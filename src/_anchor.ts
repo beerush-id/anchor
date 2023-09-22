@@ -1,6 +1,21 @@
-import { entries, logger, typeOf } from '@beerush/utils';
+import { entries, logger, merge, read, typeOf, write } from '@beerush/utils';
 
-export const ARRAY_MUTATIONS: Array<keyof Array<unknown>> = [
+export type GenericType = 'string' | 'number' | 'object' | 'array' | 'date' | 'function' | 'boolean';
+export type ItemTypeOf<T> = T extends readonly (infer U)[] ? U : never;
+
+export type ObjectAction = 'set' | 'delete';
+export type ArrayAction =
+  'copyWithin'
+  | 'fill'
+  | 'pop'
+  | 'push'
+  | 'shift'
+  | 'unshift'
+  | 'splice'
+  | 'sort'
+  | 'reverse';
+export type Action = ObjectAction | ArrayAction;
+export const ARRAY_MUTATIONS: ArrayAction[] = [
   'copyWithin',
   'fill',
   'pop',
@@ -11,47 +26,77 @@ export const ARRAY_MUTATIONS: Array<keyof Array<unknown>> = [
   'sort',
   'reverse',
 ];
+export const OBJECT_MUTATIONS: ObjectAction[] = [ 'set', 'delete' ];
 
-export type SubscribeFn<T, R extends boolean> = ((handler: Subscriber<T, R>, init?: boolean) => Unsubscribe) & {
-  destroy: (replacement: State<T, R>) => void;
-  subscribers: Subscriber<T, R>[];
-  subscriptions: WeakMap<State<T[keyof T], R>, Unsubscribe>;
+export type SubscribeFn<T> = ((handler: Subscriber<T>, init?: boolean) => Unsubscribe) & {
+  destroy: (replacement: T) => void;
+  subscribers: Subscriber<T>[];
+  subscriptions: WeakMap<State<object>, Unsubscribe>;
 };
 export type Unsubscribe = () => void;
-export type Subscriber<T, R extends boolean> = (state: State<T, R>, event: StateEvent<T>) => void;
+export type Subscriber<T> = (state: T, event: StateEvent<T>) => void;
 
-export type Readable<T, R extends boolean> = {
-  subscribe: SubscribeFn<T, R>;
+export type Writable<T, R extends boolean = true> = T & {
+  emit: (event: StateEvent<R extends true ? State<T> : T>) => void;
+  set: (value: R extends true ? State<T> : T) => void;
+  subscribe: SubscribeFn<R extends true ? State<T> : T>;
+  update: (updater: (value: R extends true ? State<T> : T) => T) => void;
 };
 
-export type Writable<T, R extends boolean> = Readable<T, R> & {
-  emit: (event: StateEvent<T>) => void;
-  set: (value: T) => void;
-  update: (updater: (value: State<T, R>) => T) => void;
-};
+export type State<T> = T extends object[]
+                       ? State<ItemTypeOf<T>>[] & Writable<T>
+                       : T extends object
+                         ? { [K in keyof T]: State<T[K]> } & Writable<T>
+                         : T;
 
-export type RecursiveWritable<T, R extends boolean> = {
-  [K in keyof T]: T[K] extends object[]
-                  ? Writable<T[K], R> & RecursiveWritable<T[K], R>
-    // eslint-disable-next-line @typescript-eslint/ban-types
-                  : T[K] extends Function
-                    ? T[K]
-                    : T[K] extends object
-                      ? Writable<T, R> & RecursiveWritable<T[K], R>
-                      : T[K];
-}
-
-export type SimpleState<T> = Writable<T, false> & T;
-export type RecursiveState<T> = Writable<T, true> & RecursiveWritable<T, true>;
-
-export type State<T, R extends boolean = true> = R extends true ? RecursiveState<T> : SimpleState<T>;
 export type StateEvent<T> = {
-  type: 'init' | 'subscribe' | 'set' | 'update' | 'delete' | 'destroy';
+  type: 'init' | 'subscribe' | 'idle' | 'active' | 'update' | 'destroy' | ObjectAction | ArrayAction | 'unknown';
   prop?: keyof T;
   path?: string;
-  value?: T[keyof T];
+  value?: unknown;
   emitter?: unknown;
 };
+export type StateInitEvent<T extends Init | Init[]> = {
+  type: 'init';
+  value: State<T>;
+  emitter: State<T>;
+};
+export type StateSubscribeEvent<T extends Init | Init[]> = {
+  type: 'subscribe';
+  emitter: State<T>;
+};
+export type StateIdleEvent<T extends Init | Init[]> = {
+  type: 'idle';
+  value: State<T>;
+  emitter: State<T>;
+}
+export type StateActiveEvent<T extends Init | Init[]> = {
+  type: 'active';
+  value: State<T>;
+  emitter: State<T>;
+}
+export type StateUpdateEvent<T extends Init | Init[]> = {
+  type: 'update';
+  value: State<T>;
+  emitter: State<T>;
+}
+export type StateDestroyEvent<T extends Init | Init[]> = {
+  type: 'destroy';
+  value: State<T>;
+  emitter: State<T>;
+}
+export type StateObjectEvent<T extends Init | Init[]> = {
+  type: ObjectAction;
+  prop: keyof T;
+  path: string;
+  value: unknown
+  emitter: State<T>;
+}
+export type StateArrayEvent<T extends Init | Init[]> = {
+  type: ArrayAction;
+  value: unknown[];
+  emitter: State<T>;
+}
 
 export type Init = {
   [key: string]: unknown;
@@ -64,16 +109,19 @@ function linkable(value: unknown): boolean {
   return LINKABLE.includes(typeOf(value));
 }
 
-export function anchor<T extends Init | Init[], R extends boolean = true>(init: T, recursive = true): State<T, R> {
+export function anchor<T extends Init | Init[]>(init: T): State<T>;
+export function anchor<T extends Init | Init[]>(init: T, recursive: false): Writable<T, false>;
+export function anchor<T extends Init | Init[]>(init: T, recursive = true): State<T> {
   if (!linkable(init)) {
     throw new Error('[ANCHOR:ERR-INVALID-VALUE] Initial value should be an object or an array!');
   }
 
-  let instance: State<T, R> = init as never;
+  let instance: State<T> = init as never;
   let destroyed = false;
-  const subscribers: Subscriber<T, R>[] = [];
-  const subscriptions: Map<State<T[keyof T], R>, Unsubscribe> = new Map();
-  const subscriptionQueues: Map<State<T[keyof T], R>, () => void> = new Map();
+
+  const subscribers: Subscriber<T>[] = [];
+  const subscriptions: Map<unknown, Unsubscribe> = new Map();
+  const subscriptionQueues: Map<unknown, () => void> = new Map();
 
   const set = (state: T): void => {
     if (destroyed) {
@@ -84,11 +132,11 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     if (Array.isArray(instance)) {
       for (const s of instance) {
         if (linkable(s)) {
-          const unsubscribe = subscriptions.get(s as State<T[keyof T], R>);
+          const unsubscribe = subscriptions.get(s as State<Init>);
 
           if (typeof unsubscribe === 'function') {
             unsubscribe();
-            subscriptions.delete(s as State<T[keyof T], R>);
+            subscriptions.delete(s as State<Init>);
           }
         }
       }
@@ -97,11 +145,11 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     } else {
       for (const [ , value ] of entries(instance)) {
         if (linkable(value)) {
-          const unsubscribe = subscriptions.get(value as State<T[keyof T], R>);
+          const unsubscribe = subscriptions.get(value as State<Init>);
 
           if (typeof unsubscribe === 'function') {
             unsubscribe();
-            subscriptions.delete(value as State<T[keyof T], R>);
+            subscriptions.delete(value as State<Init>);
           }
         }
 
@@ -117,10 +165,10 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     }
 
     logger.debug(`[anchor:Set]`, state);
-    emit({ type: 'init', value: state as never });
+    emit({ type: 'init', value: state, emitter: instance });
   };
 
-  const update = (updater: (value: State<T, R>) => T): void => {
+  const update = (updater: (value: State<T>) => T): void => {
     if (destroyed) {
       logger.warn(`[anchor:stale-update] State has been destroyed!`, instance);
       return;
@@ -129,7 +177,8 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     const result = updater(instance as never);
 
     if (result) {
-      set(result);
+      merge(instance, result);
+      emit({ type: 'update', value: instance, emitter: instance });
     } else {
       throw new Error('[ERR-INVALID-VALUE] Updater should return a value!');
     }
@@ -137,9 +186,9 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     logger.debug(`[anchor:Update]`, updater);
   };
 
-  const subscribe: SubscribeFn<T, R> = (handler: Subscriber<T, R>, init = true): Unsubscribe => {
+  const subscribe: SubscribeFn<T> = (handler: Subscriber<T>, init = true): Unsubscribe => {
     if (init) {
-      handler(instance, { type: 'subscribe' });
+      handler(instance as T, { type: 'subscribe' });
     }
 
     if (destroyed) {
@@ -158,6 +207,7 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     }
 
     logger.debug(`[anchor:subscribe]`, handler);
+    emit({ type: 'active', value: instance, emitter: instance });
 
     return () => {
       const index = subscribers.indexOf(handler);
@@ -172,6 +222,7 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
           subscriptions.delete(state);
         }
 
+        emit({ type: 'idle', value: instance, emitter: instance });
         logger.debug(`[anchor:unsubscribe] Recursive subscription idle!`, instance);
       }
     };
@@ -179,7 +230,7 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
 
   subscribe.subscribers = subscribers;
   subscribe.subscriptions = subscriptions;
-  subscribe.destroy = (replacement: State<T, R>) => {
+  subscribe.destroy = (replacement: T) => {
     destroyed = true;
     emit({ type: 'destroy', value: replacement as never });
 
@@ -197,7 +248,7 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
   const emit = (event: StateEvent<T>) => {
     for (const run of subscribers) {
       if (typeof run === 'function') {
-        run(instance, event);
+        run(instance as T, event);
       }
     }
 
@@ -217,21 +268,21 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
       }
 
       const prev = target[prop];
-      if (linkable(prev) && (prev as State<T, R>).subscribe) {
-        const unsubscribe = subscriptions.get(prev as State<T[keyof T], R>);
+      if (linkable(prev) && (prev as State<T>).subscribe) {
+        const unsubscribe = subscriptions.get(prev as State<Init>);
 
         if (typeof unsubscribe === 'function') {
           unsubscribe();
-          subscriptions.delete(prev as State<T[keyof T], R>);
+          subscriptions.delete(prev as State<Init>);
 
           logger.debug(`[anchor:set] Exiting previous subscription.`, instance, prev);
         }
       }
 
       if (linkable(value) && recursive) {
-        let state = value as State<T[keyof T], R>;
+        let state = value as State<Init>;
         if (!state.subscribe) {
-          state = anchor(value as never, recursive);
+          state = anchor(value as never);
         }
 
         const queue = () => {
@@ -247,9 +298,13 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
                   path: path ? `${ prop as string }.${ path }` : `${ prop as string }`,
                   emitter,
                 });
+
+                logger.debug('[anchor:event] Recursive subscription event.', event);
               }
             } else {
               emit({ type: 'set', value: state as never });
+
+              logger.debug('[anchor:unknown-event] Recursive subscription event.', event);
             }
           });
           subscriptions.set(state, unsubscribe);
@@ -284,11 +339,11 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
 
       const value = target[prop];
       if (typeof value === 'object') {
-        const unsubscribe = subscriptions.get(value as State<T[keyof T], R>);
+        const unsubscribe = subscriptions.get(value);
 
         if (typeof unsubscribe === 'function') {
           unsubscribe();
-          subscriptions.delete(value as State<T[keyof T], R>);
+          subscriptions.delete(value);
         }
       }
 
@@ -308,13 +363,14 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
 
   if (Array.isArray(instance)) {
     if (recursive) {
-      (instance as Init[]).forEach((item, prop) => {
+      const self = instance as Init[];
+      self.forEach((item, prop) => {
         if (linkable(item)) {
-          let state = item as State<T[keyof T], R>;
+          let state = item as State<ItemTypeOf<T>>;
 
           if (!state.subscribe) {
-            state = anchor(item as never, recursive);
-            (instance as Init[]).splice(prop, 1, state as never);
+            state = anchor(item as never);
+            self.splice(prop, 1, state as never);
           }
 
           subscriptionQueues.set(state, () => {
@@ -325,14 +381,18 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
                 if (type !== 'subscribe') {
                   emit({
                     type,
-                    value: value as never,
+                    value,
                     prop,
                     path: path ? `${ prop }.${ path }` : `${ prop }`,
                     emitter,
                   });
+
+                  logger.debug('[anchor:event] Recursive subscription event.', event);
                 }
               } else {
-                emit({ type: 'set', value: state as never });
+                emit({ type: 'unknown', value: state as never });
+
+                logger.debug('[anchor:unknown-event] Recursive subscription event.', event);
               }
             });
             subscriptions.set(state as never, unsubscribe);
@@ -348,11 +408,11 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
         if (recursive) {
           args.forEach((item, prop) => {
             if (linkable(item)) {
-              let state = item as State<T[keyof T], R>;
+              let state = item as State<Init[]>;
 
               if (!state.subscribe) {
-                state = anchor(item as never, recursive);
-                args.splice(prop, 1, state as never);
+                state = anchor(item as never);
+                args.splice(prop, 1, state);
               }
 
               const queue = () => {
@@ -363,14 +423,18 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
                     if (type !== 'subscribe') {
                       emit({
                         type,
-                        value: value as never,
+                        value,
                         prop,
                         path: path ? `${ prop }.${ path }` : `${ prop }`,
                         emitter,
                       });
+
+                      logger.debug('[anchor:event] Recursive subscription event.', event);
                     }
                   } else {
-                    emit({ type: 'set', value: state as never });
+                    emit({ type: 'unknown', value: state as never });
+
+                    logger.debug('[anchor:unknown-event] Recursive subscription event.', event);
                   }
                 });
                 subscriptions.set(state as never, unsubscribe);
@@ -389,23 +453,9 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
 
         const result = fn.bind(instance)(...(args as unknown[]));
 
-        let path;
-
-        switch (method) {
-          case 'push':
-            path = `${ (instance as Init[]).length - 1 }`;
-            break;
-          case 'splice':
-            path = `${ args[0] }`;
-            break;
-          default:
-            break;
-        }
-
         emit({
-          type: method as never,
-          value: args as never,
-          path,
+          type: method,
+          value: args,
           emitter: instance,
         });
 
@@ -416,11 +466,11 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
     if (recursive) {
       for (const [ prop, value ] of entries(instance as T)) {
         if (linkable(value)) {
-          let state = value as State<T[keyof T], R>;
+          let state = value as State<Init>;
 
           if (!state.subscribe) {
-            state = anchor(value as never, recursive);
-            instance[prop] = state as never;
+            state = anchor(value as never);
+            instance[prop as never] = state as never;
           }
 
           subscriptionQueues.set(state, () => {
@@ -431,14 +481,18 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
                 if (type !== 'subscribe') {
                   emit({
                     type,
-                    value: value as never,
+                    value,
                     prop,
                     path: path ? `${ prop as string }.${ path }` : `${ prop as string }`,
                     emitter,
                   });
+
+                  logger.debug('[anchor:event] Recursive subscription event.', event);
                 }
               } else {
-                emit({ type: 'set', value: state as never });
+                emit({ type: 'unknown', value: state as never });
+
+                logger.debug('[anchor:unknown-event] Recursive subscription event.', event);
               }
             });
             subscriptions.set(state as never, unsubscribe);
@@ -447,7 +501,7 @@ export function anchor<T extends Init | Init[], R extends boolean = true>(init: 
       }
     }
 
-    instance = new Proxy(instance, handler as never) as State<T, R>;
+    instance = new Proxy(instance, handler as never) as State<T>;
   }
 
   logger.debug(`[anchor:Create]`, instance);
@@ -463,10 +517,97 @@ anchor.debug = (enabled?: boolean, stack?: boolean) => {
  * @param {State<T>} state
  * @param {Partial<T>} value
  */
-export function assign<T extends Init, R extends boolean = true>(state: State<T, R>, value: Partial<T>) {
+export function assign<T extends Init>(state: State<T>, value: Partial<T>) {
   for (const [ key, val ] of entries(value)) {
     if (!RESERVED_KEYS.includes(key as string)) {
-      state[key] = val as never;
+      (state as T)[key] = val as never;
     }
   }
+}
+
+/**
+ * Reflects the state event to another state.
+ */
+export function reflect<S, T extends object>(event: StateEvent<S>, target: T): void {
+  if (event && [ ...OBJECT_MUTATIONS, ...ARRAY_MUTATIONS ].includes(event.type as Action)) {
+    if (OBJECT_MUTATIONS.includes(event.type as ObjectAction)) {
+      if (event.type === 'set') {
+        const value = typeof event.value === 'object' ? { ...event.value } : event.value;
+        write(target as never, event.path as never, value as never);
+      } else if (event.type === 'delete') {
+        const paths = event.path?.split('.') as never[];
+        const last = paths.pop() as never;
+
+        if (paths.length) {
+          const parent = read(target as never, paths.join('.') as never);
+          delete parent[last];
+        } else if (last) {
+          delete target[last];
+        }
+      }
+    } else if (ARRAY_MUTATIONS.includes(event.type as ArrayAction)) {
+      if (event.path) {
+        const next: Array<unknown> | void = read(target as never, event.path as never);
+
+        if (Array.isArray(next)) {
+          const fn = next[event.type as keyof Array<unknown>] as (...args: unknown[]) => unknown;
+
+          if (typeof fn === 'function') {
+            fn.bind(next)(...(event.value as never[]));
+          } else {
+            logger.warn(`[ANCHOR:WARN-INVALID-REFLECT] Invalid array event!`, next, event);
+          }
+        } else {
+          if (Array.isArray(event.emitter)) {
+            write(target as never, event.path as never, [ ...event.emitter ] as never);
+          } else {
+            logger.warn(`[ANCHOR:WARN-INVALID-REFLECT] Trying to call array methods on non array object!`, next, event);
+          }
+        }
+      } else if (typeof target[event.type as never] === 'function' && Array.isArray(event.value)) {
+        const fn = target[event.type as never] as (...args: unknown[]) => unknown;
+
+        if (typeof fn === 'function') {
+          fn.bind(target)(...(event.value as never[]));
+        } else {
+          logger.warn(`[ANCHOR:WARN-INVALID-REFLECT] Invalid array event!`, target, event);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Mirrors the state event into another object.
+ * @param {S} source
+ * @param {T} target
+ * @return {Unsubscribe}
+ */
+export function mirror<S, T extends object>(source: Writable<S> | State<S>, target: T): Unsubscribe {
+  return (source as State<Init>).subscribe((s: unknown, event) => {
+    reflect(event as never, target);
+  });
+}
+
+/**
+ * Syncs the state event between two states.
+ * @param {State<S>} source
+ * @param {State<T>} target
+ * @return {Unsubscribe}
+ */
+export function sync<S, T>(
+  source: Writable<S> | State<S>,
+  target: Writable<T> | State<T>,
+): Unsubscribe {
+  const unsubSource = (source as State<Init>).subscribe((s: unknown, event) => {
+    reflect(event as never, target as State<Init>);
+  });
+  const unsubTarget = (target as State<Init>).subscribe((s: unknown, event) => {
+    reflect(event as never, source as State<Init>);
+  });
+
+  return () => {
+    unsubSource();
+    unsubTarget();
+  };
 }
