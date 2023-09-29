@@ -40,7 +40,7 @@ export type Rec = {
   [key: string]: unknown;
 }
 
-export type Init = Rec | Rec[];
+export type Init = Rec | Array<Rec | unknown>;
 
 export type State<T, R extends boolean = true> = (
   R extends true
