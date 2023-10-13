@@ -7,3 +7,5 @@ export function debug(trace?: boolean) {
 export * from './api/index.js';
 export * from './core/index.js';
 export * from './hook/index.js';
+
+export { logger };

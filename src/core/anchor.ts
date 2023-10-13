@@ -32,16 +32,14 @@ export const LINKABLE = [ 'array', 'object' ];
 export const INTERNAL_KEY = 'anchor:internal';
 
 export type Unsubscribe = () => void;
-export type AnchorSubscriber<T> = (state: T, event: StateEvent<T>) => void;
-export type AnchorSubscriberList<T> = AnchorSubscriber<T>[];
-export type AnchorSubscriptionMap<T> = Map<T[keyof T], Unsubscribe>;
+export type Subscriber<T> = (state: T, event: StateEvent<T>) => void;
+export type SubscriberList<T> = Subscriber<T>[];
+export type SubscriptionMap<T> = Map<T[keyof T], Unsubscribe>;
 
 export type Rec = {
   [key: string]: unknown;
 }
-
-export type Init = Rec | Array<Rec | unknown>;
-
+export type Init = Rec | Array<Rec | unknown> | Map<unknown, unknown>;
 export type State<T, R extends boolean = true> = (
   R extends true
   ? T extends Rec[]
@@ -53,13 +51,22 @@ export type State<T, R extends boolean = true> = (
         ? { [K in keyof T]: T[K] extends Init ? State<T[K], R> : T[K] }
         : T
   : T
-  ) & {
-  readonly set: (value: Part<T> | Part<T>[]) => void;
-  readonly subscribe: (run: AnchorSubscriber<State<T, R>>, emit?: boolean, receiver?: unknown) => Unsubscribe;
-}
-
+  ) & (
+  T extends Map<infer K, infer V> | Set<infer V>
+  ? {
+    readonly subscribe: (
+      run: Subscriber<State<T extends Map<K, V> ? Map<K, V> : Set<V>, R>>,
+      emit?: boolean,
+      receiver?: unknown,
+    ) => Unsubscribe
+  }
+  : {
+    readonly set: (value: Part<T> | Part<T>[]) => void;
+    readonly subscribe: (run: Subscriber<State<T, R>>, emit?: boolean, receiver?: unknown) => Unsubscribe;
+  }
+  );
 export type StateEvent<T> = {
-  readonly type: 'init' | 'subscribe' | 'update' | 'destroy' | ObjectAction | ArrayAction | 'unknown';
+  readonly type: 'init' | 'subscribe' | 'update' | 'destroy' | ObjectAction | ArrayAction | 'map:set' | 'map:delete' | 'map:clear' | 'unknown';
   readonly prop?: keyof T;
   readonly path?: string;
   readonly paths?: string[];
@@ -68,13 +75,12 @@ export type StateEvent<T> = {
   readonly oldValue?: unknown;
   readonly emitter?: unknown;
 };
-
-export type AnchorManager<T> = {
+export type Controller<T> = {
   readonly set: (value: Part<T>) => void;
   readonly emit: (event: StateEvent<T>) => void;
   readonly update: (updater: (value: T) => T) => void;
   readonly destroy: () => void;
-  readonly subscribe: (run: AnchorSubscriber<T>, emit?: boolean, receiver?: unknown) => Unsubscribe;
+  readonly subscribe: (run: Subscriber<T>, emit?: boolean, receiver?: unknown) => Unsubscribe;
 };
 
 export enum Pointer {
@@ -84,11 +90,11 @@ export enum Pointer {
   SUBSCRIPTIONS,
 }
 
-export type Anchor<T, R extends boolean = true> = [ State<T, R>, AnchorManager<T>, AnchorSubscriberList<T>, AnchorSubscriptionMap<T> ];
+export type Anchor<T, R extends boolean = true> = [ State<T, R>, Controller<T>, SubscriberList<T>, SubscriptionMap<T> ];
 
 export const Registry: Map<Init, Anchor<Init>> = new Map();
-const StateRegistry: WeakMap<Init, Anchor<Init>> = new WeakMap();
-const InitsRegistry: WeakMap<Init, Anchor<Init>> = new WeakMap();
+export const StateRegistry: Map<Init, Anchor<Init>> = new Map();
+export const InitsRegistry: Map<Init, Anchor<Init>> = new Map();
 
 const read = <T extends Init>(init: T): Anchor<T> | undefined => {
   const pointer = (StateRegistry.get(init as Init) || InitsRegistry.get(init)) as never;
@@ -122,7 +128,7 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
     return registered as never;
   }
 
-  const subscribers: AnchorSubscriber<T>[] = [];
+  const subscribers: Subscriber<T>[] = [];
   const subscriptions: Map<State<T[keyof T]>, Unsubscribe> = new Map();
   let stopPropagation = false;
 
@@ -164,6 +170,7 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
       subscriptions.set(childState as never, unsubscribe);
     }
 
+    logger.debug('[anchor:link] Anchor linked to child state.');
     return childState as T[keyof T];
   };
 
@@ -173,10 +180,11 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
     if (typeof unsubscribe === 'function') {
       unsubscribe();
       subscriptions.delete(current);
+      logger.debug('[anchor:unlink] Anchor unlinked from child state.');
     }
   };
 
-  const subscribe = (handler: AnchorSubscriber<T>, emit = true, receiver?: unknown) => {
+  const subscribe = (handler: Subscriber<T>, emit = true, receiver?: unknown) => {
     if (emit) {
       const event: StateEvent<T> = { type: 'init', value: state, emitter: init };
       handler(state, event);
@@ -219,7 +227,7 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
 
   const publish = (event: StateEvent<T>) => {
     if (stopPropagation) {
-      // logger.info('[anchor:publish] Anchor event propagation stopped.');
+      // logger.debug('[anchor:publish] Anchor event propagation stopped.');
       return;
     }
 
@@ -229,7 +237,7 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
       }
     }
 
-    // logger.info('[anchor:publish] Anchor event emitted.');
+    // logger.debug('[anchor:publish] Anchor event emitted.');
   };
 
   const set = (value: Part<T> | Part<T>[], emit = true) => {
@@ -256,8 +264,8 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
     const value = updater(state);
 
     if (value) {
+      // logger.debug('[anchor:update] Anchor updater invoked.');
       set(value, emit);
-      // logger.debug('[anchor:update] Anchor updated using updater.');
     }
   };
 
@@ -286,33 +294,146 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
       const fn = init[method] as (...args: unknown[]) => unknown;
 
       if (typeof fn === 'function') {
-        Object.defineProperty(init, method, {
-          value: (...args: unknown[]) => {
-            const length = state.length;
-            const current = [ ...(state as Rec[]) ];
+        init[method as never] = (...args: unknown[]) => {
+          const current = [ ...(state as Rec[]) ];
 
-            if (recursive) {
-              args.forEach((item, i) => {
-                if (typeof item === 'object' && linkable(item)) {
-                  const childData = link(item as never);
-                  args.splice(i, 1, childData);
-                }
-              });
+          if (recursive) {
+            args.forEach((item, i) => {
+              if (typeof item === 'object' && linkable(item)) {
+                const childData = link(item as never);
+                args.splice(i, 1, childData);
+              }
+            });
+          }
+
+          const result = fn.bind(init)(...(args as unknown[]));
+
+          for (const item of current) {
+            if (!init.includes(item) && typeof item === 'object' && linkable(item)) {
+              const ref = read(item as Init);
+
+              if (ref) {
+                unlink(ref[Pointer.STATE] as never);
+              }
             }
+          }
 
-            const result = fn.bind(init)(...(args as unknown[]));
+          publish({ type: method, value: [ ...(state as Rec[]) ], params: args, oldValue: current, emitter: init });
+          return result;
+        };
 
-            if (length !== state.length) {
-              publish({ type: method, value: [ ...(state as Rec[]) ], params: args, oldValue: current, emitter: init });
+        Object.defineProperty(init, method, { enumerable: false });
+      }
+    }
+  }
+
+  if (init instanceof Map) {
+    if (recursive) {
+      for (const [ key, value ] of init.entries()) {
+        if (typeof value === 'object' && linkable(value)) {
+          const childData = link(value as never, key as keyof T);
+          init.set(key, childData);
+        }
+      }
+    }
+
+    for (const method of [ 'set', 'delete', 'clear' ]) {
+      const fn = init[method as never] as (...args: unknown[]) => unknown;
+
+      if (typeof fn === 'function') {
+        init[method as never] = ((...args: unknown[]) => {
+          const current = [ ...init.entries() ];
+
+          if (method === 'set' && recursive) {
+            const [ key, value ] = args as [ unknown, unknown ];
+
+            if (typeof value === 'object' && linkable(value)) {
+              args.splice(1, 1, link(value as never, key as keyof T));
             }
-            // else {
-            //   logger.debug('[anchor:array] Array mutation did not cause a change. Skipping publish.');
-            // }
+          } else if (method === 'delete' && recursive) {
+            const ref = read(init.get(args[0] as never) as Init);
 
-            return result;
-          },
-          enumerable: false,
-        });
+            if (ref) {
+              unlink(ref[Pointer.STATE] as never);
+            }
+          } else if (method === 'clear' && recursive) {
+            for (const [ , value ] of init.entries()) {
+              const ref = read(value as Init);
+
+              if (ref) {
+                unlink(ref[Pointer.STATE] as never);
+              }
+            }
+          }
+
+          const result = fn.bind(init)(...(args as unknown[]));
+          publish({
+            type: `map:${ method }` as never,
+            value: [ ...init.entries() ],
+            params: args,
+            oldValue: current,
+            emitter: init,
+          });
+          return result;
+        }) as never;
+
+        Object.defineProperty(init, method, { enumerable: false });
+      }
+    }
+  }
+
+  if (init instanceof Set) {
+    if (recursive) {
+      for (const value of init.values()) {
+        if (typeof value === 'object' && linkable(value)) {
+          const childData = link(value as never);
+          init.delete(value);
+          init.add(childData);
+        }
+      }
+    }
+
+    for (const method of [ 'add', 'delete', 'clear' ]) {
+      const fn = init[method as never] as (...args: unknown[]) => unknown;
+
+      if (typeof fn === 'function') {
+        init[method as never] = ((...args: unknown[]) => {
+          const current = [ ...init.entries() ];
+
+          if (method === 'add' && recursive) {
+            const [ value ] = args as [ unknown ];
+
+            if (typeof value === 'object' && linkable(value)) {
+              args.splice(0, 1, link(value as never));
+            }
+          } else if (method === 'delete' && recursive) {
+            const ref = read(args[0] as Init);
+
+            if (ref) {
+              unlink(ref[Pointer.STATE] as never);
+            }
+          } else if (method === 'clear' && recursive) {
+            for (const value of init.values()) {
+              const ref = read(value as Init);
+
+              if (ref) {
+                unlink(ref[Pointer.STATE] as never);
+              }
+            }
+          }
+
+          const result = fn.bind(init)(...(args as unknown[]));
+          publish({
+            type: `set:${ method }` as never,
+            value: [ ...init.entries() ],
+            params: args,
+            oldValue: current,
+            emitter: init,
+          });
+          return result;
+        }) as never;
+
+        Object.defineProperty(init, method, { enumerable: false });
       }
     }
   }
@@ -325,7 +446,7 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
     }
   }
 
-  const state = Array.isArray(init) ? init : new Proxy(init, {
+  const state = !transformable(init) ? init : new Proxy(init, {
     set(target: T, prop: keyof T, value: T[keyof T]) {
       const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
@@ -352,13 +473,8 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
     deleteProperty(target: T, prop: keyof T): boolean {
       const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
-      if (typeof current === 'object' && linkable(current)) {
-        const unsubscribe = subscriptions.get(current);
-
-        if (typeof unsubscribe === 'function') {
-          unsubscribe();
-          subscriptions.delete(current);
-        }
+      if (typeof current === 'object' && linkable(current) && recursive) {
+        unlink(current);
       }
 
       Reflect.deleteProperty(target, prop);
@@ -367,11 +483,16 @@ export function crate<T extends Init>(init: T, recursive = true): Anchor<T> {
       return true;
     },
   } as never);
-  const manager: AnchorManager<T> = { destroy, emit: publish, set, subscribe, update };
+  const manager: Controller<T> = { destroy, emit: publish, set, subscribe, update };
   const pointer = [ state, manager, subscribers, subscriptions ] as Anchor<T>;
 
-  Object.defineProperty(state, 'set', { value: set, enumerable: false });
-  Object.defineProperty(state, 'subscribe', { value: subscribe, enumerable: false });
+  if (replaceable(init)) {
+    Object.assign(state, { set });
+    Object.defineProperty(state, 'set', { enumerable: false });
+  }
+
+  Object.assign(state, { subscribe });
+  Object.defineProperty(state, 'subscribe', { enumerable: false });
 
   write(init, state, pointer);
 
@@ -386,7 +507,7 @@ export function anchor<T extends Init>(init: T, recursive = true): State<T> {
 
 export type Publisher<T> = (event: StateEvent<T>) => void;
 export type Readable<T> = T & {
-  readonly subscribe: (run: AnchorSubscriber<T>, emit?: boolean, receiver?: unknown) => Unsubscribe;
+  readonly subscribe: (run: Subscriber<T>, emit?: boolean, receiver?: unknown) => Unsubscribe;
 }
 export type Writable<T> = Readable<T> & {
   readonly set: (value: Part<T> | Part<T>[]) => void;
@@ -394,9 +515,9 @@ export type Writable<T> = Readable<T> & {
 
 export function readable<T extends Init>(init: T): [ Readable<T>, Publisher<T> ] {
   const instance = Array.isArray(init) ? [ ...(init as never[]) ] : { ...init };
-  const subscribers: AnchorSubscriber<T>[] = [];
+  const subscribers: Subscriber<T>[] = [];
 
-  const subscribe = (handler: AnchorSubscriber<T>, emit = true) => {
+  const subscribe = (handler: Subscriber<T>, emit = true) => {
     if (emit) {
       const event: StateEvent<T> = { type: 'init', value: instance, emitter: instance };
       handler(instance as T, event);
@@ -450,4 +571,12 @@ export function writable<T extends Init>(init: T): [ Writable<T>, Publisher<T> ]
 
 function linkable(value: unknown): boolean {
   return LINKABLE.includes(typeOf(value));
+}
+
+function replaceable(value: unknown): boolean {
+  return !(value instanceof Map || value instanceof Set);
+}
+
+function transformable(value: unknown): boolean {
+  return !(value instanceof Map || value instanceof Set || Array.isArray(value));
 }

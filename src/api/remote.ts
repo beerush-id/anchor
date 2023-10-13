@@ -143,7 +143,7 @@ const createStream = <T extends Init>(init: T, url: string, request: RequestInit
 
   Object.defineProperty(stream, 'resolve', {
     value: (response: Response) => {
-      stream.data.set(response.body as never);
+      (stream.data as State<Rec>).set(response.body as never);
       stream.set({
         status: 'success',
         statusCode: response.status,

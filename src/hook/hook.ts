@@ -5,10 +5,10 @@ import { logger } from '@beerush/utils';
 import { Stream, StreamPublisher } from '../api/index.js';
 import { history, type History, StateChanges } from '../core/history.js';
 
-export type StateHook = (init: Init) => [ object, (value: object) => void ];
+export type StateHook = <T>(init: T) => [ T, (value: T) => void ];
 export type EffectHook = (fn: () => (void | never), deps?: unknown) => void;
-export type RefHook = <T extends Init>(init: T) => {
-  current?: Anchor<T>;
+export type RefHook = <T>(init?: T) => {
+  current?: T;
 };
 
 export type InputRef = {
@@ -25,9 +25,19 @@ export type UpstreamRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, Sta
 export type UpsertRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, History<T>, State<T>, StateChanges<T>, Stream<T> ];
 export type HistoryRef<T extends Init> = [ State<T>, StateChanges<T>, History<T> ];
 
-let useState: StateHook;
-let useEffect: EffectHook;
-let useRef: RefHook;
+let _useState: StateHook;
+let _useEffect: EffectHook;
+let _useRef: RefHook;
+
+export const useState: StateHook = ((init: Init) => {
+  return _useState ? _useState(init) : init;
+}) as never;
+export const useEffect: EffectHook = ((fn: () => (void | never), deps?: unknown) => {
+  return _useEffect ? _useEffect(fn, deps) : fn();
+});
+export const useRef: RefHook = ((init: Init) => {
+  return _useRef ? _useRef(init) : { current: init };
+}) as never;
 
 export function useCrate<T extends Init>(init: T): Anchor<T>;
 export function useCrate<T extends Init>(init: T, r: false): Anchor<T, false>;
@@ -133,13 +143,13 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
                 if ([ 'checkbox', 'radio' ].includes(elementRef.type) && elementRef.checked !== value) {
                   elementRef.checked = value as never;
                   input.validate();
-                  setState({ ...state });
+                  setState({ ...state } as never);
 
                   logger.debug('[anchor:use-input] Internal input updated.');
                 } else if (elementRef.value !== value) {
                   elementRef.value = value as never;
                   input.validate();
-                  setState({ ...state });
+                  setState({ ...state } as never);
 
                   logger.debug('[anchor:use-input] Internal input updated.');
                 }
@@ -163,7 +173,7 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
               input.touched = true;
 
               if (!input.valid) {
-                setState({ ...state });
+                setState({ ...state } as never);
                 logger.debug('[anchor:use-input] Input touched but invalid.');
               }
             }
@@ -211,7 +221,7 @@ export function useStream<T extends Init>(stream: Stream<T>): Stream<T> {
     logger.debug('[anchor:use-stream] Fetching initial Stream.');
 
     return stream.subscribe((s) => {
-      setState(Array.isArray(s) ? [ ...s ] : { ...s });
+      setState((Array.isArray(s) ? [ ...s ] : { ...s }) as never);
       logger.debug('[anchor:use-stream] Stream updated.');
     }, false);
   }, []);
@@ -227,7 +237,7 @@ export function useUpstream<T extends Rec>(stream: Stream<T>, validate?: InputVa
     logger.debug('[anchor:use-upstream] Ready for submitting Stream.');
 
     return stream.subscribe((s, e) => {
-      setState(Array.isArray(s) ? [ ...s ] : { ...s });
+      setState((Array.isArray(s) ? [ ...s ] : { ...s }) as never);
       logger.debug('[anchor:use-upstream] Stream updated.', e);
     }, false);
   }, []);
@@ -250,7 +260,7 @@ export function useHistory<T extends Init>(state: State<T>, max?: number, deb?: 
 
     useEffect(() => {
       return ref.current.subscribe((s, e) => {
-        setState(Array.isArray(state) ? [ ...state ] : { ...state });
+        setState((Array.isArray(state) ? [ ...state ] : { ...state }) as never);
         logger.debug('[anchor:use-history] History changed.', e);
       }, false);
     }, []);
@@ -280,9 +290,9 @@ export function useUpsert<T extends Rec>(stream: Stream<T>, validate?: InputVali
 }
 
 export function setAnchorHook(hook: unknown, effect: unknown, ref: unknown) {
-  useState = hook as never;
-  useEffect = effect as never;
-  useRef = ref as never;
+  _useState = hook as never;
+  _useEffect = effect as never;
+  _useRef = ref as never;
 }
 
 function registerHook(state: State<Init>) {
@@ -292,7 +302,7 @@ function registerHook(state: State<Init>) {
 
   useEffect(() => {
     return state.subscribe((s) => {
-      setState(Array.isArray(s) ? [ ...s ] : { ...s });
+      setState((Array.isArray(s) ? [ ...s ] : { ...s }) as never);
       logger.debug('[anchor:use-anchor] Anchor updated.');
     }, false);
   }, []);
