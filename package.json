@@ -13,13 +13,7 @@
       "types": "./lib/esm/index.d.ts",
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js"
-    },
-    "./composer": {
-      "types": "./lib/esm/composer/index.d.ts",
-      "import": "./lib/esm/composer/index.js",
-      "require": "./lib/cjs/composer/index.js"
-    },
-    "./composer/*": "./lib/esm/composer/*"
+    }
   },
   "directories": {
     "lib": "lib",
