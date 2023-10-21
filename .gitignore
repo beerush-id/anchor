@@ -117,3 +117,7 @@ dist
 .pnp.*
 .idea
 lib
+
+# Vitepress
+docs/.vitepress/dist
+docs/.vitepress/cache
