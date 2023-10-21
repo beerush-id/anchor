@@ -21,13 +21,15 @@ Don't forget to star ⭐ the project if you find it interesting and stay tuned f
 
 > ⚠️ **Note about performance**: Anchor is designed with efficiency and performance in mind. When used in a React
 > application, Anchor leverages React's own `setState()` under the hood, ensuring optimal integration and performance
-> with
-> React's state management system. If used in a Svelte application, it behaves like a standard store-like object for
-> Reactivity, enabling components to subscribe to state changes without burdening performance. Essentially, it handles
+> with React's state management system.
+
+> If used in a Svelte application, it behaves like a standard store-like object for
+> Reactivity, enabling components to subscribe to state changes without burdening performance.
+
+> Essentially, it handles
 > state updates in a way that's idiomatic to each particular framework, ensuring both optimal interoperation and minimal
 > performance overhead. This gives you the flexibility and directness of mutable state, but in a more intuitive manner
-> and
-> without additional performance costs.
+> and without additional performance costs.
 
 ## 📚 The Anchor Advantage
 
@@ -97,7 +99,7 @@ console.log(myState.count); // 2
 
 ### Svelte
 
-```sveltehtml
+```svelte
 
 <script>
   import { anchor } from '@beerush/anchor';
