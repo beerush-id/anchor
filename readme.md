@@ -3,6 +3,8 @@
 <p align="center">Embrace JavaScript's natural mutability for effortlessly managing state — from simple todos to complex graphic design
 apps. Anchor handles state complexity with elegance, making any app's state a breeze.</p>
 
+![Split GIF showing a color picking action on the left and the corresponding code 'selectedNodes.forEach(node => node.color = value)' on the right](https://api.mahdaen.name/uploads/1022_22f2fa1abd.gif)
+
 > 🚧 **Note:** Anchor is currently in its early development stages. While it is fully functional and ready for use, there
 > could be occasional changes as we strive to improve and optimize it. Bug reports, suggestions, and contributions are
 > very welcome and appreciated!
