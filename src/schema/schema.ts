@@ -12,6 +12,27 @@ export enum SchemaType {
   String = 'string' // Test Covered.
 }
 
+export type SchemaTypeOf<T> =
+  T extends unknown[]
+  ? SchemaType.Array
+  : T extends Set<unknown>
+    ? SchemaType.Set
+    : T extends Map<unknown, unknown>
+      ? SchemaType.Map
+      : T extends Date
+        ? SchemaType.Date
+        : T extends object
+          ? SchemaType.Object
+          : T extends boolean
+            ? SchemaType.Boolean
+            : T extends string
+              ? SchemaType.String
+              : T extends number
+                ? SchemaType.Number
+                : T extends null
+                  ? SchemaType.Null
+                  : SchemaType.Custom;
+
 export const COMMON_SCHEMA_TYPES: SchemaType[] = Object.values(SchemaType);
 export const SERIALIZABLE_SCHEMA_TYPES: SchemaType[] = [
   SchemaType.Array,
@@ -28,19 +49,18 @@ export type SchemaCustomValidation = {
   expected: unknown;
 }
 
-export type BaseSchema = {
+export type BaseSchema<T> = {
+  type: SchemaTypeOf<T> | SchemaTypeOf<T>[] | SchemaType;
   title?: string;
   readonly?: boolean;
 }
 
 // Primitive Types
 export type BooleanSchema = {
-  type: SchemaType.Boolean;
   required?: boolean;
   default?: boolean | (() => boolean);
 }
 export type StringSchema = {
-  type: SchemaType.String;
   required?: boolean;
   minLength?: number;
   maxLength?: number;
@@ -50,7 +70,6 @@ export type StringSchema = {
   validate?: (value: string) => SchemaCustomValidation;
 }
 export type NumberSchema = {
-  type: SchemaType.Number;
   required?: boolean;
   minimum?: number;
   maximum?: number;
@@ -59,13 +78,11 @@ export type NumberSchema = {
   validate?: (value: number) => SchemaCustomValidation;
 }
 export type NullSchema = {
-  type: SchemaType.Null;
   required?: boolean;
 }
 
 // Object Types
 export type ObjectSchema<T> = {
-  type: SchemaType.Object;
   properties?: {
     [P in keyof T]: Schema<T[P]> | (() => Schema<T[P]>);
   };
@@ -75,14 +92,13 @@ export type ObjectSchema<T> = {
   validate?: (value: T) => SchemaCustomValidation;
 }
 export type MapSchema<K, V> = {
-  type: SchemaType.Map;
   keys?: Schema<K> | (() => Schema<K>);
   items?: Schema<V> | (() => Schema<V>);
   default?: () => Map<K, V>;
   validate?: (value: V) => SchemaCustomValidation;
 }
+
 export type ArraySchema<T> = {
-  type: SchemaType.Array;
   items?: Schema<T> | (() => Schema<T>);
   required?: boolean;
   additionalItems?: boolean;
@@ -90,7 +106,6 @@ export type ArraySchema<T> = {
   validate?: (value: T[]) => SchemaCustomValidation;
 }
 export type SetSchema<T> = {
-  type: SchemaType.Set;
   items?: Schema<T> | (() => Schema<T>);
   required?: boolean;
   additionalItems?: boolean;
@@ -98,7 +113,6 @@ export type SetSchema<T> = {
   validate?: (value: T[]) => SchemaCustomValidation;
 }
 export type DateSchema = {
-  type: SchemaType.Date;
   required?: boolean;
   default?: string | number | (() => Date);
   minDate?: Date;
@@ -108,13 +122,12 @@ export type DateSchema = {
 
 // Custom Types
 export type CustomSchema<T> = {
-  type: SchemaType | SchemaType[];
   required?: boolean;
   default?: () => T;
   validate?: (value: T) => SchemaCustomValidation;
 }
 
-export type Schema<T> = BaseSchema & (
+export type Schema<T> = BaseSchema<T> & (
   T extends Array<SchemaType>
   ? Schema<T[number]>
   : T extends Array<infer U>
@@ -137,6 +150,10 @@ export type Schema<T> = BaseSchema & (
                     ? NullSchema
                     : CustomSchema<T>
   );
+
+export type SchemaTypeMap<T> = {
+  [K in keyof Schema<T>]: K extends 'type' ? SchemaTypeOf<T> | SchemaTypeOf<T>[] : Schema<T>[K];
+}
 
 export enum SchemaErrorType {
   Type = 'typerror',
@@ -195,7 +212,7 @@ export type SchemaValidation = {
   error?: Error;
 }
 
-export type DetailedValidation<T> = T extends Array<infer U>
+export type DetailedValidation<T> = T extends (Array<infer U> | Set<infer U>)
                                     ? SchemaValidation & ArrayValidation<U>
                                     : T extends object
                                       ? SchemaValidation & ObjectValidation<T>

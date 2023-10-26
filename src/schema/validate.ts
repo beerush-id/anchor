@@ -29,7 +29,7 @@ import {
  * @param {string} path
  * @param {SchemaType[]} allowTypes
  * @param root
- * @returns {SchemaValidation<T>}
+ * @returns {DetailedValidation<T>}
  */
 export function validate<T>(
   schema: Schema<T>,
@@ -39,7 +39,7 @@ export function validate<T>(
   path?: string,
   root = true,
 ): DetailedValidation<T> {
-  const base = schema as BaseSchema & CustomSchema<T>;
+  const base = schema as BaseSchema<T> & CustomSchema<T>;
 
   if (
     (typeof base.type === 'string' && !allowTypes.includes(base.type)) ||
@@ -185,10 +185,10 @@ export function validate<T>(
           const childPath = path ? `${ path }.${ i }` : `${ i }`;
           const childResult = validate(childSchema as Schema<never>, item, allowTypes, recursive, childPath, false);
 
+          r.items[i as never] = { __valid: childResult.valid, __errors: childResult.errors } as never;
+
           if (childSchema.type === SchemaType.Object) {
-            r.items[i as never] = (childResult as never as ObjectValidation<unknown>).properties as never;
-          } else {
-            r.items[i as never] = { __valid: childResult.valid, __errors: childResult.errors } as never;
+            Object.assign(r.items[i as never], (childResult as never as ObjectValidation<unknown>).properties);
           }
 
           return childResult;

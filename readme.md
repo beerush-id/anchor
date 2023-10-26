@@ -159,13 +159,13 @@ Dive deeper into what Anchor can do for you. Check out our [documentation](https
 
 Here's what we're currently working on and what's next for Anchor:
 
-- ✅ Reactive Object – Ready
-- ✅ Circular Detection – In Progress
-- 🟡 Schema Validation in State - Partially Complete
-- 🟡 Persistent Store - Partially Complete
-- 🟡 In-Memory Store - Partially Complete
-- 🟡 History – Partially Complete
-- 🟡 REST API Helper – Partially Complete
+- ✅ Reactive Object – Ready.
+- ✅ Circular Detection – Ready.
+- 🟡 Schema Validation in State - Partially Complete.
+- 🟡 Persistent Store - Partially Complete.
+- 🟡 In-Memory Store - Partially Complete.
+- 🟡 History – Partially Complete.
+- 🟡 REST API Helper – Partially Complete.
 - ⏳ Signal – Planned. Aims to expand the toolset beyond just working with objects, promising a more comprehensive
   solution for managing and reacting to state changes in your applications.
 

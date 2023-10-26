@@ -1,5 +1,5 @@
 import { assert, test } from 'vitest';
-import { SchemaType, validateSchema } from '../../lib/esm';
+import { Schema, SchemaType, validateSchema } from '../../lib/esm';
 
 test('validates provided array', () => {
   const schema = { type: SchemaType.Array };
@@ -114,7 +114,15 @@ test('validates nested array item', () => {
 });
 
 test('fails on invalid nested array item', () => {
-  const schema = { type: SchemaType.Array, items: { type: SchemaType.Array, items: { type: SchemaType.String } } };
+  const schema: Schema<Array<(string | number)[]>> = {
+    type: SchemaType.Array,
+    items: {
+      type: SchemaType.Array,
+      items: {
+        type: SchemaType.String,
+      },
+    },
+  };
   const value = [ [ 123 ] ];
   const result = validateSchema(schema, value);
   assert(!result.valid, 'Expected validation to fail');
