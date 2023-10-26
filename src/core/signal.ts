@@ -1,9 +1,9 @@
-export type Getter<T> = () => T;
-export type Setter<T> = (newValue: T) => void;
-export type Subscriber<T> = (value: T) => void;
-export type Unsubscribe = () => void;
-export type Subscribe<T> = (callback: Subscriber<T>) => Unsubscribe;
-export type Destroy = () => void;
+type Getter<T> = () => T;
+type Setter<T> = (newValue: T) => void;
+type Subscriber<T> = (value: T) => void;
+type Unsubscribe = () => void;
+type Subscribe<T> = (callback: Subscriber<T>) => Unsubscribe;
+type Destroy = () => void;
 
 const signals = new Map<number, unknown>();
 let signalIndex = 0;

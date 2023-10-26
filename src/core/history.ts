@@ -1,5 +1,5 @@
-import type { ArrayAction, Init, State, StateEvent, Unsubscribe } from './anchor.js';
-import { ARRAY_MUTATIONS, INTERNAL_KEY } from './anchor.js';
+import type { Anchor, ArrayMutation, Init, Quench, Sail, SailShift } from './anchor.js';
+import { ARRAY_MUTATIONS, INTERNAL_KEY, Pointer, StateRegistry } from './anchor.js';
 import { merge, write } from '@beerush/utils';
 
 export type StateChanges<T> = Partial<T> | Partial<T>[];
@@ -11,15 +11,15 @@ export type HistoryEvent<T extends Init> = {
 
 const queueMap = new WeakMap<History<Init>, Map<string, number>>();
 const valueMap = new WeakMap<History<Init>, Map<string, unknown>>();
-const subscriptionMap = new WeakMap<History<Init>, Unsubscribe>();
+const subscriptionMap = new WeakMap<History<Init>, Quench>();
 
 export class History<T extends Init> {
   public changes: StateChanges<T> = Array.isArray(this.state) ? [] : {};
   public excludes: Array<keyof T> = [];
 
   private paused = false;
-  private readonly backwards: StateEvent<T>[] = [];
-  private readonly forwards: StateEvent<T>[] = [];
+  private readonly backwards: SailShift<T>[] = [];
+  private readonly forwards: SailShift<T>[] = [];
   private readonly subscribers: HistorySubscriber<T>[] = [];
 
   get canUndo(): boolean {
@@ -30,7 +30,32 @@ export class History<T extends Init> {
     return !!this.forwards.length;
   }
 
-  constructor(public state: State<T>, private max = 50, private debounce = 1000) {
+  constructor(public state: Sail<T>, private max = 50, private debounce = 1000) {
+    const instance: Anchor<T> = StateRegistry.get(state) as never;
+    const subscribers = instance?.[Pointer.SUBSCRIBERS];
+
+    if (!(subscribers instanceof Set)) {
+      return;
+    }
+
+    const handle = (s: T, e: SailShift<T>) => {
+      if (!e) return;
+
+      if (e.path) {
+
+      }
+      // console.log(s, e);
+    };
+
+    subscribers.add(handle);
+    subscriptionMap.set(this as never, () => subscribers.delete(handle));
+
+    queueMap.set(this as never, new Map<string, number>());
+    valueMap.set(this as never, new Map<string, unknown>());
+
+    if (!(instance as never as { boo: boolean }).boo) {
+      return;
+    }
     const unsubscribe = this.state.subscribe?.((s, e) => {
       if (!e) {
         return;
@@ -38,7 +63,7 @@ export class History<T extends Init> {
 
       if (e.path) {
         write(this.changes, e.path as never, e.value as never);
-      } else if (Array.isArray(this.changes) && ARRAY_MUTATIONS.includes(e.type as ArrayAction)) {
+      } else if (Array.isArray(this.changes) && ARRAY_MUTATIONS.includes(e.type as ArrayMutation)) {
         this.changes.splice(0, this.changes.length, ...(e.value as Partial<T>[]));
       } else if (e.type === 'update') {
         merge(this.changes, e.value as never);
@@ -79,10 +104,6 @@ export class History<T extends Init> {
         }, this.debounce) as never);
       }
     }, false, INTERNAL_KEY);
-
-    queueMap.set(this as never, new Map<string, number>());
-    valueMap.set(this as never, new Map<string, unknown>());
-
     subscriptionMap.set(this as never, unsubscribe);
   }
 
@@ -103,7 +124,7 @@ export class History<T extends Init> {
       if (event?.path) {
         write(this.state, event.path as never, event.oldValue as never);
         this.forwards.unshift(event as never);
-      } else if (Array.isArray(this.state) && ARRAY_MUTATIONS.includes(event?.type as ArrayAction)) {
+      } else if (Array.isArray(this.state) && ARRAY_MUTATIONS.includes(event?.type as ArrayMutation)) {
         this.state.splice(0, this.state.length, ...(event?.oldValue as never[]));
         this.forwards.unshift(event as never);
       } else if (event?.type === 'update') {
@@ -133,7 +154,7 @@ export class History<T extends Init> {
       if (event?.path) {
         write(this.state, event.path as never, event.value as never);
         this.backwards.push(event as never);
-      } else if (Array.isArray(this.state) && ARRAY_MUTATIONS.includes(event?.type as ArrayAction)) {
+      } else if (Array.isArray(this.state) && ARRAY_MUTATIONS.includes(event?.type as ArrayMutation)) {
         this.state.splice(0, this.state.length, ...(event?.value as never[]));
         this.backwards.push(event as never);
       } else if (event?.type === 'update') {
@@ -174,7 +195,7 @@ export class History<T extends Init> {
     }
   }
 
-  public subscribe(run: HistorySubscriber<T>, emit = true): Unsubscribe {
+  public subscribe(run: HistorySubscriber<T>, emit = true): Quench {
     if (emit) {
       run(this, { type: 'init', value: this.changes });
     }
@@ -191,6 +212,6 @@ export class History<T extends Init> {
   }
 }
 
-export function history<T extends Init>(state: State<T>, max = 50, debounce = 1000): History<T> {
+export function history<T extends Init>(state: Sail<T>, max = 50, debounce = 1000): History<T> {
   return new History(state, max, debounce);
 }

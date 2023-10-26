@@ -43,6 +43,9 @@ your code free from unnecessary complexity.
 
 - **Mutable States**: Experience the simplicity and intuitiveness of directly mutable states. Say goodbye to explicit
   setState calls.
+- **Schema Validation**: Anchor supports schema validation for state objects. Define your schema and let Anchor handle
+  the rest.
+- **Circular Detection**: Anchor detects circular references and prevents infinite loops.
 - **Framework Independent**: Effortlessly use Anchor with any front-end JavaScript framework. Keep things simple and
   consistent across React, Vue, Angular, or Svelte.
 - **Store**: Easily maintain state between page refreshes or across user sessions and browser's tabs. Anchor
@@ -64,13 +67,12 @@ extremely intuitive. For instance, to increment a view count in React, you'd
 use `setUser(previous => {...previous, views: previous.views + 1})`, whereas in Anchor, it is as simple
 as `user.views += 1`.
 
-Immutable state management brings to the table the concept of predictability but it often complicates what ought to be
+Immutable state management brings to the table the concept of predictability, but it often complicates what ought to be
 simple. It is beneficial until it becomes overkill. In most practical applications, there's no significant need for
-immutability and it prevents taking advantage of some of the simpler aspects of JavaScript.
+immutability, and it prevents taking advantage of some of the simpler aspects of JavaScript.
 
 Remember, **`Keep Simple Things Simple`**. With Anchor, you get the most natural and intuitive state management,
-embracing
-the flexibility of JavaScript. Don't overburden your code and development with needless complexity.
+embracing the flexibility of JavaScript. Don't overburden your code and development with needless complexity.
 
 ## 🚀 Getting Started
 
@@ -158,10 +160,12 @@ Dive deeper into what Anchor can do for you. Check out our [documentation](https
 Here's what we're currently working on and what's next for Anchor:
 
 - ✅ Reactive Object – Ready
-- 🟡 Store - Partially Complete
+- ✅ Circular Detection – In Progress
+- 🟡 Schema Validation in State - Partially Complete
+- 🟡 Persistent Store - Partially Complete
+- 🟡 In-Memory Store - Partially Complete
 - 🟡 History – Partially Complete
 - 🟡 REST API Helper – Partially Complete
-- 🔄 Circular Detection – In Progress
 - ⏳ Signal – Planned. Aims to expand the toolset beyond just working with objects, promising a more comprehensive
   solution for managing and reacting to state changes in your applications.
 

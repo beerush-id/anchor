@@ -1,4 +1,4 @@
-import type { Anchor, Init, Rec, State } from '../core/anchor.js';
+import type { Anchor, Init, Rec, Sail } from '../core/anchor.js';
 import { crate, Pointer } from '../core/anchor.js';
 import { persistent, session } from '../core/store.js';
 import { logger } from '@beerush/utils';
@@ -21,9 +21,9 @@ export type InputRef = {
 };
 export type InputRefs<T extends Rec> = { [K in keyof T]: InputRef };
 export type InputValidators<T extends Rec> = { [K in keyof T]?: (value: T[K]) => boolean }
-export type UpstreamRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, State<T>, Stream<T> ];
-export type UpsertRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, History<T>, State<T>, StateChanges<T>, Stream<T> ];
-export type HistoryRef<T extends Init> = [ State<T>, StateChanges<T>, History<T> ];
+export type UpstreamRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, Sail<T>, Stream<T> ];
+export type UpsertRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, History<T>, Sail<T>, StateChanges<T>, Stream<T> ];
+export type HistoryRef<T extends Init> = [ Sail<T>, StateChanges<T>, History<T> ];
 
 let _useState: StateHook;
 let _useEffect: EffectHook;
@@ -40,12 +40,16 @@ export const useRef: RefHook = ((init: Init) => {
 }) as never;
 
 export function useCrate<T extends Init>(init: T): Anchor<T>;
-export function useCrate<T extends Init>(init: T, r: false): Anchor<T, false>;
-export function useCrate<T extends Init>(init: T, r = true): Anchor<T> {
+export function useCrate<T extends Init, R extends boolean = true>(
+  init: T,
+  recursive: R,
+  strict?: boolean,
+): Anchor<T, R>;
+export function useCrate<T extends Init>(init: T, recursive = true, strict?: boolean): Anchor<T> {
   const ref: { current: Anchor<T> } = useRef(null as never) as never;
 
   if (!ref.current) {
-    ref.current = crate(init as Init, r) as never;
+    ref.current = crate(init as Init, recursive, strict) as never;
     logger.debug('[anchor:use-crate] Crate created.');
   }
 
@@ -54,44 +58,82 @@ export function useCrate<T extends Init>(init: T, r = true): Anchor<T> {
   return ref.current;
 }
 
-export function useAnchor<T extends Init>(init: T): State<T>;
-export function useAnchor<T extends Init>(init: T, r: false): State<T, false>;
-export function useAnchor<T extends Init>(init: T, r = true): State<T> {
-  return useCrate(init, r as false)[Pointer.STATE] as never;
+export function useAnchor<T extends Init>(init: T): Sail<T>;
+export function useAnchor<T extends Init, R extends boolean = true>(
+  init: T,
+  recursive: R,
+  strict?: boolean,
+): Sail<T, R>;
+export function useAnchor<T extends Init>(init: T, recursive = true, strict?: boolean): Sail<T> {
+  return useCrate(init, recursive, strict)[Pointer.STATE] as never;
 }
 
-export function usePersistent<T extends Init>(name: string, init: T): State<T>;
-export function usePersistent<T extends Init>(name: string, init: T, r: true, v?: string): State<T>;
-export function usePersistent<T extends Init>(name: string, init: T, r: false, v?: string): State<T, false>;
-export function usePersistent<T extends Init>(name: string, init: T, r = true, v = '1.0.0'): State<T> {
-  const state = persistent(name, init, r as false, v) as never;
+export function usePersistent<T extends Init>(name: string, init: T): Sail<T>;
+export function usePersistent<T extends Init, R extends boolean = true>(
+  name: string,
+  init: T,
+  recursive?: boolean,
+  strict?: boolean,
+  version?: string,
+): Sail<T, R>;
+export function usePersistent<T extends Init, R extends boolean = true>(
+  name: string,
+  init: T,
+  recursive?: R,
+  strict?: boolean,
+  version = '1.0.0',
+): Sail<T> {
+  const state = persistent(name, init, recursive, strict, version) as never;
   registerHook(state);
   return state;
 }
 
-export function useSession<T extends Init>(name: string, init: T): State<T>;
-export function useSession<T extends Init>(name: string, init: T, r: true, v?: string): State<T>;
-export function useSession<T extends Init>(name: string, init: T, r: false, v?: string): State<T, false>;
-export function useSession<T extends Init>(name: string, init: T, r = true, v = '1.0.0'): State<T> {
-  const state = session(name, init, r as false, v) as never;
+export function useSession<T extends Init>(name: string, init: T): Sail<T>;
+export function useSession<T extends Init>(
+  name: string,
+  init: T,
+  recursive?: boolean,
+  strict?: boolean,
+  version?: string,
+): Sail<T>;
+export function useSession<T extends Init, R extends boolean = true>(
+  name: string,
+  init: T,
+  recursive?: R,
+  strict?: boolean,
+  version = '1.0.0',
+): Sail<T> {
+  const state = session(name, init, recursive, strict, version) as never;
   registerHook(state);
   return state;
 }
 
-usePersistent.crate = <T extends Init>(name: string, init: T, recursive = true): Anchor<T> => {
-  const anchor = persistent.crate(name, init, recursive as false);
+usePersistent.crate = <T extends Init, R extends boolean = true>(
+  name: string,
+  init: T,
+  recursive?: R,
+  strict?: boolean,
+  version = '1.0.0',
+): Anchor<T, R> => {
+  const anchor = persistent.crate(name, init, recursive, strict, version);
   registerHook(anchor[Pointer.STATE] as never);
   return anchor;
 };
-useSession.crate = <T extends Init>(name: string, init: T, recursive = true): Anchor<T> => {
-  const anchor = session.crate(name, init, recursive as false);
+useSession.crate = <T extends Init, R extends boolean = true>(
+  name: string,
+  init: T,
+  recursive?: R,
+  strict?: boolean,
+  version = '1.0.0',
+): Anchor<T, R> => {
+  const anchor = session.crate(name, init, recursive, strict, version);
   registerHook(anchor[Pointer.STATE] as never);
   return anchor;
 };
 
-export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>): [ State<T>, InputRefs<T> ] {
+export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>): [ Sail<T>, InputRefs<T> ] {
   const steps: { current: InputRefs<T> } = useRef(null as never) as never;
-  const state: State<T> = useAnchor(init);
+  const state: Sail<T> = useAnchor(init);
   const [ , setState ] = useState(init);
 
   if (!steps.current) {
@@ -119,9 +161,9 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
 
                 if (elementRef) {
                   if ([ 'checkbox', 'radio' ].includes(elementRef.type)) {
-                    elementRef.checked = (state[key as keyof State<T>] ?? '') as never;
+                    elementRef.checked = (state[key as keyof Sail<T>] ?? '') as never;
                   } else {
-                    elementRef.value = (state[key as keyof State<T>] ?? '') as never;
+                    elementRef.value = (state[key as keyof Sail<T>] ?? '') as never;
                   }
 
                   elementRef.addEventListener('blur', onInput as never);
@@ -164,7 +206,7 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
                 }
               }
             },
-            valid: !!state[key as keyof State<T>],
+            valid: !!state[key as keyof Sail<T>],
             touched: false,
           } as never;
 
@@ -182,9 +224,9 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
               input.validate();
 
               if ([ 'checkbox', 'radio' ].includes(elementRef.type)) {
-                state[key as keyof State<T>] = elementRef?.checked as never;
+                state[key as keyof Sail<T>] = elementRef?.checked as never;
               } else {
-                state[key as keyof State<T>] = elementRef?.value as never;
+                state[key as keyof Sail<T>] = elementRef?.value as never;
               }
             }
           };
@@ -245,7 +287,7 @@ export function useUpstream<T extends Rec>(stream: Stream<T>, validate?: InputVa
   return [ ref, stream.fetch, state, stream ];
 }
 
-export function useHistory<T extends Init>(state: State<T>, max?: number, deb?: number, a = true): HistoryRef<T> {
+export function useHistory<T extends Init>(state: Sail<T>, max?: number, deb?: number, a = true): HistoryRef<T> {
   ensureHooks();
 
   const ref: { current: History<T> } = useRef(null as never) as never;
@@ -295,7 +337,7 @@ export function setAnchorHook(hook: unknown, effect: unknown, ref: unknown) {
   _useRef = ref as never;
 }
 
-function registerHook(state: State<Init>) {
+function registerHook(state: Sail<Init>) {
   ensureHooks();
 
   const [ , setState ] = useState(state);

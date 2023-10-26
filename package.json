@@ -13,6 +13,26 @@
       "types": "./lib/esm/index.d.ts",
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js"
+    },
+    "./api": {
+      "types": "./lib/esm/api/index.d.ts",
+      "import": "./lib/esm/api/index.js",
+      "require": "./lib/cjs/api/index.js"
+    },
+    "./core": {
+      "types": "./lib/esm/core/index.d.ts",
+      "import": "./lib/esm/core/index.js",
+      "require": "./lib/cjs/core/index.js"
+    },
+    "./hook": {
+      "types": "./lib/esm/hook/index.d.ts",
+      "import": "./lib/esm/hook/index.js",
+      "require": "./lib/cjs/hook/index.js"
+    },
+    "./schema": {
+      "types": "./lib/esm/schema/index.d.ts",
+      "import": "./lib/esm/schema/index.js",
+      "require": "./lib/cjs/schema/index.js"
     }
   },
   "directories": {
@@ -32,10 +52,11 @@
   "scripts": {
     "dev": "esdev --watch",
     "build": "esdev --clean",
-    "prepublish": "npm run build && npm run docs",
+    "prepublish": "npm run build && npm run test && npm run docs:build",
     "docs:dev": "vitepress dev docs --port 9933",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "test": "vitest"
   },
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
@@ -48,6 +69,7 @@
     "typedoc": "^0.24.8",
     "typescript": "^5.1.6",
     "vitepress": "^1.0.0-rc.22",
+    "vitest": "^0.34.6",
     "vue": "^3.3.6"
   },
   "keywords": [

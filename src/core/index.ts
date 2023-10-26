@@ -1,3 +1,11 @@
 export * from './anchor.js';
+export * from './flare.js';
 export * from './history.js';
 export * from './store.js';
+export * from './seal.js';
+export * from './signal.js';
+export { writable } from './alternative.js';
+export { readable } from './alternative.js';
+export { Writable } from './alternative.js';
+export { Readable } from './alternative.js';
+export { Publisher } from './alternative.js';

@@ -1,22 +1,22 @@
 import { logger, read, write } from '@beerush/utils';
 import {
-  Action,
   ARRAY_MUTATIONS,
-  ArrayAction,
+  ArrayMutation,
   Init,
   OBJECT_MUTATIONS,
-  ObjectAction,
-  State,
-  StateEvent,
-  Unsubscribe,
+  ObjectMutation,
+  Quench,
+  Sail,
+  SailShift,
+  StateMutation,
 } from './anchor.js';
 
 /**
  * Reflects the state event to another state or object.
  */
-export function reflect<S extends Init, T extends Init>(event: StateEvent<S>, target: T): void {
-  if (event && [ ...OBJECT_MUTATIONS, ...ARRAY_MUTATIONS ].includes(event.type as Action)) {
-    if (OBJECT_MUTATIONS.includes(event.type as ObjectAction)) {
+export function reflect<S extends Init, T extends Init>(event: SailShift<S>, target: T): void {
+  if (event && [ ...OBJECT_MUTATIONS, ...ARRAY_MUTATIONS ].includes(event.type as StateMutation)) {
+    if (OBJECT_MUTATIONS.includes(event.type as ObjectMutation)) {
       if (event.type === 'set') {
         const value = typeof event.value === 'object' ? { ...event.value } : event.value;
         write(target as never, event.path as never, value as never);
@@ -31,7 +31,7 @@ export function reflect<S extends Init, T extends Init>(event: StateEvent<S>, ta
           delete target[last];
         }
       }
-    } else if (ARRAY_MUTATIONS.includes(event.type as ArrayAction)) {
+    } else if (ARRAY_MUTATIONS.includes(event.type as ArrayMutation)) {
       if (event.path) {
         const next: Array<unknown> | void = read(target as never, event.path as never);
 
@@ -65,14 +65,14 @@ export function reflect<S extends Init, T extends Init>(event: StateEvent<S>, ta
 
 /**
  * Mirrors the state event into another state/object.
- * @param {State<S>} source
+ * @param {Sail<S>} source
  * @param {T} target
- * @return {Unsubscribe}
+ * @return {Quench}
  */
 export function mirror<S extends Init, T extends Init, R extends boolean = true>(
-  source: State<S, R>,
+  source: Sail<S, R>,
   target: T,
-): Unsubscribe {
+): Quench {
   return source.subscribe((s: unknown, event) => {
     reflect(event as never, target);
   });
@@ -80,14 +80,14 @@ export function mirror<S extends Init, T extends Init, R extends boolean = true>
 
 /**
  * Syncs the state event between two states.
- * @param {State<S>} source
- * @param {State<T>} target
- * @return {Unsubscribe}
+ * @param {Sail<S>} source
+ * @param {Sail<T>} target
+ * @return {Quench}
  */
 export function sync<S extends Init, T extends Init, R extends boolean = true>(
-  source: State<S, R>,
-  target: State<T, R>,
-): Unsubscribe {
+  source: Sail<S, R>,
+  target: Sail<T, R>,
+): Quench {
   const unsubSource = source.subscribe((s: unknown, event) => {
     reflect(event as never, target);
   });

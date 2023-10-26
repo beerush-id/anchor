@@ -6,21 +6,18 @@ hero:
   name: "Anchor"
   text: "Keep Simple Things Simple"
   tagline: "Embrace JavaScript's natural mutability for effortlessly managing state — from simple todos to complex graphic design apps. Anchor handles state complexity with elegance, making any app's state a breeze."
+  image:
+    src: /assets/logo.svg
+    alt: Anchor
   actions:
     - theme: brand
       text: Get Started
-      link: /markdown-examples
+      link: /getting-started
     - theme: alt
       text: Features
-      link: /api-examples
-    - theme: alt
-      text: Case Study
-      link: /api-examples
+      link: /features/
     - theme: alt
       text: Why Anchor?
-      link: /api-examples
-    - theme: alt
-      text: View on GitHub
       link: /api-examples
 
 features:
