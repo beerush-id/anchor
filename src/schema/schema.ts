@@ -109,7 +109,7 @@ export type SetSchema<T> = {
   items?: Schema<T> | (() => Schema<T>);
   required?: boolean;
   additionalItems?: boolean;
-  default?: () => T[];
+  default?: () => Set<T>;
   validate?: (value: T[]) => SchemaCustomValidation;
 }
 export type DateSchema = {

@@ -1,4 +1,4 @@
-import { logger, read, write } from '@beerush/utils';
+import { logger, read, write } from '../utils/index.js';
 import {
   ARRAY_MUTATIONS,
   ArrayMutation,

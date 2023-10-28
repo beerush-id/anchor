@@ -1,6 +1,5 @@
 import { assert, test } from 'vitest';
-import { satisfySchema, SchemaType, validateSchema } from '../../lib/esm';
-import { NumberSchema } from '../../lib/esm/schema';
+import { satisfySchema, Schema, SchemaType, validateSchema } from '../../lib/esm';
 
 test('validates provided number', () => {
   const schema = { type: SchemaType.Number };
@@ -150,7 +149,7 @@ test('fails if number is not finite', () => {
 });
 
 test('validates number with default value', () => {
-  const schema = { type: SchemaType.Number, default: 123 } as NumberSchema;
+  const schema = { type: SchemaType.Number, default: 123 } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -159,7 +158,7 @@ test('validates number with default value', () => {
 });
 
 test('validates number with default value and required', () => {
-  const schema = { type: SchemaType.Number, default: 123, required: true } as NumberSchema;
+  const schema = { type: SchemaType.Number, default: 123, required: true } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -168,7 +167,7 @@ test('validates number with default value and required', () => {
 });
 
 test('validates number with default value and min and max', () => {
-  const schema = { type: SchemaType.Number, default: 123, minimum: 100, maximum: 200 } as NumberSchema;
+  const schema = { type: SchemaType.Number, default: 123, minimum: 100, maximum: 200 } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -177,7 +176,7 @@ test('validates number with default value and min and max', () => {
 });
 
 test('validates number with default value and min and max and required', () => {
-  const schema = { type: SchemaType.Number, default: 123, minimum: 100, maximum: 200, required: true } as NumberSchema;
+  const schema = { type: SchemaType.Number, default: 123, minimum: 100, maximum: 200, required: true } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -186,7 +185,7 @@ test('validates number with default value and min and max and required', () => {
 });
 
 test('validates number with default value and enum', () => {
-  const schema = { type: SchemaType.Number, default: 123, enum: [ 123, 456, 789 ] } as NumberSchema;
+  const schema = { type: SchemaType.Number, default: 123, enum: [ 123, 456, 789 ] } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -195,7 +194,7 @@ test('validates number with default value and enum', () => {
 });
 
 test('validates number with default value and enum and required', () => {
-  const schema = { type: SchemaType.Number, default: 123, enum: [ 123, 456, 789 ], required: true } as NumberSchema;
+  const schema = { type: SchemaType.Number, default: 123, enum: [ 123, 456, 789 ], required: true } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -210,7 +209,7 @@ test('validates number with default value and enum and min and max', () => {
     enum: [ 123, 456, 789 ],
     minimum: 100,
     maximum: 200,
-  } as NumberSchema;
+  } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 
@@ -226,7 +225,7 @@ test('validates number with default value and enum and min and max and required'
     minimum: 100,
     maximum: 200,
     required: true,
-  } as NumberSchema;
+  } as Schema<number>;
   const value = satisfySchema(schema);
   assert(value === 123, 'Expected default value to be set');
 

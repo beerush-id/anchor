@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "outDir": "./lib/esm",
     "target": "ES2020",
     "lib": [

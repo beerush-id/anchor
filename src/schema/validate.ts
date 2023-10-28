@@ -1,4 +1,4 @@
-import { entries, typeOf } from '@beerush/utils';
+import { entries, typeOf } from '../utils/index.js';
 import {
   ArraySchema,
   BaseSchema,

@@ -2,7 +2,7 @@ import type { Stream, StreamPublisher } from './remote.js';
 import type { History, Init, Rec, Sail } from '../core/index.js';
 import { writable } from '../core/index.js';
 import { history } from '../core/history.js';
-import { logger } from '@beerush/utils';
+import { logger } from '../utils/index.js';
 
 export type FormInput<T> = {
   _value: T;

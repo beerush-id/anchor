@@ -1,8 +1,8 @@
 import type { Anchor, Init, Rec, Sail } from '../core/anchor.js';
 import { crate, Pointer } from '../core/anchor.js';
 import { persistent, session } from '../core/store.js';
-import { logger } from '@beerush/utils';
-import { Stream, StreamPublisher } from '../api/index.js';
+import { logger } from '../utils/index.js';
+import { Stream, StreamPublisher } from '../stream/index.js';
 import { history, type History, StateChanges } from '../core/history.js';
 
 export type StateHook = <T>(init: T) => [ T, (value: T) => void ];

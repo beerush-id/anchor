@@ -1,6 +1,5 @@
 import { assert, test } from 'vitest';
-import { satisfySchema, SchemaType, validateSchema } from '../../lib/esm';
-import { StringSchema } from '../../lib/esm/schema';
+import { satisfySchema, Schema, SchemaType, validateSchema } from '../../lib/esm';
 
 test('validates provided string', () => {
   const schema = { type: SchemaType.String };
@@ -198,7 +197,7 @@ test('fails validating string under strict with enum and empty string', () => {
 });
 
 test('validates string with default value', () => {
-  const schema = { type: SchemaType.String, default: 'Example' } as StringSchema;
+  const schema = { type: SchemaType.String, default: 'Example' } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 
@@ -214,7 +213,7 @@ test('validates string with default value and enum', () => {
       'Example',
       'Another Example',
     ],
-  } as StringSchema;
+  } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 
@@ -227,7 +226,7 @@ test('validates string with default value and minLength', () => {
     type: SchemaType.String,
     default: 'Example',
     minLength: 5,
-  } as StringSchema;
+  } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 
@@ -240,7 +239,7 @@ test('validates string with default value and maxLength', () => {
     type: SchemaType.String,
     default: 'Example',
     maxLength: 10,
-  } as StringSchema;
+  } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 
@@ -254,7 +253,7 @@ test('validates string with default value and minLength and maxLength', () => {
     default: 'Example',
     minLength: 5,
     maxLength: 10,
-  } as StringSchema;
+  } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 
@@ -272,7 +271,7 @@ test('validates string with default value and minLength and maxLength and enum',
       'Example',
       'Another Example',
     ],
-  } as StringSchema;
+  } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 
@@ -289,7 +288,7 @@ test('fails validating string with default value and minLength and maxLength and
     enum: [
       'Another Example',
     ],
-  } as StringSchema;
+  } as Schema<string>;
   const value = satisfySchema(schema, undefined);
   assert(value === 'Example', 'Expected default value to be set');
 

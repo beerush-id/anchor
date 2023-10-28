@@ -1,6 +1,6 @@
 import type { Anchor, ArrayMutation, Init, Quench, Sail, SailShift } from './anchor.js';
 import { ARRAY_MUTATIONS, INTERNAL_KEY, Pointer, StateRegistry } from './anchor.js';
-import { merge, write } from '@beerush/utils';
+import { merge, write } from '../utils/index.js';
 
 export type StateChanges<T> = Partial<T> | Partial<T>[];
 export type HistorySubscriber<T extends Init> = (history: History<T>, event: HistoryEvent<T>) => void;

@@ -1,6 +1,6 @@
 import { anchor, Init, Rec, Sail } from '../core/index.js';
 import { http } from './http.js';
-import { logger } from '@beerush/utils';
+import { logger } from '../utils/index.js';
 
 const StreamStore = new Map<string, Sail<Stream<Init>>>();
 

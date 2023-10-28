@@ -1,4 +1,4 @@
-import { isDateString, isFloat } from '@beerush/utils';
+import { isDateString, isFloat } from '../utils/index.js';
 import { Schema, SchemaType } from './schema.js';
 
 export const SchemaPresets = {

@@ -1,6 +1,6 @@
 import type { Anchor, Init, Rec, Sail } from './anchor.js';
 import { crate, ExternalSubscriptions, Pointer, Registry } from './anchor.js';
-import { logger, merge } from '@beerush/utils';
+import { logger, merge } from '../utils/index.js';
 
 export type StateMemory = {
   name: string;

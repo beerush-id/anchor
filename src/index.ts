@@ -1,10 +1,6 @@
-import { logger } from '@beerush/utils';
+import { logger } from './utils/index.js';
 
-export function debug(trace?: boolean) {
-  logger.setDebug(true, trace);
-}
-
-export * from './api/index.js';
+export * from './stream/index.js';
 export * from './core/index.js';
 export * from './hook/index.js';
 export {
@@ -18,3 +14,7 @@ export {
 } from './schema/index.js';
 
 export { logger };
+
+export function debug(trace?: boolean) {
+  logger.setDebug(true, trace);
+}

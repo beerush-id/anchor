@@ -1,6 +1,6 @@
 import { Sealed } from './seal.js';
-import { Beacon, crate, ExternalSubscriptions, Pointer, Sail } from './anchor.js';
-import { SchemaError, SchemaErrorType } from '../schema/index.js';
+import { anchor, Beacon, ExternalSubscriptions, Sail } from './anchor.js';
+import { Schema, SchemaError, SchemaErrorType, validate } from '../schema/index.js';
 
 interface Validation {
   __valid: boolean,
@@ -19,9 +19,9 @@ export type Inspector<T> = {
   detail: ValidationType<T>;
 }
 
-export function inspect<T extends Sealed>(value: T | Sail<T>): Inspector<T> {
-  const instance = crate(value);
-  const state = instance[Pointer.STATE];
+export function inspectSchema<T extends Sealed>(schema: Schema<T>, value: T | Sail<T>): Inspector<T> {
+  const state = anchor(value);
+  const validation = anchor(validate(schema, value));
   const subscribers = ExternalSubscriptions.get(state);
 
   const listen: Beacon<T> = (s, e) => {

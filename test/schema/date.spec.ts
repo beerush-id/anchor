@@ -1,5 +1,5 @@
 import { assert, test } from 'vitest';
-import { satisfySchema, SchemaType, validateSchema } from '../../lib/esm';
+import { satisfySchema, Schema, SchemaType, validateSchema } from '../../lib/esm';
 import { DateSchema } from '../../lib/esm/schema';
 
 test('validates provided date', () => {
@@ -140,7 +140,7 @@ test('fails on invalid date null', () => {
 });
 
 test('validates date width default value function', () => {
-  const schema = { type: SchemaType.Date, default: () => new Date() } as DateSchema;
+  const schema = { type: SchemaType.Date, default: () => new Date() };
   const value = satisfySchema(schema);
   assert(value instanceof Date, 'Expected value to be a date');
 
@@ -149,19 +149,19 @@ test('validates date width default value function', () => {
 });
 
 test('validates date width default value string', () => {
-  const schema = { type: SchemaType.Date, default: '2020-01-01' } as DateSchema;
-  const value = satisfySchema(schema);
+  const schema = { type: SchemaType.Date, default: '2020-01-01' };
+  const value = satisfySchema(schema as Schema<Date>);
   assert(value instanceof Date, 'Expected value to be a date');
 
-  const result = validateSchema(schema, value);
+  const result = validateSchema(schema as Schema<Date>, value);
   assert(result.valid, 'Expected value to be set and valid');
 });
 
 test('validates date width default value number', () => {
   const schema = { type: SchemaType.Date, default: 20200101 } as DateSchema;
-  const value = satisfySchema(schema);
+  const value = satisfySchema(schema as Schema<Date>);
   assert(value instanceof Date, 'Expected value to be a date');
 
-  const result = validateSchema(schema, value);
+  const result = validateSchema(schema as Schema<Date>, value);
   assert(result.valid, 'Expected value to be set and valid');
 });

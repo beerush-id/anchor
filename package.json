@@ -14,10 +14,10 @@
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js"
     },
-    "./api": {
-      "types": "./lib/esm/api/index.d.ts",
-      "import": "./lib/esm/api/index.js",
-      "require": "./lib/cjs/api/index.js"
+    "./stream": {
+      "types": "./lib/esm/stream/index.d.ts",
+      "import": "./lib/esm/stream/index.js",
+      "require": "./lib/cjs/stream/index.js"
     },
     "./core": {
       "types": "./lib/esm/core/index.d.ts",
@@ -33,6 +33,11 @@
       "types": "./lib/esm/schema/index.d.ts",
       "import": "./lib/esm/schema/index.js",
       "require": "./lib/cjs/schema/index.js"
+    },
+    "./utils": {
+      "types": "./lib/esm/utils/index.d.ts",
+      "import": "./lib/esm/utils/index.js",
+      "require": "./lib/cjs/utils/index.js"
     }
   },
   "directories": {
@@ -79,8 +84,5 @@
     "reactive",
     "object"
   ],
-  "type": "module",
-  "dependencies": {
-    "@beerush/utils": "^0.3.0"
-  }
+  "type": "module"
 }

@@ -1,6 +1,6 @@
 import type { Remote, Stream } from './remote.js';
 import type { ItemTypeOf, KeyOf, Part, Rec } from '../core/index.js';
-import { isNumber, isString } from '@beerush/utils';
+import { isNumber, isString } from '../utils/index.js';
 
 export type Fields<F> = Array<KeyOf<F> | { [K in keyof F]?: Fields<F[K]> | Fields<ItemTypeOf<F[K]>> }>;
 export type WhereFilter<T> = {
