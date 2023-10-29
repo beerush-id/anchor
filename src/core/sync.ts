@@ -1,20 +1,19 @@
 import { logger, read, write } from '../utils/index.js';
+import { Init, State } from './anchor.js';
 import {
   ARRAY_MUTATIONS,
   ArrayMutation,
-  Init,
   OBJECT_MUTATIONS,
   ObjectMutation,
-  Quench,
-  Sail,
-  SailShift,
+  StateChange,
   StateMutation,
-} from './anchor.js';
+  Unsubscribe,
+} from './base.js';
 
 /**
  * Reflects the state event to another state or object.
  */
-export function reflect<S extends Init, T extends Init>(event: SailShift<S>, target: T): void {
+export function reflect<S extends Init, T extends Init>(event: StateChange<S>, target: T): void {
   if (event && [ ...OBJECT_MUTATIONS, ...ARRAY_MUTATIONS ].includes(event.type as StateMutation)) {
     if (OBJECT_MUTATIONS.includes(event.type as ObjectMutation)) {
       if (event.type === 'set') {
@@ -65,14 +64,14 @@ export function reflect<S extends Init, T extends Init>(event: SailShift<S>, tar
 
 /**
  * Mirrors the state event into another state/object.
- * @param {Sail<S>} source
+ * @param {State<S>} source
  * @param {T} target
- * @return {Quench}
+ * @return {Unsubscribe}
  */
 export function mirror<S extends Init, T extends Init, R extends boolean = true>(
-  source: Sail<S, R>,
+  source: State<S, R>,
   target: T,
-): Quench {
+): Unsubscribe {
   return source.subscribe((s: unknown, event) => {
     reflect(event as never, target);
   });
@@ -80,14 +79,14 @@ export function mirror<S extends Init, T extends Init, R extends boolean = true>
 
 /**
  * Syncs the state event between two states.
- * @param {Sail<S>} source
- * @param {Sail<T>} target
- * @return {Quench}
+ * @param {State<S>} source
+ * @param {State<T>} target
+ * @return {Unsubscribe}
  */
 export function sync<S extends Init, T extends Init, R extends boolean = true>(
-  source: Sail<S, R>,
-  target: Sail<T, R>,
-): Quench {
+  source: State<S, R>,
+  target: State<T, R>,
+): Unsubscribe {
   const unsubSource = source.subscribe((s: unknown, event) => {
     reflect(event as never, target);
   });

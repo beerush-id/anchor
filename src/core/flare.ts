@@ -1,4 +1,4 @@
-import { Anchor, crate, Init, Pointer, Sail } from './anchor.js';
+import { Anchor, crate, Init, Pointer, State } from './anchor.js';
 import { Schema } from '../schema/index.js';
 
 export function flareKit<T extends Init, R extends boolean = true>(
@@ -15,7 +15,7 @@ export function flare<T extends Init, R extends boolean = true>(
   schema: Schema<T>,
   recursive: R = true as R,
   strict = true,
-): Sail<T, R> {
+): State<T, R> {
   const instance = crate<T, R>(init, recursive, strict, schema as never);
   return instance[Pointer.STATE];
 }

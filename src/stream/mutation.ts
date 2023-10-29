@@ -1,7 +1,7 @@
 import type { Stream, StreamPublisher } from './remote.js';
-import type { History, Init, Rec, Sail } from '../core/index.js';
-import { writable } from '../core/index.js';
-import { history } from '../core/history.js';
+import type { Init, State } from '../core/anchor.js';
+import { History, history } from '../core/history.js';
+import { Rec, writable } from '../core/base.js';
 import { logger } from '../utils/index.js';
 
 export type FormInput<T> = {
@@ -12,7 +12,7 @@ export type FormInput<T> = {
 export type FormControl<T> = {
   [K in keyof T]: T[K] extends Init ? FormInput<T[K]> & FormControl<T[K]> : FormInput<T[K]>;
 }
-export type Mutation<T extends Init> = [ Sail<T>, StreamPublisher<T>, History<T>, Stream<T> ];
+export type Mutation<T extends Init> = [ State<T>, StreamPublisher<T>, History<T>, Stream<T> ];
 export type Validation<T extends Init> = {
   [K in keyof T]?: (value: T[K]) => boolean;
 }
@@ -34,7 +34,7 @@ export function mutation<T extends Init>(stream: Stream<T>, validation?: Validat
   return [ record.state, stream.fetch, record, stream ];
 }
 
-function input<T extends Init>(state: Sail<T>, init: T, validation?: Validation<T>): FormControl<T> {
+function input<T extends Init>(state: State<T>, init: T, validation?: Validation<T>): FormControl<T> {
   const instance = writable(init);
 
   return new Proxy(instance, {

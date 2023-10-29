@@ -1,6 +1,7 @@
-import type { Anchor, Init, Rec, Sail } from './anchor.js';
-import { crate, ExternalSubscriptions, Pointer, Registry } from './anchor.js';
+import type { Anchor, Init, State, StateTree } from './anchor.js';
+import { crate, ExternalSubscriptions, Pointer, Registry, StateHierarchy } from './anchor.js';
 import { logger, merge } from '../utils/index.js';
+import { Readable, Rec } from './base.js';
 
 export type StateMemory = {
   name: string;
@@ -19,7 +20,8 @@ export type AnchorData = {
 };
 export type Store = {
   version: string;
-  registry: Map<Init, Anchor<Init>>;
+  registry: Readable<Map<Init, Anchor<Init>>>;
+  hierarchy: Map<State<Init>, StateTree<Init>>;
   persistent: PersistentStore;
   session: SessionStore;
   clear: () => void;
@@ -43,7 +45,7 @@ const scope: {
   addEventListener: () => undefined,
 } as never : window as never;
 
-const syncState = (type: 'persistent' | 'session', name: string, state: Sail<unknown>) => {
+const syncState = (type: 'persistent' | 'session', name: string, state: State<unknown>) => {
   const { write } = scope.getAnchor(ANCHOR_SECRET) as Store;
 
   const subscribers = ExternalSubscriptions.get(state);
@@ -57,7 +59,8 @@ const syncState = (type: 'persistent' | 'session', name: string, state: Sail<unk
 if (!scope.getAnchor) {
   const store: Store = {
     version: '1.0.0',
-    registry: Registry,
+    registry: Registry as never,
+    hierarchy: StateHierarchy,
     persistent: new Map(),
     session: new Map(),
     clear: () => {
@@ -150,8 +153,6 @@ if (!scope.getAnchor) {
   if ('BroadcastChannel' in scope) {
     const channel = new BroadcastChannel('anchor');
     channel.onmessage = (e) => {
-      console.log(e);
-
       if (e.data === 'anchor:clear') {
         store.clear();
       } else if (e.data === 'anchor:write') {
@@ -229,21 +230,21 @@ function getPersistent<T extends Init, R extends boolean = true>(
 export function session<T extends Init>(
   name: string,
   init: T | Initializer<T>,
-): Sail<T>;
+): State<T>;
 export function session<T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
   recursive?: R,
   strict?: boolean,
   version?: string,
-): Sail<T, R>;
+): State<T, R>;
 export function session<T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
-): Sail<T, R> {
+): State<T, R> {
   return getSession(name, init, recursive, strict, version)[Pointer.STATE];
 }
 
@@ -260,21 +261,21 @@ session.crate = <T extends Init, R extends boolean = true>(
 export function persistent<T extends Init>(
   name: string,
   init: T | Initializer<T>,
-): Sail<T>;
+): State<T>;
 export function persistent<T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
   recursive?: R,
   strict?: boolean,
   version?: string,
-): Sail<T, R>;
+): State<T, R>;
 export function persistent<T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
-): Sail<T, R> {
+): State<T, R> {
   return getPersistent(name, init, recursive, strict, version)[Pointer.STATE];
 }
 

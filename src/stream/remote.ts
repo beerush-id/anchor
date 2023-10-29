@@ -1,18 +1,18 @@
-import { anchor, Init, Rec, Sail } from '../core/index.js';
+import { anchor, Init, Rec, State } from '../core/index.js';
 import { http } from './http.js';
 import { logger } from '../utils/index.js';
 
-const StreamStore = new Map<string, Sail<Stream<Init>>>();
+const StreamStore = new Map<string, State<Stream<Init>>>();
 
-export type StreamPublisher<T extends Init> = () => Promise<Sail<T> | void>;
+export type StreamPublisher<T extends Init> = () => Promise<State<T> | void>;
 export type StreamMeta = {
   total: number;
   page: number;
   limit: number;
 }
-export type Stream<T extends Init, M extends StreamMeta = StreamMeta> = Sail<{
+export type Stream<T extends Init, M extends StreamMeta = StreamMeta> = State<{
   url: string;
-  data: Sail<T>;
+  data: State<T>;
   meta: T extends Rec[] ? M : never;
   status: 'init' | 'pending' | 'success' | 'error';
   resolved: boolean;
@@ -143,7 +143,7 @@ const createStream = <T extends Init>(init: T, url: string, request: RequestInit
 
   Object.defineProperty(stream, 'resolve', {
     value: (response: Response) => {
-      (stream.data as Sail<Rec>).set(response.body as never);
+      (stream.data as State<Rec>).set(response.body as never);
       stream.set({
         status: 'success',
         statusCode: response.status,

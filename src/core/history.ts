@@ -1,6 +1,7 @@
-import type { Anchor, ArrayMutation, Init, Quench, Sail, SailShift } from './anchor.js';
-import { ARRAY_MUTATIONS, INTERNAL_KEY, Pointer, StateRegistry } from './anchor.js';
+import type { Anchor, Init, State } from './anchor.js';
+import { INTERNAL_KEY, Pointer, StateRegistry } from './anchor.js';
 import { merge, write } from '../utils/index.js';
+import { ARRAY_MUTATIONS, ArrayMutation, StateChange, Unsubscribe } from './base.js';
 
 export type StateChanges<T> = Partial<T> | Partial<T>[];
 export type HistorySubscriber<T extends Init> = (history: History<T>, event: HistoryEvent<T>) => void;
@@ -11,15 +12,15 @@ export type HistoryEvent<T extends Init> = {
 
 const queueMap = new WeakMap<History<Init>, Map<string, number>>();
 const valueMap = new WeakMap<History<Init>, Map<string, unknown>>();
-const subscriptionMap = new WeakMap<History<Init>, Quench>();
+const subscriptionMap = new WeakMap<History<Init>, Unsubscribe>();
 
 export class History<T extends Init> {
   public changes: StateChanges<T> = Array.isArray(this.state) ? [] : {};
   public excludes: Array<keyof T> = [];
 
   private paused = false;
-  private readonly backwards: SailShift<T>[] = [];
-  private readonly forwards: SailShift<T>[] = [];
+  private readonly backwards: StateChange<T>[] = [];
+  private readonly forwards: StateChange<T>[] = [];
   private readonly subscribers: HistorySubscriber<T>[] = [];
 
   get canUndo(): boolean {
@@ -30,7 +31,7 @@ export class History<T extends Init> {
     return !!this.forwards.length;
   }
 
-  constructor(public state: Sail<T>, private max = 50, private debounce = 1000) {
+  constructor(public state: State<T>, private max = 50, private debounce = 1000) {
     const instance: Anchor<T> = StateRegistry.get(state) as never;
     const subscribers = instance?.[Pointer.SUBSCRIBERS];
 
@@ -38,7 +39,7 @@ export class History<T extends Init> {
       return;
     }
 
-    const handle = (s: T, e: SailShift<T>) => {
+    const handle = (s: T, e: StateChange<T>) => {
       if (!e) return;
 
       if (e.path) {
@@ -195,7 +196,7 @@ export class History<T extends Init> {
     }
   }
 
-  public subscribe(run: HistorySubscriber<T>, emit = true): Quench {
+  public subscribe(run: HistorySubscriber<T>, emit = true): Unsubscribe {
     if (emit) {
       run(this, { type: 'init', value: this.changes });
     }
@@ -212,6 +213,6 @@ export class History<T extends Init> {
   }
 }
 
-export function history<T extends Init>(state: Sail<T>, max = 50, debounce = 1000): History<T> {
+export function history<T extends Init>(state: State<T>, max = 50, debounce = 1000): History<T> {
   return new History(state, max, debounce);
 }

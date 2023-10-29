@@ -1,4 +1,4 @@
-import { entries, isObject, isObjectLike, logger, merge, typeOf } from '../utils/index.js';
+import { entries, isObject, isObjectLike, logger, LoggerConfig, merge, typeOf } from '../utils/index.js';
 import {
   ArraySchema,
   COMMON_SCHEMA_TYPES,
@@ -9,114 +9,78 @@ import {
   Schema,
   validate,
 } from '../schema/index.js';
-
-export type Part<T> = Partial<T>;
-export type KeyOf<T> = Extract<keyof T, string>;
-export type ItemTypeOf<T> = T extends readonly (infer U)[] ? U : never;
-
-export type ObjectMutation = 'set' | 'delete';
-export type ArrayMutation =
-  'copyWithin'
-  | 'fill'
-  | 'pop'
-  | 'push'
-  | 'shift'
-  | 'unshift'
-  | 'splice'
-  | 'sort'
-  | 'reverse';
-export type StateMutation = ObjectMutation | ArrayMutation;
+import {
+  ARRAY_MUTATIONS,
+  frozen,
+  ItemTypeOf,
+  Part,
+  Readable,
+  readable,
+  Rec,
+  StateChange,
+  Subscriber,
+  SubscriberList,
+  Unsubscribe,
+} from './base.js';
 
 export type AnchorConfig = {
-  strictIterable?: boolean;
-  circularDetection?: boolean;
-  circularExit?: boolean;
-  leakageDetection?: boolean;
-  leakageDetectionBounce?: number;
-  validationExit?: boolean;
-  safeInit?: boolean;
   safeObject?: boolean;
   safeObjectWarning?: boolean;
+  validationExit?: boolean;
+  immutableInit?: boolean;
+  strictIterable?: boolean;
+
+  circularDetection?: boolean;
+  circularExit?: boolean;
+
+  leakageDetection?: boolean;
+  leakageDetectionBounce?: number;
+  serializable?: boolean;
+  logger?: Partial<LoggerConfig>;
 }
 
-export const OBJECT_MUTATIONS: ObjectMutation[] = [ 'set', 'delete' ];
-export const ARRAY_MUTATIONS: ArrayMutation[] = [
-  'copyWithin',
-  'fill',
-  'pop',
-  'push',
-  'shift',
-  'unshift',
-  'splice',
-  'sort',
-  'reverse',
-];
 export const LINKABLE = [ 'array', 'object' ];
 export const INTERNAL_KEY = 'anchor:internal';
 export const ANCHOR_CONFIG: AnchorConfig = {};
 
-export type Quench = () => void;
-export type Beacon<T> = (state: T, event: SailShift<T>) => void;
-export type BeaconSet<T> = Set<Beacon<T>>;
-
-export type Rec = {
-  [key: string]: unknown;
-}
 export type Init = Rec | Array<Rec | unknown> | Map<unknown, unknown> | Set<unknown>;
-export type Sail<T, R extends boolean = true> = (
+export type State<T, R extends boolean = true> = (
   R extends true
   ? T extends Rec[]
-    ? Array<Sail<ItemTypeOf<T>, R>>
+    ? Array<State<ItemTypeOf<T>, R>>
     // eslint-disable-next-line @typescript-eslint/ban-types
     : T extends Function
       ? T
       : T extends Rec
-        ? { [K in keyof T]: T[K] extends Init ? Sail<T[K], R> : T[K] }
+        ? { [K in keyof T]: T[K] extends Init ? State<T[K], R> : T[K] }
         : T
   : T
   ) & (
   T extends Map<infer K, infer V> | Set<infer V>
   ? {
     readonly subscribe: (
-      run: Beacon<Sail<T extends Map<K, V> ? Map<K, V> : Set<V>, R>>,
+      run: Subscriber<State<T extends Map<K, V> ? Map<K, V> : Set<V>, R>>,
       emit?: boolean,
       receiver?: unknown,
-    ) => Quench
+    ) => Unsubscribe
   }
   : {
     readonly set: (value: Part<T> | Part<T>[]) => void;
-    readonly subscribe: (run: Beacon<Sail<T, R>>, emit?: boolean, receiver?: unknown) => Quench;
+    readonly subscribe: (run: Subscriber<State<T, R>>, emit?: boolean, receiver?: unknown) => Unsubscribe;
   }
   );
 
-export type SailShift<T> = {
-  readonly type: 'init' | 'subscribe' | 'update' | 'destroy' | ObjectMutation | ArrayMutation | 'map:set' | 'map:delete' | 'map:clear' | 'unknown' | 'validation';
-  readonly prop?: keyof T;
-  readonly path?: string;
-  readonly paths?: string[];
-  readonly value?: unknown;
-  readonly params?: unknown[];
-  readonly oldValue?: unknown;
-  readonly emitter?: unknown;
-};
-
-export type Navigator<T> = {
+export type Controller<T> = {
   readonly set: (value: Part<T>) => void;
-  readonly emit: (event: SailShift<T>) => void;
+  readonly emit: (event: StateChange<T>) => void;
   readonly update: (updater: (value: T) => T) => void;
   readonly destroy: () => void;
-  readonly subscribe: (run: Beacon<T>, emit?: boolean, receiver?: unknown) => Quench;
+  readonly subscribe: (run: Subscriber<T>, emit?: boolean, receiver?: unknown) => Unsubscribe;
 };
-export type TowLiner<T> = (parent: Sail<unknown>, fn: Beacon<T>) => Quench;
+export type Inheritor<T> = (parent: State<unknown>, fn: Subscriber<T>) => Unsubscribe;
 
 // Commonly used aliases.
-export type State<T, R extends boolean = true> = Sail<T, R>;
-export type StateEvent<T> = SailShift<T>;
-export type Controller<T> = Navigator<T>;
-export type Inheritor<T> = TowLiner<T>;
-export type Unsubscribe = Quench;
-export type Subscriber<T> = Beacon<T>;
-export type SubscriberList<T> = BeaconSet<T>;
+export type StateEvent<T> = StateChange<T>;
 
 export enum Pointer {
   STATE,
@@ -128,29 +92,30 @@ export enum Pointer {
   VALIDATION
 }
 
-export type ParentMap<T> = Map<Sail<T>, Beacon<T>>;
-export type ChildrenMap<T> = Map<Sail<T>, Quench>;
+export type ParentMap<T> = Readable<Map<State<T>, Subscriber<T>>>;
+export type ChildrenMap<T> = Readable<Map<State<T>, Unsubscribe>>;
 export type StateTree<T> = {
   id: number;
   parents: ParentMap<T>;
   children: ChildrenMap<T>;
 }
 
-export type Anchor<T, R extends boolean = true> = [ Sail<T, R>, Navigator<T>, BeaconSet<T>, ChildrenMap<T[keyof T]>, ParentMap<unknown> ];
+export type Anchor<T, R extends boolean = true> = [ State<T, R>, Controller<T>, SubscriberList<T>, ChildrenMap<T[keyof T]>, ParentMap<unknown> ];
 export type AnchorSchema<T> = Schema<T> & {
   refKey?: string;
   refPath?: string;
 }
 
-export const Registry: Map<Init, Anchor<Init>> = new Map();
-export const InitsRegistry: Map<Init, Anchor<Init>> = new Map();
-export const StateRegistry: Map<Sail<Init>, Anchor<Init>> = new Map();
-export const StateHierarchy: Map<Sail<Init>, StateTree<Init>> = new Map();
-export const StateLeakage: Map<Init, { start: number, count: number }> = new Map();
-export const ExternalSubscriptions: Map<Init, Set<Beacon<Init>>> = new Map();
+export const Registry = readable<Map<Init, Anchor<Init>>>(new Map(), false)[0];
+export const StateHierarchy = readable<Map<State<Init>, StateTree<Init>>>(new Map(), false)[0];
+
+export const InitsRegistry = readable<Map<Init, Anchor<Init>>>(new Map(), false)[0];
+export const StateRegistry = readable<Map<State<Init>, Anchor<Init>>>(new Map(), false)[0];
+export const StateLeakage = readable<Map<Init, { start: number, count: number }>>(new Map(), false)[0];
+export const ExternalSubscriptions = readable<Map<Init, Set<Subscriber<Init>>>>(new Map(), false)[0];
 
 const read = <T extends Init>(init: T): Anchor<T> | undefined => {
-  const pointer = (StateRegistry.get(init as Sail<T>) || InitsRegistry.get(init)) as never;
+  const pointer = (StateRegistry.get(init as State<T>) || InitsRegistry.get(init)) as never;
 
   if (pointer) {
     logger.debug('[anchor:exist] Anchor exists, reusing it.');
@@ -159,21 +124,21 @@ const read = <T extends Init>(init: T): Anchor<T> | undefined => {
   return pointer;
 };
 
-const write = <T extends Init>(init: T, state: Sail<T>, pointer: Anchor<T>) => {
+const write = <T extends Init>(init: T, state: State<T>, pointer: Anchor<T>) => {
   InitsRegistry.set(init, pointer as never);
   StateRegistry.set(state, pointer as never);
 
   logger.debug('[anchor:register] Anchor created.');
 };
 
-const revoke = <T extends Init>(init: T, state: Sail<T>) => {
+const revoke = <T extends Init>(init: T, state: State<T>) => {
   InitsRegistry.delete(init);
   StateRegistry.delete(state);
 
   logger.debug('[anchor:unregister] Anchor revoked for garbage collector.');
 };
 
-const isDescendant = (state: Sail<Init>, target: Sail<Init>): boolean => {
+const isDescendant = (state: State<Init>, target: State<Init>): boolean => {
   const hierarchy = StateHierarchy.get(target);
 
   if (hierarchy) {
@@ -191,7 +156,7 @@ const isDescendant = (state: Sail<Init>, target: Sail<Init>): boolean => {
   return false;
 };
 
-const isAncestor = (state: Sail<Init>, target: Sail<Init>): boolean => {
+const isAncestor = (state: State<Init>, target: State<Init>): boolean => {
   const hierarchy = StateHierarchy.get(target);
 
   if (hierarchy) {
@@ -229,10 +194,10 @@ export function crate<T extends Init, R extends boolean = true>(
   if (registered) {
     return registered as never;
   }
-  const parents: ParentMap<Init> = new Map();
-  const children: ChildrenMap<Init> = new Map();
-  const subscribers: Set<Beacon<T>> = new Set();
-  const internalSubscribers: Set<Beacon<T>> = new Set();
+  const parents: ParentMap<Init> = readable(new Map(), false)[0];
+  const children: ChildrenMap<Init> = readable(new Map(), false)[0];
+  const subscribers = readable<Set<Subscriber<T>>>(new Set(), false)[0];
+  const internalSubscribers = readable<Set<Subscriber<T>>>(new Set(), false)[0];
   const leakageMap = StateLeakage;
 
   const {
@@ -241,7 +206,7 @@ export function crate<T extends Init, R extends boolean = true>(
     leakageDetection = true,
     leakageDetectionBounce = 100,
     validationExit = false,
-    safeInit = true,
+    immutableInit = true,
     safeObjectWarning = true,
   } = ANCHOR_CONFIG;
   const strictIterable = strict ?? ANCHOR_CONFIG.strictIterable ?? true;
@@ -253,17 +218,7 @@ export function crate<T extends Init, R extends boolean = true>(
   let stopPropagation = true;
   let initialized = false;
 
-  const clone: T = safeInit
-                   ? (Array.isArray(init)
-                      ? [ ...init ]
-                      : init instanceof Map
-                        ? new Map(init)
-                        : init instanceof Set
-                          ? new Set(init)
-                          : isObject(init)
-                            ? { ...init }
-                            : init) as T
-                   : init;
+  const clone: T = immutableInit ? frozen(init) : init;
 
   let validation: DetailedValidation<T> | undefined = undefined;
   if (typeof schema === 'object') {
@@ -311,7 +266,7 @@ export function crate<T extends Init, R extends boolean = true>(
       return undefined as never;
     }
 
-    const inherit: TowLiner<T> = ref[Pointer.INHERIT as never] as never;
+    const inherit: Inheritor<T> = ref[Pointer.INHERIT as never] as never;
 
     const detach = inherit(state as never, listen ? (s, e) => {
       if (e) {
@@ -332,7 +287,7 @@ export function crate<T extends Init, R extends boolean = true>(
           emitter,
         });
 
-        // logger.info(`[anchor:publish] Anchor sub-event propagated. { ${ type }:${ path } }`);
+        logger.verbose(`[anchor:publish] Anchor sub-event propagated. { ${ type }:${ path } }`);
       } else {
         publish({ type: 'unknown', value: s });
       }
@@ -346,7 +301,7 @@ export function crate<T extends Init, R extends boolean = true>(
     return childState as T[keyof T];
   };
 
-  const unlink = (current: Sail<T[keyof T]>) => {
+  const unlink = (current: State<T[keyof T]>) => {
     const detach = children.get(current as never);
 
     if (typeof detach === 'function') {
@@ -356,9 +311,9 @@ export function crate<T extends Init, R extends boolean = true>(
     }
   };
 
-  const subscribe = (handler: Beacon<T>, emitNow = true) => {
+  const subscribe = (handler: Subscriber<T>, emitNow = true) => {
     if (emitNow) {
-      const event: SailShift<T> = { type: 'init', value: state, emitter: clone };
+      const event: StateChange<T> = { type: 'init', value: state, emitter: clone };
       handler(state, event);
     }
 
@@ -412,9 +367,9 @@ export function crate<T extends Init, R extends boolean = true>(
     };
   };
 
-  const publish = (event: SailShift<T>) => {
+  const publish = (event: StateChange<T>) => {
     if (stopPropagation) {
-      // logger.debug('[anchor:publish] Anchor event propagation stopped.');
+      logger.verbose('[anchor:publish] Anchor event propagation stopped.');
       return;
     }
 
@@ -426,23 +381,23 @@ export function crate<T extends Init, R extends boolean = true>(
 
     for (const [ , run ] of parents) {
       if (typeof run === 'function') {
-        run(clone, event as SailShift<Init>);
+        run(clone, event as StateChange<Init>);
       }
     }
 
     for (const run of internalSubscribers) {
       if (typeof run === 'function') {
-        run(clone, event as SailShift<Init>);
+        run(clone, event as StateChange<Init>);
       }
     }
 
-    // logger.debug('[anchor:publish] Anchor event emitted.');
+    logger.verbose('[anchor:publish] Anchor event emitted.');
   };
 
   const set = (value: Part<T> | Part<T>[], emit = true) => {
     stopPropagation = true;
 
-    const oldValue = Array.isArray(state) ? [ ...(state as never[]) ] : { ...state };
+    const oldValue = frozen(state);
 
     if (Array.isArray(value) && Array.isArray(state)) {
       state.splice(0, state.length, ...(value as never[]));
@@ -456,14 +411,14 @@ export function crate<T extends Init, R extends boolean = true>(
       publish({ type: 'update', paths: Object.keys(value), value, oldValue, emitter: clone });
     }
 
-    // logger.debug('[anchor:set] Anchor updated using setter.');
+    logger.verbose('[anchor:set] Anchor updated using setter.');
   };
 
   const update = (updater: (value: T) => T | void, emit = true) => {
     const value = updater(state);
 
     if (value) {
-      // logger.debug('[anchor:update] Anchor updater invoked.');
+      logger.verbose('[anchor:update] Anchor updater invoked.');
       set(value, emit);
     }
   };
@@ -476,7 +431,7 @@ export function crate<T extends Init, R extends boolean = true>(
 
     subscribers.clear();
 
-    revoke(clone, state as Sail<T>);
+    revoke(clone, state as State<T>);
 
     for (const run of internalSubscribers) {
       if (typeof run === 'function') {
@@ -485,7 +440,7 @@ export function crate<T extends Init, R extends boolean = true>(
     }
   };
 
-  const inherit = (parent: Sail<unknown>, fn: Beacon<T>) => {
+  const inherit = (parent: State<unknown>, fn: Subscriber<T>) => {
     if (parents.has(parent)) {
       logger.warn('[anchor:inherit] Anchor already inherits from parent.');
       return;
@@ -560,7 +515,7 @@ export function crate<T extends Init, R extends boolean = true>(
   if (shouldProxy(clone)) {
     proxyHandler = {
       set(target: T, prop: keyof T, value: T[keyof T]) {
-        const current = Reflect.get(target, prop) as Sail<T[keyof T]>;
+        const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
         // Skip if value is the same.
         if (current === value) {
@@ -620,7 +575,7 @@ export function crate<T extends Init, R extends boolean = true>(
         return true;
       },
       deleteProperty(target: T, prop: keyof T): boolean {
-        const current = Reflect.get(target, prop) as Sail<T[keyof T]>;
+        const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
         if (typeof current === 'object' && linkable(current) && recursive) {
           unlink(current);
@@ -653,7 +608,7 @@ export function crate<T extends Init, R extends boolean = true>(
   }
 
   const state = shouldProxy(clone) ? new Proxy(clone, proxyHandler) : clone;
-  const manager: Navigator<T> = { destroy, emit: publish, set, subscribe, update };
+  const manager: Controller<T> = { destroy, emit: publish, set, subscribe, update };
   const pointer: Anchor<T> = [ state, manager, subscribers, children, parents, inherit, validation ] as never;
 
   if (replaceable(clone)) {
@@ -664,10 +619,10 @@ export function crate<T extends Init, R extends boolean = true>(
   Object.assign(state, { subscribe });
   Object.defineProperty(state, 'subscribe', { enumerable: false });
 
-  StateHierarchy.set(state as Sail<T>, { id: Date.now(), parents, children });
-  ExternalSubscriptions.set(state as Sail<T>, internalSubscribers as never);
+  StateHierarchy.set(state as State<T>, { id: Date.now(), parents, children });
+  ExternalSubscriptions.set(state as State<T>, internalSubscribers as never);
 
-  write(clone, state as Sail<T>, pointer);
+  write(clone, state as State<T>, pointer);
 
   if (Array.isArray(clone)) {
     const sch = flattenSchema<object>((schema as ArraySchema<T>)?.items as never);
@@ -908,12 +863,13 @@ export function anchor<T extends Init, R extends boolean = true>(
   recursive: R = true as R,
   strict?: boolean,
   schema?: AnchorSchema<T>,
+  allowedTypes = COMMON_SCHEMA_TYPES,
 ): State<T, R> {
-  return crate(init, recursive, strict, schema)[Pointer.STATE] as never;
+  return crate(init, recursive, strict, schema, allowedTypes)[Pointer.STATE] as never;
 }
 
 export function isSail(value: unknown): boolean {
-  return StateRegistry.has(value as Sail<Init>);
+  return StateRegistry.has(value as State<Init>);
 }
 
 function linkable(value: unknown): boolean {
@@ -937,52 +893,12 @@ function isSafeObject(value: unknown) {
   );
 }
 
-function simplify<T extends Init>(value: T, recursive = true): T {
-  if (recursive) {
-    if (Array.isArray(value)) {
-      value.forEach((item, i) => {
-        if (typeof item === 'object') {
-          value[i] = simplify(item as never);
-        }
-      });
-    } else if (value instanceof Map) {
-      for (const [ key, item ] of value.entries()) {
-        if (typeof item === 'object') {
-          value.set(key, simplify(item as never));
-        }
-      }
-    } else if (value instanceof Set) {
-      for (const item of value.values()) {
-        if (typeof item === 'object') {
-          value.delete(item);
-          value.add(simplify(item as never));
-        }
-      }
-    } else if (isObject(value)) {
-      for (const [ key, item ] of entries(value)) {
-        if (typeof item === 'object') {
-          value[key] = simplify(item as never);
-        }
-      }
-    }
-  }
-
-  const set = () => undefined;
-  const subscribe = (fn: (v: T) => void, emitNow = true) => {
-    if (emitNow) {
-      fn(value);
-    }
-
-    return () => undefined;
-  };
-
-  Object.assign(value as never, { set, subscribe });
-
-  return value;
-}
-
 export function configure(config: AnchorConfig) {
   Object.assign(ANCHOR_CONFIG, { ...config });
+
+  if (typeof config.logger === 'object') {
+    logger.configure(config.logger);
+  }
 }
 
 export function getConfig(): AnchorConfig {

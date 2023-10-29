@@ -1,4 +1,4 @@
-import { Anchor, crate, Pointer, Sail } from './anchor.js';
+import { Anchor, crate, Pointer, State } from './anchor.js';
 import { Schema, SERIALIZABLE_SCHEMA_TYPES } from '../schema/index.js';
 
 type JsonPrimitive = string | number | boolean | null;
@@ -22,7 +22,7 @@ export function seal<T extends Sealed, R extends boolean = true>(
   schema: Schema<T>,
   recursive: R = true as R,
   strict = true,
-): Sail<T, R> {
+): State<T, R> {
   const instance = crate(init, recursive, strict, schema as never, SERIALIZABLE_SCHEMA_TYPES);
   return instance[Pointer.STATE];
 }
