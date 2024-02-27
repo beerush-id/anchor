@@ -11,7 +11,7 @@ export type NestedPath<T, K extends keyof T = keyof T> =
         : never)
     : never
   : never
-export type NestedArrayPath<T extends Array<unknown>> = `${ number }` | `${ number }.[${ NestedPath<T[number]> }]`;
+export type NestedArrayPath<T extends Array<unknown>> = `${ number }` | `${ number }.${ NestedPath<T[number]> }`;
 
 export type NestedPathValue<T, P extends NestedPath<T>>
   = P extends `${ infer K }.${ infer Rest }`

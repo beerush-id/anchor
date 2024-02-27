@@ -1,46 +1,92 @@
-type Getter<T> = () => T;
-type Setter<T> = (newValue: T) => void;
-type Subscriber<T> = (value: T) => void;
-type Unsubscribe = () => void;
-type Subscribe<T> = (callback: Subscriber<T>) => Unsubscribe;
+import { Anchor, crate, linkable, Pointer } from './anchor.js';
+import type { Subscribe, Subscriber } from './base.js';
+import { Rec } from './base.js';
+import { Schema, validate } from '../schema/index.js';
+import { logger } from '../utils/index.js';
+
+type Getter<T> = ((compute?: (current: T) => T) => T) & { set: Setter<T>, subscribe: Subscribe<T> };
+type Setter<T> = (newValue: T | ((current: T) => T)) => void;
 type Destroy = () => void;
 
-const signals = new Map<number, unknown>();
-let signalIndex = 0;
+export type Signal<T> = [ Getter<T>, Setter<T>, Subscribe<T>, Destroy ];
 
-const signalContexts = new Map<unknown, Array<null>>();
+export function signal<T>(init: T, schema?: Schema<T>): Signal<T> {
+  return linkable(init) ? anchorSignal(init, schema) : createSignal(init, schema);
+}
 
-let currentContext: unknown = undefined;
-let currentSubscriber: Subscriber<unknown> | undefined;
+function anchorSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
+  const state = crate(init as Rec, true, false, schema as never) as Anchor<Rec>;
 
-export function createSignal<T>(init: T) {
-  if (!currentContext) {
-    throw new Error('Cannot create signal outside of context!');
-  }
+  let value = state[Pointer.STATE];
+  const controller = state[Pointer.MANAGER];
 
-  const context = signalContexts.get(currentContext);
-  if (!context) {
-    throw new Error('Cannot create signal outside of context!');
-  }
+  const get: Getter<T> = ((compute?: (current: T) => T) => {
+    return typeof compute === 'function' ? compute(value as never) : value;
+  }) as never;
 
-  const index = context.length;
-  context.push(null);
+  const set: Setter<T> = (newValue: T | ((current: T) => T)) => {
+    if (typeof newValue === 'function') {
+      newValue = (newValue as (v: T) => T)(value as T);
+    }
 
-  if (!signals.has(index)) {
-    signals.set(index, init);
-  }
-
-  let value: T = signals.get(index) as T;
-  const subscribers = new Set<(value: T) => void>();
-
-  const set: Setter<T> = (newValue: T) => {
-    if (newValue === value) return;
-
-    value = init;
-    subscribers.forEach(emit => emit(value));
+    controller.set(newValue as never);
   };
 
-  const subscribe: Subscribe<T> = (callback: Subscriber<T>) => {
+  const subscribe: Subscribe<T> = (callback: Subscriber<T>, emitNow = true) => {
+    return controller.subscribe(callback as never, emitNow);
+  };
+
+  const destroy: Destroy = () => {
+    controller.destroy();
+    value = undefined as never;
+  };
+
+  Object.assign(get, { set, subscribe });
+
+  return [ get, set, subscribe, destroy ];
+}
+
+function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
+  if (schema) {
+    const validation = validate(schema, init);
+
+    if (!validation.valid) {
+      throw new TypeError(`[anchor:signal] The initial value does not conform to the schema.`);
+    }
+  }
+
+  let value: T = init;
+  const subscribers = new Set<Subscriber<T>>();
+
+  const get: Getter<T> = ((compute?: (current: T) => T) => {
+    return typeof compute === 'function' ? compute(value) : value;
+  }) as never;
+
+  const set: Setter<T> = (newValue: T | ((current: T) => T)) => {
+    if (typeof newValue === 'function') {
+      newValue = (newValue as (v: T) => T)(value);
+    }
+
+    if (newValue === value) return;
+
+    if (schema) {
+      const validation = validate(schema, newValue);
+
+      if (!validation.valid) {
+        logger.error(`[anchor:signal] The new value does not conform to the schema.`);
+        return;
+      }
+    }
+
+    value = newValue as T;
+    subscribers.forEach(emit => emit(value, { type: 'update' }));
+  };
+
+  const subscribe: Subscribe<T> = (callback: Subscriber<T>, emitNow = true) => {
+    if (emitNow) {
+      callback(value, { type: 'init' });
+    }
+
     subscribers.add(callback);
 
     return () => {
@@ -50,52 +96,10 @@ export function createSignal<T>(init: T) {
 
   const destroy: Destroy = () => {
     subscribers.clear();
-    signals.delete(signalIndex);
+    value = undefined as never;
   };
 
-  return [ value, set, subscribe, destroy ] as const;
-}
+  Object.assign(get, { set, subscribe });
 
-export function createContext(fn: () => Unsubscribe): void {
-  currentContext = fn;
-  const context: null[] = [];
-  signalContexts.set(currentContext, context);
-
-  fn();
-
-  currentContext = undefined;
-}
-
-export type Ref<T> = {
-  current: T;
-}
-
-const contexts = new Map<unknown, Map<number, Ref<unknown>>>();
-let referer: unknown = undefined;
-let refIndex = 0;
-
-export function createRef<T>(init: T): Ref<T> {
-  if (!referer) {
-    throw new Error('Cannot create ref outside of context!');
-  }
-
-  refIndex += 1;
-
-  let context = contexts.get(referer);
-  if (!context) {
-    context = new Map();
-    contexts.set(referer, context);
-  }
-
-  context.set(refIndex, { current: init } as Ref<T>);
-
-  return context.get(refIndex) as Ref<T>;
-}
-
-export function createEffect<T>(callback: (value: T) => void, value: Getter<T>) {
-
-}
-
-export function setContext(value: unknown) {
-  referer = value as never;
+  return [ get, set, subscribe, destroy ];
 }

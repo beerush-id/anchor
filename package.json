@@ -29,10 +29,20 @@
       "import": "./lib/esm/hook/index.js",
       "require": "./lib/cjs/hook/index.js"
     },
+    "./i18n": {
+      "types": "./lib/esm/i18n/index.d.ts",
+      "import": "./lib/esm/i18n/index.js",
+      "require": "./lib/cjs/i18n/index.js"
+    },
     "./schema": {
       "types": "./lib/esm/schema/index.d.ts",
       "import": "./lib/esm/schema/index.js",
       "require": "./lib/cjs/schema/index.js"
+    },
+    "./store": {
+      "types": "./lib/esm/store/index.d.ts",
+      "import": "./lib/esm/store/index.js",
+      "require": "./lib/cjs/store/index.js"
     },
     "./utils": {
       "types": "./lib/esm/utils/index.d.ts",

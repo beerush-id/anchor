@@ -1,12 +1,12 @@
 import { Anchor, crate, Pointer, State } from './anchor.js';
 import { Schema, SERIALIZABLE_SCHEMA_TYPES } from '../schema/index.js';
 
-type JsonPrimitive = string | number | boolean | null;
-type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-type JsonObject = { [property: string]: JsonValue };
-type JsonArray = JsonValue[];
+type SerializablePrimitive = string | number | boolean | null | Date;
+type SerializableValue = SerializablePrimitive | SerializableObject | SerializableArray;
+type SerializableObject = { [property: string]: SerializableValue };
+type SerializableArray = SerializableValue[];
 
-export type Sealed = JsonObject | JsonObject[];
+export type Sealed = SerializableObject | SerializableArray;
 
 export function sealKit<T extends Sealed, R extends boolean = true>(
   init: T,

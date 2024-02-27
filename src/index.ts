@@ -1,20 +1,23 @@
-import { logger } from './utils/index.js';
-
-export * from './stream/index.js';
+export * from './api/index.js';
 export * from './core/index.js';
 export * from './hook/index.js';
 export {
+  COMMON_SCHEMA_TYPES,
+  SERIALIZABLE_SCHEMA_TYPES,
+
   Schema,
   SchemaType,
   SchemaPresets,
-  COMMON_SCHEMA_TYPES,
-  SERIALIZABLE_SCHEMA_TYPES,
+
   validate as validateSchema,
   satisfy as satisfySchema,
 } from './schema/index.js';
 
-export { logger };
+export {
+  Locale,
+  Translation,
+  translator,
+  getPreferredLang,
+} from './i18n/index.js';
 
-export function debug(trace?: boolean) {
-  logger.setDebug(true, trace);
-}
+export { logger } from './utils/logger.js';

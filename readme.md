@@ -161,9 +161,11 @@ Here's what we're currently working on and what's next for Anchor:
 
 - ✅ Reactive Object – Ready.
 - ✅ Circular Detection – Ready.
-- 🟡 Schema Validation in State - Partially Complete.
-- 🟡 Persistent Store - Partially Complete.
-- 🟡 In-Memory Store - Partially Complete.
+- ✅ Persistent Store – Ready.
+- ✅ Session Store – Ready.
+- ✅ Memory Store – Ready.
+- ✅ Schema Validation – Ready.
+- ✅ Translation (i18n) – Ready.
 - 🟡 History – Partially Complete.
 - 🟡 REST API Helper – Partially Complete.
 - ⏳ Signal – Planned. Aims to expand the toolset beyond just working with objects, promising a more comprehensive

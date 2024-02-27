@@ -151,10 +151,6 @@ export type Schema<T> = BaseSchema<T> & (
                     : CustomSchema<T>
   );
 
-export type SchemaTypeMap<T> = {
-  [K in keyof Schema<T>]: K extends 'type' ? SchemaTypeOf<T> | SchemaTypeOf<T>[] : Schema<T>[K];
-}
-
 export enum SchemaErrorType {
   Type = 'typerror',
   Value = 'valueerror',

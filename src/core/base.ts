@@ -33,9 +33,10 @@ export const ARRAY_MUTATIONS: ArrayMutation[] = [
   'reverse',
 ];
 
-export type Unsubscribe = () => void;
 export type Subscriber<T> = (state: T, event: StateChange<T>) => void;
 export type SubscriberList<T> = Readable<Set<Subscriber<T>>>;
+export type Subscribe<T> = (callback: Subscriber<T>, emitNow?: boolean) => Unsubscribe;
+export type Unsubscribe = () => void;
 
 export type StateChange<T> = {
   readonly type: 'init' |
@@ -79,12 +80,12 @@ export type Writable<T> = Readable<T> & {
   readonly set: (value: Part<T> | Part<T>[]) => void;
 }
 
-export function readable<T>(init: T, freeze = true): [ Readable<T>, Publisher<T> ] {
+export function readable<T>(init: T, frozen = true): [ Readable<T>, Publisher<T> ] {
   if (typeof init !== 'object') {
     throw new TypeError('Readable state must be an object.');
   }
 
-  const instance = freeze ? frozen(init) : init;
+  const instance = frozen ? freeze(init) : init;
   const subscribers: Subscriber<T>[] = [];
 
   const subscribe = (handler: Subscriber<T>, emitNow = true) => {
@@ -119,8 +120,8 @@ export function readable<T>(init: T, freeze = true): [ Readable<T>, Publisher<T>
   return [ instance as Readable<T>, publish ];
 }
 
-export function writable<T>(init: T, freeze = true): [ Writable<T>, Publisher<T> ] {
-  const [ instance, publish ] = readable(init, freeze);
+export function writable<T>(init: T, frozen = true): [ Writable<T>, Publisher<T> ] {
+  const [ instance, publish ] = readable(init, frozen);
 
   const set = (value: Part<T> | Part<T>[], emit = true) => {
     if (Array.isArray(value) && Array.isArray(instance)) {
@@ -139,7 +140,7 @@ export function writable<T>(init: T, freeze = true): [ Writable<T>, Publisher<T>
   return [ instance as Writable<T>, publish ];
 }
 
-export function frozen<T>(init: T): T {
+export function freeze<T>(init: T): T {
   if (Array.isArray(init)) {
     return [ ...init ] as T;
   }
@@ -157,4 +158,27 @@ export function frozen<T>(init: T): T {
   }
 
   return init;
+}
+
+export function isSafeObject(value: unknown) {
+  return (
+    Array.isArray(value) ||
+    value instanceof Set ||
+    value instanceof Map ||
+    isObject(value)
+  );
+}
+
+export function isSerializable(value: unknown): boolean {
+  if (!Array.isArray(value) && !isObject(value)) return false;
+
+  if (Array.isArray(value)) {
+    return value.every(isSerializable);
+  } else if (typeof value === 'object') {
+    for (const key in value) {
+      if (!isSerializable(value[key as never])) return false;
+    }
+  }
+
+  return true;
 }

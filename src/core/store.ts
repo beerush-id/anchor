@@ -1,7 +1,9 @@
-import type { Anchor, Init, State, StateTree } from './anchor.js';
+import type { Anchor, AnchorSchema, Init, State, StateTree } from './anchor.js';
 import { crate, ExternalSubscriptions, Pointer, Registry, StateHierarchy } from './anchor.js';
 import { logger, merge } from '../utils/index.js';
-import { Readable, Rec } from './base.js';
+import { isSerializable, Readable, Rec } from './base.js';
+import { COMMON_SCHEMA_TYPES, SchemaType, SERIALIZABLE_SCHEMA_TYPES } from '../schema/index.js';
+import { Sealed } from './seal.js';
 
 export type StateMemory = {
   name: string;
@@ -167,6 +169,8 @@ if (!scope.getAnchor) {
 function getSession<T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
+  schema?: AnchorSchema<T>,
+  allowedTypes = COMMON_SCHEMA_TYPES,
   recursive: R = true as R,
   strict?: boolean,
   version = '1.0.0',
@@ -181,7 +185,7 @@ function getSession<T extends Init, R extends boolean = true>(
       version,
       recursive,
       strict,
-      value: crate(value, recursive, strict) as never,
+      value: crate(value, recursive, strict, schema, allowedTypes) as never,
     };
 
     sessionStore.set(name, state);
@@ -196,9 +200,10 @@ function getSession<T extends Init, R extends boolean = true>(
   return state.value as never;
 }
 
-function getPersistent<T extends Init, R extends boolean = true>(
+function getPersistent<T extends Sealed, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
+  schema?: AnchorSchema<T>,
   recursive: R = true as R,
   strict?: boolean,
   version = '1.0.0',
@@ -208,11 +213,16 @@ function getPersistent<T extends Init, R extends boolean = true>(
 
   if (!state) {
     const value = typeof init === 'function' ? (init as Initializer<T>)() : init;
+
+    if (!isSerializable(value)) {
+      throw new TypeError('[anchor:store] Persistent state must be a valid JSON!');
+    }
+
     state = {
       name,
       version,
       recursive,
-      value: crate(value, recursive, strict) as never,
+      value: crate(value, recursive, strict, schema, SERIALIZABLE_SCHEMA_TYPES) as never,
     };
 
     persistentStore.set(name, state);
@@ -227,66 +237,50 @@ function getPersistent<T extends Init, R extends boolean = true>(
   return state.value as never;
 }
 
-export function session<T extends Init>(
-  name: string,
-  init: T | Initializer<T>,
-): State<T>;
 export function session<T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
-  recursive?: R,
-  strict?: boolean,
-  version?: string,
-): State<T, R>;
-export function session<T extends Init, R extends boolean = true>(
-  name: string,
-  init: T | Initializer<T>,
+  schema?: AnchorSchema<T>,
+  allowedTypes?: SchemaType[],
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
 ): State<T, R> {
-  return getSession(name, init, recursive, strict, version)[Pointer.STATE];
+  return getSession(name, init, schema, allowedTypes, recursive, strict, version)[Pointer.STATE];
 }
 
 session.crate = <T extends Init, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
+  schema?: AnchorSchema<T>,
+  allowedTypes?: SchemaType[],
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
 ): Anchor<T, R> => {
-  return getSession(name, init, recursive, strict, version);
+  return getSession(name, init, schema, allowedTypes, recursive, strict, version);
 };
 
-export function persistent<T extends Init>(
+export function persistent<T extends Sealed, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
-): State<T>;
-export function persistent<T extends Init, R extends boolean = true>(
-  name: string,
-  init: T | Initializer<T>,
-  recursive?: R,
-  strict?: boolean,
-  version?: string,
-): State<T, R>;
-export function persistent<T extends Init, R extends boolean = true>(
-  name: string,
-  init: T | Initializer<T>,
+  schema?: AnchorSchema<T>,
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
 ): State<T, R> {
-  return getPersistent(name, init, recursive, strict, version)[Pointer.STATE];
+  return getPersistent(name, init, schema, recursive, strict, version)[Pointer.STATE];
 }
 
-persistent.crate = <T extends Init, R extends boolean = true>(
+persistent.crate = <T extends Sealed, R extends boolean = true>(
   name: string,
   init: T | Initializer<T>,
+  schema?: AnchorSchema<T>,
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
 ): Anchor<T, R> => {
-  return getPersistent(name, init, recursive, strict, version);
+  return getPersistent(name, init, schema, recursive, strict, version);
 };
 
 export const AnchorStore = scope.getAnchor(ANCHOR_SECRET) as Store;

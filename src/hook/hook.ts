@@ -1,10 +1,12 @@
-import type { Anchor, Init, State } from '../core/anchor.js';
+import type { Anchor, AnchorSchema, Init, State } from '../core/anchor.js';
 import { crate, Pointer } from '../core/anchor.js';
 import { persistent, session } from '../core/store.js';
 import { logger } from '../utils/index.js';
-import { Stream, StreamPublisher } from '../stream/index.js';
+import { Stream, StreamPublisher } from '../api/index.js';
 import { history, type History, StateChanges } from '../core/history.js';
 import { Rec } from '../core/base.js';
+import { Sealed } from '../core/index.js';
+import { SchemaType } from '../schema/index.js';
 
 export type StateHook = <T>(init: T) => [ T, (value: T) => void ];
 export type EffectHook = (fn: () => (void | never), deps?: unknown) => void;
@@ -69,65 +71,55 @@ export function useAnchor<T extends Init>(init: T, recursive = true, strict?: bo
   return useCrate(init, recursive, strict)[Pointer.STATE] as never;
 }
 
-export function usePersistent<T extends Init>(name: string, init: T): State<T>;
-export function usePersistent<T extends Init, R extends boolean = true>(
+export function usePersistent<T extends Sealed, R extends boolean = true>(
   name: string,
   init: T,
-  recursive?: boolean,
-  strict?: boolean,
-  version?: string,
-): State<T, R>;
-export function usePersistent<T extends Init, R extends boolean = true>(
-  name: string,
-  init: T,
+  schema?: AnchorSchema<T>,
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
-): State<T> {
-  const state = persistent(name, init, recursive, strict, version) as never;
+): State<T, R> {
+  const state = persistent(name, init, schema, recursive, strict, version) as never;
   registerHook(state);
   return state;
 }
 
-export function useSession<T extends Init>(name: string, init: T): State<T>;
-export function useSession<T extends Init>(
-  name: string,
-  init: T,
-  recursive?: boolean,
-  strict?: boolean,
-  version?: string,
-): State<T>;
 export function useSession<T extends Init, R extends boolean = true>(
   name: string,
   init: T,
+  schema?: AnchorSchema<T>,
+  allowedTypes?: SchemaType[],
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
-): State<T> {
-  const state = session(name, init, recursive, strict, version) as never;
+): State<T, R> {
+  const state = session(name, init, schema, allowedTypes, recursive, strict, version) as never;
   registerHook(state);
   return state;
 }
 
-usePersistent.crate = <T extends Init, R extends boolean = true>(
+usePersistent.crate = <T extends Sealed, R extends boolean = true>(
   name: string,
   init: T,
+  schema?: AnchorSchema<T>,
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
 ): Anchor<T, R> => {
-  const anchor = persistent.crate(name, init, recursive, strict, version);
+  const anchor = persistent.crate(name, init, schema, recursive, strict, version);
   registerHook(anchor[Pointer.STATE] as never);
   return anchor;
 };
 useSession.crate = <T extends Init, R extends boolean = true>(
   name: string,
   init: T,
+  schema?: AnchorSchema<T>,
+  allowedTypes?: SchemaType[],
   recursive?: R,
   strict?: boolean,
   version = '1.0.0',
 ): Anchor<T, R> => {
-  const anchor = session.crate(name, init, recursive, strict, version);
+  const anchor = session.crate(name, init, schema, allowedTypes, recursive, strict, version);
   registerHook(anchor[Pointer.STATE] as never);
   return anchor;
 };

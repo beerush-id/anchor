@@ -3,6 +3,9 @@ import { anchor, AnchorSchema, configure, SchemaPresets, SchemaType } from '../.
 
 type Foo = {
   foo: string;
+  bar?: {
+    baz: string;
+  }
 }
 type Bar = string[];
 
@@ -20,6 +23,9 @@ const arraySchema: AnchorSchema<Bar> = {
 
 const fooTemplate: Foo = {
   foo: 'bar',
+  bar: {
+    baz: 'qux',
+  },
 };
 
 test('validates anchored object immutability', () => {
@@ -28,14 +34,25 @@ test('validates anchored object immutability', () => {
 
   result.foo = 'baz';
   expect(result.foo).toBe('baz');
+  expect(fooTemplate.foo).toBe('bar');
+
+  result.bar!.baz = 'foo';
+  expect(result.bar!.baz).toBe('foo');
+  expect(fooTemplate.bar!.baz).toBe('qux');
 });
 
 test('validates reused anchored object immutability', () => {
   const result = anchor(fooTemplate);
   expect(result.foo).toBe('bar');
+  expect(result.bar.baz).toBe('qux');
 
   result.foo = 'baz';
+  result.bar.baz = 'quux';
+
+  expect(fooTemplate.foo).toBe('bar');
   expect(result.foo).toBe('baz');
+  expect(result.bar.baz).toBe('quux');
+  expect(fooTemplate.bar.baz).toBe('qux');
 });
 
 test('validates anchored array immutability', () => {

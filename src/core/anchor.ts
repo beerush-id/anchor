@@ -1,4 +1,4 @@
-import { entries, isObject, isObjectLike, logger, LoggerConfig, merge, typeOf } from '../utils/index.js';
+import { entries, isObjectLike, logger, LoggerConfig, merge, typeOf } from '../utils/index.js';
 import {
   ArraySchema,
   COMMON_SCHEMA_TYPES,
@@ -11,7 +11,8 @@ import {
 } from '../schema/index.js';
 import {
   ARRAY_MUTATIONS,
-  frozen,
+  freeze,
+  isSafeObject,
   ItemTypeOf,
   Part,
   Readable,
@@ -24,14 +25,14 @@ import {
 } from './base.js';
 
 export type AnchorConfig = {
-  safeObject?: boolean;
-  safeObjectWarning?: boolean;
-  validationExit?: boolean;
   immutableInit?: boolean;
   strictIterable?: boolean;
+  safeObject?: boolean;
+  safeObjectWarning?: boolean;
 
   circularDetection?: boolean;
   circularExit?: boolean;
+  validationExit?: boolean;
 
   leakageDetection?: boolean;
   leakageDetectionBounce?: number;
@@ -185,7 +186,7 @@ export function crate<T extends Init, R extends boolean = true>(
     throw new TypeError('[anchor:init] Initial value must be an object (object | array | set | map | etc).');
   }
 
-  if ((ANCHOR_CONFIG.safeObject ?? true) && !isSafeObject(init)) {
+  if (ANCHOR_CONFIG.safeObject && !isSafeObject(init)) {
     throw new TypeError('[anchor:init] Initial value must be a safe object (object | array | set | map).');
   }
 
@@ -201,13 +202,13 @@ export function crate<T extends Init, R extends boolean = true>(
   const leakageMap = StateLeakage;
 
   const {
+    immutableInit = true,
     circularDetection = false,
     circularExit = true,
+    validationExit = false,
     leakageDetection = true,
     leakageDetectionBounce = 100,
-    validationExit = false,
-    immutableInit = true,
-    safeObjectWarning = true,
+    safeObjectWarning = false,
   } = ANCHOR_CONFIG;
   const strictIterable = strict ?? ANCHOR_CONFIG.strictIterable ?? true;
 
@@ -218,7 +219,7 @@ export function crate<T extends Init, R extends boolean = true>(
   let stopPropagation = true;
   let initialized = false;
 
-  const clone: T = immutableInit ? frozen(init) : init;
+  const clone: T = immutableInit ? freeze(init) : init;
 
   let validation: DetailedValidation<T> | undefined = undefined;
   if (typeof schema === 'object') {
@@ -262,7 +263,7 @@ export function crate<T extends Init, R extends boolean = true>(
     }
 
     if (children.has(childState as never)) {
-      logger.warn('[anchor:link] Anchor already linked as a descendant.');
+      logger.warn('[anchor:link] Anchor already linked as descendant.');
       return undefined as never;
     }
 
@@ -397,7 +398,7 @@ export function crate<T extends Init, R extends boolean = true>(
   const set = (value: Part<T> | Part<T>[], emit = true) => {
     stopPropagation = true;
 
-    const oldValue = frozen(state);
+    const oldValue = freeze(state);
 
     if (Array.isArray(value) && Array.isArray(state)) {
       state.splice(0, state.length, ...(value as never[]));
@@ -872,7 +873,7 @@ export function isSail(value: unknown): boolean {
   return StateRegistry.has(value as State<Init>);
 }
 
-function linkable(value: unknown): boolean {
+export function linkable(value: unknown): boolean {
   return LINKABLE.includes(typeOf(value));
 }
 
@@ -882,15 +883,6 @@ function replaceable(value: unknown): boolean {
 
 function shouldProxy(value: unknown): boolean {
   return !(value instanceof Map || value instanceof Set || Array.isArray(value));
-}
-
-function isSafeObject(value: unknown) {
-  return (
-    Array.isArray(value) ||
-    value instanceof Set ||
-    value instanceof Map ||
-    isObject(value)
-  );
 }
 
 export function configure(config: AnchorConfig) {
