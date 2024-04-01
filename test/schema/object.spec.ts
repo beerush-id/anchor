@@ -1,5 +1,5 @@
 import { assert, test } from 'vitest';
-import { satisfySchema, Schema, SchemaPresets, SchemaType, validateSchema } from '../../lib/esm';
+import { satisfy, Schema, SchemaPresets, SchemaType, validate } from '../../lib/esm/schema';
 
 test('validates object', () => {
   const schema: Schema<{ foo: string }> = {
@@ -8,7 +8,7 @@ test('validates object', () => {
       foo: SchemaPresets.Str,
     },
   };
-  const result = validateSchema(schema, { foo: 'bar' });
+  const result = validate(schema, { foo: 'bar' });
 
   assert(result.valid, 'Expected validation pass');
 });
@@ -20,7 +20,7 @@ test('fails on invalid object', () => {
       foo: SchemaPresets.Str,
     },
   };
-  const result = validateSchema(schema, { foo: 123 });
+  const result = validate(schema, { foo: 123 });
 
   assert(!result.valid, 'Expected validation to fail');
 });
@@ -33,7 +33,7 @@ test('validates object with additional properties', () => {
     },
     additionalProperties: true,
   };
-  const result = validateSchema(schema, { foo: 'bar', baz: 'qux' });
+  const result = validate(schema, { foo: 'bar', baz: 'qux' });
 
   assert(result.valid, 'Expected validation pass');
 });
@@ -46,7 +46,7 @@ test('fails on invalid additional properties', () => {
     },
     additionalProperties: false,
   };
-  const result = validateSchema(schema, { foo: 'bar', baz: 'qux' });
+  const result = validate(schema, { foo: 'bar', baz: 'qux' });
 
   assert(!result.valid, 'Expected validation to fail');
 });
@@ -63,7 +63,7 @@ test('validates nested object', () => {
       },
     },
   };
-  const result = validateSchema(schema, { foo: { bar: 'baz' } });
+  const result = validate(schema, { foo: { bar: 'baz' } });
 
   assert(result.valid, 'Expected validation pass');
 });
@@ -80,7 +80,7 @@ test('fails on invalid nested object', () => {
       },
     },
   };
-  const result = validateSchema(schema, { foo: { bar: 123 } });
+  const result = validate(schema, { foo: { bar: 123 } });
 
   assert(!result.valid, 'Expected validation to fail');
 });
@@ -100,7 +100,7 @@ test('validates nested object with nested array', () => {
       },
     },
   };
-  const result = validateSchema(schema, { foo: { bar: [ 'baz' ] } });
+  const result = validate(schema, { foo: { bar: [ 'baz' ] } });
 
   assert(result.valid, 'Expected validation pass');
 });
@@ -120,7 +120,7 @@ test('fails on invalid nested object with nested array', () => {
       },
     },
   };
-  const result = validateSchema(schema, { foo: { bar: [ 123 ] } });
+  const result = validate(schema, { foo: { bar: [ 123 ] } });
   assert(!result.valid, 'Expected validation to fail');
 });
 
@@ -141,7 +141,7 @@ test('validates nested object with nested object', () => {
       },
     },
   };
-  const result = validateSchema(schema, { foo: { bar: { baz: 'qux' } } });
+  const result = validate(schema, { foo: { bar: { baz: 'qux' } } });
 
   assert(result.valid, 'Expected validation pass');
 });
@@ -163,7 +163,7 @@ test('fails on invalid nested object with nested object', () => {
       },
     },
   };
-  const result = validateSchema(schema, { foo: { bar: { baz: 123 } } });
+  const result = validate(schema, { foo: { bar: { baz: 123 } } });
 
   assert(!result.valid, 'Expected validation to fail');
 });
@@ -177,7 +177,7 @@ test('validates required object', () => {
     },
     required: [ 'foo' ],
   };
-  const result = validateSchema(schema, { foo: 'bar' });
+  const result = validate(schema, { foo: 'bar' });
   assert(result.valid, 'Expected validation pass');
 });
 
@@ -190,7 +190,7 @@ test('fails on invalid required object', () => {
     },
     required: [ 'foo' ],
   };
-  const result = validateSchema(schema, { bar: 'baz' });
+  const result = validate(schema, { bar: 'baz' });
   assert(!result.valid, 'Expected validation to fail');
 });
 
@@ -202,7 +202,7 @@ test('fails on required property with invalid schema', () => {
     } as never,
     required: [ 'foo' ],
   };
-  const result = validateSchema(schema, { baz: 123 });
+  const result = validate(schema, { baz: 123 });
   assert(!result.valid, 'Expected validation to fail');
 });
 
@@ -228,7 +228,7 @@ test('fails on invalid required nested object', () => {
     },
     required: [ 'foo' ],
   };
-  const result = validateSchema(schema as never, {
+  const result = validate(schema as never, {
     bar: 'baz',
     baz: {
       qux: 123,
@@ -247,7 +247,7 @@ test('validates object with required value property', () => {
       foo: { ...SchemaPresets.Str, required: true },
     },
   };
-  const result = validateSchema(schema, {});
+  const result = validate(schema, {});
   assert(!result.valid, 'Expected validation to fail');
 });
 
@@ -258,7 +258,7 @@ test('fails on invalid object with required value property', () => {
       foo: { ...SchemaPresets.Str, required: true },
     },
   };
-  const result = validateSchema(schema, { foo: 123 });
+  const result = validate(schema, { foo: 123 });
   assert(!result.valid, 'Expected validation to fail');
 });
 
@@ -270,10 +270,10 @@ test('validates object with default value', () => {
     },
     default: () => ({ foo: 'baz' }),
   };
-  const value = satisfySchema(schema);
+  const value = satisfy(schema);
   assert(value.foo === 'baz', 'Expected default value');
 
-  const result = validateSchema(schema, value);
+  const result = validate(schema, value);
   assert(result.valid, 'Expected validation pass');
 });
 
@@ -284,10 +284,10 @@ test('validates object with default property value', () => {
       foo: { ...SchemaPresets.Str, default: 'bar' },
     },
   };
-  const value = satisfySchema(schema, {});
+  const value = satisfy(schema, {});
   assert(value.foo === 'bar', 'Expected default value');
 
-  const result = validateSchema(schema, value);
+  const result = validate(schema, value);
   assert(result.valid, 'Expected validation pass');
 });
 
@@ -298,9 +298,9 @@ test('validates object with default property value function', () => {
       foo: { ...SchemaPresets.Str, default: () => 'bar' },
     },
   };
-  const value = satisfySchema(schema, {});
+  const value = satisfy(schema, {});
   assert(value.foo === 'bar', 'Expected default value');
 
-  const result = validateSchema(schema, value);
+  const result = validate(schema, value);
   assert(result.valid, 'Expected validation pass');
 });

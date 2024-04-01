@@ -1,7 +1,5 @@
 import { expect, test } from 'vitest';
-import { speak, translator } from '../../lib/esm/i18n';
-
-console.log(translator.global);
+import { speak } from '../../lib/esm/i18n';
 
 test('speak', () => {
   const value = speak('Hello, {name}!', { name: 'World' });

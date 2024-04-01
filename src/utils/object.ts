@@ -97,6 +97,51 @@ export function write<T extends object, P extends NestedPath<T> = NestedPath<T>>
 }
 
 /**
+ * Remove the value of an object by using a path.
+ * @param {T} object
+ * @param {P} path
+ */
+export function remove<T extends object, P extends NestedPath<T> = NestedPath<T>>(
+  object: T,
+  path: P,
+): void {
+  const key = path as string;
+
+  if (typeof object !== 'object') {
+    throw new Error(`Can not remove ${ key } from ${ typeof object }.`);
+  }
+
+  const keys = key.split('.');
+
+  if (keys.length <= 1) {
+    if (Array.isArray(object)) {
+      object.splice(Number(key), 1);
+    } else {
+      delete (object as any)[key];
+    }
+  } else {
+    keys.reduce((a, b, i) => {
+      if ((i + 1) === keys.length) {
+        if (Array.isArray(a)) {
+          a.splice(Number(b), 1);
+        } else {
+          delete a[b];
+        }
+      } else {
+        const next = a[b];
+        const nextKey = keys[i + 1];
+
+        if (typeof next !== 'object') {
+          a[b] = (nextKey === '0' || Number(nextKey)) ? [] : {};
+        }
+      }
+
+      return a[b];
+    }, object as any);
+  }
+}
+
+/**
  * Recursively replace the value of an object with value from another object by preserving the reference.
  * @param {object} object - An object to put the new value into.
  * @param {object} source - An object to put the new value from.

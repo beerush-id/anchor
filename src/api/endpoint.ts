@@ -1,6 +1,9 @@
-import type { Remote, Stream } from './remote.js';
+import type { Remote, Stream, StreamMeta, StreamQueue } from './remote.js';
 import type { ItemTypeOf, KeyOf, Part, Rec } from '../core/base.js';
-import { isNumber, isString } from '../utils/index.js';
+import { isBrowser, isNumber, isString } from '../utils/index.js';
+import { createQuery, Query, QueryState } from './query.js';
+import { State } from '@beerush/reactor';
+import { Schema } from '../schema/index.js';
 
 export type Fields<F> = Array<KeyOf<F> | { [K in keyof F]?: Fields<F[K]> | Fields<ItemTypeOf<F[K]>> }>;
 export type WhereFilter<T> = {
@@ -31,10 +34,10 @@ export type GenericFilter<T> = {
   regexp?: string | RegExp;
 };
 
-export type Filter<T extends Rec, F extends Part<T> = T, P extends Rec = Rec> = {
-  fields?: Fields<F>;
-  where?: WhereFilter<T>;
-  params?: Part<P>;
+export type Filter<Entity extends Rec, Params extends Rec = Rec> = {
+  fields?: Fields<Entity>;
+  where?: WhereFilter<Entity>;
+  params?: Part<Params>;
   prefix?: string;
   suffix?: string;
   page?: number;
@@ -66,103 +69,120 @@ export type EndpointRelation = {
   hasOne?: HasOneRelation[]
 };
 
-export type EndpointConfig = {
+export type EndpointConfig<Entity extends Rec = Rec, Params extends Rec = Rec> = {
   name: string;
   endpoint: string;
   endpointPrefix?: string;
   relations?: EndpointRelation;
-  defaultLimit?: number;
+  schema?: Schema<Entity>;
+  defaultFilter?: Filter<Entity, Params>;
 };
 
-export class Endpoint<T extends Rec> {
-  constructor(private remote: Remote, private config: EndpointConfig) {}
+const QUERY_STORE = new Map<Endpoint<Rec>, Map<string, Query<Rec>>>;
 
-  public find<F extends T = T>(filter?: Filter<T>, options?: RequestInit): Stream<F[]>;
-  public find<F extends Part<T>>(filter?: Filter<T, F>): Stream<F[]>;
-  public find<F extends T, P extends Rec>(filter?: Filter<T, F, P>): Stream<F[]>;
-  public find<F extends Part<T>, P extends Rec>(filter?: Filter<T, F, P>): Stream<F[]>;
-  public find<F extends Part<T> = T, P extends Rec = Rec>(
-    filter?: Filter<T, F, P>,
-    options?: RequestInit,
-  ): Stream<F[]> {
-    const url = this.createUrl('find', filter as never);
-    return this.remote.getAll(url, options);
+export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, Params extends Rec = Rec> {
+  constructor(private remote: Remote, private config: EndpointConfig<Entity, Params>) {
+    QUERY_STORE.set(this as never, new Map() as never);
   }
 
-  public findOne<F extends T = T>(id: string, filter?: Filter<T>, options?: RequestInit): Stream<F>;
-  public findOne<F extends Part<T>>(id: string, filter?: Filter<T, F>): Stream<F>;
-  public findOne<F extends T, P extends Rec>(id: string, filter?: Filter<T, F, P>): Stream<F>;
-  public findOne<F extends Part<T>, P extends Rec>(id: string, filter?: Filter<T, F, P>): Stream<F>;
-  public findOne<F extends Part<T> = T, P extends Rec = Rec>(
+  public init(init: Part<Entity>, filters: Filter<Entity, Params>, options?: RequestInit): StreamQueue<Entity> {
+    const url = this.createUrl('create', filters as never, (init as never as { id: string })?.id, init);
+    return this.remote.stream(url, 'POST', init, options);
+  }
+
+  public get<R extends Rec = Entity, M extends StreamMeta = Meta, P extends Rec = Params>(
     id: string,
-    filter?: Filter<T, F, P>,
+    filter?: Filter<R, P>,
+    immediate?: boolean,
+  ): State<Query<R, R, M, P>> {
+    return this.query(filter, id, immediate) as never;
+  }
+
+  public query<R extends Rec = Entity, M extends StreamMeta = Meta, P extends Rec = Params>(
+    init?: Filter<R, P>,
+    name = 'main',
+    immediate?: boolean,
+  ): QueryState<R, R[], M, P> {
+    if (!isBrowser()) {
+      return createQuery(this, init as never, immediate) as never;
+    }
+
+    const queryName = `query://collection.${ this.config.name }/${ name }`;
+    const queries = QUERY_STORE.get(this as never) ?? new Map() as never;
+    let query = queries.get(queryName);
+    if (!query) {
+      query = createQuery(this, {
+        ...this.config.defaultFilter,
+        ...init,
+      } as never, immediate) as never;
+      queries.set(queryName, query as never);
+    }
+
+    return query as never;
+  }
+
+  public find<R extends Rec = Entity, M extends StreamMeta = Meta, P extends Rec = Params>(
+    filter?: Filter<R, P>,
     options?: RequestInit,
-  ): Stream<F> {
+  ): Stream<R[], M> {
+    const url = this.createUrl('find', filter as never);
+    return this.remote.list(url, options);
+  }
+
+  public findOne<R extends Rec = Entity, P extends Rec = Params>(
+    id: string,
+    filter?: Filter<R, P>,
+    options?: RequestInit,
+  ): Stream<R> {
     const url = this.createUrl('findOne', filter as never, id);
     return this.remote.get(url, options);
   }
 
-  public create<F extends T = T>(body: T, filter?: Filter<T>, options?: RequestInit): Stream<F>;
-  public create<F extends Part<T>>(body: T, filter?: Filter<T, F>): Stream<F>;
-  public create<F extends T, P extends Rec>(body: T, filter?: Filter<T, F, P>): Stream<F>;
-  public create<F extends Part<T>, P extends Rec>(body: T, filter?: Filter<T, F, P>): Stream<F>;
-  public create<F extends Part<T> = T, P extends Rec = Rec>(
-    body: T,
-    filter?: Filter<T, F, P>,
+  public create<R extends Rec = Entity, P extends Rec = Params>(
+    body: R,
+    filter?: Filter<R, P>,
     options?: RequestInit,
-  ): Stream<F> {
+  ): Stream<R> {
     const url = this.createUrl('create', filter as never);
-    return this.remote.post<F>(url, body as never, options);
+    return this.remote.post<R>(url, body as never, options);
   }
 
-  public update<F extends T = T>(id: string, body: T, filter?: Filter<T>, options?: RequestInit): Stream<F>;
-  public update<F extends Part<T>>(id: string, body: T, filter?: Filter<T, F>): Stream<F>;
-  public update<F extends T, P extends Rec>(id: string, body: T, filter?: Filter<T, F, P>): Stream<F>;
-  public update<F extends Part<T>, P extends Rec>(id: string, body: T, filter?: Filter<T, F, P>): Stream<F>;
-  public update<F extends Part<T> = T, P extends Rec = Rec>(
+  public update<R extends Rec = Entity, P extends Rec = Params>(
     id: string,
-    body: T,
-    filter?: Filter<T, F, P>,
+    body: R,
+    filter?: Filter<R, P>,
     options?: RequestInit,
-  ): Stream<F> {
-    const url = this.createUrl('update', filter as never, id, body);
-    return this.remote.put<F>(url, body as never, options);
+  ): Stream<R> {
+    const url = this.createUrl('update', filter as never, id, body as never);
+    return this.remote.put<R>(url, body as never, options);
   }
 
-  public patch<F extends T = T>(id: string, body: Part<T>, filter?: Filter<T>, options?: RequestInit): Stream<F>;
-  public patch<F extends Part<T>>(id: string, body: Part<T>, filter?: Filter<T, F>): Stream<F>;
-  public patch<F extends T, P extends Rec>(id: string, body: Part<T>, filter?: Filter<T, F, P>): Stream<F>;
-  public patch<F extends Part<T>, P extends Rec>(id: string, body: Part<T>, filter?: Filter<T, F, P>): Stream<F>;
-  public patch<F extends Part<T> = T, P extends Rec = Rec>(
+  public patch<R extends Rec = Entity, P extends Rec = Params>(
     id: string,
-    body: Part<T>,
-    filter?: Filter<T, F, P>,
+    body: Part<R>,
+    filter?: Filter<R, P>,
     options?: RequestInit,
-  ): Stream<F> {
-    const url = this.createUrl('patch', filter as never, id, body);
-    return this.remote.patch<F>(url, body as Part<F>, options);
+  ): Stream<R> {
+    const url = this.createUrl('patch', filter as never, id, body as never);
+    return this.remote.patch<R>(url, body as Part<R>, options);
   }
 
-  public delete<F extends T = T>(id: string, filter?: Filter<T>, options?: RequestInit): Stream<F>;
-  public delete<F extends Part<T>>(id: string, filter?: Filter<T, F>): Stream<F>;
-  public delete<F extends T, P extends Rec>(id: string, filter?: Filter<T, F, P>): Stream<F>;
-  public delete<F extends Part<T>, P extends Rec>(id: string, filter?: Filter<T, F, P>): Stream<F>;
-  public delete<F extends Part<T> = T, P extends Rec = Rec>(
+  public delete<R extends Rec = Entity, P extends Rec = Params>(
     id: string,
-    filter?: Filter<T, F, P>,
+    filter?: Filter<R, P>,
     options?: RequestInit,
-  ): Stream<F> {
+  ): Stream<R> {
     const url = this.createUrl('delete', filter as never, id);
-    return this.remote.delete<F>(url, options);
+    return this.remote.delete<R>(url, options);
   }
 
   private createUrl(
     method: RelationMethod,
-    filter?: Filter<T>,
+    filter?: Filter<Entity, Params>,
     suffix?: string,
-    body?: Part<T>,
+    body?: Part<Entity>,
   ) {
-    const { endpointPrefix, relations, defaultLimit } = this.config;
+    const { endpointPrefix, relations } = this.config;
     const segments = [ this.config.endpoint ];
 
     let prefix = endpointPrefix;
@@ -223,8 +243,8 @@ export class Endpoint<T extends Rec> {
       }
     }
 
-    if (filter?.limit || defaultLimit) {
-      url.searchParams.append('limit', `${ filter?.limit || defaultLimit }`);
+    if (filter?.limit) {
+      url.searchParams.append('limit', `${ filter?.limit }`);
     }
 
     if (filter?.page) {

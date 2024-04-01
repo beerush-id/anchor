@@ -2,7 +2,7 @@ import type { Anchor, AnchorSchema, Init, State } from '../core/anchor.js';
 import { crate, Pointer } from '../core/anchor.js';
 import { persistent, session } from '../core/store.js';
 import { logger } from '../utils/index.js';
-import { Stream, StreamPublisher } from '../api/index.js';
+import { Stream, StreamPublisher, StreamQueue } from '../api/index.js';
 import { history, type History, StateChanges } from '../core/history.js';
 import { Rec } from '../core/base.js';
 import { Sealed } from '../core/index.js';
@@ -24,8 +24,8 @@ export type InputRef = {
 };
 export type InputRefs<T extends Rec> = { [K in keyof T]: InputRef };
 export type InputValidators<T extends Rec> = { [K in keyof T]?: (value: T[K]) => boolean }
-export type UpstreamRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, State<T>, Stream<T> ];
-export type UpsertRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, History<T>, State<T>, StateChanges<T>, Stream<T> ];
+export type UpstreamRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, State<T>, StreamQueue<T> ];
+export type UpsertRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, History<T>, State<T>, StateChanges<T>, StreamQueue<T> ];
 export type HistoryRef<T extends Init> = [ State<T>, StateChanges<T>, History<T> ];
 
 let _useState: StateHook;
@@ -251,8 +251,6 @@ export function useStream<T extends Init>(stream: Stream<T>): Stream<T> {
   const [ , setState ] = useState(stream);
 
   useEffect(() => {
-    stream.fetch?.();
-
     logger.debug('[anchor:use-stream] Fetching initial Stream.');
 
     return stream.subscribe((s) => {
@@ -264,7 +262,7 @@ export function useStream<T extends Init>(stream: Stream<T>): Stream<T> {
   return stream;
 }
 
-export function useUpstream<T extends Rec>(stream: Stream<T>, validate?: InputValidators<T>): UpstreamRef<T> {
+export function useUpstream<T extends Rec>(stream: StreamQueue<T>, validate?: InputValidators<T>): UpstreamRef<T> {
   const [ state, ref ] = useInput<T>(stream.data as never, validate);
   const [ , setState ] = useState(stream);
 
@@ -304,7 +302,7 @@ export function useHistory<T extends Init>(state: State<T>, max?: number, deb?: 
   return [ state, ref.current.changes, ref.current ];
 }
 
-export function useUpsert<T extends Rec>(stream: Stream<T>, validate?: InputValidators<T>): UpsertRef<T> {
+export function useUpsert<T extends Rec>(stream: StreamQueue<T>, validate?: InputValidators<T>): UpsertRef<T> {
   const [ state, changes, rec ] = useHistory<T>(stream.data as never, undefined, undefined, false);
   const [ , ref ] = useInput(stream.data as never, validate);
 

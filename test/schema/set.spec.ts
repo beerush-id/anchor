@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
-import { SchemaPresets, SchemaType, validateSchema } from '../../lib/esm';
+import { SchemaPresets, SchemaType, validate } from '../../lib/esm/schema';
 
 test('validates Set object', () => {
-  const result = validateSchema<Set<number>>({
+  const result = validate<Set<number>>({
     type: SchemaType.Set,
     items: SchemaPresets.Int,
   }, new Set([ 1, 2, 3 ]));
@@ -12,13 +12,13 @@ test('validates Set object', () => {
 
 test('validates Set object with multiple types', () => {
   const schema = { type: SchemaType.Set, items: { type: [ SchemaType.String, SchemaType.Number ] } };
-  const result = validateSchema(schema, new Set([ '1', 2, '3' ]));
+  const result = validate(schema, new Set([ '1', 2, '3' ]));
 
   expect(result.valid).toBe(true);
 });
 
 test('fails to validate Set object with invalid value', () => {
-  const result = validateSchema<Set<number>>({
+  const result = validate<Set<number>>({
     type: SchemaType.Set,
     items: {
       type: SchemaType.Number,
@@ -29,7 +29,7 @@ test('fails to validate Set object with invalid value', () => {
 });
 
 test('fails to validate Set object with invalid value (recursive)', () => {
-  const result = validateSchema<Set<object>>({
+  const result = validate<Set<object>>({
     type: SchemaType.Set,
     items: {
       type: SchemaType.Object,

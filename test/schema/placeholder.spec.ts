@@ -1,6 +1,6 @@
 import { assert, test } from 'vitest';
 import { createPlaceholder } from '../../lib/esm/schema/placeholder';
-import { Schema, SchemaType } from '../../lib/esm';
+import { Schema, SchemaType } from '../../lib/esm/schema';
 
 test('creates a placeholder for an object', () => {
   const schema = {

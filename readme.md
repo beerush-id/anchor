@@ -166,6 +166,7 @@ Here's what we're currently working on and what's next for Anchor:
 - ✅ Memory Store – Ready.
 - ✅ Schema Validation – Ready.
 - ✅ Translation (i18n) – Ready.
+- 🟡 React Hooks – Partially Complete.
 - 🟡 History – Partially Complete.
 - 🟡 REST API Helper – Partially Complete.
 - ⏳ Signal – Planned. Aims to expand the toolset beyond just working with objects, promising a more comprehensive

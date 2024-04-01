@@ -44,11 +44,23 @@ export const LINKABLE = [ 'array', 'object' ];
 export const INTERNAL_KEY = 'anchor:internal';
 export const ANCHOR_CONFIG: AnchorConfig = {};
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+export interface ArrayState<T, R extends boolean = true> extends Array<State<T, R>> {
+  fill(value: T, start?: number, end?: number): void;
+
+  push(...items: T[]): number;
+
+  unshift(...items: T[]): number;
+
+  splice(start: number, deleteCount?: number, ...items: T[]): State<T, R>[];
+}
+
 export type Init = Rec | Array<Rec | unknown> | Map<unknown, unknown> | Set<unknown>;
 export type State<T, R extends boolean = true> = (
   R extends true
   ? T extends Rec[]
-    ? Array<State<ItemTypeOf<T>, R>>
+    ? ArrayState<ItemTypeOf<T>, R>
     // eslint-disable-next-line @typescript-eslint/ban-types
     : T extends Function
       ? T

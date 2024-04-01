@@ -1,78 +1,78 @@
 import { assert, expect, it } from 'vitest';
-import { SchemaPresets, SchemaType, validateSchema } from '../../lib/esm';
+import { SchemaPresets, SchemaType, validate } from '../../lib/esm/schema';
 
 it('Should allow validating type "string"', () => {
-  const result = validateSchema({ type: SchemaType.String } as never, '');
+  const result = validate({ type: SchemaType.String } as never, '');
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type "number"', () => {
-  const result = validateSchema({ type: SchemaType.Number } as never, 0);
+  const result = validate({ type: SchemaType.Number } as never, 0);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type "boolean"', () => {
-  const result = validateSchema({ type: SchemaType.Boolean } as never, true);
+  const result = validate({ type: SchemaType.Boolean } as never, true);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type "object"', () => {
-  const result = validateSchema({ type: SchemaType.Object } as never, {});
+  const result = validate({ type: SchemaType.Object } as never, {});
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type "array"', () => {
-  const result = validateSchema({ type: SchemaType.Array } as never, []);
+  const result = validate({ type: SchemaType.Array } as never, []);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type "null"', () => {
-  const result = validateSchema({ type: SchemaType.Null } as never, null);
+  const result = validate({ type: SchemaType.Null } as never, null);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["string"]', () => {
-  const result = validateSchema({ type: [ SchemaType.String ] } as never, '');
+  const result = validate({ type: [ SchemaType.String ] } as never, '');
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["number"]', () => {
-  const result = validateSchema({ type: [ SchemaType.Number ] } as never, 0);
+  const result = validate({ type: [ SchemaType.Number ] } as never, 0);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["boolean"]', () => {
-  const result = validateSchema({ type: [ SchemaType.Boolean ] } as never, true);
+  const result = validate({ type: [ SchemaType.Boolean ] } as never, true);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["object"]', () => {
-  const result = validateSchema({ type: [ SchemaType.Object ] } as never, {});
+  const result = validate({ type: [ SchemaType.Object ] } as never, {});
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["array"]', () => {
-  const result = validateSchema({ type: [ SchemaType.Array ] } as never, []);
+  const result = validate({ type: [ SchemaType.Array ] } as never, []);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["null"]', () => {
-  const result = validateSchema({ type: [ SchemaType.Null ] } as never, null);
+  const result = validate({ type: [ SchemaType.Null ] } as never, null);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["string", "number"]', () => {
-  const result = validateSchema({ type: [ SchemaType.String, SchemaType.Number ] } as never, '');
+  const result = validate({ type: [ SchemaType.String, SchemaType.Number ] } as never, '');
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating type ["string", "boolean"], mark input "null" as invalid', () => {
-  const result = validateSchema({ type: [ SchemaType.String, SchemaType.Boolean ] } as never, null);
+  const result = validate({ type: [ SchemaType.String, SchemaType.Boolean ] } as never, null);
   expect(result.valid).toBe(false);
 });
 
 it('Should allow validating type ["string", "boolean"], mark input "undefined" as invalid if required', () => {
-  const result = validateSchema(
+  const result = validate(
     { type: [ SchemaType.String, SchemaType.Boolean ], required: true } as never,
     undefined,
   );
@@ -80,12 +80,12 @@ it('Should allow validating type ["string", "boolean"], mark input "undefined" a
 });
 
 it('Should allow validating type ["string", "boolean"], mark input "undefined" as valid if not required', () => {
-  const result = validateSchema({ type: [ SchemaType.String, SchemaType.Boolean ] } as never, undefined);
+  const result = validate({ type: [ SchemaType.String, SchemaType.Boolean ] } as never, undefined);
   expect(result.valid).toBe(true);
 });
 
 it('Should allow validating custom schema', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
     validate: () => {
       return { valid: true };
@@ -95,7 +95,7 @@ it('Should allow validating custom schema', () => {
 });
 
 it('Should allow validating custom schema with "required" set to true', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
     required: true,
     validate: () => {
@@ -106,7 +106,7 @@ it('Should allow validating custom schema with "required" set to true', () => {
 });
 
 it('Should allow adding additional properties when "additionalProperties" is "true"', () => {
-  const result = validateSchema<object>({
+  const result = validate<object>({
     type: SchemaType.Object,
     properties: {
       name: SchemaPresets.Str,
@@ -122,7 +122,7 @@ it('Should allow adding additional properties when "additionalProperties" is "tr
 
 it('Should prevent validating type "unknown"', () => {
   try {
-    validateSchema({ type: 'unknown' as never } as never, '');
+    validate({ type: 'unknown' as never } as never, '');
 
     throw new Error('Should not reach here.');
   } catch (e) {
@@ -132,7 +132,7 @@ it('Should prevent validating type "unknown"', () => {
 
 it('Should prevent validating type ["unknown"]', () => {
   try {
-    validateSchema({ type: [ 'unknown' ] as never } as never, '');
+    validate({ type: [ 'unknown' ] as never } as never, '');
 
     throw new Error('Should not reach here.');
   } catch (e) {
@@ -142,7 +142,7 @@ it('Should prevent validating type ["unknown"]', () => {
 
 it('Should prevent validating type ["unknown", "string"]', () => {
   try {
-    validateSchema({ type: [ 'unknown', 'string' ] as never } as never, '');
+    validate({ type: [ 'unknown', 'string' ] as never } as never, '');
 
     throw new Error('Should not reach here.');
   } catch (e) {
@@ -151,7 +151,7 @@ it('Should prevent validating type ["unknown", "string"]', () => {
 });
 
 it('Should mark as invalid if custom schema does not return "valid" property', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
     validate: () => {
       return {} as never;
@@ -161,7 +161,7 @@ it('Should mark as invalid if custom schema does not return "valid" property', (
 });
 
 it('Should mark as invalid if custom schema returns "valid" property as "false"', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
     validate: () => {
       return { valid: false };
@@ -171,7 +171,7 @@ it('Should mark as invalid if custom schema returns "valid" property as "false"'
 });
 
 it('Should mark as invalid if custom schema does not have a "validate" function, but is required.', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
     required: true,
   } as never, '');
@@ -179,7 +179,7 @@ it('Should mark as invalid if custom schema does not have a "validate" function,
 });
 
 it('Should mark as valid if custom schema does not have a "validate" function, but not required.', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
   } as never, '');
   expect(result.valid).toBe(true);
@@ -187,7 +187,7 @@ it('Should mark as valid if custom schema does not have a "validate" function, b
 
 it('Should mark as invalid when adding additional properties with "additionalProperties" set to "false" or' +
   ' "undefined"', () => {
-  const result = validateSchema<object>({
+  const result = validate<object>({
     type: SchemaType.Object,
     properties: {
       name: SchemaPresets.Str,
@@ -201,7 +201,7 @@ it('Should mark as invalid when adding additional properties with "additionalPro
 });
 
 it('Should validates only specific types', () => {
-  const result = validateSchema({
+  const result = validate({
     type: SchemaType.Custom,
     validate: () => {
       return { valid: false };
@@ -212,7 +212,7 @@ it('Should validates only specific types', () => {
 
 it('Should fails when validating only specific types, but the type is not included', () => {
   try {
-    validateSchema({ type: SchemaType.Custom } as never, '', [ SchemaType.String ]);
+    validate({ type: SchemaType.Custom } as never, '', [ SchemaType.String ]);
 
     throw new Error('Should not reach here.');
   } catch (error) {
@@ -222,7 +222,7 @@ it('Should fails when validating only specific types, but the type is not includ
 
 it('Should fails when validating only specific types, but the type is not included in the array', () => {
   try {
-    validateSchema({ type: [ SchemaType.Custom, SchemaType.Date ] } as never, '', [ SchemaType.String ]);
+    validate({ type: [ SchemaType.Custom, SchemaType.Date ] } as never, '', [ SchemaType.String ]);
 
     throw new Error('Should not reach here.');
   } catch (error) {

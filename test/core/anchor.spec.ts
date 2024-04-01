@@ -1,5 +1,6 @@
 import { assert, expect, test } from 'vitest';
-import { anchor, AnchorSchema, configure, SchemaPresets, SchemaType } from '../../lib/esm';
+import { anchor, AnchorSchema, configure } from '../../lib/esm';
+import { SchemaPresets, SchemaType } from '../../lib/esm/schema';
 
 type Foo = {
   foo: string;
