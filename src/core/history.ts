@@ -32,7 +32,7 @@ export class History<T extends Init> {
   }
 
   constructor(public state: State<T>, private max = 50, private debounce = 1000) {
-    const instance: Anchor<T> = StateRegistry.get(state) as never;
+    const instance: Anchor<T> = StateRegistry.get(state as never) as never;
     const subscribers = instance?.[Pointer.SUBSCRIBERS];
 
     if (!(subscribers instanceof Set)) {

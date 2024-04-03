@@ -38,14 +38,17 @@ let ANCHOR_SECRET = 'no-secret';
 const ANCHOR_STORAGE_KEY = 'anchor-store';
 
 const scope: {
-  Anchor?: Store
+  Anchor?: Store;
   getAnchor: (secret: string) => Store | void;
   addEventListener: (type: string, callback: (e: StorageEvent) => void) => void;
   localStorage?: Storage;
   BroadcastChannel?: BroadcastChannel;
-} = typeof window === 'undefined' ? {
-  addEventListener: () => undefined,
-} as never : window as never;
+} =
+  typeof window === 'undefined'
+    ? ({
+        addEventListener: () => undefined,
+      } as never)
+    : (window as never);
 
 const syncState = (type: 'persistent' | 'session', name: string, state: State<unknown>) => {
   const { write } = scope.getAnchor(ANCHOR_SECRET) as Store;
@@ -75,10 +78,10 @@ if (!scope.getAnchor) {
         const { version, persistent } = store;
         const file: AnchorData = { version, data: [] };
 
-        for (const [ name, state ] of persistent.entries()) {
+        for (const [name, state] of persistent.entries()) {
           file.data.push({
             name,
-            createdAt: (state as Rec).createdAt as string || new Date().toISOString(),
+            createdAt: ((state as Rec).createdAt as string) || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             value: state.value[Pointer.STATE] as never,
             version: state.version,
@@ -173,7 +176,7 @@ function getSession<T extends Init, R extends boolean = true>(
   allowedTypes = COMMON_SCHEMA_TYPES,
   recursive: R = true as R,
   strict?: boolean,
-  version = '1.0.0',
+  version = '1.0.0'
 ): Anchor<T, R> {
   const { session: sessionStore } = scope.getAnchor(ANCHOR_SECRET) as Store;
   let state = sessionStore.get(name);
@@ -206,7 +209,7 @@ function getPersistent<T extends Sealed, R extends boolean = true>(
   schema?: AnchorSchema<T>,
   recursive: R = true as R,
   strict?: boolean,
-  version = '1.0.0',
+  version = '1.0.0'
 ): Anchor<T, R> {
   const { persistent: persistentStore } = scope.getAnchor(ANCHOR_SECRET) as Store;
   let state = persistentStore.get(name);
@@ -244,7 +247,7 @@ export function session<T extends Init, R extends boolean = true>(
   allowedTypes?: SchemaType[],
   recursive?: R,
   strict?: boolean,
-  version = '1.0.0',
+  version = '1.0.0'
 ): State<T, R> {
   return getSession(name, init, schema, allowedTypes, recursive, strict, version)[Pointer.STATE];
 }
@@ -256,7 +259,7 @@ session.crate = <T extends Init, R extends boolean = true>(
   allowedTypes?: SchemaType[],
   recursive?: R,
   strict?: boolean,
-  version = '1.0.0',
+  version = '1.0.0'
 ): Anchor<T, R> => {
   return getSession(name, init, schema, allowedTypes, recursive, strict, version);
 };
@@ -267,7 +270,7 @@ export function persistent<T extends Sealed, R extends boolean = true>(
   schema?: AnchorSchema<T>,
   recursive?: R,
   strict?: boolean,
-  version = '1.0.0',
+  version = '1.0.0'
 ): State<T, R> {
   return getPersistent(name, init, schema, recursive, strict, version)[Pointer.STATE];
 }
@@ -278,7 +281,7 @@ persistent.crate = <T extends Sealed, R extends boolean = true>(
   schema?: AnchorSchema<T>,
   recursive?: R,
   strict?: boolean,
-  version = '1.0.0',
+  version = '1.0.0'
 ): Anchor<T, R> => {
   return getPersistent(name, init, schema, recursive, strict, version);
 };

@@ -2,22 +2,31 @@ import type { Remote, Stream, StreamMeta, StreamQueue } from './remote.js';
 import type { ItemTypeOf, KeyOf, Part, Rec } from '../core/base.js';
 import { isBrowser, isNumber, isString } from '../utils/index.js';
 import { createQuery, Query, QueryState } from './query.js';
-import { State } from '@beerush/reactor';
 import { Schema } from '../schema/index.js';
+import { State } from '../core/index.js';
 
 export type Fields<F> = Array<KeyOf<F> | { [K in keyof F]?: Fields<F[K]> | Fields<ItemTypeOf<F[K]>> }>;
 export type WhereFilter<T> = {
-  [K in keyof T]?: T[K] | T[K][] | ConditionFilter<T[K]> | ConditionFilter<T[K]>[] | WhereFilter<T[K]> | WhereFilter<T[K]>[];
+  [K in keyof T]?:
+    | T[K]
+    | T[K][]
+    | ConditionFilter<T[K]>
+    | ConditionFilter<T[K]>[]
+    | WhereFilter<T[K]>
+    | WhereFilter<T[K]>[];
 };
-export type ConditionFilter<T> =
-  T extends string ? TextFilter<T> : T extends number ? NumericFilter<T> : GenericFilter<T>;
+export type ConditionFilter<T> = T extends string
+  ? TextFilter<T>
+  : T extends number
+    ? NumericFilter<T>
+    : GenericFilter<T>;
 
 export type NumericFilter<T extends number> = GenericFilter<T> & {
   gt?: T;
   gte?: T;
   lt?: T;
   lte?: T;
-  between?: [ T, T ];
+  between?: [T, T];
 };
 export type TextFilter<T extends string> = GenericFilter<T> & {
   inq?: T[];
@@ -66,7 +75,7 @@ export type HasOneRelation = {
 export type EndpointRelation = {
   belongsTo?: BelongsToRelation[];
   hasMany?: HasManyRelation[];
-  hasOne?: HasOneRelation[]
+  hasOne?: HasOneRelation[];
 };
 
 export type EndpointConfig<Entity extends Rec = Rec, Params extends Rec = Rec> = {
@@ -78,10 +87,13 @@ export type EndpointConfig<Entity extends Rec = Rec, Params extends Rec = Rec> =
   defaultFilter?: Filter<Entity, Params>;
 };
 
-const QUERY_STORE = new Map<Endpoint<Rec>, Map<string, Query<Rec>>>;
+const QUERY_STORE = new Map<Endpoint<Rec>, Map<string, Query<Rec>>>();
 
 export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, Params extends Rec = Rec> {
-  constructor(private remote: Remote, private config: EndpointConfig<Entity, Params>) {
+  constructor(
+    private remote: Remote,
+    private config: EndpointConfig<Entity, Params>
+  ) {
     QUERY_STORE.set(this as never, new Map() as never);
   }
 
@@ -93,7 +105,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
   public get<R extends Rec = Entity, M extends StreamMeta = Meta, P extends Rec = Params>(
     id: string,
     filter?: Filter<R, P>,
-    immediate?: boolean,
+    immediate?: boolean
   ): State<Query<R, R, M, P>> {
     return this.query(filter, id, immediate) as never;
   }
@@ -101,20 +113,24 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
   public query<R extends Rec = Entity, M extends StreamMeta = Meta, P extends Rec = Params>(
     init?: Filter<R, P>,
     name = 'main',
-    immediate?: boolean,
+    immediate?: boolean
   ): QueryState<R, R[], M, P> {
     if (!isBrowser()) {
       return createQuery(this, init as never, immediate) as never;
     }
 
-    const queryName = `query://collection.${ this.config.name }/${ name }`;
-    const queries = QUERY_STORE.get(this as never) ?? new Map() as never;
+    const queryName = `query://collection.${this.config.name}/${name}`;
+    const queries = QUERY_STORE.get(this as never) ?? (new Map() as never);
     let query = queries.get(queryName);
     if (!query) {
-      query = createQuery(this, {
-        ...this.config.defaultFilter,
-        ...init,
-      } as never, immediate) as never;
+      query = createQuery(
+        this,
+        {
+          ...this.config.defaultFilter,
+          ...init,
+        } as never,
+        immediate
+      ) as never;
       queries.set(queryName, query as never);
     }
 
@@ -123,7 +139,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
 
   public find<R extends Rec = Entity, M extends StreamMeta = Meta, P extends Rec = Params>(
     filter?: Filter<R, P>,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R[], M> {
     const url = this.createUrl('find', filter as never);
     return this.remote.list(url, options);
@@ -132,7 +148,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
   public findOne<R extends Rec = Entity, P extends Rec = Params>(
     id: string,
     filter?: Filter<R, P>,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R> {
     const url = this.createUrl('findOne', filter as never, id);
     return this.remote.get(url, options);
@@ -141,7 +157,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
   public create<R extends Rec = Entity, P extends Rec = Params>(
     body: R,
     filter?: Filter<R, P>,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R> {
     const url = this.createUrl('create', filter as never);
     return this.remote.post<R>(url, body as never, options);
@@ -151,7 +167,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
     id: string,
     body: R,
     filter?: Filter<R, P>,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R> {
     const url = this.createUrl('update', filter as never, id, body as never);
     return this.remote.put<R>(url, body as never, options);
@@ -161,7 +177,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
     id: string,
     body: Part<R>,
     filter?: Filter<R, P>,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R> {
     const url = this.createUrl('patch', filter as never, id, body as never);
     return this.remote.patch<R>(url, body as Part<R>, options);
@@ -170,31 +186,24 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
   public delete<R extends Rec = Entity, P extends Rec = Params>(
     id: string,
     filter?: Filter<R, P>,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R> {
     const url = this.createUrl('delete', filter as never, id);
     return this.remote.delete<R>(url, options);
   }
 
-  private createUrl(
-    method: RelationMethod,
-    filter?: Filter<Entity, Params>,
-    suffix?: string,
-    body?: Part<Entity>,
-  ) {
+  private createUrl(method: RelationMethod, filter?: Filter<Entity, Params>, suffix?: string, body?: Part<Entity>) {
     const { endpointPrefix, relations } = this.config;
-    const segments = [ this.config.endpoint ];
+    const segments = [this.config.endpoint];
 
     let prefix = endpointPrefix;
 
     if (relations?.belongsTo) {
       for (const { endpoint, foreignKey, acceptMethods } of relations.belongsTo) {
         if (!acceptMethods || acceptMethods.includes(method)) {
-          const foreignId = (
-            filter?.where?.[foreignKey] ||
+          const foreignId = (filter?.where?.[foreignKey] ||
             filter?.params?.[foreignKey] ||
-            body?.[foreignKey]
-          ) as string;
+            body?.[foreignKey]) as string;
 
           if (isString(foreignId) || isNumber(foreignId)) {
             segments.unshift(endpoint.config.endpoint, foreignId);
@@ -237,22 +246,20 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
       url.searchParams.append('where', JSON.stringify(filter.where));
     }
 
-    for (const [ key, value ] of Object.entries(filter?.params || {})) {
+    for (const [key, value] of Object.entries(filter?.params || {})) {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, JSON.stringify(value));
       }
     }
 
     if (filter?.limit) {
-      url.searchParams.append('limit', `${ filter?.limit }`);
+      url.searchParams.append('limit', `${filter?.limit}`);
     }
 
     if (filter?.page) {
-      url.searchParams.append('page', `${ filter.page }`);
+      url.searchParams.append('page', `${filter.page}`);
     }
 
-    return [ url.pathname, url.search ].join('')
-      .replace(/[/]+/g, '/')
-      .replace(/\/$/, '');
+    return [url.pathname, url.search].join('').replace(/[/]+/g, '/').replace(/\/$/, '');
   }
 }

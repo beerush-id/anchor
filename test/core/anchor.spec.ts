@@ -1,13 +1,13 @@
 import { assert, expect, test } from 'vitest';
-import { anchor, AnchorSchema, configure } from '../../lib/esm';
+import { anchor, AnchorSchema, configure, StateEvent } from '../../lib/esm';
 import { SchemaPresets, SchemaType } from '../../lib/esm/schema';
 
 type Foo = {
   foo: string;
   bar?: {
     baz: string;
-  }
-}
+  };
+};
 type Bar = string[];
 
 const objectSchema: AnchorSchema<Foo> = {
@@ -57,12 +57,50 @@ test('validates reused anchored object immutability', () => {
 });
 
 test('validates anchored array immutability', () => {
-  const result = anchor([ 'foo', 'bar' ]);
+  const origin = ['foo', 'bar'];
+  const result = anchor(origin);
+
   expect(result[0]).toBe('foo');
   expect(result[1]).toBe('bar');
 
-  result[0] = 'baz';
-  expect(result[0]).toBe('baz');
+  let event: StateEvent<unknown>;
+  result.subscribe((_, e) => (event = e as never), false);
+
+  result[0] = 'foz';
+  expect(origin[0]).toBe('foo');
+  expect(origin[1]).toBe('bar');
+  expect(result[0]).toBe('foz');
+  expect(result[1]).toBe('bar');
+
+  expect(event.type).toBe('set');
+  expect(event.path).toBe('0');
+  expect(event.oldValue).toBe('foo');
+  expect(event.value).toBe('foz');
+
+  origin.push('qux');
+  expect(origin.length).toBe(3);
+  expect(result.length).toBe(2);
+
+  result.push('qux');
+  expect(origin.length).toBe(3);
+  expect(result.length).toBe(3);
+  expect(result[2]).toBe('qux');
+
+  expect(event.type).toBe('push');
+  expect(event.oldValue).toEqual(['foz', 'bar']);
+  expect(event.value).toEqual(['foz', 'bar', 'qux']);
+
+  result.push({ a: 1, b: 2 } as never);
+  expect(origin.length).toBe(3);
+  expect(result.length).toBe(4);
+  expect(result[3]).toEqual({ a: 1, b: 2 });
+
+  result.splice(0, 1);
+  expect(origin.length).toBe(3);
+  expect(result.length).toBe(3);
+  expect(result[0]).toBe('bar');
+  expect(result[1]).toBe('qux');
+  expect(result[2]).toEqual({ a: 1, b: 2 });
 });
 
 test('validates anchored object', () => {
@@ -74,7 +112,7 @@ test('validates anchored object', () => {
 });
 
 test('validates anchored array', () => {
-  const result = anchor([ 'foo', 'bar' ]);
+  const result = anchor(['foo', 'bar']);
 
   assert(result[0] === 'foo', 'Expected to have the same properties.');
   assert(result[1] === 'bar', 'Expected to have the same properties.');
@@ -89,7 +127,7 @@ test('validates anchored object with schema and pass validation', () => {
 });
 
 test('validates anchored array with schema and pass validation', () => {
-  const result = anchor<string[]>([ 'foo', 'bar' ], true, true, arraySchema);
+  const result = anchor<string[]>(['foo', 'bar'], true, true, arraySchema);
 
   assert(result[0] === 'foo', 'Expected to have the same item.');
   assert(result[1] === 'bar', 'Expected to have the same item.');
@@ -104,7 +142,7 @@ test('success to set new property with a valid value', () => {
 });
 
 test('success to add new item with a valid value', () => {
-  const state = anchor([ 'foo', 'bar' ], true, true, arraySchema);
+  const state = anchor(['foo', 'bar'], true, true, arraySchema);
   assert(state[0] === 'foo', 'Expected to have the same item.');
 
   state.push('baz');
@@ -112,7 +150,7 @@ test('success to add new item with a valid value', () => {
 });
 
 test('fails to add new item with invalid value', () => {
-  const state = anchor([ 'foo', 'bar' ], true, true, arraySchema);
+  const state = anchor(['foo', 'bar'], true, true, arraySchema);
   assert(state[0] === 'foo', 'Expected to have the same item.');
 });
 

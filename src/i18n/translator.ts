@@ -59,22 +59,22 @@ export enum Locale {
   VIETNAMESE = 'vi',
   WELSH = 'cy',
   XHOSA = 'xh',
-  ZULU = 'zu'
+  ZULU = 'zu',
 }
 
 export type Locales = Array<{
   name: Locale;
   label: string;
   description?: string;
-}>
+}>;
 
 export type Definitions = {
   [key: string]: string | Definitions;
-}
+};
 
 export type SimpleDefinitions = {
   [key: string]: string;
-}
+};
 
 export type Translation<T extends Definitions> = {
   name: string;
@@ -86,14 +86,14 @@ export type Translation<T extends Definitions> = {
 
 export type SpeakParams = {
   [key: string]: string | number | boolean | Date;
-}
+};
 
 type Speaker<T extends Definitions> = <P extends NestedPath<T>>(key: P, params?: SpeakParams) => string;
 
 export type TranslatorFactory<T extends Definitions = SimpleDefinitions> = ((
   baseURL?: string,
-  translation?: Translation<T>,
-) => [ Speaker<T>, Translator<T> ]) & {
+  translation?: Translation<T>
+) => [Speaker<T>, Translator<T>]) & {
   global: Translator<T>;
 };
 
@@ -325,7 +325,7 @@ export const LOCALES: Locales = [
 ];
 
 const INIT_LANG: Translation<SimpleDefinitions> = {
-  name: LOCALES.find(l => l.name === Locale.ENGLISH)?.label || 'English',
+  name: LOCALES.find((l) => l.name === Locale.ENGLISH)?.label || 'English',
   locale: Locale.ENGLISH,
   description: 'English language pack',
   version: '1.0.0',
@@ -339,10 +339,13 @@ export class Translator<T extends Definitions> {
   private unsubscribe: Unsubscribe | undefined;
 
   public get locales(): Array<ItemTypeOf<Locales>> {
-    return LOCALES.filter(l => this.translations.has(l.name));
+    return LOCALES.filter((l) => this.translations.has(l.name));
   }
 
-  public constructor(public baseURL = '/i18n', translation: Translation<T> = INIT_LANG as never) {
+  public constructor(
+    public baseURL = '/i18n',
+    translation: Translation<T> = INIT_LANG as never
+  ) {
     this.register(translation);
     this.active = this.translations.get(translation.locale) as never;
     this.use(translation.locale);
@@ -350,13 +353,11 @@ export class Translator<T extends Definitions> {
 
   public async load(locales: Locale | Locale[]): Promise<void> {
     if (Array.isArray(locales)) {
-      await Promise.all(locales.map(locale => this.load(locale)));
+      await Promise.all(locales.map((locale) => this.load(locale)));
       return;
     }
 
-    const url = (`${ this.baseURL }/${ locales }.json`)
-      .replace(/\/$/, '')
-      .replace(/\/\//g, '/');
+    const url = `${this.baseURL}/${locales}.json`.replace(/\/$/, '').replace(/\/\//g, '/');
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -400,10 +401,10 @@ export class Translator<T extends Definitions> {
 
     const translation = this.translations.get(locale);
 
-    if (!translation) throw new Error(`[anchor:i18n] Translation for locale "${ locale }" not found!`);
+    if (!translation) throw new Error(`[anchor:i18n] Translation for locale "${locale}" not found!`);
 
     this.active = translation;
-    const [ setting ] = cookie<{ locale: string }>({ path: '/' });
+    const [setting] = cookie<{ locale: string }>({ path: '/' });
     setting.locale = locale;
 
     this.publish();
@@ -457,7 +458,7 @@ export class Translator<T extends Definitions> {
   }
 
   public assign(translations: Part<T>): void {
-    for (const [ key, value ] of entries(translations)) {
+    for (const [key, value] of entries(translations)) {
       this.set(key as never, value as never);
     }
   }
@@ -466,7 +467,7 @@ export class Translator<T extends Definitions> {
     const parts = (key as string).split('.') as string[];
 
     if (parts.length === 1) {
-      delete this.active.definitions[key];
+      delete this.active.definitions[key as never];
       return;
     }
 
@@ -493,7 +494,7 @@ export class Translator<T extends Definitions> {
 
 export const translator = <T extends Definitions = SimpleDefinitions>(
   baseURL?: string,
-  translation?: Translation<T>,
+  translation?: Translation<T>
 ): TranslatorFactory<T> => {
   const instance = new Translator<T>(baseURL, translation);
 
@@ -501,7 +502,7 @@ export const translator = <T extends Definitions = SimpleDefinitions>(
     return instance.speak(key, params);
   };
 
-  return [ speaker, instance ] as never;
+  return [speaker, instance] as never;
 };
 
 const GLOBAL_TRANSLATOR: Translator<SimpleDefinitions> = new Translator<SimpleDefinitions>();
@@ -512,12 +513,12 @@ export function speak(key: string, params?: SpeakParams): string {
 }
 
 export function whisper(key: string, params?: SpeakParams): Readable<string> {
-  return GLOBAL_TRANSLATOR?.whisper(key, params) || ({ subscribe: () => () => null }) as never;
+  return GLOBAL_TRANSLATOR?.whisper(key, params) || ({ subscribe: () => () => null } as never);
 }
 
 export function registerLocale(
   translations: Translation<SimpleDefinitions> | Translation<SimpleDefinitions>[],
-  activate?: boolean,
+  activate?: boolean
 ): void {
   GLOBAL_TRANSLATOR?.register(translations);
 
@@ -537,12 +538,12 @@ export async function loadLocale(locale: Locale): Promise<void> {
 export type PreferredLanguage = {
   id: Locale;
   name: string;
-}
+};
 
 export function getPreferredLang(headers: Headers): PreferredLanguage[] {
   const languages = (headers.get('accept-language') || '').split(';');
-  return languages.map(item => {
-    const [ name, id ] = item.split(',');
+  return languages.map((item) => {
+    const [name, id] = item.split(',');
     return { id, name } as never;
   });
 }

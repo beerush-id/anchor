@@ -3,19 +3,16 @@ import { anchor, writable } from '../core/index.js';
 import { Endpoint, type EndpointConfig } from './endpoint.js';
 import { logger } from '../utils/index.js';
 
-const StreamKeys = new Map<string, string>();
-const StreamStore = new Map<string, State<Stream<Init>>>();
-
 export type StreamPublisher<T extends Init> = (cb?: (stream: Stream<T>) => void) => Promise<State<T> | void>;
 export type StreamMeta = {
   total: number;
   page: number;
   limit: number;
-}
+};
 
 export type StreamStatus = 'init' | 'pending' | 'success' | 'error';
 export type StreamMethod =
-  'LIST'
+  | 'LIST'
   | 'GET'
   | 'POST'
   | 'PUT'
@@ -46,37 +43,52 @@ export type StreamResponse<T extends Init, M extends StreamMeta = StreamMeta> = 
   request: Request;
   response: Response;
   error?: Error;
-}
+};
 
-export type Stream<T extends Init, M extends StreamMeta = StreamMeta> = Readable<StreamInit & {
-  data: State<T>;
-  duration: number;
-  meta: T extends Rec[] ? M : never;
-  progress: number;
-  resolved: boolean;
-  response: Response;
-  status: StreamStatus;
-  steps: number;
-}>;
+export type Stream<T extends Init, M extends StreamMeta = StreamMeta> = Readable<
+  StreamInit & {
+    data: State<T>;
+    duration: number;
+    meta: T extends Rec[] ? M : never;
+    progress: number;
+    resolved: boolean;
+    response: Response;
+    status: StreamStatus;
+    steps: number;
+  }
+>;
 
-export type StreamQueue<T extends Init> = Readable<StreamInit & {
-  data: State<T>;
-  duration: number;
-  progress: number;
-  resolved: boolean;
-  response: Response;
-  status: StreamStatus;
-  steps: number;
-  fetch: StreamPublisher<T>;
-}>;
+export type StreamQueue<T extends Init> = Readable<
+  StreamInit & {
+    data: State<T>;
+    duration: number;
+    progress: number;
+    resolved: boolean;
+    response: Response;
+    status: StreamStatus;
+    steps: number;
+    fetch: StreamPublisher<T>;
+  }
+>;
 
 export type StreamMiddleware = {
   req?: (stream: StreamRequest<Init>, next: () => void) => Promise<void> | void;
   res?: (stream: StreamResponse<Init>, next: () => void) => Promise<void> | void;
-}
+};
 
 export type RemoteConfig = {
   timeout?: number;
+};
+
+export type Fetcher = (input: Request, init?: StreamRequest<Init>) => Promise<Response>;
+
+const StreamKeys = new Map<string, string>();
+const StreamStore = new Map<string, State<Stream<Init>>>();
+
+let fetcher: Fetcher = fetch as never;
+
+export function defineFetcher(fn: Fetcher) {
+  fetcher = fn;
 }
 
 export class Remote {
@@ -86,14 +98,15 @@ export class Remote {
   constructor(
     public baseUrl: string,
     public headers: HeadersInit = {
-      accept: 'application/json', 'content-type': 'application/json',
+      accept: 'application/json',
+      'content-type': 'application/json',
     },
-    public config: RemoteConfig = {},
+    public config: RemoteConfig = {}
   ) {}
 
   public endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, Params extends Rec = Rec>(
     name: string,
-    config: Omit<EndpointConfig<Entity, Params>, 'name'>,
+    config: Omit<EndpointConfig<Entity, Params>, 'name'>
   ): Endpoint<Entity, Meta, Params> {
     let endpoint = this.endpoints.get(name);
 
@@ -119,7 +132,7 @@ export class Remote {
 
   public list<T extends Rec, M extends StreamMeta = StreamMeta, R extends Init = T>(
     url: string,
-    options?: RequestInit,
+    options?: RequestInit
   ): Stream<R[], M> {
     return this.request<T, R[], M>(url, [] as never, {
       method: 'LIST',
@@ -162,22 +175,27 @@ export class Remote {
     url: string,
     method: StreamMethod = 'POST',
     init: P,
-    options?: RequestInit,
+    options?: RequestInit
   ): StreamQueue<R> {
-    return this.request<P, R>(url, init, {
-      method,
-      ...options,
-    }, false) as never;
+    return this.request<P, R>(
+      url,
+      init,
+      {
+        method,
+        ...options,
+      },
+      false
+    ) as never;
   }
 
   public request<T extends Init, R extends Init = T, M extends StreamMeta = StreamMeta>(
     url: string,
     init: T,
     options: RequestInit,
-    immediate = true,
+    immediate = true
   ): Stream<R, M> {
     if (!url.startsWith('http')) {
-      url = `${ this.baseUrl }/${ url.replace(/^\//, '') }`;
+      url = `${this.baseUrl}/${url.replace(/^\//, '')}`;
     }
 
     const reqInit: RequestInit = { ...options };
@@ -186,7 +204,7 @@ export class Remote {
     const key = JSON.stringify({ ...reqInit, url });
     const req = createRequest(key, init, url, reqInit);
 
-    logger.verbose(`[anchor:remote] Created request: ${ req.id }`);
+    logger.verbose(`[anchor:remote] Created request: ${req.id}`);
 
     return handleStream(req, this.middlewares, immediate) as never;
   }
@@ -216,15 +234,11 @@ const createStream = <T extends Init>(id: string, req: StreamRequest<T>): Stream
   return stream as never;
 };
 
-const handleStream = (
-  req: StreamRequest<Init>,
-  middlewares: StreamMiddleware[],
-  immediate = true,
-) => {
+const handleStream = (req: StreamRequest<Init>, middlewares: StreamMiddleware[], immediate = true) => {
   const stream = createStream(req.id, req);
 
-  const requestMiddlewares = [ ...middlewares ].filter(m => typeof m.req === 'function');
-  const responseMiddlewares = [ ...middlewares ].filter(m => typeof m.res === 'function');
+  const requestMiddlewares = [...middlewares].filter((m) => typeof m.req === 'function');
+  const responseMiddlewares = [...middlewares].filter((m) => typeof m.res === 'function');
   const totalProgress = requestMiddlewares.length + responseMiddlewares.length + 2;
   (stream as never as Writable<Init>).set({ steps: totalProgress });
 
@@ -233,7 +247,7 @@ const handleStream = (
 
   const start = async () => {
     startTime = Date.now();
-    logger.verbose(`[anchor:request:${ req.id }] Progress: ${ stream.progress }%`);
+    logger.verbose(`[anchor:request:${req.id}] Progress: ${stream.progress}%`);
 
     (stream as never as Writable<Init>).set({ status: 'pending' });
 
@@ -247,7 +261,7 @@ const handleStream = (
             (stream as never as Writable<Init>).set({
               progress: Math.round((currentProgress / totalProgress) * 100),
             });
-            logger.verbose(`[anchor:request:${ req.id }] Progress: ${ stream.progress }%`);
+            logger.verbose(`[anchor:request:${req.id}] Progress: ${stream.progress}%`);
 
             await handleReq();
           };
@@ -271,13 +285,13 @@ const handleStream = (
         ...req.request,
         method: (req.method === 'LIST' ? 'GET' : req.method) ?? 'GET',
       });
-      stream.response = await fetch(stream.request);
+      stream.response = await fetcher(stream.request, req);
 
       currentProgress += 1;
       (stream as never as Writable<Init>).set({
         progress: Math.round((currentProgress / totalProgress) * 100),
       });
-      logger.verbose(`[anchor:request:${ req.id }] Progress: ${ stream.progress }%`);
+      logger.verbose(`[anchor:request:${req.id}] Progress: ${stream.progress}%`);
 
       if (stream.response.ok) {
         try {
@@ -298,7 +312,7 @@ const handleStream = (
             (stream as never as Writable<Init>).set({
               progress: Math.round((currentProgress / totalProgress) * 100),
             });
-            logger.verbose(`[anchor:request:${ req.id }] Progress: ${ stream.progress }%`);
+            logger.verbose(`[anchor:request:${req.id}] Progress: ${stream.progress}%`);
             await handleRes();
           };
 
@@ -362,11 +376,11 @@ const reject = (stream: Stream<Init>, error?: Error) => {
     status: 'error',
     resolved: true,
   });
-  logger.verbose(`[anchor:request:${ stream.id }] Progress: ${ stream.progress }%`);
+  logger.verbose(`[anchor:request:${stream.id}] Progress: ${stream.progress}%`);
 };
 
 const resolve = (stream: Stream<Init>) => {
-  for (const [ key, id ] of StreamKeys.entries()) {
+  for (const [key, id] of StreamKeys.entries()) {
     if (id === stream.id) {
       StreamKeys.delete(key);
       StreamStore.delete(id);
@@ -382,7 +396,7 @@ const resolve = (stream: Stream<Init>) => {
     status: 'success',
     resolved: true,
   });
-  logger.verbose(`[anchor:request:${ stream.id }] Progress: ${ stream.progress }%`);
+  logger.verbose(`[anchor:request:${stream.id}] Progress: ${stream.progress}%`);
 };
 
 export function readHeaders<T>(headers: Headers): T {

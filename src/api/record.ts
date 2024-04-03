@@ -12,7 +12,7 @@ export type Record<Entity extends Rec> = {
   update: (options?: RequestInit) => Promise<void>;
   replace: (options?: RequestInit) => Promise<void>;
   delete: (options?: RequestInit) => Promise<void>;
-}
+};
 
 export type RecordState<Entity extends Rec> = State<Record<Entity>>;
 
@@ -20,7 +20,7 @@ export function createRecord<Entity extends Rec>(
   endpoint: Endpoint<Entity>,
   id: string,
   init: Part<Entity>,
-  immediate = false,
+  immediate = false
 ): RecordState<Entity> {
   const data = anchor(init);
   const fetch = async (options?: RequestInit) => {
@@ -38,7 +38,7 @@ export function createRecord<Entity extends Rec>(
   };
 
   const update = async (options?: RequestInit) => {
-    if (!record.history.changed) return record;
+    if (!record.history.hasChanges) return record;
 
     const stream = endpoint.patch(id, record.history.changes as never, {}, options);
     await (stream as never as StreamQueue<Entity>).fetch();

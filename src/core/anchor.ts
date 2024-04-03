@@ -11,6 +11,7 @@ import {
 } from '../schema/index.js';
 import {
   ARRAY_MUTATIONS,
+  ArrayMutation,
   freeze,
   isSafeObject,
   ItemTypeOf,
@@ -38,50 +39,46 @@ export type AnchorConfig = {
   leakageDetectionBounce?: number;
   serializable?: boolean;
   logger?: Partial<LoggerConfig>;
-}
+};
 
-export const LINKABLE = [ 'array', 'object' ];
+export const LINKABLE = ['array', 'object'];
 export const INTERNAL_KEY = 'anchor:internal';
 export const ANCHOR_CONFIG: AnchorConfig = {};
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-export interface ArrayState<T, R extends boolean = true> extends Array<State<T, R>> {
+export type Arr<T, R extends boolean = true> = Omit<
+  Array<T extends Init ? State<T, R> : T>,
+  'fill' | 'push' | 'unshift' | 'splice'
+> & {
   fill(value: T, start?: number, end?: number): void;
-
   push(...items: T[]): number;
-
   unshift(...items: T[]): number;
-
   splice(start: number, deleteCount?: number, ...items: T[]): State<T, R>[];
-}
+};
 
-export type Init = Rec | Array<Rec | unknown> | Map<unknown, unknown> | Set<unknown>;
-export type State<T, R extends boolean = true> = (
-  R extends true
-  ? T extends Rec[]
-    ? ArrayState<ItemTypeOf<T>, R>
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    : T extends Function
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type Fun = Function;
+export type Init = object | Array<unknown> | Map<unknown, unknown> | Set<unknown>;
+export type State<T, R extends boolean = true> = (R extends true
+  ? T extends (infer U)[]
+    ? Arr<U, R>
+    : T extends Fun
       ? T
-      : T extends Rec
+      : T extends object
         ? { [K in keyof T]: T[K] extends Init ? State<T[K], R> : T[K] }
         : T
-  : T
-  ) & (
-  T extends Map<infer K, infer V> | Set<infer V>
-  ? {
-    readonly subscribe: (
-      run: Subscriber<State<T extends Map<K, V> ? Map<K, V> : Set<V>, R>>,
-      emit?: boolean,
-      receiver?: unknown,
-    ) => Unsubscribe
-  }
-  : {
-    readonly set: (value: Part<T> | Part<T>[]) => void;
-    readonly subscribe: (run: Subscriber<State<T, R>>, emit?: boolean, receiver?: unknown) => Unsubscribe;
-  }
-  );
+  : T) &
+  (T extends Map<infer K, infer V> | Set<infer V>
+    ? {
+        readonly subscribe: (
+          run: Subscriber<State<T extends Map<K, V> ? Map<K, V> : Set<V>, R>>,
+          emit?: boolean,
+          receiver?: unknown
+        ) => Unsubscribe;
+      }
+    : {
+        readonly set: (value: Part<T> | Part<T>[]) => void;
+        readonly subscribe: (run: Subscriber<State<T, R>>, emit?: boolean, receiver?: unknown) => Unsubscribe;
+      });
 
 export type Controller<T> = {
   readonly set: (value: Part<T>) => void;
@@ -102,7 +99,7 @@ export enum Pointer {
   CHILDREN,
   PARENTS,
   INHERIT,
-  VALIDATION
+  VALIDATION,
 }
 
 export type ParentMap<T> = Readable<Map<State<T>, Subscriber<T>>>;
@@ -111,20 +108,26 @@ export type StateTree<T> = {
   id: number;
   parents: ParentMap<T>;
   children: ChildrenMap<T>;
-}
+};
 
-export type Anchor<T, R extends boolean = true> = [ State<T, R>, Controller<T>, SubscriberList<T>, ChildrenMap<T[keyof T]>, ParentMap<unknown> ];
+export type Anchor<T, R extends boolean = true> = [
+  State<T, R>,
+  Controller<T>,
+  SubscriberList<T>,
+  ChildrenMap<T[keyof T]>,
+  ParentMap<unknown>,
+];
 export type AnchorSchema<T> = Schema<T> & {
   refKey?: string;
   refPath?: string;
-}
+};
 
 export const Registry = readable<Map<Init, Anchor<Init>>>(new Map(), false)[0];
 export const StateHierarchy = readable<Map<State<Init>, StateTree<Init>>>(new Map(), false)[0];
 
 export const InitsRegistry = readable<Map<Init, Anchor<Init>>>(new Map(), false)[0];
 export const StateRegistry = readable<Map<State<Init>, Anchor<Init>>>(new Map(), false)[0];
-export const StateLeakage = readable<Map<Init, { start: number, count: number }>>(new Map(), false)[0];
+export const StateLeakage = readable<Map<Init, { start: number; count: number }>>(new Map(), false)[0];
 export const ExternalSubscriptions = readable<Map<Init, Set<Subscriber<Init>>>>(new Map(), false)[0];
 
 const read = <T extends Init>(init: T): Anchor<T> | undefined => {
@@ -139,14 +142,14 @@ const read = <T extends Init>(init: T): Anchor<T> | undefined => {
 
 const write = <T extends Init>(init: T, state: State<T>, pointer: Anchor<T>) => {
   InitsRegistry.set(init, pointer as never);
-  StateRegistry.set(state, pointer as never);
+  StateRegistry.set(state as never, pointer as never);
 
   logger.debug('[anchor:register] Anchor created.');
 };
 
 const revoke = <T extends Init>(init: T, state: State<T>) => {
   InitsRegistry.delete(init);
-  StateRegistry.delete(state);
+  StateRegistry.delete(state as never);
 
   logger.debug('[anchor:unregister] Anchor revoked for garbage collector.');
 };
@@ -159,7 +162,7 @@ const isDescendant = (state: State<Init>, target: State<Init>): boolean => {
       return true;
     }
 
-    for (const [ next ] of hierarchy.children) {
+    for (const [next] of hierarchy.children) {
       if (isDescendant(state, next)) {
         return true;
       }
@@ -177,7 +180,7 @@ const isAncestor = (state: State<Init>, target: State<Init>): boolean => {
       return true;
     }
 
-    for (const [ next ] of hierarchy.parents) {
+    for (const [next] of hierarchy.parents) {
       if (isAncestor(state, next)) {
         return true;
       }
@@ -192,7 +195,7 @@ export function crate<T extends Init, R extends boolean = true>(
   recursive: R = true as R,
   strict?: boolean,
   schema?: AnchorSchema<T>,
-  allowedTypes = COMMON_SCHEMA_TYPES,
+  allowedTypes = COMMON_SCHEMA_TYPES
 ): Anchor<T, R> {
   if (typeof init !== 'object') {
     throw new TypeError('[anchor:init] Initial value must be an object (object | array | set | map | etc).');
@@ -240,7 +243,7 @@ export function crate<T extends Init, R extends boolean = true>(
 
     if (!validation.valid) {
       if (validationExit) {
-        throw new TypeError(`[anchor:init] Invalid initial value: ${ validation }`);
+        throw new TypeError(`[anchor:init] Invalid initial value: ${validation}`);
       }
 
       logger.error(`[anchor:init] Invalid initial value.`, validation);
@@ -255,7 +258,7 @@ export function crate<T extends Init, R extends boolean = true>(
         const { refPath } = schema || {};
         sch = {
           ...sch,
-          refPath: refPath ? `${ refPath }.${ sch.refPath ?? prop as string }` : sch.refPath ?? prop as string,
+          refPath: refPath ? `${refPath}.${sch.refPath ?? (prop as string)}` : sch.refPath ?? (prop as string),
         };
       }
 
@@ -281,30 +284,35 @@ export function crate<T extends Init, R extends boolean = true>(
 
     const inherit: Inheritor<T> = ref[Pointer.INHERIT as never] as never;
 
-    const detach = inherit(state as never, listen ? (s, e) => {
-      if (e) {
-        if (!prop && Array.isArray(state)) {
-          prop = `${ state.indexOf(childState as never) }` as keyof T;
-        }
+    const detach = inherit(
+      state as never,
+      listen
+        ? (s, e) => {
+            if (e) {
+              if (!prop && Array.isArray(state)) {
+                prop = `${state.indexOf(childState as never)}` as keyof T;
+              }
 
-        const { type, value, path, paths, params, oldValue, emitter } = e;
+              const { type, value, path, paths, params, oldValue, emitter } = e;
 
-        publish({
-          type,
-          value,
-          prop,
-          path: path ? `${ (prop ?? '') as string }.${ path }` : (prop ?? '') as string,
-          paths: paths?.map(p => `${ (prop ?? '') as string }.${ p }`),
-          params,
-          oldValue,
-          emitter,
-        });
+              publish({
+                type,
+                value,
+                prop,
+                path: path ? `${(prop ?? '') as string}.${path}` : ((prop ?? '') as string),
+                paths: paths?.map((p) => `${(prop ?? '') as string}.${p}`),
+                params,
+                oldValue,
+                emitter,
+              });
 
-        logger.verbose(`[anchor:publish] Anchor sub-event propagated. { ${ type }:${ path } }`);
-      } else {
-        publish({ type: 'unknown', value: s });
-      }
-    } : null as never);
+              logger.verbose(`[anchor:publish] Anchor sub-event propagated. { ${type}:${path} }`);
+            } else {
+              publish({ type: 'unknown', value: s });
+            }
+          }
+        : (null as never)
+    );
 
     if (typeof detach === 'function') {
       children.set(childState as never, detach);
@@ -366,8 +374,8 @@ export function crate<T extends Init, R extends boolean = true>(
             const duration = Math.round(performance.now() - stat.start);
             logger.warn('[anchor] Possible leakage detected!');
             logger.warn(
-              `[anchor] State is getting subscribed and unsubscribed too often (${ count } times) in a short period (${ duration }ms).`,
-              state,
+              `[anchor] State is getting subscribed and unsubscribed too often (${count} times) in a short period (${duration}ms).`,
+              state
             );
           }
 
@@ -392,7 +400,7 @@ export function crate<T extends Init, R extends boolean = true>(
       }
     }
 
-    for (const [ , run ] of parents) {
+    for (const [, run] of parents) {
       if (typeof run === 'function') {
         run(clone, event as StateChange<Init>);
       }
@@ -407,7 +415,7 @@ export function crate<T extends Init, R extends boolean = true>(
     logger.verbose('[anchor:publish] Anchor event emitted.');
   };
 
-  const set = (value: Part<T> | Part<T>[], emit = true) => {
+  const set = (value: Part<T> | Part<T>[], emit = true, replace?: boolean) => {
     stopPropagation = true;
 
     const oldValue = freeze(state);
@@ -415,7 +423,7 @@ export function crate<T extends Init, R extends boolean = true>(
     if (Array.isArray(value) && Array.isArray(state)) {
       state.splice(0, state.length, ...(value as never[]));
     } else {
-      merge(state, value);
+      merge(state, value, replace);
     }
 
     stopPropagation = false;
@@ -437,7 +445,7 @@ export function crate<T extends Init, R extends boolean = true>(
   };
 
   const destroy = () => {
-    for (const [ s, detach ] of children) {
+    for (const [s, detach] of children) {
       detach();
       children.delete(s);
     }
@@ -486,7 +494,7 @@ export function crate<T extends Init, R extends boolean = true>(
   };
 
   const createPath = (key: string) => {
-    return schema?.refPath ? `${ schema.refPath }.${ key }` : key;
+    return schema?.refPath ? `${schema.refPath}.${key}` : key;
   };
 
   let validateChildren: <T>(sch: AnchorSchema<T>, value: unknown, key?: string) => T = undefined as never;
@@ -509,7 +517,7 @@ export function crate<T extends Init, R extends boolean = true>(
 
       if (!validation.valid) {
         if (validationExit) {
-          throw new TypeError(`[anchor:validate] Invalid value: ${ validation }`);
+          throw new TypeError(`[anchor:validate] Invalid value: ${validation}`);
         }
 
         logger.error(`[anchor:validate] Invalid value.`, validation);
@@ -528,10 +536,11 @@ export function crate<T extends Init, R extends boolean = true>(
   if (shouldProxy(clone)) {
     proxyHandler = {
       set(target: T, prop: keyof T, value: T[keyof T]) {
+        let next = value;
         const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
         // Skip if value is the same.
-        if (current === value) {
+        if (current === next) {
           return true;
         }
 
@@ -544,13 +553,10 @@ export function crate<T extends Init, R extends boolean = true>(
 
             if (typeof properties === 'object' && !properties[prop as never] && !additionalProperties) {
               if (validationExit) {
-                throw new TypeError(`[anchor:set:validate] property "${ prop as string }" in "${ path }" is not allowed.`);
+                throw new TypeError(`[anchor:set:validate] property "${prop as string}" in "${path}" is not allowed.`);
               }
 
-              logger.error(
-                `[anchor:set:validate] property "${ prop as string }" in "${ path }" is not allowed.`,
-                target,
-              );
+              logger.error(`[anchor:set:validate] property "${prop as string}" in "${path}" is not allowed.`, target);
 
               return true;
             }
@@ -564,26 +570,33 @@ export function crate<T extends Init, R extends boolean = true>(
           }
 
           // Add new child subscription if the new value is a linkable state.
-          if (typeof value === 'object' && linkable(value) && recursive) {
+          if (typeof next === 'object' && linkable(next) && recursive) {
             if (sch) {
-              sch = { ...sch, refPath: schema?.refPath ? `${ schema.refPath }.${ prop as string }` : prop as string };
+              sch = { ...sch, refPath: schema?.refPath ? `${schema.refPath}.${prop as string}` : (prop as string) };
             }
 
-            const linked = link(value, prop, undefined, sch);
+            const linked = link(next, prop, undefined, sch);
 
-            if (linked && linked !== value) {
-              value = linked;
+            if (linked && linked !== next) {
+              next = linked;
             }
           } else if (typeof validateChildren === 'function' && sch) {
-            const newValue = validateChildren(sch, value, prop as string);
-            if (newValue !== value) {
-              value = newValue as never;
+            const newValue = validateChildren(sch, next, prop as string);
+            if (newValue !== next) {
+              next = newValue as never;
             }
           }
         }
 
-        Reflect.set(target, prop, value);
-        publish({ type: 'set', value, prop, path: prop as string, oldValue: current, emitter: clone });
+        Reflect.set(target, prop, next);
+        publish({
+          type: 'set',
+          value,
+          prop,
+          path: prop as string,
+          oldValue: current,
+          emitter: clone,
+        });
 
         return true;
       },
@@ -597,13 +610,13 @@ export function crate<T extends Init, R extends boolean = true>(
         const sch = flattenSchema<object>((schema as ObjectSchema<T>)?.properties?.[prop as never] as never);
 
         if (sch && sch.readonly) {
-          const path = schema?.refPath ? `${ schema.refPath }.${ prop as string }` : prop as string;
+          const path = schema?.refPath ? `${schema.refPath}.${prop as string}` : (prop as string);
 
           if (validationExit) {
-            throw new TypeError(`[anchor:validate] Cannot delete readonly property: ${ path }`);
+            throw new TypeError(`[anchor:validate] Cannot delete readonly property: ${path}`);
           }
 
-          logger.error(`[anchor:validate] Cannot delete readonly property: ${ path }`);
+          logger.error(`[anchor:validate] Cannot delete readonly property: ${path}`);
           return true;
         }
 
@@ -620,23 +633,6 @@ export function crate<T extends Init, R extends boolean = true>(
     } as never;
   }
 
-  const state = shouldProxy(clone) ? new Proxy(clone, proxyHandler) : clone;
-  const manager: Controller<T> = { destroy, emit: publish, set, subscribe, update };
-  const pointer: Anchor<T> = [ state, manager, subscribers, children, parents, inherit, validation ] as never;
-
-  if (replaceable(clone)) {
-    Object.assign(state, { set });
-    Object.defineProperty(state, 'set', { enumerable: false });
-  }
-
-  Object.assign(state, { subscribe });
-  Object.defineProperty(state, 'subscribe', { enumerable: false });
-
-  StateHierarchy.set(state as State<T>, { id: Date.now(), parents, children });
-  ExternalSubscriptions.set(state as State<T>, internalSubscribers as never);
-
-  write(clone, state as State<T>, pointer);
-
   if (Array.isArray(clone)) {
     const sch = flattenSchema<object>((schema as ArraySchema<T>)?.items as never);
 
@@ -652,23 +648,25 @@ export function crate<T extends Init, R extends boolean = true>(
       });
     }
 
-    for (const method of ARRAY_MUTATIONS) {
-      const fn = clone[method] as (...args: unknown[]) => unknown;
+    proxyHandler.get = ((target: T, prop: keyof T) => {
+      const value = Reflect.get(target, prop);
 
-      if (typeof fn === 'function') {
-        clone[method as never] = (...args: unknown[]) => {
-          const current = [ ...(state as Rec[]) ];
+      if (typeof value === 'function' && ARRAY_MUTATIONS.includes(prop as never)) {
+        const method = prop as ArrayMutation;
+
+        return (...args: unknown[]) => {
+          const current = [...(state as Rec[])];
 
           if (sch) {
             if (method === 'splice') {
-              const [ , , ...items ] = args as [ number, number, ...unknown[] ];
+              const [, , ...items] = args as [number, number, ...unknown[]];
               items.forEach((item, i) => {
                 if (!linkable(item)) {
                   args[i + 2] = validateChildren(sch, item);
                 }
               });
             } else if (method === 'fill') {
-              const [ value ] = args as [ unknown, number, number ];
+              const [value] = args as [unknown, number, number];
               if (!linkable(value)) {
                 args[0] = validateChildren(sch, value);
               }
@@ -684,12 +682,7 @@ export function crate<T extends Init, R extends boolean = true>(
           if (recursive) {
             args.forEach((item, i) => {
               if (typeof item === 'object' && linkable(item)) {
-                const linked = link(
-                  item as never,
-                  undefined,
-                  !strictIterable,
-                  sch,
-                );
+                const linked = link(item as never, undefined, !strictIterable, sch);
 
                 if (linked) {
                   args.splice(i, 1, linked);
@@ -698,11 +691,11 @@ export function crate<T extends Init, R extends boolean = true>(
             });
           }
 
-          const result = fn.bind(clone)(...(args as unknown[]));
+          const result = (value as (...args: unknown[]) => unknown).bind(target)(...(args as unknown[]));
 
           // Unlink items that's no longer in the array.
           for (const item of current) {
-            if (!clone.includes(item) && typeof item === 'object' && linkable(item)) {
+            if (!(target as unknown[]).includes(item) && typeof item === 'object' && linkable(item)) {
               const ref = read(item as Init);
 
               if (ref) {
@@ -711,18 +704,35 @@ export function crate<T extends Init, R extends boolean = true>(
             }
           }
 
-          publish({ type: method, value: [ ...(state as Rec[]) ], params: args, oldValue: current, emitter: clone });
+          publish({ type: method, value: [...(target as Rec[])], params: args, oldValue: current, emitter: clone });
           return result;
         };
-
-        Object.defineProperty(clone, method, { enumerable: false });
       }
-    }
+
+      return value;
+    }) as never;
   }
+
+  const state = shouldProxy(clone) ? new Proxy(clone, proxyHandler) : clone;
+  const manager: Controller<T> = { destroy, emit: publish, set, subscribe, update };
+  const pointer: Anchor<T> = [state, manager, subscribers, children, parents, inherit, validation] as never;
+
+  if (replaceable(clone)) {
+    Object.assign(state, { set });
+    Object.defineProperty(state, 'set', { enumerable: false });
+  }
+
+  Object.assign(state, { subscribe });
+  Object.defineProperty(state, 'subscribe', { enumerable: false });
+
+  StateHierarchy.set(state as State<T>, { id: Date.now(), parents, children });
+  ExternalSubscriptions.set(state as State<T>, internalSubscribers as never);
+
+  write(clone, state as State<T>, pointer);
 
   if (clone instanceof Map) {
     if (recursive) {
-      for (const [ key, value ] of clone.entries()) {
+      for (const [key, value] of clone.entries()) {
         const sch = flattenSchema<object>((schema as ObjectSchema<T>)?.properties?.[key as never] as never);
 
         if (typeof value === 'object' && linkable(value)) {
@@ -735,15 +745,15 @@ export function crate<T extends Init, R extends boolean = true>(
       }
     }
 
-    for (const method of [ 'set', 'delete', 'clear' ]) {
+    for (const method of ['set', 'delete', 'clear']) {
       const fn = clone[method as never] as (...args: unknown[]) => unknown;
 
       if (typeof fn === 'function') {
         clone[method as never] = ((...args: unknown[]) => {
-          const current = [ ...clone.entries() ];
+          const current = [...clone.entries()];
 
           if (method === 'set' && recursive) {
-            const [ key, value ] = args as [ unknown, unknown ];
+            const [key, value] = args as [unknown, unknown];
 
             const sch = flattenSchema((schema as ObjectSchema<T>)?.properties?.[key as never] as never);
 
@@ -761,7 +771,7 @@ export function crate<T extends Init, R extends boolean = true>(
               unlink(ref[Pointer.STATE] as never);
             }
           } else if (method === 'clear' && recursive) {
-            for (const [ , value ] of clone.entries()) {
+            for (const [, value] of clone.entries()) {
               const ref = read(value as Init);
 
               if (ref) {
@@ -772,12 +782,13 @@ export function crate<T extends Init, R extends boolean = true>(
 
           const result = fn.bind(clone)(...(args as unknown[]));
           publish({
-            type: `map:${ method }` as never,
-            value: [ ...clone.entries() ],
+            type: `map:${method}` as never,
+            value: [...clone.entries()],
             params: args,
             oldValue: current,
             emitter: clone,
           });
+
           return result;
         }) as never;
 
@@ -802,15 +813,15 @@ export function crate<T extends Init, R extends boolean = true>(
       }
     }
 
-    for (const method of [ 'add', 'delete', 'clear' ]) {
+    for (const method of ['add', 'delete', 'clear']) {
       const fn = clone[method as never] as (...args: unknown[]) => unknown;
 
       if (typeof fn === 'function') {
         clone[method as never] = ((...args: unknown[]) => {
-          const current = [ ...clone.entries() ];
+          const current = [...clone.entries()];
 
           if (method === 'add' && recursive) {
-            const [ value ] = args as [ unknown ];
+            const [value] = args as [unknown];
 
             if (typeof value === 'object' && linkable(value)) {
               const linked = link(value as never, undefined, !strictIterable, sch);
@@ -837,8 +848,8 @@ export function crate<T extends Init, R extends boolean = true>(
 
           const result = fn.bind(clone)(...(args as unknown[]));
           publish({
-            type: `set:${ method }` as never,
-            value: [ ...clone.entries() ],
+            type: `set:${method}` as never,
+            value: [...clone.entries()],
             params: args,
             oldValue: current,
             emitter: clone,
@@ -852,7 +863,7 @@ export function crate<T extends Init, R extends boolean = true>(
   }
 
   if (isObjectLike(clone) && recursive) {
-    for (const [ prop, value ] of entries(clone)) {
+    for (const [prop, value] of entries(clone)) {
       const sch = flattenSchema<object>((schema as ObjectSchema<T>)?.properties?.[prop as never] as never);
 
       if (typeof value === 'object' && linkable(value)) {
@@ -876,13 +887,9 @@ export function anchor<T extends Init, R extends boolean = true>(
   recursive: R = true as R,
   strict?: boolean,
   schema?: AnchorSchema<T>,
-  allowedTypes = COMMON_SCHEMA_TYPES,
+  allowedTypes = COMMON_SCHEMA_TYPES
 ): State<T, R> {
   return crate(init, recursive, strict, schema, allowedTypes)[Pointer.STATE] as never;
-}
-
-export function isSail(value: unknown): boolean {
-  return StateRegistry.has(value as State<Init>);
 }
 
 export function linkable(value: unknown): boolean {
@@ -894,7 +901,7 @@ function replaceable(value: unknown): boolean {
 }
 
 function shouldProxy(value: unknown): boolean {
-  return !(value instanceof Map || value instanceof Set || Array.isArray(value));
+  return !(value instanceof Map || value instanceof Set);
 }
 
 export function configure(config: AnchorConfig) {

@@ -121,3 +121,4 @@ lib
 # Vitepress
 docs/.vitepress/dist
 docs/.vitepress/cache
+yarn.lock

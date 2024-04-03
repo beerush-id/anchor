@@ -8,7 +8,11 @@ const DB_NAME = 'anchor-db';
 export class IndexedTable<T extends Rec> {
   private db?: IDBDatabase;
 
-  constructor(public name: string, public dbName = DB_NAME, public dbVersion = 1) {}
+  constructor(
+    public name: string,
+    public dbName = DB_NAME,
+    public dbVersion = 1
+  ) {}
 
   public async get(id: string) {
     await this.initialize();
@@ -26,6 +30,11 @@ export class IndexedTable<T extends Rec> {
     const data = await read<T>(this.db as IDBDatabase, this.name, id);
     merge(data, payload);
     return write<T>(this.db as IDBDatabase, this.name, data);
+  }
+
+  public async replace(id: string, payload: T) {
+    await this.initialize();
+    return write<T>(this.db as IDBDatabase, this.name, payload);
   }
 
   private async initialize() {

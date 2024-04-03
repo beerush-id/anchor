@@ -76,16 +76,18 @@
     "docs:dev": "vitepress dev docs --port 9933",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
   },
   "devDependencies": {
     "@beerush/esdev": "*",
-    "@types/jest": "^29.5.3",
-    "jest": "^29.6.2",
-    "ts-jest": "^29.1.1",
+    "@typescript-eslint/eslint-plugin": "^7.4.0",
+    "@typescript-eslint/parser": "^7.4.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.5",
     "typedoc": "^0.24.8",
     "typescript": "^5.1.6",
     "vitepress": "^1.0.0-rc.22",
@@ -99,5 +101,6 @@
     "reactive",
     "object"
   ],
-  "type": "module"
+  "type": "module",
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }

@@ -1,10 +1,13 @@
-import { Rec, State, StateEvent, writable } from '../core/index.js';
+import { Rec, State, StateEvent, Writable, writable } from '../core/index.js';
 import { Part } from '../core/base.js';
-import { remove, write } from '../utils/index.js';
+import { clone, remove, write } from '../utils/index.js';
 
 export type History<T extends Rec> = {
+  state: State<T>;
   changes: Part<T>;
-  changed: boolean;
+  hasChanges: boolean;
+  backwards: StateEvent<T>[];
+  forwards: StateEvent<T>[];
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -12,84 +15,92 @@ export type History<T extends Rec> = {
   clear: () => void;
   reset: () => void;
   destroy: () => void;
-}
+};
 
+export type HistoryState<T extends Rec> = Writable<History<T>>;
 export type HistoryOptions = {
   maxHistory?: number;
   debounce?: number;
-}
+};
 
-export function history<T extends Rec>(state: State<T>, options: HistoryOptions = { debounce: 500 }): History<T> {
+export function history<T extends Rec>(state: State<T>, options: HistoryOptions = { debounce: 500 }): HistoryState<T> {
   if (typeof state?.subscribe !== 'function') {
     throw new Error('Expected init state to be a writable store.');
   }
 
-  const init = JSON.parse(JSON.stringify(state));
+  const init = clone(state);
   const backwards: StateEvent<T>[] = [];
   const forwards: StateEvent<T>[] = [];
   const queues = new Map<string, number>();
-
   let stopPropagation = false;
 
+  const updateRecord = (changes?: Part<T>) => {
+    if (changes) {
+      record.changes = changes;
+    }
+
+    record.set({
+      hasChanges: backwards.length > 0,
+      canUndo: backwards.length > 0,
+      canRedo: forwards.length > 0,
+    });
+  };
+
   const undo = () => {
+    if (backwards.length === 0) return;
     const event = backwards.pop();
 
     if (event) {
       stopPropagation = true;
       write(state, event.path as never, event.oldValue as never);
 
+      if (backwards.length === 0) {
+        remove(record.changes, event.path as never);
+      }
+
       forwards.push(event);
-      record.set({
-        changed: backwards.length > 0 || forwards.length > 0,
-        canUndo: backwards.length > 0,
-        canRedo: forwards.length > 0,
-      });
+      updateRecord();
     }
   };
 
   const redo = () => {
+    if (forwards.length === 0) return;
     const event = forwards.shift();
 
     if (event) {
       stopPropagation = true;
       write(state, event.path as never, event.value as never);
-
+      write(record.changes, event.path as never, event.value as never);
       backwards.push(event);
-      record.set({
-        changed: backwards.length > 0 || forwards.length > 0,
-        canUndo: backwards.length > 0,
-        canRedo: forwards.length > 0,
-      });
+      updateRecord();
     }
   };
 
   const clear = () => {
     backwards.splice(0, backwards.length);
     forwards.splice(0, forwards.length);
-
-    record.set({
-      changes: {},
-      changed: false,
-      canUndo: false,
-      canRedo: false,
-    });
+    updateRecord({});
   };
 
   const reset = () => {
-    state.set(init);
+    state.set(clone(init) as never);
     clear();
   };
 
-  const [ record ] = writable<History<T>>({
+  const [record] = writable({
     changes: {},
-    changed: false,
+    backwards,
+    forwards,
+    hasChanges: false,
     canUndo: false,
     canRedo: false,
     undo,
     redo,
     clear,
     reset,
+    state,
     destroy: () => {
+      clear();
       unsubscribe();
     },
   });
@@ -99,35 +110,41 @@ export function history<T extends Rec>(state: State<T>, options: HistoryOptions 
       stopPropagation = false;
       return;
     }
+    const { path } = event;
+    const { debounce, maxHistory } = options;
 
-    if (event.path) {
-      const { debounce, maxHistory } = options ?? { debounce: 500 };
-      const queue = queues.get(event.path) ?? 0;
+    if (!path) return;
 
-      if (queue) {
-        clearTimeout(queue);
+    const queue = queues.get(path) ?? 0;
+    if (queue) {
+      clearTimeout(queue);
+    }
+
+    const propagate = () => {
+      if (maxHistory && backwards.length >= maxHistory) {
+        backwards.shift();
       }
 
-      queues.set(event.path, setTimeout(() => {
-        if (maxHistory && backwards.length >= maxHistory) {
-          backwards.shift();
-        }
+      backwards.push(event as never);
+      forwards.splice(0, forwards.length);
 
-        backwards.push(event as never);
-        forwards.splice(0, forwards.length);
-
-        if (event.type === 'delete') {
-          remove(record.changes, event.path as never);
+      if (event.type === 'delete') {
+        remove(record.changes, path as never);
+      } else {
+        if (Array.isArray(event.emitter)) {
+          write(record.changes, event.prop as never, [...event.emitter] as never);
         } else {
-          write(record.changes, event.path as never, event.value as never);
+          write(record.changes, path as never, event.value as never);
         }
+      }
 
-        record.set({
-          changed: backwards.length > 0 || forwards.length > 0,
-          canUndo: backwards.length > 0,
-          canRedo: forwards.length > 0,
-        });
-      }, debounce) as never);
+      updateRecord();
+    };
+
+    if (debounce) {
+      queues.set(path, setTimeout(propagate, debounce) as never);
+    } else {
+      propagate();
     }
   }, false);
 

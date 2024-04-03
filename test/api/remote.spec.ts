@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { Remote } from '../../lib/esm/api';
+import { Rec } from '../../lib/esm';
 
 const baseURL = 'http://localhost:3000';
 
@@ -17,8 +18,8 @@ test('Validate Endpoint objects', () => {
   const users = remote.endpoint('user', { endpoint: 'users' });
 
   expect(users).toBeDefined();
-  expect((users as any).config.name).toBe('user');
-  expect((users as any).config.endpoint).toBe('users');
+  expect((users as never as Record<string, Rec>).config.name).toBe('user');
+  expect((users as never as Record<string, Rec>).config.endpoint).toBe('users');
 });
 
 test('Validate Query objects', () => {
