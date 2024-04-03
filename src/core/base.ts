@@ -81,103 +81,18 @@ export type Writable<T> = Readable<T> & {
   readonly set: (value: Part<T> | Part<T>[]) => void;
 };
 
-const READABLE_STORE = new WeakMap();
-const SUBSCRIBER_STORE = new WeakMap();
-
-export class WeakReadable<T> {
-  constructor(init: T, frozen = true) {
-    if (typeof init !== 'object' || init === null) {
-      throw new TypeError('Readable state must be an object.');
-    }
-
-    READABLE_STORE.set(this as never, frozen ? freeze(init) : init);
-  }
-
-  public get(): T {
-    return READABLE_STORE.get(this as never) as T;
-  }
-
-  public subscribe(handler: Subscriber<T>, emitNow = true): Unsubscribe {
-    let subscribers = SUBSCRIBER_STORE.get(this as never) as Subscriber<T>[];
-
-    if (!subscribers) {
-      subscribers = [];
-      SUBSCRIBER_STORE.set(this as never, subscribers);
-    }
-
-    const value = READABLE_STORE.get(this as never) as T;
-
-    if (emitNow) {
-      const event: StateChange<T> = { type: 'init', value, emitter: this };
-      handler(value, event);
-    }
-
-    subscribers.push(handler);
-
-    return () => {
-      const index = subscribers.indexOf(handler);
-
-      if (index > -1) {
-        subscribers.splice(index, 1);
-      }
-    };
-  }
-}
-
-export class WeakWritable<T> extends WeakReadable<T> {
-  public set(value: T, emit = true): void {
-    READABLE_STORE.set(this as never, value);
-
-    if (emit) {
-      const event: StateChange<T> = { type: 'update', value, emitter: this };
-      publishTo(this as never, event);
-    }
-  }
-
-  public update(handler: (current: T) => T) {
-    const instance = READABLE_STORE.get(this as never) as T;
-    const value = handler(instance);
-
-    this.set(value);
-  }
-}
-
-const publishTo = <T>(instance: WeakReadable<T>, event: StateChange<T>) => {
-  const subscribers = SUBSCRIBER_STORE.get(instance as never) as Set<Subscriber<T>>;
-
-  for (const run of subscribers) {
-    if (typeof run === 'function') {
-      run(instance.get(), event);
-    }
-  }
-};
-
-export function weakReadable<T>(init: T, frozen = true): [WeakReadable<T>, T, Publisher<T>] {
-  const instance = new WeakReadable(init, frozen);
-  const publish: Publisher<T> = (event: StateChange<T>) => publishTo(instance, event);
-
-  return [instance, instance.get(), publish];
-}
-
-export function weakWritable<T>(init: T, frozen = true): [WeakWritable<T>, T, Publisher<T>] {
-  const instance = new WeakWritable(init, frozen);
-  const publish: Publisher<T> = (event: StateChange<T>) => publishTo(instance, event);
-
-  return [instance, instance.get(), publish];
-}
-
 export function readable<T>(init: T, frozen = true): [Readable<T>, Publisher<T>] {
   if (typeof init !== 'object') {
     throw new TypeError('Readable state must be an object.');
   }
 
-  const instance = frozen ? freeze(init) : init;
+  const value = frozen ? freeze(init) : init;
   const subscribers: Subscriber<T>[] = [];
 
   const subscribe = (handler: Subscriber<T>, emitNow = true) => {
     if (emitNow) {
-      const event: StateChange<T> = { type: 'init', value: instance, emitter: instance };
-      handler(instance as T, event);
+      const event: StateChange<T> = { type: 'init', value: value, emitter: value };
+      handler(value as T, event);
     }
 
     // Store the subscriber to emit events.
@@ -196,14 +111,14 @@ export function readable<T>(init: T, frozen = true): [Readable<T>, Publisher<T>]
   const publish: Publisher<T> = (event: StateChange<T>) => {
     for (const run of subscribers) {
       if (typeof run === 'function') {
-        run(instance as T, event);
+        run(value as T, event);
       }
     }
   };
 
-  Object.defineProperty(instance, 'subscribe', { value: subscribe, enumerable: false });
+  Object.defineProperty(value, 'subscribe', { value: subscribe, enumerable: false });
 
-  return [instance as Readable<T>, publish];
+  return [value as Readable<T>, publish];
 }
 
 export function writable<T>(init: T, frozen = true): [Writable<T>, Publisher<T>] {
