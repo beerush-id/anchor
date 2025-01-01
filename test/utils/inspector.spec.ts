@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { expect, test } from 'vitest';
 import {
   isArray,
   isBoolean,
@@ -19,6 +19,7 @@ import {
   isNumberString,
   isObject,
   isObjectLike,
+  isOdd,
   isPositive,
   isRegExp,
   isSet,
@@ -26,8 +27,7 @@ import {
   isTruthy,
   isUnitString,
   typeOf,
-} from '../../lib/esm/utils';
-import { isOdd } from '../../src/utils';
+} from '../../lib/esm/utils/index.js';
 
 test('Validate typeOf function', () => {
   expect(typeOf('')).toBe('string');

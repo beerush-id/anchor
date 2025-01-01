@@ -102,7 +102,7 @@ export function isNumberString(value: unknown): value is string {
  * @returns {boolean}
  */
 export function isUnitString(value: unknown): value is string {
-  return typeof value === 'string' && /^-?\d*(\.\d+)[a-z%]+$/.test(value);
+  return typeof value === 'string' && /^-?\d+(\.\d+)?[a-zA-Z%]+$/.test(value);
 }
 
 /**
