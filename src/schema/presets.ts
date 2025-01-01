@@ -39,7 +39,7 @@ export const SchemaPresets = {
     maxLength: 255,
     validate: (value) => {
       return {
-        valid: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/.test(value),
+        valid: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/.test(value),
         expected: 'password',
       };
     },

@@ -36,6 +36,7 @@ test('validates object with additional properties', () => {
   const result = validate(schema, { foo: 'bar', baz: 'qux' });
 
   assert(result.valid, 'Expected validation pass');
+  assert(result.errors.length === 0, 'Expected no errors');
 });
 
 test('fails on invalid additional properties', () => {
@@ -49,6 +50,7 @@ test('fails on invalid additional properties', () => {
   const result = validate(schema, { foo: 'bar', baz: 'qux' });
 
   assert(!result.valid, 'Expected validation to fail');
+  assert(result.errors.length === 1, 'Expected one error');
 });
 
 test('validates nested object', () => {
@@ -83,6 +85,7 @@ test('fails on invalid nested object', () => {
   const result = validate(schema, { foo: { bar: 123 } });
 
   assert(!result.valid, 'Expected validation to fail');
+  assert(result.errors.length === 1, 'Expected one root error');
 });
 
 test('validates nested object with nested array', () => {
@@ -100,7 +103,7 @@ test('validates nested object with nested array', () => {
       },
     },
   };
-  const result = validate(schema, { foo: { bar: [ 'baz' ] } });
+  const result = validate(schema, { foo: { bar: ['baz'] } });
 
   assert(result.valid, 'Expected validation pass');
 });
@@ -120,7 +123,7 @@ test('fails on invalid nested object with nested array', () => {
       },
     },
   };
-  const result = validate(schema, { foo: { bar: [ 123 ] } });
+  const result = validate(schema, { foo: { bar: [123] } });
   assert(!result.valid, 'Expected validation to fail');
 });
 
@@ -169,38 +172,38 @@ test('fails on invalid nested object with nested object', () => {
 });
 
 test('validates required object', () => {
-  const schema: Schema<{ foo: string, bar: string }> = {
+  const schema: Schema<{ foo: string; bar: string }> = {
     type: SchemaType.Object,
     properties: {
       foo: SchemaPresets.Str,
       bar: SchemaPresets.Str,
     },
-    required: [ 'foo' ],
+    required: ['foo'],
   };
   const result = validate(schema, { foo: 'bar' });
   assert(result.valid, 'Expected validation pass');
 });
 
 test('fails on invalid required object', () => {
-  const schema: Schema<{ foo: string, bar: string }> = {
+  const schema: Schema<{ foo: string; bar: string }> = {
     type: SchemaType.Object,
     properties: {
       foo: SchemaPresets.Str,
       bar: SchemaPresets.Str,
     },
-    required: [ 'foo' ],
+    required: ['foo'],
   };
   const result = validate(schema, { bar: 'baz' });
   assert(!result.valid, 'Expected validation to fail');
 });
 
 test('fails on required property with invalid schema', () => {
-  const schema: Schema<{ foo: string, bar: string }> = {
+  const schema: Schema<{ foo: string; bar: string }> = {
     type: SchemaType.Object,
     properties: {
       bar: SchemaPresets.Str,
     } as never,
-    required: [ 'foo' ],
+    required: ['foo'],
   };
   const result = validate(schema, { baz: 123 });
   assert(!result.valid, 'Expected validation to fail');
@@ -221,12 +224,12 @@ test('fails on invalid required nested object', () => {
             properties: {
               qax: SchemaPresets.Str,
             },
-            required: [ 'qex' ],
+            required: ['qex'],
           },
         },
       },
     },
-    required: [ 'foo' ],
+    required: ['foo'],
   };
   const result = validate(schema as never, {
     bar: 'baz',

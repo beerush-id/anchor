@@ -1,14 +1,14 @@
-import type { Anchor, Init, State } from './anchor.js';
-import { INTERNAL_KEY, Pointer, StateRegistry } from './anchor.js';
-import { merge, write } from '../utils/index.js';
-import { ARRAY_MUTATIONS, ArrayMutation, StateChange, Unsubscribe } from './base.js';
+import type { Anchor, Init, State } from '../../src/core/anchor.js';
+import { INTERNAL_KEY, Pointer, StateRegistry } from '../../src/core/anchor.js';
+import { merge, write } from '../../src/utils/index.js';
+import { ARRAY_MUTATIONS, ArrayMutation, StateChange, Unsubscribe } from '../../src/core/base.js';
 
 export type StateChanges<T> = Partial<T> | Partial<T>[];
 export type HistorySubscriber<T extends Init> = (history: History<T>, event: HistoryEvent<T>) => void;
 export type HistoryEvent<T extends Init> = {
   type: 'init' | 'change' | 'undo' | 'redo' | 'clear' | 'revert';
   value?: StateChanges<T>;
-}
+};
 
 const queueMap = new WeakMap<History<Init>, Map<string, number>>();
 const valueMap = new WeakMap<History<Init>, Map<string, unknown>>();
@@ -31,7 +31,11 @@ export class History<T extends Init> {
     return !!this.forwards.length;
   }
 
-  constructor(public state: State<T>, private max = 50, private debounce = 1000) {
+  constructor(
+    public state: State<T>,
+    private max = 50,
+    private debounce = 1000
+  ) {
     const instance: Anchor<T> = StateRegistry.get(state as never) as never;
     const subscribers = instance?.[Pointer.SUBSCRIBERS];
 
@@ -43,7 +47,6 @@ export class History<T extends Init> {
       if (!e) return;
 
       if (e.path) {
-
       }
       // console.log(s, e);
     };
@@ -57,54 +60,61 @@ export class History<T extends Init> {
     if (!(instance as never as { boo: boolean }).boo) {
       return;
     }
-    const unsubscribe = this.state.subscribe?.((s, e) => {
-      if (!e) {
-        return;
-      }
-
-      if (e.path) {
-        write(this.changes, e.path as never, e.value as never);
-      } else if (Array.isArray(this.changes) && ARRAY_MUTATIONS.includes(e.type as ArrayMutation)) {
-        this.changes.splice(0, this.changes.length, ...(e.value as Partial<T>[]));
-      } else if (e.type === 'update') {
-        merge(this.changes, e.value as never);
-      }
-
-      for (const path of this.excludes) {
-        if (e.path?.startsWith(path as never)) {
+    const unsubscribe = this.state.subscribe?.(
+      (s, e) => {
+        if (!e) {
           return;
         }
-      }
 
-      if (!this.paused) {
-        const queues = queueMap.get(this as never) ?? new Map<string, number>();
-        const values = valueMap.get(this as never) ?? new Map<string, unknown>();
-
-        const key = e.path || e.type;
-
-        if (queues.has(key)) {
-          clearTimeout(queues.get(key));
-        } else {
-          values.set(key, e.oldValue);
+        if (e.path) {
+          write(this.changes, e.path as never, e.value as never);
+        } else if (Array.isArray(this.changes) && ARRAY_MUTATIONS.includes(e.type as ArrayMutation)) {
+          this.changes.splice(0, this.changes.length, ...(e.value as Partial<T>[]));
+        } else if (e.type === 'update') {
+          merge(this.changes, e.value as never);
         }
 
-        queues.set(key, setTimeout(() => {
-          const oldValue = values.get(key);
+        for (const path of this.excludes) {
+          if (e.path?.startsWith(path as never)) {
+            return;
+          }
+        }
 
-          if (this.backwards.length >= this.max) {
-            this.backwards.shift();
+        if (!this.paused) {
+          const queues = queueMap.get(this as never) ?? new Map<string, number>();
+          const values = valueMap.get(this as never) ?? new Map<string, unknown>();
+
+          const key = e.path || e.type;
+
+          if (queues.has(key)) {
+            clearTimeout(queues.get(key));
+          } else {
+            values.set(key, e.oldValue);
           }
 
-          this.backwards.push({ ...e, oldValue } as never);
-          this.forwards.splice(0, this.forwards.length);
+          queues.set(
+            key,
+            setTimeout(() => {
+              const oldValue = values.get(key);
 
-          queues.delete(key as never);
-          values.delete(key as never);
+              if (this.backwards.length >= this.max) {
+                this.backwards.shift();
+              }
 
-          this.publish({ type: 'change', value: this.changes });
-        }, this.debounce) as never);
-      }
-    }, false, INTERNAL_KEY);
+              this.backwards.push({ ...e, oldValue } as never);
+              this.forwards.splice(0, this.forwards.length);
+
+              queues.delete(key as never);
+              values.delete(key as never);
+
+              this.publish({ type: 'change', value: this.changes });
+            }, this.debounce) as never
+          );
+        }
+      },
+      false,
+      INTERNAL_KEY
+    );
     subscriptionMap.set(this as never, unsubscribe);
   }
 

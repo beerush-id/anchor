@@ -1,5 +1,5 @@
 import { cacheState, directState, Initializer, MemoryOptions } from './memory.js';
-import { Init, State } from '../core/index.js';
+import { Init, type Sealed, State } from '../core/index.js';
 import { loadStates, SessionStore } from './session.js';
 import { cookie } from './cookie.js';
 
@@ -9,10 +9,10 @@ export class PersistentStore extends SessionStore {}
 
 let CURRENT_PERSISTENT_STORE: PersistentStore;
 
-export function persistent<T extends Init, R extends boolean = true>(
+export function persistentState<T extends Sealed, R extends boolean = true>(
   name: string,
   init: Initializer<T> | T,
-  options?: PersistentOptions<T, R>,
+  options?: PersistentOptions<T, R>
 ): State<T, R> {
   if (typeof CURRENT_PERSISTENT_STORE === 'undefined') {
     if (typeof window === 'undefined') {
@@ -27,6 +27,9 @@ export function persistent<T extends Init, R extends boolean = true>(
 
   return cacheState(CURRENT_PERSISTENT_STORE, name, init, options) as never;
 }
+
+// @deprecated
+export const persistent = persistentState;
 
 export function persistentContext(store: PersistentStore) {
   if (typeof window === 'undefined') return;

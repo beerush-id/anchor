@@ -1,24 +1,24 @@
-import { Sealed } from './seal.js';
-import { anchor, ExternalSubscriptions, State } from './anchor.js';
-import { Schema, SchemaError, SchemaErrorType, validate } from '../schema/index.js';
-import { Subscriber } from './base.js';
+import { Sealed } from '../../src/core/seal.js';
+import { anchor, ExternalSubscriptions, State } from '../../src/core/anchor.js';
+import { Schema, SchemaError, SchemaErrorType, validate } from '../../src/schema/index.js';
+import { Subscriber } from '../../src/core/base.js';
 
 interface Validation {
-  __valid: boolean,
-  __errors: SchemaError<SchemaErrorType>[],
+  __valid: boolean;
+  __errors: SchemaError<SchemaErrorType>[];
 }
 
 type ValidationType<T> = T extends unknown[]
-                         ? Array<ValidationType<T[number]>>
-                         : T extends object
-                           ? { [K in keyof T]: ValidationType<T[K]> } & Validation
-                           : T & Validation;
+  ? Array<ValidationType<T[number]>>
+  : T extends object
+    ? { [K in keyof T]: ValidationType<T[K]> } & Validation
+    : T & Validation;
 
 export type Inspector<T> = {
   valid: boolean;
   errors: SchemaError<SchemaErrorType>[];
   detail: ValidationType<T>;
-}
+};
 
 export function inspectSchema<T extends Sealed>(schema: Schema<T>, value: T | State<T>): Inspector<T> {
   const state = anchor(value);

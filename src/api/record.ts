@@ -1,8 +1,8 @@
 import { anchor, Rec, State } from '../core/index.js';
 import { Part } from '../core/base.js';
 import { Endpoint } from './endpoint.js';
-import { StreamQueue } from './remote.js';
-import { history } from '../history/history.js';
+import { stateHistory } from '../history/history.js';
+import { StreamQueue } from './stream.js';
 
 export type Record<Entity extends Rec> = {
   id: string;
@@ -80,7 +80,7 @@ export function createRecord<Entity extends Rec>(
     fetch,
     update,
     replace,
-    history: history(data),
+    history: stateHistory(data),
     status: 'idle',
     delete: remove,
   });

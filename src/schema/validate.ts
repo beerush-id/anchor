@@ -12,12 +12,11 @@ import {
   ObjectSchema,
   ObjectValidation,
   Schema,
+  SchemaError,
   SchemaErrorKey,
   SchemaErrorType,
   SchemaType,
-  SchemaTypeError,
   SchemaValidation,
-  SchemaValueError,
   StringSchema,
 } from './schema.js';
 
@@ -37,27 +36,25 @@ export function validate<T>(
   allowTypes = COMMON_SCHEMA_TYPES,
   recursive = true,
   path?: string,
-  root = true,
+  root = true
 ): DetailedValidation<T> {
   const base = schema as BaseSchema<T> & CustomSchema<T>;
 
   if (
     (typeof base.type === 'string' && !allowTypes.includes(base.type)) ||
-    (Array.isArray(base.type) && !base.type.every(t => COMMON_SCHEMA_TYPES.includes(t)))
+    (Array.isArray(base.type) && !base.type.every((t) => COMMON_SCHEMA_TYPES.includes(t)))
   ) {
-    throw new TypeError(`Schema type "${ base.type }" is not allowed.`);
+    throw new TypeError(`Schema type "${base.type}" is not allowed.`);
   }
 
   const result: SchemaValidation = { errors: [], valid: false };
 
   if (Array.isArray(base.type)) {
     const invalids = base.type
-      .map(t => validate({ ...base, type: t } as never, value, allowTypes, recursive, path, false))
-      .filter(r => !r.valid);
-    const invalidTypes = invalids
-      .flatMap(r => r.errors.filter(e => e.type === SchemaErrorType.Type as never));
-    const invalidValues = invalids
-      .flatMap(r => r.errors.filter(e => e.type === SchemaErrorType.Value as never));
+      .map((t) => validate({ ...base, type: t } as never, value, allowTypes, recursive, path, false))
+      .filter((r) => !r.valid);
+    const invalidTypes = invalids.flatMap((r) => r.errors.filter((e) => e.type === (SchemaErrorType.Type as never)));
+    const invalidValues = invalids.flatMap((r) => r.errors.filter((e) => e.type === (SchemaErrorType.Value as never)));
 
     if (invalidTypes.length === base.type.length) {
       result.errors.push(err(SchemaErrorType.Type, base.type, typeOf(value), path) as never);
@@ -83,30 +80,34 @@ export function validate<T>(
 
         for (const key of sch.required) {
           if (!sch.properties?.[key]) {
-            result.errors.push(err(
-              SchemaErrorType.Type,
-              `schema property: ${ key as string }`,
-              sch.properties?.[key],
-              key as string,
-              path ? `${ path }.${ key as string }` : key as string,
-            ) as never);
+            result.errors.push(
+              err(
+                SchemaErrorType.Type,
+                `schema property: ${key as string}`,
+                sch.properties?.[key],
+                key as string,
+                path ? `${path}.${key as string}` : (key as string)
+              ) as never
+            );
           }
 
           if (typeof value?.[key as never] === 'undefined') {
-            result.errors.push(err(
-              SchemaErrorType.Value,
-              `defined property: ${ key as string }`,
-              value?.[key as never],
-              key as string,
-              path ? `${ path }.${ key as string }` : key as string,
-            ) as never);
+            result.errors.push(
+              err(
+                SchemaErrorType.Value,
+                `defined property: ${key as string}`,
+                value?.[key as never],
+                key as string,
+                path ? `${path}.${key as string}` : (key as string)
+              ) as never
+            );
           }
         }
       }
 
       if (value instanceof Map) {
-        for (const [ key, val ] of value) {
-          const childPath = path ? `${ path }.${ key as string }` : key as string;
+        for (const [key, val] of value) {
+          const childPath = path ? `${path}.${key as string}` : (key as string);
           const keySchema = flattenSchema((schema as MapSchema<string, string>).keys as never);
           const valueSchema = flattenSchema((schema as MapSchema<string, string>).items as never);
 
@@ -129,14 +130,14 @@ export function validate<T>(
       if (typeof sch.properties === 'object' && base.type !== SchemaType.Map) {
         objResult.properties = {} as never;
 
-        for (const [ k, child ] of entries(sch.properties)) {
-          const childPath = path ? `${ path }.${ k as string }` : k;
+        for (const [k, child] of entries(sch.properties)) {
+          const childPath = path ? `${path}.${k as string}` : k;
           const childValue = value instanceof Map ? value.get(k) : (value as T)?.[k as never];
           const childSchema = (typeof child === 'function' ? child() : { ...child }) as Schema<T>;
           const childResult = validate(childSchema, childValue, allowTypes, recursive, childPath as string, false);
 
           if (!objResult.properties[k as never]) {
-            objResult.properties[k as never] = { __valid: false, __errors: [] } as never;
+            objResult.properties[k as never] = { __valid: childResult.valid, __errors: childResult.errors } as never;
           }
 
           if (typeof (childResult as ObjectValidation<T>).properties === 'object') {
@@ -150,8 +151,8 @@ export function validate<T>(
       }
 
       if (typeof value === 'object' && base.type !== SchemaType.Map) {
-        for (const [ k, v ] of value instanceof Map ? value : entries(value as object)) {
-          const childPath = path ? `${ path }.${ k }` : k;
+        for (const [k, v] of value instanceof Map ? value : entries(value as object)) {
+          const childPath = path ? `${path}.${k}` : k;
           let childSchema = sch.properties?.[k as never];
 
           if (typeof childSchema === 'function') {
@@ -159,7 +160,7 @@ export function validate<T>(
           }
 
           if (!childSchema && !sch.additionalProperties) {
-            result.errors.push(err(SchemaErrorType.Type, `no property: ${ k }`, v, k, childPath) as never);
+            result.errors.push(err(SchemaErrorType.Type, `no property: ${k}`, v, k, childPath) as never);
           }
         }
       }
@@ -182,7 +183,7 @@ export function validate<T>(
         }
 
         const results = (value instanceof Set ? Array.from(value) : value).map((item, i) => {
-          const childPath = path ? `${ path }.${ i }` : `${ i }`;
+          const childPath = path ? `${path}.${i}` : `${i}`;
           const childResult = validate(childSchema as Schema<never>, item, allowTypes, recursive, childPath, false);
 
           r.items[i as never] = { __valid: childResult.valid, __errors: childResult.errors } as never;
@@ -194,11 +195,11 @@ export function validate<T>(
           return childResult;
         });
         const invalidTypes = results
-          .filter(r => !r.valid)
-          .flatMap(r => r.errors.filter(e => e.type === SchemaErrorType.Type as never));
+          .filter((r) => !r.valid)
+          .flatMap((r) => r.errors.filter((e) => e.type === (SchemaErrorType.Type as never)));
         const invalidValues = results
-          .filter(r => !r.valid)
-          .flatMap(r => r.errors.filter(e => e.type === SchemaErrorType.Value as never));
+          .filter((r) => !r.valid)
+          .flatMap((r) => r.errors.filter((e) => e.type === (SchemaErrorType.Value as never)));
 
         if (invalidTypes.length && !sch.additionalItems) {
           result.errors.push(...invalidTypes);
@@ -306,17 +307,17 @@ function err<T extends SchemaErrorType>(
   expected: unknown,
   actual: unknown,
   key?: string,
-  path?: string,
-): T extends SchemaErrorType.Type ? SchemaTypeError : SchemaValueError {
+  path?: string
+): SchemaError<T> {
   let expectedText = expected;
 
   if (Array.isArray(expectedText)) {
-    expectedText = `[ ${ expectedText.join(', ') } ]`;
+    expectedText = `[ ${expectedText.join(', ')} ]`;
   } else if (typeof expectedText === 'object') {
     expectedText = JSON.stringify(expectedText);
   }
 
-  const message = `Expected "${ expectedText }" but got "${ actual }".`;
+  const message = `Expected "${expectedText}" but got "${actual}".`;
   const result = { type } as never;
 
   if (typeof key === 'string') {
@@ -330,4 +331,10 @@ function err<T extends SchemaErrorType>(
   Object.assign(result, { expected, actual, message });
 
   return result;
+}
+
+export class ValidationError<T> extends Error {
+  constructor(public errors: DetailedValidation<T>['errors']) {
+    super(`Validation error: ${errors.length} errors found.`);
+  }
 }

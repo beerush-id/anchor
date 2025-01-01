@@ -1,8 +1,8 @@
-import { Rec, State, StateEvent, Writable, writable } from '../core/index.js';
-import { Part } from '../core/base.js';
+import { type Init, type Rec, type State, type StateEvent, type Writable, writable } from '../core/index.js';
+import type { Part } from '../core/base.js';
 import { clone, remove, write } from '../utils/index.js';
 
-export type History<T extends Rec> = {
+export type History<T extends Init> = {
   state: State<T>;
   changes: Part<T>;
   hasChanges: boolean;
@@ -17,14 +17,17 @@ export type History<T extends Rec> = {
   destroy: () => void;
 };
 
-export type HistoryState<T extends Rec> = Writable<History<T>>;
+export type HistoryState<T extends Init> = Writable<History<T>>;
 export type HistoryOptions = {
   maxHistory?: number;
   debounce?: number;
 };
 
-export function history<T extends Rec>(state: State<T>, options: HistoryOptions = { debounce: 500 }): HistoryState<T> {
-  if (typeof state?.subscribe !== 'function') {
+export function stateHistory<T extends Init>(
+  state: State<T>,
+  options: HistoryOptions = { debounce: 500 }
+): HistoryState<T> {
+  if (typeof state?.subscribe !== 'function' || typeof (state as State<Rec>)?.set !== 'function') {
     throw new Error('Expected init state to be a writable store.');
   }
 
@@ -83,7 +86,7 @@ export function history<T extends Rec>(state: State<T>, options: HistoryOptions 
   };
 
   const reset = () => {
-    state.set(clone(init) as never);
+    (state as State<Rec>).set(clone(init) as never);
     clear();
   };
 
@@ -150,3 +153,6 @@ export function history<T extends Rec>(state: State<T>, options: HistoryOptions 
 
   return record as never;
 }
+
+// @deprecated
+export const history = stateHistory;

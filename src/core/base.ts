@@ -87,7 +87,7 @@ export function readable<T>(init: T, frozen = true): [Readable<T>, Publisher<T>]
   }
 
   const value = frozen ? freeze(init) : init;
-  const subscribers: Subscriber<T>[] = [];
+  const subscribers: Set<Subscriber<T>> = new Set();
 
   const subscribe = (handler: Subscriber<T>, emitNow = true) => {
     if (emitNow) {
@@ -96,15 +96,11 @@ export function readable<T>(init: T, frozen = true): [Readable<T>, Publisher<T>]
     }
 
     // Store the subscriber to emit events.
-    subscribers.push(handler);
+    subscribers.add(handler);
 
     // Return an unsubscribe function.
     return () => {
-      const index = subscribers.indexOf(handler);
-
-      if (index > -1) {
-        subscribers.splice(index, 1);
-      }
+      subscribers.delete(handler);
     };
   };
 

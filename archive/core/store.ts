@@ -1,9 +1,9 @@
-import type { Anchor, AnchorSchema, Init, State, StateTree } from './anchor.js';
-import { crate, ExternalSubscriptions, Pointer, Registry, StateHierarchy } from './anchor.js';
-import { logger, merge } from '../utils/index.js';
-import { isSerializable, Readable, Rec } from './base.js';
-import { COMMON_SCHEMA_TYPES, SchemaType, SERIALIZABLE_SCHEMA_TYPES } from '../schema/index.js';
-import { Sealed } from './seal.js';
+import type { Anchor, AnchorSchema, Init, State, StateTree } from '../../src/core/anchor.js';
+import { crate, ExternalSubscriptions, Pointer, Registry, StateHierarchy } from '../../src/core/anchor.js';
+import { logger, merge } from '../../src/utils/index.js';
+import { isSerializable, Readable, Rec } from '../../src/core/base.js';
+import { COMMON_SCHEMA_TYPES, SchemaType, SERIALIZABLE_SCHEMA_TYPES } from '../../src/schema/index.js';
+import { Sealed } from '../../src/core/seal.js';
 
 export type StateMemory = {
   name: string;

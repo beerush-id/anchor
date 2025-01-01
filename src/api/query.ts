@@ -1,8 +1,14 @@
 import { Endpoint, Filter } from './endpoint.js';
-import { anchor, Rec, State } from '../core/index.js';
-import { Remote, Stream, StreamMeta, StreamQueue } from './remote.js';
+import { anchor, Init, Readable, Rec, State } from '../core/index.js';
+import { Remote } from './remote.js';
+import type { Stream, StreamMeta, StreamQueue } from './stream.js';
 
-export type Query<Entity extends Rec, Data extends Rec | Rec[] = Rec, Meta extends StreamMeta = StreamMeta, Params extends Rec = Rec> = {
+export type Query<
+  Entity extends Rec,
+  Data extends Rec | Rec[] = Rec,
+  Meta extends StreamMeta = StreamMeta,
+  Params extends Rec = Rec,
+> = {
   data: Data;
   meta: Meta;
   filter: Filter<Entity, Params>;
@@ -10,26 +16,41 @@ export type Query<Entity extends Rec, Data extends Rec | Rec[] = Rec, Meta exten
   fetch: (options?: RequestInit) => Promise<Stream<Entity[], Meta>>;
 };
 
-export type QueryState<Entity extends Rec, Data extends Rec | Rec[] = Rec, Meta extends StreamMeta = StreamMeta, Params extends Rec = Rec> = State<Query<Entity, Data, Meta, Params>>;
+export type QueryState<
+  Entity extends Rec,
+  Data extends Rec | Rec[] = Rec,
+  Meta extends StreamMeta = StreamMeta,
+  Params extends Rec = Rec,
+> = State<Query<Entity, Data, Meta, Params>>;
 
 type InternalEndpoint = {
   remote: Remote;
   createUrl: (method: string, filters: Filter<Rec>) => string;
-}
+};
 
-export function createQuery<Entity extends Rec, Data extends Rec | Rec[] = Rec, Meta extends StreamMeta = StreamMeta, Params extends Rec = Rec>(
+export function createQuery<
+  Entity extends Rec,
+  Data extends Rec | Rec[] = Rec,
+  Meta extends StreamMeta = StreamMeta,
+  Params extends Rec = Rec,
+>(
   endpoint: Endpoint<Entity, Meta, Params>,
   init?: Filter<Entity, Params>,
-  immediate = false,
+  immediate = false
 ): QueryState<Entity, Data, Meta, Params> {
   const fetch = async (options?: RequestInit) => {
     query.set({ status: 'pending' });
 
     const url = (endpoint as never as InternalEndpoint).createUrl('find', { ...query.filter });
-    const stream = (endpoint as never as InternalEndpoint).remote.request(url, [], {
-      method: 'LIST',
-      ...options,
-    }, false);
+    const stream = (endpoint as never as InternalEndpoint).remote.request(
+      url,
+      [],
+      {
+        method: 'LIST',
+        ...options,
+      },
+      false
+    );
 
     await (stream as never as StreamQueue<Entity>).fetch();
 
@@ -54,7 +75,7 @@ export function createQuery<Entity extends Rec, Data extends Rec | Rec[] = Rec, 
     fetch,
   });
 
-  query.filter.subscribe(() => {
+  (query.filter as Readable<Init>).subscribe(() => {
     fetch().catch(() => {
       query.set({ status: 'error' });
     });

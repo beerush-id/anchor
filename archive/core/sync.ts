@@ -1,5 +1,5 @@
-import { logger, read, write } from '../utils/index.js';
-import { Init, State } from './anchor.js';
+import { logger, read, write } from '../../src/utils/index.js';
+import { Init, State } from '../../src/core/anchor.js';
 import {
   ARRAY_MUTATIONS,
   ArrayMutation,
@@ -8,13 +8,13 @@ import {
   StateChange,
   StateMutation,
   Unsubscribe,
-} from './base.js';
+} from '../../src/core/base.js';
 
 /**
  * Reflects the state event to another state or object.
  */
 export function reflect<S extends Init, T extends Init>(event: StateChange<S>, target: T): void {
-  if (event && [ ...OBJECT_MUTATIONS, ...ARRAY_MUTATIONS ].includes(event.type as StateMutation)) {
+  if (event && [...OBJECT_MUTATIONS, ...ARRAY_MUTATIONS].includes(event.type as StateMutation)) {
     if (OBJECT_MUTATIONS.includes(event.type as ObjectMutation)) {
       if (event.type === 'set') {
         const value = typeof event.value === 'object' ? { ...event.value } : event.value;
@@ -44,7 +44,7 @@ export function reflect<S extends Init, T extends Init>(event: StateChange<S>, t
           }
         } else {
           if (Array.isArray(event.emitter)) {
-            write(target as never, event.path as never, [ ...event.emitter ] as never);
+            write(target as never, event.path as never, [...event.emitter] as never);
           } else {
             logger.warn(`[anchor:reflect] Trying to call array methods on non array object!`, next, event);
           }
@@ -70,7 +70,7 @@ export function reflect<S extends Init, T extends Init>(event: StateChange<S>, t
  */
 export function mirror<S extends Init, T extends Init, R extends boolean = true>(
   source: State<S, R>,
-  target: T,
+  target: T
 ): Unsubscribe {
   return source.subscribe((s: unknown, event) => {
     reflect(event as never, target);
@@ -85,7 +85,7 @@ export function mirror<S extends Init, T extends Init, R extends boolean = true>
  */
 export function sync<S extends Init, T extends Init, R extends boolean = true>(
   source: State<S, R>,
-  target: State<T, R>,
+  target: State<T, R>
 ): Unsubscribe {
   const unsubSource = source.subscribe((s: unknown, event) => {
     reflect(event as never, target);

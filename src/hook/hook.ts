@@ -1,15 +1,14 @@
-import type { Anchor, AnchorSchema, Init, State } from '../core/anchor.js';
+import type { Anchor, Init, State } from '../core/anchor.js';
 import { crate, Pointer } from '../core/anchor.js';
-import { persistent, session } from '../core/store.js';
 import { logger } from '../utils/index.js';
-import { Stream, StreamPublisher, StreamQueue } from '../api/index.js';
-import { history, type History, StateChanges } from '../core/history.js';
-import { Rec } from '../core/base.js';
-import { Sealed } from '../core/index.js';
-import { SchemaType } from '../schema/index.js';
+import type { Rec } from '../core/base.js';
+import type { Sealed } from '../core/seal.js';
+import type { MemoryOptions, PersistentOptions, SessionOptions } from '../store/index.js';
+import { memoryState, persistentState, sessionState } from '../store/index.js';
+import { type HistoryOptions, type HistoryState, stateHistory } from '../history/index.js';
 
-export type StateHook = <T>(init: T) => [ T, (value: T) => void ];
-export type EffectHook = (fn: () => (void | never), deps?: unknown) => void;
+export type StateHook = <T>(init: T) => [T, (value: T) => void];
+export type EffectHook = (fn: () => void | never, deps?: unknown) => void;
 export type RefHook = <T>(init?: T) => {
   current?: T;
 };
@@ -18,15 +17,12 @@ export type InputRef = {
   current: never | null;
   valid?: boolean;
   touched?: boolean;
-  destroy: () => void,
-  update: (value: unknown) => void,
-  validate: () => void,
+  destroy: () => void;
+  update: (value: unknown) => void;
+  validate: () => void;
 };
 export type InputRefs<T extends Rec> = { [K in keyof T]: InputRef };
-export type InputValidators<T extends Rec> = { [K in keyof T]?: (value: T[K]) => boolean }
-export type UpstreamRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, State<T>, StreamQueue<T> ];
-export type UpsertRef<T extends Rec> = [ InputRefs<T>, StreamPublisher<T>, History<T>, State<T>, StateChanges<T>, StreamQueue<T> ];
-export type HistoryRef<T extends Init> = [ State<T>, StateChanges<T>, History<T> ];
+export type InputValidators<T extends Rec> = { [K in keyof T]?: (value: T[K]) => boolean };
 
 let _useState: StateHook;
 let _useEffect: EffectHook;
@@ -35,9 +31,9 @@ let _useRef: RefHook;
 export const useState: StateHook = ((init: Init) => {
   return _useState ? _useState(init) : init;
 }) as never;
-export const useEffect: EffectHook = ((fn: () => (void | never), deps?: unknown) => {
+export const useEffect: EffectHook = (fn: () => void | never, deps?: unknown) => {
   return _useEffect ? _useEffect(fn, deps) : fn();
-});
+};
 export const useRef: RefHook = ((init: Init) => {
   return _useRef ? _useRef(init) : { current: init };
 }) as never;
@@ -46,7 +42,7 @@ export function useCrate<T extends Init>(init: T): Anchor<T>;
 export function useCrate<T extends Init, R extends boolean = true>(
   init: T,
   recursive: R,
-  strict?: boolean,
+  strict?: boolean
 ): Anchor<T, R>;
 export function useCrate<T extends Init>(init: T, recursive = true, strict?: boolean): Anchor<T> {
   const ref: { current: Anchor<T> } = useRef(null as never) as never;
@@ -65,21 +61,28 @@ export function useAnchor<T extends Init>(init: T): State<T>;
 export function useAnchor<T extends Init, R extends boolean = true>(
   init: T,
   recursive: R,
-  strict?: boolean,
+  strict?: boolean
 ): State<T, R>;
 export function useAnchor<T extends Init>(init: T, recursive = true, strict?: boolean): State<T> {
   return useCrate(init, recursive, strict)[Pointer.STATE] as never;
 }
 
+export function useMemory<T extends Init, R extends boolean = true>(
+  name: string,
+  init: T,
+  options: MemoryOptions<T>
+): State<T, R> {
+  const state = memoryState(name, init, options) as never;
+  registerHook(state);
+  return state;
+}
+
 export function usePersistent<T extends Sealed, R extends boolean = true>(
   name: string,
   init: T,
-  schema?: AnchorSchema<T>,
-  recursive?: R,
-  strict?: boolean,
-  version = '1.0.0',
+  options: PersistentOptions<T>
 ): State<T, R> {
-  const state = persistent(name, init, schema, recursive, strict, version) as never;
+  const state = persistentState(name, init, options) as never;
   registerHook(state);
   return state;
 }
@@ -87,47 +90,17 @@ export function usePersistent<T extends Sealed, R extends boolean = true>(
 export function useSession<T extends Init, R extends boolean = true>(
   name: string,
   init: T,
-  schema?: AnchorSchema<T>,
-  allowedTypes?: SchemaType[],
-  recursive?: R,
-  strict?: boolean,
-  version = '1.0.0',
+  options: SessionOptions<T>
 ): State<T, R> {
-  const state = session(name, init, schema, allowedTypes, recursive, strict, version) as never;
+  const state = sessionState(name, init, options) as never;
   registerHook(state);
   return state;
 }
 
-usePersistent.crate = <T extends Sealed, R extends boolean = true>(
-  name: string,
-  init: T,
-  schema?: AnchorSchema<T>,
-  recursive?: R,
-  strict?: boolean,
-  version = '1.0.0',
-): Anchor<T, R> => {
-  const anchor = persistent.crate(name, init, schema, recursive, strict, version);
-  registerHook(anchor[Pointer.STATE] as never);
-  return anchor;
-};
-useSession.crate = <T extends Init, R extends boolean = true>(
-  name: string,
-  init: T,
-  schema?: AnchorSchema<T>,
-  allowedTypes?: SchemaType[],
-  recursive?: R,
-  strict?: boolean,
-  version = '1.0.0',
-): Anchor<T, R> => {
-  const anchor = session.crate(name, init, schema, allowedTypes, recursive, strict, version);
-  registerHook(anchor[Pointer.STATE] as never);
-  return anchor;
-};
-
-export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>): [ State<T>, InputRefs<T> ] {
+export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>): [State<T>, InputRefs<T>] {
   const steps: { current: InputRefs<T> } = useRef(null as never) as never;
   const state: State<T> = useAnchor(init);
-  const [ , setState ] = useState(init);
+  const [, setState] = useState(init);
 
   if (!steps.current) {
     steps.current = new Proxy({} as never, {
@@ -153,7 +126,7 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
                 elementRef = element as never;
 
                 if (elementRef) {
-                  if ([ 'checkbox', 'radio' ].includes(elementRef.type)) {
+                  if (['checkbox', 'radio'].includes(elementRef.type)) {
                     elementRef.checked = (state[key as keyof State<T>] ?? '') as never;
                   } else {
                     elementRef.value = (state[key as keyof State<T>] ?? '') as never;
@@ -175,7 +148,7 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
             },
             update: (value: unknown) => {
               if (elementRef) {
-                if ([ 'checkbox', 'radio' ].includes(elementRef.type) && elementRef.checked !== value) {
+                if (['checkbox', 'radio'].includes(elementRef.type) && elementRef.checked !== value) {
                   elementRef.checked = value as never;
                   input.validate();
                   setState({ ...state } as never);
@@ -216,7 +189,7 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
             if (elementRef) {
               input.validate();
 
-              if ([ 'checkbox', 'radio' ].includes(elementRef.type)) {
+              if (['checkbox', 'radio'].includes(elementRef.type)) {
                 state[key as keyof State<T>] = elementRef?.checked as never;
               } else {
                 state[key as keyof State<T>] = elementRef?.value as never;
@@ -242,84 +215,13 @@ export function useInput<T extends Rec>(init: T, validate?: InputValidators<T>):
     }, false);
   }, []);
 
-  return [ state, steps.current ];
+  return [state, steps.current];
 }
 
-export function useStream<T extends Init>(stream: Stream<T>): Stream<T> {
-  ensureHooks();
-
-  const [ , setState ] = useState(stream);
-
-  useEffect(() => {
-    logger.debug('[anchor:use-stream] Fetching initial Stream.');
-
-    return stream.subscribe((s) => {
-      setState((Array.isArray(s) ? [ ...s ] : { ...s }) as never);
-      logger.debug('[anchor:use-stream] Stream updated.');
-    }, false);
-  }, []);
-
-  return stream;
-}
-
-export function useUpstream<T extends Rec>(stream: StreamQueue<T>, validate?: InputValidators<T>): UpstreamRef<T> {
-  const [ state, ref ] = useInput<T>(stream.data as never, validate);
-  const [ , setState ] = useState(stream);
-
-  useEffect(() => {
-    logger.debug('[anchor:use-upstream] Ready for submitting Stream.');
-
-    return stream.subscribe((s, e) => {
-      setState((Array.isArray(s) ? [ ...s ] : { ...s }) as never);
-      logger.debug('[anchor:use-upstream] Stream updated.', e);
-    }, false);
-  }, []);
-
-  return [ ref, stream.fetch, state, stream ];
-}
-
-export function useHistory<T extends Init>(state: State<T>, max?: number, deb?: number, a = true): HistoryRef<T> {
-  ensureHooks();
-
-  const ref: { current: History<T> } = useRef(null as never) as never;
-
-  if (!ref.current) {
-    ref.current = history<T>(state, max, deb);
-    logger.debug('[anchor:use-history] History created.');
-  }
-
-  if (a) {
-    const [ , setState ] = useState(state);
-
-    useEffect(() => {
-      return ref.current.subscribe((s, e) => {
-        setState((Array.isArray(state) ? [ ...state ] : { ...state }) as never);
-        logger.debug('[anchor:use-history] History changed.', e);
-      }, false);
-    }, []);
-  }
-
-  return [ state, ref.current.changes, ref.current ];
-}
-
-export function useUpsert<T extends Rec>(stream: StreamQueue<T>, validate?: InputValidators<T>): UpsertRef<T> {
-  const [ state, changes, rec ] = useHistory<T>(stream.data as never, undefined, undefined, false);
-  const [ , ref ] = useInput(stream.data as never, validate);
-
-  stream.data = changes as never;
-
-  const [ , setState ] = useState(stream);
-
-  useEffect(() => {
-    logger.debug('[anchor:use-upsert] Ready for submitting Stream.');
-
-    return stream.subscribe((s, e) => {
-      setState({ ...stream });
-      logger.debug('[anchor:use-upsert] Stream updated.', e);
-    }, false);
-  }, []);
-
-  return [ ref, stream.fetch, rec, state, changes, stream ];
+export function useHistory<T extends Init>(state: State<T>, options: HistoryOptions): HistoryState<T> {
+  const value = stateHistory(state as never, options);
+  registerHook(value as never);
+  return value as never;
 }
 
 export function setAnchorHook(hook: unknown, effect: unknown, ref: unknown) {
@@ -331,11 +233,11 @@ export function setAnchorHook(hook: unknown, effect: unknown, ref: unknown) {
 function registerHook(state: State<Init>) {
   ensureHooks();
 
-  const [ , setState ] = useState(state);
+  const [, setState] = useState(state);
 
   useEffect(() => {
     return state.subscribe((s) => {
-      setState((Array.isArray(s) ? [ ...s ] : { ...s }) as never);
+      setState((Array.isArray(s) ? [...s] : { ...s }) as never);
       logger.debug('[anchor:use-anchor] Anchor updated.');
     }, false);
   }, []);
@@ -344,13 +246,13 @@ function registerHook(state: State<Init>) {
 }
 
 function ensureHooks() {
-  if (typeof useState !== 'function') {
+  if (typeof _useState !== 'function') {
     throw new Error('Anchor hook is not set.');
   }
-  if (typeof useEffect !== 'function') {
+  if (typeof _useEffect !== 'function') {
     throw new Error('Anchor effect is not set.');
   }
-  if (typeof useRef !== 'function') {
+  if (typeof _useRef !== 'function') {
     throw new Error('Anchor ref is not set.');
   }
 }

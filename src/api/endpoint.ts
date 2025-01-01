@@ -1,9 +1,10 @@
-import type { Remote, Stream, StreamMeta, StreamQueue } from './remote.js';
+import type { Remote } from './remote.js';
 import type { ItemTypeOf, KeyOf, Part, Rec } from '../core/base.js';
-import { isBrowser, isNumber, isString } from '../utils/index.js';
+import { isBrowser, isNumber, isString, read } from '../utils/index.js';
 import { createQuery, Query, QueryState } from './query.js';
-import { Schema } from '../schema/index.js';
 import { State } from '../core/index.js';
+import { ZodIssue, ZodSchema } from 'zod';
+import { Stream, StreamMeta, StreamQueue } from './stream.js';
 
 export type Fields<F> = Array<KeyOf<F> | { [K in keyof F]?: Fields<F[K]> | Fields<ItemTypeOf<F[K]>> }>;
 export type WhereFilter<T> = {
@@ -83,7 +84,7 @@ export type EndpointConfig<Entity extends Rec = Rec, Params extends Rec = Rec> =
   endpoint: string;
   endpointPrefix?: string;
   relations?: EndpointRelation;
-  schema?: Schema<Entity>;
+  schema?: ZodSchema;
   defaultFilter?: Filter<Entity, Params>;
 };
 
@@ -159,6 +160,8 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
     filter?: Filter<R, P>,
     options?: RequestInit
   ): Stream<R> {
+    this.validate(body);
+
     const url = this.createUrl('create', filter as never);
     return this.remote.post<R>(url, body as never, options);
   }
@@ -169,6 +172,8 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
     filter?: Filter<R, P>,
     options?: RequestInit
   ): Stream<R> {
+    this.validate(body);
+
     const url = this.createUrl('update', filter as never, id, body as never);
     return this.remote.put<R>(url, body as never, options);
   }
@@ -179,6 +184,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
     filter?: Filter<R, P>,
     options?: RequestInit
   ): Stream<R> {
+    this.validate(body, true);
     const url = this.createUrl('patch', filter as never, id, body as never);
     return this.remote.patch<R>(url, body as Part<R>, options);
   }
@@ -190,6 +196,34 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
   ): Stream<R> {
     const url = this.createUrl('delete', filter as never, id);
     return this.remote.delete<R>(url, options);
+  }
+
+  public validate<R extends Rec = Entity>(payload: R, partial?: boolean) {
+    if (!this.config.schema) {
+      return;
+    }
+
+    const validation = this.config.schema.safeParse(payload);
+    if (!validation.success) {
+      if (partial) {
+        const errors: ZodIssue[] = [];
+
+        for (const err of validation.error.errors) {
+          if (err.path) {
+            const value = read<R>(payload, err.path as never);
+            if (typeof value !== 'undefined') {
+              errors.push(err);
+            }
+          }
+        }
+
+        if (errors.length) {
+          throw new SchemaError(errors);
+        }
+      } else {
+        throw new SchemaError(validation.error.errors);
+      }
+    }
   }
 
   private createUrl(method: RelationMethod, filter?: Filter<Entity, Params>, suffix?: string, body?: Part<Entity>) {
@@ -261,5 +295,11 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
     }
 
     return [url.pathname, url.search].join('').replace(/[/]+/g, '/').replace(/\/$/, '');
+  }
+}
+
+export class SchemaError extends Error {
+  constructor(public errors: ZodIssue[]) {
+    super('Schema validation failed');
   }
 }

@@ -1,4 +1,4 @@
-import { isArray, isObject } from './inspector.js';
+import { isArray, isFunction, isObject, typeOf } from './inspector.js';
 
 export type NestedPath<T, K extends keyof T = keyof T> = K extends string | number
   ? T[K] extends infer R
@@ -32,11 +32,13 @@ export type NestedPathMaps<T extends object> = {
  * Get the value of an object by using a path.
  * @param {T} object - An object to get the value from.
  * @param {string} path - A dot separated string as a key to get the value.
+ * @param {any} fallback - A fallback value if the key is not found.
  * @returns {any}
  */
 export function read<T extends object, P extends NestedPath<T> = NestedPath<T>>(
   object: T,
-  path: P
+  path: P,
+  fallback?: unknown
 ): NestedPathValue<T, P> {
   const key = path as string;
 
@@ -47,12 +49,14 @@ export function read<T extends object, P extends NestedPath<T> = NestedPath<T>>(
   const keys = key.split('.');
 
   if (keys.length > 1) {
-    return keys.reduce((a, b, i) => {
-      const next = a[b as never];
-      return i + 1 === keys.length ? next : next || {};
-    }, object) as never;
+    return (
+      (keys.reduce((a, b, i) => {
+        const next = a[b as never];
+        return i + 1 === keys.length ? next : next || {};
+      }, object) as never) ?? fallback
+    );
   } else {
-    return (object as never)[key];
+    return (object as never)[key] ?? fallback;
   }
 }
 
@@ -259,22 +263,24 @@ export function merge(target: object, source: object, cleanup?: boolean) {
  * @param {boolean} cleanup - Remove the item that is not exist in the source array.
  */
 export function mergeItems(target: unknown[], source: unknown[], cleanup?: boolean) {
+  if (target === source) return;
+
   if (!isArray(target) || !isArray(source)) {
     throw new Error('Target and source must be an Array!');
   }
 
   source.forEach((item, i) => {
-    if (typeof item === 'undefined' || target[i] === item) {
+    if (typeof item === 'undefined') {
       return;
     }
 
-    if (typeof item !== typeof target[i]) {
+    if (typeOf(item) !== typeOf(target[i])) {
       target[i] = item;
     } else {
-      if (isObject(item)) {
-        merge(target[i] as object, item as object, cleanup);
-      } else if (isArray(item)) {
+      if (Array.isArray(item)) {
         mergeItems(target[i] as unknown[], item as unknown[], cleanup);
+      } else if (typeof item === 'object' && item !== null) {
+        merge(target[i] as object, item as object, cleanup);
       } else {
         target[i] = item;
       }
@@ -332,7 +338,7 @@ export function stringify(object: unknown): string {
     }
 
     text.push('}');
-  } else if (Array.isArray(object)) {
+  } else if (isArray(object)) {
     text.push('[');
 
     for (const item of object) {
@@ -340,7 +346,7 @@ export function stringify(object: unknown): string {
     }
 
     text.push(']');
-  } else if (typeof object === 'function') {
+  } else if (isFunction(object)) {
     text.push(object.toString());
   } else {
     text.push(JSON.stringify(object));

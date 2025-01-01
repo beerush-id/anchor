@@ -1,40 +1,59 @@
 import { Rec } from '../core/index.js';
 import { Part } from '../core/base.js';
 import { merge } from '../utils/index.js';
-import { open, read, write } from './db.js';
+import { type IndexedRecord, open, type QueryFn, type QueryOptions, read, remove, search, write } from './db.js';
 
 const DB_NAME = 'anchor-db';
+
+export type TableRow<T extends Rec> = IndexedRecord<T>;
 
 export class IndexedTable<T extends Rec> {
   private db?: IDBDatabase;
 
   constructor(
     public name: string,
-    public dbName = DB_NAME,
-    public dbVersion = 1
+    public indexes?: Array<keyof IndexedTable<T> | string>,
+    public dbVersion = 1,
+    public dbName = DB_NAME
   ) {}
 
-  public async get(id: string) {
+  public async create(payload: Part<T>): Promise<TableRow<T>> {
+    await this.initialize();
+    return write<T>(this.db as IDBDatabase, this.name, {
+      createdAt: new Date().toISOString(),
+      createdAtI: Date.now(),
+      updatedAt: new Date().toISOString(),
+      updatedAtI: Date.now(),
+      ...payload,
+    });
+  }
+
+  public async read(id: string): Promise<TableRow<T>> {
     await this.initialize();
     return read<T>(this.db as IDBDatabase, this.name, id);
   }
 
-  public async create(payload: Part<T>) {
-    await this.initialize();
-    return write<T>(this.db as IDBDatabase, this.name, payload);
-  }
-
-  public async update(id: string, payload: Part<T>) {
+  public async update(id: string, payload: Part<T>): Promise<TableRow<T>> {
     await this.initialize();
 
     const data = await read<T>(this.db as IDBDatabase, this.name, id);
-    merge(data, payload);
-    return write<T>(this.db as IDBDatabase, this.name, data);
+    merge(data, { ...payload, updatedAt: new Date().toISOString(), updatedAtI: Date.now() });
+    return write<T>(this.db as IDBDatabase, this.name, data, id);
   }
 
-  public async replace(id: string, payload: T) {
+  public async delete(id: string) {
     await this.initialize();
-    return write<T>(this.db as IDBDatabase, this.name, payload);
+    return remove(this.db as IDBDatabase, this.name, id);
+  }
+
+  public async query(options?: QueryOptions<T>): Promise<TableRow<T>[]> {
+    await this.initialize();
+    return search(this.db as IDBDatabase, this.name, undefined, options);
+  }
+
+  public async search(fn: QueryFn<T>, options?: QueryOptions<T>): Promise<TableRow<T>[]> {
+    await this.initialize();
+    return search(this.db as IDBDatabase, this.name, fn, options);
   }
 
   private async initialize() {
@@ -44,10 +63,15 @@ export class IndexedTable<T extends Rec> {
   }
 
   private async open() {
-    this.db = await open(this.dbName, this.name, this.dbVersion);
+    this.db = await open(this.dbName, this.name, this.dbVersion, this.indexes as never);
   }
 }
 
-export function table<T extends Rec>(name: string, db = DB_NAME, version = 1) {
-  return new IndexedTable<T>(name, db, version);
+export function table<T extends Rec>(
+  name: string,
+  indexes?: Array<keyof IndexedTable<T> | string>,
+  version = 1,
+  db = DB_NAME
+) {
+  return new IndexedTable<T>(name, indexes, version, db);
 }

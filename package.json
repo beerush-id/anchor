@@ -24,6 +24,11 @@
       "import": "./lib/esm/core/index.js",
       "require": "./lib/cjs/core/index.js"
     },
+    "./db": {
+      "types": "./lib/esm/db/index.d.ts",
+      "import": "./lib/esm/db/index.js",
+      "require": "./lib/cjs/db/index.js"
+    },
     "./history": {
       "types": "./lib/esm/history/index.d.ts",
       "import": "./lib/esm/history/index.js",
@@ -82,7 +87,7 @@
     "url": "https://github.com/beerush-id/anchor/issues"
   },
   "devDependencies": {
-    "@beerush/esdev": "*",
+    "@beerush/esdev": "^1.1.0",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
     "eslint": "^8.57.0",
@@ -102,5 +107,8 @@
     "object"
   ],
   "type": "module",
-  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
+  "peerDependencies": {
+    "zod": "^3.22.5"
+  }
 }

@@ -1,5 +1,5 @@
 export type GenericType =
-  'string'
+  | 'string'
   | 'number'
   | 'object'
   | 'array'
@@ -7,18 +7,26 @@ export type GenericType =
   | 'function'
   | 'boolean'
   | 'null'
+  | 'regexp'
+  | 'error'
+  | 'map'
+  | 'set'
   | 'undefined';
 
 export const DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)((-(\d{2}):(\d{2})|Z)?)$/;
 
 /**
  * Get the generic type of the given value. Unlike `typeof`, the returned type will be a generic type. For example,
- * calling `typeOf([])` will returns `array` instead of `object`.
+ * calling `typeOf([])` will return `array` instead of `object`.
  * @param value
  * @returns {GenericType}
  */
 export function typeOf(value: unknown): GenericType {
-  return toString.call(value).replace(/\[object /, '').replace(/]/, '').toLowerCase() as GenericType;
+  return toString
+    .call(value)
+    .replace(/\[object /, '')
+    .replace(/]/, '')
+    .toLowerCase() as GenericType;
 }
 
 /**
@@ -26,7 +34,7 @@ export function typeOf(value: unknown): GenericType {
  * @param value
  * @returns {boolean}
  */
-export function isString(value: unknown): boolean {
+export function isString(value: unknown): value is string {
   return typeof value === 'string';
 }
 
@@ -35,8 +43,8 @@ export function isString(value: unknown): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isNumber(value: unknown): boolean {
-  return typeof value === 'number';
+export function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value);
 }
 
 /**
@@ -44,8 +52,17 @@ export function isNumber(value: unknown): boolean {
  * @param {number} n
  * @returns {boolean}
  */
-export function isEven(n: number): boolean {
-  return (n % 2) === 0;
+export function isEven(n: number): n is number {
+  return n % 2 === 0;
+}
+
+/**
+ * Check if the given value is an odd number.
+ * @param {number} n
+ * @returns {boolean}
+ */
+export function isOdd(n: number): n is number {
+  return n % 2 !== 0;
 }
 
 /**
@@ -53,8 +70,9 @@ export function isEven(n: number): boolean {
  * @param {number} n
  * @returns {boolean}
  */
-export function isInt(n: number) {
-  return Number(n) === n && n % 1 === 0;
+export function isInt(n: unknown): n is number {
+  if (typeof n !== 'number' || isNaN(n)) return false;
+  return n % 1 === 0;
 }
 
 /**
@@ -62,8 +80,9 @@ export function isInt(n: number) {
  * @param {number} n
  * @returns {boolean}
  */
-export function isFloat(n: number) {
-  return Number(n) === n && n % 1 !== 0;
+export function isFloat(n: unknown): n is number {
+  if (typeof n !== 'number' || isNaN(n)) return false;
+  return n % 1 !== 0;
 }
 
 /**
@@ -71,8 +90,9 @@ export function isFloat(n: number) {
  * @param {string} value
  * @returns {boolean}
  */
-export function isNumberString(value: string): boolean {
-  const n = value.match(/^[-\d][\d.]+$/);
+export function isNumberString(value: unknown): value is string {
+  if (typeof value !== 'string' || value === '') return false;
+  const n = value.match(/^-\d+(\.\d+)?$|^\d+(\.\d+)?$/);
   return n !== null && n.length > 0;
 }
 
@@ -81,9 +101,8 @@ export function isNumberString(value: string): boolean {
  * @param {string} value
  * @returns {boolean}
  */
-export function isUnitString(value: string): boolean {
-  const n = value.match(/^[-\d][\d.]+\w+$/);
-  return n !== null && n.length > 0;
+export function isUnitString(value: unknown): value is string {
+  return typeof value === 'string' && /^-?\d*(\.\d+)[a-z%]+$/.test(value);
 }
 
 /**
@@ -91,7 +110,7 @@ export function isUnitString(value: string): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isObject(value: unknown): boolean {
+export function isObject<T extends object = object>(value: unknown): value is T {
   if (typeof value !== 'object' || value === null) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
@@ -102,7 +121,7 @@ export function isObject(value: unknown): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isObjectLike(value: unknown): boolean {
+export function isObjectLike(value: unknown): value is object {
   return typeOf(value) === 'object';
 }
 
@@ -111,7 +130,7 @@ export function isObjectLike(value: unknown): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isArray(value: unknown): boolean {
+export function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value);
 }
 
@@ -120,7 +139,7 @@ export function isArray(value: unknown): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isDate(value: unknown): boolean {
+export function isDate(value: unknown): value is Date {
   return typeOf(value) === 'date';
 }
 
@@ -129,8 +148,15 @@ export function isDate(value: unknown): boolean {
  * @param {string} value
  * @returns {boolean}
  */
-export function isDateString(value: string): boolean {
-  return DATE_REGEX.test(value);
+export function isDateString(value: unknown): value is string {
+  if (typeof value !== 'string' || value === '') return false;
+  try {
+    const beginDate = new Date(0);
+    const currentDate = new Date(value);
+    return !isNaN(currentDate.getTime()) && currentDate > beginDate;
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -138,7 +164,8 @@ export function isDateString(value: string): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isFunction(value: unknown): boolean {
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function isFunction(value: unknown): value is Function {
   return typeof value === 'function';
 }
 
@@ -147,7 +174,7 @@ export function isFunction(value: unknown): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isBoolean(value: unknown): boolean {
+export function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean';
 }
 
@@ -156,8 +183,53 @@ export function isBoolean(value: unknown): boolean {
  * @param {string} value
  * @returns {boolean}
  */
-export function isBooleanString(value: string): boolean {
+export function isBooleanString(value: unknown): value is string {
   return value === 'true' || value === 'false';
+}
+
+/**
+ * Check if the given value is a map.
+ * @param value
+ * @returns {boolean}
+ */
+export function isMap(value: unknown): value is Map<unknown, unknown> {
+  return typeOf(value) === 'map';
+}
+
+/**
+ * Check if the given value is a set.
+ * @param value
+ * @returns {boolean}
+ */
+export function isSet(value: unknown): value is Set<unknown> {
+  return typeOf(value) === 'set';
+}
+
+/**
+ * Check if the given value is a regular expression.
+ * @param value
+ * @returns {boolean}
+ */
+export function isRegExp(value: unknown): value is RegExp {
+  return typeOf(value) === 'regexp';
+}
+
+/**
+ * Check if the given value is an error object.
+ * @param value
+ * @returns {boolean}
+ */
+export function isError(value: unknown): value is Error {
+  return typeOf(value) === 'error';
+}
+
+/**
+ * Check if the given value is a defined value.
+ * @param value
+ * @returns {boolean}
+ */
+export function isDefined(value: unknown): value is NonNullable<unknown> {
+  return !isNullish(value);
 }
 
 /**
@@ -165,8 +237,8 @@ export function isBooleanString(value: string): boolean {
  * @param value
  * @returns {boolean}
  */
-export function isNullish(value: unknown): boolean {
-  return value === null || value === undefined || isNaN(value as number);
+export function isNullish(value: unknown): value is null | undefined | number {
+  return value === null || value === undefined || (typeof value === 'number' && isNaN(value as number));
 }
 
 /**
@@ -176,6 +248,40 @@ export function isNullish(value: unknown): boolean {
  */
 export function isFalsy(value: unknown): boolean {
   return isNullish(value) || (typeof value === 'boolean' && !value);
+}
+
+/**
+ * Check if the given value is a truthy value.
+ * @param value
+ * @returns {boolean}
+ */
+export function isTruthy(value: unknown): boolean {
+  return !isFalsy(value);
+}
+
+/**
+ * Check if the given value is a positive value, including 0.
+ * @param value
+ * @returns {boolean}
+ */
+export function isPositive(value: unknown): value is number {
+  return typeof value === 'number' && value >= 0;
+}
+
+/**
+ * Check if the given value is an empty value. This includes empty string, empty array, and empty object.
+ * @param value
+ * @returns {boolean}
+ */
+export function isEmpty(value: unknown): value is string | number | unknown[] | Record<string, unknown> {
+  if (isNullish(value)) return true;
+  if (isString(value)) return (value as string).length === 0;
+  if (isArray(value)) return (value as unknown[]).length === 0;
+  if (isObject(value)) return Object.keys(value as Record<string, unknown>).length === 0;
+  if (isSet(value) || isMap(value)) return (value as Set<unknown>).size === 0;
+  if (typeof value === 'number') return value <= 0;
+
+  return false;
 }
 
 /**

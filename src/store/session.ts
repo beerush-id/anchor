@@ -22,7 +22,7 @@ export class SessionStore extends MemoryStore {
   public json(stringify = true) {
     const data: Rec = {};
 
-    for (const [ key, state ] of this.entries()) {
+    for (const [key, state] of this.entries()) {
       const { name, version, recursive, strict, value } = state;
       data[key] = { name, version, recursive, strict, value };
     }
@@ -33,10 +33,10 @@ export class SessionStore extends MemoryStore {
 
 let CURRENT_SESSION_STORE: SessionStore;
 
-export function session<T extends Init, R extends boolean = true>(
+export function sessionState<T extends Init, R extends boolean = true>(
   name: string,
   init: Initializer<T> | T,
-  options?: SessionOptions<T>,
+  options?: SessionOptions<T>
 ): State<T, R> {
   if (typeof CURRENT_SESSION_STORE === 'undefined') {
     if (typeof window === 'undefined') {
@@ -52,10 +52,13 @@ export function session<T extends Init, R extends boolean = true>(
   return cacheState(CURRENT_SESSION_STORE, name, init, options) as never;
 }
 
+// @deprecated
+export const session = sessionState;
+
 export function loadStates(store: SessionStore, storage: Storage) {
   const subscriptions = new Map<string, () => void>();
 
-  store.subscribe(e => {
+  store.subscribe((e) => {
     if (e.type === 'set' || e.type === 'update') {
       if (typeof e.value !== 'object' || !('subscribe' in e.value)) return;
 
@@ -102,11 +105,11 @@ function readFrom(store: SessionStore, storage: Storage) {
 
     if (!raw) return;
 
-    const { data, version } = JSON.parse(raw ?? '{"data": {}, "version": "1.0.0"}') as { version: string, data: Rec };
+    const { data, version } = JSON.parse(raw ?? '{"data": {}, "version": "1.0.0"}') as { version: string; data: Rec };
 
     if (store.version !== version) return;
 
-    for (const [ key, state ] of Object.entries(data)) {
+    for (const [key, state] of Object.entries(data)) {
       const {
         name,
         version,
@@ -132,10 +135,13 @@ function readFrom(store: SessionStore, storage: Storage) {
 
 function writeTo(store: SessionStore, storage: Storage) {
   try {
-    storage.setItem(STORE_NAME, JSON.stringify({
-      data: store.json(false),
-      version: store.version,
-    }));
+    storage.setItem(
+      STORE_NAME,
+      JSON.stringify({
+        data: store.json(false),
+        version: store.version,
+      })
+    );
     logger.verbose(`[anchor:session] Session states saved.`);
   } catch (error) {
     logger.error(`[anchor:session] Write session states failed.`, error);

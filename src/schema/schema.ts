@@ -9,11 +9,10 @@ export enum SchemaType {
   Object = 'object', // Test Covered.
   RegExp = 'regexp',
   Set = 'set',
-  String = 'string' // Test Covered.
+  String = 'string', // Test Covered.
 }
 
-export type SchemaTypeOf<T> =
-  T extends unknown[]
+export type SchemaTypeOf<T> = T extends unknown[]
   ? SchemaType.Array
   : T extends Set<unknown>
     ? SchemaType.Set
@@ -45,21 +44,21 @@ export const SERIALIZABLE_SCHEMA_TYPES: SchemaType[] = [
 ];
 
 export type SchemaCustomValidation = {
-  valid: boolean
+  valid: boolean;
   expected: unknown;
-}
+};
 
 export type BaseSchema<T> = {
   type: SchemaTypeOf<T> | SchemaTypeOf<T>[] | SchemaType;
   title?: string;
   readonly?: boolean;
-}
+};
 
 // Primitive Types
 export type BooleanSchema = {
   required?: boolean;
   default?: boolean | (() => boolean);
-}
+};
 export type StringSchema = {
   required?: boolean;
   minLength?: number;
@@ -68,7 +67,7 @@ export type StringSchema = {
   default?: string | (() => string);
   enum?: string[];
   validate?: (value: string) => SchemaCustomValidation;
-}
+};
 export type NumberSchema = {
   required?: boolean;
   minimum?: number;
@@ -76,10 +75,10 @@ export type NumberSchema = {
   default?: number | (() => number);
   enum?: number[];
   validate?: (value: number) => SchemaCustomValidation;
-}
+};
 export type NullSchema = {
   required?: boolean;
-}
+};
 
 // Object Types
 export type ObjectSchema<T> = {
@@ -90,13 +89,13 @@ export type ObjectSchema<T> = {
   additionalProperties?: boolean;
   default?: () => T;
   validate?: (value: T) => SchemaCustomValidation;
-}
+};
 export type MapSchema<K, V> = {
   keys?: Schema<K> | (() => Schema<K>);
   items?: Schema<V> | (() => Schema<V>);
   default?: () => Map<K, V>;
   validate?: (value: V) => SchemaCustomValidation;
-}
+};
 
 export type ArraySchema<T> = {
   items?: Schema<T> | (() => Schema<T>);
@@ -104,52 +103,51 @@ export type ArraySchema<T> = {
   additionalItems?: boolean;
   default?: () => T[];
   validate?: (value: T[]) => SchemaCustomValidation;
-}
+};
 export type SetSchema<T> = {
   items?: Schema<T> | (() => Schema<T>);
   required?: boolean;
   additionalItems?: boolean;
   default?: () => Set<T>;
   validate?: (value: T[]) => SchemaCustomValidation;
-}
+};
 export type DateSchema = {
   required?: boolean;
   default?: string | number | (() => Date);
   minDate?: Date;
   maxDate?: Date;
   validate?: (value: Date) => SchemaCustomValidation;
-}
+};
 
 // Custom Types
 export type CustomSchema<T> = {
   required?: boolean;
   default?: () => T;
   validate?: (value: T) => SchemaCustomValidation;
-}
+};
 
-export type Schema<T> = BaseSchema<T> & (
-  T extends Array<SchemaType>
-  ? Schema<T[number]>
-  : T extends Array<infer U>
-    ? ArraySchema<U>
-    : T extends Set<infer U>
-      ? SetSchema<U>
-      : T extends Map<infer K, infer V>
-        ? MapSchema<K, V>
-        : T extends Date
-          ? DateSchema
-          : T extends object
-            ? ObjectSchema<T>
-            : T extends boolean
-              ? BooleanSchema
-              : T extends string
-                ? StringSchema
-                : T extends number
-                  ? NumberSchema
-                  : T extends null
-                    ? NullSchema
-                    : CustomSchema<T>
-  );
+export type Schema<T> = BaseSchema<T> &
+  (T extends Array<SchemaType>
+    ? Schema<T[number]>
+    : T extends Array<infer U>
+      ? ArraySchema<U>
+      : T extends Set<infer U>
+        ? SetSchema<U>
+        : T extends Map<infer K, infer V>
+          ? MapSchema<K, V>
+          : T extends Date
+            ? DateSchema
+            : T extends object
+              ? ObjectSchema<T>
+              : T extends boolean
+                ? BooleanSchema
+                : T extends string
+                  ? StringSchema
+                  : T extends number
+                    ? NumberSchema
+                    : T extends null
+                      ? NullSchema
+                      : CustomSchema<T>);
 
 export enum SchemaErrorType {
   Type = 'typerror',
@@ -167,52 +165,50 @@ export type SchemaBaseError = {
   message: string;
   key?: SchemaErrorKey;
   path?: string;
-}
+};
 export type SchemaTypeError = {
   type: SchemaErrorType.Type;
   expected: string | string[];
   actual: string;
-}
+};
 export type SchemaValueError = {
   type: SchemaErrorType.Value;
   expected: unknown;
   actual: unknown;
-}
-export type SchemaError<T extends SchemaErrorType> =
-    SchemaBaseError & T extends SchemaErrorType.Type
-    ? SchemaTypeError
-    : SchemaValueError;
+};
+export type SchemaError<T extends SchemaErrorType> = SchemaBaseError &
+  (T extends SchemaErrorType.Type ? SchemaTypeError : SchemaValueError);
 
 export type FieldValidation = {
-  __valid: boolean,
-  __errors: SchemaError<SchemaErrorType>[],
-}
+  __valid: boolean;
+  __errors: SchemaError<SchemaErrorType>[];
+};
 
 export type ValidationType<T> = T extends unknown[]
-                                ? Array<ValidationType<T[number]>>
-                                : T extends object
-                                  ? { [K in keyof T]: ValidationType<T[K]> } & FieldValidation
-                                  : T & FieldValidation;
+  ? Array<ValidationType<T[number]>>
+  : T extends object
+    ? { [K in keyof T]: ValidationType<T[K]> } & FieldValidation
+    : T & FieldValidation;
 
 export type ObjectValidation<T> = {
   properties: ValidationType<T>;
-}
+};
 
 export type ArrayValidation<T> = {
   items: ValidationType<T>;
-}
+};
 
 export type SchemaValidation = {
   valid: boolean;
   errors: SchemaError<SchemaErrorType>[];
   error?: Error;
-}
+};
 
-export type DetailedValidation<T> = T extends (Array<infer U> | Set<infer U>)
-                                    ? SchemaValidation & ArrayValidation<U>
-                                    : T extends object
-                                      ? SchemaValidation & ObjectValidation<T>
-                                      : SchemaValidation;
+export type DetailedValidation<T> = T extends Array<infer U> | Set<infer U>
+  ? SchemaValidation & ArrayValidation<U>
+  : T extends object | Map<unknown, unknown>
+    ? SchemaValidation & ObjectValidation<T>
+    : SchemaValidation;
 
 export function flattenSchema<T>(schema: Schema<T> | (() => Schema<T>)): Schema<T> {
   if (typeof schema === 'function') {

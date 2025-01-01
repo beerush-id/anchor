@@ -1,4 +1,3 @@
-export * from './flare.js';
 export * from './seal.js';
 
 export { signal } from './signal.js';

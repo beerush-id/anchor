@@ -14,7 +14,7 @@ export type MemoryOptions<T extends Init, R extends boolean = true> = {
   recursive?: R;
   schema?: AnchorSchema<T>;
   allowedTypes?: SchemaType[];
-}
+};
 
 export type MemoryState<T extends Init, R extends boolean = true> = {
   name: string;
@@ -31,7 +31,7 @@ export type MemoryEvent = {
   type: 'set' | 'delete' | 'update';
   name: string;
   value?: State<Init>;
-}
+};
 
 export class MemoryStore {
   private states: Map<string, MemoryState<Init>> = new Map();
@@ -82,10 +82,10 @@ export class MemoryStore {
 
 let CURRENT_MEMORY_STORE: MemoryStore;
 
-export function memory<T extends Init, R extends boolean = true>(
+export function memoryState<T extends Init, R extends boolean = true>(
   name: string,
   init: Initializer<T> | T,
-  options?: MemoryOptions<T, R>,
+  options?: MemoryOptions<T, R>
 ): State<T, R> {
   if (typeof CURRENT_MEMORY_STORE === 'undefined') {
     if (typeof window === 'undefined') {
@@ -98,18 +98,21 @@ export function memory<T extends Init, R extends boolean = true>(
   return cacheState(CURRENT_MEMORY_STORE, name, init, options) as never;
 }
 
+// @deprecated
+export const memory = memoryState;
+
 export function directState<T extends Init, R extends boolean = true>(
   init: T | Initializer<T>,
-  options?: MemoryOptions<T, R>,
+  options?: MemoryOptions<T, R>
 ): State<T, R> {
   if (typeof init === 'function') {
     const { init: data, options: initOptions } = init() as {
-      init: T,
-      options: MemoryOptions<T>
+      init: T;
+      options: MemoryOptions<T>;
     };
 
     init = data;
-    options = options ?? initOptions as never;
+    options = options ?? (initOptions as never);
   }
 
   return anchor(init as T, options?.recursive, options?.strict, options?.schema, options?.allowedTypes) as never;
@@ -119,15 +122,15 @@ export function cacheState<T extends Init, R extends boolean = true>(
   store: MemoryStore,
   name: string,
   init: T | Initializer<T>,
-  options?: MemoryOptions<T, R>,
+  options?: MemoryOptions<T, R>
 ) {
   let state: MemoryState<T> = store.get(name) as never;
 
   if (typeof state === 'undefined') {
     if (typeof init === 'function') {
       const { init: data, options: initOptions } = init() as {
-        init: T,
-        options: MemoryOptions<T, R>
+        init: T;
+        options: MemoryOptions<T, R>;
       };
 
       init = data;
@@ -153,7 +156,7 @@ export function cacheState<T extends Init, R extends boolean = true>(
     } as never;
 
     store.set(name, state);
-    logger.debug(`[anchor:store] State "${ name }" initialized.`);
+    logger.debug(`[anchor:store] State "${name}" initialized.`);
   }
 
   if (state.status === MemoryStatus.Loaded) {
@@ -166,12 +169,12 @@ export function cacheState<T extends Init, R extends boolean = true>(
       state.recursive ?? options?.recursive,
       state.strict ?? options?.strict,
       options?.schema as never,
-      options?.allowedTypes,
+      options?.allowedTypes
     ) as never;
 
     state.status = MemoryStatus.Initialized;
     store.publish({ type: 'update', name, value: state.value as never });
-    logger.debug(`[anchor:store] State "${ name }" initialized.`);
+    logger.debug(`[anchor:store] State "${name}" initialized.`);
   }
 
   return state.value;

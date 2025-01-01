@@ -4,11 +4,11 @@ import { Rec } from './base.js';
 import { Schema, validate } from '../schema/index.js';
 import { logger } from '../utils/index.js';
 
-type Getter<T> = ((compute?: (current: T) => T) => T) & { set: Setter<T>, subscribe: Subscribe<T> };
+type Getter<T> = ((compute?: (current: T) => T) => T) & { set: Setter<T>; subscribe: Subscribe<T> };
 type Setter<T> = (newValue: T | ((current: T) => T)) => void;
 type Destroy = () => void;
 
-export type Signal<T> = [ Getter<T>, Setter<T>, Subscribe<T>, Destroy ];
+export type Signal<T> = [Getter<T>, Setter<T>, Subscribe<T>, Destroy];
 
 export function signal<T>(init: T, schema?: Schema<T>): Signal<T> {
   return linkable(init) ? anchorSignal(init, schema) : createSignal(init, schema);
@@ -17,16 +17,16 @@ export function signal<T>(init: T, schema?: Schema<T>): Signal<T> {
 function anchorSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
   const state = crate(init as Rec, true, false, schema as never) as Anchor<Rec>;
 
-  let value = state[Pointer.STATE];
+  let storedValue = state[Pointer.STATE];
   const controller = state[Pointer.MANAGER];
 
-  const get: Getter<T> = ((compute?: (current: T) => T) => {
-    return typeof compute === 'function' ? compute(value as never) : value;
+  const value: Getter<T> = ((compute?: (current: T) => T) => {
+    return typeof compute === 'function' ? compute(storedValue as never) : storedValue;
   }) as never;
 
   const set: Setter<T> = (newValue: T | ((current: T) => T)) => {
     if (typeof newValue === 'function') {
-      newValue = (newValue as (v: T) => T)(value as T);
+      newValue = (newValue as (v: T) => T)(storedValue as T);
     }
 
     controller.set(newValue as never);
@@ -38,12 +38,12 @@ function anchorSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
 
   const destroy: Destroy = () => {
     controller.destroy();
-    value = undefined as never;
+    storedValue = undefined as never;
   };
 
-  Object.assign(get, { set, subscribe });
+  Object.assign(value, { set, subscribe });
 
-  return [ get, set, subscribe, destroy ];
+  return [value, set, subscribe, destroy];
 }
 
 function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
@@ -55,19 +55,19 @@ function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
     }
   }
 
-  let value: T = init;
+  let storedValue: T = init;
   const subscribers = new Set<Subscriber<T>>();
 
-  const get: Getter<T> = ((compute?: (current: T) => T) => {
-    return typeof compute === 'function' ? compute(value) : value;
+  const value: Getter<T> = ((compute?: (current: T) => T) => {
+    return typeof compute === 'function' ? compute(storedValue) : storedValue;
   }) as never;
 
   const set: Setter<T> = (newValue: T | ((current: T) => T)) => {
     if (typeof newValue === 'function') {
-      newValue = (newValue as (v: T) => T)(value);
+      newValue = (newValue as (v: T) => T)(storedValue);
     }
 
-    if (newValue === value) return;
+    if (newValue === storedValue) return;
 
     if (schema) {
       const validation = validate(schema, newValue);
@@ -78,13 +78,13 @@ function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
       }
     }
 
-    value = newValue as T;
-    subscribers.forEach(emit => emit(value, { type: 'update' }));
+    storedValue = newValue as T;
+    subscribers.forEach((emit) => emit(storedValue, { type: 'update' }));
   };
 
   const subscribe: Subscribe<T> = (callback: Subscriber<T>, emitNow = true) => {
     if (emitNow) {
-      callback(value, { type: 'init' });
+      callback(storedValue, { type: 'init' });
     }
 
     subscribers.add(callback);
@@ -96,10 +96,10 @@ function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
 
   const destroy: Destroy = () => {
     subscribers.clear();
-    value = undefined as never;
+    storedValue = undefined as never;
   };
 
-  Object.assign(get, { set, subscribe });
+  Object.assign(value, { set, subscribe });
 
-  return [ get, set, subscribe, destroy ];
+  return [value, set, subscribe, destroy];
 }
