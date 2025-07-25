@@ -46,11 +46,13 @@ export const SERIALIZABLE_SCHEMA_TYPES: SchemaType[] = [
 export type SchemaCustomValidation = {
   valid: boolean;
   expected: unknown;
+  message?: string;
 };
 
 export type BaseSchema<T> = {
   type: SchemaTypeOf<T> | SchemaTypeOf<T>[] | SchemaType;
   title?: string;
+  message?: string;
   readonly?: boolean;
 };
 

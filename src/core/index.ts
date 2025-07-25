@@ -1,6 +1,7 @@
 export * from './seal.js';
+export * from './form.js';
 
-export { signal } from './signal.js';
+export { signal, derived } from './signal.js';
 
 export {
   Anchor,

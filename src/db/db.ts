@@ -102,11 +102,13 @@ export const read = <T extends Rec>(db: IDBDatabase, name: string, id?: string):
 
 export type QueryFn<T extends Rec> = (rec: IndexedRecord<T>) => boolean;
 
+export type QueryWhereFilter<T extends Rec> = {
+  [K in keyof T]?: T[K] | ((value: T[K]) => boolean);
+};
 export type QueryOptions<T extends Rec> = {
-  where?: {
-    [K in keyof T]?: T[K] | ((value: T[K]) => boolean);
-  };
+  where?: QueryWhereFilter<T>;
   orderBy?: string;
+  offset?: number;
   limit?: number;
 };
 
@@ -118,18 +120,19 @@ export const search = <T extends Rec>(
 ): Promise<IndexedRecord<T>[]> => {
   if (!db) throw new Error('Database not initialized.');
 
-  const limit = options?.limit;
+  const { offset = 0, limit } = options ?? {};
 
   return new Promise<IndexedRecord<T>[]>((resolve, reject) => {
     const start = Date.now();
     const store = db?.transaction(name).objectStore(name);
     const result: IndexedRecord<T>[] = [];
+
     let request;
+    let position = 0;
 
     if (options?.where) {
       fn = (rec) => {
-        // Return true if all conditions are met.
-        return Object.entries(options.where as never).every(([key, value]) => {
+        return Object.entries(options.where as never).some(([key, value]) => {
           if (typeof value === 'function') {
             return value(rec[key]);
           }
@@ -163,23 +166,27 @@ export const search = <T extends Rec>(
 
         if (cursor) {
           if (fn(cursor.value)) {
-            result.push(cursor.value);
+            if (position >= offset) {
+              result.push(cursor.value);
+            }
+
+            position++;
           }
 
           if (limit && result.length >= limit) {
             resolve(result);
-            logger.debug('Query time:', Date.now() - start, 'ms');
+            logger.debug('[anchor:db:search] Query time:', Date.now() - start, 'ms');
             return;
           }
 
           cursor.continue();
         } else {
           resolve(result);
-          logger.debug('Query time:', Date.now() - start, 'ms');
+          logger.debug('[anchor:db:search] Query time:', Date.now() - start, 'ms');
         }
       } else {
         resolve((event.target as IDBRequest).result);
-        logger.debug('Query time:', Date.now() - start, 'ms');
+        logger.debug('[anchor:db:search] Query time:', Date.now() - start, 'ms');
       }
     };
 
@@ -187,17 +194,12 @@ export const search = <T extends Rec>(
   });
 };
 
-export const write = <T extends Rec>(
-  db: IDBDatabase,
-  name: string,
-  payload: Part<T>,
-  id?: string
-): Promise<IndexedRecord<T>> => {
+export const write = <T extends Rec>(db: IDBDatabase, name: string, payload: Part<T>): Promise<IndexedRecord<T>> => {
   if (!db) throw new Error('Database not initialized.');
 
   return new Promise<IndexedRecord<T>>((resolve, reject) => {
     const store = db?.transaction(name, 'readwrite').objectStore(name);
-    const record = { ...payload, id };
+    const record = { ...payload } as IndexedRecord<T>;
 
     if (!record.id) {
       record.id = crypto.randomUUID();

@@ -49,6 +49,16 @@
       "import": "./lib/esm/schema/index.js",
       "require": "./lib/cjs/schema/index.js"
     },
+    "./stream": {
+      "types": "./lib/esm/stream/index.d.ts",
+      "import": "./lib/esm/stream/index.js",
+      "require": "./lib/cjs/stream/index.js"
+    },
+    "./sync": {
+      "types": "./lib/esm/sync/index.d.ts",
+      "import": "./lib/esm/sync/index.js",
+      "require": "./lib/cjs/sync/index.js"
+    },
     "./store": {
       "types": "./lib/esm/store/index.d.ts",
       "import": "./lib/esm/store/index.js",

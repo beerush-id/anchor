@@ -1,17 +1,40 @@
 import { Anchor, crate, linkable, Pointer } from './anchor.js';
-import type { Subscribe, Subscriber } from './base.js';
+import type { Readable, Subscribe, Subscriber } from './base.js';
 import { Rec } from './base.js';
 import { Schema, validate } from '../schema/index.js';
 import { logger } from '../utils/index.js';
 
-type Getter<T> = ((compute?: (current: T) => T) => T) & { set: Setter<T>; subscribe: Subscribe<T> };
-type Setter<T> = (newValue: T | ((current: T) => T)) => void;
-type Destroy = () => void;
+export type GetterFn<T> = (compute?: (current: T) => T) => T;
+export type GetterProps<T> = { set: Setter<T>; subscribe: Subscribe<T> };
+export type Getter<T> = GetterFn<T> & GetterProps<T>;
+export type Setter<T> = (newValue: T | ((current: T) => T)) => void;
+export type Destroy = () => void;
 
 export type Signal<T> = [Getter<T>, Setter<T>, Subscribe<T>, Destroy];
+export type DerivedSignal<T> = [Getter<T>, Destroy, Subscribe<T>];
 
 export function signal<T>(init: T, schema?: Schema<T>): Signal<T> {
-  return linkable(init) ? anchorSignal(init, schema) : createSignal(init, schema);
+  return linkable(init) ? anchorSignal(init, schema) : primitiveSignal(init, schema);
+}
+
+export function derived<T, S>(state: S, fn: (state: S) => T): DerivedSignal<T> {
+  const [value, set, subscribe, destroy] = signal(fn(state));
+
+  const callback = (newState: S) => {
+    const newValue = fn(newState);
+    if (newValue === value()) return;
+
+    console.log(newValue);
+    set(fn(newState));
+  };
+
+  const unsubscribe = (state as never as Readable<unknown>).subscribe(callback as never);
+  const destroyAll = () => {
+    unsubscribe();
+    destroy();
+  };
+
+  return [value, destroyAll, subscribe];
 }
 
 function anchorSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
@@ -46,7 +69,7 @@ function anchorSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
   return [value, set, subscribe, destroy];
 }
 
-function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
+function primitiveSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
   if (schema) {
     const validation = validate(schema, init);
 
@@ -59,7 +82,22 @@ function createSignal<T>(init: T, schema?: Schema<T>): Signal<T> {
   const subscribers = new Set<Subscriber<T>>();
 
   const value: Getter<T> = ((compute?: (current: T) => T) => {
-    return typeof compute === 'function' ? compute(storedValue) : storedValue;
+    let returnedValue = storedValue;
+
+    if (typeof compute === 'function') {
+      returnedValue = compute(storedValue);
+
+      if (schema) {
+        const validation = validate(schema, returnedValue);
+
+        if (!validation.valid) {
+          logger.error(`[anchor:signal] The computed value does not conform to the schema.`);
+          return storedValue;
+        }
+      }
+    }
+
+    return returnedValue;
   }) as never;
 
   const set: Setter<T> = (newValue: T | ((current: T) => T)) => {

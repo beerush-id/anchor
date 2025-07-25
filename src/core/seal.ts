@@ -12,7 +12,7 @@ export function sealKit<T extends Sealed, R extends boolean = true>(
   init: T,
   schema: Schema<T>,
   recursive: R = true as R,
-  strict = true,
+  strict = true
 ): Anchor<T, R> {
   return crate(init, recursive, strict, schema as never, SERIALIZABLE_SCHEMA_TYPES);
 }
@@ -21,7 +21,7 @@ export function seal<T extends Sealed, R extends boolean = true>(
   init: T,
   schema: Schema<T>,
   recursive: R = true as R,
-  strict = true,
+  strict = true
 ): State<T, R> {
   const instance = crate(init, recursive, strict, schema as never, SERIALIZABLE_SCHEMA_TYPES);
   return instance[Pointer.STATE];

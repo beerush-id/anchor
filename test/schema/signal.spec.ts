@@ -1,12 +1,12 @@
 import { expect, test } from 'vitest';
-import { signal } from '../../lib/esm';
+import { signal } from '../../lib/esm/index.js';
 
 test('validates new signal object for number', () => {
   const value = signal(1);
 
   expect(Array.isArray(value)).toBe(true);
 
-  const [ getter, setter, subscribe, destroy ] = value;
+  const [getter, setter, subscribe, destroy] = value;
 
   expect(typeof getter).toBe('function');
   expect(typeof getter.set).toBe('function');
@@ -21,16 +21,16 @@ test('validates new signal object for number', () => {
   setter(2);
 
   expect(getter()).toBe(2);
-  expect(getter(v => v + 1)).toBe(3);
+  expect(getter((v) => v + 1)).toBe(3);
 
   getter.set(4);
   expect(getter()).toBe(4);
 
-  getter.subscribe(v => {
+  getter.subscribe((v) => {
     expect(v).toBe(4);
   });
 
-  subscribe(v => {
+  subscribe((v) => {
     expect(v).toBe(4);
   });
 
@@ -39,24 +39,24 @@ test('validates new signal object for number', () => {
 });
 
 test('validates new signal object for string', () => {
-  const [ getter, setter, subscribe, destroy ] = signal('foo');
+  const [getter, setter, subscribe, destroy] = signal('foo');
 
   expect(getter()).toBe('foo');
 
   setter('bar');
 
   expect(getter()).toBe('bar');
-  expect(getter(v => v + 'baz')).toBe('barbaz');
+  expect(getter((v) => v + 'baz')).toBe('barbaz');
 
   getter.set('baz');
 
   expect(getter()).toBe('baz');
 
-  getter.subscribe(v => {
+  getter.subscribe((v) => {
     expect(v).toBe('baz');
   });
 
-  subscribe(v => {
+  subscribe((v) => {
     expect(v).toBe('baz');
   });
 
@@ -65,24 +65,24 @@ test('validates new signal object for string', () => {
 });
 
 test('validates new signal object for boolean', () => {
-  const [ getter, setter, subscribe, destroy ] = signal(true);
+  const [getter, setter, subscribe, destroy] = signal(true);
 
   expect(getter()).toBe(true);
 
   setter(false);
 
   expect(getter()).toBe(false);
-  expect(getter(v => !v)).toBe(true);
+  expect(getter((v) => !v)).toBe(true);
 
   getter.set(true);
 
   expect(getter()).toBe(true);
 
-  getter.subscribe(v => {
+  getter.subscribe((v) => {
     expect(v).toBe(true);
   });
 
-  subscribe(v => {
+  subscribe((v) => {
     expect(v).toBe(true);
   });
 
@@ -91,24 +91,24 @@ test('validates new signal object for boolean', () => {
 });
 
 test('validates new signal object for object', () => {
-  const [ getter, setter, subscribe, destroy ] = signal({ foo: 'bar' });
+  const [getter, setter, subscribe, destroy] = signal({ foo: 'bar' });
 
   expect(getter()).toEqual({ foo: 'bar' });
 
   setter({ foo: 'baz' });
 
   expect(getter()).toEqual({ foo: 'baz' });
-  expect(getter(v => ({ foo: 'fiz' }))).toEqual({ foo: 'fiz' });
+  expect(getter((v) => ({ foo: 'fiz' }))).toEqual({ foo: 'fiz' });
 
   getter.set({ foo: 'quux' });
 
   expect(getter()).toEqual({ foo: 'quux' });
 
-  getter.subscribe(v => {
+  getter.subscribe((v) => {
     expect(v).toEqual({ foo: 'quux' });
   });
 
-  subscribe(v => {
+  subscribe((v) => {
     expect(v).toEqual({ foo: 'quux' });
   });
 
@@ -117,25 +117,25 @@ test('validates new signal object for object', () => {
 });
 
 test('validates new signal object for array', () => {
-  const [ getter, setter, subscribe, destroy ] = signal([ 'foo', 'bar' ]);
+  const [getter, setter, subscribe, destroy] = signal(['foo', 'bar']);
 
-  expect(getter()).toEqual([ 'foo', 'bar' ]);
+  expect(getter()).toEqual(['foo', 'bar']);
 
-  setter([ 'foo', 'baz' ]);
+  setter(['foo', 'baz']);
 
-  expect(getter()).toEqual([ 'foo', 'baz' ]);
-  expect(getter(v => [ 'foo', 'fiz' ])).toEqual([ 'foo', 'fiz' ]);
+  expect(getter()).toEqual(['foo', 'baz']);
+  expect(getter((v) => ['foo', 'fiz'])).toEqual(['foo', 'fiz']);
 
-  getter.set([ 'foo', 'quux' ]);
+  getter.set(['foo', 'quux']);
 
-  expect(getter()).toEqual([ 'foo', 'quux' ]);
+  expect(getter()).toEqual(['foo', 'quux']);
 
-  getter.subscribe(v => {
-    expect(v).toEqual([ 'foo', 'quux' ]);
+  getter.subscribe((v) => {
+    expect(v).toEqual(['foo', 'quux']);
   });
 
-  subscribe(v => {
-    expect(v).toEqual([ 'foo', 'quux' ]);
+  subscribe((v) => {
+    expect(v).toEqual(['foo', 'quux']);
   });
 
   destroy();
