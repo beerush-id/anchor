@@ -16,10 +16,6 @@
     "./history": {
       "types": "./dist/history/index.d.ts",
       "import": "./dist/history/index.js"
-    },
-    "./storage": {
-      "types": "./dist/storage/index.d.ts",
-      "import": "./dist/storage/index.js"
     }
   },
   "files": [
@@ -61,7 +57,8 @@
     "build": "rimraf dist && tsup && publint",
     "prepublish": "rimraf dist && tsup && publint",
     "test": "rimraf coverage && vitest --run",
-    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
+    "format": "prettier --write ."
   },
   "license": "MIT"
 }

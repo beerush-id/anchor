@@ -59,7 +59,6 @@ export function createCopy<T>(init: T, deepCopy?: boolean) {
 }
 
 export function broadcast(subscribers: Set<unknown>, value: unknown, event: StateChange) {
-  // Use forEach for Set iteration, which is generally more idiomatic and potentially slightly faster than for...of for Sets.
   for (const subscriber of subscribers) {
     (subscriber as StateSubscriber<unknown>)(value, event);
   }
@@ -71,4 +70,8 @@ export function linkable(value: unknown): value is Linkable {
 
 export function shouldProxy(value: unknown): boolean {
   return !(value instanceof Map || value instanceof Set);
+}
+
+export function shortId() {
+  return Math.random().toString(36).substring(2, 15);
 }

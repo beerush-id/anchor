@@ -1,5 +1,5 @@
 import { session, SessionStorage } from './session.js';
-import type { AnchorOptions, PlainObject } from '../types.js';
+import type { AnchorOptions, PlainObject } from '@anchor/core';
 import type { ZodType } from 'zod/v4';
 
 const hasLocalStorage = () => typeof sessionStorage !== 'undefined';

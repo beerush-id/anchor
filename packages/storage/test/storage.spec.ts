@@ -1,13 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger, type PlainObject } from '../src/index.js';
-import {
-  MemoryStorage,
-  PersistentStorage,
-  SessionStorage,
-  STORAGE_KEY,
-  session,
-  persistent,
-} from '../src/storage/index.js';
+import { logger, type PlainObject } from '@anchor/core';
+import { MemoryStorage, persistent, PersistentStorage, session, SessionStorage, STORAGE_KEY } from '../src/index.js';
 import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
 
 describe('Storage Modules', () => {

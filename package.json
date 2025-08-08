@@ -4,17 +4,14 @@
   "version": "0.0.1",
   "description": "Reactive State Management for Javascript",
   "scripts": {
-    "build": "esdev --clean",
-    "dev": "esdev --watch",
-    "dev:docs": "mpkg run dev -f docs",
-    "dev:react": "mpkg run dev -f apps/react",
+    "dev": "bpkg run dev",
+    "dev:core": "bpkg run dev -f packages/core",
+    "dev:docs": "bpkg run dev -f apps/docs",
+    "dev:react": "bpkg run dev -f apps/react",
+    "build": "bpkg run build",
     "format": "bpkg run format",
     "lint": "bpkg run lint",
-    "test": "vitest run",
-    "prepublish": "npm run build && npm run test && npm run docs:build",
-    "docs:dev": "vitepress dev docs --port 9933",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "test": "bpkg run test"
   },
   "devDependencies": {
     "@beerush/esdev": "^1.1.0",
@@ -23,7 +20,7 @@
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "monopkg": "^0.3.7",
+    "monopkg": "^0.3.10",
     "prettier": "^3.2.5",
     "typedoc": "^0.24.8",
     "typescript": "^5.1.6",
@@ -46,90 +43,11 @@
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
   "typings": "lib/esm/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./lib/esm/index.d.ts",
-      "import": "./lib/esm/index.js",
-      "require": "./lib/cjs/index.js"
-    },
-    "./api": {
-      "types": "./lib/esm/api/index.d.ts",
-      "import": "./lib/esm/api/index.js",
-      "require": "./lib/cjs/api/index.js"
-    },
-    "./core": {
-      "types": "./lib/esm/core/index.d.ts",
-      "import": "./lib/esm/core/index.js",
-      "require": "./lib/cjs/core/index.js"
-    },
-    "./db": {
-      "types": "./lib/esm/db/index.d.ts",
-      "import": "./lib/esm/db/index.js",
-      "require": "./lib/cjs/db/index.js"
-    },
-    "./history": {
-      "types": "./lib/esm/history/index.d.ts",
-      "import": "./lib/esm/history/index.js",
-      "require": "./lib/cjs/history/index.js"
-    },
-    "./hook": {
-      "types": "./lib/esm/hook/index.d.ts",
-      "import": "./lib/esm/hook/index.js",
-      "require": "./lib/cjs/hook/index.js"
-    },
-    "./i18n": {
-      "types": "./lib/esm/i18n/index.d.ts",
-      "import": "./lib/esm/i18n/index.js",
-      "require": "./lib/cjs/i18n/index.js"
-    },
-    "./schema": {
-      "types": "./lib/esm/schema/index.d.ts",
-      "import": "./lib/esm/schema/index.js",
-      "require": "./lib/cjs/schema/index.js"
-    },
-    "./stream": {
-      "types": "./lib/esm/stream/index.d.ts",
-      "import": "./lib/esm/stream/index.js",
-      "require": "./lib/cjs/stream/index.js"
-    },
-    "./sync": {
-      "types": "./lib/esm/sync/index.d.ts",
-      "import": "./lib/esm/sync/index.js",
-      "require": "./lib/cjs/sync/index.js"
-    },
-    "./store": {
-      "types": "./lib/esm/store/index.d.ts",
-      "import": "./lib/esm/store/index.js",
-      "require": "./lib/cjs/store/index.js"
-    },
-    "./utils": {
-      "types": "./lib/esm/utils/index.d.ts",
-      "import": "./lib/esm/utils/index.js",
-      "require": "./lib/cjs/utils/index.js"
-    }
-  },
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
-  "files": [
-    "lib/"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beerush-id/anchor.git"
   },
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
-  },
-  "keywords": [
-    "reactive",
-    "reactive",
-    "svelte",
-    "reactive",
-    "object"
-  ]
+  }
 }

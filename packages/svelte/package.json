@@ -52,7 +52,8 @@
     "dev": "rimraf dist && tsup --watch",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
-    "prepublish": "rimraf dist && tsup && publint"
+    "prepublish": "rimraf dist && tsup && publint",
+    "format": "prettier --write ."
   },
   "license": "MIT",
   "dependencies": {

@@ -1,6 +1,5 @@
-import type { StateKey } from '../types.js';
+import { anchor, type StateKey } from '@anchor/core';
 import { isObject } from '@beerush/utils';
-import { clear } from '../helper.js';
 
 export type StorageEvent = {
   type: 'set' | 'assign' | 'delete' | 'clear';
@@ -48,7 +47,7 @@ export class MemoryStorage<T extends Record<string, unknown> = Record<string, un
   }
 
   public clear() {
-    clear(this.#storage);
+    anchor.clear(this.#storage);
     this.publish({ type: 'clear', name: '' });
   }
 

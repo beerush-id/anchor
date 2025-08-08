@@ -19,7 +19,7 @@ import {
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { createLinkableRefs, shouldProxy } from './utils.js';
+import { createLinkableRefs, shortId, shouldProxy } from './utils.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createArrayProxyHandler, createProxyHandler } from './proxy.js';
 import { wrapMethods } from './wrapper.js';
@@ -53,7 +53,7 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
     return STATE_REGISTRY.get(init as WeakKey) as T;
   }
 
-  const id = Math.random().toString(36).substring(2, 15);
+  const id = shortId();
 
   logger.verbose('Initializing state:', init);
 

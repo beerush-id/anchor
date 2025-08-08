@@ -1,10 +1,8 @@
 import { MemoryStorage } from './memory.js';
-import { logger } from '../logger.js';
+import type { AnchorOptions, PlainObject, StateUnsubscribe } from '@anchor/core';
+import { anchor, derive, logger } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
-import type { AnchorOptions, PlainObject, StateUnsubscribe } from '../types.js';
 import type { ZodType } from 'zod/v4';
-import { anchor } from '../anchor.js';
-import { derive } from '../derive.js';
 
 export const STORAGE_KEY = 'anchor-storage';
 
