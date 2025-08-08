@@ -208,7 +208,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
       if (partial) {
         const errors: ZodIssue[] = [];
 
-        for (const err of validation.error.errors) {
+        for (const err of validation.error.issues) {
           if (err.path) {
             const value = read<R>(payload, err.path as never);
             if (typeof value !== 'undefined') {
@@ -221,7 +221,7 @@ export class Endpoint<Entity extends Rec, Meta extends StreamMeta = StreamMeta, 
           throw new SchemaError(errors);
         }
       } else {
-        throw new SchemaError(validation.error.errors);
+        throw new SchemaError(validation.error.issues);
       }
     }
   }

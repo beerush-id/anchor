@@ -1,7 +1,45 @@
 {
-  "name": "@beerush/anchor",
+  "name": "anchor",
+  "type": "module",
   "version": "0.0.1",
   "description": "Reactive State Management for Javascript",
+  "scripts": {
+    "build": "esdev --clean",
+    "dev": "esdev --watch",
+    "dev:docs": "mpkg run dev -f docs",
+    "dev:react": "mpkg run dev -f apps/react",
+    "format": "bpkg run format",
+    "lint": "bpkg run lint",
+    "test": "vitest run",
+    "prepublish": "npm run build && npm run test && npm run docs:build",
+    "docs:dev": "vitepress dev docs --port 9933",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "@beerush/esdev": "^1.1.0",
+    "@typescript-eslint/eslint-plugin": "^7.4.0",
+    "@typescript-eslint/parser": "^7.4.0",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "monopkg": "^0.3.7",
+    "prettier": "^3.2.5",
+    "typedoc": "^0.24.8",
+    "typescript": "^5.1.6",
+    "vitepress": "^1.0.0-rc.22",
+    "vitest": "^3.2.4",
+    "vue": "^3.3.6"
+  },
+  "engines": {
+    "bun": ">=1.2.15"
+  },
+  "packageManager": "bun@1.2.15",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -84,30 +122,8 @@
     "type": "git",
     "url": "git+https://github.com/beerush-id/anchor.git"
   },
-  "scripts": {
-    "dev": "esdev --watch",
-    "build": "esdev --clean",
-    "prepublish": "npm run build && npm run test && npm run docs:build",
-    "docs:dev": "vitepress dev docs --port 9933",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
-    "test": "vitest run"
-  },
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
-  },
-  "devDependencies": {
-    "@beerush/esdev": "^1.1.0",
-    "@typescript-eslint/eslint-plugin": "^7.4.0",
-    "@typescript-eslint/parser": "^7.4.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.2.5",
-    "typedoc": "^0.24.8",
-    "typescript": "^5.1.6",
-    "vitepress": "^1.0.0-rc.22",
-    "vitest": "^0.34.6",
-    "vue": "^3.3.6"
   },
   "keywords": [
     "reactive",
@@ -115,9 +131,5 @@
     "svelte",
     "reactive",
     "object"
-  ],
-  "type": "module",
-  "peerDependencies": {
-    "zod": "^3.22.5"
-  }
+  ]
 }

@@ -44,8 +44,8 @@ export function stateHistory<T extends Init>(
 
     record.set({
       hasChanges: backwards.length > 0,
-      canUndo: backwards.length > 0,
-      canRedo: forwards.length > 0,
+      canBackward: backwards.length > 0,
+      canForward: forwards.length > 0,
     });
   };
 
@@ -95,8 +95,8 @@ export function stateHistory<T extends Init>(
     backwards,
     forwards,
     hasChanges: false,
-    canUndo: false,
-    canRedo: false,
+    canBackward: false,
+    canForward: false,
     undo,
     redo,
     clear,

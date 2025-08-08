@@ -5,7 +5,7 @@ title: "Anchor - Simplified JavaScript State Management"
 hero:
   name: "Anchor"
   text: "Keep Simple Things Simple"
-  tagline: "Embrace JavaScript's natural mutability for effortlessly managing state — from simple todos to complex graphic design apps. Anchor handles state complexity with elegance, making any app's state a breeze."
+  tagline: "Embrace JavaScript's natural mutability for effortlessly managing state — from simple todo to complex graphic design apps. Anchor handles state complexity with elegance, making any app's state a breeze."
   image:
     src: /assets/logo.svg
     alt: Anchor

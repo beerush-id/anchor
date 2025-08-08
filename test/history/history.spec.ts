@@ -12,9 +12,9 @@ test('History without debounce', () => {
   expect(state.count).toBe(1);
   expect(track.hasChanges).toBe(true);
   expect(track.backwards.length).toBe(1);
-  expect(track.canUndo).toBe(true);
+  expect(track.canBackward).toBe(true);
   expect(track.forwards.length).toBe(0);
-  expect(track.canRedo).toBe(false);
+  expect(track.canForward).toBe(false);
   expect(track.changes).toEqual({ count: 1 });
 
   track.undo();
@@ -22,9 +22,9 @@ test('History without debounce', () => {
   expect(state.count).toBe(0);
   expect(track.hasChanges).toBe(false);
   expect(track.backwards.length).toBe(0);
-  expect(track.canUndo).toBe(false);
+  expect(track.canBackward).toBe(false);
   expect(track.forwards.length).toBe(1);
-  expect(track.canRedo).toBe(true);
+  expect(track.canForward).toBe(true);
   expect(track.changes).toEqual({});
 
   track.redo();
@@ -32,9 +32,9 @@ test('History without debounce', () => {
   expect(state.count).toBe(1);
   expect(track.hasChanges).toBe(true);
   expect(track.backwards.length).toBe(1);
-  expect(track.canUndo).toBe(true);
+  expect(track.canBackward).toBe(true);
   expect(track.forwards.length).toBe(0);
-  expect(track.canRedo).toBe(false);
+  expect(track.canForward).toBe(false);
   expect(track.changes).toEqual({ count: 1 });
 
   track.destroy();
@@ -43,9 +43,9 @@ test('History without debounce', () => {
   expect(state.count).toBe(2);
   expect(track.hasChanges).toBe(false);
   expect(track.backwards.length).toBe(0);
-  expect(track.canUndo).toBe(false);
+  expect(track.canBackward).toBe(false);
   expect(track.forwards.length).toBe(0);
-  expect(track.canRedo).toBe(false);
+  expect(track.canForward).toBe(false);
   expect(track.changes).toEqual({});
 });
 

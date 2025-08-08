@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-orange: #ffa500;
+  --color-brand-purple: #c62879;
+}
+
+.shiki {
+  @apply p-4 rounded-md overflow-auto;
+}
+
+body {
+  @apply text-white;
+}
