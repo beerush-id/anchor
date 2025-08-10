@@ -31,6 +31,8 @@
     "@eslint/css": "^0.5.0",
     "@eslint/js": "^9.23.0",
     "@eslint/markdown": "^6.3.0",
+    "@playwright/test": "^1.54.2",
+    "@types/bun": "^1.2.19",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "esbuild-raw-plugin": "^0.2.0",
@@ -54,7 +56,9 @@
     "build": "rimraf dist && tsup && publint",
     "prepublish": "rimraf dist && tsup && publint",
     "test": "rimraf coverage && vitest --run",
-    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "license": "MIT"
 }

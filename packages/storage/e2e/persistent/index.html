@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persistent Storage E2E Tests</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        margin: 0;
+        font-size: 2.5rem;
+      }
+      .subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-top: 10px;
+      }
+      .test-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      .test-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+      .test-card:hover {
+        transform: translateY(-5px);
+      }
+      .test-card h2 {
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+      .test-card.passed {
+        border-left: 5px solid #4caf50;
+      }
+      .test-card.failed {
+        border-left: 5px solid #f44336;
+      }
+      .test-result {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .test-result.passed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+      .test-result.failed {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+      .run-button {
+        display: block;
+        margin: 20px auto;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+      .run-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      }
+      .run-button:active {
+        transform: translateY(0);
+      }
+      .status {
+        text-align: center;
+        padding: 20px;
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+      .status.passed {
+        color: #4caf50;
+      }
+      .status.failed {
+        color: #f44336;
+      }
+      .hidden {
+        display: none;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Persistent Storage E2E Tests</h1>
+      <div class="subtitle">Testing the Anchor Storage Persistent Implementation</div>
+    </header>
+
+    <button id="runTests" class="run-button">Run All Tests</button>
+    
+    <div id="testStatus" class="status hidden"></div>
+
+    <div id="testResults" class="test-container hidden">
+      <!-- Test results will be populated here -->
+    </div>
+
+    <script type="module" src="./index.js"></script>
+    <script>
+      document.getElementById('runTests').addEventListener('click', async function() {
+        const button = this;
+        button.disabled = true;
+        button.textContent = 'Running Tests...';
+        
+        const results = await window.runPersistentStorageTests();
+        displayResults(results);
+        
+        button.disabled = false;
+        button.textContent = 'Run All Tests Again';
+      });
+      
+      function displayResults(results) {
+        const resultsContainer = document.getElementById('testResults');
+        const statusElement = document.getElementById('testStatus');
+        
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.remove('hidden');
+        
+        let passedTests = 0;
+        let totalTests = 0;
+        
+        Object.keys(results).forEach(testKey => {
+          if (testKey === 'importError') return;
+          
+          totalTests++;
+          const test = results[testKey];
+          const isPassed = !test.error;
+          
+          if (isPassed) passedTests++;
+          
+          const testCard = document.createElement('div');
+          testCard.className = `test-card ${isPassed ? 'passed' : 'failed'}`;
+          
+          const testName = getTestName(testKey);
+          testCard.innerHTML = `
+            <h2>${testName}</h2>
+            <div class="test-result ${isPassed ? 'passed' : 'failed'}">
+              Status: ${isPassed ? '✅ PASSED' : '❌ FAILED'}
+            </div>
+            ${isPassed ? 
+              `<pre>${JSON.stringify(test, null, 2)}</pre>` : 
+              `<div>Error: ${test.error}</div>`}
+          `;
+          
+          resultsContainer.appendChild(testCard);
+        });
+        
+        statusElement.textContent = `Tests: ${passedTests}/${totalTests} passed`;
+        statusElement.className = `status ${passedTests === totalTests ? 'passed' : 'failed'}`;
+        statusElement.classList.remove('hidden');
+      }
+      
+      function getTestName(testKey) {
+        const testNames = {
+          test1: 'Initialize with initial data',
+          test2: 'Get correct length',
+          test3: 'Set and get values',
+          test4: 'Delete values',
+          test5: 'Assign data',
+          test6: 'Subscribe and publish events',
+          test7: 'Generate JSON representation',
+          test8: 'Persist data in localStorage'
+        };
+        
+        return testNames[testKey] || testKey;
+      }
+    </script>
+  </body>
+</html>
