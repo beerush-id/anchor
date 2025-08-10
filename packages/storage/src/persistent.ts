@@ -1,10 +1,17 @@
-import { session, SessionStorage } from './session.js';
+import { session, SessionStorage, STORAGE_KEY } from './session.js';
 import type { AnchorOptions, PlainObject } from '@anchor/core';
 import type { ZodType } from 'zod/v4';
 
 const hasLocalStorage = () => typeof sessionStorage !== 'undefined';
 
 export class PersistentStorage<T extends Record<string, unknown> = Record<string, unknown>> extends SessionStorage<T> {
+  public get key(): string {
+    return `${STORAGE_KEY}-persistent://${this.name}@${this.version}`;
+  }
+
+  public get oldKey(): string {
+    return `${STORAGE_KEY}-persistent://${this.name}@${this.previousVersion ?? '-1.0.0'}`;
+  }
   constructor(
     protected name: string,
     protected init?: T,

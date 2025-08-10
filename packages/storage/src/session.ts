@@ -4,17 +4,18 @@ import { anchor, derive, logger } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
 import type { ZodType } from 'zod/v4';
 
-export const STORAGE_KEY = 'anchor-storage';
+export const STORAGE_KEY = 'anchor';
+export const STORAGE_SYNC = new Map<string, PlainObject>();
 
 const hasSessionStorage = () => typeof sessionStorage !== 'undefined';
 
 export class SessionStorage<T extends Record<string, unknown> = Record<string, unknown>> extends MemoryStorage<T> {
-  protected get key(): string {
-    return `${STORAGE_KEY}://${this.name}@${this.version}`;
+  public get key(): string {
+    return `${STORAGE_KEY}-session://${this.name}@${this.version}`;
   }
 
-  protected get oldKey(): string {
-    return `${STORAGE_KEY}://${this.name}@${this.previousVersion ?? '-1.0.0'}`;
+  public get oldKey(): string {
+    return `${STORAGE_KEY}-session://${this.name}@${this.previousVersion ?? '-1.0.0'}`;
   }
 
   constructor(
@@ -118,9 +119,16 @@ export const session = (<T extends PlainObject, S extends ZodType = ZodType>(
     const controller = derive.resolve(state);
 
     if (typeof controller?.subscribe === 'function') {
-      const unsubscribe = controller.subscribe(() => {
+      STORAGE_SYNC.set(storage.key, state);
+
+      const stateUnsubscribe = controller.subscribe(() => {
         storage?.write();
       });
+      const unsubscribe = () => {
+        stateUnsubscribe?.();
+        STORAGE_SYNC.delete(storage.key);
+      };
+
       STORAGE_SUBSCRIPTION_REGISTRY.set(state, unsubscribe);
     }
   }
@@ -138,3 +146,20 @@ session.leave = <T extends PlainObject>(state: T) => {
   STORAGE_REGISTRY.delete(state);
   STORAGE_SUBSCRIPTION_REGISTRY.delete(state);
 };
+
+if (isBrowser()) {
+  window.addEventListener('storage', (event) => {
+    if (!event.key) return;
+
+    if (STORAGE_SYNC.has(event.key)) {
+      const state = STORAGE_SYNC.get(event.key) as PlainObject;
+
+      try {
+        const data = JSON.parse(event.newValue ?? '');
+        anchor.assign(state, data as PlainObject);
+      } catch (error) {
+        logger.error(`Unable to parse new value of: "${event.key}".`, error);
+      }
+    }
+  });
+}
