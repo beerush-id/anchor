@@ -1,7 +1,7 @@
 import type { ZodType } from 'zod/v4';
 import { broadcast, linkable } from './utils.js';
 import { STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
-import type { Linkable, SetTrapOptions, StateKey, StateMutation } from './types.js';
+import type { KeyLike, Linkable, SetTrapOptions, StateMutation } from './types.js';
 
 export function wrapMethods<T extends Set<Linkable> | Map<string, Linkable>, S extends ZodType>({
   init,
@@ -121,7 +121,7 @@ export function wrapMethods<T extends Set<Linkable> | Map<string, Linkable>, S e
           broadcast(subscribers, init, {
             type: method,
             prev: self instanceof Map ? entries : values,
-            keys: self instanceof Map ? (entries.map((item) => item.key) as StateKey[]) : [],
+            keys: self instanceof Map ? (entries.map((item) => item.key) as KeyLike[]) : [],
           });
 
           return result;

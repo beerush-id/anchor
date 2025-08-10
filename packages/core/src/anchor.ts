@@ -4,7 +4,7 @@ import { logger } from './logger.js';
 import type {
   AnchorFn,
   AnchorOptions,
-  PlainObject,
+  ObjLike,
   SetTrapOptions,
   StateChildrenMap,
   StateController,
@@ -100,7 +100,7 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
 
     for (const [key, ref] of createLinkableRefs(init)) {
       logger.verbose('Anchoring child reference for key:', key, 'with value:', ref);
-      (init as PlainObject)[key] = anchorFn(ref, {
+      (init as ObjLike)[key] = anchorFn(ref, {
         ...configs,
         schema: (schema as never as ZodObject)?.shape?.[key],
       });
@@ -134,7 +134,7 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
     const proxyHandler = Array.isArray(state)
       ? createArrayProxyHandler<T, S>(proxyHandlerOptions)
       : createProxyHandler<T, S>(proxyHandlerOptions);
-    state = new Proxy(state as Record<string, unknown>, proxyHandler) as T;
+    state = new Proxy(state as ObjLike, proxyHandler) as T;
 
     logger.verbose('Proxy created for state:', state);
   } else if (init instanceof Set || init instanceof Map) {

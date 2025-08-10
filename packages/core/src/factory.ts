@@ -1,8 +1,8 @@
 import type {
   DestroyFactoryInit,
+  KeyLike,
   Linkable,
   LinkFactoryInit,
-  StateKey,
   StateSubscribeFn,
   StateSubscriber,
   SubscribeFactoryInit,
@@ -15,7 +15,7 @@ import { INIT_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { cancelCleanup } from './derive.js';
 
 export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkFactoryInit<T>) {
-  return (childPath: StateKey, childState: Linkable) => {
+  return (childPath: KeyLike, childState: Linkable) => {
     // Avoid duplicate linking
     if (!STATE_REGISTRY.has(childState) || subscriptions.has(childState)) return;
 

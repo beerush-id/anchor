@@ -1,7 +1,7 @@
 import type {
   Linkable,
+  ObjLike,
   PipeTransformer,
-  PlainObject,
   StateController,
   StateSubscriber,
   StateUnsubscribe,
@@ -71,12 +71,12 @@ deriveFn.pipe = <Source, Target>(
 
   if (!isFunction(transform)) {
     return deriveFn(source, (snapshot) => {
-      assign(target as PlainObject, snapshot as PlainObject);
+      assign(target as ObjLike, snapshot as ObjLike);
     });
   }
 
   return deriveFn(source, (newValue) => {
-    Object.assign(target as PlainObject, transform(newValue as Source));
+    Object.assign(target as ObjLike, transform(newValue as Source));
   });
 };
 

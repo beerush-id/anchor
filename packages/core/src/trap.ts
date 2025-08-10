@@ -1,5 +1,5 @@
 import type { ZodArray, ZodObject, ZodType } from 'zod/v4';
-import type { GetTrapOptions, Linkable, PlainObject, SetTrapOptions, StateKey, StateMutation } from './types.js';
+import type { GetTrapOptions, KeyLike, Linkable, ObjLike, SetTrapOptions, StateMutation } from './types.js';
 import { STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import { broadcast, linkable } from './utils.js';
 import { logger } from './logger.js';
@@ -9,7 +9,7 @@ export function createGetTrap<T, S extends ZodType>(options: GetTrapOptions<T, S
   const { mutator, deferred, cloned, link, strict, schema, anchor, recursive, children, subscribers, subscriptions } =
     options;
 
-  return (target: PlainObject, prop: StateKey, receiver?: unknown) => {
+  return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     if (children.has(prop)) {
       const proxied = children.get(prop) as Linkable;
 
@@ -61,7 +61,7 @@ export function createSetTrap<T, S extends ZodType>(options: SetTrapOptions<T, S
   const { deferred, recursive, cloned, strict, schema, link, unlink, anchor, children, subscribers, subscriptions } =
     options;
 
-  return (target: PlainObject, prop: StateKey, value: Linkable, receiver?: unknown) => {
+  return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
     const current = children.get(prop) ?? (Reflect.get(target, prop, receiver) as Linkable);
 
     if (current === value) {
@@ -126,7 +126,7 @@ export function createSetTrap<T, S extends ZodType>(options: SetTrapOptions<T, S
 export function createDeleteTrap<T, S extends ZodType>(options: SetTrapOptions<T, S>) {
   const { strict, schema, unlink, children, subscribers, subscriptions } = options;
 
-  return (target: PlainObject, prop: StateKey, receiver?: unknown) => {
+  return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
 
     if (subSchema) {
@@ -171,7 +171,7 @@ export function createArrayMutator<T, S extends ZodType>(options: SetTrapOptions
     const originFn = (init as Array<unknown>)[method] as (...args: unknown[]) => unknown;
     const targetFn = (...args: unknown[]) => {
       // Capture the current items to track the removed items.
-      const currentItems = [...(init as PlainObject[])];
+      const currentItems = [...(init as ObjLike[])];
 
       // Create a list of the added items.
       let addedItems: Linkable[] = [];

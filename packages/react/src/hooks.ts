@@ -1,5 +1,5 @@
 import { type ZodArray, type ZodObject, ZodType } from 'zod/v4';
-import type { AnchorOptions, StateChangeEvent, StateMutation } from '@anchor/core';
+import type { AnchorOptions, ObjLike, StateChange, StateMutation } from '@anchor/core';
 import { anchor, derive, logger } from '@anchor/core';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -15,19 +15,16 @@ export type UseAnchorOptions<T, S extends ZodType> = AnchorOptions<S> & {
   deps?: Dependencies<T>;
 };
 export type DerivedMemoDeps<T> = Array<Dependency<T> | unknown>;
-export type StateOutput<T> = [T, StateChangeEvent];
+export type StateOutput<T> = [T, StateChange];
 
-export function useAnchor<T>(init: T, deps?: Dependencies<T>): [T, StateChangeEvent];
-export function useAnchor<T, S extends ZodType = ZodType>(
-  init: T,
-  options?: UseAnchorOptions<T, S>
-): [T, StateChangeEvent];
+export function useAnchor<T>(init: T, deps?: Dependencies<T>): [T, StateChange];
+export function useAnchor<T, S extends ZodType = ZodType>(init: T, options?: UseAnchorOptions<T, S>): [T, StateChange];
 export function useAnchor<T, S extends ZodType = ZodType>(
   init: T,
   options?: UseAnchorOptions<T, S> | Dependencies<T>
-): [T, StateChangeEvent] {
+): [T, StateChange] {
   const [[initRef, optionsRef]] = useState([init, options]);
-  const [eventRef, setEventRef] = useState<StateChangeEvent>({ type: 'init', path: '' });
+  const [eventRef, setEventRef] = useState<StateChange>({ type: 'init', keys: [] });
   const [stateRef] = useMemo<[T]>(() => {
     logger.verbose('[react:use] Creating state:', init);
 
@@ -59,39 +56,39 @@ export function useAnchor<T, S extends ZodType = ZodType>(
   return [stateRef, eventRef];
 }
 
-export function useObject<T extends Record<string, unknown>>(init: T, deps?: Dependencies<T>): [T, StateChangeEvent];
-export function useObject<T extends Record<string, unknown>, S extends ZodObject = ZodObject>(
+export function useObject<T extends ObjLike>(init: T, deps?: Dependencies<T>): [T, StateChange];
+export function useObject<T extends ObjLike, S extends ZodObject = ZodObject>(
   init: T,
   options?: UseAnchorOptions<T, S>
-): [T, StateChangeEvent];
-export function useObject<T extends Record<string, unknown>, S extends ZodObject = ZodObject>(
+): [T, StateChange];
+export function useObject<T extends ObjLike, S extends ZodObject = ZodObject>(
   init: T,
   options?: UseAnchorOptions<T, S> | Dependencies<T>
-): [T, StateChangeEvent] {
+): [T, StateChange] {
   return useAnchor(init, options as Dependencies<T>);
 }
 
-export function useArray<T extends unknown[]>(init: T, deps?: Dependencies<T>): [T, StateChangeEvent];
+export function useArray<T extends unknown[]>(init: T, deps?: Dependencies<T>): [T, StateChange];
 export function useArray<T extends unknown[], S extends ZodArray = ZodArray>(
   init: T,
   options?: UseAnchorOptions<T, S>
-): [T, StateChangeEvent];
+): [T, StateChange];
 export function useArray<T extends unknown[], S extends ZodArray = ZodArray>(
   init: T,
   options?: UseAnchorOptions<T, S> | Dependencies<T>
-): [T, StateChangeEvent] {
+): [T, StateChange] {
   return useAnchor<T, S>(init, options as UseAnchorOptions<T, S>);
 }
 
-export function useFlatArray<T extends unknown[]>(init: T, deps?: Dependencies<T>): [T, StateChangeEvent];
+export function useFlatArray<T extends unknown[]>(init: T, deps?: Dependencies<T>): [T, StateChange];
 export function useFlatArray<T extends unknown[], S extends ZodArray = ZodArray>(
   init: T,
   options?: UseAnchorOptions<T, S>
-): [T, StateChangeEvent];
+): [T, StateChange];
 export function useFlatArray<T extends unknown[], S extends ZodArray = ZodArray>(
   init: T,
   options?: UseAnchorOptions<T, S> | Dependencies<T>
-): [T, StateChangeEvent] {
+): [T, StateChange] {
   return useAnchor<T, S>(init, { ...options, recursive: 'flat' } as UseAnchorOptions<T, S>);
 }
 
@@ -103,7 +100,7 @@ export function useDerived<T, R>(
   transform?: ((state: T) => R) | Dependencies<T>,
   deps?: Dependencies<T>
 ): StateOutput<T | R> {
-  const [eventRef, setEventRef] = useState({ type: 'init', path: '' } as StateChangeEvent);
+  const [eventRef, setEventRef] = useState({ type: 'init', keys: [] } as StateChange);
   const [derivedRef] = useMemo(() => {
     return [typeof transform === 'function' ? transform(state) : state];
   }, [eventRef, state, transform, deps]);
@@ -156,19 +153,20 @@ export function useDerivedMemo<T, R>(
   return [output, eventRef];
 }
 
-const shouldRender = <T>(event: StateChangeEvent, dependencies?: Dependency<T>[]) => {
+const shouldRender = <T>(event: StateChange, dependencies?: Dependency<T>[]) => {
   if (!dependencies) return true;
+  const path = event.keys.join('.');
 
   for (const dep of dependencies) {
     if (typeof dep === 'string') {
-      return event.path === dep || event.type === dep;
+      return path === dep || event.type === dep;
     } else if (typeof dep === 'object') {
       const { path, type } = dep;
 
       if (path && type) {
-        return event.path === path && event.type === type;
+        return path === path && event.type === type;
       } else {
-        return event.type === type || event.path === path;
+        return event.type === type || path === path;
       }
     }
   }

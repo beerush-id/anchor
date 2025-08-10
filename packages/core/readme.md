@@ -1,36 +1,222 @@
-# TypeScript Package Template (tsup)
+# @anchor/core
 
-A simple, zero-config TypeScript package template using tsup for bundling. Perfect for creating libraries and packages with modern tooling.
+Reactive State Management for JavaScript with a focus on simplicity and developer experience.
 
 ## Features
 
-- **TypeScript** - Write your code in TypeScript for type safety and better developer experience
-- **tsup** - Zero-config bundler powered by esbuild for blazing fast builds
-- **ESLint** - Integrated code linting with modern ESLint configuration
-- **Prettier** - Code formatting that maintains consistent style
-- **Publint** - Package validation before publishing to npm
-- **Dual Package Support** - Outputs both ESM and CommonJS formats
+- **Reactive State Management** - Directly mutate state without needing setState patterns
+- **Framework Agnostic** - Works with React, Svelte, Vue, Angular, and vanilla JS
+- **Schema Validation** - Built-in Zod schema validation support
+- **History Tracking** - Undo/redo functionality with the history module
+- **API Integration** - Fetch and stream utilities for REST APIs and WebSockets
+- **Type Safety** - Full TypeScript support with comprehensive type definitions
+- **Zero Dependencies** - Lightweight core with no production dependencies
 
-## Getting Started
+## Installation
 
-1. Clone this template
-2. Install dependencies with your preferred package manager
-3. Start developing with `npm run dev`
+```bash
+npm install @anchor/core
+```
 
-## Scripts
+## Quick Start
 
-- `npm run dev` - Start development mode with watch
-- `npm run build` - Build the package for production
-- `npm run clean` - Remove the dist directory
-- `npm run prepublish` - Prepare the package for publishing
+```javascript
+import { anchor, derive } from '@anchor/core';
 
-## Output
+// Create a reactive state object
+const state = anchor({
+  count: 0,
+  user: {
+    name: 'John Doe',
+    email: 'john@example.com'
+  }
+});
 
-The build process generates:
+// Subscribe to state changes
+const unsubscribe = derive(state, (snapshot, event) => {
+  console.log('State changed:', snapshot, event);
+});
 
-- CommonJS output (`*.cjs`)
-- ES Modules output (`*.js`)
-- TypeScript declarations (`*.d.ts`)
+// Mutate state directly
+state.count++;
+state.user.name = 'Jane Doe';
+
+// Unsubscribe when needed
+// unsubscribe();
+```
+
+## Core Concepts
+
+### Anchoring State
+
+The **anchor** function makes JavaScript objects, arrays, Maps, and Sets reactive. Note that Anchor only supports complex data types - not primitive values directly:
+
+```javascript
+import { anchor } from '@anchor/core';
+
+// Objects (supported)
+const user = anchor({
+  name: 'John',
+  age: 30
+});
+
+// Arrays (supported)
+const items = anchor([1, 2, 3]);
+
+// Maps (supported)
+const mapState = anchor(new Map([['key', 'value']]));
+
+// Sets (supported)
+const setState = anchor(new Set([1, 2, 3]));
+```
+
+### Subscriptions
+
+Listen to state changes with the **derive** function:
+
+```javascript
+import { anchor, derive } from '@anchor/core';
+
+const state = anchor({ count: 0 });
+
+const unsubscribe = derive(state, (snapshot, event) => {
+  console.log('State updated:', snapshot, 'Event:', event);
+});
+
+// Later, to unsubscribe
+unsubscribe();
+```
+
+Alternatively, you can access the controller directly:
+
+```javascript
+import { anchor, derive } from '@anchor/core';
+
+const state = anchor({ count: 0 });
+const controller = derive.resolve(state);
+
+if (controller) {
+  const unsubscribe = controller.subscribe((snapshot, event) => {
+    console.log('State updated:', snapshot, 'Event:', event);
+  });
+  
+  // Later, to unsubscribe
+  // unsubscribe();
+}
+```
+
+### Schema Validation
+
+Validate your state with Zod schemas:
+
+```javascript
+import { anchor } from '@anchor/core';
+import { z } from 'zod';
+
+const UserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email()
+});
+
+const user = anchor({
+  name: 'John',
+  email: 'john@example.com'
+}, { 
+  schema: UserSchema,
+  strict: true // Throws on validation errors
+});
+```
+
+## Modules
+
+### Fetch
+
+Handle REST API calls with reactive state:
+
+```javascript
+import { fetchState } from '@anchor/core/fetch';
+
+const users = fetchState([], {
+  url: '/api/users',
+  method: 'GET'
+});
+
+// users.status will be 'pending' -> 'success' or 'error'
+// users.data will contain the response data
+```
+
+### History
+
+Add undo/redo functionality to your state:
+
+```javascript
+import { anchor } from '@anchor/core';
+import { history } from '@anchor/core/history';
+
+const state = anchor({ count: 0 });
+const stateHistory = history(state);
+
+state.count++; // 1
+state.count++; // 2
+
+stateHistory.backward(); // count: 1
+stateHistory.backward(); // count: 0
+stateHistory.forward();  // count: 1
+```
+
+## API Reference
+
+### anchor(value, options?)
+
+Creates a reactive state from any value. Supported value types are objects, arrays, Maps, and Sets.
+
+**Parameters:**
+- `value` - The value to make reactive (objects, arrays, Maps, or Sets)
+- `options` - Configuration options:
+  - `schema` - Zod schema for validation
+  - `strict` - Throw on validation errors
+  - `cloned` - Clone the initial value
+  - `deferred` - Defer child anchoring
+  - `recursive` - Recursively anchor children
+
+### derive(state, handler)
+
+Subscribe to an existing anchored state.
+
+```javascript
+import { derive } from '@anchor/core';
+
+const state = anchor({ count: 0 });
+
+const unsubscribe = derive(state, (snapshot, event) => {
+  console.log('State changed:', snapshot);
+});
+```
+
+### derive.resolve(state)
+
+Resolve the StateController for a given anchored state to access subscribe, destroy methods directly.
+
+```javascript
+import { derive } from '@anchor/core';
+
+const state = anchor({ count: 0 });
+const controller = derive.resolve(state);
+
+if (controller) {
+  const unsubscribe = controller.subscribe((snapshot, event) => {
+    console.log('State changed:', snapshot);
+  });
+}
+```
+
+## Browser Support
+
+Anchor works in all modern browsers that support ES6+ features including:
+- Proxy API
+- WeakMap and WeakSet
+- Promises
+- Modern Array methods
 
 ## License
 

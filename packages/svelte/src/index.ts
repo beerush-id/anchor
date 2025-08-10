@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod/v4';
-import { anchor, anchor as createAnchor, type AnchorOptions, derive as createDerive } from '@anchor/core';
+
+import { anchor as createAnchor, type AnchorOptions, derive as createDerive } from '@anchor/core';
 
 export * from '@anchor/core';
 
@@ -20,8 +21,4 @@ export function useDerived<T, R>(state: T, transform?: (snapshot: T) => R): T | 
   const set = (() => {}) as (value: T) => void;
 
   return { subscribe, set } as never as T | R;
-}
-
-export function useTest<T>(init: T): T {
-  return anchor(init);
 }

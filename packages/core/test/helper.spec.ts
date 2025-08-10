@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, logger, type PlainObject } from '../src/index.js';
+import { anchor, derive, logger, type ObjLike } from '../src/index.js';
 
 describe('Anchor Helpers', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -16,7 +16,7 @@ describe('Anchor Helpers', () => {
     it('should assign values to Object state', () => {
       const state = anchor({ a: 1, b: 2 });
 
-      anchor.assign<PlainObject>(state, { a: 3, c: 4 });
+      anchor.assign<ObjLike>(state, { a: 3, c: 4 });
 
       expect(state).toEqual({ a: 3, b: 2, c: 4 });
     });
@@ -55,7 +55,7 @@ describe('Anchor Helpers', () => {
     it('should assign and replace nested properties', () => {
       const state = anchor({ a: { b: 1, c: 2 } });
 
-      anchor.assign<PlainObject>(state, { a: { b: 3, d: 4 } });
+      anchor.assign<ObjLike>(state, { a: { b: 3, d: 4 } });
 
       expect(state).toEqual({ a: { b: 3, d: 4 } });
     });

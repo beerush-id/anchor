@@ -17,7 +17,7 @@ export type Logger = {
   configure: (config: Partial<LoggerConfig>) => void;
 };
 
-export type StateKey = string | number | symbol;
+export type KeyLike = string | number | symbol;
 export type BatchMutation = 'assign' | 'remove';
 export type SetMutation = 'add' | 'delete';
 export type MapMutation = 'set' | 'delete' | 'clear';
@@ -37,11 +37,11 @@ export type StateUnsubscribe = () => void;
 export type StateSubscribeFn<T> = (handle: StateSubscriber<T>) => StateUnsubscribe;
 export type StateSubscriberList<T> = Set<StateSubscriber<T>>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
-export type StateChildrenMap = Map<StateKey, Linkable>;
+export type StateChildrenMap = Map<KeyLike, Linkable>;
 
 export type StateChange = {
   type: 'init' | StateMutation;
-  keys: StateKey[];
+  keys: KeyLike[];
   prev?: unknown;
   value?: unknown;
 };
@@ -50,8 +50,10 @@ export type StateController<T> = {
   destroy: StateUnsubscribe;
   subscribe: StateSubscribeFn<T>;
 };
-export type PlainObject = Record<StateKey, unknown>;
-export type Linkable = PlainObject | unknown[] | Set<unknown> | Map<StateKey, unknown>;
+export type ObjLike = {
+  [key: KeyLike]: unknown;
+};
+export type Linkable = ObjLike | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
 
 export type AnchorOptions<S extends ZodType> = AnchorConfig & {
   schema?: S;
@@ -61,10 +63,10 @@ export type PipeTransformer<T, R> = (value: T) => Partial<R>;
 
 export type GetTrapOptions<T, S extends ZodType> = AnchorOptions<S> & {
   init: T;
-  link: (childPath: StateKey, childState: Linkable) => void;
+  link: (childPath: KeyLike, childState: Linkable) => void;
   anchor: <T, S extends ZodType>(init: T, options: AnchorOptions<S>) => T;
   mutator?: WeakMap<WeakKey, WeakKey>;
-  children: Map<StateKey, Linkable>;
+  children: Map<KeyLike, Linkable>;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
 };
@@ -87,7 +89,7 @@ export type DestroyFactoryInit<T> = LinkFactoryInit<T> & {
 export type SubscribeFactoryInit<T> = AnchorConfig &
   DestroyFactoryInit<T> &
   LinkFactoryInit<T> & {
-    link: (childPath: StateKey, childState: Linkable) => void;
+    link: (childPath: KeyLike, childState: Linkable) => void;
     unlink: (state: Linkable) => void;
   };
 
@@ -97,7 +99,7 @@ export interface AnchorFn {
   raw<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
   flat<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
 
-  assign<T, K>(target: Map<T, K>, source: Map<T, K> | Record<StateKey, K>): void;
+  assign<T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>): void;
   assign<T extends Array<unknown>>(target: T, source: { [key: string]: T[number] } | Record<string, T[number]>): void;
   assign<T extends object>(target: T, source: Partial<T>): void;
 

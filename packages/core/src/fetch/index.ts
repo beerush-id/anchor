@@ -1,5 +1,5 @@
 import type { ZodType } from 'zod/v4';
-import type { AnchorOptions, PlainObject } from '../types.js';
+import type { AnchorOptions, ObjLike } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../utils.js';
@@ -199,7 +199,7 @@ function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T,
       return;
     }
 
-    anchor.assign(state.data as PlainObject, transform(state.data, chunk) as PlainObject);
+    anchor.assign(state.data as ObjLike, transform(state.data, chunk) as ObjLike);
   } else if (isArray(chunk)) {
     if (typeof state.data === 'undefined') {
       state.data = transform(state.data, chunk);

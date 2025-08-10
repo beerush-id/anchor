@@ -1,4 +1,4 @@
-import type { ArrayMutation, Linkable, PlainObject, StateChange, StateKey } from '../types.js';
+import type { ArrayMutation, KeyLike, Linkable, ObjLike, StateChange } from '../types.js';
 import { anchor } from '../anchor.js';
 import { derive } from '../derive.js';
 import { isArray, isObjectLike } from '@beerush/utils';
@@ -103,7 +103,7 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
   const reset = () => {
     isBusy = true;
 
-    anchor.assign(state as PlainObject, snapshot as PlainObject);
+    anchor.assign(state as ObjLike, snapshot as ObjLike);
     clear();
 
     isBusy = false;
@@ -174,10 +174,10 @@ export function undoChange<T>(state: T, event: StateChange) {
   } else if (type === 'delete') {
     if (target instanceof Map) {
       target.set(key, prev);
-    } else if ((target as PlainObject)[key] instanceof Set) {
+    } else if ((target as ObjLike)[key] instanceof Set) {
       (target[key as never] as Set<unknown>).add(prev);
     } else {
-      (target as PlainObject)[key] = prev;
+      (target as ObjLike)[key] = prev;
     }
   } else if (type === 'assign') {
     assign(target as never, prev as never);
@@ -223,10 +223,10 @@ export function redoChange<T>(state: T, event: StateChange) {
   } else if (type === 'delete') {
     if (target instanceof Map) {
       target.delete(key);
-    } else if ((target as PlainObject)[key] instanceof Set) {
+    } else if ((target as ObjLike)[key] instanceof Set) {
       (target[key as never] as Set<unknown>).delete(prev);
     } else {
-      delete (target as PlainObject)[key];
+      delete (target as ObjLike)[key];
     }
   } else if (type === 'assign') {
     assign(target as never, value as never);
@@ -242,13 +242,13 @@ export function redoChange<T>(state: T, event: StateChange) {
   STATE_BUSY_LIST.delete(state as Linkable);
 }
 
-function getTarget<T>(state: T, ...keys: StateKey[]) {
+function getTarget<T>(state: T, ...keys: KeyLike[]) {
   if (!keys.length) {
     return { key: '', target: state as Linkable };
   }
 
   const parentKeys = [...keys];
-  const key = parentKeys.pop() as StateKey;
+  const key = parentKeys.pop() as KeyLike;
 
   if (!parentKeys.length) {
     return { key, target: state as Linkable };
@@ -261,7 +261,7 @@ function getTarget<T>(state: T, ...keys: StateKey[]) {
   return { key, target };
 }
 
-function getValue<T>(target: T, key: StateKey) {
+function getValue<T>(target: T, key: KeyLike) {
   if (target instanceof Map) {
     return target.get(key);
   } else if (isObjectLike(target) || isArray(target)) {
