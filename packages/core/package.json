@@ -49,7 +49,7 @@
   "peerDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20250804.1",
     "typescript": "^5.8.2",
-    "zod": "^4.0.10"
+    "zod": "^4.0.15"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",

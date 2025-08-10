@@ -43,10 +43,11 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
+    "@anchor/storage": "workspace:*",
     "@typescript/native-preview": "^7.0.0-dev.20250804.1",
     "svelte": "^5.36.16",
     "typescript": "^5.8.2",
-    "zod": "^4.0.10"
+    "zod": "^4.0.15"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
