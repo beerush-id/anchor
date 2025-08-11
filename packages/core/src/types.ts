@@ -1,4 +1,4 @@
-import { ARRAY_MUTATIONS, OBJECT_MUTATIONS } from './constant.js';
+import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
 import type { ZodType } from 'zod/v4';
 import type { LogLevel } from './logger.js';
 
@@ -18,9 +18,9 @@ export type Logger = {
 };
 
 export type KeyLike = string | number | symbol;
-export type BatchMutation = 'assign' | 'remove';
-export type SetMutation = 'add' | 'delete';
-export type MapMutation = 'set' | 'delete' | 'clear';
+export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
+export type SetMutation = (typeof SET_MUTATIONS)[number];
+export type MapMutation = (typeof MAP_MUTATIONS)[number];
 export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number];
 export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number];
 export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation;
@@ -37,7 +37,7 @@ export type StateUnsubscribe = () => void;
 export type StateSubscribeFn<T> = (handle: StateSubscriber<T>) => StateUnsubscribe;
 export type StateSubscriberList<T> = Set<StateSubscriber<T>>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
-export type StateChildrenMap = Map<KeyLike, Linkable>;
+export type StateChildrenMap = WeakMap<WeakKey, Linkable>;
 
 export type StateChange = {
   type: 'init' | StateMutation;
@@ -66,7 +66,7 @@ export type GetTrapOptions<T, S extends ZodType> = AnchorOptions<S> & {
   link: (childPath: KeyLike, childState: Linkable) => void;
   anchor: <T, S extends ZodType>(init: T, options: AnchorOptions<S>) => T;
   mutator?: WeakMap<WeakKey, WeakKey>;
-  children: Map<KeyLike, Linkable>;
+  children: StateChildrenMap;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
 };

@@ -1,11 +1,11 @@
 import { MemoryStorage } from './memory.js';
-import type { AnchorOptions, PlainObject, StateUnsubscribe } from '@anchor/core';
+import type { AnchorOptions, ObjLike, StateUnsubscribe } from '@anchor/core';
 import { anchor, derive, logger } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
 import type { ZodType } from 'zod/v4';
 
 export const STORAGE_KEY = 'anchor';
-export const STORAGE_SYNC = new Map<string, PlainObject>();
+export const STORAGE_SYNC = new Map<string, ObjLike>();
 
 const hasSessionStorage = () => typeof sessionStorage !== 'undefined';
 
@@ -76,8 +76,8 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
   }
 }
 
-const STORAGE_REGISTRY = new WeakMap<PlainObject, SessionStorage>();
-const STORAGE_SUBSCRIPTION_REGISTRY = new WeakMap<PlainObject, StateUnsubscribe>();
+const STORAGE_REGISTRY = new WeakMap<ObjLike, SessionStorage>();
+const STORAGE_SUBSCRIPTION_REGISTRY = new WeakMap<ObjLike, StateUnsubscribe>();
 
 export interface SessionFn {
   /**
@@ -89,7 +89,7 @@ export interface SessionFn {
    * @param {typeof SessionStorage} storageClass
    * @returns {T}
    */
-  <T extends PlainObject, S extends ZodType = ZodType>(
+  <T extends ObjLike, S extends ZodType = ZodType>(
     name: string,
     init: T,
     options?: AnchorOptions<S>,
@@ -101,10 +101,10 @@ export interface SessionFn {
    * Leaving a reactive session object will stop syncing with session storage.
    * @param {T} state
    */
-  leave<T extends PlainObject>(state: T): void;
+  leave<T extends ObjLike>(state: T): void;
 }
 
-export const session = (<T extends PlainObject, S extends ZodType = ZodType>(
+export const session = (<T extends ObjLike, S extends ZodType = ZodType>(
   name: string,
   init: T,
   options?: AnchorOptions<S>,
@@ -136,7 +136,7 @@ export const session = (<T extends PlainObject, S extends ZodType = ZodType>(
   return state;
 }) as SessionFn;
 
-session.leave = <T extends PlainObject>(state: T) => {
+session.leave = <T extends ObjLike>(state: T) => {
   const unsubscribe = STORAGE_SUBSCRIPTION_REGISTRY.get(state);
 
   if (typeof unsubscribe === 'function') {
@@ -152,11 +152,11 @@ if (isBrowser()) {
     if (!event.key) return;
 
     if (STORAGE_SYNC.has(event.key)) {
-      const state = STORAGE_SYNC.get(event.key) as PlainObject;
+      const state = STORAGE_SYNC.get(event.key) as ObjLike;
 
       try {
         const data = JSON.parse(event.newValue ?? '');
-        anchor.assign(state, data as PlainObject);
+        anchor.assign(state, data as ObjLike);
       } catch (error) {
         logger.error(`Unable to parse new value of: "${event.key}".`, error);
       }

@@ -10,8 +10,10 @@ export function createGetTrap<T, S extends ZodType>(options: GetTrapOptions<T, S
     options;
 
   return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
-    if (children.has(prop)) {
-      const proxied = children.get(prop) as Linkable;
+    let value = Reflect.get(target, prop, receiver) as Linkable;
+
+    if (children.has(value)) {
+      const proxied = children.get(value) as Linkable;
 
       if (STATE_REGISTRY.has(proxied) && subscribers.size && !subscriptions.has(proxied)) {
         if (!(recursive === 'flat' && Array.isArray(target))) {
@@ -22,14 +24,13 @@ export function createGetTrap<T, S extends ZodType>(options: GetTrapOptions<T, S
       return proxied;
     }
 
-    let value = Reflect.get(target, prop, receiver) as Linkable;
-
+    // If the value is an array method, try to get the mutator for the array.
     if (mutator?.has(value)) {
-      return mutator.get(value);
+      return mutator?.get(value);
     }
 
     if (recursive && !STATE_REGISTRY.has(value) && linkable(value)) {
-      value = anchor(value, {
+      const proxied = anchor(value, {
         deferred,
         recursive,
         cloned,
@@ -37,11 +38,11 @@ export function createGetTrap<T, S extends ZodType>(options: GetTrapOptions<T, S
         schema: (schema as never as ZodObject)?.shape?.[prop as string],
       });
 
-      // Reflect.set(target, prop, value, receiver);
-    }
+      if (!children.has(value)) {
+        children.set(value, proxied);
+      }
 
-    if (STATE_REGISTRY.has(value) && !children.has(prop)) {
-      children.set(prop, value);
+      value = proxied;
     }
 
     // Link if the value is a reactive state and there is an active subscription.
@@ -62,7 +63,7 @@ export function createSetTrap<T, S extends ZodType>(options: SetTrapOptions<T, S
     options;
 
   return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
-    const current = children.get(prop) ?? (Reflect.get(target, prop, receiver) as Linkable);
+    const current = Reflect.get(target, prop, receiver) as Linkable;
 
     if (current === value) {
       return true;
@@ -89,7 +90,7 @@ export function createSetTrap<T, S extends ZodType>(options: SetTrapOptions<T, S
         logger.verbose('Creating new reference for property:', prop, 'with value:', value);
         const proxied = anchor(value, { deferred, recursive, cloned, strict, schema: subSchema });
 
-        children.set(prop, proxied);
+        children.set(value, proxied);
 
         if (subscribers.size && !subscriptions.has(proxied)) {
           if (!(recursive === 'flat' && Array.isArray(target))) {
@@ -102,8 +103,8 @@ export function createSetTrap<T, S extends ZodType>(options: SetTrapOptions<T, S
     logger.verbose('Setting property:', prop, 'to value:', value);
     Reflect.set(target, prop, value, receiver);
 
-    if (deferred && children.has(prop)) {
-      children.delete(prop);
+    if (children.has(current)) {
+      children.delete(current);
     }
 
     if (subscriptions.has(current)) {
@@ -141,13 +142,13 @@ export function createDeleteTrap<T, S extends ZodType>(options: SetTrapOptions<T
       }
     }
 
-    const current = children.get(prop) ?? (Reflect.get(target, prop, receiver) as Linkable);
+    const current = Reflect.get(target, prop, receiver) as Linkable;
 
     logger.verbose('Deleting property:', prop);
     Reflect.deleteProperty(target, prop);
 
-    if (children.has(prop)) {
-      children.delete(prop);
+    if (children.has(current)) {
+      children.delete(current);
     }
 
     if (subscriptions.has(current)) {

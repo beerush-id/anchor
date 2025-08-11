@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger, type PlainObject } from '@anchor/core';
+import { logger } from '@anchor/core';
 import { persistent, PersistentStorage, STORAGE_KEY } from '../src/index.js';
 import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
 
@@ -108,7 +108,7 @@ describe('Mocked Storage Module', () => {
 
   describe('Persistent Storage', () => {
     it('should write to localStorage', () => {
-      const storage = new PersistentStorage<PlainObject>('test', { a: 1 });
+      const storage = new PersistentStorage<ObjLike>('test', { a: 1 });
       const key = `${STORAGE_KEY}-persistent://test@1.0.0`;
 
       expect(localStorage.getItem(key)).toBe(storage.json());
@@ -140,7 +140,7 @@ describe('Mocked Storage Module', () => {
       localStorage.setItem(oldKey, JSON.stringify({ a: 1, b: 'test' }));
       expect(localStorage.getItem(oldKey)).toBe(JSON.stringify({ a: 1, b: 'test' }));
 
-      const upgraded = new PersistentStorage<PlainObject>('test', { a: 1, b: 2 }, '1.1.0', '1.0.0');
+      const upgraded = new PersistentStorage<ObjLike>('test', { a: 1, b: 2 }, '1.1.0', '1.0.0');
 
       expect(upgraded.get('a')).toBe(1);
       expect(upgraded.get('b')).toBe(2);
@@ -150,7 +150,7 @@ describe('Mocked Storage Module', () => {
     });
 
     it('should handle localStorage errors gracefully', () => {
-      const storage = new PersistentStorage<PlainObject>('test', { a: 1 });
+      const storage = new PersistentStorage<ObjLike>('test', { a: 1 });
       const consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
 
       // Mock setItem to throw an error

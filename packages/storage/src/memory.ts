@@ -1,9 +1,9 @@
-import { anchor, type StateKey } from '@anchor/core';
+import { anchor, type KeyLike } from '@anchor/core';
 import { isObject } from '@beerush/utils';
 
 export type StorageEvent = {
   type: 'set' | 'assign' | 'delete' | 'clear';
-  name: StateKey;
+  name: KeyLike;
   value?: unknown;
 };
 

@@ -1,5 +1,8 @@
 import type { AnchorConfig } from './types.js';
 
+export const SET_MUTATIONS = ['add', 'delete'] as const;
+export const MAP_MUTATIONS = ['set', 'delete', 'clear'] as const;
+export const BATCH_MUTATIONS = ['assign', 'remove'] as const;
 export const OBJECT_MUTATIONS = ['set', 'delete'] as const;
 export const ARRAY_MUTATIONS = [
   'copyWithin',

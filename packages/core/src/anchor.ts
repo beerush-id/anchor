@@ -65,7 +65,7 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
     recursive = ANCHOR_CONFIG.recursive,
   } = options ?? {};
   const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive };
-  const children: StateChildrenMap = new Map();
+  const children: StateChildrenMap = new WeakMap();
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
 

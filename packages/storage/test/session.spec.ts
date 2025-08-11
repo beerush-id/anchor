@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger, type PlainObject } from '@anchor/core';
+import { logger } from '@anchor/core';
 import { session, SessionStorage, STORAGE_KEY } from '../src/index.js';
 import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
 
@@ -108,7 +108,7 @@ describe('Mocked Storage Module', () => {
 
   describe('Session Storage', () => {
     it('should write to sessionStorage', () => {
-      const storage = new SessionStorage<PlainObject>('test', { a: 1 });
+      const storage = new SessionStorage<ObjLike>('test', { a: 1 });
       const key = `${STORAGE_KEY}-session://test@1.0.0`;
 
       expect(sessionStorage.getItem(key)).toBe(storage.json());
@@ -140,7 +140,7 @@ describe('Mocked Storage Module', () => {
       sessionStorage.setItem(oldKey, JSON.stringify({ a: 1, b: 'test' }));
       expect(sessionStorage.getItem(oldKey)).toBe(JSON.stringify({ a: 1, b: 'test' }));
 
-      const upgraded = new SessionStorage<PlainObject>('test', { a: 1, b: 2 }, '1.1.0', '1.0.0');
+      const upgraded = new SessionStorage<ObjLike>('test', { a: 1, b: 2 }, '1.1.0', '1.0.0');
 
       expect(upgraded.get('a')).toBe(1);
       expect(upgraded.get('b')).toBe(2);
@@ -150,7 +150,7 @@ describe('Mocked Storage Module', () => {
     });
 
     it('should handle sessionStorage errors gracefully', () => {
-      const storage = new SessionStorage<PlainObject>('test', { a: 1 });
+      const storage = new SessionStorage<ObjLike>('test', { a: 1 });
       const consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
 
       // Mock setItem to throw an error
