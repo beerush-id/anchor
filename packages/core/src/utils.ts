@@ -1,6 +1,6 @@
 import type { Linkable, StateChange, StateSubscriber } from './types.js';
 import { LINKABLE } from './constant.js';
-import { clone, typeOf } from '@beerush/utils';
+import { typeOf } from '@beerush/utils';
 
 export function createLinkableRefs<T>(value: T) {
   const linkableRefs = new Map<string, Linkable>();
@@ -38,24 +38,6 @@ export function createLinkableRefs<T>(value: T) {
   }
 
   return linkableRefs;
-}
-
-export function createCopy<T>(init: T, deepCopy?: boolean) {
-  if (deepCopy) {
-    return clone(init);
-  }
-
-  if (Array.isArray(init)) {
-    return [...init] as T;
-  } else if (init instanceof Map) {
-    return new Map(init) as T;
-  } else if (init instanceof Set) {
-    return new Set(init) as T;
-  } else if (typeof init === 'object' && init !== null) {
-    return { ...init } as T;
-  }
-
-  return init;
 }
 
 export function broadcast(subscribers: Set<unknown>, value: unknown, event: StateChange) {

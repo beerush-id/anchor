@@ -5,14 +5,25 @@ import { isArray, isObjectLike } from '@beerush/utils';
 import { assign } from '../helper.js';
 import { STATE_BUSY_LIST } from '../registry.js';
 import { ARRAY_MUTATIONS } from '../constant.js';
+import { logger } from '../logger.js';
+import { microtask } from '../utils/index.js';
 
 export type HistoryOptions = {
+  debounce?: number;
   maxHistory?: number;
 };
 
 export const DEFAULT_HISTORY_OPTION = {
+  debounce: 100,
   maxHistory: 100,
 };
+
+export function setDefaultOptions(options: HistoryOptions) {
+  Object.assign(DEFAULT_HISTORY_OPTION, options);
+}
+export function getDefaultOptions() {
+  return DEFAULT_HISTORY_OPTION;
+}
 
 export type HistoryState = {
   readonly backwardList: StateChange[];
@@ -27,15 +38,16 @@ export type HistoryState = {
 };
 
 export function history<T>(state: T, options?: HistoryOptions): HistoryState {
-  const { maxHistory = DEFAULT_HISTORY_OPTION.maxHistory } = options ?? {};
+  const { maxHistory = DEFAULT_HISTORY_OPTION.maxHistory, debounce = DEFAULT_HISTORY_OPTION.debounce } = options ?? {};
 
   const backwardList: StateChange[] = [];
   const forwardList: StateChange[] = [];
+  const [schedule] = microtask<StateChange>(debounce);
   const snapshot = anchor.snapshot(state);
   const controller = derive.resolve(state);
 
   if (typeof controller?.subscribe !== 'function') {
-    throw new Error('[history] Cannot create history state from non-reactive object.');
+    logger.error('Cannot create history state from non-reactive object:', state);
   }
 
   let isBusy = false;
@@ -109,27 +121,35 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
     isBusy = false;
   };
 
-  // Subscribe for state changes and push the event to the backward stack, then clears the forward stack.
-  const unsubscribe = controller?.subscribe((snap, event) => {
-    if (event.type !== 'init' && !isBusy) {
-      if (maxHistory && backwardList.length >= maxHistory) {
-        backwardList.shift();
-      }
-
-      backwardList.push(event);
-      forwardList.length = 0;
-
-      assign(historyState, {
-        canForward: forwardList.length > 0,
-        canBackward: backwardList.length > 0,
-      });
-    }
-  });
-
   const destroy = () => {
     unsubscribe?.();
     clear();
   };
+
+  // Subscribe for state changes and push the event to the backward stack, then clears the forward stack.
+  const unsubscribe = controller?.subscribe((snap, event) => {
+    if (event.type !== 'init' && !isBusy) {
+      schedule((first, last) => {
+        if (maxHistory && backwardList.length >= maxHistory) {
+          backwardList.shift();
+        }
+
+        if (first.keys.join('.') === last.keys.join('.')) {
+          backwardList.push({ ...last, prev: first.prev });
+        } else {
+          backwardList.push(first);
+          backwardList.push(last);
+        }
+
+        forwardList.length = 0;
+
+        assign(historyState, {
+          canForward: forwardList.length > 0,
+          canBackward: backwardList.length > 0,
+        });
+      }, event);
+    }
+  });
 
   const historyState = anchor.raw<HistoryState>(
     {

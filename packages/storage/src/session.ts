@@ -1,6 +1,6 @@
 import { MemoryStorage } from './memory.js';
 import type { AnchorOptions, ObjLike, StateUnsubscribe } from '@anchor/core';
-import { anchor, derive, logger } from '@anchor/core';
+import { anchor, derive, logger, microtask } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
 import type { ZodType } from 'zod/v4';
 
@@ -104,6 +104,8 @@ export interface SessionFn {
   leave<T extends ObjLike>(state: T): void;
 }
 
+export const STORAGE_SYNC_DELAY = 100;
+
 export const session = (<T extends ObjLike, S extends ZodType = ZodType>(
   name: string,
   init: T,
@@ -119,10 +121,13 @@ export const session = (<T extends ObjLike, S extends ZodType = ZodType>(
     const controller = derive.resolve(state);
 
     if (typeof controller?.subscribe === 'function') {
+      const [schedule] = microtask(STORAGE_SYNC_DELAY);
       STORAGE_SYNC.set(storage.key, state);
 
       const stateUnsubscribe = controller.subscribe(() => {
-        storage?.write();
+        schedule(() => {
+          storage?.write();
+        });
       });
       const unsubscribe = () => {
         stateUnsubscribe?.();

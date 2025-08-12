@@ -208,7 +208,7 @@ anchorFn.snapshot = <T>(state: T): T => {
     logger.error('Cannot create snapshot of non-existence state:', state);
   }
 
-  return clone(target) as T;
+  return clone(target ?? state) as T;
 };
 
 // Export the assign function.

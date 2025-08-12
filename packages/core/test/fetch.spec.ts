@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchState, FetchStatus, streamState } from '../src/fetch/index.js';
-import { derive } from '../src/derive.js';
+import { derive, fetchState, FetchStatus, streamState } from '@anchor/core';
 
 describe('Reactive Fetch', () => {
   const mockUserData = {
@@ -12,22 +11,24 @@ describe('Reactive Fetch', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     vi.resetAllMocks();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     global.fetch = originalFetch;
   });
 
   describe('Fetch', () => {
-    it('should initialize with pending status and default data', () => {
+    it('should initialize with pending status and default data', async () => {
       global.fetch = vi.fn(() => {
         return Promise.resolve(
           new Response(JSON.stringify(mockUserData), {
             status: 200,
           })
         );
-      });
+      }) as never;
 
       const initialState = { message: 'loading...' };
       const state = fetchState(initialState, {
@@ -39,6 +40,8 @@ describe('Reactive Fetch', () => {
       expect(state.data).toEqual(initialState);
       expect(state.error).toBeUndefined();
       expect(state.response).toBeUndefined();
+
+      vi.runAllTimers();
     });
 
     it('should handle successful fetch response', async () => {
@@ -52,7 +55,7 @@ describe('Reactive Fetch', () => {
       const mockFetch = vi.fn(() => {
         return Promise.resolve(mockResponse);
       });
-      global.fetch = mockFetch;
+      global.fetch = mockFetch as never;
 
       const initialState = {};
       const state = fetchState(initialState, {
@@ -60,7 +63,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toEqual(mockUserData);
@@ -80,7 +83,7 @@ describe('Reactive Fetch', () => {
 
       global.fetch = vi.fn(() => {
         return Promise.resolve(mockResponse);
-      });
+      }) as never;
 
       const initialState = {};
       const state = fetchState(initialState, {
@@ -88,7 +91,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Error);
       expect(state.error).toBeDefined();
@@ -98,7 +101,7 @@ describe('Reactive Fetch', () => {
 
     it('should handle network error', async () => {
       const mockError = new Error('Network error');
-      global.fetch = vi.fn().mockRejectedValue(mockError);
+      global.fetch = vi.fn().mockRejectedValue(mockError) as never;
 
       const initialState = {};
       const state = fetchState(initialState, {
@@ -106,7 +109,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Error);
       expect(state.error).toBe(mockError);
@@ -121,7 +124,7 @@ describe('Reactive Fetch', () => {
         statusText: 'OK',
       };
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const initialState = {};
       const state = fetchState(initialState, {
@@ -139,7 +142,7 @@ describe('Reactive Fetch', () => {
     it('should initialize with pending status and default data', () => {
       global.fetch = vi.fn(() => {
         return Promise.resolve(new Response(JSON.stringify(mockUserData), { status: 200 }));
-      });
+      }) as never;
 
       const initialState = 'loading...';
       const state = streamState(initialState, {
@@ -169,7 +172,7 @@ describe('Reactive Fetch', () => {
 
       const mockResponse = new Response(mockReadable, { status: 200 });
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const initialState = '';
       const state = streamState(initialState, {
@@ -177,7 +180,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toBe('Hello World!');
@@ -200,7 +203,7 @@ describe('Reactive Fetch', () => {
 
       const mockResponse = new Response(mockReadable, { status: 200 });
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const initialState: Record<string, unknown> = {};
       const state = streamState(initialState, {
@@ -208,7 +211,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toEqual({ id: 2, name: 'Jane' });
@@ -233,7 +236,7 @@ describe('Reactive Fetch', () => {
 
       const mockResponse = new Response(mockReadable, { status: 200 });
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const initialState: unknown[] = [];
       const state = streamState(initialState, {
@@ -241,7 +244,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toEqual([1, 2, 3, 4, 5, 6]);
@@ -263,7 +266,7 @@ describe('Reactive Fetch', () => {
 
       const mockResponse = new Response(mockReadable, { status: 200 });
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const initialState = '';
       const state = streamState(initialState, {
@@ -272,7 +275,7 @@ describe('Reactive Fetch', () => {
         transform: (current, chunk) => `[${chunk}]`,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toBe('[Hello][ ][World]');
@@ -285,7 +288,7 @@ describe('Reactive Fetch', () => {
         status: 200,
       };
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const initialState = '';
       const state = streamState(initialState, {
@@ -293,7 +296,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Error);
       expect(state.error).toBeDefined();
@@ -302,7 +305,7 @@ describe('Reactive Fetch', () => {
 
     it('should handle fetch error in stream', async () => {
       const mockError = new Error('Network error');
-      global.fetch = vi.fn().mockRejectedValue(mockError);
+      global.fetch = vi.fn().mockRejectedValue(mockError) as never;
 
       const initialState = '';
       const state = streamState(initialState, {
@@ -310,7 +313,7 @@ describe('Reactive Fetch', () => {
         method: 'GET',
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Error);
       expect(state.error).toBe(mockError);
@@ -319,7 +322,7 @@ describe('Reactive Fetch', () => {
 
   describe('Reactivities', () => {
     it('should notify to fetch state changes', async () => {
-      global.fetch = vi.fn().mockResolvedValue(new Response('Ok', { status: 200 }));
+      global.fetch = vi.fn().mockResolvedValue(new Response('Ok', { status: 200 })) as never;
 
       const subscriber = vi.fn();
       const state = fetchState('', {
@@ -332,7 +335,7 @@ describe('Reactive Fetch', () => {
       expect(state.data).toBe('');
       expect(state.error).toBeUndefined();
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toBe('Ok');
@@ -369,7 +372,7 @@ describe('Reactive Fetch', () => {
         },
       });
       const mockResponse = new Response(mockReadable, { status: 200 });
-      global.fetch = vi.fn().mockResolvedValue(mockResponse);
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
       const subscriber = vi.fn();
       const state = streamState('', {
@@ -382,7 +385,7 @@ describe('Reactive Fetch', () => {
       expect(state.data).toBe('');
       expect(state.error).toBeUndefined();
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await vi.runAllTimersAsync();
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toBe('Hello World');

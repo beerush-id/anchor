@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, logger } from '../src/index.js';
-import { history } from '../src/history/index.js';
+import { anchor, getDefaultOptions, history, logger } from '@anchor/core';
+
+const defaultOptions = getDefaultOptions();
+const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
 
 describe('Anchor History', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     consoleErrorSpy.mockRestore();
   });
 
@@ -35,10 +39,14 @@ describe('Anchor History', () => {
       expect(stateHistory.canForward).toBe(false);
     });
 
-    it('should throw error for non-reactive objects', () => {
-      expect(() => {
-        history({ a: 1, b: 2 });
-      }).toThrow('[history] Cannot create history state from non-reactive object.');
+    it('should not throw error for non-reactive objects', () => {
+      consoleErrorSpy.mockClear();
+
+      const stateHistory = history({ a: 1, b: 2 });
+
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+      stateHistory.destroy();
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -48,6 +56,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+
+      timeTravel();
 
       expect(stateHistory.canBackward).toBe(true);
       expect(stateHistory.canForward).toBe(false);
@@ -62,7 +72,9 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
 
       expect(state.count).toBe(2);
       expect(stateHistory.canBackward).toBe(true);
@@ -93,7 +105,9 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
 
       stateHistory.backward();
       stateHistory.backward();
@@ -122,7 +136,9 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
 
       // Go backward to create forward list
       stateHistory.backward();
@@ -131,6 +147,8 @@ describe('Anchor History', () => {
 
       // Make a new change, which should clear forward list
       state.count = 3;
+      timeTravel();
+
       expect(stateHistory.forwardList).toHaveLength(0);
       expect(stateHistory.backwardList).toHaveLength(2);
 
@@ -142,7 +160,9 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
 
       expect(stateHistory.canBackward).toBe(true);
       expect(stateHistory.backwardList).toHaveLength(2);
@@ -162,7 +182,9 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
 
       stateHistory.backward();
       expect(state.count).toBe(1);
@@ -186,9 +208,13 @@ describe('Anchor History', () => {
 
       // Make more changes than maxHistory
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
       state.count = 3;
+      timeTravel();
       state.count = 4;
+      timeTravel();
 
       expect(stateHistory.backwardList).toHaveLength(2);
       // Should only keep the last 2 changes
@@ -201,8 +227,11 @@ describe('Anchor History', () => {
       const stateHistory = history(state, { maxHistory: 2 });
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
       state.count = 3;
+      timeTravel();
 
       // At this point we should have 2 changes in backwardList
       expect(stateHistory.backwardList).toHaveLength(2);
@@ -216,6 +245,8 @@ describe('Anchor History', () => {
 
       // Add a new change
       state.count = 4;
+      timeTravel();
+
       expect(stateHistory.backwardList).toHaveLength(2);
 
       stateHistory.destroy();
@@ -226,8 +257,11 @@ describe('Anchor History', () => {
       const stateHistory = history(state, { maxHistory: 2 });
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
       state.count = 3;
+      timeTravel();
 
       stateHistory.backward();
 
@@ -242,6 +276,7 @@ describe('Anchor History', () => {
       expect(stateHistory.forwardList).toHaveLength(2);
 
       state.count = 4;
+      timeTravel();
 
       expect(stateHistory.backwardList).toHaveLength(1);
       expect(stateHistory.forwardList).toHaveLength(0);
@@ -254,9 +289,13 @@ describe('Anchor History', () => {
       const stateHistory = history(state, { maxHistory: 2 });
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
       state.count = 3;
+      timeTravel();
       state.count = 4;
+      timeTravel();
 
       // Go back to create forwardList
       stateHistory.backward();
@@ -280,8 +319,11 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
       state.count = 2;
+      timeTravel();
       state.count = 3;
+      timeTravel();
 
       // Go back to the beginning
       stateHistory.backward();
@@ -311,6 +353,8 @@ describe('Anchor History', () => {
       expect(stateHistory.backwardList).toHaveLength(0);
 
       state.count = 1;
+      timeTravel();
+
       expect(stateHistory.backwardList).toHaveLength(1);
 
       stateHistory.destroy();
@@ -321,6 +365,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.count = 1;
+      timeTravel();
+
       expect(stateHistory.backwardList).toHaveLength(1);
 
       stateHistory.destroy();
@@ -332,6 +378,8 @@ describe('Anchor History', () => {
 
       // Should not track changes after destroy
       state.count = 2;
+      timeTravel();
+
       expect(stateHistory.backwardList).toHaveLength(0);
     });
   });
@@ -342,6 +390,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.items.push(4);
+      timeTravel();
+
       expect(state.items).toEqual([1, 2, 3, 4]);
 
       stateHistory.backward();
@@ -358,6 +408,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.user.name = 'Jane';
+      timeTravel();
+
       expect(state.user.name).toBe('Jane');
 
       stateHistory.backward();
@@ -374,6 +426,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.map.set('key2', 'value2');
+      timeTravel();
+
       expect(state.map.get('key2')).toBe('value2');
 
       stateHistory.backward();
@@ -390,6 +444,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.set.add(4);
+      timeTravel();
+
       expect(state.set.has(4)).toBe(true);
 
       stateHistory.backward();
@@ -413,6 +469,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.map.delete('key1');
+      timeTravel();
+
       expect(state.map.has('key1')).toBe(false);
 
       stateHistory.backward();
@@ -430,6 +488,8 @@ describe('Anchor History', () => {
       const stateHistory = history(state);
 
       state.set.delete(2);
+      timeTravel();
+
       expect(state.set.has(2)).toBe(false);
 
       stateHistory.backward();
@@ -439,6 +499,57 @@ describe('Anchor History', () => {
       expect(state.set.has(2)).toBe(false);
 
       stateHistory.destroy();
+    });
+
+    it('should handle rapid typing', () => {
+      const state = anchor({ text: '' });
+      const debounce = 200;
+      const stateHistory = history(state, { debounce });
+
+      const words = ['Hello', ' ', 'World', ' ', 'TypeScript', ' ', 'is', ' ', 'awesome.'];
+      for (const word of words) {
+        const timeUnit = debounce / word.length;
+
+        for (const char of word) {
+          state.text += char;
+          timeTravel(timeUnit);
+        }
+
+        timeTravel(5);
+      }
+      timeTravel(5);
+
+      expect(state.text).toBe('Hello World TypeScript is awesome.');
+      expect(stateHistory.canBackward).toBe(true);
+      expect(stateHistory.canForward).toBe(false);
+      expect(stateHistory.backwardList.length).toBe(words.length);
+
+      expect(stateHistory.backwardList[0].prev).toBe('');
+      expect(stateHistory.backwardList[0].value).toBe('Hello');
+
+      expect(stateHistory.backwardList[1].prev).toBe('Hello');
+      expect(stateHistory.backwardList[1].value).toBe('Hello ');
+
+      expect(stateHistory.backwardList[2].prev).toBe('Hello ');
+      expect(stateHistory.backwardList[2].value).toBe('Hello World');
+
+      expect(stateHistory.backwardList[3].prev).toBe('Hello World');
+      expect(stateHistory.backwardList[3].value).toBe('Hello World ');
+
+      expect(stateHistory.backwardList[4].prev).toBe('Hello World ');
+      expect(stateHistory.backwardList[4].value).toBe('Hello World TypeScript');
+
+      expect(stateHistory.backwardList[5].prev).toBe('Hello World TypeScript');
+      expect(stateHistory.backwardList[5].value).toBe('Hello World TypeScript ');
+
+      expect(stateHistory.backwardList[6].prev).toBe('Hello World TypeScript ');
+      expect(stateHistory.backwardList[6].value).toBe('Hello World TypeScript is');
+
+      expect(stateHistory.backwardList[7].prev).toBe('Hello World TypeScript is');
+      expect(stateHistory.backwardList[7].value).toBe('Hello World TypeScript is ');
+
+      expect(stateHistory.backwardList[8].prev).toBe('Hello World TypeScript is ');
+      expect(stateHistory.backwardList[8].value).toBe('Hello World TypeScript is awesome.');
     });
   });
 });

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger } from '@anchor/core';
-import { persistent, PersistentStorage, STORAGE_KEY } from '../src/index.js';
+import { logger, ObjLike } from '@anchor/core';
+import { persistent, PersistentStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
 import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
 
 describe('Storage Module', () => {
@@ -172,10 +172,12 @@ describe('Mocked Storage Module', () => {
 
 describe('Reactive Storage', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     mockBrowserStorage();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     clearStorageMocks();
   });
 
@@ -200,14 +202,17 @@ describe('Reactive Storage', () => {
 
       // Update state
       state.a = 2;
+      vi.advanceTimersByTime(STORAGE_SYNC_DELAY);
       expect(localStorage.getItem(key)).toBe(JSON.stringify({ a: 2 }));
 
       // Add new property
       (state as Record<string, unknown>).b = 'new';
+      vi.advanceTimersByTime(STORAGE_SYNC_DELAY);
       expect(localStorage.getItem(key)).toBe(JSON.stringify({ a: 2, b: 'new' }));
 
       // Delete property
       delete (state as Record<string, unknown>).a;
+      vi.advanceTimersByTime(STORAGE_SYNC_DELAY);
       expect(localStorage.getItem(key)).toBe(JSON.stringify({ b: 'new' }));
     });
 

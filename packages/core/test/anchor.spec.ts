@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, logger } from '../src/index.js';
+import { anchor, derive, logger } from '@anchor/core';
 import { z } from 'zod';
 
 describe('Anchor Core', () => {
