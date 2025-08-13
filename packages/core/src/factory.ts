@@ -9,7 +9,7 @@ import type {
   UnlinkFactoryInit,
 } from './types.js';
 import { logger } from './logger.js';
-import { broadcast, createLinkableRefs } from './utils.js';
+import { broadcast, createLinkableRefs } from './internal.js';
 import { INIT_REGISTRY, STATE_REGISTRY } from './registry.js';
 
 import { cancelCleanup } from './derive.js';

@@ -1,5 +1,5 @@
 import type { ZodType } from 'zod/v4';
-import { broadcast, linkable } from './utils.js';
+import { broadcast, linkable } from './internal.js';
 import { STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import type { KeyLike, Linkable, SetTrapOptions, StateMutation } from './types.js';
 

@@ -2,6 +2,22 @@ import type { Linkable, StateChange, StateSubscriber } from './types.js';
 import { LINKABLE } from './constant.js';
 import { typeOf } from '@beerush/utils';
 
+export function broadcast(subscribers: Set<unknown>, value: unknown, event: StateChange) {
+  for (const subscriber of subscribers) {
+    if (typeof subscriber === 'function') {
+      (subscriber as StateSubscriber<unknown>)(value, event);
+    }
+  }
+}
+
+export function linkable(value: unknown): value is Linkable {
+  return LINKABLE.has(typeOf(value));
+}
+
+export function shouldProxy(value: unknown): boolean {
+  return !(value instanceof Map || value instanceof Set);
+}
+
 export function createLinkableRefs<T>(value: T) {
   const linkableRefs = new Map<string, Linkable>();
 
@@ -38,22 +54,4 @@ export function createLinkableRefs<T>(value: T) {
   }
 
   return linkableRefs;
-}
-
-export function broadcast(subscribers: Set<unknown>, value: unknown, event: StateChange) {
-  for (const subscriber of subscribers) {
-    (subscriber as StateSubscriber<unknown>)(value, event);
-  }
-}
-
-export function linkable(value: unknown): value is Linkable {
-  return LINKABLE.has(typeOf(value));
-}
-
-export function shouldProxy(value: unknown): boolean {
-  return !(value instanceof Map || value instanceof Set);
-}
-
-export function shortId() {
-  return Math.random().toString(36).substring(2, 15);
 }

@@ -19,11 +19,12 @@ import {
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { createLinkableRefs, shortId, shouldProxy } from './utils.js';
+import { createLinkableRefs, shouldProxy } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createArrayProxyHandler, createProxyHandler } from './proxy.js';
 import { wrapMethods } from './wrapper.js';
 import { assign, clear, remove } from './helper.js';
+import { shortId } from './utils/index.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -44,18 +45,14 @@ import { assign, clear, remove } from './helper.js';
  */
 function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T {
   if (STATE_REGISTRY.has(init as WeakKey)) {
-    logger.verbose('State exists in registry:', init);
     return init;
   }
 
   if (INIT_REGISTRY.has(init as WeakKey)) {
-    logger.verbose('State exists in init registry:', init);
     return STATE_REGISTRY.get(init as WeakKey) as T;
   }
 
   const id = shortId();
-
-  logger.verbose('Initializing state:', init);
 
   const {
     schema,
@@ -70,7 +67,6 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
   const subscriptions: StateSubscriptionMap = new Map();
 
   if (cloned) {
-    logger.verbose('Cloning the initial state:', init);
     init = clone(init);
   }
 
@@ -79,7 +75,6 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
       throw new Error('Schema only supported on "object" and "array".');
     }
 
-    logger.verbose('Validating the initial state against schema:', init);
     const result = schema.safeParse(init);
 
     if (result.success) {
@@ -96,10 +91,7 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
   }
 
   if (recursive && !deferred) {
-    logger.verbose('Creating child references for state:', init);
-
     for (const [key, ref] of createLinkableRefs(init)) {
-      logger.verbose('Anchoring child reference for key:', key, 'with value:', ref);
       (init as ObjLike)[key] = anchorFn(ref, {
         ...configs,
         schema: (schema as never as ZodObject)?.shape?.[key],
@@ -117,8 +109,6 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
   const unlink = createUnlinkFactory({ subscriptions });
 
   if (shouldProxy(state)) {
-    logger.verbose('Creating proxy handler for state:', state);
-
     const proxyHandlerOptions: SetTrapOptions<T, S> = {
       ...configs,
       init,
@@ -135,8 +125,6 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
       ? createArrayProxyHandler<T, S>(proxyHandlerOptions)
       : createProxyHandler<T, S>(proxyHandlerOptions);
     state = new Proxy(state as ObjLike, proxyHandler) as T;
-
-    logger.verbose('Proxy created for state:', state);
   } else if (init instanceof Set || init instanceof Map) {
     wrapMethods({
       ...configs,
@@ -158,6 +146,7 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
       link,
       state,
       unlink,
+      children,
       deferred,
       recursive,
       subscribers,
@@ -194,6 +183,21 @@ anchorFn.flat = <T extends unknown[], S extends ZodType = ZodType>(init: T, opti
  */
 anchorFn.raw = <T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T => {
   return anchorFn(init, { ...options, cloned: false });
+};
+
+/**
+ * This function is used to get the underlying object from the state.
+ * @param {T} state
+ * @returns {T}
+ */
+anchorFn.get = <T>(state: T): T => {
+  const target = REFLECT_REGISTRY.get(state as WeakKey);
+
+  if (!target) {
+    logger.error('Attempt to get the underlying object on non-existence state:', state);
+  }
+
+  return (target ?? state) as T;
 };
 
 /**

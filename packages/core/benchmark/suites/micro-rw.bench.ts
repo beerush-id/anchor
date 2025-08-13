@@ -54,6 +54,39 @@ benny.suite(
     };
   }),
 
+  benny.add('anchor() (Recursive)', () => {
+    const state = anchor({
+      count: 1,
+      user: {
+        name: 'John',
+        address: {
+          line: '123 Street',
+        },
+      },
+    });
+    return () => {
+      const val = state.user.address.line;
+    };
+  }),
+
+  benny.add('anchor() (Recursive, Eager)', () => {
+    const state = anchor(
+      {
+        count: 1,
+        user: {
+          name: 'John',
+          address: {
+            line: '123 Street',
+          },
+        },
+      },
+      { deferred: false }
+    );
+    return () => {
+      const val = state.user.address.line;
+    };
+  }),
+
   benny.add('anchor() with Schema', () => {
     const state = anchor(createSimpleObject(), { schema: simpleSchema, recursive: false });
     return () => {

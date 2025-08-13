@@ -89,6 +89,7 @@ export type DestroyFactoryInit<T> = LinkFactoryInit<T> & {
 export type SubscribeFactoryInit<T> = AnchorConfig &
   DestroyFactoryInit<T> &
   LinkFactoryInit<T> & {
+    children: StateChildrenMap;
     link: (childPath: KeyLike, childState: Linkable) => void;
     unlink: (state: Linkable) => void;
   };
@@ -108,5 +109,6 @@ export interface AnchorFn {
   remove<T extends object>(target: T, ...keys: Array<keyof T>): void;
   clear<T>(target: T): void;
 
+  get<T>(state: T): T;
   snapshot<T>(state: T): T;
 }

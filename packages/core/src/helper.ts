@@ -1,7 +1,7 @@
 import type { ObjLike } from './types.js';
 import { REFLECT_REGISTRY, STATE_BUSY_LIST, SUBSCRIBER_REGISTRY } from './registry.js';
 import { isArray, isDefined, isMap, isObject, isObjectLike } from '@beerush/utils';
-import { broadcast } from './utils.js';
+import { broadcast } from './internal.js';
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
 export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;

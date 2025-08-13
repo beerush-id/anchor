@@ -1,7 +1,7 @@
 import type { ZodArray, ZodObject, ZodType } from 'zod/v4';
 import type { GetTrapOptions, KeyLike, Linkable, ObjLike, SetTrapOptions, StateMutation } from './types.js';
 import { STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
-import { broadcast, linkable } from './utils.js';
+import { broadcast, linkable } from './internal.js';
 import { logger } from './logger.js';
 import { ARRAY_MUTATIONS } from './constant.js';
 

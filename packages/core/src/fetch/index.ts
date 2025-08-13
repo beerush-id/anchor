@@ -2,7 +2,7 @@ import type { ZodType } from 'zod/v4';
 import type { AnchorOptions, ObjLike } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
-import { linkable } from '../utils.js';
+import { linkable } from '../internal.js';
 import { logger } from '../logger.js';
 
 export type RequestOptions = RequestInit & {
