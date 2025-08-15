@@ -1,5 +1,8 @@
 import benny from 'benny';
-import { anchor } from '../shared.js'; // Assuming shared.ts exists
+import { anchor } from '../shared.js';
+import { linkable } from '../../src/internal.js';
+import type { ObjLike } from '@anchor/core';
+import type { KeyLike } from '../../src/index.js'; // Assuming shared.ts exists
 
 // --- More complex data for the UI scenario ---
 
@@ -30,7 +33,9 @@ type User = {
   address: UserAddress;
 };
 
-const createUsers = (count = 100): User[] => {
+const ITEM_COUNT = 1000;
+
+const createUsers = (count = ITEM_COUNT): User[] => {
   const users: User[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -62,10 +67,21 @@ const createUsers = (count = 100): User[] => {
   return users;
 };
 
+const flatProxyHandler = {
+  get(target: ObjLike, key: KeyLike, receiver?: unknown) {
+    const value = Reflect.get(target, key, receiver);
+
+    if (linkable(value)) {
+      return new Proxy(value, flatProxyHandler);
+    }
+
+    return value;
+  },
+};
 // --- The Benchmark Suite ---
 
 benny.suite(
-  '🖥️ UI Rendering Simulation (100 items)',
+  `🖥️ UI Rendering Simulation (${ITEM_COUNT} items)`,
 
   // This benchmark measures the combined cost of creation + a full read loop.
   // It's a more holistic measure of "time to first paint".
@@ -83,25 +99,26 @@ benny.suite(
     return output;
   }),
 
+  benny.add('Baseline (Plain Proxy)', () => {
+    const users = new Proxy(createUsers(), flatProxyHandler as never);
+    let output = '';
+    // Simulate reading the values as a UI would
+    for (const user of users) {
+      output += user.id;
+      output += user.fullName;
+      output += user.account.email;
+    }
+    // Returning the string prevents the loop from being optimized away
+    return output;
+  }),
+
   benny.add('anchor() - Default (Lazy)', () => {
-    const state: User[] = anchor(createUsers());
+    const state: User[] = anchor(createUsers(), { immutable: true });
     let output = '';
     for (const user of state) {
       output += user.id;
       output += user.fullName;
       // This will trigger lazy proxy creation for `user.account`
-      output += user.account.email;
-    }
-    return output;
-  }),
-
-  benny.add('anchor() - Hot Start (Eager)', () => {
-    // The cost of `anchor()` here will be high, as it proxies everything.
-    const state: User[] = anchor(createUsers(), { lazy: false });
-    let output = '';
-    for (const user of state) {
-      output += user.id;
-      output += user.fullName;
       output += user.account.email;
     }
     return output;

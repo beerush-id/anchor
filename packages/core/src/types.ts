@@ -1,5 +1,5 @@
 import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
-import type { ZodType } from 'zod/v4';
+import { type input, type output, type ZodArray, type ZodObject, type ZodType } from 'zod/v4';
 import type { LogLevel } from './logger.js';
 
 export type LoggerConfig = {
@@ -9,6 +9,13 @@ export type LoggerConfig = {
   traceVerbose: boolean;
 };
 export type Logger = {
+  create: {
+    error(...args: unknown[]): unknown[];
+    warn(...args: unknown[]): unknown[];
+    info(...args: unknown[]): unknown[];
+    debug(...args: unknown[]): unknown[];
+    verbose(...args: unknown[]): unknown[];
+  };
   error: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;
   info: (...args: unknown[]) => void;
@@ -17,20 +24,32 @@ export type Logger = {
   configure: (config: Partial<LoggerConfig>) => void;
 };
 
+export type Recursive = boolean | 'flat';
+export type MethodLike = (...args: unknown[]) => unknown;
 export type KeyLike = string | number | symbol;
+export type ObjLike = {
+  [key: KeyLike]: unknown;
+};
+
+export type Linkable = ObjLike | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
+export type LinkableSchema = ZodObject | ZodArray;
+export type ReadonlyLink = Immutable<Linkable>;
+
 export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
 export type SetMutation = (typeof SET_MUTATIONS)[number];
 export type MapMutation = (typeof MAP_MUTATIONS)[number];
 export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number];
 export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number];
 export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation;
+
 export type AnchorConfig = {
   cloned?: boolean;
   strict?: boolean;
   deferred?: boolean;
   recursive?: Recursive;
+  immutable?: boolean;
 };
-export type Recursive = boolean | 'flat';
+export type AnchorOptions<S extends ZodType = ZodType> = AnchorConfig & { schema?: S };
 
 export type StateSubscriber<T> = (snapshot: T, event: StateChange) => void;
 export type StateUnsubscribe = () => void;
@@ -38,6 +57,31 @@ export type StateSubscribeFn<T> = (handle: StateSubscriber<T>) => StateUnsubscri
 export type StateSubscriberList<T> = Set<StateSubscriber<T>>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
 export type StateChildrenMap = WeakMap<WeakKey, Linkable>;
+
+export type StatePropGetter<T extends Linkable = Linkable> = (
+  target: T,
+  prop: keyof T,
+  receiver?: unknown
+) => T[keyof T];
+export type StatePropSetter<T extends Linkable = Linkable> = (
+  target: T,
+  prop: keyof T,
+  value: T[keyof T],
+  receiver?: unknown
+) => boolean;
+export type StatePropRemover<T extends Linkable = Linkable> = (target: T, prop: keyof T) => boolean;
+
+export type StateReferences<T, S extends ZodType> = {
+  link: (childPath: KeyLike, childState: Linkable) => void;
+  unlink: (childState: Linkable) => void;
+  configs: AnchorOptions<S>;
+  children: StateChildrenMap;
+  subscribers: StateSubscriberList<T>;
+  subscriptions: StateSubscriptionMap;
+  getter?: StatePropGetter;
+  schema?: S;
+  mutator?: WeakMap<WeakKey, MethodLike>;
+};
 
 export type StateChange = {
   type: 'init' | StateMutation;
@@ -49,14 +93,6 @@ export type StateController<T> = {
   id: string;
   destroy: StateUnsubscribe;
   subscribe: StateSubscribeFn<T>;
-};
-export type ObjLike = {
-  [key: KeyLike]: unknown;
-};
-export type Linkable = ObjLike | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
-
-export type AnchorOptions<S extends ZodType> = AnchorConfig & {
-  schema?: S;
 };
 
 export type PipeTransformer<T, R> = (value: T) => Partial<R>;
@@ -94,11 +130,101 @@ export type SubscribeFactoryInit<T> = AnchorConfig &
     unlink: (state: Linkable) => void;
   };
 
-export interface AnchorFn {
-  <T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
+export type Immutable<T> = T extends MethodLike
+  ? T
+  : T extends Map<infer K, infer V>
+    ? ReadonlyMap<Immutable<K>, Immutable<V>>
+    : T extends Set<infer U>
+      ? ReadonlySet<Immutable<U>>
+      : T extends object
+        ? {
+            readonly [P in keyof T]: Immutable<T[P]>;
+          }
+        : T extends Array<infer U>
+          ? ReadonlyArray<Immutable<U>>
+          : T;
 
-  raw<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
-  flat<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
+export type Mutable<T> =
+  T extends ReadonlyMap<infer K, infer V>
+    ? Map<K, V>
+    : T extends ReadonlySet<infer U>
+      ? Set<U>
+      : T extends ReadonlyArray<infer U>
+        ? {
+            -readonly [P in keyof T]: P extends keyof Array<U> ? Array<U>[P] : never;
+          }
+        : {
+            -readonly [P in keyof T]: T[P];
+          };
+
+export type MutationKey<T> =
+  T extends ReadonlyMap<unknown, unknown>
+    ? MapMutation
+    : T extends ReadonlySet<unknown>
+      ? SetMutation
+      : T extends ReadonlyArray<unknown>
+        ? ArrayMutation
+        : keyof T;
+
+type UniqueArray<T> = T extends readonly [infer First, ...infer Rest]
+  ? First extends Rest[number]
+    ? never
+    : readonly [First, ...UniqueArray<Rest>]
+  : T;
+
+export type MergedType<T> = { [P in keyof T]: T[P] } & {};
+
+export type MutablePart<T, K extends MutationKey<T>[]> =
+  T extends ReadonlyMap<infer M, infer V>
+    ? T & {
+        -readonly [P in K[number]]: P extends keyof Map<M, V> ? Map<M, V>[P] : never;
+      }
+    : T extends ReadonlySet<infer U>
+      ? T & {
+          -readonly [P in K[number]]: P extends keyof Set<U> ? Set<U>[P] : never;
+        }
+      : T extends ReadonlyArray<infer U>
+        ? T & {
+            -readonly [P in K[number]]: P extends keyof Array<U> ? Array<U>[P] : never;
+          }
+        : MergedType<
+            Omit<T, K[number]> & {
+              -readonly [P in K[number]]: P extends keyof T ? T[P] : never;
+            }
+          >;
+
+export interface AnchorFn {
+  <T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
+  <S extends ZodType, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
+
+  <T extends Linkable, S extends ZodType = ZodType>(
+    init: T,
+    options?: AnchorOptions<S> & { immutable: true }
+  ): Immutable<T>;
+  <S extends ZodType, T extends input<S>>(
+    init: T,
+    schema: S,
+    options?: AnchorConfig & { immutable: true }
+  ): Immutable<output<S>>;
+
+  // Initializer methods.
+
+  raw<T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
+  flat<T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
+  model<S extends LinkableSchema, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
+
+  immutable<T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): Immutable<T>;
+  immutable<S extends ZodType, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): Immutable<output<S>>;
+
+  // Accessibility methods.
+
+  get<T>(state: T): T;
+  snapshot<T>(state: T): T;
+
+  writable<T>(state: T): Mutable<T>;
+  writable<T, K extends MutationKey<T>[]>(init: T, contracts?: UniqueArray<K>): MutablePart<T, K>;
+
+  // Utility methods.
 
   assign<T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>): void;
   assign<T extends Array<unknown>>(target: T, source: { [key: string]: T[number] } | Record<string, T[number]>): void;
@@ -107,8 +233,8 @@ export interface AnchorFn {
   remove<T, K>(target: Map<T, K>, ...keys: Array<T>): void;
   remove<T extends Array<unknown>>(target: T, ...keys: Array<string>): void;
   remove<T extends object>(target: T, ...keys: Array<keyof T>): void;
+
   clear<T>(target: T): void;
 
-  get<T>(state: T): T;
-  snapshot<T>(state: T): T;
+  configure(config: Partial<AnchorConfig>): void;
 }

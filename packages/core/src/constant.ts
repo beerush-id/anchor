@@ -22,4 +22,5 @@ export const ANCHOR_CONFIG: AnchorConfig = {
   strict: false,
   deferred: true,
   recursive: true,
+  immutable: false,
 };

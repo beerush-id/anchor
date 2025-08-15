@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import benny from 'benny';
-import { anchor, derive, type StateChangeEvent } from '../dist/index.js';
+import { anchor, derive, type StateChange } from '../dist/index.js';
 
-export { anchor, derive, benny, type StateChangeEvent };
+export { anchor, derive, benny, type StateChange };
 
 export const postSchema = z.object({
   id: z.string(),

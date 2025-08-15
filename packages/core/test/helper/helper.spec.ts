@@ -42,7 +42,7 @@ describe('Anchor Helpers', () => {
         c: 4,
       });
 
-      expect(state).toEqual(
+      expect(anchor.get(state)).toEqual(
         new Map([
           ['a', 3],
           ['b', 2],
@@ -123,7 +123,7 @@ describe('Anchor Helpers', () => {
 
       anchor.remove(state, 'a', 'c');
 
-      expect(state).toEqual(new Map([['b', 2]]));
+      expect(anchor.get(state)).toEqual(new Map([['b', 2]]));
     });
 
     it('should remove elements from Array state', () => {

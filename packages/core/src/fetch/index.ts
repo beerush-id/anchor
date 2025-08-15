@@ -40,7 +40,7 @@ export function fetchState<T, S extends ZodType = ZodType>(init: T, options: Fet
     init = anchor(init, options);
   }
 
-  const state = anchor<FetchState<T>, S>({ data: init, status: FetchStatus.Pending });
+  const state = anchor.raw<FetchState<T>, S>({ data: init, status: FetchStatus.Pending }, options);
 
   fetch(options.url, options)
     .then(async (response) => {
@@ -97,7 +97,7 @@ export function streamState<T, S extends ZodType = ZodType>(init: T, options: St
     init = anchor(init, options);
   }
 
-  const state = anchor<FetchState<T>, S>({ data: init, status: FetchStatus.Pending });
+  const state = anchor.raw<FetchState<T>, S>({ data: init, status: FetchStatus.Pending }, options);
 
   fetch(options.url, options)
     .then(async (response) => {

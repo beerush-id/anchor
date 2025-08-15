@@ -1,30 +1,35 @@
 import type { ZodObject, ZodType } from 'zod/v4';
-import { clone, isArray, isObject } from '@beerush/utils';
+import { isArray, isObject } from '@beerush/utils';
 import { logger } from './logger.js';
 import type {
+  AnchorConfig,
   AnchorFn,
   AnchorOptions,
+  Immutable,
   ObjLike,
-  SetTrapOptions,
   StateChildrenMap,
   StateController,
+  StateReferences,
   StateSubscriberList,
   StateSubscriptionMap,
 } from './types.js';
 import { ANCHOR_CONFIG } from './constant.js';
 import {
   INIT_REGISTRY,
+  REFERENCE_REGISTRY,
   REFLECT_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { createLinkableRefs, shouldProxy } from './internal.js';
+import { createLinkableRefs, linkable } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
-import { createArrayProxyHandler, createProxyHandler } from './proxy.js';
-import { wrapMethods } from './wrapper.js';
+import { createProxyHandler, writeContract } from './proxy.js';
 import { assign, clear, remove } from './helper.js';
 import { shortId } from './utils/index.js';
+import { createArrayMutator } from './array.js';
+import { createCollectionMutator } from './collection.js';
+import { captureStack } from './exception.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -38,12 +43,13 @@ import { shortId } from './utils/index.js';
  * @template T The type of the value to anchor.
  * @template S The Zod schema type for validation.
  * @param init The initial value to anchor.
+ * @param schemaOptions
  * @param options Optional configuration for anchoring, including schema, strict mode, and recursive anchoring.
  * @returns The proxied, reactive version of the input value.
  * @throws If `strict` mode is enabled and schema validation fails during initialization.
  * @throws If `strict` mode is enabled and schema validation fails during property updates or array mutations.
  */
-function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T {
+function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptions<S>, options?: AnchorOptions<S>): T {
   if (STATE_REGISTRY.has(init as WeakKey)) {
     return init;
   }
@@ -52,22 +58,32 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
     return STATE_REGISTRY.get(init as WeakKey) as T;
   }
 
-  const id = shortId();
+  if (!linkable(init)) {
+    captureStack.violation.init(init, anchorFn);
+    return init;
+  }
 
+  if (!(schemaOptions as ZodType)?._zod) {
+    options = schemaOptions as AnchorOptions<S>;
+  }
+
+  const id = shortId();
   const {
-    schema,
     strict = ANCHOR_CONFIG.strict,
     cloned = ANCHOR_CONFIG.cloned,
     deferred = ANCHOR_CONFIG.deferred,
     recursive = ANCHOR_CONFIG.recursive,
+    immutable = ANCHOR_CONFIG.immutable,
   } = options ?? {};
-  const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive };
+
+  const schema = (schemaOptions as ZodType)?._zod ? (schemaOptions as S) : (schemaOptions as AnchorOptions<S>)?.schema;
+  const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive, immutable };
   const children: StateChildrenMap = new WeakMap();
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
 
-  if (cloned) {
-    init = clone(init);
+  if (cloned && !immutable) {
+    init = structuredClone(init);
   }
 
   if (schema) {
@@ -101,42 +117,28 @@ function anchorFn<T, S extends ZodType = ZodType>(init: T, options?: AnchorOptio
 
   let state: T = init;
 
-  const link = createLinkFactory({
-    init,
-    subscribers,
-    subscriptions,
-  });
+  const link = createLinkFactory({ init, subscribers, subscriptions });
   const unlink = createUnlinkFactory({ subscriptions });
 
-  if (shouldProxy(state)) {
-    const proxyHandlerOptions: SetTrapOptions<T, S> = {
-      ...configs,
-      init,
-      link,
-      anchor: anchorFn,
-      unlink,
-      schema,
-      children,
-      subscribers,
-      subscriptions,
-    };
+  const references: StateReferences<T, S> = {
+    link,
+    unlink,
+    schema,
+    configs,
+    children,
+    subscribers,
+    subscriptions,
+  };
+  REFERENCE_REGISTRY.set(init as WeakKey, references as StateReferences<unknown, ZodType>);
 
-    const proxyHandler = Array.isArray(state)
-      ? createArrayProxyHandler<T, S>(proxyHandlerOptions)
-      : createProxyHandler<T, S>(proxyHandlerOptions);
-    state = new Proxy(state as ObjLike, proxyHandler) as T;
-  } else if (init instanceof Set || init instanceof Map) {
-    wrapMethods({
-      ...configs,
-      init,
-      link,
-      anchor: anchorFn,
-      unlink,
-      children,
-      subscribers,
-      subscriptions,
-    });
+  if (Array.isArray(init)) {
+    references.mutator = createArrayMutator(init, references);
+  } else if (init instanceof Map || init instanceof Set) {
+    references.mutator = createCollectionMutator(init);
   }
+
+  const proxyHandler = createProxyHandler<T>(init, references);
+  state = new Proxy(state as ObjLike, proxyHandler) as T;
 
   const controller: StateController<T> = {
     id,
@@ -212,10 +214,29 @@ anchorFn.snapshot = <T>(state: T): T => {
     logger.error('Cannot create snapshot of non-existence state:', state);
   }
 
-  return clone(target ?? state) as T;
+  return structuredClone(target ?? state) as T;
 };
 
-// Export the assign function.
+/**
+ * This function is used to configure the Anchor's default options.
+ * @param {Partial<AnchorConfig>} config
+ */
+anchorFn.configure = (config: Partial<AnchorConfig>) => {
+  Object.assign(ANCHOR_CONFIG, config);
+};
+
+/**
+ * This function is used to create a reactive object that is immutable.
+ * @param {T} init
+ * @param {AnchorOptions<S>} options
+ * @returns {Immutable<T>}
+ */
+anchorFn.immutable = <T, S extends ZodType>(init: T, options?: AnchorOptions<S>): Immutable<T> => {
+  return anchorFn(init, { ...options, immutable: true }) as Immutable<T>;
+};
+
+// Assign utility functions.
+anchorFn.writable = writeContract;
 anchorFn.assign = assign;
 anchorFn.remove = remove;
 anchorFn.clear = clear;

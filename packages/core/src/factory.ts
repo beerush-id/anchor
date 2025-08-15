@@ -8,7 +8,6 @@ import type {
   SubscribeFactoryInit,
   UnlinkFactoryInit,
 } from './types.js';
-import { logger } from './logger.js';
 import { broadcast, createLinkableRefs } from './internal.js';
 import { INIT_REGISTRY, STATE_REGISTRY } from './registry.js';
 
@@ -19,8 +18,6 @@ export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkF
     // Avoid duplicate linking
     if (!STATE_REGISTRY.has(childState) || subscriptions.has(childState)) return;
 
-    logger.verbose('Linking reactive reference for:', childPath, 'with value:', childState);
-
     // Get the controller for the child state
     const ctrl = STATE_REGISTRY.get(childState as WeakKey);
 
@@ -30,8 +27,6 @@ export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkF
       const childUnsubscribe = ctrl.subscribe((_, event) => {
         // Ignore init events to prevent duplicate notifications
         if (event && event?.type !== 'init') {
-          logger.verbose('Broadcasting event from linked state:', childPath, 'with event:', event);
-
           const keys = event?.keys ?? [];
           keys.unshift(childPath);
 
@@ -51,7 +46,6 @@ export function createUnlinkFactory({ subscriptions }: UnlinkFactoryInit) {
     const unsubscribe = subscriptions.get(childState);
 
     if (typeof unsubscribe === 'function') {
-      logger.verbose('Unlinking reactive reference for value:', childState);
       unsubscribe();
       subscriptions.delete(childState);
     }
@@ -67,8 +61,6 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
     // Immediately notify the handler with the current state.
     handler(init, { type: 'init', keys: [] });
 
-    logger.verbose('Subscribing to child references for state:', state);
-
     // Link all child references to track their changes
     if (recursive && !(recursive === 'flat' && Array.isArray(init))) {
       for (const [key, value] of createLinkableRefs(state)) {
@@ -78,24 +70,18 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
       }
     }
 
-    logger.verbose('Subscribing to state:', state);
-
     // Add the handler to the list of active subscribers
     subscribers.add(handler);
 
     // Return the unsubscribe function
     return () => {
-      logger.verbose('Unsubscribe from state:', state);
       // Remove the handler from active subscribers
       subscribers.delete(handler);
 
       // If no more subscribers, clean up resources
       if (subscribers.size <= 0) {
-        logger.verbose('State is no longer used:', state);
-
         // Unlink all child references if any exist
         if (subscriptions.size) {
-          logger.verbose('Unlinking references.');
           // Iterate over a copy of the subscriptions map to safely unlink
           subscriptions.forEach((_, val) => {
             unlink(val as Linkable);
@@ -123,7 +109,5 @@ export function createDestroyFactory<T>({ init, state, subscribers, subscription
     // Remove the state from STATE_REGISTRY and STATE_LINK.
     STATE_REGISTRY.delete(state as WeakKey);
     INIT_REGISTRY.delete(init as WeakKey);
-
-    logger.verbose('State destroyed for:', state);
   };
 }

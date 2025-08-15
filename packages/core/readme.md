@@ -28,8 +28,8 @@ const state = anchor({
   count: 0,
   user: {
     name: 'John Doe',
-    email: 'john@example.com'
-  }
+    email: 'john@example.com',
+  },
 });
 
 // Subscribe to state changes
@@ -57,7 +57,7 @@ import { anchor } from '@anchor/core';
 // Objects (supported)
 const user = anchor({
   name: 'John',
-  age: 30
+  age: 30,
 });
 
 // Arrays (supported)
@@ -99,7 +99,7 @@ if (controller) {
   const unsubscribe = controller.subscribe((snapshot, event) => {
     console.log('State updated:', snapshot, 'Event:', event);
   });
-  
+
   // Later, to unsubscribe
   // unsubscribe();
 }
@@ -115,16 +115,19 @@ import { z } from 'zod';
 
 const UserSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email()
+  email: z.string().email(),
 });
 
-const user = anchor({
-  name: 'John',
-  email: 'john@example.com'
-}, { 
-  schema: UserSchema,
-  strict: true // Throws on validation errors
-});
+const user = anchor(
+  {
+    name: 'John',
+    email: 'john@example.com',
+  },
+  {
+    schema: UserSchema,
+    strict: true, // Throws on validation errors
+  }
+);
 ```
 
 ## Modules
@@ -138,7 +141,7 @@ import { fetchState } from '@anchor/core/fetch';
 
 const users = fetchState([], {
   url: '/api/users',
-  method: 'GET'
+  methodCall: 'GET',
 });
 
 // users.status will be 'pending' -> 'success' or 'error'
@@ -161,7 +164,7 @@ state.count++; // 2
 
 stateHistory.backward(); // count: 1
 stateHistory.backward(); // count: 0
-stateHistory.forward();  // count: 1
+stateHistory.forward(); // count: 1
 ```
 
 ## API Reference
@@ -171,6 +174,7 @@ stateHistory.forward();  // count: 1
 Creates a reactive state from any value. Supported value types are objects, arrays, Maps, and Sets.
 
 **Parameters:**
+
 - `value` - The value to make reactive (objects, arrays, Maps, or Sets)
 - `options` - Configuration options:
   - `schema` - Zod schema for validation
@@ -213,6 +217,7 @@ if (controller) {
 ## Browser Support
 
 Anchor works in all modern browsers that support ES6+ features including:
+
 - Proxy API
 - WeakMap and WeakSet
 - Promises
