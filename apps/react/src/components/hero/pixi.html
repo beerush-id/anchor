@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PixiJS: Light, Attracted Bugs</title>
     <style>
       body {
@@ -28,10 +28,16 @@
 
     <script type="module">
       // Import necessary PixiJS v8 modules
-      import { Application, Graphics, Sprite, Point, Texture } from 'https://cdn.jsdelivr.net/npm/pixi@8.1.1/dist/pixi.mjs';
+      import {
+        Application,
+        Graphics,
+        Sprite,
+        Point,
+        Texture,
+      } from 'https://cdn.jsdelivr.net/npm/pixi@8.1.1/dist/pixi.mjs';
 
       // Ensure the window is fully loaded before initializing PixiJS
-      window.onload = async function() {
+      window.onload = async function () {
         // const loadingMessage = document.getElementById('loadingMessage'); // Removed
 
         // 1. Create a PixiJS Application
@@ -72,10 +78,7 @@
           canvas.height = radius * 2;
           const ctx = canvas.getContext('2d');
 
-          const gradient = ctx.createRadialGradient(
-            radius, radius, 0,
-            radius, radius, radius
-          );
+          const gradient = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
 
           gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
           gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
@@ -161,7 +164,8 @@
             let dist = Math.sqrt(dx * dx + dy * dy);
 
             // Normalize direction and apply attraction force
-            if (dist > 1) { // Avoid division by zero when dist is very small
+            if (dist > 1) {
+              // Avoid division by zero when dist is very small
               dx /= dist;
               dy /= dist;
               this.vx += dx * BUG_ATTRACTION_FORCE;
@@ -205,7 +209,7 @@
 
         // 6. Initialize Bugs
         function initBugs() {
-          bugs.forEach(bug => bug.destroy()); // Destroy existing bugs
+          bugs.forEach((bug) => bug.destroy()); // Destroy existing bugs
           bugs = [];
           for (let i = 0; i < BUG_COUNT; i++) {
             const bug = new Bug();
@@ -241,7 +245,7 @@
           lightMask.y = mousePos.y;
 
           // Update bugs
-          bugs.forEach(bug => {
+          bugs.forEach((bug) => {
             bug.update(mousePos.x, mousePos.y);
           });
 

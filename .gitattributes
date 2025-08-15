@@ -2,7 +2,7 @@
 * text=auto
 
 # Force specific files to have Unix line endings
-*.{js,jsx,ts,tsx,json,css,scss,md} text eol=lf
+*.{js,jsx,ts,tsx,json,css,scss,md,svelte} text eol=lf
 
 # Ensure bash scripts have Unix line endings
 *.sh text eol=lf
