@@ -31,10 +31,6 @@
 	const svUser = $state({ name: 'foo' });
 	svMap.set('foo', 1);
 
-	console.log(svMap);
-	console.log(svUser);
-	console.log(mapState);
-
 	derive.log(mapState);
 
 	$inspect(counter);
