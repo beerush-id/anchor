@@ -6,7 +6,11 @@
 }
 
 .shiki {
-  @apply p-4 rounded-md overflow-auto;
+  @apply p-4 rounded-md overflow-auto outline-none;
+}
+
+.inline-code {
+  @apply bg-slate-800 rounded-sm px-1 font-bold py-0.5;
 }
 
 body {

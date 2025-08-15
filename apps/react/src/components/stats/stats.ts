@@ -22,19 +22,19 @@ export const classicTodoStats = anchor({
 
 export const todoStats = anchor({
   app: {
-    name: 'Todo App',
+    name: 'Anchor Todo App',
     value: 0,
   },
   form: {
-    name: 'Todo Form',
+    name: 'Anchor Todo Form',
     value: 0,
   },
   list: {
-    name: 'Todo List',
+    name: 'Anchor Todo List',
     value: 0,
   },
   item: {
-    name: 'Todo Item',
+    name: 'Anchor Todo Item',
     value: 0,
   },
 });
@@ -45,4 +45,14 @@ export function useUpdateStat(fn: () => void, timeout = 50) {
       fn();
     }, timeout);
   });
+}
+
+export function flashNode(element: HTMLElement | null = null) {
+  if (!element) return;
+
+  element.style.boxShadow = '0 0 0 1px red';
+
+  setTimeout(() => {
+    element.style.boxShadow = '';
+  }, 300);
 }

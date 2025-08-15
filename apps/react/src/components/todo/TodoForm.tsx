@@ -1,15 +1,18 @@
-import React, { memo, useState } from 'react';
+import { type FC, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
-import type { TodoItemProp } from '../Types.js';
-import { todoStats, useUpdateStat } from '../stats/stats.js';
+import { flashNode, todoStats, useUpdateStat } from '../stats/stats.js';
+import { useDerivedContext } from '@anchor/react';
+import { TodoContext } from '../../lib/todo.js';
 
-export const TodoForm: React.FC<{ todos: TodoItemProp[] }> = memo(({ todos }) => {
+export const TodoForm: FC = () => {
+  const [todos] = useDerivedContext(TodoContext);
+  const ref = useRef(null);
   const [newText, setNewText] = useState('');
 
   const addTodo = () => {
     todos.push({
-      id: Date.now(),
+      id: todos.length + 1,
       text: newText,
       completed: false,
     });
@@ -17,12 +20,13 @@ export const TodoForm: React.FC<{ todos: TodoItemProp[] }> = memo(({ todos }) =>
     setNewText('');
   };
 
+  flashNode(ref.current);
   useUpdateStat(() => {
     todoStats.form.value++;
   });
-  console.log('Rendering todo form');
+  console.log('Rendering todo form.');
   return (
-    <div className="flex gap-2">
+    <div ref={ref} className="flex gap-2">
       <input
         type="text"
         value={newText}
@@ -35,4 +39,4 @@ export const TodoForm: React.FC<{ todos: TodoItemProp[] }> = memo(({ todos }) =>
       </Button>
     </div>
   );
-});
+};

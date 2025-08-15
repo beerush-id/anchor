@@ -5,6 +5,7 @@ import { BoxPanel } from './BoxPanel.js';
 import { BoxView } from './BoxView.js';
 import { ControlPanelCode } from './ControlPanelCode.js';
 import { CardHeader } from '../CardHeader.js';
+import { CodeBlock } from '../CodeBlock.js';
 
 export const ControlPanel: React.FC = () => {
   const [showCode, setShowCode] = useState(false);
@@ -17,8 +18,6 @@ export const ControlPanel: React.FC = () => {
     },
     []
   );
-
-  console.log('Rendering control panel');
 
   return (
     <div className="mt-12">
@@ -33,6 +32,13 @@ export const ControlPanel: React.FC = () => {
           <BoxPanel box={box} />
           <BoxView box={box} />
         </div>
+        <CodeBlock
+          code={`// Pipe state directly to the element's style.
+derive.pipe(state, element.style, ({ x, scale }) => ({
+  left: \`\${x}%\`,
+  transform: \`translate3d(-50%, -50%, 0) rotate(\${(x / 100) * 360}deg) scale(\${scale})\`,
+}));`}
+        />
         <div className="bg-slate-950">{showCode && <ControlPanelCode />}</div>
       </Card>
     </div>

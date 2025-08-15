@@ -1,21 +1,24 @@
-import React, { memo } from 'react';
-import { useDerived } from '@anchor/react';
+import { type FC, useRef } from 'react';
+import { useDerivedContext } from '@anchor/react';
 import { TodoItem } from './TodoItem.js';
-import type { TodoItemProp } from '../Types.js';
-import { todoStats, useUpdateStat } from '../stats/stats.js';
+import { flashNode, todoStats, useUpdateStat } from '../stats/stats.js';
+import { TodoContext } from '../../lib/todo.js';
 
-export const TodoList: React.FC<{ todos: TodoItemProp[] }> = memo(({ todos }) => {
-  const [items] = useDerived(todos);
+export const TodoList: FC = () => {
+  const ref = useRef(null);
+  const [items, , snapshot] = useDerivedContext(TodoContext);
 
+  flashNode(ref.current);
   useUpdateStat(() => {
     todoStats.list.value++;
   });
-  console.log('Rendering todo list');
+  console.log('Rendering todo list:', snapshot);
+
   return (
-    <ul className="mt-4 space-y-2">
+    <ul ref={ref} className="mt-4 space-y-2">
       {items.map((todo) => (
         <TodoItem key={todo.id} todo={todo} />
       ))}
     </ul>
   );
-});
+};

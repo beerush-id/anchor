@@ -5,8 +5,6 @@ import { useDerived } from '@anchor/react';
 export const BoxPanel: React.FC<{ box: BoxProp }> = memo(({ box }) => {
   const [state] = useDerived(box);
 
-  console.log('Rendering box controller');
-
   return (
     <div className="p-6">
       <h4 className="font-semibold mb-4">Control Panel</h4>
@@ -17,8 +15,9 @@ export const BoxPanel: React.FC<{ box: BoxProp }> = memo(({ box }) => {
             type="range"
             min="0"
             max="100"
+            step={0.01}
             value={state.x}
-            onChange={(e) => (state.x = parseInt(e.target.value))}
+            onChange={(e) => (state.x = parseFloat(e.target.value))}
             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-orange"
           />
         </div>

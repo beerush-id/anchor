@@ -13,20 +13,17 @@ export const BoxView: React.FC<{ box: BoxProp }> = memo(({ box }) => {
     if (!boxNode.current) return;
 
     return derive.pipe(box, boxNode.current.style, ({ x, scale }) => ({
-      top: `50%`,
       left: `${x}%`,
       transform: `translate3d(-50%, -50%, 0) rotate(${(x / 100) * 360}deg) scale(${scale})`,
     }));
   }, [boxNode]);
-
-  console.log('Rendering box viewer');
 
   return (
     <div className="p-6 bg-slate-950/50 min-h-[250px] flex items-center justify-center relative overflow-hidden">
       <div
         ref={boxNode}
         className="w-24 h-24 bg-gradient-to-br from-brand-orange to-brand-purple rounded-lg shadow-2xl shadow-purple-500/20"
-        style={{ position: 'absolute', top: 0, left: 0 }}
+        style={{ position: 'absolute', top: '50%', left: '50%' }}
       />
     </div>
   );

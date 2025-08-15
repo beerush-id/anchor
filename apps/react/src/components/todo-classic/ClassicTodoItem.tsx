@@ -1,17 +1,20 @@
-import React, { memo } from 'react';
+import React, { memo, useRef } from 'react';
 
-import type { TodoItemProp } from '../Types.js';
-import { classicTodoStats, useUpdateStat } from '../stats/stats.js';
+import type { ITodoItem } from '../../lib/todo.js';
+import { classicTodoStats, flashNode, useUpdateStat } from '../stats/stats.js';
 
-export const ClassicTodoItem: React.FC<{ todo: TodoItemProp; onToggle: (id: number) => void }> = memo(
+export const ClassicTodoItem: React.FC<{ todo: ITodoItem; onToggle: (id: number) => void }> = memo(
   ({ todo, onToggle }) => {
+    const ref = useRef(null);
+
+    flashNode(ref.current);
     useUpdateStat(() => {
       classicTodoStats.item.value++;
     });
-    console.log('Rendering classic todo item', todo.id);
+    console.log('Rendering classic todo item:', todo);
 
     return (
-      <li key={todo.id} className="flex items-center gap-3 bg-slate-800/70 p-2 rounded-md">
+      <li ref={ref} key={todo.id} className="flex items-center gap-3 bg-slate-800/70 p-2 rounded-md">
         <input
           type="checkbox"
           checked={todo.completed}

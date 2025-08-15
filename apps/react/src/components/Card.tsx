@@ -1,5 +1,15 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { flashNode } from './stats/stats.js';
 
-export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden ${className}`}>{children}</div>
-);
+export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => {
+  const ref = useRef(null);
+  flashNode(ref.current);
+
+  return (
+    <div
+      ref={ref}
+      className={`bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden flex flex-col ${className}`}>
+      {children}
+    </div>
+  );
+};

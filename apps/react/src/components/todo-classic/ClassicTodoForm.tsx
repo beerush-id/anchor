@@ -1,15 +1,16 @@
 import { Button } from '../Button.js';
 import { Plus } from 'lucide-react';
-import React, { memo, useState } from 'react';
-import type { TodoItemProp } from '../Types.js';
-import { classicTodoStats, useUpdateStat } from '../stats/stats.js';
+import { type FC, useRef, useState } from 'react';
+import { type ITodoItem, type ITodoList } from '../../lib/todo.js';
+import { classicTodoStats, flashNode, useUpdateStat } from '../stats/stats.js';
 
-export const ClassicTodoForm: React.FC<{ onAdd: (todo: TodoItemProp) => void }> = memo(({ onAdd }) => {
+export const ClassicTodoForm: FC<{ todos: ITodoList; onAdd: (todo: ITodoItem) => void }> = ({ todos, onAdd }) => {
+  const ref = useRef(null);
   const [newTodoText, setNewTodoText] = useState('');
 
   const addTodo = () => {
     onAdd({
-      id: Math.random(),
+      id: todos.length + 1,
       text: newTodoText,
       completed: false,
     });
@@ -17,13 +18,15 @@ export const ClassicTodoForm: React.FC<{ onAdd: (todo: TodoItemProp) => void }> 
     setNewTodoText('');
   };
 
+  flashNode(ref.current);
   useUpdateStat(() => {
     classicTodoStats.form.value++;
   });
-  console.log('Rendering classic todo form');
+
+  console.log('Rendering classic todo form.');
 
   return (
-    <div className="flex gap-2">
+    <div ref={ref} className="flex gap-2">
       <input
         type="text"
         value={newTodoText}
@@ -36,4 +39,4 @@ export const ClassicTodoForm: React.FC<{ onAdd: (todo: TodoItemProp) => void }> 
       </Button>
     </div>
   );
-});
+};
