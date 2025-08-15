@@ -11,7 +11,8 @@
     "build": "bpkg run build",
     "format": "bpkg run format",
     "lint": "bpkg run lint",
-    "test": "bpkg run test"
+    "test": "bpkg run test",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@beerush/esdev": "^1.1.0",
@@ -20,6 +21,8 @@
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
     "monopkg": "^0.3.10",
     "prettier": "^3.2.5",
     "typedoc": "^0.24.8",
@@ -49,5 +52,11 @@
   },
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

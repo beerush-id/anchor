@@ -116,7 +116,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 .idea
-lib
 
 # Vitepress
 docs/.vitepress/dist
