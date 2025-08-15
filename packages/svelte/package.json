@@ -2,26 +2,30 @@
   "type": "module",
   "name": "@anchor/svelte",
   "version": "0.0.1",
-  "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "svelte": "./dist/index.js",
+      "import": "./dist/index.js"
     },
     "./preprocessor": {
       "types": "./dist/preprocessor/index.d.ts",
-      "import": "./dist/preprocessor/index.js",
-      "require": "./dist/preprocessor/index.cjs"
+      "svelte": "./dist/preprocessor/index.js",
+      "import": "./dist/preprocessor/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "svelte": "./dist/storage/index.js",
+      "import": "./dist/storage/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "directories": {
-    "dist": "dist"
+    "dist": "./dist"
   },
   "publishConfig": {
     "access": "public"
@@ -59,5 +63,6 @@
   "license": "MIT",
   "dependencies": {
     "@anchor/core": "workspace:*"
-  }
+  },
+  "svelte": "./dist/index.js"
 }
