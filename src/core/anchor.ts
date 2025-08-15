@@ -258,7 +258,7 @@ export function crate<T extends Init, R extends boolean = true>(
         const { refPath } = schema || {};
         sch = {
           ...sch,
-          refPath: refPath ? `${refPath}.${sch.refPath ?? (prop as string)}` : sch.refPath ?? (prop as string),
+          refPath: refPath ? `${refPath}.${sch.refPath ?? (prop as string)}` : (sch.refPath ?? (prop as string)),
         };
       }
 
@@ -535,7 +535,7 @@ export function crate<T extends Init, R extends boolean = true>(
   let proxyHandler: ProxyHandler<T> = undefined as never;
   if (shouldProxy(clone)) {
     proxyHandler = {
-      set(target: T, prop: keyof T, value: T[keyof T]) {
+      setter(target: T, prop: keyof T, value: T[keyof T]) {
         let next = value;
         const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
@@ -600,7 +600,7 @@ export function crate<T extends Init, R extends boolean = true>(
 
         return true;
       },
-      deleteProperty(target: T, prop: keyof T): boolean {
+      remover(target: T, prop: keyof T): boolean {
         const current = Reflect.get(target, prop) as State<T[keyof T]>;
 
         if (typeof current === 'object' && linkable(current) && recursive) {

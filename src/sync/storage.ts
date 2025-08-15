@@ -103,7 +103,7 @@ function initMaster() {
   window.addEventListener('beforeunload', () => {
     if (SLAVES.size) {
       const candidate = SLAVES.values().next();
-      SLAVES.delete(candidate.value);
+      SLAVES.delete(candidate.value as string);
 
       broadcastChannel.postMessage({
         id: CHANNEL,
