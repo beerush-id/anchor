@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, logger } from '@anchor/core';
+import { anchor } from '@anchor/core';
 import { z } from 'zod';
 
 describe('Anchor Core - Schema Validation', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   describe('Schema Validation', () => {
@@ -130,7 +130,7 @@ describe('Anchor Core - Schema Validation', () => {
       const state = anchor({ name: 'John', age: 30 }, { schema, strict: false });
 
       // Reset mock to clear any previous calls
-      consoleErrorSpy.mockClear();
+      errorSpy.mockClear();
 
       // Invalid update should not throw but log error
       state.age = 'invalid' as never;
@@ -139,7 +139,7 @@ describe('Anchor Core - Schema Validation', () => {
       expect(state.age).toBe(30);
 
       // Should have called console.error
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should log error for array validation failures when strict is false', () => {
@@ -147,7 +147,7 @@ describe('Anchor Core - Schema Validation', () => {
       const state = anchor(['a', 'b'], { schema, strict: false });
 
       // Reset mock to clear any previous calls
-      consoleErrorSpy.mockClear();
+      errorSpy.mockClear();
 
       // Invalid push should not throw but log error
       state.push(123 as never);
@@ -156,7 +156,7 @@ describe('Anchor Core - Schema Validation', () => {
       expect(state).toEqual(['a', 'b']);
 
       // Should have called console.error
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should throw for invalid assignment in strict mode', () => {

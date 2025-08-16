@@ -1,9 +1,10 @@
 import type { ZodObject, ZodType } from 'zod/v4';
 import type { KeyLike, Linkable, ObjLike, StateReferences } from './types.js';
-import { REFERENCE_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
+import { INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import { broadcast, linkable } from './internal.js';
 import { logger } from './logger.js';
 import { anchor } from './anchor.js';
+import { captureStack } from './exception.js';
 
 export function createGetter<T, S extends ZodType>(init: T, options?: StateReferences<T, S>) {
   const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
@@ -31,8 +32,13 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
     };
   }
 
-  return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+  const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     let value = Reflect.get(target, prop, receiver) as Linkable;
+
+    if (value === init) {
+      captureStack.violation.circular(prop, getter);
+      return INIT_REGISTRY.get(init as WeakKey) ?? init;
+    }
 
     // If the value is an array method, set method, or map method,
     // try to get the method trap from the mutator map.
@@ -80,6 +86,8 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
 
     return value;
   };
+
+  return getter;
 }
 
 export function createSetter<T, S extends ZodType>(init: T, options?: StateReferences<T, S>) {

@@ -3,7 +3,7 @@ import type { AnchorOptions, ObjLike } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
-import { logger } from '../logger.js';
+import { captureStack } from '../exception.js';
 
 export type RequestOptions = RequestInit & {
   url: string | URL;
@@ -56,7 +56,7 @@ export function fetchState<T, S extends ZodType = ZodType>(init: T, options: Fet
               status: FetchStatus.Success,
             });
           } catch (error) {
-            logger.error('Unable to parse JSON body:', error);
+            captureStack.error.external('Unable to parse JSON body', error as Error);
             anchor.assign(state, {
               error,
               response,
@@ -71,6 +71,11 @@ export function fetchState<T, S extends ZodType = ZodType>(init: T, options: Fet
           });
         }
       } else {
+        captureStack.error.external(
+          'Something went wrong when fetching response',
+          new Error(response.statusText),
+          fetchState
+        );
         anchor.assign(state, {
           response,
           status: FetchStatus.Error,
@@ -79,6 +84,7 @@ export function fetchState<T, S extends ZodType = ZodType>(init: T, options: Fet
       }
     })
     .catch((error) => {
+      captureStack.error.external('Something went wrong when fetching response', error as Error);
       anchor.assign(state, { status: FetchStatus.Error, error });
     });
 
@@ -125,7 +131,7 @@ export function streamState<T, S extends ZodType = ZodType>(init: T, options: St
             }
           );
         } catch (error) {
-          logger.error('Something went wrong when streaming response:', error);
+          captureStack.error.external('Something went wrong when streaming response', error as Error);
           anchor.assign(state, { response, error, status: FetchStatus.Error } as FetchState<T>);
         }
       } else {
@@ -137,6 +143,7 @@ export function streamState<T, S extends ZodType = ZodType>(init: T, options: St
       }
     })
     .catch((error) => {
+      captureStack.error.external('Something went wrong when fetching stream', error as Error);
       anchor.assign(state, { status: FetchStatus.Error, error });
     });
 
@@ -192,20 +199,26 @@ function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T,
       return;
     }
 
-    (state as { data: string }).data += transform(state.data, chunk) as string;
+    if (isString(state.data)) {
+      (state as { data: string }).data += transform(state.data, chunk) as string;
+    }
   } else if (isObject(chunk)) {
     if (typeof state.data === 'undefined') {
       state.data = transform(state.data, chunk);
       return;
     }
 
-    anchor.assign(state.data as ObjLike, transform(state.data, chunk) as ObjLike);
+    if (isObject(state.data)) {
+      anchor.assign(state.data as ObjLike, transform(state.data, chunk) as ObjLike);
+    }
   } else if (isArray(chunk)) {
     if (typeof state.data === 'undefined') {
       state.data = transform(state.data, chunk);
       return;
     }
 
-    (state.data as unknown[]).push(...(transform(state.data, chunk) as unknown[]));
+    if (isArray(state.data)) {
+      (state.data as unknown[]).push(...(transform(state.data, chunk) as unknown[]));
+    }
   }
 }

@@ -14,10 +14,6 @@ export function linkable(value: unknown): value is Linkable {
   return LINKABLE.has(typeOf(value));
 }
 
-export function shouldProxy(value: unknown): boolean {
-  return !(value instanceof Map || value instanceof Set);
-}
-
 export function createLinkableRefs<T>(value: T) {
   const linkableRefs = new Map<string, Linkable>();
 

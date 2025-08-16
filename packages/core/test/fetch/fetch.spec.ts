@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { derive, fetchState, FetchStatus, streamState } from '@anchor/core';
 
 describe('Reactive Fetch', () => {
+  let errorSpy: ReturnType<typeof vi.spyOn>;
   const mockUserData = {
     id: 1,
     name: 'John Doe',
@@ -13,11 +14,13 @@ describe('Reactive Fetch', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.resetAllMocks();
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.useRealTimers();
     global.fetch = originalFetch;
+    errorSpy.mockRestore();
   });
 
   describe('Fetch', () => {

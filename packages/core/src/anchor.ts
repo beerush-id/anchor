@@ -30,6 +30,7 @@ import { shortId } from './utils/index.js';
 import { createArrayMutator } from './array.js';
 import { createCollectionMutator } from './collection.js';
 import { captureStack } from './exception.js';
+import { softClone } from './utils/clone.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -83,12 +84,12 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
   const subscriptions: StateSubscriptionMap = new Map();
 
   if (cloned && !immutable) {
-    init = structuredClone(init);
+    init = softClone(init);
   }
 
   if (schema) {
     if (!isObject(init) && !isArray(init)) {
-      throw new Error('Schema only supported on "object" and "array".');
+      captureStack.violation.schema('(object | array)', schema.type, strict ?? false, anchorFn);
     }
 
     const result = schema.safeParse(init);
@@ -99,10 +100,13 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
       } else if (isObject(init)) {
         Object.assign(init, result.data);
       }
-    } else if (strict) {
-      throw result.error;
     } else {
-      logger.error(result.error.message, result.error);
+      captureStack.error.validation(
+        'Attempted to initialize state with schema:',
+        result.error,
+        strict ?? false,
+        anchorFn
+      );
     }
   }
 

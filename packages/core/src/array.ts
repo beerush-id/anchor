@@ -3,7 +3,6 @@ import type { Linkable, MethodLike, ObjLike, StateMutation, StateReferences } fr
 import { INIT_REGISTRY, REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { ARRAY_MUTATIONS } from './constant.js';
 import { broadcast, linkable } from './internal.js';
-import { logger } from './logger.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 
@@ -114,12 +113,13 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
             }
           }
           // If strict mode is enabled and validation fails, throw the error.
-        } else if (strict) {
-          throw validation.error;
         } else {
-          for (const issue of validation.error.issues) {
-            logger.error(`Can not invoke method: "${method}" (${issue.message}).`);
-          }
+          captureStack.error.validation(
+            `Attempted to mutate: "${method}" of an array:`,
+            validation.error,
+            strict,
+            targetFn
+          );
 
           if (method === 'push' || method === 'unshift') {
             return currentItems.length;

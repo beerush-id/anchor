@@ -7,9 +7,9 @@ import type {
   StateUnsubscribe,
 } from './types.js';
 import { STATE_CLEANUP_QUEUES, STATE_REGISTRY } from './registry.js';
-import { logger } from './logger.js';
 import { isFunction } from '@beerush/utils';
 import { assign } from './helper.js';
+import { captureStack } from './exception.js';
 
 /**
  * Derives a new subscription from an existing anchored state.
@@ -24,9 +24,19 @@ function deriveFn<T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe {
   const ctrl = STATE_REGISTRY.get(state as WeakKey);
 
   if (typeof ctrl?.subscribe !== 'function') {
-    logger.warn('Ignoring subscription to non reactive state:', state);
+    captureStack.warning.external(
+      'Invalid subscription target:',
+      'Attempted to subscribe to non-reactive state.',
+      'Object is not reactive',
+      deriveFn
+    );
 
-    handler(state, { type: 'init', keys: [] });
+    try {
+      handler(state, { type: 'init', keys: [] });
+    } catch (error) {
+      captureStack.error.external('Unable to execute the subscription handler function.', error as Error);
+    }
+
     return () => {
       // No-op, as there is no subscription to unsubscribe from.
     };

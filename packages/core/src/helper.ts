@@ -1,7 +1,8 @@
 import type { ObjLike } from './types.js';
 import { REFLECT_REGISTRY, STATE_BUSY_LIST, SUBSCRIBER_REGISTRY } from './registry.js';
-import { isArray, isDefined, isMap, isObject, isObjectLike } from '@beerush/utils';
+import { isArray, isDefined, isMap, isObjectLike, isSet } from '@beerush/utils';
 import { broadcast } from './internal.js';
+import { softEntries, softKeys } from './utils/clone.js';
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
 export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
@@ -16,7 +17,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     throw new Error('Cannot assign to non-assignable state.');
   }
 
-  if (!isObject(source)) {
+  if (!isObjectLike(source)) {
     throw new Error('Cannot assign using non-object value.');
   }
 
@@ -29,7 +30,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
   const prev: AssignablePart<T> = {};
 
-  for (const [key, val] of Object.entries(source)) {
+  for (const [key, val] of softEntries(source)) {
     if (isMap(target)) {
       prev[key as never] = target.get(key) as never;
       target.set(key, val);
@@ -67,6 +68,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {
+    target = init as T;
     STATE_BUSY_LIST.add(init);
   }
 
@@ -86,13 +88,18 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   }
 
   if (isArray(target)) {
-    target.splice(
-      0,
-      target.length,
-      ...target.filter((v, i) => {
-        return !keys.includes(String(i) as keyof T);
-      })
-    );
+    if (keys.length === 1) {
+      target.splice(keys[0] as never, 1);
+    } else {
+      const values = [...target];
+      target.length = 0;
+
+      values.forEach((v, i) => {
+        if (!keys.includes(String(i) as keyof T)) {
+          target.push(v);
+        }
+      });
+    }
   }
 
   if (subscribers?.size) {
@@ -114,7 +121,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
  * @param {T} target
  */
 export const clear = <T extends Assignable>(target: T) => {
-  if (!isObjectLike(target) && !isMap(target) && !isArray(target)) {
+  if (!isObjectLike(target) && !isMap(target) && !isArray(target) && !isSet(target)) {
     throw new Error('Cannot clear non-assignable state.');
   }
 
@@ -130,8 +137,8 @@ export const clear = <T extends Assignable>(target: T) => {
   } else if (isArray(target)) {
     target.length = 0;
   } else if (isObjectLike(target)) {
-    for (const key of Object.keys(target)) {
-      delete target[key as keyof T];
+    for (const key of softKeys(target)) {
+      delete target[key];
     }
   }
 

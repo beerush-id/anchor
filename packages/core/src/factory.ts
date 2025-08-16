@@ -12,6 +12,7 @@ import { broadcast, createLinkableRefs } from './internal.js';
 import { INIT_REGISTRY, STATE_REGISTRY } from './registry.js';
 
 import { cancelCleanup } from './derive.js';
+import { captureStack } from './exception.js';
 
 export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkFactoryInit<T>) {
   return (childPath: KeyLike, childState: Linkable) => {
@@ -59,7 +60,12 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
     cancelCleanup(state as Linkable);
 
     // Immediately notify the handler with the current state.
-    handler(init, { type: 'init', keys: [] });
+    try {
+      handler(init, { type: 'init', keys: [] });
+    } catch (error) {
+      captureStack.error.external('Unable to execute the subscription handler function', error as Error);
+      return () => {};
+    }
 
     // Link all child references to track their changes
     if (recursive && !(recursive === 'flat' && Array.isArray(init))) {
