@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, type Mutable } from '@anchor/core';
+import { anchor, type Mutable } from '../../src/index.js';
 import { z } from 'zod';
 
 describe('Anchor Core - Immutable with Schema Validation', () => {

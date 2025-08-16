@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { microbatch, microtask } from '@anchor/core';
+import { microbatch, microtask } from '../../src/index.js';
 
 describe('Utils', () => {
   beforeEach(() => {

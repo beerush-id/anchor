@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, logger } from '@anchor/core';
+import { anchor, derive, logger } from '../../src/index.js';
 
 describe('Anchor Core - Controller', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;

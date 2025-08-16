@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, logger, type ObjLike } from '@anchor/core';
+import { anchor, derive, logger, type ObjLike } from '../../src/index.js';
 
 describe('Anchor Helpers', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;

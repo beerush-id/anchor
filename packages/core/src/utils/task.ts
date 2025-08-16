@@ -1,4 +1,4 @@
-import { logger } from '../logger.js';
+import { captureStack } from '../exception.js';
 
 /**
  * Type definition for a task handler function.
@@ -77,7 +77,7 @@ export function microtask<T = undefined>(timeout = 10): [TaskScheduler<T>, TaskD
           try {
             await execFn(initValue as T, lastValue as T);
           } catch (error) {
-            logger.error('Batch execution failed: ', error);
+            captureStack.error.external('Scheduler execution failed.', error as Error);
           }
         }
       }, timeout) as never;

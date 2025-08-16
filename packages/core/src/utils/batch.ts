@@ -1,4 +1,4 @@
-import { logger } from '../logger.js';
+import { captureStack } from '../exception.js';
 
 /**
  * Type definition for a batch handler function.
@@ -49,7 +49,7 @@ export function microbatch(delay = 10): [BatchScheduler, BatchResetter] {
           try {
             handler();
           } catch (error) {
-            logger.error('Batch execution failed:', error);
+            captureStack.error.external('Batch execution failed.', error as Error);
           }
         }
 

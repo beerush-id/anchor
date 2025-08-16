@@ -13,7 +13,7 @@ import type {
 import { createCollectionMutator } from './collection.js';
 import { REFERENCE_REGISTRY, REFLECT_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
-import { captureStack, generator } from './exception.js';
+import { captureStack } from './exception.js';
 
 export function createProxyHandler<T>(init: T, references: StateReferences<T, ZodType>) {
   const { immutable } = references.configs;
@@ -50,10 +50,7 @@ export const writeContract = <T, K extends MutationKey<T>[]>(state: T, contracts
   const init = REFLECT_REGISTRY.get(state as WeakKey) as Linkable;
 
   if (typeof init === 'undefined') {
-    const message = generator.violation('Attempted to create write contract of non-reactive state.');
-    const error = new Error('State is not reactive.');
-    Error.captureStackTrace?.(error, writeContract);
-    console.error(message, error);
+    captureStack.contractViolation.init(writeContract);
     return state as MutablePart<T, K>;
   }
 

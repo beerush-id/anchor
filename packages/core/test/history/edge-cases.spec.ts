@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, history, logger } from '@anchor/core';
+import { anchor, history, logger } from '../../src/index.js';
 
 const defaultOptions = { debounce: 100, maxHistory: 100 };
 const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);

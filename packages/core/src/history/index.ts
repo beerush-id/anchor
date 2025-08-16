@@ -5,8 +5,8 @@ import { isArray, isObjectLike } from '@beerush/utils';
 import { assign } from '../helper.js';
 import { STATE_BUSY_LIST } from '../registry.js';
 import { ARRAY_MUTATIONS } from '../constant.js';
-import { logger } from '../logger.js';
 import { microtask } from '../utils/index.js';
+import { captureStack } from '../exception.js';
 
 export type HistoryOptions = {
   debounce?: number;
@@ -43,11 +43,15 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
   const backwardList: StateChange[] = [];
   const forwardList: StateChange[] = [];
   const [schedule] = microtask<StateChange>(debounce);
-  const snapshot = anchor.snapshot(state);
   const controller = derive.resolve(state);
+  let snapshot: T;
 
   if (typeof controller?.subscribe !== 'function') {
-    logger.error('Cannot create history state from non-reactive object:', state);
+    const error = new Error('Object is not reactive.');
+    captureStack.error.external('Cannot create history state from non-reactive object.', error, history);
+    snapshot = state;
+  } else {
+    snapshot = anchor.snapshot(state);
   }
 
   let isBusy = false;

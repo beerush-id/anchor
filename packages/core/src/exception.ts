@@ -1,7 +1,7 @@
 import type { KeyLike, StateMutation } from './types.js';
 import { typeOf } from '@beerush/utils';
 
-export const generator = {
+const generator = {
   init(message: string) {
     const messages = [
       '\x1b[1m[violation] Initializing non-linkable object:\x1b[0m',
@@ -223,6 +223,13 @@ export const captureStack = {
     },
   },
   contractViolation: {
+    init(...excludeStacks: unknown[]) {
+      const message = generator.violation('Attempted to create write contract of non-reactive state.');
+      const error = new Error('State is not reactive.');
+      shiftStack(error, captureStack.contractViolation.init, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
     setter(prop: KeyLike, ...excludeStacks: unknown[]) {
       const message = generator.contractViolation(
         `Attempted to modify property "${prop as string}" of a write contract.`

@@ -1,20 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, getDefaultOptions, history, logger } from '@anchor/core';
+import { anchor, getDefaultOptions, history } from '../../src/index.js';
 
 const defaultOptions = getDefaultOptions();
 const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
 
 describe('Anchor History', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    consoleErrorSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   describe('Initialization', () => {
@@ -40,13 +40,13 @@ describe('Anchor History', () => {
     });
 
     it('should not throw error for non-reactive objects', () => {
-      consoleErrorSpy.mockClear();
+      errorSpy.mockClear();
 
       const stateHistory = history({ a: 1, b: 2 });
 
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
       stateHistory.destroy();
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
     });
   });
 

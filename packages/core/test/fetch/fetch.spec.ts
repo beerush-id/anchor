@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { derive, fetchState, FetchStatus, streamState } from '@anchor/core';
+import { derive, fetchState, FetchStatus, streamState } from '../../src/index.js';
 
 describe('Reactive Fetch', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

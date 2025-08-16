@@ -2,7 +2,6 @@ import type { ZodObject, ZodType } from 'zod/v4';
 import type { KeyLike, Linkable, ObjLike, StateReferences } from './types.js';
 import { INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import { broadcast, linkable } from './internal.js';
-import { logger } from './logger.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 
@@ -100,7 +99,7 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
   const { link, unlink, schema, configs, children, subscribers, subscriptions } = references;
   const { cloned, strict, deferred, immutable, recursive } = configs;
 
-  return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
+  const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
     const current = Reflect.get(target, prop, receiver) as Linkable;
 
     if (current === value) {
@@ -116,9 +115,12 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
         if (result.success) {
           value = (result.data ?? value) as Linkable;
         } else {
-          for (const issue of result.error.issues) {
-            logger.error(`Can not update the value of: "${prop as string}" (${issue.message}).`);
-          }
+          captureStack.error.validation(
+            `Attempted to update property: "${prop as string}" of a state:`,
+            result.error,
+            strict,
+            setter
+          );
 
           return !strict;
         }
@@ -161,6 +163,8 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
 
     return true;
   };
+
+  return setter;
 }
 
 export function createRemover<T, S extends ZodType>(init: T, options?: StateReferences<T, S>) {
@@ -173,16 +177,19 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
   const { unlink, schema, configs, children, subscribers, subscriptions } = references;
   const { strict } = configs;
 
-  return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+  const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
 
     if (subSchema) {
       const result = subSchema.safeParse(undefined);
 
       if (!result.success) {
-        for (const issue of result.error.issues) {
-          logger.error(`Can not delete property: "${prop as string}" (${issue.message}).`);
-        }
+        captureStack.error.validation(
+          `Attempted to delete property: "${prop as string}" of a state:`,
+          result.error,
+          strict,
+          remover
+        );
 
         return !strict;
       }
@@ -206,4 +213,6 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
 
     return true;
   };
+
+  return remover;
 }

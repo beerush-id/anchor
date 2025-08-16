@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor } from '@anchor/core';
+import { anchor } from '../../src/index.js';
 import { z } from 'zod';
 
 describe('Anchor Core - Error Handling', () => {

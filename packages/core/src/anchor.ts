@@ -1,6 +1,5 @@
 import type { ZodObject, ZodType } from 'zod/v4';
 import { isArray, isObject } from '@beerush/utils';
-import { logger } from './logger.js';
 import type {
   AnchorConfig,
   AnchorFn,
@@ -200,7 +199,8 @@ anchorFn.get = <T>(state: T): T => {
   const target = REFLECT_REGISTRY.get(state as WeakKey);
 
   if (!target) {
-    logger.error('Attempt to get the underlying object on non-existence state:', state);
+    const error = new Error('State does not exist.');
+    captureStack.error.external('Attempt to get the underlying object on non-existence state:', error, anchorFn.get);
   }
 
   return (target ?? state) as T;
@@ -215,7 +215,8 @@ anchorFn.snapshot = <T>(state: T): T => {
   const target = REFLECT_REGISTRY.get(state as WeakKey);
 
   if (!target) {
-    logger.error('Cannot create snapshot of non-existence state:', state);
+    const error = new Error('State does not exist.');
+    captureStack.error.external('Cannot create snapshot of non-existence state.', error, anchorFn.snapshot);
   }
 
   return structuredClone(target ?? state) as T;

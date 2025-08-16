@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '../../src/index.js';
 
 describe('Anchor Derive - Edge Cases', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
