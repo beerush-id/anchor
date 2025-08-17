@@ -196,11 +196,6 @@ export type MutablePart<T, K extends MutationKey<T>[]> =
 export interface AnchorFn {
   <T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
   <S extends ZodType, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
-
-  <T extends Linkable, S extends ZodType = ZodType>(
-    init: T,
-    options?: AnchorOptions<S> & { immutable: true }
-  ): Immutable<T>;
   <S extends ZodType, T extends input<S>>(
     init: T,
     schema: S,

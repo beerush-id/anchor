@@ -36,7 +36,11 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
 
     if (value === init) {
       captureStack.violation.circular(prop, getter);
-      return INIT_REGISTRY.get(init as WeakKey) ?? init;
+      return INIT_REGISTRY.get(init as WeakKey) as T;
+    }
+
+    if (INIT_REGISTRY.has(value)) {
+      value = INIT_REGISTRY.get(value as WeakKey) as Linkable;
     }
 
     // If the value is an array method, set method, or map method,
@@ -45,17 +49,17 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
       return mutator?.get(value);
     }
 
-    if (children.has(value)) {
-      const proxied = children.get(value) as Linkable;
-
-      if (STATE_REGISTRY.has(proxied) && subscribers.size && !subscriptions.has(proxied)) {
-        if (!(recursive === 'flat' && Array.isArray(target))) {
-          link(prop as string, proxied);
-        }
-      }
-
-      return proxied;
-    }
+    // if (children.has(value)) {
+    //   const proxied = children.get(value) as Linkable;
+    //
+    //   if (STATE_REGISTRY.has(proxied) && subscribers.size && !subscriptions.has(proxied)) {
+    //     if (!(recursive === 'flat' && Array.isArray(target))) {
+    //       link(prop as string, proxied);
+    //     }
+    //   }
+    //
+    //   return proxied;
+    // }
 
     if (recursive && !STATE_REGISTRY.has(value) && linkable(value)) {
       const proxied = anchor(value, {
@@ -68,7 +72,7 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
       });
 
       if (!children.has(value)) {
-        children.set(value, proxied);
+        // children.set(value, proxied);
       }
 
       value = proxied;

@@ -67,10 +67,16 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
       return () => {};
     }
 
+    // Check if the handler is already subscribed.
+    // If it is, return an empty unsubscribe function to prevent duplicate notifications.
+    if (subscribers.has(handler)) {
+      return () => {};
+    }
+
     // Link all child references to track their changes
     if (recursive && !(recursive === 'flat' && Array.isArray(init))) {
-      for (const [key, value] of createLinkableRefs(state)) {
-        if (!subscriptions.has(value)) {
+      for (const [key, value] of createLinkableRefs(init)) {
+        if (value !== init && !subscriptions.has(value)) {
           link(key, value);
         }
       }

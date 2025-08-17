@@ -42,6 +42,11 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     const targetFn = (key: string) => {
       let value = getFn.call(init, key);
 
+      if (value === init) {
+        captureStack.violation.circular(key, targetFn);
+        return INIT_REGISTRY.get(init as WeakKey) ?? init;
+      }
+
       if (!STATE_REGISTRY.has(value as Linkable) && linkable(value)) {
         value = anchor(value, {
           cloned,

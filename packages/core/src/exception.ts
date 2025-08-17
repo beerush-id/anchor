@@ -179,7 +179,7 @@ export const captureStack = {
     },
     circular(prop: KeyLike, ...excludeStacks: unknown[]) {
       const message = generator.circularViolation(
-        `Attempted to initialize child state: "${prop as string}" that references to itself.`
+        `Attempted to link child state: "${prop as string}" that references to itself.`
       );
       const error = new Error(`Circular reference violation: "${prop as string}".`);
       shiftStack(error, captureStack.violation.circular, excludeStacks);

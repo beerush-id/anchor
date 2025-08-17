@@ -67,6 +67,12 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
     options = schemaOptions as AnchorOptions<S>;
   }
 
+  // @TODO: Revisit the non-deferred implementation once the core is stable.
+  // Force enable deferred mode and make eager mode less priority since eager mode is mostly poor for performance.
+  if (options?.deferred === false) {
+    options.deferred = true;
+  }
+
   const id = shortId();
   const {
     strict = ANCHOR_CONFIG.strict,
@@ -91,21 +97,25 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
       captureStack.violation.schema('(object | array)', schema.type, strict ?? false, anchorFn);
     }
 
-    const result = schema.safeParse(init);
+    try {
+      const result = schema.safeParse(init);
 
-    if (result.success) {
-      if (Array.isArray(init)) {
-        init.splice(0, init.length, ...(result.data as unknown[]));
-      } else if (isObject(init)) {
-        Object.assign(init, result.data);
+      if (result.success) {
+        if (Array.isArray(init)) {
+          init.splice(0, init.length, ...(result.data as unknown[]));
+        } else if (isObject(init)) {
+          Object.assign(init, result.data);
+        }
+      } else {
+        captureStack.error.validation(
+          'Attempted to initialize state with schema:',
+          result.error,
+          strict ?? false,
+          anchorFn
+        );
       }
-    } else {
-      captureStack.error.validation(
-        'Attempted to initialize state with schema:',
-        result.error,
-        strict ?? false,
-        anchorFn
-      );
+    } catch (error) {
+      captureStack.error.validation('Something went wrong when validating schema.', error as Error, strict, anchorFn);
     }
   }
 
