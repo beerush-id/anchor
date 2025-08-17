@@ -14,7 +14,7 @@ export function linkable(value: unknown): value is Linkable {
   return LINKABLE.has(typeOf(value));
 }
 
-export function createLinkableRefs<T>(value: T) {
+export function createLinkableTargets<T>(value: T) {
   const linkableRefs = new Map<string, Linkable>();
 
   if (Array.isArray(value)) {

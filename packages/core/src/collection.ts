@@ -154,8 +154,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       }
 
       if (method === 'clear') {
-        const entries = [...self.entries()].map(([key, value]) => ({ key, value }));
-        const values = entries.map((item) => item.value);
+        const entries = [...self.entries()];
+        const values = entries.map(([, value]) => value);
         const result = methodFn.apply(self, []);
 
         if (recursive) {
@@ -170,7 +170,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           broadcast(subscribers, init, {
             type: method,
             prev: self instanceof Map ? entries : values,
-            keys: self instanceof Map ? (entries.map((item) => item.key) as KeyLike[]) : [],
+            keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
           });
         }
 

@@ -121,6 +121,32 @@ describe('Anchor Core - Schema Validation', () => {
       expect(state.tags).toEqual(['tag1', 'tag2']);
     });
 
+    it('should prevent deleting required property', () => {
+      const schema = z.object({
+        id: z.number(),
+        username: z.string(),
+        fullName: z.string().optional(),
+      });
+
+      const state = anchor({ id: 1, username: 'John' }, schema);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (state as any).id;
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (state as any).username;
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+
+      state.fullName = 'John Doe';
+
+      expect(state.id).toBe(1);
+      expect(state.fullName).toBe('John Doe');
+      expect(state.username).toBe('John');
+
+      delete state.fullName;
+      expect(state.fullName).toBeUndefined();
+    });
+
     it('should log error instead of throwing when strict is false', () => {
       const schema = z.object({
         name: z.string(),

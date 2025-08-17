@@ -21,7 +21,7 @@ import {
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { createLinkableRefs, linkable } from './internal.js';
+import { createLinkableTargets, linkable } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import { assign, clear, remove } from './helper.js';
@@ -120,7 +120,7 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
   }
 
   if (recursive && !deferred) {
-    for (const [key, ref] of createLinkableRefs(init)) {
+    for (const [key, ref] of createLinkableTargets(init)) {
       (init as ObjLike)[key] = anchorFn(ref, {
         ...configs,
         schema: (schema as never as ZodObject)?.shape?.[key],

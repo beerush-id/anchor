@@ -1,4 +1,4 @@
-import { isArray, isDate, isMap, isObject, isRegExp, isSet } from '@beerush/utils';
+import { isArray, isDate, isMap, isRegExp, isSet } from '@beerush/utils';
 import type { ObjLike } from '../types.js';
 import { captureStack } from '../exception.js';
 
@@ -11,7 +11,7 @@ import { captureStack } from '../exception.js';
  */
 export function softClone<T>(source: T, clonedRefs: WeakMap<object, object> = new WeakMap(), prop: string = 'root'): T {
   if (source === null || source === undefined || typeof source !== 'object') {
-    return source;
+    return source as T;
   }
 
   if (clonedRefs.has(source)) {
@@ -50,11 +50,11 @@ export function softClone<T>(source: T, clonedRefs: WeakMap<object, object> = ne
     }
 
     return clonedSet as T;
-  } else if (isObject(source)) {
+  } else {
     const clonedObject: Record<string | symbol | number, unknown> = {};
     clonedRefs.set(source, clonedObject);
 
-    for (const [key, value] of softEntries(source)) {
+    for (const [key, value] of softEntries(source as ObjLike)) {
       const descriptor = Object.getOwnPropertyDescriptor(source, key);
 
       if (descriptor?.set || descriptor?.get) {
@@ -65,8 +65,6 @@ export function softClone<T>(source: T, clonedRefs: WeakMap<object, object> = ne
     }
 
     return clonedObject as T;
-  } else {
-    return source;
   }
 }
 

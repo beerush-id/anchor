@@ -1,7 +1,6 @@
 import type { ArrayMutation, KeyLike, Linkable, ObjLike, StateChange } from '../types.js';
 import { anchor } from '../anchor.js';
 import { derive } from '../derive.js';
-import { isArray, isObjectLike } from '@beerush/utils';
 import { assign } from '../helper.js';
 import { STATE_BUSY_LIST } from '../registry.js';
 import { ARRAY_MUTATIONS } from '../constant.js';
@@ -43,6 +42,7 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
   const backwardList: StateChange[] = [];
   const forwardList: StateChange[] = [];
   const [schedule] = microtask<StateChange>(debounce);
+  const changeList = new Set<StateChange>();
   const controller = derive.resolve(state);
   let snapshot: T;
 
@@ -62,14 +62,8 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
     const event = backwardList.pop();
 
     if (event) {
-      if (maxHistory && forwardList.length >= maxHistory) {
-        forwardList.pop();
-      }
-
       forwardList.unshift(event);
-
       undoChange(state, event);
-
       assign(historyState, {
         canForward: forwardList.length > 0,
         canBackward: backwardList.length > 0,
@@ -85,14 +79,8 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
     const event = forwardList.shift();
 
     if (event) {
-      if (maxHistory && backwardList.length >= maxHistory) {
-        backwardList.shift();
-      }
-
       backwardList.push(event);
-
       redoChange(state, event);
-
       assign(historyState, {
         canForward: forwardList.length > 0,
         canBackward: backwardList.length > 0,
@@ -133,19 +121,16 @@ export function history<T>(state: T, options?: HistoryOptions): HistoryState {
   // Subscribe for state changes and push the event to the backward stack, then clears the forward stack.
   const unsubscribe = controller?.subscribe((snap, event) => {
     if (event.type !== 'init' && !isBusy) {
-      schedule((first, last) => {
+      changeList.add(event);
+
+      schedule(() => {
         if (maxHistory && backwardList.length >= maxHistory) {
           backwardList.shift();
         }
 
-        if (first.keys.join('.') === last.keys.join('.')) {
-          backwardList.push({ ...last, prev: first.prev });
-        } else {
-          backwardList.push(first);
-          backwardList.push(last);
-        }
-
+        backwardList.push(...createChanges(changeList));
         forwardList.length = 0;
+        changeList.clear();
 
         assign(historyState, {
           canForward: forwardList.length > 0,
@@ -255,9 +240,7 @@ export function redoChange<T>(state: T, event: StateChange) {
   } else if (type === 'assign') {
     assign(target as never, value as never);
   } else if (type === 'clear') {
-    if (target instanceof Map || target instanceof Set) {
-      target.clear();
-    }
+    (target as Set<unknown>).clear();
   } else if (ARRAY_MUTATIONS.includes(type as never)) {
     const items = target[key as never] as unknown[];
     (items[type as ArrayMutation] as (...args: unknown[]) => unknown)(...(value as unknown[]));
@@ -279,26 +262,42 @@ function getTarget<T>(state: T, ...keys: KeyLike[]) {
   }
 
   const target = parentKeys.reduce((parent, key) => {
-    return getValue(parent, key);
+    return getValue(parent, key) as T;
   }, state) as Linkable;
 
   return { key, target };
 }
 
 function getValue<T>(target: T, key: KeyLike) {
-  if (target instanceof Map) {
-    return target.get(key);
-  } else if (isObjectLike(target) || isArray(target)) {
-    return target[key as keyof T];
-  }
-
-  return target;
+  return (target as Map<KeyLike, unknown>).get?.(key) ?? (target as Record<KeyLike, unknown>)[key];
 }
 
 function setValue<T>(target: T, key: keyof T, value: T[keyof T]) {
   if (target instanceof Map) {
     target.set(key, value);
-  } else if (isObjectLike(target) || isArray(target)) {
+  } else if (typeof target === 'object' && target !== null) {
     target[key as keyof T] = value as never;
   }
+}
+
+function createChanges(changeList: Set<StateChange>) {
+  const prevChanges = new Map<string, StateChange>();
+  const nextChanges = new Map<string, unknown>();
+
+  for (const change of changeList) {
+    const key = change.keys.join('.');
+
+    if (!prevChanges.has(key)) {
+      prevChanges.set(key, change);
+    }
+
+    nextChanges.set(key, change.value);
+  }
+
+  return prevChanges.entries().map(([key, change]) => {
+    return {
+      ...change,
+      value: nextChanges.get(key),
+    };
+  });
 }

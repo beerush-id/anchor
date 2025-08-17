@@ -128,10 +128,14 @@ describe('Anchor Helpers', () => {
 
     it('should remove elements from Array state', () => {
       const state = anchor(['a', 'b', 'c']);
-
       anchor.remove(state, '0', '2');
-
       expect(state).toEqual(['b']);
+    });
+
+    it('should handle single element removal from Array state', () => {
+      const state = anchor(['a', 'b', 'c']);
+      anchor.remove(state, '1');
+      expect(state).toEqual(['a', 'c']);
     });
 
     it('should throw error when removing from non-assignable state', () => {

@@ -100,8 +100,8 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
     throw new Error(`Set trap factory called on non-reactive state.`);
   }
 
-  const { link, unlink, schema, configs, children, subscribers, subscriptions } = references;
-  const { cloned, strict, deferred, immutable, recursive } = configs;
+  const { unlink, schema, configs, subscribers, subscriptions } = references;
+  const { strict } = configs;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
     const current = Reflect.get(target, prop, receiver) as Linkable;
@@ -117,7 +117,7 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
         const result = subSchema.safeParse(value);
 
         if (result.success) {
-          value = (result.data ?? value) as Linkable;
+          value = result.data as Linkable;
         } else {
           captureStack.error.validation(
             `Attempted to update property: "${prop as string}" of a state:`,
@@ -131,29 +131,34 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
       }
     }
 
-    if (!STATE_REGISTRY.has(value) && recursive) {
-      if (!deferred && linkable(value)) {
-        const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
-        const proxied = anchor(value, { immutable, deferred, recursive, cloned, strict, schema: subSchema });
-
-        children.set(value, proxied);
-
-        if (subscribers.size && !subscriptions.has(proxied)) {
-          if (!(recursive === 'flat' && Array.isArray(target))) {
-            link(prop as string, proxied);
-          }
-        }
-      }
-    }
+    // @TODO: Revisit eager mode set trap handler once the core is stable.
+    // if (!STATE_REGISTRY.has(value) && recursive) {
+    //   if (!deferred && linkable(value)) {
+    //     const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
+    //     const proxied = anchor(value, { immutable, deferred, recursive, cloned, strict, schema: subSchema });
+    //
+    //     children.set(value, proxied);
+    //
+    //     if (subscribers.size && !subscriptions.has(proxied)) {
+    //       if (!(recursive === 'flat' && Array.isArray(target))) {
+    //         link(prop as string, proxied);
+    //       }
+    //     }
+    //   }
+    // }
 
     Reflect.set(target, prop, value, receiver);
 
-    if (children.has(current)) {
-      children.delete(current);
-    }
+    // if (children.has(current)) {
+    //   children.delete(current);
+    // }
 
-    if (subscriptions.has(current)) {
-      unlink(current);
+    if (INIT_REGISTRY.has(current)) {
+      const state = INIT_REGISTRY.get(current) as Linkable;
+
+      if (subscriptions.has(state)) {
+        unlink(state);
+      }
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
@@ -178,7 +183,7 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
     throw new Error(`Delete trap factory called on non-reactive state.`);
   }
 
-  const { unlink, schema, configs, children, subscribers, subscriptions } = references;
+  const { unlink, schema, configs, subscribers, subscriptions } = references;
   const { strict } = configs;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
@@ -203,12 +208,16 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
 
     Reflect.deleteProperty(target, prop);
 
-    if (children.has(current)) {
-      children.delete(current);
-    }
+    // if (children.has(current)) {
+    //   children.delete(current);
+    // }
 
-    if (subscriptions.has(current)) {
-      unlink(current);
+    if (INIT_REGISTRY.has(current)) {
+      const state = INIT_REGISTRY.get(current) as Linkable;
+
+      if (subscriptions.has(state)) {
+        unlink(state);
+      }
     }
 
     if (!STATE_BUSY_LIST.has(target)) {

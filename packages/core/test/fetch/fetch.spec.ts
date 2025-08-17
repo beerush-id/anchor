@@ -253,6 +253,23 @@ describe('Reactive Fetch', () => {
       expect(state.data).toEqual([1, 2, 3, 4, 5, 6]);
     });
 
+    it('should handle fetch error response', async () => {
+      const mockResponse = new Response('', { status: 500, statusText: 'Internal server error' });
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
+
+      const state = streamState('', {
+        url: 'https://api.example.com/stream',
+        method: 'GET',
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Error);
+      expect(state.error).toBeDefined();
+      expect(state.error?.message).toBe('Internal server error');
+      expect(state.response).toBe(mockResponse);
+    });
+
     it('should handle stream with transform function', async () => {
       const textChunks = ['Hello', ' ', 'World'];
 
@@ -320,6 +337,84 @@ describe('Reactive Fetch', () => {
 
       expect(state.status).toBe(FetchStatus.Error);
       expect(state.error).toBe(mockError);
+    });
+
+    it('should handle done stream contains value', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let jsonChunk: any = undefined;
+
+      const encoder = new TextEncoder();
+      const reader = {
+        read() {
+          return {
+            done: true,
+            value: encoder.encode(jsonChunk ? JSON.stringify(jsonChunk) : 'done' + ' chunk'),
+          };
+        },
+      };
+      const mockReadable = {
+        getReader: () => reader,
+      };
+      const mockResponse = {
+        body: mockReadable,
+        status: 200,
+        ok: true,
+      } as never as Response;
+
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
+
+      const state = streamState('', {
+        url: 'https://example.com',
+        method: 'GET',
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Success);
+      expect(state.data).toBe('done chunk');
+      expect(state.response?.status).toBe(mockResponse.status);
+
+      // Handle undefined as Init.
+
+      // Text chunk.
+      const undefState = streamState(undefined, {
+        url: 'https://example.com',
+        method: 'GET',
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(undefState.status).toBe(FetchStatus.Success);
+      expect(undefState.data).toBe('done chunk');
+      expect(undefState.response?.status).toBe(mockResponse.status);
+
+      expect(state.response?.status).toBe(mockResponse.status);
+
+      // Object chunk.
+      jsonChunk = { text: 'done chunk' };
+      const objState = streamState(undefined, {
+        url: 'https://example.com',
+        method: 'GET',
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(objState.status).toBe(FetchStatus.Success);
+      expect(objState.data).toEqual(jsonChunk);
+      expect(objState.response?.status).toBe(mockResponse.status);
+
+      // Array chunk.
+      jsonChunk = ['done chunk'];
+      const arrState = streamState(undefined, {
+        url: 'https://example.com',
+        method: 'GET',
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(arrState.status).toBe(FetchStatus.Success);
+      expect(arrState.data).toEqual(jsonChunk);
+      expect(arrState.response?.status).toBe(mockResponse.status);
     });
   });
 

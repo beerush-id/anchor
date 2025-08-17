@@ -108,7 +108,7 @@ export function streamState<T, S extends ZodType = ZodType>(init: T, options: St
   fetch(options.url, options)
     .then(async (response) => {
       if (response.ok) {
-        const readable = response.body?.getReader();
+        const readable = response.body?.getReader?.();
 
         if (!isDefined(readable) || !isFunction(readable?.read)) {
           const error = new Error(`Invalid response body. Expected readable stream, got: "${typeOf(readable)}.`);
@@ -123,10 +123,7 @@ export function streamState<T, S extends ZodType = ZodType>(init: T, options: St
               appendChunk(state, chunk, options.transform);
             },
             (chunk) => {
-              if (isDefined(chunk)) {
-                appendChunk(state, chunk, options.transform);
-              }
-
+              appendChunk(state, chunk as T, options.transform);
               anchor.assign(state, { response, status: FetchStatus.Success });
             }
           );
@@ -135,6 +132,11 @@ export function streamState<T, S extends ZodType = ZodType>(init: T, options: St
           anchor.assign(state, { response, error, status: FetchStatus.Error } as FetchState<T>);
         }
       } else {
+        captureStack.error.external(
+          'Something went wrong when fetching response',
+          new Error(response.statusText),
+          streamState
+        );
         anchor.assign(state, {
           response,
           status: FetchStatus.Error,

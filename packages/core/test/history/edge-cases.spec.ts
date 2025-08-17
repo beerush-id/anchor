@@ -284,5 +284,30 @@ describe('Anchor History - Edge Cases', () => {
 
       stateHistory.destroy();
     });
+
+    it('should handle two different rapid changes', () => {
+      const state = anchor({
+        count: 0,
+        name: 'John',
+        theme: 'light',
+      });
+      const stateHistory = history(state);
+
+      state.count = 1;
+      timeTravel(10);
+      state.name = 'John Smith';
+      timeTravel(10);
+      state.count = 2;
+      timeTravel(10);
+      state.theme = 'dark';
+      timeTravel(10);
+      state.count = 3;
+      timeTravel(10);
+      state.name = 'John Doe';
+
+      timeTravel();
+
+      expect(stateHistory.backwardList).toHaveLength(3);
+    });
   });
 });

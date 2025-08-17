@@ -8,7 +8,7 @@ import type {
   SubscribeFactoryInit,
   UnlinkFactoryInit,
 } from './types.js';
-import { broadcast, createLinkableRefs } from './internal.js';
+import { broadcast } from './internal.js';
 import { INIT_REGISTRY, STATE_REGISTRY } from './registry.js';
 
 import { cancelCleanup } from './derive.js';
@@ -54,7 +54,7 @@ export function createUnlinkFactory({ subscriptions }: UnlinkFactoryInit) {
 }
 
 export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): StateSubscribeFn<T> {
-  const { init, state, recursive, subscribers, subscriptions, link, unlink } = options;
+  const { init, state, subscribers, subscriptions, unlink } = options;
 
   return (handler: StateSubscriber<T>) => {
     cancelCleanup(state as Linkable);
@@ -73,14 +73,16 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
       return () => {};
     }
 
+    // @TODO: Revisit eager subscriptions once the core is stable.
     // Link all child references to track their changes
-    if (recursive && !(recursive === 'flat' && Array.isArray(init))) {
-      for (const [key, value] of createLinkableRefs(init)) {
-        if (value !== init && !subscriptions.has(value)) {
-          link(key, value);
-        }
-      }
-    }
+    // if (recursive && !(recursive === 'flat' && Array.isArray(init))) {
+    //   for (const [key, target] of createLinkableTargets(init)) {
+    //     const childState = INIT_REGISTRY.get(target) as Linkable;
+    //     if (childState && childState !== state && !subscriptions.has(childState)) {
+    //       link(key, childState);
+    //     }
+    //   }
+    // }
 
     // Add the handler to the list of active subscribers
     subscribers.add(handler);

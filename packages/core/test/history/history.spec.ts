@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, getDefaultOptions, history } from '../../src/index.js';
+import { anchor, getDefaultOptions, history, setDefaultOptions } from '../../src/index.js';
 
-const defaultOptions = getDefaultOptions();
+const defaultOptions = { ...getDefaultOptions() };
 const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
 
 describe('Anchor History', () => {
@@ -48,6 +48,16 @@ describe('Anchor History', () => {
       stateHistory.destroy();
       expect(errorSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('should update the default options', () => {
+      setDefaultOptions({ maxHistory: 25 });
+
+      expect(getDefaultOptions().maxHistory).toBe(25);
+      expect(getDefaultOptions().debounce).toBe(defaultOptions.debounce);
+      expect(getDefaultOptions().maxHistory).not.toBe(defaultOptions.maxHistory);
+
+      setDefaultOptions(defaultOptions);
+    });
   });
 
   describe('Basic Operations', () => {
@@ -68,7 +78,7 @@ describe('Anchor History', () => {
     });
 
     it('should handle backward operation', () => {
-      const state = anchor({ count: 0 });
+      const state = anchor({ count: 0 }) as { count?: number };
       const stateHistory = history(state);
 
       state.count = 1;
@@ -97,11 +107,18 @@ describe('Anchor History', () => {
       expect(stateHistory.backwardList).toHaveLength(0);
       expect(stateHistory.forwardList).toHaveLength(2);
 
+      delete state.count;
+      timeTravel();
+      expect(state.count).toBeUndefined();
+
+      stateHistory.backward();
+      expect(state.count).toBe(0);
+
       stateHistory.destroy();
     });
 
     it('should handle forward operation', () => {
-      const state = anchor({ count: 0 });
+      const state = anchor({ count: 0 }) as { count?: number };
       const stateHistory = history(state);
 
       state.count = 1;
@@ -127,6 +144,16 @@ describe('Anchor History', () => {
       expect(state.count).toBe(2);
       expect(stateHistory.canBackward).toBe(true);
       expect(stateHistory.canForward).toBe(false);
+
+      delete state.count;
+      timeTravel();
+      expect(state.count).toBeUndefined();
+
+      stateHistory.backward();
+      expect(state.count).toBe(2);
+
+      stateHistory.forward();
+      expect(state.count).toBeUndefined();
 
       stateHistory.destroy();
     });
@@ -198,6 +225,24 @@ describe('Anchor History', () => {
       expect(stateHistory.forwardList).toHaveLength(0);
 
       stateHistory.destroy();
+    });
+
+    it('should handle "assign" operation', () => {
+      const state = anchor({ count: 0 }) as Record<string, unknown>;
+      const stateHistory = history(state);
+
+      anchor.assign(state, { count: 1, name: 'test' });
+      timeTravel();
+      expect(state.count).toBe(1);
+      expect(state.name).toBe('test');
+
+      stateHistory.backward();
+      expect(state.count).toBe(0);
+      expect(state.name).toBeUndefined();
+
+      stateHistory.forward();
+      expect(state.count).toBe(1);
+      expect(state.name).toBe('test');
     });
   });
 
@@ -422,19 +467,49 @@ describe('Anchor History', () => {
     });
 
     it('should handle Map operations', () => {
-      const state = anchor({ map: new Map([['key1', 'value1']]) });
+      const state = anchor({ map: new Map([['key1', 'value1']]) }) as { map: Map<string, unknown> };
       const stateHistory = history(state);
 
       state.map.set('key2', 'value2');
       timeTravel();
-
       expect(state.map.get('key2')).toBe('value2');
+
+      state.map.set('key1', 'value1-changed');
+      timeTravel();
+      expect(state.map.get('key1')).toBe('value1-changed');
+
+      stateHistory.backward();
+      expect(state.map.get('key1')).toBe('value1');
 
       stateHistory.backward();
       expect(state.map.has('key2')).toBe(false);
 
       stateHistory.forward();
       expect(state.map.get('key2')).toBe('value2');
+
+      state.map.clear();
+      timeTravel();
+      expect(state.map.size).toBe(0);
+      expect(stateHistory.canBackward).toBe(true);
+
+      stateHistory.backward();
+      expect(state.map.size).toBe(2);
+      expect(stateHistory.canForward).toBe(true);
+
+      stateHistory.forward();
+      expect(state.map.size).toBe(0);
+      expect(stateHistory.canBackward).toBe(true);
+
+      state.map.set('foo', { bar: 'baz' });
+      timeTravel();
+
+      expect(state.map.has('foo'));
+      expect(state.map.get('foo')).toEqual({ bar: 'baz' });
+
+      stateHistory.backward();
+      expect(state.map.has('foo')).toBe(false);
+      expect(state.map.size).toBe(0);
+      expect(stateHistory.canForward).toBe(true);
 
       stateHistory.destroy();
     });
@@ -453,6 +528,20 @@ describe('Anchor History', () => {
 
       stateHistory.forward();
       expect(state.set.has(4)).toBe(true);
+
+      state.set.delete(4);
+      timeTravel();
+      expect(state.set.has(4)).toBe(false);
+
+      stateHistory.backward();
+      expect(state.set.has(4)).toBe(true);
+
+      state.set.clear();
+      timeTravel();
+      expect(state.set.size).toBe(0);
+
+      stateHistory.backward();
+      expect(state.set.size).toBe(4);
 
       stateHistory.destroy();
     });
