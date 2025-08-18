@@ -11,8 +11,8 @@
     "build": "bpkg run build",
     "format": "bpkg run format",
     "lint": "bpkg run lint",
-    "test": "rimraf coverage && vitest --run",
-    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
+    "test": "rimraf tests && vitest --run",
+    "test:preview": "rimraf tests && vitest --run && vite preview --outDir tests",
     "prepare": "husky"
   },
   "devDependencies": {
