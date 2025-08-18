@@ -7,6 +7,7 @@ describe('Anchor Derive - Edge Cases', () => {
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // errorSpy = vi.spyOn(console, 'error');
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
@@ -174,6 +175,30 @@ describe('Anchor Derive - Edge Cases', () => {
 
       unsubscribe();
     });
+
+    it('should handle derive.log() method', () => {
+      const state = anchor({ count: 1 });
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const unsubscribe = derive.log(state);
+
+      expect(logSpy).toHaveBeenCalled();
+
+      unsubscribe();
+    });
+
+    it('should handle invalid state and subscription handler', () => {
+      derive(10 as never, 10 as never);
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      derive(10 as never, () => {
+        throw new Error('Invalid state');
+      });
+
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('Controller Edge Cases', () => {
@@ -183,6 +208,16 @@ describe('Anchor Derive - Edge Cases', () => {
       const controller = derive.resolve(plainObject);
       expect(controller).toBeUndefined();
       expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle subscribing to non-reactive objects', () => {
+      const handler = vi.fn();
+      const unsubscribe = derive({}, handler);
+
+      expect(handler).toHaveBeenCalledTimes(1); // Init.
+      expect(warnSpy).toHaveBeenCalled();
+
+      unsubscribe();
     });
 
     it('should handle multiple resolves to the same state', () => {
@@ -230,6 +265,22 @@ describe('Anchor Derive - Edge Cases', () => {
   });
 
   describe('Pipe Edge Cases', () => {
+    it('should handle piping without transform function', () => {
+      const state = anchor({ count: 1 });
+      const target = { count: 0 };
+      const unsubscribe = derive.pipe(state, target);
+
+      expect(state.count).toBe(1);
+      expect(target.count).toBe(1); // Should be updated by pipe.
+
+      state.count++;
+
+      expect(state.count).toBe(2);
+      expect(target.count).toBe(2); // Should be updated by pipe.
+
+      unsubscribe();
+    });
+
     it('should handle piping between non-object states', () => {
       expect(() => {
         derive.pipe(42 as never, {} as never);

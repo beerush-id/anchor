@@ -6,6 +6,7 @@ describe('Anchor - Circular References', () => {
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // errorSpy = vi.spyOn(console, 'error');
   });
 
   afterEach(() => {
@@ -342,6 +343,17 @@ describe('Anchor - Circular References', () => {
       expect(state.name).toBe('updated');
       expect(state.self.name).toBe('updated');
       expect(handler).toHaveBeenCalledTimes(1); // Only init, no update
+    });
+
+    it('should log exception for self-referencing map', () => {
+      const map = new Map();
+      map.set('self', map);
+
+      const state = anchor(map);
+      const self = state.get('self');
+
+      expect(self).toBe(state);
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 });

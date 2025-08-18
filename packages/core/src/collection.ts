@@ -1,6 +1,6 @@
 import type { ZodType } from 'zod/v4';
 import { broadcast, linkable } from './internal.js';
-import { INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
+import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import type { KeyLike, Linkable, MethodLike, SetMutation, StateMutation, StateReferences } from './types.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
@@ -36,18 +36,16 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
   const mutator = new WeakMap<WeakKey, MethodLike>();
 
   if (init instanceof Map && recursive && deferred) {
-    const setFn = (init as Map<string, unknown>).set;
     const getFn = init.get as (key: string) => unknown;
 
     const targetFn = (key: string) => {
       let value = getFn.call(init, key);
 
-      if (value === init) {
-        captureStack.violation.circular(key, targetFn);
-        return INIT_REGISTRY.get(init as WeakKey) ?? init;
+      if (INIT_REGISTRY.has(value as Linkable)) {
+        value = INIT_REGISTRY.get(value as WeakKey) as Linkable;
       }
 
-      if (!STATE_REGISTRY.has(value as Linkable) && linkable(value)) {
+      if (!CONTROLLER_REGISTRY.has(value as Linkable) && linkable(value)) {
         value = anchor(value, {
           cloned,
           strict,
@@ -55,11 +53,9 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           recursive,
           immutable,
         });
-
-        setFn?.call(init, key, value);
       }
 
-      if (STATE_REGISTRY.has(value as Linkable) && subscribers.size) {
+      if (CONTROLLER_REGISTRY.has(value as Linkable) && subscribers.size && !subscriptions.has(value as Linkable)) {
         link(key, value as never);
       }
 
@@ -93,20 +89,26 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
     const targetFn = (keyValue: string, value?: Linkable) => {
       const oldValue = init instanceof Map ? init.get(keyValue) : undefined;
-      let newValue = (method === 'set' ? value : keyValue) as Linkable;
+      const newValue = (method === 'set' ? value : keyValue) as Linkable;
 
-      if (!STATE_REGISTRY.has(newValue) && recursive && linkable(newValue) && !deferred) {
-        newValue = anchor(newValue, { deferred, recursive, immutable, cloned, strict });
-      }
+      // @TODO: Revisit eager mode child init once the core is stable.
+      // if (!CONTROLLER_REGISTRY.has(newValue) && recursive && linkable(newValue) && !deferred) {
+      //   newValue = anchor(newValue, { deferred, recursive, immutable, cloned, strict });
+      // }
 
-      const result = methodFn.apply(init, method === 'set' ? [keyValue, newValue] : [newValue]);
+      methodFn.apply(init, method === 'set' ? [keyValue, newValue] : [newValue]);
 
-      if (STATE_REGISTRY.has(newValue) && subscribers.size && recursive && !deferred) {
-        link(method === 'set' ? keyValue : '', newValue as never);
-      }
+      // @TODO: Revisit eager mode linking once the core is stable.
+      // if (CONTROLLER_REGISTRY.has(newValue) && subscribers.size && recursive && !deferred) {
+      //   link(method === 'set' ? keyValue : '', newValue as never);
+      // }
 
-      if (oldValue && subscriptions.has(oldValue)) {
-        unlink(oldValue as Linkable);
+      if (INIT_REGISTRY.has(oldValue as WeakKey)) {
+        const childState = INIT_REGISTRY.get(oldValue as WeakKey) as Linkable;
+
+        if (subscriptions.has(childState)) {
+          unlink(childState);
+        }
       }
 
       if (!STATE_BUSY_LIST.has(init)) {
@@ -118,11 +120,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         });
       }
 
-      if (result === init) {
-        return INIT_REGISTRY.get(init as WeakKey);
-      }
-
-      return result;
+      // Collection mutation will always return itself for chaining.
+      return INIT_REGISTRY.get(init as WeakKey);
     };
 
     // Object.assign(init, { [method]: targetFn });
@@ -131,8 +130,6 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
   for (const method of ['delete', 'clear']) {
     const methodFn = init[method as never] as (...args: unknown[]) => unknown;
-    if (typeof methodFn !== 'function') continue;
-
     const targetFn = (keyValue?: unknown) => {
       const self = init as Set<Linkable> | Map<unknown, Linkable>;
 
@@ -140,8 +137,11 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         const current = (self instanceof Set ? keyValue : self.get(keyValue)) as Linkable;
         const result = methodFn.apply(self, [keyValue]);
 
-        if (current && subscriptions.has(current)) {
-          unlink(current as Linkable);
+        if (INIT_REGISTRY.has(current)) {
+          const childState = INIT_REGISTRY.get(current) as Linkable;
+          if (subscriptions.has(childState)) {
+            unlink(childState as Linkable);
+          }
         }
 
         broadcast(subscribers, self, {
@@ -158,10 +158,12 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         const values = entries.map(([, value]) => value);
         const result = methodFn.apply(self, []);
 
-        if (recursive) {
-          for (const value of values) {
-            if (subscriptions.has(value)) {
-              unlink(value);
+        if (recursive && subscriptions.size) {
+          for (const current of values) {
+            const childState = INIT_REGISTRY.get(current) as Linkable;
+
+            if (subscriptions.has(childState)) {
+              unlink(childState as Linkable);
             }
           }
         }
@@ -172,10 +174,6 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             prev: self instanceof Map ? entries : values,
             keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
           });
-        }
-
-        if (result === init) {
-          return INIT_REGISTRY.get(init as WeakKey);
         }
 
         return result;

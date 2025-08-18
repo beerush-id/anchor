@@ -1,9 +1,8 @@
-import type { ZodArray, ZodType } from 'zod/v4';
+import type { ZodType } from 'zod/v4';
 import type { Linkable, MethodLike, ObjLike, StateMutation, StateReferences } from './types.js';
-import { INIT_REGISTRY, REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
+import { INIT_REGISTRY, REFERENCE_REGISTRY } from './registry.js';
 import { ARRAY_MUTATIONS } from './constant.js';
-import { broadcast, linkable } from './internal.js';
-import { anchor } from './anchor.js';
+import { broadcast } from './internal.js';
 import { captureStack } from './exception.js';
 
 const mockReturn = {
@@ -19,13 +18,8 @@ const mockReturn = {
   pop(items: unknown[]) {
     return items[items.length - 1];
   },
-  splice(items: unknown[], start: number, deleteCount?: number) {
-    const actualStart = start < 0 ? Math.max(items.length + start, 0) : Math.min(start, items.length);
-    const actualDeleteCount =
-      deleteCount === undefined
-        ? items.length - actualStart
-        : Math.min(Math.max(deleteCount, 0), items.length - actualStart);
-    return items.slice(actualStart, actualStart + actualDeleteCount);
+  splice() {
+    return [];
   },
   fill(items: unknown[]) {
     return items;
@@ -45,8 +39,8 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
     throw new Error(`Array trap factory called on non-reactive state.`);
   }
 
-  const { link, unlink, schema, configs, subscribers, subscriptions } = references;
-  const { cloned, strict, deferred, immutable, recursive } = configs;
+  const { unlink, schema, configs, subscribers, subscriptions } = references;
+  const { strict, immutable } = configs;
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
 
@@ -109,13 +103,13 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
             const index = args.indexOf(value);
 
             if (index > -1) {
-              args[index] = (validation.data as unknown[])?.[i] ?? value;
+              args[index] = (validation.data as unknown[])?.[i];
             }
           }
           // If strict mode is enabled and validation fails, throw the error.
         } else {
           captureStack.error.validation(
-            `Attempted to mutate: "${method}" of an array:`,
+            `Attempted to mutate: "${method}" of an array with invalid input:`,
             validation.error,
             strict,
             targetFn
@@ -127,25 +121,26 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
             return [];
           }
 
-          return init;
+          return INIT_REGISTRY.get(init);
         }
       }
 
+      // @TODO: Revisit eager mode linking once the core is stable.
       // Eagerly proxy any linkable items inside the arguments before passing to the origin method.
       // This block only runs in eager mode ("deferred" option is off).
-      if (recursive && !deferred) {
-        // Get the item schema.
-        const itemSchema = (schema as never as ZodArray)?.unwrap() as ZodType;
-        const argsLength = args.length;
-
-        for (let i = 0; i < argsLength; i++) {
-          const item = args[i];
-
-          if (!STATE_REGISTRY.has(item as Linkable) && linkable(item)) {
-            args[i] = anchor(item, { immutable, deferred, recursive, cloned, strict, schema: itemSchema });
-          }
-        }
-      }
+      // if (recursive && !deferred) {
+      //   // Get the item schema.
+      //   const itemSchema = (schema as never as ZodArray)?.unwrap() as ZodType;
+      //   const argsLength = args.length;
+      //
+      //   for (let i = 0; i < argsLength; i++) {
+      //     const item = args[i];
+      //
+      //     if (!CONTROLLER_REGISTRY.has(item as Linkable) && linkable(item)) {
+      //       args[i] = anchor(item, { immutable, deferred, recursive, cloned, strict, schema: itemSchema });
+      //     }
+      //   }
+      // }
 
       // Call the original method to perform the operation.
       const result = originFn.apply(init, args);
@@ -155,49 +150,51 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
         current = result as never;
       }
 
+      // @TODO: Revisit eager mode linking once the core is stable.
       // If there are subscribers, recursive linking is enabled, and "deferred" option is off,
       // eagerly link any new items in the array.
-      if (subscribers.size && recursive && recursive !== 'flat' && !deferred && addedItemsLength) {
-        // Link new items that were added to the array if they are linkable.
-        if (method === 'push') {
-          // For push, items are added at the end.
-          const startIndex = currentItems.length;
-          addedItems.forEach((item, i) => {
-            if (STATE_REGISTRY.has(item as Linkable)) {
-              link(`${startIndex + i}`, item as Linkable);
-            }
-          });
-        } else if (method === 'unshift') {
-          // For unshift, items are added at the beginning.
-          addedItems.forEach((item, i) => {
-            if (STATE_REGISTRY.has(item as Linkable)) {
-              link(`${i}`, item as Linkable);
-            }
-          });
-        } else if (method === 'splice') {
-          const [start] = args as [number, number];
-          addedItems.forEach((item, i) => {
-            if (STATE_REGISTRY.has(item as Linkable)) {
-              link(`${start + i}`, item as Linkable);
-            }
-          });
-        } else {
-          // For other methods like fill, iterate through the state to find new items.
-          // Only link if the item is not already linked.
-          (init as Linkable[]).forEach((item, i) => {
-            if (STATE_REGISTRY.has(item)) {
-              // The key for array items is their index.
-              link(String(i), item);
-            }
-          });
-        }
-      }
+      // if (subscribers.size && recursive && recursive !== 'flat' && !deferred && addedItemsLength) {
+      //   // Link new items that were added to the array if they are linkable.
+      //   if (method === 'push') {
+      //     // For push, items are added at the end.
+      //     const startIndex = currentItems.length;
+      //     addedItems.forEach((item, i) => {
+      //       if (CONTROLLER_REGISTRY.has(item as Linkable)) {
+      //         link(`${startIndex + i}`, item as Linkable);
+      //       }
+      //     });
+      //   } else if (method === 'unshift') {
+      //     // For unshift, items are added at the beginning.
+      //     addedItems.forEach((item, i) => {
+      //       if (CONTROLLER_REGISTRY.has(item as Linkable)) {
+      //         link(`${i}`, item as Linkable);
+      //       }
+      //     });
+      //   } else if (method === 'splice') {
+      //     const [start] = args as [number, number];
+      //     addedItems.forEach((item, i) => {
+      //       if (CONTROLLER_REGISTRY.has(item as Linkable)) {
+      //         link(`${start + i}`, item as Linkable);
+      //       }
+      //     });
+      //   } else {
+      //     // For other methods like fill, iterate through the state to find new items.
+      //     // Only link if the item is not already linked.
+      //     (init as Linkable[]).forEach((item, i) => {
+      //       if (CONTROLLER_REGISTRY.has(item)) {
+      //         // The key for array items is their index.
+      //         link(String(i), item);
+      //       }
+      //     });
+      //   }
+      // }
 
       // Unlink the deleted items.
       if (deletedItemsLength) {
         for (const item of deletedItems) {
-          if (subscriptions.has(item)) {
-            unlink(item as Linkable);
+          const childState = INIT_REGISTRY.get(item) as Linkable;
+          if (subscriptions.has(childState)) {
+            unlink(childState);
           }
         }
       }

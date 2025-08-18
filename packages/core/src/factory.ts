@@ -9,26 +9,30 @@ import type {
   UnlinkFactoryInit,
 } from './types.js';
 import { broadcast } from './internal.js';
-import { INIT_REGISTRY, STATE_REGISTRY } from './registry.js';
-
-import { cancelCleanup } from './derive.js';
+import {
+  CONTROLLER_REGISTRY,
+  INIT_REGISTRY,
+  REFERENCE_REGISTRY,
+  STATE_REGISTRY,
+  SUBSCRIBER_REGISTRY,
+  SUBSCRIPTION_REGISTRY,
+} from './registry.js';
 import { captureStack } from './exception.js';
 
 export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkFactoryInit<T>) {
-  return (childPath: KeyLike, childState: Linkable) => {
-    // Avoid duplicate linking
-    if (!STATE_REGISTRY.has(childState) || subscriptions.has(childState)) return;
+  return (childPath: KeyLike, childState: Linkable): void => {
+    if (subscriptions.has(childState)) return;
 
     // Get the controller for the child state
-    const ctrl = STATE_REGISTRY.get(childState as WeakKey);
+    const ctrl = CONTROLLER_REGISTRY.get(childState as WeakKey);
 
     // If the child state has a valid controller with subscribe method
     if (typeof ctrl?.subscribe === 'function') {
       // Subscribe to the child state changes
       const childUnsubscribe = ctrl.subscribe((_, event) => {
         // Ignore init events to prevent duplicate notifications
-        if (event && event?.type !== 'init') {
-          const keys = event?.keys ?? [];
+        if (event && event.type !== 'init') {
+          const keys = event.keys as KeyLike[];
           keys.unshift(childPath);
 
           // Broadcast the event with modified path to include the key
@@ -54,11 +58,9 @@ export function createUnlinkFactory({ subscriptions }: UnlinkFactoryInit) {
 }
 
 export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): StateSubscribeFn<T> {
-  const { init, state, subscribers, subscriptions, unlink } = options;
+  const { init, subscribers, subscriptions, unlink } = options;
 
-  return (handler: StateSubscriber<T>) => {
-    cancelCleanup(state as Linkable);
-
+  const subscribeFn = (handler: StateSubscriber<T>) => {
     // Immediately notify the handler with the current state.
     try {
       handler(init, { type: 'init', keys: [] });
@@ -67,10 +69,32 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
       return () => {};
     }
 
+    const unsubscribeFn = () => {
+      // Remove the handler from active subscribers
+      subscribers.delete(handler);
+
+      // If no more subscribers, clean up resources
+      if (subscribers.size <= 0) {
+        // Unlink all child references if any exist
+        if (subscriptions.size) {
+          // Iterate over a copy of the subscriptions map to safely unlink
+          subscriptions.forEach((_, val) => {
+            unlink(val as Linkable);
+          });
+        }
+      }
+    };
+
     // Check if the handler is already subscribed.
     // If it is, return an empty unsubscribe function to prevent duplicate notifications.
     if (subscribers.has(handler)) {
-      return () => {};
+      captureStack.warning.external(
+        'Duplicate subscription',
+        'Attempted to subscribe to a state using the same handler multiple times.',
+        'Subscription handler already registered',
+        subscribeFn
+      );
+      return unsubscribeFn;
     }
 
     // @TODO: Revisit eager subscriptions once the core is stable.
@@ -88,26 +112,10 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
     subscribers.add(handler);
 
     // Return the unsubscribe function
-    return () => {
-      // Remove the handler from active subscribers
-      subscribers.delete(handler);
-
-      // If no more subscribers, clean up resources
-      if (subscribers.size <= 0) {
-        // Unlink all child references if any exist
-        if (subscriptions.size) {
-          // Iterate over a copy of the subscriptions map to safely unlink
-          subscriptions.forEach((_, val) => {
-            unlink(val as Linkable);
-          });
-        }
-
-        // Clean up the state from global tracking maps
-        // STATE_LINK.delete(init as WeakKey);
-        // ANCHOR_REGISTRY.delete(state as WeakKey);
-      }
-    };
+    return unsubscribeFn;
   };
+
+  return subscribeFn;
 }
 
 export function createDestroyFactory<T>({ init, state, subscribers, subscriptions }: DestroyFactoryInit<T>) {
@@ -121,7 +129,12 @@ export function createDestroyFactory<T>({ init, state, subscribers, subscription
     subscriptions.clear();
 
     // Remove the state from STATE_REGISTRY and STATE_LINK.
-    STATE_REGISTRY.delete(state as WeakKey);
     INIT_REGISTRY.delete(init as WeakKey);
+    REFERENCE_REGISTRY.delete(init as WeakKey);
+
+    STATE_REGISTRY.delete(state as WeakKey);
+    CONTROLLER_REGISTRY.delete(state as WeakKey);
+    SUBSCRIBER_REGISTRY.delete(state as WeakKey);
+    SUBSCRIPTION_REGISTRY.delete(state as WeakKey);
   };
 }

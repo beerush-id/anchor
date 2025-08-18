@@ -1,12 +1,5 @@
-import type {
-  Linkable,
-  ObjLike,
-  PipeTransformer,
-  StateController,
-  StateSubscriber,
-  StateUnsubscribe,
-} from './types.js';
-import { STATE_CLEANUP_QUEUES, STATE_REGISTRY } from './registry.js';
+import type { ObjLike, PipeTransformer, StateController, StateSubscriber, StateUnsubscribe } from './types.js';
+import { CONTROLLER_REGISTRY } from './registry.js';
 import { isFunction } from '@beerush/utils';
 import { assign } from './helper.js';
 import { captureStack } from './exception.js';
@@ -21,7 +14,7 @@ import { captureStack } from './exception.js';
  * @returns A function to unsubscribe from the derived state.
  */
 function deriveFn<T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe {
-  const ctrl = STATE_REGISTRY.get(state as WeakKey);
+  const ctrl = CONTROLLER_REGISTRY.get(state as WeakKey);
 
   if (typeof ctrl?.subscribe !== 'function') {
     captureStack.warning.external(
@@ -34,7 +27,7 @@ function deriveFn<T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe {
     try {
       handler(state, { type: 'init', keys: [] });
     } catch (error) {
-      captureStack.error.external('Unable to execute the subscription handler function.', error as Error);
+      captureStack.error.external('Unable to execute the subscription handler function.', error as Error, deriveFn);
     }
 
     return () => {
@@ -58,7 +51,7 @@ deriveFn.log = <T>(state: T) => {
  * @returns The `StateController` for the given state, or `undefined` if not found.
  */
 deriveFn.resolve = <T>(state: T): StateController<T> | undefined => {
-  return STATE_REGISTRY.get(state as WeakKey) as StateController<T>;
+  return CONTROLLER_REGISTRY.get(state as WeakKey) as StateController<T>;
 };
 
 /**
@@ -85,8 +78,8 @@ deriveFn.pipe = <Source, Target>(
     });
   }
 
-  return deriveFn(source, (newValue) => {
-    Object.assign(target as ObjLike, transform(newValue as Source));
+  return deriveFn(source, (snapshot) => {
+    assign(target as ObjLike, transform(snapshot as Source));
   });
 };
 
@@ -99,29 +92,3 @@ export interface DeriveFn {
 }
 
 export const derive = deriveFn as DeriveFn;
-
-const CLEANUP_SCHEDULER_WINDOW = 100;
-
-export function scheduleCleanup<T extends Linkable>(state: T): void {
-  if (!STATE_REGISTRY.has(state)) return;
-
-  const controller = STATE_REGISTRY.get(state);
-  if (!controller || STATE_CLEANUP_QUEUES.has(controller)) return;
-
-  const scheduler = setTimeout(() => {
-    if (STATE_CLEANUP_QUEUES.has(controller)) {
-      controller.destroy();
-    }
-  }, CLEANUP_SCHEDULER_WINDOW) as never;
-
-  STATE_CLEANUP_QUEUES.set(controller, scheduler);
-}
-
-export function cancelCleanup<T extends Linkable>(state: T) {
-  const controller = STATE_REGISTRY.get(state);
-
-  if (controller && STATE_CLEANUP_QUEUES.has(controller)) {
-    clearTimeout(STATE_CLEANUP_QUEUES.get(controller));
-    STATE_CLEANUP_QUEUES.delete(controller);
-  }
-}

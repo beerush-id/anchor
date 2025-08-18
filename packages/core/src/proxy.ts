@@ -11,7 +11,7 @@ import type {
   StateReferences,
 } from './types.js';
 import { createCollectionMutator } from './collection.js';
-import { REFERENCE_REGISTRY, REFLECT_REGISTRY } from './registry.js';
+import { REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
 
@@ -47,7 +47,7 @@ export function createProxyHandler<T>(init: T, references: StateReferences<T, Zo
 }
 
 export const writeContract = <T, K extends MutationKey<T>[]>(state: T, contracts?: K): MutablePart<T, K> => {
-  const init = REFLECT_REGISTRY.get(state as WeakKey) as Linkable;
+  const init = STATE_REGISTRY.get(state as WeakKey) as Linkable;
 
   if (typeof init === 'undefined') {
     captureStack.contractViolation.init(writeContract);

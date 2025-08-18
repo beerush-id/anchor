@@ -1,5 +1,5 @@
 import type { ObjLike } from './types.js';
-import { REFLECT_REGISTRY, STATE_BUSY_LIST, SUBSCRIBER_REGISTRY } from './registry.js';
+import { STATE_BUSY_LIST, STATE_REGISTRY, SUBSCRIBER_REGISTRY } from './registry.js';
 import { isArray, isDefined, isMap, isObjectLike, isSet } from '@beerush/utils';
 import { broadcast } from './internal.js';
 import { softEntries, softKeys } from './utils/clone.js';
@@ -21,7 +21,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     throw new Error('Cannot assign using non-object value.');
   }
 
-  const init = REFLECT_REGISTRY.get(target);
+  const init = STATE_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {
@@ -64,7 +64,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     throw new Error('Cannot remove from non-assignable state.');
   }
 
-  const init = REFLECT_REGISTRY.get(target);
+  const init = STATE_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {
@@ -125,7 +125,7 @@ export const clear = <T extends Assignable>(target: T) => {
     throw new Error('Cannot clear non-assignable state.');
   }
 
-  const init = REFLECT_REGISTRY.get(target);
+  const init = STATE_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {

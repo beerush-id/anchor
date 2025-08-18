@@ -56,7 +56,6 @@ export type StateUnsubscribe = () => void;
 export type StateSubscribeFn<T> = (handle: StateSubscriber<T>) => StateUnsubscribe;
 export type StateSubscriberList<T> = Set<StateSubscriber<T>>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
-export type StateChildrenMap = WeakMap<WeakKey, Linkable>;
 
 export type StatePropGetter<T extends Linkable = Linkable> = (
   target: T,
@@ -75,7 +74,6 @@ export type StateReferences<T, S extends ZodType> = {
   link: (childPath: KeyLike, childState: Linkable) => void;
   unlink: (childState: Linkable) => void;
   configs: AnchorOptions<S>;
-  children: StateChildrenMap;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
   getter?: StatePropGetter;
@@ -102,7 +100,6 @@ export type GetTrapOptions<T, S extends ZodType> = AnchorOptions<S> & {
   link: (childPath: KeyLike, childState: Linkable) => void;
   anchor: <T, S extends ZodType>(init: T, options: AnchorOptions<S>) => T;
   mutator?: WeakMap<WeakKey, WeakKey>;
-  children: StateChildrenMap;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
 };
@@ -125,7 +122,6 @@ export type DestroyFactoryInit<T> = LinkFactoryInit<T> & {
 export type SubscribeFactoryInit<T> = AnchorConfig &
   DestroyFactoryInit<T> &
   LinkFactoryInit<T> & {
-    children: StateChildrenMap;
     link: (childPath: KeyLike, childState: Linkable) => void;
     unlink: (state: Linkable) => void;
   };

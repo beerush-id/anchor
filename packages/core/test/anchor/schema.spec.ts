@@ -7,6 +7,7 @@ describe('Anchor Core - Schema Validation', () => {
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // errorSpy = vi.spyOn(console, 'error');
   });
 
   afterEach(() => {
@@ -203,6 +204,28 @@ describe('Anchor Core - Schema Validation', () => {
         state.name = 'John Smith';
       }).not.toThrow();
       expect(state.name).toBe('John Smith');
+    });
+
+    it('should return the correct type when schema validation failed', () => {
+      const schema = z.array(z.string());
+      const state = anchor(['a', 'b', 'c'], schema);
+
+      expect(state[0]).toBe('a');
+      expect(state[1]).toBe('b');
+      expect(state[2]).toBe('c');
+
+      expect(state.splice(0, 1, 1 as never)).toEqual([]); // Invalid item type, return empty array.
+      expect(state.push(1 as never)).toBe(3); // Invalid item type, return the same length.
+      expect(state.unshift(1 as never)).toBe(3); // Invalid item type, return the same length.
+      expect(state.fill(1 as never)).toBe(state); // Invalid item type, return itself.
+    });
+
+    it('should handle non object and array initialization with schema', () => {
+      const schema = z.object();
+      const state = anchor(new Map() as never, schema);
+
+      expect(state).toBeInstanceOf(Map);
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 });

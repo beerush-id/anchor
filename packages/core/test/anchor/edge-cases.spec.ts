@@ -1,16 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, logger } from '../../src/index.js';
+import { anchor, derive } from '../../src/index.js';
 import { createGetter, createRemover, createSetter } from '../../src/trap.js';
+import { createCollectionMutator } from '../../src/collection.js';
+import { createArrayMutator } from '../../src/array.js';
+import { createLinkFactory } from '../../src/factory.js';
 
 describe('Anchor Core - Edge Cases', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
+    // errorSpy = vi.spyOn(console, 'error');
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   describe('Edge Cases - Basic', () => {
@@ -57,6 +61,20 @@ describe('Anchor Core - Edge Cases', () => {
       expect(state.set).toBeInstanceOf(Set);
       expect(state.set.has('value1')).toBe(true);
     });
+
+    it('should handle getting the underlying object of non-reactive', () => {
+      const profile = { name: 'John Doe' };
+      const init = anchor.get(profile);
+
+      expect(init).toBe(profile); // Should return the given input itself.
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle snapshotting non-reactive objects', () => {
+      const snapshot = anchor.snapshot({ name: 'John Doe' });
+      expect(snapshot).toEqual({ name: 'John Doe' });
+      expect(errorSpy).toHaveBeenCalled();
+    });
   });
 
   describe('Edge Cases - Trap Factory Integrity', () => {
@@ -76,6 +94,29 @@ describe('Anchor Core - Edge Cases', () => {
       expect(() => {
         createRemover({} as never);
       }).toThrowError('Delete trap factory called on non-reactive state.');
+    });
+    it('should throw when trying to create array mutator with no reference', () => {
+      expect(() => {
+        createArrayMutator([] as never);
+      }).toThrow('Array trap factory called on non-reactive state.');
+    });
+
+    it('should throw when trying to create collection mutator with no reference', () => {
+      expect(() => {
+        createCollectionMutator({} as never);
+      }).toThrow('Get trap factory called on non-reactive state.');
+    });
+
+    it('should handle linking with existing subscription', () => {
+      const subscriptions = new WeakMap();
+      const state = anchor({ count: 1 });
+      subscriptions.set(state, {} as never);
+
+      const link = createLinkFactory({ subscriptions } as never);
+      const result = link('', state);
+
+      expect(result).toBeUndefined();
+      expect(subscriptions.has(result as never)).toBe(false);
     });
   });
 
@@ -141,6 +182,74 @@ describe('Anchor Core - Edge Cases', () => {
       expect(handler).toHaveBeenCalledTimes(3); // No change since the previous profile no longer its children.
       expect(state.profile).toBeUndefined();
       expect(profile.name).toBe('Jane Smith');
+
+      unsubscribe();
+    });
+
+    it('should unlink the previous item after mutating array', () => {
+      const state = anchor([{ name: 'John Smith' }]);
+      const handler = vi.fn();
+      const unsubscribe = derive(state, handler);
+      const profile = state[0];
+
+      expect(profile.name).toBe('John Smith');
+      expect(handler).toHaveBeenCalledTimes(1); // Init.
+
+      profile.name = 'Jane Smith';
+      expect(profile.name).toBe('Jane Smith');
+      expect(state[0].name).toBe('Jane Smith');
+      expect(handler).toHaveBeenCalledTimes(2);
+
+      state.splice(0, 1, { name: 'Jim Smith' });
+      expect(profile.name).toBe('Jane Smith');
+      expect(state[0].name).toBe('Jim Smith');
+      expect(handler).toHaveBeenCalledTimes(3); // From splice.
+
+      profile.name = 'Michael Smith';
+      expect(profile.name).toBe('Michael Smith');
+      expect(state[0].name).toBe('Jim Smith');
+
+      expect(handler).toHaveBeenCalledTimes(3); // No change due to no link to the old profile.
+
+      unsubscribe();
+    });
+
+    it('should unlink the previous subscriptions after mutating Map', () => {
+      const state = anchor(new Map([['profile', { name: 'John Smith' }]]));
+      const handler = vi.fn();
+      const unsubscribe = derive(state, handler);
+      const profile = state.get('profile') as { name: string };
+
+      expect(profile.name).toBe('John Smith');
+      expect(handler).toHaveBeenCalledTimes(1); // Init.
+
+      profile.name = 'Jane Smith';
+      expect(profile.name).toBe('Jane Smith');
+      expect(handler).toHaveBeenCalledTimes(2); // Change name.
+
+      state.set('profile', { name: 'John Doe' });
+      expect(state.get('profile')).toEqual({ name: 'John Doe' });
+      expect(handler).toHaveBeenCalledTimes(3); // Change profile.
+
+      profile.name = 'Michael Smith';
+      expect(profile.name).toBe('Michael Smith');
+      expect(state.get('profile')).toEqual({ name: 'John Doe' }); // No change
+      expect(handler).toHaveBeenCalledTimes(3); // No change due to invalidated subscription.
+
+      (state.get('profile') as { name: string }).name = 'Michael Doe';
+      expect(profile.name).toBe('Michael Smith'); // Doesn't interfere with the original object.
+      expect(state.get('profile')).toEqual({ name: 'Michael Doe' });
+
+      expect(handler).toHaveBeenCalledTimes(4); // Change new profile name.
+
+      const newProfile = state.get('profile') as { name: string };
+      expect(newProfile.name).toBe('Michael Doe');
+
+      state.clear(); // Cleaning up all subscriptions.
+      newProfile.name = 'Undefined';
+      expect(newProfile.name).toBe('Undefined');
+      expect(state.get('profile')).toBeUndefined();
+      expect(handler).toHaveBeenCalledTimes(5); // Only from the clear() event.
 
       unsubscribe();
     });

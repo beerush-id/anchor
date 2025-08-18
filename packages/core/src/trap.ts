@@ -1,6 +1,6 @@
 import type { ZodObject, ZodType } from 'zod/v4';
 import type { KeyLike, Linkable, ObjLike, StateReferences } from './types.js';
-import { INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
+import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
@@ -12,7 +12,7 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const { link, schema, configs, mutator, children, subscribers, subscriptions } = references;
+  const { link, schema, configs, mutator, subscribers, subscriptions } = references;
   const { cloned, strict, deferred, immutable, recursive } = configs;
 
   if (init instanceof Set || init instanceof Map) {
@@ -49,20 +49,8 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
       return mutator?.get(value);
     }
 
-    // if (children.has(value)) {
-    //   const proxied = children.get(value) as Linkable;
-    //
-    //   if (STATE_REGISTRY.has(proxied) && subscribers.size && !subscriptions.has(proxied)) {
-    //     if (!(recursive === 'flat' && Array.isArray(target))) {
-    //       link(prop as string, proxied);
-    //     }
-    //   }
-    //
-    //   return proxied;
-    // }
-
-    if (recursive && !STATE_REGISTRY.has(value) && linkable(value)) {
-      const proxied = anchor(value, {
+    if (recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
+      value = anchor(value, {
         schema: (schema as never as ZodObject)?.shape?.[prop as string],
         cloned,
         strict,
@@ -70,18 +58,12 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
         immutable,
         recursive,
       });
-
-      if (!children.has(value)) {
-        // children.set(value, proxied);
-      }
-
-      value = proxied;
     }
 
     // Link if the value is a reactive state and there is an active subscription.
     // Separating this process from creation is necessary to make sure
     // reading an existing state is linked properly.
-    if (STATE_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
+    if (CONTROLLER_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
       if (!(recursive === 'flat' && Array.isArray(target))) {
         link(prop as string, value as never);
       }
@@ -137,8 +119,6 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
     //     const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
     //     const proxied = anchor(value, { immutable, deferred, recursive, cloned, strict, schema: subSchema });
     //
-    //     children.set(value, proxied);
-    //
     //     if (subscribers.size && !subscriptions.has(proxied)) {
     //       if (!(recursive === 'flat' && Array.isArray(target))) {
     //         link(prop as string, proxied);
@@ -148,10 +128,6 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
     // }
 
     Reflect.set(target, prop, value, receiver);
-
-    // if (children.has(current)) {
-    //   children.delete(current);
-    // }
 
     if (INIT_REGISTRY.has(current)) {
       const state = INIT_REGISTRY.get(current) as Linkable;
@@ -207,10 +183,6 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
     const current = Reflect.get(target, prop, receiver) as Linkable;
 
     Reflect.deleteProperty(target, prop);
-
-    // if (children.has(current)) {
-    //   children.delete(current);
-    // }
 
     if (INIT_REGISTRY.has(current)) {
       const state = INIT_REGISTRY.get(current) as Linkable;

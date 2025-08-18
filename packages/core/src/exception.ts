@@ -103,13 +103,13 @@ const generator = {
   },
   validation(context: string, message: string) {
     const messages = [
-      '\x1b[1m[schema] Schema validation failed:\x1b[0m',
+      '\x1b[1m[schema] Input validation failed:\x1b[0m',
       '',
       `\x1b[4m\x1b[1m${context}\x1b[0m`,
       '',
       message,
       '',
-      'The provided schema does not match the expected structure.',
+      'The provided input does not match the expected structure.',
       '- Ensure that all required properties are present and of the correct type.',
       '- Check that the schema adheres to the defined structure and constraints.',
       '',
@@ -158,7 +158,7 @@ export const captureStack = {
     },
     validation(context: string, error: Error, strict?: boolean, ...excludeStacks: unknown[]) {
       const message = generator.validation(context, error.message as string);
-      error = new Error('Invalid schema.');
+      error = new Error('Invalid input.');
       shiftStack(error, captureStack.error.validation, excludeStacks);
 
       if (strict) {

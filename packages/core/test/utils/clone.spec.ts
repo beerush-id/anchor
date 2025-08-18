@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { softClone, softEntries, softKeys } from '../../src/index.js';
 
-describe('Clone Utilities', () => {
+describe('Anchor Utilities - Cloner', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -12,7 +12,7 @@ describe('Clone Utilities', () => {
     errorSpy.mockRestore();
   });
 
-  describe('softClone', () => {
+  describe('Soft Clone (softClone)', () => {
     it('should return primitive values as-is', () => {
       expect(softClone(42)).toBe(42);
       expect(softClone('hello')).toBe('hello');
@@ -131,7 +131,7 @@ describe('Clone Utilities', () => {
     });
   });
 
-  describe('softEntries', () => {
+  describe('Soft Entries (softEntries)', () => {
     it('should return object entries including symbol keys', () => {
       const sym = Symbol('test');
       const obj = { a: 1, b: 2, [sym]: 3 };
@@ -163,7 +163,7 @@ describe('Clone Utilities', () => {
     });
   });
 
-  describe('softKeys', () => {
+  describe('Soft Keys (softKeys)', () => {
     it('should return object keys including symbol keys', () => {
       const sym = Symbol('test');
       const obj = { a: 1, b: 2, [sym]: 3 };

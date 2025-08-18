@@ -2,8 +2,8 @@ import type { Linkable, StateController, StateReferences, StateSubscriberList, S
 import type { ZodType } from 'zod/v4';
 
 export const INIT_REGISTRY = new WeakMap<WeakKey, WeakKey>();
-export const STATE_REGISTRY = new WeakMap<WeakKey, StateController<unknown>>();
-export const REFLECT_REGISTRY = new WeakMap<WeakKey, WeakKey>();
+export const STATE_REGISTRY = new WeakMap<WeakKey, WeakKey>();
+export const CONTROLLER_REGISTRY = new WeakMap<WeakKey, StateController<unknown>>();
 export const REFERENCE_REGISTRY = new WeakMap<WeakKey, StateReferences<Linkable, ZodType>>();
 export const SUBSCRIBER_REGISTRY = new WeakMap<WeakKey, StateSubscriberList<unknown>>();
 export const SUBSCRIPTION_REGISTRY = new WeakMap<WeakKey, StateSubscriptionMap>();

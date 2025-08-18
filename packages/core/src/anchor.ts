@@ -1,4 +1,4 @@
-import type { ZodObject, ZodType } from 'zod/v4';
+import type { ZodType } from 'zod/v4';
 import { isArray, isObject } from '@beerush/utils';
 import type {
   AnchorConfig,
@@ -6,7 +6,6 @@ import type {
   AnchorOptions,
   Immutable,
   ObjLike,
-  StateChildrenMap,
   StateController,
   StateReferences,
   StateSubscriberList,
@@ -14,14 +13,14 @@ import type {
 } from './types.js';
 import { ANCHOR_CONFIG } from './constant.js';
 import {
+  CONTROLLER_REGISTRY,
   INIT_REGISTRY,
   REFERENCE_REGISTRY,
-  REFLECT_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { createLinkableTargets, linkable } from './internal.js';
+import { linkable } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import { assign, clear, remove } from './helper.js';
@@ -50,12 +49,14 @@ import { softClone } from './utils/clone.js';
  * @throws If `strict` mode is enabled and schema validation fails during property updates or array mutations.
  */
 function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptions<S>, options?: AnchorOptions<S>): T {
-  if (STATE_REGISTRY.has(init as WeakKey)) {
+  if (CONTROLLER_REGISTRY.has(init as WeakKey)) {
+    // Return itself if the given object is a reactive state.
     return init;
   }
 
   if (INIT_REGISTRY.has(init as WeakKey)) {
-    return STATE_REGISTRY.get(init as WeakKey) as T;
+    // Return the existing reactive state if the given init is already initialized.
+    return INIT_REGISTRY.get(init as WeakKey) as T;
   }
 
   if (!linkable(init)) {
@@ -84,7 +85,6 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
 
   const schema = (schemaOptions as ZodType)?._zod ? (schemaOptions as S) : (schemaOptions as AnchorOptions<S>)?.schema;
   const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive, immutable };
-  const children: StateChildrenMap = new WeakMap();
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
 
@@ -94,7 +94,7 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
 
   if (schema) {
     if (!isObject(init) && !isArray(init)) {
-      captureStack.violation.schema('(object | array)', schema.type, strict ?? false, anchorFn);
+      captureStack.violation.schema('(object | array)', schema.type, strict as false, anchorFn);
     }
 
     try {
@@ -107,26 +107,22 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
           Object.assign(init, result.data);
         }
       } else {
-        captureStack.error.validation(
-          'Attempted to initialize state with schema:',
-          result.error,
-          strict ?? false,
-          anchorFn
-        );
+        captureStack.error.validation('Attempted to initialize state with schema:', result.error, strict, anchorFn);
       }
     } catch (error) {
       captureStack.error.validation('Something went wrong when validating schema.', error as Error, strict, anchorFn);
     }
   }
 
-  if (recursive && !deferred) {
-    for (const [key, ref] of createLinkableTargets(init)) {
-      (init as ObjLike)[key] = anchorFn(ref, {
-        ...configs,
-        schema: (schema as never as ZodObject)?.shape?.[key],
-      });
-    }
-  }
+  // @TODO: Revisit eager initialization once the core is stable.
+  // if (recursive && !deferred) {
+  //   for (const [key, ref] of createLinkableTargets(init)) {
+  //     (init as ObjLike)[key] = anchorFn(ref, {
+  //       ...configs,
+  //       schema: (schema as never as ZodObject)?.shape?.[key],
+  //     });
+  //   }
+  // }
 
   let state: T = init;
 
@@ -138,7 +134,6 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
     unlink,
     schema,
     configs,
-    children,
     subscribers,
     subscriptions,
   };
@@ -161,7 +156,6 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
       link,
       state,
       unlink,
-      children,
       deferred,
       recursive,
       subscribers,
@@ -170,9 +164,9 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
   };
 
   // Register the state with its controller for global access.
-  STATE_REGISTRY.set(state as WeakKey, controller as StateController<unknown>);
   INIT_REGISTRY.set(init as WeakKey, state as WeakKey);
-  REFLECT_REGISTRY.set(state as WeakKey, init as WeakKey);
+  STATE_REGISTRY.set(state as WeakKey, init as WeakKey);
+  CONTROLLER_REGISTRY.set(state as WeakKey, controller as StateController<unknown>);
   SUBSCRIBER_REGISTRY.set(state as WeakKey, subscribers as never);
   SUBSCRIPTION_REGISTRY.set(state as WeakKey, subscriptions);
 
@@ -206,7 +200,7 @@ anchorFn.raw = <T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions
  * @returns {T}
  */
 anchorFn.get = <T>(state: T): T => {
-  const target = REFLECT_REGISTRY.get(state as WeakKey);
+  const target = STATE_REGISTRY.get(state as WeakKey);
 
   if (!target) {
     const error = new Error('State does not exist.');
@@ -222,7 +216,7 @@ anchorFn.get = <T>(state: T): T => {
  * @returns {T}
  */
 anchorFn.snapshot = <T>(state: T): T => {
-  const target = REFLECT_REGISTRY.get(state as WeakKey);
+  const target = STATE_REGISTRY.get(state as WeakKey);
 
   if (!target) {
     const error = new Error('State does not exist.');

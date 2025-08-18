@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, logger } from '../../src/index.js';
+import { anchor, derive, logger } from '../../src/index.js';
 
 describe('Anchor Core - Basic Operations', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -42,6 +42,48 @@ describe('Anchor Core - Basic Operations', () => {
       expect(anchor.get(arrState)).toEqual([1, 2, 3]);
       expect(anchor.get(mapState)).toEqual(new Map([['key', 'value']]));
       expect(anchor.get(setState)).toEqual(new Set([1, 2, 3]));
+    });
+
+    it('should handle initialization with existing state', () => {
+      const state = anchor({ name: 'John Smith' });
+      const profile = anchor.get(state); // Get the underlying init object.
+
+      expect(state).not.toBe(profile); // Should be a new object due to soft clone.
+      expect(state.name).toBe(profile.name); // Should have the same name.
+
+      const newState = anchor(profile); // Should return the same state.
+      expect(newState).toBe(state);
+      expect(newState.name).toBe(profile.name);
+
+      const newState2 = anchor(state);
+      expect(newState2).toBe(state);
+      expect(newState2.name).toBe(profile.name);
+    });
+
+    it('should handle defined deferred option', () => {
+      const state = anchor(
+        {
+          count: 1,
+          profile: { name: 'John Smith' },
+        },
+        { deferred: false } // Should be ignored due to child state always be deferred.
+      );
+      const profile = anchor.get(state).profile;
+
+      expect(derive.resolve(profile)).toBeUndefined(); // Should be undefined due to child state haven't been accessed.
+    });
+
+    it('should change the default options', () => {
+      anchor.configure({ immutable: true });
+
+      const state = anchor({ count: 1 });
+
+      state.count++; // Failed due to immutable state.
+
+      expect(state.count).toBe(1);
+      expect(errorSpy).toHaveBeenCalled();
+
+      anchor.configure({ immutable: false }); // Reset to default.
     });
   });
 
