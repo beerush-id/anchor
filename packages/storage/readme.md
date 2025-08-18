@@ -27,6 +27,7 @@ A simple, zero-config TypeScript package template using tsup for bundling. Perfe
 ## Output
 
 The build process generates:
+
 - CommonJS output (`*.cjs`)
 - ES Modules output (`*.js`)
 - TypeScript declarations (`*.d.ts`)

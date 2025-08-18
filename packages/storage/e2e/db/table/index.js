@@ -80,9 +80,9 @@ window.runIndexedTableTests = async function () {
       });
 
       // Then update it
-      const updatedRecord = await table.update('update-test-id', { 
+      const updatedRecord = await table.update('update-test-id', {
         name: 'updated-name',
-        value: 75
+        value: 75,
       });
 
       results.test4 = {
@@ -158,7 +158,7 @@ window.runIndexedTableTests = async function () {
       ];
 
       const resultsArray = await Promise.allSettled(promises);
-      const fulfilledCount = resultsArray.filter(result => result.status === 'fulfilled').length;
+      const fulfilledCount = resultsArray.filter((result) => result.status === 'fulfilled').length;
 
       results.test7 = {
         fulfilledCount: fulfilledCount,

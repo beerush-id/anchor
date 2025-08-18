@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Storage E2E Tests</title>
     <style>
       body {
@@ -123,7 +123,7 @@
     </header>
 
     <button id="runTests" class="run-button">Run All Tests</button>
-    
+
     <div id="testStatus" class="status hidden"></div>
 
     <div id="testResults" class="test-container hidden">
@@ -132,59 +132,57 @@
 
     <script type="module" src="./index.js"></script>
     <script>
-      document.getElementById('runTests').addEventListener('click', async function() {
+      document.getElementById('runTests').addEventListener('click', async function () {
         const button = this;
         button.disabled = true;
         button.textContent = 'Running Tests...';
-        
+
         const results = await window.runSessionStorageTests();
         displayResults(results);
-        
+
         button.disabled = false;
         button.textContent = 'Run All Tests Again';
       });
-      
+
       function displayResults(results) {
         const resultsContainer = document.getElementById('testResults');
         const statusElement = document.getElementById('testStatus');
-        
+
         resultsContainer.innerHTML = '';
         resultsContainer.classList.remove('hidden');
-        
+
         let passedTests = 0;
         let totalTests = 0;
-        
-        Object.keys(results).forEach(testKey => {
+
+        Object.keys(results).forEach((testKey) => {
           if (testKey === 'importError') return;
-          
+
           totalTests++;
           const test = results[testKey];
           const isPassed = !test.error;
-          
+
           if (isPassed) passedTests++;
-          
+
           const testCard = document.createElement('div');
           testCard.className = `test-card ${isPassed ? 'passed' : 'failed'}`;
-          
+
           const testName = getTestName(testKey);
           testCard.innerHTML = `
             <h2>${testName}</h2>
             <div class="test-result ${isPassed ? 'passed' : 'failed'}">
               Status: ${isPassed ? '✅ PASSED' : '❌ FAILED'}
             </div>
-            ${isPassed ? 
-              `<pre>${JSON.stringify(test, null, 2)}</pre>` : 
-              `<div>Error: ${test.error}</div>`}
+            ${isPassed ? `<pre>${JSON.stringify(test, null, 2)}</pre>` : `<div>Error: ${test.error}</div>`}
           `;
-          
+
           resultsContainer.appendChild(testCard);
         });
-        
+
         statusElement.textContent = `Tests: ${passedTests}/${totalTests} passed`;
         statusElement.className = `status ${passedTests === totalTests ? 'passed' : 'failed'}`;
         statusElement.classList.remove('hidden');
       }
-      
+
       function getTestName(testKey) {
         const testNames = {
           test1: 'Initialize with initial data',
@@ -194,9 +192,9 @@
           test5: 'Assign data',
           test6: 'Subscribe and publish events',
           test7: 'Generate JSON representation',
-          test8: 'Persist data in sessionStorage'
+          test8: 'Persist data in sessionStorage',
         };
-        
+
         return testNames[testKey] || testKey;
       }
     </script>

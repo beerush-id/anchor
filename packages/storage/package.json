@@ -54,6 +54,7 @@
     "dev": "rimraf dist && tsup --watch",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
+    "format": "prettier --write .",
     "prepublish": "rimraf dist && tsup && publint",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
