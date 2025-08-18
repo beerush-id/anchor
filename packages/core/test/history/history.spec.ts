@@ -514,6 +514,27 @@ describe('Anchor History', () => {
       stateHistory.destroy();
     });
 
+    it('should handle deep map operations', () => {
+      const state = anchor({
+        count: 1,
+        settings: new Map([['profile', { theme: 'light' }]]),
+      });
+      const profile = state.settings.get('profile') as { theme: string };
+      const stateHistory = history(state);
+
+      expect(profile.theme).toBe('light');
+
+      profile.theme = 'dark';
+      timeTravel();
+
+      expect(profile.theme).toBe('dark');
+      expect(stateHistory.canBackward).toBe(true);
+
+      stateHistory.backward();
+
+      expect(profile.theme).toBe('light');
+    });
+
     it('should handle Set operations', () => {
       const state = anchor({ set: new Set([1, 2, 3]) });
       const stateHistory = history(state);

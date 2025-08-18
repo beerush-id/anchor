@@ -1,5 +1,5 @@
 import { isArray, isDate, isMap, isRegExp, isSet } from '@beerush/utils';
-import type { ObjLike } from '../types.js';
+import type { Linkable, ObjLike } from '../types.js';
 import { captureStack } from '../exception.js';
 
 /**
@@ -69,6 +69,10 @@ export function softClone<T>(source: T, clonedRefs: WeakMap<object, object> = ne
 }
 
 export function softEntries<T extends ObjLike>(obj: T): Array<[keyof T, T[keyof T]]> {
+  if ((obj as Linkable) instanceof Map || (obj as Linkable) instanceof Set) {
+    return (obj as never as Map<string, unknown>).entries() as never;
+  }
+
   const entries = Object.entries(obj) as Array<[keyof T, T[keyof T]]>;
 
   for (const sym of Object.getOwnPropertySymbols(obj)) {

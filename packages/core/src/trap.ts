@@ -65,7 +65,7 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
     // reading an existing state is linked properly.
     if (CONTROLLER_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
       if (!(recursive === 'flat' && Array.isArray(target))) {
-        link(prop as string, value as never);
+        link(prop, value);
       }
     }
 
@@ -82,7 +82,7 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
     throw new Error(`Set trap factory called on non-reactive state.`);
   }
 
-  const { unlink, schema, configs, subscribers, subscriptions } = references;
+  const { id, unlink, schema, configs, subscribers, subscriptions } = references;
   const { strict } = configs;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
@@ -124,12 +124,17 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
-      broadcast(subscribers, target, {
-        type: 'set',
-        prev: current,
-        keys: [prop as string],
-        value: target[prop],
-      });
+      broadcast(
+        subscribers,
+        target,
+        {
+          type: 'set',
+          prev: current,
+          keys: [prop as string],
+          value: target[prop],
+        },
+        id
+      );
     }
 
     return true;
@@ -145,7 +150,7 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
     throw new Error(`Delete trap factory called on non-reactive state.`);
   }
 
-  const { unlink, schema, configs, subscribers, subscriptions } = references;
+  const { id, unlink, schema, configs, subscribers, subscriptions } = references;
   const { strict } = configs;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
@@ -179,7 +184,7 @@ export function createRemover<T, S extends ZodType>(init: T, options?: StateRefe
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
-      broadcast(subscribers, target, { type: 'delete', prev: current, keys: [prop] });
+      broadcast(subscribers, target, { type: 'delete', prev: current, keys: [prop] }, id);
     }
 
     return true;

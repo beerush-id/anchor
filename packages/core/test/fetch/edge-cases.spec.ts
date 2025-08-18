@@ -39,6 +39,25 @@ describe('Reactive Fetch - Edge Cases', () => {
       expect(state.data).toBe('Hello World');
     });
 
+    it('should handle no headers with text content', async () => {
+      const mockResponse = new Response('Hello World', {
+        status: 200,
+      });
+      mockResponse.headers.set('Content-Type', false as never);
+
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
+
+      const state = fetchState('', {
+        url: 'https://api.example.com/text',
+        method: 'GET',
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Success);
+      expect(state.data).toBe('Hello World');
+    });
+
     it('should handle empty response', async () => {
       const mockResponse = new Response('', {
         headers: {

@@ -39,7 +39,7 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
     throw new Error(`Array trap factory called on non-reactive state.`);
   }
 
-  const { unlink, schema, configs, subscribers, subscriptions } = references;
+  const { id, unlink, schema, configs, subscribers, subscriptions } = references;
   const { strict, immutable } = configs;
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
@@ -106,7 +106,6 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
               args[index] = (validation.data as unknown[])?.[i];
             }
           }
-          // If strict mode is enabled and validation fails, throw the error.
         } else {
           captureStack.error.validation(
             `Attempted to mutate: "${method}" of an array with invalid input:`,
@@ -144,12 +143,17 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
       }
 
       // Broadcast the array mutation event to all subscribers
-      broadcast(subscribers, init, {
-        type: method as StateMutation,
-        prev: current,
-        keys: [],
-        value: args,
-      });
+      broadcast(
+        subscribers,
+        init,
+        {
+          type: method as StateMutation,
+          prev: current,
+          keys: [],
+          value: args,
+        },
+        id
+      );
 
       if (result === init) {
         return INIT_REGISTRY.get(init as WeakKey);

@@ -269,7 +269,11 @@ function getTarget<T>(state: T, ...keys: KeyLike[]) {
 }
 
 function getValue<T>(target: T, key: KeyLike) {
-  return (target as Map<KeyLike, unknown>).get?.(key) ?? (target as Record<KeyLike, unknown>)[key];
+  if (target instanceof Map) {
+    return target.get(key);
+  }
+
+  return (target as Record<KeyLike, unknown>)[key];
 }
 
 function setValue<T>(target: T, key: keyof T, value: T[keyof T]) {

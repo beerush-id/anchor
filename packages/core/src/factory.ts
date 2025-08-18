@@ -3,6 +3,7 @@ import type {
   KeyLike,
   Linkable,
   LinkFactoryInit,
+  ObjLike,
   StateSubscribeFn,
   StateSubscriber,
   SubscribeFactoryInit,
@@ -18,9 +19,10 @@ import {
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
 import { captureStack } from './exception.js';
+import { softEntries } from './utils/index.js';
 
-export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkFactoryInit<T>) {
-  return (childPath: KeyLike, childState: Linkable): void => {
+export function createLinkFactory<T>({ id, init, subscribers, subscriptions }: LinkFactoryInit<T>) {
+  return (childPath: KeyLike, childState: Linkable, receiver?: Linkable): void => {
     if (subscriptions.has(childState)) return;
 
     // Get the controller for the child state
@@ -28,17 +30,23 @@ export function createLinkFactory<T>({ init, subscribers, subscriptions }: LinkF
 
     // If the child state has a valid controller with subscribe method
     if (typeof ctrl?.subscribe === 'function') {
-      // Subscribe to the child state changes
-      const childUnsubscribe = ctrl.subscribe((_, event) => {
+      const childHandler: StateSubscriber<unknown> = (_, event, emitter) => {
         // Ignore init events to prevent duplicate notifications
         if (event && event.type !== 'init') {
           const keys = event.keys as KeyLike[];
           keys.unshift(childPath);
 
           // Broadcast the event with modified path to include the key
-          broadcast(subscribers, init, { ...event, keys });
+          broadcast(subscribers, init, { ...event, keys }, emitter);
         }
+      };
+
+      Object.defineProperty(childHandler, '__internal_id__', {
+        value: id,
       });
+
+      // Subscribe to the child state changes
+      const childUnsubscribe = ctrl.subscribe(childHandler, receiver);
 
       // Store the unsubscribe function for cleanup
       subscriptions.set(childState, childUnsubscribe);
@@ -58,9 +66,9 @@ export function createUnlinkFactory({ subscriptions }: UnlinkFactoryInit) {
 }
 
 export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): StateSubscribeFn<T> {
-  const { init, subscribers, subscriptions, unlink } = options;
+  const { init, state, recursive, link, subscribers, subscriptions, unlink } = options;
 
-  const subscribeFn = (handler: StateSubscriber<T>) => {
+  const subscribeFn = (handler: StateSubscriber<T>, receiver?: Linkable) => {
     // Immediately notify the handler with the current state.
     try {
       handler(init, { type: 'init', keys: [] });
@@ -99,6 +107,16 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
 
     // Add the handler to the list of active subscribers
     subscribers.add(handler);
+
+    if (!(Array.isArray(init) && recursive === 'flat')) {
+      for (const [key, value] of softEntries(init as ObjLike)) {
+        const childState = INIT_REGISTRY.get(value as Linkable) as Linkable;
+
+        if (childState && !subscriptions.has(childState) && childState !== receiver) {
+          link(key, childState, (receiver ?? state) as Linkable);
+        }
+      }
+    }
 
     // Return the unsubscribe function
     return unsubscribeFn;

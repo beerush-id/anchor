@@ -30,7 +30,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const { link, unlink, configs, subscribers, subscriptions } = references;
+  const { id, link, unlink, configs, subscribers, subscriptions } = references;
   const { cloned, strict, deferred, immutable, recursive } = configs;
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
@@ -39,7 +39,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     const getFn = init.get as (key: string) => unknown;
 
     const targetFn = (key: string) => {
-      let value = getFn.call(init, key);
+      let value = getFn.call(init, key) as Linkable;
 
       if (INIT_REGISTRY.has(value as Linkable)) {
         value = INIT_REGISTRY.get(value as WeakKey) as Linkable;
@@ -55,8 +55,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         });
       }
 
-      if (CONTROLLER_REGISTRY.has(value as Linkable) && subscribers.size && !subscriptions.has(value as Linkable)) {
-        link(key, value as never);
+      if (CONTROLLER_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
+        link(key, value);
       }
 
       return value;
@@ -102,12 +102,17 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       }
 
       if (!STATE_BUSY_LIST.has(init)) {
-        broadcast(subscribers, init, {
-          type: method as StateMutation,
-          prev: oldValue,
-          keys: method === 'set' ? [keyValue] : [],
-          value: newValue,
-        });
+        broadcast(
+          subscribers,
+          init,
+          {
+            type: method as StateMutation,
+            prev: oldValue,
+            keys: method === 'set' ? [keyValue] : [],
+            value: newValue,
+          },
+          id
+        );
       }
 
       // Collection mutation will always return itself for chaining.
@@ -134,11 +139,16 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           }
         }
 
-        broadcast(subscribers, self, {
-          type: method,
-          prev: current,
-          keys: self instanceof Map ? [keyValue as string] : [],
-        });
+        broadcast(
+          subscribers,
+          self,
+          {
+            type: method,
+            prev: current,
+            keys: self instanceof Map ? [keyValue as string] : [],
+          },
+          id
+        );
 
         return result;
       }
@@ -159,11 +169,16 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         }
 
         if (!STATE_BUSY_LIST.has(init)) {
-          broadcast(subscribers, init, {
-            type: method,
-            prev: self instanceof Map ? entries : values,
-            keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
-          });
+          broadcast(
+            subscribers,
+            init,
+            {
+              type: method,
+              prev: self instanceof Map ? entries : values,
+              keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
+            },
+            id
+          );
         }
 
         return result;

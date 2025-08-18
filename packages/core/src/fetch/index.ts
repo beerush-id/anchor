@@ -45,10 +45,10 @@ export function fetchState<T, S extends ZodType = ZodType>(init: T, options: Fet
   fetch(options.url, options)
     .then(async (response) => {
       if (response.ok) {
-        const contentType = response.headers.get('content-type') ?? '';
+        const contentType = response.headers.get('content-type');
         const body = await response.text();
 
-        if (contentType.includes('application/json')) {
+        if (typeof contentType === 'string' && contentType.includes('application/json')) {
           try {
             anchor.assign(state, {
               response,
@@ -157,8 +157,6 @@ async function readStream<T>(
   receiver: (chunk: T) => void,
   finalizer: (chunk?: T) => void
 ) {
-  if (!isFunction(receiver)) return;
-
   const { done, value } = await readable.read();
 
   if (done) {

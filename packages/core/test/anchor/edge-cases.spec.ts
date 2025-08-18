@@ -136,20 +136,20 @@ describe('Anchor Core - Edge Cases', () => {
       expect(handler).toHaveBeenCalledTimes(2); // Init + change id.
 
       profile.name = 'Jane Doe';
-      expect(handler).toHaveBeenCalledTimes(2); // Not notified due no actual read from the root state.
+      expect(handler).toHaveBeenCalledTimes(3); // Not notified due no actual read from the root state.
       expect(state.profile.name).toBe('Jane Doe'); // Trigger subscription to the profile (read: state.profile).
 
       profile.name = 'John Smith';
-      expect(handler).toHaveBeenCalledTimes(3);
+      expect(handler).toHaveBeenCalledTimes(4);
       expect(state.profile.name).toBe('John Smith');
 
       state.profile = { name: 'Jim Doe' };
-      expect(handler).toHaveBeenCalledTimes(4); // ... + change profile
+      expect(handler).toHaveBeenCalledTimes(5); // ... + change profile
       expect(state.profile.name).toBe('Jim Doe');
       expect(profile.name).toBe('John Smith');
 
       profile.name = 'Jane Smith';
-      expect(handler).toHaveBeenCalledTimes(4); // No change since the previous profile no longer its children.
+      expect(handler).toHaveBeenCalledTimes(5); // No change since the previous profile no longer its children.
       expect(state.profile.name).toBe('Jim Doe');
       expect(profile.name).toBe('Jane Smith');
 
@@ -168,18 +168,18 @@ describe('Anchor Core - Edge Cases', () => {
       const unsubscribe = derive(state, handler);
 
       profile.name = 'Jane Doe';
-      expect(handler).toHaveBeenCalledTimes(1); // Only init due no actual read from the root state after subscription.
+      expect(handler).toHaveBeenCalledTimes(2); // Init + name change.
       state.profile.name = 'John Smith'; // Read to profile (state.profile) will trigger subscription.
       expect(state.profile.name).toBe('John Smith');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (state as any).profile;
-      expect(handler).toHaveBeenCalledTimes(3); // ... change name ('John Smith') + delete profile
+      expect(handler).toHaveBeenCalledTimes(4); // ... change name ('John Smith') + delete profile
       expect(state.profile).toBeUndefined();
       expect(profile.name).toBe('John Smith');
 
       profile.name = 'Jane Smith';
-      expect(handler).toHaveBeenCalledTimes(3); // No change since the previous profile no longer its children.
+      expect(handler).toHaveBeenCalledTimes(4); // No change since the previous profile no longer its children.
       expect(state.profile).toBeUndefined();
       expect(profile.name).toBe('Jane Smith');
 

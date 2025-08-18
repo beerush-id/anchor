@@ -1,5 +1,5 @@
 import type { ObjLike } from './types.js';
-import { STATE_BUSY_LIST, STATE_REGISTRY, SUBSCRIBER_REGISTRY } from './registry.js';
+import { CONTROLLER_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY, SUBSCRIBER_REGISTRY } from './registry.js';
 import { isArray, isDefined, isMap, isObjectLike, isSet } from '@beerush/utils';
 import { broadcast } from './internal.js';
 import { softEntries, softKeys } from './utils/clone.js';
@@ -22,6 +22,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   const init = STATE_REGISTRY.get(target);
+  const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {
@@ -41,12 +42,17 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   if (subscribers?.size) {
-    broadcast(subscribers, init, {
-      type: 'assign',
-      prev,
-      keys: [],
-      value: source,
-    });
+    broadcast(
+      subscribers,
+      init,
+      {
+        type: 'assign',
+        prev,
+        keys: [],
+        value: source,
+      },
+      controller?.id
+    );
   }
 
   if (isDefined(init)) {
@@ -65,6 +71,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   }
 
   const init = STATE_REGISTRY.get(target);
+  const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {
@@ -103,12 +110,17 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   }
 
   if (subscribers?.size) {
-    broadcast(subscribers, init, {
-      type: 'remove',
-      prev,
-      keys: [],
-      value: keys,
-    });
+    broadcast(
+      subscribers,
+      init,
+      {
+        type: 'remove',
+        prev,
+        keys: [],
+        value: keys,
+      },
+      controller?.id
+    );
   }
 
   if (isDefined(init)) {
@@ -126,6 +138,7 @@ export const clear = <T extends Assignable>(target: T) => {
   }
 
   const init = STATE_REGISTRY.get(target);
+  const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
   if (isDefined(init)) {
@@ -143,12 +156,17 @@ export const clear = <T extends Assignable>(target: T) => {
   }
 
   if (subscribers?.size) {
-    broadcast(subscribers, init, {
-      type: 'clear',
-      prev: {},
-      keys: [],
-      value: undefined,
-    });
+    broadcast(
+      subscribers,
+      init,
+      {
+        type: 'clear',
+        prev: {},
+        keys: [],
+        value: undefined,
+      },
+      controller?.id
+    );
   }
 
   if (isDefined(init)) {

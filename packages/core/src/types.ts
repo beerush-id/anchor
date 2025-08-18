@@ -51,11 +51,13 @@ export type AnchorConfig = {
 };
 export type AnchorOptions<S extends ZodType = ZodType> = AnchorConfig & { schema?: S };
 
-export type StateSubscriber<T> = (snapshot: T, event: StateChange) => void;
+export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
-export type StateSubscribeFn<T> = (handle: StateSubscriber<T>) => StateUnsubscribe;
+export type StateSubscribeFn<T> = (handle: StateSubscriber<T>, receiver?: Linkable) => StateUnsubscribe;
 export type StateSubscriberList<T> = Set<StateSubscriber<T>>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
+export type StateLinkFn = (childKey: KeyLike, childState: Linkable, receiver?: Linkable) => void;
+export type StateUnlinkFn = (childState: Linkable) => void;
 
 export type StatePropGetter<T extends Linkable = Linkable> = (
   target: T,
@@ -71,8 +73,9 @@ export type StatePropSetter<T extends Linkable = Linkable> = (
 export type StatePropRemover<T extends Linkable = Linkable> = (target: T, prop: keyof T) => boolean;
 
 export type StateReferences<T, S extends ZodType> = {
-  link: (childPath: KeyLike, childState: Linkable) => void;
-  unlink: (childState: Linkable) => void;
+  id: string;
+  link: StateLinkFn;
+  unlink: StateUnlinkFn;
   configs: AnchorOptions<S>;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
@@ -86,6 +89,7 @@ export type StateChange = {
   keys: KeyLike[];
   prev?: unknown;
   value?: unknown;
+  emitter?: string;
 };
 export type StateController<T> = {
   id: string;
@@ -96,23 +100,26 @@ export type StateController<T> = {
 export type PipeTransformer<T, R> = (value: T) => Partial<R>;
 
 export type GetTrapOptions<T, S extends ZodType> = AnchorOptions<S> & {
+  id: string;
   init: T;
-  link: (childPath: KeyLike, childState: Linkable) => void;
+  link: StateLinkFn;
   anchor: <T, S extends ZodType>(init: T, options: AnchorOptions<S>) => T;
   mutator?: WeakMap<WeakKey, WeakKey>;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
 };
 export type SetTrapOptions<T, S extends ZodType> = GetTrapOptions<T, S> & {
-  unlink: (childState: Linkable) => void;
+  unlink: StateUnlinkFn;
 };
 
 export type LinkFactoryInit<T> = {
+  id: string;
   init: T;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
 };
 export type UnlinkFactoryInit = {
+  id: string;
   subscriptions: StateSubscriptionMap;
 };
 
@@ -122,8 +129,8 @@ export type DestroyFactoryInit<T> = LinkFactoryInit<T> & {
 export type SubscribeFactoryInit<T> = AnchorConfig &
   DestroyFactoryInit<T> &
   LinkFactoryInit<T> & {
-    link: (childPath: KeyLike, childState: Linkable) => void;
-    unlink: (state: Linkable) => void;
+    link: StateLinkFn;
+    unlink: StateUnlinkFn;
   };
 
 export type Immutable<T> = T extends MethodLike

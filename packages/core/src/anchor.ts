@@ -116,10 +116,11 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
 
   let state: T = init;
 
-  const link = createLinkFactory({ init, subscribers, subscriptions });
-  const unlink = createUnlinkFactory({ subscriptions });
+  const link = createLinkFactory({ id, init, subscribers, subscriptions });
+  const unlink = createUnlinkFactory({ id, subscriptions });
 
   const references: StateReferences<T, S> = {
+    id,
     link,
     unlink,
     schema,
@@ -140,8 +141,9 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
 
   const controller: StateController<T> = {
     id,
-    destroy: createDestroyFactory({ init, state, subscribers, subscriptions }),
+    destroy: createDestroyFactory({ id, init, state, subscribers, subscriptions }),
     subscribe: createSubscribeFactory({
+      id,
       init,
       link,
       state,
