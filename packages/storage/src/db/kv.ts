@@ -1,6 +1,6 @@
 import { type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
-import { logger } from '@anchor/core';
+import { captureStack } from '@anchor/core';
 
 export type KVEvent<T> = {
   type: IDBStatus | 'set' | 'delete';
@@ -10,7 +10,7 @@ export type KVEvent<T> = {
 
 export type KVSubscriber<T> = DBSubscriber & ((event: KVEvent<T>) => void);
 export type Operation = {
-  promise: () => Promise<void> | void;
+  promise: () => Promise<void>;
 };
 
 /**
@@ -98,13 +98,14 @@ export class IndexedKv<T> extends IndexedStore {
 
   public set(key: string, value: T, onerror?: (error: Error) => void): Operation {
     if (this.status !== IDBStatus.Open) {
-      logger.error(`Cannot perform "set" operation during "${this.status}" state.`);
-      onerror?.(new Error(`Database is not open: "${this.status}"`));
-      return { promise: () => {} };
+      const error = new Error(`Database is in "${this.status}" state.`);
+      captureStack.error.external(`Cannot perform "set" operation during "${this.status}" state.`, error, this.set);
+      onerror?.(error);
+      return { promise: () => Promise.resolve() };
     }
 
     const current = this.#storage.get(key);
-    let resolved = false;
+    let resolved: Error | boolean = false;
     let resolver: () => void;
     let rejector: (error: Error) => void;
 
@@ -115,9 +116,10 @@ export class IndexedKv<T> extends IndexedStore {
       .then(() => {
         this.publish({ type: 'set', key, value });
         resolver?.();
+        resolved = true;
       })
       .catch((error) => {
-        logger.error(`Unable to set value of "${key}":`, error);
+        captureStack.error.external(`Unable to set value of "${key}":`, error, put, this.set);
 
         if (current) {
           this.#storage.set(key, current);
@@ -127,36 +129,42 @@ export class IndexedKv<T> extends IndexedStore {
 
         onerror?.(error);
         rejector?.(error);
+        resolved = error;
       })
       .finally(() => {
-        resolved = true;
         this.setFree();
       });
 
     return {
       promise: () => {
-        return (
-          !resolved &&
-          new Promise((resolve, reject) => {
-            resolver = resolve as never;
-            rejector = reject;
-          })
-        );
+        if (resolved) {
+          return resolved === true ? Promise.resolve() : Promise.reject(resolved);
+        }
+
+        return new Promise((resolve, reject) => {
+          resolver = resolve as never;
+          rejector = reject;
+        });
       },
     } as Operation;
   }
 
   public delete(key: string, onerror?: (error: Error) => void): Operation {
     if (this.status !== IDBStatus.Open) {
-      logger.error(`Cannot perform "delete" operation during "${this.status}" state.`);
-      onerror?.(new Error(`Database is not open: "${this.status}"`));
-      return { promise: () => {} };
+      const error = new Error(`Database is in "${this.status}" state.`);
+      captureStack.error.external(
+        `Cannot perform "delete" operation during "${this.status}" state.`,
+        error,
+        this.delete
+      );
+      onerror?.(error);
+      return { promise: () => Promise.resolve() };
     }
 
     const current = this.#storage.get(key);
 
     if (current) {
-      let resolved = false;
+      let resolved: Error | boolean = false;
       let resolver: (value: true) => void;
       let rejector: (error: Error) => void;
 
@@ -167,33 +175,35 @@ export class IndexedKv<T> extends IndexedStore {
         .then(() => {
           this.publish({ type: 'delete', key });
           resolver?.(true);
+          resolved = true;
         })
         .catch((error) => {
-          logger.error(`Unable to delete "${key}":`, error);
+          captureStack.error.external(`Unable to delete "${key}":`, error, remove, this.delete);
           this.#storage.set(key, current);
 
           onerror?.(error);
           rejector?.(error);
+          resolved = error;
         })
         .finally(() => {
-          resolved = true;
           this.setFree();
         });
 
       return {
         promise: () => {
-          return (
-            !resolved &&
-            new Promise((resolve, reject) => {
-              resolver = resolve as never;
-              rejector = reject as never;
-            })
-          );
+          if (resolved) {
+            return resolved === true ? Promise.resolve() : Promise.reject(resolved);
+          }
+
+          return new Promise((resolve, reject) => {
+            resolver = resolve as never;
+            rejector = reject as never;
+          });
         },
       } as Operation;
     }
 
-    return { promise: () => {} };
+    return { promise: () => Promise.resolve() };
   }
 
   public subscribe(handler: KVSubscriber<T>): DBUnsubscribe {

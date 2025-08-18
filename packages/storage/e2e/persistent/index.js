@@ -123,6 +123,8 @@ window.runPersistentStorageTests = async function () {
       state.a = 2;
       state.c = 'new';
 
+      await new Promise((resolve) => setTimeout(resolve, 101));
+
       const stored = localStorage.getItem(key);
       const parsed = JSON.parse(stored);
 

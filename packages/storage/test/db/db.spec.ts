@@ -46,6 +46,15 @@ describe('IndexedDB Module', () => {
       expect(event.type).toBe(IDBStatus.Closed);
       expect(db.status).toBe(IDBStatus.Closed);
     });
+
+    it('should gracefully handle closing db on non-supported environment', () => {
+      const db = new IndexedStore('test-db');
+
+      expect(db.status).toBe(IDBStatus.Closed);
+      expect(() => {
+        db.close();
+      }).not.toThrow();
+    });
   });
 });
 

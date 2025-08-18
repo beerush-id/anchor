@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { IDBStatus, IndexedKv } from '../../src/db/index.js';
-import { logger } from '@anchor/core';
 
 describe('IndexedKV Module', () => {
   describe('IndexedKv', () => {
@@ -32,15 +31,15 @@ describe('IndexedKV Module', () => {
 });
 
 describe('Mocked IndexedKV Module', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockIndexedDB();
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
+    errorSpy.mockRestore();
     clearIndexedDBMock();
   });
 
@@ -90,11 +89,15 @@ describe('Mocked IndexedKV Module', () => {
       expect(kv.get('key2')).toBe('value2');
     });
 
-    it('should handle promise based set operation', async () => {
+    it('should handle promise based set operations', async () => {
       const kv = new IndexedKv<string>('test-kv');
       await kv.promise();
 
       await kv.set('key1', 'value1').promise();
+
+      const result = kv.set('key3', 'value3');
+      await result.promise();
+      await result.promise();
 
       expect(kv.get('key1')).toBe('value1');
     });
@@ -123,6 +126,15 @@ describe('Mocked IndexedKV Module', () => {
 
       await kv.delete('k1').promise();
       expect(kv.get('k1')).toBeUndefined();
+
+      await kv.set('k2', 'value2').promise();
+      expect(kv.get('k2')).toBe('value2');
+
+      const result = kv.delete('k2');
+      await result.promise();
+      await result.promise(); // Should not throw an error.
+
+      expect(kv.get('k2')).toBeUndefined();
     });
 
     it('should handle deleting non-existent key', async () => {
@@ -161,7 +173,6 @@ describe('Mocked IndexedKV Module', () => {
       const kv = new IndexedKv<string>('test-kv');
       await kv.promise();
 
-      const consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
       const onErrorSpy = vi.fn();
 
       // Force an error by closing the database first
@@ -171,18 +182,15 @@ describe('Mocked IndexedKV Module', () => {
 
       await kv.completed();
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
       expect(onErrorSpy).toHaveBeenCalled();
       expect(kv.get('key1')).toBeUndefined(); // Value should not be stored
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('should handle delete errors gracefully', async () => {
       const kv = new IndexedKv<string>('test-kv');
       await kv.promise();
 
-      const consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
       const onErrorSpy = vi.fn();
 
       kv.set('key1', 'value1');
@@ -198,11 +206,9 @@ describe('Mocked IndexedKV Module', () => {
       // Wait for the async operation
       await kv.completed();
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
       expect(onErrorSpy).toHaveBeenCalled();
       expect(kv.get('key1')).toBe('value1'); // Value should be restored
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('should handle complex data types', async () => {

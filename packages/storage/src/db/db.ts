@@ -1,5 +1,5 @@
 import { isFunction } from '@beerush/utils';
-import { logger } from '@anchor/core';
+import { captureStack } from '@anchor/core';
 
 export const DB_NAME = 'anchor';
 
@@ -153,8 +153,6 @@ export class IndexedStore {
 
     if (connection.status === IDBStatus.Init) {
       connection.onUpgrade.add((event: IDBVersionChangeEvent) => {
-        if (this.status !== IDBStatus.Init) return;
-
         try {
           this.upgrade?.(event);
         } catch (error) {
@@ -207,7 +205,11 @@ export class IndexedStore {
             await this.setup?.();
             this.status = IDBStatus.Open;
           } catch (error) {
-            logger.error(error);
+            captureStack.error.external(
+              `Unable to finish the Database setup of "${this.dbName}".`,
+              error as Error,
+              this.init
+            );
             this.error = error as Error;
             this.status = IDBStatus.Closed;
           } finally {
