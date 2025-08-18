@@ -129,6 +129,48 @@ describe('Anchor Utilities - Cloner', () => {
       cloned.value = 100;
       expect(cloned.value).toBe(100);
     });
+
+    it('should shallow clone object', () => {
+      const profile = { name: 'John Doe' };
+      const sym = Symbol('test');
+      const obj = { count: 1, profile, [sym]: 'Test' };
+      const cloned = softClone(obj, false);
+
+      expect(cloned).not.toBe(obj);
+      expect(cloned).toEqual(obj);
+      expect(cloned.profile).toBe(profile);
+      expect(cloned[sym]).toBe('Test');
+    });
+
+    it('should shallow clone array', () => {
+      const profile = { name: 'John Doe' };
+      const arr = [profile];
+      const cloned = softClone(arr, false);
+
+      expect(cloned).not.toBe(arr);
+      expect(cloned).toEqual(arr);
+      expect(cloned[0]).toBe(profile);
+    });
+
+    it('should shallow clone Map', () => {
+      const profile = { name: 'John Doe' };
+      const map = new Map([['profile', profile]]);
+      const cloned = softClone(map, false);
+
+      expect(cloned).not.toBe(map);
+      expect(cloned).toEqual(map);
+      expect(cloned.get('profile')).toBe(profile);
+    });
+
+    it('should shallow clone Set', () => {
+      const profile = { name: 'John Doe' };
+      const set = new Set([profile]);
+      const cloned = softClone(set, false);
+
+      expect(cloned).not.toBe(set);
+      expect(cloned).toEqual(set);
+      expect(cloned.has(profile)).toBe(true);
+    });
   });
 
   describe('Soft Entries (softEntries)', () => {

@@ -81,7 +81,7 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
     deferred = ANCHOR_CONFIG.deferred,
     recursive = ANCHOR_CONFIG.recursive,
     immutable = ANCHOR_CONFIG.immutable,
-  } = options ?? {};
+  } = (options ?? {}) as AnchorConfig;
 
   const schema = (schemaOptions as ZodType)?._zod ? (schemaOptions as S) : (schemaOptions as AnchorOptions<S>)?.schema;
   const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive, immutable };
@@ -89,7 +89,7 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
   const subscriptions: StateSubscriptionMap = new Map();
 
   if (cloned && !immutable) {
-    init = softClone(init);
+    init = softClone(init, recursive);
   }
 
   if (schema) {
