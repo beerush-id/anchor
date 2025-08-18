@@ -113,20 +113,6 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
       }
     }
 
-    // @TODO: Revisit eager mode set trap handler once the core is stable.
-    // if (!STATE_REGISTRY.has(value) && recursive) {
-    //   if (!deferred && linkable(value)) {
-    //     const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
-    //     const proxied = anchor(value, { immutable, deferred, recursive, cloned, strict, schema: subSchema });
-    //
-    //     if (subscribers.size && !subscriptions.has(proxied)) {
-    //       if (!(recursive === 'flat' && Array.isArray(target))) {
-    //         link(prop as string, proxied);
-    //       }
-    //     }
-    //   }
-    // }
-
     Reflect.set(target, prop, value, receiver);
 
     if (INIT_REGISTRY.has(current)) {

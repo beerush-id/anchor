@@ -97,17 +97,6 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
       return unsubscribeFn;
     }
 
-    // @TODO: Revisit eager subscriptions once the core is stable.
-    // Link all child references to track their changes
-    // if (recursive && !(recursive === 'flat' && Array.isArray(init))) {
-    //   for (const [key, target] of createLinkableTargets(init)) {
-    //     const childState = INIT_REGISTRY.get(target) as Linkable;
-    //     if (childState && childState !== state && !subscriptions.has(childState)) {
-    //       link(key, childState);
-    //     }
-    //   }
-    // }
-
     // Add the handler to the list of active subscribers
     subscribers.add(handler);
 

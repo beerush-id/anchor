@@ -125,23 +125,6 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
         }
       }
 
-      // @TODO: Revisit eager mode linking once the core is stable.
-      // Eagerly proxy any linkable items inside the arguments before passing to the origin method.
-      // This block only runs in eager mode ("deferred" option is off).
-      // if (recursive && !deferred) {
-      //   // Get the item schema.
-      //   const itemSchema = (schema as never as ZodArray)?.unwrap() as ZodType;
-      //   const argsLength = args.length;
-      //
-      //   for (let i = 0; i < argsLength; i++) {
-      //     const item = args[i];
-      //
-      //     if (!CONTROLLER_REGISTRY.has(item as Linkable) && linkable(item)) {
-      //       args[i] = anchor(item, { immutable, deferred, recursive, cloned, strict, schema: itemSchema });
-      //     }
-      //   }
-      // }
-
       // Call the original method to perform the operation.
       const result = originFn.apply(init, args);
 
@@ -149,45 +132,6 @@ export function createArrayMutator<T extends unknown[], S extends ZodType>(init:
       if (['shift', 'pop'].includes(method)) {
         current = result as never;
       }
-
-      // @TODO: Revisit eager mode linking once the core is stable.
-      // If there are subscribers, recursive linking is enabled, and "deferred" option is off,
-      // eagerly link any new items in the array.
-      // if (subscribers.size && recursive && recursive !== 'flat' && !deferred && addedItemsLength) {
-      //   // Link new items that were added to the array if they are linkable.
-      //   if (method === 'push') {
-      //     // For push, items are added at the end.
-      //     const startIndex = currentItems.length;
-      //     addedItems.forEach((item, i) => {
-      //       if (CONTROLLER_REGISTRY.has(item as Linkable)) {
-      //         link(`${startIndex + i}`, item as Linkable);
-      //       }
-      //     });
-      //   } else if (method === 'unshift') {
-      //     // For unshift, items are added at the beginning.
-      //     addedItems.forEach((item, i) => {
-      //       if (CONTROLLER_REGISTRY.has(item as Linkable)) {
-      //         link(`${i}`, item as Linkable);
-      //       }
-      //     });
-      //   } else if (method === 'splice') {
-      //     const [start] = args as [number, number];
-      //     addedItems.forEach((item, i) => {
-      //       if (CONTROLLER_REGISTRY.has(item as Linkable)) {
-      //         link(`${start + i}`, item as Linkable);
-      //       }
-      //     });
-      //   } else {
-      //     // For other methods like fill, iterate through the state to find new items.
-      //     // Only link if the item is not already linked.
-      //     (init as Linkable[]).forEach((item, i) => {
-      //       if (CONTROLLER_REGISTRY.has(item)) {
-      //         // The key for array items is their index.
-      //         link(String(i), item);
-      //       }
-      //     });
-      //   }
-      // }
 
       // Unlink the deleted items.
       if (deletedItemsLength) {

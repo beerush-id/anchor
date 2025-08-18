@@ -114,16 +114,6 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
     }
   }
 
-  // @TODO: Revisit eager initialization once the core is stable.
-  // if (recursive && !deferred) {
-  //   for (const [key, ref] of createLinkableTargets(init)) {
-  //     (init as ObjLike)[key] = anchorFn(ref, {
-  //       ...configs,
-  //       schema: (schema as never as ZodObject)?.shape?.[key],
-  //     });
-  //   }
-  // }
-
   let state: T = init;
 
   const link = createLinkFactory({ init, subscribers, subscriptions });
