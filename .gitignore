@@ -65,4 +65,4 @@ jspm_packages/
 docs/.vitepress/dist
 docs/.vitepress/cache
 yarn.lock
-/.husky
+!/.husky/_/
