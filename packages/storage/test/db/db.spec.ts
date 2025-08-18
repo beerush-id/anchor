@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
-import { type DBEvent, IDBStatus, IndexedStore } from '../../src/db/db.js';
+import { type DBEvent, IDBStatus, IndexedStore } from '../../src/db/index.js';
 
 // Test implementation of IndexedDb
 class TestIndexedDb extends IndexedStore {

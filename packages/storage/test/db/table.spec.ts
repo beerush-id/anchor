@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IndexedTable } from '../../src/db/table.js';
+import { IDBStatus, IndexedTable } from '../../src/db/index.js';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import type { Rec } from '../../src/db/helper.js';
-import { IDBStatus } from '../../src/db/db.js';
 
 interface TestRecord extends Rec {
   name: string;

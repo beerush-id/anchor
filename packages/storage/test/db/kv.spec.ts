@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
-import { IndexedKv } from '../../src/db/kv.js';
+import { IDBStatus, IndexedKv } from '../../src/db/index.js';
 import { logger } from '@anchor/core';
-import { IDBStatus } from '../../src/db/db.js';
 
 describe('IndexedKV Module', () => {
   describe('IndexedKv', () => {

@@ -1,19 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger, ObjLike } from '@anchor/core';
+import { ObjLike } from '@anchor/core';
 import { persistent, PersistentStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
 import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
 
 describe('Storage Module', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-  });
-
   describe('Persistent Storage', () => {
     it('should initialize a persistent storage', () => {
       const storage = new PersistentStorage('test', { a: 1 });
@@ -98,11 +88,15 @@ describe('Storage Module', () => {
 });
 
 describe('Mocked Storage Module', () => {
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockBrowserStorage();
   });
 
   afterEach(() => {
+    errorSpy.mockRestore();
     clearStorageMocks();
   });
 
@@ -151,7 +145,6 @@ describe('Mocked Storage Module', () => {
 
     it('should handle localStorage errors gracefully', () => {
       const storage = new PersistentStorage<ObjLike>('test', { a: 1 });
-      const consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
 
       // Mock setItem to throw an error
       const originalSetItem = localStorage.setItem;
@@ -161,12 +154,15 @@ describe('Mocked Storage Module', () => {
 
       storage.set('b', 2);
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
 
       // Restore original function
       localStorage.setItem = originalSetItem;
-      consoleErrorSpy.mockRestore();
     });
+  });
+
+  describe('Persistent Storage - Edge Cases', () => {
+    it('should handle browser storage change event', () => {});
   });
 });
 

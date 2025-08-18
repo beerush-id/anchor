@@ -1,19 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger, type ObjLike } from '@anchor/core';
+import { type ObjLike } from '@anchor/core';
 import { session, SessionStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
-import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
+import { clearStorageMocks, emitGlobalEvent, mockBrowserStorage } from '../mocks/storage-mock.js';
 
 describe('Storage Module', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-  });
-
   describe('Session Storage', () => {
     it('should initialize a session storage', () => {
       const storage = new SessionStorage('test', { a: 1 });
@@ -98,11 +88,15 @@ describe('Storage Module', () => {
 });
 
 describe('Mocked Storage Module', () => {
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockBrowserStorage();
   });
 
   afterEach(() => {
+    errorSpy.mockRestore();
     clearStorageMocks();
   });
 
@@ -151,7 +145,6 @@ describe('Mocked Storage Module', () => {
 
     it('should handle sessionStorage errors gracefully', () => {
       const storage = new SessionStorage<ObjLike>('test', { a: 1 });
-      const consoleErrorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
 
       // Mock setItem to throw an error
       const originalSetItem = sessionStorage.setItem;
@@ -161,11 +154,56 @@ describe('Mocked Storage Module', () => {
 
       storage.set('b', 2);
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
 
       // Restore original function
       sessionStorage.setItem = originalSetItem;
-      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('Session Storage - Edge Cases', () => {
+    it('should handle error when initializing corrupted storage', () => {
+      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      sessionStorage.setItem(key, '{"foo": "bar", "bar": -}');
+      const storage = new SessionStorage<ObjLike>('test', { a: 1 });
+
+      expect(storage.get('foo')).toBeUndefined();
+      expect(storage.get('bar')).toBeUndefined();
+      expect(storage.get('a')).toBe(1);
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle storage change event with no key', () => {
+      const storage = session('test', { a: 1 });
+
+      emitGlobalEvent('storage', { key: null, newValue: null });
+      expect(storage.a).toBe(1); // No side effect from storage change event.
+    });
+
+    it('should handle storage change event with a valid payload', () => {
+      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const storage = session('test', { a: 1 });
+
+      expect(storage.a).toBe(1);
+      emitGlobalEvent('storage', { key, newValue: JSON.stringify({ a: 2 }) });
+      expect(storage.a).toBe(2); // Value should be updated.
+    });
+
+    it('should handle storage change event with an invalid payload', () => {
+      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const storage = session('test', { a: 1 });
+
+      expect(storage.a).toBe(1);
+
+      emitGlobalEvent('storage', { key, newValue: '{invalid}' });
+
+      expect(storage.a).toBe(1); // Value should not be updated.
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      emitGlobalEvent('storage', { key, newValue: undefined });
+
+      expect(storage.a).toBe(1);
+      expect(errorSpy).toHaveBeenCalledTimes(2);
     });
   });
 });

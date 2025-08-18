@@ -91,17 +91,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       const oldValue = init instanceof Map ? init.get(keyValue) : undefined;
       const newValue = (method === 'set' ? value : keyValue) as Linkable;
 
-      // @TODO: Revisit eager mode child init once the core is stable.
-      // if (!CONTROLLER_REGISTRY.has(newValue) && recursive && linkable(newValue) && !deferred) {
-      //   newValue = anchor(newValue, { deferred, recursive, immutable, cloned, strict });
-      // }
-
       methodFn.apply(init, method === 'set' ? [keyValue, newValue] : [newValue]);
-
-      // @TODO: Revisit eager mode linking once the core is stable.
-      // if (CONTROLLER_REGISTRY.has(newValue) && subscribers.size && recursive && !deferred) {
-      //   link(method === 'set' ? keyValue : '', newValue as never);
-      // }
 
       if (INIT_REGISTRY.has(oldValue as WeakKey)) {
         const childState = INIT_REGISTRY.get(oldValue as WeakKey) as Linkable;

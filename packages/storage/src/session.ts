@@ -1,6 +1,13 @@
 import { MemoryStorage } from './memory.js';
-import type { AnchorOptions, ObjLike, StateUnsubscribe } from '@anchor/core';
-import { anchor, derive, logger, microtask } from '@anchor/core';
+import {
+  anchor,
+  type AnchorOptions,
+  captureStack,
+  derive,
+  microtask,
+  type ObjLike,
+  type StateUnsubscribe,
+} from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
 import type { ZodType } from 'zod/v4';
 
@@ -15,7 +22,7 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
   }
 
   public get oldKey(): string {
-    return `${STORAGE_KEY}-session://${this.name}@${this.previousVersion ?? '-1.0.0'}`;
+    return `${STORAGE_KEY}-session://${this.name}@${this.previousVersion}`;
   }
 
   constructor(
@@ -43,7 +50,11 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
           const storedData = JSON.parse(stored) as Record<string, unknown>;
           this.assign(storedData);
         } catch (error) {
-          logger.error(`Unable to initialize storage: "${this.key}".`, error);
+          captureStack.error.external(
+            ['Unable to parse storage object from the persistent storage:', stored].join('\n\n'),
+            error as Error,
+            this.constructor
+          );
         }
       } else if (this.length) {
         this.adapter.setItem(this.key, this.json());
@@ -71,7 +82,13 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
         this.adapter?.removeItem(this.key);
       }
     } catch (error) {
-      logger.error(`Unable to write storage: "${this.key}".`, error);
+      captureStack.error.external(
+        `Unable to write storage: "${this.key}".`,
+        error as Error,
+        this.write,
+        this.delete,
+        this.set
+      );
     }
   }
 }
@@ -106,6 +123,8 @@ export interface SessionFn {
 
 export const STORAGE_SYNC_DELAY = 100;
 
+let storageChangeListened = false;
+
 export const session = (<T extends ObjLike, S extends ZodType = ZodType>(
   name: string,
   init: T,
@@ -136,6 +155,13 @@ export const session = (<T extends ObjLike, S extends ZodType = ZodType>(
 
       STORAGE_SUBSCRIPTION_REGISTRY.set(state, unsubscribe);
     }
+
+    // Lazily subscribe to storage changes.
+    // This make sure that storage subscription is only created once, when needed.
+    if (!storageChangeListened) {
+      storageChangeListened = true;
+      listenStorageChange();
+    }
   }
 
   return state;
@@ -152,8 +178,12 @@ session.leave = <T extends ObjLike>(state: T) => {
   STORAGE_SUBSCRIPTION_REGISTRY.delete(state);
 };
 
-if (isBrowser()) {
-  window.addEventListener('storage', (event) => {
+/**
+ * This function add handler to storage change event.
+ * This function must be called only once and lazily.
+ */
+function listenStorageChange() {
+  const storageHandler = (event: StorageEvent) => {
     if (!event.key) return;
 
     if (STORAGE_SYNC.has(event.key)) {
@@ -163,8 +193,14 @@ if (isBrowser()) {
         const data = JSON.parse(event.newValue ?? '');
         anchor.assign(state, data as ObjLike);
       } catch (error) {
-        logger.error(`Unable to parse new value of: "${event.key}".`, error);
+        captureStack.error.external(
+          [`Unable to parse new value of "${event.key}":`, event.newValue].join('\n\n'),
+          error as Error,
+          storageHandler
+        );
       }
     }
-  });
+  };
+
+  window.addEventListener('storage', storageHandler);
 }

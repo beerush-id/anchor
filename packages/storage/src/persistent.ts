@@ -10,7 +10,7 @@ export class PersistentStorage<T extends Record<string, unknown> = Record<string
   }
 
   public get oldKey(): string {
-    return `${STORAGE_KEY}-persistent://${this.name}@${this.previousVersion ?? '-1.0.0'}`;
+    return `${STORAGE_KEY}-persistent://${this.name}@${this.previousVersion}`;
   }
   constructor(
     protected name: string,

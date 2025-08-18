@@ -84,5 +84,27 @@ describe('Storage Module', () => {
 
       expect(json).toBe(JSON.stringify({ a: 1, b: 'test' }));
     });
+
+    it('should get the storage keys', () => {
+      const storage = new MemoryStorage({ a: 1, b: 'test' });
+      const keys = storage.keys;
+
+      expect(keys).toEqual(['a', 'b']);
+    });
+
+    it('should clear the storage object', () => {
+      const storage = new MemoryStorage({ a: 1, b: 'test' });
+      const handler = vi.fn();
+      const unsubscribe = storage.subscribe(handler);
+
+      storage.clear();
+
+      expect(storage.get('a')).toBeUndefined();
+      expect(storage.get('b')).toBeUndefined();
+      expect(storage.keys).toEqual([]);
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+    });
   });
 });

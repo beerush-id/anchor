@@ -27,6 +27,24 @@ export class StorageMock implements Storage {
   }
 }
 
+const globalListeners = new Map<string, Set<(event: unknown) => void>>();
+
+export function emitGlobalEvent(type: string, event: unknown) {
+  const listeners = globalListeners.get(type) as Set<(event: unknown) => void>;
+
+  if (listeners) {
+    for (const listener of listeners) {
+      if (typeof listener === 'function') {
+        listener(event as never);
+      }
+    }
+  }
+}
+
+export function clearGlobalListeners() {
+  globalListeners.clear();
+}
+
 export function mockBrowserStorage() {
   // Create mock storage instances
   const sessionStorageMock = new StorageMock();
@@ -36,6 +54,13 @@ export function mockBrowserStorage() {
     value: {
       sessionStorage: sessionStorageMock,
       localStorage: localStorageMock,
+      addEventListener: (type: string, listener: (event: StorageEvent) => void) => {
+        if (!globalListeners.has(type)) {
+          globalListeners.set(type, new Set());
+        }
+
+        globalListeners.get(type)?.add(listener as never);
+      },
     },
     writable: true,
   });

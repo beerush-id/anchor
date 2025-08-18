@@ -3,6 +3,7 @@ export * from './derive.js';
 export * from './logger.js';
 export * from './types.ts';
 
+export * from './exception.js';
 export * from './fetch/index.js';
 export * from './history/index.js';
 export * from './utils/index.js';
