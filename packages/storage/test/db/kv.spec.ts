@@ -134,6 +134,8 @@ describe('Mocked IndexedKV Module', () => {
       await result.promise();
       await result.promise(); // Should not throw an error.
 
+      await kv.delete('unknown').promise(); // Deleting non-existing record.
+
       expect(kv.get('k2')).toBeUndefined();
     });
 
