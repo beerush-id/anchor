@@ -6,6 +6,7 @@ export default defineConfig({
     reporters: ['default', 'html'],
     outputFile: 'tests/index.html',
     coverage: {
+      provider: 'v8',
       enabled: true,
       include: ['packages/core/src/**/*.ts', 'packages/storage/src/**/*.ts'],
       reportsDirectory: './tests/coverage',

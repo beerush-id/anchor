@@ -16,21 +16,13 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@beerush/esdev": "^1.1.0",
-    "@typescript-eslint/eslint-plugin": "^7.4.0",
-    "@typescript-eslint/parser": "^7.4.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
     "monopkg": "^0.3.10",
     "prettier": "^3.2.5",
-    "typedoc": "^0.24.8",
-    "typescript": "^5.1.6",
-    "vitepress": "^1.0.0-rc.22",
-    "vitest": "^3.2.4",
-    "vue": "^3.3.6"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "bun": ">=1.2.15"
@@ -44,9 +36,6 @@
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
-  "main": "lib/cjs/index.js",
-  "module": "lib/esm/index.js",
-  "typings": "lib/esm/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beerush-id/anchor.git"
