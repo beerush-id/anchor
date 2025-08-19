@@ -16,15 +16,42 @@ export const STORAGE_SYNC = new Map<string, ObjLike>();
 
 const hasSessionStorage = () => typeof sessionStorage !== 'undefined';
 
+/**
+ * SessionStorage is a class that extends MemoryStorage to provide session storage functionality.
+ * It automatically syncs with the browser's sessionStorage and handles versioning of stored data.
+ *
+ * @template T - The type of the stored data, must be a Record<string, unknown>
+ *
+ * @example
+ * ```typescript
+ * const storage = new SessionStorage('myApp', { user: null, theme: 'light' });
+ * storage.set('user', { id: 1, name: 'John' });
+ * ```
+ */
 export class SessionStorage<T extends Record<string, unknown> = Record<string, unknown>> extends MemoryStorage<T> {
+  /**
+   * Returns the storage key with the current version
+   */
   public get key(): string {
     return `${STORAGE_KEY}-session://${this.name}@${this.version}`;
   }
 
+  /**
+   * Returns the storage key with the previous version (used for cleanup)
+   */
   public get oldKey(): string {
     return `${STORAGE_KEY}-session://${this.name}@${this.previousVersion}`;
   }
 
+  /**
+   * Creates a new SessionStorage instance
+   *
+   * @param name - The name of the storage
+   * @param init - Initial data to populate the storage
+   * @param version - Version of the storage schema (default: '1.0.0')
+   * @param previousVersion - Previous version to clean up
+   * @param adapter - Storage adapter (defaults to window.sessionStorage)
+   */
   constructor(
     protected name: string,
     protected init?: T,
@@ -62,16 +89,30 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
     }
   }
 
+  /**
+   * Sets a value in the storage and persists it to sessionStorage
+   *
+   * @param key - The key to set
+   * @param value - The value to store
+   */
   public set(key: keyof T, value: T[keyof T]) {
     super.set(key, value);
     this.write();
   }
 
+  /**
+   * Deletes a key from storage and updates sessionStorage
+   *
+   * @param key - The key to delete
+   */
   public delete(key: keyof T) {
     super.delete(key);
     this.write();
   }
 
+  /**
+   * Writes the current storage state to the sessionStorage adapter
+   */
   public write() {
     if (typeof this.adapter === 'undefined') return;
 
@@ -98,13 +139,26 @@ const STORAGE_SUBSCRIPTION_REGISTRY = new WeakMap<ObjLike, StateUnsubscribe>();
 
 export interface SessionFn {
   /**
-   * Create a reactive session object.
-   * Session object will sync with session storage.
-   * @param {string} name
-   * @param {T} init
-   * @param {AnchorOptions<S>} options
-   * @param {typeof SessionStorage} storageClass
-   * @returns {T}
+   * Creates a reactive session object that automatically syncs with sessionStorage.
+   * The session object will persist data across page reloads within the same browser session.
+   *
+   * @template T - The type of the initial data object
+   * @template S - The schema type for anchor options
+   *
+   * @param name - Unique identifier for the session storage instance
+   * @param init - Initial data to populate the session storage
+   * @param options - Optional anchor configuration options
+   * @param storageClass - Custom storage class to use (defaults to SessionStorage)
+   *
+   * @returns A reactive proxy object that syncs with sessionStorage
+   *
+   * @example
+   * ```typescript
+   * const userSession = session('user', { id: null, name: '' });
+   * userSession.id = 123;
+   * userSession.name = 'John';
+   * // Data is automatically persisted to sessionStorage
+   * ```
    */
   <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
     name: string,
@@ -114,9 +168,17 @@ export interface SessionFn {
   ): T;
 
   /**
-   * Leave a reactive session object.
-   * Leaving a reactive session object will stop syncing with session storage.
-   * @param {T} state
+   * Disconnects a reactive session object from sessionStorage synchronization.
+   *
+   * @template T - The type of the session object
+   * @param state - The reactive session object to disconnect
+   *
+   * @example
+   * ```typescript
+   * const userSession = session('user', { id: 1, name: 'John' });
+   * session.leave(userSession);
+   * // userSession is no longer synced with sessionStorage
+   * ```
    */
   leave<T extends ObjLike>(state: T): void;
 }
@@ -125,6 +187,28 @@ export const STORAGE_SYNC_DELAY = 100;
 
 let storageChangeListened = false;
 
+/**
+ * Creates a reactive session object that automatically syncs with sessionStorage.
+ * The session object will persist data across page reloads within the same browser session.
+ *
+ * @template T - The type of the initial data object
+ * @template S - The schema type for anchor options
+ *
+ * @param name - Unique identifier for the session storage instance
+ * @param init - Initial data to populate the session storage
+ * @param options - Optional anchor configuration options
+ * @param storageClass - Custom storage class to use (defaults to SessionStorage)
+ *
+ * @returns A reactive proxy object that syncs with sessionStorage
+ *
+ * @example
+ * ```typescript
+ * const userSession = session('user', { id: null, name: '' });
+ * userSession.id = 123;
+ * userSession.name = 'John';
+ * // Data is automatically persisted to sessionStorage
+ * ```
+ */
 export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
@@ -167,6 +251,19 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
   return state;
 }) as SessionFn;
 
+/**
+ * Disconnects a reactive session object from sessionStorage synchronization.
+ *
+ * @template T - The type of the session object
+ * @param state - The reactive session object to disconnect
+ *
+ * @example
+ * ```typescript
+ * const userSession = session('user', { id: 1, name: 'John' });
+ * session.leave(userSession);
+ * // userSession is no longer synced with sessionStorage
+ * ```
+ */
 session.leave = <T extends ObjLike>(state: T) => {
   const unsubscribe = STORAGE_SUBSCRIPTION_REGISTRY.get(state);
 

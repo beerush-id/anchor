@@ -16,24 +16,58 @@ export type Operation = {
 /**
  * IndexedKV is an optimistic KV Storage that uses IndexedDB as its backend.
  * It provides a simple key-value store with optimistic concurrency control.
+ *
+ * This class extends IndexedStore and provides methods to set, get, and delete
+ * key-value pairs. It also supports subscribing to changes in the store.
+ *
+ * @template T The type of values stored in the key-value store.
  */
 export class IndexedKv<T> extends IndexedStore {
+  /**
+   * In-memory storage for the key-value pairs.
+   */
   #storage = new Map<string, T>();
+
+  /**
+   * Set of awaiter functions to resolve when operations complete.
+   */
   #awaiters = new Set<() => void>();
+
+  /**
+   * Counter for ongoing operations.
+   */
   #operations = 0;
 
+  /**
+   * Gets a readonly object store for reading data.
+   * @protected
+   */
   protected get reader(): IDBObjectStore {
     return this.instance?.transaction(this.name, 'readonly').objectStore(this.name) as IDBObjectStore;
   }
 
+  /**
+   * Gets a readwrite object store for writing data.
+   * @protected
+   */
   protected get writer(): IDBObjectStore {
     return this.instance?.transaction(this.name, 'readwrite').objectStore(this.name) as IDBObjectStore;
   }
 
+  /**
+   * Indicates whether there are ongoing operations.
+   * @returns True if there are ongoing operations, false otherwise.
+   */
   public get busy(): boolean {
     return this.#operations > 0;
   }
 
+  /**
+   * Creates a new IndexedKv instance.
+   * @param name - The name of the object store.
+   * @param version - The version of the database.
+   * @param dbName - The name of the database.
+   */
   constructor(
     protected name: string,
     protected version = 1,
@@ -43,6 +77,10 @@ export class IndexedKv<T> extends IndexedStore {
     this.init().open();
   }
 
+  /**
+   * Sets up the initial data by reading from the IndexedDB.
+   * @protected
+   */
   protected async setup() {
     await new Promise((resolve, reject) => {
       const request = this.reader.openCursor();
@@ -64,6 +102,10 @@ export class IndexedKv<T> extends IndexedStore {
     });
   }
 
+  /**
+   * Waits for all ongoing operations to complete.
+   * @returns A promise that resolves when all operations are completed.
+   */
   public async completed(): Promise<true> {
     if (this.busy) {
       return await new Promise((resolve) => {
@@ -81,6 +123,11 @@ export class IndexedKv<T> extends IndexedStore {
     return true;
   }
 
+  /**
+   * Upgrades the database by creating the object store if it doesn't exist.
+   * @param event - The version change event.
+   * @protected
+   */
   protected upgrade(event: IDBVersionChangeEvent): Promise<void> | void {
     const db = (event.target as IDBOpenDBRequest)?.result as IDBDatabase;
     if (db && !db.objectStoreNames.contains(this.name)) {
@@ -88,14 +135,31 @@ export class IndexedKv<T> extends IndexedStore {
     }
   }
 
+  /**
+   * Publishes an event to subscribers.
+   * @param event - The event to publish.
+   * @protected
+   */
   protected publish(event: KVEvent<T>) {
     super.publish(event as DBEvent);
   }
 
+  /**
+   * Gets the value associated with the specified key.
+   * @param name - The key to look up.
+   * @returns The value associated with the key, or undefined if not found.
+   */
   public get(name: string): T | undefined {
     return this.#storage.get(name);
   }
 
+  /**
+   * Sets the value for the specified key.
+   * @param key - The key to set.
+   * @param value - The value to set.
+   * @param onerror - Optional error handler.
+   * @returns An operation object with a promise that resolves when the operation completes.
+   */
   public set(key: string, value: T, onerror?: (error: Error) => void): Operation {
     if (this.status !== IDBStatus.Open) {
       const error = new Error(`Database is in "${this.status}" state.`);
@@ -149,6 +213,12 @@ export class IndexedKv<T> extends IndexedStore {
     } as Operation;
   }
 
+  /**
+   * Deletes the value associated with the specified key.
+   * @param key - The key to delete.
+   * @param onerror - Optional error handler.
+   * @returns An operation object with a promise that resolves when the operation completes.
+   */
   public delete(key: string, onerror?: (error: Error) => void): Operation {
     if (this.status !== IDBStatus.Open) {
       const error = new Error(`Database is in "${this.status}" state.`);
@@ -206,14 +276,27 @@ export class IndexedKv<T> extends IndexedStore {
     return { promise: () => Promise.resolve() };
   }
 
+  /**
+   * Subscribes to changes in the store.
+   * @param handler - The handler function to call when changes occur.
+   * @returns A function to unsubscribe from changes.
+   */
   public subscribe(handler: KVSubscriber<T>): DBUnsubscribe {
     return super.subscribe(handler);
   }
 
+  /**
+   * Increments the operation counter.
+   * @private
+   */
   private setBusy() {
     this.#operations += 1;
   }
 
+  /**
+   * Decrements the operation counter and notifies awaiters.
+   * @private
+   */
   private setFree() {
     this.#operations -= 1;
 
