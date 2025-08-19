@@ -1,6 +1,5 @@
 import { session, SessionStorage, STORAGE_KEY } from './session.js';
-import type { AnchorOptions, ObjLike } from '@anchor/core';
-import type { ZodType } from 'zod/v4';
+import type { AnchorOptions, LinkableSchema, ObjLike } from '@anchor/core';
 
 const hasLocalStorage = () => typeof sessionStorage !== 'undefined';
 
@@ -31,7 +30,7 @@ export interface PersistentFn {
    * @param {AnchorOptions<S>} options
    * @returns {T}
    */
-  <T extends ObjLike, S extends ZodType = ZodType>(name: string, init: T, options?: AnchorOptions<S>): T;
+  <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(name: string, init: T, options?: AnchorOptions<S>): T;
 
   /**
    * Leave a reactive persistent object.
@@ -41,7 +40,7 @@ export interface PersistentFn {
   leave<T extends ObjLike>(state: T): void;
 }
 
-export const persistent = (<T extends ObjLike, S extends ZodType = ZodType>(
+export const persistent = (<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
   options?: AnchorOptions<S>

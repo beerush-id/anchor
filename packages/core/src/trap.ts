@@ -1,9 +1,10 @@
-import type { ZodObject, ZodType } from 'zod/v4';
+import type { ZodArray, ZodObject, ZodType } from 'zod/v4';
 import type { KeyLike, Linkable, LinkableSchema, ObjLike, StateReferences } from './types.js';
 import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
+import { isArray } from '@beerush/utils';
 
 export function createGetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
   const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
@@ -50,8 +51,14 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
     }
 
     if (recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
-      value = anchor(value, {
-        schema: (schema as never as ZodObject)?.shape?.[prop as string],
+      const childSchema = (
+        isArray(init)
+          ? (schema as never as ZodArray)?.unwrap?.()
+          : (schema as never as ZodObject)?.shape?.[prop as string]
+      ) as LinkableSchema;
+
+      value = anchor<T, LinkableSchema>(value as T, {
+        schema: childSchema,
         cloned,
         strict,
         deferred,
@@ -93,10 +100,10 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
     }
 
     if (schema) {
-      const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
+      const childSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
 
-      if (subSchema) {
-        const result = subSchema.safeParse(value);
+      if (childSchema) {
+        const result = childSchema.safeParse(value);
 
         if (result.success) {
           value = result.data as Linkable;
@@ -154,10 +161,10 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
   const { strict } = configs;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
-    const subSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
+    const childSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
 
-    if (subSchema) {
-      const result = subSchema.safeParse(undefined);
+    if (childSchema) {
+      const result = childSchema.safeParse(undefined);
 
       if (!result.success) {
         captureStack.error.validation(

@@ -58,6 +58,17 @@ describe('Anchor Core - Schema Validation', () => {
       }).toThrow();
     });
 
+    it('should validate array with nested schema', () => {
+      const schema = z.array(
+        z.object({
+          name: z.string(),
+        })
+      );
+      const state = anchor([{ name: 'John' }], schema);
+
+      expect(state[0].name).toBe('John');
+    });
+
     it('should validate initial nested properties', () => {
       const schema = z.object({
         id: z.number(),

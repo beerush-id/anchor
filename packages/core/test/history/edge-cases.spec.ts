@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, history, logger } from '../../src/index.js';
+import { anchor, history } from '../../src/index.js';
 
 const defaultOptions = { debounce: 100, maxHistory: 100 };
 const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
@@ -9,7 +9,7 @@ describe('Anchor History - Edge Cases', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    errorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

@@ -1,28 +1,5 @@
 import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
 import { type input, type output, type ZodArray, type ZodObject } from 'zod/v4';
-import type { LogLevel } from './logger.js';
-
-export type LoggerConfig = {
-  level: LogLevel;
-  verbose: boolean;
-  traceDebug: boolean;
-  traceVerbose: boolean;
-};
-export type Logger = {
-  create: {
-    error(...args: unknown[]): unknown[];
-    warn(...args: unknown[]): unknown[];
-    info(...args: unknown[]): unknown[];
-    debug(...args: unknown[]): unknown[];
-    verbose(...args: unknown[]): unknown[];
-  };
-  error: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  info: (...args: unknown[]) => void;
-  debug: (...args: unknown[]) => void;
-  verbose: (...args: unknown[]) => void;
-  configure: (config: Partial<LoggerConfig>) => void;
-};
 
 export type Recursive = boolean | 'flat';
 export type MethodLike = (...args: unknown[]) => unknown;
@@ -33,6 +10,9 @@ export type ObjLike = {
 
 export type Linkable = object | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
 export type LinkableSchema = ZodObject | ZodArray;
+export type ModelInput<S> = input<S>;
+export type ModelOutput<S> = output<S>;
+export type ImmutableOutput<S> = Immutable<ModelOutput<S>>;
 export type ReadonlyLink = Immutable<Linkable>;
 
 export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
@@ -172,28 +152,28 @@ export type MutablePart<T, K extends MutationKey<T>[]> =
 
 export interface AnchorFn {
   <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
-  <S extends LinkableSchema, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
-  <S extends LinkableSchema, T extends input<S>>(
+  <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: AnchorConfig): ModelOutput<S>;
+  <S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
     options?: AnchorConfig & { immutable: true }
-  ): Immutable<output<S>>;
+  ): ImmutableOutput<S>;
 
   // Initializer methods.
 
   raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
-  flat<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
-  model<S extends LinkableSchema, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
+  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+  model<S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: AnchorConfig): ModelOutput<S>;
 
   immutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options?: AnchorOptions<S>
   ): Immutable<T>;
-  immutable<S extends LinkableSchema, T extends input<S>>(
+  immutable<S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
     options?: AnchorConfig
-  ): Immutable<output<S>>;
+  ): ImmutableOutput<S>;
 
   // Accessibility methods.
 

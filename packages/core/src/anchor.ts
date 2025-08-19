@@ -1,4 +1,3 @@
-import type { ZodType } from 'zod/v4';
 import { isArray, isObject } from '@beerush/utils';
 import type {
   AnchorConfig,
@@ -70,7 +69,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     return init;
   }
 
-  if (!(schemaOptions as ZodType)?._zod) {
+  if (!(schemaOptions as LinkableSchema)?._zod) {
     options = schemaOptions as AnchorOptions<S>;
   }
 

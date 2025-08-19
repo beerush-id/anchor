@@ -4,12 +4,12 @@ import {
   type AnchorOptions,
   captureStack,
   derive,
+  type LinkableSchema,
   microtask,
   type ObjLike,
   type StateUnsubscribe,
 } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
-import type { ZodType } from 'zod/v4';
 
 export const STORAGE_KEY = 'anchor';
 export const STORAGE_SYNC = new Map<string, ObjLike>();
@@ -106,7 +106,7 @@ export interface SessionFn {
    * @param {typeof SessionStorage} storageClass
    * @returns {T}
    */
-  <T extends ObjLike, S extends ZodType = ZodType>(
+  <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
     name: string,
     init: T,
     options?: AnchorOptions<S>,
@@ -125,7 +125,7 @@ export const STORAGE_SYNC_DELAY = 100;
 
 let storageChangeListened = false;
 
-export const session = (<T extends ObjLike, S extends ZodType = ZodType>(
+export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
   options?: AnchorOptions<S>,

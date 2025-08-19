@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, logger } from '../../src/index.js';
+import { anchor } from '../../src/index.js';
 
 describe('Anchor Core - Array Methods', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    errorSpy = vi.spyOn(logger as never as typeof console, 'error').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
