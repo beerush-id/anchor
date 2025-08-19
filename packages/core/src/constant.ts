@@ -17,10 +17,10 @@ export const ARRAY_MUTATIONS = [
 ] as const;
 
 export const LINKABLE = new Set(['array', 'object', 'map', 'set']);
-export const ANCHOR_CONFIG: AnchorConfig = {
+export const ANCHOR_CONFIG = {
   cloned: true,
   strict: false,
   deferred: true,
   recursive: true,
   immutable: false,
-};
+} satisfies AnchorConfig;

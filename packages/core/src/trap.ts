@@ -1,6 +1,14 @@
 import type { ZodArray, ZodObject, ZodType } from 'zod/v4';
-import type { KeyLike, Linkable, LinkableSchema, ObjLike, StateReferences } from './types.js';
-import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
+import type {
+  AnchorInternalFn,
+  KeyLike,
+  Linkable,
+  LinkableSchema,
+  ObjLike,
+  StateMetadata,
+  StateReferences,
+} from './types.js';
+import { CONTROLLER_REGISTRY, INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
@@ -25,14 +33,15 @@ import { isArray } from '@beerush/utils';
  * @throws {Error} When called on a non-reactive state object
  */
 export function createGetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
+  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
 
   if (!references) {
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const { link, schema, configs, mutator, subscribers, subscriptions } = references;
-  const { cloned, strict, deferred, immutable, recursive } = configs;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+  const { schema, subscribers, subscriptions } = meta;
+  const { link, mutator, configs } = references;
 
   if (init instanceof Set || init instanceof Map) {
     return (target: ObjLike, prop: KeyLike) => {
@@ -55,11 +64,11 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
 
     if (value === init) {
       captureStack.violation.circular(prop, getter);
-      return INIT_REGISTRY.get(init as WeakKey) as T;
+      return INIT_REGISTRY.get(init) as T;
     }
 
     if (INIT_REGISTRY.has(value)) {
-      value = INIT_REGISTRY.get(value as WeakKey) as Linkable;
+      value = INIT_REGISTRY.get(value) as Linkable;
     }
 
     // If the value is an array method, set method, or map method,
@@ -68,28 +77,21 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
       return mutator?.get(value);
     }
 
-    if (recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
+    if (configs.recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
       const childSchema = (
         isArray(init)
           ? (schema as never as ZodArray)?.unwrap?.()
           : (schema as never as ZodObject)?.shape?.[prop as string]
       ) as LinkableSchema;
 
-      value = anchor<T, LinkableSchema>(value as T, {
-        schema: childSchema,
-        cloned,
-        strict,
-        deferred,
-        immutable,
-        recursive,
-      });
+      value = (anchor as AnchorInternalFn)(value as T, { ...configs, schema: childSchema }, meta.root ?? meta, meta);
     }
 
     // Link if the value is a reactive state and there is an active subscription.
     // Separating this process from creation is necessary to make sure
     // reading an existing state is linked properly.
     if (CONTROLLER_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
-      if (!(recursive === 'flat' && Array.isArray(target))) {
+      if (!(configs.recursive === 'flat' && Array.isArray(target))) {
         link(prop, value);
       }
     }
@@ -119,14 +121,15 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
  * @throws {Error} When called on a non-reactive state object
  */
 export function createSetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
+  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
 
   if (!references) {
     throw new Error(`Set trap factory called on non-reactive state.`);
   }
 
-  const { id, unlink, schema, configs, subscribers, subscriptions } = references;
-  const { strict } = configs;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+  const { schema, subscribers, subscriptions } = meta;
+  const { unlink, configs } = references;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
     const current = Reflect.get(target, prop, receiver) as Linkable;
@@ -147,11 +150,11 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
           captureStack.error.validation(
             `Attempted to update property: "${prop as string}" of a state:`,
             result.error,
-            strict,
+            configs.strict,
             setter
           );
 
-          return !strict;
+          return !configs.strict;
         }
       }
     }
@@ -176,7 +179,7 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
           keys: [prop as string],
           value: target[prop],
         },
-        id
+        meta.id
       );
     }
 
@@ -204,14 +207,15 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
  * @throws {Error} When called on a non-reactive state object
  */
 export function createRemover<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
+  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
 
   if (!references) {
     throw new Error(`Delete trap factory called on non-reactive state.`);
   }
 
-  const { id, unlink, schema, configs, subscribers, subscriptions } = references;
-  const { strict } = configs;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+  const { schema, subscribers, subscriptions } = meta;
+  const { unlink, configs } = references;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     const childSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
@@ -223,11 +227,11 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
         captureStack.error.validation(
           `Attempted to delete property: "${prop as string}" of a state:`,
           result.error,
-          strict,
+          configs.strict,
           remover
         );
 
-        return !strict;
+        return !configs.strict;
       }
     }
 
@@ -244,7 +248,7 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
-      broadcast(subscribers, target, { type: 'delete', prev: current, keys: [prop] }, id);
+      broadcast(subscribers, target, { type: 'delete', prev: current, keys: [prop] }, meta.id);
     }
 
     return true;

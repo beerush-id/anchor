@@ -112,7 +112,7 @@ describe('Anchor Core - Edge Cases', () => {
       const state = anchor({ count: 1 });
       subscriptions.set(state, {} as never);
 
-      const link = createLinkFactory({ subscriptions } as never);
+      const link = createLinkFactory({}, { subscriptions } as never);
       const result = link('', state);
 
       expect(result).toBeUndefined();

@@ -7,7 +7,9 @@ import type {
   Linkable,
   LinkableSchema,
   ObjLike,
+  State,
   StateController,
+  StateMetadata,
   StateReferences,
   StateSubscriberList,
   StateSubscriptionMap,
@@ -16,6 +18,7 @@ import { ANCHOR_CONFIG } from './constant.js';
 import {
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
+  META_REGISTRY,
   REFERENCE_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
@@ -45,6 +48,8 @@ import { softClone } from './utils/clone.js';
  * @param init The initial value to anchor.
  * @param schemaOptions
  * @param options Optional configuration for anchoring, including schema, strict mode, and recursive anchoring.
+ * @param root - The root state's metadata.
+ * @param parent - The parent state's metadata.
  * @returns The proxied, reactive version of the input value.
  * @throws If `strict` mode is enabled and schema validation fails during initialization.
  * @throws If `strict` mode is enabled and schema validation fails during property updates or array mutations.
@@ -52,16 +57,18 @@ import { softClone } from './utils/clone.js';
 function anchorFn<T extends Linkable, S extends LinkableSchema>(
   init: T,
   schemaOptions?: S | AnchorOptions<S>,
-  options?: AnchorOptions<S>
-): T {
-  if (CONTROLLER_REGISTRY.has(init as WeakKey)) {
-    // Return itself if the given object is a reactive state.
+  options?: AnchorOptions<S>,
+  parent?: StateMetadata<Linkable>,
+  root?: StateMetadata<Linkable>
+): State<T> {
+  // Return itself if the given object is a reactive state.
+  if (CONTROLLER_REGISTRY.has(init)) {
     return init;
   }
 
-  if (INIT_REGISTRY.has(init as WeakKey)) {
-    // Return the existing reactive state if the given init is already initialized.
-    return INIT_REGISTRY.get(init as WeakKey) as T;
+  // Return the existing reactive state if the given init is already initialized.
+  if (INIT_REGISTRY.has(init)) {
+    return INIT_REGISTRY.get(init) as T;
   }
 
   if (!linkable(init)) {
@@ -73,35 +80,27 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     options = schemaOptions as AnchorOptions<S>;
   }
 
-  // @TODO: Revisit the non-deferred implementation once the core is stable.
-  // Force enable deferred mode and make eager mode less priority since eager mode is mostly poor for performance.
-  if (options?.deferred === false) {
-    options.deferred = true;
-  }
-
-  const id = shortId();
-  const {
-    strict = ANCHOR_CONFIG.strict,
-    cloned = ANCHOR_CONFIG.cloned,
-    deferred = ANCHOR_CONFIG.deferred,
-    recursive = ANCHOR_CONFIG.recursive,
-    immutable = ANCHOR_CONFIG.immutable,
-  } = (options ?? {}) as AnchorConfig;
-
+  const cloned = options?.cloned ?? ANCHOR_CONFIG.cloned;
   const schema = (schemaOptions as LinkableSchema)?._zod
     ? (schemaOptions as S)
     : (schemaOptions as AnchorOptions<S>)?.schema;
-  const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive, immutable };
+  const configs: AnchorOptions<S> = {
+    cloned: false,
+    deferred: true,
+    strict: options?.strict ?? ANCHOR_CONFIG.strict,
+    recursive: options?.recursive ?? ANCHOR_CONFIG.recursive,
+    immutable: options?.immutable ?? ANCHOR_CONFIG.immutable,
+  };
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
 
-  if (cloned && !immutable) {
-    init = softClone(init, recursive);
+  if (cloned && !configs.immutable) {
+    init = softClone(init, configs.recursive);
   }
 
   if (schema) {
     if (!isObject(init) && !isArray(init)) {
-      captureStack.violation.schema('(object | array)', schema.type, strict as false, anchorFn);
+      captureStack.violation.schema('(object | array)', schema.type, configs.strict as false, anchorFn);
     }
 
     try {
@@ -114,28 +113,45 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
           Object.assign(init, result.data);
         }
       } else {
-        captureStack.error.validation('Attempted to initialize state with schema:', result.error, strict, anchorFn);
+        captureStack.error.validation(
+          'Attempted to initialize state with schema:',
+          result.error,
+          configs.strict,
+          anchorFn
+        );
       }
     } catch (error) {
-      captureStack.error.validation('Something went wrong when validating schema.', error as Error, strict, anchorFn);
+      captureStack.error.validation(
+        'Something went wrong when validating schema.',
+        error as Error,
+        configs.strict,
+        anchorFn
+      );
     }
   }
 
-  let state: T = init;
-
-  const link = createLinkFactory({ id, init, subscribers, subscriptions });
-  const unlink = createUnlinkFactory({ id, subscriptions });
-
-  const references: StateReferences<T, S> = {
-    id,
-    link,
-    unlink,
+  const meta: StateMetadata<T, S> = {
+    id: shortId(),
+    cloned,
     schema,
     configs,
     subscribers,
     subscriptions,
+    root,
+    parent,
   };
-  REFERENCE_REGISTRY.set(init as WeakKey, references as never as StateReferences<object, S>);
+  META_REGISTRY.set(init, meta as never as StateMetadata);
+
+  const link = createLinkFactory(init, meta);
+  const unlink = createUnlinkFactory(subscriptions);
+
+  const references: StateReferences<T, S> = {
+    meta,
+    link,
+    unlink,
+    configs,
+  };
+  REFERENCE_REGISTRY.set(init, references as never as StateReferences<object, S>);
 
   if (Array.isArray(init)) {
     references.mutator = createArrayMutator(init, references as never as StateReferences<unknown[], S>);
@@ -144,30 +160,20 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   }
 
   const proxyHandler = createProxyHandler<T>(init, references);
-  state = new Proxy(state as ObjLike, proxyHandler) as T;
+  const state = new Proxy(init as ObjLike, proxyHandler) as State<T>;
 
-  const controller: StateController<T> = {
-    id,
-    destroy: createDestroyFactory({ id, init, state, subscribers, subscriptions }),
-    subscribe: createSubscribeFactory({
-      id,
-      init,
-      link,
-      state,
-      unlink,
-      deferred,
-      recursive,
-      subscribers,
-      subscriptions,
-    }),
+  const controller: StateController<T, S> = {
+    meta,
+    destroy: createDestroyFactory(init, state, meta),
+    subscribe: createSubscribeFactory(init, state, meta, { link, unlink }),
   };
 
   // Register the state with its controller for global access.
-  INIT_REGISTRY.set(init as WeakKey, state as WeakKey);
-  STATE_REGISTRY.set(state as WeakKey, init as WeakKey);
-  CONTROLLER_REGISTRY.set(state as WeakKey, controller as StateController<unknown>);
-  SUBSCRIBER_REGISTRY.set(state as WeakKey, subscribers as never);
-  SUBSCRIPTION_REGISTRY.set(state as WeakKey, subscriptions);
+  INIT_REGISTRY.set(init, state);
+  STATE_REGISTRY.set(state, init);
+  CONTROLLER_REGISTRY.set(state, controller as never);
+  SUBSCRIBER_REGISTRY.set(state, subscribers as never);
+  SUBSCRIPTION_REGISTRY.set(state, subscriptions);
 
   // Return the proxied state object
   return state;
@@ -204,8 +210,8 @@ anchorFn.raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
  * @param {T} state
  * @returns {T}
  */
-anchorFn.get = <T>(state: T): T => {
-  const target = STATE_REGISTRY.get(state as WeakKey);
+anchorFn.get = <T extends State>(state: T): T => {
+  const target = STATE_REGISTRY.get(state);
 
   if (!target) {
     const error = new Error('State does not exist.');
@@ -226,8 +232,8 @@ anchorFn.get = <T>(state: T): T => {
  * @param {T} state - The reactive state to create a snapshot from.
  * @returns {T} A deep copy of the underlying object.
  */
-anchorFn.snapshot = <T>(state: T): T => {
-  const target = STATE_REGISTRY.get(state as WeakKey);
+anchorFn.snapshot = <T extends State>(state: T): T => {
+  const target = STATE_REGISTRY.get(state);
 
   if (!target) {
     const error = new Error('State does not exist.');

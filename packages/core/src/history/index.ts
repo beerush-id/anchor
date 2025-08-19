@@ -49,20 +49,8 @@ export type HistoryState = {
  * @param options.debounce - Debounce time in milliseconds for collecting changes (default: 100ms)
  * @param options.maxHistory - Maximum number of history states to keep (default: 100)
  * @returns A HistoryState object with methods and properties for history management
- *
- * @example
- * ```typescript
- * const state = anchor({ count: 0 });
- * const history = history(state);
- *
- * state.count = 1;
- * state.count = 2;
- *
- * history.backward(); // Undo last change, state.count becomes 1
- * history.forward();  // Redo change, state.count becomes 2 again
- * ```
  */
-export function history<T>(state: T, options?: HistoryOptions): HistoryState {
+export function history<T extends Linkable>(state: T, options?: HistoryOptions): HistoryState {
   const { maxHistory = DEFAULT_HISTORY_OPTION.maxHistory, debounce = DEFAULT_HISTORY_OPTION.debounce } = options ?? {};
 
   const backwardList: StateChange[] = [];

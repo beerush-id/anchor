@@ -1,13 +1,13 @@
 import type {
-  DestroyFactoryInit,
   KeyLike,
   Linkable,
-  LinkFactoryInit,
   ObjLike,
+  State,
+  StateMetadata,
   StateSubscribeFn,
   StateSubscriber,
+  StateSubscriptionMap,
   SubscribeFactoryInit,
-  UnlinkFactoryInit,
 } from './types.js';
 import { broadcast } from './internal.js';
 import {
@@ -30,29 +30,20 @@ import { softEntries } from './utils/index.js';
  * includes the child's key.
  *
  * @template T - The type of the parent state
- * @param {Object} options - Configuration object for the link factory
- * @param {string} options.id - Unique identifier for the link factory
- * @param {T} options.init - Initial state value of the parent
- * @param {Set<StateSubscriber<T>>} options.subscribers - Set of subscriber functions for the parent state
- * @param {Map<Linkable, Function>} options.subscriptions - Map tracking active subscriptions to child states
+ * @param init - The initial value of the parent state
+ * @param meta - The metadata associated with the parent state
  * @returns {(childPath: KeyLike, childState: Linkable, receiver?: Linkable) => void}
  *          A function that links a child state to the parent state
- *
- * @example
- * const linkFactory = createLinkFactory({ id: 'myState', init: {}, subscribers: new Set(), subscriptions: new Map() });
- * linkFactory('childKey', childStateInstance);
  */
-export function createLinkFactory<T>({
-  id,
-  init,
-  subscribers,
-  subscriptions,
-}: LinkFactoryInit<T>): (childPath: KeyLike, childState: Linkable, receiver?: Linkable) => void {
+export function createLinkFactory<T extends Linkable>(
+  init: T,
+  meta: StateMetadata<T>
+): (childPath: KeyLike, childState: Linkable, receiver?: Linkable) => void {
   return (childPath: KeyLike, childState: Linkable, receiver?: Linkable): void => {
-    if (subscriptions.has(childState)) return;
+    if (meta.subscriptions.has(childState)) return;
 
     // Get the controller for the child state
-    const ctrl = CONTROLLER_REGISTRY.get(childState as WeakKey);
+    const ctrl = CONTROLLER_REGISTRY.get(childState);
 
     // If the child state has a valid controller with subscribe method
     if (typeof ctrl?.subscribe === 'function') {
@@ -63,19 +54,19 @@ export function createLinkFactory<T>({
           keys.unshift(childPath);
 
           // Broadcast the event with modified path to include the key
-          broadcast(subscribers, init, { ...event, keys }, emitter);
+          broadcast(meta.subscribers, init, { ...event, keys }, emitter);
         }
       };
 
       Object.defineProperty(childHandler, '__internal_id__', {
-        value: id,
+        value: meta.id,
       });
 
       // Subscribe to the child state changes
       const childUnsubscribe = ctrl.subscribe(childHandler, receiver);
 
       // Store the unsubscribe function for cleanup
-      subscriptions.set(childState, childUnsubscribe);
+      meta.subscriptions.set(childState, childUnsubscribe);
     }
   };
 }
@@ -88,15 +79,14 @@ export function createLinkFactory<T>({
  * The unlinking process involves calling the stored unsubscribe function for the child state and
  * removing the subscription reference from the tracking map.
  *
- * @param {Object} options - Configuration object for the unlink factory
- * @param {Map<Linkable, Function>} options.subscriptions - Map tracking active subscriptions to child states
+ * @param {StateSubscriptionMap} subscriptions - Map tracking active subscriptions to child states
  * @returns {(childState: Linkable) => void} A function that unlinks a child state from the parent state
  *
  * @example
  * const unlinkFactory = createUnlinkFactory({ subscriptions: new Map() });
  * unlinkFactory(childStateInstance);
  */
-export function createUnlinkFactory({ subscriptions }: UnlinkFactoryInit): (childState: Linkable) => void {
+export function createUnlinkFactory(subscriptions: StateSubscriptionMap): (childState: Linkable) => void {
   return (childState: Linkable) => {
     const unsubscribe = subscriptions.get(childState);
 
@@ -117,27 +107,19 @@ export function createUnlinkFactory({ subscriptions }: UnlinkFactoryInit): (chil
  * up all child state subscriptions.
  *
  * @template T - The type of the state being subscribed to
- * @param {SubscribeFactoryInit<T>} options - Configuration object for the subscribe factory
- * @param {T} options.init - Initial state value
- * @param {Linkable} options.state - The state object being subscribed to
- * @param {string} options.recursive - Controls how nested states are handled ('flat' to skip nesting)
- * @param {(childPath: KeyLike, childState: Linkable, receiver?: Linkable) => void} options.link - Function to link child states
- * @param {Set<StateSubscriber<T>>} options.subscribers - Set of active subscriber functions
- * @param {Map<Linkable, Function>} options.subscriptions - Map tracking active child state subscriptions
- * @param {(childState: Linkable) => void} options.unlink - Function to unlink child states
+ * @param init - The initial state value
+ * @param state - The state associated with the init
+ * @param meta - The metadata associated with the init
+ * @param helper - Utilities to handle the subscriptions
  * @returns {StateSubscribeFn<T>} A function that subscribes a handler to state changes
- *
- * @example
- * const subscribeFn = createSubscribeFactory({ init: {}, state: stateInstance, ... });
- * const unsubscribe = subscribeFn((snapshot, event) => {
- *   console.log('State changed:', snapshot, event);
- * });
- *
- * // To unsubscribe later
- * unsubscribe();
  */
-export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): StateSubscribeFn<T> {
-  const { init, state, recursive, link, subscribers, subscriptions, unlink } = options;
+export function createSubscribeFactory<T extends Linkable>(
+  init: T,
+  state: State<T>,
+  meta: StateMetadata<T>,
+  helper: SubscribeFactoryInit
+): StateSubscribeFn<T> {
+  const { subscribers, subscriptions } = meta;
 
   const subscribeFn = (handler: StateSubscriber<T>, receiver?: Linkable) => {
     // Immediately notify the handler with the current state.
@@ -158,7 +140,7 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
         if (subscriptions.size) {
           // Iterate over a copy of the subscriptions map to safely unlink
           subscriptions.forEach((_, val) => {
-            unlink(val as Linkable);
+            helper.unlink(val as Linkable);
           });
         }
       }
@@ -179,12 +161,12 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
     // Add the handler to the list of active subscribers
     subscribers.add(handler);
 
-    if (!(Array.isArray(init) && recursive === 'flat')) {
+    if (!(Array.isArray(init) && meta.configs.recursive === 'flat')) {
       for (const [key, value] of softEntries(init as ObjLike)) {
         const childState = INIT_REGISTRY.get(value as Linkable) as Linkable;
 
         if (childState && !subscriptions.has(childState) && childState !== receiver) {
-          link(key, childState, (receiver ?? state) as Linkable);
+          helper.link(key, childState, (receiver ?? state) as Linkable);
         }
       }
     }
@@ -207,23 +189,17 @@ export function createSubscribeFactory<T>(options: SubscribeFactoryInit<T>): Sta
  * This cleanup process ensures no memory leaks and properly disconnects the state from the reactive system.
  *
  * @template T - The type of the state being destroyed
- * @param {Object} options - Configuration object for the destroy factory
- * @param {T} options.init - Initial state value that will be removed from registries
- * @param {Linkable} options.state - The state object to be destroyed and removed from registries
- * @param {Set<StateSubscriber<T>>} options.subscribers - Set of subscriber functions to be cleared
- * @param {Map<Linkable, Function>} options.subscriptions - Map of active subscriptions to be unsubscribed
+ * @param init - Initial state value
+ * @param state - The state object to be destroyed and removed from registries
+ * @param subscribers - Set of subscriber functions to be cleared
+ * @param subscriptions - Map of active subscriptions to be unsubscribed
  * @returns {() => void} A function that destroys the state and cleans up all resources
- *
- * @example
- * const destroyFn = createDestroyFactory({ init: initialState, state: stateInstance, subscribers: new Set(), subscriptions: new Map() });
- * destroyFn(); // Completely destroys the state and cleans up
  */
-export function createDestroyFactory<T>({
-  init,
-  state,
-  subscribers,
-  subscriptions,
-}: DestroyFactoryInit<T>): () => void {
+export function createDestroyFactory<T extends Linkable>(
+  init: T,
+  state: State<T>,
+  { subscribers, subscriptions }: StateMetadata<T>
+): () => void {
   return () => {
     for (const unsubscribe of subscriptions.values()) {
       unsubscribe?.();
@@ -234,12 +210,12 @@ export function createDestroyFactory<T>({
     subscriptions.clear();
 
     // Remove the state from STATE_REGISTRY and STATE_LINK.
-    INIT_REGISTRY.delete(init as WeakKey);
-    REFERENCE_REGISTRY.delete(init as WeakKey);
+    INIT_REGISTRY.delete(init);
+    REFERENCE_REGISTRY.delete(init);
 
-    STATE_REGISTRY.delete(state as WeakKey);
-    CONTROLLER_REGISTRY.delete(state as WeakKey);
-    SUBSCRIBER_REGISTRY.delete(state as WeakKey);
-    SUBSCRIPTION_REGISTRY.delete(state as WeakKey);
+    STATE_REGISTRY.delete(state);
+    CONTROLLER_REGISTRY.delete(state);
+    SUBSCRIBER_REGISTRY.delete(state);
+    SUBSCRIPTION_REGISTRY.delete(state);
   };
 }

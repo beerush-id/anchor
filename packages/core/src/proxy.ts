@@ -53,7 +53,7 @@ export function createProxyHandler<T extends Linkable>(init: T, references: Stat
     get: getter,
     set: createSetter(init),
     deleteProperty: createRemover(init),
-  } as ProxyHandler<ObjLike>;
+  } as ProxyHandler<Linkable>;
 }
 
 /**
@@ -69,27 +69,19 @@ export function createProxyHandler<T extends Linkable>(init: T, references: Stat
  * @param state - The immutable state to create a mutable proxy for
  * @param contracts - Optional array of allowed mutation keys
  * @returns A mutable proxy of the state with contract enforcement
- *
- * @example
- * ```typescript
- * const state = anchor({ count: 0, name: 'test' });
- * const mutable = writeContract(state, ['count']); // Only 'count' can be mutated
- * mutable.count = 1; // Allowed
- * mutable.name = 'new'; // Throws contract violation
- * ```
  */
 export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
   state: T,
   contracts?: K
 ): MutablePart<T, K> => {
-  const init = STATE_REGISTRY.get(state as WeakKey) as Linkable;
+  const init = STATE_REGISTRY.get(state) as Linkable;
 
   if (typeof init === 'undefined') {
     captureStack.contractViolation.init(writeContract);
     return state as MutablePart<T, K>;
   }
 
-  const references = REFERENCE_REGISTRY.get(init as WeakKey) as StateReferences<Linkable, LinkableSchema>;
+  const references = REFERENCE_REGISTRY.get(init) as StateReferences;
   const newOptions = {
     ...references,
     configs: {
@@ -164,6 +156,5 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
   };
 
   const proxied = new Proxy(init, handler) as MutablePart<T, K>;
-
   return proxied;
 };

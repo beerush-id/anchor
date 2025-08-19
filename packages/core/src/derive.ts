@@ -1,4 +1,12 @@
-import type { ObjLike, PipeTransformer, StateController, StateSubscriber, StateUnsubscribe } from './types.js';
+import type {
+  Linkable,
+  ObjLike,
+  PipeTransformer,
+  State,
+  StateController,
+  StateSubscriber,
+  StateUnsubscribe,
+} from './types.js';
 import { CONTROLLER_REGISTRY } from './registry.js';
 import { isFunction } from '@beerush/utils';
 import { assign } from './helper.js';
@@ -13,8 +21,8 @@ import { captureStack } from './exception.js';
  * @param handler The subscriber function to call on state changes.
  * @returns A function to unsubscribe from the derived state.
  */
-function deriveFn<T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe {
-  const ctrl = CONTROLLER_REGISTRY.get(state as WeakKey);
+function deriveFn<T extends Linkable>(state: State<T>, handler: StateSubscriber<T>): StateUnsubscribe {
+  const ctrl = CONTROLLER_REGISTRY.get(state);
 
   if (typeof ctrl?.subscribe !== 'function') {
     captureStack.warning.external(
@@ -58,8 +66,8 @@ deriveFn.log = <T>(state: T): StateUnsubscribe => {
  * @param state The anchored state object.
  * @returns The `StateController` for the given state, or `undefined` if not found.
  */
-deriveFn.resolve = <T>(state: T): StateController<T> | undefined => {
-  return CONTROLLER_REGISTRY.get(state as WeakKey) as StateController<T>;
+deriveFn.resolve = <T extends Linkable>(state: State<T>): StateController<T> | undefined => {
+  return CONTROLLER_REGISTRY.get(state) as never;
 };
 
 /**
@@ -75,7 +83,7 @@ deriveFn.resolve = <T>(state: T): StateController<T> | undefined => {
  * @returns A function to unsubscribe from the piping operation.
  * @throws {Error} If either source or target is not an object.
  */
-deriveFn.pipe = <Source, Target>(
+deriveFn.pipe = <Source extends Linkable, Target extends Linkable>(
   source: Source,
   target: Target,
   transform?: PipeTransformer<Source, Target>
@@ -98,9 +106,9 @@ deriveFn.pipe = <Source, Target>(
 export interface DeriveFn {
   <T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe;
 
-  log<T>(state: T): StateUnsubscribe;
+  log<T extends Linkable>(state: State<T>): StateUnsubscribe;
   pipe<Source, Target>(source: Source, target: Target, transform?: PipeTransformer<Source, Target>): StateUnsubscribe;
-  resolve<T>(state: T): StateController<T> | undefined;
+  resolve<T extends Linkable>(state: State<T>): StateController<T> | undefined;
 }
 
 export const derive = deriveFn as DeriveFn;

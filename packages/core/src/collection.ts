@@ -1,11 +1,13 @@
 import { broadcast, linkable } from './internal.js';
-import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
+import { CONTROLLER_REGISTRY, INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import type {
+  AnchorInternalFn,
   KeyLike,
   Linkable,
   LinkableSchema,
   MethodLike,
   SetMutation,
+  StateMetadata,
   StateMutation,
   StateReferences,
 } from './types.js';
@@ -47,14 +49,16 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
   init: T,
   options?: StateReferences<T, S>
 ) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
+  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
 
   if (!references) {
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const { id, link, unlink, configs, subscribers, subscriptions } = references;
-  const { cloned, strict, deferred, immutable, recursive } = configs;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+  const { subscribers, subscriptions } = meta;
+  const { link, unlink, configs } = references;
+  const { deferred, immutable, recursive } = configs;
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
 
@@ -65,17 +69,11 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       let value = getFn.call(init, key) as Linkable;
 
       if (INIT_REGISTRY.has(value as Linkable)) {
-        value = INIT_REGISTRY.get(value as WeakKey) as Linkable;
+        value = INIT_REGISTRY.get(value) as Linkable;
       }
 
       if (!CONTROLLER_REGISTRY.has(value as Linkable) && linkable(value)) {
-        value = anchor(value, {
-          cloned,
-          strict,
-          deferred,
-          recursive,
-          immutable,
-        });
+        value = (anchor as AnchorInternalFn)(value, { ...configs }, meta.root ?? meta, meta);
       }
 
       if (CONTROLLER_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
@@ -116,8 +114,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
       methodFn.apply(init, method === 'set' ? [keyValue, newValue] : [newValue]);
 
-      if (INIT_REGISTRY.has(oldValue as WeakKey)) {
-        const childState = INIT_REGISTRY.get(oldValue as WeakKey) as Linkable;
+      if (INIT_REGISTRY.has(oldValue as Linkable)) {
+        const childState = INIT_REGISTRY.get(oldValue as Linkable) as Linkable;
 
         if (subscriptions.has(childState)) {
           unlink(childState);
@@ -134,12 +132,12 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             keys: method === 'set' ? [keyValue] : [],
             value: newValue,
           },
-          id
+          meta.id
         );
       }
 
       // Collection mutation will always return itself for chaining.
-      return INIT_REGISTRY.get(init as WeakKey);
+      return INIT_REGISTRY.get(init);
     };
 
     // Object.assign(init, { [method]: targetFn });
@@ -170,7 +168,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             prev: current,
             keys: self instanceof Map ? [keyValue as string] : [],
           },
-          id
+          meta.id
         );
 
         return result;
@@ -200,7 +198,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
               prev: self instanceof Map ? entries : values,
               keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
             },
-            id
+            meta.id
           );
         }
 

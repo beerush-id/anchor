@@ -1,5 +1,13 @@
-import type { Linkable, LinkableSchema, MethodLike, ObjLike, StateMutation, StateReferences } from './types.js';
-import { INIT_REGISTRY, REFERENCE_REGISTRY } from './registry.js';
+import type {
+  Linkable,
+  LinkableSchema,
+  MethodLike,
+  ObjLike,
+  StateMetadata,
+  StateMutation,
+  StateReferences,
+} from './types.js';
+import { INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY } from './registry.js';
 import { ARRAY_MUTATIONS } from './constant.js';
 import { broadcast } from './internal.js';
 import { captureStack } from './exception.js';
@@ -52,23 +60,24 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
   init: T,
   options?: StateReferences<T, S>
 ) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
+  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
 
   if (!references) {
     throw new Error(`Array trap factory called on non-reactive state.`);
   }
 
-  const { id, unlink, schema, configs, subscribers, subscriptions } = references;
-  const { strict, immutable } = configs;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+  const { schema, subscribers, subscriptions } = meta;
+  const { unlink, configs } = references;
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
 
-  if (immutable) {
+  if (configs.immutable) {
     for (const method of ARRAY_MUTATIONS) {
       const originFn = (init as Array<unknown>)[method] as (...args: unknown[]) => unknown;
       const targetFn: MethodLike = (...args) => {
         captureStack.violation.methodCall(method, targetFn);
-        return (mockReturn[method as never] as typeof targetFn)?.(INIT_REGISTRY.get(init as WeakKey), ...args);
+        return (mockReturn[method as never] as typeof targetFn)?.(INIT_REGISTRY.get(init), ...args);
       };
 
       mutator.set(originFn, targetFn);
@@ -129,7 +138,7 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
           captureStack.error.validation(
             `Attempted to mutate: "${method}" of an array with invalid input:`,
             validation.error,
-            strict,
+            configs.strict,
             targetFn
           );
 
@@ -171,11 +180,11 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
           keys: [],
           value: args,
         },
-        id
+        meta.id
       );
 
       if (result === init) {
-        return INIT_REGISTRY.get(init as WeakKey);
+        return INIT_REGISTRY.get(init);
       }
 
       return result;

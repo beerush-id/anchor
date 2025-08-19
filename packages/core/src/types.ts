@@ -34,10 +34,35 @@ export type AnchorOptions<S extends LinkableSchema = LinkableSchema> = AnchorCon
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
 export type StateSubscribeFn<T> = (handle: StateSubscriber<T>, receiver?: Linkable) => StateUnsubscribe;
-export type StateSubscriberList<T> = Set<StateSubscriber<T>>;
+export type StateSubscriberList<T extends Linkable = Linkable> = Set<StateSubscriber<T>>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
 export type StateLinkFn = (childKey: KeyLike, childState: Linkable, receiver?: Linkable) => void;
 export type StateUnlinkFn = (childState: Linkable) => void;
+
+export type State<T extends Linkable = Linkable> = T;
+export type StateMetadata<
+  T extends Linkable = LinkableSchema,
+  S extends LinkableSchema = LinkableSchema,
+  RootType extends Linkable = Linkable,
+  RootSchema extends LinkableSchema = LinkableSchema,
+  ParentType extends Linkable = Linkable,
+  ParentSchema extends LinkableSchema = LinkableSchema,
+> = {
+  id: string;
+  cloned: boolean;
+  configs: AnchorConfig;
+  subscribers: StateSubscriberList<T>;
+  subscriptions: StateSubscriptionMap;
+  root?: StateMetadata<RootType, RootSchema>;
+  parent?: StateMetadata<ParentType, ParentSchema>;
+  schema?: S;
+};
+
+export type StateController<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
+  meta: StateMetadata<T, S>;
+  destroy: StateUnsubscribe;
+  subscribe: StateSubscribeFn<T>;
+};
 
 export type StatePropGetter<T extends Linkable = Linkable> = (
   target: T,
@@ -45,15 +70,12 @@ export type StatePropGetter<T extends Linkable = Linkable> = (
   receiver?: unknown
 ) => T[keyof T];
 
-export type StateReferences<T extends Linkable, S extends LinkableSchema> = {
-  id: string;
+export type StateReferences<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
+  meta: StateMetadata<T, S>;
   link: StateLinkFn;
   unlink: StateUnlinkFn;
-  configs: AnchorOptions<S>;
-  subscribers: StateSubscriberList<T>;
-  subscriptions: StateSubscriptionMap;
+  configs: AnchorConfig;
   getter?: StatePropGetter<T>;
-  schema?: S;
   mutator?: WeakMap<WeakKey, MethodLike>;
 };
 
@@ -64,34 +86,13 @@ export type StateChange = {
   value?: unknown;
   emitter?: string;
 };
-export type StateController<T> = {
-  id: string;
-  destroy: StateUnsubscribe;
-  subscribe: StateSubscribeFn<T>;
-};
 
 export type PipeTransformer<T, R> = (value: T) => Partial<R>;
 
-export type LinkFactoryInit<T> = {
-  id: string;
-  init: T;
-  subscribers: StateSubscriberList<T>;
-  subscriptions: StateSubscriptionMap;
+export type SubscribeFactoryInit = {
+  link: StateLinkFn;
+  unlink: StateUnlinkFn;
 };
-export type UnlinkFactoryInit = {
-  id: string;
-  subscriptions: StateSubscriptionMap;
-};
-
-export type DestroyFactoryInit<T> = LinkFactoryInit<T> & {
-  state: T;
-};
-export type SubscribeFactoryInit<T> = AnchorConfig &
-  DestroyFactoryInit<T> &
-  LinkFactoryInit<T> & {
-    link: StateLinkFn;
-    unlink: StateUnlinkFn;
-  };
 
 export type Immutable<T> = T extends MethodLike
   ? T
@@ -164,7 +165,7 @@ export interface AnchorFn {
    * @param options - Configuration options for the state
    * @returns Reactive state object
    */
-  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): State<T>;
 
   /**
    * Creates a reactive state with schema validation.
@@ -199,7 +200,7 @@ export interface AnchorFn {
    * @param options - Configuration options
    * @returns Raw reactive state object
    */
-  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): State<T>;
 
   /**
    * Creates a flat reactive state that only tracks top-level properties.
@@ -208,7 +209,7 @@ export interface AnchorFn {
    * @param options - Configuration options
    * @returns Flat reactive array state
    */
-  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): State<T>;
 
   /**
    * Creates a reactive state with schema validation.
@@ -254,7 +255,7 @@ export interface AnchorFn {
    * @param state - The reactive state
    * @returns Current state value
    */
-  get<T>(state: T): T;
+  get<T extends Linkable>(state: State<T>): T;
 
   /**
    * Creates a snapshot of the current state.
@@ -262,7 +263,7 @@ export interface AnchorFn {
    * @param state - The reactive state
    * @returns State snapshot
    */
-  snapshot<T>(state: T): T;
+  snapshot<T extends Linkable>(state: State<T>): T;
 
   /**
    * Makes a readonly state writable.
@@ -317,3 +318,10 @@ export interface AnchorFn {
    */
   configure(config: Partial<AnchorConfig>): void;
 }
+
+export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(
+  init: T,
+  options: AnchorOptions<S>,
+  root?: StateMetadata,
+  parent?: StateMetadata
+) => State<T>;
