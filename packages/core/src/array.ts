@@ -31,6 +31,23 @@ const mockReturn = {
   },
 };
 
+/**
+ * Creates a mutator for an array that handles state changes and validation.
+ *
+ * This function creates a WeakMap of method proxies for array mutation methods.
+ * It handles both mutable and immutable array operations, including:
+ * - Validation of new items against a schema
+ * - Broadcasting of state changes to subscribers
+ * - Proper linking/unlinking of array elements
+ * - Handling of immutable arrays by returning mock values
+ *
+ * @template T - The type of the array
+ * @template S - The schema type for validation
+ * @param init - The initial array state
+ * @param options - Optional state references containing schema, configs, and subscribers
+ * @returns A WeakMap mapping original array methods to their proxied implementations
+ * @throws Error if called on a non-reactive state (when no references are found)
+ */
 export function createArrayMutator<T extends unknown[], S extends LinkableSchema>(
   init: T,
   options?: StateReferences<T, S>

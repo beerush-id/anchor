@@ -216,9 +216,15 @@ anchorFn.get = <T>(state: T): T => {
 };
 
 /**
- * This function is used to create a snapshot of the state.
- * @param {T} state
- * @returns {T}
+ * Creates a deep copy snapshot of the given state.
+ *
+ * This function retrieves the underlying raw object from the state registry
+ * and returns a structured clone of it. If the state is not found in the
+ * registry, an error is logged.
+ *
+ * @template T The type of the state.
+ * @param {T} state - The reactive state to create a snapshot from.
+ * @returns {T} A deep copy of the underlying object.
  */
 anchorFn.snapshot = <T>(state: T): T => {
   const target = STATE_REGISTRY.get(state as WeakKey);

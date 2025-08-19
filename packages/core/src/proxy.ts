@@ -14,6 +14,19 @@ import { REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
 
+/**
+ * Creates a ProxyHandler for the given state object based on its mutability configuration.
+ *
+ * This function generates a proxy handler that either enforces immutability (by capturing
+ * violations when attempting to set or delete properties) or allows mutations through
+ * appropriate setter and remover functions. The handler is used to create a proxy that
+ * wraps the initial state object.
+ *
+ * @template T - The type of the state object
+ * @param init - The initial state object to be proxied
+ * @param references - State references containing configuration and utility functions
+ * @returns A ProxyHandler configured according to the immutability settings
+ */
 export function createProxyHandler<T extends Linkable>(init: T, references: StateReferences<T, LinkableSchema>) {
   const { immutable } = references.configs;
 
@@ -43,6 +56,28 @@ export function createProxyHandler<T extends Linkable>(init: T, references: Stat
   } as ProxyHandler<ObjLike>;
 }
 
+/**
+ * Creates a mutable proxy of an immutable state with optional contract restrictions.
+ *
+ * This function takes an immutable state and returns a mutable proxy that allows controlled
+ * mutations based on the provided contract. If no contract is provided, all mutations are allowed.
+ * The proxy maintains the same interface as the original state but enforces contract violations
+ * when accessing or modifying properties not listed in the contract.
+ *
+ * @template T - The type of the state object
+ * @template K - The type of the mutation key array
+ * @param state - The immutable state to create a mutable proxy for
+ * @param contracts - Optional array of allowed mutation keys
+ * @returns A mutable proxy of the state with contract enforcement
+ *
+ * @example
+ * ```typescript
+ * const state = anchor({ count: 0, name: 'test' });
+ * const mutable = writeContract(state, ['count']); // Only 'count' can be mutated
+ * mutable.count = 1; // Allowed
+ * mutable.name = 'new'; // Throws contract violation
+ * ```
+ */
 export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
   state: T,
   contracts?: K

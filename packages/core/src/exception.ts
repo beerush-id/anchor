@@ -267,6 +267,18 @@ export const captureStack = {
   },
 };
 
+/**
+ * Shifts the stack trace of an error to exclude specified stack frames.
+ *
+ * This function modifies the stack trace of the provided error object by
+ * removing stack frames associated with the caller and any functions
+ * specified in the excludedStacks array. It uses Error.captureStackTrace
+ * when available (e.g., in Node.js environments).
+ *
+ * @param error - The error object whose stack trace will be modified
+ * @param caller - The function that should appear as the top of the stack trace
+ * @param excludedStacks - An array of functions whose stack frames should be removed
+ */
 function shiftStack(error: Error, caller: unknown, excludedStacks: unknown[]) {
   if (excludedStacks.length) {
     Error.captureStackTrace?.(error, caller as () => void);

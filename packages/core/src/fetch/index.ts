@@ -30,9 +30,21 @@ export type FetchState<T> = {
 /**
  * Create a reactive fetch state object.
  * Reactive fetch state object will sync with fetch response.
- * @param {T} init
- * @param {FetchOptions<S>} options
- * @returns {FetchState<T>}
+ *
+ * @template T - The type of data being fetched
+ * @template S - The linkable schema type
+ * @param {T} init - Initial data value
+ * @param {FetchOptions<S>} options - Fetch configuration options including URL and request settings
+ * @returns {FetchState<T>} A reactive state object containing data, status, error and response
+ *
+ * @example
+ * const state = fetchState({}, {
+ *   url: '/api/data',
+ *   method: 'GET'
+ * });
+ *
+ * // state will automatically update with fetched data
+ * console.log(state.status); // 'pending' -> 'success' or 'error'
  */
 export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
@@ -94,11 +106,24 @@ export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
 }
 
 /**
- * Create a reactive stream state object.
- * Reactive stream state object will be updated with each stream chunk.
- * @param {T} init
- * @param {StreamOptions} options
- * @returns {FetchState<T>}
+ * Create a reactive stream state object that handles streaming responses.
+ * The stream state will update incrementally as data chunks are received.
+ *
+ * @template T - The type of data being streamed
+ * @template S - The linkable schema type
+ * @param {T} init - Initial data value
+ * @param {StreamOptions<T, S>} options - Stream configuration options including URL, request settings, and optional transform function
+ * @returns {FetchState<T>} A reactive state object containing data, status, error and response
+ *
+ * @example
+ * const state = streamState([], {
+ *   url: '/api/stream',
+ *   method: 'GET',
+ *   transform: (current, chunk) => [...current, ...chunk]
+ * });
+ *
+ * // state will update incrementally as stream chunks are received
+ * console.log(state.status); // 'pending' -> 'success' or 'error'
  */
 export function streamState<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
@@ -157,11 +182,29 @@ export function streamState<T, S extends LinkableSchema = LinkableSchema>(
   return state;
 }
 
+/**
+ * Reads data chunks from a ReadableStream and processes them through receiver and finalizer callbacks.
+ * This function recursively reads from the stream until it's done, decoding each chunk and attempting
+ * to parse it as JSON. If JSON parsing fails, the raw string is passed to the receiver instead.
+ *
+ * @template T - The type of data being processed
+ * @param {ReadableStreamDefaultReader<Uint8Array>} readable - The stream reader to read data from
+ * @param {(chunk: T) => void} receiver - Callback function to process each data chunk
+ * @param {(chunk?: T) => void} finalizer - Callback function to finalize processing when stream is done
+ * @returns {Promise<void>} A promise that resolves when the stream has been fully read
+ *
+ * @example
+ * const reader = response.body.getReader();
+ * await readStream(reader,
+ *   (chunk) => console.log('Received:', chunk),
+ *   (finalChunk) => console.log('Stream completed')
+ * );
+ */
 async function readStream<T>(
   readable: ReadableStreamDefaultReader<Uint8Array>,
   receiver: (chunk: T) => void,
   finalizer: (chunk?: T) => void
-) {
+): Promise<void> {
   const { done, value } = await readable.read();
 
   if (done) {
@@ -193,7 +236,21 @@ async function readStream<T>(
   }
 }
 
-function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T, chunk: T) => T) {
+/**
+ * Appends a data chunk to the fetch state, applying transformation logic based on data types.
+ * This function handles different data types (string, object, array) appropriately:
+ * - Strings are concatenated
+ * - Objects are merged using anchor.assign
+ * - Arrays have their elements pushed
+ * If no transform function is provided, the chunk replaces the current data.
+ *
+ * @template T - The type of data being processed
+ * @param {FetchState<T>} state - The fetch state object to update
+ * @param {T} chunk - The data chunk to append
+ * @param {(current: T, chunk: T) => T} [transform] - Optional transformation function to apply to the data
+ * @returns {void}
+ */
+function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T, chunk: T) => T): void {
   if (typeof transform !== 'function') {
     transform = () => chunk;
   }

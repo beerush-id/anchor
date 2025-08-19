@@ -9,8 +9,31 @@ export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
 
 /**
  * Assigns a partial state to the given state.
- * @param {T} target
- * @param {Partial<T>} source
+ *
+ * This function updates the target state object with values from the source object.
+ * It supports objects, arrays, and maps. The function also handles state management
+ * by notifying subscribers of the changes.
+ *
+ * @template T - The type of the target state object
+ * @template P - The type of the source partial object
+ * @param {T} target - The target state object to be updated
+ * @param {P} source - The partial object containing the new values
+ * @throws {Error} If the target is not an assignable state or if the source is not an object-like value
+ *
+ * @example
+ * // For objects
+ * const state = { name: 'John', age: 30 };
+ * assign(state, { age: 31 });
+ *
+ * @example
+ * // For arrays
+ * const list = [1, 2, 3];
+ * assign(list, { 1: 20 });
+ *
+ * @example
+ * // For maps
+ * const map = new Map([['key1', 'value1']]);
+ * assign(map, { key1: 'newValue1', key2: 'value2' });
  */
 export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P) => {
   if ((!isSafeObject(target) && !isArray(target)) || isSet(target)) {
@@ -62,8 +85,30 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
 /**
  * Removes the given keys from the given state.
- * @param {T} target
- * @param {keyof T} keys
+ *
+ * This function removes specified keys from the target state object.
+ * It supports objects, arrays, and maps. The function also handles state management
+ * by notifying subscribers of the changes.
+ *
+ * @template T - The type of the target state object
+ * @param {T} target - The target state object from which keys will be removed
+ * @param {...keyof T} keys - The keys to be removed from the target object
+ * @throws {Error} If the target is not an assignable state
+ *
+ * @example
+ * // For objects
+ * const state = { name: 'John', age: 30, city: 'New York' };
+ * remove(state, 'age', 'city');
+ *
+ * @example
+ * // For arrays
+ * const list = [1, 2, 3, 4, 5];
+ * remove(list, 1, 3); // Removes elements at index 1 and 3
+ *
+ * @example
+ * // For maps
+ * const map = new Map([['key1', 'value1'], ['key2', 'value2'], ['key3', 'value3']]);
+ * remove(map, 'key1', 'key3');
  */
 export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>) => {
   if (!isSafeObject(target) && !isArray(target)) {
@@ -130,7 +175,29 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
 
 /**
  * Clears the given state.
- * @param {T} target
+ *
+ * This function clears the target state object, removing all its contents.
+ * It supports objects, arrays, and maps. The function also handles state management
+ * by notifying subscribers of the changes.
+ *
+ * @template T - The type of the target state object
+ * @param {T} target - The target state object to be cleared
+ * @throws {Error} If the target is not an assignable state
+ *
+ * @example
+ * // For objects
+ * const state = { name: 'John', age: 30 };
+ * clear(state);
+ *
+ * @example
+ * // For arrays
+ * const list = [1, 2, 3];
+ * clear(list);
+ *
+ * @example
+ * // For maps
+ * const map = new Map([['key1', 'value1'], ['key2', 'value2']]);
+ * clear(map);
  */
 export const clear = <T extends Assignable>(target: T) => {
   if (!isSafeObject(target) && !isArray(target)) {

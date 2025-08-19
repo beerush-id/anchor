@@ -150,9 +150,40 @@ export type MutablePart<T, K extends MutationKey<T>[]> =
             }
           >;
 
+/**
+ * Anchor function interface that provides state management capabilities.
+ *
+ * @template T - The type of the initial state
+ * @template S - The schema type for validation
+ */
 export interface AnchorFn {
+  /**
+   * Creates a reactive state with optional configuration.
+   *
+   * @param init - Initial state value
+   * @param options - Configuration options for the state
+   * @returns Reactive state object
+   */
   <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+
+  /**
+   * Creates a reactive state with schema validation.
+   *
+   * @param init - Initial state value
+   * @param schema - Zod schema for validation
+   * @param options - Configuration options
+   * @returns Validated reactive state object
+   */
   <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: AnchorConfig): ModelOutput<S>;
+
+  /**
+   * Creates an immutable reactive state with schema validation.
+   *
+   * @param init - Initial state value
+   * @param schema - Zod schema for validation
+   * @param options - Configuration options with immutable flag
+   * @returns Immutable validated reactive state object
+   */
   <S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
@@ -161,14 +192,54 @@ export interface AnchorFn {
 
   // Initializer methods.
 
+  /**
+   * Creates a raw reactive state without making a clone of the initial state.
+   *
+   * @param init - Initial state value
+   * @param options - Configuration options
+   * @returns Raw reactive state object
+   */
   raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+
+  /**
+   * Creates a flat reactive state that only tracks top-level properties.
+   *
+   * @param init - Initial array state
+   * @param options - Configuration options
+   * @returns Flat reactive array state
+   */
   flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+
+  /**
+   * Creates a reactive state with schema validation.
+   *
+   * @param init - Initial state value
+   * @param schema - Zod schema for validation
+   * @param options - Configuration options
+   * @returns Validated reactive state object
+   */
   model<S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: AnchorConfig): ModelOutput<S>;
 
+  /**
+   * Creates an immutable reactive state.
+   *
+   * @param init - Initial state value
+   * @param options - Configuration options
+   * @returns Immutable reactive state object
+   */
   immutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options?: AnchorOptions<S>
   ): Immutable<T>;
+
+  /**
+   * Creates an immutable reactive state with schema validation.
+   *
+   * @param init - Initial state value
+   * @param schema - Zod schema for validation
+   * @param options - Configuration options
+   * @returns Immutable validated reactive state object
+   */
   immutable<S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
@@ -177,23 +248,72 @@ export interface AnchorFn {
 
   // Accessibility methods.
 
+  /**
+   * Gets the current state value.
+   *
+   * @param state - The reactive state
+   * @returns Current state value
+   */
   get<T>(state: T): T;
+
+  /**
+   * Creates a snapshot of the current state.
+   *
+   * @param state - The reactive state
+   * @returns State snapshot
+   */
   snapshot<T>(state: T): T;
 
+  /**
+   * Makes a readonly state writable.
+   *
+   * @param state - The readonly state
+   * @returns Writable state object
+   */
   writable<T extends ReadonlyLink>(state: T): Mutable<T>;
-  writable<T, K extends MutationKey<T>[]>(init: T, contracts?: K): MutablePart<T, K>;
+
+  /**
+   * Makes a readonly state writable with specific contracts.
+   *
+   * @param init - The readonly state
+   * @param contracts - Keys that should be mutable
+   * @returns Partially writable state object
+   */
+  writable<T extends ReadonlyLink, K extends MutationKey<T>[]>(init: T, contracts?: K): MutablePart<T, K>;
 
   // Utility methods.
 
+  /**
+   * Assigns properties from source to target object.
+   *
+   * @param target - Target object
+   * @param source - Source object with properties to assign
+   */
   assign<T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>): void;
-  assign<T extends Array<unknown>>(target: T, source: { [key: string]: T[number] } | Record<string, T[number]>): void;
+  assign<T extends unknown[]>(target: T, source: { [key: string]: T[number] } | Record<string, T[number]>): void;
   assign<T extends object>(target: T, source: Partial<T>): void;
 
+  /**
+   * Removes keys from a collection.
+   *
+   * @param target - Target collection
+   * @param keys - Keys to remove
+   */
   remove<T, K>(target: Map<T, K>, ...keys: Array<T>): void;
-  remove<T extends Array<unknown>>(target: T, ...keys: Array<string>): void;
+  remove<T extends unknown[]>(target: T, ...keys: Array<string>): void;
   remove<T extends object>(target: T, ...keys: Array<keyof T>): void;
 
+  /**
+   * Clears all entries from a collection.
+   *
+   * @param target - Target collection to clear
+   */
   clear<T>(target: T): void;
 
+  /**
+   * Configures global anchor settings.
+   *
+   * @param config - Partial configuration object
+   */
   configure(config: Partial<AnchorConfig>): void;
 }

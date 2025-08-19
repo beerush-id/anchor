@@ -38,7 +38,15 @@ function deriveFn<T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe {
   return ctrl?.subscribe(handler as StateSubscriber<unknown>);
 }
 
-deriveFn.log = <T>(state: T) => {
+/**
+ * Subscribe to changes in the provided state and log it to the console.
+ * This is a convenience method that uses `console.log` as the subscriber function.
+ *
+ * @template T The type of the state.
+ * @param state The anchored state object to subscribe to.
+ * @returns A function to unsubscribe from the logging subscription.
+ */
+deriveFn.log = <T>(state: T): StateUnsubscribe => {
   return deriveFn(state, console.log);
 };
 
@@ -56,12 +64,16 @@ deriveFn.resolve = <T>(state: T): StateController<T> | undefined => {
 
 /**
  * Pipe changes of the source state to a target state.
+ * This function allows you to synchronize changes from a source state to a target state,
+ * with an optional transformation function to modify the data during the transfer.
+ *
  * @template Source The type of the source state.
  * @template Target The type of the target state.
- * @param source The source state.
- * @param target The target state.
- * @param {PipeTransformer} transform The transform function.
- * @returns {StateUnsubscribe}
+ * @param source The source state object to pipe from.
+ * @param target The target state object to pipe to.
+ * @param transform An optional function to transform the source state before assigning it to the target.
+ * @returns A function to unsubscribe from the piping operation.
+ * @throws {Error} If either source or target is not an object.
  */
 deriveFn.pipe = <Source, Target>(
   source: Source,

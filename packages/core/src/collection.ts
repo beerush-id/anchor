@@ -27,6 +27,22 @@ const mockReturn = {
   },
 };
 
+/**
+ * Creates a mutator for a collection (Set or Map) that handles reactive state management.
+ *
+ * This function wraps collection methods to provide reactive behavior, including:
+ * - Automatic linking/unlinking of nested reactive states
+ * - Broadcasting of state changes to subscribers
+ * - Support for both mutable and immutable modes
+ * - Recursive handling of nested collections when configured
+ *
+ * @template T - The type of the collection (Set or Map)
+ * @template S - The schema type for linkable references
+ * @param init - The initial collection instance to create a mutator for
+ * @param options - Optional state references configuration
+ * @returns A WeakMap containing the wrapped mutation methods
+ * @throws {Error} When called on a non-reactive state (no references found)
+ */
 export function createCollectionMutator<T extends Set<Linkable> | Map<string, Linkable>, S extends LinkableSchema>(
   init: T,
   options?: StateReferences<T, S>
