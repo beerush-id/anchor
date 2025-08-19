@@ -13,7 +13,7 @@ export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
  * @param {Partial<T>} source
  */
 export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P) => {
-  if (typeof target !== 'object' || target === null) {
+  if (!isSafeObject(target) && !isArray(target) && isSet(target)) {
     throw new Error('Cannot assign to non-assignable state.');
   }
 
@@ -35,7 +35,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     if (isMap(target)) {
       prev[key as never] = target.get(key) as never;
       target.set(key, val);
-    } else if (isObjectLike(target) || isArray(target)) {
+    } else if (isSafeObject(target) || isArray(target)) {
       prev[key as keyof T] = target[key as keyof T];
       target[key as never] = val;
     }
@@ -66,7 +66,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
  * @param {keyof T} keys
  */
 export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>) => {
-  if (!isObjectLike(target) && !isMap(target) && !isArray(target)) {
+  if (!isSafeObject(target) && !isArray(target)) {
     throw new Error('Cannot remove from non-assignable state.');
   }
 
@@ -85,7 +85,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     if (isMap(target)) {
       prev[key as never] = target.get(key) as never;
       target.delete(key);
-    } else if (isObjectLike(target) || isArray(target)) {
+    } else if (isSafeObject(target) || isArray(target)) {
       prev[key] = target[key];
 
       if (!isArray(target)) {
@@ -133,7 +133,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
  * @param {T} target
  */
 export const clear = <T extends Assignable>(target: T) => {
-  if (!isObjectLike(target) && !isMap(target) && !isArray(target) && !isSet(target)) {
+  if (!isSafeObject(target) && !isArray(target)) {
     throw new Error('Cannot clear non-assignable state.');
   }
 
@@ -149,7 +149,7 @@ export const clear = <T extends Assignable>(target: T) => {
     target.clear();
   } else if (isArray(target)) {
     target.length = 0;
-  } else if (isObjectLike(target)) {
+  } else if (isSafeObject(target)) {
     for (const key of softKeys(target)) {
       delete target[key];
     }
@@ -173,3 +173,7 @@ export const clear = <T extends Assignable>(target: T) => {
     STATE_BUSY_LIST.delete(init);
   }
 };
+
+function isSafeObject(value: unknown): value is object {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
