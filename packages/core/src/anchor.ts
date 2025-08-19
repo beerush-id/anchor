@@ -5,6 +5,8 @@ import type {
   AnchorFn,
   AnchorOptions,
   Immutable,
+  Linkable,
+  LinkableSchema,
   ObjLike,
   StateController,
   StateReferences,
@@ -48,7 +50,11 @@ import { softClone } from './utils/clone.js';
  * @throws If `strict` mode is enabled and schema validation fails during initialization.
  * @throws If `strict` mode is enabled and schema validation fails during property updates or array mutations.
  */
-function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptions<S>, options?: AnchorOptions<S>): T {
+function anchorFn<T extends Linkable, S extends LinkableSchema>(
+  init: T,
+  schemaOptions?: S | AnchorOptions<S>,
+  options?: AnchorOptions<S>
+): T {
   if (CONTROLLER_REGISTRY.has(init as WeakKey)) {
     // Return itself if the given object is a reactive state.
     return init;
@@ -83,7 +89,9 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
     immutable = ANCHOR_CONFIG.immutable,
   } = (options ?? {}) as AnchorConfig;
 
-  const schema = (schemaOptions as ZodType)?._zod ? (schemaOptions as S) : (schemaOptions as AnchorOptions<S>)?.schema;
+  const schema = (schemaOptions as LinkableSchema)?._zod
+    ? (schemaOptions as S)
+    : (schemaOptions as AnchorOptions<S>)?.schema;
   const configs: AnchorOptions<S> = { deferred, cloned: false, strict, recursive, immutable };
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
@@ -128,10 +136,10 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
     subscribers,
     subscriptions,
   };
-  REFERENCE_REGISTRY.set(init as WeakKey, references as StateReferences<unknown, ZodType>);
+  REFERENCE_REGISTRY.set(init as WeakKey, references as never as StateReferences<object, S>);
 
   if (Array.isArray(init)) {
-    references.mutator = createArrayMutator(init, references);
+    references.mutator = createArrayMutator(init, references as never as StateReferences<unknown[], S>);
   } else if (init instanceof Map || init instanceof Set) {
     references.mutator = createCollectionMutator(init);
   }
@@ -172,7 +180,10 @@ function anchorFn<T, S extends ZodType>(init: T, schemaOptions?: S | AnchorOptio
  * @param {AnchorOptions<S>} options
  * @returns {T}
  */
-anchorFn.flat = <T extends unknown[], S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T => {
+anchorFn.flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: AnchorOptions<S>
+): T => {
   return anchorFn(init, { ...options, recursive: 'flat' });
 };
 
@@ -182,7 +193,10 @@ anchorFn.flat = <T extends unknown[], S extends ZodType = ZodType>(init: T, opti
  * @param {AnchorOptions<S>} options
  * @returns {T}
  */
-anchorFn.raw = <T, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T => {
+anchorFn.raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: AnchorOptions<S>
+): T => {
   return anchorFn(init, { ...options, cloned: false });
 };
 
@@ -232,7 +246,10 @@ anchorFn.configure = (config: Partial<AnchorConfig>) => {
  * @param {AnchorOptions<S>} options
  * @returns {Immutable<T>}
  */
-anchorFn.immutable = <T, S extends ZodType>(init: T, options?: AnchorOptions<S>): Immutable<T> => {
+anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
+  init: T,
+  options?: AnchorOptions<S>
+): Immutable<T> => {
   return anchorFn(init, { ...options, immutable: true }) as Immutable<T>;
 };
 

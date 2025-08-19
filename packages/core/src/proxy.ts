@@ -1,13 +1,12 @@
-import type { ZodType } from 'zod/v4';
 import { createGetter, createRemover, createSetter } from './trap.js';
 import type {
   KeyLike,
   Linkable,
+  LinkableSchema,
   MethodLike,
   MutablePart,
   MutationKey,
   ObjLike,
-  StatePropGetter,
   StateReferences,
 } from './types.js';
 import { createCollectionMutator } from './collection.js';
@@ -15,13 +14,11 @@ import { REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
 
-export function createProxyHandler<T>(init: T, references: StateReferences<T, ZodType>) {
+export function createProxyHandler<T extends Linkable>(init: T, references: StateReferences<T, LinkableSchema>) {
   const { immutable } = references.configs;
-  // const { recursive, deferred, immutable } = configs;
 
-  const getter = createGetter(init);
-  references.getter = getter as StatePropGetter;
-  // const getter = recursive && deferred ? createGetter(init) : undefined;
+  const getter = createGetter<T, LinkableSchema>(init);
+  references.getter = getter as never;
 
   if (immutable) {
     const handler = {
@@ -46,7 +43,10 @@ export function createProxyHandler<T>(init: T, references: StateReferences<T, Zo
   } as ProxyHandler<ObjLike>;
 }
 
-export const writeContract = <T, K extends MutationKey<T>[]>(state: T, contracts?: K): MutablePart<T, K> => {
+export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
+  state: T,
+  contracts?: K
+): MutablePart<T, K> => {
   const init = STATE_REGISTRY.get(state as WeakKey) as Linkable;
 
   if (typeof init === 'undefined') {
@@ -54,7 +54,7 @@ export const writeContract = <T, K extends MutationKey<T>[]>(state: T, contracts
     return state as MutablePart<T, K>;
   }
 
-  const references = REFERENCE_REGISTRY.get(init as WeakKey) as StateReferences<unknown, ZodType>;
+  const references = REFERENCE_REGISTRY.get(init as WeakKey) as StateReferences<Linkable, LinkableSchema>;
   const newOptions = {
     ...references,
     configs: {
@@ -66,9 +66,12 @@ export const writeContract = <T, K extends MutationKey<T>[]>(state: T, contracts
   };
 
   if (Array.isArray(init)) {
-    newOptions.mutator = createArrayMutator(init, newOptions);
+    newOptions.mutator = createArrayMutator(init, newOptions as StateReferences<unknown[], LinkableSchema>);
   } else if (init instanceof Map || init instanceof Set) {
-    newOptions.mutator = createCollectionMutator(init as Set<Linkable>, newOptions);
+    newOptions.mutator = createCollectionMutator(
+      init as Set<Linkable>,
+      newOptions as StateReferences<Set<Linkable>, LinkableSchema>
+    );
   }
 
   const getter = createGetter(init, newOptions);
@@ -93,7 +96,7 @@ export const writeContract = <T, K extends MutationKey<T>[]>(state: T, contracts
           };
         }
 
-        const valueFn = getter(target, prop, receiver) as MethodLike;
+        const valueFn = getter(target, prop as never, receiver) as MethodLike;
         return (...args: unknown[]) => {
           const result = valueFn(...args);
 

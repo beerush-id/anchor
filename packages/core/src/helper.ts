@@ -13,7 +13,7 @@ export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
  * @param {Partial<T>} source
  */
 export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P) => {
-  if (!isSafeObject(target) && !isArray(target) && isSet(target)) {
+  if ((!isSafeObject(target) && !isArray(target)) || isSet(target)) {
     throw new Error('Cannot assign to non-assignable state.');
   }
 

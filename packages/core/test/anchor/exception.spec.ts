@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureStack } from '../../src/exception.js';
+import { captureStack } from '../../src/index.js';
 
 describe('Anchor Core - Exception Handling', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;

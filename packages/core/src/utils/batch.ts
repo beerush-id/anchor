@@ -36,7 +36,7 @@ export type BatchResetter = () => void;
  * // To cancel pending executions:
  * // reset();
  */
-export function microbatch(delay = 10): [BatchScheduler, BatchResetter] {
+export function microbatch(delay: number = 10): [BatchScheduler, BatchResetter] {
   const BATCHES = new Set<() => void>();
   let activeId: number | undefined = undefined;
 

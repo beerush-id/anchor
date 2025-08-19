@@ -1,5 +1,5 @@
 import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
-import { type input, type output, type ZodArray, type ZodObject, type ZodType } from 'zod/v4';
+import { type input, type output, type ZodArray, type ZodObject } from 'zod/v4';
 import type { LogLevel } from './logger.js';
 
 export type LoggerConfig = {
@@ -31,7 +31,7 @@ export type ObjLike = {
   [key: KeyLike]: unknown;
 };
 
-export type Linkable = ObjLike | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
+export type Linkable = object | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
 export type LinkableSchema = ZodObject | ZodArray;
 export type ReadonlyLink = Immutable<Linkable>;
 
@@ -49,7 +49,7 @@ export type AnchorConfig = {
   recursive?: Recursive;
   immutable?: boolean;
 };
-export type AnchorOptions<S extends ZodType = ZodType> = AnchorConfig & { schema?: S };
+export type AnchorOptions<S extends LinkableSchema = LinkableSchema> = AnchorConfig & { schema?: S };
 
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
@@ -64,22 +64,15 @@ export type StatePropGetter<T extends Linkable = Linkable> = (
   prop: keyof T,
   receiver?: unknown
 ) => T[keyof T];
-export type StatePropSetter<T extends Linkable = Linkable> = (
-  target: T,
-  prop: keyof T,
-  value: T[keyof T],
-  receiver?: unknown
-) => boolean;
-export type StatePropRemover<T extends Linkable = Linkable> = (target: T, prop: keyof T) => boolean;
 
-export type StateReferences<T, S extends ZodType> = {
+export type StateReferences<T extends Linkable, S extends LinkableSchema> = {
   id: string;
   link: StateLinkFn;
   unlink: StateUnlinkFn;
   configs: AnchorOptions<S>;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
-  getter?: StatePropGetter;
+  getter?: StatePropGetter<T>;
   schema?: S;
   mutator?: WeakMap<WeakKey, MethodLike>;
 };
@@ -98,19 +91,6 @@ export type StateController<T> = {
 };
 
 export type PipeTransformer<T, R> = (value: T) => Partial<R>;
-
-export type GetTrapOptions<T, S extends ZodType> = AnchorOptions<S> & {
-  id: string;
-  init: T;
-  link: StateLinkFn;
-  anchor: <T, S extends ZodType>(init: T, options: AnchorOptions<S>) => T;
-  mutator?: WeakMap<WeakKey, WeakKey>;
-  subscribers: StateSubscriberList<T>;
-  subscriptions: StateSubscriptionMap;
-};
-export type SetTrapOptions<T, S extends ZodType> = GetTrapOptions<T, S> & {
-  unlink: StateUnlinkFn;
-};
 
 export type LinkFactoryInit<T> = {
   id: string;
@@ -169,12 +149,6 @@ export type MutationKey<T> =
         ? ArrayMutation
         : keyof T;
 
-type UniqueArray<T> = T extends readonly [infer First, ...infer Rest]
-  ? First extends Rest[number]
-    ? never
-    : readonly [First, ...UniqueArray<Rest>]
-  : T;
-
 export type MergedType<T> = { [P in keyof T]: T[P] } & {};
 
 export type MutablePart<T, K extends MutationKey<T>[]> =
@@ -197,9 +171,9 @@ export type MutablePart<T, K extends MutationKey<T>[]> =
           >;
 
 export interface AnchorFn {
-  <T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
-  <S extends ZodType, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
-  <S extends ZodType, T extends input<S>>(
+  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+  <S extends LinkableSchema, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
+  <S extends LinkableSchema, T extends input<S>>(
     init: T,
     schema: S,
     options?: AnchorConfig & { immutable: true }
@@ -207,20 +181,27 @@ export interface AnchorFn {
 
   // Initializer methods.
 
-  raw<T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
-  flat<T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): T;
+  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
+  flat<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): T;
   model<S extends LinkableSchema, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): output<S>;
 
-  immutable<T extends Linkable, S extends ZodType = ZodType>(init: T, options?: AnchorOptions<S>): Immutable<T>;
-  immutable<S extends ZodType, T extends input<S>>(init: T, schema: S, options?: AnchorConfig): Immutable<output<S>>;
+  immutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+    init: T,
+    options?: AnchorOptions<S>
+  ): Immutable<T>;
+  immutable<S extends LinkableSchema, T extends input<S>>(
+    init: T,
+    schema: S,
+    options?: AnchorConfig
+  ): Immutable<output<S>>;
 
   // Accessibility methods.
 
   get<T>(state: T): T;
   snapshot<T>(state: T): T;
 
-  writable<T>(state: T): Mutable<T>;
-  writable<T, K extends MutationKey<T>[]>(init: T, contracts?: UniqueArray<K>): MutablePart<T, K>;
+  writable<T extends ReadonlyLink>(state: T): Mutable<T>;
+  writable<T, K extends MutationKey<T>[]>(init: T, contracts?: K): MutablePart<T, K>;
 
   // Utility methods.
 

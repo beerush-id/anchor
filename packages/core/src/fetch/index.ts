@@ -1,5 +1,4 @@
-import type { ZodType } from 'zod/v4';
-import type { AnchorOptions, ObjLike } from '../types.js';
+import type { AnchorOptions, LinkableSchema, ObjLike } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
@@ -8,9 +7,9 @@ import { captureStack } from '../exception.js';
 export type RequestOptions = RequestInit & {
   url: string | URL;
 };
-export type FetchOptions<S extends ZodType> = AnchorOptions<S> & RequestOptions;
+export type FetchOptions<S extends LinkableSchema> = AnchorOptions<S> & RequestOptions;
 
-export type StreamOptions<T, S extends ZodType> = FetchOptions<S> & {
+export type StreamOptions<T, S extends LinkableSchema> = FetchOptions<S> & {
   transform?: (current: T, chunk: T) => T;
 };
 
@@ -35,7 +34,10 @@ export type FetchState<T> = {
  * @param {FetchOptions<S>} options
  * @returns {FetchState<T>}
  */
-export function fetchState<T, S extends ZodType = ZodType>(init: T, options: FetchOptions<S>): FetchState<T> {
+export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options: FetchOptions<S>
+): FetchState<T> {
   if (linkable(init)) {
     init = anchor(init, options);
   }
@@ -98,7 +100,10 @@ export function fetchState<T, S extends ZodType = ZodType>(init: T, options: Fet
  * @param {StreamOptions} options
  * @returns {FetchState<T>}
  */
-export function streamState<T, S extends ZodType = ZodType>(init: T, options: StreamOptions<T, S>): FetchState<T> {
+export function streamState<T, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options: StreamOptions<T, S>
+): FetchState<T> {
   if (linkable(init)) {
     init = anchor(init, options);
   }

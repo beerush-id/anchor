@@ -1,5 +1,4 @@
-import type { ZodType } from 'zod/v4';
-import type { Linkable, MethodLike, ObjLike, StateMutation, StateReferences } from './types.js';
+import type { Linkable, LinkableSchema, MethodLike, ObjLike, StateMutation, StateReferences } from './types.js';
 import { INIT_REGISTRY, REFERENCE_REGISTRY } from './registry.js';
 import { ARRAY_MUTATIONS } from './constant.js';
 import { broadcast } from './internal.js';
@@ -32,7 +31,10 @@ const mockReturn = {
   },
 };
 
-export function createArrayMutator<T extends unknown[], S extends ZodType>(init: T, options?: StateReferences<T, S>) {
+export function createArrayMutator<T extends unknown[], S extends LinkableSchema>(
+  init: T,
+  options?: StateReferences<T, S>
+) {
   const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
 
   if (!references) {

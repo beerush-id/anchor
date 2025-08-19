@@ -107,8 +107,7 @@ describe('Anchor Derive - Edge Cases', () => {
       const unsubscribeParent = derive(parentState, (parentValue) => {
         parentHandler(parentValue);
         // Subscribe to child state within parent subscription
-        const unsubscribeChild = derive(childState, childHandler);
-        return unsubscribeChild; // This return value is ignored by derive
+        return derive(childState, childHandler); // This return value is ignored by derive
       });
 
       expect(parentHandler).toHaveBeenCalledTimes(1);

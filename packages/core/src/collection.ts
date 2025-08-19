@@ -1,7 +1,14 @@
-import type { ZodType } from 'zod/v4';
 import { broadcast, linkable } from './internal.js';
 import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
-import type { KeyLike, Linkable, MethodLike, SetMutation, StateMutation, StateReferences } from './types.js';
+import type {
+  KeyLike,
+  Linkable,
+  LinkableSchema,
+  MethodLike,
+  SetMutation,
+  StateMutation,
+  StateReferences,
+} from './types.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 
@@ -20,7 +27,7 @@ const mockReturn = {
   },
 };
 
-export function createCollectionMutator<T extends Set<Linkable> | Map<string, Linkable>, S extends ZodType>(
+export function createCollectionMutator<T extends Set<Linkable> | Map<string, Linkable>, S extends LinkableSchema>(
   init: T,
   options?: StateReferences<T, S>
 ) {

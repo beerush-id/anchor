@@ -1,11 +1,11 @@
 import type { ZodObject, ZodType } from 'zod/v4';
-import type { KeyLike, Linkable, ObjLike, StateReferences } from './types.js';
+import type { KeyLike, Linkable, LinkableSchema, ObjLike, StateReferences } from './types.js';
 import { CONTROLLER_REGISTRY, INIT_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 
-export function createGetter<T, S extends ZodType>(init: T, options?: StateReferences<T, S>) {
+export function createGetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
   const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
 
   if (!references) {
@@ -75,7 +75,7 @@ export function createGetter<T, S extends ZodType>(init: T, options?: StateRefer
   return getter;
 }
 
-export function createSetter<T, S extends ZodType>(init: T, options?: StateReferences<T, S>) {
+export function createSetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
   const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
 
   if (!references) {
@@ -143,7 +143,7 @@ export function createSetter<T, S extends ZodType>(init: T, options?: StateRefer
   return setter;
 }
 
-export function createRemover<T, S extends ZodType>(init: T, options?: StateReferences<T, S>) {
+export function createRemover<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
   const references = (options ?? REFERENCE_REGISTRY.get(init as WeakKey)) as StateReferences<T, S>;
 
   if (!references) {
