@@ -40,3 +40,25 @@ export const createTestData = (): TestData => ({
     { id: 'p2', title: 'Second Post', likes: 25 },
   ],
 });
+
+export const simpleProxy = (data: any, recurisve?: boolean) => {
+  if (recurisve) {
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'object' && value !== null) {
+        data[key] = simpleProxy(value, recurisve);
+      }
+    }
+  }
+
+  return new Proxy(data, {
+    get(target, key, receiver) {
+      return Reflect.get(target, key, receiver);
+    },
+    set(target, key, value, receiver) {
+      return Reflect.set(target, key, value, receiver);
+    },
+    deleteProperty(target, key) {
+      return Reflect.deleteProperty(target, key);
+    },
+  });
+};

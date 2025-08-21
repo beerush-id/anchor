@@ -5,6 +5,7 @@ import type {
   Linkable,
   LinkableSchema,
   ObjLike,
+  StateChange,
   StateMetadata,
   StateReferences,
 } from './types.js';
@@ -13,6 +14,9 @@ import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
+import { assignObserver, getObserver } from './derive.js';
+import { OBSERVER_KEYS } from './constant.js';
+import { createCollectionGetter } from './collection.js';
 
 /**
  * Creates a getter trap function for a reactive state object.
@@ -40,26 +44,32 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
-  const { schema, subscribers, subscriptions } = meta;
+  const { schema, observers, subscribers, subscriptions } = meta;
   const { link, mutator, configs } = references;
 
   if (init instanceof Set || init instanceof Map) {
-    return (target: ObjLike, prop: KeyLike) => {
-      const value = target[prop] as (...args: unknown[]) => unknown;
-
-      if (mutator?.has(value)) {
-        return mutator?.get(value);
-      }
-
-      if (typeof value === 'function') {
-        return value.bind(target);
-      }
-
-      return value;
-    };
+    return createCollectionGetter(init as Set<unknown>, options as never);
   }
 
   const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+    const observer = getObserver();
+
+    if (configs.observable && observer) {
+      assignObserver(init, observers, observer);
+
+      const keys = observer.states.get(init) as Set<KeyLike>;
+
+      if (isArray(init)) {
+        if (!keys.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
+          keys.add(OBSERVER_KEYS.ARRAY_MUTATIONS);
+        }
+      } else {
+        if (!keys.has(prop)) {
+          keys.add(prop);
+        }
+      }
+    }
+
     let value = Reflect.get(target, prop, receiver) as Linkable;
 
     if (value === init) {
@@ -128,7 +138,7 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
-  const { schema, subscribers, subscriptions } = meta;
+  const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
@@ -170,17 +180,22 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
-      broadcast(
-        subscribers,
-        target,
-        {
-          type: 'set',
-          prev: current,
-          keys: [prop as string],
-          value: target[prop],
-        },
-        meta.id
-      );
+      const event: StateChange = {
+        type: 'set',
+        keys: [prop as string],
+        prev: current,
+        value: target[prop],
+      };
+
+      if (observers.size) {
+        for (const observer of observers) {
+          if (observer.states.get(init)?.has(prop)) {
+            observer.onChange(event);
+          }
+        }
+      }
+
+      broadcast(subscribers, target, event, meta.id);
     }
 
     return true;
@@ -214,7 +229,7 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
-  const { schema, subscribers, subscriptions } = meta;
+  const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
@@ -248,7 +263,21 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
-      broadcast(subscribers, target, { type: 'delete', prev: current, keys: [prop] }, meta.id);
+      const event: StateChange = {
+        type: 'delete',
+        prev: current,
+        keys: [prop],
+      };
+
+      if (observers.size) {
+        for (const observer of observers) {
+          if (observer.states.get(init)?.has(prop)) {
+            observer.onChange(event);
+          }
+        }
+      }
+
+      broadcast(subscribers, target, event, meta.id);
     }
 
     return true;

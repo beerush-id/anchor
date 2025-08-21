@@ -10,6 +10,7 @@ import type {
   State,
   StateController,
   StateMetadata,
+  StateObserverList,
   StateReferences,
   StateSubscriberList,
   StateSubscriptionMap,
@@ -90,7 +91,9 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     strict: options?.strict ?? ANCHOR_CONFIG.strict,
     recursive: options?.recursive ?? ANCHOR_CONFIG.recursive,
     immutable: options?.immutable ?? ANCHOR_CONFIG.immutable,
+    observable: options?.observable ?? ANCHOR_CONFIG.observable,
   };
+  const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
 
@@ -135,6 +138,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     cloned,
     schema,
     configs,
+    observers,
     subscribers,
     subscriptions,
     root,

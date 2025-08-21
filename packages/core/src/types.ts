@@ -15,6 +15,13 @@ export type ModelOutput<S> = output<S>;
 export type ImmutableOutput<S> = Immutable<ModelOutput<S>>;
 export type ReadonlyLink = Immutable<Linkable>;
 
+export type StateObserver = {
+  readonly states: WeakMap<State, Set<KeyLike>>;
+  readonly onChange: (event: StateChange) => void;
+  readonly onDestroy: (fn: () => void) => void;
+  readonly destroy: () => void;
+};
+
 export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
 export type SetMutation = (typeof SET_MUTATIONS)[number];
 export type MapMutation = (typeof MAP_MUTATIONS)[number];
@@ -28,6 +35,7 @@ export type AnchorConfig = {
   deferred?: boolean;
   recursive?: Recursive;
   immutable?: boolean;
+  observable?: boolean;
 };
 export type AnchorOptions<S extends LinkableSchema = LinkableSchema> = AnchorConfig & { schema?: S };
 
@@ -35,6 +43,7 @@ export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: str
 export type StateUnsubscribe = () => void;
 export type StateSubscribeFn<T> = (handle: StateSubscriber<T>, receiver?: Linkable) => StateUnsubscribe;
 export type StateSubscriberList<T extends Linkable = Linkable> = Set<StateSubscriber<T>>;
+export type StateObserverList = Set<StateObserver>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
 export type StateLinkFn = (childKey: KeyLike, childState: Linkable, receiver?: Linkable) => void;
 export type StateUnlinkFn = (childState: Linkable) => void;
@@ -51,6 +60,7 @@ export type StateMetadata<
   id: string;
   cloned: boolean;
   configs: AnchorConfig;
+  observers: StateObserverList;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
   root?: StateMetadata<RootType, RootSchema>;

@@ -23,4 +23,13 @@ export const ANCHOR_CONFIG = {
   deferred: true,
   recursive: true,
   immutable: false,
+  observable: true,
 } satisfies AnchorConfig;
+
+export enum OBSERVER_KEYS {
+  ARRAY_MUTATIONS = 'array_mutations',
+  COLLECTION_MUTATIONS = 'collection_mutations',
+}
+
+export const LIST_MUTATIONS = new Set(ARRAY_MUTATIONS);
+export const COLLECTION_MUTATIONS = new Set([...MAP_MUTATIONS, ...SET_MUTATIONS]);

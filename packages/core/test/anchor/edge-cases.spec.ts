@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, derive } from '../../src/index.js';
 import { createGetter, createRemover, createSetter } from '../../src/trap.js';
-import { createCollectionMutator } from '../../src/collection.js';
+import { createCollectionGetter, createCollectionMutator } from '../../src/collection.js';
 import { createArrayMutator } from '../../src/array.js';
 import { createLinkFactory } from '../../src/factory.js';
 
@@ -99,6 +99,12 @@ describe('Anchor Core - Edge Cases', () => {
       expect(() => {
         createArrayMutator([] as never);
       }).toThrow('Array trap factory called on non-reactive state.');
+    });
+
+    it('should throw when trying to create collection getter with no reference', () => {
+      expect(() => {
+        createCollectionGetter({} as never);
+      }).toThrow('Get trap factory called on non-reactive state.');
     });
 
     it('should throw when trying to create collection mutator with no reference', () => {

@@ -75,6 +75,46 @@ describe('Anchor Core - Map Operations', () => {
 
       unsubscribe();
     });
+
+    it('should handler Map iterators with nested objects', () => {
+      const map = new Map([
+        ['a', { count: 1 }],
+        ['b', { count: 2 }],
+      ]);
+      const state = anchor({ map });
+      const handler = vi.fn();
+      const unsubscribe = derive(state, handler);
+
+      expect(state.map).toBeInstanceOf(Map);
+
+      state.map.forEach((value) => {
+        value.count++;
+      });
+
+      expect(handler).toHaveBeenCalledTimes(3); // Init + increment.
+      expect(state.map.get('a').count).toBe(2);
+      expect(state.map.get('b').count).toBe(3);
+
+      const values = Array.from(state.map.values());
+      for (const value of values) {
+        value.count++;
+      }
+
+      expect(handler).toHaveBeenCalledTimes(5); // ... + increment.
+      expect(state.map.get('a').count).toBe(3);
+      expect(state.map.get('b').count).toBe(4);
+
+      const entries = Array.from(state.map.entries());
+      for (const [, value] of entries) {
+        value.count++;
+      }
+
+      expect(handler).toHaveBeenCalledTimes(7); // ... + increment.
+      expect(state.map.get('a').count).toBe(4);
+      expect(state.map.get('b').count).toBe(5);
+
+      unsubscribe();
+    });
   });
 
   describe('Direct Map and Set Anchoring', () => {

@@ -7,12 +7,14 @@ import type {
   MutablePart,
   MutationKey,
   ObjLike,
+  StatePropGetter,
   StateReferences,
 } from './types.js';
 import { createCollectionMutator } from './collection.js';
 import { REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
+import { isArray, isMap, isSet } from '@beerush/utils';
 
 /**
  * Creates a ProxyHandler for the given state object based on its mutability configuration.
@@ -28,10 +30,10 @@ import { captureStack } from './exception.js';
  * @returns A ProxyHandler configured according to the immutability settings
  */
 export function createProxyHandler<T extends Linkable>(init: T, references: StateReferences<T, LinkableSchema>) {
-  const { immutable } = references.configs;
+  const { recursive, immutable } = references.configs;
 
-  const getter = createGetter<T, LinkableSchema>(init);
-  references.getter = getter as never;
+  references.getter = createGetter<T, LinkableSchema>(init) as never;
+  const getter = recursive || isArray(init) || isSet(init) || isMap(init) ? references.getter : undefined;
 
   if (immutable) {
     const handler = {
@@ -101,7 +103,7 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
     );
   }
 
-  const getter = createGetter(init, newOptions);
+  const getter = createGetter(init, newOptions) as StatePropGetter;
   const setter = createSetter(init, newOptions);
   const remover = createRemover(init, newOptions);
 

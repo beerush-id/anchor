@@ -3,12 +3,13 @@ import type {
   LinkableSchema,
   MethodLike,
   ObjLike,
+  StateChange,
   StateMetadata,
   StateMutation,
   StateReferences,
 } from './types.js';
 import { INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY } from './registry.js';
-import { ARRAY_MUTATIONS } from './constant.js';
+import { ARRAY_MUTATIONS, OBSERVER_KEYS } from './constant.js';
 import { broadcast } from './internal.js';
 import { captureStack } from './exception.js';
 
@@ -67,7 +68,7 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
-  const { schema, subscribers, subscriptions } = meta;
+  const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
@@ -170,18 +171,23 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
         }
       }
 
+      const event: StateChange = {
+        type: method as StateMutation,
+        prev: current,
+        keys: [],
+        value: args,
+      };
+
+      if (observers.size) {
+        for (const observer of observers) {
+          if (observer.states.get(init)?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
+            observer.onChange(event);
+          }
+        }
+      }
+
       // Broadcast the array mutation event to all subscribers
-      broadcast(
-        subscribers,
-        init,
-        {
-          type: method as StateMutation,
-          prev: current,
-          keys: [],
-          value: args,
-        },
-        meta.id
-      );
+      broadcast(subscribers, init, event, meta.id);
 
       if (result === init) {
         return INIT_REGISTRY.get(init);
