@@ -1,4 +1,5 @@
 import type {
+  KeyLike,
   Linkable,
   ObjLike,
   PipeTransformer,
@@ -46,9 +47,13 @@ export function getObserver(): StateObserver | undefined {
  * An observer manages subscriptions and provides lifecycle hooks for state tracking.
  *
  * @param onChange - Callback function that will be called when state changes occur
+ * @param onTrack - Callback function that will be called when a new state is tracked
  * @returns A new observer instance with states management, onChange handler, onDestroy hook, and cleanup functionality
  */
-export function createObserver(onChange: (event: StateChange) => void): StateObserver {
+export function createObserver(
+  onChange: (event: StateChange) => void,
+  onTrack?: (state: Linkable, key: KeyLike) => void
+): StateObserver {
   const states = new WeakMap();
   const destroyers = new Set<() => void>();
 
@@ -69,6 +74,9 @@ export function createObserver(onChange: (event: StateChange) => void): StateObs
   return {
     get states() {
       return states;
+    },
+    get onTrack() {
+      return onTrack;
     },
     get onChange() {
       return onChange;

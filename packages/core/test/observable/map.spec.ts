@@ -21,7 +21,8 @@ describe('Anchor Core - Observable Map', () => {
         ]),
         { observable: true }
       );
-      const observer = createObserver(() => {});
+      const onTrack = vi.fn();
+      const observer = createObserver(() => {}, onTrack);
       const restore = setObserver(observer);
 
       // Access map to track it
@@ -33,6 +34,7 @@ describe('Anchor Core - Observable Map', () => {
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('collection_mutations')).toBe(true);
+      expect(onTrack).toHaveBeenCalledTimes(1);
     });
 
     it('should trigger observer onChange when map is mutated', () => {

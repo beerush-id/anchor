@@ -62,10 +62,12 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
       if (isArray(init)) {
         if (!keys.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
           keys.add(OBSERVER_KEYS.ARRAY_MUTATIONS);
+          observer.onTrack?.(init, OBSERVER_KEYS.ARRAY_MUTATIONS);
         }
       } else {
         if (!keys.has(prop)) {
           keys.add(prop);
+          observer.onTrack?.(init, prop);
         }
       }
     }

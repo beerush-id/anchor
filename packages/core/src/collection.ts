@@ -58,6 +58,7 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
 
       if (!keys.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
         keys.add(OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        observer.onTrack?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
     }
 

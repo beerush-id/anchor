@@ -16,7 +16,8 @@ describe('Anchor Core - Observable Object', () => {
     it('should track property access when observable is enabled', () => {
       const state = anchor({ a: 1, b: 2 }, { observable: true });
 
-      const observer = createObserver(() => {});
+      const onTack = vi.fn();
+      const observer = createObserver(() => {}, onTack);
       const restore = setObserver(observer);
 
       // Access properties to track them
@@ -33,6 +34,7 @@ describe('Anchor Core - Observable Object', () => {
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('a')).toBe(true);
       expect(trackedProps?.has('b')).toBe(true);
+      expect(onTack).toHaveBeenCalledTimes(2);
     });
 
     it('should not track property access when observable is disabled', () => {

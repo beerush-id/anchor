@@ -16,7 +16,8 @@ describe('Anchor Core - Observable Array', () => {
     it('should track array mutations when observable is enabled', () => {
       const state = anchor([1, 2, 3], { observable: true });
 
-      const observer = createObserver(() => {});
+      const onTrack = vi.fn();
+      const observer = createObserver(() => {}, onTrack);
       const restore = setObserver(observer);
 
       // Access array to track it
@@ -28,6 +29,7 @@ describe('Anchor Core - Observable Array', () => {
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('array_mutations')).toBe(true);
+      expect(onTrack).toHaveBeenCalledTimes(1);
     });
 
     it('should trigger observer onChange when array is mutated', () => {

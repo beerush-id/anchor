@@ -20,6 +20,7 @@ export type StateObserver = {
   readonly onChange: (event: StateChange) => void;
   readonly onDestroy: (fn: () => void) => void;
   readonly destroy: () => void;
+  readonly onTrack?: (state: Linkable, key: KeyLike) => void;
 };
 
 export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
