@@ -25,11 +25,15 @@ let currentObserver: StateObserver | undefined = undefined;
  * @returns A cleanup function that restores the previous observer context
  */
 export function setObserver(observer: StateObserver) {
+  let restored = false;
   const prevObserver = currentObserver;
   currentObserver = observer;
 
   return () => {
-    currentObserver = prevObserver;
+    if (!restored) {
+      restored = true;
+      currentObserver = prevObserver;
+    }
   };
 }
 
