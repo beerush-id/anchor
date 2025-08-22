@@ -1,16 +1,17 @@
 import { Button } from '../Button.js';
 import { Plus } from 'lucide-react';
 import { type FC, useRef, useState } from 'react';
-import { type ITodoItem, type ITodoList } from '../../lib/todo.js';
+import { type ITodoItem } from '../../lib/todo.js';
 import { classicTodoStats, flashNode, useUpdateStat } from '../stats/stats.js';
+import { shortId } from '@anchor/core';
 
-export const ClassicTodoForm: FC<{ todos: ITodoList; onAdd: (todo: ITodoItem) => void }> = ({ todos, onAdd }) => {
+export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAdd }) => {
   const ref = useRef(null);
   const [newTodoText, setNewTodoText] = useState('');
 
   const addTodo = () => {
     onAdd({
-      id: todos.length + 1,
+      id: shortId(),
       text: newTodoText,
       completed: false,
     });
@@ -22,8 +23,6 @@ export const ClassicTodoForm: FC<{ todos: ITodoList; onAdd: (todo: ITodoItem) =>
   useUpdateStat(() => {
     classicTodoStats.form.value++;
   });
-
-  console.log('Rendering classic todo form.');
 
   return (
     <div ref={ref} className="flex gap-2">

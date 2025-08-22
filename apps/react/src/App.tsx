@@ -6,7 +6,7 @@ import { ControlPanel } from './components/control-panel/ControlPanel.js';
 import { RenderStats } from './components/stats/RenderStats.js';
 import { classicTodoStats, todoStats } from './components/stats/stats.js';
 import { CartApp } from './components/cart/CartApp.js';
-import { PixiApp } from './components/pixi/PixiApp.js';
+import { Auth } from './components/auth/Auth.js';
 
 // --- Reusable UI Components ---
 const Section: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
@@ -24,8 +24,6 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 // 1. Todo Anchor Demo
 const TodoListDemo = () => {
-  console.log('Rendering Todo Demo');
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-12">
       <div className="flex-1 flex flex-col gap-4">
@@ -45,16 +43,25 @@ const TodoListDemo = () => {
 // The main App component
 export default function App() {
   return (
-    <main className="bg-slate-950 w-screen h-screen overflow-y-scroll snap-y snap-mandatory">
+    <main className="bg-slate-950 w-screen">
       {/* Todo Anchor Demo */}
-      <PixiApp />
       <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <SectionTitle>Reactive, Intuitive, and Productive</SectionTitle>
         <p className="text-center text-slate-400 mt-4 max-w-2xl mx-auto">
           Transform complex map and spread syntax into simple, direct mutations that feel natural. Anchor ensures that
           only the components that actually changed re-render.
         </p>
+        <p className="text-center text-slate-400 mt-4 italic">
+          <span className="inline-block bg-slate-900 text-slate-300 px-2 py-1 rounded-md border border-red-400">
+            Component flashes on re-render
+          </span>
+        </p>
         <TodoListDemo />
+        <p className="text-center text-slate-400 mt-6 italic">
+          <span className="inline-block bg-slate-900 text-slate-300 px-3 py-2 rounded-md border border-slate-700">
+            Both samples use the same component splitting and structure
+          </span>
+        </p>
       </Section>
 
       {/* Pipe Demo */}
@@ -65,6 +72,16 @@ export default function App() {
           directly to any target, like a DOM element's style, with on-the-fly transforms.
         </p>
         <ControlPanel />
+      </Section>
+
+      {/* Pipe Demo */}
+      <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <SectionTitle>Write Once, Use Everywhere</SectionTitle>
+        <p className="text-center text-slate-400 mt-4 max-w-2xl mx-auto">
+          No providers, no context, no boilerplate. Declare your state once and use it anywhere in your application with
+          simple syntax. Share state seamlessly across components.
+        </p>
+        <Auth />
       </Section>
 
       {/* Derive Demo */}

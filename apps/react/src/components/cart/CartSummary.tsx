@@ -1,20 +1,17 @@
-import { type FC, memo } from 'react';
+import { type FC } from 'react';
 import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
-import { useDerived } from '@anchor/react';
 import { Button } from '../Button.js';
+import { observed } from '@anchor/react';
 
-export const CartSummary: FC<{ items: CartItemType[] }> = memo(({ items }) => {
-  const [summary] = useDerived(items, (snapshot) => {
-    const subtotal = snapshot.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-    return {
-      subtotal,
-      tax: subtotal * 0.08,
-      total: subtotal + subtotal * 0.08,
-    };
-  });
+export const CartSummary: FC<{ items: CartItemType[] }> = observed(({ items }) => {
+  const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const summary = {
+    subtotal,
+    tax: subtotal * 0.08,
+    total: subtotal + subtotal * 0.08,
+  };
 
   return (
     <Card>

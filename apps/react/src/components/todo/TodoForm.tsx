@@ -2,17 +2,17 @@ import { type FC, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
 import { flashNode, todoStats, useUpdateStat } from '../stats/stats.js';
-import { useDerivedContext } from '@anchor/react';
-import { TodoContext } from '../../lib/todo.js';
+import { type ITodoList } from '../../lib/todo.js';
+import { shortId } from '@anchor/core';
+import { observed } from '@anchor/react';
 
-export const TodoForm: FC = () => {
-  const [todos] = useDerivedContext(TodoContext);
+export const TodoForm: FC<{ todos: ITodoList }> = observed(({ todos }) => {
   const ref = useRef(null);
   const [newText, setNewText] = useState('');
 
   const addTodo = () => {
     todos.push({
-      id: todos.length + 1,
+      id: shortId(),
       text: newText,
       completed: false,
     });
@@ -24,7 +24,7 @@ export const TodoForm: FC = () => {
   useUpdateStat(() => {
     todoStats.form.value++;
   });
-  console.log('Rendering todo form.');
+
   return (
     <div ref={ref} className="flex gap-2">
       <input
@@ -39,4 +39,4 @@ export const TodoForm: FC = () => {
       </Button>
     </div>
   );
-};
+}, 'TodoForm');

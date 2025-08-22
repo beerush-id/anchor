@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 
 export type ITodoItem = {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
 };
