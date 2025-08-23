@@ -11,5 +11,5 @@ export default defineConfig({
   treeshake: true,
   sourcemap: true,
   platform: 'browser',
-  external: ['@anchor/core', 'react'],
+  external: ['@anchor/core', '@anchor/storage', 'react'],
 });

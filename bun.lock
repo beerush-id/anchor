@@ -18,6 +18,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@anchor/react": "workspace:*",
+        "@anchor/storage": "workspace:*",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "shiki": "^3.8.1",
@@ -89,6 +90,7 @@
       "name": "@anchor-app/vue",
       "version": "0.0.1",
       "dependencies": {
+        "@anchor/storage": "workspace:*",
         "@anchor/vue": "workspace:*",
         "vue": "^3.5.18",
       },
@@ -143,6 +145,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
+        "@anchor/storage": "workspace:*",
       },
       "devDependencies": {
         "@eslint/css": "^0.5.0",
@@ -206,6 +209,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
+        "@anchor/storage": "workspace:*",
       },
       "devDependencies": {
         "@eslint/css": "^0.5.0",
@@ -226,7 +230,6 @@
         "zod": "^4.0.17",
       },
       "peerDependencies": {
-        "@anchor/storage": "workspace:*",
         "@typescript/native-preview": "^7.0.0-dev.20250804.1",
         "svelte": "^5.36.16",
         "typescript": "^5.8.2",
@@ -237,6 +240,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
+        "@anchor/storage": "workspace:*",
       },
       "devDependencies": {
         "@eslint/css": "^0.5.0",

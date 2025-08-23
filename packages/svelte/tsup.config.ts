@@ -1,12 +1,15 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['./src/**/*.ts'],
+  entry: ['./src/index.ts'],
   outDir: './dist',
   dts: true,
   splitting: false,
   minify: false,
-  format: ['esm', 'cjs'],
-  bundle: false,
+  format: ['esm'],
+  bundle: true,
+  treeshake: true,
+  sourcemap: true,
   platform: 'browser',
+  external: ['@anchor/core', '@anchor/storage', 'svelte'],
 });

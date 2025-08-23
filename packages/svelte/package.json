@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "module": "./dist/index.js",
   "dependencies": {
-    "@anchor/core": "workspace:*"
+    "@anchor/core": "workspace:*",
+    "@anchor/storage": "workspace:*"
   },
   "devDependencies": {
     "@eslint/css": "^0.5.0",
@@ -21,7 +22,6 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@anchor/storage": "workspace:*",
     "@typescript/native-preview": "^7.0.0-dev.20250804.1",
     "svelte": "^5.36.16",
     "typescript": "^5.8.2"
