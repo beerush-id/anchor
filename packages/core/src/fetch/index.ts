@@ -7,9 +7,9 @@ import { captureStack } from '../exception.js';
 export type RequestOptions = RequestInit & {
   url: string | URL;
 };
-export type FetchOptions<S extends LinkableSchema> = AnchorOptions<S> & RequestOptions;
+export type FetchOptions<S extends LinkableSchema = LinkableSchema> = AnchorOptions<S> & RequestOptions;
 
-export type StreamOptions<T, S extends LinkableSchema> = FetchOptions<S> & {
+export type StreamOptions<T, S extends LinkableSchema = LinkableSchema> = FetchOptions<S> & {
   transform?: (current: T, chunk: T) => T;
 };
 
@@ -36,15 +36,6 @@ export type FetchState<T> = {
  * @param {T} init - Initial data value
  * @param {FetchOptions<S>} options - Fetch configuration options including URL and request settings
  * @returns {FetchState<T>} A reactive state object containing data, status, error and response
- *
- * @example
- * const state = fetchState({}, {
- *   url: '/api/data',
- *   method: 'GET'
- * });
- *
- * // state will automatically update with fetched data
- * console.log(state.status); // 'pending' -> 'success' or 'error'
  */
 export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
@@ -114,16 +105,6 @@ export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
  * @param {T} init - Initial data value
  * @param {StreamOptions<T, S>} options - Stream configuration options including URL, request settings, and optional transform function
  * @returns {FetchState<T>} A reactive state object containing data, status, error and response
- *
- * @example
- * const state = streamState([], {
- *   url: '/api/stream',
- *   method: 'GET',
- *   transform: (current, chunk) => [...current, ...chunk]
- * });
- *
- * // state will update incrementally as stream chunks are received
- * console.log(state.status); // 'pending' -> 'success' or 'error'
  */
 export function streamState<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
@@ -192,13 +173,6 @@ export function streamState<T, S extends LinkableSchema = LinkableSchema>(
  * @param {(chunk: T) => void} receiver - Callback function to process each data chunk
  * @param {(chunk?: T) => void} finalizer - Callback function to finalize processing when stream is done
  * @returns {Promise<void>} A promise that resolves when the stream has been fully read
- *
- * @example
- * const reader = response.body.getReader();
- * await readStream(reader,
- *   (chunk) => console.log('Received:', chunk),
- *   (finalChunk) => console.log('Stream completed')
- * );
  */
 async function readStream<T>(
   readable: ReadableStreamDefaultReader<Uint8Array>,

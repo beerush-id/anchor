@@ -14,9 +14,9 @@ import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
-import { assignObserver, getObserver } from './derive.js';
 import { OBSERVER_KEYS } from './constant.js';
 import { createCollectionGetter } from './collection.js';
+import { assignObserver, getObserver } from './observable.js';
 
 /**
  * Creates a getter trap function for a reactive state object.

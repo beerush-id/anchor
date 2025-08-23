@@ -1,4 +1,4 @@
-import type { ArrayMutation, KeyLike, Linkable, ObjLike, StateChange } from '../types.js';
+import type { ArrayMutation, KeyLike, Linkable, ObjLike, State, StateChange } from '../types.js';
 import { anchor } from '../anchor.js';
 import { derive } from '../derive.js';
 import { assign } from '../helper.js';
@@ -50,7 +50,7 @@ export type HistoryState = {
  * @param options.maxHistory - Maximum number of history states to keep (default: 100)
  * @returns A HistoryState object with methods and properties for history management
  */
-export function history<T extends Linkable>(state: T, options?: HistoryOptions): HistoryState {
+export function history<T extends State>(state: T, options?: HistoryOptions): HistoryState {
   const { maxHistory = DEFAULT_HISTORY_OPTION.maxHistory, debounce = DEFAULT_HISTORY_OPTION.debounce } = options ?? {};
 
   const backwardList: StateChange[] = [];

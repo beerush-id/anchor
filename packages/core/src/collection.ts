@@ -17,7 +17,7 @@ import type {
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { COLLECTION_MUTATIONS, OBSERVER_KEYS } from './constant.js';
-import { assignObserver, getObserver } from './derive.js';
+import { assignObserver, getObserver } from './observable.js';
 
 const mockReturn = {
   set(map: Map<unknown, unknown>) {
