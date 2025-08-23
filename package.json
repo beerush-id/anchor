@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "bpkg run dev",
     "dev:core": "bpkg run dev -f packages/core",
-    "dev:docs": "bpkg run dev -f apps/svelte",
     "dev:react": "bpkg run dev -f apps/react",
+    "dev:svelte": "bpkg run dev -f apps/svelte",
+    "dev:vue": "bpkg run dev -f apps/vue",
     "build": "bpkg run build",
     "format": "bpkg run format",
     "lint": "bpkg run lint",

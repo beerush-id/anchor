@@ -14,11 +14,11 @@
 </script>
 
 <template>
-  <ul ref="listRef" class="todo-list bg-gray-50 rounded-lg divide-y divide-gray-200">
+  <ul ref="listRef" class="todo-list bg-gray-50 dark:bg-slate-700 rounded-lg divide-y divide-gray-200 dark:divide-slate-600">
     <template v-for="todo in todos" :key="todo.id">
       <TodoItem :todo :todos />
     </template>
-    <li v-if="todos.length === 0" class="p-4 text-center text-gray-500">
+    <li v-if="todos.length === 0" class="p-4 text-center text-gray-500 dark:text-slate-400">
       No tasks yet. Add a new task to get started!
     </li>
   </ul>

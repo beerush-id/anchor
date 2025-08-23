@@ -20,18 +20,18 @@
 <template>
   <div
     ref="statsRef"
-    class="todo-stats mt-4 flex justify-between items-center bg-white rounded-lg border border-slate-200 p-4">
+    class="todo-stats mt-4 flex justify-between items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
     <div class="todo-stats-item flex flex-col items-center">
-      <span class="todo-stats-label text-sm text-gray-500">Total</span>
-      <span class="todo-stats-value text-lg font-semibold">{{ stats.total }}</span>
+      <span class="todo-stats-label text-sm text-gray-500 dark:text-slate-400">Total</span>
+      <span class="todo-stats-value text-lg font-semibold dark:text-white">{{ stats.total }}</span>
     </div>
     <div class="todo-stats-item flex flex-col items-center">
-      <span class="todo-stats-label text-sm text-gray-500">Active</span>
-      <span class="todo-stats-value text-lg font-semibold text-blue-600">{{ stats.active }}</span>
+      <span class="todo-stats-label text-sm text-gray-500 dark:text-slate-400">Active</span>
+      <span class="todo-stats-value text-lg font-semibold text-blue-600 dark:text-blue-400">{{ stats.active }}</span>
     </div>
     <div class="todo-stats-item flex flex-col items-center">
-      <span class="todo-stats-label text-sm text-gray-500">Completed</span>
-      <span class="todo-stats-value text-lg font-semibold text-green-600">{{ stats.completed }}</span>
+      <span class="todo-stats-label text-sm text-gray-500 dark:text-slate-400">Completed</span>
+      <span class="todo-stats-value text-lg font-semibold text-green-600 dark:text-green-400">{{ stats.completed }}</span>
     </div>
   </div>
 </template>
