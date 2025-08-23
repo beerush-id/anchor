@@ -1,7 +1,6 @@
 {
   "name": "@anchor/vue",
   "version": "0.0.1",
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "dependencies": {
     "@anchor/core": "workspace:*",
@@ -27,12 +26,15 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js"
     }
   },
   "directories": {
-    "dist": "dist"
+    "dist": "./dist"
   },
   "files": [
     "dist"
