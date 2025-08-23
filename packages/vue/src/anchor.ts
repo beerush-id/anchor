@@ -107,16 +107,3 @@ export function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSc
   const state = anchor.raw(init, options);
   return derivedRef(state) as Ref<T>;
 }
-
-/**
- * Creates a writable version of a readonly state.
- * This is a Vue wrapper around anchor.writable that returns a Ref.
- *
- * @template T - The type of the readonly state
- * @param state - The readonly state to make writable
- * @returns A Vue Ref containing the writable state
- */
-export function writableRef<T extends Linkable>(state: T): Ref<T> {
-  const writableState = anchor.writable(state);
-  return derivedRef(writableState) as Ref<T>;
-}
