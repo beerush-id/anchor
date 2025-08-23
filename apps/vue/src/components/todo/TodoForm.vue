@@ -1,25 +1,29 @@
 <script setup lang="ts">
-import type { ITodoList } from './types.js';
-import { ref } from 'vue';
-import { shortId } from '@anchor/core';
+  import type { ITodoList } from './types.js';
+  import { ref } from 'vue';
+  import { shortId } from '@anchor/core';
+  import { flashNode } from '../../lib/node.js';
 
-const newText = ref('');
-const { todos } = defineProps<{ todos: ITodoList }>();
+  const newText = ref('');
+  const { todos } = defineProps<{ todos: ITodoList }>();
 
-const handleAdd = () => {
-  if (newText.value.trim() !== '') {
-    todos.push({
-      id: shortId(),
-      text: newText.value,
-      completed: false,
-    });
-    newText.value = '';
-  }
-};
+  const handleAdd = () => {
+    if (newText.value.trim() !== '') {
+      todos.push({
+        id: shortId(),
+        text: newText.value,
+        completed: false,
+      });
+      newText.value = '';
+    }
+  };
+
+  const formRef = ref(null);
+  flashNode(formRef);
 </script>
 
 <template>
-  <div class="todo-form mb-6">
+  <div ref="formRef" class="todo-form mb-6">
     <div class="flex gap-2">
       <input
         type="text"

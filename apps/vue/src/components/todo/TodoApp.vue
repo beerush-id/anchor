@@ -1,27 +1,35 @@
 <script setup lang="ts">
-import { useAnchor } from '@anchor/vue';
-import { shortId } from '@anchor/core';
-import TodoList from './TodoList.vue';
-import type { ITodoList } from './types.js';
-import TodoForm from './TodoForm.vue';
+  import { anchorRef } from '@anchor/vue';
+  import { shortId } from '@anchor/core';
+  import TodoList from './TodoList.vue';
+  import type { ITodoList } from './types.js';
+  import TodoForm from './TodoForm.vue';
+  import { ref } from 'vue';
+  import { flashNode } from '../../lib/node.js';
 
-const todos = useAnchor<ITodoList>([
-  {
-    id: shortId(),
-    text: 'Learn Vue',
-    completed: true,
-  },
-  {
-    id: shortId(),
-    text: 'Learn Anchor',
-    completed: false,
-  },
-]);
+  const todos = anchorRef<ITodoList>([
+    {
+      id: shortId(),
+      text: 'Learn Vue',
+      completed: true,
+    },
+    {
+      id: shortId(),
+      text: 'Learn Anchor',
+      completed: false,
+    },
+  ]);
+
+  const appRef = ref(null);
+  flashNode(appRef);
 </script>
 
 <template>
-  <div class="w-full max-w-md mx-auto mt-10 bg-white rounded-xl overflow-hidden p-6 border border-slate-200">
-    <div class="flex items-center justify-center mb-6">
+  <div
+    ref="appRef"
+    class="w-full max-w-md mx-auto mt-10 bg-white rounded-xl overflow-hidden p-10 border border-slate-200">
+    <div class="flex flex-col items-center justify-center mb-10">
+      <img src="../../assets/anchor-logo.webp" alt="Anchor Logo" class="w-20" />
       <h1 class="text-3xl font-bold text-gray-800">Todo App</h1>
     </div>
     <TodoForm :todos />
