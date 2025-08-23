@@ -1,6 +1,6 @@
 import { type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
-import { anchor, captureStack, derive, microtask, type State, type StateUnsubscribe } from '@anchor/core';
+import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchor/core';
 import { STORAGE_SYNC_DELAY } from '../session.js';
 
 export type KVEvent<T> = {
@@ -310,12 +310,6 @@ export class IndexedKv<T> extends IndexedStore {
 }
 
 /**
- * Default IndexedKv instance used for anchor storage operations.
- * This instance is named 'anchor' and handles all key-value storage for the application.
- */
-const anchorKV = new IndexedKv('anchor');
-
-/**
  * Type definition for values that can be stored in the key-value store.
  * Storable types include primitive values, objects, and arrays that can be serialized.
  */
@@ -339,64 +333,8 @@ export type KVState<T extends Storable> = {
   /** The actual stored data */
   data: T;
   /** The initialization status of the state */
-  status: 'init' | 'ready' | 'error';
-};
-
-/**
- * WeakMap to track subscriptions for KVState objects to prevent memory leaks.
- * Maps each KVState to its corresponding unsubscribe function.
- */
-const KV_STATE_SUBSCRIPTIONS = new WeakMap<KVState<Storable>, StateUnsubscribe>();
-
-function kvFn<T extends Storable>(key: string, init: T): KVState<T> {
-  const state = anchor.raw({ data: init, status: 'init' } as KVState<T>);
-  const [schedule] = microtask(STORAGE_SYNC_DELAY);
-
-  const readKv = () => {
-    const value = anchorKV.get(key) as T;
-
-    if (value) {
-      state.data = value;
-    } else {
-      anchorKV.set(key, init);
-    }
-
-    state.status = 'ready';
-
-    if (anchor.get(state.data as State) && !KV_STATE_SUBSCRIPTIONS.has(state)) {
-      const unsubscribe = derive(state.data, (snapshot, event) => {
-        if (event.type !== 'init') {
-          schedule(() => {
-            anchorKV.set(key, snapshot);
-          });
-        }
-      });
-
-      KV_STATE_SUBSCRIPTIONS.set(state, unsubscribe);
-    }
-  };
-
-  if (anchorKV.status === IDBStatus.Init) {
-    const unsubscribe = anchorKV.subscribe((event) => {
-      if (event.type === IDBStatus.Open) {
-        readKv();
-      }
-
-      unsubscribe();
-    });
-  } else {
-    readKv();
-  }
-
-  return state;
-}
-
-kvFn.leave = <T extends Storable>(state: KVState<T>) => {
-  if (KV_STATE_SUBSCRIPTIONS.has(state)) {
-    const unsubscribe = KV_STATE_SUBSCRIPTIONS.get(state) as StateUnsubscribe;
-    unsubscribe?.();
-    KV_STATE_SUBSCRIPTIONS.delete(state);
-  }
+  status: 'init' | 'ready' | 'error' | 'removed';
+  error?: Error;
 };
 
 export interface KVFn {
@@ -426,6 +364,169 @@ export interface KVFn {
    * @param state - The state object to unsubscribe
    */
   leave<T extends Storable>(state: KVState<T>): void;
+
+  /**
+   * Removes a key-value pair from the storage.
+   *
+   * This function is used to delete a specific key-value pair from the storage.
+   * It takes a key as input and removes the corresponding key-value pair from the storage.
+   * If the key does not exist in the storage, the function does nothing.
+   * It also publishes a "remove" event to notify subscribers about the removal.
+   *
+   * @param {string} key
+   */
+  remove(key: string): void;
+
+  /**
+   * A helper to wait for the store operations to complete.
+   *
+   * @returns {Promise<true>}
+   */
+  completed(): Promise<true>;
 }
 
-export const kv = kvFn as KVFn;
+/**
+ * Creates a key-value store function that provides reactive state management synchronized with IndexedDB.
+ *
+ * This factory function initializes an IndexedKv storage instance and returns a KVFn function
+ * that can be used to create reactive state objects. Each state object automatically syncs
+ * with the underlying IndexedDB storage and maintains its own initialization status.
+ *
+ * The returned function manages state lifecycle including:
+ * - Caching states by key to prevent duplicate instances
+ * - Tracking usage counts for memory management
+ * - Automatically synchronizing reactive changes to IndexedDB with debouncing
+ * - Handling database initialization and readiness states
+ *
+ * @param name - The name of the object store in IndexedDB
+ * @param version - The version of the database schema (default: 1)
+ * @param dbName - The name of the database (default: `${name}.kv`)
+ * @returns A KVFn function that can create and manage reactive key-value states
+ */
+export function createKVStore(name: string, version = 1, dbName = `${name}.kv`): KVFn {
+  const store = new IndexedKv(name, version, dbName);
+
+  const stateMap = new Map<string, KVState<Storable>>();
+  const stateUsage = new Map<KVState<Storable>, number>();
+  const stateSubscriptions = new WeakMap<KVState<Storable>, StateUnsubscribe>();
+
+  function kvFn<T extends Storable>(key: string, init: T): KVState<T> {
+    // Make sure access to the same key is pointing to the same state.
+    // One key will have one state that in charge of synchronization.
+    if (stateMap.has(key)) {
+      const state = stateMap.get(key) as KVState<T>;
+
+      // Track the usage count to prevent unnecessary unsubscribes.
+      const usage = stateUsage.get(state) ?? 0;
+      stateUsage.set(state, usage + 1);
+
+      return state;
+    }
+
+    const state = anchor.raw({ data: init, status: 'init' } as KVState<T>);
+    const [schedule] = microtask(STORAGE_SYNC_DELAY);
+
+    const readKv = () => {
+      const value = store.get(key) as T;
+
+      if (value) {
+        state.data = value;
+      } else {
+        store.set(key, init, (error) => {
+          anchor.assign(state, { error, status: 'error' });
+        });
+      }
+
+      // Maintain optimistic behavior by setting status to ready while the store is writing.
+      state.status = 'ready';
+
+      // Create synchronization if the given state data is a linkable value.
+      if (!stateSubscriptions.has(state)) {
+        const stateUnsubscribe = derive(state, (snapshot, event) => {
+          if (event.type !== 'init' && event.keys.includes('data')) {
+            schedule(() => {
+              store.set(key, snapshot.data, (error) => {
+                anchor.assign(state, { error, status: 'error' });
+              });
+            });
+          }
+        });
+
+        const unsubscribe = () => {
+          let usage = stateUsage.get(state) ?? 1;
+
+          usage -= 1;
+
+          if (usage <= 0) {
+            stateUnsubscribe();
+            stateUsage.delete(state);
+            stateSubscriptions.delete(state);
+          } else {
+            stateUsage.set(state, usage);
+          }
+        };
+
+        stateSubscriptions.set(state, unsubscribe);
+      }
+    };
+
+    if (store.status === IDBStatus.Init) {
+      const unsubscribe = store.subscribe((event) => {
+        if (event.type === IDBStatus.Open) {
+          readKv();
+          unsubscribe();
+        } else if (event.type === IDBStatus.Closed) {
+          anchor.assign(state, { status: 'error', error: store.error });
+          unsubscribe();
+        }
+      });
+    } else {
+      readKv();
+    }
+
+    if (!stateMap.has(key)) {
+      stateMap.set(key, state);
+      stateUsage.set(state, 1);
+    }
+
+    return state;
+  }
+
+  kvFn.leave = <T extends Storable>(state: KVState<T>) => {
+    if (stateSubscriptions.has(state)) {
+      stateSubscriptions.get(state)?.();
+    }
+  };
+
+  kvFn.remove = (key: string) => {
+    const state = stateMap.get(key);
+
+    store
+      .delete(key)
+      .promise()
+      .then(() => {
+        if (state) {
+          const unsubscribe = stateSubscriptions.get(state);
+
+          stateUsage.delete(state);
+          unsubscribe?.();
+
+          anchor.assign(state, { status: 'removed', data: undefined });
+        }
+      })
+      .catch((error) => {
+        if (state) {
+          anchor.assign(state, { error, status: 'error' });
+        }
+      });
+  };
+
+  kvFn.completed = () => {
+    return store.completed();
+  };
+
+  return kvFn as KVFn;
+}
+
+// Creates default KV store.
+export const kv = createKVStore('anchor');
