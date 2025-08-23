@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ObjLike } from '@anchor/core';
-import { session, SessionStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
+import { flushStorageCache, session, SessionStorage, STORAGE_SYNC_DELAY } from '../src/index.js';
 import { clearStorageMocks, emitGlobalEvent, mockBrowserStorage } from '../mocks/storage-mock.js';
 
 describe('Storage Module', () => {
@@ -96,6 +96,7 @@ describe('Mocked Storage Module', () => {
   });
 
   afterEach(() => {
+    flushStorageCache();
     errorSpy.mockRestore();
     clearStorageMocks();
   });
@@ -103,7 +104,7 @@ describe('Mocked Storage Module', () => {
   describe('Session Storage', () => {
     it('should write to sessionStorage', () => {
       const storage = new SessionStorage<ObjLike>('test', { a: 1 });
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
 
       expect(sessionStorage.getItem(key)).toBe(storage.json());
 
@@ -118,7 +119,7 @@ describe('Mocked Storage Module', () => {
     });
 
     it('should read from sessionStorage', () => {
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
       sessionStorage.setItem(key, JSON.stringify({ a: 1, b: 'test' }));
 
       const storage = new SessionStorage<{ a?: number; b?: string }>('test');
@@ -128,8 +129,8 @@ describe('Mocked Storage Module', () => {
     });
 
     it('Should remove the old version from sessionStorage', () => {
-      const oldKey = `${STORAGE_KEY}-session://test@1.0.0`;
-      const newKey = `${STORAGE_KEY}-session://test@1.1.0`;
+      const oldKey = SessionStorage.key('test');
+      const newKey = SessionStorage.key('test', '1.1.0');
 
       sessionStorage.setItem(oldKey, JSON.stringify({ a: 1, b: 'test' }));
       expect(sessionStorage.getItem(oldKey)).toBe(JSON.stringify({ a: 1, b: 'test' }));
@@ -163,7 +164,7 @@ describe('Mocked Storage Module', () => {
 
   describe('Session Storage - Edge Cases', () => {
     it('should handle error when initializing corrupted storage', () => {
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
       sessionStorage.setItem(key, '{"foo": "bar", "bar": -}');
       const storage = new SessionStorage<ObjLike>('test', { a: 1 });
 
@@ -171,6 +172,13 @@ describe('Mocked Storage Module', () => {
       expect(storage.get('bar')).toBeUndefined();
       expect(storage.get('a')).toBe(1);
       expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should share the same session state with the same name', () => {
+      const state1 = session('shared-test', { a: 1 });
+      const state2 = session('shared-test', { a: 2 });
+
+      expect(state1).toBe(state2);
     });
 
     it('should handle storage change event with no key', () => {
@@ -181,7 +189,7 @@ describe('Mocked Storage Module', () => {
     });
 
     it('should handle storage change event with a valid payload', () => {
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
       const storage = session('test', { a: 1 });
 
       expect(storage.a).toBe(1);
@@ -190,7 +198,7 @@ describe('Mocked Storage Module', () => {
     });
 
     it('should handle storage change event with an invalid payload', () => {
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
       const storage = session('test', { a: 1 });
 
       expect(storage.a).toBe(1);
@@ -217,6 +225,7 @@ describe('Reactive Storage', () => {
   afterEach(() => {
     vi.useRealTimers();
     clearStorageMocks();
+    flushStorageCache();
   });
 
   describe('Session Storage', () => {
@@ -227,13 +236,13 @@ describe('Reactive Storage', () => {
       expect(state.b).toBe('test');
 
       // Check if the state is stored in sessionStorage
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
       expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 1, b: 'test' }));
     });
 
     it('should sync changes to session storage', () => {
       const state = session('test', { a: 1 });
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
 
       // Initial state
       expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 1 }));
@@ -256,7 +265,7 @@ describe('Reactive Storage', () => {
 
     it('should leave a reactive session object', () => {
       const state = session('test', { a: 1 });
-      const key = `${STORAGE_KEY}-session://test@1.0.0`;
+      const key = SessionStorage.key('test');
 
       // Verify it's stored initially
       expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 1 }));
@@ -267,6 +276,35 @@ describe('Reactive Storage', () => {
       // Changes should no longer be synced to storage
       state.a = 2;
       expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 1 })); // Should remain unchanged
+    });
+
+    it('should handle leaving shared reactive session objects', () => {
+      const state1 = session('test', { a: 1 });
+      const state2 = session('test', { a: 1 });
+      const key = SessionStorage.key('test');
+
+      expect(state1).toBe(state2);
+      expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 1 }));
+
+      session.leave(state1);
+
+      state2.a = 2;
+      vi.advanceTimersByTime(STORAGE_SYNC_DELAY);
+
+      expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 2 }));
+      expect(state1.a).toBe(2);
+
+      expect(state2).toBe(state1);
+
+      session.leave(state2);
+
+      state1.a = 3;
+      vi.advanceTimersByTime(STORAGE_SYNC_DELAY);
+
+      expect(state1.a).toBe(3);
+      expect(state2.a).toBe(3);
+
+      expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 2 }));
     });
   });
 });

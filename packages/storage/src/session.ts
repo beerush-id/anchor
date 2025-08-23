@@ -7,13 +7,14 @@ import {
   type LinkableSchema,
   microtask,
   type ObjLike,
+  type State,
   type StateUnsubscribe,
 } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
 import type { SessionFn } from './types.js';
 
 export const STORAGE_KEY = 'anchor';
-export const STORAGE_SYNC = new Map<string, ObjLike>();
+export const STORAGE_SYNC_DELAY = 100;
 
 const hasSessionStorage = () => typeof sessionStorage !== 'undefined';
 
@@ -24,18 +25,22 @@ const hasSessionStorage = () => typeof sessionStorage !== 'undefined';
  * @template T - The type of the stored data, must be a Record<string, unknown>
  */
 export class SessionStorage<T extends Record<string, unknown> = Record<string, unknown>> extends MemoryStorage<T> {
+  public static key(name: string, version = '1.0.0') {
+    return `${STORAGE_KEY}-session://${name}@${version}`;
+  }
+
   /**
    * Returns the storage key with the current version
    */
   public get key(): string {
-    return `${STORAGE_KEY}-session://${this.name}@${this.version}`;
+    return SessionStorage.key(this.name, this.version);
   }
 
   /**
    * Returns the storage key with the previous version (used for cleanup)
    */
   public get oldKey(): string {
-    return `${STORAGE_KEY}-session://${this.name}@${this.previousVersion}`;
+    return SessionStorage.key(this.name, this.previousVersion);
   }
 
   /**
@@ -129,10 +134,17 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
   }
 }
 
+const STORAGE_MAP = new Map<string, State>();
+const STORAGE_SYNC = new Map<string, ObjLike>();
+const STORAGE_USAGE = new Map<string, number>();
 const STORAGE_REGISTRY = new WeakMap<ObjLike, SessionStorage>();
 const STORAGE_SUBSCRIPTION_REGISTRY = new WeakMap<ObjLike, StateUnsubscribe>();
 
-export const STORAGE_SYNC_DELAY = 100;
+export function flushStorageCache() {
+  STORAGE_MAP.clear();
+  STORAGE_SYNC.clear();
+  STORAGE_USAGE.clear();
+}
 
 let storageChangeListened = false;
 
@@ -156,26 +168,55 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
   options?: AnchorOptions<S>,
   storageClass = SessionStorage
 ): T => {
+  const [cName, cVersion = '1.0.0'] = name.split('@');
+  const [cNewVersion, cOldVersion] = cVersion.split(':');
+  const key = storageClass.key(cName, cNewVersion);
+
+  if (STORAGE_MAP.has(key)) {
+    const usage = STORAGE_USAGE.get(key) as number;
+    STORAGE_USAGE.set(key, usage + 1);
+
+    return STORAGE_MAP.get(key) as T;
+  }
+
   const state = anchor(init, options);
 
+  STORAGE_MAP.set(key, state);
+  STORAGE_USAGE.set(key, 1);
+
   if (isBrowser() && !STORAGE_REGISTRY.has(state)) {
-    const storage = new storageClass(name, state) as SessionStorage;
+    const storage = new storageClass(cName, state, cNewVersion, cOldVersion) as SessionStorage;
     STORAGE_REGISTRY.set(state, storage);
 
     const controller = derive.resolve(state);
 
     if (typeof controller?.subscribe === 'function') {
       const [schedule] = microtask(STORAGE_SYNC_DELAY);
-      STORAGE_SYNC.set(storage.key, state);
+      STORAGE_SYNC.set(key, state);
 
       const stateUnsubscribe = controller.subscribe(() => {
         schedule(() => {
           storage?.write();
         });
       });
+
       const unsubscribe = () => {
-        stateUnsubscribe?.();
-        STORAGE_SYNC.delete(storage.key);
+        let usage = STORAGE_USAGE.get(key) as number;
+
+        usage -= 1;
+
+        if (usage <= 0) {
+          stateUnsubscribe?.();
+
+          STORAGE_MAP.delete(key);
+          STORAGE_USAGE.delete(key);
+
+          STORAGE_SYNC.delete(key);
+          STORAGE_REGISTRY.delete(state);
+          STORAGE_SUBSCRIPTION_REGISTRY.delete(state);
+        } else {
+          STORAGE_USAGE.set(key, usage);
+        }
       };
 
       STORAGE_SUBSCRIPTION_REGISTRY.set(state, unsubscribe);
@@ -204,9 +245,6 @@ session.leave = <T extends ObjLike>(state: T) => {
   if (typeof unsubscribe === 'function') {
     unsubscribe();
   }
-
-  STORAGE_REGISTRY.delete(state);
-  STORAGE_SUBSCRIPTION_REGISTRY.delete(state);
 };
 
 /**

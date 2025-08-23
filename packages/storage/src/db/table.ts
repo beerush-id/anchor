@@ -503,7 +503,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
             anchor.assign(state, { status: 'removed' });
 
             rowList.delete(id);
-            rowUsage.delete(id);
+            rowUsage.set(id, 1);
             rowSubscriptions.get(state)?.();
           })
           .catch((error) => {

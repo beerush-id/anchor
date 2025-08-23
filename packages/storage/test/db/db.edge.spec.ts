@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IndexedStore } from '../../src/db/db.js';
-import { create, find, put, read, remove, update } from '../../src/db/helper.js';
+import { create, createRecord, find, put, read, remove, update } from '../../src/db/helper.js';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
+import { setIdProvider } from '../../src/db/index.js';
 
 class TestIndexStore extends IndexedStore {
   constructor(dbName: string, dbVersion = 1) {
@@ -272,5 +273,15 @@ describe('IndexedDB - Edge Cases', () => {
 
     await promise;
     expect(errorHandler).toHaveBeenCalledWith(updater.error);
+  });
+
+  it('should handle setting up custom ID Generator', () => {
+    setIdProvider(() => 'custom-id');
+    const rec = createRecord({ name: 'test' });
+
+    expect(rec.id).toBe('custom-id');
+    expect(rec.name).toBe('test');
+    expect(rec.created_at).toBeInstanceOf(Date);
+    expect(rec.updated_at).toBeInstanceOf(Date);
   });
 });

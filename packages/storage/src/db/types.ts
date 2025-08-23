@@ -1,3 +1,5 @@
+import type { IndexedKv } from './kv.js';
+
 export enum IDBStatus {
   Idle = 'idle',
   Init = 'init',
@@ -54,6 +56,8 @@ export type Storable =
       [key: string]: Storable;
     }
   | Array<Storable>;
+
+export type KVSeed<T> = [string, T];
 
 /**
  * Represents the state of a key-value storage item.
@@ -113,7 +117,13 @@ export interface KVFn {
    *
    * @returns {Promise<true>}
    */
-  completed(): Promise<true>;
+  ready(): Promise<true>;
+
+  /**
+   * Returns the store instance.
+   * @returns {IndexedKv<T>}
+   */
+  store<T extends Storable>(): IndexedKv<T>;
 }
 
 export type Rec = {

@@ -11,12 +11,16 @@ const hasLocalStorage = () => typeof sessionStorage !== 'undefined';
  * @template T - The type of the stored object, extending Record<string, unknown>
  */
 export class PersistentStorage<T extends Record<string, unknown> = Record<string, unknown>> extends SessionStorage<T> {
+  public static key(name: string, version = '1.0.0') {
+    return `${STORAGE_KEY}-persistent://${name}@${version}`;
+  }
+
   /**
    * Gets the storage key for the current version.
    * The key format is `${STORAGE_KEY}-persistent://${name}@${version}`
    */
   public get key(): string {
-    return `${STORAGE_KEY}-persistent://${this.name}@${this.version}`;
+    return PersistentStorage.key(this.name, this.version);
   }
 
   /**
@@ -24,7 +28,7 @@ export class PersistentStorage<T extends Record<string, unknown> = Record<string
    * The key format is `${STORAGE_KEY}-persistent://${name}@${previousVersion}`
    */
   public get oldKey(): string {
-    return `${STORAGE_KEY}-persistent://${this.name}@${this.previousVersion}`;
+    return PersistentStorage.key(this.name, this.previousVersion);
   }
 
   /**

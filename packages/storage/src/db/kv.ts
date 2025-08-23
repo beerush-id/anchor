@@ -6,6 +6,7 @@ import {
   IDBStatus,
   type KVEvent,
   type KVFn,
+  type KVSeed,
   type KVState,
   type KVSubscriber,
   type Operation,
@@ -67,11 +68,13 @@ export class IndexedKv<T> extends IndexedStore {
    * @param name - The name of the object store.
    * @param version - The version of the database.
    * @param dbName - The name of the database.
+   * @param seeds - An optional array of seed objects to initialize the database.
    */
   constructor(
     protected name: string,
     protected version = 1,
-    dbName = `${name}.kv`
+    dbName = `${name}.kv`,
+    protected seeds?: KVSeed<T>[]
   ) {
     super(dbName, version);
     this.init().open();
@@ -100,6 +103,16 @@ export class IndexedKv<T> extends IndexedStore {
         reject(request.error);
       };
     });
+  }
+
+  protected finalize(): void {
+    if (!this.#storage.size && this.seeds) {
+      for (const [key, value] of this.seeds) {
+        this.set(key, value);
+      }
+    }
+
+    super.finalize();
   }
 
   /**
@@ -308,6 +321,8 @@ export class IndexedKv<T> extends IndexedStore {
   }
 }
 
+const KV_STORES = new Map<string, KVFn>();
+
 /**
  * Creates a key-value store function that provides reactive state management synchronized with IndexedDB.
  *
@@ -324,23 +339,35 @@ export class IndexedKv<T> extends IndexedStore {
  * @param name - The name of the object store in IndexedDB
  * @param version - The version of the database schema (default: 1)
  * @param dbName - The name of the database (default: `${name}.kv`)
+ * @param seeds - An initial set of key-value pairs to seed the database.
  * @returns A KVFn function that can create and manage reactive key-value states
  */
-export function createKVStore(name: string, version = 1, dbName = `${name}.kv`): KVFn {
-  const store = new IndexedKv(name, version, dbName);
+export function createKVStore<T extends Storable>(
+  name: string,
+  version = 1,
+  dbName = `${name}.kv`,
+  seeds?: KVSeed<T>[]
+): KVFn {
+  const key = `${name}@${version}`;
+
+  if (KV_STORES.has(key)) {
+    return KV_STORES.get(key) as KVFn;
+  }
+
+  const store = new IndexedKv<T>(name, version, dbName, seeds);
 
   const stateMap = new Map<string, KVState<Storable>>();
   const stateUsage = new Map<KVState<Storable>, number>();
   const stateSubscriptions = new WeakMap<KVState<Storable>, StateUnsubscribe>();
 
-  function kvFn<T extends Storable>(key: string, init: T): KVState<T> {
+  function kvFn(key: string, init: T): KVState<T> {
     // Make sure access to the same key is pointing to the same state.
     // One key will have one state that in charge of synchronization.
     if (stateMap.has(key)) {
       const state = stateMap.get(key) as KVState<T>;
 
       // Track the usage count to prevent unnecessary unsubscribes.
-      const usage = stateUsage.get(state) ?? 0;
+      const usage = stateUsage.get(state) as number;
       stateUsage.set(state, usage + 1);
 
       return state;
@@ -350,9 +377,12 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
     const [schedule] = microtask(DB_SYNC_DELAY);
 
     const readKv = () => {
-      const value = store.get(key) as T;
+      const value = store.get(key);
 
-      if (value) {
+      // Maintain optimistic behavior.
+      state.status = 'ready';
+
+      if (typeof value !== 'undefined') {
         state.data = value;
       } else {
         store.set(key, init, (error) => {
@@ -360,22 +390,20 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
         });
       }
 
-      // Maintain optimistic behavior by setting status to ready while the store is writing.
-      state.status = 'ready';
-
       // Create synchronization if the given state data is a linkable value.
       const stateUnsubscribe = derive(state, (snapshot, event) => {
         if (event.type !== 'init' && event.keys.includes('data')) {
           schedule(() => {
+            const prev = event.prev as T;
             store.set(key, snapshot.data, (error) => {
-              anchor.assign(state, { error, status: 'error' });
+              anchor.assign(state, { data: prev, error, status: 'error' });
             });
           });
         }
       });
 
       const unsubscribe = () => {
-        let usage = stateUsage.get(state) ?? 1;
+        let usage = stateUsage.get(state) as number;
 
         usage -= 1;
 
@@ -415,6 +443,10 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
     return state;
   }
 
+  kvFn.store = () => {
+    return store;
+  };
+
   kvFn.leave = <T extends Storable>(state: KVState<T>) => {
     if (stateSubscriptions.has(state)) {
       stateSubscriptions.get(state)?.();
@@ -424,6 +456,10 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
   kvFn.remove = (key: string) => {
     const state = stateMap.get(key);
 
+    if (state) {
+      state.status = 'removed';
+    }
+
     store
       .delete(key)
       .promise()
@@ -431,10 +467,10 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
         if (state) {
           const unsubscribe = stateSubscriptions.get(state);
 
-          stateUsage.delete(state);
+          stateUsage.set(state, 1);
           unsubscribe?.();
 
-          anchor.assign(state, { status: 'removed', data: undefined });
+          anchor.assign(state, { data: undefined });
         }
       })
       .catch((error) => {
@@ -444,9 +480,12 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
       });
   };
 
-  kvFn.completed = () => {
-    return store.completed();
+  kvFn.ready = async () => {
+    await store.promise();
+    return await store.completed();
   };
+
+  KV_STORES.set(key, kvFn as KVFn);
 
   return kvFn as KVFn;
 }
