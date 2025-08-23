@@ -1,6 +1,7 @@
 import { type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
-import { anchor, captureStack, type ObjLike } from '@anchor/core';
+import { anchor, captureStack, derive, microtask, type State, type StateUnsubscribe } from '@anchor/core';
+import { STORAGE_SYNC_DELAY } from '../session.js';
 
 export type KVEvent<T> = {
   type: IDBStatus | 'set' | 'delete';
@@ -308,29 +309,48 @@ export class IndexedKv<T> extends IndexedStore {
   }
 }
 
+/**
+ * Default IndexedKv instance used for anchor storage operations.
+ * This instance is named 'anchor' and handles all key-value storage for the application.
+ */
 const anchorKV = new IndexedKv('anchor');
 
-export type Storable = string | number | boolean | null | ObjLike | Array<Storable>;
+/**
+ * Type definition for values that can be stored in the key-value store.
+ * Storable types include primitive values, objects, and arrays that can be serialized.
+ */
+export type Storable =
+  | string
+  | number
+  | boolean
+  | null
+  | {
+      [key: string]: Storable;
+    }
+  | Array<Storable>;
+
+/**
+ * Represents the state of a key-value storage item.
+ * Contains both the actual data and a status indicator for initialization state.
+ *
+ * @template T - The type of the stored data that extends Storable
+ */
 export type KVState<T extends Storable> = {
+  /** The actual stored data */
   data: T;
+  /** The initialization status of the state */
   status: 'init' | 'ready' | 'error';
 };
 
 /**
- * Creates a reactive key-value state that is synchronized with IndexedDB.
- *
- * This function initializes a reactive state object that automatically syncs
- * with the IndexedKv storage. On first access, it reads the value from storage
- * or sets an initial value if none exists. The state includes both the data
- * and a status indicator showing the initialization state.
- *
- * @template T - The type of the stored value, must extend Storable
- * @param key - The unique key to identify the stored value
- * @param init - The initial value to use if no existing value is found
- * @returns A reactive state object containing the data and status
+ * WeakMap to track subscriptions for KVState objects to prevent memory leaks.
+ * Maps each KVState to its corresponding unsubscribe function.
  */
-export function kv<T extends Storable>(key: string, init: T): KVState<T> {
+const KV_STATE_SUBSCRIPTIONS = new WeakMap<KVState<Storable>, StateUnsubscribe>();
+
+function kvFn<T extends Storable>(key: string, init: T): KVState<T> {
   const state = anchor.raw({ data: init, status: 'init' } as KVState<T>);
+  const [schedule] = microtask(STORAGE_SYNC_DELAY);
 
   const readKv = () => {
     const value = anchorKV.get(key) as T;
@@ -342,6 +362,18 @@ export function kv<T extends Storable>(key: string, init: T): KVState<T> {
     }
 
     state.status = 'ready';
+
+    if (anchor.get(state.data as State) && !KV_STATE_SUBSCRIPTIONS.has(state)) {
+      const unsubscribe = derive(state.data, (snapshot, event) => {
+        if (event.type !== 'init') {
+          schedule(() => {
+            anchorKV.set(key, snapshot);
+          });
+        }
+      });
+
+      KV_STATE_SUBSCRIPTIONS.set(state, unsubscribe);
+    }
   };
 
   if (anchorKV.status === IDBStatus.Init) {
@@ -358,3 +390,42 @@ export function kv<T extends Storable>(key: string, init: T): KVState<T> {
 
   return state;
 }
+
+kvFn.leave = <T extends Storable>(state: KVState<T>) => {
+  if (KV_STATE_SUBSCRIPTIONS.has(state)) {
+    const unsubscribe = KV_STATE_SUBSCRIPTIONS.get(state) as StateUnsubscribe;
+    unsubscribe?.();
+    KV_STATE_SUBSCRIPTIONS.delete(state);
+  }
+};
+
+export interface KVFn {
+  /**
+   * Creates a reactive key-value state that is synchronized with IndexedDB.
+   *
+   * This function initializes a reactive state object that automatically syncs
+   * with the IndexedKv storage. On first access, it reads the value from storage
+   * or sets an initial value if none exists. The state includes both the data
+   * and a status indicator showing the initialization state.
+   *
+   * @template T - The type of the stored value, must extend Storable
+   * @param key - The unique key to identify the stored value
+   * @param init - The initial value to use if no existing value is found
+   * @returns A reactive state object containing the data and status
+   */
+  <T extends Storable>(key: string, init?: T): KVState<T>;
+
+  /**
+   * Cleans up the subscription for a reactive key-value state.
+   *
+   * This method removes the subscription associated with a given state object,
+   * preventing further synchronization with the IndexedDB. It should be called
+   * when the state is no longer needed to avoid memory leaks.
+   *
+   * @template T - The type of the stored value, must extend Storable
+   * @param state - The state object to unsubscribe
+   */
+  leave<T extends Storable>(state: KVState<T>): void;
+}
+
+export const kv = kvFn as KVFn;
