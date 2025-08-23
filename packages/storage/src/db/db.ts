@@ -2,6 +2,7 @@ import { isFunction } from '@beerush/utils';
 import { captureStack } from '@anchor/core';
 
 export const DB_NAME = 'anchor';
+export const DB_SYNC_DELAY = 100;
 
 export enum IDBStatus {
   Idle = 'idle',

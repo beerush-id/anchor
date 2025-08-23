@@ -1,7 +1,6 @@
-import { type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
+import { DB_SYNC_DELAY, type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
 import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchor/core';
-import { STORAGE_SYNC_DELAY } from '../session.js';
 
 export type KVEvent<T> = {
   type: IDBStatus | 'set' | 'delete';
@@ -318,6 +317,7 @@ export type Storable =
   | number
   | boolean
   | null
+  | Date
   | {
       [key: string]: Storable;
     }
@@ -424,7 +424,7 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
     }
 
     const state = anchor.raw({ data: init, status: 'init' } as KVState<T>);
-    const [schedule] = microtask(STORAGE_SYNC_DELAY);
+    const [schedule] = microtask(DB_SYNC_DELAY);
 
     const readKv = () => {
       const value = store.get(key) as T;
@@ -441,33 +441,33 @@ export function createKVStore(name: string, version = 1, dbName = `${name}.kv`):
       state.status = 'ready';
 
       // Create synchronization if the given state data is a linkable value.
-      if (!stateSubscriptions.has(state)) {
-        const stateUnsubscribe = derive(state, (snapshot, event) => {
-          if (event.type !== 'init' && event.keys.includes('data')) {
-            schedule(() => {
-              store.set(key, snapshot.data, (error) => {
-                anchor.assign(state, { error, status: 'error' });
-              });
+      const stateUnsubscribe = derive(state, (snapshot, event) => {
+        if (event.type !== 'init' && event.keys.includes('data')) {
+          schedule(() => {
+            store.set(key, snapshot.data, (error) => {
+              anchor.assign(state, { error, status: 'error' });
             });
-          }
-        });
+          });
+        }
+      });
 
-        const unsubscribe = () => {
-          let usage = stateUsage.get(state) ?? 1;
+      const unsubscribe = () => {
+        let usage = stateUsage.get(state) ?? 1;
 
-          usage -= 1;
+        usage -= 1;
 
-          if (usage <= 0) {
-            stateUnsubscribe();
-            stateUsage.delete(state);
-            stateSubscriptions.delete(state);
-          } else {
-            stateUsage.set(state, usage);
-          }
-        };
+        if (usage <= 0) {
+          stateUnsubscribe();
 
-        stateSubscriptions.set(state, unsubscribe);
-      }
+          stateMap.delete(key);
+          stateUsage.delete(state);
+          stateSubscriptions.delete(state);
+        } else {
+          stateUsage.set(state, usage);
+        }
+      };
+
+      stateSubscriptions.set(state, unsubscribe);
     };
 
     if (store.status === IDBStatus.Init) {
