@@ -1,7 +1,10 @@
-import { anchor, createObserver, type PipeTransformer, setObserver, type State } from '@anchor/core';
-import { customRef, onRenderTracked, onUnmounted, type Ref } from 'vue';
+import { createObserver, type Immutable, type PipeTransformer, setObserver, type State } from '@anchor/core';
+import { customRef, onMounted, onUnmounted, onUpdated, type Ref } from 'vue';
+import { isServer } from './utils.js';
 
 const REF_REGISTRY = new WeakMap<WeakKey, State>();
+
+let activeObserver: (() => void) | undefined = undefined;
 
 /**
  * Creates a Vue ref that derives its value from an Anchor state.
@@ -18,13 +21,23 @@ const REF_REGISTRY = new WeakMap<WeakKey, State>();
  *
  * @returns A Vue ref that tracks the (possibly transformed) state value
  */
-export function derivedRef<T extends State>(state: T): Ref<T>;
-export function derivedRef<T extends State, R>(state: T, transform: PipeTransformer<T, R>): Ref<R>;
-export function derivedRef<T extends State, R>(state: T, transform?: PipeTransformer<T, R>): Ref<T | R> {
+export function derivedRef<T extends State>(state: T | Ref<T>): Ref<T>;
+export function derivedRef<T extends State, R>(state: T | Ref<T>, transform: PipeTransformer<T, R>): Ref<Immutable<R>>;
+export function derivedRef<T extends State, R>(
+  state: T | Ref<T>,
+  transform?: PipeTransformer<T, R>
+): Ref<T | Immutable<R>> {
   const observer = createObserver(() => {
+    if (typeof transform === 'function') {
+      const _unobserve = setObserver(observer);
+      computed = transform(state as T) as R;
+      _unobserve();
+    }
+
     applyChanges?.();
   });
 
+  let computed: R | undefined = undefined;
   let destroyed = false;
   let unobserve: (() => void) | undefined;
   let applyChanges: (() => void) | undefined;
@@ -35,6 +48,12 @@ export function derivedRef<T extends State, R>(state: T, transform?: PipeTransfo
     state = REF_REGISTRY.get(state) as T;
   }
 
+  if (typeof transform === 'function') {
+    const _unobserve = setObserver(observer);
+    computed = transform(state as T) as R;
+    _unobserve();
+  }
+
   onUnmounted(() => {
     destroyed = true;
     applyChanges = undefined;
@@ -42,8 +61,30 @@ export function derivedRef<T extends State, R>(state: T, transform?: PipeTransfo
     REF_REGISTRY.delete(ref);
   });
 
-  onRenderTracked(() => {
-    unobserve?.();
+  const startObservation = () => {
+    if (isServer() || typeof unobserve === 'function') return;
+
+    if (typeof activeObserver === 'function') {
+      activeObserver();
+    }
+
+    unobserve = setObserver(observer);
+    activeObserver = stopObservation;
+  };
+
+  const stopObservation = () => {
+    if (isServer() || typeof unobserve !== 'function') return;
+
+    unobserve();
+    unobserve = undefined;
+  };
+
+  onMounted(() => {
+    stopObservation();
+  });
+
+  onUpdated(() => {
+    stopObservation();
   });
 
   const ref = customRef((track, trigger) => {
@@ -54,12 +95,12 @@ export function derivedRef<T extends State, R>(state: T, transform?: PipeTransfo
     return {
       get() {
         if (!destroyed) {
+          startObservation();
           track();
-          unobserve = setObserver(observer);
         }
 
         if (typeof transform === 'function') {
-          return transform(anchor.get(state));
+          return computed;
         }
 
         return state;
