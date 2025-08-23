@@ -1,5 +1,4 @@
 import { defineConfig } from 'tsup';
-import { raw } from 'esbuild-raw-plugin';
 
 export default defineConfig({
   entry: ['./src/index.ts'],
@@ -8,10 +7,8 @@ export default defineConfig({
   splitting: false,
   minify: false,
   format: ['esm'],
-  plugins: [raw()],
-  treeshake: true,
   bundle: true,
+  treeshake: true,
   sourcemap: true,
   platform: 'browser',
-  publicDir: './public',
 });

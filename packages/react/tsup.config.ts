@@ -1,16 +1,15 @@
 import { defineConfig } from 'tsup';
-import { raw } from 'esbuild-raw-plugin';
 
 export default defineConfig({
-  entry: ['./src/**/*.ts', './src/**/*.tsx'],
+  entry: ['./src/index.ts', './src/components/index.tsx'],
   outDir: './dist',
   dts: true,
   splitting: false,
-  sourcemap: true,
   minify: false,
   format: ['esm'],
-  plugins: [raw()],
-  bundle: false,
+  bundle: true,
+  treeshake: true,
+  sourcemap: true,
   platform: 'browser',
-  publicDir: './public',
+  external: ['@anchor/core', 'react'],
 });

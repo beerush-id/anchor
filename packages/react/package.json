@@ -1,23 +1,9 @@
 {
-  "type": "module",
   "name": "@anchor/react",
   "version": "0.0.1",
-  "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "directories": {
-    "dist": "./dist"
-  },
-  "publishConfig": {
-    "access": "public"
+  "dependencies": {
+    "@anchor/core": "workspace:*"
   },
   "devDependencies": {
     "@eslint/css": "^0.5.0",
@@ -25,7 +11,6 @@
     "@eslint/markdown": "^6.3.0",
     "@types/react": "^19.1.8",
     "@vitest/ui": "^3.2.4",
-    "esbuild-raw-plugin": "^0.2.0",
     "eslint": "^9.23.0",
     "eslint-plugin-prettier": "^5.2.3",
     "prettier": "^3.5.3",
@@ -39,8 +24,23 @@
   "peerDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20250804.1",
     "react": "^19.1.0",
-    "typescript": "^5.8.2",
-    "zod": "^4.0.15"
+    "typescript": "^5.8.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "directories": {
+    "dist": "./dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
@@ -49,8 +49,9 @@
     "prepublish": "rimraf dist && tsup && publint",
     "format": "prettier --write ."
   },
-  "license": "MIT",
-  "dependencies": {
-    "@anchor/core": "workspace:*"
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "optionalDependencies": {
+    "zod": "^4.0.17"
   }
 }
