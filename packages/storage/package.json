@@ -24,10 +24,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@anchor/core": "workspace:*",
-    "@beerush/utils": "^0.5.0"
+    "@anchor/core": "workspace:*"
   },
   "devDependencies": {
+    "@beerush/utils": "^0.5.0",
     "@eslint/css": "^0.5.0",
     "@eslint/js": "^9.23.0",
     "@eslint/markdown": "^6.3.0",

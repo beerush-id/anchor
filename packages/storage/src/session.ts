@@ -21,12 +21,6 @@ const hasSessionStorage = () => typeof sessionStorage !== 'undefined';
  * It automatically syncs with the browser's sessionStorage and handles versioning of stored data.
  *
  * @template T - The type of the stored data, must be a Record<string, unknown>
- *
- * @example
- * ```typescript
- * const storage = new SessionStorage('myApp', { user: null, theme: 'light' });
- * storage.set('user', { id: 1, name: 'John' });
- * ```
  */
 export class SessionStorage<T extends Record<string, unknown> = Record<string, unknown>> extends MemoryStorage<T> {
   /**
@@ -151,14 +145,6 @@ export interface SessionFn {
    * @param storageClass - Custom storage class to use (defaults to SessionStorage)
    *
    * @returns A reactive proxy object that syncs with sessionStorage
-   *
-   * @example
-   * ```typescript
-   * const userSession = session('user', { id: null, name: '' });
-   * userSession.id = 123;
-   * userSession.name = 'John';
-   * // Data is automatically persisted to sessionStorage
-   * ```
    */
   <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
     name: string,
@@ -200,14 +186,6 @@ let storageChangeListened = false;
  * @param storageClass - Custom storage class to use (defaults to SessionStorage)
  *
  * @returns A reactive proxy object that syncs with sessionStorage
- *
- * @example
- * ```typescript
- * const userSession = session('user', { id: null, name: '' });
- * userSession.id = 123;
- * userSession.name = 'John';
- * // Data is automatically persisted to sessionStorage
- * ```
  */
 export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
@@ -256,13 +234,6 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
  *
  * @template T - The type of the session object
  * @param state - The reactive session object to disconnect
- *
- * @example
- * ```typescript
- * const userSession = session('user', { id: 1, name: 'John' });
- * session.leave(userSession);
- * // userSession is no longer synced with sessionStorage
- * ```
  */
 session.leave = <T extends ObjLike>(state: T) => {
   const unsubscribe = STORAGE_SUBSCRIPTION_REGISTRY.get(state);

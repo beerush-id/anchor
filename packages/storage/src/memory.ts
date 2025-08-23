@@ -13,26 +13,6 @@ export type StorageSubscriber = (event: StorageEvent) => void;
  * A memory-based storage implementation that provides a key-value store with subscription capabilities.
  *
  * @template T - The type of the storage object, defaults to Record<string, unknown>
- *
- * @example
- * ```typescript
- * const storage = new MemoryStorage<{ name: string; age: number }>();
- * storage.set('name', 'John');
- * storage.set('age', 30);
- *
- * // Subscribe to storage changes
- * const unsubscribe = storage.subscribe((event) => {
- *   console.log(`Event: ${event.type}`, event.name, event.value);
- * });
- *
- * // Get values
- * console.log(storage.get('name')); // 'John'
- * console.log(storage.length); // 2
- * console.log(storage.keys); // ['name', 'age']
- *
- * // Clean up
- * unsubscribe();
- * ```
  */
 export class MemoryStorage<T extends Record<string, unknown> = Record<string, unknown>> {
   readonly #storage: T = {} as T;
