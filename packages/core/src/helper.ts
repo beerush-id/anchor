@@ -1,5 +1,11 @@
-import type { ObjLike } from './types.js';
-import { CONTROLLER_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY, SUBSCRIBER_REGISTRY } from './registry.js';
+import type { Linkable, ObjLike } from './types.js';
+import {
+  CONTROLLER_REGISTRY,
+  META_REGISTRY,
+  STATE_BUSY_LIST,
+  STATE_REGISTRY,
+  SUBSCRIBER_REGISTRY,
+} from './registry.js';
 import { isArray, isDefined, isMap, isObjectLike, isSet } from '@beerush/utils';
 import { broadcast } from './internal.js';
 import { softEntries, softKeys } from './utils/clone.js';
@@ -30,6 +36,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   const init = STATE_REGISTRY.get(target);
+  const meta = META_REGISTRY.get(init as Linkable);
   const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
@@ -46,6 +53,17 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     } else if (isSafeObject(target) || isArray(target)) {
       prev[key as keyof T] = target[key as keyof T];
       target[key as never] = val;
+    }
+  }
+
+  if (meta?.observers?.size) {
+    for (const observer of meta.observers) {
+      observer.onChange({
+        type: 'assign',
+        prev,
+        keys: [],
+        value: source,
+      });
     }
   }
 
@@ -86,6 +104,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   }
 
   const init = STATE_REGISTRY.get(target);
+  const meta = META_REGISTRY.get(init as Linkable);
   const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
@@ -120,6 +139,17 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
         if (!keys.includes(String(i) as keyof T)) {
           target.push(v);
         }
+      });
+    }
+  }
+
+  if (meta?.observers?.size) {
+    for (const observer of meta.observers) {
+      observer.onChange({
+        type: 'remove',
+        prev,
+        keys: [],
+        value: keys,
       });
     }
   }
@@ -160,6 +190,7 @@ export const clear = <T extends Assignable>(target: T) => {
   }
 
   const init = STATE_REGISTRY.get(target);
+  const meta = META_REGISTRY.get(init as Linkable);
   const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
@@ -174,6 +205,16 @@ export const clear = <T extends Assignable>(target: T) => {
   } else if (isSafeObject(target)) {
     for (const key of softKeys(target)) {
       delete target[key];
+    }
+  }
+
+  if (meta?.observers?.size) {
+    for (const observer of meta.observers) {
+      observer.onChange({
+        type: 'clear',
+        prev: {},
+        keys: [],
+      });
     }
   }
 
