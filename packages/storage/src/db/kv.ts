@@ -1,6 +1,6 @@
 import { type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
-import { captureStack } from '@anchor/core';
+import { anchor, captureStack, type ObjLike } from '@anchor/core';
 
 export type KVEvent<T> = {
   type: IDBStatus | 'set' | 'delete';
@@ -306,4 +306,55 @@ export class IndexedKv<T> extends IndexedStore {
 
     this.#awaiters.forEach((handler) => handler());
   }
+}
+
+const anchorKV = new IndexedKv('anchor');
+
+export type Storable = string | number | boolean | null | ObjLike | Array<Storable>;
+export type KVState<T extends Storable> = {
+  data: T;
+  status: 'init' | 'ready' | 'error';
+};
+
+/**
+ * Creates a reactive key-value state that is synchronized with IndexedDB.
+ *
+ * This function initializes a reactive state object that automatically syncs
+ * with the IndexedKv storage. On first access, it reads the value from storage
+ * or sets an initial value if none exists. The state includes both the data
+ * and a status indicator showing the initialization state.
+ *
+ * @template T - The type of the stored value, must extend Storable
+ * @param key - The unique key to identify the stored value
+ * @param init - The initial value to use if no existing value is found
+ * @returns A reactive state object containing the data and status
+ */
+export function kv<T extends Storable>(key: string, init: T): KVState<T> {
+  const state = anchor.raw({ data: init, status: 'init' } as KVState<T>);
+
+  const readKv = () => {
+    const value = anchorKV.get(key) as T;
+
+    if (value) {
+      state.data = value;
+    } else {
+      anchorKV.set(key, init);
+    }
+
+    state.status = 'ready';
+  };
+
+  if (anchorKV.status === IDBStatus.Init) {
+    const unsubscribe = anchorKV.subscribe((event) => {
+      if (event.type === IDBStatus.Open) {
+        readKv();
+      }
+
+      unsubscribe();
+    });
+  } else {
+    readKv();
+  }
+
+  return state;
 }

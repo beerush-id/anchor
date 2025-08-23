@@ -47,12 +47,6 @@ type Connection = {
  * @param name - The name of the database to connect to
  * @param version - The version number of the database schema
  * @returns A Connection object that represents the database connection
- *
- * @example
- * ```typescript
- * const connection = createConnection('myDatabase', 1);
- * connection.open();
- * ```
  */
 const createConnection = (name: string, version: number): Connection => {
   if (hasIndexedDb()) {
@@ -137,25 +131,6 @@ const createConnection = (name: string, version: number): Connection => {
  * The class provides event subscription capabilities to monitor database
  * status changes and supports both synchronous and asynchronous setup
  * operations during database initialization.
- *
- * @example
- * ```typescript
- * class MyStore extends IndexedStore {
- *   protected upgrade(event: IDBVersionChangeEvent) {
- *     const db = (event.target as IDBOpenDBRequest).result;
- *     if (event.oldVersion < 1) {
- *       db.createObjectStore('mystore');
- *     }
- *   }
- *
- *   protected async setup() {
- *     // Perform any additional setup after database is opened
- *   }
- * }
- *
- * const store = new MyStore('mydb', 1);
- * await store.init().open().promise();
- * ```
  */
 export class IndexedStore {
   /**
