@@ -4,7 +4,7 @@ import { isServer } from './utils.js';
 
 const REF_REGISTRY = new WeakMap<WeakKey, State>();
 
-let activeObserver: (() => void) | undefined = undefined;
+let prepNextObserver: (() => void) | undefined = undefined;
 
 /**
  * Creates a Vue ref that derives its value from an Anchor state.
@@ -64,12 +64,12 @@ export function derivedRef<T extends State, R>(
   const startObservation = () => {
     if (isServer() || typeof unobserve === 'function') return;
 
-    if (typeof activeObserver === 'function') {
-      activeObserver();
+    if (typeof prepNextObserver === 'function') {
+      prepNextObserver();
     }
 
     unobserve = setObserver(observer);
-    activeObserver = stopObservation;
+    prepNextObserver = stopObservation;
   };
 
   const stopObservation = () => {
