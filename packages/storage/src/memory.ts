@@ -1,13 +1,6 @@
-import { anchor, type KeyLike } from '@anchor/core';
+import { anchor } from '@anchor/core';
 import { isObject } from '@beerush/utils';
-
-export type StorageEvent = {
-  type: 'set' | 'assign' | 'delete' | 'clear';
-  name: KeyLike;
-  value?: unknown;
-};
-
-export type StorageSubscriber = (event: StorageEvent) => void;
+import type { StorageEvent, StorageSubscriber } from './types.js';
 
 /**
  * A memory-based storage implementation that provides a key-value store with subscription capabilities.

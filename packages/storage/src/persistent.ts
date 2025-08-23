@@ -1,5 +1,6 @@
 import { session, SessionStorage, STORAGE_KEY } from './session.js';
 import type { AnchorOptions, LinkableSchema, ObjLike } from '@anchor/core';
+import type { PersistentFn } from './types.js';
 
 const hasLocalStorage = () => typeof sessionStorage !== 'undefined';
 
@@ -42,31 +43,6 @@ export class PersistentStorage<T extends Record<string, unknown> = Record<string
   ) {
     super(name, init, version, previousVersion, hasLocalStorage() ? localStorage : undefined);
   }
-}
-
-/**
- * Interface for the persistent function that provides methods for creating and managing persistent storage.
- */
-export interface PersistentFn {
-  /**
-   * Creates a reactive persistent object that syncs with local storage.
-   *
-   * @template T - The type of the initial data object
-   * @template S - The type of the linkable schema
-   * @param {string} name - The unique name for the persistent storage instance
-   * @param {T} init - The initial data to populate the storage with
-   * @param {AnchorOptions<S>} [options] - Optional configuration options for the storage
-   * @returns {T} A reactive object that persists data to localStorage
-   */
-  <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(name: string, init: T, options?: AnchorOptions<S>): T;
-
-  /**
-   * Disconnects a reactive persistent object from localStorage synchronization.
-   *
-   * @template T - The type of the object to disconnect
-   * @param {T} state - The reactive object to stop syncing with localStorage
-   */
-  leave<T extends ObjLike>(state: T): void;
 }
 
 /**

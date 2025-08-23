@@ -10,6 +10,7 @@ import {
   type StateUnsubscribe,
 } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
+import type { SessionFn } from './types.js';
 
 export const STORAGE_KEY = 'anchor';
 export const STORAGE_SYNC = new Map<string, ObjLike>();
@@ -130,44 +131,6 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
 
 const STORAGE_REGISTRY = new WeakMap<ObjLike, SessionStorage>();
 const STORAGE_SUBSCRIPTION_REGISTRY = new WeakMap<ObjLike, StateUnsubscribe>();
-
-export interface SessionFn {
-  /**
-   * Creates a reactive session object that automatically syncs with sessionStorage.
-   * The session object will persist data across page reloads within the same browser session.
-   *
-   * @template T - The type of the initial data object
-   * @template S - The schema type for anchor options
-   *
-   * @param name - Unique identifier for the session storage instance
-   * @param init - Initial data to populate the session storage
-   * @param options - Optional anchor configuration options
-   * @param storageClass - Custom storage class to use (defaults to SessionStorage)
-   *
-   * @returns A reactive proxy object that syncs with sessionStorage
-   */
-  <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
-    name: string,
-    init: T,
-    options?: AnchorOptions<S>,
-    storageClass?: typeof SessionStorage
-  ): T;
-
-  /**
-   * Disconnects a reactive session object from sessionStorage synchronization.
-   *
-   * @template T - The type of the session object
-   * @param state - The reactive session object to disconnect
-   *
-   * @example
-   * ```typescript
-   * const userSession = session('user', { id: 1, name: 'John' });
-   * session.leave(userSession);
-   * // userSession is no longer synced with sessionStorage
-   * ```
-   */
-  leave<T extends ObjLike>(state: T): void;
-}
 
 export const STORAGE_SYNC_DELAY = 100;
 
