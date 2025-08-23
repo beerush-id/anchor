@@ -71,3 +71,52 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   const state = anchor<S, T>(init, schemaOptions as S, options);
   return derivedRef(state) as Ref<T>;
 }
+
+/**
+ * Creates a reactive array that only reacts to changes in the array.
+ * This is a Vue wrapper around anchor.flat that returns a Ref.
+ *
+ * @template T - The type of the initial array
+ * @template S - The schema type for validation
+ * @param init - Initial array value
+ * @param options - Configuration options
+ * @returns A Vue Ref containing the flat reactive array
+ */
+export function flatRef<T extends unknown[], S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: AnchorOptions<S>
+): Ref<T> {
+  const state = anchor.flat(init, options);
+  return derivedRef(state) as Ref<T>;
+}
+
+/**
+ * Creates a reactive object that mutates the original object.
+ * This is a Vue wrapper around anchor.raw that returns a Ref.
+ *
+ * @template T - The type of the initial object
+ * @template S - The schema type for validation
+ * @param init - Initial object value
+ * @param options - Configuration options
+ * @returns A Vue Ref containing the raw reactive object
+ */
+export function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: AnchorOptions<S>
+): Ref<T> {
+  const state = anchor.raw(init, options);
+  return derivedRef(state) as Ref<T>;
+}
+
+/**
+ * Creates a writable version of a readonly state.
+ * This is a Vue wrapper around anchor.writable that returns a Ref.
+ *
+ * @template T - The type of the readonly state
+ * @param state - The readonly state to make writable
+ * @returns A Vue Ref containing the writable state
+ */
+export function writableRef<T extends Linkable>(state: T): Ref<T> {
+  const writableState = anchor.writable(state);
+  return derivedRef(writableState) as Ref<T>;
+}
