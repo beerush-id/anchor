@@ -1,18 +1,16 @@
 import { isFunction } from '@beerush/utils';
-import { DB_SYNC_DELAY, IDBStatus, IndexedStore } from './db.js';
-import {
-  create,
-  createRecord,
-  DEFAULT_FIND_LIMIT,
-  type FilterFn,
-  find,
-  read,
-  type Rec,
-  remove,
-  type Row,
-  update,
-} from './helper.js';
+import { DB_SYNC_DELAY, IndexedStore } from './db.js';
+import { create, createRecord, DEFAULT_FIND_LIMIT, find, read, remove, update } from './helper.js';
 import { anchor, derive, microtask, type StateUnsubscribe } from '@anchor/core';
+import {
+  type FilterFn,
+  IDBStatus,
+  type ReactiveTable,
+  type Rec,
+  type Row,
+  type RowListState,
+  type RowState,
+} from './types.js';
 
 /**
  * IndexedDB Table is a promise-first API for IndexedDB.
@@ -276,90 +274,43 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
   }
 }
 
-export type RowStatus = 'init' | 'pending' | 'ready' | 'error' | 'removed';
-export type RowRequest = {
-  status: RowStatus;
-  error?: Error;
-};
-export type RowState<R extends Row<Rec>> = RowRequest & {
-  data: R;
-};
-export type RowListState<R extends Row<Rec>> = RowRequest & {
-  data: R[];
-};
-
 /**
- * ReactiveTable interface provides a reactive wrapper around IndexedTable operations.
- * It manages state synchronization and provides reactive data access patterns.
+ * Creates a reactive table instance that provides state management for IndexedDB records.
+ * This function wraps an IndexedTable with reactive state management capabilities,
+ * allowing for automatic synchronization between memory and database states.
  *
  * @template T - The base record type that extends Rec
  * @template R - The row type that extends Row<T>, defaults to Row<T>
+ * @param name - The name of the IndexedDB object store
+ * @returns A reactive table interface with methods for managing records
  */
-export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
-  /**
-   * Gets a reactive row state by ID.
-   * If the row doesn't exist in the local cache, it will be fetched from the database.
-   *
-   * @param id - The record ID to fetch
-   * @returns RowState containing the reactive data and status
-   */
-  get(id: string): RowState<R>;
-
-  /**
-   * Adds a new record to the table.
-   * Creates a reactive row state and persists the data to the database.
-   *
-   * @param payload - The record data to create
-   * @returns RowState containing the reactive data and status
-   */
-  add(payload: T): RowState<R>;
-
-  /**
-   * Lists records matching the filter criteria.
-   * Returns a reactive list state that updates when the underlying data changes.
-   *
-   * @param filter - The filter criteria (IDBKeyRange or FilterFn) (optional)
-   * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
-   * @param direction - Cursor direction for sorting (optional)
-   * @returns RowListState containing the reactive data array and status
-   */
-  list(filter?: IDBKeyRange | FilterFn, limit?: number, direction?: IDBCursorDirection): RowListState<R>;
-
-  /**
-   * Lists records by index matching the filter criteria.
-   * Returns a reactive list state that updates when the underlying data changes.
-   *
-   * @param name - The index name to search on
-   * @param filter - The filter criteria (IDBKeyRange or FilterFn) (optional)
-   * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
-   * @param direction - Cursor direction for sorting (optional)
-   * @returns RowListState containing the reactive data array and status
-   */
-  listIndex(
-    name: keyof R,
-    filter?: IDBKeyRange | FilterFn,
-    limit?: number,
-    direction?: IDBCursorDirection
-  ): RowListState<R>;
-
-  /**
-   * Removes a record by ID.
-   * Marks the record as deleted in the database and updates the reactive state.
-   *
-   * @param id - The record ID to delete
-   * @returns RowState containing the reactive data and status
-   */
-  remove(id: string): RowState<R>;
-}
-
 export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: string): ReactiveTable<T, R> {
   const table = new IndexedTable<T, R>(name);
 
+  /**
+   * Map storing row states by record ID
+   */
   const rowList = new Map<string, RowState<R>>();
+
+  /**
+   * Map tracking usage count of each row for reference counting
+   */
   const rowUsage = new Map<string, number>();
+
+  /**
+   * WeakMap storing unsubscribe functions for row state subscriptions
+   */
   const rowSubscriptions = new WeakMap<RowState<R>, StateUnsubscribe>();
 
-  // Make sure each record has one manager that in charge of synchronization.
+  /**
+   * Ensures a row state exists for the given ID, creating it if necessary.
+   * Implements reference counting to manage row lifecycle.
+   *
+   * @param id - The record ID
+   * @param data - Initial data for the row (default: empty object)
+   * @param status - Initial status for the row (default: 'init')
+   * @returns The row state for the given ID
+   */
   const ensureRow = (id: string, data = {}, status = 'init') => {
     if (rowList.has(id)) {
       const usage = rowUsage.get(id) ?? 0;
@@ -412,6 +363,11 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
   };
 
   return {
+    /**
+     * Gets a row state by ID, initializing it with data from the database if needed.
+     * @param id - The record ID
+     * @returns The row state
+     */
     get(id: string): RowState<R> {
       const state = ensureRow(id);
 
@@ -434,6 +390,12 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
 
       return state;
     },
+
+    /**
+     * Adds a new record to the table.
+     * @param payload - The record data to add
+     * @returns The row state for the new record
+     */
     add(payload: T): RowState<R> {
       const row = createRecord<T>(payload);
       const state = ensureRow(row.id, row);
@@ -453,6 +415,14 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
 
       return state;
     },
+
+    /**
+     * Lists records matching filter criteria.
+     * @param filter - The filter criteria (IDBKeyRange or FilterFn)
+     * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
+     * @param direction - Cursor direction (default: undefined)
+     * @returns A state object containing the list of records
+     */
     list(filter?: IDBKeyRange | FilterFn, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
       const state = anchor.raw<RowListState<R>>({
         data: [],
@@ -478,6 +448,15 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
 
       return state;
     },
+
+    /**
+     * Lists records by index matching filter criteria.
+     * @param name - The index name to search on
+     * @param filter - The filter criteria (IDBKeyRange or FilterFn)
+     * @param limit - Maximum number of records to return
+     * @param direction - Cursor direction
+     * @returns A state object containing the list of records
+     */
     listIndex(
       name: keyof R,
       filter?: IDBKeyRange | FilterFn,
@@ -505,6 +484,12 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
 
       return state;
     },
+
+    /**
+     * Removes a record by ID.
+     * @param id - The record ID to remove
+     * @returns The row state for the removed record
+     */
     remove(id: string): RowState<R> {
       const state = ensureRow(id);
 
@@ -529,6 +514,11 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
 
       return state;
     },
+
+    /**
+     * Decrements the reference count for a row and cleans up if no longer used.
+     * @param id - The record ID to leave
+     */
     leave(id: string) {
       const state = rowList.get(id);
 

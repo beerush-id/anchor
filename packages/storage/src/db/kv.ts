@@ -1,17 +1,17 @@
-import { DB_SYNC_DELAY, type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus, IndexedStore } from './db.js';
-import { put, remove } from './helper.js';
+import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchor/core';
-
-export type KVEvent<T> = {
-  type: IDBStatus | 'set' | 'delete';
-  key?: string;
-  value?: T;
-};
-
-export type KVSubscriber<T> = DBSubscriber & ((event: KVEvent<T>) => void);
-export type Operation = {
-  promise: () => Promise<void>;
-};
+import {
+  type DBEvent,
+  type DBUnsubscribe,
+  IDBStatus,
+  type KVEvent,
+  type KVFn,
+  type KVState,
+  type KVSubscriber,
+  type Operation,
+  type Storable,
+} from './types.js';
+import { put, remove } from './helper.js';
 
 /**
  * IndexedKV is an optimistic KV Storage that uses IndexedDB as its backend.
@@ -306,83 +306,6 @@ export class IndexedKv<T> extends IndexedStore {
 
     this.#awaiters.forEach((handler) => handler());
   }
-}
-
-/**
- * Type definition for values that can be stored in the key-value store.
- * Storable types include primitive values, objects, and arrays that can be serialized.
- */
-export type Storable =
-  | string
-  | number
-  | boolean
-  | null
-  | Date
-  | {
-      [key: string]: Storable;
-    }
-  | Array<Storable>;
-
-/**
- * Represents the state of a key-value storage item.
- * Contains both the actual data and a status indicator for initialization state.
- *
- * @template T - The type of the stored data that extends Storable
- */
-export type KVState<T extends Storable> = {
-  /** The actual stored data */
-  data: T;
-  /** The initialization status of the state */
-  status: 'init' | 'ready' | 'error' | 'removed';
-  error?: Error;
-};
-
-export interface KVFn {
-  /**
-   * Creates a reactive key-value state that is synchronized with IndexedDB.
-   *
-   * This function initializes a reactive state object that automatically syncs
-   * with the IndexedKv storage. On first access, it reads the value from storage
-   * or sets an initial value if none exists. The state includes both the data
-   * and a status indicator showing the initialization state.
-   *
-   * @template T - The type of the stored value, must extend Storable
-   * @param key - The unique key to identify the stored value
-   * @param init - The initial value to use if no existing value is found
-   * @returns A reactive state object containing the data and status
-   */
-  <T extends Storable>(key: string, init?: T): KVState<T>;
-
-  /**
-   * Cleans up the subscription for a reactive key-value state.
-   *
-   * This method removes the subscription associated with a given state object,
-   * preventing further synchronization with the IndexedDB. It should be called
-   * when the state is no longer needed to avoid memory leaks.
-   *
-   * @template T - The type of the stored value, must extend Storable
-   * @param state - The state object to unsubscribe
-   */
-  leave<T extends Storable>(state: KVState<T>): void;
-
-  /**
-   * Removes a key-value pair from the storage.
-   *
-   * This function is used to delete a specific key-value pair from the storage.
-   * It takes a key as input and removes the corresponding key-value pair from the storage.
-   * If the key does not exist in the storage, the function does nothing.
-   * It also publishes a "remove" event to notify subscribers about the removal.
-   *
-   * @param {string} key
-   */
-  remove(key: string): void;
-
-  /**
-   * A helper to wait for the store operations to complete.
-   *
-   * @returns {Promise<true>}
-   */
-  completed(): Promise<true>;
 }
 
 /**

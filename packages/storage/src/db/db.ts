@@ -1,42 +1,10 @@
 import { isFunction } from '@beerush/utils';
 import { captureStack } from '@anchor/core';
+import { type Connection, type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus } from './types.js';
 
 export const DB_NAME = 'anchor';
 export const DB_SYNC_DELAY = 100;
-
-export enum IDBStatus {
-  Idle = 'idle',
-  Init = 'init',
-  Open = 'open',
-  Closed = 'closed',
-}
-
-export type DBEvent = {
-  type: IDBStatus;
-};
-export type DBSubscriber = (event: DBEvent) => void;
-export type DBUnsubscribe = () => void;
-
-const DB_CONNECTIONS = new Map<string, Connection>();
-
-type UpgradeList = Set<(event: IDBVersionChangeEvent) => void>;
-type LoaderList = Set<(db: IDBDatabase) => Promise<void> | void>;
-type RejectList = Set<(error: DOMException | null) => void>;
-type CloseList = Set<(error?: Error) => void>;
-
-type Connection = {
-  name: string;
-  version: number;
-  error?: DOMException | Error | null;
-  status: IDBStatus;
-  onUpgrade: UpgradeList;
-  onLoaded: LoaderList;
-  onClosed: CloseList;
-  onError: RejectList;
-  open: () => Connection;
-  close: (error?: Error) => void;
-  instance?: IDBDatabase;
-};
+export const DB_CONNECTIONS = new Map<string, Connection>();
 
 /**
  * Creates a new IndexedDB connection with the specified name and version.

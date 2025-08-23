@@ -1,18 +1,7 @@
 import { isFunction, merge } from '@beerush/utils';
-import type { Storable } from './kv.js';
 import { uuid } from './uuid.js';
+import type { FilterFn, Rec, Row } from './types.js';
 
-export type Rec = {
-  [key: string]: Storable;
-};
-export type Row<T extends Rec> = T & {
-  id: string;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at?: Date;
-};
-
-export type FilterFn = <T extends Rec>(record: Row<T>) => boolean;
 export const DEFAULT_FIND_LIMIT = 25;
 
 /**
