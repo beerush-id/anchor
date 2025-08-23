@@ -1,13 +1,15 @@
 import { isFunction, merge } from '@beerush/utils';
-import { shortId } from '@anchor/core';
+import type { Storable } from './kv.js';
+import { uuid } from './uuid.js';
 
 export type Rec = {
-  [key: string]: unknown;
+  [key: string]: Storable;
 };
 export type Row<T extends Rec> = T & {
   id: string;
   created_at: Date;
   updated_at: Date;
+  deleted_at?: Date;
 };
 
 export type FilterFn = <T extends Rec>(record: Row<T>) => boolean;
@@ -124,17 +126,21 @@ export const remove = (table: IDBObjectStore, key: string): Promise<true> => {
  */
 export const create = <T extends Rec, R extends Row<T> = Row<T>>(table: IDBObjectStore, payload: T): Promise<R> => {
   return new Promise((resolve, reject) => {
-    const record = {
-      id: shortId(),
-      created_at: new Date(),
-      updated_at: new Date(),
-      ...payload,
-    } as R;
+    const record = createRecord<T, R>(payload);
     const request = table.add(record);
 
     request.onsuccess = () => resolve(record);
     request.onerror = () => reject(request.error);
   });
+};
+
+export const createRecord = <T extends Rec, R extends Row<T> = Row<T>>(payload: T): R => {
+  return {
+    id: uuid(),
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...payload,
+  } as R;
 };
 
 /**

@@ -1,6 +1,18 @@
 import { isFunction } from '@beerush/utils';
-import { IDBStatus, IndexedStore } from './db.js';
-import { create, DEFAULT_FIND_LIMIT, type FilterFn, find, read, type Rec, remove, type Row, update } from './helper.js';
+import { DB_SYNC_DELAY, IDBStatus, IndexedStore } from './db.js';
+import {
+  create,
+  createRecord,
+  DEFAULT_FIND_LIMIT,
+  type FilterFn,
+  find,
+  read,
+  type Rec,
+  remove,
+  type Row,
+  update,
+} from './helper.js';
+import { anchor, derive, microtask, type StateUnsubscribe } from '@anchor/core';
 
 /**
  * IndexedDB Table is a promise-first API for IndexedDB.
@@ -262,4 +274,267 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
       }
     });
   }
+}
+
+export type RowStatus = 'init' | 'pending' | 'ready' | 'error' | 'removed';
+export type RowRequest = {
+  status: RowStatus;
+  error?: Error;
+};
+export type RowState<R extends Row<Rec>> = RowRequest & {
+  data: R;
+};
+export type RowListState<R extends Row<Rec>> = RowRequest & {
+  data: R[];
+};
+
+/**
+ * ReactiveTable interface provides a reactive wrapper around IndexedTable operations.
+ * It manages state synchronization and provides reactive data access patterns.
+ *
+ * @template T - The base record type that extends Rec
+ * @template R - The row type that extends Row<T>, defaults to Row<T>
+ */
+export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
+  /**
+   * Gets a reactive row state by ID.
+   * If the row doesn't exist in the local cache, it will be fetched from the database.
+   *
+   * @param id - The record ID to fetch
+   * @returns RowState containing the reactive data and status
+   */
+  get(id: string): RowState<R>;
+
+  /**
+   * Adds a new record to the table.
+   * Creates a reactive row state and persists the data to the database.
+   *
+   * @param payload - The record data to create
+   * @returns RowState containing the reactive data and status
+   */
+  add(payload: T): RowState<R>;
+
+  /**
+   * Lists records matching the filter criteria.
+   * Returns a reactive list state that updates when the underlying data changes.
+   *
+   * @param filter - The filter criteria (IDBKeyRange or FilterFn) (optional)
+   * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
+   * @param direction - Cursor direction for sorting (optional)
+   * @returns RowListState containing the reactive data array and status
+   */
+  list(filter?: IDBKeyRange | FilterFn, limit?: number, direction?: IDBCursorDirection): RowListState<R>;
+
+  /**
+   * Lists records by index matching the filter criteria.
+   * Returns a reactive list state that updates when the underlying data changes.
+   *
+   * @param name - The index name to search on
+   * @param filter - The filter criteria (IDBKeyRange or FilterFn) (optional)
+   * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
+   * @param direction - Cursor direction for sorting (optional)
+   * @returns RowListState containing the reactive data array and status
+   */
+  listIndex(
+    name: keyof R,
+    filter?: IDBKeyRange | FilterFn,
+    limit?: number,
+    direction?: IDBCursorDirection
+  ): RowListState<R>;
+
+  /**
+   * Removes a record by ID.
+   * Marks the record as deleted in the database and updates the reactive state.
+   *
+   * @param id - The record ID to delete
+   * @returns RowState containing the reactive data and status
+   */
+  remove(id: string): RowState<R>;
+}
+
+export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: string): ReactiveTable<T, R> {
+  const table = new IndexedTable<T, R>(name);
+
+  const rowList = new Map<string, RowState<R>>();
+  const rowUsage = new Map<string, number>();
+  const rowSubscriptions = new WeakMap<RowState<R>, StateUnsubscribe>();
+
+  // Make sure each record has one manager that in charge of synchronization.
+  const ensureRow = (id: string, data = {}, status = 'init') => {
+    if (rowList.has(id)) {
+      const usage = rowUsage.get(id) ?? 0;
+      rowUsage.set(id, usage + 1);
+      return rowList.get(id) as RowState<R>;
+    }
+
+    const state = anchor.raw({ data, status }) as RowState<R>;
+    const [schedule] = microtask(DB_SYNC_DELAY);
+
+    rowList.set(id, state);
+    rowUsage.set(id, 1);
+
+    const stateUnsubscribe = derive(state, (snapshot, event) => {
+      if (event.type !== 'init' && event.keys.includes('data')) {
+        schedule(() => {
+          state.status = 'pending';
+
+          table
+            .update(id, snapshot.data)
+            .then(() => {
+              state.status = 'ready';
+            })
+            .catch((error) => {
+              anchor.assign(state, { status: 'error', error });
+            });
+        });
+      }
+    });
+
+    const unsubscribe = () => {
+      let usage = rowUsage.get(id) ?? 1;
+
+      usage -= 1;
+
+      if (usage <= 0) {
+        stateUnsubscribe();
+
+        rowList.delete(id);
+        rowUsage.delete(id);
+        rowSubscriptions.delete(state);
+      } else {
+        rowUsage.set(id, usage);
+      }
+    };
+
+    rowSubscriptions.set(state, unsubscribe);
+
+    return state;
+  };
+
+  return {
+    get(id: string): RowState<R> {
+      const state = ensureRow(id);
+
+      if (state.status === 'init') {
+        state.status = 'pending';
+
+        table
+          .read(id)
+          .then((data) => {
+            if (data) {
+              anchor.assign(state, { data, status: 'ready' });
+            } else {
+              anchor.assign(state, { status: 'error', error: new Error('Not found.') });
+            }
+          })
+          .catch((error) => {
+            anchor.assign(state, { status: 'error', error });
+          });
+      }
+
+      return state;
+    },
+    add(payload: T): RowState<R> {
+      const row = createRecord<T>(payload);
+      const state = ensureRow(row.id, row);
+
+      if (state.status === 'init') {
+        state.status = 'pending';
+
+        table
+          .create(payload)
+          .then(() => {
+            anchor.assign(state, { status: 'ready' });
+          })
+          .catch((error) => {
+            anchor.assign(state, { status: 'error', error });
+          });
+      }
+
+      return state;
+    },
+    list(filter?: IDBKeyRange | FilterFn, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
+      const state = anchor.raw<RowListState<R>>({
+        data: [],
+        status: 'pending',
+      });
+
+      table
+        .find(filter, limit, direction)
+        .then((res) => {
+          res = res.map((rec) => ensureRow(rec.id, rec, 'ready').data);
+
+          anchor.assign(state, {
+            data: res,
+            status: 'ready',
+          });
+        })
+        .catch((error) => {
+          anchor.assign(state, {
+            status: 'error',
+            error,
+          });
+        });
+
+      return state;
+    },
+    listIndex(
+      name: keyof R,
+      filter?: IDBKeyRange | FilterFn,
+      limit?: number,
+      direction?: IDBCursorDirection
+    ): RowListState<R> {
+      const state = anchor.raw<RowListState<R>>({
+        data: [],
+        status: 'init',
+      });
+
+      table
+        .findByIndex(name, filter, limit, direction)
+        .then((res) => {
+          res = res.map((rec) => ensureRow(rec.id, rec, 'ready').data);
+
+          anchor.assign(state, {
+            data: res,
+            status: 'ready',
+          });
+        })
+        .catch((error) => {
+          anchor.assign(state, { status: 'error', error });
+        });
+
+      return state;
+    },
+    remove(id: string): RowState<R> {
+      const state = ensureRow(id);
+
+      if (state.status === 'init') {
+        state.status = 'pending';
+        state.data.deleted_at = new Date();
+
+        table
+          .delete(id)
+          .then(() => {
+            anchor.assign(state, { status: 'removed' });
+
+            rowList.delete(id);
+            rowUsage.delete(id);
+            rowSubscriptions.get(state)?.();
+          })
+          .catch((error) => {
+            delete state.data.deleted_at;
+            anchor.assign(state, { status: 'error', error });
+          });
+      }
+
+      return state;
+    },
+    leave(id: string) {
+      const state = rowList.get(id);
+
+      if (state) {
+        rowSubscriptions.get(state)?.();
+      }
+    },
+  } as ReactiveTable<T, R>;
 }
