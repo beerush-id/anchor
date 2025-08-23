@@ -77,6 +77,7 @@ describe('Anchor Core - Observable Object', () => {
       state.a = 3;
 
       expect(state.a).toBe(3);
+      expect(onChange).toHaveBeenCalledTimes(1);
       expect(onChange).toHaveBeenCalledWith({
         type: 'set',
         keys: ['a'],
@@ -87,11 +88,27 @@ describe('Anchor Core - Observable Object', () => {
       delete state.b;
 
       expect(state.b).toBeUndefined();
+      expect(onChange).toHaveBeenCalledTimes(2);
       expect(onChange).toHaveBeenCalledWith({
         type: 'delete',
         keys: ['b'],
         prev: 2,
       });
+
+      anchor.assign(state, { a: 1, b: 2 });
+
+      expect(state.a).toBe(1);
+      expect(state.b).toBe(2);
+      expect(onChange).toHaveBeenCalledTimes(3);
+
+      anchor.remove(state, 'b');
+
+      expect(state.b).toBeUndefined();
+      expect(onChange).toHaveBeenCalledTimes(4);
+
+      anchor.clear(state);
+      expect(state).toEqual({});
+      expect(onChange).toHaveBeenCalledTimes(5);
     });
 
     it('should track nested object properties', () => {
