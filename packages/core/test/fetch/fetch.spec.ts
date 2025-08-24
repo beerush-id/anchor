@@ -139,6 +139,48 @@ describe('Reactive Fetch', () => {
       expect(typeof state.data).toBe('object');
       expect(derive.resolve(state.data)).toBeDefined();
     });
+
+    it('should handle conversion to promise', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        text: () => Promise.resolve(JSON.stringify([{ a: 1 }])),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const state = fetchState([], {
+        url: 'https://api.example.com/users',
+        method: 'GET',
+      });
+
+      const result = await fetchState.promise(state);
+
+      expect(result.data).toEqual([{ a: 1 }]);
+      expect(result.status).toBe(FetchStatus.Success);
+
+      // Make sure conversion from a completed state still resolves.
+      const result2 = await fetchState.promise(state);
+      expect(result2.data).toEqual([{ a: 1 }]);
+      expect(result2.status).toBe(FetchStatus.Success);
+    });
+
+    it('should handle promise error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const handler = vi.fn();
+      const state = fetchState([], {
+        url: 'https://example.com/data',
+      });
+
+      await fetchState.promise(state).catch(handler);
+
+      expect(state.status).toBe(FetchStatus.Error);
+      expect(handler).toHaveBeenCalled();
+    });
   });
 
   describe('Stream', () => {
@@ -415,6 +457,57 @@ describe('Reactive Fetch', () => {
       expect(arrState.status).toBe(FetchStatus.Success);
       expect(arrState.data).toEqual(jsonChunk);
       expect(arrState.response?.status).toBe(mockResponse.status);
+    });
+
+    it('should handle conversion to promise', async () => {
+      const textChunks = ['Hello', ' ', 'World'];
+
+      const encoder = new TextEncoder();
+      const mockReadable = new ReadableStream({
+        start: (controller) => {
+          for (const chunk of textChunks) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+
+          controller.close();
+        },
+      });
+
+      const mockResponse = new Response(mockReadable, { status: 200 });
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
+
+      const state = streamState('', {
+        url: 'https://example.com/api/data',
+        method: 'GET',
+      });
+      const result = await streamState.promise(state);
+
+      expect(result.data).toBe('Hello World');
+      expect(result.status).toBe(FetchStatus.Success);
+
+      // Make sure conversion from a completed state still resolves.
+      const result2 = await streamState.promise(state);
+
+      expect(result2.data).toBe('Hello World');
+      expect(result2.status).toBe(FetchStatus.Success);
+    });
+
+    it('should handle promise error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const handler = vi.fn();
+      const state = streamState([], {
+        url: 'https://example.com/data',
+      });
+
+      await fetchState.promise(state).catch(handler);
+
+      expect(state.status).toBe(FetchStatus.Error);
+      expect(handler).toHaveBeenCalled();
     });
   });
 

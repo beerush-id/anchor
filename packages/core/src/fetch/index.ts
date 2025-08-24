@@ -1,8 +1,9 @@
-import type { AnchorOptions, LinkableSchema, ObjLike } from '../types.js';
+import type { AnchorOptions, Linkable, LinkableSchema, ObjLike } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
 import { captureStack } from '../exception.js';
+import { derive } from '../derive.ts';
 
 export type RequestOptions = RequestInit & {
   url: string | URL;
@@ -27,6 +28,12 @@ export type FetchState<T> = {
   response?: Response;
 };
 
+export interface FetchFn {
+  <T, S extends LinkableSchema = LinkableSchema>(init: T, options: FetchOptions<S>): FetchState<T>;
+
+  promise<T, S extends FetchState<T>>(state: S): Promise<S>;
+}
+
 /**
  * Create a reactive fetch state object.
  * Reactive fetch state object will sync with fetch response.
@@ -37,10 +44,7 @@ export type FetchState<T> = {
  * @param {FetchOptions<S>} options - Fetch configuration options including URL and request settings
  * @returns {FetchState<T>} A reactive state object containing data, status, error and response
  */
-export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
-  init: T,
-  options: FetchOptions<S>
-): FetchState<T> {
+function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, options: FetchOptions<S>): FetchState<T> {
   if (linkable(init)) {
     init = anchor(init, options);
   }
@@ -79,7 +83,7 @@ export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
         captureStack.error.external(
           'Something went wrong when fetching response',
           new Error(response.statusText),
-          fetchState
+          fetchStateFn
         );
         anchor.assign(state, {
           response,
@@ -96,6 +100,18 @@ export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
   return state;
 }
 
+fetchStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
+  return toPromise(state);
+};
+
+export const fetchState = fetchStateFn as FetchFn;
+
+export interface StreamFn {
+  <T, S extends LinkableSchema = LinkableSchema>(init: T, options?: StreamOptions<T, S>): FetchState<T>;
+
+  promise<T, S extends FetchState<T>>(state: S): Promise<S>;
+}
+
 /**
  * Create a reactive stream state object that handles streaming responses.
  * The stream state will update incrementally as data chunks are received.
@@ -106,7 +122,7 @@ export function fetchState<T, S extends LinkableSchema = LinkableSchema>(
  * @param {StreamOptions<T, S>} options - Stream configuration options including URL, request settings, and optional transform function
  * @returns {FetchState<T>} A reactive state object containing data, status, error and response
  */
-export function streamState<T, S extends LinkableSchema = LinkableSchema>(
+function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options: StreamOptions<T, S>
 ): FetchState<T> {
@@ -146,7 +162,7 @@ export function streamState<T, S extends LinkableSchema = LinkableSchema>(
         captureStack.error.external(
           'Something went wrong when fetching response',
           new Error(response.statusText),
-          streamState
+          streamStateFn
         );
         anchor.assign(state, {
           response,
@@ -162,6 +178,12 @@ export function streamState<T, S extends LinkableSchema = LinkableSchema>(
 
   return state;
 }
+
+streamStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
+  return toPromise(state);
+};
+
+export const streamState = streamStateFn as StreamFn;
 
 /**
  * Reads data chunks from a ReadableStream and processes them through receiver and finalizer callbacks.
@@ -214,7 +236,7 @@ async function readStream<T>(
  * Appends a data chunk to the fetch state, applying transformation logic based on data types.
  * This function handles different data types (string, object, array) appropriately:
  * - Strings are concatenated
- * - Objects are merged using anchor.assign
+ * - Objects are merged using `anchor.assign`
  * - Arrays have their elements pushed
  * If no transform function is provided, the chunk replaces the current data.
  *
@@ -258,3 +280,33 @@ function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T,
     }
   }
 }
+
+/**
+ * Converts a FetchState object to a Promise that resolves when the fetch operation completes.
+ * If the state is still pending, it creates a promise that listens for state changes and resolves
+ * or rejects based on the final status. If the state is already completed (success or error),
+ * it returns a resolved promise with the current state.
+ *
+ * @template T - The type of the FetchState object
+ * @param {T} state - The FetchState object to convert to a promise
+ * @returns {Promise<T>} A promise that resolves with the final state or rejects with an error
+ */
+const toPromise = <T, S extends FetchState<T>>(state: S): Promise<S> => {
+  if (state.status === FetchStatus.Pending) {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = derive(state, (_s, event) => {
+        if (event.type !== 'init' && !event.keys.includes('data')) {
+          if (state.status === FetchStatus.Error) {
+            reject(state.error);
+          } else if (state.status === FetchStatus.Success) {
+            resolve(state);
+          }
+
+          unsubscribe();
+        }
+      });
+    });
+  }
+
+  return Promise.resolve(state);
+};
