@@ -233,3 +233,7 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
    */
   store<T extends IndexedTable<Rec>>(): T;
 }
+
+export type InferRec<T> = T extends ReactiveTable<infer R> ? R : never;
+export type InferRow<T> = T extends ReactiveTable<Rec, infer R> ? R : never;
+export type InferList<T> = T extends ReactiveTable<Rec, infer R> ? R[] : never;

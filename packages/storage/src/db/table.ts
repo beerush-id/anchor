@@ -543,6 +543,11 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       }
     },
 
+    /**
+     * Convert the state into a promise that resolves when the state is ready.
+     * @param {T} state
+     * @returns {Promise<T>}
+     */
     async promise<T extends RowState<R> | RowListState<R>>(state: T): Promise<T> {
       if (state.status === 'pending') {
         return await new Promise<T>((resolve, reject) => {
@@ -563,6 +568,10 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       return state;
     },
 
+    /**
+     * Gets the underlying table store.
+     * @returns {IndexedTable<T, R>}
+     */
     store() {
       return table;
     },
