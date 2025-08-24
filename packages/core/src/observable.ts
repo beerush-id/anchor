@@ -1,4 +1,5 @@
 import type { KeyLike, Linkable, StateChange, StateObserver } from './types.js';
+import { captureStack } from './exception.js';
 
 let currentObserver: StateObserver | undefined = undefined;
 
@@ -76,6 +77,9 @@ export function createObserver(
     get destroy() {
       return destroy;
     },
+    run<R>(fn: () => R): R | undefined {
+      return withinObserver(this, fn);
+    },
   };
 }
 
@@ -101,4 +105,69 @@ export function assignObserver(init: Linkable, observers: Set<StateObserver>, ob
   if (!observer.states.has(init)) {
     observer.states.set(init, new Set());
   }
+}
+
+/**
+ * Executes a function within a specific observer context.
+ * This function temporarily sets the provided observer as the current context,
+ * executes the provided function, and then restores the previous observer context.
+ * It's useful for running code that should be tracked by a specific observer.
+ *
+ * @param observer - The observer to set as the current context
+ * @param fn - The function to execute within the observer context
+ */
+export function withinObserver<R>(observer: StateObserver, fn: () => R): R | undefined {
+  const prevObserver = currentObserver;
+  currentObserver = observer;
+
+  let result: R | undefined = undefined;
+
+  if (typeof fn === 'function') {
+    try {
+      result = fn();
+    } catch (error) {
+      captureStack.error.external('Unable to execute the within observer function', error as Error, withinObserver);
+    }
+  } else {
+    const error = new Error('Invalid argument.');
+    captureStack.error.argument('The given argument is not a function', error, withinObserver);
+  }
+
+  currentObserver = prevObserver;
+
+  return result;
+}
+
+/**
+ * Executes a function outside of any observer context.
+ * This function temporarily removes the current observer context,
+ * executes the provided function, and then restores the previous observer context.
+ * It's useful for running code that shouldn't be tracked by the reactive system.
+ *
+ * @param fn - The function to execute outside of observer context
+ */
+export function outsideObserver<R>(fn: () => R): R | undefined {
+  const prevObserver = currentObserver;
+  currentObserver = undefined;
+
+  let result: R | undefined = undefined;
+
+  if (typeof fn === 'function') {
+    try {
+      result = fn();
+    } catch (error) {
+      captureStack.error.external(
+        'Unable to execute the outside of observer function',
+        error as Error,
+        outsideObserver
+      );
+    }
+  } else {
+    const error = new Error('Invalid argument.');
+    captureStack.error.argument('The given argument is not a function', error, outsideObserver);
+  }
+
+  currentObserver = prevObserver;
+
+  return result;
 }

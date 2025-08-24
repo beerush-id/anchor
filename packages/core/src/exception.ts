@@ -16,6 +16,20 @@ const generator = {
 
     return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
   },
+  argumentException(message: string) {
+    const messages = [
+      '\x1b[1mAn invalid function argument given:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      'This is likely due to an invalid argument being passed.',
+      'Please check the provided arguments and try again.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor] ' + messages.join('\n')}\x1b[0m\n\n`;
+  },
   internalException(message: string) {
     const messages = [
       '\x1b[1mAn internal exception occured:\x1b[0m',
@@ -146,6 +160,11 @@ export const captureStack = {
     },
   },
   error: {
+    argument(text: string, error: Error, ...excludeStacks: unknown[]) {
+      const message = generator.argumentException(text);
+      shiftStack(error, captureStack.error.argument, excludeStacks);
+      console.error(message, error, '\n');
+    },
     internal(text: string, error: Error, ...excludeStacks: unknown[]) {
       const message = generator.internalException(text);
       shiftStack(error, captureStack.error.internal, excludeStacks);

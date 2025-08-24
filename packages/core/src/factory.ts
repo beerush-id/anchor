@@ -20,6 +20,7 @@ import {
 } from './registry.js';
 import { captureStack } from './exception.js';
 import { softEntries } from './utils/index.js';
+import { outsideObserver } from './observable.js';
 
 /**
  * Creates a factory function for linking child states to a parent state.
@@ -81,10 +82,6 @@ export function createLinkFactory<T extends Linkable>(
  *
  * @param {StateSubscriptionMap} subscriptions - Map tracking active subscriptions to child states
  * @returns {(childState: Linkable) => void} A function that unlinks a child state from the parent state
- *
- * @example
- * const unlinkFactory = createUnlinkFactory({ subscriptions: new Map() });
- * unlinkFactory(childStateInstance);
  */
 export function createUnlinkFactory(subscriptions: StateSubscriptionMap): (childState: Linkable) => void {
   return (childState: Linkable) => {
@@ -123,11 +120,17 @@ export function createSubscribeFactory<T extends Linkable>(
 
   const subscribeFn = (handler: StateSubscriber<T>, receiver?: Linkable) => {
     // Immediately notify the handler with the current state.
-    try {
-      handler(init, { type: 'init', keys: [] });
-    } catch (error) {
-      captureStack.error.external('Unable to execute the subscription handler function', error as Error);
-      return () => {};
+    const handlerOutput = outsideObserver(() => {
+      try {
+        handler(init, { type: 'init', keys: [] });
+      } catch (error) {
+        captureStack.error.external('Unable to execute the subscription handler function', error as Error);
+        return () => {};
+      }
+    });
+
+    if (typeof handlerOutput !== 'undefined') {
+      return handlerOutput;
     }
 
     const unsubscribeFn = () => {

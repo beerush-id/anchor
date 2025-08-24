@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, setObserver } from '../../src/index.js';
+import { anchor, createObserver, outsideObserver, setObserver, withinObserver } from '../../src/index.js';
 
 describe('Anchor Core - Observable Observer Management', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -212,6 +212,119 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       // Verify all changes were observed
       expect(onChange).toHaveBeenCalledTimes(4);
+    });
+
+    it('should handle outside of observer function', () => {
+      const handler = vi.fn().mockImplementation(() => 'Success');
+      const result = outsideObserver<string>(handler);
+
+      expect(result).toBe('Success');
+    });
+
+    it('should handle outside of observer function that throws', () => {
+      const handler = vi.fn().mockImplementation(() => {
+        throw new Error('Execution error');
+      });
+      const result = outsideObserver(handler);
+
+      expect(result).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle outside of observer function with invalid function', () => {
+      const result = outsideObserver(null as never);
+
+      expect(result).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should not track property access when called outside of observer', () => {
+      const trackHandler = vi.fn();
+      const observer = createObserver(() => {}, trackHandler);
+      const state = anchor({ count: 1, profile: { name: 'John' } });
+
+      const unobserve = setObserver(observer);
+
+      const count = state.count;
+
+      expect(count).toBe(1);
+      expect(observer.states.has(anchor.get(state))).toBe(true);
+      expect(trackHandler).toHaveBeenCalledTimes(1);
+
+      outsideObserver(() => {
+        const name = state.profile.name;
+        expect(name).toBe('John');
+      });
+
+      expect(trackHandler).toHaveBeenCalledTimes(1); // Not called due to name accessed outside of observer.
+
+      const name = state.profile.name; // (2 tracks): .profile + .profile.name
+
+      expect(name).toBe('John');
+      expect(trackHandler).toHaveBeenCalledTimes(3); // Now it's called because the observer has been restored.
+
+      unobserve();
+    });
+
+    it('should handle within observer function', () => {
+      const handle = vi.fn().mockImplementation(() => 'Success');
+      const observer = createObserver(() => {});
+      const result = withinObserver(observer, handle);
+
+      expect(result).toBe('Success');
+    });
+
+    it('should handle within observer function that throws', () => {
+      const handler = vi.fn().mockImplementation(() => {
+        throw new Error('Execution error');
+      });
+      const observer = createObserver(() => {});
+      const result = withinObserver(observer, handler);
+
+      expect(result).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle within observer function with invalid function', () => {
+      const observer = createObserver(() => {});
+      const result = withinObserver(observer, null as never);
+
+      expect(result).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should track property access when called within an observer', () => {
+      const trackHandler = vi.fn();
+      const observer = createObserver(() => {}, trackHandler);
+      const state = anchor({ count: 1, profile: { name: 'John', age: 10 } });
+
+      const count = state.count;
+
+      expect(count).toBe(1);
+      expect(observer.states.has(anchor.get(state))).toBe(false);
+      expect(trackHandler).not.toHaveBeenCalled(); // Not tracked due to outside of observer.
+
+      withinObserver(observer, () => {
+        // This access will trigger a tracking.
+        const name = state.profile.name; // (2 tracks): .profile + .profile.name
+        expect(name).toBe('John');
+      });
+
+      expect(observer.states.has(anchor.get(state))).toBe(true);
+      expect(trackHandler).toHaveBeenCalledTimes(2);
+
+      // This access will not trigger a tracking.
+      const age = state.profile.age;
+
+      expect(age).toBe(10);
+      expect(trackHandler).toHaveBeenCalledTimes(2);
+
+      observer.run(() => {
+        const age = state.profile.age; // Only: .profile.age since .profile already tracked.
+        expect(age).toBe(10);
+      });
+
+      expect(trackHandler).toHaveBeenCalledTimes(3);
     });
   });
 });

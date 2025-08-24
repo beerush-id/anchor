@@ -21,6 +21,7 @@ export type StateObserver = {
   readonly onDestroy: (fn: () => void) => void;
   readonly destroy: () => void;
   readonly onTrack?: (state: Linkable, key: KeyLike) => void;
+  run<R>(fn: () => R): R | undefined;
 };
 
 export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
