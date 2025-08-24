@@ -274,6 +274,8 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
   }
 }
 
+const TABLE_STORES = new Map<string, ReactiveTable<Rec>>();
+
 /**
  * Creates a reactive table instance that provides state management for IndexedDB records.
  * This function wraps an IndexedTable with reactive state management capabilities,
@@ -282,20 +284,36 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
  * @template T - The base record type that extends Rec
  * @template R - The row type that extends Row<T>, defaults to Row<T>
  * @param name - The name of the IndexedDB object store
+ * @param version - The version of the database schema
+ * @param indexes - An array of index names to create in the object store
+ * @param remIndexes - An array of index names to remove from the object store
+ * @param dbName - The name of the database
  * @returns A reactive table interface with methods for managing records
  */
-export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: string): ReactiveTable<T, R> {
-  const table = new IndexedTable<T, R>(name);
+export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
+  name: string,
+  version = 1,
+  indexes?: (keyof R)[],
+  remIndexes?: (keyof R)[],
+  dbName = name
+): ReactiveTable<T, R> {
+  const key = `${dbName}://${name}@${version}`;
+
+  if (TABLE_STORES.has(key)) {
+    return TABLE_STORES.get(key) as ReactiveTable<T, R>;
+  }
+
+  const table = new IndexedTable<T, R>(name, version, indexes, remIndexes, dbName);
 
   /**
    * Map storing row states by record ID
    */
-  const rowList = new Map<string, RowState<R>>();
+  const rowMaps = new Map<string, RowState<R>>();
 
   /**
    * Map tracking usage count of each row for reference counting
    */
-  const rowUsage = new Map<string, number>();
+  const rowUsages = new Map<string, number>();
 
   /**
    * WeakMap storing unsubscribe functions for row state subscriptions
@@ -312,17 +330,17 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
    * @returns The row state for the given ID
    */
   const ensureRow = (id: string, data = {}, status = 'init') => {
-    if (rowList.has(id)) {
-      const usage = rowUsage.get(id) ?? 0;
-      rowUsage.set(id, usage + 1);
-      return rowList.get(id) as RowState<R>;
+    if (rowMaps.has(id)) {
+      const usage = rowUsages.get(id) as number;
+      rowUsages.set(id, usage + 1);
+      return rowMaps.get(id) as RowState<R>;
     }
 
     const state = anchor.raw({ data, status }) as RowState<R>;
     const [schedule] = microtask(DB_SYNC_DELAY);
 
-    rowList.set(id, state);
-    rowUsage.set(id, 1);
+    rowMaps.set(id, state);
+    rowUsages.set(id, 1);
 
     const stateUnsubscribe = derive(state, (snapshot, event) => {
       if (event.type !== 'init' && event.keys.includes('data')) {
@@ -342,18 +360,18 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
     });
 
     const unsubscribe = () => {
-      let usage = rowUsage.get(id) ?? 1;
+      let usage = rowUsages.get(id) as number;
 
       usage -= 1;
 
       if (usage <= 0) {
         stateUnsubscribe();
 
-        rowList.delete(id);
-        rowUsage.delete(id);
+        rowMaps.delete(id);
+        rowUsages.delete(id);
         rowSubscriptions.delete(state);
       } else {
-        rowUsage.set(id, usage);
+        rowUsages.set(id, usage);
       }
     };
 
@@ -362,7 +380,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
     return state;
   };
 
-  return {
+  const tableRef = {
     /**
      * Gets a row state by ID, initializing it with data from the database if needed.
      * @param id - The record ID
@@ -404,7 +422,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
         state.status = 'pending';
 
         table
-          .create(payload)
+          .create(row)
           .then(() => {
             anchor.assign(state, { status: 'ready' });
           })
@@ -465,7 +483,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
     ): RowListState<R> {
       const state = anchor.raw<RowListState<R>>({
         data: [],
-        status: 'init',
+        status: 'pending',
       });
 
       table
@@ -493,24 +511,22 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
     remove(id: string): RowState<R> {
       const state = ensureRow(id);
 
-      if (state.status === 'init') {
-        state.status = 'pending';
-        state.data.deleted_at = new Date();
+      state.status = 'pending';
+      state.data.deleted_at = new Date();
 
-        table
-          .delete(id)
-          .then(() => {
-            anchor.assign(state, { status: 'removed' });
+      table
+        .delete(id)
+        .then(() => {
+          anchor.assign(state, { status: 'removed' });
 
-            rowList.delete(id);
-            rowUsage.set(id, 1);
-            rowSubscriptions.get(state)?.();
-          })
-          .catch((error) => {
-            delete state.data.deleted_at;
-            anchor.assign(state, { status: 'error', error });
-          });
-      }
+          rowMaps.delete(id);
+          rowUsages.set(id, 1);
+          rowSubscriptions.get(state)?.();
+        })
+        .catch((error) => {
+          delete state.data.deleted_at;
+          anchor.assign(state, { status: 'error', error });
+        });
 
       return state;
     },
@@ -520,11 +536,39 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(name: stri
      * @param id - The record ID to leave
      */
     leave(id: string) {
-      const state = rowList.get(id);
+      const state = rowMaps.get(id);
 
       if (state) {
         rowSubscriptions.get(state)?.();
       }
     },
+
+    async promise<T extends RowState<R> | RowListState<R>>(state: T): Promise<T> {
+      if (state.status === 'pending') {
+        return await new Promise<T>((resolve, reject) => {
+          const unsubscribe = derive(state, (snapshot, event) => {
+            if (event.type !== 'init' && !event.keys.includes('data')) {
+              if (state.error) {
+                reject(state.error);
+              } else {
+                resolve(state);
+              }
+
+              unsubscribe();
+            }
+          });
+        });
+      }
+
+      return state;
+    },
+
+    store() {
+      return table;
+    },
   } as ReactiveTable<T, R>;
+
+  TABLE_STORES.set(key, tableRef);
+
+  return tableRef;
 }

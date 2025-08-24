@@ -1,4 +1,5 @@
 import type { IndexedKv } from './kv.js';
+import type { IndexedTable } from './table.js';
 
 export enum IDBStatus {
   Idle = 'idle',
@@ -218,4 +219,17 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
    * @param id - The record ID to leave
    */
   leave(id: string): void;
+
+  /**
+   * Creates a promise that resolves when the provided state is completed.
+   * @param state - The state to wait for completion
+   * @returns A promise that resolves when the state is completed
+   */
+  promise<T extends RowState<R> | RowListState<R>>(state: T): Promise<T>;
+
+  /**
+   * Get the underlying store instance.
+   * @returns IndexedTable instance
+   */
+  store<T extends IndexedTable<Rec>>(): T;
 }
