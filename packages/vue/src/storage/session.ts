@@ -1,5 +1,5 @@
 import type { AnchorOptions, LinkableSchema, ObjLike } from '@anchor/core';
-import type { Ref } from 'vue';
+import { onUnmounted, type Ref } from 'vue';
 import { session } from '@anchor/storage';
 import { derivedRef } from '../derive.js';
 
@@ -24,5 +24,10 @@ export function sessionRef<T extends ObjLike, S extends LinkableSchema = Linkabl
   options?: AnchorOptions<S>
 ): Ref<T> {
   const state = session(name, init, options);
+
+  onUnmounted(() => {
+    session.leave(state);
+  });
+
   return derivedRef(state);
 }

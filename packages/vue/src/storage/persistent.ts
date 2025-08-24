@@ -1,5 +1,5 @@
 import type { AnchorOptions, LinkableSchema, ObjLike } from '@anchor/core';
-import type { Ref } from 'vue';
+import { onUnmounted, type Ref } from 'vue';
 import { persistent } from '@anchor/storage';
 import { derivedRef } from '../derive.js';
 
@@ -24,5 +24,10 @@ export function persistentRef<T extends ObjLike, S extends LinkableSchema = Link
   options?: AnchorOptions<S>
 ): Ref<T> {
   const state = persistent(name, init, options);
+
+  onUnmounted(() => {
+    persistent.leave(state);
+  });
+
   return derivedRef(state);
 }
