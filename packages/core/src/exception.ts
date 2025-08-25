@@ -17,6 +17,16 @@ const generator = {
     return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
   },
   argumentException(message: string) {
+    message = message
+      .split('\n')
+      .map((line, i) => {
+        if (i === 0) {
+          return `\x1b[4m\x1b[1m${line}\x1b[0m`;
+        }
+        return line;
+      })
+      .join('\n');
+
     const messages = [
       '\x1b[1mAn invalid function argument given:\x1b[0m',
       '',
@@ -45,6 +55,16 @@ const generator = {
     return `⚠️\x1b[31m${'\x1b[1m[anchor] ' + messages.join('\n')}\x1b[0m\n\n`;
   },
   externalException(message: string) {
+    message = message
+      .split('\n')
+      .map((line, i) => {
+        if (i === 0) {
+          return `\x1b[4m\x1b[1m${line}\x1b[0m`;
+        }
+        return line;
+      })
+      .join('\n');
+
     const messages = [
       '\x1b[1mAn external exception occured:\x1b[0m',
       '',
