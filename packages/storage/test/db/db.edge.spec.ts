@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IndexedStore } from '../../src/db/db.js';
-import { create, createRecord, find, put, read, remove, update } from '../../src/db/helper.js';
+import { count, create, createRecord, find, put, read, remove, update } from '../../src/db/helper.js';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { setIdProvider } from '../../src/db/index.js';
 
@@ -154,6 +154,31 @@ describe('IndexedDB - Edge Cases', () => {
     expect(db2.error).toBeDefined();
     expect(db2.error?.message).toBe('Internal setup error: [5093]');
     expect(errorSpy).toHaveBeenCalled();
+  });
+
+  it('should handler table:count error', async () => {
+    const request: {
+      onerror: ((error: Error) => void) | null;
+      error: Error;
+    } = { onerror: null, error: new Error('Find error') };
+    const table = {
+      count: () => request,
+      openCursor: () => request,
+    };
+    const errorHandler = vi.fn();
+    const promise = count(table as never).catch(errorHandler);
+
+    request.onerror?.(request.error);
+
+    await promise;
+    expect(errorHandler).toHaveBeenCalledWith(request.error);
+
+    const promise2 = count(table as never, () => false).catch(errorHandler);
+
+    request.onerror?.(request.error);
+
+    await promise2;
+    expect(errorHandler).toHaveBeenCalledWith(request.error);
   });
 
   it('should handler table:find error', async () => {

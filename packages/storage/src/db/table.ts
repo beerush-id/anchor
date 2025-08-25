@@ -1,13 +1,23 @@
-import { isFunction } from '@beerush/utils';
+import { isArray, isDefined, isFunction } from '@beerush/utils';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
-import { create, createRecord, DEFAULT_FIND_LIMIT, find, read, remove, update } from './helper.js';
-import { anchor, derive, microtask, type StateUnsubscribe } from '@anchor/core';
+import {
+  count as countRecord,
+  create,
+  createRecord,
+  DEFAULT_FIND_LIMIT,
+  find,
+  read,
+  remove,
+  update,
+} from './helper.js';
+import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchor/core';
 import {
   type FilterFn,
   IDBStatus,
   type ReactiveTable,
   type Rec,
   type Row,
+  type RowList,
   type RowListState,
   type RowState,
 } from './types.js';
@@ -48,13 +58,15 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
    * @param indexes - Array of index names to create (default: undefined)
    * @param remIndexes - Array of index names to remove (default: undefined)
    * @param dbName - The name of the database (default: name)
+   * @param seeds - Array of seed data to insert into the table for the first time (default: undefined)
    */
   constructor(
     protected name: string,
     protected version = 1,
     protected indexes?: Array<keyof R>,
     protected remIndexes?: Array<keyof R>,
-    dbName = name
+    dbName = name,
+    protected seeds?: R[]
   ) {
     super(dbName, version);
     this.init();
@@ -103,6 +115,53 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
   }
 
   /**
+   * Sets up the table by seeding initial data if the table is empty.
+   * This method is called during initialization to populate the table
+   * with seed data if no records exist.
+   * @returns {Promise<void>} A promise that resolves when setup is complete
+   */
+  protected async setup(): Promise<void> {
+    if (isDefined(this.seeds) && !isArray(this.seeds)) {
+      const error = new Error('Seed Error: Invalid seed data');
+      captureStack.error.argument('The given data is not a valid seed data.', error);
+    }
+
+    if (isArray(this.seeds)) {
+      const total = await countRecord(this.reader);
+
+      if (total <= 0) {
+        for (const seed of this.seeds) {
+          if (typeof seed !== 'object' || seed === null) {
+            const error = new Error(`Seed Error: Invalid seed data`);
+            captureStack.error.external('Invalid seed data: Object is not JSON serializable.', error as Error);
+            continue;
+          }
+
+          let data: string;
+
+          try {
+            data = JSON.stringify(seed, null, 2);
+          } catch (err) {
+            const error = new Error(`Seed Error: ${(err as Error).message}`);
+            captureStack.error.external('Invalid seed data: Object is not JSON serializable.', error as Error);
+            continue;
+          }
+
+          try {
+            await create(this.writer, seed);
+          } catch (err) {
+            const error = new Error(`Seed Error: ${(err as Error).message}`);
+            captureStack.error.external(
+              `Unable to seed table "${this.name}@${this.version}" with:\n\n${data}`,
+              error as Error
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Finalizes initialization and executes queued operations
    */
   protected finalize() {
@@ -117,6 +176,67 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
   }
 
   /**
+   * Sets the seed data for the table.
+   * This method allows updating the seed data that will be used to populate
+   * the table when it's first created and empty.
+   *
+   * @param seeds - Array of seed data to insert into the table for the first time
+   */
+  public seed(seeds: R[]): this {
+    this.seeds = seeds;
+    return this;
+  }
+
+  /**
+   * Counts the number of records matching the filter criteria
+   * @param filter - The filter criteria (IDBKeyRange or FilterFn)
+   * @returns Promise resolving to the count of records
+   */
+  public count(filter?: IDBKeyRange | FilterFn<R>): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const submit = () => {
+        if (this.status === IDBStatus.Closed) {
+          return reject(new Error('Table is closed.'));
+        }
+
+        countRecord(this.reader, filter).then(resolve).catch(reject);
+      };
+
+      if (this.status === IDBStatus.Init) {
+        this.queues.add(submit);
+      } else {
+        submit();
+      }
+    });
+  }
+
+  /**
+   * Counts the number of records by index matching the filter criteria
+   * @param index - The index name to count on
+   * @param filter - The filter criteria (IDBKeyRange or FilterFn)
+   * @returns Promise resolving to the count of records
+   */
+  public countByIndex(index: keyof R, filter?: IDBKeyRange | FilterFn<R>): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const submit = () => {
+        if (this.status === IDBStatus.Closed) {
+          return reject(new Error('Table is closed.'));
+        }
+
+        countRecord(this.reader.index(index as string), filter)
+          .then(resolve)
+          .catch(reject);
+      };
+
+      if (this.status === IDBStatus.Init) {
+        this.queues.add(submit);
+      } else {
+        submit();
+      }
+    });
+  }
+
+  /**
    * Finds records matching the filter criteria
    * @param filter - The filter criteria (IDBKeyRange or FilterFn)
    * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
@@ -124,7 +244,7 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
    * @returns Promise resolving to array of records
    */
   public find(
-    filter?: IDBKeyRange | FilterFn,
+    filter?: IDBKeyRange | FilterFn<R>,
     limit = DEFAULT_FIND_LIMIT,
     direction?: IDBCursorDirection
   ): Promise<R[]> {
@@ -146,6 +266,81 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
   }
 
   /**
+   * Lists records matching the filter criteria with pagination support.
+   * Returns both the records and the total count of matching records.
+   *
+   * @param filter - The filter criteria (IDBKeyRange or FilterFn)
+   * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
+   * @param direction - Cursor direction for traversal (default: undefined)
+   * @returns Promise resolving to RowList containing records and count
+   */
+  public list(
+    filter?: IDBKeyRange | FilterFn<R>,
+    limit = DEFAULT_FIND_LIMIT,
+    direction?: IDBCursorDirection
+  ): Promise<RowList<T>> {
+    return new Promise((resolve, reject) => {
+      const submit = () => {
+        if (this.status === IDBStatus.Closed) {
+          return reject(new Error('Table is closed.'));
+        }
+
+        Promise.all([find(this.reader, filter, limit, direction), countRecord(this.reader, filter)])
+          .then(([rows, count]) => {
+            resolve({ rows, count });
+          })
+          .catch(reject);
+      };
+
+      if (this.status === IDBStatus.Init) {
+        this.queues.add(submit);
+      } else {
+        submit();
+      }
+    });
+  }
+
+  /**
+   * Lists records by index matching the filter criteria with pagination support.
+   * Returns both the records and the total count of matching records.
+   *
+   * @param index - The index name to search on
+   * @param filter - The filter criteria (IDBKeyRange or FilterFn)
+   * @param limit - Maximum number of records to return (default: DEFAULT_FIND_LIMIT)
+   * @param direction - Cursor direction for traversal (default: undefined)
+   * @returns Promise resolving to RowList containing records and count
+   */
+  public listByIndex(
+    index: keyof R,
+    filter?: IDBKeyRange | FilterFn<R>,
+    limit = DEFAULT_FIND_LIMIT,
+    direction?: IDBCursorDirection
+  ): Promise<RowList<T>> {
+    return new Promise((resolve, reject) => {
+      const submit = () => {
+        if (this.status === IDBStatus.Closed) {
+          return reject(new Error('Table is closed.'));
+        }
+
+        Promise.all([
+          find(this.reader.index(index as string), filter, limit, direction),
+          countRecord(this.reader.index(index as string), filter),
+        ])
+          .then(([rows, count]) => {
+            resolve({ rows, count });
+          })
+          .catch(reject);
+      };
+
+      if (this.status === IDBStatus.Init) {
+        this.queues.add(submit);
+      } else {
+        submit();
+      }
+    });
+  }
+
+  /**
    * Finds records by index matching the filter criteria
    * @param index - The index name to search on
    * @param filter - The filter criteria (IDBKeyRange or FilterFn)
@@ -155,7 +350,7 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
    */
   public findByIndex(
     index: keyof R,
-    filter?: IDBKeyRange | FilterFn,
+    filter?: IDBKeyRange | FilterFn<R>,
     limit = DEFAULT_FIND_LIMIT,
     direction?: IDBCursorDirection
   ): Promise<R[]> {
@@ -288,6 +483,7 @@ const TABLE_STORES = new Map<string, ReactiveTable<Rec>>();
  * @param indexes - An array of index names to create in the object store
  * @param remIndexes - An array of index names to remove from the object store
  * @param dbName - The name of the database
+ * @param seeds - An array of seed data to populate the object store
  * @returns A reactive table interface with methods for managing records
  */
 export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
@@ -295,7 +491,8 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
   version = 1,
   indexes?: (keyof R)[],
   remIndexes?: (keyof R)[],
-  dbName = name
+  dbName = name,
+  seeds?: R[]
 ): ReactiveTable<T, R> {
   const key = `${dbName}://${name}@${version}`;
 
@@ -303,7 +500,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     return TABLE_STORES.get(key) as ReactiveTable<T, R>;
   }
 
-  const table = new IndexedTable<T, R>(name, version, indexes, remIndexes, dbName);
+  const table = new IndexedTable<T, R>(name, version, indexes, remIndexes, dbName, seeds);
 
   /**
    * Map storing row states by record ID
@@ -441,19 +638,21 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
      * @param direction - Cursor direction (default: undefined)
      * @returns A state object containing the list of records
      */
-    list(filter?: IDBKeyRange | FilterFn, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
+    list(filter?: IDBKeyRange | FilterFn<R>, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
       const state = anchor.raw<RowListState<R>>({
         data: [],
+        count: 0,
         status: 'pending',
       });
 
       table
-        .find(filter, limit, direction)
+        .list(filter, limit, direction)
         .then((res) => {
-          res = res.map((rec) => ensureRow(rec.id, rec, 'ready').data);
+          const data = res.rows.map((rec) => ensureRow(rec.id, rec, 'ready').data);
 
           anchor.assign(state, {
-            data: res,
+            data,
+            count: res.count,
             status: 'ready',
           });
         })
@@ -477,22 +676,24 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
      */
     listIndex(
       name: keyof R,
-      filter?: IDBKeyRange | FilterFn,
+      filter?: IDBKeyRange | FilterFn<R>,
       limit?: number,
       direction?: IDBCursorDirection
     ): RowListState<R> {
       const state = anchor.raw<RowListState<R>>({
         data: [],
+        count: 0,
         status: 'pending',
       });
 
       table
-        .findByIndex(name, filter, limit, direction)
+        .listByIndex(name, filter, limit, direction)
         .then((res) => {
-          res = res.map((rec) => ensureRow(rec.id, rec, 'ready').data);
+          const data = res.rows.map((rec) => ensureRow(rec.id, rec, 'ready').data);
 
           anchor.assign(state, {
-            data: res,
+            data,
+            count: res.count,
             status: 'ready',
           });
         })

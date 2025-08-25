@@ -145,6 +145,7 @@ describe('Reactive Table Module', () => {
       await table.promise(listState).catch(() => {});
 
       expect(listState.status).toBe('ready');
+      expect(listState.count).toBe(2);
       expect(listState.data).toHaveLength(2);
       expect(listState.data[0].id).toBe('list-1');
       expect(listState.data[1].id).toBe('list-2');
@@ -439,8 +440,8 @@ describe('Reactive Table Module', () => {
       // Mock the table to force an error on find
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const internalTable = (table as any).store();
-      const originalFind = internalTable.find;
-      internalTable.find = vi.fn().mockRejectedValue('List error');
+      const originalFind = internalTable.list;
+      internalTable.list = vi.fn().mockRejectedValue('List error');
 
       const listState = table.list();
 
@@ -450,7 +451,7 @@ describe('Reactive Table Module', () => {
       expect(listState.error).toBeDefined();
 
       // Restore original function
-      internalTable.find = originalFind;
+      internalTable.list = originalFind;
     });
 
     it('should handle listIndex errors gracefully', async () => {
@@ -459,8 +460,8 @@ describe('Reactive Table Module', () => {
       // Mock the table to force an error on findByIndex
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const internalTable = (table as any).store();
-      const originalFindIndex = internalTable.findByIndex;
-      internalTable.findByIndex = vi.fn().mockRejectedValue('Find by index error');
+      const originalFindIndex = internalTable.listByIndex;
+      internalTable.listByIndex = vi.fn().mockRejectedValue('Find by index error');
 
       const listState = table.listIndex('name');
 
@@ -470,7 +471,7 @@ describe('Reactive Table Module', () => {
       expect(listState.error).toBeDefined();
 
       // Restore original function
-      internalTable.findByIndex = originalFindIndex;
+      internalTable.listByIndex = originalFindIndex;
     });
 
     it('should handle complex nested objects', async () => {

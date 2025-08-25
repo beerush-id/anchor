@@ -137,8 +137,13 @@ export type Row<T extends Rec> = T & {
   updated_at: Date;
   deleted_at?: Date;
 };
+export type Rows<T extends Rec> = Row<T>[];
+export type RowList<T extends Rec> = {
+  rows: Rows<T>;
+  count: number;
+};
 
-export type FilterFn = <T extends Rec>(record: Row<T>) => boolean;
+export type FilterFn<T> = (record: T) => boolean;
 export type RowStatus = 'init' | 'pending' | 'ready' | 'error' | 'removed';
 export type RowRequest = {
   status: RowStatus;
@@ -148,6 +153,7 @@ export type RowState<R extends Row<Rec>> = RowRequest & {
   data: R;
 };
 export type RowListState<R extends Row<Rec>> = RowRequest & {
+  count: number;
   data: R[];
 };
 
@@ -186,7 +192,7 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
    * @param direction - Cursor direction for sorting (optional)
    * @returns RowListState containing the reactive data array and status
    */
-  list(filter?: IDBKeyRange | FilterFn, limit?: number, direction?: IDBCursorDirection): RowListState<R>;
+  list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection): RowListState<R>;
 
   /**
    * Lists records by index matching the filter criteria.
@@ -200,7 +206,7 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
    */
   listIndex(
     name: keyof R,
-    filter?: IDBKeyRange | FilterFn,
+    filter?: IDBKeyRange | FilterFn<R>,
     limit?: number,
     direction?: IDBCursorDirection
   ): RowListState<R>;

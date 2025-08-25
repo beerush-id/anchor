@@ -17,7 +17,7 @@ export const DEFAULT_FIND_LIMIT = 25;
  */
 export const find = <T>(
   table: IDBObjectStore | IDBIndex,
-  filter?: IDBKeyRange | FilterFn,
+  filter?: IDBKeyRange | FilterFn<T>,
   limit: number = DEFAULT_FIND_LIMIT,
   direction?: IDBCursorDirection
 ): Promise<T[]> => {
@@ -64,6 +64,47 @@ export const find = <T>(
 export const read = <T>(table: IDBObjectStore, id?: string): Promise<T | T[] | undefined> => {
   return new Promise((resolve, reject) => {
     const request = id ? table.get(id) : table.getAll();
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Counts the number of records in an IndexedDB object store or index.
+ *
+ * @param {IDBObjectStore | IDBIndex} table - The object store or index to count records in.
+ * @param {IDBKeyRange} [filter] - Optional filter to apply when counting records.
+ * @returns {Promise<number>} A promise that resolves with the count of records.
+ */
+export const count = <T extends Rec = Rec>(
+  table: IDBObjectStore | IDBIndex,
+  filter?: IDBKeyRange | FilterFn<T>
+): Promise<number> => {
+  if (isFunction(filter)) {
+    return new Promise((resolve, reject) => {
+      const request = table.openCursor();
+      let count = 0;
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest).result;
+
+        if (cursor) {
+          if (filter(cursor.value)) {
+            count++;
+          }
+          cursor.continue();
+        } else {
+          resolve(count);
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = table.count(filter);
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
