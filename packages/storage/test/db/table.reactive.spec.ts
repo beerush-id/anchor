@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
-import { createTable, DB_SYNC_DELAY, type Rec } from '../../src/db/index.js';
+import { createRecord, createTable, DB_SYNC_DELAY, type Rec } from '../../src/db/index.js';
 
 interface TestRecord extends Rec {
   name: string;
@@ -38,6 +38,22 @@ describe('Reactive Table Module', () => {
       const table2 = createTable<TestRecord>('shared-reactive-table');
 
       expect(table1).toBe(table2);
+    });
+
+    it('should create a reactive table with seeds', async () => {
+      const table = createTable('test-reactive-table-seed').seed([
+        createRecord({ name: 'John' }),
+        createRecord({ name: 'Jane' }),
+      ]);
+
+      const list = table.list();
+      await table.promise(list);
+
+      expect(list.count).toBe(2);
+      expect(list.data.length).toBe(2);
+      expect(list.data[0].name).toBe('John');
+      expect(list.data[1].name).toBe('Jane');
+      expect(list.status).toBe('ready');
     });
 
     it('should create reactive row state with initial data', async () => {
