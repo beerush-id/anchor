@@ -41,9 +41,27 @@ describe('Anchor Core - Exception Handling', () => {
         expect(consoleErrorSpy).toHaveBeenCalled();
       });
 
+      it('should capture external error with multi lines', () => {
+        const error = new Error('External Error');
+        captureStack.error.external('External error occurred\nNew line in the error message', error);
+        expect(consoleErrorSpy).toHaveBeenCalled();
+      });
+
+      it('should capture argument error', () => {
+        const error = new Error('Argument Error');
+        captureStack.error.argument('Argument error occurred', error);
+        expect(consoleErrorSpy).toHaveBeenCalled();
+      });
+
       it('should capture validation error', () => {
         const error = new Error('Validation Error');
         captureStack.error.validation('Validation context', error);
+        expect(consoleErrorSpy).toHaveBeenCalled();
+      });
+
+      it('should capture external error with multi lines', () => {
+        const error = new Error('Argument Error');
+        captureStack.error.argument('Argument error occurred\nNew line in the error message', error);
         expect(consoleErrorSpy).toHaveBeenCalled();
       });
 
