@@ -1,24 +1,11 @@
 <script setup lang="ts">
-  import { anchorRef } from '@anchor/vue';
-  import { shortId } from '@anchor/core';
   import TodoList from './TodoList.vue';
-  import type { ITodoList } from './types.js';
   import TodoForm from './TodoForm.vue';
   import { ref } from 'vue';
   import { flashNode } from '../../lib/node.js';
+  import { todoTableRef } from '../../lib/todos.js';
 
-  const todos = anchorRef<ITodoList>([
-    {
-      id: shortId(),
-      text: 'Learn Vue',
-      completed: true,
-    },
-    {
-      id: shortId(),
-      text: 'Learn Anchor',
-      completed: false,
-    },
-  ]);
+  const todos = todoTableRef.list();
 
   const appRef = ref(null);
   flashNode(appRef);
@@ -32,7 +19,15 @@
       <img src="../../assets/anchor-logo.webp" alt="Anchor Logo" class="w-20" />
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Todo App</h1>
     </div>
-    <TodoForm :todos />
-    <TodoList :todos />
+    <template v-if="todos.status === 'pending'">
+      <span>Loading...</span>
+    </template>
+    <template v-else-if="todos.status === 'error'">
+      <span>Error: {{ todos.error }}</span>
+    </template>
+    <template v-else>
+      <TodoForm :todos="todos.data" />
+      <TodoList :todos="todos.data" />
+    </template>
   </div>
 </template>

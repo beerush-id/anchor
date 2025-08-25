@@ -1,15 +1,17 @@
 <script setup lang="ts">
-  import type { ITodoList } from './types.js';
-  import { ref, type Ref } from 'vue';
+  import { ref } from 'vue';
   import { derivedRef } from '@anchor/vue';
   import { flashNode } from '../../lib/node.js';
+  import type { TodoRecList, TodoRefList } from '../../lib/todos.js';
 
-  const { todos } = defineProps<{ todos: ITodoList | Ref<ITodoList> }>();
-  const stats = derivedRef(todos, (todos) => {
+  const { todos } = defineProps<{ todos: TodoRecList | TodoRefList }>();
+  const stats = derivedRef(todos, (todos: TodoRecList) => {
+    const records = todos.filter((todo) => !todo.deleted_at);
+
     return {
-      total: todos.length,
-      active: todos.filter((todo) => !todo.completed).length,
-      completed: todos.filter((todo) => todo.completed).length,
+      total: records.length,
+      active: records.filter((todo) => !todo.completed).length,
+      completed: records.filter((todo) => todo.completed).length,
     };
   });
 
@@ -31,7 +33,9 @@
     </div>
     <div class="todo-stats-item flex flex-col items-center">
       <span class="todo-stats-label text-sm text-gray-500 dark:text-slate-400">Completed</span>
-      <span class="todo-stats-value text-lg font-semibold text-green-600 dark:text-green-400">{{ stats.completed }}</span>
+      <span class="todo-stats-value text-lg font-semibold text-green-600 dark:text-green-400">
+        {{ stats.completed }}
+      </span>
     </div>
   </div>
 </template>

@@ -1,19 +1,16 @@
 <script setup lang="ts">
-  import type { ITodoList } from './types.js';
   import { ref } from 'vue';
-  import { shortId } from '@anchor/core';
   import { flashNode } from '../../lib/node.js';
+  import { type TodoRecList, todoTable } from '../../lib/todos.js';
+  import Plus from '../icons/Plus.vue';
 
   const newText = ref('');
-  const { todos } = defineProps<{ todos: ITodoList }>();
+  const { todos } = defineProps<{ todos: TodoRecList }>();
 
   const handleAdd = () => {
     if (newText.value.trim() !== '') {
-      todos.push({
-        id: shortId(),
-        text: newText.value,
-        completed: false,
-      });
+      const todo = todoTable.add({ text: newText.value, completed: false });
+      todos.push(todo.data);
       newText.value = '';
     }
   };
@@ -34,7 +31,7 @@
       <button
         @click="handleAdd"
         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
-        Add
+        <Plus />
       </button>
     </div>
   </div>
