@@ -28,7 +28,7 @@ describe('Reactive Table Module', () => {
       expect(typeof table.get).toBe('function');
       expect(typeof table.add).toBe('function');
       expect(typeof table.list).toBe('function');
-      expect(typeof table.listIndex).toBe('function');
+      expect(typeof table.listByIndex).toBe('function');
       expect(typeof table.remove).toBe('function');
       expect(typeof table.leave).toBe('function');
     });
@@ -161,7 +161,7 @@ describe('Reactive Table Module', () => {
 
       await Promise.all([table.promise(row1), table.promise(row2), table.promise(row3)]);
 
-      const listState = table.listIndex('name', IDBKeyRange.only('apple'));
+      const listState = table.listByIndex('name', IDBKeyRange.only('apple'));
 
       expect(listState.status).toBe('pending');
 
@@ -463,7 +463,7 @@ describe('Reactive Table Module', () => {
       const originalFindIndex = internalTable.listByIndex;
       internalTable.listByIndex = vi.fn().mockRejectedValue('Find by index error');
 
-      const listState = table.listIndex('name');
+      const listState = table.listByIndex('name');
 
       await table.promise(listState).catch(() => {});
 

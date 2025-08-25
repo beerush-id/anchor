@@ -674,7 +674,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
      * @param direction - Cursor direction
      * @returns A state object containing the list of records
      */
-    listIndex(
+    listByIndex(
       name: keyof R,
       filter?: IDBKeyRange | FilterFn<R>,
       limit?: number,

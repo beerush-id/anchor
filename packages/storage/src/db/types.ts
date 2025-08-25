@@ -204,7 +204,7 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
    * @param direction - Cursor direction for sorting (optional)
    * @returns RowListState containing the reactive data array and status
    */
-  listIndex(
+  listByIndex(
     name: keyof R,
     filter?: IDBKeyRange | FilterFn<R>,
     limit?: number,
