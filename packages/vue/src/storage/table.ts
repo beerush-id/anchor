@@ -13,15 +13,17 @@ import { derivedRef } from '../derive.js';
 
 export interface TableRef<T extends Rec, R extends Row<T> = Row<T>> {
   get(id: string): Ref<RowState<R>>;
-  list(filter?: IDBKeyRange | FilterFn, limit?: number, direction?: IDBCursorDirection): Ref<RowListState<R>>;
-  listIndex(
+  add(payload: T): Ref<RowState<R>>;
+  remove(id: string): Ref<RowState<R>>;
+  list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection): Ref<RowListState<R>>;
+  listByIndex(
     name: keyof R,
-    filter?: IDBKeyRange | FilterFn,
+    filter?: IDBKeyRange | FilterFn<R>,
     limit?: number,
     direction?: IDBCursorDirection
   ): Ref<RowListState<R>>;
-  add(payload: T): Ref<RowState<R>>;
-  remove(id: string): Ref<RowState<R>>;
+  seed<T extends R[]>(seeds: T): this;
+  table(): ReactiveTable<T>;
 }
 
 export type InferRef<T> = T extends TableRef<Rec, infer R> ? Ref<R> : never;
@@ -67,17 +69,24 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
 
       return derivedRef(state);
     },
-    list(filter?: IDBKeyRange | FilterFn, limit?: number, direction?: IDBCursorDirection) {
+    list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
       const state = tableRef.list(filter, limit, direction);
       return derivedRef(state);
     },
-    listIndex(name: keyof R, filter?: IDBKeyRange | FilterFn, limit?: number, direction?: IDBCursorDirection) {
-      const state = tableRef.listIndex(name, filter, limit, direction);
+    listByIndex(name: keyof R, filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
+      const state = tableRef.listByIndex(name, filter, limit, direction);
       return derivedRef(state);
     },
     remove(id: string) {
       const state = tableRef.remove(id);
       return derivedRef(state);
+    },
+    seed(seeds: R[]) {
+      tableRef.seed(seeds);
+      return this;
+    },
+    table() {
+      return tableRef;
     },
   };
 }
