@@ -234,6 +234,18 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
   promise<T extends RowState<R> | RowListState<R>>(state: T): Promise<T>;
 
   /**
+   * Seeds the table with initial data.
+   *
+   * This method is used to populate the table with initial data records.
+   * It takes an array of records and inserts them into the table if the table is empty.
+   *
+   * @template T - The type of the records array, must extend Row<R>[]
+   * @param seeds - An array of records to seed the table with
+   * @returns The current ReactiveTable instance for method chaining
+   */
+  seed<T extends R[]>(seeds: T): this;
+
+  /**
    * Get the underlying store instance.
    * @returns IndexedTable instance
    */

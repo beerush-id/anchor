@@ -733,6 +733,19 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     },
 
     /**
+     * Sets the seed data for the reactive table.
+     * This method allows updating the seed data that will be used to populate
+     * the table when it's first created and empty.
+     *
+     * @param seeds - Array of seed data to insert into the table for the first time
+     * @returns The reactive table instance for method chaining
+     */
+    seed(seeds: R[]) {
+      table.seed(seeds);
+      return this;
+    },
+
+    /**
      * Decrements the reference count for a row and cleans up if no longer used.
      * @param id - The record ID to leave
      */
