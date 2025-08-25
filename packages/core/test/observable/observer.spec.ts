@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, outsideObserver, setObserver, withinObserver } from '../../src/index.js';
+import { anchor, createObserver, derive, outsideObserver, setObserver, withinObserver } from '../../src/index.js';
 
 describe('Anchor Core - Observable Observer Management', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -325,6 +325,107 @@ describe('Anchor Core - Observable Observer Management', () => {
       });
 
       expect(trackHandler).toHaveBeenCalledTimes(3);
+    });
+
+    it('should track property access when called inside an effect', () => {
+      const changeHandler = vi.fn();
+      const trackHandler = vi.fn();
+      const observer = createObserver(changeHandler, trackHandler);
+      const state = anchor({ count: 1, profile: { name: 'John' } });
+
+      const unobserve = setObserver(observer);
+
+      const count = state.count;
+      expect(count).toBe(1);
+      expect(observer.states.has(anchor.get(state))).toBe(true);
+      expect(trackHandler).toHaveBeenCalledTimes(1);
+
+      const unsubscribe = derive(state, () => {
+        // Any property access here should trigger a dependency tracking.
+        const name = state.profile.name; // (2 tracks): .profile + .profile.name
+        expect(name).toBe('John');
+      });
+
+      expect(trackHandler).toHaveBeenCalledTimes(3);
+      expect(observer.states.has(anchor.get(state).profile)).toBe(true);
+
+      unsubscribe();
+      unobserve();
+    });
+
+    it('should track property access when called inside a notification effect', async () => {
+      const changeHandler = vi.fn();
+      const trackHandler = vi.fn();
+      const observer = createObserver(changeHandler, trackHandler);
+      const state = anchor({ count: 1, profile: { name: 'John' } });
+
+      const unobserve = setObserver(observer);
+
+      const unsubscribe = derive(state, (_s, event) => {
+        // Any property access here should trigger a dependency tracking.
+        const count = state.count;
+        expect(count).toBe(1);
+
+        if (event.type !== 'init') {
+          const name = state.profile.name; // Trigger dependency tracking in a notification effect.
+          expect(name).toBe('John Doe');
+        }
+      });
+
+      expect(trackHandler).toHaveBeenCalledTimes(1);
+      expect(observer.states.has(anchor.get(state))).toBe(true);
+
+      // Isolate the profile read to make sure it does not trigger the observer
+      const profile = outsideObserver(() => {
+        return state.profile;
+      });
+      profile.name = 'John Doe';
+
+      expect(trackHandler).toHaveBeenCalledTimes(3);
+      expect(changeHandler).not.toHaveBeenCalled();
+      expect(observer.states.has(anchor.get(state).profile)).toBe(true);
+
+      unsubscribe();
+      unobserve();
+    });
+
+    it('should not track property access when called inside an isolated effect', () => {
+      const changeHandler = vi.fn();
+      const trackHandler = vi.fn();
+      const observer = createObserver(changeHandler, trackHandler);
+      const state = anchor({ count: 1, profile: { name: 'John' } });
+
+      const unobserve = setObserver(observer);
+
+      const count = state.count;
+      expect(count).toBe(1);
+      expect(observer.states.has(anchor.get(state))).toBe(true);
+      expect(trackHandler).toHaveBeenCalledTimes(1);
+
+      const unsubscribe = derive(state, (_s, event) => {
+        // Isolate the handler to be called outside of observer.
+        outsideObserver(() => {
+          // Any property access here should not trigger a dependency tracking.
+          if (event.type === 'init') {
+            const name = state.profile.name;
+            expect(name).toBe('John');
+          } else {
+            const name = state.profile.name;
+            expect(name).toBe('John Doe');
+          }
+        });
+      });
+
+      // Isolate profile read to make sure it's not tracked.
+      const profile = outsideObserver(() => state.profile);
+      profile.name = 'John Doe';
+
+      expect(trackHandler).toHaveBeenCalledTimes(1);
+      expect(changeHandler).not.toHaveBeenCalled();
+      expect(observer.states.has(anchor.get(state).profile)).toBe(false);
+
+      unsubscribe();
+      unobserve();
     });
   });
 });
