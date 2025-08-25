@@ -256,6 +256,14 @@ anchorFn.configure = (config: Partial<AnchorConfig>) => {
 };
 
 /**
+ * This function is used to return the Anchor's default options.
+ * @returns {AnchorConfig}
+ */
+anchorFn.configs = (): AnchorConfig => {
+  return ANCHOR_CONFIG;
+};
+
+/**
  * This function is used to create a reactive object that is immutable.
  * @param {T} init
  * @param {AnchorOptions<S>} options

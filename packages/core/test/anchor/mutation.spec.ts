@@ -13,7 +13,17 @@ describe('Anchor Core - Mutation', () => {
   });
 
   describe('Source Immutability', () => {
-    it('should not mutate the original object', () => {
+    const { cloned } = anchor.configs();
+
+    beforeEach(() => {
+      anchor.configure({ cloned: true });
+    });
+
+    afterEach(() => {
+      anchor.configure({ cloned });
+    });
+
+    it('should not mutate the original object in a cloned mode', () => {
       const original = { foo: 'bar', nested: { value: 1 } };
       const state = anchor(original);
 
@@ -26,7 +36,7 @@ describe('Anchor Core - Mutation', () => {
       expect(state.nested.value).toBe(2);
     });
 
-    it('should not mutate the original array', () => {
+    it('should not mutate the original array in a cloned mode', () => {
       const original = [1, 2, 3];
       const state = anchor(original);
 
@@ -41,6 +51,16 @@ describe('Anchor Core - Mutation', () => {
   });
 
   describe('Source Mutable (unsafe)', () => {
+    const { cloned } = anchor.configs();
+
+    beforeEach(() => {
+      anchor.configure({ cloned: true });
+    });
+
+    afterEach(() => {
+      anchor.configure({ cloned });
+    });
+
     it('should mutates the original object', () => {
       const original = { count: 1, foo: 'bar' };
       const state = anchor.raw(original);

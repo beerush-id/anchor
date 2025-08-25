@@ -324,11 +324,17 @@ export interface AnchorFn {
   clear<T>(target: T): void;
 
   /**
-   * Configures global anchor settings.
+   * Configures global Anchor settings.
    *
    * @param config - Partial configuration object
    */
   configure(config: Partial<AnchorConfig>): void;
+
+  /**
+   * Gets the global Anchor settings.
+   * @returns {AnchorConfig}
+   */
+  configs(): AnchorConfig;
 }
 
 export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(

@@ -345,11 +345,11 @@ describe('Anchor - Circular References', () => {
       expect(handler).toHaveBeenCalledTimes(1); // Only init, no update
     });
 
-    it('should log exception for self-referencing map', () => {
+    it('should log exception for self-referencing map in a cloned mode', () => {
       const map = new Map();
       map.set('self', map);
 
-      const state = anchor(map);
+      const state = anchor(map, { cloned: true });
       const self = state.get('self');
 
       expect(self).toBe(state);

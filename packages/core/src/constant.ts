@@ -18,7 +18,7 @@ export const ARRAY_MUTATIONS = [
 
 export const LINKABLE = new Set(['array', 'object', 'map', 'set']);
 export const ANCHOR_CONFIG = {
-  cloned: true,
+  cloned: false,
   strict: false,
   deferred: true,
   recursive: true,
