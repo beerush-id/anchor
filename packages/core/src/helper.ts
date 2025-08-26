@@ -87,7 +87,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     STATE_BUSY_LIST.delete(init);
   }
 
-  if (meta && devTool) {
+  if (meta && devTool?.onAssign) {
     devTool?.onAssign(meta, source);
   }
 };
@@ -179,7 +179,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     STATE_BUSY_LIST.delete(init);
   }
 
-  if (meta && devTool) {
+  if (meta && devTool?.onRemove) {
     devTool?.onRemove(meta, keys);
   }
 };
@@ -248,7 +248,7 @@ export const clear = <T extends Assignable>(target: T) => {
     STATE_BUSY_LIST.delete(init);
   }
 
-  if (meta && devTool) {
+  if (meta && devTool?.onClear) {
     devTool?.onClear(meta);
   }
 };

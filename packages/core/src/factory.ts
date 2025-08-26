@@ -73,7 +73,7 @@ export function createLinkFactory<T extends Linkable>(
       // Store the unsubscribe function for cleanup
       meta.subscriptions.set(childState, childUnsubscribe);
 
-      devTool?.onLink(meta, childMeta);
+      devTool?.onLink?.(meta, childMeta);
     }
   };
 }
@@ -100,7 +100,7 @@ export function createUnlinkFactory<T extends Linkable>(meta: StateMetadata<T>):
       unsubscribe();
       subscriptions.delete(childState);
 
-      if (devTool) {
+      if (devTool?.onUnlink) {
         const childInit = STATE_REGISTRY.get(childState) as Linkable;
         const childMeta = META_REGISTRY.get(childInit) as StateMetadata;
         devTool.onUnlink(meta, childMeta);
@@ -161,7 +161,7 @@ export function createSubscribeFactory<T extends Linkable>(
         }
       }
 
-      devTool?.onUnsubscribe(meta, handler, receiver);
+      devTool?.onUnsubscribe?.(meta, handler, receiver);
     };
 
     // Check if the handler is already subscribed.
@@ -189,7 +189,7 @@ export function createSubscribeFactory<T extends Linkable>(
       }
     }
 
-    devTool?.onSubscribe(meta, handler, receiver);
+    devTool?.onSubscribe?.(meta, handler, receiver);
 
     // Return the unsubscribe function
     return unsubscribeFn;
@@ -249,7 +249,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     SUBSCRIBER_REGISTRY.delete(state);
     SUBSCRIPTION_REGISTRY.delete(state);
 
-    devTool?.onDestroy(meta);
+    devTool?.onDestroy?.(meta);
   };
 
   return handler;

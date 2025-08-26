@@ -61,7 +61,7 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
       if (!keys.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
         keys.add(OBSERVER_KEYS.COLLECTION_MUTATIONS);
         observer.onTrack?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
-        devTool?.onTrack(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
     }
 
@@ -239,7 +239,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
         broadcast(subscribers, init, event, meta.id);
 
-        devTool?.onCall(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
+        devTool?.onCall?.(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
       }
 
       // Collection mutation will always return itself for chaining.
@@ -283,7 +283,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
           broadcast(subscribers, self, event, meta.id);
 
-          devTool?.onCall(meta, method, [keyValue]);
+          devTool?.onCall?.(meta, method, [keyValue]);
         }
 
         return result;
@@ -321,7 +321,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
           broadcast(subscribers, init, event, meta.id);
 
-          devTool?.onCall(meta, method, []);
+          devTool?.onCall?.(meta, method, []);
         }
 
         return result;

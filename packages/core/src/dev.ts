@@ -16,14 +16,14 @@ export type DevTool = {
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike} prop
    */
-  onGet: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  onGet?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
   /**
    * A callback that will be called when a property is set.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike} prop
    * @param {unknown} value
    */
-  onSet: <T extends Linkable, S extends LinkableSchema>(
+  onSet?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     prop: KeyLike,
     value: unknown
@@ -33,14 +33,14 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {KeyLike} prop
    */
-  onDelete: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  onDelete?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
   /**
    * A callback that will be called when a method is called.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {string} method
    * @param {unknown[]} args
    */
-  onCall: <T extends Linkable, S extends LinkableSchema>(
+  onCall?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     method: string,
     args: unknown[]
@@ -49,35 +49,35 @@ export type DevTool = {
    * A callback that will be called when a state is initialized.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onInit: <T extends Linkable, S extends LinkableSchema>(init: Linkable, meta: StateMetadata<T, S>) => void;
+  onInit?: <T extends Linkable, S extends LinkableSchema>(init: Linkable, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a bulk assignment is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {ObjLike} source
    */
-  onAssign: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, source: ObjLike) => void;
+  onAssign?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, source: ObjLike) => void;
   /**
    * A callback that will be called when a bulk removal is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike[]} props
    */
-  onRemove: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
+  onRemove?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
   /**
    * A callback that will be called when a state is cleared.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onClear: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
+  onClear?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a state is destroyed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onDestroy: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
+  onDestroy?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a subscriber is added.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {StateSubscriber<Linkable>} handler
    */
-  onSubscribe: <T extends Linkable, S extends LinkableSchema>(
+  onSubscribe?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     handler: StateSubscriber<T>,
     receiver?: Linkable
@@ -87,7 +87,7 @@ export type DevTool = {
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {StateSubscriber<Linkable>} handler
    */
-  onUnsubscribe: <T extends Linkable, S extends LinkableSchema>(
+  onUnsubscribe?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     handler: StateSubscriber<T>,
     receiver?: Linkable
@@ -97,19 +97,19 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
-  onLink: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  onLink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
   /**
    * A callback that will be called when a child reference is unlinked.
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
-  onUnlink: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  onUnlink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
   /**
    * A callback that will be called when a state is being tracked by an observer.
    * @param {StateMetadata} meta
    * @param {StateObserver} observer
    */
-  onTrack: <T extends Linkable, S extends LinkableSchema>(
+  onTrack?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     observer: StateObserver,
     key: KeyLike
@@ -119,7 +119,10 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {StateObserver} observer
    */
-  onUntrack: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, observer: StateObserver) => void;
+  onUntrack?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    observer: StateObserver
+  ) => void;
 };
 
 let activeDevTool: DevTool | undefined = undefined;

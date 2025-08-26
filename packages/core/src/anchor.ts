@@ -181,7 +181,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   SUBSCRIPTION_REGISTRY.set(state, subscriptions);
 
   // Trigger dev tool if it is available.
-  getDevTool()?.onInit(init, meta);
+  getDevTool()?.onInit?.(init, meta);
 
   // Return the proxied state object
   return state;

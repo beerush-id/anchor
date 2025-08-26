@@ -67,7 +67,7 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
           observer.onTrack?.(init, OBSERVER_KEYS.ARRAY_MUTATIONS);
 
           // Trigger the dev tool callback if available.
-          devTool?.onTrack(meta, observer, OBSERVER_KEYS.ARRAY_MUTATIONS);
+          devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.ARRAY_MUTATIONS);
         }
       } else {
         if (!keys.has(prop)) {
@@ -75,7 +75,7 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
           observer.onTrack?.(init, prop);
 
           // Trigger the dev tool callback if available.
-          devTool?.onTrack(meta, observer, prop);
+          devTool?.onTrack?.(meta, observer, prop);
         }
       }
     }
@@ -83,7 +83,7 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
     let value = Reflect.get(target, prop, receiver) as Linkable;
 
     // Trigger the dev tool callback if available.
-    devTool?.onGet(meta, prop);
+    devTool?.onGet?.(meta, prop);
 
     if (value === init) {
       captureStack.violation.circular(prop, getter);
@@ -212,7 +212,7 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
       broadcast(subscribers, target, event, meta.id);
 
       // Trigger the dev tool callback if available.
-      devTool?.onSet(meta, prop, value);
+      devTool?.onSet?.(meta, prop, value);
     }
 
     return true;
@@ -298,7 +298,7 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
       broadcast(subscribers, target, event, meta.id);
 
       // Trigger the dev tool callback if available.
-      devTool?.onDelete(meta, prop);
+      devTool?.onDelete?.(meta, prop);
     }
 
     return true;

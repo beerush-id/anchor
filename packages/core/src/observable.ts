@@ -101,7 +101,7 @@ export function assignObserver(init: Linkable, observers: Set<StateObserver>, ob
     observer.onDestroy(() => {
       observer.states.delete(init);
       observers.delete(observer);
-      getDevTool()?.onUntrack(META_REGISTRY.get(init) as StateMetadata, observer);
+      getDevTool()?.onUntrack?.(META_REGISTRY.get(init) as StateMetadata, observer);
     });
   }
 

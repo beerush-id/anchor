@@ -191,7 +191,7 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
       // Broadcast the array mutation event to all subscribers
       broadcast(subscribers, init, event, meta.id);
 
-      devTool?.onCall(meta, method, args);
+      devTool?.onCall?.(meta, method, args);
 
       if (result === init) {
         return INIT_REGISTRY.get(init);
