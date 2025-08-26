@@ -29,13 +29,19 @@ function deriveFn<T extends Linkable>(state: State<T>, handler: StateSubscriber<
       'Invalid subscription target:',
       'Attempted to subscribe to non-reactive state.',
       'Object is not reactive',
-      deriveFn
+      deriveFn,
+      deriveFn.pipe
     );
 
     try {
       handler(state, { type: 'init', keys: [] });
     } catch (error) {
-      captureStack.error.external('Unable to execute the subscription handler function.', error as Error, deriveFn);
+      captureStack.error.external(
+        'Unable to execute the subscription handler function.',
+        error as Error,
+        deriveFn,
+        deriveFn.pipe
+      );
     }
 
     return () => {

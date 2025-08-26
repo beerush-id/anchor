@@ -16,6 +16,7 @@ export type ImmutableOutput<S> = Immutable<ModelOutput<S>>;
 export type ReadonlyLink = Immutable<Linkable>;
 
 export type StateObserver = {
+  readonly id: string;
   readonly states: WeakMap<State, Set<KeyLike>>;
   readonly onChange: (event: StateChange) => void;
   readonly onDestroy: (fn: () => void) => void;

@@ -54,6 +54,34 @@ describe('Anchor Core - Observable Observer Management', () => {
       });
     });
 
+    it('should properly handle duplicated observers', () => {
+      const state = anchor({ count: 1, foo: 'bar' });
+      const changeHandler = vi.fn();
+      const observer = createObserver(changeHandler);
+      const restore1 = setObserver(observer);
+      const restore2 = setObserver(observer);
+
+      expect(restore1).toBe(restore2); // Duplicate observation should return the same restorer.
+
+      const count = state.count;
+      expect(count).toBe(1);
+
+      state.count += 1;
+
+      expect(state.count).toBe(2);
+      expect(changeHandler).toHaveBeenCalledTimes(1);
+
+      restore2(); // Should properly leave the observer context.
+
+      const foo = state.foo;
+      expect(foo).toBe('bar');
+
+      state.foo = 'baz';
+
+      expect(state.foo).toBe('baz');
+      expect(changeHandler).toHaveBeenCalledTimes(1); // Should not get notified after out of observer.
+    });
+
     it('should properly clean up observers', () => {
       const state = anchor({ a: 1 }, { observable: true });
       const observer = createObserver(() => {});

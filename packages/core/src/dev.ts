@@ -71,7 +71,7 @@ export type DevTool = {
    * A callback that will be called when a state is destroyed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onDestroy?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
+  onDestroy?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a subscriber is added.
    * @param {StateMetadata} meta - State metadata associated with the event.

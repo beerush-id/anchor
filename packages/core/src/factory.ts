@@ -249,7 +249,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     SUBSCRIBER_REGISTRY.delete(state);
     SUBSCRIPTION_REGISTRY.delete(state);
 
-    devTool?.onDestroy?.(meta);
+    devTool?.onDestroy?.(init, meta);
   };
 
   return handler;

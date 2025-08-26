@@ -2,8 +2,10 @@ import type { KeyLike, Linkable, StateChange, StateMetadata, StateObserver } fro
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { META_REGISTRY } from './registry.js';
+import { shortId } from './utils/index.js';
 
 let currentObserver: StateObserver | undefined = undefined;
+let currentRestorer: (() => void) | undefined = undefined;
 
 /**
  * Sets the current observer context for state tracking.
@@ -13,16 +15,23 @@ let currentObserver: StateObserver | undefined = undefined;
  * @returns A cleanup function that restores the previous observer context
  */
 export function setObserver(observer: StateObserver) {
+  // Make sure it handles duplicate observer such as when evaluated in React's strict mode.
+  if (currentObserver === observer) return currentRestorer;
+
   let restored = false;
   const prevObserver = currentObserver;
-  currentObserver = observer;
+  const prevRestorer = currentRestorer;
 
-  return () => {
+  currentObserver = observer;
+  currentRestorer = () => {
     if (!restored) {
       restored = true;
       currentObserver = prevObserver;
+      currentRestorer = prevRestorer;
     }
   };
+
+  return currentRestorer;
 }
 
 /**
@@ -64,6 +73,7 @@ export function createObserver(
   };
 
   return {
+    id: shortId(),
     get states() {
       return states;
     },
@@ -142,7 +152,7 @@ export function withinObserver<R>(observer: StateObserver, fn: () => R): R | und
 }
 
 /**
- * Executes a function outside of any observer context.
+ * Executes a function outside any observer context.
  * This function temporarily removes the current observer context,
  * executes the provided function, and then restores the previous observer context.
  * It's useful for running code that shouldn't be tracked by the reactive system.

@@ -404,6 +404,9 @@ describe('Anchor Dev Tool', () => {
       expect(devTool?.onDestroy).toHaveBeenCalledTimes(1);
       expect(devTool?.onDestroy).toHaveBeenCalledWith(
         expect.objectContaining({
+          count: expect.any(Number),
+        }),
+        expect.objectContaining({
           id: expect.any(String),
         })
       );
