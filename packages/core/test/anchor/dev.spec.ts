@@ -64,7 +64,6 @@ describe('Anchor Dev Tool', () => {
         onGet: 123 as never,
       };
 
-      // @ts-expect-error - Testing invalid input
       expect(setDevTool(devTool)).toBeUndefined();
       expect(getDevTool()).not.toBe(devTool);
     });
@@ -78,6 +77,20 @@ describe('Anchor Dev Tool', () => {
       // @ts-expect-error - Testing invalid input
       expect(setDevTool(devTool)).toBeUndefined();
       expect(getDevTool()).not.toBe(devTool);
+    });
+
+    it('should handle dev tool with partial callbacks', () => {
+      const devTool = {
+        onInit: vi.fn(),
+      };
+      setDevTool(devTool);
+
+      const state = anchor({ name: 'John' });
+
+      expect(state.name).toBe('John');
+      expect(() => {
+        delete state.name;
+      }).not.toThrow();
     });
   });
 
