@@ -12,6 +12,7 @@ import { INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY } from './registry.js'
 import { ARRAY_MUTATIONS, OBSERVER_KEYS } from './constant.js';
 import { broadcast } from './internal.js';
 import { captureStack } from './exception.js';
+import { getDevTool } from './dev.js';
 
 const mockReturn = {
   shift(items: unknown[]) {
@@ -68,6 +69,7 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
+  const devTool = getDevTool();
   const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
 
@@ -188,6 +190,8 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
 
       // Broadcast the array mutation event to all subscribers
       broadcast(subscribers, init, event, meta.id);
+
+      devTool?.onCall(meta, method, args);
 
       if (result === init) {
         return INIT_REGISTRY.get(init);

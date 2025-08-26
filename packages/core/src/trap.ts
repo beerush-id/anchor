@@ -17,6 +17,7 @@ import { isArray } from '@beerush/utils';
 import { OBSERVER_KEYS } from './constant.js';
 import { createCollectionGetter } from './collection.js';
 import { assignObserver, getObserver } from './observable.js';
+import { getDevTool } from './dev.js';
 
 /**
  * Creates a getter trap function for a reactive state object.
@@ -44,6 +45,7 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
+  const devTool = getDevTool();
   const { schema, observers, subscribers, subscriptions } = meta;
   const { link, mutator, configs } = references;
 
@@ -63,16 +65,25 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
         if (!keys.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
           keys.add(OBSERVER_KEYS.ARRAY_MUTATIONS);
           observer.onTrack?.(init, OBSERVER_KEYS.ARRAY_MUTATIONS);
+
+          // Trigger the dev tool callback if available.
+          devTool?.onTrack(meta, observer, OBSERVER_KEYS.ARRAY_MUTATIONS);
         }
       } else {
         if (!keys.has(prop)) {
           keys.add(prop);
           observer.onTrack?.(init, prop);
+
+          // Trigger the dev tool callback if available.
+          devTool?.onTrack(meta, observer, prop);
         }
       }
     }
 
     let value = Reflect.get(target, prop, receiver) as Linkable;
+
+    // Trigger the dev tool callback if available.
+    devTool?.onGet(meta, prop);
 
     if (value === init) {
       captureStack.violation.circular(prop, getter);
@@ -140,6 +151,7 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
+  const devTool = getDevTool();
   const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
 
@@ -198,6 +210,9 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
       }
 
       broadcast(subscribers, target, event, meta.id);
+
+      // Trigger the dev tool callback if available.
+      devTool?.onSet(meta, prop, value);
     }
 
     return true;
@@ -231,6 +246,7 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
+  const devTool = getDevTool();
   const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
 
@@ -280,6 +296,9 @@ export function createRemover<T extends Linkable, S extends LinkableSchema>(init
       }
 
       broadcast(subscribers, target, event, meta.id);
+
+      // Trigger the dev tool callback if available.
+      devTool?.onDelete(meta, prop);
     }
 
     return true;

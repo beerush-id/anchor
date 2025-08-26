@@ -43,6 +43,7 @@ export type AnchorOptions<S extends LinkableSchema = LinkableSchema> = AnchorCon
 
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
+export type StateDestroyer = () => void;
 export type StateSubscribeFn<T> = (handle: StateSubscriber<T>, receiver?: Linkable) => StateUnsubscribe;
 export type StateSubscriberList<T extends Linkable = Linkable> = Set<StateSubscriber<T>>;
 export type StateObserverList = Set<StateObserver>;
@@ -72,7 +73,7 @@ export type StateMetadata<
 
 export type StateController<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
   meta: StateMetadata<T, S>;
-  destroy: StateUnsubscribe;
+  destroy: StateDestroyer;
   subscribe: StateSubscribeFn<T>;
 };
 
@@ -322,6 +323,18 @@ export interface AnchorFn {
    * @param target - Target collection to clear
    */
   clear<T>(target: T): void;
+
+  /**
+   * Destroys a reactive state and cleans up all associated resources.
+   *
+   * This function retrieves the controller associated with the given state
+   * and calls its destroy method, effectively cleaning up all observers,
+   * subscribers, and references. If the state does not exist, an error is logged.
+   *
+   * @template T The type of the state to destroy.
+   * @param {T} state - The reactive state to destroy.
+   */
+  destroy<T extends State>(state: T): void;
 
   /**
    * Configures global Anchor settings.

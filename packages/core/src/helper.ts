@@ -9,6 +9,7 @@ import {
 import { isArray, isDefined, isMap, isObjectLike, isSet } from '@beerush/utils';
 import { broadcast } from './internal.js';
 import { softEntries, softKeys } from './utils/clone.js';
+import { getDevTool } from './dev.js';
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
 export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
@@ -37,6 +38,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
   const init = STATE_REGISTRY.get(target);
   const meta = META_REGISTRY.get(init as Linkable);
+  const devTool = getDevTool();
   const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
@@ -84,6 +86,10 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   if (isDefined(init)) {
     STATE_BUSY_LIST.delete(init);
   }
+
+  if (meta && devTool) {
+    devTool?.onAssign(meta, source);
+  }
 };
 
 /**
@@ -105,6 +111,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
 
   const init = STATE_REGISTRY.get(target);
   const meta = META_REGISTRY.get(init as Linkable);
+  const devTool = getDevTool();
   const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
@@ -171,6 +178,10 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   if (isDefined(init)) {
     STATE_BUSY_LIST.delete(init);
   }
+
+  if (meta && devTool) {
+    devTool?.onRemove(meta, keys);
+  }
 };
 
 /**
@@ -191,6 +202,7 @@ export const clear = <T extends Assignable>(target: T) => {
 
   const init = STATE_REGISTRY.get(target);
   const meta = META_REGISTRY.get(init as Linkable);
+  const devTool = getDevTool();
   const controller = CONTROLLER_REGISTRY.get(target);
   const subscribers = SUBSCRIBER_REGISTRY.get(target);
 
@@ -234,6 +246,10 @@ export const clear = <T extends Assignable>(target: T) => {
 
   if (isDefined(init)) {
     STATE_BUSY_LIST.delete(init);
+  }
+
+  if (meta && devTool) {
+    devTool?.onClear(meta);
   }
 };
 

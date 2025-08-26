@@ -18,6 +18,7 @@ import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { COLLECTION_MUTATIONS, OBSERVER_KEYS } from './constant.js';
 import { assignObserver, getObserver } from './observable.js';
+import { getDevTool } from './dev.js';
 
 const mockReturn = {
   set(map: Map<unknown, unknown>) {
@@ -45,6 +46,7 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
+  const devTool = getDevTool();
   const { observers } = meta;
   const { link, mutator, configs } = references;
 
@@ -59,6 +61,7 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
       if (!keys.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
         keys.add(OBSERVER_KEYS.COLLECTION_MUTATIONS);
         observer.onTrack?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        devTool?.onTrack(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
     }
 
@@ -150,6 +153,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
+  const devTool = getDevTool();
   const { observers, subscribers, subscriptions } = meta;
   const { link, unlink, configs } = references;
   const { deferred, immutable, recursive } = configs;
@@ -234,6 +238,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         }
 
         broadcast(subscribers, init, event, meta.id);
+
+        devTool?.onCall(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
       }
 
       // Collection mutation will always return itself for chaining.
@@ -276,6 +282,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           }
 
           broadcast(subscribers, self, event, meta.id);
+
+          devTool?.onCall(meta, method, [keyValue]);
         }
 
         return result;
@@ -312,6 +320,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           }
 
           broadcast(subscribers, init, event, meta.id);
+
+          devTool?.onCall(meta, method, []);
         }
 
         return result;

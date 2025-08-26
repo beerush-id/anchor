@@ -34,6 +34,7 @@ import { createArrayMutator } from './array.js';
 import { createCollectionMutator } from './collection.js';
 import { captureStack } from './exception.js';
 import { softClone } from './utils/clone.js';
+import { getDevTool } from './dev.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -147,7 +148,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   META_REGISTRY.set(init, meta as never as StateMetadata);
 
   const link = createLinkFactory(init, meta);
-  const unlink = createUnlinkFactory(subscriptions);
+  const unlink = createUnlinkFactory(meta);
 
   const references: StateReferences<T, S> = {
     meta,
@@ -178,6 +179,9 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   CONTROLLER_REGISTRY.set(state, controller as never);
   SUBSCRIBER_REGISTRY.set(state, subscribers as never);
   SUBSCRIPTION_REGISTRY.set(state, subscriptions);
+
+  // Trigger dev tool if it is available.
+  getDevTool()?.onInit(init, meta);
 
   // Return the proxied state object
   return state;
@@ -234,9 +238,10 @@ anchorFn.get = <T extends State>(state: T): T => {
  *
  * @template T The type of the state.
  * @param {T} state - The reactive state to create a snapshot from.
+ * @param recursive - Whether to recursively clone the object.
  * @returns {T} A deep copy of the underlying object.
  */
-anchorFn.snapshot = <T extends State>(state: T): T => {
+anchorFn.snapshot = <T extends State>(state: T, recursive = true): T => {
   const target = STATE_REGISTRY.get(state);
 
   if (!target) {
@@ -244,7 +249,29 @@ anchorFn.snapshot = <T extends State>(state: T): T => {
     captureStack.error.external('Cannot create snapshot of non-existence state.', error, anchorFn.snapshot);
   }
 
-  return structuredClone(target ?? state) as T;
+  return softClone(target ?? state, recursive) as T;
+};
+
+/**
+ * Destroys a reactive state and cleans up all associated resources.
+ *
+ * This function retrieves the controller associated with the given state
+ * and calls its destroy method, effectively cleaning up all observers,
+ * subscribers, and references. If the state does not exist, an error is logged.
+ *
+ * @template T The type of the state to destroy.
+ * @param {T} state - The reactive state to destroy.
+ */
+anchorFn.destroy = <T extends State>(state: T) => {
+  const controller = CONTROLLER_REGISTRY.get(state);
+
+  if (!controller) {
+    const error = new Error('Object is not a state');
+    captureStack.error.external('Attempted to destroy a state that does not exist', error, anchorFn.destroy);
+    return;
+  }
+
+  controller.destroy();
 };
 
 /**

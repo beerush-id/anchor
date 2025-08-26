@@ -14,7 +14,6 @@ import { createCollectionMutator } from './collection.js';
 import { REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
-import { isArray, isMap, isSet } from '@beerush/utils';
 
 /**
  * Creates a ProxyHandler for the given state object based on its mutability configuration.
@@ -30,14 +29,13 @@ import { isArray, isMap, isSet } from '@beerush/utils';
  * @returns A ProxyHandler configured according to the immutability settings
  */
 export function createProxyHandler<T extends Linkable>(init: T, references: StateReferences<T, LinkableSchema>) {
-  const { recursive, immutable } = references.configs;
+  const { immutable } = references.configs;
 
   references.getter = createGetter<T, LinkableSchema>(init) as never;
-  const getter = recursive || isArray(init) || isSet(init) || isMap(init) ? references.getter : undefined;
 
   if (immutable) {
     const handler = {
-      get: getter,
+      get: references.getter,
       set: (target: Linkable, prop: KeyLike) => {
         captureStack.violation.setter(prop, handler.set);
         return true;
@@ -52,7 +50,7 @@ export function createProxyHandler<T extends Linkable>(init: T, references: Stat
   }
 
   return {
-    get: getter,
+    get: references.getter,
     set: createSetter(init),
     deleteProperty: createRemover(init),
   } as ProxyHandler<Linkable>;

@@ -1,5 +1,7 @@
-import type { KeyLike, Linkable, StateChange, StateObserver } from './types.js';
+import type { KeyLike, Linkable, StateChange, StateMetadata, StateObserver } from './types.js';
 import { captureStack } from './exception.js';
+import { getDevTool } from './dev.js';
+import { META_REGISTRY } from './registry.js';
 
 let currentObserver: StateObserver | undefined = undefined;
 
@@ -99,6 +101,7 @@ export function assignObserver(init: Linkable, observers: Set<StateObserver>, ob
     observer.onDestroy(() => {
       observer.states.delete(init);
       observers.delete(observer);
+      getDevTool()?.onUntrack(META_REGISTRY.get(init) as StateMetadata, observer);
     });
   }
 

@@ -75,6 +75,11 @@ describe('Anchor Core - Edge Cases', () => {
       expect(snapshot).toEqual({ name: 'John Doe' });
       expect(errorSpy).toHaveBeenCalled();
     });
+
+    it('should handle destroying non reactive object', () => {
+      anchor.destroy({ name: 'John Doe' });
+      expect(errorSpy).toHaveBeenCalled();
+    });
   });
 
   describe('Edge Cases - Trap Factory Integrity', () => {

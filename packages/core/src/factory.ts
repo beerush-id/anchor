@@ -6,13 +6,13 @@ import type {
   StateMetadata,
   StateSubscribeFn,
   StateSubscriber,
-  StateSubscriptionMap,
   SubscribeFactoryInit,
 } from './types.js';
 import { broadcast } from './internal.js';
 import {
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
+  META_REGISTRY,
   REFERENCE_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
@@ -20,6 +20,7 @@ import {
 } from './registry.js';
 import { captureStack } from './exception.js';
 import { softEntries } from './utils/index.js';
+import { getDevTool } from './dev.js';
 
 /**
  * Creates a factory function for linking child states to a parent state.
@@ -32,21 +33,25 @@ import { softEntries } from './utils/index.js';
  * @template T - The type of the parent state
  * @param init - The initial value of the parent state
  * @param meta - The metadata associated with the parent state
- * @returns {(childPath: KeyLike, childState: Linkable, receiver?: Linkable) => void}
+ * @returns {(childPath: KeyLike, childState: State, receiver?: State) => void}
  *          A function that links a child state to the parent state
  */
 export function createLinkFactory<T extends Linkable>(
   init: T,
   meta: StateMetadata<T>
-): (childPath: KeyLike, childState: Linkable, receiver?: Linkable) => void {
-  return (childPath: KeyLike, childState: Linkable, receiver?: Linkable): void => {
+): (childPath: KeyLike, childState: State, receiver?: State) => void {
+  const devTool = getDevTool();
+
+  return (childPath: KeyLike, childState: State, receiver?: State): void => {
     if (meta.subscriptions.has(childState)) return;
 
     // Get the controller for the child state
-    const ctrl = CONTROLLER_REGISTRY.get(childState);
+    const childInit = STATE_REGISTRY.get(childState) as Linkable;
+    const childMeta = META_REGISTRY.get(childInit) as StateMetadata;
+    const childController = CONTROLLER_REGISTRY.get(childState);
 
     // If the child state has a valid controller with subscribe method
-    if (typeof ctrl?.subscribe === 'function') {
+    if (typeof childController?.subscribe === 'function') {
       const childHandler: StateSubscriber<unknown> = (_, event, emitter) => {
         // Ignore init events to prevent duplicate notifications
         if (event && event.type !== 'init') {
@@ -63,10 +68,12 @@ export function createLinkFactory<T extends Linkable>(
       });
 
       // Subscribe to the child state changes
-      const childUnsubscribe = ctrl.subscribe(childHandler, receiver);
+      const childUnsubscribe = childController.subscribe(childHandler, receiver);
 
       // Store the unsubscribe function for cleanup
       meta.subscriptions.set(childState, childUnsubscribe);
+
+      devTool?.onLink(meta, childMeta);
     }
   };
 }
@@ -79,16 +86,25 @@ export function createLinkFactory<T extends Linkable>(
  * The unlinking process involves calling the stored unsubscribe function for the child state and
  * removing the subscription reference from the tracking map.
  *
- * @param {StateSubscriptionMap} subscriptions - Map tracking active subscriptions to child states
+ * @param meta - The metadata object associated with the child state
  * @returns {(childState: Linkable) => void} A function that unlinks a child state from the parent state
  */
-export function createUnlinkFactory(subscriptions: StateSubscriptionMap): (childState: Linkable) => void {
-  return (childState: Linkable) => {
+export function createUnlinkFactory<T extends Linkable>(meta: StateMetadata<T>): (childState: Linkable) => void {
+  const devTool = getDevTool();
+  const { subscriptions } = meta;
+
+  return (childState: State) => {
     const unsubscribe = subscriptions.get(childState);
 
     if (typeof unsubscribe === 'function') {
       unsubscribe();
       subscriptions.delete(childState);
+
+      if (devTool) {
+        const childInit = STATE_REGISTRY.get(childState) as Linkable;
+        const childMeta = META_REGISTRY.get(childInit) as StateMetadata;
+        devTool.onUnlink(meta, childMeta);
+      }
     }
   };
 }
@@ -115,9 +131,10 @@ export function createSubscribeFactory<T extends Linkable>(
   meta: StateMetadata<T>,
   helper: SubscribeFactoryInit
 ): StateSubscribeFn<T> {
+  const devTool = getDevTool();
   const { subscribers, subscriptions } = meta;
 
-  const subscribeFn = (handler: StateSubscriber<T>, receiver?: Linkable) => {
+  const subscribeFn = (handler: StateSubscriber<T>, receiver?: State) => {
     // Immediately notify the handler with the current state.
     try {
       handler(init, { type: 'init', keys: [] });
@@ -127,6 +144,9 @@ export function createSubscribeFactory<T extends Linkable>(
     }
 
     const unsubscribeFn = () => {
+      // Do nothing if no subscribers left for potential multiple unsubscribe calls.
+      if (!subscribers.size) return;
+
       // Remove the handler from active subscribers
       subscribers.delete(handler);
 
@@ -136,10 +156,12 @@ export function createSubscribeFactory<T extends Linkable>(
         if (subscriptions.size) {
           // Iterate over a copy of the subscriptions map to safely unlink
           subscriptions.forEach((_, val) => {
-            helper.unlink(val as Linkable);
+            helper.unlink(val as State);
           });
         }
       }
+
+      devTool?.onUnsubscribe(meta, handler, receiver);
     };
 
     // Check if the handler is already subscribed.
@@ -159,13 +181,15 @@ export function createSubscribeFactory<T extends Linkable>(
 
     if (!(Array.isArray(init) && meta.configs.recursive === 'flat')) {
       for (const [key, value] of softEntries(init as ObjLike)) {
-        const childState = INIT_REGISTRY.get(value as Linkable) as Linkable;
+        const childState = INIT_REGISTRY.get(value as Linkable) as State;
 
         if (childState && !subscriptions.has(childState) && childState !== receiver) {
-          helper.link(key, childState, (receiver ?? state) as Linkable);
+          helper.link(key, childState, (receiver ?? state) as State);
         }
       }
     }
+
+    devTool?.onSubscribe(meta, handler, receiver);
 
     // Return the unsubscribe function
     return unsubscribeFn;
@@ -180,25 +204,35 @@ export function createSubscribeFactory<T extends Linkable>(
  * This factory generates a function that completely destroys a state by:
  * 1. Unsubscribing all active subscriptions to child states
  * 2. Clearing all subscribers and subscriptions
- * 3. Removing the state from all internal registries (INIT, REFERENCE, STATE, CONTROLLER, SUBSCRIBER, SUBSCRIPTION)
+ * 3. Removing the state from all internal registries (INIT, META, REFERENCE, STATE, CONTROLLER, SUBSCRIBER,
+ * SUBSCRIPTION)
  *
  * This cleanup process ensures no memory leaks and properly disconnects the state from the reactive system.
  *
  * @template T - The type of the state being destroyed
  * @param init - Initial state value
  * @param state - The state object to be destroyed and removed from registries
- * @param subscribers - Set of subscriber functions to be cleared
- * @param subscriptions - Map of active subscriptions to be unsubscribed
+ * @param meta - The metadata associated with the state
  * @returns {() => void} A function that destroys the state and cleans up all resources
  */
-export function createDestroyFactory<T extends Linkable>(
-  init: T,
-  state: State<T>,
-  { subscribers, subscriptions }: StateMetadata<T>
-): () => void {
-  return () => {
-    for (const unsubscribe of subscriptions.values()) {
+export function createDestroyFactory<T extends Linkable>(init: T, state: State<T>, meta: StateMetadata<T>): () => void {
+  const devTool = getDevTool();
+  const { subscribers, subscriptions } = meta;
+
+  const handler = (propagation?: boolean) => {
+    if (propagation && subscribers.size) {
+      const error = new Error('State is active');
+      captureStack.error.internal('Attempted to destroy state that still active', error, handler);
+      return;
+    }
+
+    for (const [childState, unsubscribe] of subscriptions.entries()) {
       unsubscribe?.();
+
+      const childController = CONTROLLER_REGISTRY.get(childState);
+      if (!childController?.meta.subscribers.size) {
+        (childController?.destroy as (prop: boolean) => void)(true);
+      }
     }
 
     // Cleaning up the observers and subscriptions.
@@ -207,11 +241,16 @@ export function createDestroyFactory<T extends Linkable>(
 
     // Remove the state from STATE_REGISTRY and STATE_LINK.
     INIT_REGISTRY.delete(init);
+    META_REGISTRY.delete(init);
     REFERENCE_REGISTRY.delete(init);
 
     STATE_REGISTRY.delete(state);
     CONTROLLER_REGISTRY.delete(state);
     SUBSCRIBER_REGISTRY.delete(state);
     SUBSCRIPTION_REGISTRY.delete(state);
+
+    devTool?.onDestroy(meta);
   };
+
+  return handler;
 }
