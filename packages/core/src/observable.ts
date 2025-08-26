@@ -16,7 +16,7 @@ let currentRestorer: (() => void) | undefined = undefined;
  */
 export function setObserver(observer: StateObserver) {
   // Make sure it handles duplicate observer such as when evaluated in React's strict mode.
-  if (currentObserver === observer) return currentRestorer;
+  if (currentObserver === observer) return currentRestorer as () => void;
 
   let restored = false;
   const prevObserver = currentObserver;
