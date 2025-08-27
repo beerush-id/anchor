@@ -82,6 +82,13 @@ describe('Anchor Core - Basic Operations', () => {
 
       anchor.configure({ immutable: false }); // Reset to default.
     });
+
+    it('should find the initialized state of init', () => {
+      const init = { name: 'John' };
+      const state = anchor(init);
+
+      expect(anchor.find(init)).toBe(state);
+    });
   });
 
   describe('Read and Write', () => {

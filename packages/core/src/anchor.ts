@@ -230,6 +230,15 @@ anchorFn.get = <T extends State>(state: T): T => {
 };
 
 /**
+ * This function is used to find the state from the given object.
+ * @param {T} init - The reactive state or plain object to find.
+ * @returns {T | undefined} - The reactive state associated with the given object, or undefined if not found.
+ */
+anchorFn.find = <T extends Linkable>(init: T): T | undefined => {
+  return INIT_REGISTRY.get(init) as T;
+};
+
+/**
  * Creates a deep copy snapshot of the given state.
  *
  * This function retrieves the underlying raw object from the state registry

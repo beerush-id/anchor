@@ -34,21 +34,6 @@ export type TaskDestroyer = () => void;
  * @template T - The type of context data that can be passed to the handler
  * @param timeout - The timeout in milliseconds before executing the task (default: 10ms)
  * @returns A tuple containing the scheduler and destroyer functions
- *
- * @example
- * ```typescript
- * const [schedule, destroy] = microtask<number>();
- *
- * schedule((init, current) => {
- *   console.log(`Initial value: ${init}, Current value: ${current}`);
- * }, 1);
- *
- * schedule((init, current) => {
- *   console.log(`Initial value: ${init}, Current value: ${current}`);
- * }, 2);
- *
- * // After 100ms, only logs: "Initial value: 1, Current value: 2"
- * ```
  */
 export function microtask<T = undefined>(timeout = 10): [TaskScheduler<T>, TaskDestroyer] {
   let initContext: T | undefined = undefined;

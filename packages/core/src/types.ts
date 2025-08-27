@@ -23,6 +23,7 @@ export type StateObserver = {
   readonly destroy: () => void;
   readonly onTrack?: (state: Linkable, key: KeyLike) => void;
   run<R>(fn: () => R): R | undefined;
+  name?: string;
 };
 
 export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
@@ -270,6 +271,8 @@ export interface AnchorFn {
    * @returns Current state value
    */
   get<T extends Linkable>(state: State<T>): T;
+
+  find<T extends Linkable>(init: T): T;
 
   /**
    * Creates a snapshot of the current state.

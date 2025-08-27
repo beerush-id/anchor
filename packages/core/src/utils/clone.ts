@@ -1,4 +1,4 @@
-import { isArray, isDate, isMap, isRegExp, isSet } from '@beerush/utils';
+import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from '@beerush/utils';
 import type { Linkable, ObjLike, Recursive } from '../types.js';
 import { captureStack } from '../exception.js';
 
@@ -16,22 +16,6 @@ import { captureStack } from '../exception.js';
  * @param {WeakMap<object, object>} clonedRefs - WeakMap to track cloned references (used internally for circular references)
  * @param {string} prop - Property name (used internally for exception message)
  * @returns {T} - A deep clone of the source object
- *
- * @example
- * // Clone a simple object
- * const obj = { a: 1, b: { c: 2 } };
- * const cloned = softClone(obj);
- *
- * @example
- * // Clone an array
- * const arr = [1, 2, [3, 4]];
- * const cloned = softClone(arr);
- *
- * @example
- * // Handle circular references
- * const obj: any = { a: 1 };
- * obj.self = obj;
- * const cloned = softClone(obj); // Won't cause infinite recursion
  */
 export function softClone<T>(
   source: T,
@@ -118,20 +102,16 @@ export function softClone<T>(
  * @template T - The type of the source object
  * @param {T} obj - The object to get entries from
  * @returns {Array<[keyof T, T[keyof T]]>} - Array of key-value pairs
- *
- * @example
- * // Get entries from a plain object
- * const obj = { a: 1, [Symbol('b')]: 2 };
- * const entries = softEntries(obj); // [['a', 1], [Symbol('b'), 2]]
- *
- * @example
- * // Get entries from a Map
- * const map = new Map([['a', 1], ['b', 2]]);
- * const entries = softEntries(map); // [['a', 1], ['b', 2]]
  */
+export function softEntries<T extends ObjLike>(obj: T): Array<[keyof T, T[keyof T]]>;
+export function softEntries<T extends unknown[]>(arr: T): [number | string, T[number]];
+export function softEntries<T extends Map<unknown, unknown>>(
+  map: T
+): T extends Map<infer K, infer V> ? Array<[K, V]> : never;
+export function softEntries<T extends Set<unknown>>(set: T): T extends Set<infer V> ? Array<[number, V]> : never;
 export function softEntries<T extends ObjLike>(obj: T): Array<[keyof T, T[keyof T]]> {
   if ((obj as Linkable) instanceof Map || (obj as Linkable) instanceof Set) {
-    return (obj as never as Map<string, unknown>).entries() as never;
+    return [...(obj as never as Map<string, unknown>).entries()] as never;
   }
 
   const entries = Object.entries(obj) as Array<[keyof T, T[keyof T]]>;
@@ -153,21 +133,100 @@ export function softEntries<T extends ObjLike>(obj: T): Array<[keyof T, T[keyof 
  * @template T - The type of the source object
  * @param {T} obj - The object to get keys from
  * @returns {Array<keyof T>} - Array of keys
- *
- * @example
- * // Get keys from a plain object
- * const obj = { a: 1, [Symbol('b')]: 2 };
- * const keys = softKeys(obj); // ['a', Symbol('b')]
- *
- * @example
- * // Get keys from a Map
- * const map = new Map([['a', 1], ['b', 2]]);
- * const keys = softKeys(map); // ['a', 'b']
  */
+export function softKeys<T extends ObjLike>(obj: T): Array<keyof T>;
+export function softKeys<T extends unknown[]>(arr: T): [number | string];
+export function softKeys<T extends Map<unknown, unknown>>(map: T): T extends Map<infer K, unknown> ? Array<K> : never;
+export function softKeys<T extends Set<unknown>>(set: T): T extends Set<infer V> ? Array<V> : never;
 export function softKeys<T extends ObjLike>(obj: T): Array<keyof T> {
   if (isMap(obj) || isSet(obj)) {
     return [...obj.keys()] as Array<keyof T>;
   }
 
   return [...Object.keys(obj), ...Object.getOwnPropertySymbols(obj)] as Array<keyof T>;
+}
+
+/**
+ * Get values of an object including symbol keys
+ *
+ * This function returns an array of values for the given object,
+ * including both string and symbol keys. For Maps and Sets, it returns
+ * their native values iterator converted to an array.
+ *
+ * @template T - The type of the source object
+ * @param {T} obj - The object to get values from
+ * @returns {Array<T[keyof T]>} - Array of values
+ */
+export function softValues<T extends ObjLike>(obj: T): Array<T[keyof T]>;
+export function softValues<T extends unknown[]>(arr: T): [number | string, T[number]];
+export function softValues<T extends Map<unknown, unknown>>(map: T): T extends Map<unknown, infer V> ? Array<V> : never;
+export function softValues<T extends Set<unknown>>(set: T): T extends Set<infer V> ? Array<V> : never;
+export function softValues<T extends ObjLike>(obj: T): Array<T[keyof T]> {
+  if (Array.isArray(obj)) return obj;
+  if (isMap(obj) || isSet(obj)) {
+    return [...obj.values()] as Array<T[keyof T]>;
+  }
+
+  const values = Object.values(obj);
+
+  for (const sym of Object.getOwnPropertySymbols(obj)) {
+    values.push(obj[sym as never]);
+  }
+
+  return values as Array<T[keyof T]>;
+}
+
+/**
+ * Performs a shallow equality comparison between two values.
+ *
+ * This function checks if two values are equal. It handles primitives,
+ * Dates, RegExps, Arrays, Maps, Sets, and plain objects. For complex types,
+ * it performs a shallow comparison of their contents.
+ *
+ * @template T - The type of the values to compare.
+ * @param {T} a - The first value to compare.
+ * @param {T} b - The second value to compare.
+ * @returns {boolean} - True if the values are shallowly equal, false otherwise.
+ */
+export function softEqual<A, B>(a: A, b: B): boolean {
+  if ((a as never) === b) return true;
+  if (typeOf(a) !== typeOf(b)) return false;
+  if (isDate(a) && isDate(b)) return a.getTime() === b.getTime();
+  if (isRegExp(a) && isRegExp(b)) return a.source === b.source && a.flags === b.flags;
+
+  if (isArray(a) && isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((val, i) => val === b[i]);
+  }
+
+  if (isMap(a) && isMap(b)) {
+    if (a.size !== b.size) return false;
+    for (const [key, value] of a.entries()) {
+      if (!b.has(key) || b.get(key) !== value) return false;
+    }
+    return true;
+  }
+
+  if (isSet(a) && isSet(b)) {
+    if (a.size !== b.size) return false;
+    for (const value of a.values()) {
+      if (!b.has(value)) return false;
+    }
+    return true;
+  }
+
+  if (typeof a === 'object' && typeof b === 'object' && a !== null && b !== null) {
+    const aObj = a as ObjLike;
+    const bObj = b as ObjLike;
+    const aKeys = softKeys(aObj);
+    const bKeys = softKeys(bObj);
+
+    if (aKeys.length !== bKeys.length) return false;
+    for (const key of aKeys) {
+      if (aObj[key] !== bObj[key]) return false;
+    }
+    return true;
+  }
+
+  return false;
 }

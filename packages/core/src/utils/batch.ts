@@ -24,17 +24,6 @@ export type BatchResetter = () => void;
  *
  * @param {number} delay - The delay in milliseconds before executing the batch. Defaults to 10ms.
  * @returns {[BatchScheduler, BatchResetter]} A tuple containing the scheduler and resetter functions.
- *
- * @example
- * const [schedule, reset] = microbatch(50);
- *
- * schedule(() => console.log('Task 1'));
- * schedule(() => console.log('Task 2'));
- *
- * // Both tasks will be executed together after 50ms
- *
- * // To cancel pending executions:
- * // reset();
  */
 export function microbatch(delay: number = 10): [BatchScheduler, BatchResetter] {
   const BATCHES = new Set<() => void>();

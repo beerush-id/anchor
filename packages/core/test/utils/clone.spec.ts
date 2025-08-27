@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { softClone, softEntries, softKeys } from '../../src/index.js';
+import { softClone, softEntries, softEqual, softKeys, softValues } from '../../src/index.js';
 
 describe('Anchor Utilities - Cloner', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -203,6 +203,240 @@ describe('Anchor Utilities - Cloner', () => {
         ])
       );
     });
+
+    it('should return entries for Map objects', () => {
+      const map = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
+      const entries = softEntries(map);
+
+      expect(entries).toHaveLength(2);
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          ['a', 1],
+          ['b', 2],
+        ])
+      );
+    });
+
+    it('should return entries for Set objects', () => {
+      const set = new Set([1, 2, 3]);
+      const entries = softEntries(set);
+
+      expect(entries).toHaveLength(3);
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          [1, 1],
+          [2, 2],
+          [3, 3],
+        ])
+      );
+    });
+
+    it('should return empty array for empty object', () => {
+      const obj = {};
+      const entries = softEntries(obj);
+
+      expect(entries).toHaveLength(0);
+      expect(entries).toEqual([]);
+    });
+
+    it('should return empty array for empty Map', () => {
+      const map = new Map();
+      const entries = softEntries(map);
+
+      expect(entries).toHaveLength(0);
+      expect(entries).toEqual([]);
+    });
+
+    it('should return empty array for empty Set', () => {
+      const set = new Set();
+      const entries = softEntries(set);
+
+      expect(entries).toHaveLength(0);
+      expect(entries).toEqual([]);
+    });
+
+    it('should handle object with inherited properties', () => {
+      const parent = { a: 1 };
+      const child = Object.create(parent);
+      child.b = 2;
+
+      const entries = softEntries(child);
+
+      // Should only return own properties
+      expect(entries).toHaveLength(1);
+      expect(entries).toEqual(expect.arrayContaining([['b', 2]]));
+    });
+
+    it('should handle object with undefined and null values', () => {
+      const sym = Symbol('test');
+      const obj = { a: undefined, b: null, c: 0, [sym]: undefined };
+      const entries = softEntries(obj);
+
+      expect(entries).toHaveLength(4);
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          ['a', undefined],
+          ['b', null],
+          ['c', 0],
+          [sym, undefined],
+        ])
+      );
+    });
+
+    it('should handle object with function values', () => {
+      const fn = () => {};
+      const sym = Symbol('fn');
+      const obj = { a: fn, b: 42, [sym]: fn };
+      const entries = softEntries(obj);
+
+      expect(entries).toHaveLength(3);
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          ['a', fn],
+          ['b', 42],
+          [sym, fn],
+        ])
+      );
+    });
+
+    it('should handle object with nested objects', () => {
+      const nested = { x: 1 };
+      const sym = Symbol('nested');
+      const obj = { a: nested, b: 42, [sym]: nested };
+      const entries = softEntries(obj);
+
+      expect(entries).toHaveLength(3);
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          ['a', nested],
+          ['b', 42],
+          [sym, nested],
+        ])
+      );
+    });
+  });
+
+  describe('Soft Values (softValues)', () => {
+    it('should return array as-is when input is an array', () => {
+      const arr = [1, 2, 3];
+      const values = softValues(arr);
+
+      expect(values).toBe(arr);
+      expect(values).toEqual([1, 2, 3]);
+    });
+
+    it('should return values of a Map', () => {
+      const map = new Map([
+        ['a', 1],
+        ['b', 2],
+        ['c', 3],
+      ]);
+      const values = softValues(map);
+
+      expect(values).toHaveLength(3);
+      expect(values).toEqual(expect.arrayContaining([1, 2, 3]));
+    });
+
+    it('should return values of a Set', () => {
+      const set = new Set([1, 2, 3]);
+      const values = softValues(set);
+
+      expect(values).toHaveLength(3);
+      expect(values).toEqual(expect.arrayContaining([1, 2, 3]));
+    });
+
+    it('should return values of a plain object including symbol values', () => {
+      const sym = Symbol('test');
+      const obj = { a: 1, b: 2, [sym]: 3 };
+      const values = softValues(obj);
+
+      expect(values).toHaveLength(3);
+      expect(values).toEqual(expect.arrayContaining([1, 2, 3]));
+    });
+
+    it('should return only symbol values when object has no string keys', () => {
+      const sym1 = Symbol('test1');
+      const sym2 = Symbol('test2');
+      const obj = { [sym1]: 1, [sym2]: 2 };
+      const values = softValues(obj);
+
+      expect(values).toHaveLength(2);
+      expect(values).toEqual(expect.arrayContaining([1, 2]));
+    });
+
+    it('should return empty array for empty object', () => {
+      const obj = {};
+      const values = softValues(obj);
+
+      expect(values).toHaveLength(0);
+      expect(values).toEqual([]);
+    });
+
+    it('should return empty array for empty array', () => {
+      const arr: number[] = [];
+      const values = softValues(arr);
+
+      expect(values).toHaveLength(0);
+      expect(values).toEqual([]);
+      expect(values).toBe(arr);
+    });
+
+    it('should return empty array for empty Map', () => {
+      const map = new Map();
+      const values = softValues(map);
+
+      expect(values).toHaveLength(0);
+      expect(values).toEqual([]);
+    });
+
+    it('should return empty array for empty Set', () => {
+      const set = new Set();
+      const values = softValues(set);
+
+      expect(values).toHaveLength(0);
+      expect(values).toEqual([]);
+    });
+
+    it('should handle object with inherited properties', () => {
+      const parent = { a: 1 };
+      const child = Object.create(parent);
+      child.b = 2;
+
+      const values = softValues(child);
+
+      // Should only return own properties
+      expect(values).toHaveLength(1);
+      expect(values).toEqual(expect.arrayContaining([2]));
+    });
+
+    it('should handle object with undefined and null values', () => {
+      const obj = { a: undefined, b: null, c: 0 };
+      const values = softValues(obj);
+
+      expect(values).toHaveLength(3);
+      expect(values).toEqual(expect.arrayContaining([undefined, null, 0]));
+    });
+
+    it('should handle object with function values', () => {
+      const fn = () => {};
+      const obj = { a: fn, b: 42 };
+      const values = softValues(obj);
+
+      expect(values).toHaveLength(2);
+      expect(values).toEqual(expect.arrayContaining([fn, 42]));
+    });
+
+    it('should handle object with nested objects', () => {
+      const nested = { x: 1 };
+      const obj = { a: nested, b: 42 };
+      const values = softValues(obj);
+
+      expect(values).toHaveLength(2);
+      expect(values).toEqual(expect.arrayContaining([nested, 42]));
+    });
   });
 
   describe('Soft Keys (softKeys)', () => {
@@ -223,6 +457,162 @@ describe('Anchor Utilities - Cloner', () => {
 
       expect(keys).toHaveLength(2);
       expect(keys).toEqual(expect.arrayContaining([sym1, sym2]));
+    });
+  });
+
+  describe('Soft Equal (softEqual)', () => {
+    it('should return true for equal objects', () => {
+      const obj1 = { a: 1, b: 2 };
+      const obj2 = { a: 1, b: 2 };
+      expect(softEqual(obj1, obj2)).toBe(true);
+    });
+
+    it('should return false for unequal objects', () => {
+      const obj1 = { a: 1, b: 2 };
+      const obj2 = { a: 1, b: 3 };
+      expect(softEqual(obj1, obj2)).toBe(false);
+    });
+
+    it('should return true for equal arrays', () => {
+      const arr1 = [1, 2, 3];
+      const arr2 = [1, 2, 3];
+      expect(softEqual(arr1, arr2)).toBe(true);
+    });
+
+    it('should return false for unequal arrays', () => {
+      const arr1 = [1, 2, 3];
+      const arr2 = [1, 2, 4];
+      expect(softEqual(arr1, arr2)).toBe(false);
+    });
+
+    it('should return true for identical primitive values', () => {
+      expect(softEqual(42, 42)).toBe(true);
+      expect(softEqual('hello', 'hello')).toBe(true);
+      expect(softEqual(true, true)).toBe(true);
+      expect(softEqual(null, null)).toBe(true);
+      expect(softEqual(undefined, undefined)).toBe(true);
+    });
+
+    it('should return false for different primitive values', () => {
+      expect(softEqual(42, 43)).toBe(false);
+      expect(softEqual('hello', 'world')).toBe(false);
+      expect(softEqual(true, false)).toBe(false);
+      expect(softEqual(null, undefined)).toBe(false);
+      expect(softEqual(0, false)).toBe(false); // Different types
+      expect(softEqual('', false)).toBe(false); // Different types
+    });
+
+    it('should return true for equal Date objects', () => {
+      const date1 = new Date('2023-01-01');
+      const date2 = new Date('2023-01-01');
+      expect(softEqual(date1, date2)).toBe(true);
+    });
+
+    it('should return false for unequal Date objects', () => {
+      const date1 = new Date('2023-01-01');
+      const date2 = new Date('2023-01-02');
+      expect(softEqual(date1, date2)).toBe(false);
+    });
+
+    it('should return true for equal RegExp objects', () => {
+      const regex1 = new RegExp('abc', 'gi');
+      const regex2 = new RegExp('abc', 'gi');
+      expect(softEqual(regex1, regex2)).toBe(true);
+    });
+
+    it('should return false for unequal RegExp objects', () => {
+      const regex1 = new RegExp('abc', 'gi');
+      const regex2 = new RegExp('abc', 'g');
+      const regex3 = new RegExp('abcd', 'gi');
+      expect(softEqual(regex1, regex2)).toBe(false);
+      expect(softEqual(regex1, regex3)).toBe(false);
+    });
+
+    it('should return false when comparing different types', () => {
+      expect(softEqual({}, [])).toBe(false);
+      expect(softEqual({}, new Date())).toBe(false);
+      expect(softEqual([], new Map())).toBe(false);
+      expect(softEqual(new Set(), new Map())).toBe(false);
+    });
+
+    it('should return true for equal Map objects', () => {
+      const map1 = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
+      const map2 = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
+      expect(softEqual(map1, map2)).toBe(true);
+    });
+
+    it('should return false for unequal Map objects', () => {
+      const map1 = new Map([['a', 1]]);
+      const map2 = new Map([['a', 2]]);
+      const map3 = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
+      expect(softEqual(map1, map2)).toBe(false);
+      expect(softEqual(map1, map3)).toBe(false);
+    });
+
+    it('should return true for equal Set objects', () => {
+      const set1 = new Set([1, 2, 3]);
+      const set2 = new Set([1, 2, 3]);
+      expect(softEqual(set1, set2)).toBe(true);
+    });
+
+    it('should return false for unequal Set objects', () => {
+      const set1 = new Set([1, 2, 3]);
+      const set2 = new Set([1, 2, 4]);
+      const set3 = new Set([1, 2]);
+      expect(softEqual(set1, set2)).toBe(false);
+      expect(softEqual(set1, set3)).toBe(false);
+    });
+
+    it('should handle objects with symbol keys', () => {
+      const sym = Symbol('test');
+      const obj1 = { a: 1, [sym]: 2 };
+      const obj2 = { a: 1, [sym]: 2 };
+      const obj3 = { a: 1, [sym]: 3 };
+      expect(softEqual(obj1, obj2)).toBe(true);
+      expect(softEqual(obj1, obj3)).toBe(false);
+    });
+
+    it('should handle objects with different key counts', () => {
+      const obj1 = { a: 1 };
+      const obj2 = { a: 1, b: 2 };
+      expect(softEqual(obj1, obj2)).toBe(false);
+    });
+
+    it('should handle empty objects and arrays', () => {
+      expect(softEqual({}, {})).toBe(true);
+      expect(softEqual([], [])).toBe(true);
+      expect(softEqual({}, [])).toBe(false);
+    });
+
+    it('should handle empty Maps and Sets', () => {
+      expect(softEqual(new Map(), new Map())).toBe(true);
+      expect(softEqual(new Set(), new Set())).toBe(true);
+      expect(softEqual(new Map(), new Set())).toBe(false);
+    });
+
+    it('should handle nested objects with shallow comparison', () => {
+      const obj1 = { a: { b: 1 } };
+      const obj2 = { a: { b: 1 } };
+      const obj3 = { a: { b: 2 } };
+
+      // Should be false because it's a shallow comparison and the nested objects are different instances
+      expect(softEqual(obj1, obj2)).toBe(false);
+      expect(softEqual(obj1, obj3)).toBe(false);
+    });
+
+    it('should handle arrays of different lengths', () => {
+      const arr1 = [1, 2];
+      const arr2 = [1, 2, 3];
+      expect(softEqual(arr1, arr2)).toBe(false);
     });
   });
 });
