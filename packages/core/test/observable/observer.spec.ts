@@ -100,10 +100,10 @@ describe('Anchor Core - Observable Observer Management', () => {
       const state = anchor({ a: 1 }, { observable: true });
       const observer = createObserver(() => {});
 
-      withinObserver(observer, () => {
+      withinObserver(() => {
         const valueA = state.a;
         expect(valueA).toBe(1);
-      });
+      }, observer);
 
       expect(observer.states.has(anchor.get(state)));
       anchor.destroy(state);

@@ -3,6 +3,7 @@ import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { META_REGISTRY } from './registry.js';
 import { shortId } from './utils/index.js';
+import { isFunction } from '@beerush/utils';
 
 let currentObserver: StateObserver | undefined = undefined;
 let currentRestorer: (() => void) | undefined = undefined;
@@ -90,7 +91,7 @@ export function createObserver(
       return destroy;
     },
     run<R>(fn: () => R): R | undefined {
-      return withinObserver(this, fn);
+      return withinObserver(fn, this);
     },
   };
 }
@@ -126,18 +127,26 @@ export function assignObserver(init: Linkable, observers: Set<StateObserver>, ob
  * executes the provided function, and then restores the previous observer context.
  * It's useful for running code that should be tracked by a specific observer.
  *
- * @param observer - The observer to set as the current context
- * @param fn - The function to execute within the observer context
+ * @template R - The type of the return value of the function.
+ * @param {() => R} fn - The function to execute within the observer context
+ * @param {StateObserver} observer - The observer to set as the current context
  */
-export function withinObserver<R>(observer: StateObserver, fn: () => R): R | undefined {
+export function withinObserver<R>(fn: () => R, observer: StateObserver): R | undefined;
+export function withinObserver<R>(observer: StateObserver, fn: () => R): R | undefined;
+export function withinObserver<R>(
+  observerOrFn: StateObserver | (() => R),
+  fnOrObserver: (() => R) | StateObserver
+): R | undefined {
+  if (isFunction(observerOrFn)) return withinObserver(fnOrObserver as StateObserver, observerOrFn);
+
   const prevObserver = currentObserver;
-  currentObserver = observer;
+  currentObserver = observerOrFn;
 
   let result: R | undefined = undefined;
 
-  if (typeof fn === 'function') {
+  if (typeof fnOrObserver === 'function') {
     try {
-      result = fn();
+      result = fnOrObserver();
     } catch (error) {
       captureStack.error.external('Unable to execute the within observer function', error as Error, withinObserver);
     }
