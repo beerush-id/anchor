@@ -176,12 +176,14 @@ export function softValues<T extends ObjLike>(obj: T): Array<T[keyof T]> {
   return values as Array<T[keyof T]>;
 }
 
+type InternalEqualFn = <A, B>(a: A, b: B, deep?: boolean, comparedRefs?: WeakMap<object, Set<object>>) => boolean;
+
 /**
- * Performs a shallow equality comparison between two values.
+ * Performs a shallow/deep equality comparison between two values.
  *
  * This function checks if two values are equal. It handles primitives,
  * Dates, RegExps, Arrays, Maps, Sets, and plain objects. For complex types,
- * it performs a shallow comparison of their contents.
+ * it performs a shallow/deep comparison of their contents.
  *
  * @template T - The type of the values to compare.
  * @param {T} a - The first value to compare.
@@ -189,9 +191,37 @@ export function softValues<T extends ObjLike>(obj: T): Array<T[keyof T]> {
  * @param {boolean} deep - If true, performs a deep comparison.
  * @returns {boolean} - True if the values are shallowly equal, false otherwise.
  */
-export function softEqual<A, B>(a: A, b: B, deep: boolean = false): boolean {
+export function softEqual<A, B>(a: A, b: B, deep?: boolean): boolean;
+export function softEqual<A, B>(
+  a: A,
+  b: B,
+  deep: boolean = false,
+  comparedRefs: WeakMap<object, Set<object>> = new WeakMap()
+): boolean {
   if ((a as never) === b) return true;
   if (typeOf(a) !== typeOf(b)) return false;
+
+  // Handle circular references (edge cases)
+  if (typeof a === 'object' && typeof b === 'object' && a !== null && b !== null) {
+    if (comparedRefs.has(a as object)) {
+      const comparedSet = comparedRefs.get(a as object);
+      if (comparedSet?.has(b as object)) {
+        return true; // Assume equal if we're in a circular comparison
+      }
+    }
+
+    // Mark these objects as being compared
+    if (!comparedRefs.has(a as object)) {
+      comparedRefs.set(a as object, new Set());
+    }
+    comparedRefs.get(a as object)?.add(b as object);
+
+    if (!comparedRefs.has(b as object)) {
+      comparedRefs.set(b as object, new Set());
+    }
+    comparedRefs.get(b as object)?.add(a as object);
+  }
+
   if (isDate(a) && isDate(b)) return a.getTime() === b.getTime();
   if (isRegExp(a) && isRegExp(b)) return a.source === b.source && a.flags === b.flags;
 
@@ -200,7 +230,7 @@ export function softEqual<A, B>(a: A, b: B, deep: boolean = false): boolean {
     if (!deep) {
       return a.every((val, i) => val === b[i]);
     }
-    return a.every((val, i) => softEqual(val, b[i], deep));
+    return a.every((val, i) => (softEqual as InternalEqualFn)(val, b[i], deep, comparedRefs));
   }
 
   if (isMap(a) && isMap(b)) {
@@ -211,7 +241,7 @@ export function softEqual<A, B>(a: A, b: B, deep: boolean = false): boolean {
       }
     } else {
       for (const [key, value] of a.entries()) {
-        if (!b.has(key) || !softEqual(value, b.get(key), deep)) return false;
+        if (!b.has(key) || !(softEqual as InternalEqualFn)(value, b.get(key), deep, comparedRefs)) return false;
       }
     }
     return true;
@@ -228,7 +258,7 @@ export function softEqual<A, B>(a: A, b: B, deep: boolean = false): boolean {
       for (const aValue of a.values()) {
         let found = false;
         for (const bValue of b.values()) {
-          if (softEqual(aValue, bValue, deep)) {
+          if ((softEqual as InternalEqualFn)(aValue, bValue, deep, comparedRefs)) {
             found = true;
             break;
           }
@@ -252,7 +282,7 @@ export function softEqual<A, B>(a: A, b: B, deep: boolean = false): boolean {
       }
     } else {
       for (const key of aKeys) {
-        if (!softEqual(aObj[key], bObj[key], deep)) return false;
+        if (!(softEqual as InternalEqualFn)(aObj[key], bObj[key], deep, comparedRefs)) return false;
       }
     }
     return true;

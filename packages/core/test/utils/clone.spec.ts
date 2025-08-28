@@ -615,4 +615,92 @@ describe('Anchor Utilities - Cloner', () => {
       expect(softEqual(arr1, arr2)).toBe(false);
     });
   });
+
+  describe('Soft Equal - Deep Equality', () => {
+    it('should perform deep comparison of nested objects', () => {
+      const obj1 = { a: { b: { c: 1 } } };
+      const obj2 = { a: { b: { c: 1 } } };
+      const obj3 = { a: { b: { c: 2 } } };
+
+      // Shallow comparison should fail for different object instances
+      expect(softEqual(obj1, obj2)).toBe(false);
+      expect(softEqual(obj1, obj3)).toBe(false);
+
+      // Deep comparison should pass for equivalent structures
+      expect(softEqual(obj1, obj2, true)).toBe(true);
+      expect(softEqual(obj1, obj3, true)).toBe(false);
+    });
+
+    it('should perform deep comparison of nested arrays', () => {
+      const arr1 = [1, [2, [3, 4]]];
+      const arr2 = [1, [2, [3, 4]]];
+      const arr3 = [1, [2, [3, 5]]];
+
+      // Shallow comparison should fail for different array instances
+      expect(softEqual(arr1, arr2)).toBe(false);
+      expect(softEqual(arr1, arr3)).toBe(false);
+
+      // Deep comparison should pass for equivalent structures
+      expect(softEqual(arr1, arr2, true)).toBe(true);
+      expect(softEqual(arr1, arr3, true)).toBe(false);
+    });
+
+    it('should perform deep comparison of Maps with nested objects', () => {
+      const map1 = new Map([['a', { b: 1 }]]);
+      const map2 = new Map([['a', { b: 1 }]]);
+      const map3 = new Map([['a', { b: 2 }]]);
+
+      // Shallow comparison should fail for different object instances
+      expect(softEqual(map1, map2)).toBe(false);
+      expect(softEqual(map1, map3)).toBe(false);
+
+      // Deep comparison should pass for equivalent structures
+      expect(softEqual(map1, map2, true)).toBe(true);
+      expect(softEqual(map1, map3, true)).toBe(false);
+    });
+
+    it('should perform deep comparison of Sets with nested objects', () => {
+      const set1 = new Set([{ a: 1 }, { b: [2, 3] }]);
+      const set2 = new Set([{ a: 1 }, { b: [2, 3] }]);
+      const set3 = new Set([{ a: 1 }, { b: [2, 4] }]);
+
+      // Shallow comparison should fail for different object instances
+      expect(softEqual(set1, set2)).toBe(false);
+      expect(softEqual(set1, set3)).toBe(false);
+
+      // Deep comparison should pass for equivalent structures
+      expect(softEqual(set1, set2, true)).toBe(true);
+      expect(softEqual(set1, set3, true)).toBe(false);
+    });
+
+    it('should perform deep comparison of objects with symbol keys', () => {
+      const sym = Symbol('test');
+      const obj1 = { a: { b: 1 }, [sym]: { c: 2 } };
+      const obj2 = { a: { b: 1 }, [sym]: { c: 2 } };
+      const obj3 = { a: { b: 1 }, [sym]: { c: 3 } };
+
+      // Shallow comparison should fail for different object instances
+      expect(softEqual(obj1, obj2)).toBe(false);
+      expect(softEqual(obj1, obj3)).toBe(false);
+
+      // Deep comparison should pass for equivalent structures
+      expect(softEqual(obj1, obj2, true)).toBe(true);
+      expect(softEqual(obj1, obj3, true)).toBe(false);
+    });
+
+    it('should perform deep comparison with circular references', () => {
+      const obj1 = { a: 1 } as Record<string, unknown>;
+      obj1.self = obj1;
+
+      const obj2 = { a: 1 } as Record<string, unknown>;
+      obj2.self = obj2;
+
+      const obj3 = { a: 2 } as Record<string, unknown>;
+      obj3.self = obj3;
+
+      // Deep comparison should handle circular references
+      expect(softEqual(obj1, obj2, true)).toBe(true);
+      expect(softEqual(obj1, obj3, true)).toBe(false);
+    });
+  });
 });
