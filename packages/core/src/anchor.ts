@@ -270,13 +270,16 @@ anchorFn.snapshot = <T extends State>(state: T, recursive = true): T => {
  *
  * @template T The type of the state to destroy.
  * @param {T} state - The reactive state to destroy.
+ * @param silent
  */
-anchorFn.destroy = <T extends State>(state: T) => {
+anchorFn.destroy = <T extends State>(state: T, silent?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);
 
   if (!controller) {
-    const error = new Error('Object is not a state');
-    captureStack.error.external('Attempted to destroy a state that does not exist', error, anchorFn.destroy);
+    if (!silent) {
+      const error = new Error('Object is not a state');
+      captureStack.error.external('Attempted to destroy a state that does not exist', error, anchorFn.destroy);
+    }
     return;
   }
 

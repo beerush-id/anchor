@@ -19,7 +19,7 @@ import {
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
 import { captureStack } from './exception.js';
-import { softEntries } from './utils/index.js';
+import { softEntries, softValues } from './utils/index.js';
 import { getDevTool } from './dev.js';
 
 /**
@@ -220,12 +220,16 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
   const { observers, subscribers, subscriptions } = meta;
 
   const handler = (propagation?: boolean) => {
+    // Prevents destroying a state that is already destroyed.
+    if (!INIT_REGISTRY.has(init)) return;
+
     if (propagation && subscribers.size) {
       const error = new Error('State is active');
       captureStack.error.internal('Attempted to destroy state that still active', error, handler);
       return;
     }
 
+    // Removing the destroyed state from all observers.
     if (observers.size) {
       for (const observer of observers) {
         if (observer.states.has(init)) {
@@ -236,18 +240,28 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
       observers.clear();
     }
 
-    for (const [childState, unsubscribe] of subscriptions.entries()) {
-      unsubscribe?.();
+    if (subscriptions.size) {
+      for (const unsubscribe of subscriptions.values()) {
+        unsubscribe?.();
+      }
 
-      const childController = CONTROLLER_REGISTRY.get(childState);
-      if (!childController?.meta.subscribers.size) {
-        (childController?.destroy as (prop: boolean) => void)(true);
+      subscriptions.clear();
+    }
+
+    for (const childInit of softValues(init as { [key: string]: Linkable })) {
+      const childState = INIT_REGISTRY.get(childInit as Linkable) as State;
+
+      if (childState) {
+        const childController = CONTROLLER_REGISTRY.get(childState);
+
+        if (!childController?.meta.subscribers.size) {
+          (childController?.destroy as (prop: boolean) => void)(true);
+        }
       }
     }
 
-    // Cleaning up the observers and subscriptions.
+    // Cleaning up the subscriber list.
     subscribers.clear();
-    subscriptions.clear();
 
     // Remove the state from STATE_REGISTRY and STATE_LINK.
     INIT_REGISTRY.delete(init);

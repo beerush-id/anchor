@@ -35,6 +35,11 @@ describe('Anchor Core - Controller', () => {
       controller?.destroy();
 
       expect(derive.resolve(state)).toBeUndefined();
+
+      // Ensure destroying multiple times should not throw.
+      expect(() => {
+        controller?.destroy();
+      }).not.toThrow();
     });
 
     it('should destroy nested states', () => {
