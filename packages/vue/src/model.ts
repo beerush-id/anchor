@@ -1,10 +1,10 @@
 import {
   anchor,
-  type AnchorConfig,
   type ImmutableOutput,
   type LinkableSchema,
   type ModelInput,
   type ModelOutput,
+  type StateBaseOptions,
 } from '@anchor/core';
 import { derivedRef } from './derive.js';
 import type { Ref } from 'vue';
@@ -27,7 +27,7 @@ import type { Ref } from 'vue';
 export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
-  options?: AnchorConfig
+  options?: StateBaseOptions
 ): Ref<ModelOutput<S>>;
 
 /**
@@ -48,13 +48,13 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
-  options: AnchorConfig & { immutable: true }
+  options: StateBaseOptions & { immutable: true }
 ): Ref<ImmutableOutput<S>>;
 
 export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
-  options?: AnchorConfig
+  options?: StateBaseOptions
 ) {
   const state = anchor(init, schema, options);
   return derivedRef(state);

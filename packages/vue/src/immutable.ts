@@ -1,4 +1,4 @@
-import { anchor, type AnchorOptions, type Immutable, type Linkable, type LinkableSchema } from '@anchor/core';
+import { anchor, type Immutable, type Linkable, type LinkableSchema, type StateOptions } from '@anchor/core';
 import type { Ref } from 'vue';
 import { derivedRef } from './derive.js';
 
@@ -14,7 +14,7 @@ import { derivedRef } from './derive.js';
  */
 export function immutableRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
-  options?: AnchorOptions<S>
+  options?: StateOptions<S>
 ): Ref<Immutable<T>> {
   const state = anchor.immutable(init, options);
   return derivedRef(state) as Ref<Immutable<T>>;
