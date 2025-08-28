@@ -85,7 +85,7 @@ describe('Anchor Core - Controller', () => {
       expect(derive.resolve(profile)).toBe(profileController);
 
       // Simulate internal destroy and should be prevented with warning.
-      profileController.destroy(true);
+      (profileController.destroy as (force?: boolean) => void)(true);
 
       expect(derive.resolve(profile)).toBe(profileController);
       expect(errorSpy).toHaveBeenCalledTimes(1);

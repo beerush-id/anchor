@@ -217,13 +217,23 @@ export function createSubscribeFactory<T extends Linkable>(
  */
 export function createDestroyFactory<T extends Linkable>(init: T, state: State<T>, meta: StateMetadata<T>): () => void {
   const devTool = getDevTool();
-  const { subscribers, subscriptions } = meta;
+  const { observers, subscribers, subscriptions } = meta;
 
   const handler = (propagation?: boolean) => {
     if (propagation && subscribers.size) {
       const error = new Error('State is active');
       captureStack.error.internal('Attempted to destroy state that still active', error, handler);
       return;
+    }
+
+    if (observers.size) {
+      for (const observer of observers) {
+        if (observer.states.has(init)) {
+          observer.states.delete(init);
+        }
+      }
+
+      observers.clear();
     }
 
     for (const [childState, unsubscribe] of subscriptions.entries()) {

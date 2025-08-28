@@ -96,6 +96,20 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(trackedProps).toBeUndefined();
     });
 
+    it('should properly remove destroyed state from observer', () => {
+      const state = anchor({ a: 1 }, { observable: true });
+      const observer = createObserver(() => {});
+
+      withinObserver(observer, () => {
+        const valueA = state.a;
+        expect(valueA).toBe(1);
+      });
+
+      expect(observer.states.has(anchor.get(state)));
+      anchor.destroy(state);
+      expect(observer.states.has(anchor.get(state))).toBe(false);
+    });
+
     it('should handle observer context switching', () => {
       const state1 = anchor({ a: 1 }, { observable: true });
       const state2 = anchor({ b: 2 }, { observable: true });
