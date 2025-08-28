@@ -1,13 +1,13 @@
 import { MemoryStorage } from './memory.js';
 import {
   anchor,
-  type AnchorOptions,
   captureStack,
   derive,
   type LinkableSchema,
   microtask,
   type ObjLike,
   type State,
+  type StateOptions,
   type StateUnsubscribe,
 } from '@anchor/core';
 import { isBrowser } from '@beerush/utils';
@@ -165,7 +165,7 @@ let storageChangeListened = false;
 export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
-  options?: AnchorOptions<S>,
+  options?: StateOptions<S>,
   storageClass = SessionStorage
 ): T => {
   const [cName, cVersion = '1.0.0'] = name.split('@');

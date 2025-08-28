@@ -106,7 +106,7 @@ userSession.name = 'John';
 Creates a reactive session object that automatically syncs with sessionStorage.
 
 ```typescript
-session<T, S>(name: string, init: T, options?: AnchorOptions<S>, storageClass?: typeof SessionStorage): T
+session<T, S>(name: string, init: T, options?: StateOptions<S>, storageClass?: typeof SessionStorage): T
 ```
 
 #### session.leave()
@@ -136,7 +136,7 @@ userSettings.theme = 'dark';
 Creates a reactive persistent object that syncs with localStorage.
 
 ```typescript
-persistent<T, S>(name: string, init: T, options?: AnchorOptions<S>): T
+persistent<T, S>(name: string, init: T, options?: StateOptions<S>): T
 ```
 
 #### persistent.leave()

@@ -1,5 +1,5 @@
 import { session, SessionStorage, STORAGE_KEY } from './session.js';
-import type { AnchorOptions, LinkableSchema, ObjLike } from '@anchor/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
 import type { PersistentFn } from './types.js';
 
 const hasLocalStorage = () => typeof sessionStorage !== 'undefined';
@@ -56,13 +56,13 @@ export class PersistentStorage<T extends Record<string, unknown> = Record<string
  * @template S - The type of the linkable schema
  * @param {string} name - The unique name for the persistent storage instance
  * @param {T} init - The initial data to populate the storage with
- * @param {AnchorOptions<S>} [options] - Optional configuration options for the storage
+ * @param {StateOptions<S>} [options] - Optional configuration options for the storage
  * @returns {T} A reactive object that persists data to localStorage
  */
 export const persistent = (<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
-  options?: AnchorOptions<S>
+  options?: StateOptions<S>
 ): T => {
   return session(name, init, options, PersistentStorage);
 }) as PersistentFn;

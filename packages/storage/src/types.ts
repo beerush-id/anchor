@@ -1,5 +1,5 @@
-import type { AnchorOptions, KeyLike, LinkableSchema, ObjLike } from '@anchor/core';
-import { SessionStorage } from './session.js';
+import type { KeyLike, LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
+import type { SessionStorage } from './session.js';
 
 export type StorageEvent = {
   type: 'set' | 'assign' | 'delete' | 'clear';
@@ -26,7 +26,7 @@ export interface SessionFn {
   <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
     name: string,
     init: T,
-    options?: AnchorOptions<S>,
+    options?: StateOptions<S>,
     storageClass?: typeof SessionStorage
   ): T;
 
@@ -57,10 +57,10 @@ export interface PersistentFn {
    * @template S - The type of the linkable schema
    * @param {string} name - The unique name for the persistent storage instance
    * @param {T} init - The initial data to populate the storage with
-   * @param {AnchorOptions<S>} [options] - Optional configuration options for the storage
+   * @param {StateOptions<S>} [options] - Optional configuration options for the storage
    * @returns {T} A reactive object that persists data to localStorage
    */
-  <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(name: string, init: T, options?: AnchorOptions<S>): T;
+  <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(name: string, init: T, options?: StateOptions<S>): T;
 
   /**
    * Disconnects a reactive persistent object from localStorage synchronization.

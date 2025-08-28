@@ -18,7 +18,7 @@
     "noUnusedParameters": false,
     "skipLibCheck": true,
     "strict": true,
-    "target": "ESNext",
+    "target": "ES2022",
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts"],
