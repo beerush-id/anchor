@@ -1,10 +1,17 @@
-import type { ZodType } from 'zod/v4';
-
-import { anchor as createAnchor, type AnchorOptions, derive as createDerive } from '@anchor/core';
+import {
+  anchor as createAnchor,
+  derive as createDerive,
+  type Linkable,
+  type LinkableSchema,
+  type StateOptions,
+} from '@anchor/core';
 
 export * from '@anchor/core';
 
-export function useAnchor<T, S extends ZodType>(init: T, options?: AnchorOptions<S>): T {
+export function useAnchor<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: StateOptions<S>
+): T {
   const value = createAnchor<T, S>(init, options);
   return useDerived(value);
 }
