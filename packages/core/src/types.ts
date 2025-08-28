@@ -33,7 +33,7 @@ export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number];
 export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number];
 export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation;
 
-export type AnchorConfig = {
+export type StateBaseOptions = {
   cloned?: boolean;
   strict?: boolean;
   deferred?: boolean;
@@ -41,7 +41,11 @@ export type AnchorConfig = {
   immutable?: boolean;
   observable?: boolean;
 };
-export type AnchorOptions<S extends LinkableSchema = LinkableSchema> = AnchorConfig & { schema?: S };
+export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & { schema?: S };
+
+export type AnchorSettings = StateBaseOptions & {
+  production: boolean;
+};
 
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
@@ -64,7 +68,7 @@ export type StateMetadata<
 > = {
   id: string;
   cloned: boolean;
-  configs: AnchorConfig;
+  configs: StateBaseOptions;
   observers: StateObserverList;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
@@ -89,7 +93,7 @@ export type StateReferences<T extends Linkable = Linkable, S extends LinkableSch
   meta: StateMetadata<T, S>;
   link: StateLinkFn;
   unlink: StateUnlinkFn;
-  configs: AnchorConfig;
+  configs: StateBaseOptions;
   getter?: StatePropGetter<T>;
   mutator?: WeakMap<WeakKey, MethodLike>;
 };
@@ -180,7 +184,7 @@ export interface AnchorFn {
    * @param options - Configuration options for the state
    * @returns Reactive state object
    */
-  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): State<T>;
+  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a reactive state with schema validation.
@@ -190,7 +194,7 @@ export interface AnchorFn {
    * @param options - Configuration options
    * @returns Validated reactive state object
    */
-  <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: AnchorConfig): ModelOutput<S>;
+  <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): ModelOutput<S>;
 
   /**
    * Creates an immutable reactive state with schema validation.
@@ -203,7 +207,7 @@ export interface AnchorFn {
   <S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
-    options?: AnchorConfig & { immutable: true }
+    options?: StateBaseOptions & { immutable: true }
   ): ImmutableOutput<S>;
 
   // Initializer methods.
@@ -215,7 +219,7 @@ export interface AnchorFn {
    * @param options - Configuration options
    * @returns Raw reactive state object
    */
-  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): State<T>;
+  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a flat reactive state that only tracks top-level properties.
@@ -224,7 +228,7 @@ export interface AnchorFn {
    * @param options - Configuration options
    * @returns Flat reactive array state
    */
-  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: AnchorOptions<S>): State<T>;
+  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a reactive state with schema validation.
@@ -234,7 +238,11 @@ export interface AnchorFn {
    * @param options - Configuration options
    * @returns Validated reactive state object
    */
-  model<S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: AnchorConfig): ModelOutput<S>;
+  model<S extends LinkableSchema, T extends ModelInput<S>>(
+    init: T,
+    schema: S,
+    options?: StateBaseOptions
+  ): ModelOutput<S>;
 
   /**
    * Creates an immutable reactive state.
@@ -245,7 +253,7 @@ export interface AnchorFn {
    */
   immutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
     init: T,
-    options?: AnchorOptions<S>
+    options?: StateOptions<S>
   ): Immutable<T>;
 
   /**
@@ -259,7 +267,7 @@ export interface AnchorFn {
   immutable<S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
-    options?: AnchorConfig
+    options?: StateBaseOptions
   ): ImmutableOutput<S>;
 
   // Accessibility methods.
@@ -343,20 +351,20 @@ export interface AnchorFn {
   /**
    * Configures global Anchor settings.
    *
-   * @param config - Partial configuration object
+   * @param {Partial<AnchorSettings>} config - Partial configuration object
    */
-  configure(config: Partial<AnchorConfig>): void;
+  configure(config: Partial<AnchorSettings>): void;
 
   /**
    * Gets the global Anchor settings.
-   * @returns {AnchorConfig}
+   * @returns {AnchorSettings}
    */
-  configs(): AnchorConfig;
+  configs(): AnchorSettings;
 }
 
 export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(
   init: T,
-  options: AnchorOptions<S>,
+  options: StateOptions<S>,
   root?: StateMetadata,
   parent?: StateMetadata
 ) => State<T>;

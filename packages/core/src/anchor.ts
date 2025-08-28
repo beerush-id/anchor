@@ -1,8 +1,7 @@
 import { isArray, isObject } from '@beerush/utils';
 import type {
-  AnchorConfig,
   AnchorFn,
-  AnchorOptions,
+  AnchorSettings,
   Immutable,
   Linkable,
   LinkableSchema,
@@ -11,11 +10,12 @@ import type {
   StateController,
   StateMetadata,
   StateObserverList,
+  StateOptions,
   StateReferences,
   StateSubscriberList,
   StateSubscriptionMap,
 } from './types.js';
-import { ANCHOR_CONFIG } from './constant.js';
+import { ANCHOR_SETTINGS } from './constant.js';
 import {
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
@@ -58,8 +58,8 @@ import { getDevTool } from './dev.js';
  */
 function anchorFn<T extends Linkable, S extends LinkableSchema>(
   init: T,
-  schemaOptions?: S | AnchorOptions<S>,
-  options?: AnchorOptions<S>,
+  schemaOptions?: S | StateOptions<S>,
+  options?: StateOptions<S>,
   parent?: StateMetadata<Linkable>,
   root?: StateMetadata<Linkable>
 ): State<T> {
@@ -79,20 +79,20 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   }
 
   if (!(schemaOptions as LinkableSchema)?._zod) {
-    options = schemaOptions as AnchorOptions<S>;
+    options = schemaOptions as StateOptions<S>;
   }
 
-  const cloned = options?.cloned ?? ANCHOR_CONFIG.cloned;
+  const cloned = options?.cloned ?? ANCHOR_SETTINGS.cloned;
   const schema = (schemaOptions as LinkableSchema)?._zod
     ? (schemaOptions as S)
-    : (schemaOptions as AnchorOptions<S>)?.schema;
-  const configs: AnchorOptions<S> = {
+    : (schemaOptions as StateOptions<S>)?.schema;
+  const configs: StateOptions<S> = {
     cloned: false,
     deferred: true,
-    strict: options?.strict ?? ANCHOR_CONFIG.strict,
-    recursive: options?.recursive ?? ANCHOR_CONFIG.recursive,
-    immutable: options?.immutable ?? ANCHOR_CONFIG.immutable,
-    observable: options?.observable ?? ANCHOR_CONFIG.observable,
+    strict: options?.strict ?? ANCHOR_SETTINGS.strict,
+    recursive: options?.recursive ?? ANCHOR_SETTINGS.recursive,
+    immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
+    observable: options?.observable ?? ANCHOR_SETTINGS.observable,
   };
   const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
@@ -190,12 +190,12 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
 /**
  * This function is used to create a reactive array that only react to changes in the array.
  * @param {T} init
- * @param {AnchorOptions<S>} options
+ * @param {StateOptions<S>} options
  * @returns {T}
  */
 anchorFn.flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>(
   init: T,
-  options?: AnchorOptions<S>
+  options?: StateOptions<S>
 ): T => {
   return anchorFn(init, { ...options, recursive: 'flat' });
 };
@@ -203,12 +203,12 @@ anchorFn.flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>
 /**
  * This function is used to create a reactive object that mutates the original object.
  * @param {T} init
- * @param {AnchorOptions<S>} options
+ * @param {StateOptions<S>} options
  * @returns {T}
  */
 anchorFn.raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
-  options?: AnchorOptions<S>
+  options?: StateOptions<S>
 ): T => {
   return anchorFn(init, { ...options, cloned: false });
 };
@@ -288,29 +288,29 @@ anchorFn.destroy = <T extends State>(state: T, silent?: boolean) => {
 
 /**
  * This function is used to configure the Anchor's default options.
- * @param {Partial<AnchorConfig>} config
+ * @param {Partial<AnchorSettings>} config
  */
-anchorFn.configure = (config: Partial<AnchorConfig>) => {
-  Object.assign(ANCHOR_CONFIG, config);
+anchorFn.configure = (config: Partial<AnchorSettings>) => {
+  Object.assign(ANCHOR_SETTINGS, config);
 };
 
 /**
  * This function is used to return the Anchor's default options.
- * @returns {AnchorConfig}
+ * @returns {AnchorSettings}
  */
-anchorFn.configs = (): AnchorConfig => {
-  return ANCHOR_CONFIG;
+anchorFn.configs = (): AnchorSettings => {
+  return ANCHOR_SETTINGS;
 };
 
 /**
  * This function is used to create a reactive object that is immutable.
  * @param {T} init
- * @param {AnchorOptions<S>} options
+ * @param {StateOptions<S>} options
  * @returns {Immutable<T>}
  */
 anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
   init: T,
-  options?: AnchorOptions<S>
+  options?: StateOptions<S>
 ): Immutable<T> => {
   return anchorFn(init, { ...options, immutable: true }) as Immutable<T>;
 };

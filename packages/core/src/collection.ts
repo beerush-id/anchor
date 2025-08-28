@@ -1,13 +1,13 @@
 import { broadcast, linkable } from './internal.js';
 import { CONTROLLER_REGISTRY, INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
 import type {
-  AnchorConfig,
   AnchorInternalFn,
   KeyLike,
   Linkable,
   LinkableSchema,
   MethodLike,
   SetMutation,
+  StateBaseOptions,
   StateChange,
   StateLinkFn,
   StateMetadata,
@@ -103,7 +103,13 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
   }) as ProxyHandler<Set<unknown> | Map<string, unknown>>['get'];
 }
 
-function resolveState(value: Linkable, configs: AnchorConfig, meta: StateMetadata, link: StateLinkFn, key?: KeyLike) {
+function resolveState(
+  value: Linkable,
+  configs: StateBaseOptions,
+  meta: StateMetadata,
+  link: StateLinkFn,
+  key?: KeyLike
+) {
   if (!linkable(value)) return value;
 
   const { subscribers, subscriptions } = meta;

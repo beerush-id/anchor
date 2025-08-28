@@ -1,4 +1,4 @@
-import type { AnchorOptions, Linkable, LinkableSchema, ObjLike } from '../types.js';
+import type { Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
@@ -8,7 +8,7 @@ import { derive } from '../derive.ts';
 export type RequestOptions = RequestInit & {
   url: string | URL;
 };
-export type FetchOptions<S extends LinkableSchema = LinkableSchema> = AnchorOptions<S> & RequestOptions;
+export type FetchOptions<S extends LinkableSchema = LinkableSchema> = StateOptions<S> & RequestOptions;
 
 export type StreamOptions<T, S extends LinkableSchema = LinkableSchema> = FetchOptions<S> & {
   transform?: (current: T, chunk: T) => T;

@@ -186,9 +186,10 @@ export function softValues<T extends ObjLike>(obj: T): Array<T[keyof T]> {
  * @template T - The type of the values to compare.
  * @param {T} a - The first value to compare.
  * @param {T} b - The second value to compare.
+ * @param {boolean} deep - If true, performs a deep comparison.
  * @returns {boolean} - True if the values are shallowly equal, false otherwise.
  */
-export function softEqual<A, B>(a: A, b: B): boolean {
+export function softEqual<A, B>(a: A, b: B, deep: boolean = false): boolean {
   if ((a as never) === b) return true;
   if (typeOf(a) !== typeOf(b)) return false;
   if (isDate(a) && isDate(b)) return a.getTime() === b.getTime();
@@ -196,21 +197,44 @@ export function softEqual<A, B>(a: A, b: B): boolean {
 
   if (isArray(a) && isArray(b)) {
     if (a.length !== b.length) return false;
-    return a.every((val, i) => val === b[i]);
+    if (!deep) {
+      return a.every((val, i) => val === b[i]);
+    }
+    return a.every((val, i) => softEqual(val, b[i], deep));
   }
 
   if (isMap(a) && isMap(b)) {
     if (a.size !== b.size) return false;
-    for (const [key, value] of a.entries()) {
-      if (!b.has(key) || b.get(key) !== value) return false;
+    if (!deep) {
+      for (const [key, value] of a.entries()) {
+        if (!b.has(key) || b.get(key) !== value) return false;
+      }
+    } else {
+      for (const [key, value] of a.entries()) {
+        if (!b.has(key) || !softEqual(value, b.get(key), deep)) return false;
+      }
     }
     return true;
   }
 
   if (isSet(a) && isSet(b)) {
     if (a.size !== b.size) return false;
-    for (const value of a.values()) {
-      if (!b.has(value)) return false;
+    if (!deep) {
+      for (const value of a.values()) {
+        if (!b.has(value)) return false;
+      }
+    } else {
+      // For deep comparison of sets, we need to check if every item in a has a matching item in b
+      for (const aValue of a.values()) {
+        let found = false;
+        for (const bValue of b.values()) {
+          if (softEqual(aValue, bValue, deep)) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) return false;
+      }
     }
     return true;
   }
@@ -222,8 +246,14 @@ export function softEqual<A, B>(a: A, b: B): boolean {
     const bKeys = softKeys(bObj);
 
     if (aKeys.length !== bKeys.length) return false;
-    for (const key of aKeys) {
-      if (aObj[key] !== bObj[key]) return false;
+    if (!deep) {
+      for (const key of aKeys) {
+        if (aObj[key] !== bObj[key]) return false;
+      }
+    } else {
+      for (const key of aKeys) {
+        if (!softEqual(aObj[key], bObj[key], deep)) return false;
+      }
     }
     return true;
   }

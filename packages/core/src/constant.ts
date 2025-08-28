@@ -1,4 +1,4 @@
-import type { AnchorConfig } from './types.js';
+import type { AnchorSettings } from './types.js';
 
 export const SET_MUTATIONS = ['add', 'delete'] as const;
 export const MAP_MUTATIONS = ['set', 'delete', 'clear'] as const;
@@ -17,14 +17,15 @@ export const ARRAY_MUTATIONS = [
 ] as const;
 
 export const LINKABLE = new Set(['array', 'object', 'map', 'set']);
-export const ANCHOR_CONFIG = {
+export const ANCHOR_SETTINGS = {
   cloned: false,
   strict: false,
   deferred: true,
   recursive: true,
   immutable: false,
   observable: true,
-} satisfies AnchorConfig;
+  production: true,
+} satisfies AnchorSettings;
 
 export enum OBSERVER_KEYS {
   ARRAY_MUTATIONS = 'array_mutations',
