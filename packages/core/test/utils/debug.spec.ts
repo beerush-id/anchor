@@ -218,5 +218,132 @@ describe('Anchor Utilities - Debugger', () => {
 
       restore();
     });
+
+    it('should handle debugger function with missing methods by falling back to main debugger', () => {
+      const restore = setDebugger(debugSpy);
+
+      // Test that when debugger doesn't have specific methods, it falls back to main debugger
+      debug.ok('test ok');
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[32m✓ test ok\x1b[0m');
+
+      debug.info('test info');
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[34mℹ test info\x1b[0m');
+
+      debug.check('test check', true);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[36m▣ test check\x1b[0m');
+
+      debug.error('test error');
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[31m✕ test error\x1b[0m');
+
+      debug.warning('test warning');
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[33m! test warning\x1b[0m');
+
+      restore();
+    });
+
+    it('should handle debugger function with custom methods', () => {
+      const customDebugSpy = vi.fn();
+      const customOkSpy = vi.fn();
+      const customInfoSpy = vi.fn();
+
+      const customDebugger = Object.assign(customDebugSpy, {
+        ok: customOkSpy,
+        info: customInfoSpy,
+      });
+
+      const restore = setDebugger(customDebugger);
+
+      debug('regular debug');
+      expect(customDebugSpy).toHaveBeenCalledWith('regular debug');
+
+      debug.ok('custom ok');
+      expect(customOkSpy).toHaveBeenCalledWith('\x1b[32m✓ custom ok\x1b[0m');
+
+      debug.info('custom info');
+      expect(customInfoSpy).toHaveBeenCalledWith('\x1b[34mℹ custom info\x1b[0m');
+
+      // These should fall back to main debugger function
+      debug.check('check fallback', true);
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[36m▣ check fallback\x1b[0m');
+
+      debug.error('error fallback');
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[31m✕ error fallback\x1b[0m');
+
+      debug.warning('warning fallback');
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[33m! warning fallback\x1b[0m');
+
+      restore();
+    });
+
+    it('should correctly handle falsy values in debug messages', () => {
+      const restore = setDebugger(debugSpy);
+
+      debug.ok('zero value', 0);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[32m✓ zero value\x1b[0m', 0);
+
+      debug.info('null value', null);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[34mℹ null value\x1b[0m', null);
+
+      debug.check('falsy condition', false, undefined);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[37m▢ falsy condition\x1b[0m', undefined);
+
+      debug.error('empty string', '');
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[31m✕ empty string\x1b[0m', '');
+
+      debug.warning('NaN value', NaN);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[33m! NaN value\x1b[0m', NaN);
+
+      restore();
+    });
+
+    it('should handle complex nested objects and arrays in debug messages', () => {
+      const restore = setDebugger(debugSpy);
+
+      const complexObject = {
+        nested: {
+          array: [1, 2, { deep: 'value' }],
+          func: () => 'test',
+          date: new Date('2023-01-01'),
+        },
+      };
+
+      debug.ok('complex object', complexObject);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[32m✓ complex object\x1b[0m', complexObject);
+
+      debug.info('multiple args', 'string', 42, true, [1, 2, 3]);
+      expect(debugSpy).toHaveBeenCalledWith('\x1b[34mℹ multiple args\x1b[0m', 'string', 42, true, [1, 2, 3]);
+
+      restore();
+    });
+
+    it('should handle withDebugger returning correct values', () => {
+      const restore = setDebugger(debugSpy);
+
+      const result = withDebugger(() => {
+        debug('inside withDebugger');
+        return { value: 'test' };
+      }, debugSpy);
+
+      expect(result).toEqual({ value: 'test' });
+      expect(debugSpy).toHaveBeenCalledWith('inside withDebugger');
+
+      restore();
+    });
+
+    it('should properly restore debugger after withDebugger even with async operations', () => {
+      const restore = setDebugger(debugSpy);
+      const tempDebugSpy = vi.fn();
+
+      new Promise((resolve) => {
+        withDebugger(() => {
+          debug('async debug');
+          resolve('done');
+        }, tempDebugSpy);
+      });
+
+      expect(tempDebugSpy).toHaveBeenCalledWith('async debug');
+
+      restore();
+    });
   });
 });
