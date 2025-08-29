@@ -7,7 +7,7 @@ import type {
   StateObserver,
   StateSubscriber,
 } from './types.js';
-import { isFunction, isObject } from '@beerush/utils';
+import { isFunction, isObjectLike } from '@beerush/utils';
 import { captureStack } from './exception.js';
 
 export type DevTool = {
@@ -49,7 +49,7 @@ export type DevTool = {
    * A callback that will be called when a state is initialized.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onInit?: <T extends Linkable, S extends LinkableSchema>(init: Linkable, meta: StateMetadata<T, S>) => void;
+  onInit?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a bulk assignment is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
@@ -127,19 +127,37 @@ export type DevTool = {
 
 let activeDevTool: DevTool | undefined = undefined;
 
+const DEV_TOOL_KEYS = new Set([
+  'onGet',
+  'onSet',
+  'onDelete',
+  'onCall',
+  'onInit',
+  'onAssign',
+  'onRemove',
+  'onClear',
+  'onDestroy',
+  'onSubscribe',
+  'onUnsubscribe',
+  'onLink',
+  'onUnlink',
+  'onTrack',
+  'onUntrack',
+]);
+
 /**
  * Sets the active development tool. This tool will receive callbacks for various state-related events.
  * @param {DevTool} devTool - The development tool to set as active.
  */
 export function setDevTool(devTool: DevTool) {
-  if (!isObject(devTool)) {
+  if (!isObjectLike(devTool)) {
     const error = new Error('Invalid argument.');
     captureStack.error.argument('The given argument is not a valid DevTool object.', error, setDevTool);
     return;
   }
 
   for (const [key, value] of Object.entries(devTool)) {
-    if (!isFunction(value)) {
+    if (DEV_TOOL_KEYS.has(key) && !isFunction(value)) {
       const error = new Error('Invalid callback.');
       captureStack.error.argument(`The given callback for "${key}" is not a function.`, error, setDevTool);
       delete devTool[key as never];

@@ -59,7 +59,7 @@ export type StateUnlinkFn = (childState: Linkable) => void;
 
 export type State<T extends Linkable = Linkable> = T;
 export type StateMetadata<
-  T extends Linkable = LinkableSchema,
+  T extends Linkable = Linkable,
   S extends LinkableSchema = LinkableSchema,
   RootType extends Linkable = Linkable,
   RootSchema extends LinkableSchema = LinkableSchema,

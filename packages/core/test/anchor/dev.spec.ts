@@ -75,8 +75,8 @@ describe('Anchor Dev Tool', () => {
       };
 
       // @ts-expect-error - Testing invalid input
-      expect(setDevTool(devTool)).toBeUndefined();
-      expect(getDevTool()).not.toBe(devTool);
+      expect(setDevTool(devTool)).toBeDefined();
+      expect(getDevTool()).toBe(devTool);
     });
 
     it('should handle dev tool with partial callbacks', () => {
