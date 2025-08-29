@@ -1,93 +1,107 @@
-import { type Context, useContext, useEffect, useMemo, useState } from 'react';
-import { anchor, captureStack, derive, type Linkable, type StateChange } from '@anchor/core';
-import { shouldRender } from './utils.js';
-import type { Dependencies, Dependency, Derived, DerivedMemoDeps, TransformFn } from './types.js';
+import { useEffect, useMemo, useState } from 'react';
+import { anchor, derive, type Immutable, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
+import type { TransformFn, TransformSnapshotFn } from './types.js';
+import { useObserverRef } from './observable.js';
 
-export function useDerived<T extends Linkable>(state: T, deps?: Dependencies<T>): Derived<T>;
-export function useDerived<T extends Linkable, R>(state: T, transform?: TransformFn<T, R>): Derived<R>;
-export function useDerived<T extends Linkable, R>(
+/**
+ * React hook that allows you to derive a computed value from a reactive state.
+ * It automatically re-computes the value whenever the dependent state change.
+ *
+ * @param transform - A function that receives the current state and its snapshot, and returns the computed value.
+ * @param [deps] - An optional array of dependencies that specify the state and mutations that the computed value depends on.
+ */
+export function useDerived<R, D extends unknown[] = unknown[]>(transform: TransformFn<R>, deps?: D): R {
+  const [observer, version] = useObserverRef();
+  return useMemo(() => {
+    return observer.run(() => {
+      return transform();
+    }) as R;
+  }, [observer, version, ...(deps ?? [])]);
+}
+
+export function useDerivedList<T extends ObjLike[]>(state: T): Array<{ key: number; value: T[number] }>;
+export function useDerivedList<T extends ObjLike[], K extends keyof T[number]>(
   state: T,
-  transform?: TransformFn<T, R>,
-  deps?: Dependencies<T>
-): Derived<R>;
-export function useDerived<T extends Linkable, R>(
+  key: K
+): Array<{ key: T[number][K]; value: T[number] }>;
+/**
+ * React hook that derives a list of objects with their keys from a reactive array state.
+ * Each item in the returned array contains a **key** and a **value** property.
+ * If no key is specified, the index of each item in the array is used as the key.
+ *
+ * @template T - The type of the reactive array state.
+ * @param {T} state - A reactive array state from which to derive the list.
+ * @param {(keyof T[number]) | number} [key] - An optional property name to use as the key for each item in the list.
+ */
+export function useDerivedList<T extends ObjLike[], K extends keyof T[number]>(
   state: T,
-  transformDeps?: ((state: T) => R) | Dependencies<T>,
-  deps?: Dependencies<T>
-): Derived<T | R> {
-  const [eventRef, setEventRef] = useState({ type: 'init', keys: [] } as StateChange);
-  const [derived, snapshot] = useMemo(() => {
-    const derivedRef = typeof transformDeps === 'function' ? transformDeps(state) : state;
-    return [derivedRef, anchor.get(state)];
-  }, [state, transformDeps, deps]);
+  key?: K
+): Array<{ key: T[number][K]; value: T[number] }> {
+  const [observer, version] = useObserverRef();
+  return useMemo(() => {
+    return observer.run(() => {
+      if (!key) {
+        return state.map((value, key) => ({ key, value }));
+      }
+
+      const snap = anchor.get(state);
+      return state.map((value, i) => ({ key: snap[i][key], value }));
+    }) as Array<{ key: T[number][K]; value: T[number] }>;
+  }, [observer, version, state, key]);
+}
+
+export function useDerivedRef<T extends State>(state: T): Immutable<T>;
+export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R;
+/**
+ * React hook that derives an underlying object of a reactive state.
+ * It returns the underlying object of the state, or the result of applying a transform function to the underlying
+ * object.
+ *
+ * @template T - The type of the reactive state.
+ * @template R - The type of the transformed value.
+ * @param {T} state - A reactive state from which to derive the underlying object.
+ * @param {TransformSnapshotFn<T, R>} [transform] - An optional function that receives the state snapshot and returns the transformed value.
+ * @returns {R} The snapshot of the state, or the result of applying the transform function to the snapshot.
+ */
+export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R {
+  return useMemo(() => {
+    const value = anchor.get(state);
+    return transform ? transform(value) : value;
+  }, [state]) as R;
+}
+
+export function useSnapshot<T extends Linkable>(state: T): T;
+export function useSnapshot<T extends Linkable, R>(state: T, transform: TransformSnapshotFn<T, R>): R;
+/**
+ * React hook that allows you to derive a computed value from a reactive state without an explicit observer.
+ * It re-computes the value whenever the state changes.
+ *
+ * @warning This hook subscribes to ALL changes on the state object and creates a snapshot on every update,
+ * making it less efficient than `useDerived` for fine-grained reactivity. Only use this hook when you need
+ * to react to all changes or when working with non-observable properties.
+ *
+ * @param state - A reactive state from which to derive the computed value.
+ * @param transform - An optional function that receives the current state snapshot and returns the computed value. If not provided, the state snapshot itself is returned.
+ */
+export function useSnapshot<T extends Linkable, R>(state: T, transform?: TransformSnapshotFn<T, R>): T | R {
+  const [version, setVersion] = useState(1);
+  const value = useMemo(() => {
+    return outsideObserver(() => {
+      if (typeof transform === 'function') {
+        return transform(anchor.snapshot(state));
+      }
+
+      return anchor.snapshot(state);
+    }) as T | R;
+  }, [state, version]);
 
   useEffect(() => {
-    const controller = derive.resolve(state);
-    const dependencies = Array.isArray(transformDeps) ? transformDeps : deps;
-
-    if (typeof controller?.subscribe !== 'function') {
-      captureStack.warning.external(
-        'Unable to derive from object',
-        'Attempted to derive from non-reactive state.',
-        'Object is not reactive'
-      );
-    }
-
-    const unsubscribe = controller?.subscribe((snapshot, event) => {
-      if (event.type !== 'init' && shouldRender(event, dependencies)) {
-        setEventRef(event);
+    return derive(state, (_, event) => {
+      if (event.type !== 'init') {
+        setVersion((prev) => prev + 1);
       }
     });
+  }, [state]);
 
-    return () => {
-      unsubscribe?.();
-    };
-  }, [derived]);
-
-  return [derived, eventRef, snapshot];
-}
-
-export function useDerivedContext<T extends Linkable>(context: Context<T>, deps?: Dependencies<T>): Derived<T>;
-export function useDerivedContext<T extends Linkable, R>(
-  context: Context<T>,
-  transform?: TransformFn<T, R>
-): Derived<R>;
-export function useDerivedContext<T extends Linkable, R>(
-  context: Context<T>,
-  transform?: TransformFn<T, R>,
-  deps?: Dependencies<T>
-): Derived<R>;
-export function useDerivedContext<T extends Linkable, R>(
-  context: Context<T>,
-  transformDeps?: ((state: T) => R) | Dependencies<T>,
-  deps?: Dependencies<T>
-): Derived<T | R> {
-  const state = useContext<T>(context);
-  return useDerived(state, transformDeps as (snapshot: T) => R, deps);
-}
-
-export function useDerivedMemo<T extends Linkable>(
-  state: T,
-  deps: DerivedMemoDeps<T>,
-  props?: Dependencies<T>
-): Derived<T>;
-export function useDerivedMemo<T extends Linkable, R>(
-  state: T,
-  transform: TransformFn<T, R>,
-  deps: DerivedMemoDeps<T>,
-  props?: Dependencies<T>
-): Derived<R>;
-export function useDerivedMemo<T extends Linkable, R>(
-  state: T,
-  transformDeps?: ((state: T) => R) | DerivedMemoDeps<T>,
-  deps?: DerivedMemoDeps<T>
-): Derived<T | R> {
-  const initDeps = (Array.isArray(transformDeps) ? transformDeps : deps) as Dependency<T>[];
-  const [stateRef, snapshot, eventRef] = useDerived(state);
-
-  const output = useMemo(() => {
-    return typeof transformDeps === 'function' ? transformDeps(stateRef) : stateRef;
-  }, [eventRef, initDeps]);
-
-  return [output, snapshot, eventRef];
+  return value;
 }

@@ -1,13 +1,13 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['./src/index.ts', './src/components/index.tsx'],
+  entry: ['./src/**/*.ts', './src/**/*.tsx'],
   outDir: './dist',
   dts: true,
   splitting: false,
   minify: false,
   format: ['esm'],
-  bundle: true,
+  bundle: false,
   treeshake: true,
   sourcemap: true,
   platform: 'browser',

@@ -1,15 +1,12 @@
-import type { AnchorOptions, LinkableSchema, StateChange, StateMutation } from '@anchor/core';
+import type { Linkable, LinkableSchema, StateOptions } from '@anchor/core';
 
-export type Derived<T> = [T, StateChange, T];
-export type Dependency<T> = keyof T | StateMutation | DependencyMap<T>;
-export type Dependencies<T> = Dependency<T>[];
-export type DependencyMap<T> = { path?: keyof T; type?: StateMutation };
-export type DerivedMemoDeps<T> = Array<Dependency<T> | unknown>;
+export type Setter<T extends Linkable> = (prev: T) => T;
+export type StateSetter<T extends Linkable, S extends LinkableSchema = LinkableSchema> = (
+  value: T | Setter<T>,
+  options?: StateOptions<S>
+) => void;
+export type AnchorState<T extends Linkable, S extends LinkableSchema = LinkableSchema> = [T, StateSetter<T, S>];
 
-export type InitFn<T> = () => T;
-export type TransformFn<T, R> = (snapshot: T) => R;
-export type InitOptions<T, S extends LinkableSchema> = AnchorOptions<S> & {
-  deps?: Dependencies<T>;
-};
-
+export type TransformFn<R> = () => R;
+export type TransformSnapshotFn<T, R> = (snapshot: T) => R;
 export type Bindable = Record<string, unknown>;

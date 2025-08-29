@@ -1,19 +1,42 @@
 {
+  "type": "module",
   "name": "@anchor/react",
   "version": "0.0.1",
+  "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
-  "dependencies": {
-    "@anchor/core": "workspace:*",
-    "@anchor/storage": "workspace:*"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js"
+    },
+    "./preprocessor": {
+      "types": "./dist/preprocessor/index.d.ts",
+      "import": "./dist/preprocessor/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "dist": "./dist"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@eslint/css": "^0.5.0",
     "@eslint/js": "^9.23.0",
     "@eslint/markdown": "^6.3.0",
+    "@testing-library/react": "^16.3.0",
     "@types/react": "^19.1.8",
     "@vitest/ui": "^3.2.4",
     "eslint": "^9.23.0",
     "eslint-plugin-prettier": "^5.2.3",
+    "jsdom": "^26.1.0",
     "prettier": "^3.5.3",
     "publint": "^0.3.9",
     "react": "^19.1.0",
@@ -27,32 +50,18 @@
     "react": "^19.1.0",
     "typescript": "^5.8.2"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "directories": {
-    "dist": "./dist"
-  },
-  "files": [
-    "dist"
-  ],
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
     "prepublish": "rimraf dist && tsup && publint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "rimraf coverage && vitest --run",
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },
-  "type": "module",
-  "types": "./dist/index.d.ts",
-  "optionalDependencies": {
-    "zod": "^4.0.17"
+  "license": "MIT",
+  "dependencies": {
+    "@anchor/core": "workspace:*",
+    "@anchor/storage": "workspace:*"
   }
 }
