@@ -1,5 +1,5 @@
 import { type InputHTMLAttributes, useRef } from 'react';
-import { flashNode } from './stats/stats.js';
+import { flashNode } from '@lib/stats.js';
 import { observed } from '@anchor/react';
 
 export type InputProps<T extends Record<string, string>> = {

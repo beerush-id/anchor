@@ -1,5 +1,5 @@
 import { type FC, useRef } from 'react';
-import { flashNode } from '../stats/stats.js';
+import { flashNode } from '@lib/stats.js';
 import { Button } from '../Button.js';
 import { Input } from '../Input.js';
 import { type AuthFormData, schema } from './auth-lib.js';

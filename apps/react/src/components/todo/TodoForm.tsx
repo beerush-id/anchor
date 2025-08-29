@@ -1,21 +1,26 @@
-import { type FC, useRef, useState } from 'react';
+import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
-import { flashNode, todoStats, useUpdateStat } from '../stats/stats.js';
-import { type ITodoList } from '../../lib/todo.js';
+import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
+import { type ITodoList, type ITodoStats } from '@lib/todo.js';
 import { shortId } from '@anchor/core';
 import { observed } from '@anchor/react';
 
-export const TodoForm: FC<{ todos: ITodoList }> = observed(({ todos }) => {
+export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({ todos, stats }) => {
   const ref = useRef(null);
   const [newText, setNewText] = useState('');
 
-  const addTodo = () => {
+  const addTodo: FormEventHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     todos.push({
       id: shortId(),
       text: newText,
       completed: false,
     });
+    stats.total++;
+    stats.active++;
 
     setNewText('');
   };
@@ -26,7 +31,7 @@ export const TodoForm: FC<{ todos: ITodoList }> = observed(({ todos }) => {
   });
 
   return (
-    <div ref={ref} className="flex gap-2">
+    <form ref={ref} className="flex gap-2" onSubmit={addTodo}>
       <input
         type="text"
         value={newText}
@@ -34,9 +39,9 @@ export const TodoForm: FC<{ todos: ITodoList }> = observed(({ todos }) => {
         placeholder="Add a new todo..."
         className="flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-orange"
       />
-      <Button disabled={!newText} onClick={addTodo}>
+      <Button type="submit" disabled={!newText}>
         <Plus size={16} />
       </Button>
-    </div>
+    </form>
   );
 }, 'TodoForm');

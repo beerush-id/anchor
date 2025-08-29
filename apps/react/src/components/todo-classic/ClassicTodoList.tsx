@@ -1,7 +1,7 @@
 import { type FC, useRef } from 'react';
-import { type ITodoList } from '../../lib/todo.js';
+import { type ITodoList } from '@lib/todo.js';
 import { ClassicTodoItem } from './ClassicTodoItem.js';
-import { classicTodoStats, flashNode, useUpdateStat } from '../stats/stats.js';
+import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
 
 export const ClassicTodoList: FC<{
   todos: ITodoList;
@@ -14,6 +14,10 @@ export const ClassicTodoList: FC<{
   useUpdateStat(() => {
     classicTodoStats.list.value++;
   });
+
+  if (!todos.length) {
+    return <p className="text-slate-400 text-sm flex items-center justify-center mt-4">No todos yet.</p>;
+  }
 
   return (
     <ul ref={ref} className="mt-4 space-y-2">

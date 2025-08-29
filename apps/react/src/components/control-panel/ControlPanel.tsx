@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '../Card.js';
-import { useObject } from '@anchor/react';
+import { useAnchor } from '@anchor/react';
 import { BoxPanel } from './BoxPanel.js';
 import { BoxView } from './BoxView.js';
 import { ControlPanelCode } from './ControlPanelCode.js';
@@ -9,15 +9,7 @@ import { CodeBlock } from '../CodeBlock.js';
 
 export const ControlPanel: React.FC = () => {
   const [showCode, setShowCode] = useState(false);
-
-  // Use empty array as deps to avoid re-rendering.
-  const [box] = useObject(
-    {
-      x: 50,
-      scale: 1,
-    },
-    []
-  );
+  const [box] = useAnchor({ x: 50, scale: 1 });
 
   return (
     <div className="mt-12">

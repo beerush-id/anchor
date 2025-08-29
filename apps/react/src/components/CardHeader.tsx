@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { flashNode } from './stats/stats.js';
+import { flashNode } from '@lib/stats.js';
 
 export const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const ref = useRef(null);

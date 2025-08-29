@@ -1,8 +1,8 @@
 import { type FC, memo, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useDerived } from '@anchor/react';
-import { flashNode } from '../stats/stats.js';
+import { observed } from '@anchor/react';
+import { flashNode } from '@lib/stats.js';
 
 export type CartItemType = {
   id: string;
@@ -23,10 +23,8 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
   );
 });
 
-export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> = memo(({ item, items }) => {
+export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> = observed(({ item, items }) => {
   const ref = useRef(null);
-  useDerived(item, ['quantity']);
-
   flashNode(ref.current);
 
   const handleRemove = () => {

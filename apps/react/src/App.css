@@ -1,0 +1,61 @@
+.shiki {
+  @apply p-4 overflow-auto outline-none;
+  max-height: 480px;
+}
+
+.shiki {
+  counter-reset: step;
+  counter-increment: step 0;
+}
+
+.shiki .line::before {
+  content: counter(step);
+  counter-increment: step;
+  width: 1rem;
+  margin-right: 1.5rem;
+  display: inline-block;
+  text-align: right;
+  color: rgba(115, 138, 148, 0.4);
+}
+
+.inline-code {
+  @apply bg-slate-800 rounded-sm px-1 font-bold py-0.5;
+}
+
+body {
+  @apply text-white;
+}
+
+.bugs {
+  --torch-x: 50%;
+  --torch-y: 50%;
+}
+
+@keyframes bug-jitter {
+  0% {
+    transform: translate3d(var(--bug-x), var(--bug-y), 0) rotate(var(--bug-rotate));
+  }
+  50% {
+    transform: translate3d(calc(var(--bug-x) + 1px), calc(var(--bug-y) - 1px), 0) rotate(calc(var(--bug-rotate) + 5deg));
+  }
+  100% {
+    transform: translate3d(var(--bug-x), var(--bug-y), 0) rotate(var(--bug-rotate));
+  }
+}
+
+.bug-node {
+  --bug-x: 0;
+  --bug-y: 0;
+  --bug-rotate: 0;
+  --bug-delay: 0.1s;
+  @apply absolute pointer-events-none;
+  left: var(--torch-x);
+  top: var(--torch-y);
+  transform: translate3d(var(--bug-x), var(--bug-y), 0) rotate(var(--bug-rotate));
+  animation: bug-jitter 0.3s infinite;
+  animation-delay: var(--bug-delay);
+  transition:
+    left 0.3s ease-in-out,
+    top 0.3s ease-in-out;
+  transition-delay: var(--bug-delay);
+}

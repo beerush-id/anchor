@@ -8,4 +8,13 @@ export type ITodoItem = {
 
 export type ITodoList = ITodoItem[];
 
+export type ITodoStats = {
+  total: number;
+  active: number;
+  completed: number;
+};
+
 export const TodoContext = createContext<ITodoList>([]);
+
+export const BENCHMARK_SIZE = 100;
+export const BENCHMARK_TOGGLE_SIZE = 25;

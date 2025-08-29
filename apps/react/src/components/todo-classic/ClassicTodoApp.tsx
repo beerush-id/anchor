@@ -1,31 +1,76 @@
 import { type FC, useRef, useState } from 'react';
 import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
-import { type ITodoItem } from '../../lib/todo.js';
+import { BENCHMARK_SIZE, type ITodoItem } from '@lib/todo.js';
 import { ClassicTodoForm } from './ClassicTodoForm.js';
 import { ClassicTodoList } from './ClassicTodoList.js';
-import { classicTodoStats, flashNode, useUpdateStat } from '../stats/stats.js';
+import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
 import { CodeBlock } from '../CodeBlock.js';
-import { shortId } from '@anchor/core';
+import { microloop, shortId } from '@anchor/core';
 import { ClassicTodoCode } from './ClassicTodoCode.js';
+import { CircleQuestionMark, Gauge } from 'lucide-react';
+import { Tooltip } from '../Tooltip.js';
+import { ClassicTodoStats } from './ClassicTodoStats.js';
+
+const [loop] = microloop(5, BENCHMARK_SIZE);
+const benchmark = (fn: () => void) => {
+  const start = performance.now();
+  loop(fn).then(() => console.log(`Profiling done in ${performance.now() - start}ms.`));
+};
 
 export const ClassicTodoApp: FC = () => {
   const [panel, setPanel] = useState({ info: false, code: false });
   const [todos, setTodos] = useState([
-    { id: shortId(), text: 'Master React state', completed: true },
-    { id: shortId(), text: 'Try Anchor', completed: false },
+    { id: '1', text: 'Learn React state', completed: true },
+    { id: '2', text: 'Learn Anchor state', completed: false },
+    { id: '3', text: 'Master Anchor state', completed: false },
   ]);
+  const [stats, setStats] = useState({ total: 3, completed: 1, active: 2 });
 
   const handleOnAdd = (todo: ITodoItem) => {
-    setTodos([...todos, todo]);
+    setTodos((current) => {
+      const updated = [...current, todo];
+      setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
+      return updated;
+    });
   };
 
   const handleToggle = (id: string) => {
-    setTodos(todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)));
+    const todo = todos.find((todo) => todo.id === id);
+    if (!todo) return;
+
+    todo.completed = !todo.completed;
+
+    setTodos((current) =>
+      current.map((item) => {
+        if (item.id === id) {
+          return { ...todo };
+        }
+        return item;
+      })
+    );
+
+    setStats((current) => ({
+      ...current,
+      completed: todo?.completed ? current.completed + 1 : current.completed - 1,
+      active: todo?.completed ? current.active - 1 : current.active + 1,
+    }));
   };
 
   const handleRemove = (id: string) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
+    setTodos((current) => {
+      const updated = current.filter((item) => item.id !== id);
+
+      const item = current.find((todo) => todo.id === id);
+      setStats((current) => ({
+        ...current,
+        total: updated.length,
+        completed: item?.completed ? stats.completed - 1 : stats.completed,
+        active: !item?.completed ? stats.active - 1 : stats.active,
+      }));
+
+      return updated;
+    });
   };
 
   const toggleInfo = () => {
@@ -36,6 +81,14 @@ export const ClassicTodoApp: FC = () => {
     setPanel((current) => ({ ...current, code: !current.code }));
   };
 
+  const addTodo = () => {
+    setTodos((current) => {
+      const updated = [...current, { id: shortId(), text: `New todo (${current.length + 1})`, completed: false }];
+      setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
+      return updated;
+    });
+  };
+
   useUpdateStat(() => {
     classicTodoStats.app.value++;
   });
@@ -44,6 +97,12 @@ export const ClassicTodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">👌Classic Todo List</h3>
+        <button
+          onClick={() => benchmark(addTodo)}
+          className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
+          <Gauge size={20} />
+          <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
+        </button>
         <ClassicTodoPanel panel={panel} toggleInfo={toggleInfo} toggleCode={toggleCode} />
       </CardHeader>
       <ClassicInfoPanel panel={panel} />
@@ -51,6 +110,11 @@ export const ClassicTodoApp: FC = () => {
         <ClassicTodoForm onAdd={handleOnAdd} />
         <ClassicTodoList todos={todos} onToggle={handleToggle} onRemove={handleRemove} />
       </div>
+      <ClassicTodoStats stats={stats} />
+      <p className="text-slate-500 text-xs text-center px-10 mb-4">
+        Stats are computed during mutation to prevent extensive resource usage from derivation. This also to showcase
+        the complexity level of the optimization.
+      </p>
       <ClassicCodePanel panel={panel} />
     </Card>
   );
@@ -69,8 +133,8 @@ const ClassicTodoPanel: FC<{
     <div ref={ref} className="flex items-center">
       <button
         onClick={toggleInfo}
-        className="hover:text-slate-200 hover:border-slate-200 rounded-full w-4 h-4 border border-slate-400 text-xs text-slate-400 inline-flex items-center justify-center mr-4">
-        i
+        className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
+        <CircleQuestionMark size={20} />
       </button>
       <button className="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium" onClick={toggleCode}>
         {panel.code ? 'Hide Code' : 'Show Code'}

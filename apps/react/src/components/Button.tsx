@@ -1,11 +1,11 @@
-import React from 'react';
+import { type ButtonHTMLAttributes, type FC } from 'react';
 
-export const Button: React.FC<{
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
-}> = ({ disabled, children, onClick, className = '' }) => (
+export const Button: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({
+  disabled,
+  children,
+  onClick,
+  className = '',
+}) => (
   <button
     onClick={onClick}
     disabled={disabled}

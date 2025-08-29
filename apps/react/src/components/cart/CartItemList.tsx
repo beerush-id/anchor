@@ -1,25 +1,23 @@
-import { type FC, memo } from 'react';
+import { type FC, memo, useRef } from 'react';
 import { CartItem, type CartItemType } from './CartItem.js';
 import { useDerived } from '@anchor/react';
-import { Card } from '../Card.js';
-import { CardHeader } from '../CardHeader.js';
-import { ARRAY_MUTATIONS } from '@anchor/core';
+import { flashNode } from '@lib/stats.js';
 
 export const CartItemList: FC<{ items: CartItemType[] }> = memo(({ items }) => {
-  const [cartItems] = useDerived(items, () => {
+  const ref = useRef(null);
+  const cartItems = useDerived(() => {
     return [...items].sort((a, b) => {
       return a.name.localeCompare(b.name);
     });
-  }, [...ARRAY_MUTATIONS]);
+  });
+
+  flashNode(ref.current);
 
   return (
-    <Card className="col-span-2">
-      <CardHeader>Your Cart</CardHeader>
-      <div className="p-4 space-y-4">
-        {cartItems.map((item) => (
-          <CartItem key={item.id} {...{ item, items }} />
-        ))}
-      </div>
-    </Card>
+    <div ref={ref} className="p-4 space-y-4">
+      {cartItems.map((item) => (
+        <CartItem key={item.id} {...{ item, items }} />
+      ))}
+    </div>
   );
 });
