@@ -2,6 +2,9 @@
 @import './App.css';
 
 @theme {
+  --color-brand-main: #533ddd;
+  --color-brand-main-hover: #4a2d9b;
+  --color-brand-main-active: #3b1e8c;
   --color-brand-orange: #ffa500;
-  --color-brand-purple: #c62879;
+  --color-brand-red: #fb2c36;
 }

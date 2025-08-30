@@ -1,5 +1,4 @@
 import { type FC, memo, useEffect, useRef } from 'react';
-
 import { BENCHMARK_TOGGLE_SIZE, type ITodoItem } from '@lib/todo.js';
 import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
 import { Button } from '../Button.js';
@@ -10,7 +9,7 @@ import { Tooltip } from '../Tooltip.js';
 const [loop] = microloop(5, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
-  loop(fn).then(() => console.log(`Profiling done in ${performance.now() - start}ms.`));
+  loop(fn).then(() => console.log(`Profiling done in ${(performance.now() - start).toLocaleString()}ms.`));
 };
 
 export const ClassicTodoItem: FC<{
@@ -34,9 +33,9 @@ export const ClassicTodoItem: FC<{
   };
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || todo.id.length === 1) return;
     ref.current.scrollIntoView({ behavior: 'instant', block: 'center' });
-  }, []);
+  }, [todo]);
 
   return (
     <li ref={ref} className="flex items-center gap-2">

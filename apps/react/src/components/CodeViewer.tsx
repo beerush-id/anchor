@@ -15,7 +15,7 @@ export const CodeViewer: FC<{ items: CodeItem[] }> = ({ items }) => {
         {items.map((block) => (
           <button
             key={block.name}
-            className={'tab px-2 py-1 text-sm font-medium' + (active === block.name ? ' bg-slate-900' : '')}
+            className={'tab px-3 py-2 text-sm font-medium' + (active === block.name ? ' bg-slate-900' : '')}
             onClick={() => setActive(block.name)}>
             {block.name}
           </button>

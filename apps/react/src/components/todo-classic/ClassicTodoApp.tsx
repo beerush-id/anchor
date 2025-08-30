@@ -5,12 +5,11 @@ import { BENCHMARK_SIZE, type ITodoItem } from '@lib/todo.js';
 import { ClassicTodoForm } from './ClassicTodoForm.js';
 import { ClassicTodoList } from './ClassicTodoList.js';
 import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
-import { CodeBlock } from '../CodeBlock.js';
 import { microloop, shortId } from '@anchor/core';
-import { ClassicTodoCode } from './ClassicTodoCode.js';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { ClassicTodoStats } from './ClassicTodoStats.js';
+import { ClassicTodoCode } from './ClassicTodoCode.js';
 
 const [loop] = microloop(5, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
@@ -81,7 +80,7 @@ export const ClassicTodoApp: FC = () => {
     setPanel((current) => ({ ...current, code: !current.code }));
   };
 
-  const addTodo = () => {
+  const addBenchmarkItem = () => {
     setTodos((current) => {
       const updated = [...current, { id: shortId(), text: `New todo (${current.length + 1})`, completed: false }];
       setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
@@ -98,7 +97,7 @@ export const ClassicTodoApp: FC = () => {
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">👌Classic Todo List</h3>
         <button
-          onClick={() => benchmark(addTodo)}
+          onClick={() => benchmark(addBenchmarkItem)}
           className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
           <Gauge size={20} />
           <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
@@ -167,15 +166,6 @@ const ClassicCodePanel: FC<{ panel: { code: boolean } }> = ({ panel }) => {
 
   return (
     <div ref={ref} className="bg-slate-950">
-      {!panel.code && (
-        <CodeBlock
-          code={`const TodoItem = ({ item, onToggle }) => {
-  const handleChange = () => {
-    onToggle(item);
-  };
-};`}
-        />
-      )}
       {panel.code && <ClassicTodoCode />}
     </div>
   );

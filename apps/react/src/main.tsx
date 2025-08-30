@@ -3,7 +3,7 @@ import './index.css';
 import { StrictMode } from 'react';
 import { setDevMode } from '@anchor/react';
 import { BrowserRouter, Route, Routes } from 'react-router';
-import Home from '@pages/Home.js';
+import Home from '@pages/home/Home.js';
 
 setDevMode(process.env.NODE_ENV === 'development');
 

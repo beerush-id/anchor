@@ -14,9 +14,9 @@ export const RenderStatItem: FC<{ stat: RenderStatProp }> = ({ stat }) => {
   flashNode(ref.current);
 
   return (
-    <div ref={ref} className="flex items-center gap-2 px-4">
-      <span className="text-slate-400 flex-1">{snapshot.name}:</span>
-      <span className="text-slate-300">{snapshot.value}</span>
+    <div ref={ref} className="flex flex-col items-center px-4 text-center flex-1">
+      <span className="text-slate-300 font-bold text">{snapshot.value}</span>
+      <span className="text-slate-500 flex-1 text-xs font-medium">{snapshot.name}</span>
     </div>
   );
 };

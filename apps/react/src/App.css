@@ -19,11 +19,16 @@
 }
 
 .inline-code {
-  @apply bg-slate-800 rounded-sm px-1 font-bold py-0.5;
+  @apply bg-slate-800/60 rounded-sm px-1 font-bold py-0.5;
 }
 
 body {
   @apply text-white;
+  color-scheme: dark;
+}
+
+.card {
+  @apply bg-slate-900/75 border border-slate-700/50 rounded-xl;
 }
 
 .bugs {
@@ -58,4 +63,30 @@ body {
     left 0.3s ease-in-out,
     top 0.3s ease-in-out;
   transition-delay: var(--bug-delay);
+}
+
+.page-section {
+  @apply relative;
+
+  &:before,
+  &:after {
+    @apply absolute w-2xl aspect-square block rounded-full z-0 blur-[150px] opacity-30;
+    content: '';
+  }
+
+  &:before {
+    @apply bg-brand-red;
+    top: 5%;
+    left: 10%;
+  }
+
+  &:after {
+    @apply bg-brand-main;
+    right: 10%;
+    bottom: 5%;
+  }
+
+  & > * {
+    @apply relative z-10;
+  }
 }

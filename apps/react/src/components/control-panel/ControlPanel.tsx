@@ -24,13 +24,15 @@ export const ControlPanel: React.FC = () => {
           <BoxPanel box={box} />
           <BoxView box={box} />
         </div>
-        <CodeBlock
-          code={`// Pipe state directly to the element's style.
+        {!showCode && (
+          <CodeBlock
+            code={`// Pipe state directly to the element's style.
 derive.pipe(state, element.style, ({ x, scale }) => ({
   left: \`\${ x }%\`,
   transform: \`translate3d(-50%, -50%, 0) rotate(\${ (x / 100) * 360 }deg) scale(\${ scale })\`,
 }));`}
-        />
+          />
+        )}
         <div className="bg-slate-950">{showCode && <ControlPanelCode />}</div>
       </Card>
     </div>

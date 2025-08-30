@@ -7,9 +7,9 @@ export const RenderStats: React.FC<{ stats: RenderStatProp[] }> = ({ stats }) =>
   return (
     <Card>
       <CardHeader>
-        <h3>Render Counter</h3>
+        <h3 className="text-center w-full">Render Counter</h3>
       </CardHeader>
-      <div className="flex flex-col gap-4 py-4">
+      <div className="flex gap-4 p-4">
         {stats.map((stat) => (
           <RenderStatItem key={stat.name} stat={stat} />
         ))}

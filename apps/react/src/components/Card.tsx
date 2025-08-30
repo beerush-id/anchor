@@ -6,9 +6,7 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string }> =
   flashNode(ref.current);
 
   return (
-    <div
-      ref={ref}
-      className={`bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden flex flex-col ${className}`}>
+    <div ref={ref} className={`card overflow-hidden flex flex-col ${className}`}>
       {children}
     </div>
   );

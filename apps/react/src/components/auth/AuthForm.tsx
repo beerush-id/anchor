@@ -4,32 +4,35 @@ import { Button } from '../Button.js';
 import { Input } from '../Input.js';
 import { type AuthFormData, schema } from './auth-lib.js';
 import { observed } from '@anchor/react';
+import { Card } from '../Card.js';
 
-export const AuthForm: FC<{ formData: AuthFormData }> = ({ formData }) => {
+export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ formData, className }) => {
   return (
-    <form className="flex flex-col gap-5 rounded-xl w-md bg-slate-900 p-8 shadow-2xl">
-      <div className="text-center mb-2">
-        <h2 className="text-2xl font-bold text-white">🔐 Welcome</h2>
-        <p className="text-slate-400 mt-2">Sign in to your account</p>
-      </div>
+    <Card className={className}>
+      <form className="flex flex-col gap-4 p-10 rounded-xl">
+        <div className="text-center mb-2">
+          <h2 className="text-2xl font-bold text-white">🔐 Welcome</h2>
+          <p className="text-slate-400 mt-2">Sign in to your account</p>
+        </div>
 
-      <label className="flex flex-col gap-2">
-        <span className="text-slate-300 font-medium">Full Name</span>
-        <Input bindTo={formData} name="name" placeholder="John Doe" />
-      </label>
+        <label className="flex flex-col gap-2">
+          <span className="text-slate-300 font-medium">Full Name</span>
+          <Input className="w-full" bindTo={formData} name="name" placeholder="John Doe" />
+        </label>
 
-      <label className="flex flex-col gap-2">
-        <span className="text-slate-300 font-medium">Email</span>
-        <Input bindTo={formData} name="email" placeholder="john@domain.com" />
-      </label>
+        <label className="flex flex-col gap-2">
+          <span className="text-slate-300 font-medium">Email</span>
+          <Input className="w-full" bindTo={formData} name="email" placeholder="john@domain.com" />
+        </label>
 
-      <label className="flex flex-col gap-2">
-        <span className="text-slate-300 font-medium">Password</span>
-        <Input type="password" bindTo={formData} name="password" placeholder="********" />
-      </label>
+        <label className="flex flex-col gap-2">
+          <span className="text-slate-300 font-medium">Password</span>
+          <Input className="w-full" type="password" bindTo={formData} name="password" placeholder="********" />
+        </label>
 
-      <FormControl payload={formData} />
-    </form>
+        <FormControl payload={formData} />
+      </form>
+    </Card>
   );
 };
 

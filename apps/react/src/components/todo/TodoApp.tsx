@@ -1,17 +1,16 @@
 import { TodoForm } from './TodoForm.js';
 import { TodoList } from './TodoList.js';
-import { TodoCode } from './TodoCode.js';
 import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import { type FC, useRef } from 'react';
 import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
-import { CodeBlock } from '../CodeBlock.js';
 import { observed, useAnchor } from '@anchor/react';
-import { microloop, setDebugger, shortId } from '@anchor/core';
+import { microloop, shortId } from '@anchor/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { TodoStats } from './TodoStats.js';
 import { BENCHMARK_SIZE } from '@lib/todo.js';
+import { TodoCode } from './TodoCode.js';
 
 const [loop] = microloop(5, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
@@ -20,7 +19,6 @@ const benchmark = (fn: () => void) => {
 };
 
 export const TodoApp: FC = () => {
-  setDebugger((...args) => console.log(...args));
   const [panel] = useAnchor({ info: false, code: false });
   const [todos] = useAnchor([
     { id: '1', text: 'Learn React state', completed: true },
@@ -29,7 +27,7 @@ export const TodoApp: FC = () => {
   ]);
   const [stats] = useAnchor({ total: 3, completed: 1, active: 2 });
 
-  const addTodo = () => {
+  const addBenchmarkItem = () => {
     todos.push({ id: shortId(), text: `New Todo (${todos.length + 1})`, completed: false });
     stats.total++;
     stats.active++;
@@ -44,7 +42,7 @@ export const TodoApp: FC = () => {
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">😍 Anchor Todo List</h3>
         <button
-          onClick={() => benchmark(addTodo)}
+          onClick={() => benchmark(addBenchmarkItem)}
           className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
           <Gauge size={20} />
           <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
@@ -111,15 +109,6 @@ const CodePanel: FC<{ panel: { code: boolean } }> = observed(({ panel }) => {
 
   return (
     <div ref={ref} className="bg-slate-950">
-      {!panel.code && (
-        <CodeBlock
-          code={`const TodoItem = ({ item }) => {
-  const handleChange = () => {
-    item.completed = !item.completed;
-  };
-};`}
-        />
-      )}
       {panel.code && <TodoCode />}
     </div>
   );

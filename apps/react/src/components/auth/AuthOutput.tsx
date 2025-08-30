@@ -12,7 +12,7 @@ export const AuthOutput: FC<{ formData: AuthFormData }> = observed(({ formData }
   return (
     <Card className="flex-1">
       <CardHeader>
-        <h3 className="font-semibold text-slate-200 flex-1">🛡️ Validated Data</h3>
+        <h3 className="font-semibold text-slate-200 flex-1">🛡️ Validation</h3>
       </CardHeader>
       <CodeBlock code={outputCode} />
     </Card>

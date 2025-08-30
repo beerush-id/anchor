@@ -4,19 +4,19 @@ import { useEffect } from 'react';
 export const classicTodoStats = anchor(
   {
     app: {
-      name: 'Classic Todo App',
+      name: 'App',
       value: 0,
     },
     form: {
-      name: 'Classic Todo Form',
+      name: 'Form',
       value: 0,
     },
     list: {
-      name: 'Classic Todo List',
+      name: 'List',
       value: 0,
     },
     item: {
-      name: 'Classic Todo Item',
+      name: 'Item',
       value: 0,
     },
   },
@@ -26,19 +26,19 @@ export const classicTodoStats = anchor(
 export const todoStats = anchor(
   {
     app: {
-      name: 'Anchor Todo App',
+      name: 'App',
       value: 0,
     },
     form: {
-      name: 'Anchor Todo Form',
+      name: 'Form',
       value: 0,
     },
     list: {
-      name: 'Anchor Todo List',
+      name: 'List',
       value: 0,
     },
     item: {
-      name: 'Anchor Todo Item',
+      name: 'Item',
       value: 0,
     },
   },

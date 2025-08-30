@@ -7,14 +7,14 @@ export type InputProps<T extends Record<string, string>> = {
   name: keyof T;
 } & InputHTMLAttributes<HTMLInputElement>;
 
-function InputComp<T extends Record<string, string>>({ bindTo, name, ...props }: InputProps<T>) {
+function InputComp<T extends Record<string, string>>({ bindTo, name, className, ...props }: InputProps<T>) {
   const ref = useRef(null);
   flashNode(ref.current);
 
   return (
     <input
       ref={ref}
-      className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-900 text-white placeholder-slate-500 transition-colors duration-200 outline-none"
+      className={`w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-900 text-white placeholder-slate-500 transition-colors duration-200 outline-none ${className}`}
       name={name}
       value={bindTo[name]}
       onChange={(e) => {

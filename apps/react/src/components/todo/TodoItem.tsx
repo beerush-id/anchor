@@ -10,7 +10,7 @@ import { Tooltip } from '../Tooltip.js';
 const [loop] = microloop(5, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
-  loop(fn).then(() => console.log(`Profiling done in ${performance.now() - start}ms.`));
+  loop(fn).then(() => console.log(`Profiling done in ${(performance.now() - start).toLocaleString()}ms.`));
 };
 
 export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem }> = memo(({ todos, stats, todo }) => {
@@ -46,9 +46,9 @@ export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem
   };
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || todo.id.length === 1) return;
     ref.current.scrollIntoView({ behavior: 'instant', block: 'center' });
-  }, []);
+  }, [todo]);
 
   return (
     <li ref={ref} className="flex items-center gap-2">
