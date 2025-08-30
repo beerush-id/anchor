@@ -13,10 +13,10 @@ export type MicroLooper = [LoopFn, StopFn];
  * @returns A tuple containing the loop function and stop function
  */
 export function microloop(timeout: number, steps: number): MicroLooper {
+  let isRunning = false;
   let currentStep = 0;
   let currentInterval = 0;
   let currentResolver: ((value: number) => void) | undefined = undefined;
-  let isRunning = false;
 
   const loop = (fn: () => void) => {
     if (isRunning) {
@@ -39,7 +39,7 @@ export function microloop(timeout: number, steps: number): MicroLooper {
         try {
           fn();
 
-          if (currentStep === steps) {
+          if (currentStep >= steps) {
             stop();
           }
         } catch (error) {
@@ -52,9 +52,11 @@ export function microloop(timeout: number, steps: number): MicroLooper {
 
   const stop = () => {
     clearInterval(currentInterval);
-    currentInterval = 0;
-    isRunning = false;
     currentResolver?.(currentStep);
+
+    isRunning = false;
+    currentStep = 0;
+    currentInterval = 0;
   };
 
   return [loop, stop];

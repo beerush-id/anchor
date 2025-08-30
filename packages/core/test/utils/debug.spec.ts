@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { debug, setDebugger, withDebugger } from '../../src/index.js';
+import { createDebugger, debug, getDebugger, setDebugger, withDebugger } from '../../src/index.js';
 
 describe('Anchor Utilities - Debugger', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -20,6 +20,17 @@ describe('Anchor Utilities - Debugger', () => {
       const restore = setDebugger(debugSpy);
       debug('test message');
       expect(debugSpy).toHaveBeenCalledWith('test message');
+      restore();
+    });
+
+    it('should get the current debugger function', () => {
+      const restore = setDebugger(debugSpy);
+      debug('test message');
+      expect(debugSpy).toHaveBeenCalledWith('test message');
+
+      const debugFn = getDebugger();
+      expect(debugFn).toBe(debugSpy);
+
       restore();
     });
 
@@ -273,6 +284,77 @@ describe('Anchor Utilities - Debugger', () => {
       expect(customDebugSpy).toHaveBeenCalledWith('\x1b[33m! warning fallback\x1b[0m');
 
       restore();
+    });
+
+    it('should handle debugger function with custom factory', () => {
+      let cDebug = createDebugger();
+      const customDebugSpy = vi.fn();
+      const customOkSpy = vi.fn();
+      const customInfoSpy = vi.fn();
+
+      const customDebugger = Object.assign(customDebugSpy, {
+        ok: customOkSpy,
+        info: customInfoSpy,
+      });
+
+      const restore = setDebugger(customDebugger);
+
+      cDebug('regular debug');
+      expect(customDebugSpy).toHaveBeenCalledWith('regular debug');
+
+      cDebug = createDebugger('test');
+
+      cDebug.ok('custom ok');
+      expect(customOkSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[32m✓ custom ok\x1b[0m');
+
+      cDebug.info('custom info');
+      expect(customInfoSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[34mℹ custom info\x1b[0m');
+
+      // These should fall back to main debugger function
+      cDebug.check('check fallback', true);
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[36m▣ check fallback\x1b[0m');
+
+      cDebug.error('error fallback');
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[31m✕ error fallback\x1b[0m');
+
+      cDebug.warning('warning fallback');
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[33m! warning fallback\x1b[0m');
+
+      restore();
+    });
+
+    it('should handle debugger function with custom debugger factory', () => {
+      const customOkSpy = vi.fn();
+      const customInfoSpy = vi.fn();
+      const customDebugSpy = vi.fn();
+
+      const customDebugger = Object.assign(customDebugSpy, {
+        ok: customOkSpy,
+        info: customInfoSpy,
+      });
+
+      let cDebug = createDebugger(undefined, customDebugger);
+
+      cDebug('regular debug');
+      expect(customDebugSpy).toHaveBeenCalledWith('regular debug');
+
+      cDebug.ok('custom ok');
+      expect(customOkSpy).toHaveBeenCalledWith('\x1b[32m✓ custom ok\x1b[0m');
+
+      cDebug.info('custom info');
+      expect(customInfoSpy).toHaveBeenCalledWith('\x1b[34mℹ custom info\x1b[0m');
+
+      cDebug = createDebugger('test', customDebugSpy);
+
+      // These should fall back to main debugger function
+      cDebug.check('check fallback', true);
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[36m▣ check fallback\x1b[0m');
+
+      cDebug.error('error fallback');
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[31m✕ error fallback\x1b[0m');
+
+      cDebug.warning('warning fallback');
+      expect(customDebugSpy).toHaveBeenCalledWith('\x1b[1mtest\x1b[0m \x1b[33m! warning fallback\x1b[0m');
     });
 
     it('should correctly handle falsy values in debug messages', () => {

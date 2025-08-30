@@ -1,8 +1,8 @@
-import { isFunction } from '@beerush/utils';
+import { isFunction, isString } from '@beerush/utils';
 
 export type DebugFn = (...args: unknown[]) => void;
 
-let currentDebugger: DebugFn | undefined = undefined;
+let currentLogger: DebugFn | undefined = undefined;
 
 /**
  * Sets the current debugger function and returns a restore function.
@@ -19,15 +19,24 @@ export function setDebugger(debugFn: DebugFn | undefined) {
 
   let restored = false;
 
-  const prevDebugger = currentDebugger;
-  currentDebugger = debugFn;
+  const prevLogger = currentLogger;
+  currentLogger = debugFn;
 
   return () => {
     if (!restored) {
-      currentDebugger = prevDebugger;
+      currentLogger = prevLogger;
       restored = true;
     }
   };
+}
+
+/**
+ * Gets the current debugger function.
+ *
+ * @returns The current debugger function, or undefined if debugging is disabled
+ */
+export function getDebugger(): DebugFn | undefined {
+  return currentLogger;
 }
 
 /**
@@ -47,7 +56,7 @@ export function withDebugger<R>(fn: () => R, debugFn: DebugFn): R {
   try {
     result = fn();
   } catch (error) {
-    currentDebugger?.(error);
+    currentLogger?.(error);
   }
 
   restoreDebugger();
@@ -103,43 +112,49 @@ export interface Debugger {
   warning(message: string, ...extras: unknown[]): void;
 }
 
-const debugFn = ((...args: unknown[]) => {
-  if (!isFunction(currentDebugger)) return;
-  return currentDebugger(...args);
-}) as Debugger;
+export function createDebugger(prefix?: string, logger?: DebugFn): Debugger {
+  const log = (scope: keyof Debugger | 'default', ...args: unknown[]) => {
+    const logFn =
+      scope === 'default'
+        ? (logger ?? currentLogger)
+        : ((logger as Debugger)?.[scope] ?? logger ?? (currentLogger as Debugger)?.[scope] ?? currentLogger);
+    if (!isFunction(logFn)) return;
 
-debugFn.ok = (message: string, ...extras: unknown[]) => {
-  if (!isFunction(currentDebugger)) return;
-  return ((currentDebugger as Debugger).ok ?? currentDebugger)(`\x1b[32m✓ ${message}\x1b[0m`, ...extras);
-};
+    if (prefix && isString(args[0])) {
+      logFn(`\x1b[1m${prefix}\x1b[0m ${args[0]}`, ...args.slice(1));
+    }
+    (logFn as DebugFn)(...args);
+  };
 
-debugFn.info = (message: string, ...extras: unknown[]) => {
-  if (!isFunction(currentDebugger)) return;
-  return ((currentDebugger as Debugger).info ?? currentDebugger)(`\x1b[34mℹ ${message}\x1b[0m`, ...extras);
-};
+  const debugFn = ((...args: unknown[]) => {
+    return log('default', ...args);
+  }) as Debugger;
 
-debugFn.check = (message: string, condition: boolean, ...extras: unknown[]) => {
-  if (!isFunction(currentDebugger)) return;
-  if (condition) {
-    return (((currentDebugger as Debugger).check as Debugger['info']) ?? currentDebugger)(
-      `\x1b[36m▣ ${message}\x1b[0m`,
-      ...extras
-    );
-  }
-  return (((currentDebugger as Debugger).check as Debugger['info']) ?? currentDebugger)(
-    `\x1b[37m▢ ${message}\x1b[0m`,
-    ...extras
-  );
-};
+  debugFn.ok = (message: string, ...extras: unknown[]) => {
+    return log('ok', `\x1b[32m✓ ${message}\x1b[0m`, ...extras);
+  };
 
-debugFn.error = (message: string, ...extras: unknown[]) => {
-  if (!isFunction(currentDebugger)) return;
-  return ((currentDebugger as Debugger).error ?? currentDebugger)(`\x1b[31m✕ ${message}\x1b[0m`, ...extras);
-};
+  debugFn.info = (message: string, ...extras: unknown[]) => {
+    return log('info', `\x1b[34mℹ ${message}\x1b[0m`, ...extras);
+  };
 
-debugFn.warning = (message: string, ...extras: unknown[]) => {
-  if (!isFunction(currentDebugger)) return;
-  return ((currentDebugger as Debugger).warning ?? currentDebugger)(`\x1b[33m! ${message}\x1b[0m`, ...extras);
-};
+  debugFn.check = (message: string, condition: boolean, ...extras: unknown[]) => {
+    if (condition) {
+      return log('check', `\x1b[36m▣ ${message}\x1b[0m`, ...extras);
+    }
 
-export const debug = debugFn as Debugger;
+    return log('check', `\x1b[37m▢ ${message}\x1b[0m`, ...extras);
+  };
+
+  debugFn.error = (message: string, ...extras: unknown[]) => {
+    return log('error', `\x1b[31m✕ ${message}\x1b[0m`, ...extras);
+  };
+
+  debugFn.warning = (message: string, ...extras: unknown[]) => {
+    return log('warning', `\x1b[33m! ${message}\x1b[0m`, ...extras);
+  };
+
+  return debugFn;
+}
+
+export const debug = createDebugger() as Debugger;
