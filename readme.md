@@ -80,9 +80,9 @@ console.log(myState.count); // 2
 ## 🤝 Support and Contributions
 
 If you need help, have found a bug, or want to contribute, please see
-our [contributing guidelines](https://github.com/beerush-id/Anchor/blob/main/CONTRIBUTING.md). We appreciate and value
+our [contributing guidelines](./CONTRIBUTING.md). We appreciate and value
 your input!
 
 ## 📄 License
 
-Anchor is [MIT licensed](./LICENSE).
+Anchor is [MIT licensed](./LICENSE.md).
