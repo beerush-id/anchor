@@ -1,6 +1,5 @@
 import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from '@beerush/utils';
 import type { Linkable, ObjLike, Recursive } from '../types.js';
-import { captureStack } from '../exception.js';
 
 /**
  * Deep clone an object with proper handling of circular references
@@ -14,21 +13,18 @@ import { captureStack } from '../exception.js';
  * @param {T} source - The object to clone
  * @param {Recursive} recursive - Whether to clone nested objects recursively (default: true)
  * @param {WeakMap<object, object>} clonedRefs - WeakMap to track cloned references (used internally for circular references)
- * @param {string} prop - Property name (used internally for exception message)
  * @returns {T} - A deep clone of the source object
  */
 export function softClone<T>(
   source: T,
   recursive: Recursive = true,
-  clonedRefs: WeakMap<object, object> = new WeakMap(),
-  prop: string = 'root'
+  clonedRefs: WeakMap<object, object> = new WeakMap()
 ): T {
   if (source === null || source === undefined || typeof source !== 'object') {
     return source as T;
   }
 
   if (clonedRefs.has(source)) {
-    captureStack.violation.circular(prop, softClone);
     return clonedRefs.get(source) as T;
   }
 
@@ -42,8 +38,8 @@ export function softClone<T>(
     const clonedArray: unknown[] = [];
     clonedRefs.set(source, clonedArray);
 
-    source.forEach((item, index) => {
-      clonedArray.push(softClone(item, recursive, clonedRefs, String(index)));
+    source.forEach((item) => {
+      clonedArray.push(softClone(item, recursive, clonedRefs));
     });
 
     return clonedArray as T;
@@ -54,10 +50,7 @@ export function softClone<T>(
     clonedRefs.set(source, clonedMap);
 
     for (const [key, value] of source.entries()) {
-      clonedMap.set(
-        softClone(key, recursive, clonedRefs, 'map:key'),
-        softClone(value, recursive, clonedRefs, key as string)
-      );
+      clonedMap.set(softClone(key, recursive, clonedRefs), softClone(value, recursive, clonedRefs));
     }
 
     return clonedMap as T;
@@ -68,7 +61,7 @@ export function softClone<T>(
     clonedRefs.set(source, clonedSet);
 
     for (const value of source.values()) {
-      clonedSet.add(softClone(value, recursive, clonedRefs, 'set:add'));
+      clonedSet.add(softClone(value, recursive, clonedRefs));
     }
 
     return clonedSet as T;
@@ -84,7 +77,7 @@ export function softClone<T>(
       if (descriptor?.set || descriptor?.get) {
         Object.defineProperty(clonedObject, key, { ...descriptor });
       } else {
-        clonedObject[key] = softClone(value, recursive, clonedRefs, key as string);
+        clonedObject[key] = softClone(value, recursive, clonedRefs);
       }
     }
 

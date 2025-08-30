@@ -344,16 +344,5 @@ describe('Anchor - Circular References', () => {
       expect(state.self.name).toBe('updated');
       expect(handler).toHaveBeenCalledTimes(1); // Only init, no update
     });
-
-    it('should log exception for self-referencing map in a cloned mode', () => {
-      const map = new Map();
-      map.set('self', map);
-
-      const state = anchor(map, { cloned: true });
-      const self = state.get('self');
-
-      expect(self).toBe(state);
-      expect(errorSpy).toHaveBeenCalled();
-    });
   });
 });
