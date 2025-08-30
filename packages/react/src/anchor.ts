@@ -1,6 +1,7 @@
 import {
   anchor,
-  debug,
+  createDebugger,
+  getDebugger,
   type Linkable,
   type LinkableSchema,
   microtask,
@@ -52,10 +53,11 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
 
   // -- BEGIN_DEV_MODE -- //
   // Dedicated logics to handle state in development mode.
+  const debug = createDebugger('[useAnchor]', getDebugger());
   const [schedule] = useRef(microtask(0)).current;
-  const initRef = useRef(DEV_MODE ? softClone(init) : init);
-  const optionsRef = useRef(DEV_MODE ? softClone(options) : options);
-  const stableRef = useRef(!DEV_MODE);
+  const initRef = useRef(softClone(init));
+  const optionsRef = useRef(softClone(options));
+  const stableRef = useRef(false);
   const mountedRef = useRef(false);
 
   // Mark the effect as unstable on every-render; unless the render
@@ -95,7 +97,7 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
         if (init !== initRef.current || options !== optionsRef.current) {
           // This step will only run during fast-refresh (HMR).
           const needUpdate = !softEqual(init, initRef.current, true) || !softEqual(options, optionsRef.current);
-          debug.check('State need update:', needUpdate, state);
+          debug.check('State need update?', needUpdate, state);
 
           if (needUpdate) {
             initRef.current = softClone(init);

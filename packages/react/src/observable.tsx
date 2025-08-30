@@ -1,7 +1,9 @@
 import { type ComponentType, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  createDebugger,
   createObserver,
   derive,
+  getDebugger,
   type Linkable,
   microtask,
   type ObjLike,
@@ -9,7 +11,7 @@ import {
   type StateObserver,
 } from '@anchor/core';
 import type { Bindable } from './types.js';
-import { DEV_MODE } from './dev.js';
+import { DEV_MODE, STRICT_MODE } from './dev.js';
 
 export type AnchoredProps = {
   _state_version: number;
@@ -66,21 +68,25 @@ export function useObserverRef(deps: Linkable[] = [], displayName?: string): [St
   // -- BEGIN_DEV_MODE -- //
   // Dedicated logics to handle observer in development mode,
   // respecting the strict-mode and fast-refresh (HMR).
-  const [schedule] = useRef(microtask(5)).current;
+  const debug = createDebugger('[useObserverRef]', getDebugger());
+  const [schedule] = useRef(microtask(0)).current;
   const depsRef = useRef<Set<Linkable>>(null);
-  const stableRef = useRef(false);
+  const stableRef = useRef(!STRICT_MODE);
 
   useEffect(() => {
     schedule(() => {
       // Schedule to mark the observer as stable.
       // This step to make sure it's survive in the strict-mode.
       stableRef.current = true;
+      debug.ok('Observer is stable:', observer.name);
     });
 
     return () => {
+      debug.check('Observer need destroy?', stableRef.current, observer.name);
       // Should destroy the observer only when the component is unmounted.
       // It prevents the strict-mode to destroy it on the second render.
       if (stableRef.current) {
+        debug.ok('Observer destroyed:', observer.name);
         observer.destroy();
       }
     };
@@ -96,11 +102,13 @@ export function useObserverRef(deps: Linkable[] = [], displayName?: string): [St
     if (depsRef.current) {
       // Check if the dependencies have changed.
       const newDeps = depsChanged(depsRef.current, deps);
+      debug.check('Observer need update?', newDeps as never, observer.name);
 
       if (newDeps) {
         // Update the dependencies and destroy the observer to establish a new observations.
         depsRef.current = newDeps;
         observer.destroy();
+        debug.ok('Observer updated:', observer.name);
       }
     } else {
       // Store the dependencies

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { type ComponentType, useState } from 'react';
 import { anchor } from '@anchor/core';
-import { type AnchoredProps, cleanProps, observed, useObserver } from '../src/index.js';
+import { type AnchoredProps, cleanProps, observed, setDevMode, useObserver } from '../src/index.js';
 
 // Mock component for testing
 const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) => {
@@ -10,6 +10,7 @@ const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) 
 };
 
 describe('Anchor React - Observable Edge Cases', () => {
+  setDevMode(false, false);
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

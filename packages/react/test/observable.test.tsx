@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { type ComponentType } from 'react';
 import { anchor } from '@anchor/core';
-import { type AnchoredProps, cleanProps, observed, useObserver } from '../src/index.js';
+import { type AnchoredProps, cleanProps, observed, setDevMode, useObserver } from '../src/index.js';
 import { mockObserverProp } from '../mocks/observable.js';
 
 // Mock component for testing
@@ -11,6 +11,16 @@ const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) 
 };
 
 describe('Anchor React - Observable', () => {
+  setDevMode(false, false);
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('Observer Hook', () => {
     it('should create an observer and return Unobserve component and version number', () => {
       let UnobserveComponent: ComponentType | null = null;
@@ -73,8 +83,10 @@ describe('Anchor React - Observable', () => {
         return <div>Test</div>;
       };
 
-      const { unmount } = render(<TestComponentWithObserver />);
-      unmount();
+      vi.advanceTimersByTime(10);
+
+      const { unmount: unmount1 } = render(<TestComponentWithObserver />);
+      unmount1();
 
       expect(destroySpy).toHaveBeenCalled();
     });

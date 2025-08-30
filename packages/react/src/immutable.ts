@@ -32,6 +32,8 @@ export function useImmutable<T extends Linkable, S extends LinkableSchema = Link
   return useAnchor<Immutable<T>>(init as Immutable<T>, { ...options, immutable: true });
 }
 
+export function useWriter<T extends Linkable>(state: T): Mutable<T>;
+export function useWriter<T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts: K): MutablePart<T, K>;
 /**
  * A React hook that creates a mutable version of an immutable state.
  *
@@ -44,8 +46,6 @@ export function useImmutable<T extends Linkable, S extends LinkableSchema = Link
  * @param contracts - Optional mutation key contracts that define allowed mutations
  * @returns A mutable version of the input state
  */
-export function useWriter<T extends Linkable>(state: T): Mutable<T>;
-export function useWriter<T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts: K): MutablePart<T, K>;
 export function useWriter<T extends Linkable, K extends MutationKey<T>[]>(
   state: T,
   contracts?: K
