@@ -69,6 +69,10 @@ export default defineConfig({
             text: 'Data Integrity',
             link: '/data-integrity',
           },
+          {
+            text: 'FAQ',
+            link: '/faq',
+          },
         ],
       },
       {
@@ -116,20 +120,6 @@ export default defineConfig({
           {
             text: 'Table Store',
             link: '/storage/table',
-          },
-        ],
-      },
-      {
-        text: 'Advanced',
-        collapsed: true,
-        items: [
-          {
-            text: 'Utilities',
-            link: '/utilities',
-          },
-          {
-            text: 'Dev Tools',
-            link: '/dev-tools',
           },
         ],
       },
@@ -184,6 +174,20 @@ export default defineConfig({
           {
             text: 'Usage',
             link: '/vue/usage',
+          },
+        ],
+      },
+      {
+        text: 'Advanced',
+        collapsed: true,
+        items: [
+          {
+            text: 'Utilities',
+            link: '/utilities',
+          },
+          {
+            text: 'Dev Tools',
+            link: '/dev-tools',
           },
         ],
       },

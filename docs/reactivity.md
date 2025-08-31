@@ -44,7 +44,7 @@ const observer = createObserver((change) => {
 
 // Within this observer context, accessing state.user.name creates a dependency
 const name = withinObserver(observer, () => {
-  console.log(state.user.name); // This creates a tracked dependency
+  return state.user.name; // This creates a tracked dependency
 });
 
 console.log(name); // This will log the name
