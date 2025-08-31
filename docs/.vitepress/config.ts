@@ -185,10 +185,6 @@ export default defineConfig({
             text: 'Usage',
             link: '/vue/usage',
           },
-          {
-            text: 'Caveats',
-            link: '/vue/caveats',
-          },
         ],
       },
     ],
