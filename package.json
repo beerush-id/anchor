@@ -14,7 +14,10 @@
     "lint": "bpkg run lint",
     "test": "rimraf tests && vitest --run",
     "test:preview": "rimraf tests && vitest --run && vite preview --outDir tests",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docs:dev": "vitepress dev docs --port 6611",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs --port 5611"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^3.2.4",
