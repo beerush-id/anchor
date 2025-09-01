@@ -22,7 +22,6 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20250804.1",
     "svelte": "^5.36.16",
     "typescript": "^5.8.2"
   },

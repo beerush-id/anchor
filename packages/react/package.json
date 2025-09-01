@@ -46,7 +46,6 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20250804.1",
     "react": "^19.1.0",
     "typescript": "^5.8.2"
   },

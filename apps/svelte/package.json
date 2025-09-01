@@ -1,17 +1,9 @@
 {
 	"name": "@anchor/docs",
-	"private": true,
 	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev --port 5273",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+	"dependencies": {
+		"@anchor/storage": "workspace:*",
+		"@anchor/svelte": "workspace:*"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -37,11 +29,16 @@
 		"vite-plugin-devtools-json": "^0.2.0",
 		"vitest": "^3.2.4"
 	},
-	"dependencies": {
-		"@anchor/storage": "workspace:*",
-		"@anchor/svelte": "workspace:*"
+	"private": true,
+	"scripts": {
+		"dev": "vite dev --port 5273",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"format": "prettier --write .",
+		"lint": "prettier --check . && eslint ."
 	},
-	"peerDependencies": {
-		"@typescript/native-preview": "^7.0.0-dev.20250804.1"
-	}
+	"type": "module"
 }
