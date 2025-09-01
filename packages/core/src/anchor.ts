@@ -21,6 +21,7 @@ import {
   INIT_REGISTRY,
   META_REGISTRY,
   REFERENCE_REGISTRY,
+  SORTER_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
@@ -90,6 +91,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     cloned: false,
     deferred: true,
     strict: options?.strict ?? ANCHOR_SETTINGS.strict,
+    ordered: options?.ordered ?? false,
     recursive: options?.recursive ?? ANCHOR_SETTINGS.recursive,
     immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
     observable: options?.observable ?? ANCHOR_SETTINGS.observable,
@@ -199,6 +201,25 @@ anchorFn.flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>
 ): T => {
   return anchorFn(init, { ...options, recursive: 'flat' });
 };
+
+/**
+ * Creates a reactive array that is sorted and reacts to changes maintaining the sort order.
+ * The array will be sorted initially using the provided compare function, and the sort order
+ * will be maintained when the array is mutated.
+ *
+ * @template T - The type of elements in the array
+ * @template S - The Zod schema type for validation
+ * @param {T[]} init - The initial array to make reactive and sorted
+ * @param {(a: T, b: T) => number} compare - The comparison function to use for sorting
+ * @param {StateOptions<S>} options - Optional configuration for anchoring
+ * @returns {T[]} The reactive sorted array
+ */
+anchorFn.ordered = ((init, compare, options) => {
+  init.sort(compare);
+  SORTER_REGISTRY.set(init, compare);
+
+  return anchorFn(init, { ...options, ordered: true });
+}) satisfies AnchorFn['ordered'];
 
 /**
  * This function is used to create a reactive object that mutates the original object.

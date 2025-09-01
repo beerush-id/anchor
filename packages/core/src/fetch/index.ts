@@ -26,6 +26,8 @@ export type FetchState<T> = {
   status: FetchStatus;
   error?: Error;
   response?: Response;
+  fetch: () => void;
+  abort: () => void;
 };
 
 export interface FetchFn {
@@ -49,53 +51,84 @@ function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, opt
     init = anchor(init, options);
   }
 
-  const state = anchor.raw<FetchState<T>, S>({ data: init, status: FetchStatus.Pending }, options);
+  const controller = new AbortController();
+  const signal = controller.signal;
 
-  fetch(options.url, options)
-    .then(async (response) => {
-      if (response.ok) {
-        const contentType = response.headers.get('content-type');
-        const body = await response.text();
+  let started = false;
+  const start = () => {
+    if (started) return;
 
-        if (typeof contentType === 'string' && contentType.includes('application/json')) {
-          try {
+    if (state.status !== FetchStatus.Pending) {
+      state.status = FetchStatus.Pending;
+    }
+
+    fetch(options.url, { ...options, signal })
+      .then(async (response) => {
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          const body = await response.text();
+
+          if (typeof contentType === 'string' && contentType.includes('application/json')) {
+            try {
+              anchor.assign(state, {
+                response,
+                data: JSON.parse(body),
+                status: FetchStatus.Success,
+              });
+            } catch (error) {
+              captureStack.error.external('Unable to parse JSON body', error as Error);
+              anchor.assign(state, {
+                error,
+                response,
+                status: FetchStatus.Error,
+              } as FetchState<T>);
+            }
+          } else {
             anchor.assign(state, {
               response,
-              data: JSON.parse(body),
+              data: body as T,
               status: FetchStatus.Success,
             });
-          } catch (error) {
-            captureStack.error.external('Unable to parse JSON body', error as Error);
-            anchor.assign(state, {
-              error,
-              response,
-              status: FetchStatus.Error,
-            } as FetchState<T>);
           }
         } else {
+          captureStack.error.external(
+            'Something went wrong when fetching response',
+            new Error(response.statusText),
+            fetchStateFn
+          );
           anchor.assign(state, {
             response,
-            data: body as T,
-            status: FetchStatus.Success,
+            status: FetchStatus.Error,
+            error: new Error(response.statusText),
           });
         }
-      } else {
-        captureStack.error.external(
-          'Something went wrong when fetching response',
-          new Error(response.statusText),
-          fetchStateFn
-        );
-        anchor.assign(state, {
-          response,
-          status: FetchStatus.Error,
-          error: new Error(response.statusText),
-        });
-      }
-    })
-    .catch((error) => {
-      captureStack.error.external('Something went wrong when fetching response', error as Error);
-      anchor.assign(state, { status: FetchStatus.Error, error });
-    });
+      })
+      .catch((error) => {
+        captureStack.error.external('Something went wrong when fetching response', error as Error);
+        anchor.assign(state, { status: FetchStatus.Error, error });
+      })
+      .finally(() => {
+        started = false;
+      });
+
+    started = true;
+  };
+
+  const state = anchor.raw<FetchState<T>, S>(
+    {
+      data: init,
+      status: options.deferred ? FetchStatus.Idle : FetchStatus.Pending,
+      fetch: start,
+      abort() {
+        controller.abort();
+      },
+    },
+    { ...options, recursive: false }
+  );
+
+  if (!options.deferred) {
+    start();
+  }
 
   return state;
 }
@@ -130,51 +163,82 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
     init = anchor(init, options);
   }
 
-  const state = anchor.raw<FetchState<T>, S>({ data: init, status: FetchStatus.Pending }, options);
+  const controller = new AbortController();
+  const signal = controller.signal;
 
-  fetch(options.url, options)
-    .then(async (response) => {
-      if (response.ok) {
-        const readable = response.body?.getReader?.();
+  let started = false;
+  const start = () => {
+    if (started) return;
 
-        if (!isDefined(readable) || !isFunction(readable?.read)) {
-          const error = new Error(`Invalid response body. Expected readable stream, got: "${typeOf(readable)}.`);
-          anchor.assign(state, { response, status: FetchStatus.Error, error });
-          return;
-        }
+    if (state.status !== FetchStatus.Pending) {
+      state.status = FetchStatus.Pending;
+    }
 
-        try {
-          await readStream<T>(
-            readable,
-            (chunk) => {
-              appendChunk(state, chunk, options.transform);
-            },
-            (chunk) => {
-              appendChunk(state, chunk as T, options.transform);
-              anchor.assign(state, { response, status: FetchStatus.Success });
-            }
+    fetch(options.url, { ...options, signal })
+      .then(async (response) => {
+        if (response.ok) {
+          const readable = response.body?.getReader?.();
+
+          if (!isDefined(readable) || !isFunction(readable?.read)) {
+            const error = new Error(`Invalid response body. Expected readable stream, got: "${typeOf(readable)}.`);
+            anchor.assign(state, { response, status: FetchStatus.Error, error });
+            return;
+          }
+
+          try {
+            await readStream<T>(
+              readable,
+              (chunk) => {
+                appendChunk(state, chunk, options.transform);
+              },
+              (chunk) => {
+                appendChunk(state, chunk as T, options.transform);
+                anchor.assign(state, { response, status: FetchStatus.Success });
+              }
+            );
+          } catch (error) {
+            captureStack.error.external('Something went wrong when streaming response', error as Error);
+            anchor.assign(state, { response, error, status: FetchStatus.Error } as FetchState<T>);
+          }
+        } else {
+          captureStack.error.external(
+            'Something went wrong when fetching response',
+            new Error(response.statusText),
+            streamStateFn
           );
-        } catch (error) {
-          captureStack.error.external('Something went wrong when streaming response', error as Error);
-          anchor.assign(state, { response, error, status: FetchStatus.Error } as FetchState<T>);
+          anchor.assign(state, {
+            response,
+            status: FetchStatus.Error,
+            error: new Error(response.statusText),
+          });
         }
-      } else {
-        captureStack.error.external(
-          'Something went wrong when fetching response',
-          new Error(response.statusText),
-          streamStateFn
-        );
-        anchor.assign(state, {
-          response,
-          status: FetchStatus.Error,
-          error: new Error(response.statusText),
-        });
-      }
-    })
-    .catch((error) => {
-      captureStack.error.external('Something went wrong when fetching stream', error as Error);
-      anchor.assign(state, { status: FetchStatus.Error, error });
-    });
+      })
+      .catch((error) => {
+        captureStack.error.external('Something went wrong when fetching stream', error as Error);
+        anchor.assign(state, { status: FetchStatus.Error, error });
+      })
+      .finally(() => {
+        started = false;
+      });
+
+    started = true;
+  };
+
+  const state = anchor.raw<FetchState<T>, S>(
+    {
+      data: init,
+      status: options.deferred ? FetchStatus.Idle : FetchStatus.Pending,
+      fetch: start,
+      abort() {
+        controller.abort();
+      },
+    },
+    { ...options, recursive: false }
+  );
+
+  if (!options.deferred) {
+    start();
+  }
 
   return state;
 }

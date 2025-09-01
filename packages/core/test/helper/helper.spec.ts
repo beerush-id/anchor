@@ -52,6 +52,13 @@ describe('Anchor Helpers', () => {
       expect(state instanceof Map).toBe(true);
     });
 
+    it('should assign values to Set state', () => {
+      const state = anchor(new Set([1, 2]));
+      anchor.assign(state, [3, 4] as never);
+
+      expect(anchor.get(state)).toEqual(new Set([1, 2, 3, 4]));
+    });
+
     it('should assign and replace nested properties', () => {
       const state = anchor({ a: { b: 1, c: 2 } });
 

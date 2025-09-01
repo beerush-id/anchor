@@ -14,6 +14,7 @@ import {
   INIT_REGISTRY,
   META_REGISTRY,
   REFERENCE_REGISTRY,
+  SORTER_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
@@ -267,6 +268,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     INIT_REGISTRY.delete(init);
     META_REGISTRY.delete(init);
     REFERENCE_REGISTRY.delete(init);
+    SORTER_REGISTRY.delete(init);
 
     STATE_REGISTRY.delete(state);
     CONTROLLER_REGISTRY.delete(state);

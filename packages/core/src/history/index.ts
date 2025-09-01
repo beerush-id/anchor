@@ -6,6 +6,7 @@ import { STATE_BUSY_LIST } from '../registry.js';
 import { ARRAY_MUTATIONS } from '../constant.js';
 import { microtask } from '../utils/index.js';
 import { captureStack } from '../exception.js';
+import { isMap, isSet } from '@beerush/utils';
 
 export type HistoryOptions = {
   debounce?: number;
@@ -119,9 +120,27 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   };
 
   const reset = () => {
+    if (snapshot === state) return;
+
     isBusy = true;
 
-    anchor.assign(state as ObjLike, snapshot as ObjLike);
+    STATE_BUSY_LIST.add(state);
+
+    if (Array.isArray(state)) {
+      state.splice(0, state.length, ...(snapshot as typeof state));
+    } else if (isMap(state)) {
+      state.clear();
+      (snapshot as typeof state).forEach((value, key) => state.set(key as never, value));
+    } else if (isSet(state)) {
+      state.clear();
+      (snapshot as typeof state).forEach((value) => state.add(value));
+    } else {
+      Object.assign(state, snapshot);
+    }
+
+    STATE_BUSY_LIST.delete(state);
+    anchor.assign(state, {});
+
     clear();
 
     isBusy = false;

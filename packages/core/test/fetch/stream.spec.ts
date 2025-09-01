@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { derive, fetchState, FetchStatus, streamState } from '../../src/index.js';
+import { derive, FetchStatus, streamState } from '../../src/index.js';
 
 describe('Reactive Request', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -21,6 +21,7 @@ describe('Reactive Request', () => {
     vi.useRealTimers();
     global.fetch = originalFetch;
     errorSpy.mockRestore();
+    vi.resetAllMocks();
   });
 
   describe('Stream', () => {
@@ -344,10 +345,88 @@ describe('Reactive Request', () => {
         url: 'https://example.com/data',
       });
 
-      await fetchState.promise(state).catch(handler);
+      await streamState.promise(state).catch(handler);
 
       expect(state.status).toBe(FetchStatus.Error);
       expect(handler).toHaveBeenCalled();
+    });
+
+    it('should defer the fetch request', async () => {
+      const mockResponse = new Response('Hello World', {
+        status: 200,
+      });
+      const mockFetch = vi.fn(() => {
+        return Promise.resolve(mockResponse);
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const state = streamState('', {
+        url: 'https://jsonplaceholder.typicode.com/posts',
+        method: 'GET',
+        deferred: true,
+      });
+
+      expect(state.status).toBe(FetchStatus.Idle);
+      expect(state.data).toEqual('');
+
+      state.fetch();
+
+      expect(state.status).toBe(FetchStatus.Pending);
+      expect(state.data).toEqual('');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      state.fetch(); // Should not re-trigger the fetch.
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Success);
+      expect(state.data).toEqual('Hello World');
+    });
+
+    it('should handle aborting the fetch request', async () => {
+      const mockFetch = vi.fn((url, options) => {
+        return new Promise((resolve, reject) => {
+          const abortSignal = options.signal;
+
+          abortSignal.addEventListener('abort', () => {
+            reject(new Error('Request aborted'));
+          });
+
+          // Simulate a delayed response
+          setTimeout(() => {
+            if (!abortSignal.aborted) {
+              resolve(
+                new Response(JSON.stringify(mockUserData), {
+                  status: 200,
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                })
+              );
+            }
+          }, 100);
+        });
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const initialState = {};
+      const state = streamState(initialState, {
+        url: 'https://api.example.com/users/1',
+        method: 'GET',
+      });
+
+      expect(state.status).toBe(FetchStatus.Pending);
+
+      // Abort the request
+      state.abort();
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Error);
+      expect(state.error).toBeDefined();
+      expect(state.error?.message).toBe('Request aborted');
     });
   });
 

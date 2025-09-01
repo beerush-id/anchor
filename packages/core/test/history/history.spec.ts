@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, getDefaultOptions, history, setDefaultOptions } from '../../src/index.js';
+import { anchor, getDefaultOptions, history, setDefaultOptions, softEntries, softValues } from '../../src/index.js';
 
 const defaultOptions = { ...getDefaultOptions() };
 const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
@@ -44,6 +44,7 @@ describe('Anchor History', () => {
 
       const stateHistory = history({ a: 1, b: 2 });
 
+      expect(() => stateHistory.reset()).not.toThrow();
       expect(errorSpy).toHaveBeenCalledTimes(1);
       stateHistory.destroy();
       expect(errorSpy).toHaveBeenCalledTimes(1);
@@ -225,6 +226,43 @@ describe('Anchor History', () => {
       expect(stateHistory.forwardList).toHaveLength(0);
 
       stateHistory.destroy();
+    });
+
+    it('should handle reset Array operation', () => {
+      const state = anchor([1, 2]);
+      const stateHistory = history(state);
+
+      state.push(3);
+      timeTravel();
+
+      stateHistory.reset();
+      expect(state).toEqual([1, 2]);
+
+      stateHistory.destroy();
+    });
+
+    it('should handle reset Map operation', () => {
+      const state = anchor(new Map([['count', 0]]));
+      const stateHistory = history(state);
+
+      state.set('count', 1);
+      timeTravel();
+
+      stateHistory.reset();
+
+      expect(softEntries(state)).toEqual([['count', 0]]);
+    });
+
+    it('should handle reset Set operation', () => {
+      const state = anchor(new Set([1, 2, 3]));
+      const stateHistory = history(state);
+
+      state.add(4);
+      timeTravel();
+
+      stateHistory.reset();
+
+      expect(softValues(state)).toEqual([1, 2, 3]);
     });
 
     it('should handle "assign" operation', () => {

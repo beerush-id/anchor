@@ -36,6 +36,7 @@ export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMu
 export type StateBaseOptions = {
   cloned?: boolean;
   strict?: boolean;
+  ordered?: boolean;
   deferred?: boolean;
   recursive?: Recursive;
   immutable?: boolean;
@@ -229,6 +230,22 @@ export interface AnchorFn {
    * @returns Flat reactive array state
    */
   flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
+
+  /**
+   * Creates an ordered reactive array that maintains sort order based on the provided comparison function.
+   *
+   * @template T - The type of the array elements
+   * @template S - The schema type for validation
+   * @param init - Initial array state
+   * @param compare - Comparison function to determine sort order
+   * @param options - Configuration options
+   * @returns Ordered reactive array state
+   */
+  ordered<T extends unknown[], S extends LinkableSchema = LinkableSchema>(
+    init: T,
+    compare: (a: T[number], b: T[number]) => number,
+    options?: StateOptions<S>
+  ): State<T>;
 
   /**
    * Creates a reactive state with schema validation.

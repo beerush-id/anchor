@@ -6,7 +6,7 @@ import {
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
 } from './registry.js';
-import { isArray, isDefined, isMap, isObjectLike, isSet } from '@beerush/utils';
+import { isArray, isDefined, isMap, isSet } from '@beerush/utils';
 import { broadcast } from './internal.js';
 import { softEntries, softKeys } from './utils/clone.js';
 import { getDevTool } from './dev.js';
@@ -28,11 +28,11 @@ export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
  * @throws {Error} If the target is not an assignable state or if the source is not an object-like value
  */
 export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P) => {
-  if ((!isSafeObject(target) && !isArray(target)) || isSet(target)) {
+  if (!isSafeObject(target) && !isArray(target)) {
     throw new Error('Cannot assign to non-assignable state.');
   }
 
-  if (!isObjectLike(source)) {
+  if (!isSafeObject(source) && !isArray(source)) {
     throw new Error('Cannot assign using non-object value.');
   }
 
@@ -52,6 +52,8 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     if (isMap(target)) {
       prev[key as never] = target.get(key) as never;
       target.set(key, val);
+    } else if (isSet(target)) {
+      target.add(val);
     } else if (isSafeObject(target) || isArray(target)) {
       prev[key as keyof T] = target[key as keyof T];
       target[key as never] = val;

@@ -8,11 +8,12 @@ import type {
   StateMutation,
   StateReferences,
 } from './types.js';
-import { INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY } from './registry.js';
+import { INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, SORTER_REGISTRY } from './registry.js';
 import { ARRAY_MUTATIONS, OBSERVER_KEYS } from './constant.js';
 import { broadcast } from './internal.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
+import { isFunction } from '@beerush/utils';
 
 const mockReturn = {
   shift(items: unknown[]) {
@@ -40,6 +41,10 @@ const mockReturn = {
     return items;
   },
 };
+
+// Define the max number of items additions to switch between using sort vs splice
+// when adding an item into an ordered list.
+const HEURISTIC_THRESHOLD = 5;
 
 /**
  * Creates a mutator for an array that handles state changes and validation.
@@ -72,6 +77,7 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
   const devTool = getDevTool();
   const { schema, observers, subscribers, subscriptions } = meta;
   const { unlink, configs } = references;
+  const compare = SORTER_REGISTRY.get(init);
 
   const mutator = new WeakMap<WeakKey, MethodLike>();
 
@@ -156,7 +162,23 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
       }
 
       // Call the original method to perform the operation.
-      const result = originFn.apply(init, args);
+      let result: unknown;
+
+      if (method === 'push' && configs.ordered && isFunction(compare)) {
+        if (addedItems.length <= HEURISTIC_THRESHOLD) {
+          for (const item of addedItems) {
+            orderedPush(init, item, compare);
+          }
+
+          result = init.length;
+        } else {
+          originFn.apply(init, args);
+          init.sort(compare);
+          result = init.length;
+        }
+      } else {
+        result = originFn.apply(init, args);
+      }
 
       let current = currentItems;
       if (['shift', 'pop'].includes(method)) {
@@ -207,3 +229,36 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
 }
 
 createArrayMutator.mock = mockReturn;
+
+/**
+ * Inserts an item into an array at the correct position to maintain sorted order.
+ *
+ * This function uses binary search to find the correct insertion point for the item
+ * based on the provided comparison function. The array must already be sorted
+ * according to the same comparison function for the result to be correctly sorted.
+ *
+ * @template T - The type of elements in the array
+ * @param target - The sorted array to insert the item into
+ * @param item - The item to insert
+ * @param compare - A function that defines the sort order. It should return:
+ *   - A negative value if the first argument is less than the second
+ *   - Zero if the first argument is equal to the second
+ *   - A positive value if the first argument is greater than the second
+ */
+export function orderedPush<T>(target: T[], item: T, compare: (a: T, b: T) => number): void {
+  let low = 0;
+  let high = target.length;
+
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    const result = compare(target[mid], item);
+
+    if (result <= 0) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+
+  target.splice(low, 0, item);
+}
