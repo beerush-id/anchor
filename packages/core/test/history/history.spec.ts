@@ -469,21 +469,37 @@ describe('Anchor History', () => {
 
   describe('Complex Data Structures', () => {
     it('should handle array operations', () => {
-      const state = anchor({ items: [1, 2, 3] });
+      const state = anchor([1, 2, 3]);
       const stateHistory = history(state);
 
-      state.items.push(4);
+      state.push(4);
       timeTravel();
 
-      expect(state.items).toEqual([1, 2, 3, 4]);
+      expect(state).toEqual([1, 2, 3, 4]);
 
       stateHistory.backward();
-      expect(state.items).toEqual([1, 2, 3]);
+      expect(state).toEqual([1, 2, 3]);
 
       stateHistory.forward();
-      expect(state.items).toEqual([1, 2, 3, 4]);
+      expect(state).toEqual([1, 2, 3, 4]);
 
       stateHistory.destroy();
+
+      const nestedArray = anchor({ items: [1, 2, 3] });
+      const nestedHistory = history(nestedArray);
+
+      nestedArray.items.push(4);
+      timeTravel();
+
+      expect(nestedArray.items).toEqual([1, 2, 3, 4]);
+
+      nestedHistory.backward();
+      expect(nestedArray.items).toEqual([1, 2, 3]);
+
+      nestedHistory.forward();
+      expect(nestedArray.items).toEqual([1, 2, 3, 4]);
+
+      nestedHistory.destroy();
     });
 
     it('should handle object nesting', () => {

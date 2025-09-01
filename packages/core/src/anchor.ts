@@ -1,4 +1,4 @@
-import { isArray, isObject } from '@beerush/utils';
+import { isArray, isFunction, isObject } from '@beerush/utils';
 import type {
   AnchorFn,
   AnchorSettings,
@@ -91,7 +91,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     cloned: false,
     deferred: true,
     strict: options?.strict ?? ANCHOR_SETTINGS.strict,
-    ordered: options?.ordered ?? false,
+    ordered: (options?.ordered ?? false) && isFunction(options?.compare),
     recursive: options?.recursive ?? ANCHOR_SETTINGS.recursive,
     immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
     observable: options?.observable ?? ANCHOR_SETTINGS.observable,
@@ -134,6 +134,13 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
         anchorFn
       );
     }
+  }
+
+  // Sort the initial array and register the compare function
+  // if the state is marked as ordered and the given compare option is a function
+  if (configs.ordered && Array.isArray(init)) {
+    init.sort(options?.compare);
+    SORTER_REGISTRY.set(init, options?.compare as (a: unknown, b: unknown) => number);
   }
 
   const meta: StateMetadata<T, S> = {
@@ -215,10 +222,7 @@ anchorFn.flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>
  * @returns {T[]} The reactive sorted array
  */
 anchorFn.ordered = ((init, compare, options) => {
-  init.sort(compare);
-  SORTER_REGISTRY.set(init, compare);
-
-  return anchorFn(init, { ...options, ordered: true });
+  return anchorFn(init, { ...options, ordered: true, compare });
 }) satisfies AnchorFn['ordered'];
 
 /**
@@ -237,12 +241,13 @@ anchorFn.raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
 /**
  * This function is used to get the underlying object from the state.
  * @param {T} state
+ * @param silent
  * @returns {T}
  */
-anchorFn.get = <T extends State>(state: T): T => {
+anchorFn.get = <T extends State>(state: T, silent = false): T => {
   const target = STATE_REGISTRY.get(state);
 
-  if (!target) {
+  if (!target && !silent) {
     const error = new Error('State does not exist.');
     captureStack.error.external('Attempt to get the underlying object on non-existence state:', error, anchorFn.get);
   }

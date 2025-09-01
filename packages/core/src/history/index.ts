@@ -247,14 +247,20 @@ export function undoChange<T>(state: T, event: StateChange) {
       }
     }
   } else if (ARRAY_MUTATIONS.includes(type as never)) {
-    const items = target[key as never] as unknown[];
+    const items = (key ? target[key as never] : target) as unknown[];
 
     if (type === 'shift') {
       items.unshift(prev);
     } else if (type === 'pop') {
       items.push(prev);
     } else if (type === 'push') {
-      items.pop();
+      const initItems = (anchor.get as (item: unknown, silent: boolean) => unknown[])(items, true);
+      for (const item of event.value as unknown[]) {
+        const index = initItems.indexOf(item);
+        if (index >= 0) {
+          items.splice(index, 1);
+        }
+      }
     } else if (type === 'unshift') {
       items.shift();
     } else {
@@ -301,7 +307,7 @@ export function redoChange<T>(state: T, event: StateChange) {
   } else if (type === 'clear') {
     (target as Set<unknown>).clear();
   } else if (ARRAY_MUTATIONS.includes(type as never)) {
-    const items = target[key as never] as unknown[];
+    const items = (key ? target[key as never] : target) as unknown[];
     (items[type as ArrayMutation] as (...args: unknown[]) => unknown)(...(value as unknown[]));
   }
 
