@@ -200,59 +200,23 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   return state;
 }
 
-/**
- * This function is used to create a reactive array that only react to changes in the array.
- * @param {T} init
- * @param {StateOptions<S>} options
- * @returns {T}
- */
-anchorFn.flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>(
-  init: T,
-  options?: StateOptions<S>
-): T => {
+anchorFn.flat = ((init, options) => {
   return anchorFn(init, { ...options, recursive: 'flat' });
-};
+}) satisfies AnchorFn['flat'];
 
-/**
- * Creates a reactive array that is sorted and reacts to changes maintaining the sort order.
- * The array will be sorted initially using the provided compare function, and the sort order
- * will be maintained when the array is mutated.
- *
- * @template T - The type of elements in the array
- * @template S - The Zod schema type for validation
- * @param {T[]} init - The initial array to make reactive and sorted
- * @param {(a: T, b: T) => number} compare - The comparison function to use for sorting
- * @param {StateOptions<S>} options - Optional configuration for anchoring
- * @returns {T[]} The reactive sorted array
- */
 anchorFn.ordered = ((init, compare, options) => {
   return anchorFn(init, { ...options, ordered: true, compare });
 }) satisfies AnchorFn['ordered'];
 
-/**
- * This function is used to create a reactive object that mutates the original object.
- * @param {T} init
- * @param {StateOptions<S>} options
- * @returns {T}
- */
-anchorFn.raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
-  init: T,
-  options?: StateOptions<S>
-): T => {
+anchorFn.raw = ((init, options) => {
   return anchorFn(init, { ...options, cloned: false });
-};
+}) satisfies AnchorFn['raw'];
 
 anchorFn.has = ((state) => {
   return STATE_REGISTRY.has(state);
 }) satisfies AnchorFn['has'];
 
-/**
- * This function is used to get the underlying object from the state.
- * @param {T} state
- * @param silent
- * @returns {T}
- */
-anchorFn.get = <T extends State>(state: T, silent = false): T => {
+anchorFn.get = ((state, silent = false) => {
   const target = STATE_REGISTRY.get(state);
 
   if (!target && !silent) {
@@ -260,31 +224,14 @@ anchorFn.get = <T extends State>(state: T, silent = false): T => {
     captureStack.error.external('Attempt to get the underlying object on non-existence state:', error, anchorFn.get);
   }
 
-  return (target ?? state) as T;
-};
+  return (target ?? state) as typeof state;
+}) satisfies AnchorFn['get'];
 
-/**
- * This function is used to find the state from the given object.
- * @param {T} init - The reactive state or plain object to find.
- * @returns {T | undefined} - The reactive state associated with the given object, or undefined if not found.
- */
-anchorFn.find = <T extends Linkable>(init: T): T | undefined => {
-  return INIT_REGISTRY.get(init) as T;
-};
+anchorFn.find = ((init) => {
+  return INIT_REGISTRY.get(init) as typeof init;
+}) satisfies AnchorFn['find'];
 
-/**
- * Creates a deep copy snapshot of the given state.
- *
- * This function retrieves the underlying raw object from the state registry
- * and returns a structured clone of it. If the state is not found in the
- * registry, an error is logged.
- *
- * @template T The type of the state.
- * @param {T} state - The reactive state to create a snapshot from.
- * @param recursive - Whether to recursively clone the object.
- * @returns {T} A deep copy of the underlying object.
- */
-anchorFn.snapshot = <T extends State>(state: T, recursive = true): T => {
+anchorFn.snapshot = ((state, recursive = true) => {
   const target = STATE_REGISTRY.get(state);
 
   if (!target) {
@@ -292,21 +239,10 @@ anchorFn.snapshot = <T extends State>(state: T, recursive = true): T => {
     captureStack.error.external('Cannot create snapshot of non-existence state.', error, anchorFn.snapshot);
   }
 
-  return softClone(target ?? state, recursive) as T;
-};
+  return softClone(target ?? state, recursive) as typeof state;
+}) satisfies AnchorFn['snapshot'];
 
-/**
- * Destroys a reactive state and cleans up all associated resources.
- *
- * This function retrieves the controller associated with the given state
- * and calls its destroy method, effectively cleaning up all observers,
- * subscribers, and references. If the state does not exist, an error is logged.
- *
- * @template T The type of the state to destroy.
- * @param {T} state - The reactive state to destroy.
- * @param silent
- */
-anchorFn.destroy = <T extends State>(state: T, silent?: boolean) => {
+anchorFn.destroy = ((state, silent?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);
 
   if (!controller) {
@@ -318,30 +254,16 @@ anchorFn.destroy = <T extends State>(state: T, silent?: boolean) => {
   }
 
   controller.destroy();
-};
+}) satisfies AnchorFn['destroy'];
 
-/**
- * This function is used to configure the Anchor's default options.
- * @param {Partial<AnchorSettings>} config
- */
-anchorFn.configure = (config: Partial<AnchorSettings>) => {
+anchorFn.configure = ((config: Partial<AnchorSettings>) => {
   Object.assign(ANCHOR_SETTINGS, config);
-};
+}) satisfies AnchorFn['configure'];
 
-/**
- * This function is used to return the Anchor's default options.
- * @returns {AnchorSettings}
- */
-anchorFn.configs = (): AnchorSettings => {
+anchorFn.configs = ((): AnchorSettings => {
   return ANCHOR_SETTINGS;
-};
+}) satisfies AnchorFn['configs'];
 
-/**
- * This function is used to create a reactive object that is immutable.
- * @param {T} init
- * @param {StateOptions<S>} options
- * @returns {Immutable<T>}
- */
 anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
   init: T,
   options?: StateOptions<S>
