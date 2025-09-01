@@ -12,6 +12,7 @@ import { broadcast } from './internal.js';
 import {
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
+  META_INIT_REGISTRY,
   META_REGISTRY,
   REFERENCE_REGISTRY,
   SORTER_REGISTRY,
@@ -56,9 +57,7 @@ export function createLinkFactory<T extends Linkable>(
       const childHandler: StateSubscriber<unknown> = (_, event, emitter) => {
         // Ignore init events to prevent duplicate notifications
         if (event && event.type !== 'init') {
-          const keys = event.keys as KeyLike[];
-          keys.unshift(childPath);
-
+          const keys = [childPath, ...event.keys] as KeyLike[];
           // Broadcast the event with modified path to include the key
           broadcast(meta.subscribers, init, { ...event, keys }, emitter);
         }
@@ -274,6 +273,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     CONTROLLER_REGISTRY.delete(state);
     SUBSCRIBER_REGISTRY.delete(state);
     SUBSCRIPTION_REGISTRY.delete(state);
+    META_INIT_REGISTRY.delete(meta as StateMetadata);
 
     devTool?.onDestroy?.(init, meta);
   };

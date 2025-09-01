@@ -1,4 +1,4 @@
-import { isArray, isFunction, isObject } from '@beerush/utils';
+import { isArray, isFunction, isMap, isObject, isSet } from '@beerush/utils';
 import type {
   AnchorFn,
   AnchorSettings,
@@ -19,6 +19,7 @@ import { ANCHOR_SETTINGS } from './constant.js';
 import {
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
+  META_INIT_REGISTRY,
   META_REGISTRY,
   REFERENCE_REGISTRY,
   SORTER_REGISTRY,
@@ -143,8 +144,10 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     SORTER_REGISTRY.set(init, options?.compare as (a: unknown, b: unknown) => number);
   }
 
+  const type = isArray(init) ? 'array' : isSet(init) ? 'set' : isMap(init) ? 'map' : 'object';
   const meta: StateMetadata<T, S> = {
     id: shortId(),
+    type,
     cloned,
     schema,
     configs,
@@ -155,6 +158,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     parent,
   };
   META_REGISTRY.set(init, meta as never as StateMetadata);
+  META_INIT_REGISTRY.set(meta as never as StateMetadata, init);
 
   const link = createLinkFactory(init, meta);
   const unlink = createUnlinkFactory(meta);
@@ -237,6 +241,10 @@ anchorFn.raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
 ): T => {
   return anchorFn(init, { ...options, cloned: false });
 };
+
+anchorFn.has = ((state) => {
+  return STATE_REGISTRY.has(state);
+}) satisfies AnchorFn['has'];
 
 /**
  * This function is used to get the underlying object from the state.

@@ -69,6 +69,7 @@ export type StateMetadata<
   ParentSchema extends LinkableSchema = LinkableSchema,
 > = {
   id: string;
+  type: 'object' | 'array' | 'set' | 'map';
   cloned: boolean;
   configs: StateBaseOptions;
   observers: StateObserverList;
@@ -291,6 +292,15 @@ export interface AnchorFn {
   // Accessibility methods.
 
   /**
+   * Checks if a given state is reactive.
+   *
+   * @template T - The type of the state
+   * @param state - The state to check
+   * @returns True if the state is reactive, false otherwise
+   */
+  has<T extends State>(state: T): boolean;
+
+  /**
    * Gets the current state value.
    *
    * @param state - The reactive state
@@ -298,6 +308,18 @@ export interface AnchorFn {
    */
   get<T extends Linkable>(state: State<T>): T;
 
+  /**
+   * Finds and returns a reactive state instance that matches the given initial state.
+   *
+   * This method is used to retrieve an existing reactive state instance when you have
+   * a reference to the original state object. It's particularly useful when you need
+   * to access a state that was previously created but don't have a direct reference
+   * to its reactive wrapper.
+   *
+   * @template T - The type of the state object
+   * @param {T} init - The initial state object to find the reactive instance for
+   * @returns {T} The reactive state instance if found, otherwise the original object
+   */
   find<T extends Linkable>(init: T): T;
 
   /**

@@ -246,6 +246,26 @@ createArrayMutator.mock = mockReturn;
  *   - A positive value if the first argument is greater than the second
  */
 export function orderedPush<T>(target: T[], item: T, compare: (a: T, b: T) => number): void {
+  target.splice(orderedIndexOf(target, item, compare), 0, item);
+}
+
+/**
+ * Finds the index at which an item should be inserted into a sorted array to maintain sort order.
+ *
+ * This function uses binary search to efficiently determine the correct insertion point
+ * for the item based on the provided comparison function. The array must already be sorted
+ * according to the same comparison function for the result to be correct.
+ *
+ * @template T - The type of elements in the array
+ * @param target - The sorted array to search
+ * @param item - The item to find the insertion index for
+ * @param compare - A function that defines the sort order. It should return:
+ *   - A negative value if the first argument is less than the second
+ *   - Zero if the first argument is equal to the second
+ *   - A positive value if the first argument is greater than the second
+ * @returns The index at which the item should be inserted to maintain sorted order
+ */
+export function orderedIndexOf<T>(target: T[], item: T, compare: (a: T, b: T) => number): number {
   let low = 0;
   let high = target.length;
 
@@ -260,5 +280,5 @@ export function orderedPush<T>(target: T[], item: T, compare: (a: T, b: T) => nu
     }
   }
 
-  target.splice(low, 0, item);
+  return low;
 }

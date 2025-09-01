@@ -19,3 +19,4 @@ export const SUBSCRIPTION_REGISTRY = new WeakMap<State, StateSubscriptionMap>();
 
 export const STATE_BUSY_LIST = new WeakSet<State>();
 export const SORTER_REGISTRY = new WeakMap<Linkable, (a: unknown, b: unknown) => number>();
+export const META_INIT_REGISTRY = new WeakMap<StateMetadata, Linkable>();

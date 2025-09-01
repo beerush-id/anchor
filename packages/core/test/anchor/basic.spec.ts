@@ -139,5 +139,12 @@ describe('Anchor Core - Basic Operations', () => {
       expect(state.user.name).toBe('Jane');
       expect(state.user.profile.age).toBe(31);
     });
+
+    it('should check if state is exist', () => {
+      const state = anchor({ count: 1 });
+
+      expect(anchor.has(state)).toBe(true);
+      expect(anchor.has({ name: 'Non Existence' })).toBe(false);
+    });
   });
 });
