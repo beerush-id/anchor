@@ -23,7 +23,7 @@ export default function Home() {
 
         <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <SectionTitle>No Bridge, Just Pipe!</SectionTitle>
-          <p className="text-center text-slate-400 mt-4 max-w-2xl mx-auto">
+          <p className="text-center text-slate-300 mt-4 max-w-2xl mx-auto">
             Use <code className="inline-code">derive.pipe()</code> to create powerful, one-way data flows from your
             state directly to any target, like a DOM element's style, with on-the-fly transforms.
           </p>
@@ -35,7 +35,7 @@ export default function Home() {
         {/* Derive Demo */}
         <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <SectionTitle>Readable and Human-Predictable</SectionTitle>
-          <p className="text-center text-slate-400 mt-4 max-w-2xl mx-auto">
+          <p className="text-center text-slate-300 mt-4 max-w-2xl mx-auto">
             Create computed state that automatically responds to changes. Efficient, declarative, and boilerplate-free.
             Smart rendering ensures components update only when necessary.
           </p>
@@ -51,7 +51,7 @@ export default function Home() {
           <MainCTA tiys={false} className="w-full my-10 md:my-20" />
         </Section>
 
-        <footer className="text-center py-8 text-slate-400 text-sm">
+        <footer className="text-center py-8 text-slate-300 text-sm">
           <p>
             © {new Date().getFullYear()} Anchor. All rights reserved. Built with ❤️ by{' '}
             <a

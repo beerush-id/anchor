@@ -4,7 +4,7 @@ import { Button } from '../Button.js';
 import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoList, type ITodoStats } from '@lib/todo.js';
 import { shortId } from '@anchor/core';
-import { observed } from '@anchor/react';
+import { observed } from '@anchor/react/components';
 
 export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({ todos, stats }) => {
   const ref = useRef(null);

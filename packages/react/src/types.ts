@@ -10,3 +10,6 @@ export type AnchorState<T extends Linkable, S extends LinkableSchema = LinkableS
 export type TransformFn<R> = () => R;
 export type TransformSnapshotFn<T, R> = (snapshot: T) => R;
 export type Bindable = Record<string, unknown>;
+export type AnchoredProps = {
+  _state_version: number;
+};

@@ -1,17 +1,26 @@
 import { BookText, GithubIcon } from 'lucide-react';
 import { Tooltip } from './Tooltip.js';
 import { inlineNav } from '@lib/nav.js';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRefTrap } from '@anchor/react';
+
+const SCROLL_THRESHOLD = 68;
 
 export const Header = () => {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRefTrap<HTMLElement>(null, (el) => {
+    if (el && window.scrollY > (el.offsetHeight ?? SCROLL_THRESHOLD)) {
+      el.classList.add('backdrop-blur-xl');
+    }
+
+    return el;
+  });
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     if (!ref.current) return;
 
     window.addEventListener('scroll', () => {
-      if (window.scrollY > (ref.current?.offsetHeight ?? 68)) {
+      if (window.scrollY > (ref.current?.offsetHeight ?? SCROLL_THRESHOLD)) {
         setScrolled(true);
       } else {
         setScrolled(false);
@@ -43,7 +52,9 @@ export const Header = () => {
           </a>
         </div>
         <div className="flex items-center gap-4 md:gap-6">
-          <a href="/docs" className="flex items-center text-slate-300 hover:text-slate-100 gap-1 transition-colors">
+          <a
+            href="/docs/overview.html"
+            className="flex items-center text-slate-300 hover:text-slate-100 gap-1 transition-colors">
             <BookText className="w-4 h-4" />
             <span className="text-sm">Docs</span>
           </a>

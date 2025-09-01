@@ -1,6 +1,7 @@
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
-import { observed, useAnchor, useDerivedRef, useImmutable } from '@anchor/react';
+import { useAnchor, useDerivedRef, useImmutable } from '@anchor/react';
+import { observed } from '@anchor/react/components';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
 import { anchor, type Immutable } from '@anchor/core';

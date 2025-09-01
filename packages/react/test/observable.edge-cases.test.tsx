@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { type ComponentType, useState } from 'react';
 import { anchor } from '@anchor/core';
-import { type AnchoredProps, cleanProps, observed, setDevMode, useObserver } from '../src/index.js';
+import { type AnchoredProps, cleanProps, observed, setDevMode, useObserverNode } from '../src/index.js';
 
 // Mock component for testing
 const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) => {
@@ -27,7 +27,7 @@ describe('Anchor React - Observable Edge Cases', () => {
       let versionValue = 0;
 
       const TestComponentWithObserver = () => {
-        const [, version] = useObserver();
+        const [, version] = useObserverNode();
         versionValue = version;
 
         return (

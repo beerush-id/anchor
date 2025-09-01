@@ -1,11 +1,11 @@
 import { type FC, useRef } from 'react';
 import type { ITodoStats } from '@lib/todo.js';
-import { useDerived } from '@anchor/react';
+import { useObserved } from '@anchor/react';
 import { flashNode } from '@lib/stats.js';
 
 export const TodoStats: FC<{ stats: ITodoStats }> = ({ stats }) => {
   const ref = useRef(null);
-  const [total, active, completed] = useDerived(() => [stats.total, stats.active, stats.completed], [stats]);
+  const [total, active, completed] = useObserved(() => [stats.total, stats.active, stats.completed], [stats]);
 
   flashNode(ref.current);
 

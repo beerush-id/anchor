@@ -3,7 +3,7 @@ import { flashNode } from '@lib/stats.js';
 import { Button } from '../Button.js';
 import { Input } from '../Input.js';
 import { type AuthFormData, schema } from './auth-lib.js';
-import { observed } from '@anchor/react';
+import { observed } from '@anchor/react/components';
 import { Card } from '../Card.js';
 
 export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ formData, className }) => {

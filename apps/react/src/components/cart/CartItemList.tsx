@@ -1,11 +1,11 @@
-import { type FC, memo, useRef } from 'react';
+import { type FC, useRef } from 'react';
 import { CartItem, type CartItemType } from './CartItem.js';
-import { useDerived } from '@anchor/react';
 import { flashNode } from '@lib/stats.js';
+import { useObserved } from '@anchor/react';
 
-export const CartItemList: FC<{ items: CartItemType[] }> = memo(({ items }) => {
+export const CartItemList: FC<{ items: CartItemType[] }> = ({ items }) => {
   const ref = useRef(null);
-  const cartItems = useDerived(() => {
+  const cartItems = useObserved(() => {
     return [...items].sort((a, b) => {
       return a.name.localeCompare(b.name);
     });
@@ -20,4 +20,4 @@ export const CartItemList: FC<{ items: CartItemType[] }> = memo(({ items }) => {
       ))}
     </div>
   );
-});
+};

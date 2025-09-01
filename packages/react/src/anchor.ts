@@ -5,7 +5,6 @@ import {
   type Linkable,
   type LinkableSchema,
   microtask,
-  shortId,
   softClone,
   softEqual,
   type StateOptions,
@@ -13,14 +12,30 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AnchorState, Setter } from './types.js';
 import { DEV_MODE } from './dev.js';
+import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 
 // Dedicated state update list to work with Fast Refresh (HMR) support.
 const UPDATE_LIST = new Set();
 
+/**
+ * Custom React hook that creates and manages an anchor state.
+ *
+ * This hook provides a way to create reactive state that can be shared across components
+ * and automatically handles cleanup, fast refresh (HMR), and strict mode concerns.
+ *
+ * @template T - The type of the initial value, must extend Linkable
+ * @template S - The schema type for the state, defaults to LinkableSchema
+ *
+ * @param init - The initial value for the state
+ * @param options - Optional configuration for the state
+ *
+ * @returns A tuple containing the current state and a setter function
+ */
 export function useAnchor<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
 ): AnchorState<T, S> {
+  const [cleanup, cancelCleanup] = useRef(microtask(CLEANUP_DEBOUNCE_TIME)).current;
   const [state, setState] = useState(() => {
     return anchor(init, options);
   });
@@ -43,8 +58,12 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
   // state update during fast-refresh. This early return will optimize the code path.
   if (!DEV_MODE) {
     useEffect(() => {
+      cancelCleanup();
+
       return () => {
-        anchor.destroy(state);
+        cleanup(() => {
+          anchor.destroy(state);
+        });
       };
     }, [state]);
 
@@ -52,6 +71,13 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
   }
 
   // -- BEGIN_DEV_MODE -- //
+  // Make sure to work with the underlying object instead of the proxy object
+  // in case the used init is a reactive object.
+  const existingInt = (anchor.get as (s: T, silent: boolean) => T)(init, true);
+  if (existingInt) {
+    init = existingInt;
+  }
+
   // Dedicated logics to handle state in development mode.
   const debug = createDebugger('[useAnchor]', getDebugger());
   const [schedule] = useRef(microtask(0)).current;
@@ -75,7 +101,8 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
       // to destroy the live state when the component unmount.
       if (!stableRef.current) {
         stableRef.current = true;
-        debug.check('Effect is stable:', stableRef.current, state);
+        cancelCleanup();
+        debug.check('State is stable:', stableRef.current, state);
       }
 
       // Make sure the fast-refresh updater only applies after the component is mounted.
@@ -111,33 +138,20 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
 
   useEffect(() => {
     return () => {
-      debug.check('State need destroy?', stableRef.current, state);
+      debug.check('State is stable?', stableRef.current, state);
       // Destroy the live/previous state ONLY if the effect is stable. Stable effect is:
       // - Not called during fast-refresh (HMR) re-render.
       // - Is called during unmount.
       // - Always stable in production mode.
       if (stableRef.current) {
-        anchor.destroy(state);
-        debug.ok('State destroyed:', state);
+        cleanup(() => {
+          anchor.destroy(state);
+          debug.ok('State destroyed:', state);
+        });
       }
     };
   }, [state]);
 
   return [state, setCurrent];
   // -- END_DEV_MODE -- //
-}
-
-/**
- * A React hook that generates a short, unique identifier string.
- *
- * This hook uses the **shortId()** function from the Anchor core library
- * to generate a unique ID that remains stable across re-renders.
- *
- * @returns The generated short ID string.
- */
-export function useShortId() {
-  const [id] = useState(() => {
-    return shortId();
-  });
-  return id;
 }

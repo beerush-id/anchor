@@ -3,7 +3,7 @@ import { type AuthFormData, schema } from './auth-lib.js';
 import { Card } from '../Card.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { CardHeader } from '../CardHeader.js';
-import { observed } from '@anchor/react';
+import { observed } from '@anchor/react/components';
 
 export const AuthOutput: FC<{ formData: AuthFormData }> = observed(({ formData }) => {
   const output = schema.safeParse(formData);

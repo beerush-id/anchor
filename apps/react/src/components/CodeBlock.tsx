@@ -1,7 +1,7 @@
 import { anchor } from '@anchor/core';
 import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
 import { type FC, useRef } from 'react';
-import { useDerived } from '@anchor/react';
+import { useObserved } from '@anchor/react';
 import { LoaderCircle } from 'lucide-react';
 import { flashNode } from '@lib/stats.js';
 
@@ -16,7 +16,7 @@ createHighlighter({
 
 export const CodeBlock: FC<{ code: string; lang?: string }> = ({ code, lang = 'jsx' }) => {
   const ref = useRef(null);
-  const output = useDerived(() => {
+  const output = useObserved(() => {
     const { highlighter } = shiki;
     return highlighter && highlighter.codeToHtml(code, { lang, theme: 'catppuccin-mocha' });
   }, [code, lang]);

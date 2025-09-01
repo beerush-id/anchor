@@ -9,6 +9,7 @@ const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}/social.jpg`;
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  outDir: '../apps/react/public/docs',
   base: BASE_URL,
   sitemap: {
     hostname: PAGE_URL,
@@ -138,6 +139,10 @@ export default defineConfig({
           {
             text: 'Components',
             link: '/react/components',
+          },
+          {
+            text: 'Utilities',
+            link: '/react/utilities',
           },
           {
             text: 'Caveats',

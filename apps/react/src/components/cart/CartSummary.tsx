@@ -3,10 +3,11 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { Button } from '../Button.js';
-import { useDerived } from '@anchor/react';
+import { useObserved } from '@anchor/react';
+import { ReceiptIcon } from 'lucide-react';
 
 export const CartSummary: FC<{ items: CartItemType[] }> = ({ items }) => {
-  const summary = useDerived(() => {
+  const summary = useObserved(() => {
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     return {
       subtotal,
@@ -17,7 +18,10 @@ export const CartSummary: FC<{ items: CartItemType[] }> = ({ items }) => {
 
   return (
     <Card>
-      <CardHeader>Order Summary</CardHeader>
+      <CardHeader>
+        <ReceiptIcon className="w-4 h-4 mr-2" />
+        <h3 className="text-slate-200 font-semibold">Order Summary</h3>
+      </CardHeader>
       <div className="p-6 space-y-3">
         <div className="flex justify-between">
           <span className="text-slate-400">Subtotal</span>

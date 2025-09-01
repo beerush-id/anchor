@@ -3,7 +3,7 @@ import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
 import { BENCHMARK_TOGGLE_SIZE, type ITodoItem, type ITodoList, type ITodoStats } from '@lib/todo.js';
 import { Button } from '../Button.js';
 import { Gauge, Trash2 } from 'lucide-react';
-import { useDerived } from '@anchor/react';
+import { useObserved } from '@anchor/react';
 import { microloop } from '@anchor/core';
 import { Tooltip } from '../Tooltip.js';
 
@@ -15,7 +15,7 @@ const benchmark = (fn: () => void) => {
 
 export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem }> = memo(({ todos, stats, todo }) => {
   const ref = useRef<HTMLLIElement>(null);
-  const [text, completed] = useDerived(() => [todo.text, todo.completed], [todo]);
+  const [text, completed] = useObserved(() => [todo.text, todo.completed], [todo]);
 
   flashNode(ref.current);
   useUpdateStat(() => {

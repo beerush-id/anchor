@@ -1,20 +1,30 @@
-import { type InputHTMLAttributes } from 'react';
-import { cleanProps, observed } from '../observable.js';
+import { type InputHTMLAttributes, type Ref } from 'react';
 import type { Bindable } from '../types.js';
+import { useWatcher } from '../derive.js';
+import { cleanProps } from '../utils.js';
 
 export type InputProps<T extends Bindable> = {
   bind: T;
   name: keyof T;
-} & InputHTMLAttributes<HTMLInputElement>;
+  ref?: Ref<HTMLInputElement>;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 
-function InputComp<T extends Bindable>({ bind, name, value, onChange, ...props }: InputProps<T>) {
+export function Input<T extends Bindable, P extends InputProps<T>>({ bind, name, value, onChange, ...props }: P) {
+  const current = (useWatcher(bind, name) ?? value) as string;
+
   return (
     <input
-      name={name}
-      value={(bind?.[name] ?? value) as string | number | undefined}
+      name={name as string}
+      value={current}
       onChange={(e) => {
         if (bind) {
-          bind[name] = e.target.value as never;
+          let value = e.target.value;
+
+          if (props.type === 'number') {
+            value = parseFloat(value) as never;
+          }
+
+          bind[name] = value as never;
         } else {
           onChange?.(e);
         }
@@ -24,14 +34,14 @@ function InputComp<T extends Bindable>({ bind, name, value, onChange, ...props }
   );
 }
 
-export const Input = observed(InputComp, 'Input');
+export function Checkbox<T extends Bindable>({ bind, name, checked, onChange, ...props }: InputProps<T>) {
+  const current = (useWatcher(bind, name) ?? checked) as boolean;
 
-function CheckboxComp<T extends Bindable>({ bind, name, checked, onChange, ...props }: InputProps<T>) {
   return (
     <input
       type="checkbox"
-      name={name}
-      checked={(bind?.[name] ?? checked) as boolean | undefined}
+      name={name as string}
+      checked={current}
       onChange={(e) => {
         if (bind) {
           bind[name] = e.target.checked as never;
@@ -44,14 +54,14 @@ function CheckboxComp<T extends Bindable>({ bind, name, checked, onChange, ...pr
   );
 }
 
-export const Checkbox = observed(CheckboxComp, 'Checkbox');
+export function Radio<T extends Bindable>({ bind, name, checked, onChange, ...props }: InputProps<T>) {
+  const current = (useWatcher(bind, name) ?? checked) as boolean;
 
-function RadioComp<T extends Bindable>({ bind, name, checked, onChange, ...props }: InputProps<T>) {
   return (
     <input
       type="radio"
-      name={name}
-      checked={(bind?.[name] ?? checked) as boolean | undefined}
+      name={name as string}
+      checked={current}
       onChange={(e) => {
         if (bind) {
           bind[name] = e.target.checked as never;
@@ -63,5 +73,3 @@ function RadioComp<T extends Bindable>({ bind, name, checked, onChange, ...props
     />
   );
 }
-
-export const Radio = observed(RadioComp, 'Radio');

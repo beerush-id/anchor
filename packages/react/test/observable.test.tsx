@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { type ComponentType } from 'react';
 import { anchor } from '@anchor/core';
-import { type AnchoredProps, cleanProps, observed, setDevMode, useObserver } from '../src/index.js';
+import { type AnchoredProps, cleanProps, observed, setDevMode, useObserverNode } from '../src/index.js';
 import { mockObserverProp } from '../mocks/observable.js';
 
 // Mock component for testing
@@ -27,7 +27,7 @@ describe('Anchor React - Observable', () => {
       let version: number | null = null;
 
       const TestHook = () => {
-        const [Unobserve, versionValue] = useObserver();
+        const [Unobserve, versionValue] = useObserverNode();
         UnobserveComponent = Unobserve;
         version = versionValue;
         return null;
@@ -45,7 +45,7 @@ describe('Anchor React - Observable', () => {
       const state = anchor({ count: 0 });
 
       const TestComponentWithObserver = () => {
-        const [, version] = useObserver();
+        const [, version] = useObserverNode();
         versionValue = version;
 
         return (
@@ -78,7 +78,7 @@ describe('Anchor React - Observable', () => {
       const destroySpy = vi.fn();
 
       const TestComponentWithObserver = () => {
-        useObserver();
+        useObserverNode();
         mockObserverProp('destroy', destroySpy);
         return <div>Test</div>;
       };
@@ -239,7 +239,7 @@ describe('Anchor React - Observable', () => {
       const destroySpies = [destroySpy1, destroySpy2];
 
       const TestComponentWithObserver = () => {
-        useObserver();
+        useObserverNode();
         mockObserverProp('destroy', destroySpies.shift());
         return <div>Test</div>;
       };

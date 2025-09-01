@@ -1,6 +1,11 @@
 export * from './anchor.js';
+export * from './array.js';
 export * from './derive.js';
 export * from './dev.js';
+export * from './fetch.js';
+export * from './history.js';
 export * from './immutable.js';
 export * from './model.js';
 export * from './observable.js';
+export * from './utils.js';
+export { CLEANUP_DEBOUNCE_TIME } from './constant.js';

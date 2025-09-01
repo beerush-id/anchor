@@ -1,8 +1,10 @@
-import { type FC, memo, useRef } from 'react';
+import { type FC, type KeyboardEventHandler, memo, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { observed } from '@anchor/react';
 import { flashNode } from '@lib/stats.js';
+import { usePicker } from '@anchor/react';
+import { Input, observed } from '@anchor/react/components';
+import { setDebugger } from '@anchor/core';
 
 export type CartItemType = {
   id: string;
@@ -12,13 +14,41 @@ export type CartItemType = {
 };
 
 export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(({ items, item }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  setDebugger(console.log);
+  const form = usePicker(item, ['name']);
+  setDebugger(undefined);
+
+  flashNode(ref.current);
+
+  const handleNameChange: KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key === 'Enter') {
+      item.name = form.name;
+    }
+  };
+
+  const handleBlur = () => {
+    if (form.name !== item.name) {
+      form.name = item.name;
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between">
+    <div ref={ref} className="flex items-center justify-between">
       <div>
-        <p className="font-semibold">{item.name}</p>
+        <p className="font-semibold text-slate-200">
+          <Input
+            type="text"
+            bind={form}
+            name="name"
+            onKeyUp={handleNameChange}
+            onBlur={handleBlur}
+            className="outline-none"
+          />
+        </p>
         <span className="text-sm text-slate-400">${item.price.toFixed(2)}</span>
       </div>
-      <CartItemControl {...{ items, item }} />
+      <CartItemControl items={items} item={item} />
     </div>
   );
 });

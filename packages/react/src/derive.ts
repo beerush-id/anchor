@@ -16,7 +16,42 @@ export function useDerived<R, D extends unknown[] = unknown[]>(transform: Transf
     return observer.run(() => {
       return transform();
     }) as R;
-  }, [observer, version, ...(deps ?? [])]);
+  }, [version, ...(deps ?? [])]);
+}
+
+export function usePicker<T extends State, K extends keyof T>(state: T, keys: K[]): { [key in K]: T[key] } {
+  const [init, values] = pickValues(state, keys);
+  const cached = useMemo(() => init, values);
+  const output = anchor(cached);
+
+  useEffect(() => {
+    return derive(state, (newValue, event) => {
+      if (event.type !== 'init') {
+        const key = event.keys.join('.') as K;
+        if (keys.includes(key)) {
+          output[key] = newValue[key];
+        }
+      }
+    });
+  }, [output]);
+
+  return output;
+}
+
+export function useWatcher<T extends State, K extends keyof T>(state: T, key: K) {
+  const [value, setValue] = useState(state?.[key]);
+
+  useEffect(() => {
+    if (typeof state !== 'object' || state === null) return;
+
+    return derive(state, (current, event) => {
+      if (event.type !== 'init' && event.keys.join('.') === key) {
+        setValue(current[key]);
+      }
+    });
+  }, [state, key]);
+
+  return value;
 }
 
 export function useDerivedList<T extends ObjLike[]>(state: T): Array<{ key: number; value: T[number] }>;
@@ -47,27 +82,7 @@ export function useDerivedList<T extends ObjLike[], K extends keyof T[number]>(
       const snap = anchor.get(state);
       return state.map((value, i) => ({ key: snap[i][key], value }));
     }) as Array<{ key: T[number][K]; value: T[number] }>;
-  }, [observer, version, state, key]);
-}
-
-export function useDerivedRef<T extends State>(state: T): Immutable<T>;
-export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R;
-/**
- * React hook that derives an underlying object of a reactive state.
- * It returns the underlying object of the state, or the result of applying a transform function to the underlying
- * object.
- *
- * @template T - The type of the reactive state.
- * @template R - The type of the transformed value.
- * @param {T} state - A reactive state from which to derive the underlying object.
- * @param {TransformSnapshotFn<T, R>} [transform] - An optional function that receives the state snapshot and returns the transformed value.
- * @returns {R} The snapshot of the state, or the result of applying the transform function to the snapshot.
- */
-export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R {
-  return useMemo(() => {
-    const value = anchor.get(state);
-    return transform ? transform(value) : value;
-  }, [state]) as R;
+  }, [version, state, key]);
 }
 
 export function useSnapshot<T extends Linkable>(state: T): T;
@@ -104,4 +119,38 @@ export function useSnapshot<T extends Linkable, R>(state: T, transform?: Transfo
   }, [state]);
 
   return value;
+}
+
+export function useDerivedRef<T extends State>(state: T): Immutable<T>;
+export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R;
+/**
+ * React hook that derives an underlying object of a reactive state.
+ * It returns the underlying object of the state, or the result of applying a transform function to the underlying
+ * object.
+ *
+ * This hook doesn't react to state changes. It's only re-compute if the state itself that changed.
+ *
+ * @template T - The type of the reactive state.
+ * @template R - The type of the transformed value.
+ * @param {T} state - A reactive state from which to derive the underlying object.
+ * @param {TransformSnapshotFn<T, R>} [transform] - An optional function that receives the state snapshot and returns the transformed value.
+ * @returns {R} The snapshot of the state, or the result of applying the transform function to the snapshot.
+ */
+export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R {
+  return useMemo(() => {
+    const value = anchor.get(state);
+    return transform ? transform(value) : value;
+  }, [state]) as R;
+}
+
+function pickValues<T extends State>(state: T, keys: (keyof T)[]) {
+  const values = [] as T[keyof T][];
+  const result = {} as T;
+
+  for (const key of keys) {
+    values.push(state[key]);
+    result[key] = state[key];
+  }
+
+  return [result, values] as const;
 }

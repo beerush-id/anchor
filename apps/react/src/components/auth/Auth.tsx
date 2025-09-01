@@ -10,7 +10,7 @@ export const Auth = () => {
   return (
     <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <SectionTitle>Write Once, Use Everywhere</SectionTitle>
-      <p className="text-center text-slate-400 mt-4 max-w-2xl mx-auto">
+      <p className="text-center text-slate-300 mt-4 max-w-2xl mx-auto">
         No providers, no context, no boilerplate. Declare your state once and use it anywhere in your application with
         simple syntax. Share state seamlessly across components.
       </p>
