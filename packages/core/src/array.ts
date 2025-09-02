@@ -1,5 +1,6 @@
 import type {
   ArrayMutator,
+  Broadcaster,
   Linkable,
   MethodLike,
   ObjLike,
@@ -9,9 +10,8 @@ import type {
   StateRelation,
   TrapOverrides,
 } from './types.js';
-import { INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
-import { ARRAY_MUTATIONS, OBSERVER_KEYS } from './constant.js';
-import { broadcast } from './internal.js';
+import { BROADCASTER_REGISTRY, INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
+import { ARRAY_MUTATIONS } from './constant.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { isFunction } from '@beerush/utils';
@@ -71,10 +71,12 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
   }
 
   const devTool = getDevTool();
-  const { schema, observers, subscribers, subscriptions } = meta;
+  const compare = SORTER_REGISTRY.get(init);
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
+
+  const { schema, subscriptions } = meta;
   const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
   const { configs } = options ?? meta;
-  const compare = SORTER_REGISTRY.get(init);
 
   const mutator: ArrayMutator<T[number]> = {} as never;
   const mutatorMap = new WeakMap<WeakKey, MethodLike>();
@@ -186,16 +188,9 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
         value: args,
       };
 
-      if (observers.size) {
-        for (const observer of observers) {
-          if (observer.states.get(init)?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
-            observer.onChange(event);
-          }
-        }
-      }
-
       // Broadcast the array mutation event to all subscribers
-      broadcast(subscribers, init, event, meta.id);
+      broadcaster.emit(event);
+      broadcaster.broadcast(init, event, meta.id);
 
       devTool?.onCall?.(meta, method, args);
 

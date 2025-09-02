@@ -1,4 +1,5 @@
 import type {
+  Broadcaster,
   KeyLike,
   Linkable,
   ObjLike,
@@ -8,7 +9,6 @@ import type {
   StateSubscriber,
   SubscribeFactoryInit,
 } from './types.js';
-import { broadcast } from './internal.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -46,6 +46,7 @@ export function createLinkFactory<T extends Linkable>(
   meta: StateMetadata<T>
 ): (childPath: KeyLike, childState: State, receiver?: State) => void {
   const devTool = getDevTool();
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   return (childPath: KeyLike, childState: State, receiver?: State): void => {
     if (meta.subscriptions.has(childState)) return;
@@ -62,7 +63,7 @@ export function createLinkFactory<T extends Linkable>(
         if (event && event.type !== 'init') {
           const keys = [childPath, ...event.keys] as KeyLike[];
           // Broadcast the event with modified path to include the key
-          broadcast(meta.subscribers, init, { ...event, keys }, emitter);
+          broadcaster.broadcast(init, { ...event, keys }, emitter);
         }
       };
 

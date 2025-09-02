@@ -498,9 +498,8 @@ export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(
  * @param snapshot - The current state snapshot
  * @param event - The state change event details
  * @param emitter - Optional emitter identifier
- * @param prop - Optional property that changed
  */
-export type BroadcastFn = (snapshot: Linkable, event: StateChange, emitter?: string, prop?: KeyLike) => void;
+export type BroadcastFn = (snapshot: Linkable, event: StateChange, emitter?: string) => void;
 
 /**
  * Function type for emitting state changes to subscribers.

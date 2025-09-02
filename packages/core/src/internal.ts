@@ -1,35 +1,6 @@
-import type { Broadcaster, KeyLike, Linkable, StateChange, StateMetadata, StateSubscriber } from './types.js';
-import { LINKABLE, OBSERVER_KEYS } from './constant.js';
+import type { BatchMutation, Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
+import { BATCH_MUTATION_KEYS, LINKABLE, OBSERVER_KEYS } from './constant.js';
 import { typeOf } from '@beerush/utils';
-
-/**
- * Broadcasts a state change event to all subscribers in the provided set.
- *
- * This function iterates through each subscriber and calls it with the provided
- * snapshot and event. If a subscriber has an `__internal_id__` property and
- * an emitter ID is provided, it ensures the subscriber is not the same as the
- * emitter before invoking the subscriber.
- *
- * @param subscribers - A set of subscribers to notify.
- * @param snapshot - The current state snapshot to pass to subscribers.
- * @param event - The state change event to pass to subscribers.
- * @param emitter - Optional identifier of the emitter to prevent self-notification.
- */
-export function broadcast(subscribers: Set<unknown>, snapshot: unknown, event: StateChange, emitter?: string) {
-  for (const subscriber of subscribers) {
-    if (typeof subscriber === 'function') {
-      const receiver = (subscriber as never as { __internal_id__: string }).__internal_id__;
-
-      if (receiver) {
-        if (receiver !== emitter) {
-          (subscriber as StateSubscriber<unknown>)(snapshot, event, emitter);
-        }
-      } else {
-        (subscriber as StateSubscriber<unknown>)(snapshot, event);
-      }
-    }
-  }
-}
 
 /**
  * Creates a broadcaster object for managing state change notifications.
@@ -72,6 +43,8 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
             }
           } else if (keys.has(prop ?? event.keys.join('.'))) {
             observer.onChange(event);
+          } else if (BATCH_MUTATION_KEYS.has(event.type as BatchMutation)) {
+            observer.onChange(event);
           }
         }
       }
@@ -86,13 +59,8 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
      * @param snapshot - The current state snapshot.
      * @param event - The state change event.
      * @param emitter - Optional identifier of the emitting instance.
-     * @param prop - Optional property key that was changed.
      */
-    broadcast(snapshot, event, emitter, prop) {
-      if (prop) {
-        this.emit(event, prop);
-      }
-
+    broadcast(snapshot, event, emitter) {
       for (const subscriber of subscribers) {
         if (typeof subscriber === 'function') {
           const receiver = (subscriber as never as { __internal_id__: string }).__internal_id__;

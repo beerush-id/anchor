@@ -1,5 +1,6 @@
-import { broadcast, linkable } from './internal.js';
+import { linkable } from './internal.js';
 import {
+  BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
   META_REGISTRY,
@@ -9,6 +10,7 @@ import {
 } from './registry.js';
 import type {
   AnchorInternalFn,
+  Broadcaster,
   KeyLike,
   Linkable,
   MethodLike,
@@ -24,7 +26,7 @@ import type {
 } from './types.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
-import { COLLECTION_MUTATIONS, OBSERVER_KEYS } from './constant.js';
+import { COLLECTION_MUTATION_KEYS, OBSERVER_KEYS } from './constant.js';
 import { assignObserver, getObserver } from './observable.js';
 import { getDevTool } from './dev.js';
 
@@ -63,7 +65,7 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
   return ((target, prop, receiver?) => {
     const observer = getObserver();
 
-    if (configs.observable && observer && !COLLECTION_MUTATIONS.has(prop as never)) {
+    if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
       assignObserver(init, observers, observer);
 
       const keys = observer.states.get(init) as Set<KeyLike>;
@@ -169,7 +171,9 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
   }
 
   const devTool = getDevTool();
-  const { observers, subscribers, subscriptions } = meta;
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
+
+  const { subscriptions } = meta;
   const { link, unlink } = RELATION_REGISTRY.get(init) as StateRelation;
   const { configs } = options ?? meta;
   const { deferred, immutable, recursive } = configs;
@@ -229,15 +233,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           value: newValue,
         };
 
-        if (observers.size) {
-          for (const observer of observers) {
-            if (observer.states.get(init)?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
-              observer.onChange(event);
-            }
-          }
-        }
-
-        broadcast(subscribers, init, event, meta.id);
+        broadcaster.emit(event);
+        broadcaster.broadcast(init, event, meta.id);
 
         devTool?.onCall?.(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
       }
@@ -274,15 +271,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             keys: self instanceof Map ? [keyValue as string] : [],
           };
 
-          if (observers.size) {
-            for (const observer of observers) {
-              if (observer.states.get(init)?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
-                observer.onChange(event);
-              }
-            }
-          }
-
-          broadcast(subscribers, self, event, meta.id);
+          broadcaster.emit(event);
+          broadcaster.broadcast(self, event, meta.id);
 
           devTool?.onCall?.(meta, method, [keyValue]);
         }
@@ -312,15 +302,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
           };
 
-          if (observers.size) {
-            for (const observer of observers) {
-              if (observer.states.get(init)?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
-                observer.onChange(event);
-              }
-            }
-          }
-
-          broadcast(subscribers, init, event, meta.id);
+          broadcaster.emit(event);
+          broadcaster.broadcast(self, event, meta.id);
 
           devTool?.onCall?.(meta, method, []);
         }

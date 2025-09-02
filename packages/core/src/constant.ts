@@ -2,7 +2,7 @@ import type { AnchorSettings } from './types.js';
 
 export const SET_MUTATIONS = ['add', 'delete'] as const;
 export const MAP_MUTATIONS = ['set', 'delete', 'clear'] as const;
-export const BATCH_MUTATIONS = ['assign', 'remove'] as const;
+export const BATCH_MUTATIONS = ['assign', 'remove', 'clear'] as const;
 export const OBJECT_MUTATIONS = ['set', 'delete'] as const;
 export const ARRAY_MUTATIONS = [
   'copyWithin',
@@ -32,5 +32,5 @@ export enum OBSERVER_KEYS {
   COLLECTION_MUTATIONS = 'collection_mutations',
 }
 
-export const LIST_MUTATIONS = new Set(ARRAY_MUTATIONS);
-export const COLLECTION_MUTATIONS = new Set([...MAP_MUTATIONS, ...SET_MUTATIONS]);
+export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);
+export const COLLECTION_MUTATION_KEYS = new Set([...MAP_MUTATIONS, ...SET_MUTATIONS]);

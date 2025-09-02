@@ -1,6 +1,7 @@
 import type { ZodArray, ZodObject, ZodType } from 'zod/v4';
 import type {
   AnchorInternalFn,
+  Broadcaster,
   KeyLike,
   Linkable,
   LinkableSchema,
@@ -11,6 +12,7 @@ import type {
   TrapOverrides,
 } from './types.js';
 import {
+  BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
   INIT_REGISTRY,
   META_REGISTRY,
@@ -18,7 +20,7 @@ import {
   RELATION_REGISTRY,
   STATE_BUSY_LIST,
 } from './registry.js';
-import { broadcast, linkable } from './internal.js';
+import { linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
@@ -161,9 +163,10 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
   }
 
   const devTool = getDevTool();
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
-  const { schema, observers, subscribers, subscriptions } = meta;
+  const { schema, subscriptions } = meta;
   const { configs } = options ?? meta;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
@@ -212,15 +215,8 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
         value: target[prop],
       };
 
-      if (observers.size) {
-        for (const observer of observers) {
-          if (observer.states.get(init)?.has(prop)) {
-            observer.onChange(event);
-          }
-        }
-      }
-
-      broadcast(subscribers, target, event, meta.id);
+      broadcaster.emit(event, prop);
+      broadcaster.broadcast(target, event, meta.id);
 
       // Trigger the dev tool callback if available.
       devTool?.onSet?.(meta, prop, value);
@@ -257,9 +253,10 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
   }
 
   const devTool = getDevTool();
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
-  const { schema, observers, subscribers, subscriptions } = meta;
+  const { schema, subscriptions } = meta;
   const { configs } = options ?? meta;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
@@ -299,15 +296,8 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
         keys: [prop],
       };
 
-      if (observers.size) {
-        for (const observer of observers) {
-          if (observer.states.get(init)?.has(prop)) {
-            observer.onChange(event);
-          }
-        }
-      }
-
-      broadcast(subscribers, target, event, meta.id);
+      broadcaster.emit(event, prop);
+      broadcaster.broadcast(target, event, meta.id);
 
       // Trigger the dev tool callback if available.
       devTool?.onDelete?.(meta, prop);

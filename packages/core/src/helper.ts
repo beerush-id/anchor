@@ -1,13 +1,6 @@
-import type { Linkable, ObjLike } from './types.js';
-import {
-  CONTROLLER_REGISTRY,
-  META_REGISTRY,
-  STATE_BUSY_LIST,
-  STATE_REGISTRY,
-  SUBSCRIBER_REGISTRY,
-} from './registry.js';
+import type { Broadcaster, Linkable, ObjLike, StateChange } from './types.js';
+import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import { isArray, isDefined, isMap, isSet } from '@beerush/utils';
-import { broadcast } from './internal.js';
 import { softEntries, softKeys } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 
@@ -36,11 +29,10 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     throw new Error('Cannot assign using non-object value.');
   }
 
-  const init = STATE_REGISTRY.get(target);
+  const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
   const devTool = getDevTool();
-  const controller = CONTROLLER_REGISTRY.get(target);
-  const subscribers = SUBSCRIBER_REGISTRY.get(target);
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
     STATE_BUSY_LIST.add(init);
@@ -60,30 +52,15 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     }
   }
 
-  if (meta?.observers?.size) {
-    for (const observer of meta.observers) {
-      observer.onChange({
-        type: 'assign',
-        prev,
-        keys: [],
-        value: source,
-      });
-    }
-  }
+  const event: StateChange = {
+    type: 'assign',
+    prev,
+    keys: [],
+    value: source,
+  };
 
-  if (subscribers?.size) {
-    broadcast(
-      subscribers,
-      init,
-      {
-        type: 'assign',
-        prev,
-        keys: [],
-        value: source,
-      },
-      controller?.meta.id
-    );
-  }
+  broadcaster?.emit(event);
+  broadcaster?.broadcast(init, event, meta?.id);
 
   if (isDefined(init)) {
     STATE_BUSY_LIST.delete(init);
@@ -111,11 +88,10 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     throw new Error('Cannot remove from non-assignable state.');
   }
 
-  const init = STATE_REGISTRY.get(target);
+  const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
   const devTool = getDevTool();
-  const controller = CONTROLLER_REGISTRY.get(target);
-  const subscribers = SUBSCRIBER_REGISTRY.get(target);
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
     target = init as T;
@@ -152,30 +128,15 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     }
   }
 
-  if (meta?.observers?.size) {
-    for (const observer of meta.observers) {
-      observer.onChange({
-        type: 'remove',
-        prev,
-        keys: [],
-        value: keys,
-      });
-    }
-  }
+  const event: StateChange = {
+    type: 'remove',
+    prev,
+    keys: [],
+    value: keys,
+  };
 
-  if (subscribers?.size) {
-    broadcast(
-      subscribers,
-      init,
-      {
-        type: 'remove',
-        prev,
-        keys: [],
-        value: keys,
-      },
-      controller?.meta.id
-    );
-  }
+  broadcaster?.emit(event);
+  broadcaster?.broadcast(init, event, meta?.id);
 
   if (isDefined(init)) {
     STATE_BUSY_LIST.delete(init);
@@ -202,11 +163,10 @@ export const clear = <T extends Assignable>(target: T) => {
     throw new Error('Cannot clear non-assignable state.');
   }
 
-  const init = STATE_REGISTRY.get(target);
+  const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
   const devTool = getDevTool();
-  const controller = CONTROLLER_REGISTRY.get(target);
-  const subscribers = SUBSCRIBER_REGISTRY.get(target);
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
     STATE_BUSY_LIST.add(init);
@@ -222,29 +182,14 @@ export const clear = <T extends Assignable>(target: T) => {
     }
   }
 
-  if (meta?.observers?.size) {
-    for (const observer of meta.observers) {
-      observer.onChange({
-        type: 'clear',
-        prev: {},
-        keys: [],
-      });
-    }
-  }
+  const event: StateChange = {
+    type: 'clear',
+    prev: {},
+    keys: [],
+  };
 
-  if (subscribers?.size) {
-    broadcast(
-      subscribers,
-      init,
-      {
-        type: 'clear',
-        prev: {},
-        keys: [],
-        value: undefined,
-      },
-      controller?.meta.id
-    );
-  }
+  broadcaster?.emit(event);
+  broadcaster?.broadcast(init, event, meta?.id);
 
   if (isDefined(init)) {
     STATE_BUSY_LIST.delete(init);
