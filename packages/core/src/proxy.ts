@@ -1,17 +1,19 @@
-import { createGetter, createRemover, createSetter } from './trap.js';
+import { createGetter } from './trap.js';
 import type {
   KeyLike,
   Linkable,
-  LinkableSchema,
   MethodLike,
   MutablePart,
   MutationKey,
   ObjLike,
+  StateController,
+  StateGateway,
+  StateMetadata,
   StatePropGetter,
-  StateReferences,
+  TrapOverrides,
 } from './types.js';
 import { createCollectionMutator } from './collection.js';
-import { REFERENCE_REGISTRY, STATE_REGISTRY } from './registry.js';
+import { CONTROLLER_REGISTRY, GATEWAY_REGISTRY, META_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
 
@@ -25,17 +27,16 @@ import { captureStack } from './exception.js';
  *
  * @template T - The type of the state object
  * @param init - The initial state object to be proxied
- * @param references - State references containing configuration and utility functions
+ * @param gateway
+ * @param meta
  * @returns A ProxyHandler configured according to the immutability settings
  */
-export function createProxyHandler<T extends Linkable>(init: T, references: StateReferences<T, LinkableSchema>) {
-  const { immutable } = references.configs;
-
-  references.getter = createGetter<T, LinkableSchema>(init) as never;
+export function createProxyHandler<T extends Linkable>(init: T, gateway: StateGateway<T>, meta: StateMetadata<T>) {
+  const { immutable } = meta.configs;
 
   if (immutable) {
     const handler = {
-      get: references.getter,
+      get: gateway.getter,
       set: (target: Linkable, prop: KeyLike) => {
         captureStack.violation.setter(prop, handler.set);
         return true;
@@ -50,9 +51,9 @@ export function createProxyHandler<T extends Linkable>(init: T, references: Stat
   }
 
   return {
-    get: references.getter,
-    set: createSetter(init),
-    deleteProperty: createRemover(init),
+    get: gateway.getter,
+    set: gateway.setter,
+    deleteProperty: gateway.remover,
   } as ProxyHandler<Linkable>;
 }
 
@@ -81,30 +82,25 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
     return state as MutablePart<T, K>;
   }
 
-  const references = REFERENCE_REGISTRY.get(init) as StateReferences;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+  const gateway = GATEWAY_REGISTRY.get(init) as StateGateway;
+  const controller = CONTROLLER_REGISTRY.get(state) as StateController;
   const newOptions = {
-    ...references,
     configs: {
-      ...references.configs,
+      ...meta.configs,
       cloned: false,
       immutable: false,
       recursive: false,
     },
-  };
+  } as TrapOverrides;
 
   if (Array.isArray(init)) {
-    newOptions.mutator = createArrayMutator(init, newOptions as StateReferences<unknown[], LinkableSchema>);
+    newOptions.mutator = createArrayMutator(init, newOptions as TrapOverrides).mutatorMap;
   } else if (init instanceof Map || init instanceof Set) {
-    newOptions.mutator = createCollectionMutator(
-      init as Set<Linkable>,
-      newOptions as StateReferences<Set<Linkable>, LinkableSchema>
-    );
+    newOptions.mutator = createCollectionMutator(init as Set<Linkable>, newOptions as TrapOverrides).mutatorMap;
   }
 
   const getter = createGetter(init, newOptions) as StatePropGetter;
-  const setter = createSetter(init, newOptions);
-  const remover = createRemover(init, newOptions);
-
   const mutator = newOptions.mutator as WeakMap<WeakKey, (...args: unknown[]) => void>;
   const allowList = Array.isArray(contracts) ? new Set(contracts) : undefined;
 
@@ -135,7 +131,7 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
         };
       }
 
-      return references.getter?.(target, prop as never, receiver);
+      return gateway.getter(target, prop as never, receiver);
     },
     set(target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) {
       if (allowList && !allowList.has(prop as never)) {
@@ -143,7 +139,7 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
         return true;
       }
 
-      return setter(target, prop, value, receiver);
+      return gateway.setter(target, prop, value, receiver);
     },
     deleteProperty(target: ObjLike, prop: KeyLike, receiver?: unknown) {
       if (allowList && !allowList.has(prop as never)) {
@@ -151,10 +147,12 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
         return true;
       }
 
-      return remover(target, prop, receiver);
+      return gateway.remover(target, prop, receiver);
     },
   };
 
-  const proxied = new Proxy(init, handler) as MutablePart<T, K>;
+  const proxied = new Proxy(init, handler as ProxyHandler<T>) as MutablePart<T, K>;
+  CONTROLLER_REGISTRY.set(proxied, controller);
+
   return proxied;
 };

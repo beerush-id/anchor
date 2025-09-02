@@ -1,10 +1,16 @@
 import { broadcast, linkable } from './internal.js';
-import { CONTROLLER_REGISTRY, INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
+import {
+  CONTROLLER_REGISTRY,
+  INIT_REGISTRY,
+  META_REGISTRY,
+  MUTATOR_REGISTRY,
+  RELATION_REGISTRY,
+  STATE_BUSY_LIST,
+} from './registry.js';
 import type {
   AnchorInternalFn,
   KeyLike,
   Linkable,
-  LinkableSchema,
   MethodLike,
   SetMutation,
   StateBaseOptions,
@@ -12,7 +18,9 @@ import type {
   StateLinkFn,
   StateMetadata,
   StateMutation,
-  StateReferences,
+  StateMutator,
+  StateRelation,
+  TrapOverrides,
 } from './types.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
@@ -35,20 +43,22 @@ const mockReturn = {
   },
 };
 
-export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unknown>, S extends LinkableSchema>(
+export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unknown>>(
   init: T,
-  options?: StateReferences<T, S>
+  options?: TrapOverrides
 ) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
 
-  if (!references) {
+  if (!meta) {
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const meta = META_REGISTRY.get(init) as StateMetadata;
   const devTool = getDevTool();
+  const mutator = options?.mutator ?? MUTATOR_REGISTRY.get(init)?.mutatorMap;
+
+  const { link } = RELATION_REGISTRY.get(init) as StateRelation;
   const { observers } = meta;
-  const { link, mutator, configs } = references;
+  const { configs } = options ?? meta;
 
   return ((target, prop, receiver?) => {
     const observer = getObserver();
@@ -148,23 +158,24 @@ function resolveState(
  * @returns A WeakMap containing the wrapped mutation methods
  * @throws {Error} When called on a non-reactive state (no references found)
  */
-export function createCollectionMutator<T extends Set<Linkable> | Map<string, Linkable>, S extends LinkableSchema>(
+export function createCollectionMutator<T extends Set<Linkable> | Map<string, Linkable>>(
   init: T,
-  options?: StateReferences<T, S>
+  options?: TrapOverrides
 ) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
+  const meta = META_REGISTRY.get(init) as StateMetadata;
 
-  if (!references) {
-    throw new Error(`Get trap factory called on non-reactive state.`);
+  if (!meta) {
+    throw new Error(`Collection trap factory called on non-reactive state.`);
   }
 
-  const meta = META_REGISTRY.get(init) as StateMetadata;
   const devTool = getDevTool();
   const { observers, subscribers, subscriptions } = meta;
-  const { link, unlink, configs } = references;
+  const { link, unlink } = RELATION_REGISTRY.get(init) as StateRelation;
+  const { configs } = options ?? meta;
   const { deferred, immutable, recursive } = configs;
 
-  const mutator = new WeakMap<WeakKey, MethodLike>();
+  const mutator = {} as StateMutator<T>;
+  const mutatorMap = new WeakMap<WeakKey, MethodLike>();
 
   // Map value getter trap.
   if (init instanceof Map && recursive && deferred) {
@@ -176,7 +187,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     };
 
     // Object.assign(init, { get: targetFn });
-    mutator.set(init.get, targetFn as MethodLike);
+    mutatorMap.set(init.get, targetFn as MethodLike);
   }
 
   // Collection iterator traps.
@@ -189,24 +200,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       }, thisArg);
     };
 
-    mutator.set(init.forEach, forEachFn as MethodLike);
-  }
-
-  if (immutable) {
-    for (const method of ['set', 'add', 'delete', 'clear'] as SetMutation[]) {
-      const methodFn = init[method as never] as (...args: unknown[]) => unknown;
-
-      if (typeof methodFn === 'function') {
-        const targetFn = () => {
-          captureStack.violation.methodCall(method, targetFn);
-          return mockReturn[method]?.(init as never);
-        };
-
-        mutator.set(methodFn, targetFn);
-      }
-    }
-
-    return mutator;
+    mutatorMap.set(init.forEach, forEachFn as MethodLike);
   }
 
   for (const method of ['set', 'add']) {
@@ -253,7 +247,8 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     };
 
     // Object.assign(init, { [method]: targetFn });
-    mutator.set(methodFn, targetFn as MethodLike);
+    mutatorMap.set(methodFn, targetFn as MethodLike);
+    mutator[method as never] = targetFn as never;
   }
 
   for (const method of ['delete', 'clear']) {
@@ -335,10 +330,26 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     };
 
     // Object.assign(init, { [method]: targetFn });
-    mutator.set(methodFn, targetFn);
+    mutatorMap.set(methodFn, targetFn);
+    mutator[method as never] = targetFn as never;
   }
 
-  return mutator;
+  if (immutable) {
+    for (const method of ['set', 'add', 'delete', 'clear'] as SetMutation[]) {
+      const methodFn = init[method as never] as (...args: unknown[]) => unknown;
+
+      if (typeof methodFn === 'function') {
+        const targetFn = () => {
+          captureStack.violation.methodCall(method, targetFn);
+          return mockReturn[method]?.(init as never);
+        };
+
+        mutatorMap.set(methodFn, targetFn);
+      }
+    }
+  }
+
+  return { mutator, mutatorMap };
 }
 
 createCollectionMutator.mock = mockReturn;

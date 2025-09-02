@@ -8,26 +8,34 @@ import type {
   ObjLike,
   State,
   StateController,
+  StateGateway,
+  StateGetter,
   StateMetadata,
+  StateMutator,
   StateObserverList,
   StateOptions,
-  StateReferences,
+  StateRelation,
+  StateRemover,
+  StateSetter,
   StateSubscriberList,
   StateSubscriptionMap,
 } from './types.js';
 import { ANCHOR_SETTINGS } from './constant.js';
 import {
+  BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
+  GATEWAY_REGISTRY,
   INIT_REGISTRY,
   META_INIT_REGISTRY,
   META_REGISTRY,
-  REFERENCE_REGISTRY,
+  MUTATOR_REGISTRY,
+  RELATION_REGISTRY,
   SORTER_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { linkable } from './internal.js';
+import { createBroadcaster, linkable } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import { assign, clear, remove } from './helper.js';
@@ -37,6 +45,7 @@ import { createCollectionMutator } from './collection.js';
 import { captureStack } from './exception.js';
 import { softClone } from './utils/clone.js';
 import { getDevTool } from './dev.js';
+import { createGetter, createRemover, createSetter } from './trap.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -160,24 +169,36 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   META_REGISTRY.set(init, meta as never as StateMetadata);
   META_INIT_REGISTRY.set(meta as never as StateMetadata, init);
 
+  // State broadcasting helpers.
+  const broadcaster = createBroadcaster(init, meta);
+  BROADCASTER_REGISTRY.set(init, broadcaster);
+
+  // State relationship helpers.
   const link = createLinkFactory(init, meta);
   const unlink = createUnlinkFactory(meta);
+  const relation: StateRelation = { link, unlink };
+  RELATION_REGISTRY.set(init, relation);
 
-  const references: StateReferences<T, S> = {
-    meta,
-    link,
-    unlink,
-    configs,
-  };
-  REFERENCE_REGISTRY.set(init, references as never as StateReferences<object, S>);
+  let mutators: ReturnType<typeof createArrayMutator> | ReturnType<typeof createCollectionMutator>;
 
   if (Array.isArray(init)) {
-    references.mutator = createArrayMutator(init, references as never as StateReferences<unknown[], S>);
+    mutators = createArrayMutator(init);
+    MUTATOR_REGISTRY.set(init, mutators);
   } else if (init instanceof Map || init instanceof Set) {
-    references.mutator = createCollectionMutator(init);
+    mutators = createCollectionMutator(init);
+    MUTATOR_REGISTRY.set(init, mutators);
   }
 
-  const proxyHandler = createProxyHandler<T>(init, references);
+  const gateway: StateGateway<T> = {
+    getter: createGetter(init) as StateGetter<T>,
+    setter: createSetter(init) as StateSetter<T>,
+    remover: createRemover(init) as StateRemover<T>,
+    mutator: mutators?.mutator as StateMutator<T>,
+    broadcaster,
+  };
+  GATEWAY_REGISTRY.set(init, gateway as StateGateway);
+
+  const proxyHandler = createProxyHandler<T>(init, gateway, meta);
   const state = new Proxy(init as ObjLike, proxyHandler) as State<T>;
 
   const controller: StateController<T, S> = {

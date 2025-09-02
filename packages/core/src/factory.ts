@@ -10,11 +10,14 @@ import type {
 } from './types.js';
 import { broadcast } from './internal.js';
 import {
+  BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
+  GATEWAY_REGISTRY,
   INIT_REGISTRY,
   META_INIT_REGISTRY,
   META_REGISTRY,
-  REFERENCE_REGISTRY,
+  MUTATOR_REGISTRY,
+  RELATION_REGISTRY,
   SORTER_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
@@ -266,8 +269,12 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     // Remove the state from STATE_REGISTRY and STATE_LINK.
     INIT_REGISTRY.delete(init);
     META_REGISTRY.delete(init);
-    REFERENCE_REGISTRY.delete(init);
     SORTER_REGISTRY.delete(init);
+
+    RELATION_REGISTRY.delete(init);
+    MUTATOR_REGISTRY.delete(init);
+    BROADCASTER_REGISTRY.delete(init);
+    GATEWAY_REGISTRY.delete(init);
 
     STATE_REGISTRY.delete(state);
     CONTROLLER_REGISTRY.delete(state);

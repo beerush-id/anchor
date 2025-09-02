@@ -7,9 +7,17 @@ import type {
   ObjLike,
   StateChange,
   StateMetadata,
-  StateReferences,
+  StateRelation,
+  TrapOverrides,
 } from './types.js';
-import { CONTROLLER_REGISTRY, INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, STATE_BUSY_LIST } from './registry.js';
+import {
+  CONTROLLER_REGISTRY,
+  INIT_REGISTRY,
+  META_REGISTRY,
+  MUTATOR_REGISTRY,
+  RELATION_REGISTRY,
+  STATE_BUSY_LIST,
+} from './registry.js';
 import { broadcast, linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
@@ -37,17 +45,19 @@ import { getDevTool } from './dev.js';
  * @returns A getter function that handles property access with reactive behavior
  * @throws {Error} When called on a non-reactive state object
  */
-export function createGetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
+export function createGetter<T extends Linkable>(init: T, options?: TrapOverrides) {
+  const meta = META_REGISTRY.get(init) as StateMetadata;
 
-  if (!references) {
+  if (!meta) {
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const meta = META_REGISTRY.get(init) as StateMetadata;
   const devTool = getDevTool();
+  const mutator = options?.mutator ?? MUTATOR_REGISTRY.get(init)?.mutatorMap;
+
+  const { link } = RELATION_REGISTRY.get(init) as StateRelation;
   const { schema, observers, subscribers, subscriptions } = meta;
-  const { link, mutator, configs } = references;
+  const { configs } = options ?? meta;
 
   if (init instanceof Set || init instanceof Map) {
     return createCollectionGetter(init as Set<unknown>, options as never);
@@ -97,7 +107,7 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
     // If the value is an array method, set method, or map method,
     // try to get the method trap from the mutator map.
     if (mutator?.has(value)) {
-      return mutator?.get(value);
+      return mutator.get(value);
     }
 
     if (configs.recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
@@ -143,17 +153,18 @@ export function createGetter<T extends Linkable, S extends LinkableSchema>(init:
  * @returns A setter function that handles property assignment with reactive behavior
  * @throws {Error} When called on a non-reactive state object
  */
-export function createSetter<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
+export function createSetter<T extends Linkable>(init: T, options?: TrapOverrides) {
+  const meta = META_REGISTRY.get(init) as StateMetadata;
 
-  if (!references) {
+  if (!meta) {
     throw new Error(`Set trap factory called on non-reactive state.`);
   }
 
-  const meta = META_REGISTRY.get(init) as StateMetadata;
   const devTool = getDevTool();
+
+  const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
   const { schema, observers, subscribers, subscriptions } = meta;
-  const { unlink, configs } = references;
+  const { configs } = options ?? meta;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
     const current = Reflect.get(target, prop, receiver) as Linkable;
@@ -238,17 +249,18 @@ export function createSetter<T extends Linkable, S extends LinkableSchema>(init:
  * @returns A remover function that handles property deletion with reactive behavior
  * @throws {Error} When called on a non-reactive state object
  */
-export function createRemover<T extends Linkable, S extends LinkableSchema>(init: T, options?: StateReferences<T, S>) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
+export function createRemover<T extends Linkable>(init: T, options?: TrapOverrides) {
+  const meta = META_REGISTRY.get(init) as StateMetadata;
 
-  if (!references) {
+  if (!meta) {
     throw new Error(`Delete trap factory called on non-reactive state.`);
   }
 
-  const meta = META_REGISTRY.get(init) as StateMetadata;
   const devTool = getDevTool();
+
+  const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
   const { schema, observers, subscribers, subscriptions } = meta;
-  const { unlink, configs } = references;
+  const { configs } = options ?? meta;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     const childSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;

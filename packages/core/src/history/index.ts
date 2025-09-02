@@ -61,7 +61,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   const controller = derive.resolve(state);
   let snapshot: T;
 
-  if (typeof controller?.subscribe !== 'function') {
+  if (!anchor.has(state)) {
     const error = new Error('Object is not reactive.');
     captureStack.error.external('Cannot create history state from non-reactive object.', error, history);
     snapshot = state;

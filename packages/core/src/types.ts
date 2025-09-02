@@ -80,6 +80,61 @@ export type StateMetadata<
   schema?: S;
 };
 
+export type MapMutator<K, V> = {
+  set(key: K, value: V): void;
+  delete(key: K): void;
+  clear(): void;
+};
+
+export type SetMutator<V> = {
+  add(value: V): void;
+  delete(value: V): void;
+  clear(): void;
+};
+
+export type ArrayMutator<T> = {
+  push(...items: T[]): void;
+  pop(): T | undefined;
+  shift(): T | undefined;
+  unshift(...items: T[]): void;
+  splice(start: number, deleteCount?: number, ...items: T[]): T[];
+  reverse(): T[];
+  sort(compareFn?: (a: T, b: T) => number): T[];
+  fill(value: T, start?: number, end?: number): T[];
+  copyWithin(target: number, start: number, end?: number): T[];
+};
+
+export type StateMutator<T extends Linkable> =
+  T extends Set<infer U>
+    ? SetMutator<U>
+    : T extends Map<infer K, infer V>
+      ? MapMutator<K, V>
+      : T extends Array<infer U>
+        ? ArrayMutator<U>
+        : never;
+
+export type StateGetter<T extends Linkable> = (target: T, prop: keyof T | KeyLike, receiver?: unknown) => unknown;
+export type StateSetter<T extends Linkable> = (
+  target: T,
+  prop: keyof T | KeyLike,
+  value?: unknown,
+  receiver?: unknown
+) => unknown;
+export type StateRemover<T extends Linkable> = (target: T, prop: keyof T | KeyLike, receiver?: unknown) => unknown;
+
+export type StateRelation = {
+  link: StateLinkFn;
+  unlink: StateUnlinkFn;
+};
+
+export type StateGateway<T extends Linkable = Linkable> = {
+  getter: StateGetter<T>;
+  setter: StateSetter<T>;
+  remover: StateRemover<T>;
+  broadcaster: Broadcaster;
+  mutator?: StateMutator<T>;
+};
+
 export type StateController<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
   meta: StateMetadata<T, S>;
   destroy: StateDestroyer;
@@ -92,12 +147,8 @@ export type StatePropGetter<T extends Linkable = Linkable> = (
   receiver?: unknown
 ) => T[keyof T];
 
-export type StateReferences<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
-  meta: StateMetadata<T, S>;
-  link: StateLinkFn;
-  unlink: StateUnlinkFn;
+export type TrapOverrides = {
   configs: StateBaseOptions;
-  getter?: StatePropGetter<T>;
   mutator?: WeakMap<WeakKey, MethodLike>;
 };
 
@@ -172,6 +223,38 @@ export type MutablePart<T, K extends MutationKey<T>[]> =
               -readonly [P in K[number]]: P extends keyof T ? T[P] : never;
             }
           >;
+
+/**
+ * Extracts the keys of an object that are not readonly.
+ *
+ * This type uses conditional types to determine which properties of T are writable:
+ * 1. For each property P in T, it creates a test object with P as the only property
+ * 2. It then checks if this property can be made non-readonly
+ * 3. If it can, the key P is included in the result
+ *
+ * @template T - The object type to extract writable keys from
+ * @returns A union of keys that are not readonly in T
+ */
+export type WritableKeys<T> = {
+  [P in keyof T]-?: (<Q>() => Q extends { [K in P]: T[K] } ? 1 : 2) extends <R>() => R extends {
+    -readonly [K in P]: T[K];
+  }
+    ? 1
+    : 2
+    ? P
+    : never;
+}[keyof T];
+
+/**
+ * Creates a new type containing only the writable properties of T.
+ *
+ * This type combines WritableKeys with Pick to create a new object type
+ * that only includes the properties of T that are not readonly.
+ *
+ * @template T - The object type to pick writable properties from
+ * @returns A new object type with only the writable properties of T
+ */
+export type Writable<T> = Pick<T, WritableKeys<T>>;
 
 /**
  * Anchor function interface that provides state management capabilities.
@@ -408,3 +491,43 @@ export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(
   root?: StateMetadata,
   parent?: StateMetadata
 ) => State<T>;
+
+/**
+ * Function type for broadcasting state changes to subscribers.
+ *
+ * @param snapshot - The current state snapshot
+ * @param event - The state change event details
+ * @param emitter - Optional emitter identifier
+ * @param prop - Optional property that changed
+ */
+export type BroadcastFn = (snapshot: Linkable, event: StateChange, emitter?: string, prop?: KeyLike) => void;
+
+/**
+ * Function type for emitting state changes to subscribers.
+ *
+ * @param event - The state change event details
+ * @param prop - Optional property key that was changed
+ */
+export type EmitFn = (event: StateChange, prop?: KeyLike) => void;
+
+/**
+ * Interface for broadcasting state changes to subscribers.
+ */
+export type Broadcaster = {
+  /**
+   * Emits a state change event.
+   *
+   * @param event - The state change event details
+   * @param prop - Optional property key that was changed
+   */
+  emit: EmitFn;
+
+  /**
+   * Broadcasts a state change to all subscribers.
+   *
+   * @param snapshot - The current state snapshot
+   * @param event - The state change event details
+   * @param emitter - Optional emitter identifier
+   */
+  broadcast: BroadcastFn;
+};

@@ -1,14 +1,15 @@
 import type {
+  ArrayMutator,
   Linkable,
-  LinkableSchema,
   MethodLike,
   ObjLike,
   StateChange,
   StateMetadata,
   StateMutation,
-  StateReferences,
+  StateRelation,
+  TrapOverrides,
 } from './types.js';
-import { INIT_REGISTRY, META_REGISTRY, REFERENCE_REGISTRY, SORTER_REGISTRY } from './registry.js';
+import { INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
 import { ARRAY_MUTATIONS, OBSERVER_KEYS } from './constant.js';
 import { broadcast } from './internal.js';
 import { captureStack } from './exception.js';
@@ -57,43 +58,26 @@ const HEURISTIC_THRESHOLD = 5;
  * - Handling of immutable arrays by returning mock values
  *
  * @template T - The type of the array
- * @template S - The schema type for validation
  * @param init - The initial array state
  * @param options - Optional state references containing schema, configs, and subscribers
  * @returns A WeakMap mapping original array methods to their proxied implementations
  * @throws Error if called on a non-reactive state (when no references are found)
  */
-export function createArrayMutator<T extends unknown[], S extends LinkableSchema>(
-  init: T,
-  options?: StateReferences<T, S>
-) {
-  const references = (options ?? REFERENCE_REGISTRY.get(init)) as StateReferences<T, S>;
+export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapOverrides) {
+  const meta = META_REGISTRY.get(init) as StateMetadata;
 
-  if (!references) {
+  if (!meta) {
     throw new Error(`Array trap factory called on non-reactive state.`);
   }
 
-  const meta = META_REGISTRY.get(init) as StateMetadata;
   const devTool = getDevTool();
   const { schema, observers, subscribers, subscriptions } = meta;
-  const { unlink, configs } = references;
+  const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
+  const { configs } = options ?? meta;
   const compare = SORTER_REGISTRY.get(init);
 
-  const mutator = new WeakMap<WeakKey, MethodLike>();
-
-  if (configs.immutable) {
-    for (const method of ARRAY_MUTATIONS) {
-      const originFn = (init as Array<unknown>)[method] as (...args: unknown[]) => unknown;
-      const targetFn: MethodLike = (...args) => {
-        captureStack.violation.methodCall(method, targetFn);
-        return (mockReturn[method as never] as typeof targetFn)?.(INIT_REGISTRY.get(init), ...args);
-      };
-
-      mutator.set(originFn, targetFn);
-    }
-
-    return mutator;
-  }
+  const mutator: ArrayMutator<T[number]> = {} as never;
+  const mutatorMap = new WeakMap<WeakKey, MethodLike>();
 
   for (const method of ARRAY_MUTATIONS) {
     const originFn = (init as Array<unknown>)[method] as (...args: unknown[]) => unknown;
@@ -222,10 +206,23 @@ export function createArrayMutator<T extends unknown[], S extends LinkableSchema
       return result;
     };
 
-    mutator.set(originFn, targetFn);
+    mutator[method] = targetFn as never;
+    mutatorMap.set(originFn, targetFn);
   }
 
-  return mutator;
+  if (configs.immutable) {
+    for (const method of ARRAY_MUTATIONS) {
+      const originFn = (init as Array<unknown>)[method] as (...args: unknown[]) => unknown;
+      const targetFn: MethodLike = (...args) => {
+        captureStack.violation.methodCall(method, targetFn);
+        return (mockReturn[method as never] as typeof targetFn)?.(INIT_REGISTRY.get(init), ...args);
+      };
+
+      mutatorMap.set(originFn, targetFn);
+    }
+  }
+
+  return { mutator, mutatorMap };
 }
 
 createArrayMutator.mock = mockReturn;

@@ -115,7 +115,7 @@ describe('Anchor Core - Edge Cases', () => {
     it('should throw when trying to create collection mutator with no reference', () => {
       expect(() => {
         createCollectionMutator({} as never);
-      }).toThrow('Get trap factory called on non-reactive state.');
+      }).toThrow('Collection trap factory called on non-reactive state.');
     });
 
     it('should handle linking with existing subscription', () => {
