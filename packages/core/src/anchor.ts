@@ -47,6 +47,7 @@ import { captureStack } from './exception.js';
 import { softClone } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { createGetter, createRemover, createSetter } from './trap.js';
+import { Linkables } from './enum.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -154,7 +155,13 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     SORTER_REGISTRY.set(init, options?.compare as (a: unknown, b: unknown) => number);
   }
 
-  const type = isArray(init) ? 'array' : isSet(init) ? 'set' : isMap(init) ? 'map' : 'object';
+  const type = isArray(init)
+    ? Linkables.ARRAY
+    : isSet(init)
+      ? Linkables.SET
+      : isMap(init)
+        ? Linkables.MAP
+        : Linkables.OBJECT;
   const meta: StateMetadata<T, S> = {
     id: shortId(),
     type,

@@ -1,7 +1,7 @@
 import type { BatchMutation, Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
 import { BATCH_MUTATION_KEYS, LINKABLE } from './constant.js';
 import { typeOf } from '@beerush/utils';
-import { OBSERVER_KEYS } from './enum.js';
+import { Linkables, OBSERVER_KEYS } from './enum.js';
 
 /**
  * Creates a broadcaster object for managing state change notifications.
@@ -89,5 +89,5 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
  * @returns True if the value is linkable, false otherwise.
  */
 export function linkable(value: unknown): value is Linkable {
-  return LINKABLE.has(typeOf(value));
+  return LINKABLE.has(typeOf(value) as Linkables);
 }
