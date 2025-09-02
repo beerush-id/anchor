@@ -1,6 +1,7 @@
 import type { BatchMutation, Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
-import { BATCH_MUTATION_KEYS, LINKABLE, OBSERVER_KEYS } from './constant.js';
+import { BATCH_MUTATION_KEYS, LINKABLE } from './constant.js';
 import { typeOf } from '@beerush/utils';
+import { OBSERVER_KEYS } from './enum.js';
 
 /**
  * Creates a broadcaster object for managing state change notifications.

@@ -24,10 +24,10 @@ import { linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
-import { OBSERVER_KEYS } from './constant.js';
 import { createCollectionGetter } from './collection.js';
 import { assignObserver, getObserver } from './observable.js';
 import { getDevTool } from './dev.js';
+import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
 
 /**
  * Creates a getter trap function for a reactive state object.
@@ -209,7 +209,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
 
     if (!STATE_BUSY_LIST.has(target)) {
       const event: StateChange = {
-        type: 'set',
+        type: ObjectMutations.SET,
         keys: [prop as string],
         prev: current,
         value: target[prop],
@@ -291,7 +291,7 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
 
     if (!STATE_BUSY_LIST.has(target)) {
       const event: StateChange = {
-        type: 'delete',
+        type: ObjectMutations.DELETE,
         prev: current,
         keys: [prop],
       };

@@ -1,5 +1,6 @@
 export * from './anchor.js';
 export * from './derive.js';
+export * from './enum.js';
 export * from './observable.js';
 export * from './types.ts';
 

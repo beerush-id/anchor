@@ -3,6 +3,7 @@ import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } 
 import { isArray, isDefined, isMap, isSet } from '@beerush/utils';
 import { softEntries, softKeys } from './utils/clone.js';
 import { getDevTool } from './dev.js';
+import { BatchMutations } from './enum.js';
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
 export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
@@ -53,7 +54,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   const event: StateChange = {
-    type: 'assign',
+    type: BatchMutations.ASSIGN,
     prev,
     keys: [],
     value: source,
@@ -129,7 +130,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   }
 
   const event: StateChange = {
-    type: 'remove',
+    type: BatchMutations.REMOVE,
     prev,
     keys: [],
     value: keys,
@@ -183,7 +184,7 @@ export const clear = <T extends Assignable>(target: T) => {
   }
 
   const event: StateChange = {
-    type: 'clear',
+    type: BatchMutations.CLEAR,
     prev: {},
     keys: [],
   };

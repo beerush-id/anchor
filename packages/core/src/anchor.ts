@@ -24,13 +24,14 @@ import { ANCHOR_SETTINGS } from './constant.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
-  GATEWAY_REGISTRY,
+  INIT_GATEWAY_REGISTRY,
   INIT_REGISTRY,
   META_INIT_REGISTRY,
   META_REGISTRY,
   MUTATOR_REGISTRY,
   RELATION_REGISTRY,
   SORTER_REGISTRY,
+  STATE_GATEWAY_REGISTRY,
   STATE_REGISTRY,
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
@@ -196,7 +197,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     mutator: mutators?.mutator as StateMutator<T>,
     broadcaster,
   };
-  GATEWAY_REGISTRY.set(init, gateway as StateGateway);
+  INIT_GATEWAY_REGISTRY.set(init, gateway as StateGateway);
 
   const proxyHandler = createProxyHandler<T>(init, gateway, meta);
   const state = new Proxy(init as ObjLike, proxyHandler) as State<T>;
@@ -213,6 +214,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   CONTROLLER_REGISTRY.set(state, controller as never);
   SUBSCRIBER_REGISTRY.set(state, subscribers as never);
   SUBSCRIPTION_REGISTRY.set(state, subscriptions);
+  STATE_GATEWAY_REGISTRY.set(state, gateway as StateGateway);
 
   // Trigger dev tool if it is available.
   getDevTool()?.onInit?.(init, meta);

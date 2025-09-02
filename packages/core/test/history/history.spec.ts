@@ -79,7 +79,7 @@ describe('Anchor History', () => {
     });
 
     it('should handle backward operation', () => {
-      const state = anchor({ count: 0 }) as { count?: number };
+      const state = anchor({ count: 0 }) as { count?: number; age?: number };
       const stateHistory = history(state);
 
       state.count = 1;
@@ -114,6 +114,14 @@ describe('Anchor History', () => {
 
       stateHistory.backward();
       expect(state.count).toBe(0);
+
+      state.age = 10;
+      timeTravel();
+
+      expect(state.age).toBe(10);
+
+      stateHistory.backward();
+      expect(state.age).toBeUndefined();
 
       stateHistory.destroy();
     });
@@ -617,6 +625,9 @@ describe('Anchor History', () => {
 
       stateHistory.backward();
       expect(state.set.size).toBe(4);
+
+      stateHistory.forward();
+      expect(state.set.size).toBe(0);
 
       stateHistory.destroy();
     });

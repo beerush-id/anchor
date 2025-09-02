@@ -12,7 +12,7 @@ import type {
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
-  GATEWAY_REGISTRY,
+  INIT_GATEWAY_REGISTRY,
   INIT_REGISTRY,
   META_INIT_REGISTRY,
   META_REGISTRY,
@@ -275,7 +275,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     RELATION_REGISTRY.delete(init);
     MUTATOR_REGISTRY.delete(init);
     BROADCASTER_REGISTRY.delete(init);
-    GATEWAY_REGISTRY.delete(init);
+    INIT_GATEWAY_REGISTRY.delete(init);
 
     STATE_REGISTRY.delete(state);
     CONTROLLER_REGISTRY.delete(state);

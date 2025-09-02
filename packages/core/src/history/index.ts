@@ -1,12 +1,24 @@
-import type { ArrayMutation, KeyLike, Linkable, ObjLike, State, StateChange } from '../types.js';
+import type {
+  ArrayMutation,
+  ArrayMutator,
+  KeyLike,
+  Linkable,
+  MapMutator,
+  SetMutation,
+  SetMutator,
+  State,
+  StateChange,
+  StateGateway,
+} from '../types.js';
 import { anchor } from '../anchor.js';
 import { derive } from '../derive.js';
 import { assign } from '../helper.js';
-import { STATE_BUSY_LIST } from '../registry.js';
-import { ARRAY_MUTATIONS } from '../constant.js';
+import { INIT_GATEWAY_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from '../registry.js';
+import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
 import { microtask } from '../utils/index.js';
 import { captureStack } from '../exception.js';
 import { isMap, isSet } from '@beerush/utils';
+import { BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
 
 export type HistoryOptions = {
   debounce?: number;
@@ -209,66 +221,85 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
  * @internal
  */
 export function undoChange<T>(state: T, event: StateChange) {
+  const init = STATE_REGISTRY.get(state as Linkable) as Linkable;
   const { type, prev } = event;
-  const { key, target } = getTarget(state, ...event.keys);
+  const { key, target } = getTarget(init, event);
+  const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
 
-  STATE_BUSY_LIST.add(state as Linkable);
+  // STATE_BUSY_LIST.add(state as Linkable);
 
-  if (type === 'set') {
-    if (target instanceof Map) {
-      if (typeof prev === 'undefined') {
-        target.delete(key);
-      } else {
-        target.set(key, prev);
-      }
+  if (type === ObjectMutations.SET) {
+    if (typeof prev === 'undefined') {
+      gateway.remover(target, key, target);
     } else {
-      target[key as never] = prev as never;
+      gateway.setter(target, key, prev, target);
     }
-  } else if (type === 'add') {
-    (target[key as never] as Set<unknown>).delete(event.value);
-  } else if (type === 'delete') {
-    if (target instanceof Map) {
-      target.set(key, prev);
-    } else if ((target as ObjLike)[key] instanceof Set) {
-      (target[key as never] as Set<unknown>).add(prev);
+    // target[key as never] = prev as never;
+  } else if (type === MapMutations.SET) {
+    if (typeof prev === 'undefined') {
+      // target.delete(key);
+      (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
     } else {
-      (target as ObjLike)[key] = prev;
+      // target.set(key, prev);
+      (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
     }
-  } else if (type === 'assign') {
-    assign(target as never, prev as never);
-  } else if (type === 'clear') {
+  } else if (type === SetMutations.ADD) {
+    (gateway.mutator as SetMutator<unknown>).delete(event.value);
+    // (target[key as never] as Set<unknown>).delete(event.value);
+  } else if (type === ObjectMutations.DELETE) {
+    // (target as ObjLike)[key] = prev;
+    gateway?.setter(target, key, prev, target);
+  } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
+    if (target instanceof Map) {
+      // target.set(key, prev);
+      (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
+    } else if (target instanceof Set) {
+      // (target[key as never] as Set<unknown>).add(prev);
+      (gateway.mutator as SetMutator<unknown>).add(prev);
+    }
+  } else if (type === BatchMutations.ASSIGN) {
+    // assign(target as never, prev as never);
+    assign(anchor.find(target) as never, prev as never);
+  } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
     if (target instanceof Map) {
       for (const [key, value] of prev as [[unknown, unknown]]) {
-        target.set(key as never, value);
+        // target.set(key as never, value);
+        (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
       }
     } else if (target instanceof Set) {
       for (const value of prev as [unknown]) {
-        target.add(value);
+        // target.add(value);
+        (gateway.mutator as SetMutator<unknown>).add(value);
       }
     }
   } else if (ARRAY_MUTATIONS.includes(type as never)) {
-    const items = (key ? target[key as never] : target) as unknown[];
+    const items = target as unknown[];
 
     if (type === 'shift') {
-      items.unshift(prev);
+      // items.unshift(prev);
+      (gateway.mutator as ArrayMutator<unknown>).unshift(prev);
     } else if (type === 'pop') {
-      items.push(prev);
+      // items.push(prev);
+      (gateway.mutator as ArrayMutator<unknown>).push(prev);
     } else if (type === 'push') {
       const initItems = (anchor.get as (item: unknown, silent: boolean) => unknown[])(items, true);
       for (const item of event.value as unknown[]) {
         const index = initItems.indexOf(item);
         if (index >= 0) {
-          items.splice(index, 1);
+          // items.splice(index, 1);
+          (gateway.mutator as ArrayMutator<unknown>).splice(index, 1);
         }
       }
     } else if (type === 'unshift') {
-      items.shift();
+      // items.shift();
+      (gateway.mutator as ArrayMutator<unknown>).shift();
     } else {
-      items.splice(0, items.length, ...(prev as unknown[]));
+      // items.splice(0, items.length, ...(prev as unknown[]));
+      (gateway.mutator as ArrayMutator<unknown>).splice(0, items.length, ...(prev as unknown[]));
     }
   }
 
-  STATE_BUSY_LIST.delete(state as Linkable);
+  // STATE_BUSY_LIST.delete(state as Linkable);
 }
 
 /**
@@ -285,33 +316,63 @@ export function undoChange<T>(state: T, event: StateChange) {
  * @internal
  */
 export function redoChange<T>(state: T, event: StateChange) {
+  const init = STATE_REGISTRY.get(state as Linkable);
   const { type, prev, value } = event;
-  const { key, target } = getTarget(state, ...event.keys);
+  const { key, target } = getTarget(init, event);
+  const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
 
-  STATE_BUSY_LIST.add(state as Linkable);
+  // STATE_BUSY_LIST.add(state as Linkable);
 
-  if (type === 'set') {
-    setValue(target as never, key as keyof T, value as never);
-  } else if (type === 'add') {
-    (target[key as never] as Set<unknown>).add(value);
-  } else if (type === 'delete') {
+  if (type === ObjectMutations.SET) {
+    gateway.setter(target, key, value, target);
+  } else if (type === MapMutations.SET) {
+    (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
+  } else if (type === SetMutations.ADD) {
+    (gateway.mutator as SetMutator<unknown>).add(value);
+  } else if (type === ObjectMutations.DELETE) {
+    gateway.remover(target, key, target);
+  } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
     if (target instanceof Map) {
-      target.delete(key);
-    } else if ((target as ObjLike)[key] instanceof Set) {
-      (target[key as never] as Set<unknown>).delete(prev);
-    } else {
-      delete (target as ObjLike)[key];
+      (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
+    } else if (target instanceof Set) {
+      (gateway.mutator as SetMutator<unknown>).delete(prev);
     }
-  } else if (type === 'assign') {
-    assign(target as never, value as never);
-  } else if (type === 'clear') {
-    (target as Set<unknown>).clear();
-  } else if (ARRAY_MUTATIONS.includes(type as never)) {
-    const items = (key ? target[key as never] : target) as unknown[];
-    (items[type as ArrayMutation] as (...args: unknown[]) => unknown)(...(value as unknown[]));
+  } else if (type === BatchMutations.ASSIGN) {
+    assign(anchor.find(target) as never, value as never);
+  } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
+    if (target instanceof Map) {
+      (gateway.mutator as MapMutator<unknown, unknown>).clear();
+    } else if (target instanceof Set) {
+      (gateway.mutator as SetMutator<unknown>).clear();
+    }
+  } else if (ARRAY_MUTATIONS.includes(type as ArrayMutation)) {
+    ((gateway.mutator as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
+      ...(value as unknown[])
+    );
   }
+  //
+  // if (type === ObjectMutations.SET || type === MapMutations.SET) {
+  //   setValue(target as never, key as keyof T, value as never);
+  // } else if (type === SetMutations.ADD) {
+  //   (target[key as never] as Set<unknown>).add(value);
+  // } else if (type === 'delete') {
+  //   if (target instanceof Map) {
+  //     target.delete(key);
+  //   } else if ((target as ObjLike)[key] instanceof Set) {
+  //     (target[key as never] as Set<unknown>).delete(prev);
+  //   } else {
+  //     delete (target as ObjLike)[key];
+  //   }
+  // } else if (type === 'assign') {
+  //   assign(target as never, value as never);
+  // } else if (type === 'clear') {
+  //   (target as Set<unknown>).clear();
+  // } else if (ARRAY_MUTATIONS.includes(type as never)) {
+  //   const items = (key ? target[key as never] : target) as unknown[];
+  //   (items[type as ArrayMutation] as (...args: unknown[]) => unknown)(...(value as unknown[]));
+  // }
 
-  STATE_BUSY_LIST.delete(state as Linkable);
+  // STATE_BUSY_LIST.delete(state as Linkable);
 }
 
 /**
@@ -324,20 +385,27 @@ export function redoChange<T>(state: T, event: StateChange) {
  *
  * @template T - The type of the state object
  * @param state - The root state object to traverse
- * @param keys - The path of keys leading to the target property
+ * @param event - The state change event containing information about the modified property
  * @returns An object containing the final key and its parent target object
  *
  * @internal
  */
-function getTarget<T>(state: T, ...keys: KeyLike[]) {
-  if (!keys.length) {
+function getTarget<T>(state: T, event: StateChange) {
+  if (!event.keys.length) {
     return { key: '', target: state as Linkable };
   }
 
-  const parentKeys = [...keys];
+  const parentKeys = [...event.keys];
   const key = parentKeys.pop() as KeyLike;
 
   if (!parentKeys.length) {
+    if (
+      ARRAY_MUTATION_KEYS.has(event.type as ArrayMutation) ||
+      COLLECTION_MUTATION_KEYS.has(event.type as SetMutation)
+    ) {
+      return { key: '', target: getValue(state, key) as Linkable };
+    }
+
     return { key, target: state as Linkable };
   }
 
@@ -369,29 +437,6 @@ function getValue<T>(target: T, key: KeyLike) {
   }
 
   return (target as Record<KeyLike, unknown>)[key];
-}
-
-/**
- * Sets a value on a target object using a specified key.
- *
- * This function is used internally by the history management system to
- * apply values to various data structures including Maps and plain objects.
- * It provides a unified interface for value assignment regardless of the
- * underlying data structure.
- *
- * @template T - The type of the target object
- * @param target - The target object on which to set the value
- * @param key - The key used to set the value
- * @param value - The value to be set
- *
- * @internal
- */
-function setValue<T>(target: T, key: keyof T, value: T[keyof T]) {
-  if (target instanceof Map) {
-    target.set(key, value);
-  } else if (typeof target === 'object' && target !== null) {
-    target[key as keyof T] = value as never;
-  }
 }
 
 /**

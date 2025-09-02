@@ -1,5 +1,6 @@
 import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
 import { type input, type output, type ZodArray, type ZodObject } from 'zod/v4';
+import type { Linkables } from './enum.js';
 
 export type Recursive = boolean | 'flat';
 export type MethodLike = (...args: unknown[]) => unknown;
@@ -69,7 +70,7 @@ export type StateMetadata<
   ParentSchema extends LinkableSchema = LinkableSchema,
 > = {
   id: string;
-  type: 'object' | 'array' | 'set' | 'map';
+  type: Linkables;
   cloned: boolean;
   configs: StateBaseOptions;
   observers: StateObserverList;

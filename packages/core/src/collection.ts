@@ -14,21 +14,20 @@ import type {
   KeyLike,
   Linkable,
   MethodLike,
-  SetMutation,
   StateBaseOptions,
   StateChange,
   StateLinkFn,
   StateMetadata,
-  StateMutation,
   StateMutator,
   StateRelation,
   TrapOverrides,
 } from './types.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
-import { COLLECTION_MUTATION_KEYS, OBSERVER_KEYS } from './constant.js';
+import { COLLECTION_MUTATION_KEYS } from './constant.js';
 import { assignObserver, getObserver } from './observable.js';
 import { getDevTool } from './dev.js';
+import { MapMutations, OBSERVER_KEYS, SetMutations } from './enum.js';
 
 const mockReturn = {
   set(map: Map<unknown, unknown>) {
@@ -227,7 +226,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
       if (!STATE_BUSY_LIST.has(init)) {
         const event: StateChange = {
-          type: method as StateMutation,
+          type: method === 'set' ? MapMutations.SET : SetMutations.ADD,
           prev: oldValue,
           keys: method === 'set' ? [keyValue] : [],
           value: newValue,
@@ -266,7 +265,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
         if (!STATE_BUSY_LIST.has(init)) {
           const event: StateChange = {
-            type: method,
+            type: self instanceof Map ? MapMutations.DELETE : SetMutations.DELETE,
             prev: current,
             keys: self instanceof Map ? [keyValue as string] : [],
           };
@@ -297,7 +296,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
 
         if (!STATE_BUSY_LIST.has(init)) {
           const event: StateChange = {
-            type: method,
+            type: self instanceof Map ? MapMutations.CLEAR : SetMutations.CLEAR,
             prev: self instanceof Map ? entries : values,
             keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
           };
@@ -318,13 +317,13 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
   }
 
   if (immutable) {
-    for (const method of ['set', 'add', 'delete', 'clear'] as SetMutation[]) {
+    for (const method of ['set', 'add', 'delete', 'clear']) {
       const methodFn = init[method as never] as (...args: unknown[]) => unknown;
 
       if (typeof methodFn === 'function') {
         const targetFn = () => {
-          captureStack.violation.methodCall(method, targetFn);
-          return mockReturn[method]?.(init as never);
+          captureStack.violation.methodCall(method as never, targetFn);
+          return mockReturn[method as keyof typeof mockReturn]?.(init as never);
         };
 
         mutatorMap.set(methodFn, targetFn);

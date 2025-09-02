@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, setObserver } from '../../src/index.js';
+import { anchor, createObserver, MapMutations, setObserver } from '../../src/index.js';
 
 describe('Anchor Core - Observable Map', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -59,7 +59,7 @@ describe('Anchor Core - Observable Map', () => {
       state.set('c', 3);
 
       expect(onChange).toHaveBeenCalledWith({
-        type: 'set',
+        type: MapMutations.SET,
         keys: ['c'],
         prev: undefined,
         value: 3,
@@ -105,7 +105,7 @@ describe('Anchor Core - Observable Map', () => {
       // Test various map mutations
       state.set('c', 3);
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'set',
+        type: MapMutations.SET,
         keys: ['c'],
         prev: undefined,
         value: 3,
@@ -113,7 +113,7 @@ describe('Anchor Core - Observable Map', () => {
 
       state.delete('a');
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'delete',
+        type: MapMutations.DELETE,
         keys: ['a'],
         prev: 1,
         value: undefined,
@@ -121,7 +121,7 @@ describe('Anchor Core - Observable Map', () => {
 
       state.clear();
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'clear',
+        type: MapMutations.CLEAR,
         keys: [['b', 'c']],
         prev: [
           ['b', 2],

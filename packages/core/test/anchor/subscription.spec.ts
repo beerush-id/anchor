@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, derive, MapMutations, SetMutations } from '../../src/index.js';
 
 describe('Anchor Core - Subscription', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -89,7 +89,7 @@ describe('Anchor Core - Subscription', () => {
 
       expect(handler).toHaveBeenCalledTimes(2); // init + set
       expect(handler).toHaveBeenNthCalledWith(2, anchor.get(state), {
-        type: 'set',
+        type: MapMutations.SET,
         prev: undefined,
         keys: ['map', 'b'],
         value: 2,
@@ -110,7 +110,7 @@ describe('Anchor Core - Subscription', () => {
 
       expect(handler).toHaveBeenCalledTimes(2); // init + set
       expect(handler).toHaveBeenNthCalledWith(2, anchor.get(state), {
-        type: 'add',
+        type: SetMutations.ADD,
         prev: undefined,
         keys: ['set'],
         value: 3,

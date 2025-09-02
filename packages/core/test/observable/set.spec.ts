@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, setObserver } from '../../src/index.js';
+import { anchor, createObserver, ObjectMutations, SetMutations, setObserver } from '../../src/index.js';
 
 describe('Anchor Core - Observable Set', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -45,7 +45,7 @@ describe('Anchor Core - Observable Set', () => {
       state.add(4);
 
       expect(onChange).toHaveBeenCalledWith({
-        type: 'add',
+        type: SetMutations.ADD,
         keys: [],
         prev: undefined,
         value: 4,
@@ -67,7 +67,7 @@ describe('Anchor Core - Observable Set', () => {
       // Test various set mutations
       state.add(4);
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'add',
+        type: SetMutations.ADD,
         keys: [],
         prev: undefined,
         value: 4,
@@ -75,7 +75,7 @@ describe('Anchor Core - Observable Set', () => {
 
       state.delete(1);
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'delete',
+        type: SetMutations.DELETE,
         keys: [],
         prev: 1,
         value: undefined,
@@ -83,7 +83,7 @@ describe('Anchor Core - Observable Set', () => {
 
       state.clear();
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'clear',
+        type: SetMutations.CLEAR,
         keys: [[]],
         prev: [2, 3, 4],
       });
@@ -110,7 +110,7 @@ describe('Anchor Core - Observable Set', () => {
       values[0].a = 3;
 
       expect(onChange).toHaveBeenCalledWith({
-        type: 'set',
+        type: ObjectMutations.SET,
         keys: ['a'],
         prev: 1,
         value: 3,
@@ -121,7 +121,7 @@ describe('Anchor Core - Observable Set', () => {
       state.add(obj3 as never);
 
       expect(onChange).toHaveBeenLastCalledWith({
-        type: 'add',
+        type: SetMutations.ADD,
         keys: [],
         prev: undefined,
         value: obj3,

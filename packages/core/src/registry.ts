@@ -23,12 +23,13 @@ export const MUTATOR_REGISTRY = new WeakMap<
   ReturnType<typeof createArrayMutator> | ReturnType<typeof createCollectionMutator>
 >();
 export const BROADCASTER_REGISTRY = new WeakMap<Linkable, Broadcaster>();
-export const GATEWAY_REGISTRY = new WeakMap<Linkable, StateGateway>();
+export const INIT_GATEWAY_REGISTRY = new WeakMap<Linkable, StateGateway>();
 
 export const STATE_REGISTRY = new WeakMap<State, Linkable>();
 export const CONTROLLER_REGISTRY = new WeakMap<State, StateController>();
 export const SUBSCRIBER_REGISTRY = new WeakMap<State, StateSubscriberList>();
 export const SUBSCRIPTION_REGISTRY = new WeakMap<State, StateSubscriptionMap>();
+export const STATE_GATEWAY_REGISTRY = new WeakMap<State, StateGateway>();
 
 export const STATE_BUSY_LIST = new WeakSet<State>();
 export const META_INIT_REGISTRY = new WeakMap<StateMetadata, Linkable>();

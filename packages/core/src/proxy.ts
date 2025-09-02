@@ -13,7 +13,7 @@ import type {
   TrapOverrides,
 } from './types.js';
 import { createCollectionMutator } from './collection.js';
-import { CONTROLLER_REGISTRY, GATEWAY_REGISTRY, META_REGISTRY, STATE_REGISTRY } from './registry.js';
+import { CONTROLLER_REGISTRY, INIT_GATEWAY_REGISTRY, META_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createArrayMutator } from './array.js';
 import { captureStack } from './exception.js';
 
@@ -83,7 +83,7 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
   }
 
   const meta = META_REGISTRY.get(init) as StateMetadata;
-  const gateway = GATEWAY_REGISTRY.get(init) as StateGateway;
+  const gateway = INIT_GATEWAY_REGISTRY.get(init) as StateGateway;
   const controller = CONTROLLER_REGISTRY.get(state) as StateController;
   const newOptions = {
     configs: {

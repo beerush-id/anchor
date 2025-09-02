@@ -1,4 +1,5 @@
 import type {
+  ArrayMutation,
   ArrayMutator,
   Broadcaster,
   Linkable,
@@ -6,7 +7,6 @@ import type {
   ObjLike,
   StateChange,
   StateMetadata,
-  StateMutation,
   StateRelation,
   TrapOverrides,
 } from './types.js';
@@ -182,7 +182,7 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
       }
 
       const event: StateChange = {
-        type: method as StateMutation,
+        type: method as ArrayMutation,
         prev: current,
         keys: [],
         value: args,
