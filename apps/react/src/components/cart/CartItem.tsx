@@ -66,14 +66,14 @@ export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> 
 
   return (
     <div ref={ref} className="flex items-center gap-2">
-      <Button onClick={() => (item.quantity = Math.max(0, item.quantity - 1))} className="p-2">
+      <Button onClick={() => (item.quantity = Math.max(0, item.quantity - 1))} className="btn-icon">
         <Minus size={14} />
       </Button>
       <span className="font-mono w-8 text-center">{item.quantity}</span>
-      <Button onClick={() => item.quantity++} className="p-2">
+      <Button onClick={() => item.quantity++} className="btn-icon">
         <Plus size={14} />
       </Button>
-      <Button onClick={() => handleRemove()} className="p-2 ml-4 text-red-400 hover:bg-red-900/50">
+      <Button onClick={() => handleRemove()} className="ml-4 btn-icon">
         <Trash2 size={14} />
       </Button>
     </div>

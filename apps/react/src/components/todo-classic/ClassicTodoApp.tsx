@@ -96,9 +96,7 @@ export const ClassicTodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">👌Classic Todo List</h3>
-        <button
-          onClick={() => benchmark(addBenchmarkItem)}
-          className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
+        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn mr-4">
           <Gauge size={20} />
           <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
         </button>
@@ -130,12 +128,10 @@ const ClassicTodoPanel: FC<{
 
   return (
     <div ref={ref} className="flex items-center">
-      <button
-        onClick={toggleInfo}
-        className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
+      <button onClick={toggleInfo} className="anchor-icon-btn mr-4">
         <CircleQuestionMark size={20} />
       </button>
-      <button className="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium" onClick={toggleCode}>
+      <button className="anchor-btn btn-alternate" onClick={toggleCode}>
         {panel.code ? 'Hide Code' : 'Show Code'}
       </button>
     </div>

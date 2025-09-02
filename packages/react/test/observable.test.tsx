@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { type ComponentType } from 'react';
 import { anchor } from '@anchor/core';
-import { type AnchoredProps, cleanProps, observed, setDevMode, useObserverNode } from '../src/index.js';
+import { cleanProps, CLEANUP_DEBOUNCE_TIME, setDevMode } from '../src/index.js';
 import { mockObserverProp } from '../mocks/observable.js';
+import type { AnchoredProps } from '../src/types.js';
+import { observed, useObserverNode } from '../src/components/index.js';
 
 // Mock component for testing
 const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) => {
@@ -87,6 +89,7 @@ describe('Anchor React - Observable', () => {
 
       const { unmount: unmount1 } = render(<TestComponentWithObserver />);
       unmount1();
+      vi.advanceTimersByTime(CLEANUP_DEBOUNCE_TIME);
 
       expect(destroySpy).toHaveBeenCalled();
     });
@@ -252,6 +255,7 @@ describe('Anchor React - Observable', () => {
       );
 
       unmount();
+      vi.advanceTimersByTime(CLEANUP_DEBOUNCE_TIME);
 
       expect(destroySpy1).toHaveBeenCalled();
       expect(destroySpy2).toHaveBeenCalled();

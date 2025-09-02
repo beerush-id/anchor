@@ -1,3 +1,13 @@
+@theme {
+  --color-brand-main: #533ddd;
+  --color-brand-main-hover: #4a2d9b;
+  --color-brand-main-active: #3b1e8c;
+  --color-brand-orange: #ffa500;
+  --color-brand-orange-hover: #e68a00;
+  --color-brand-orange-active: #c86c00;
+  --color-brand-red: #fb2c36;
+}
+
 .shiki {
   @apply p-4 overflow-auto outline-none;
   max-height: 480px;
@@ -27,42 +37,54 @@ body {
   color-scheme: dark;
 }
 
-.card {
+@utility card {
   @apply bg-slate-900/75 border border-slate-700/50 rounded-xl;
 }
 
-.bugs {
-  --torch-x: 50%;
-  --torch-y: 50%;
+@utility anchor-btn {
+  @apply inline-flex items-center gap-2 px-3 py-2 rounded-md font-semibold;
+  @apply bg-slate-700 text-white;
+  @apply text-sm transition-all duration-200 outline-none whitespace-nowrap;
+  @apply focus:ring-2 focus:ring-brand-orange/75;
+  @apply hover:bg-slate-600 active:bg-slate-800 active:ring-0;
+  @apply disabled:pointer-events-none disabled:opacity-50;
+
+  &.btn-primary {
+    @apply bg-brand-orange text-white;
+    @apply focus:ring-brand-red/75;
+    @apply hover:bg-brand-orange-hover;
+    @apply active:bg-brand-orange-active;
+  }
+
+  &.btn-alternate {
+    @apply px-4 py-2 rounded-md;
+    @apply bg-slate-900 hover:bg-brand-orange text-white active:bg-slate-950;
+    @apply disabled:opacity-25 disabled:pointer-events-none;
+  }
+
+  &.btn-lg {
+    @apply px-8 py-3.5 text-[1rem];
+  }
+
+  &.btn-icon {
+    @apply px-2.5;
+  }
 }
 
-@keyframes bug-jitter {
-  0% {
-    transform: translate3d(var(--bug-x), var(--bug-y), 0) rotate(var(--bug-rotate));
-  }
-  50% {
-    transform: translate3d(calc(var(--bug-x) + 1px), calc(var(--bug-y) - 1px), 0) rotate(calc(var(--bug-rotate) + 5deg));
-  }
-  100% {
-    transform: translate3d(var(--bug-x), var(--bug-y), 0) rotate(var(--bug-rotate));
-  }
+@utility anchor-icon-btn {
+  @apply inline-flex items-center justify-center transition-all duration-200 outline-none;
+  @apply hover:text-slate-200 text-slate-400 focus:text-slate-300 active:text-slate-500;
+  @apply disabled:opacity-25 disabled:pointer-events-none;
 }
 
-.bug-node {
-  --bug-x: 0;
-  --bug-y: 0;
-  --bug-rotate: 0;
-  --bug-delay: 0.1s;
-  @apply absolute pointer-events-none;
-  left: var(--torch-x);
-  top: var(--torch-y);
-  transform: translate3d(var(--bug-x), var(--bug-y), 0) rotate(var(--bug-rotate));
-  animation: bug-jitter 0.3s infinite;
-  animation-delay: var(--bug-delay);
-  transition:
-    left 0.3s ease-in-out,
-    top 0.3s ease-in-out;
-  transition-delay: var(--bug-delay);
+@utility anchor-input {
+  @apply px-3 py-2 rounded-md outline-none transition-all duration-200 text-sm;
+  @apply bg-slate-800 text-white placeholder-slate-500;
+  @apply focus:ring-2 focus:ring-brand-orange/75;
+
+  &.input-md {
+    @apply px-4 py-3 rounded-lg text-[1rem];
+  }
 }
 
 .page-section {

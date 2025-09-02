@@ -42,9 +42,7 @@ export const TodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">😍 Anchor Todo List</h3>
-        <button
-          onClick={() => benchmark(addBenchmarkItem)}
-          className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
+        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn mr-4">
           <Gauge size={20} />
           <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
         </button>
@@ -72,14 +70,10 @@ const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ p
 
   return (
     <div ref={ref} className="flex items-center">
-      <button
-        onClick={() => (panel.info = !panel.info)}
-        className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center mr-4">
+      <button onClick={() => (panel.info = !panel.info)} className="anchor-icon-btn mr-4">
         <CircleQuestionMark size={20} />
       </button>
-      <button
-        className="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium"
-        onClick={() => (panel.code = !panel.code)}>
+      <button className="anchor-btn btn-alternate" onClick={() => (panel.code = !panel.code)}>
         {panel.code ? 'Hide Code' : 'Show Code'}
       </button>
     </div>

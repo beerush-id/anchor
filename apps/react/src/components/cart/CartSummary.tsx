@@ -39,7 +39,9 @@ export const CartSummary: FC<{ items: CartItemType[] }> = ({ items }) => {
       <div className="flex-1"></div>
       <div className="flex items-center p-4 border-t border-t-slate-700">
         <span className="flex-1"></span>
-        <Button disabled={!summary.total}>Checkout</Button>
+        <Button className="btn-primary" disabled={!summary.total}>
+          Checkout
+        </Button>
       </div>
     </Card>
   );

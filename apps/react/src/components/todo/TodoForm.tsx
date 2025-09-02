@@ -31,13 +31,13 @@ export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({
   });
 
   return (
-    <form ref={ref} className="flex gap-2" onSubmit={addTodo}>
+    <form ref={ref} className="flex gap-3" onSubmit={addTodo}>
       <input
         type="text"
         value={newText}
         onChange={(e) => setNewText(e.target.value)}
         placeholder="Add a new todo..."
-        className="flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-orange"
+        className="anchor-input flex-grow"
       />
       <Button type="submit" disabled={!newText}>
         <Plus size={16} />

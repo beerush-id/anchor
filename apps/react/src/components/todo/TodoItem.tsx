@@ -1,8 +1,8 @@
 import { type FC, memo, useEffect, useRef } from 'react';
 import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
 import { BENCHMARK_TOGGLE_SIZE, type ITodoItem, type ITodoList, type ITodoStats } from '@lib/todo.js';
-import { Button } from '../Button.js';
-import { Gauge, Trash2 } from 'lucide-react';
+import { Button, IconButton } from '../Button.js';
+import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
 import { useObserved } from '@anchor/react';
 import { microloop } from '@anchor/core';
 import { Tooltip } from '../Tooltip.js';
@@ -15,7 +15,7 @@ const benchmark = (fn: () => void) => {
 
 export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem }> = memo(({ todos, stats, todo }) => {
   const ref = useRef<HTMLLIElement>(null);
-  const [text, completed] = useObserved(() => [todo.text, todo.completed], [todo]);
+  const [text, completed] = useObserved(() => [todo.text, todo.completed]);
 
   flashNode(ref.current);
   useUpdateStat(() => {
@@ -53,21 +53,20 @@ export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem
   return (
     <li ref={ref} className="flex items-center gap-2">
       <div className="flex items-center flex-1 gap-3 bg-slate-800/70 p-2 rounded-md">
-        <input
-          type="checkbox"
-          checked={completed}
-          onChange={handleToggle}
-          className="w-5 h-5 rounded bg-slate-700 border-slate-600 text-brand-purple focus:ring-brand-purple"
-        />
-        <span className={`${completed ? 'flex-1 line-through text-slate-500' : 'flex-1'}`}>{text}</span>
+        <label className="text-slate-300">
+          <input type="checkbox" checked={completed} onChange={handleToggle} className="sr-only" />
+          {completed && <SquareCheck />}
+          {!completed && <Square />}
+        </label>
+        <span className={`text-semibold text-sm ${completed ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+          {text}
+        </span>
       </div>
-      <button
-        onClick={() => benchmark(handleToggle)}
-        className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center">
+      <IconButton onClick={() => benchmark(handleToggle)}>
         <Gauge size={20} />
         <Tooltip>Toggle {BENCHMARK_TOGGLE_SIZE} times</Tooltip>
-      </button>
-      <Button onClick={() => handleRemove()} className="p-2 text-red-400 hover:bg-red-900/50">
+      </IconButton>
+      <Button onClick={() => handleRemove()} className="btn-icon">
         <Trash2 size={14} />
       </Button>
     </li>

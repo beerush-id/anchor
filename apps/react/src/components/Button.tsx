@@ -6,10 +6,18 @@ export const Button: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({
   onClick,
   className = '',
 }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`inline-flex items-center gap-2 px-4 py-2 rounded-md font-semibold text-sm bg-slate-700 text-white hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-brand-purple disabled:pointer-events-none disabled:bg-slate-800 disabled:text-slate-600 ${className}`}>
+  <button onClick={onClick} disabled={disabled} className={`anchor-btn ${className}`}>
+    {children}
+  </button>
+);
+
+export const IconButton: FC<ButtonHTMLAttributes<HTMLButtonElement>> = ({
+  disabled,
+  children,
+  onClick,
+  className = '',
+}) => (
+  <button onClick={onClick} disabled={disabled} className={`anchor-icon-btn ${className}`}>
     {children}
   </button>
 );

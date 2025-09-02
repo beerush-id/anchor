@@ -16,7 +16,7 @@ export const ControlPanel: React.FC = () => {
       <Card>
         <CardHeader>
           <h3 className="font-semibold text-slate-200 flex-1">Anchor Pipe</h3>
-          <button className="bg-slate-900 text-white px-4 py-2 rounded-md" onClick={() => setShowCode(!showCode)}>
+          <button className="anchor-btn btn-alternate" onClick={() => setShowCode(!showCode)}>
             {showCode ? 'Hide Code' : 'Show Code'}
           </button>
         </CardHeader>

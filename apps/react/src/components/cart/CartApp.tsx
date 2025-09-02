@@ -10,7 +10,7 @@ import type { CartItemType } from './CartItem.js';
 import { ListRestart, Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { Input } from '@anchor/react/components';
-import { Button } from '../Button.js';
+import { Button, IconButton } from '../Button.js';
 
 export const CartApp: FC = () => {
   const ref = useRef(null);
@@ -62,35 +62,19 @@ const CartForm: FC<{ items: CartItemType[] }> = ({ items }) => {
     <form ref={formRef} onSubmit={handleSubmit} className="mt-4 flex items-end p-4 gap-4 border-t border-t-slate-700">
       <label className="flex flex-col flex-1 gap-2">
         <span className="text-xs text-slate-400">Item name</span>
-        <Input
-          ref={firstInputRef}
-          bind={formData}
-          name="name"
-          placeholder="Name"
-          className="px-3 py-1 border border-slate-700 rounded-md outline-none focus:border-blue-600"
-        />
+        <Input ref={firstInputRef} bind={formData} name="name" placeholder="Name" className="anchor-input" />
       </label>
       <label className="flex flex-col gap-2">
         <span className="text-xs text-slate-400">Item price</span>
-        <Input
-          type="number"
-          bind={formData}
-          name="price"
-          placeholder="Price"
-          className="w-20 px-3 py-1 border border-slate-700 rounded-md outline-none focus:border-blue-600"
-        />
+        <Input min="0" type="number" bind={formData} name="price" placeholder="Price" className="w-20 anchor-input" />
       </label>
       <label className="flex flex-col gap-2">
         <span className="text-xs text-slate-400">Qty</span>
-        <Input
-          type="number"
-          bind={formData}
-          name="quantity"
-          placeholder="Qty"
-          className="w-20 px-3 py-1 border border-slate-700 rounded-md outline-none focus:border-blue-600"
-        />
+        <Input min="0" type="number" bind={formData} name="quantity" placeholder="Qty" className="w-20 anchor-input" />
       </label>
-      <Button type="submit">Add Item</Button>
+      <Button className="btn-alternate" type="submit">
+        Add Item
+      </Button>
     </form>
   );
 };
@@ -100,24 +84,18 @@ const CartHistory: FC<{ items: CartItemType[] }> = ({ items }) => {
 
   return (
     <div className="flex items-center gap-4">
-      <button
-        disabled={!history.canBackward}
-        onClick={history.backward}
-        className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center disabled:opacity-25 disabled:pointer-events-none">
+      <IconButton disabled={!history.canBackward} onClick={history.backward}>
         <Undo size={20} />
         <Tooltip>Undo ({history.backwardList.length})</Tooltip>
-      </button>
-      <button
-        disabled={!history.canForward}
-        onClick={history.forward}
-        className="hover:text-slate-200 text-slate-400 inline-flex items-center justify-center disabled:opacity-25 disabled:pointer-events-none">
+      </IconButton>
+      <IconButton disabled={!history.canForward} onClick={history.forward}>
         <Redo size={20} />
         <Tooltip>Redo ({history.forwardList.length})</Tooltip>
-      </button>
+      </IconButton>
       <button
         disabled={!history.canBackward && !history.canForward}
         onClick={history.reset}
-        className="bg-slate-900 hover:bg-slate-950 transition-all text-white px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap flex items-center gap-2 disabled:opacity-25 disabled:pointer-events-none">
+        className="anchor-btn btn-alternate">
         <ListRestart size={20} />
         <span>Reset</span>
       </button>

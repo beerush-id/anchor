@@ -17,17 +17,17 @@ export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ f
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Full Name</span>
-          <Input className="w-full" bindTo={formData} name="name" placeholder="John Doe" />
+          <Input className="w-full input-md" bindTo={formData} name="name" placeholder="John Doe" />
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Email</span>
-          <Input className="w-full" bindTo={formData} name="email" placeholder="john@domain.com" />
+          <Input className="w-full input-md" bindTo={formData} name="email" placeholder="john@domain.com" />
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Password</span>
-          <Input className="w-full" type="password" bindTo={formData} name="password" placeholder="********" />
+          <Input className="w-full input-md" type="password" bindTo={formData} name="password" placeholder="********" />
         </label>
 
         <FormControl payload={formData} />
@@ -44,8 +44,10 @@ export const FormControl: FC<{ payload: AuthFormData }> = observed(({ payload })
 
   return (
     <div ref={ref} className="flex items-center justify-end gap-4 pt-6">
-      <Button>Cancel</Button>
-      <Button disabled={disabled}>Submit</Button>
+      <Button className="btn-lg">Cancel</Button>
+      <Button className="btn-lg btn-primary" disabled={disabled}>
+        Submit
+      </Button>
     </div>
   );
 }, 'AuthControl');

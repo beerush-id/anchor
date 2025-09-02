@@ -1,7 +1,7 @@
 import { Button } from '../Button.js';
 import { Plus } from 'lucide-react';
 import { type FC, type FormEventHandler, useRef, useState } from 'react';
-import { type ITodoItem } from '../../lib/todo.js';
+import { type ITodoItem } from '@lib/todo.js';
 import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
 import { shortId } from '@anchor/core';
 
@@ -28,13 +28,13 @@ export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAd
   });
 
   return (
-    <form ref={ref} className="flex gap-2" onSubmit={addTodo}>
+    <form ref={ref} className="flex gap-3" onSubmit={addTodo}>
       <input
         type="text"
         value={newTodoText}
         onChange={(e) => setNewTodoText(e.target.value)}
         placeholder="Add a new todo..."
-        className="flex-grow bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-purple"
+        className="anchor-input flex-grow"
       />
       <Button type="submit" disabled={!newTodoText}>
         <Plus size={16} />
