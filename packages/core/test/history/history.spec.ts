@@ -215,7 +215,7 @@ describe('Anchor History', () => {
 
     it('should handle reset operation', () => {
       const state = anchor({ count: 0 });
-      const stateHistory = history(state);
+      const stateHistory = history(state, { resettable: true });
 
       state.count = 1;
       timeTravel();
@@ -238,7 +238,7 @@ describe('Anchor History', () => {
 
     it('should handle reset Array operation', () => {
       const state = anchor([1, 2]);
-      const stateHistory = history(state);
+      const stateHistory = history(state, { resettable: true });
 
       state.push(3);
       timeTravel();
@@ -251,7 +251,7 @@ describe('Anchor History', () => {
 
     it('should handle reset Map operation', () => {
       const state = anchor(new Map([['count', 0]]));
-      const stateHistory = history(state);
+      const stateHistory = history(state, { resettable: true });
 
       state.set('count', 1);
       timeTravel();
@@ -263,7 +263,7 @@ describe('Anchor History', () => {
 
     it('should handle reset Set operation', () => {
       const state = anchor(new Set([1, 2, 3]));
-      const stateHistory = history(state);
+      const stateHistory = history(state, { resettable: true });
 
       state.add(4);
       timeTravel();

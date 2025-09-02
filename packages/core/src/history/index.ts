@@ -13,16 +13,16 @@ import type {
 import { anchor } from '../anchor.js';
 import { derive } from '../derive.js';
 import { assign } from '../helper.js';
-import { INIT_GATEWAY_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from '../registry.js';
+import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
 import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
 import { microtask } from '../utils/index.js';
 import { captureStack } from '../exception.js';
-import { isMap, isSet } from '@beerush/utils';
 import { BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
 
 export type HistoryOptions = {
   debounce?: number;
   maxHistory?: number;
+  resettable?: boolean;
 };
 
 export const DEFAULT_HISTORY_OPTION = {
@@ -42,6 +42,7 @@ export type HistoryState = {
   readonly forwardList: StateChange[];
   canBackward: boolean;
   canForward: boolean;
+  canReset: boolean;
   backward(): void;
   forward(): void;
   destroy(): void;
@@ -66,19 +67,16 @@ export type HistoryState = {
 export function history<T extends State>(state: T, options?: HistoryOptions): HistoryState {
   const { maxHistory = DEFAULT_HISTORY_OPTION.maxHistory, debounce = DEFAULT_HISTORY_OPTION.debounce } = options ?? {};
 
+  const [schedule] = microtask<StateChange>(debounce);
+  const changeList: StateChange[] = [];
   const backwardList: StateChange[] = [];
   const forwardList: StateChange[] = [];
-  const [schedule] = microtask<StateChange>(debounce);
-  const changeList = new Set<StateChange>();
+  const mergeList = new Set<StateChange>();
   const controller = derive.resolve(state);
-  let snapshot: T;
 
   if (!anchor.has(state)) {
     const error = new Error('Object is not reactive.');
     captureStack.error.external('Cannot create history state from non-reactive object.', error, history);
-    snapshot = state;
-  } else {
-    snapshot = anchor.snapshot(state);
   }
 
   let isBusy = false;
@@ -132,33 +130,19 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   };
 
   const reset = () => {
-    if (snapshot === state) return;
-
+    if (!options?.resettable) return;
     isBusy = true;
 
-    STATE_BUSY_LIST.add(state);
-
-    if (Array.isArray(state)) {
-      state.splice(0, state.length, ...(snapshot as typeof state));
-    } else if (isMap(state)) {
-      state.clear();
-      (snapshot as typeof state).forEach((value, key) => state.set(key as never, value));
-    } else if (isSet(state)) {
-      state.clear();
-      (snapshot as typeof state).forEach((value) => state.add(value));
-    } else {
-      Object.assign(state, snapshot);
+    while (changeList.length) {
+      undoChange(state, changeList.pop() as StateChange);
     }
 
-    STATE_BUSY_LIST.delete(state);
-    anchor.assign(state, {});
-
     clear();
-
     isBusy = false;
   };
 
   const destroy = () => {
+    changeList.length = 0;
     unsubscribe?.();
     clear();
   };
@@ -166,16 +150,23 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   // Subscribe for state changes and push the event to the backward stack, then clears the forward stack.
   const unsubscribe = controller?.subscribe((snap, event) => {
     if (event.type !== 'init' && !isBusy) {
-      changeList.add(event);
+      mergeList.add(event);
 
       schedule(() => {
         if (maxHistory && backwardList.length >= maxHistory) {
           backwardList.shift();
         }
 
-        backwardList.push(...createChanges(changeList));
+        for (const change of mergeChanges(mergeList)) {
+          if (options?.resettable) {
+            changeList.push(change);
+          }
+
+          backwardList.push(change);
+        }
+
         forwardList.length = 0;
-        changeList.clear();
+        mergeList.clear();
 
         assign(historyState, {
           canForward: forwardList.length > 0,
@@ -195,6 +186,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
       },
       canBackward: false,
       canForward: false,
+      canReset: changeList.length > 0,
       backward,
       forward,
       destroy,
@@ -400,8 +392,9 @@ function getTarget<T>(state: T, event: StateChange) {
 
   if (!parentKeys.length) {
     if (
-      ARRAY_MUTATION_KEYS.has(event.type as ArrayMutation) ||
-      COLLECTION_MUTATION_KEYS.has(event.type as SetMutation)
+      (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutation) ||
+        COLLECTION_MUTATION_KEYS.has(event.type as SetMutation)) &&
+      event.type !== MapMutations.SET
     ) {
       return { key: '', target: getValue(state, key) as Linkable };
     }
@@ -456,7 +449,7 @@ function getValue<T>(target: T, key: KeyLike) {
  *
  * @internal
  */
-function createChanges(changeList: Set<StateChange>) {
+function mergeChanges(changeList: Set<StateChange>) {
   const prevChanges = new Map<string, StateChange>();
   const nextChanges = new Map<string, unknown>();
 

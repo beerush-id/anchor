@@ -201,7 +201,7 @@ describe('Anchor History - Edge Cases', () => {
 
     it('should handle history reset and clear operations', () => {
       const state = anchor({ count: 5 });
-      const stateHistory = history(state);
+      const stateHistory = history(state, { resettable: true });
 
       state.count = 10;
       timeTravel();
