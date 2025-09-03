@@ -2,6 +2,8 @@ import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_
 import { type input, type output, type ZodArray, type ZodObject } from 'zod/v4';
 import type { Linkables } from './enum.js';
 
+export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
+
 export type Recursive = boolean | 'flat';
 export type MethodLike = (...args: unknown[]) => unknown;
 export type KeyLike = string | number | symbol;
@@ -53,7 +55,11 @@ export type AnchorSettings = StateBaseOptions & {
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
 export type StateDestroyer = () => void;
-export type StateSubscribeFn<T> = (handle: StateSubscriber<T>, receiver?: Linkable) => StateUnsubscribe;
+export type StateSubscribeFn<T> = (
+  handle: StateSubscriber<T>,
+  receiver?: Linkable,
+  recursive?: boolean
+) => StateUnsubscribe;
 export type StateSubscriberList<T extends Linkable = Linkable> = Set<StateSubscriber<T>>;
 export type StateObserverList = Set<StateObserver>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
@@ -168,7 +174,7 @@ export type SubscribeFactoryInit = {
   unlink: StateUnlinkFn;
 };
 
-export type Immutable<T> = T extends MethodLike
+export type Immutable<T> = T extends Primitive
   ? T
   : T extends Map<infer K, infer V>
     ? ReadonlyMap<Immutable<K>, Immutable<V>>

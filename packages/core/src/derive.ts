@@ -17,11 +17,16 @@ import { captureStack } from './exception.js';
  * This is a convenience function to subscribe to changes of an already anchored state.
  *
  * @template T The type of the state.
- * @param state The anchored state object to derive from.
- * @param handler The subscriber function to call on state changes.
+ * @param state - The anchored state object to derive from.
+ * @param handler - The subscriber function to call on state changes.
+ * @param recursive - Whether to recursively subscribe to child states (Default: follow).
  * @returns A function to unsubscribe from the derived state.
  */
-function deriveFn<T extends Linkable>(state: State<T>, handler: StateSubscriber<T>): StateUnsubscribe {
+function deriveFn<T extends Linkable>(
+  state: State<T>,
+  handler: StateSubscriber<T>,
+  recursive?: boolean
+): StateUnsubscribe {
   const ctrl = CONTROLLER_REGISTRY.get(state);
 
   if (typeof ctrl?.subscribe !== 'function') {
@@ -49,7 +54,7 @@ function deriveFn<T extends Linkable>(state: State<T>, handler: StateSubscriber<
     };
   }
 
-  return ctrl?.subscribe(handler as StateSubscriber<unknown>);
+  return ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
 }
 
 /**
@@ -110,7 +115,7 @@ deriveFn.pipe = <Source extends Linkable, Target extends Linkable>(
 };
 
 export interface DeriveFn {
-  <T>(state: T, handler: StateSubscriber<T>): StateUnsubscribe;
+  <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean): StateUnsubscribe;
 
   log<T extends Linkable>(state: State<T>): StateUnsubscribe;
   pipe<Source, Target>(source: Source, target: Target, transform?: PipeTransformer<Source, Target>): StateUnsubscribe;

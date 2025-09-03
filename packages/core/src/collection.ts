@@ -193,6 +193,17 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     mutatorMap.set(init.get, targetFn as MethodLike);
   }
 
+  // Set has trap.
+  if (init instanceof Set && recursive && deferred) {
+    const hasFn = init.has as (value: unknown) => boolean;
+    const targetFn = (value: unknown) => {
+      if (anchor.has(value as Linkable)) value = anchor.get(value as Linkable);
+      return hasFn.call(init, value);
+    };
+
+    mutatorMap.set(init.has, targetFn as MethodLike);
+  }
+
   // Collection iterator traps.
   if (recursive) {
     // Collection forEach trap.
@@ -211,6 +222,10 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     if (typeof methodFn !== 'function') continue;
 
     const targetFn = (keyValue: string, value?: Linkable) => {
+      // Make sure to always work with the underlying object (if exist).
+      if (anchor.has(keyValue as never)) keyValue = anchor.get(keyValue as never);
+      if (anchor.has(value as never)) value = anchor.get(value as never);
+
       const oldValue = init instanceof Map ? init.get(keyValue) : undefined;
       const newValue = (method === 'set' ? value : keyValue) as Linkable;
 
@@ -253,6 +268,9 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       const self = init as Set<Linkable> | Map<unknown, Linkable>;
 
       if (method === 'delete') {
+        // Make sure to always work with the underlying object (if exist).
+        if (anchor.has(keyValue as Linkable)) keyValue = anchor.get(keyValue as Linkable);
+
         const current = (self instanceof Set ? keyValue : self.get(keyValue)) as Linkable;
         const result = methodFn.apply(self, [keyValue]);
 

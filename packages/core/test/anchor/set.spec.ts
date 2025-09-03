@@ -27,6 +27,17 @@ describe('Anchor Core - Set Operations', () => {
       expect(state.set.size).toBe(3);
     });
 
+    it('should handle Set add operation with an existing state as value', () => {
+      const user = anchor({ name: 'John' });
+      const set = anchor(new Set([{ name: 'Jane' }]));
+
+      set.add(user);
+
+      expect(set.size).toBe(2);
+      expect(set.has(user)).toBe(true);
+      expect(set.has(anchor.get(user))).toBe(true);
+    });
+
     it('should handle Set delete operations', () => {
       const set = new Set([1, 2, 3]);
       const state = anchor({ set });
@@ -39,6 +50,22 @@ describe('Anchor Core - Set Operations', () => {
       // Try to delete non-existing value
       const result2 = state.set.delete(10);
       expect(result2).toBe(false);
+    });
+
+    it('should handle Set delete operation with an existing state as value', () => {
+      const user = anchor({ name: 'John' });
+      const set = anchor(new Set([{ name: 'Jane' }]));
+
+      set.add(user);
+
+      expect(set.size).toBe(2);
+      expect(set.has(user)).toBe(true);
+      expect(set.has(anchor.get(user))).toBe(true);
+
+      set.delete(user);
+      expect(set.size).toBe(1);
+      expect(set.has(user)).toBe(false);
+      expect(set.has(anchor.get(user))).toBe(false);
     });
 
     it('should handle Set clear operations', () => {

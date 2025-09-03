@@ -21,6 +21,18 @@ describe('Anchor Core - Array Methods', () => {
       expect(state[2]).toBe(3);
     });
 
+    it('should handle pushing an existing state', () => {
+      const user = anchor({ name: 'John' });
+      const users = anchor([{ name: 'Jane' }]);
+
+      users.push(user);
+
+      expect(users[1]).toBe(user);
+      expect(anchor.get(users[1])).toBe(anchor.get(user));
+      expect(users[1]).not.toBe(anchor.get(user));
+      expect(users).toEqual([{ name: 'Jane' }, { name: 'John' }]);
+    });
+
     it('should handle array pop operation', () => {
       const state = anchor([1, 2, 3]);
       const lastItem = state.pop();

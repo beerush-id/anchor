@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, derive, type Linkable } from '../../src/index.js';
 import { createGetter, createRemover, createSetter } from '../../src/trap.js';
 import { createCollectionGetter, createCollectionMutator } from '../../src/collection.js';
 import { createArrayMutator } from '../../src/array.js';
@@ -28,6 +28,19 @@ describe('Anchor Core - Edge Cases', () => {
       // Should not trigger update
       expect(handler).toHaveBeenCalledTimes(1); // only init
       unsubscribe();
+    });
+
+    it('should handle setting an existing state as value', () => {
+      const user = anchor({ name: 'John' });
+      const state = anchor<Record<string, unknown>>({ jane: { name: 'Jane' } });
+
+      state.john = user;
+
+      expect(state.john).toBe(user);
+      expect(state.jane).toEqual({ name: 'Jane' });
+      expect(anchor.get(state.john as Linkable)).toBe(anchor.get(user));
+      expect(anchor.get(state.jane as Linkable)).not.toBe(user);
+      expect(state.jane).not.toBe(anchor.get(user));
     });
 
     it('should handle nested array operations', () => {

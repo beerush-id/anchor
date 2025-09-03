@@ -138,7 +138,7 @@ export function createSubscribeFactory<T extends Linkable>(
   const devTool = getDevTool();
   const { subscribers, subscriptions } = meta;
 
-  const subscribeFn = (handler: StateSubscriber<T>, receiver?: State) => {
+  const subscribeFn = (handler: StateSubscriber<T>, receiver?: State, recursive = meta.configs.recursive) => {
     // Immediately notify the handler with the current state.
     try {
       handler(init, { type: 'init', keys: [] });
@@ -155,7 +155,7 @@ export function createSubscribeFactory<T extends Linkable>(
       subscribers.delete(handler);
 
       // If no more subscribers, clean up resources
-      if (subscribers.size <= 0) {
+      if (subscribers.size <= 0 && recursive) {
         // Unlink all child references if any exist
         if (subscriptions.size) {
           // Iterate over a copy of the subscriptions map to safely unlink
@@ -183,7 +183,7 @@ export function createSubscribeFactory<T extends Linkable>(
     // Add the handler to the list of active subscribers
     subscribers.add(handler);
 
-    if (!(Array.isArray(init) && meta.configs.recursive === 'flat')) {
+    if (recursive && !(Array.isArray(init) && meta.configs.recursive === 'flat')) {
       for (const [key, value] of softEntries(init as ObjLike)) {
         const childState = INIT_REGISTRY.get(value as Linkable) as State;
 

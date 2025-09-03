@@ -28,6 +28,7 @@ export type HistoryOptions = {
 export const DEFAULT_HISTORY_OPTION = {
   debounce: 100,
   maxHistory: 100,
+  resettable: false,
 };
 
 export function setDefaultOptions(options: HistoryOptions) {
@@ -65,7 +66,11 @@ export type HistoryState = {
  * @returns A HistoryState object with methods and properties for history management
  */
 export function history<T extends State>(state: T, options?: HistoryOptions): HistoryState {
-  const { maxHistory = DEFAULT_HISTORY_OPTION.maxHistory, debounce = DEFAULT_HISTORY_OPTION.debounce } = options ?? {};
+  const {
+    maxHistory = DEFAULT_HISTORY_OPTION.maxHistory,
+    debounce = DEFAULT_HISTORY_OPTION.debounce,
+    resettable = DEFAULT_HISTORY_OPTION.resettable,
+  } = options ?? {};
 
   const [schedule] = microtask<StateChange>(debounce);
   const changeList: StateChange[] = [];
@@ -92,6 +97,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
       assign(historyState, {
         canForward: forwardList.length > 0,
         canBackward: backwardList.length > 0,
+        canReset: changeList.length > 0,
       });
     }
 
@@ -109,6 +115,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
       assign(historyState, {
         canForward: forwardList.length > 0,
         canBackward: backwardList.length > 0,
+        canReset: changeList.length > 0,
       });
     }
 
@@ -124,6 +131,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
     assign(historyState, {
       canForward: forwardList.length > 0,
       canBackward: backwardList.length > 0,
+      canReset: changeList.length > 0,
     });
 
     isBusy = false;
@@ -158,7 +166,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
         }
 
         for (const change of mergeChanges(mergeList)) {
-          if (options?.resettable) {
+          if (resettable) {
             changeList.push(change);
           }
 
@@ -171,6 +179,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
         assign(historyState, {
           canForward: forwardList.length > 0,
           canBackward: backwardList.length > 0,
+          canReset: changeList.length > 0,
         });
       }, event);
     }
@@ -217,8 +226,6 @@ export function undoChange<T>(state: T, event: StateChange) {
   const { type, prev } = event;
   const { key, target } = getTarget(init, event);
   const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
-
-  // STATE_BUSY_LIST.add(state as Linkable);
 
   if (type === ObjectMutations.SET) {
     if (typeof prev === 'undefined') {
@@ -290,8 +297,6 @@ export function undoChange<T>(state: T, event: StateChange) {
       (gateway.mutator as ArrayMutator<unknown>).splice(0, items.length, ...(prev as unknown[]));
     }
   }
-
-  // STATE_BUSY_LIST.delete(state as Linkable);
 }
 
 /**
@@ -312,8 +317,6 @@ export function redoChange<T>(state: T, event: StateChange) {
   const { type, prev, value } = event;
   const { key, target } = getTarget(init, event);
   const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
-
-  // STATE_BUSY_LIST.add(state as Linkable);
 
   if (type === ObjectMutations.SET) {
     gateway.setter(target, key, value, target);
@@ -342,29 +345,6 @@ export function redoChange<T>(state: T, event: StateChange) {
       ...(value as unknown[])
     );
   }
-  //
-  // if (type === ObjectMutations.SET || type === MapMutations.SET) {
-  //   setValue(target as never, key as keyof T, value as never);
-  // } else if (type === SetMutations.ADD) {
-  //   (target[key as never] as Set<unknown>).add(value);
-  // } else if (type === 'delete') {
-  //   if (target instanceof Map) {
-  //     target.delete(key);
-  //   } else if ((target as ObjLike)[key] instanceof Set) {
-  //     (target[key as never] as Set<unknown>).delete(prev);
-  //   } else {
-  //     delete (target as ObjLike)[key];
-  //   }
-  // } else if (type === 'assign') {
-  //   assign(target as never, value as never);
-  // } else if (type === 'clear') {
-  //   (target as Set<unknown>).clear();
-  // } else if (ARRAY_MUTATIONS.includes(type as never)) {
-  //   const items = (key ? target[key as never] : target) as unknown[];
-  //   (items[type as ArrayMutation] as (...args: unknown[]) => unknown)(...(value as unknown[]));
-  // }
-
-  // STATE_BUSY_LIST.delete(state as Linkable);
 }
 
 /**

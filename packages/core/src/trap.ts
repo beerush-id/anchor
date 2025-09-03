@@ -170,6 +170,9 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
   const { configs } = options ?? meta;
 
   const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
+    // Make sure to always work with the underlying object (if exist).
+    if (anchor.has(value)) value = anchor.get(value);
+
     const current = Reflect.get(target, prop, receiver) as Linkable;
 
     if (current === value) {

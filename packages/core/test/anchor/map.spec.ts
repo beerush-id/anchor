@@ -30,6 +30,19 @@ describe('Anchor Core - Map Operations', () => {
       expect(state.map.size).toBe(2);
     });
 
+    it('should handle Map set operation with an existing state as value', () => {
+      const user = anchor({ name: 'John' });
+      const map = anchor(new Map([['jane', { name: 'Jane' }]]));
+
+      map.set('john', user);
+
+      expect(map.size).toBe(2);
+      expect(map.get('john')).toBe(user);
+      expect(map.get('jane')).toEqual({ name: 'Jane' });
+      expect(anchor.get(map.get('john'))).toBe(anchor.get(user));
+      expect(anchor.get(map.get('john'))).not.toBe(user);
+    });
+
     it('should handle Map delete operations', () => {
       const map = new Map([
         ['a', 1],

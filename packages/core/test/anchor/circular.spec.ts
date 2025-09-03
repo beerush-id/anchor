@@ -53,8 +53,7 @@ describe('Anchor - Circular References', () => {
       const state = anchor({ set });
 
       expect(state.set).toBeInstanceOf(Set);
-      // Get-trap of state.set will return a proxied Set, which is not the same as the original Set.
-      expect(state.set.has(state.set)).toBe(false);
+      expect(state.set.has(state.set)).toBe(true);
     });
   });
 

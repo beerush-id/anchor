@@ -15,6 +15,7 @@ import { ARRAY_MUTATIONS } from './constant.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { isFunction } from '@beerush/utils';
+import { anchor } from './anchor.js';
 
 const mockReturn = {
   shift(items: unknown[]) {
@@ -84,6 +85,9 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
   for (const method of ARRAY_MUTATIONS) {
     const originFn = (init as Array<unknown>)[method] as (...args: unknown[]) => unknown;
     const targetFn = (...args: unknown[]) => {
+      // Make sure to always work with the underlying object (if exist).
+      args = args.map((arg) => (anchor.has(arg as Linkable) ? anchor.get(arg as Linkable) : arg));
+
       // Capture the current items to track the removed items.
       const currentItems = [...(init as ObjLike[])];
 
