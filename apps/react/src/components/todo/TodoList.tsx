@@ -1,15 +1,15 @@
 import { type FC, useRef } from 'react';
 import { TodoItem } from './TodoItem.js';
-import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
+import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoList, type ITodoStats } from '@lib/todo.js';
-import { useDerivedList } from '@anchor/react';
+import { debugRender, useDerivedList } from '@anchor/react';
 import { observed } from '@anchor/react/components';
 
 export const TodoList: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({ todos, stats }) => {
   const ref = useRef(null);
   const items = useDerivedList(todos, 'id');
 
-  flashNode(ref.current);
+  debugRender(ref.current);
   useUpdateStat(() => {
     todoStats.list.value++;
   });

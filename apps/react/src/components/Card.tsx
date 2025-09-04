@@ -1,12 +1,12 @@
-import React, { useRef } from 'react';
-import { flashNode } from '@lib/stats.js';
+import { type FC, type ReactNode, useRef } from 'react';
+import { debugRender } from '@anchor/react';
 
-export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => {
+export const Card: FC<{ children: ReactNode; className?: string }> = ({ children, className = '' }) => {
   const ref = useRef(null);
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
-    <div ref={ref} className={`card overflow-hidden flex flex-col ${className}`}>
+    <div ref={ref} className={`card flex flex-col ${className}`}>
       {children}
     </div>
   );

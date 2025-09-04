@@ -1,8 +1,7 @@
 import { type FC, type KeyboardEventHandler, memo, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { flashNode } from '@lib/stats.js';
-import { usePicker } from '@anchor/react';
+import { debugRender, usePicker } from '@anchor/react';
 import { Input, observed } from '@anchor/react/components';
 import { setDebugger } from '@anchor/core';
 
@@ -19,7 +18,7 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
   const form = usePicker(item, ['name']);
   setDebugger(undefined);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   const handleNameChange: KeyboardEventHandler<HTMLInputElement> = (event) => {
     if (event.key === 'Enter') {
@@ -55,7 +54,7 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
 
 export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> = observed(({ item, items }) => {
   const ref = useRef(null);
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   const handleRemove = () => {
     const index = items.indexOf(item);

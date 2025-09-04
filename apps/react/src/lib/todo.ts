@@ -16,5 +16,5 @@ export type ITodoStats = {
 
 export const TodoContext = createContext<ITodoList>([]);
 
-export const BENCHMARK_SIZE = 500;
+export const BENCHMARK_SIZE = 1000;
 export const BENCHMARK_TOGGLE_SIZE = 25;

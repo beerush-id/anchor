@@ -4,12 +4,13 @@ import { CardHeader } from '../CardHeader.js';
 import { BENCHMARK_SIZE, type ITodoItem } from '@lib/todo.js';
 import { ClassicTodoForm } from './ClassicTodoForm.js';
 import { ClassicTodoList } from './ClassicTodoList.js';
-import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
+import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
 import { microloop, shortId } from '@anchor/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { ClassicTodoStats } from './ClassicTodoStats.js';
 import { ClassicTodoCode } from './ClassicTodoCode.js';
+import { debugRender } from '@anchor/react';
 
 const [loop] = microloop(5, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
@@ -96,7 +97,7 @@ export const ClassicTodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">👌Classic Todo List</h3>
-        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn mr-4">
+        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
           <Gauge size={20} />
           <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
         </button>
@@ -124,7 +125,7 @@ const ClassicTodoPanel: FC<{
 }> = ({ panel, toggleInfo, toggleCode }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="flex items-center">
@@ -141,7 +142,7 @@ const ClassicTodoPanel: FC<{
 const ClassicInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="text-sm text-slate-400">
@@ -158,7 +159,7 @@ const ClassicInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
 const ClassicCodePanel: FC<{ panel: { code: boolean } }> = ({ panel }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="bg-slate-950">

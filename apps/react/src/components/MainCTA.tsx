@@ -1,8 +1,12 @@
 import { BookText, Gauge } from 'lucide-react';
 import { inlineNav } from '@lib/nav.js';
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 
-export const MainCTA: FC<{ className?: string; tiys?: boolean }> = ({ className, tiys = true }) => {
+export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactNode }> = ({
+  className,
+  tiys = true,
+  children,
+}) => {
   return (
     <div className={`max-w-5xl mx-auto flex items-center justify-center gap-8 ${className}`}>
       <a
@@ -22,6 +26,7 @@ export const MainCTA: FC<{ className?: string; tiys?: boolean }> = ({ className,
           Try It Yourself
         </a>
       )}
+      {children}
     </div>
   );
 };

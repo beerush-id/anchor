@@ -8,12 +8,13 @@
   --color-brand-red: #fb2c36;
 }
 
-.shiki {
-  @apply p-4 overflow-auto outline-none;
-  max-height: 480px;
+:root {
+  color-scheme: dark;
 }
 
 .shiki {
+  @apply p-4 overflow-auto outline-none;
+  max-height: 480px;
   counter-reset: step;
   counter-increment: step 0;
 }
@@ -28,26 +29,39 @@
   color: rgba(115, 138, 148, 0.4);
 }
 
+.code-block-fit {
+  @apply flex flex-col flex-1;
+
+  .shiki {
+    @apply flex-1;
+    max-height: 512px;
+    background-color: transparent !important;
+  }
+}
+
 .inline-code {
   @apply bg-slate-800/60 rounded-sm px-1 font-bold py-0.5;
 }
 
 body {
-  @apply text-white;
-  color-scheme: dark;
+  @apply text-slate-300;
 }
 
 @utility card {
-  @apply bg-slate-900/75 border border-slate-700/50 rounded-xl;
+  @apply bg-slate-900/75 border border-slate-700/50 rounded-xl shadow-lg;
+}
+
+@utility anchor-btn-icon {
+  @apply px-2.5;
 }
 
 @utility anchor-btn {
   @apply inline-flex items-center gap-2 px-3 py-2 rounded-md font-semibold;
-  @apply bg-slate-700 text-white;
+  @apply bg-slate-700 text-white select-none;
   @apply text-sm transition-all duration-200 outline-none whitespace-nowrap;
   @apply focus:ring-2 focus:ring-brand-orange/75;
   @apply hover:bg-slate-600 active:bg-slate-800 active:ring-0;
-  @apply disabled:pointer-events-none disabled:opacity-50;
+  @apply disabled:pointer-events-none disabled:opacity-50 disabled:text-slate-500;
 
   &.btn-primary {
     @apply bg-brand-orange text-white;
@@ -67,7 +81,7 @@ body {
   }
 
   &.btn-icon {
-    @apply px-2.5;
+    @apply anchor-btn-icon;
   }
 }
 
@@ -84,6 +98,15 @@ body {
 
   &.input-md {
     @apply px-4 py-3 rounded-lg text-[1rem];
+  }
+
+  &.tool-input {
+    @apply px-2 py-1 w-full text-xs font-semibold text-slate-300 h-[28px];
+  }
+
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 
@@ -111,4 +134,42 @@ body {
   & > * {
     @apply relative z-10;
   }
+}
+
+@utility toggle-btn {
+  @apply anchor-btn px-0 py-0 anchor-btn-icon rounded-sm w-[30px] aspect-square justify-center;
+  @apply focus:z-10;
+
+  &[data-inherit='true'] {
+    @apply bg-brand-orange/30;
+  }
+
+  &[data-checked='true'] {
+    @apply bg-brand-orange;
+  }
+}
+
+.toggle-group {
+  @apply flex items-center;
+
+  & > .toggle-btn {
+    @apply rounded-none;
+
+    &:first-child {
+      @apply rounded-l-sm;
+    }
+
+    &:last-child {
+      @apply rounded-r-sm;
+    }
+  }
+}
+
+.canvas-content {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(#2f3642 1px, transparent 1px);
+  background-size: 20px 20px;
 }

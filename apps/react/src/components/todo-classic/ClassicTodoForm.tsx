@@ -2,8 +2,9 @@ import { Button } from '../Button.js';
 import { Plus } from 'lucide-react';
 import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { type ITodoItem } from '@lib/todo.js';
-import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
+import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
 import { shortId } from '@anchor/core';
+import { debugRender } from '@anchor/react';
 
 export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAdd }) => {
   const ref = useRef(null);
@@ -22,7 +23,7 @@ export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAd
     setNewTodoText('');
   };
 
-  flashNode(ref.current);
+  debugRender(ref.current);
   useUpdateStat(() => {
     classicTodoStats.form.value++;
   });

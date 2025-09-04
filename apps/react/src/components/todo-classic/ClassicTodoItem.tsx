@@ -1,10 +1,11 @@
 import { type FC, memo, useEffect, useRef } from 'react';
 import { BENCHMARK_TOGGLE_SIZE, type ITodoItem } from '@lib/todo.js';
-import { classicTodoStats, flashNode, useUpdateStat } from '@lib/stats.js';
+import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
 import { Button, IconButton } from '../Button.js';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
 import { microloop } from '@anchor/core';
 import { Tooltip } from '../Tooltip.js';
+import { debugRender } from '@anchor/react';
 
 const [loop] = microloop(5, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {
@@ -19,7 +20,7 @@ export const ClassicTodoItem: FC<{
 }> = memo(({ todo, onToggle, onRemove }) => {
   const ref = useRef<HTMLLIElement>(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
   useUpdateStat(() => {
     classicTodoStats.item.value++;
   });

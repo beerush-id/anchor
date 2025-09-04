@@ -7,6 +7,7 @@ import { type FC } from 'react';
 import { anchor, type Immutable } from '@anchor/core';
 import { Bar } from 'react-chartjs-2';
 import { MainCTA } from '@components/MainCTA.js';
+import { BENCHMARK_SIZE, BENCHMARK_TOGGLE_SIZE } from '@lib/todo.js';
 
 type Metric = {
   name: string;
@@ -38,6 +39,7 @@ export const Performance = () => {
       name: 'toggle',
       icon: 'toggle',
       label: 'Toggling Action',
+      description: 'Rapidly toggle an item 25 times while displaying 103 items',
       metrics: [
         {
           name: 'render',
@@ -46,8 +48,8 @@ export const Performance = () => {
           description:
             'Measures the time spent by React rendering UI components during the benchmark action, reflecting rendering efficiency.',
           data: {
-            classic: 253,
-            anchor: 1,
+            classic: 119,
+            anchor: 0.4,
             ratio: 253,
           },
           unit: 'ms',
@@ -59,8 +61,8 @@ export const Performance = () => {
           description:
             'Measures the overall duration from start to finish of the benchmark action, reflecting user-perceived performance.',
           data: {
-            classic: 4807,
-            anchor: 149,
+            classic: 5477,
+            anchor: 384,
             ratio: 32.3,
           },
           unit: 'ms',
@@ -72,8 +74,8 @@ export const Performance = () => {
           description:
             'Measures the number of frames rendered per second, reflecting the smoothness and responsiveness of the UI.',
           data: {
-            classic: 24,
-            anchor: 170,
+            classic: 16.8,
+            anchor: 182.4,
             ratio: 7.1,
           },
           unit: 'fps',
@@ -84,8 +86,8 @@ export const Performance = () => {
           label: 'Degraded Performance',
           description: 'Measures the peak time spent by React rendering UI components during the benchmark action.',
           data: {
-            classic: 559,
-            anchor: 1.3,
+            classic: 380,
+            anchor: 1,
             ratio: 430,
           },
           unit: 'ms',
@@ -96,6 +98,7 @@ export const Performance = () => {
       name: 'add',
       icon: 'list',
       label: 'Item Addition',
+      description: 'Rapidly adds 1000 items to the list.',
       metrics: [
         {
           name: 'degraded',
@@ -105,8 +108,8 @@ export const Performance = () => {
             'Measures the peak time spent by React rendering UI components during the benchmark action,' +
             ' reflecting scaling performance.',
           data: {
-            classic: 227.7,
-            anchor: 1.6,
+            classic: 111.6,
+            anchor: 1.2,
             ratio: 142.3,
           },
           unit: 'ms',
@@ -119,8 +122,8 @@ export const Performance = () => {
             'Measures the time spent by React rendering UI components during the start action, reflecting raw' +
             ' performance.',
           data: {
-            classic: 3.7,
-            anchor: 2.2,
+            classic: 1.7,
+            anchor: 1,
             ratio: 1.7,
           },
           unit: 'ms',
@@ -132,8 +135,8 @@ export const Performance = () => {
           description:
             'Measures the overall duration from start to finish of the benchmark action, reflecting user-perceived performance.',
           data: {
-            classic: 35400,
-            anchor: 6409,
+            classic: 82603,
+            anchor: 15185,
             ratio: 5.5,
           },
           unit: 'ms',
@@ -145,8 +148,8 @@ export const Performance = () => {
           description:
             'Measures the number of frames rendered per second, reflecting the smoothness and responsiveness of the UI.',
           data: {
-            classic: 43,
-            anchor: 139,
+            classic: 16.8,
+            anchor: 100.8,
             ratio: 3.2,
           },
           unit: 'fps',
@@ -211,6 +214,10 @@ export const Performance = () => {
         </div>
       </div>
       {display.current && <PerformanceGroup display={display} />}
+      <p className="text-center mt-8 max-w-4xl mx-auto italic text-slate-400 text-sm">
+        Benchmark data taken by adding {BENCHMARK_SIZE.toLocaleString()} todo items and rapidly toggle an item
+        {BENCHMARK_TOGGLE_SIZE.toLocaleString()} times while displaying {BENCHMARK_SIZE.toLocaleString()} items.
+      </p>
       <MainCTA className="mt-10 md:mt-20" />
     </Section>
   );
@@ -255,7 +262,9 @@ const PerformanceChart: FC<{ data?: Record<string, number>; unit?: string }> = (
   return (
     <>
       <div className="flex flex-col gap-4 flex-1">
-        <span className="card p-6 w-full text-center text-4xl">~{data.ratio}x</span>
+        <span className="card p-6 w-full text-center text-4xl">
+          ~{(data.classic > data.anchor ? data.classic / data.anchor : data.anchor / data.classic).toFixed(2)}x
+        </span>
         <div className="grid grid-cols-2 flex-1 gap-4">
           <div className="card flex flex-col gap-2 flex-1 justify-center items-center">
             <p>

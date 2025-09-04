@@ -3,8 +3,8 @@ import { TodoList } from './TodoList.js';
 import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import { type FC, useRef } from 'react';
-import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
-import { useAnchor } from '@anchor/react';
+import { todoStats, useUpdateStat } from '@lib/stats.js';
+import { debugRender, useAnchor } from '@anchor/react';
 import { observed } from '@anchor/react/components';
 import { microloop, shortId } from '@anchor/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
@@ -42,7 +42,7 @@ export const TodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">😍 Anchor Todo List</h3>
-        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn mr-4">
+        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
           <Gauge size={20} />
           <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
         </button>
@@ -66,7 +66,7 @@ export const TodoApp: FC = () => {
 const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ panel }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="flex items-center">
@@ -83,7 +83,7 @@ const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ p
 const InfoPanel: FC<{ panel: { info: boolean } }> = observed(({ panel }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="text-sm text-slate-400">
@@ -100,7 +100,7 @@ const InfoPanel: FC<{ panel: { info: boolean } }> = observed(({ panel }) => {
 const CodePanel: FC<{ panel: { code: boolean } }> = observed(({ panel }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="bg-slate-950">

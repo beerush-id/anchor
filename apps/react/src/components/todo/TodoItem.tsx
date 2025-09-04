@@ -1,9 +1,9 @@
 import { type FC, memo, useEffect, useRef } from 'react';
-import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
+import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { BENCHMARK_TOGGLE_SIZE, type ITodoItem, type ITodoList, type ITodoStats } from '@lib/todo.js';
 import { Button, IconButton } from '../Button.js';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
-import { useObserved } from '@anchor/react';
+import { debugRender, useObserved } from '@anchor/react';
 import { microloop } from '@anchor/core';
 import { Tooltip } from '../Tooltip.js';
 
@@ -17,7 +17,7 @@ export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem
   const ref = useRef<HTMLLIElement>(null);
   const [text, completed] = useObserved(() => [todo.text, todo.completed]);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
   useUpdateStat(() => {
     todoStats.item.value++;
   });

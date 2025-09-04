@@ -1,10 +1,10 @@
 import { type FC, useRef } from 'react';
-import { flashNode } from '@lib/stats.js';
 import { Button } from '../Button.js';
 import { Input } from '../Input.js';
 import { type AuthFormData, schema } from './auth-lib.js';
 import { observed } from '@anchor/react/components';
 import { Card } from '../Card.js';
+import { debugRender } from '@anchor/react';
 
 export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ formData, className }) => {
   return (
@@ -17,17 +17,30 @@ export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ f
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Full Name</span>
-          <Input className="w-full input-md" bindTo={formData} name="name" placeholder="John Doe" />
+          <Input className="w-full input-md" bindTo={formData} name="name" placeholder="John Doe" autoComplete="name" />
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Email</span>
-          <Input className="w-full input-md" bindTo={formData} name="email" placeholder="john@domain.com" />
+          <Input
+            className="w-full input-md"
+            bindTo={formData}
+            name="email"
+            placeholder="john@domain.com"
+            autoComplete="email"
+          />
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Password</span>
-          <Input className="w-full input-md" type="password" bindTo={formData} name="password" placeholder="********" />
+          <Input
+            className="w-full input-md"
+            type="password"
+            bindTo={formData}
+            name="password"
+            placeholder="********"
+            autoComplete="current-password"
+          />
         </label>
 
         <FormControl payload={formData} />
@@ -38,7 +51,7 @@ export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ f
 
 export const FormControl: FC<{ payload: AuthFormData }> = observed(({ payload }) => {
   const ref = useRef(null);
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   const disabled = !payload.password || !payload.email || !payload.name || !schema.safeParse(payload).success;
 

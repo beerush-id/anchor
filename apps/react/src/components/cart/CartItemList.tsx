@@ -1,7 +1,6 @@
 import { type FC, useRef } from 'react';
 import { CartItem, type CartItemType } from './CartItem.js';
-import { flashNode } from '@lib/stats.js';
-import { useObserved } from '@anchor/react';
+import { debugRender, useObserved } from '@anchor/react';
 
 export const CartItemList: FC<{ items: CartItemType[] }> = ({ items }) => {
   const ref = useRef(null);
@@ -11,7 +10,7 @@ export const CartItemList: FC<{ items: CartItemType[] }> = ({ items }) => {
     });
   });
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="p-4 space-y-4">

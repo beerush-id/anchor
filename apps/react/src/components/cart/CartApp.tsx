@@ -1,9 +1,8 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
 import { anchor, shortId } from '@anchor/core';
-import { useAnchor, useHistory } from '@anchor/react';
+import { debugRender, useAnchor, useHistory } from '@anchor/react';
 import { CartSummary } from './CartSummary.js';
 import { CartItemList } from './CartItemList.js';
-import { flashNode } from '@lib/stats.js';
 import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
@@ -20,7 +19,7 @@ export const CartApp: FC = () => {
     { id: '5', name: 'Pants', price: 69, quantity: 0 },
   ]);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="mt-12 w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -56,7 +55,7 @@ const CartForm: FC<{ items: CartItemType[] }> = ({ items }) => {
     firstInputRef.current?.focus();
   };
 
-  flashNode(formRef.current);
+  debugRender(formRef.current);
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="mt-4 flex items-end p-4 gap-4 border-t border-t-slate-700">

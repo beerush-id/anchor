@@ -9,6 +9,7 @@ import { Performance } from './Performance.js';
 import { Philosophy } from './Philosophy.js';
 import { Architecture } from './Architecture.js';
 import { MainCTA } from '@components/MainCTA.js';
+import { EditorDemo } from './EditorDemo.js';
 
 export default function Home() {
   return (
@@ -16,10 +17,13 @@ export default function Home() {
       <Header />
       <main className="w-screen bg-slate-900 text-white">
         <Hero />
+        <EditorDemo />
+
         <Performance />
+        <TodoBenchmark />
+
         <Philosophy />
         <Architecture />
-        <TodoBenchmark />
 
         <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <SectionTitle>No Bridge, Just Pipe!</SectionTitle>

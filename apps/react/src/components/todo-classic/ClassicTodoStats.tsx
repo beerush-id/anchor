@@ -1,11 +1,11 @@
 import { type FC, useRef } from 'react';
 import type { ITodoStats } from '@lib/todo.js';
-import { flashNode } from '@lib/stats.js';
+import { debugRender } from '@anchor/react';
 
 export const ClassicTodoStats: FC<{ stats: ITodoStats }> = ({ stats }) => {
   const ref = useRef(null);
 
-  flashNode(ref.current);
+  debugRender(ref.current);
 
   return (
     <div ref={ref} className="flex items-center justify-between px-10 pb-4">

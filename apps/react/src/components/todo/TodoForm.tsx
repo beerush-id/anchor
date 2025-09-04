@@ -1,10 +1,11 @@
 import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
-import { flashNode, todoStats, useUpdateStat } from '@lib/stats.js';
+import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoList, type ITodoStats } from '@lib/todo.js';
 import { shortId } from '@anchor/core';
 import { observed } from '@anchor/react/components';
+import { debugRender } from '@anchor/react';
 
 export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({ todos, stats }) => {
   const ref = useRef(null);
@@ -25,7 +26,7 @@ export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({
     setNewText('');
   };
 
-  flashNode(ref.current);
+  debugRender(ref.current);
   useUpdateStat(() => {
     todoStats.form.value++;
   });
