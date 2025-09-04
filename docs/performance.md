@@ -4,11 +4,21 @@ Anchor is designed from the ground up to deliver a blazingly fast and fluid user
 is rooted in a single principle: doing the absolute minimum amount of work necessary to keep the UI in perfect sync with
 your application state.
 
+::: tip FAQ
+
+**Why** there such huge performance gaps between **Classic Todo List** and **Anchor Todo List**?
+
+- **Wasted Re-renders** - Classic Todo App re-renders every time a todo item is added, changed, or removed.
+- **Heavy Computation** - Classic Todo App makes a copy of the entire state tree every time a todo item is
+  added, changed, or removed. As the app grows, the time taken to compute this will increase linearly (**O(N)**).
+
+:::
+
 ## **Fine-Grained Reactivity**
 
 This is the cornerstone of Anchor's performance. Traditional reactive frameworks often re-render large components or
-entire sub-trees of the UI whenever any piece of state changes. This is inefficient and leads to a phenomenon known as "
-wasted renders."
+entire subtrees of the UI whenever any piece of state changes. This is inefficient and leads to a
+phenomenon known as "wasted renders".
 
 Anchor takes a different approach. It tracks dependencies at the most granular level possible, ensuring that when you
 update a specific piece of state, only the exact components that are subscribed to that data will re-render.
@@ -58,40 +68,42 @@ handle scale and complexity without the performance bottlenecks of traditional s
 The following metrics were captured from a live demo comparing an application built with a traditional reactive model
 against the same application built with Anchor.
 
-- **Item Addition:** Rapidly adding 500 new todo items to a list.
-- **Item Toggling:** Rapidly toggling a single item 25 times within a list of over 500 items.
+- **Item Addition:** Rapidly adding 1000 new todo items to a list.
+- **Item Toggling:** Rapidly toggling a single item 25 times within a list of over 1000 items.
+
+> Each operation is debounced by 5ms.
 
 ### **Performance Metrics**
 
-| Metric                                    | Classic           | Anchor          | Ratio       |
-| :---------------------------------------- | :---------------- | :-------------- | :---------- |
-| **Adding 500 Items**                      |                   |                 |             |
-| Start FPS                                 | 43 fps            | 139 fps         | **~3.2x**   |
-| Start Render Time                         | 3.7 ms            | 2.2 ms          | **~1.7x**   |
-| Degraded/Later FPS                        | 21 fps            | 110 fps         | **~5.2x**   |
-| Late Render Time                          | 227.7 ms          | 1.6 ms          | **~142.3x** |
-| Time To Finish                            | 35,400 ms (35.4s) | 6,409 ms (6.4s) | **~5.5x**   |
-| **Toggling an item 25 times (503 items)** |                   |                 |             |
-| FPS                                       | 24 fps            | 170 fps         | **~7.1x**   |
-| Render Time (Average)                     | 253 ms            | 1 ms            | **~253x**   |
-| Render Time (Peak)                        | 559 ms            | 1.3 ms          | **~430x**   |
-| Time To Finish                            | 4,807 ms (4.8s)   | 149 ms          | **~32.3x**  |
+| Metric                                    | Classic           | Anchor            | Ratio                              |
+| :---------------------------------------- | :---------------- | :---------------- | :--------------------------------- |
+| **Adding 1000 Items**                     |                   |                   |                                    |
+| Start FPS                                 | 199 fps           | 198 fps           | _Raw fps_                          |
+| Start Render Time                         | 1.7 ms            | 1 ms              | **~{{(1.7/1).toFixed(2)}}x**       |
+| Degraded/Later FPS                        | 14.4 fps          | 100.8 fps         | **~{{(100.8/14.4).toFixed(2)}}x**  |
+| Late Render Time                          | 111.6 ms          | 1.2 ms            | **~{{(111.6/1.2).toFixed(2)}}x**   |
+| Time To Finish                            | 82,603 ms (82.6s) | 15,185 ms (15.1s) | **~{{(82603/15185).toFixed(2)}}x** |
+| **Toggling an item 25 times (103 items)** |                   |                   |                                    |
+| FPS                                       | 16.8 fps          | 182.4 fps         | **~{{(182.4/16.8).toFixed(2)}}x**  |
+| Render Time (Average)                     | 119 ms            | 0.4 ms            | **~{{(119/0.4).toFixed(2)}}x**     |
+| Render Time (Peak)                        | 380 ms            | 1 ms              | **~{{(380/1).toFixed(2)}}x**       |
+| Time To Finish                            | 5,477 ms (5.4s)   | 384 ms            | **~{{(5477/384).toFixed(2)}}x**    |
 
 ### **Analysis & Key Takeaways**
 
 The data from these tests is conclusive: Anchor fundamentally redefines what's possible in web application performance.
 
 - **Efficiency at Scale**: The Classic App's performance degrades dramatically as the list grows. Its render time for a
-  single item update explodes to **227.7ms**, and its frame rate plummets to a choppy **21 fps**. In contrast, Anchor's
-  render time remains stable at a blazingly fast **1.6ms**, with a fluid **110 fps**.
+  single item update explodes to **111 ms**, and its frame rate plummets to a choppy **16 fps**. In contrast, Anchor's
+  render time remains stable at a blazingly fast **1ms**, with a fluid **108 fps**.
 - **Classic immutability bottleneck**: The Classic App's performance is also impacted by the immutability approach.
   Each item addition need to clone the entire list, leading the time and resource consumption is increased as the list
   size increases.
 - **The Problem of Wasted Renders**: The Classic App re-renders components that don't need to change, leading to a
-  massive render count of **122,307** for a single operation. Anchor, with its fine-grained reactivity, only renders
-  what's necessary, resulting in an estimated count of just **528**.
-- **A Superior User Experience**: The tangible impact is clear. The Anchor app is **~32x faster** at completing the
-  toggling action and **~5.5x faster** at adding items. This translates to an application that feels instant,
+  massive render count of **503,503** (**O(N)**). Anchor, with its fine-grained reactivity, only renders
+  what's necessary, resulting in count of just **1,003** (**O(1)**, the same with the items count).
+- **A Superior User Experience**: The tangible impact is clear. The Anchor app is **~297x faster** at completing the
+  toggling action and **~93x faster** at adding items. This translates to an application that feels instant,
   responsive, and a joy to use.
 
 These metrics prove that Anchor's architectural philosophy is a solution to the scalability problems facing modern web

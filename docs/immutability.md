@@ -23,7 +23,7 @@ nested data structures, it quickly leads to:
 - **Source of Confusion:** It can be difficult work with data because we need to make sure that the data that is being
   read is the upto-date one. It leads to confusion and potential bugs.
 
-## **True Immutability**
+## **True Immutability (Solution)**
 
 Anchor's approach to immutability is fundamentally different. Instead of relying on manual copying, Anchor uses a
 powerful, proxy-based system that gives you the best of both worlds:
@@ -33,32 +33,20 @@ powerful, proxy-based system that gives you the best of both worlds:
 - **Safe and Immutable:** Behind the scenes, Anchor's write contract engine apply this change. It maintains a single,
   stable source of truth, so you get all the safety and predictability of an immutable
   state without the performance penalties.
-- **Fine-grained Updates:** Anchor's write contract engine only updates the parts of the state that signed in the contract,
+- **Fine-grained Updates:** Anchor's write contract engine only updates the parts of the state that signed in the
+  contract,
   preventing accidental changes to the state.
-- **Up to Date:** Whenever and wherever you read a state, it will be always up to date and consistent since it maintain a
+- **Up to Date:** Whenever and wherever you read a state, it will be always up to date and consistent since it maintain
+  a
   stable reference to the state.
 
 This innovative approach is what makes Anchor so fast. It allows for highly optimized, fine-grained updates without the
 expensive overhead of deep cloning.
 
-::: warning Write Contract
-
-Write contract allows you to mutate a state, but it's limited to single level mutation. This is important to make sure
-there is no unintentionally modified nested state. This is a design choice to make sure that the state is always stable.
-
-```ts
-const profileWriter = anchor.writable(profile, ['name']);
-
-profileWriter.name = 'New Name'; // This is allowed
-profileWriter.age = 10; // This is not allowed
-profileWriter.address.line = 'New Line'; // This is not allowed (need a new contract).
-```
-
-:::
-
 ### **Strongly Typed**
 
-Anchor reinforces its commitment to immutability through **strong typing**. When you declare an immutable state, Anchor returns a
+Anchor reinforces its commitment to immutability through **strong typing**. When you declare an immutable state, Anchor
+returns a
 read-only type in your IDE. This is a crucial feature for preventing accidental mutations:
 
 - **Compile-time Safety:** If you try to mutate a read-only state directly, your IDE will immediately warn you, or your
@@ -119,13 +107,14 @@ user.name = 'Jane Doe'; // This will be trapped and produce an error
 user.age = 31; // This will also be trapped
 ```
 
-### Mutating Immutable States
+## Write Contract
 
-To modify an immutable state, you need to create a writable version using the `writable` method:
+To modify an immutable state, you need to create a writable version of the state by using the `writable` method:
 
 ```typescript
 import { anchor } from '@anchor/core';
 
+// Declare an immutable state.
 const immutableState = anchor.immutable({ count: 0, name: 'Anchor' });
 
 // Create a writable version of the immutable state
@@ -140,9 +129,31 @@ console.log(immutableState.count); // 1
 console.log(immutableState.name); // 'Updated Anchor'
 ```
 
+::: warning Write Contract
+
+Write contract allows you to mutate a state, but it's limited to single level mutation. This is important to make sure
+there is no unintentionally modified nested state. This is a design choice to make sure that the state is always stable.
+
+```ts
+const profileWriter = anchor.writable(profile, ['name']);
+
+profileWriter.name = 'New Name'; // This is allowed
+profileWriter.age = 10; // This is not allowed
+profileWriter.address.line = 'New Line'; // This is not allowed (need a new contract).
+```
+
+:::
+
 ### Partially Writable States with Contracts
 
 You can also create partially writable states by specifying a contract that allows only certain mutations:
+
+::: tip Recommended
+
+We always recommend using contracts to define the allowed mutations for your state to reduce the risk of accidental
+changes. The purpose of immutable is to maintain the state stable, open contract can lead to unexpected changes.
+
+:::
 
 ```typescript
 import { anchor } from '@anchor/core';
@@ -197,7 +208,7 @@ type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contr
 **Parameters:**
 
 - `state`: The immutable state to make writable
-- `contracts`: Optional array of allowed mutation keys
+- `contracts`: Optional array of the allowed mutation keys
 
 **Example:**
 
@@ -233,7 +244,7 @@ const writable = anchor.writable(immutable, ['count']); // Only 'count' can be m
 Immutable states are ideal for shared data that should not be directly modified by multiple components:
 
 ```tsx
-// Good: Configuration data that should remain consistent
+// ✓ Good: Configuration data that should remain consistent
 const config = anchor.immutable({
   apiUrl: 'https://api.example.com',
   theme: 'dark',
@@ -251,9 +262,9 @@ function Component() {
 When you need to modify an immutable state, create a writable version rather than making the original mutable:
 
 ```tsx
-// Good: Create a specific writable version for mutations
+// ✓ Good: Create a specific writable version for mutations
 const settings = anchor.immutable({ volume: 50, brightness: 70 });
-const settingsWriter = anchor.writable(settings);
+const settingsWriter = anchor.writable(settings, ['volume']);
 
 function SettingsPanel() {
   return (
@@ -267,7 +278,7 @@ function SettingsPanel() {
 Use contracts to limit which properties or methods can be mutated:
 
 ```typescript
-// Good: Only allow specific mutations
+// ✓ Good: Only allow specific mutations
 const userState = anchor.immutable({
   profile: { name: 'John', email: 'john@example.com' },
   preferences: { theme: 'dark' },
@@ -282,7 +293,7 @@ const preferenceWriter = anchor.writable(userState, ['preferences']);
 Use schema validation with immutable states to ensure data integrity:
 
 ```typescript
-// Good: Immutable state with schema validation
+// ✓ Good: Immutable state with schema validation
 const userSchema = z.object({
   id: z.number(),
   name: z.string().min(1),
@@ -304,11 +315,11 @@ const user = anchor.immutable(
 Never attempt to directly mutate immutable states:
 
 ```typescript
-// Bad: Direct mutation attempt
+// ✕ Bad: Direct mutation attempt
 const state = anchor.immutable({ count: 0 });
 state.count = 1; // This will be trapped
 
-// Good: Use writable version
+// ✓ Good: Use writable version
 const state2 = anchor.immutable({ count: 0 });
 const writer = anchor.writable(state2);
 writer.count = 1; // This is the correct approach
@@ -319,15 +330,16 @@ writer.count = 1; // This is the correct approach
 Share the immutable version of your state with components that only need to read it:
 
 ```tsx
-// Good: Share immutable state for reading
+// ✓ Good: Share immutable state for reading
 const data = anchor.immutable({ items: [] });
 const dataWriter = anchor.writable(data);
 
 // Components that only read data use the immutable version
-<ReadOnlyComponent data={data} />
+<ReadOnlyComponent data={ data } />
 
 // Components that need to modify data use the writable version
-<EditableComponent data={data} writer={dataWriter} />
+<EditableComponent data={ data } writer={ dataWriter } />
 ```
 
-By following these practices, you can leverage the full power of Anchor's immutability system while maintaining clean, predictable, and maintainable code.
+By following these practices, you can leverage the full power of Anchor's immutability system while maintaining clean,
+predictable, and maintainable code.

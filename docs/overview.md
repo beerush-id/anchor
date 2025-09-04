@@ -14,6 +14,39 @@ Data-State-View) model**, a new architectural philosophy that redefines how you 
 mission is to solve the complex challenges of state management by focusing on the **AX (All eXperience) philosophy**,
 which aims to empower developers with intuitive code and provide users with a blazing-fast, fluid experience.
 
+::: tip Declarative Syntax
+
+```tsx {17}
+import { editorApp, TOOL_ICON_SIZE } from '../lib/editor.js';
+import { useObserved, useWriter } from '@anchor/react';
+
+export function DisplayPanel() {
+  // SETUP PHASE.
+  const style = useObserved(() => editorApp.currentStyle);  // 1. Observe the currentStyle
+  const styleWriter = useWriter(style, [ 'display' ]);      // 2. Create a writer for the display property
+
+  // REACTIVE PHASE.
+  return (
+    <ToggleGroup>
+      <Toggle bind={ styleWriter } name="display" value="block" className="toggle-btn">
+        <Square size={ TOOL_ICON_SIZE } />
+        <Tooltip>Block</Tooltip>
+      </Toggle>
+
+      <!-- Your IDE will warn you about this line because the `position` is not in contract.  -->
+      <Toggle bind={ styleWriter } name="position" value="grid" className="toggle-btn"> // [!code error]
+        <LayoutGrid size={ TOOL_ICON_SIZE } />
+        <Tooltip>Grid</Tooltip>
+      </Toggle>
+    </ToggleGroup>
+  );
+}
+```
+
+<img src="/images/contract-violation.webp" alt="Write Contract Violation" />
+
+:::
+
 ## **Background Problem**
 
 In many traditional frameworks and libraries, state management often leads to a series of escalating problems:

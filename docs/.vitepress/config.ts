@@ -77,54 +77,6 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Request',
-        collapsed: true,
-        items: [
-          {
-            text: 'Getting Started',
-            link: '/request/getting-started',
-          },
-          {
-            text: 'Fetch',
-            link: '/request/fetch',
-          },
-          {
-            text: 'Stream',
-            link: '/request/stream',
-          },
-        ],
-      },
-      {
-        text: 'Storage',
-        collapsed: true,
-        items: [
-          {
-            text: 'Getting Started',
-            link: '/storage/getting-started',
-          },
-          {
-            text: 'Usage',
-            link: '/storage/usage',
-          },
-          {
-            text: 'Persistent Storage',
-            link: '/storage/local-storage',
-          },
-          {
-            text: 'Session Storage',
-            link: '/storage/session-storage',
-          },
-          {
-            text: 'KV Store',
-            link: '/storage/kv-store',
-          },
-          {
-            text: 'Table Store',
-            link: '/storage/table',
-          },
-        ],
-      },
-      {
         text: 'Anchor - React',
         collapsed: true,
         items: [
@@ -179,6 +131,54 @@ export default defineConfig({
           {
             text: 'Usage',
             link: '/vue/usage',
+          },
+        ],
+      },
+      {
+        text: 'Request',
+        collapsed: true,
+        items: [
+          {
+            text: 'Getting Started',
+            link: '/request/getting-started',
+          },
+          {
+            text: 'Fetch',
+            link: '/request/fetch',
+          },
+          {
+            text: 'Stream',
+            link: '/request/stream',
+          },
+        ],
+      },
+      {
+        text: 'Storage',
+        collapsed: true,
+        items: [
+          {
+            text: 'Getting Started',
+            link: '/storage/getting-started',
+          },
+          {
+            text: 'Usage',
+            link: '/storage/usage',
+          },
+          {
+            text: 'Persistent Storage',
+            link: '/storage/local-storage',
+          },
+          {
+            text: 'Session Storage',
+            link: '/storage/session-storage',
+          },
+          {
+            text: 'KV Store',
+            link: '/storage/kv-store',
+          },
+          {
+            text: 'Table Store',
+            link: '/storage/table',
           },
         ],
       },
