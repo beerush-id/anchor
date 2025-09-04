@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { shortId } from '@anchor/core';
+import { microtask, shortId, softEqual } from '@anchor/core';
 import type { AnchoredProps, Bindable } from './types.js';
+import { DEV_MODE } from './dev.js';
 
 /**
  * A React hook that generates a short, unique identifier string.
@@ -66,4 +67,60 @@ export function cleanProps<T extends Bindable>(props: T) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _state_version, ...rest } = props as T & AnchoredProps;
   return rest;
+}
+
+export function useConstant<T>(init: () => T): T;
+export function useConstant<T>(init: T, cleanup?: (current: T) => void): T;
+/**
+ * A React hook that returns a constant value that is only updated when the value changes in development mode.
+ *
+ * In production mode, the hook will always return the initial value.
+ * In development mode, the hook will update the value if it is not equal to the current value.
+ * If the initial value is a factory, it will always use the initial value.
+ *
+ * @template T - The type of the value.
+ * @param {T | (() => T)} init - The initial value, or the initial value factory.
+ * @param {(current: T) => void} cleanup - An optional cleanup function to be called when the value changes.
+ * @returns The constant value.
+ */
+export function useConstant<T>(init: T | (() => T), cleanup?: (current: T) => void): T {
+  const ref = useRef<T>(null);
+
+  if (!ref.current) {
+    ref.current = typeof init === 'function' ? (init as () => T)() : init;
+  }
+
+  if (DEV_MODE && typeof init !== 'function' && !softEqual(init, ref.current)) {
+    cleanup?.(ref.current);
+    ref.current = init;
+  }
+
+  return ref.current as T;
+}
+
+export function useMicrotask(timeout?: number) {
+  return useRef(microtask(timeout)).current;
+}
+
+/**
+ * Compares two arrays for shallow equality, ignoring the order of elements.
+ *
+ * This function checks if two arrays contain the same elements by comparing:
+ * 1. Their lengths
+ * 2. Whether all elements in one array exist in the other array
+ *
+ * It's used to determine if the dependencies of an observer have changed,
+ * where the position of elements doesn't matter but their presence does.
+ *
+ * @param prev - The previous array of dependencies
+ * @param next - The next array of dependencies
+ * @returns true if the arrays are different, false if they contain the same elements
+ */
+export function depsChanged(prev: Set<unknown>, next: unknown[]): Set<unknown> | void {
+  const nextSet = new Set(next);
+  if (nextSet.size !== prev.size) return nextSet;
+
+  for (const item of nextSet) {
+    if (!prev.has(item)) return nextSet;
+  }
 }

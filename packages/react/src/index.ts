@@ -8,4 +8,3 @@ export * from './immutable.js';
 export * from './model.js';
 export * from './observable.js';
 export * from './utils.js';
-export { CLEANUP_DEBOUNCE_TIME } from './constant.js';

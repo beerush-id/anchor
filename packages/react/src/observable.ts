@@ -9,6 +9,7 @@ import {
 } from '@anchor/core';
 import { DEV_MODE, STRICT_MODE } from './dev.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
+import { depsChanged } from './utils.js';
 
 /**
  * `useObserverRef` is a custom React hook that provides a stable `StateObserver` instance
@@ -120,7 +121,7 @@ export function useObserverRef(deps: Linkable[] = [], displayName?: string): [St
 
       if (newDeps) {
         // Update the dependencies and destroy the observer to establish a new observations.
-        depsRef.current = newDeps;
+        depsRef.current = newDeps as never;
         observer.destroy();
         debug.ok('Observer updated:', observer.name);
       }
@@ -161,27 +162,4 @@ export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) 
       return observe();
     }) as R;
   }, [version, ...(deps ?? [])]);
-}
-
-/**
- * Compares two arrays for shallow equality, ignoring the order of elements.
- *
- * This function checks if two arrays contain the same elements by comparing:
- * 1. Their lengths
- * 2. Whether all elements in one array exist in the other array
- *
- * It's used to determine if the dependencies of an observer have changed,
- * where the position of elements doesn't matter but their presence does.
- *
- * @param prev - The previous array of dependencies
- * @param next - The next array of dependencies
- * @returns true if the arrays are different, false if they contain the same elements
- */
-function depsChanged(prev: Set<Linkable>, next: Linkable[]): Set<Linkable> | void {
-  const nextSet = new Set(next);
-  if (nextSet.size !== prev.size) return nextSet;
-
-  for (const item of nextSet) {
-    if (!prev.has(item)) return nextSet;
-  }
 }

@@ -46,11 +46,8 @@ export function useWriter<T extends Linkable, K extends MutationKey<T>[]>(state:
  * @param contracts - Optional mutation key contracts that define allowed mutations
  * @returns A mutable version of the input state
  */
-export function useWriter<T extends Linkable, K extends MutationKey<T>[]>(
-  state: T,
-  contracts?: K
-): [MutablePart<T, K>] {
+export function useWriter<T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts?: K): MutablePart<T, K> {
   return useMemo(() => {
-    return [anchor.writable(state, contracts)];
+    return anchor.writable(state, contracts);
   }, [state, contracts]);
 }

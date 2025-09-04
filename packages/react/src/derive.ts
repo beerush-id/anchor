@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { anchor, derive, type Immutable, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
 import type { TransformFn, TransformSnapshotFn } from './types.js';
 import { useObserverRef } from './observable.js';
+import { RENDERER_INIT_VERSION } from './constant.js';
+import { depsChanged } from './utils.js';
 
 /**
  * React hook that allows you to derive a computed value from a reactive state.
@@ -25,33 +27,83 @@ export function usePicker<T extends State, K extends keyof T>(state: T, keys: K[
   const output = anchor(cached);
 
   useEffect(() => {
-    return derive(state, (newValue, event) => {
-      if (event.type !== 'init') {
-        const key = event.keys.join('.') as K;
-        if (keys.includes(key)) {
-          output[key] = newValue[key];
+    return derive(
+      state,
+      (newValue, event) => {
+        if (event.type !== 'init') {
+          const key = event.keys.join('.') as K;
+          if (keys.includes(key)) {
+            output[key] = newValue[key];
+          }
         }
-      }
-    });
+      },
+      false
+    );
   }, [output]);
 
   return output;
 }
 
-export function useWatcher<T extends State, K extends keyof T>(state: T, key: K) {
-  const [value, setValue] = useState(state?.[key]);
+export function useValue<T extends State, K extends keyof T>(state: T, key: K) {
+  const [version, setVersion] = useState(RENDERER_INIT_VERSION);
+  const current = useMemo(() => {
+    return state?.[key];
+  }, [state, key, version]);
 
   useEffect(() => {
     if (typeof state !== 'object' || state === null) return;
 
-    return derive(state, (current, event) => {
-      if (event.type !== 'init' && event.keys.join('.') === key) {
-        setValue(current[key]);
-      }
-    });
+    return derive(
+      state,
+      (next, event) => {
+        if (event.type !== 'init' && event.keys.join('.') === key) {
+          setVersion((c) => c + 1);
+        }
+      },
+      false
+    );
   }, [state, key]);
 
-  return value;
+  return current;
+}
+
+export function useValueIs<T extends State, K extends keyof T>(state: T, key: K, expect: unknown): boolean {
+  const depsRef = useRef(new Set([state, key, expect]));
+  const updateRef = useRef(false);
+  const compareRef = useRef(state?.[key] === expect);
+  const [, setVersion] = useState(RENDERER_INIT_VERSION);
+
+  if (updateRef.current) {
+    const updatedDeps = depsChanged(depsRef.current, [state, key, expect]);
+
+    if (updatedDeps) {
+      depsRef.current = updatedDeps;
+      compareRef.current = state?.[key] === expect;
+    }
+  } else {
+    updateRef.current = true;
+  }
+
+  useEffect(() => {
+    if (typeof state !== 'object' || state === null) return;
+
+    return derive(
+      state,
+      (_, event) => {
+        if (event.type !== 'init' && event.keys.join('.') === key) {
+          const next = state[key] === expect;
+          if (next !== compareRef.current) {
+            updateRef.current = false;
+            compareRef.current = next;
+            setVersion((c) => c + 1);
+          }
+        }
+      },
+      false
+    );
+  }, [state, key, expect]);
+
+  return compareRef.current;
 }
 
 export function useDerivedList<T extends ObjLike[]>(state: T): Array<{ key: number; value: T[number] }>;
