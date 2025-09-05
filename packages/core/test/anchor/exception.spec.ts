@@ -106,7 +106,17 @@ describe('Anchor Core - Exception Handling', () => {
       });
 
       it('should capture method call violation', () => {
-        captureStack.violation.methodCall('push');
+        captureStack.violation.methodCall('push' as never);
+        expect(consoleErrorSpy).toHaveBeenCalled();
+      });
+
+      it('should capture derivation violation', () => {
+        captureStack.violation.derivation('push', new Error('Error'));
+        expect(consoleErrorSpy).toHaveBeenCalled();
+      });
+
+      it('should capture general violation', () => {
+        captureStack.violation.general('Violation', 'push', new Error('Error'));
         expect(consoleErrorSpy).toHaveBeenCalled();
       });
     });
@@ -133,7 +143,7 @@ describe('Anchor Core - Exception Handling', () => {
       });
 
       it('should capture contract method call violation', () => {
-        captureStack.contractViolation.methodCall('push');
+        captureStack.contractViolation.methodCall('push' as never);
         expect(consoleErrorSpy).toHaveBeenCalled();
       });
     });

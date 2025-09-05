@@ -120,6 +120,18 @@ const generator = {
 
     return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
   },
+  generalViolation(title: string, message: string, notes?: string[]) {
+    const messages = [
+      `\x1b[1m[violation] ${title}\x1b[0m`,
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      notes ? `\n\x1b[1mImportant\x1b[0m: ${notes.join('\n')}\x1b[0m` : undefined,
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ].filter((t) => t !== undefined);
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
   schemaViolation(message: string) {
     const messages = [
       '\x1b[1m[schema] Schema violation detected:\x1b[0m',
@@ -213,6 +225,20 @@ export const captureStack = {
       const message = generator.init(`Attempted to create state from "${typeOf(value)}".`);
       const error = new Error(`Type data "${typeOf(value)}" is not observable.`);
       shiftStack(error, captureStack.violation.init, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    general(title: string, body: string, error: Error, notes?: string[], ...excludedStacks: unknown[]) {
+      const message = generator.generalViolation(title, body, notes);
+      shiftStack(error, captureStack.violation.general, excludedStacks);
+
+      console.error(message, error, '\n');
+    },
+    derivation(body: string, error: Error, ...excludedStacks: unknown[]) {
+      const message = generator.generalViolation('Derivation violation detected:', body, [
+        'This error is caused by providing a non-reactive state to the derivation call. If you think this is a bug, please report it at https://github.com/beerush-id/anchor/issues',
+      ]);
+      shiftStack(error, captureStack.violation.derivation, excludedStacks);
 
       console.error(message, error, '\n');
     },

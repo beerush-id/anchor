@@ -243,7 +243,7 @@ anchorFn.raw = ((init, options) => {
 }) satisfies AnchorFn['raw'];
 
 anchorFn.has = ((state) => {
-  return STATE_REGISTRY.has(state);
+  return CONTROLLER_REGISTRY.has(state);
 }) satisfies AnchorFn['has'];
 
 anchorFn.get = ((state, silent = false) => {
@@ -277,8 +277,8 @@ anchorFn.destroy = ((state, silent?: boolean) => {
 
   if (!controller) {
     if (!silent) {
-      const error = new Error('Object is not a state');
-      captureStack.error.external('Attempted to destroy a state that does not exist', error, anchorFn.destroy);
+      const error = new Error('Object is not a state.');
+      captureStack.error.external('Attempted to destroy a state that does not exist.', error, anchorFn.destroy);
     }
     return;
   }

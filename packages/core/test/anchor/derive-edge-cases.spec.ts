@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, derive } from '../../src/index.js';
 
-describe('Anchor Derive - Edge Cases', () => {
+describe('Anchor Core - Derivation Edge Cases', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -16,7 +16,7 @@ describe('Anchor Derive - Edge Cases', () => {
     warnSpy.mockRestore();
   });
 
-  describe('Subscription Edge Cases', () => {
+  describe('Derivation', () => {
     it('should handle subscribing to non-reactive objects', () => {
       const plainObject = { count: 0 };
       const handler = vi.fn();
@@ -200,7 +200,7 @@ describe('Anchor Derive - Edge Cases', () => {
     });
   });
 
-  describe('Controller Edge Cases', () => {
+  describe('Controller', () => {
     it('should handle resolve with non-reactive objects', () => {
       const plainObject = { count: 0 };
 
@@ -263,7 +263,7 @@ describe('Anchor Derive - Edge Cases', () => {
     });
   });
 
-  describe('Pipe Edge Cases', () => {
+  describe('Piping', () => {
     it('should handle piping without transform function', () => {
       const state = anchor({ count: 1 });
       const target = { count: 0 };
@@ -281,13 +281,14 @@ describe('Anchor Derive - Edge Cases', () => {
     });
 
     it('should handle piping between non-object states', () => {
-      expect(() => {
-        derive.pipe(42 as never, {} as never);
-      }).toThrow('Both source and target must be objects');
+      derive.pipe(42 as never, {} as never);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
 
-      expect(() => {
-        derive.pipe({} as never, 42 as never);
-      }).toThrow('Both source and target must be objects');
+      derive.pipe({} as never, 42 as never);
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+
+      derive.pipe(anchor({}) as never, 42 as never);
+      expect(errorSpy).toHaveBeenCalledTimes(3);
     });
 
     it('should handle piping with transform function', () => {
@@ -334,6 +335,252 @@ describe('Anchor Derive - Edge Cases', () => {
 
       expect(target.fullName).toBe('Jane');
       expect(target.years).toBe(25);
+
+      unsubscribe();
+    });
+  });
+
+  describe('Binding', () => {
+    it('should handle binding non-reactive states', () => {
+      const left = { value: 1 };
+      const right = { value: 2 };
+
+      const unsubscribe = derive.bind(left, right);
+
+      // Should log error but not throw
+      expect(errorSpy).toHaveBeenCalled();
+
+      // Values should remain unchanged
+      expect(left.value).toBe(1);
+      expect(right.value).toBe(2);
+
+      unsubscribe();
+    });
+
+    it('should handle binding with non-reactive left state', () => {
+      const left = { value: 1 };
+      const right = anchor({ value: 2 });
+
+      const unsubscribe = derive.bind(left, right);
+
+      // Should log error but not throw
+      expect(errorSpy).toHaveBeenCalled();
+
+      // Values should remain unchanged
+      expect(left.value).toBe(1);
+      expect(right.value).toBe(2);
+
+      unsubscribe();
+    });
+
+    it('should handle binding with non-reactive right state', () => {
+      const left = anchor({ value: 2 });
+      const right = { value: 1 };
+
+      const unsubscribe = derive.bind(left, right);
+
+      // Should log error but not throw
+      expect(errorSpy).toHaveBeenCalled();
+
+      // Values should remain unchanged
+      expect(left.value).toBe(2);
+      expect(right.value).toBe(1);
+
+      unsubscribe();
+    });
+
+    it('should prevent infinite loops during binding', () => {
+      const left = anchor({ count: 0 });
+      const right = anchor({ count: 0 });
+
+      // Create binding without transformations (which could cause loops)
+      const unsubscribe = derive.bind(left, right);
+
+      // Initial sync - right should take left's value
+      expect(left.count).toBe(0);
+      expect(right.count).toBe(0);
+
+      // Update left and ensure no infinite loop occurs
+      left.count = 5;
+      expect(left.count).toBe(5);
+      expect(right.count).toBe(5);
+
+      // Update right and ensure no infinite loop occurs
+      right.count = 10;
+      expect(left.count).toBe(10);
+      expect(right.count).toBe(10);
+
+      unsubscribe();
+    });
+
+    it('should handle binding with complex transformation functions', () => {
+      type Shape = { items?: number[]; count?: number };
+      const left = anchor<Shape>({ items: [1, 2, 3] });
+      const right = anchor<Shape>({ count: 0 });
+
+      const unsubscribe = derive.bind(
+        left,
+        right,
+        (current) => ({ count: current.items.length }),
+        (current) => ({ items: Array(current.count).fill(0) })
+      );
+
+      // Initial binding
+      expect(left.items).toEqual([0, 0, 0]);
+      expect(right.count).toBe(3);
+
+      // Update left
+      left.items = [1, 2, 3, 4, 5];
+      expect(left.items).toEqual([1, 2, 3, 4, 5]);
+      expect(right.count).toBe(5);
+
+      // Update right
+      right.count = 2;
+      expect(left.items).toEqual([0, 0]);
+      expect(right.count).toBe(2);
+
+      unsubscribe();
+    });
+
+    it('should handle binding with transformation functions that return undefined', () => {
+      const left = anchor({ value: 1 });
+      const right = anchor({ value: 2 });
+
+      const unsubscribe = derive.bind(
+        left,
+        right,
+        () => undefined, // Return undefined
+        () => undefined // Return undefined
+      );
+
+      // Initial binding - no transformations should be applied
+      expect(left.value).toBe(1);
+      expect(right.value).toBe(2); // Right should still sync to left's value
+
+      // Updates should still work even with undefined returns
+      left.value = 5;
+      expect(left.value).toBe(5);
+      expect(right.value).toBe(2);
+
+      right.value = 10;
+      expect(left.value).toBe(5);
+      expect(right.value).toBe(10);
+
+      unsubscribe();
+    });
+
+    it('should properly clean up both subscriptions when unsubscribed', () => {
+      const left = anchor({ value: 1 });
+      const right = anchor({ value: 2 });
+      const leftHandler = vi.fn();
+      const rightHandler = vi.fn();
+
+      // Set up additional listeners to verify cleanup
+      const unsubscribeDeriveLeft = derive(left, leftHandler);
+      const unsubscribeDeriveRight = derive(right, rightHandler);
+
+      // Bind the states
+      const unsubscribeBind = derive.bind(left, right);
+
+      // Clear initial calls
+      leftHandler.mockClear();
+      rightHandler.mockClear();
+
+      // Update left - both bound states and separate listeners should be notified
+      left.value = 10;
+      expect(leftHandler).toHaveBeenCalled();
+      expect(rightHandler).toHaveBeenCalled();
+
+      // Clear mocks
+      leftHandler.mockClear();
+      rightHandler.mockClear();
+
+      // Unsubscribe the binding
+      unsubscribeBind();
+
+      // Update left again - only separate listeners should be notified
+      left.value = 20;
+      expect(leftHandler).toHaveBeenCalled();
+      expect(rightHandler).not.toHaveBeenCalled(); // Right should not be updated through binding
+      expect(right.value).toBe(10); // Should retain previous value
+
+      // Clean up
+      unsubscribeDeriveLeft();
+      unsubscribeDeriveRight();
+    });
+
+    it('should handle rapid successive updates without conflicts', () => {
+      const left = anchor({ value: 0 });
+      const right = anchor({ value: 0 });
+
+      const unsubscribe = derive.bind(left, right);
+
+      // Perform rapid updates
+      left.value = 1;
+      left.value = 2;
+      left.value = 3;
+      right.value = 4;
+      right.value = 5;
+      left.value = 6;
+
+      // Final values should be consistent
+      expect(left.value).toBe(6);
+      expect(right.value).toBe(6);
+
+      unsubscribe();
+    });
+
+    it('should handle binding with nested object transformations', () => {
+      const left = anchor({
+        user: {
+          profile: {
+            name: 'John',
+            settings: { theme: 'dark' },
+          },
+        },
+      });
+
+      const right = anchor({
+        userData: {
+          fullName: 'John',
+          preferences: { mode: 'dark' },
+        },
+      });
+
+      const unsubscribe = derive.bind(
+        left,
+        right,
+        (current) => ({
+          userData: {
+            fullName: current.user.profile.name,
+            preferences: {
+              mode: current.user.profile.settings.theme,
+            },
+          },
+        }),
+        (current) => ({
+          user: {
+            profile: {
+              name: current.userData.fullName,
+              settings: {
+                theme: current.userData.preferences.mode,
+              },
+            },
+          },
+        })
+      );
+
+      // Initial binding
+      expect(left.user.profile.name).toBe('John');
+      expect(right.userData.fullName).toBe('John');
+
+      // Update nested property on left
+      left.user.profile.name = 'Jane';
+      expect(right.userData.fullName).toBe('Jane');
+
+      // Update nested property on right
+      right.userData.preferences.mode = 'light';
+      expect(left.user.profile.settings.theme).toBe('light');
 
       unsubscribe();
     });
