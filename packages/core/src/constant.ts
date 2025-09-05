@@ -31,3 +31,26 @@ export const ANCHOR_SETTINGS = {
 export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);
 export const ARRAY_MUTATION_KEYS = new Set(ARRAY_MUTATIONS);
 export const COLLECTION_MUTATION_KEYS = new Set([...MAP_MUTATIONS, ...SET_MUTATIONS]);
+
+// Define the max number of items additions to switch between using sort vs splice
+// when adding an item into an ordered list.
+export const HEURISTIC_THRESHOLD = 5;
+
+// Dev tool keys
+export const DEV_TOOL_KEYS = new Set([
+  'onGet',
+  'onSet',
+  'onDelete',
+  'onCall',
+  'onInit',
+  'onAssign',
+  'onRemove',
+  'onClear',
+  'onDestroy',
+  'onSubscribe',
+  'onUnsubscribe',
+  'onLink',
+  'onUnlink',
+  'onTrack',
+  'onUntrack',
+]);

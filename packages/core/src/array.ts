@@ -11,7 +11,7 @@ import type {
   TrapOverrides,
 } from './types.js';
 import { BROADCASTER_REGISTRY, INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
-import { ARRAY_MUTATIONS } from './constant.js';
+import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from './constant.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { isFunction } from '@beerush/utils';
@@ -43,10 +43,6 @@ const mockReturn = {
     return items;
   },
 };
-
-// Define the max number of items additions to switch between using sort vs splice
-// when adding an item into an ordered list.
-const HEURISTIC_THRESHOLD = 5;
 
 /**
  * Creates a mutator for an array that handles state changes and validation.

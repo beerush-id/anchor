@@ -1,12 +1,9 @@
-import type { Broadcaster, Linkable, ObjLike, StateChange } from './types.js';
+import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from './types.js';
 import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import { isArray, isDefined, isMap, isSet } from '@beerush/utils';
 import { softEntries, softKeys } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { BatchMutations } from './enum.js';
-
-export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
-export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
 
 /**
  * Assigns a partial state to the given state.

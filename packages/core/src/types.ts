@@ -537,3 +537,192 @@ export type Broadcaster = {
    */
   broadcast: BroadcastFn;
 };
+
+export interface DeriveFn {
+  /**
+   * Derives a new subscription from an existing anchored state.
+   * This is a convenience function to subscribe to changes of an already anchored state.
+   *
+   * @template T The type of the state.
+   * @param state - The anchored state object to derive from.
+   * @param handler - The subscriber function to call on state changes.
+   * @param recursive - Whether to recursively subscribe to child states (Default: follow).
+   * @returns A function to unsubscribe from the derived state.
+   */ <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean): StateUnsubscribe;
+
+  /**
+   * Subscribe to changes in the provided state and log it to the console.
+   * This is a convenience method that uses `console.log` as the subscriber function.
+   *
+   * @template T The type of the state.
+   * @param state The anchored state object to subscribe to.
+   * @returns A function to unsubscribe from the logging subscription.
+   */
+  log<T extends Linkable>(state: State<T>): StateUnsubscribe;
+
+  /**
+   * Pipe changes of the source state to a target state.
+   * This function allows you to synchronize changes from a source state to a target state,
+   * with an optional transformation function to modify the data during the transfer.
+   *
+   * @template Source The type of the source state.
+   * @template Target The type of the target state.
+   * @param source The source state object to pipe from.
+   * @param target The target state object to pipe to.
+   * @param transform An optional function to transform the source state before assigning it to the target.
+   * @returns A function to unsubscribe from the piping operation.
+   */
+  pipe<Source extends State, Target extends Linkable>(
+    source: Source,
+    target: Target,
+    transform?: PipeTransformer<Source, Target>
+  ): StateUnsubscribe;
+
+  /**
+   * Bind two states together, synchronizing changes between them.
+   * This function allows you to keep two states in sync, with optional transformation functions
+   * to modify the data during the transfer in both directions.
+   *
+   * @template Left The type of the left state.
+   * @template Right The type of the right state.
+   * @param left The left state object to bind.
+   * @param right The right state object to bind.
+   * @param transformLeft An optional function to transform the left state before assigning it to the right.
+   * @param transformRight An optional function to transform the right state before assigning it to the left.
+   * @returns A function to unsubscribe from the binding operation.
+   */
+  bind<Left extends State, Right extends State>(
+    left: Left,
+    right: Right,
+    transformLeft?: PipeTransformer<Left, Right>,
+    transformRight?: PipeTransformer<Right, Left>
+  ): StateUnsubscribe;
+
+  /**
+   * Resolves the [StateController] for a given anchored state.
+   * This allows direct access to the [set] methods of the controller.
+   *
+   * @template T The type of the state.
+   * @param state The anchored state object.
+   * @returns The [StateController] if not found.
+   */
+  resolve<T extends Linkable>(state: State<T>): StateController<T> | undefined;
+}
+
+export type DevTool = {
+  /**
+   * A callback that will be called when a property is accessed.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {KeyLike} prop
+   */
+  onGet?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  /**
+   * A callback that will be called when a property is set.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {KeyLike} prop
+   * @param {unknown} value
+   */
+  onSet?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    prop: KeyLike,
+    value: unknown
+  ) => void;
+  /**
+   * A callback that will be called when a property is deleted.
+   * @param {StateMetadata} meta
+   * @param {KeyLike} prop
+   */
+  onDelete?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  /**
+   * A callback that will be called when a method is called.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {string} method
+   * @param {unknown[]} args
+   */
+  onCall?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    method: string,
+    args: unknown[]
+  ) => void;
+  /**
+   * A callback that will be called when a state is initialized.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   */
+  onInit?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
+  /**
+   * A callback that will be called when a bulk assignment is performed.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {ObjLike} source
+   */
+  onAssign?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, source: ObjLike) => void;
+  /**
+   * A callback that will be called when a bulk removal is performed.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {KeyLike[]} props
+   */
+  onRemove?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
+  /**
+   * A callback that will be called when a state is cleared.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   */
+  onClear?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
+  /**
+   * A callback that will be called when a state is destroyed.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   */
+  onDestroy?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
+  /**
+   * A callback that will be called when a subscriber is added.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {StateSubscriber<Linkable>} handler
+   */
+  onSubscribe?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    handler: StateSubscriber<T>,
+    receiver?: Linkable
+  ) => void;
+  /**
+   * A callback that will be called when a subscriber is removed.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {StateSubscriber<Linkable>} handler
+   */
+  onUnsubscribe?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    handler: StateSubscriber<T>,
+    receiver?: Linkable
+  ) => void;
+  /**
+   * A callback that will be called when a child reference is linked.
+   * @param {StateMetadata} meta
+   * @param {StateMetadata} child
+   */
+  onLink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  /**
+   * A callback that will be called when a child reference is unlinked.
+   * @param {StateMetadata} meta
+   * @param {StateMetadata} child
+   */
+  onUnlink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  /**
+   * A callback that will be called when a state is being tracked by an observer.
+   * @param {StateMetadata} meta
+   * @param {StateObserver} observer
+   */
+  onTrack?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    observer: StateObserver,
+    key: KeyLike
+  ) => void;
+  /**
+   * A callback that will be called when a state is no longer being tracked by an observer.
+   * @param {StateMetadata} meta
+   * @param {StateObserver} observer
+   */
+  onUntrack?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    observer: StateObserver
+  ) => void;
+};
+
+export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
+export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
