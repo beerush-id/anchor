@@ -18,7 +18,7 @@ export type CssNode = {
   label?: string;
   style: StyleRec;
   selector: string;
-  styleVariants: StyleVariant[];
+  stateStyles: StyleVariant[];
   children?: CssNode[];
 };
 
@@ -26,6 +26,7 @@ export type Editor = {
   current: CssNode;
   rootStyle: NodeStyle;
   currentStyle: NodeStyle;
+  currentCssContent: string;
   nodes: CssNode[];
   viewMode: 'canvas' | 'code' | 'json';
 };
@@ -83,7 +84,7 @@ export function createNode(
     label,
     selector,
     style: init ?? {},
-    styleVariants: initVariants ? createInitVariants(type) : [],
+    stateStyles: initVariants ? createInitVariants(type) : [],
     children: [],
   } as CssNode;
 }
@@ -100,7 +101,7 @@ const initNodes: CssNode[] = [
       margin: 0,
       padding: 0,
     },
-    styleVariants: [],
+    stateStyles: [],
   },
   {
     id: shortId(),
@@ -118,7 +119,7 @@ const initNodes: CssNode[] = [
       paddingInline: 16,
       borderRadius: 5,
     },
-    styleVariants: [
+    stateStyles: [
       {
         style: {},
         selector: ':focus',
@@ -162,11 +163,12 @@ export const editorApp = anchor.immutable<Editor>({
   current: initNodes[1],
   rootStyle: initNodes[0].style,
   currentStyle: initNodes[1].style,
+  currentCssContent: '',
   nodes: initNodes,
   viewMode: 'canvas',
 });
 
-export const editorWriter = anchor.writable(editorApp, ['currentStyle', 'current']);
+export const editorWriter = anchor.writable(editorApp, ['currentStyle', 'current', 'currentCssContent']);
 
 export function parseAll() {
   const contents: string[] = [];
@@ -176,7 +178,7 @@ export function parseAll() {
       contents.push(content);
     }
   }
-  return contents.join('\n');
+  return contents.join('\n\n');
 }
 
 export function parseCss(node: CssNode) {
@@ -184,7 +186,7 @@ export function parseCss(node: CssNode) {
 
   const contents = [styleToCss(node.selector, node.style)];
 
-  for (const variant of node.styleVariants) {
+  for (const variant of node.stateStyles) {
     if (Object.keys(variant.style).length) {
       contents.push(styleToCss(`${node.selector}${variant.selector}`, variant.style));
     }

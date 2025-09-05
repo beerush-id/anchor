@@ -23,7 +23,7 @@ import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';
 
 export default function EditorLayoutPanel() {
-  const node = editorApp.current;
+  const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
   const [style, display, direction] = useObserved(() => [
     editorApp.currentStyle,
     editorApp.currentStyle?.display,
@@ -31,10 +31,7 @@ export default function EditorLayoutPanel() {
   ]);
   const styleWriter = useWriter(style, ['display', 'alignItems', 'justifyContent', 'backgroundColor', 'flexDirection']);
   const isFlex =
-    display === 'flex' ||
-    display === 'inline-flex' ||
-    node.style.display === 'flex' ||
-    node.style.display === 'inline-flex';
+    display === 'flex' || display === 'inline-flex' || base.display === 'flex' || base.display === 'inline-flex';
   const isVertical = direction === 'column';
 
   return (
@@ -42,24 +39,19 @@ export default function EditorLayoutPanel() {
       <PanelRow>
         <PanelColumn label="Display">
           <ToggleGroup>
-            <Toggle bind={styleWriter} name="display" value="block" inherits={[node.style]} className="toggle-btn">
+            <Toggle bind={styleWriter} name="display" value="block" inherits={[base]} className="toggle-btn">
               <Square size={TOOL_ICON_SIZE} />
               <Tooltip>Block</Tooltip>
             </Toggle>
-            <Toggle bind={styleWriter} name="display" value="flex" inherits={[node.style]} className="toggle-btn">
+            <Toggle bind={styleWriter} name="display" value="flex" inherits={[base]} className="toggle-btn">
               <LayoutPanelTop size={TOOL_ICON_SIZE} />
               <Tooltip>Flex</Tooltip>
             </Toggle>
-            <Toggle
-              bind={styleWriter}
-              name="display"
-              value="inline-flex"
-              inherits={[node.style]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="display" value="inline-flex" inherits={[base]} className="toggle-btn">
               <LayoutTemplate size={TOOL_ICON_SIZE} />
               <Tooltip>Inline Flex</Tooltip>
             </Toggle>
-            <Toggle bind={styleWriter} name="display" value="grid" inherits={[node.style]} className="toggle-btn">
+            <Toggle bind={styleWriter} name="display" value="grid" inherits={[base]} className="toggle-btn">
               <LayoutGrid size={TOOL_ICON_SIZE} />
               <Tooltip>Grid</Tooltip>
             </Toggle>
@@ -72,7 +64,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name="flexDirection"
               value="row"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <PanelTopBottomDashed size={TOOL_ICON_SIZE} />
@@ -82,7 +74,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name="flexDirection"
               value="column"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <PanelLeftRightDashed size={TOOL_ICON_SIZE} />
@@ -95,7 +87,7 @@ export default function EditorLayoutPanel() {
           <ColorPicker
             bind={styleWriter}
             name="backgroundColor"
-            inherits={[node.style]}
+            inherits={[base]}
             className="toggle-btn cursor-pointer">
             <PaintBucket size={TOOL_ICON_SIZE} />
             <Tooltip>Background Color</Tooltip>
@@ -110,7 +102,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'alignItems' : 'justifyContent'}
               value="flex-start"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <AlignHorizontalJustifyStart size={TOOL_ICON_SIZE} />
@@ -120,7 +112,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'alignItems' : 'justifyContent'}
               value="center"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <AlignHorizontalJustifyCenter size={TOOL_ICON_SIZE} />
@@ -130,7 +122,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'alignItems' : 'justifyContent'}
               value="flex-end"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <AlignHorizontalJustifyEnd size={TOOL_ICON_SIZE} />
@@ -145,7 +137,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'justifyContent' : 'alignItems'}
               value="flex-start"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <AlignVerticalJustifyStart size={TOOL_ICON_SIZE} />
@@ -155,7 +147,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'justifyContent' : 'alignItems'}
               value="center"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <AlignVerticalJustifyCenter size={TOOL_ICON_SIZE} />
@@ -165,7 +157,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'justifyContent' : 'alignItems'}
               value="flex-end"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               <AlignVerticalJustifyEnd size={TOOL_ICON_SIZE} />
@@ -175,7 +167,7 @@ export default function EditorLayoutPanel() {
               bind={styleWriter}
               name={isVertical ? 'justifyContent' : 'alignItems'}
               value="stretch"
-              inherits={[node.style]}
+              inherits={[base]}
               className="toggle-btn"
               disabled={!isFlex}>
               {!isVertical && <StretchVertical size={TOOL_ICON_SIZE} />}

@@ -34,7 +34,7 @@
 
   .shiki {
     @apply flex-1;
-    max-height: 512px;
+    max-height: var(--canvas-height, 512px);
     background-color: transparent !important;
   }
 }
@@ -164,6 +164,24 @@ body {
       @apply rounded-r-sm;
     }
   }
+}
+
+.tooltip {
+  --tooltip-top: auto;
+  --tooltip-left: auto;
+
+  @apply fixed -translate-x-1/2 bg-black/90 text-xs px-2 py-1 rounded-sm mt-2;
+  @apply backdrop-blur-sm pointer-events-none whitespace-nowrap z-50;
+
+  top: var(--tooltip-top);
+  left: var(--tooltip-left);
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
+}
+
+.editor-app {
+  max-height: 640px;
 }
 
 .canvas-content {

@@ -1,5 +1,5 @@
 import { debugRender, useObserved, useValueIs } from '@anchor/react';
-import { type CssNode, editorApp, editorWriter, type StyleVariant } from '@lib/editor.js';
+import { type CssNode, editorApp, editorWriter, parseAll, type StyleVariant } from '@lib/editor.js';
 import { type FC, useRef } from 'react';
 import { type Immutable } from '@anchor/core';
 
@@ -10,7 +10,7 @@ export default function EditorNodeList() {
   const nodes = useObserved(() => editorApp.nodes);
 
   return (
-    <div className="border-r border-r-slate-800 min-w-[150px]">
+    <div className="border-r border-r-slate-800 min-w-[150px] overflow-x-hidden overflow-y-auto">
       <ul className="node-list">
         {nodes.map((node) => (
           <NodeItem key={node.id} node={node} />
@@ -30,6 +30,7 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
   const handleSelect = () => {
     editorWriter.current = node;
     editorWriter.currentStyle = node.style;
+    editorWriter.currentCssContent = parseAll();
   };
 
   return (
@@ -45,7 +46,7 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
           <li className="style-variant w-full">
             <NodeVariant node={node} />
           </li>
-          {node.styleVariants.map((variant) => (
+          {node.stateStyles.map((variant) => (
             <li key={variant.selector} className="style-variant w-full">
               <NodeVariant node={node} variant={variant} />
             </li>

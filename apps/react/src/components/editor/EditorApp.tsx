@@ -5,10 +5,11 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import EditorHistory from './EditorHistory.js';
 import { useRef } from 'react';
-import { debugRender } from '@anchor/react';
+import { debugRender, useObserved } from '@anchor/react';
 import { EditorExport } from './EditorExport.js';
 import { SwatchBook } from 'lucide-react';
 import { DebugSwitch } from '../DebugSwitch.js';
+import { editorApp, parseAll } from '@lib/editor.js';
 
 export default function EditorApp() {
   const ref = useRef<HTMLDivElement>(null);
@@ -16,6 +17,7 @@ export default function EditorApp() {
 
   return (
     <div ref={ref} className="px-8 max-w-7xl mx-auto flex flex-col w-screen">
+      <EditorOutput />
       <Card className="flex-1">
         <CardHeader>
           <h1 className="flex items-center gap-2">
@@ -32,7 +34,7 @@ export default function EditorApp() {
           <EditorHistory />
         </CardHeader>
 
-        <div className="w-full flex items-stretch flex-1">
+        <div className="editor-app w-full flex items-stretch flex-1">
           <EditorNodeList />
           <EditorCanvas />
           <EditorPanel />
@@ -40,4 +42,14 @@ export default function EditorApp() {
       </Card>
     </div>
   );
+}
+
+function EditorOutput() {
+  let content = useObserved(() => editorApp.currentCssContent);
+
+  if (!content) {
+    content = parseAll();
+  }
+
+  return <style id={'css-output'}>{content}</style>;
 }

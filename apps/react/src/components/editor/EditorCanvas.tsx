@@ -1,5 +1,5 @@
-import { debugRender, useMicrotask, useObserved, useSnapshot, useWriter } from '@anchor/react';
-import { editorApp, parseAll, TOOL_ICON_SIZE } from '@lib/editor.js';
+import { debugRender, useMicrotask, useObserved, useRefTrap, useSnapshot, useWriter } from '@anchor/react';
+import { type CssNode, editorApp, parseAll, parseCss, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { useRef } from 'react';
 import { CodeBlock } from '../CodeBlock.js';
 import { Toggle, ToggleGroup } from '@anchor/react/components';
@@ -7,7 +7,13 @@ import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react
 import { Tooltip } from '../Tooltip.js';
 
 export default function EditorCanvas() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRefTrap<HTMLDivElement>(null, (element) => {
+    if (element) {
+      element.style.setProperty('--canvas-height', `${element.offsetHeight}px`);
+    }
+
+    return element;
+  });
   debugRender(ref.current);
 
   const [viewMode] = useObserved(() => [editorApp.viewMode]);
@@ -57,7 +63,7 @@ export function CanvasView() {
   if (node) {
     schedule(() => {
       if (!styleRef.current) return;
-      styleRef.current.innerHTML = parseAll();
+      styleRef.current.innerHTML = parseCss(node as CssNode);
     });
   }
 
@@ -66,13 +72,20 @@ export function CanvasView() {
   const isGeneral = node?.type === 'general';
 
   return (
-    <div className="flex-1 canvas-content gap-4 select-none main">
-      <div ref={designRef} className="canvas-element bg-black/20">
+    <div ref={previewRef} className="flex-1 canvas-content gap-4 select-none main">
+      {node.style !== editorApp.currentStyle && (
+        <div className="canvas-element bg-black/20">
+          <div style={{ ...node.style }}>
+            <span>Normal</span>
+          </div>
+        </div>
+      )}
+      <div className="canvas-element bg-black/20">
         <div style={style as never}>
-          <span>Design</span>
+          <span>Current</span>
         </div>
       </div>
-      <div ref={previewRef} className="canvas-element bg-black/20">
+      <div className="canvas-element bg-black/20">
         {isGeneral && (
           <div tabIndex={1} className={node?.selector?.replace('.', '')}>
             <span>Live preview</span>
@@ -89,7 +102,7 @@ export function CanvasView() {
           </select>
         )}
       </div>
-      <style ref={styleRef}></style>
+      <style ref={styleRef} id={'current-css-output'}></style>
     </div>
   );
 }

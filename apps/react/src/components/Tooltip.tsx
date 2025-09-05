@@ -10,7 +10,14 @@ export const Tooltip: FC<{ children: ReactNode }> = ({ children }) => {
     const parent = ref.current.parentElement as HTMLElement;
     parent.style.position = 'relative';
 
-    const mouseenter = () => setShow(true);
+    const mouseenter = () => {
+      const { top, left, width, height } = parent.getBoundingClientRect();
+
+      ref.current?.style.setProperty('--tooltip-top', `${top + height}px`);
+      ref.current?.style.setProperty('--tooltip-left', `${width / 2 + left}px`);
+
+      setShow(true);
+    };
     const mouseleave = () => setShow(false);
 
     parent.addEventListener('mouseenter', mouseenter);
@@ -23,26 +30,7 @@ export const Tooltip: FC<{ children: ReactNode }> = ({ children }) => {
   }, []);
 
   return (
-    <span
-      className={[
-        'absolute',
-        'top-full',
-        'left-1/2',
-        '-translate-x-1/2',
-        'bg-black/90',
-        'text-xs',
-        'px-2',
-        'py-1',
-        'rounded-sm',
-        'mt-2',
-        'backdrop-blur-sm',
-        'transition-all',
-        'pointer-events-none',
-        'whitespace-nowrap',
-        'z-50',
-        show ? 'opacity-100 visible' : 'opacity-0 invisible',
-      ].join(' ')}
-      ref={ref}>
+    <span ref={ref} className={['tooltip', show ? 'opacity-100 visible' : 'opacity-0 invisible'].join(' ')}>
       {children}
     </span>
   );

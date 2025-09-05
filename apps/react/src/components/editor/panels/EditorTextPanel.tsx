@@ -7,7 +7,7 @@ import {
   CaseLower,
   CaseSensitive,
   CaseUpper,
-  Ellipsis,
+  Dot,
   Italic,
   PanelBottomDashed,
   Strikethrough,
@@ -23,7 +23,7 @@ import { PanelRow } from '../../PanelRow.js';
 
 export default function EditorTextPanel() {
   const root = editorApp.rootStyle;
-  const node = editorApp.current;
+  const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
   const style = useObserved(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'color',
@@ -47,36 +47,36 @@ export default function EditorTextPanel() {
             <option value="Verdana">Verdana</option>
           </Select>
         </PanelColumn>
-        <PanelColumn className="flex-1" label="Font size">
+        <PanelColumn className="flex-1" label="Size">
           <Input
             type={'number'}
             bind={styleWriter}
             name={'fontSize'}
-            inherits={[node.style, root]}
+            inherits={[base, root]}
             className={'anchor-input tool-input cols-1'}
             placeholder="default"
           />
+        </PanelColumn>
+        <PanelColumn label="Color">
+          <ColorPicker bind={styleWriter} name="color" inherits={[base, root]} className="toggle-btn cursor-pointer">
+            <Type size={TOOL_ICON_SIZE} />
+            <Tooltip>Text Color</Tooltip>
+          </ColorPicker>
         </PanelColumn>
       </PanelRow>
 
       <PanelRow>
         <PanelColumn label="Font style">
           <ToggleGroup>
-            <Toggle
-              bind={styleWriter}
-              name="fontWeight"
-              value="bold"
-              inherits={[node.style, root]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="fontWeight" value="normal" inherits={[base, root]} className="toggle-btn">
+              <Type size={TOOL_ICON_SIZE} />
+              <Tooltip>Normal</Tooltip>
+            </Toggle>
+            <Toggle bind={styleWriter} name="fontWeight" value="bold" inherits={[base, root]} className="toggle-btn">
               <Bold size={TOOL_ICON_SIZE} />
               <Tooltip>Bold</Tooltip>
             </Toggle>
-            <Toggle
-              bind={styleWriter}
-              name="fontStyle"
-              value="italic"
-              inherits={[node.style, root]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="fontStyle" value="italic" inherits={[base, root]} className="toggle-btn">
               <Italic size={TOOL_ICON_SIZE} />
               <Tooltip>Italic</Tooltip>
             </Toggle>
@@ -84,53 +84,23 @@ export default function EditorTextPanel() {
         </PanelColumn>
         <PanelColumn label="Align text">
           <ToggleGroup>
-            <Toggle
-              bind={styleWriter}
-              name="textAlign"
-              value="left"
-              inherits={[node.style, root]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="textAlign" value="left" inherits={[base, root]} className="toggle-btn">
               <AlignLeft size={TOOL_ICON_SIZE} />
               <Tooltip>Left</Tooltip>
             </Toggle>
-            <Toggle
-              bind={styleWriter}
-              name="textAlign"
-              value="center"
-              inherits={[node.style, root]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="textAlign" value="center" inherits={[base, root]} className="toggle-btn">
               <AlignCenter size={TOOL_ICON_SIZE} />
               <Tooltip>Center</Tooltip>
             </Toggle>
-            <Toggle
-              bind={styleWriter}
-              name="textAlign"
-              value="right"
-              inherits={[node.style, root]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="textAlign" value="right" inherits={[base, root]} className="toggle-btn">
               <AlignRight size={TOOL_ICON_SIZE} />
               <Tooltip>Right</Tooltip>
             </Toggle>
-            <Toggle
-              bind={styleWriter}
-              name="textAlign"
-              value="justify"
-              inherits={[node.style, root]}
-              className="toggle-btn">
+            <Toggle bind={styleWriter} name="textAlign" value="justify" inherits={[base, root]} className="toggle-btn">
               <AlignJustify size={TOOL_ICON_SIZE} />
               <Tooltip>Justify</Tooltip>
             </Toggle>
           </ToggleGroup>
-        </PanelColumn>
-        <PanelColumn label="Color">
-          <ColorPicker
-            bind={styleWriter}
-            name="color"
-            inherits={[node.style, root]}
-            className="toggle-btn cursor-pointer">
-            <Type size={TOOL_ICON_SIZE} />
-            <Tooltip>Text Color</Tooltip>
-          </ColorPicker>
         </PanelColumn>
       </PanelRow>
 
@@ -141,7 +111,7 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textTransform"
               value="lowercase"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
               <CaseLower size={TOOL_ICON_SIZE} />
               <Tooltip>lowercase</Tooltip>
@@ -150,7 +120,7 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textTransform"
               value="capitalize"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
               <CaseSensitive size={TOOL_ICON_SIZE} />
               <Tooltip>Titlecase</Tooltip>
@@ -159,7 +129,7 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textTransform"
               value="uppercase"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
               <CaseUpper size={TOOL_ICON_SIZE} />
               <Tooltip>UPPERCASE</Tooltip>
@@ -172,7 +142,7 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textDecoration"
               value="line-through"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
               <Strikethrough size={TOOL_ICON_SIZE} />
               <Tooltip>Strikethrough</Tooltip>
@@ -181,7 +151,7 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textDecoration"
               value="underline"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
               <Underline size={TOOL_ICON_SIZE} />
               <Tooltip>Underline</Tooltip>
@@ -190,7 +160,7 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textDecoration"
               value="dashed"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
               <PanelBottomDashed size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
@@ -199,9 +169,9 @@ export default function EditorTextPanel() {
               bind={styleWriter}
               name="textDecoration"
               value="dotted"
-              inherits={[node.style, root]}
+              inherits={[base, root]}
               className="toggle-btn">
-              <Ellipsis size={TOOL_ICON_SIZE} />
+              <Dot size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>
           </ToggleGroup>

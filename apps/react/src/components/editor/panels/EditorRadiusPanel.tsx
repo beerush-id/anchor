@@ -6,7 +6,7 @@ import { PanelRow } from '../../PanelRow.js';
 import { Tooltip } from '../../Tooltip.js';
 
 export default function EditorRadiusPanel() {
-  const node = editorApp.current;
+  const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
   const style = useObserved(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'borderRadius',
@@ -50,72 +50,78 @@ export default function EditorRadiusPanel() {
   return (
     <>
       <PanelRow>
-        <PanelColumn label="Rounded">
-          <div className="grid grid-cols-5 gap-2">
-            <label className="cols-1">
-              <Input
-                type={'number'}
-                bind={styleWriter}
-                name={'borderRadius'}
-                inherits={[node.style]}
-                className={'anchor-input tool-input'}
-                placeholder="0"
-                onChange={handleAll}
-              />
-              <Tooltip>All</Tooltip>
-            </label>
-            <label className="cols-1">
-              <Input
-                type={'number'}
-                bind={styleWriter}
-                name={'borderTopLeftRadius'}
-                inherits={[node.style]}
-                className={'anchor-input tool-input'}
-                placeholder="0"
-                min={0}
-                onChange={(e) => handleSync('top-left', e.target.value)}
-              />
-              <Tooltip>Top Left</Tooltip>
-            </label>
-            <label className="cols-1">
-              <Input
-                type={'number'}
-                bind={styleWriter}
-                name={'borderTopRightRadius'}
-                inherits={[node.style]}
-                className={'anchor-input tool-input'}
-                placeholder="0"
-                min={0}
-                onChange={(e) => handleSync('top-right', e.target.value)}
-              />
-              <Tooltip>Top Right</Tooltip>
-            </label>
-            <label className="cols-1">
-              <Input
-                type={'number'}
-                bind={styleWriter}
-                name={'borderBottomLeftRadius'}
-                inherits={[node.style]}
-                className={'anchor-input tool-input'}
-                placeholder="0"
-                min={0}
-                onChange={(e) => handleSync('bottom-left', e.target.value)}
-              />
-              <Tooltip>Bottom Left</Tooltip>
-            </label>
-            <label className="cols-1">
-              <Input
-                type={'number'}
-                bind={styleWriter}
-                name={'borderBottomRightRadius'}
-                inherits={[node.style]}
-                className={'anchor-input tool-input'}
-                placeholder="0"
-                min={0}
-                onChange={(e) => handleSync('bottom-right', e.target.value)}
-              />
-              <Tooltip>Bottom Right</Tooltip>
-            </label>
+        <PanelColumn label="Border radius">
+          <div className="flex items-stretch gap-4">
+            <div className="inputs flex-1 flex flex-col justify-between">
+              <label className="cols-1">
+                <Input
+                  type={'number'}
+                  bind={styleWriter}
+                  name={'borderTopLeftRadius'}
+                  inherits={[base]}
+                  className={'anchor-input tool-input text-center'}
+                  placeholder="0"
+                  min={0}
+                  onChange={(e) => handleSync('top-left', e.target.value)}
+                />
+                <Tooltip>Top Left</Tooltip>
+              </label>
+              <label className="cols-1">
+                <Input
+                  type={'number'}
+                  bind={styleWriter}
+                  name={'borderBottomLeftRadius'}
+                  inherits={[base]}
+                  className={'anchor-input tool-input text-center'}
+                  placeholder="0"
+                  min={0}
+                  onChange={(e) => handleSync('bottom-left', e.target.value)}
+                />
+                <Tooltip>Bottom Left</Tooltip>
+              </label>
+            </div>
+            <div className="preview w-[96px] rounded-lg aspect-square border border-slate-800 flex items-center justify-center p-4">
+              <label className="cols-1">
+                <Input
+                  type={'number'}
+                  bind={styleWriter}
+                  name={'borderRadius'}
+                  inherits={[base]}
+                  className={'anchor-input tool-input text-center'}
+                  placeholder="0"
+                  onChange={handleAll}
+                />
+                <Tooltip>All</Tooltip>
+              </label>
+            </div>
+            <div className="inputs flex-1 flex flex-col justify-between">
+              <label className="cols-1">
+                <Input
+                  type={'number'}
+                  bind={styleWriter}
+                  name={'borderTopRightRadius'}
+                  inherits={[base]}
+                  className={'anchor-input tool-input text-center'}
+                  placeholder="0"
+                  min={0}
+                  onChange={(e) => handleSync('top-right', e.target.value)}
+                />
+                <Tooltip>Top Right</Tooltip>
+              </label>
+              <label className="cols-1">
+                <Input
+                  type={'number'}
+                  bind={styleWriter}
+                  name={'borderBottomRightRadius'}
+                  inherits={[base]}
+                  className={'anchor-input tool-input text-center'}
+                  placeholder="0"
+                  min={0}
+                  onChange={(e) => handleSync('bottom-right', e.target.value)}
+                />
+                <Tooltip>Bottom Right</Tooltip>
+              </label>
+            </div>
           </div>
         </PanelColumn>
       </PanelRow>
