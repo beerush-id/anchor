@@ -1,38 +1,136 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { anchor, derive, type Immutable, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
+import {
+  anchor,
+  captureStack,
+  derive,
+  type Immutable,
+  type Linkable,
+  type ObjLike,
+  outsideObserver,
+  type State,
+} from '@anchor/core';
 import type { TransformFn, TransformSnapshotFn } from './types.js';
 import { useObserverRef } from './observable.js';
-import { RENDERER_INIT_VERSION } from './constant.js';
-import { depsChanged } from './utils.js';
+import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
+import { depsChanged, pickValues } from './utils.js';
+import { useMicrotask } from './hooks.js';
 
 /**
  * React hook that allows you to derive a computed value from a reactive state.
  * It automatically re-computes the value whenever the dependent state change.
  *
- * @param transform - A function that receives the current state and its snapshot, and returns the computed value.
- * @param [deps] - An optional array of dependencies that specify the state and mutations that the computed value depends on.
+ * @param state - The reactive state to derive from.
+ * @param recursive - Whether to recursively derive the computed value.
  */
-export function useDerived<R, D extends unknown[] = unknown[]>(transform: TransformFn<R>, deps?: D): R {
-  const [observer, version] = useObserverRef();
-  return useMemo(() => {
-    return observer.run(() => {
-      return transform();
-    }) as R;
-  }, [version, ...(deps ?? [])]);
+export function useDerived<T extends Linkable>(state: T, recursive?: boolean): T;
+/**
+ * React hook that allows you to derive a computed value from a reactive state.
+ * It automatically re-computes the value whenever the dependent state change.
+ *
+ * @param state - The reactive state to derive from.
+ * @param transform - A function that receives the current value, and returns the computed value.
+ */
+export function useDerived<T extends Linkable, R>(state: T, transform: TransformFn<T, R>): R;
+export function useDerived<T extends Linkable, R>(state: T, transformRecursive?: TransformFn<T, R> | boolean): T | R {
+  const [version, setVersion] = useState(RENDERER_INIT_VERSION);
+  const value = useMemo(() => {
+    const current = anchor.has(state) ? anchor.get(state) : state;
+    return typeof transformRecursive === 'function' ? transformRecursive(current) : current;
+  }, [state, version]);
+
+  useEffect(() => {
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to derive from a non-reactive state.', error);
+      return;
+    }
+
+    return derive(
+      state,
+      (_, event) => {
+        if (event.type !== 'init') {
+          setVersion((c) => c + 1);
+        }
+      },
+      typeof transformRecursive === 'boolean' ? transformRecursive : false
+    );
+  }, [state]);
+
+  return value as T | R;
 }
 
-export function usePicker<T extends State, K extends keyof T>(state: T, keys: K[]): { [key in K]: T[key] } {
-  const [init, values] = pickValues(state, keys);
+/**
+ * React hook that creates a derivation pipe between a source and target reactive state.
+ * Changes from the source state are automatically piped to the target state.
+ * An optional transform function can be used to modify the data during the pipe operation.
+ *
+ * @template T - The type of the source reactive state.
+ * @template R - The type of the target reactive state.
+ * @param {T} source - The source reactive state to pipe from.
+ * @param {R} target - The target reactive state to pipe to.
+ * @param {TransformFn<T, R>} [transform] - Optional function to transform the data during piping.
+ * @returns {void}
+ */
+export function usePipe<T extends State, R extends State>(source: T, target: R, transform?: TransformFn<T, R>) {
+  useEffect(() => {
+    return derive.pipe(source, target, transform);
+  }, [source, target]);
+}
+
+/**
+ * React hook that creates a bidirectional binding between two reactive states.
+ * Changes from either state are automatically synchronized to the other state.
+ * Optional transform functions can be used to modify the data during the synchronization.
+ *
+ * @template T - The type of the left reactive state.
+ * @template R - The type of the right reactive state.
+ * @param {T} left - The left reactive state to bind.
+ * @param {R} right - The right reactive state to bind.
+ * @param {TransformFn<T, R>} [transformLeft] - Optional function to transform data from left to right.
+ * @param {TransformFn<R, T>} [transformRight] - Optional function to transform data from right to left.
+ * @returns {void}
+ */
+export function useBind<T extends State, R extends State>(
+  left: T,
+  right: R,
+  transformLeft?: TransformFn<T, R>,
+  transformRight?: TransformFn<R, T>
+) {
+  useEffect(() => {
+    return derive.bind(left, right, transformLeft, transformRight);
+  }, [left, right]);
+}
+
+/**
+ * React hook that allows you to inherit specific properties from a reactive state object.
+ * It returns a new object containing only the specified keys and their values.
+ * The returned object is reactive and will update when the source state changes.
+ *
+ * @template T - The type of the reactive state object.
+ * @template K - The type of keys being picked from the state.
+ * @param {T} state - The reactive state object to pick values from.
+ * @param {K[]} picks - An array of keys to pick from the state object.
+ * @returns {{ [key in K]: T[key] }} - A new reactive object containing only the picked properties.
+ */
+export function useInherit<T extends State, K extends keyof T>(state: T, picks: K[]): { [key in K]: T[key] } {
+  const [init, values] = pickValues(state, picks);
   const cached = useMemo(() => init, values);
   const output = anchor(cached);
 
   useEffect(() => {
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to pick values from a non-reactive state.', error);
+      return;
+    }
+
     return derive(
       state,
       (newValue, event) => {
         if (event.type !== 'init') {
           const key = event.keys.join('.') as K;
-          if (keys.includes(key)) {
+
+          if (picks.includes(key)) {
             output[key] = newValue[key];
           }
         }
@@ -44,14 +142,28 @@ export function usePicker<T extends State, K extends keyof T>(state: T, keys: K[
   return output;
 }
 
-export function useValue<T extends State, K extends keyof T>(state: T, key: K) {
+/**
+ * React hook that derives a specific property value from a reactive state object.
+ * It automatically re-computes the value whenever the dependent state property changes.
+ *
+ * @template T - The type of the reactive state object.
+ * @template K - The type of the key being derived.
+ * @param {T} state - The reactive state object to derive from.
+ * @param {K} key - The key of the property to derive from the state object.
+ * @returns {T[K]} - The derived value of the specified property.
+ */
+export function useValue<T extends State, K extends keyof T>(state: T, key: K): T[K] {
   const [version, setVersion] = useState(RENDERER_INIT_VERSION);
   const current = useMemo(() => {
     return state?.[key];
   }, [state, key, version]);
 
   useEffect(() => {
-    if (typeof state !== 'object' || state === null) return;
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to derive value from a non-reactive state.', error);
+      return;
+    }
 
     return derive(
       state,
@@ -67,43 +179,74 @@ export function useValue<T extends State, K extends keyof T>(state: T, key: K) {
   return current;
 }
 
+/**
+ * React hook that checks if a specific property of a reactive state equals an expected value.
+ * It automatically re-evaluates the comparison whenever the dependent state changes.
+ *
+ * @template T - The type of the reactive state object.
+ * @template K - The type of the key being checked.
+ * @param {T} state - The reactive state object to check.
+ * @param {K} key - The key of the property to check in the state object.
+ * @param {unknown} expect - The expected value to compare against.
+ * @returns {boolean} - Returns true if the property value equals the expected value, false otherwise.
+ */
 export function useValueIs<T extends State, K extends keyof T>(state: T, key: K, expect: unknown): boolean {
-  const depsRef = useRef(new Set([state, key, expect]));
-  const updateRef = useRef(false);
-  const compareRef = useRef(state?.[key] === expect);
+  const ref = useRef({
+    deps: new Set([state, key, expect]),
+    matched: state?.[key] === expect,
+    checkDeps: false,
+  }).current;
+  const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
   const [, setVersion] = useState(RENDERER_INIT_VERSION);
 
-  if (updateRef.current) {
-    const updatedDeps = depsChanged(depsRef.current, [state, key, expect]);
+  if (ref.checkDeps) {
+    const updatedDeps = depsChanged(ref.deps, [state, key, expect]);
 
     if (updatedDeps) {
-      depsRef.current = updatedDeps;
-      compareRef.current = state?.[key] === expect;
+      ref.deps.clear(); // Cleanup the previous deps to allow for garbage collection.
+      ref.deps = updatedDeps;
+      ref.matched = state?.[key] === expect;
     }
   } else {
-    updateRef.current = true;
+    ref.checkDeps = true;
   }
 
   useEffect(() => {
-    if (typeof state !== 'object' || state === null) return;
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to compare value from a non-reactive state.', error);
+      return;
+    }
 
-    return derive(
+    cancelCleanup();
+
+    const unsubscribe = derive(
       state,
       (_, event) => {
         if (event.type !== 'init' && event.keys.join('.') === key) {
           const next = state[key] === expect;
-          if (next !== compareRef.current) {
-            updateRef.current = false;
-            compareRef.current = next;
+
+          if (next !== ref.matched) {
+            ref.matched = next;
+            ref.checkDeps = false;
+
             setVersion((c) => c + 1);
           }
         }
       },
       false
     );
+
+    return () => {
+      unsubscribe();
+
+      cleanup(() => {
+        ref.deps.clear();
+      });
+    };
   }, [state, key, expect]);
 
-  return compareRef.current;
+  return ref.matched;
 }
 
 export function useDerivedList<T extends ObjLike[]>(state: T): Array<{ key: number; value: T[number] }>;
@@ -193,16 +336,4 @@ export function useDerivedRef<T extends State, R>(state: T, transform?: Transfor
     const value = anchor.get(state);
     return transform ? transform(value) : value;
   }, [state]) as R;
-}
-
-function pickValues<T extends State>(state: T, keys: (keyof T)[]) {
-  const values = [] as T[keyof T][];
-  const result = {} as T;
-
-  for (const key of keys) {
-    values.push(state[key]);
-    result[key] = state[key];
-  }
-
-  return [result, values] as const;
 }

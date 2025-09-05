@@ -3,6 +3,7 @@ export * from './array.js';
 export * from './derive.js';
 export * from './dev.js';
 export * from './fetch.js';
+export * from './hooks.js';
 export * from './history.js';
 export * from './immutable.js';
 export * from './model.js';

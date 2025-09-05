@@ -137,7 +137,7 @@ body {
 }
 
 @utility toggle-btn {
-  @apply anchor-btn px-0 py-0 anchor-btn-icon rounded-sm w-[30px] aspect-square justify-center;
+  @apply anchor-btn anchor-btn-icon px-0 py-0 rounded-sm w-[30px] aspect-square justify-center;
   @apply focus:z-10;
 
   &[data-inherit='true'] {

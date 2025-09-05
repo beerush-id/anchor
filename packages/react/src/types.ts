@@ -7,7 +7,7 @@ export type StateSetter<T extends Linkable, S extends LinkableSchema = LinkableS
 ) => void;
 export type AnchorState<T extends Linkable, S extends LinkableSchema = LinkableSchema> = [T, StateSetter<T, S>];
 
-export type TransformFn<R> = () => R;
+export type TransformFn<T extends Linkable, R> = (current: T) => R;
 export type TransformSnapshotFn<T, R> = (snapshot: T) => R;
 export type Bindable = Record<string, unknown>;
 export type AnchoredProps = {

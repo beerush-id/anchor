@@ -1,51 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { microtask, shortId, softEqual } from '@anchor/core';
+import { type State } from '@anchor/core';
 import type { AnchoredProps, Bindable } from './types.js';
-import { DEV_MODE } from './dev.js';
-
-/**
- * A React hook that generates a short, unique identifier string.
- *
- * This hook uses the **shortId()** function from the Anchor core library
- * to generate a unique ID that remains stable across re-renders.
- *
- * @returns The generated short ID string.
- */
-export function useShortId() {
-  const [id] = useState(() => {
-    return shortId();
-  });
-  return id;
-}
-
-/**
- * A React hook that creates a ref with a custom setter handler.
- *
- * This hook returns a ref-like object that allows you to intercept and modify
- * the value being set through a handler function. The handler function is called
- * whenever the current property is set, enabling you to apply custom logic
- * (e.g., validation, transformation) before updating the ref's value.
- *
- * @template T - The type of the value stored in the ref.
- * @param init - The initial value for the ref.
- * @param handler - A function that processes the value before it's set.
- *                  It receives the new value and returns the value to be stored.
- * @returns A ref-like object with a custom setter.
- */
-export function useRefTrap<T>(init: T | null, handler: (value: T | null) => T | null) {
-  const ref = useRef(init);
-
-  return useMemo(() => {
-    return {
-      get current() {
-        return ref.current;
-      },
-      set current(value) {
-        ref.current = handler(value);
-      },
-    };
-  }, [ref]);
-}
 
 /**
  * `cleanProps` is a utility function designed to remove the internal
@@ -69,39 +23,6 @@ export function cleanProps<T extends Bindable>(props: T) {
   return rest;
 }
 
-export function useConstant<T>(init: () => T): T;
-export function useConstant<T>(init: T, cleanup?: (current: T) => void): T;
-/**
- * A React hook that returns a constant value that is only updated when the value changes in development mode.
- *
- * In production mode, the hook will always return the initial value.
- * In development mode, the hook will update the value if it is not equal to the current value.
- * If the initial value is a factory, it will always use the initial value.
- *
- * @template T - The type of the value.
- * @param {T | (() => T)} init - The initial value, or the initial value factory.
- * @param {(current: T) => void} cleanup - An optional cleanup function to be called when the value changes.
- * @returns The constant value.
- */
-export function useConstant<T>(init: T | (() => T), cleanup?: (current: T) => void): T {
-  const ref = useRef<T>(null);
-
-  if (!ref.current) {
-    ref.current = typeof init === 'function' ? (init as () => T)() : init;
-  }
-
-  if (DEV_MODE && typeof init !== 'function' && !softEqual(init, ref.current)) {
-    cleanup?.(ref.current);
-    ref.current = init;
-  }
-
-  return ref.current as T;
-}
-
-export function useMicrotask(timeout?: number) {
-  return useRef(microtask(timeout)).current;
-}
-
 /**
  * Compares two arrays for shallow equality, ignoring the order of elements.
  *
@@ -123,4 +44,27 @@ export function depsChanged(prev: Set<unknown>, next: unknown[]): Set<unknown> |
   for (const item of nextSet) {
     if (!prev.has(item)) return nextSet;
   }
+}
+
+/**
+ * Helper function that extracts specific properties from a reactive state object.
+ * It returns a tuple containing:
+ * 1. An object with the picked properties and their values
+ * 2. An array of the values corresponding to the picked keys
+ *
+ * @template T - The type of the reactive state object
+ * @param {T} state - The reactive state object to pick values from
+ * @param {(keyof T)[]} keys - An array of keys to pick from the state object
+ * @returns {[T, T[keyof T][]]} A tuple containing the picked object and values array
+ */
+export function pickValues<T extends State>(state: T, keys: (keyof T)[]): [T, T[keyof T][]] {
+  const values = [] as T[keyof T][];
+  const result = {} as T;
+
+  for (const key of keys) {
+    values.push(state[key]);
+    result[key] = state[key];
+  }
+
+  return [result, values] as const;
 }
