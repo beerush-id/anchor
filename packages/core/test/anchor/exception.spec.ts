@@ -6,11 +6,13 @@ describe('Anchor Core - Exception Handling', () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
   });
@@ -117,6 +119,7 @@ describe('Anchor Core - Exception Handling', () => {
 
       it('should capture general violation', () => {
         captureStack.violation.general('Violation', 'push', new Error('Error'));
+        vi.runAllTimers();
         expect(consoleErrorSpy).toHaveBeenCalled();
       });
     });

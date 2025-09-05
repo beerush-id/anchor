@@ -1,11 +1,13 @@
 import { isArray, isFunction, isMap, isObject, isSet } from '@beerush/utils';
 import type {
-  AnchorFn,
+  Anchor,
   AnchorSettings,
+  ArrayMutation,
   Immutable,
   Linkable,
   LinkableSchema,
   ObjLike,
+  SetMutation,
   State,
   StateController,
   StateGateway,
@@ -20,7 +22,7 @@ import type {
   StateSubscriberList,
   StateSubscriptionMap,
 } from './types.js';
-import { ANCHOR_SETTINGS } from './constant.js';
+import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from './constant.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -232,19 +234,19 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
 
 anchorFn.flat = ((init, options) => {
   return anchorFn(init, { ...options, recursive: 'flat' });
-}) satisfies AnchorFn['flat'];
+}) satisfies Anchor['flat'];
 
 anchorFn.ordered = ((init, compare, options) => {
   return anchorFn(init, { ...options, ordered: true, compare });
-}) satisfies AnchorFn['ordered'];
+}) satisfies Anchor['ordered'];
 
 anchorFn.raw = ((init, options) => {
   return anchorFn(init, { ...options, cloned: false });
-}) satisfies AnchorFn['raw'];
+}) satisfies Anchor['raw'];
 
 anchorFn.has = ((state) => {
   return CONTROLLER_REGISTRY.has(state);
-}) satisfies AnchorFn['has'];
+}) satisfies Anchor['has'];
 
 anchorFn.get = ((state, silent = false) => {
   const target = STATE_REGISTRY.get(state);
@@ -255,11 +257,55 @@ anchorFn.get = ((state, silent = false) => {
   }
 
   return (target ?? state) as typeof state;
-}) satisfies AnchorFn['get'];
+}) satisfies Anchor['get'];
 
 anchorFn.find = ((init) => {
   return INIT_REGISTRY.get(init) as typeof init;
-}) satisfies AnchorFn['find'];
+}) satisfies Anchor['find'];
+
+anchorFn.read = ((state) => {
+  if (anchorFn.has(state)) state = anchorFn.get(state);
+
+  const handler = {
+    get: (target, prop, receiver) => {
+      const value = Reflect.get(target, prop, receiver);
+
+      if (linkable(value)) {
+        return anchorFn.read(value);
+      }
+
+      if (ARRAY_MUTATION_KEYS.has(prop as ArrayMutation)) {
+        const fn = (...args: unknown[]) => {
+          captureStack.violation.methodCall(prop as ArrayMutation, fn);
+          return (createArrayMutator.mock?.[prop as never] as Array<unknown>['push'])?.(target, ...args);
+        };
+
+        return fn;
+      }
+
+      if (COLLECTION_MUTATION_PROPS.has(prop as SetMutation)) {
+        const fn = (...args: unknown[]) => {
+          captureStack.violation.methodCall(prop as SetMutation, fn);
+          return (createCollectionMutator.mock?.[prop as never] as Array<unknown>['push'])?.(target, ...args);
+        };
+
+        return fn;
+      }
+
+      return value;
+    },
+    set: (target, prop) => {
+      captureStack.violation.setter(prop, handler.set);
+      return true;
+    },
+    deleteProperty: (target, prop) => {
+      captureStack.violation.remover(prop, handler.deleteProperty);
+      return true;
+    },
+  } as ProxyHandler<typeof state>;
+
+  return new Proxy(state, handler) as Immutable<typeof state>;
+}) satisfies Anchor['read'];
 
 anchorFn.snapshot = ((state, recursive = true) => {
   const target = STATE_REGISTRY.get(state);
@@ -270,7 +316,7 @@ anchorFn.snapshot = ((state, recursive = true) => {
   }
 
   return softClone(target ?? state, recursive) as typeof state;
-}) satisfies AnchorFn['snapshot'];
+}) satisfies Anchor['snapshot'];
 
 anchorFn.destroy = ((state, silent?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);
@@ -284,15 +330,15 @@ anchorFn.destroy = ((state, silent?: boolean) => {
   }
 
   controller.destroy();
-}) satisfies AnchorFn['destroy'];
+}) satisfies Anchor['destroy'];
 
 anchorFn.configure = ((config: Partial<AnchorSettings>) => {
   Object.assign(ANCHOR_SETTINGS, config);
-}) satisfies AnchorFn['configure'];
+}) satisfies Anchor['configure'];
 
 anchorFn.configs = ((): AnchorSettings => {
   return ANCHOR_SETTINGS;
-}) satisfies AnchorFn['configs'];
+}) satisfies Anchor['configs'];
 
 anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
   init: T,
@@ -307,4 +353,4 @@ anchorFn.assign = assign;
 anchorFn.remove = remove;
 anchorFn.clear = clear;
 
-export const anchor = anchorFn as AnchorFn;
+export const anchor = anchorFn as Anchor;

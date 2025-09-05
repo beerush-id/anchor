@@ -470,4 +470,40 @@ describe('Anchor Core - Observable Observer Management', () => {
       unobserve();
     });
   });
+
+  describe('Unsafe Observation Detection', () => {
+    it('should detect and warn about unsafe observation when threshold is exceeded', () => {
+      vi.useFakeTimers();
+
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const observer = createObserver(() => {});
+      const originalConfig = anchor.configs();
+
+      anchor.configure({ safeObservationThreshold: 5 });
+
+      const states = Array.from({ length: 6 }, (_, i) => anchor({ value: i }, { observable: true }));
+
+      observer.run(() => {
+        states.forEach((state, i) => {
+          const value = state.value;
+          expect(value).toBe(i);
+        });
+      });
+
+      vi.runAllTimers();
+
+      // Check that error was called with the expected unsafe observation warning
+      expect(errorSpy).toHaveBeenCalled();
+
+      const errorMessage = errorSpy.mock.calls[0][0];
+
+      expect(errorMessage).toContain('⚠️\x1b[31m\x1b[1m[anchor]');
+      expect(errorMessage).toContain('Attempted to observe too many states');
+
+      // Restore original configuration
+      anchor.configure(originalConfig);
+      errorSpy.mockRestore();
+      vi.useRealTimers();
+    });
+  });
 });

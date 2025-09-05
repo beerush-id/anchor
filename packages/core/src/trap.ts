@@ -25,7 +25,7 @@ import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
 import { createCollectionGetter } from './collection.js';
-import { assignObserver, getObserver } from './observable.js';
+import { getObserver } from './observable.js';
 import { getDevTool } from './dev.js';
 import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
 
@@ -69,26 +69,11 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     const observer = getObserver();
 
     if (configs.observable && observer) {
-      assignObserver(init, observers, observer);
+      const track = observer.assign(init, observers);
+      const tracked = track(Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
 
-      const keys = observer.states.get(init) as Set<KeyLike>;
-
-      if (isArray(init)) {
-        if (!keys.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
-          keys.add(OBSERVER_KEYS.ARRAY_MUTATIONS);
-          observer.onTrack?.(init, OBSERVER_KEYS.ARRAY_MUTATIONS);
-
-          // Trigger the dev tool callback if available.
-          devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.ARRAY_MUTATIONS);
-        }
-      } else {
-        if (!keys.has(prop)) {
-          keys.add(prop);
-          observer.onTrack?.(init, prop);
-
-          // Trigger the dev tool callback if available.
-          devTool?.onTrack?.(meta, observer, prop);
-        }
+      if (!tracked && devTool?.onTrack) {
+        devTool.onTrack(meta, observer, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
       }
     }
 

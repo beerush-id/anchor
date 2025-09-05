@@ -25,7 +25,7 @@ import type {
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { COLLECTION_MUTATION_KEYS } from './constant.js';
-import { assignObserver, getObserver } from './observable.js';
+import { getObserver } from './observable.js';
 import { getDevTool } from './dev.js';
 import { MapMutations, OBSERVER_KEYS, SetMutations } from './enum.js';
 
@@ -65,14 +65,11 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
     const observer = getObserver();
 
     if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
-      assignObserver(init, observers, observer);
+      const track = observer.assign(init, observers);
+      const tracked = track(OBSERVER_KEYS.COLLECTION_MUTATIONS);
 
-      const keys = observer.states.get(init) as Set<KeyLike>;
-
-      if (!keys.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
-        keys.add(OBSERVER_KEYS.COLLECTION_MUTATIONS);
-        observer.onTrack?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
-        devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+      if (!tracked && devTool?.onTrack) {
+        devTool.onTrack(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
     }
 

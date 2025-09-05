@@ -1,9 +1,10 @@
-import type { KeyLike, Linkable, StateChange, StateMetadata, StateObserver } from './types.js';
+import type { KeyLike, Linkable, StateChange, StateMetadata, StateObserver, StateTracker } from './types.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { META_REGISTRY } from './registry.js';
 import { shortId } from './utils/index.js';
 import { isFunction } from '@beerush/utils';
+import { ANCHOR_SETTINGS } from './constant.js';
 
 let currentObserver: StateObserver | undefined = undefined;
 let currentRestorer: (() => void) | undefined = undefined;
@@ -56,12 +57,26 @@ export function createObserver(
   onChange: (event: StateChange) => void,
   onTrack?: (state: Linkable, key: KeyLike) => void
 ): StateObserver {
+  let observedSize = 0;
+
   const states = new WeakMap();
   const destroyers = new Set<() => void>();
 
-  const onDestroy = (fn: () => void) => {
-    destroyers.add(fn);
-  };
+  const track = ((state, key) => {
+    const keys = states.get(state) as Set<KeyLike>;
+
+    if (keys.has(key)) {
+      return true;
+    } else {
+      keys.add(key);
+
+      if (isFunction(onTrack)) {
+        onTrack(state, key);
+      }
+    }
+
+    return false;
+  }) satisfies StateTracker;
 
   const destroy = () => {
     for (const fn of destroyers) {
@@ -73,52 +88,67 @@ export function createObserver(
     destroyers.clear();
   };
 
-  return {
+  const assign = ((init, observers) => {
+    if (!observers.has(observer)) {
+      observers.add(observer);
+
+      destroyers.add(() => {
+        states.delete(init);
+        observers.delete(observer);
+        getDevTool()?.onUntrack?.(META_REGISTRY.get(init) as StateMetadata, observer);
+      });
+    }
+
+    if (!states.has(init)) {
+      states.set(init, new Set());
+
+      if (ANCHOR_SETTINGS.safeObservation) {
+        observedSize += 1;
+
+        if (observedSize >= ANCHOR_SETTINGS.safeObservationThreshold) {
+          const error = new Error('Observation limit exceeded.');
+          captureStack.violation.general(
+            'Unsafe observation detected:',
+            `Attempted to observe too many states (${observedSize}) within a single observer.`,
+            error,
+            [
+              `We always recommend keeping observations small.`,
+              `- It's likely you are trying to perform an extensive read operation such as JSON.stringify during the observation phase.`,
+              `- Use the optimized reader utility such as "anchor.read" to perform an extensive operation while maintain immutability.`,
+            ],
+            assign
+          );
+        }
+      }
+    }
+
+    return (key) => track(init, key);
+  }) satisfies StateObserver['assign'];
+
+  const run = <R>(fn: () => R): R => {
+    return withinObserver(fn, observer);
+  };
+
+  const observer = {
     id: shortId(),
     get states() {
       return states;
     },
-    get onTrack() {
-      return onTrack;
-    },
     get onChange() {
       return onChange;
-    },
-    get onDestroy() {
-      return onDestroy;
     },
     get destroy() {
       return destroy;
     },
-    run<R>(fn: () => R): R | undefined {
-      return withinObserver(fn, this);
+    get assign() {
+      return assign;
+    },
+    get run() {
+      return run;
     },
   };
-}
 
-/**
- * Assigns an observer to a state object and sets up cleanup logic.
- * This function ensures that the observer is properly linked to the state object
- * and that cleanup logic is registered to remove the observer when it's no longer needed.
- *
- * @param init - The state object to be observed
- * @param observers - A set of all observers tracking this state object
- * @param observer - The observer to be assigned to the state object
- */
-export function assignObserver(init: Linkable, observers: Set<StateObserver>, observer: StateObserver) {
-  if (!observers.has(observer)) {
-    observers.add(observer);
-
-    observer.onDestroy(() => {
-      observer.states.delete(init);
-      observers.delete(observer);
-      getDevTool()?.onUntrack?.(META_REGISTRY.get(init) as StateMetadata, observer);
-    });
-  }
-
-  if (!observer.states.has(init)) {
-    observer.states.set(init, new Set());
-  }
+  return observer;
 }
 
 /**
@@ -131,12 +161,9 @@ export function assignObserver(init: Linkable, observers: Set<StateObserver>, ob
  * @param {() => R} fn - The function to execute within the observer context
  * @param {StateObserver} observer - The observer to set as the current context
  */
-export function withinObserver<R>(fn: () => R, observer: StateObserver): R | undefined;
-export function withinObserver<R>(observer: StateObserver, fn: () => R): R | undefined;
-export function withinObserver<R>(
-  observerOrFn: StateObserver | (() => R),
-  fnOrObserver: (() => R) | StateObserver
-): R | undefined {
+export function withinObserver<R>(fn: () => R, observer: StateObserver): R;
+export function withinObserver<R>(observer: StateObserver, fn: () => R): R;
+export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrObserver: (() => R) | StateObserver): R {
   if (isFunction(observerOrFn)) return withinObserver(fnOrObserver as StateObserver, observerOrFn);
 
   const prevObserver = currentObserver;
@@ -157,7 +184,7 @@ export function withinObserver<R>(
 
   currentObserver = prevObserver;
 
-  return result;
+  return result as R;
 }
 
 /**
@@ -168,7 +195,7 @@ export function withinObserver<R>(
  *
  * @param fn - The function to execute outside of observer context
  */
-export function outsideObserver<R>(fn: () => R): R | undefined {
+export function outsideObserver<R>(fn: () => R): R {
   const prevObserver = currentObserver;
   currentObserver = undefined;
 
@@ -191,5 +218,5 @@ export function outsideObserver<R>(fn: () => R): R | undefined {
 
   currentObserver = prevObserver;
 
-  return result;
+  return result as R;
 }

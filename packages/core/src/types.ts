@@ -18,14 +18,15 @@ export type ModelOutput<S> = output<S>;
 export type ImmutableOutput<S> = Immutable<ModelOutput<S>>;
 export type ReadonlyLink = Immutable<Linkable>;
 
+export type StateTracker = (init: Linkable, key: KeyLike) => boolean;
+export type StateKeyTracker = (key: KeyLike) => boolean;
 export type StateObserver = {
   readonly id: string;
   readonly states: WeakMap<State, Set<KeyLike>>;
+  readonly assign: (init: Linkable, observers: StateObserverList) => StateKeyTracker;
   readonly onChange: (event: StateChange) => void;
-  readonly onDestroy: (fn: () => void) => void;
   readonly destroy: () => void;
-  readonly onTrack?: (state: Linkable, key: KeyLike) => void;
-  run<R>(fn: () => R): R | undefined;
+  readonly run: <R>(fn: () => R) => R;
   name?: string;
 };
 
@@ -50,6 +51,8 @@ export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseO
 
 export type AnchorSettings = StateBaseOptions & {
   production: boolean;
+  safeObservation: boolean;
+  safeObservationThreshold: number;
 };
 
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
@@ -269,7 +272,7 @@ export type Writable<T> = Pick<T, WritableKeys<T>>;
  * @template T - The type of the initial state
  * @template S - The schema type for validation
  */
-export interface AnchorFn {
+export interface Anchor {
   /**
    * Creates a reactive state with optional configuration.
    *
@@ -411,6 +414,21 @@ export interface AnchorFn {
    * @returns {T} The reactive state instance if found, otherwise the original object
    */
   find<T extends Linkable>(init: T): T;
+
+  /**
+   * Creates a read-only version of the given state.
+   *
+   * This method returns an `Immutable<T>` type, which is a deep readonly version of the state.
+   * It is useful for scenarios where you want to ensure that a state object
+   * cannot be modified, providing immutability guarantees while
+   * enabling optimizations for read-only access by bypassing reactive traps.
+   *
+   * The returned object is a proxy that prevents direct mutations.
+   *
+   * @param state - The state object to make read-only.
+   * @returns A read-only proxy of the state.
+   */
+  read<T extends State>(state: T): Immutable<T>;
 
   /**
    * Creates a snapshot of the current state.

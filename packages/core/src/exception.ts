@@ -1,5 +1,6 @@
 import type { KeyLike, StateMutation } from './types.js';
 import { typeOf } from '@beerush/utils';
+import { microtask } from './utils/index.js';
 
 const generator = {
   init(message: string) {
@@ -181,6 +182,7 @@ const generator = {
   },
 };
 
+const [schedule] = microtask(0);
 export const captureStack = {
   warning: {
     external(title: string, body: string, trace: string | unknown, ...excludeStacks: unknown[]) {
@@ -232,7 +234,7 @@ export const captureStack = {
       const message = generator.generalViolation(title, body, notes);
       shiftStack(error, captureStack.violation.general, excludedStacks);
 
-      console.error(message, error, '\n');
+      schedule(() => console.error(message, error, '\n'));
     },
     derivation(body: string, error: Error, ...excludedStacks: unknown[]) {
       const message = generator.generalViolation('Derivation violation detected:', body, [
