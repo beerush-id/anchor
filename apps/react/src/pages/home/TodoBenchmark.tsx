@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { ClassicTodoApp } from '@components/todo-classic/ClassicTodoApp.js';
 import { RenderStats } from '@components/stats/RenderStats.js';
-import { classicTodoStats, todoStats } from '@lib/stats.js';
+import { classicTodoStats, manualTodoStats, todoStats } from '@lib/stats.js';
 import { TodoApp } from '@components/todo/TodoApp.js';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
+import { ManualTodoApp } from '@components/todo-manual/ManualTodoApp.js';
+import { Button } from '@components/Button.js';
+import { Zap, ZapOff } from 'lucide-react';
+
+const AnchorTodoApp = memo(TodoApp);
+const OptimizedTodoApp = memo(ManualTodoApp);
+const DefaultTodoApp = memo(ClassicTodoApp);
 
 export const TodoBenchmark = () => {
   const [showDemo, setShowDemo] = useState(true);
+  const [optimized, setOptimized] = useState(false);
+
   if (!showDemo) {
     return <button onClick={() => setShowDemo(true)}>Show Demo</button>;
   }
+
   return (
     <>
       <Section id="todo-benchmark" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 min-h-screen">
@@ -19,15 +29,33 @@ export const TodoBenchmark = () => {
           how Anchor's fine-grained reactivity prevent re-renders, while a classic approach can cause performance to
           degrade as the app scales.
         </SectionDescription>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-12">
+        <div className="flex items-center mt-12 justify-center py-4">
+          <Button onClick={() => setOptimized((c) => !c)}>
+            {!optimized ? <Zap size={16} /> : <ZapOff size={16} />}
+            <span>Use {optimized ? 'Classic' : 'Optimized'} Version</span>
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="flex-1 flex flex-col gap-4">
-            <ClassicTodoApp />
-            <RenderStats
-              stats={[classicTodoStats.app, classicTodoStats.form, classicTodoStats.list, classicTodoStats.item]}
-            />
+            {!optimized && (
+              <>
+                <DefaultTodoApp />
+                <RenderStats
+                  stats={[classicTodoStats.app, classicTodoStats.form, classicTodoStats.list, classicTodoStats.item]}
+                />
+              </>
+            )}
+            {optimized && (
+              <>
+                <OptimizedTodoApp />
+                <RenderStats
+                  stats={[manualTodoStats.app, manualTodoStats.form, manualTodoStats.list, manualTodoStats.item]}
+                />
+              </>
+            )}
           </div>
           <div className="flex-1 flex flex-col gap-4">
-            <TodoApp />
+            <AnchorTodoApp />
             <RenderStats stats={[todoStats.app, todoStats.form, todoStats.list, todoStats.item]} />
           </div>
         </div>

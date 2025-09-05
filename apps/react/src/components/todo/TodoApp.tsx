@@ -55,8 +55,8 @@ export const TodoApp: FC = () => {
       </div>
       <TodoStats stats={stats} />
       <p className="text-slate-500 text-xs text-center px-10 mb-4">
-        Stats are computed during mutation to prevent extensive resource usage from derivation. This also to showcase
-        the complexity level of the optimization.
+        Stats are computed during mutation to prevent extensive resource usage from filtering. This also to showcase the
+        complexity level of the optimization.
       </p>
       <CodePanel panel={panel} />
     </Card>
@@ -72,6 +72,7 @@ const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ p
     <div ref={ref} className="flex items-center">
       <button onClick={() => (panel.info = !panel.info)} className="anchor-icon-btn mr-4">
         <CircleQuestionMark size={20} />
+        <Tooltip>{panel.info ? 'Hide' : 'Show'} Info</Tooltip>
       </button>
       <button className="anchor-btn btn-alternate" onClick={() => (panel.code = !panel.code)}>
         {panel.code ? 'Hide Code' : 'Show Code'}

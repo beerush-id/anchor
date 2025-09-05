@@ -23,6 +23,28 @@ export const classicTodoStats = anchor(
   { observable: false }
 );
 
+export const manualTodoStats = anchor(
+  {
+    app: {
+      name: 'App',
+      value: 0,
+    },
+    form: {
+      name: 'Form',
+      value: 0,
+    },
+    list: {
+      name: 'List',
+      value: 0,
+    },
+    item: {
+      name: 'Item',
+      value: 0,
+    },
+  },
+  { observable: false }
+);
+
 export const todoStats = anchor(
   {
     app: {

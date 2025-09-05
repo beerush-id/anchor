@@ -11,7 +11,7 @@ export const CodeViewer: FC<{ items: CodeItem[] }> = ({ items }) => {
 
   return (
     <div className="todo-tabs">
-      <div className="tabs flex items-center gap-2">
+      <div className="tabs flex items-center gap-2 overflow-x-auto">
         {items.map((block) => (
           <button
             key={block.name}

@@ -110,8 +110,8 @@ export const ClassicTodoApp: FC = () => {
       </div>
       <ClassicTodoStats stats={stats} />
       <p className="text-slate-500 text-xs text-center px-10 mb-4">
-        Stats are computed during mutation to prevent extensive resource usage from derivation. This also to showcase
-        the complexity level of the optimization.
+        Stats are computed during mutation to prevent extensive resource usage from filtering. This also to showcase the
+        complexity level of the optimization.
       </p>
       <ClassicCodePanel panel={panel} />
     </Card>
@@ -131,6 +131,7 @@ const ClassicTodoPanel: FC<{
     <div ref={ref} className="flex items-center">
       <button onClick={toggleInfo} className="anchor-icon-btn mr-4">
         <CircleQuestionMark size={20} />
+        <Tooltip>{panel.info ? 'Hide' : 'Show'} Info</Tooltip>
       </button>
       <button className="anchor-btn btn-alternate" onClick={toggleCode}>
         {panel.code ? 'Hide Code' : 'Show Code'}
