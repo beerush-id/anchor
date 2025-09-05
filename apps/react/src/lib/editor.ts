@@ -109,6 +109,9 @@ const initNodes: CssNode[] = [
     selector: '.button',
     style: {
       color: '#000000',
+      display: 'inline-flex',
+      alignItems: 'center',
+      height: 40,
       backgroundColor: '#cf942a',
       fontWeight: 'bold',
       paddingBlock: 8,

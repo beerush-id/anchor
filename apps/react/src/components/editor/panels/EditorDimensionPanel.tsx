@@ -6,6 +6,7 @@ import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';
 
 export default function EditorDimensionPanel() {
+  const node = editorApp.current;
   const style = useObserved(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'width',
@@ -26,6 +27,7 @@ export default function EditorDimensionPanel() {
             type={'number'}
             bind={styleWriter}
             name={'width'}
+            inherits={[node.style]}
             className={'anchor-input tool-input'}
             placeholder="auto"
           />
@@ -35,6 +37,7 @@ export default function EditorDimensionPanel() {
             type={'number'}
             bind={styleWriter}
             name={'height'}
+            inherits={[node.style]}
             className={'anchor-input tool-input'}
             placeholder="auto"
           />
@@ -44,6 +47,7 @@ export default function EditorDimensionPanel() {
             type={'number'}
             bind={styleWriter}
             name={'margin'}
+            inherits={[node.style]}
             className={'anchor-input tool-input'}
             placeholder="auto"
             onChange={(e) => {
@@ -57,6 +61,7 @@ export default function EditorDimensionPanel() {
             type={'number'}
             bind={styleWriter}
             name={'padding'}
+            inherits={[node.style]}
             className={'anchor-input tool-input'}
             placeholder="auto"
             onChange={(e) => {
@@ -75,6 +80,7 @@ export default function EditorDimensionPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'marginBlock'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Block"
                 onChange={() => {
@@ -88,6 +94,7 @@ export default function EditorDimensionPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'marginInline'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Inline"
                 onChange={() => {
@@ -105,6 +112,7 @@ export default function EditorDimensionPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'paddingBlock'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Block"
                 onChange={() => {
@@ -118,6 +126,7 @@ export default function EditorDimensionPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'paddingInline'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Inline"
                 onChange={() => {

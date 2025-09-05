@@ -18,7 +18,7 @@ export function DebugSwitch() {
     <button onClick={handleToggle} className="anchor-btn btn-icon btn-alternate tool-btn">
       {debugMode && <Bug size={16} />}
       {!debugMode && <BugOff size={16} />}
-      <Tooltip>{debugMode ? 'Disable' : 'Enable'} Debug Mode</Tooltip>
+      <Tooltip>{debugMode ? 'Disable' : 'Enable'} Render Debugger</Tooltip>
     </button>
   );
 }

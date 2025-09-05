@@ -6,6 +6,7 @@ import { PanelRow } from '../../PanelRow.js';
 import { Tooltip } from '../../Tooltip.js';
 
 export default function EditorRadiusPanel() {
+  const node = editorApp.current;
   const style = useObserved(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'borderRadius',
@@ -56,6 +57,7 @@ export default function EditorRadiusPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'borderRadius'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input'}
                 placeholder="0"
                 onChange={handleAll}
@@ -67,6 +69,7 @@ export default function EditorRadiusPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'borderTopLeftRadius'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input'}
                 placeholder="0"
                 min={0}
@@ -79,6 +82,7 @@ export default function EditorRadiusPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'borderTopRightRadius'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input'}
                 placeholder="0"
                 min={0}
@@ -91,6 +95,7 @@ export default function EditorRadiusPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'borderBottomLeftRadius'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input'}
                 placeholder="0"
                 min={0}
@@ -103,6 +108,7 @@ export default function EditorRadiusPanel() {
                 type={'number'}
                 bind={styleWriter}
                 name={'borderBottomRightRadius'}
+                inherits={[node.style]}
                 className={'anchor-input tool-input'}
                 placeholder="0"
                 min={0}

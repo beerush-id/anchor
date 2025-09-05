@@ -52,8 +52,9 @@ export default function EditorTextPanel() {
             type={'number'}
             bind={styleWriter}
             name={'fontSize'}
+            inherits={[node.style, root]}
             className={'anchor-input tool-input cols-1'}
-            placeholder={`${root.fontSize || 'default'}`}
+            placeholder="default"
           />
         </PanelColumn>
       </PanelRow>
@@ -62,19 +63,19 @@ export default function EditorTextPanel() {
         <PanelColumn label="Font style">
           <ToggleGroup>
             <Toggle
-              data-inherit={root.fontWeight === 'bold'}
               bind={styleWriter}
               name="fontWeight"
               value="bold"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <Bold size={TOOL_ICON_SIZE} />
               <Tooltip>Bold</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.fontStyle === 'italic'}
               bind={styleWriter}
               name="fontStyle"
               value="italic"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <Italic size={TOOL_ICON_SIZE} />
               <Tooltip>Italic</Tooltip>
@@ -84,37 +85,37 @@ export default function EditorTextPanel() {
         <PanelColumn label="Align text">
           <ToggleGroup>
             <Toggle
-              data-inherit={root.textAlign === 'left'}
               bind={styleWriter}
               name="textAlign"
               value="left"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <AlignLeft size={TOOL_ICON_SIZE} />
               <Tooltip>Left</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textAlign === 'center'}
               bind={styleWriter}
               name="textAlign"
               value="center"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <AlignCenter size={TOOL_ICON_SIZE} />
               <Tooltip>Center</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textAlign === 'right'}
               bind={styleWriter}
               name="textAlign"
               value="right"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <AlignRight size={TOOL_ICON_SIZE} />
               <Tooltip>Right</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textAlign === 'justify'}
               bind={styleWriter}
               name="textAlign"
               value="justify"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <AlignJustify size={TOOL_ICON_SIZE} />
               <Tooltip>Justify</Tooltip>
@@ -123,10 +124,10 @@ export default function EditorTextPanel() {
         </PanelColumn>
         <PanelColumn label="Color">
           <ColorPicker
-            className="toggle-btn cursor-pointer"
             bind={styleWriter}
             name="color"
-            placeholder={`${node.style.color ?? root.color ?? '#000000'}`}>
+            inherits={[node.style, root]}
+            className="toggle-btn cursor-pointer">
             <Type size={TOOL_ICON_SIZE} />
             <Tooltip>Text Color</Tooltip>
           </ColorPicker>
@@ -137,28 +138,28 @@ export default function EditorTextPanel() {
         <PanelColumn label="Text transform">
           <ToggleGroup>
             <Toggle
-              data-inherit={root.textTransform === 'lowercase'}
               bind={styleWriter}
               name="textTransform"
               value="lowercase"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <CaseLower size={TOOL_ICON_SIZE} />
               <Tooltip>lowercase</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textTransform === 'capitalize'}
               bind={styleWriter}
               name="textTransform"
               value="capitalize"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <CaseSensitive size={TOOL_ICON_SIZE} />
               <Tooltip>Titlecase</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textTransform === 'uppercase'}
               bind={styleWriter}
               name="textTransform"
               value="uppercase"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <CaseUpper size={TOOL_ICON_SIZE} />
               <Tooltip>UPPERCASE</Tooltip>
@@ -168,37 +169,37 @@ export default function EditorTextPanel() {
         <PanelColumn label="Decoration">
           <ToggleGroup>
             <Toggle
-              data-inherit={root.textDecoration === 'line-through'}
               bind={styleWriter}
               name="textDecoration"
               value="line-through"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <Strikethrough size={TOOL_ICON_SIZE} />
               <Tooltip>Strikethrough</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textDecoration === 'underline'}
               bind={styleWriter}
               name="textDecoration"
               value="underline"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <Underline size={TOOL_ICON_SIZE} />
               <Tooltip>Underline</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textDecoration === 'dashed'}
               bind={styleWriter}
               name="textDecoration"
               value="dashed"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <PanelBottomDashed size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
             </Toggle>
             <Toggle
-              data-inherit={root.textDecoration === 'dotted'}
               bind={styleWriter}
               name="textDecoration"
               value="dotted"
+              inherits={[node.style, root]}
               className="toggle-btn">
               <Ellipsis size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>

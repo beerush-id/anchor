@@ -140,7 +140,8 @@ body {
   @apply anchor-btn anchor-btn-icon px-0 py-0 rounded-sm w-[30px] aspect-square justify-center;
   @apply focus:z-10;
 
-  &[data-inherit='true'] {
+  &[data-inherit='true'],
+  &[data-partial='true'] {
     @apply bg-brand-orange/30;
   }
 

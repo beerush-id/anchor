@@ -24,6 +24,9 @@ export default function EditorApp() {
           </h1>
           <div className="flex-1 flex items-center">
             <DebugSwitch />
+            <span className="text-xs text-slate-300 italic ml-4 font-semibold">
+              NOTE: Red flashes means the component is re-rendering.
+            </span>
           </div>
           <EditorExport />
           <EditorHistory />
