@@ -1,4 +1,11 @@
-import { type HTMLAttributes, type InputHTMLAttributes, type Ref, type SelectHTMLAttributes, useRef } from 'react';
+import {
+  type HTMLAttributes,
+  type InputHTMLAttributes,
+  type Ref,
+  type SelectHTMLAttributes,
+  useMemo,
+  useRef,
+} from 'react';
 import type { Bindable } from '../types.js';
 import { useValue } from '../derive.js';
 import type { WritableKeys } from '@anchor/core';
@@ -12,18 +19,29 @@ export type ForwardProps<T extends HTMLAttributes<HTMLElement>> = Omit<T, 'name'
 
 export type InputProps<T extends Bindable, K extends WritableKeys<T>> = BindProps<T, K> & {
   ref?: Ref<HTMLInputElement>;
+  inherits?: Record<string, string | number | undefined>[];
 } & ForwardProps<InputHTMLAttributes<HTMLInputElement>>;
 
 export function Input<T extends Bindable, K extends WritableKeys<T>>({
   bind,
   name,
   value,
+  inherits,
   onChange,
+  placeholder,
   ...props
 }: InputProps<T, K>) {
   const ref = useRef<HTMLInputElement>(null);
   debugRender(ref.current);
 
+  const inheritedPlaceholder: string | undefined = useMemo(() => {
+    if (!Array.isArray(inherits) || !inherits.length) return undefined;
+
+    for (const ref of inherits) {
+      const refValue = ref?.[name as never];
+      if (refValue !== undefined) return refValue as string;
+    }
+  }, [bind, name, value]);
   const current = (useValue(bind, name) ?? value ?? '') as string;
 
   return (
@@ -31,15 +49,21 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
       ref={ref}
       name={name as string}
       value={current}
+      placeholder={inheritedPlaceholder ?? placeholder}
       onChange={(e) => {
         if (bind) {
-          let value = e.target.value;
+          let value: string | number | undefined = e.target.value;
 
           if (props.type === 'number') {
-            value = parseFloat(value) as never;
+            value = parseFloat(value);
+            if (isNaN(value)) value = undefined;
           }
 
-          bind[name] = value as T[K];
+          if (typeof value === 'undefined') {
+            delete bind[name];
+          } else {
+            bind[name] = value as T[K];
+          }
         }
 
         onChange?.(e);

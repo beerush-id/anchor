@@ -2,13 +2,14 @@ import { type InputProps } from './Input.js';
 import type { Bindable } from '../types.js';
 import type { WritableKeys } from '@anchor/core';
 import { useValue } from '../derive.js';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { debugRender } from '../dev.js';
 
 export function ColorPicker<T extends Bindable, K extends WritableKeys<T>>({
   bind,
   name,
   value,
+  inherits,
   onChange,
   children,
   className,
@@ -18,7 +19,15 @@ export function ColorPicker<T extends Bindable, K extends WritableKeys<T>>({
   const ref = useRef<HTMLLabelElement>(null);
   debugRender(ref.current);
 
-  const current = (useValue(bind, name) ?? value ?? placeholder ?? '#000000') as string;
+  const inheritedPlaceholder: string | undefined = useMemo(() => {
+    if (!Array.isArray(inherits) || !inherits.length) return undefined;
+
+    for (const ref of inherits) {
+      const refValue = ref?.[name as never];
+      if (refValue !== undefined) return refValue as string;
+    }
+  }, [bind, name, value]);
+  const current = (useValue(bind, name) ?? value ?? inheritedPlaceholder ?? placeholder ?? '#000000') as string;
 
   return (
     <label ref={ref} className={className} style={{ backgroundColor: current }}>
