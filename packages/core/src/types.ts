@@ -13,7 +13,7 @@ export type ObjLike = {
 };
 
 export type Linkable = object | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
-export type LinkableModel = ZodObject | ZodArray;
+export type LinkableSchema = ZodObject | ZodArray;
 export type ImmutableOutput<S> = Immutable<ModelOutput<S>>;
 export type ReadonlyLink = Immutable<Linkable>;
 
@@ -54,7 +54,7 @@ export type StateBaseOptions = {
   observable?: boolean;
   compare?: (a: unknown, b: unknown) => number;
 };
-export type StateOptions<S extends LinkableModel = LinkableModel> = StateBaseOptions & { schema?: S };
+export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & { schema?: S };
 
 export type AnchorSettings = StateBaseOptions & {
   production: boolean;
@@ -79,11 +79,11 @@ export type StateUnlinkFn = (childState: Linkable) => void;
 export type State<T extends Linkable = Linkable> = T;
 export type StateMetadata<
   T extends Linkable = Linkable,
-  S extends LinkableModel = LinkableModel,
+  S extends LinkableSchema = LinkableSchema,
   RootType extends Linkable = Linkable,
-  RootSchema extends LinkableModel = LinkableModel,
+  RootSchema extends LinkableSchema = LinkableSchema,
   ParentType extends Linkable = Linkable,
-  ParentSchema extends LinkableModel = LinkableModel,
+  ParentSchema extends LinkableSchema = LinkableSchema,
 > = {
   id: string;
   type: Linkables;
@@ -153,7 +153,7 @@ export type StateGateway<T extends Linkable = Linkable> = {
   mutator?: StateMutator<T>;
 };
 
-export type StateController<T extends Linkable = Linkable, S extends LinkableModel = LinkableModel> = {
+export type StateController<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
   meta: StateMetadata<T, S>;
   destroy: StateDestroyer;
   subscribe: StateSubscribeFn<T>;
@@ -296,7 +296,7 @@ export interface Anchor {
    * @param options - Configuration options for the state
    * @returns Reactive state object
    */
-  <T extends Linkable, S extends LinkableModel = LinkableModel>(init: T, options?: StateOptions<S>): State<T>;
+  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a reactive state with schema validation.
@@ -306,7 +306,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Validated reactive state object
    */
-  <S extends LinkableModel, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): ModelOutput<S>;
+  <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): ModelOutput<S>;
 
   /**
    * Creates an immutable reactive state with schema validation.
@@ -316,7 +316,7 @@ export interface Anchor {
    * @param options - Configuration options with immutable flag
    * @returns Immutable validated reactive state object
    */
-  <S extends LinkableModel, T extends ModelInput<S>>(
+  <S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
     options?: StateBaseOptions & { immutable: true }
@@ -331,7 +331,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Raw reactive state object
    */
-  raw<T extends Linkable, S extends LinkableModel = LinkableModel>(init: T, options?: StateOptions<S>): State<T>;
+  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a flat reactive state that only tracks top-level properties.
@@ -340,7 +340,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Flat reactive array state
    */
-  flat<T extends unknown[], S extends LinkableModel = LinkableModel>(init: T, options?: StateOptions<S>): State<T>;
+  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates an ordered reactive array that maintains sort order based on the provided comparison function.
@@ -352,7 +352,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Ordered reactive array state
    */
-  ordered<T extends unknown[], S extends LinkableModel = LinkableModel>(
+  ordered<T extends unknown[], S extends LinkableSchema = LinkableSchema>(
     init: T,
     compare: (a: T[number], b: T[number]) => number,
     options?: StateOptions<S>
@@ -366,7 +366,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Validated reactive state object
    */
-  model<S extends LinkableModel, T extends ModelInput<S>>(
+  model<S extends LinkableSchema, T extends ModelInput<S>>(
     schema: S,
     init: T,
     options?: StateBaseOptions
@@ -382,7 +382,7 @@ export interface Anchor {
    * @param options - Configuration options with immutable flag set to true.
    * @returns Immutable validated reactive state object.
    */
-  model<S extends LinkableModel, T extends ModelInput<S>>(
+  model<S extends LinkableSchema, T extends ModelInput<S>>(
     schema: S,
     init: T,
     options?: StateBaseOptions & { immutable: true }
@@ -395,7 +395,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Immutable reactive state object
    */
-  immutable<T extends Linkable, S extends LinkableModel = LinkableModel>(
+  immutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options?: StateOptions<S>
   ): Immutable<T>;
@@ -408,7 +408,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Immutable validated reactive state object
    */
-  immutable<S extends LinkableModel, T extends ModelInput<S>>(
+  immutable<S extends LinkableSchema, T extends ModelInput<S>>(
     init: T,
     schema: S,
     options?: StateBaseOptions
@@ -556,7 +556,7 @@ export interface Anchor {
   configs(): AnchorSettings;
 }
 
-export type AnchorInternalFn = <T extends Linkable, S extends LinkableModel>(
+export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(
   init: T,
   options: StateOptions<S>,
   root?: StateMetadata,
@@ -687,14 +687,14 @@ export type DevTool = {
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike} prop
    */
-  onGet?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  onGet?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
   /**
    * A callback that will be called when a property is set.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike} prop
    * @param {unknown} value
    */
-  onSet?: <T extends Linkable, S extends LinkableModel>(
+  onSet?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     prop: KeyLike,
     value: unknown
@@ -704,14 +704,14 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {KeyLike} prop
    */
-  onDelete?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  onDelete?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
   /**
    * A callback that will be called when a method is called.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {string} method
    * @param {unknown[]} args
    */
-  onCall?: <T extends Linkable, S extends LinkableModel>(
+  onCall?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     method: string,
     args: unknown[]
@@ -720,35 +720,35 @@ export type DevTool = {
    * A callback that will be called when a state is initialized.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onInit?: <T extends Linkable, S extends LinkableModel>(init: T, meta: StateMetadata<T, S>) => void;
+  onInit?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a bulk assignment is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {ObjLike} source
    */
-  onAssign?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, source: ObjLike) => void;
+  onAssign?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, source: ObjLike) => void;
   /**
    * A callback that will be called when a bulk removal is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike[]} props
    */
-  onRemove?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
+  onRemove?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
   /**
    * A callback that will be called when a state is cleared.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onClear?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>) => void;
+  onClear?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a state is destroyed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onDestroy?: <T extends Linkable, S extends LinkableModel>(init: T, meta: StateMetadata<T, S>) => void;
+  onDestroy?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a subscriber is added.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {StateSubscriber<Linkable>} handler
    */
-  onSubscribe?: <T extends Linkable, S extends LinkableModel>(
+  onSubscribe?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     handler: StateSubscriber<T>,
     receiver?: Linkable
@@ -758,7 +758,7 @@ export type DevTool = {
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {StateSubscriber<Linkable>} handler
    */
-  onUnsubscribe?: <T extends Linkable, S extends LinkableModel>(
+  onUnsubscribe?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     handler: StateSubscriber<T>,
     receiver?: Linkable
@@ -768,19 +768,19 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
-  onLink?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  onLink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
   /**
    * A callback that will be called when a child reference is unlinked.
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
-  onUnlink?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  onUnlink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
   /**
    * A callback that will be called when a state is being tracked by an observer.
    * @param {StateMetadata} meta
    * @param {StateObserver} observer
    */
-  onTrack?: <T extends Linkable, S extends LinkableModel>(
+  onTrack?: <T extends Linkable, S extends LinkableSchema>(
     meta: StateMetadata<T, S>,
     observer: StateObserver,
     key: KeyLike
@@ -790,7 +790,10 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {StateObserver} observer
    */
-  onUntrack?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, observer: StateObserver) => void;
+  onUntrack?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    observer: StateObserver
+  ) => void;
 };
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;

@@ -1,4 +1,4 @@
-import type { Linkable, LinkableModel, ObjLike, StateOptions } from '../types.js';
+import type { Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
 import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
@@ -8,9 +8,9 @@ import { derive } from '../derive.ts';
 export type RequestOptions = RequestInit & {
   url: string | URL;
 };
-export type FetchOptions<S extends LinkableModel = LinkableModel> = StateOptions<S> & RequestOptions;
+export type FetchOptions<S extends LinkableSchema = LinkableSchema> = StateOptions<S> & RequestOptions;
 
-export type StreamOptions<T, S extends LinkableModel = LinkableModel> = FetchOptions<S> & {
+export type StreamOptions<T, S extends LinkableSchema = LinkableSchema> = FetchOptions<S> & {
   transform?: (current: T, chunk: T) => T;
 };
 
@@ -31,7 +31,7 @@ export type FetchState<T> = {
 };
 
 export interface FetchFn {
-  <T, S extends LinkableModel = LinkableModel>(init: T, options: FetchOptions<S>): FetchState<T>;
+  <T, S extends LinkableSchema = LinkableSchema>(init: T, options: FetchOptions<S>): FetchState<T>;
 
   promise<T, S extends FetchState<T>>(state: S): Promise<S>;
 }
@@ -46,7 +46,7 @@ export interface FetchFn {
  * @param {FetchOptions<S>} options - Fetch configuration options including URL and request settings
  * @returns {FetchState<T>} A reactive state object containing data, status, error and response
  */
-function fetchStateFn<T, S extends LinkableModel = LinkableModel>(init: T, options: FetchOptions<S>): FetchState<T> {
+function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, options: FetchOptions<S>): FetchState<T> {
   if (linkable(init)) {
     init = anchor(init, options);
   }
@@ -140,7 +140,7 @@ fetchStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
 export const fetchState = fetchStateFn as FetchFn;
 
 export interface StreamFn {
-  <T, S extends LinkableModel = LinkableModel>(init: T, options?: StreamOptions<T, S>): FetchState<T>;
+  <T, S extends LinkableSchema = LinkableSchema>(init: T, options?: StreamOptions<T, S>): FetchState<T>;
 
   promise<T, S extends FetchState<T>>(state: S): Promise<S>;
 }
@@ -155,7 +155,7 @@ export interface StreamFn {
  * @param {StreamOptions<T, S>} options - Stream configuration options including URL, request settings, and optional transform function
  * @returns {FetchState<T>} A reactive state object containing data, status, error and response
  */
-function streamStateFn<T, S extends LinkableModel = LinkableModel>(
+function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options: StreamOptions<T, S>
 ): FetchState<T> {

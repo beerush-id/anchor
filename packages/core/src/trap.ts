@@ -3,7 +3,7 @@ import type {
   Broadcaster,
   KeyLike,
   Linkable,
-  LinkableModel,
+  LinkableSchema,
   ModelArray,
   ModelObject,
   ObjLike,
@@ -103,7 +103,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
         isArray(init)
           ? (schema as never as ModelArray)?.unwrap?.()
           : (schema as never as ModelObject)?.shape?.[prop as string]
-      ) as LinkableModel;
+      ) as LinkableSchema;
 
       value = (anchor as AnchorInternalFn)(value as T, { ...configs, schema: childSchema }, meta.root ?? meta, meta);
     }

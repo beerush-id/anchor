@@ -5,7 +5,7 @@ import type {
   ArrayMutation,
   Immutable,
   Linkable,
-  LinkableModel,
+  LinkableSchema,
   ModelObject,
   ObjLike,
   SetMutation,
@@ -75,7 +75,7 @@ import { createBroadcaster } from './broadcast.js';
  * @throws If `strict` mode is enabled and schema validation fails during initialization.
  * @throws If `strict` mode is enabled and schema validation fails during property updates or array mutations.
  */
-function anchorFn<T extends Linkable, S extends LinkableModel>(
+function anchorFn<T extends Linkable, S extends LinkableSchema>(
   init: T,
   schemaOptions?: S | StateOptions<S>,
   options?: StateOptions<S>,
@@ -97,12 +97,12 @@ function anchorFn<T extends Linkable, S extends LinkableModel>(
     return init;
   }
 
-  if (!(schemaOptions as LinkableModel)?._zod) {
+  if (!(schemaOptions as LinkableSchema)?._zod) {
     options = schemaOptions as StateOptions<S>;
   }
 
   const cloned = options?.cloned ?? ANCHOR_SETTINGS.cloned;
-  const schema = (schemaOptions as LinkableModel)?._zod
+  const schema = (schemaOptions as LinkableSchema)?._zod
     ? (schemaOptions as S)
     : (schemaOptions as StateOptions<S>)?.schema;
   const configs: StateOptions<S> = {
@@ -239,7 +239,7 @@ function anchorFn<T extends Linkable, S extends LinkableModel>(
   return state;
 }
 
-anchorFn.immutable = <T extends Linkable, S extends LinkableModel>(
+anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
   init: T,
   schemaOptions?: StateOptions<S> | S,
   options?: StateOptions<S>
