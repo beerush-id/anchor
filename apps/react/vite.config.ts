@@ -4,7 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 import * as path from 'node:path';
 
 // https://vite.dev/config/
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? './' : '/',
   resolve: {
     alias: {
       'react-dom/client': 'react-dom/profiling',
