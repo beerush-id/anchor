@@ -32,7 +32,7 @@ export const Header = () => {
     <header ref={ref} className={`sticky top-0 z-50 ${scrolled ? 'bg-slate-900/10 backdrop-blur-xl' : ''}`}>
       <nav className="container mx-auto px-6 py-4 flex items-center gap-6 md:gap-20 max-w-6xl">
         <h1 className="tracking-tight flex items-center select-none flex-1 md:flex-none">
-          <a href="/">
+          <a href={BASE_PATH}>
             <img src={`${BASE_PATH}/images/anchor-dark.svg`} alt="Anchor Logo" className="h-8" />
           </a>
           <span className="hidden">Anchor - Framework Agnostic State Management Library</span>
@@ -53,7 +53,7 @@ export const Header = () => {
         </div>
         <div className="flex items-center gap-4 md:gap-6">
           <a
-            href="/docs/overview.html"
+            href={`${BASE_PATH}/docs`}
             className="flex items-center text-slate-300 hover:text-slate-100 gap-2 transition-colors">
             <BookText className="w-4 h-4" />
             <span className="text-sm">Docs</span>
