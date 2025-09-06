@@ -1,0 +1,64 @@
+{
+  "name": "@anchor/vue",
+  "version": "0.0.1",
+  "module": "./dist/index.js",
+  "dependencies": {
+    "@anchor/core": "workspace:*",
+    "@anchor/storage": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/css": "^0.5.0",
+    "@eslint/js": "^9.23.0",
+    "@eslint/markdown": "^6.3.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/ui": "^3.2.4",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.23.0",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.5.3",
+    "publint": "^0.3.9",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.4.0",
+    "typescript-eslint": "^8.27.0",
+    "vitest": "^3.2.4",
+    "vue": "^3.5.19"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.2",
+    "vue": "^3.5.19"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js"
+    }
+  },
+  "directories": {
+    "dist": "./dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "rimraf dist && tsup --watch",
+    "clean": "rimraf dist",
+    "build": "rimraf dist && tsup && publint",
+    "format": "prettier --write .",
+    "prepublish": "rimraf dist && tsup && publint",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "optionalDependencies": {
+    "zod": "^4.0.17"
+  }
+}

@@ -1,114 +1,56 @@
 {
-  "name": "@beerush/anchor",
+  "name": "anchor",
+  "type": "module",
   "version": "0.0.1",
   "description": "Reactive State Management for Javascript",
+  "scripts": {
+    "dev": "bpkg run dev",
+    "dev:core": "bpkg run dev -f packages/core",
+    "dev:react": "bpkg run dev -f apps/react",
+    "dev:svelte": "bpkg run dev -f apps/svelte",
+    "dev:vue": "bpkg run dev -f apps/vue",
+    "build": "bpkg run build",
+    "format": "bpkg run format",
+    "lint": "bpkg run lint",
+    "test": "rimraf apps/react/public/coverage && vitest --run",
+    "test:preview": "rimraf apps/react/public/coverage && vitest --run && vite preview --outDir apps/react/public/coverage",
+    "prepare": "husky",
+    "docs:dev": "vitepress dev docs --port 6611",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs --port 5611"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
+    "monopkg": "^0.3.10",
+    "prettier": "^3.2.5",
+    "vitepress": "^1.6.4",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "bun": ">=1.2.15"
+  },
+  "packageManager": "bun@1.2.15",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
-  "main": "lib/cjs/index.js",
-  "module": "lib/esm/index.js",
-  "typings": "lib/esm/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./lib/esm/index.d.ts",
-      "import": "./lib/esm/index.js",
-      "require": "./lib/cjs/index.js"
-    },
-    "./api": {
-      "types": "./lib/esm/api/index.d.ts",
-      "import": "./lib/esm/api/index.js",
-      "require": "./lib/cjs/api/index.js"
-    },
-    "./core": {
-      "types": "./lib/esm/core/index.d.ts",
-      "import": "./lib/esm/core/index.js",
-      "require": "./lib/cjs/core/index.js"
-    },
-    "./db": {
-      "types": "./lib/esm/db/index.d.ts",
-      "import": "./lib/esm/db/index.js",
-      "require": "./lib/cjs/db/index.js"
-    },
-    "./history": {
-      "types": "./lib/esm/history/index.d.ts",
-      "import": "./lib/esm/history/index.js",
-      "require": "./lib/cjs/history/index.js"
-    },
-    "./hook": {
-      "types": "./lib/esm/hook/index.d.ts",
-      "import": "./lib/esm/hook/index.js",
-      "require": "./lib/cjs/hook/index.js"
-    },
-    "./i18n": {
-      "types": "./lib/esm/i18n/index.d.ts",
-      "import": "./lib/esm/i18n/index.js",
-      "require": "./lib/cjs/i18n/index.js"
-    },
-    "./schema": {
-      "types": "./lib/esm/schema/index.d.ts",
-      "import": "./lib/esm/schema/index.js",
-      "require": "./lib/cjs/schema/index.js"
-    },
-    "./store": {
-      "types": "./lib/esm/store/index.d.ts",
-      "import": "./lib/esm/store/index.js",
-      "require": "./lib/cjs/store/index.js"
-    },
-    "./utils": {
-      "types": "./lib/esm/utils/index.d.ts",
-      "import": "./lib/esm/utils/index.js",
-      "require": "./lib/cjs/utils/index.js"
-    }
-  },
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
-  "files": [
-    "lib/"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beerush-id/anchor.git"
   },
-  "scripts": {
-    "dev": "esdev --watch",
-    "build": "esdev --clean",
-    "prepublish": "npm run build && npm run test && npm run docs:build",
-    "docs:dev": "vitepress dev docs --port 9933",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs",
-    "test": "vitest run"
-  },
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
   },
-  "devDependencies": {
-    "@beerush/esdev": "^1.1.0",
-    "@typescript-eslint/eslint-plugin": "^7.4.0",
-    "@typescript-eslint/parser": "^7.4.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.2.5",
-    "typedoc": "^0.24.8",
-    "typescript": "^5.1.6",
-    "vitepress": "^1.0.0-rc.22",
-    "vitest": "^0.34.6",
-    "vue": "^3.3.6"
-  },
-  "keywords": [
-    "reactive",
-    "reactive",
-    "svelte",
-    "reactive",
-    "object"
-  ],
-  "type": "module",
-  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
-  "peerDependencies": {
-    "zod": "^3.22.5"
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write"
+    ]
   }
 }

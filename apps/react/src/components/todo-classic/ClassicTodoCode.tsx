@@ -1,0 +1,29 @@
+import TodoAppCode from './ClassicTodoApp.js?raw';
+import TodoItemCode from './ClassicTodoItem.js?raw';
+import TodoListCode from './ClassicTodoList.js?raw';
+import TodoFormCode from './ClassicTodoForm.js?raw';
+import { memo } from 'react';
+import { CodeViewer } from '../CodeViewer.js';
+
+const codeBlocks = [
+  {
+    name: 'TodoApp.tsx',
+    code: TodoAppCode,
+  },
+  {
+    name: 'TodoForm.tsx',
+    code: TodoFormCode,
+  },
+  {
+    name: 'TodoList.tsx',
+    code: TodoListCode,
+  },
+  {
+    name: 'TodoItem.tsx',
+    code: TodoItemCode,
+  },
+];
+
+export const ClassicTodoCode = memo(() => {
+  return <CodeViewer items={codeBlocks} />;
+});

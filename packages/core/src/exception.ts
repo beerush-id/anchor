@@ -1,0 +1,357 @@
+import type { KeyLike, StateMutation } from './types.js';
+import { typeOf } from '@beerush/utils';
+import { microtask } from './utils/index.js';
+
+const generator = {
+  init(message: string) {
+    const messages = [
+      '\x1b[1m[violation] Initializing non-linkable object:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      '\x1b[1mRemember\x1b[0m: Only the following types are supported:',
+      '- Object, Array, Set, and Map',
+      '',
+      '\x1b[3m\x1b[1mPlease check the error stack below for more details.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  argumentException(message: string) {
+    message = message
+      .split('\n')
+      .map((line, i) => {
+        if (i === 0) {
+          return `\x1b[4m\x1b[1m${line}\x1b[0m`;
+        }
+        return line;
+      })
+      .join('\n');
+
+    const messages = [
+      '\x1b[1mAn invalid function argument given:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      'This is likely due to an invalid argument being passed.',
+      'Please check the provided arguments and try again.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor] ' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  internalException(message: string) {
+    const messages = [
+      '\x1b[1mAn internal exception occured:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      'This is likely a bug in the library implementation.',
+      'Please report this issue with the full stack trace.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor] ' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  externalException(message: string) {
+    message = message
+      .split('\n')
+      .map((line, i) => {
+        if (i === 0) {
+          return `\x1b[4m\x1b[1m${line}\x1b[0m`;
+        }
+        return line;
+      })
+      .join('\n');
+
+    const messages = [
+      '\x1b[1mAn external exception occured:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      'This error originated from an external source (e.g., application logic, subscription handler).',
+      'If you believe this is an issue with the library, please report it with the full stack trace.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor] ' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  warning(title: string, message: string, ...extras: string[]) {
+    const messages = [
+      `\x1b[1m[warning] ${title}\x1b[0m`,
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      ...extras,
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for more details if available.',
+    ];
+
+    return `⚠️\x1b[33m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  violation(message: string) {
+    const messages = [
+      '\x1b[1m[violation] Read-only state violation detected:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      '\x1b[1mImportant\x1b[0m: Direct mutation of read-only state is not permitted.',
+      "- If this state was declared immutable, use a designated 'writer' function to modify it.",
+      "- If this state should be mutable, ensure it was initialized without the 'immutable: true' option.",
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  contractViolation(message: string) {
+    const messages = [
+      '\x1b[1m[violation] Write contract violation detected:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      '\x1b[1mImportant\x1b[0m: Mutation of non-contract property is not allowed.',
+      '- If write contract is declared with specific props, only those props are mutable.',
+      '- If write contract of array, set, and map is declared with specific methods, only those methods are available.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  generalViolation(title: string, message: string, notes?: string[]) {
+    const messages = [
+      `\x1b[1m[violation] ${title}\x1b[0m`,
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      notes ? `\n\x1b[1mImportant\x1b[0m: ${notes.join('\n')}\x1b[0m` : undefined,
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ].filter((t) => t !== undefined);
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  schemaViolation(message: string) {
+    const messages = [
+      '\x1b[1m[schema] Schema violation detected:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      'The provided schema does not match the expected structure.',
+      '- Ensure that all required properties are present and of the correct type.',
+      '- Check that the schema adheres to the defined structure and constraints.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  validation(context: string, message: string) {
+    const messages = [
+      '\x1b[1m[schema] Input validation failed:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${context}\x1b[0m`,
+      '',
+      message,
+      '',
+      'The provided input does not match the expected structure.',
+      '- Ensure that all required properties are present and of the correct type.',
+      '- Check that the schema adheres to the defined structure and constraints.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+  circularViolation(message: string) {
+    const messages = [
+      '\x1b[1m[violation] Circular reference detected:\x1b[0m',
+      '',
+      `\x1b[4m\x1b[1m${message}\x1b[0m`,
+      '',
+      '\x1b[1mImportant\x1b[0m: Circular references in state objects are not permitted.',
+      '- Ensure that the state object does not contain circular references.',
+      '- Consider using a different data structure or serialization approach.',
+      '',
+      '\x1b[3m\x1b[1mSee stack trace below for debugging information.',
+    ];
+
+    return `⚠️\x1b[31m${'\x1b[1m[anchor]' + messages.join('\n')}\x1b[0m\n\n`;
+  },
+};
+
+const [schedule] = microtask(0);
+export const captureStack = {
+  warning: {
+    external(title: string, body: string, trace: string | unknown, ...excludeStacks: unknown[]) {
+      const message = generator.warning(title, body);
+      const error = new Error(typeof trace === 'string' ? trace : body);
+      shiftStack(error, captureStack.warning.external, excludeStacks);
+
+      console.warn(message, error, '\n');
+    },
+  },
+  error: {
+    argument(text: string, error: Error, ...excludeStacks: unknown[]) {
+      const message = generator.argumentException(text);
+      shiftStack(error, captureStack.error.argument, excludeStacks);
+      console.error(message, error, '\n');
+    },
+    internal(text: string, error: Error, ...excludeStacks: unknown[]) {
+      const message = generator.internalException(text);
+      shiftStack(error, captureStack.error.internal, excludeStacks);
+      console.error(message, error, '\n');
+    },
+    external(text: string, error: Error, ...excludeStacks: unknown[]) {
+      const message = generator.externalException(text);
+      shiftStack(error, captureStack.error.external, excludeStacks);
+      console.error(message, error, '\n');
+    },
+    validation(context: string, error: Error, strict?: boolean, ...excludeStacks: unknown[]) {
+      const message = generator.validation(context, error.message as string);
+      error = new Error('Invalid input.');
+      shiftStack(error, captureStack.error.validation, excludeStacks);
+
+      if (strict) {
+        console.error(message);
+        throw error;
+      }
+
+      console.error(message, error, '\n');
+    },
+  },
+  violation: {
+    init(value: unknown, ...excludeStacks: unknown[]) {
+      const message = generator.init(`Attempted to create state from "${typeOf(value)}".`);
+      const error = new Error(`Type data "${typeOf(value)}" is not observable.`);
+      shiftStack(error, captureStack.violation.init, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    general(title: string, body: string, error: Error, notes?: string[], ...excludedStacks: unknown[]) {
+      const message = generator.generalViolation(title, body, notes);
+      shiftStack(error, captureStack.violation.general, excludedStacks);
+
+      schedule(() => console.error(message, error, '\n'));
+    },
+    derivation(body: string, error: Error, ...excludedStacks: unknown[]) {
+      const message = generator.generalViolation('Derivation violation detected:', body, [
+        'This error is caused by providing a non-reactive state to the derivation call. If you think this is a bug, please report it at https://github.com/beerush-id/anchor/issues',
+      ]);
+      shiftStack(error, captureStack.violation.derivation, excludedStacks);
+
+      console.error(message, error, '\n');
+    },
+    circular(prop: KeyLike, ...excludeStacks: unknown[]) {
+      const message = generator.circularViolation(
+        `Attempted to link child state: "${prop as string}" that references to itself.`
+      );
+      const error = new Error(`Circular reference violation: "${prop as string}".`);
+      shiftStack(error, captureStack.violation.circular, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    schema(expected: string, value: string, strict: boolean, ...excludeStacks: unknown[]) {
+      const message = generator.schemaViolation(
+        `Attempted to initialize schema of state: "${value}". Expected: "${value}".`
+      );
+      const error = new Error(`Invalid init schema: "${typeOf(value)}".`);
+      shiftStack(error, captureStack.violation.schema, excludeStacks);
+
+      if (strict) {
+        console.error(message);
+        throw error;
+      }
+
+      console.error(message, error, '\n');
+    },
+    setter(prop: KeyLike, ...excludeStacks: unknown[]) {
+      const message = generator.violation(`Attempted to modify property "${prop as string}" of a read-only state.`);
+      const error = new Error(`Property "${prop as string}" is read-only.`);
+      shiftStack(error, captureStack.violation.setter, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    remover(prop: KeyLike, ...excludeStacks: unknown[]) {
+      const message = generator.violation(`Attempt to delete property "${prop as string}" of a read-only state.`);
+      const error = new Error(`Property "${prop as string}" is read-only.`);
+      shiftStack(error, captureStack.violation.remover, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    methodCall(method: StateMutation, ...excludeStacks: unknown[]) {
+      const message = generator.violation(`Attempt to mutate: "${method}" of a read-only state.`);
+      const error = new Error(`State is read-only.`);
+      shiftStack(error, captureStack.violation.methodCall, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+  },
+  contractViolation: {
+    init(...excludeStacks: unknown[]) {
+      const message = generator.violation('Attempted to create write contract of non-reactive state.');
+      const error = new Error('State is not reactive.');
+      shiftStack(error, captureStack.contractViolation.init, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    setter(prop: KeyLike, ...excludeStacks: unknown[]) {
+      const message = generator.contractViolation(
+        `Attempted to modify property "${prop as string}" of a write contract.`
+      );
+      const error = new Error(`Property "${prop as string}" is read-only.`);
+      shiftStack(error, captureStack.contractViolation.setter, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    remover(prop: KeyLike, ...excludeStacks: unknown[]) {
+      const message = generator.contractViolation(
+        `Attempt to delete property "${prop as string}" of a write contract.`
+      );
+      const error = new Error(`Property "${prop as string}" is read-only.`);
+      shiftStack(error, captureStack.contractViolation.remover, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    methodRead(prop: KeyLike, ...excludeStacks: unknown[]) {
+      const message = generator.contractViolation(
+        `Attempted to access mutation: "${prop as string}" of a write contract.`
+      );
+      const error = new Error(`Method "${prop as string}" is immutable.`);
+      shiftStack(error, captureStack.contractViolation.methodRead, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+    methodCall(method: StateMutation, ...excludeStacks: unknown[]) {
+      const message = generator.contractViolation(`Attempt to mutate: "${method}" of a write contract.`);
+      const error = new Error(`State is read-only.`);
+      shiftStack(error, captureStack.contractViolation.methodCall, excludeStacks);
+
+      console.error(message, error, '\n');
+    },
+  },
+};
+
+/**
+ * Shifts the stack trace of an error to exclude specified stack frames.
+ *
+ * This function modifies the stack trace of the provided error object by
+ * removing stack frames associated with the caller and any functions
+ * specified in the excludedStacks array. It uses Error.captureStackTrace
+ * when available (e.g., in Node.js environments).
+ *
+ * @param error - The error object whose stack trace will be modified
+ * @param caller - The function that should appear as the top of the stack trace
+ * @param excludedStacks - An array of functions whose stack frames should be removed
+ */
+function shiftStack(error: Error, caller: unknown, excludedStacks: unknown[]) {
+  if (excludedStacks.length) {
+    Error.captureStackTrace?.(error, caller as () => void);
+
+    for (const fn of [...excludedStacks]) {
+      Error.captureStackTrace?.(error, fn as () => void);
+    }
+  }
+}

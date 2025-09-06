@@ -28,7 +28,7 @@
  *   custom containers.
  *
  * - `default`: The color used purely for subtle indication without any
- *   special meanings attched to it such as bg color for menu hover state.
+ *   special meanings attached to it such as bg color for menu hover state.
  *
  * - `brand`: Used for primary brand colors, such as link text, button with
  *   brand theme, etc.
@@ -44,14 +44,17 @@
  * -------------------------------------------------------------------------- */
 
 :root {
+  --color-brand-main: #533ddd;
+  --color-brand-orange: #ffa500;
+  --color-brand-red: #fb2c36;
   --vp-c-default-1: var(--vp-c-gray-1);
   --vp-c-default-2: var(--vp-c-gray-2);
   --vp-c-default-3: var(--vp-c-gray-3);
   --vp-c-default-soft: var(--vp-c-gray-soft);
 
-  --vp-c-brand-1: #5e4de0;
-  --vp-c-brand-2: #7866ff;
-  --vp-c-brand-3: #5643ea;
+  --vp-c-brand-1: var(--color-brand-main);
+  --vp-c-brand-2: var(--color-brand-orange);
+  --vp-c-brand-3: var(--color-brand-red);
   --vp-c-brand-soft: var(--vp-c-indigo-soft);
 
   --vp-c-tip-1: var(--vp-c-brand-1);
@@ -70,12 +73,8 @@
   --vp-c-danger-soft: var(--vp-c-red-soft);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --vp-c-brand-1: #a599ff;
-    --vp-c-brand-2: #a599ff;
-    --vp-c-brand-3: #766dc0;
-  }
+.dark {
+  --color-brand-main: #9181f5;
 }
 
 /**
@@ -102,16 +101,16 @@
   --vp-home-hero-name-color: transparent;
   --vp-home-hero-name-background: -webkit-linear-gradient(
     120deg,
-    #ae2efd 30%,
-    #2efdae
+    var(--color-brand-red) 30%,
+    var(--color-brand-orange)
   );
 
   --vp-home-hero-image-background-image: linear-gradient(
     -45deg,
-    #ae2efd 50%,
-    #2efdae 50%
+    var(--color-brand-red) 50%,
+    var(--color-brand-orange) 50%
   );
-  --vp-home-hero-image-filter: blur(40px);
+  --vp-home-hero-image-filter: blur(44px);
 }
 
 @media (min-width: 640px) {
@@ -122,7 +121,7 @@
 
 @media (min-width: 960px) {
   :root {
-    --vp-home-hero-image-filter: blur(72px);
+    --vp-home-hero-image-filter: blur(68px);
   }
 }
 

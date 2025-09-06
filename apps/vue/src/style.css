@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body {
+  width: 100%;
+  margin: 0;
+}

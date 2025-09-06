@@ -1,0 +1,68 @@
+{
+  "name": "@anchor/svelte",
+  "version": "0.0.1",
+  "module": "./dist/index.js",
+  "dependencies": {
+    "@anchor/core": "workspace:*",
+    "@anchor/storage": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/css": "^0.5.0",
+    "@eslint/js": "^9.23.0",
+    "@eslint/markdown": "^6.3.0",
+    "@types/react": "^19.1.8",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^9.23.0",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.5.3",
+    "publint": "^0.3.9",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.4.0",
+    "typescript-eslint": "^8.27.0",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "svelte": "^5.36.16",
+    "typescript": "^5.8.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./preprocessor": {
+      "types": "./dist/preprocessor/index.d.ts",
+      "svelte": "./dist/preprocessor/index.js",
+      "import": "./dist/preprocessor/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "svelte": "./dist/storage/index.js",
+      "import": "./dist/storage/index.js"
+    }
+  },
+  "directories": {
+    "dist": "./dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "rimraf dist && tsup --watch",
+    "clean": "rimraf dist",
+    "build": "rimraf dist && tsup && publint",
+    "prepublish": "rimraf dist && tsup && publint",
+    "format": "prettier --write ."
+  },
+  "svelte": "./dist/index.js",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "optionalDependencies": {
+    "zod": "^4.0.17"
+  }
+}
