@@ -1,472 +1,327 @@
-# **Data Integrity**
+# **Data Integrity with Anchor - Ensuring Valid State in Your Applications**
 
-Data integrity is the assurance that your application's data is accurate, consistent, and reliable throughout its
-lifecycle. In a traditional state management model, ensuring data integrity can be a manual, error-prone process. Anchor
-makes data integrity a core part of its architecture, not an afterthought.
+Learn how Anchor ensures data integrity through schema validation and type safety in your state management.
 
 <div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
   <img src="/schemas/data-integrity.webp" alt="Reactivity Schema" />
 </div>
 
-## **Schema Integration**
+## **What is Data Integrity in State Management?**
 
-Anchor champions data integrity by integrating **Zod schemas as a first-citizen class**. Zod is a powerful
-TypeScript-first schema declaration and validation library that provides:
+Data integrity in state management refers to ensuring that your application state always conforms to expected formats,
+types, and constraints. With Anchor, you can maintain data integrity through:
 
-- **Runtime Validation:** Anchor automatically validates incoming data against your Zod schema. If an API response, user
-  input, or local storage data doesn't conform to the expected shape, Anchor will catch the error, preventing corrupt
-  data from ever reaching your application state.
-- **Compile-time Type Safety:** By using Zod schemas to define your state, you get robust type inference and
-  compile-time type safety. Your IDE will immediately warn you if you try to access a property that doesn't exist on
-  your state, or if you try to assign a value of the wrong type. This catches a wide class of bugs before you even run
-  your code.
+1. **Schema Validation**: Runtime validation of state against defined schemas
+2. **Type Safety**: Compile-time type checking with TypeScript
+3. **Immutable State**: Prevention of unauthorized mutations
+4. **Controlled Mutations**: Write contracts that limit state changes
 
-## **Unified Data Model**
+## **Schema Validation**
 
-The integration of Zod schemas reinforces the **DSV model** by ensuring that the **State** layer is always a single,
-stable source of truth.
-
-- **A Single Source of Truth for Data:** Your Zod schema acts as the single source of truth for your data's shape and
-  integrity. You don't have to duplicate type definitions or validation logic in different parts of your application.
-- **Predictable Data:** With Anchor and Zod, you can be confident that the data you read from the state will always have
-  the shape you expect. This predictability simplifies component logic and makes your application much easier to reason
-  about.
-
-By making data integrity a core part of its state management philosophy, Anchor frees developers from the burden of
-manual data validation and provides a robust foundation for building reliable applications.
-
-## Usage
-
-To use schema validation in Anchor, you need to provide a Zod schema when creating your state:
+Anchor integrates seamlessly with Zod, a TypeScript-first schema declaration and validation library:
 
 ```typescript
 import { anchor } from '@anchor/core';
 import { z } from 'zod';
 
-// Define your schema
-const userSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
+// Define a schema for user data
+const UserSchema = z.object({
+  id: z.number().positive(),
+  name: z.string().min(1).max(100),
   email: z.string().email(),
-  age: z.number().min(0).max(150),
+  age: z.number().min(0).max(150).optional(),
   isActive: z.boolean().default(true),
 });
 
-// Create a validated state
+// Create a state with schema validation
 const userState = anchor(
   {
-    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+    id: 1,
     name: 'John Doe',
     email: 'john@example.com',
-    age: 30,
-    isActive: true,
   },
-  {
-    schema: userSchema,
-  }
+  UserSchema
 );
 
 // Valid updates work as expected
 userState.name = 'Jane Doe';
 
 // Invalid updates are caught
-userState.email = 'invalid-email'; // This will be validated and rejected
+userState.email = 'invalid-email'; // This will be rejected
 userState.age = -5; // This will also be rejected
 ```
 
-### Strict Mode
+## **Error Handling**
 
-Anchor provides a strict mode that throws errors when validation fails, rather than silently ignoring invalid updates:
+Anchor implements a soft-error model, meaning validation errors are logged to the console without throwing exceptions.
+This design choice ensures your application remains usable even when validation issues occur.
+
+To handle validation errors programmatically, use the **`anchor.catch`** method. This method accepts a callback function
+that executes whenever a validation error occurs on the specified state.
 
 ```typescript
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
+const errors = [];
 
-const userSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
+// Register error handler for a specific state
+const unhandle = anchor.catch(state, (exception) => {
+  errors.push(exception);
 });
 
-// Create a validated state with strict mode
-const userState = anchor.model(
-  {
-    name: 'John Doe',
-    email: 'john@example.com',
-  },
-  {
-    schema: userSchema,
-    strict: true, // Throws errors on validation failure
-  }
-);
+// Attempt to mutate the state with invalid data
+state.email = 'invalid-email';
 
-// This will throw an error in strict mode
-try {
-  userState.email = 'invalid-email';
-} catch (error) {
-  console.error('Validation failed:', error);
+// Check for captured validation errors
+if (errors.length) {
+  console.log('Validation errors occurred:', errors);
 }
+
+// Unregister error handler.
+unhandle();
 ```
 
-## APIs
+This approach allows you to provide user feedback or implement custom error handling logic while maintaining application
+stability.
 
-### **`anchor.model()`**
+::: tip Concerned about verbosity?
 
-Creates a reactive state with schema validation.
+At first glance, handling validation errors might seem verbose. While this approach is perfectly fine for simple
+applications, it becomes highly beneficial in complex applications. You won't need to wrap every operation in
+`try-catch` blocks, and errors can be handled centrally while keeping your application stable and responsive.
 
-```typescript
-type model = <S extends LinkableSchema, T extends ModelInput<S>>(
-  init: T,
-  schema: S,
-  options?: StateBaseOptions
-) => ModelOutput<S>;
-```
+:::
 
-**Parameters:**
+### **Sample of Validation Handling in React**
 
-- `init`: The initial value for the state
-- `schema`: Zod schema for validation
-- `options`: Optional configuration for the state
-
-**Example:**
-
-```typescript
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
-
-const userSchema = z.object({
-  name: z.string(),
-  age: z.number(),
-});
-
-const userState = anchor.model({ name: 'John', age: 30 }, userSchema);
-```
-
-### **`anchor.immutable()`** with Schema
-
-Creates an immutable reactive state with schema validation.
-
-```typescript
-type immutable = <S extends LinkableSchema, T extends ModelInput<S>>(
-  init: T,
-  schema: S,
-  options?: StateBaseOptions
-) => ImmutableOutput<S>;
-```
-
-**Parameters:**
-
-- `init`: The initial value for the state
-- `schema`: Zod schema for validation
-- `options`: Optional configuration for the state
-
-**Example:**
-
-```typescript
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
-
-const userSchema = z.object({
-  name: z.string(),
-  age: z.number(),
-});
-
-const immutableUserState = anchor.immutable({ name: 'John', age: 30 }, userSchema);
-```
-
-## Data Integrity & Immutability
-
-Anchor's powerful combination of data integrity and immutability provides a robust foundation for building reliable
-applications. When you combine Zod schema validation with immutable states, you get the benefits of both features:
-
-### Immutable Validated States
-
-```typescript
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
-
-const userSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  email: z.string().email(),
-  preferences: z.object({
-    theme: z.enum(['light', 'dark']),
-    notifications: z.boolean(),
-  }),
-});
-
-// Create an immutable state with schema validation
-const userState = anchor.immutable(
-  {
-    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-    name: 'John Doe',
-    email: 'john@example.com',
-    preferences: {
-      theme: 'light',
-      notifications: true,
-    },
-  },
-  userSchema
-);
-
-// Reading properties works normally
-console.log(userState.name); // 'John Doe'
-console.log(userState.preferences.theme); // 'light'
-
-// Direct mutations are prevented
-userState.name = 'Jane Doe'; // This will be trapped and produce an error
-```
-
-### Controlled Mutations with Validation
-
-To modify an immutable validated state, you need to create a writable version using the **`writable`** method, which
-still enforces schema validation:
-
-```typescript
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
-
-const userSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  age: z.number().min(0),
-});
-
-// Create an immutable state with schema validation
-const userState = anchor.immutable(
-  {
-    name: 'John Doe',
-    email: 'john@example.com',
-    age: 30,
-  },
-  userSchema
-);
-
-// Create a writable version
-const userWriter = anchor.writable(userState);
-
-// Valid mutations work
-userWriter.name = 'Jane Doe';
-userWriter.age = 31;
-
-// Invalid mutations are caught by the schema
-userWriter.email = 'invalid-email'; // This will be rejected
-userWriter.age = -5; // This will also be rejected
-```
-
-### Partial Mutations with Contracts
-
-You can also create partially writable states with specific contracts that still enforce schema validation:
-
-```typescript
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
-
-const userSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  age: z.number().min(0),
-  active: z.boolean(),
-});
-
-// Create an immutable state with schema validation
-const userState = anchor.immutable(
-  {
-    name: 'John Doe',
-    email: 'john@example.com',
-    age: 30,
-    active: true,
-  },
-  userSchema
-);
-
-// Create a writable version that only allows mutating 'name' and 'age'
-const userWriter = anchor.writable(userState, ['name', 'age']);
-
-// These mutations work (valid and allowed by contract)
-userWriter.name = 'Jane Doe';
-userWriter.age = 31;
-
-// This is rejected by the contract (not in allowed keys)
-userWriter.active = false;
-
-// This is rejected by the schema (invalid value)
-userWriter.age = -5;
-```
-
-## Best Practices
-
-### 1. Always Use Schema Validation for Complex States
-
-For any state that has a defined structure, always use schema validation to ensure data integrity:
-
-```typescript
-// Good: Using schema validation
-const userSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  email: z.string().email(),
-  createdAt: z.date(),
-});
-
-const userState = anchor.model(
-  {
-    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-    name: 'John Doe',
-    email: 'john@example.com',
-    createdAt: new Date(),
-  },
-  userSchema
-);
-
-// Bad: No validation
-const userState1 = anchor({
-  id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-  name: 'John Doe',
-  email: 'john@example.com',
-  createdAt: new Date(),
-});
-```
-
-### 2. Use Strict Mode in Development
-
-Enable strict mode during development to catch validation errors early:
-
-```typescript
-// Enable strict mode as the default configuration in dev mode.
-anchor.configure({ strict: isDevMode() });
-```
-
-```typescript
-// Enable strict mode for a specific state
-const userState = anchor(initialValue, {
-  schema: userSchema,
-  strict: isDevMode(),
-});
-```
-
-### 3. Combine with Immutability for Shared Data
-
-Use immutable validated states for shared data that should not be directly modified:
+In React applications, Anchor provides a seamless way to handle validation errors directly within your components.
+The **`useException`** hook allows you to capture and display validation errors for specific state properties.
 
 ```tsx
+const EditProfile = observed(() => {
+  // Capture validation errors for the 'state' object
+  const formErrors = useException(state);
+
+  return (
+    <form>
+      <Input bind={state} name="email" />
+      {/* Display error message if email validation fails */}
+      {formErrors.email && <span className="error">Invalid email format.</span>}
+    </form>
+  );
+});
+```
+
+## **Immutable State with Validation**
+
+Combine immutability with schema validation for maximum data integrity:
+
+```typescript
 import { anchor } from '@anchor/core';
 import { z } from 'zod';
 
-const configSchema = z.object({
-  apiUrl: z.string().url(),
-  theme: z.enum(['light', 'dark']),
+const SettingsSchema = z.object({
+  theme: z.enum(['light', 'dark']).default('light'),
   language: z.string().min(2).max(5),
-});
-
-// Configuration data that should remain consistent
-const config = anchor.immutable(
-  {
-    apiUrl: 'https://api.example.com',
-    theme: 'dark',
-    language: 'en',
-  },
-  configSchema
-);
-
-// Components can read the config but cannot modify it directly
-function Component() {
-  return <div className={config.theme}>Content</div>;
-}
-```
-
-### 4. Create Specific Writers for Mutations
-
-When you need to modify immutable validated states, create specific writers rather than making the original mutable:
-
-```tsx
-import { anchor } from '@anchor/core';
-import { z } from 'zod';
-
-const settingsSchema = z.object({
-  volume: z.number().min(0).max(100),
-  brightness: z.number().min(0).max(100),
   notifications: z.boolean(),
 });
 
-const settings = anchor.immutable(
+// Create an immutable, validated state
+const appSettings = anchor.immutable(
   {
-    volume: 50,
-    brightness: 70,
+    theme: 'dark',
+    language: 'en',
     notifications: true,
   },
-  settingsSchema
+  SettingsSchema
 );
 
-// Create a specific writer for mutations
-const settingsWriter = anchor.writable(settings);
+// Create a write contract for controlled mutations
+const settingsWriter = anchor.writable(appSettings, ['theme', 'language']);
 
-function SettingsPanel() {
-  return (
-    <input type="range" value={settings.volume} onChange={(e) => (settingsWriter.volume = parseInt(e.target.value))} />
-  );
-}
+// Valid mutations
+settingsWriter.theme = 'light';
+settingsWriter.language = 'es';
+
+// Invalid mutations are prevented
+// settingsWriter.theme = 'invalid-theme'; // Validation error!
 ```
 
-### 5. Use Contracts for Fine-Grained Control
+This pattern enables you to provide real-time feedback to users as they interact with form fields, improving the overall
+user experience by guiding them towards valid input.
 
-Use contracts to limit which properties can be mutated, adding an extra layer of control:
+## **Type Safety with TypeScript**
+
+Anchor provides excellent TypeScript support for compile-time type checking:
 
 ```typescript
 import { anchor } from '@anchor/core';
-import { z } from 'zod';
 
-const userSchema = z.object({
-  profile: z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-  }),
-  preferences: z.object({
-    theme: z.enum(['light', 'dark']),
-  }),
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  preferences: {
+    theme: 'light' | 'dark';
+    notifications: boolean;
+  };
+}
+
+const userState = anchor<User>({
+  id: 1,
+  name: 'John Doe',
+  email: 'john@example.com',
+  preferences: {
+    theme: 'dark',
+    notifications: true,
+  },
 });
 
-const userState = anchor.immutable(
-  {
-    profile: {
-      name: 'John',
-      email: 'john@example.com',
-    },
-    preferences: {
-      theme: 'dark',
-    },
-  },
-  userSchema
-);
-
-// Only allow updating preferences
-const preferenceWriter = anchor.writable(userState, ['preferences']);
-preferenceWriter.preferences.theme = 'light'; // This works
-preferenceWriter.profile.name = 'Jane'; // This is blocked by contract
+// TypeScript will catch these errors at compile time:
+// userState.id = 'string'; // Type error!
+// userState.preferences.theme = 'blue'; // Type error!
 ```
 
-### 6. Validate Incoming Data
+## **Nested Schema Validation**
 
-Always validate data from external sources (APIs, localStorage, etc.) before using it:
+Anchor supports nested schema validation for complex state structures:
 
 ```typescript
 import { anchor } from '@anchor/core';
 import { z } from 'zod';
 
-const userSchema = z.object({
-  id: z.string().uuid(),
+const AddressSchema = z.object({
+  street: z.string().min(1),
+  city: z.string().min(1),
+  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/),
+  country: z.string().min(2),
+});
+
+const UserSchema = z.object({
+  id: z.number(),
   name: z.string().min(1),
   email: z.string().email(),
+  address: AddressSchema,
 });
 
-// Validate data from an API response
-async function fetchUser(id) {
-  const response = await fetch(`/api/users/${id}`);
-  const userData = await response.json();
-
-  // Create state with validated data
-  return anchor.immutable(userData, userSchema);
-}
+const userState = anchor(
+  {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    address: {
+      street: '123 Main St',
+      city: 'Anytown',
+      zipCode: '12345',
+      country: 'USA',
+    },
+  },
+  UserSchema
+);
 ```
 
-By following these practices and leveraging the combination of data integrity and immutability, you can build
-applications with robust, predictable state management that catches errors early and prevents data corruption.
+## **Array Validation**
+
+Validate arrays and their contents with Anchor:
+
+```typescript
+import { anchor } from '@anchor/core';
+import { z } from 'zod';
+
+const TagSchema = z.object({
+  id: z.number(),
+  name: z.string().min(1),
+});
+
+const PostSchema = z.object({
+  id: z.number(),
+  title: z.string().min(1),
+  content: z.string().min(1),
+  tags: z.array(TagSchema).max(10),
+});
+
+const postState = anchor(
+  {
+    id: 1,
+    title: 'My First Post',
+    content: 'This is the content of my first post',
+    tags: [
+      { id: 1, name: 'introduction' },
+      { id: 2, name: 'tutorial' },
+    ],
+  },
+  PostSchema
+);
+```
+
+## **Custom Validation**
+
+Create custom validation logic for domain-specific requirements:
+
+```typescript
+import { anchor } from '@anchor/core';
+import { z } from 'zod';
+
+// Custom validation for password strength
+const PasswordSchema = z.string().superRefine((val, ctx) => {
+  if (val.length < 8) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Password must be at least 8 characters long',
+    });
+  }
+
+  if (!/[A-Z]/.test(val)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Password must contain at least one uppercase letter',
+    });
+  }
+
+  if (!/[0-9]/.test(val)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Password must contain at least one number',
+    });
+  }
+});
+
+const UserRegistrationSchema = z.object({
+  username: z.string().min(3),
+  email: z.string().email(),
+  password: PasswordSchema,
+});
+
+const registrationState = anchor(
+  {
+    username: 'johndoe',
+    email: 'john@example.com',
+    password: 'MyPassword123',
+  },
+  UserRegistrationSchema
+);
+```
+
+## **Benefits of Data Integrity with Anchor**
+
+1. **Prevent Runtime Errors**: Catch data issues before they cause application problems
+2. **Improve User Experience**: Provide clear feedback on data requirements
+3. **Enhance Developer Productivity**: Catch errors early in the development process
+4. **Ensure Consistent State**: Maintain predictable application behavior
+5. **Simplify Debugging**: Clear error messages help identify issues quickly
+
+## **Best Practices for Data Integrity**
+
+1. **Define Schemas Early**: Create schemas during the design phase
+2. **Use TypeScript Types**: Combine runtime validation with compile-time checking
+3. **Validate at Boundaries**: Validate data when it enters your application
+4. **Provide Clear Error Messages**: Help users understand validation requirements
+5. **Test Validation Logic**: Ensure your schemas work as expected
+6. **Document Data Requirements**: Make schema constraints clear to other developers
+
+## **Next Steps**
+
+To learn more about data integrity and validation with Anchor:
+
+- Review the [Immutability Guide](/immutability) for safe state mutations
+- Explore [Reactivity](/reactivity) to understand how validated state works with observation
+- Check out the [API Reference](/usage) for detailed function documentation
+- See how validation works with [Storage](/storage/getting-started) for persistent data

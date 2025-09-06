@@ -1,4 +1,4 @@
-# **Performance**
+# **Anchor Performance - Blazingly Fast State Management for Web Applications**
 
 Anchor is designed from the ground up to deliver a blazingly fast and fluid user experience. Our performance philosophy
 is rooted in a single principle: doing the absolute minimum amount of work necessary to keep the UI in perfect sync with
@@ -58,7 +58,7 @@ runtime. This means:
 By combining fine-grained reactivity with optimized state updates and a minimal footprint, Anchor empowers you to build
 applications that feel instant and responsive to every user interaction.
 
-## **Benchmark**
+## **Benchmark Results**
 
 This benchmark report provides hard data and visual proof of Anchor's superior performance, demonstrating its ability to
 handle scale and complexity without the performance bottlenecks of traditional state management.

@@ -1,88 +1,247 @@
-# **Architecture**
+# **Anchor Architecture - Technical Deep Dive into State Management**
 
-The Anchor architecture is the engine that powers the DSV model and its superior performance. This section provides an
-in-depth look at the core principles and powerful built-in utilities that make Anchor a revolutionary solution.
+Explore the technical architecture that makes Anchor a revolutionary state management solution for modern web applications.
 
-## **The Anchor Mental Model**
+## **Core Architecture Overview**
 
-The core of Anchor's philosophy is built on three pillars that ensure your application is robust, performant, and
-reliable from the ground up.
+Anchor's architecture is built around several key components that work together to provide exceptional state management:
 
-### **Lazy Initialization & Performance**
+1. **Proxy-Based Reactivity System**: Tracks dependencies and notifies observers of changes
+2. **Immutable State Engine**: Ensures state integrity through write contracts
+3. **Schema Validation Layer**: Validates state against defined schemas
+4. **Observation Manager**: Coordinates fine-grained reactivity
+5. **Integration Layers**: Framework-specific adapters for React, Vue, and Svelte
 
-Anchor's state is a single entity with no direct, in-memory references to nested states. These nested states are
-initialized **on-demand**, only when a component needs to read from them. This provides a crucial balance between speed
-and resource usage, ensuring a minimal memory footprint. It’s similar to a relational database, but for a state, where
-references are built on demand. This approach is what allows Anchor to handle vast, complex datasets efficiently, as the
-cost of a state is not proportional to its size.
+## **Reactivity System Architecture**
 
-### **Observation & Derivation**
+### **Proxy Handlers**
 
-While they may seem similar, **Observation** and **Derivation** serve different purposes within Anchor's reactivity
-model. Observation focuses on direct, small units. It maintains a single, efficient connection between a specific piece
-of state and a single observer (a component, for instance). This is the foundation of Anchor's fine-grained reactivity.
-In contrast, Derivation provides a deep, full connection to the state tree. When a state changes at a deeper level, the
-root state gets a notification, ensuring a unified view of the entire application.
+At the core of Anchor's reactivity system are Proxy handlers that intercept property access and mutation:
 
-### **True Immutability & Data Integrity**
+```javascript
+// Simplified representation of Anchor's proxy mechanism
+const handler = {
+  get(target, property) {
+    // Track dependency when property is accessed within observer context
+    trackDependency(target, property);
+    return target[property];
+  },
 
-Anchor champions a **true immutable model** that cleverly sidesteps the typical performance overhead associated with
-deep copying large state trees. It allows you to write intuitive **"direct mutation"** code within strictly controlled
-**"write contracts"**, without sacrificing state integrity. This is a massive win for both performance and developer
-experience. It is also **strongly typed**, so if you declare a state, you'll be warned or prevented from making a
-mutation in the IDE. For an additional layer of data integrity, Anchor integrates
-**Zod schemas as a first-citizen class**, ensuring your data always conforms to its defined structure and types at both
-development and runtime.
+  set(target, property, value) {
+    // Validate and notify observers when property is mutated
+    const oldValue = target[property];
+    target[property] = validateAndApplyChange(value);
+    notifyObservers(target, property, value, oldValue);
+    return true;
+  },
+};
+```
 
-## **Framework Agnosticism**
+### **Dependency Tracking**
 
-Anchor's mental model is heavily influenced by the difficulties of sharing state between frameworks and platforms. This
-is why the core state engine is built to be completely agnostic. The Anchor state is the **what**, and then you choose
-the **how** by using the specific bindings for your chosen **UI framework**, such as **React** or **Vue**. This same principle
-extends to **cross-platform applications**, allowing you to share the same state logic between web, mobile, and desktop.
-This allows you to choose the best **UI framework** for the job without compromising your core architectural design.
+Anchor maintains a sophisticated dependency tracking system:
 
-## **Integrated Built-ins**
+1. **Observer Context**: When code runs within an observer context, accessed properties are tracked
+2. **Dependency Graph**: A graph of which observers depend on which properties
+3. **Change Notification**: When a property changes, only relevant observers are notified
 
-Anchor's rich suite of built-in utilities covers common application needs, providing powerful, ready-to-use solutions
-with elegant APIs.
+### **Fine-Grained vs Coarse-Grained Reactivity**
 
-### **Optimistic Model**
+Unlike traditional frameworks that re-render entire components when any state changes, Anchor's approach:
 
-The **Optimistic Model** makes UI updates instantly in response to user actions, even before a server response is
-received. This creates a highly responsive feel, eliminating perceived latency and enhancing user satisfaction.
+- **Traditional**: Component re-renders when any part of its state changes
+- **Anchor**: Only re-executes code that depends on specifically changed properties
 
-### **History Utility**
+This results in significantly fewer unnecessary computations and DOM updates.
 
-Anchor provides an **out-of-the-box History utility** that automatically tracks state changes. This gives you built-in
-undo/redo functionality with virtually no additional development effort.
+## **Immutability Architecture**
+
+### **Proxy-Based Write Contracts**
+
+Anchor implements immutability through a proxy-based write contract system:
+
+```javascript
+// Simplified representation of write contract mechanism
+function createWriteContract(immutableState, allowedKeys) {
+  return new Proxy(immutableState, {
+    set(target, property, value) {
+      if (allowedKeys.includes(property)) {
+        // Apply mutation through controlled mechanism
+        applyControlledMutation(target, property, value);
+        return true;
+      }
+      // Trap unauthorized mutations
+      throw new Error(`Cannot mutate property '${property}' without contract`);
+    },
+  });
+}
+```
+
+### **Immutable State Benefits**
+
+1. **Predictability**: State changes only occur through explicit contracts
+2. **Debugging**: Easier to trace when and how state changes occur
+3. **Concurrency Safety**: No race conditions from multiple simultaneous mutations
+4. **Snapshot Consistency**: State snapshots remain consistent over time
+
+## **Schema Validation Architecture**
+
+### **Zod Integration**
+
+Anchor integrates with Zod for runtime schema validation:
+
+1. **Schema Definition**: Define schemas using Zod's intuitive API
+2. **Validation Hooks**: Validate state changes against schemas
+3. **Error Reporting**: Provide detailed error information for invalid mutations
+
+### **Validation Pipeline**
+
+```javascript
+// Simplified validation flow
+function validateStateChange(state, schema, newValue, path) {
+  try {
+    // Apply Zod validation
+    const result = schema.parse(newValue);
+    return { valid: true, value: result };
+  } catch (error) {
+    return { valid: false, error: error.issues };
+  }
+}
+```
+
+## **Framework Integration Architecture**
+
+### **Adapter Pattern**
+
+Each framework integration follows the adapter pattern:
+
+1. **Core Abstraction**: Framework-agnostic reactive primitives
+2. **Framework Adapters**: Specific implementations for React, Vue, Svelte
+3. **Consistent API**: Same underlying concepts across all frameworks
+
+### **React Integration**
+
+React integration leverages:
+
+- **Hooks**: `useObserved` and `useWriter` for state observation and mutation
+- **Context Avoidance**: No need for React Context providers
+- **Automatic Cleanup**: Observers automatically clean up when components unmount
+
+### **Vue Integration**
+
+Vue integration takes advantage of:
+
+- **Reactivity System**: Natural integration with Vue's reactivity
+- **Composition API**: `derivedRef` and `writableRef` composable functions
+- **Template Integration**: Seamless binding with Vue templates
+
+### **Svelte Integration**
+
+Svelte integration benefits from:
+
+- **Native Stores**: Integration with Svelte's store contract
+- **Reactive Statements**: Natural integration with `$` syntax
+- **Compile-Time Optimizations**: Leveraging Svelte's compilation process
+
+## **Performance Architecture**
+
+### **Lazy Initialization**
+
+Anchor uses lazy initialization to optimize performance:
+
+1. **Nested Proxy Creation**: Child objects are only made reactive when accessed
+2. **Memory Efficiency**: Unused parts of state tree don't consume resources
+3. **Fast Startup**: Initial state creation is lightweight
+
+### **Memory Management**
+
+Automatic memory management prevents leaks:
+
+1. **Weak References**: Observers tracked with weak references for automatic cleanup
+2. **Explicit Cleanup**: Manual cleanup options for immediate resource release
+3. **Garbage Collection**: Proper cleanup when observers are no longer referenced
+
+## **Storage Architecture**
 
 ### **Reactive Storage**
 
-Work with `localStorage`, `sessionStorage`, and `IndexedDB` just like plain objects. Anchor provides a true two-way
-storage binding that automatically syncs data, ensuring your application state is always up-to-date.
+Anchor's storage system provides:
 
-### **Reactive Request**
+1. **Two-Way Binding**: Automatic synchronization between state and storage
+2. **Multiple Backends**: Support for localStorage, sessionStorage, and IndexedDB
+3. **Schema Validation**: Stored data validated against schemas
 
-Handle asynchronous requests and server-sent events (SSE) incredibly simply and reactively. Received data chunks
-automatically update the UI, providing real-time experiences with ease.
+### **Persistence Pipeline**
 
-## **Limitless, Beyond Built-ins**
+```javascript
+// Simplified persistence flow
+function persistState(state, storageKey) {
+  // Serialize state
+  const serialized = JSON.stringify(state);
 
-While Anchor's built-in utilities provide a quick way to work with common data types and services, they are not a hard
-limit. The core state engine's agnostic nature is a powerful foundation that allows you to build your own custom
-bindings.
+  // Store in appropriate backend
+  localStorage.setItem(storageKey, serialized);
 
-Think of Anchor's built-ins as a starting point. With a clear understanding of the DSV model and how Anchor's core state
-emits events on every change, you can extend its functionality to bind to virtually any data source or system.
+  // Set up synchronization
+  setupSync(state, storageKey);
+}
+```
 
-- **State-to-DOM Binding:** You could create a binding that connects a specific part of your `appState` to a `canvas`
-  element, allowing you to reactively render visualizations or animations without a UI framework.
-- **State-to-Media Binding:** Imagine building a binding that connects a specific property in your state (e.g.,
-  `appState.media.volume`) to an HTML5 audio or video element, providing seamless two-way control.
-- **State-to-Hardware Binding:** Your state could be connected to an IoT device or a USB peripheral, allowing you to use
-  the DSV model to manage and display data from the physical world.
+## **Error Handling Architecture**
 
-This is the ultimate promise of Anchor's architecture. It is built to be a foundational layer for any application,
-regardless of its complexity or platform. The Anchor state is the **what**, and then you choose the **how** by creating
-your own bindings to connect it to anything and everything.
+### **Soft Exception Handling**
+
+Anchor implements graceful error handling:
+
+1. **Non-Fatal Errors**: Validation errors don't crash the application
+2. **Detailed Reporting**: Clear error messages for debugging
+3. **Recovery Mechanisms**: Automatic recovery from certain error conditions
+
+## **Scalability Architecture**
+
+### **Modular Design**
+
+Anchor's architecture scales through:
+
+1. **Component Isolation**: Components only observe needed state
+2. **State Partitioning**: Large state trees can be logically partitioned
+3. **Hierarchical Observers**: Nested observer contexts for complex applications
+
+### **Performance Consistency**
+
+As applications grow:
+
+1. **Constant Time Updates**: Individual state changes take consistent time
+2. **Linear Scaling**: Performance scales linearly with actual complexity
+3. **No Degradation**: No performance cliffs as state size increases
+
+## **Security Architecture**
+
+### **Mutation Control**
+
+Security through controlled mutations:
+
+1. **Explicit Contracts**: Mutations only allowed through explicit write contracts
+2. **Type Safety**: Compile-time checking prevents many invalid operations
+3. **Runtime Validation**: Runtime checks catch unauthorized mutations
+
+### **Data Integrity**
+
+Ensuring data remains valid and consistent:
+
+1. **Schema Enforcement**: All state changes validated against schemas
+2. **Immutable Core**: Core state cannot be accidentally modified
+3. **Audit Trail**: Clear record of all state changes
+
+## **Next Steps**
+
+To learn more about Anchor's architecture and implementation:
+
+- Review the [Philosophy](/philosophy) behind Anchor's design decisions
+- Explore [Reactivity](/reactivity) in detail
+- Understand [Immutability](/immutability) mechanisms
+- Check out framework-specific guides:
+  - [React Architecture](/react/getting-started)
+  - [Vue Architecture](/vue/getting-started)
+  - [Svelte Architecture](/svelte/getting-started)
+- Contribute to the project on [GitHub](https://github.com/beerush-id/anchor)

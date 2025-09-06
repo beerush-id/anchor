@@ -1,155 +1,161 @@
-# **Getting Started**
+# **Getting Started with Anchor**
 
-Welcome to Anchor! This page will guide you through the first steps of using the framework, from understanding its
-modern requirements to installing the right packages for your project.
+Learn how to use Anchor, the revolutionary state management library that provides fine-grained reactivity and true immutability for modern web applications.
 
-## **Modern Platform**
+## **What You'll Learn**
 
-Anchor is built on a modern, ESM-only architecture, which means it leverages the latest JavaScript features to provide
-its superior performance and developer experience.
+In this guide, you'll learn:
 
-### **ESM Only**
+1. How to create reactive state with Anchor
+2. How to observe state changes
+3. How to work with immutable state
+4. How to create write contracts for state mutations
+5. Basic patterns for building reactive applications
 
-Anchor is distributed exclusively as an **ESM (ECMAScript Module)**. This is the standard for modern
-JavaScript development, providing benefits like tree-shaking and a cleaner module system. To use Anchor, your project
-must support ESM.
+## **Prerequisites**
 
-### **Modern JavaScript**
+Before starting this guide, make sure you have:
 
-Anchor's core engine relies heavily on modern JavaScript features like **`Proxy`**,
-**`WeakMap`**, and **`WeakSet`**. These are essential for its unique approach to true immutability and fine-grained
-reactivity. As a result, Anchor is only compatible with modern browsers and JavaScript environments. It's built for
-today's web,
-not yesterday's.
+- Basic knowledge of JavaScript or TypeScript
+- Node.js installed (version 14 or higher)
+- A package manager like npm, yarn, or pnpm
+- Anchor [installed](/installation) in your project
 
-## **Packages**
+## **Creating Your First State**
 
-Anchor's architecture is modular, allowing you to install only the packages you need. The core functionality is provided
-by `@anchor/core`, with separate packages for framework bindings and built-in utilities.
+Let's start by creating a simple reactive state:
 
-### **Core**
+```typescript
+import { anchor } from '@anchor/core';
 
-The heart of Anchor's state management. This package contains the DSV model, true immutability, and
-fine-grained reactivity.
+// Create a reactive state object
+const userState = anchor({
+  name: 'John Doe',
+  age: 30,
+  isLoggedIn: false,
+});
 
-::: code-group
-
-```sh [Bun]
-bun add @anchor/core
+// Access state properties
+console.log(userState.name); // 'John Doe'
+console.log(userState.age); // 30
 ```
 
-```sh [NPM]
-npm install @anchor/core
+## **Observing State Changes**
+
+One of Anchor's core features is fine-grained reactivity. You can observe state changes using the `derive` function:
+
+```typescript
+import { anchor, derive } from '@anchor/core';
+
+const counter = anchor({ count: 0 });
+
+// Observe all changes to the counter
+derive(counter, (snapshot, event) => {
+  console.log('Counter changed:', snapshot, event);
+});
+
+// This will trigger the observer
+counter.count++;
 ```
 
-```sh [Yarn]
-yarn add @anchor/core
+## **Working with Immutable State**
+
+Anchor's true immutability system allows you to work with immutable state while maintaining intuitive syntax:
+
+```typescript
+import { anchor } from '@anchor/core';
+
+// Create an immutable state
+const profile = anchor.immutable({
+  name: 'Jane Smith',
+  email: 'jane@example.com',
+  preferences: {
+    theme: 'dark',
+    notifications: true,
+  },
+});
+
+// Reading works normally
+console.log(profile.name); // 'Jane Smith'
+
+// Direct mutations are prevented
+// profile.name = 'New Name'; // This would be trapped
 ```
 
-```sh [PNPM]
-pnpm add @anchor/core
+## **Creating Write Contracts**
+
+To modify immutable state, you need to create a write contract:
+
+```typescript
+import { anchor } from '@anchor/core';
+
+const settings = anchor.immutable({
+  volume: 50,
+  brightness: 70,
+  theme: 'light',
+});
+
+// Create a write contract for specific properties
+const settingsWriter = anchor.writable(settings, ['volume', 'brightness']);
+
+// These mutations are allowed
+settingsWriter.volume = 80;
+settingsWriter.brightness = 90;
+
+// This would be trapped
+// settingsWriter.theme = 'dark';
 ```
 
-:::
+## **Framework Integration Examples**
 
-### **Storage**
+### **React Example**
 
-A built-in package that provides reactive bindings for `localStorage`, `sessionStorage`, and `IndexedDB`.
+```jsx
+import { useAnchor } from '@anchor/react';
+import { observed } from '@anchor/react/components';
 
-::: code-group
+const Counter = observed(() => {
+  const state = useAnchor({
+    count: 0,
+    title: 'My App',
+  });
 
-```sh [Bun]
-bun add @anchor/storage
+  return (
+    <div>
+      <h1>{state.title}</h1>
+      <p>Count: {state.count}</p>
+      <button onClick={() => state.count++}>Increment</button>
+    </div>
+  );
+});
 ```
 
-```sh [NPM]
-npm install @anchor/storage
-```
+## **Best Practices**
 
-```sh [Yarn]
-yarn add @anchor/storage
-```
+1. **Create State at the Right Level**: Place state at the component or application level where it's needed
+2. **Use Immutable State for Shared Data**: Prevent accidental mutations with immutable state
+3. **Create Specific Write Contracts**: Limit mutations to only what's necessary
+4. **Observe Only What You Need**: Fine-grained observation prevents unnecessary re-renders
+5. **Clean Up Observers**: Remove observers when components unmount to prevent memory leaks
 
-```sh [PNPM]
-pnpm add @anchor/storage
-```
+## **Next Steps**
 
-:::
+Now that you've learned the basics of Anchor:
 
-### **React**
+- Explore [Reactivity](/reactivity) to understand fine-grained observation
+- Learn about [Immutability](/immutability) and write contracts
+- Check out [Performance](/performance) optimizations
+- Review the [Usage Guide](/usage) for comprehensive API documentation
+- Try framework-specific guides:
+  - [React Guide](/react/getting-started)
+  - [Vue Guide](/vue/getting-started)
+  - [Svelte Guide](/svelte/getting-started)
 
-The official bindings for integrating Anchor into your React applications.
+## **Need Help?**
 
-::: code-group
+If you're having trouble:
 
-```sh [Bun]
-bun add @anchor/react
-```
-
-```sh [NPM]
-npm install @anchor/react
-```
-
-```sh [Yarn]
-yarn add @anchor/react
-```
-
-```sh [PNPM]
-pnpm add @anchor/react
-```
-
-:::
-
-### **Vue**
-
-The official bindings for integrating Anchor into your Vue applications.
-
-::: code-group
-
-```sh [Bun]
-bun add @anchor/vue
-```
-
-```sh [NPM]
-npm install @anchor/vue
-```
-
-```sh [Yarn]
-yarn add @anchor/vue
-```
-
-```sh [PNPM]
-pnpm add @anchor/vue
-```
-
-:::
-
-### **Svelte**
-
-The official bindings for integrating Anchor into your Svelte applications.
-
-::: code-group
-
-```sh [Bun]
-bun add @anchor/svelte
-```
-
-```sh [NPM]
-npm install @anchor/svelte
-```
-
-```sh [Yarn]
-yarn add @anchor/svelte
-```
-
-```sh [PNPM]
-pnpm add @anchor/svelte
-```
-
-:::
-
-## **Your First Project**
-
-Now that you understand Anchor's philosophy and have the necessary packages, you're ready to create your first
-application. We recommend starting with a simple project to see the power of the **DSV model** in action. You can find
-detailed guides on installation and setup in the **"Installation"** page.
+1. Check the [FAQ](/faq) for common issues
+2. Look at the [API Reference](/usage) for detailed function documentation
+3. Open an issue on [GitHub](https://github.com/beerush-id/anchor/issues)
+4. Join our community Discord for real-time support

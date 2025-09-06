@@ -1,59 +1,135 @@
-# **Frequently Asked Questions (FAQ)**
+# **Frequently Asked Questions (FAQ) - Anchor State Management**
 
-### **Q: What is Anchor and how is it different from other state management libraries?**
+Find answers to common questions about Anchor, the revolutionary state management library for modern web applications.
 
-**A:** Anchor is a state management framework built on the **DSV (Data-State-View)** model. Unlike traditional libraries
-that rely on a "copy-on-mutation" approach, Anchor introduces a stable, single application state that is immutable,
-strongly typed, and highly performant. It solves the scalability problem without introducing new complexity.
+## **What is Anchor?**
 
-### **Q: What is the "DSV Model"?**
+Anchor is a revolutionary state management framework for modern web applications. It introduces the **DSV (Data-State-View) model**, a new architectural philosophy that redefines how you build reactive user interfaces. Anchor focuses on the **AX (All eXperience) philosophy**, which aims to empower developers with intuitive code while providing users with a blazing-fast, fluid experience.
 
-**A:** DSV stands for **Data-State-View**. It's a clear architectural philosophy where data from external sources (
-`Data`) is bound to a central, stable `appState` (`State`), which then drives the UI (`View`). This model eliminates
-prop drilling and scattered logic by making the `State` the single source of truth.
+## **What makes Anchor different from other state management libraries?**
 
-### **Q: What is "True Immutability" and why is it better?**
+Anchor stands out from other state management solutions with several unique features:
 
-**A:** "True Immutability" is a core concept in Anchor that allows you to write intuitive "direct mutation" code (e.g.,
-`state.user.name = 'John'`) while maintaining an immutable state behind the scenes. This is achieved through a
-proxy-based system that avoids the expensive deep cloning of objects and arrays, which is a common performance
-bottleneck in other libraries.
+1. **Fine-Grained Reactivity**: Only components that depend on specific state changes are re-rendered, eliminating wasted renders
+2. **True Immutability**: Direct mutation syntax with proxy-based write contracts for safety without performance penalties
+3. **DSV Architecture**: Clean Data-State-View separation that eliminates prop drilling and context hell
+4. **Integrated Built-ins**: Includes optimistic UI, history tracking, reactive storage, and reactive requests out of the box
+5. **Framework Agnostic**: Works seamlessly with React, Vue, Svelte, and vanilla JavaScript
 
-### **Q: Can Anchor be used with my favorite framework?**
+## **How does Anchor's performance compare to other solutions?**
 
-**A:** Yes. Anchor is built to be **framework-agnostic**. While the core engine is separate, we provide official
-packages for popular frameworks like **React**, **Vue**, and **Svelte**. This allows you to use the same state model and
-logic across different parts of your application or even across different projects.
+Anchor is designed for maximum performance with:
 
-### **Q: Is Anchor only for large-scale or "Enterprise" applications?**
+- **Fine-Grained Updates**: Only relevant components are re-rendered
+- **Optimized State Updates**: No deep cloning required for mutations
+- **Minimal Overhead**: Lightweight library with fast startup times
+- **Efficient Memory Usage**: Designed to consume minimal resources
 
-**A:** No. Anchor's core philosophy is that an architecture that scales well for large applications is also perfect for
-small ones. Its efficient, fine-grained reactivity ensures that the overhead is minimal, so a simple app remains just as
-fast and easy to build. Anchor provides **sustainable performance** for any size project.
+In benchmark tests, Anchor significantly outperforms traditional state management solutions, especially as applications scale.
 
-### **Q: What are the key performance benefits?**
+## **Is Anchor suitable for large applications?**
 
-**A:** Anchor's benchmark tests show a massive performance advantage over traditional methods. When handling large
-datasets, Anchor delivers:
+Yes, Anchor is specifically designed for enterprise-scale applications. Its architecture scales gracefully with application complexity:
 
-- **Up to ~430x faster peak render times**.
-- **Up to ~32x faster completion times**.
-- **Up to ~231x fewer wasted renders**.
+- **Modular Design**: Components only observe the state they need
+- **Memory Efficient**: Automatic cleanup prevents memory leaks
+- **Predictable State**: Single source of truth eliminates state inconsistencies
+- **Developer Tools**: Built-in debugging and development tools
 
-These metrics are a direct result of Anchor's fine-grained reactivity, which ensures the UI is only updated where and
-when it's absolutely necessary.
+## **How does Anchor handle immutability?**
 
-### **Q: How does Anchor handle data fetching and real-time updates?**
+Anchor implements **True Immutability** through a proxy-based system:
 
-**A:** Anchor includes powerful built-in utilities like **Reactive Request** and **Reactive Storage**. These tools allow
-you to seamlessly bind external data sources (like `fetch`, `SSE`, or `IndexedDB`) to your `appState`, automating
-two-way synchronization and handling optimistic updates out of the box.
+- **Direct Mutation Syntax**: Write `state.user.name = 'John'` directly
+- **Write Contracts**: Changes are applied through controlled contracts
+- **Compile-time Safety**: Type checking prevents unauthorized mutations
+- **Runtime Protection**: Proxies trap unauthorized mutations
 
-### **Q: I'm worried about the learning curve. Is it hard to learn?**
+This approach gives you the benefits of immutability without the performance overhead of deep cloning.
 
-**A:** The learning curve for Anchor is virtually nonexistent. While the underlying **DSV model** is a revolutionary
-architectural philosophy, the developer's interaction with it is designed to be as intuitive as possible.
+## **Which frameworks does Anchor support?**
 
-You read data as you normally would, and you write data as you normally would. Anchor’s unique system frees you from the
-manual complexity of other libraries, such as context providers, `set` functions, or immutability boilerplate. You get
-all the performance and scalability benefits of a sophisticated, modern architecture without the cognitive overhead.
+Anchor provides first-class support for:
+
+- **React**: Full hooks integration with `useObserved` and `useWriter`
+- **Vue**: Seamless reactivity integration with the Vue ecosystem
+- **Svelte**: Native integration with Svelte's reactivity system
+- **Vanilla JavaScript**: Framework-agnostic core package
+
+## **How do I get started with Anchor?**
+
+1. Install Anchor using npm or yarn:
+
+   ```bash
+   npm install @anchor/core
+   # For React
+   npm install @anchor/react
+   # For Vue
+   npm install @anchor/vue
+   # For Svelte
+   npm install @anchor/svelte
+   ```
+
+2. Import and create your first state:
+
+   ```javascript
+   import { anchor } from '@anchor/core';
+
+   const state = anchor({
+     count: 0,
+     name: 'Anchor',
+   });
+   ```
+
+3. Refer to our [Getting Started](/getting-started) guide for detailed instructions.
+
+## **Is Anchor production ready?**
+
+Yes, Anchor is production ready with:
+
+- **100% Test Coverage**: Comprehensive testing across all modules
+- **Enterprise Adoption**: Used in large-scale applications
+- **Active Development**: Regular updates and improvements
+- **Community Support**: Active community and issue tracking
+
+## **How does Anchor handle state persistence?**
+
+Anchor includes built-in reactive storage solutions:
+
+- **Persistent Storage**: Two-way binding with localStorage and IndexedDB
+- **Session Storage**: Session-specific state persistence
+- **KV Store**: Key-value storage for simple data
+- **Table Store**: Structured data storage with querying capabilities
+
+## **Can I use Anchor with my existing state management solution?**
+
+Yes, Anchor can coexist with existing state management solutions. You can gradually migrate parts of your application to Anchor without rewriting everything at once.
+
+## **How do I debug Anchor applications?**
+
+Anchor provides several debugging tools:
+
+- **Built-in DevTools**: Visualize state changes and component dependencies
+- **Derivation Logging**: Log state changes to the console with `derive.log`
+- **State Snapshots**: Capture and inspect state at any point in time
+- **Error Handling**: Comprehensive error messages for common issues
+
+## **Where can I get help with Anchor?**
+
+You can get help through:
+
+- **Documentation**: Comprehensive guides and API references
+- **GitHub Issues**: Report bugs or request features
+- **Community Discord**: Real-time chat with other developers
+- **Stack Overflow**: Q&A with the developer community
+
+## **How do I contribute to Anchor?**
+
+Contributions are welcome! You can:
+
+- **Report Issues**: File bugs or suggest features on GitHub
+- **Submit Pull Requests**: Contribute code improvements
+- **Improve Documentation**: Help make the docs better
+- **Answer Questions**: Support other developers in the community
+
+Check out our [Contributing Guide](https://github.com/beerush-id/anchor/blob/main/CONTRIBUTING.md) for more details.

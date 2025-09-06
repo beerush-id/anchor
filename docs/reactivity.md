@@ -1,4 +1,4 @@
-# Reactivity
+# **Fine-Grained Reactivity in Anchor - Efficient State Management**
 
 Anchor's reactivity system is built on a fine-grained observation model that enables efficient state management with
 minimal overhead. This document explains the core concepts of Anchor's reactivity: Observation, Derivation, and History
@@ -16,7 +16,7 @@ You can think it as an assistant of your state data. It will help you to manage 
 
 :::
 
-## Observation
+## **Observation - Foundation of Fine-Grained Reactivity**
 
 Observation is the foundation of Anchor's fine-grained reactivity. It maintains direct connections between specific
 pieces of state and their observers (components or functions). When a piece of state changes, only the observers that
@@ -26,7 +26,7 @@ directly depend on that state are notified.
   <img src="/schemas/observation.webp" alt="Observation Schema" />
 </div>
 
-### How Observation Works
+### **How Observation Works in Anchor**
 
 When you access a property of a reactive state object within an observer context, Anchor automatically tracks this
 dependency. Later, when that property is modified, only the relevant observers are re-executed.
@@ -51,6 +51,8 @@ const name = withinObserver(observer, () => {
   return user.profile.name; // This creates a tracked dependency
 });
 
+console.log(name); // This will log the name
+
 // Later, when we update the tracked property:
 user.profile.name = 'Jane'; // This will trigger the observer callback
 ```
@@ -61,13 +63,13 @@ You can also use the `observer.run` method instead of `withinObserver`. For Exam
 
 ```ts
 observer.run(() => {
-  console.log(user.profile.name);
+  console.log(state.profile.name);
 });
 ```
 
 :::
 
-### Key Benefits
+### **Key Benefits of Anchor's Observation System**
 
 1. **Efficiency**: Only relevant observers are notified of changes
 2. **Automatic Dependency Tracking**: Dependencies are tracked automatically when accessed within an observer context
@@ -81,7 +83,7 @@ collect them, it's always good practice to clean up early.
 
 :::
 
-### Bypassing Observation
+### **Bypassing Observation**
 
 Sometimes, you may want to bypass observation of some state properties within an observation context to prevent some
 property
@@ -130,7 +132,7 @@ hooks for state tracking.
 ```ts
 type createObserver = (
   onChange: (event: StateChange) => void,
-  onTrack?: (state: Linkable, key: KeyLike) => void
+  onTrack?: (state: State, key: KeyLike) => void
 ) => StateObserver;
 ```
 
@@ -148,8 +150,8 @@ current context, executes the provided function, and then restores the previous 
 
 ```ts
 type withinObserver = {
-  <R>(fn: () => R, observer: StateObserver): R | undefined;
-  <R>(observer: StateObserver, fn: () => R): R | undefined;
+  <R>(fn: () => R, observer: StateObserver): R;
+  <R>(observer: StateObserver, fn: () => R): R;
 };
 ```
 
@@ -175,7 +177,7 @@ Executes a function outside any observer context. This function temporarily remo
 executes the provided function, and then restores the previous observer context.
 
 ```ts
-type outsideObserver = <R>(fn: () => R) => R | undefined;
+type outsideObserver = <R>(fn: () => R) => R;
 ```
 
 **Parameters:**
@@ -281,22 +283,6 @@ Subscribes to changes in a reactive state.
 type derive = <T>(state: T, handler: StateSubscriber<T>) => StateUnsubscribe;
 ```
 
-#### **`derive.log`**
-
-Subscribe to changes in the provided state and log it to the console.
-
-```ts
-type log = <T>(state: T) => StateUnsubscribe;
-```
-
-#### **`derive.resolve`**
-
-Resolves the `StateController` for a given anchored state.
-
-```ts
-type resolve = <T>(state: State<T>) => StateController<T> | undefined;
-```
-
 #### **`derive.pipe`**
 
 Pipe changes of the source state to a target state.
@@ -306,6 +292,19 @@ type pipe = <Source, Target>(
   source: Source,
   target: Target,
   transform?: PipeTransformer<Source, Target>
+) => StateUnsubscribe;
+```
+
+#### **`derive.bind`**
+
+Create a two-way binding between two states.
+
+```ts
+type bind = <Left, Right>(
+  left: Left,
+  right: Right,
+  transformLeft?: PipeTransformer<Left, Right>,
+  transformRight?: PipeTransformer<Right, Left>
 ) => StateUnsubscribe;
 ```
 
@@ -368,19 +367,38 @@ Creates a history management system for a reactive state object with undo/redo f
 type history = <T>(state: T, options?: HistoryOptions) => HistoryState;
 ```
 
+**Parameters**
+
+- **`state`**: The reactive state object to be managed.
+- **`options`**: (Optional) An object containing the following properties:
+
+**Options**
+
+- **`maxHistory`**: (Optional) The maximum number of history states to keep. Defaults to 100.
+- **`debounce`**: (Optional) The debounce time in milliseconds. Defaults to 100ms.
+- **`resettable`**: (Optional) Whether the history state should be resettable. Defaults to false.
+
+::: warning Resettable History
+
+If the history is configured as **resettable**, the engine will keep track every change to the object.
+While this is useful for resetting the object, it can also be a performance issue if you have a large object.
+
+:::
+
 The history function returns a HistoryState object with the following properties and methods:
 
-| Property/Method | Description                            |
-| --------------- | -------------------------------------- |
-| `backwardList`  | Array of previous states (readonly)    |
-| `forwardList`   | Array of future states (readonly)      |
-| `canBackward`   | Boolean indicating if undo is possible |
-| `canForward`    | Boolean indicating if redo is possible |
-| `backward()`    | Undo the last change                   |
-| `forward()`     | Redo the last undone change            |
-| `clear()`       | Clear the history                      |
-| `reset()`       | Reset history to initial state         |
-| `destroy()`     | Clean up history tracking              |
+| Property/Method  | Description                             |
+| ---------------- | --------------------------------------- |
+| `backwardList`   | Array of previous states (readonly)     |
+| `forwardList`    | Array of future states (readonly)       |
+| `canBackward`    | Boolean indicating if undo is possible  |
+| `canForward`     | Boolean indicating if redo is possible  |
+| `canReset`       | Boolean indicating if reset is possible |
+| **`backward()`** | Undo the last change                    |
+| **`forward()`**  | Redo the last undone change             |
+| **`clear()`**    | Clear the history                       |
+| **`reset()`**    | Reset history to initial state          |
+| **`destroy()`**  | Clean up history tracking               |
 
 ## Utility APIs
 
@@ -412,34 +430,20 @@ type getObserver = () => StateObserver | undefined;
 
 **Returns:** The current observer context or `undefined` if no observer is active
 
-### Using the derive.log Function
+#### **`derive.log`**
 
-For debugging purposes, you can easily log state changes to the console:
+Subscribe to changes in the provided state and log it to the console.
 
-```typescript
-// Log all state changes to the console
-const unsubscribe = derive.log(state);
-
-// To stop logging
-unsubscribe();
+```ts
+type log = <T>(state: T) => StateUnsubscribe;
 ```
 
-### Resolving State Controllers
+#### **`derive.resolve`**
 
-You can access the underlying state controller using `derive.resolve`:
+Resolves the `StateController` for a given state.
 
-```typescript
-import { anchor, derive } from '@anchor/core';
-
-const state = anchor({ count: 0 });
-
-// Get the state controller
-const controller = derive.resolve(state);
-
-// Use the controller to subscribe directly
-const unsubscribe = controller?.subscribe((snapshot, event) => {
-  console.log('State changed:', snapshot, event);
-});
+```ts
+type resolve = <T>(state: State<T>) => StateController<T> | undefined;
 ```
 
 ## Best Practices

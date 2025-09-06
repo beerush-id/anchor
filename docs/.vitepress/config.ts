@@ -4,7 +4,8 @@ const BASE_URL = '/docs';
 const PAGE_URL = 'https://anchor.beerush.io/docs';
 const PAGE_TITLE = 'Anchor Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - State Management Library`;
-const PAGE_OPEN_DESCRIPTION = 'MonoPKG is a simple, yet beautiful package manager for monorepos.';
+const PAGE_OPEN_DESCRIPTION =
+  'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability.';
 const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}/social.jpg`;
 
 // https://vitepress.dev/reference/site-config
@@ -16,6 +17,26 @@ export default defineConfig({
   },
   title: PAGE_TITLE,
   description: PAGE_OPEN_DESCRIPTION,
+  head: [
+    [
+      'meta',
+      {
+        name: 'keywords',
+        content:
+          'state management, reactivity, immutability, javascript, typescript, vue, react, svelte, fine-grained reactivity, web development',
+      },
+    ],
+    ['meta', { name: 'author', content: 'Nanang Mahdaen El Agung' }],
+    ['meta', { property: 'og:title', content: PAGE_OPEN_TITLE }],
+    ['meta', { property: 'og:description', content: PAGE_OPEN_DESCRIPTION }],
+    ['meta', { property: 'og:image', content: PAGE_OPEN_THUMBNAIL }],
+    ['meta', { property: 'og:url', content: PAGE_URL }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: PAGE_OPEN_TITLE }],
+    ['meta', { name: 'twitter:description', content: PAGE_OPEN_DESCRIPTION }],
+    ['meta', { name: 'twitter:image', content: PAGE_OPEN_THUMBNAIL }],
+    ['link', { rel: 'canonical', href: PAGE_URL }],
+  ],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [

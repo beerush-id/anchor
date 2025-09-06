@@ -1,4 +1,4 @@
-# Immutability
+# **True Immutability in Anchor - Safe State Management Without Performance Penalty**
 
 Immutability is a cornerstone of robust, predictable applications. It ensures that a piece of state cannot be changed
 once it's created, preventing unintended side effects and making your application easier to reason about. However, the
@@ -9,7 +9,7 @@ offers a revolutionary solution: **True Immutability**.
   <img src="/schemas/immutable.webp" alt="Reactivity Schema" />
 </div>
 
-## **The Problem**
+## **The Problem with Traditional Immutability**
 
 Most immutable patterns rely on a "copy-on-mutation" model. When you need to update a
 state, you must create an entirely new object or array. This seems straightforward for a simple change, but for deeply
@@ -23,7 +23,7 @@ nested data structures, it quickly leads to:
 - **Source of Confusion:** It can be difficult work with data because we need to make sure that the data that is being
   read is the upto-date one. It leads to confusion and potential bugs.
 
-## **True Immutability (Solution)**
+## **True Immutability - Anchor's Revolutionary Solution**
 
 Anchor's approach to immutability is fundamentally different. Instead of relying on manual copying, Anchor uses a
 powerful, proxy-based system that gives you the best of both worlds:
@@ -43,7 +43,7 @@ powerful, proxy-based system that gives you the best of both worlds:
 This innovative approach is what makes Anchor so fast. It allows for highly optimized, fine-grained updates without the
 expensive overhead of deep cloning.
 
-### **Strongly Typed**
+### **Strongly Typed Immutability**
 
 Anchor reinforces its commitment to immutability through **strong typing**. When you declare an immutable state, Anchor
 returns a

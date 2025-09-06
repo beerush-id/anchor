@@ -1,9 +1,9 @@
-# Usage
+# **Anchor Usage Guide - Getting Started with State Management**
 
 Before getting started with Anchor, ensure you have followed the [installation](/installation) instructions.
-This guide will provide a basic introduction to Anchor's core functionality.
+This guide will provide a basic introduction to Anchor's core functionality for state management in web applications.
 
-## Basic Usage
+## **Basic Usage of Anchor State Management**
 
 After installing the appropriate packages, you can start using **Anchor** in your project. Here's a basic example with
 the core package:
@@ -34,12 +34,12 @@ state.items.push({ id: 1, text: 'First item' });
 
 > For framework-specific usage, refer to the respective framework guides.
 
-## Configurations
+## **Configuring Anchor State Management**
 
 Anchor works out of the box with zero configuration. However, for advanced use cases, you can customize behavior through
 global configuration or per-state options:
 
-### Default Configuration
+### **Default Configuration**
 
 You can configure Anchor's default configurations using `anchor.configure`:
 
@@ -53,13 +53,13 @@ anchor.configure({
 
 ::: tip Important Note
 
-While Anchor value and recommends the true-immutability model, its core mental is to provide an intuitive and easy-to-use API
+While Anchor value and support true immutability model, its core mental is to provide an intuitive and easy-to-use API
 to work with state. That's why we don't enable true immutability by default, as we don't want to force you to work with
 immutable state everywhere.
 
 :::
 
-### Per-State Configuration
+### **Per-State Configuration**
 
 You can also configure options when creating individual states, overriding the default configuration:
 
@@ -78,7 +78,7 @@ const state = anchor(
 );
 ```
 
-### Available Options
+### **Available Configuration Options**
 
 - **`immutable`** **_boolean_**: Enables true immutability. The returned state will become read-only (Default: `false`).
 - **`observable`** **_boolean_**: Disables observation, state can be only derived (Default: `true`).
@@ -87,63 +87,17 @@ const state = anchor(
 ::: tip Flat Recursion
 
 When a state is configured with `recursive: 'flat'`, it will only notify for array mutations while maintains nested
-reactivity. This can be useful when you have a large array, and you only need to react to array mutations.
+reactivity. This can be useful when you have a large array and you only need to react to array mutations.
 
 **Note:** This option only applicable for derivation. Observation will always respect the fine-grained tracking.
 
 :::
 
-::: details Flat Sample
-
-```ts
-import { anchor, derive } from '@anchor/core';
-
-const state = anchor(
-  [
-    {
-      username: 'john',
-      profile: {
-        name: 'John Doe',
-      },
-    },
-  ],
-  { recursive: 'flat' }
-);
-
-derive(state, console.log); // Will only log for array mutations.
-derive(state[0], console.log); // Child objects remain reactive, this will log all changes.
-```
-
-:::
-
-::: details Non Recursive Sample
-
-```ts
-import { anchor, derive } from '@anchor/core';
-
-const state = anchor(
-  [
-    {
-      username: 'john',
-      profile: {
-        name: 'John Doe',
-      },
-    },
-  ],
-  { recursive: false }
-);
-
-derive(state, console.log); // Will only log for array mutations.
-derive(state[0], console.log); // Will do nothing since the child objects are not reactive.
-```
-
-:::
-
-## APIs
+## **Anchor APIs for State Management**
 
 Anchor provides a set of APIs to manage state:
 
-### **`anchor`**
+### **`anchor` - Create Reactive State**
 
 This function is used to creates a reactive state with optional configuration.
 
@@ -180,11 +134,11 @@ const state = anchor(initialState, schema, options);
 
 #### Parameters
 
-- **`initialState`**: The initial object of the state.
+- **`initialState`**: The initial state of the state.
 - **`options`** **_[optional]_**: Options to configure the state.
 - **`schema`** **_[optional]_**: Schema to validate the state.
 
-### **`anchor.model`**
+### **`anchor.model` - Create State with Schema Validation**
 
 Creates a reactive state with schema validation.
 
@@ -192,7 +146,7 @@ Creates a reactive state with schema validation.
 type model = <S, T>(init: T, schema: S, options?: StateBaseOptions) => T;
 ```
 
-### **`anchor.immutable`**
+### **`anchor.immutable` - Create Immutable State**
 
 Creates an immutable reactive state.
 
@@ -204,7 +158,7 @@ type immutable = <T, S>(init: T, options?: StateOptions<S>) => Immutable<T>;
 type immutable = <S, T>(init: T, schema: S, options?: StateBaseOptions) => Immutable<T>;
 ```
 
-### **`anchor.get`**
+### **`anchor.get` - Get Current State Value**
 
 Gets the current state value.
 
@@ -212,7 +166,7 @@ Gets the current state value.
 type get = <T>(state: State<T>) => T;
 ```
 
-### **`anchor.snapshot`**
+### **`anchor.snapshot` - Create State Snapshot**
 
 Creates a snapshot of the current state.
 
@@ -220,7 +174,7 @@ Creates a snapshot of the current state.
 type snapshot = <T>(state: State<T>) => T;
 ```
 
-### **`anchor.writable`**
+### **`anchor.writable` - Create Write Contract**
 
 Create a write contract to mutate a state.
 
@@ -232,9 +186,9 @@ type writable = <T>(state: T) => Mutable<T>;
 type writable = <T, K>(state: T, contracts?: K) => MutablePart<T, K>;
 ```
 
-## Batch APIs
+## **Batch APIs for State Operations**
 
-### **`anchor.assign`**
+### **`anchor.assign` - Assign Properties**
 
 Assigns properties from source to target object.
 
@@ -246,7 +200,7 @@ type assign = {
 };
 ```
 
-### **`anchor.remove`**
+### **`anchor.remove` - Remove Keys**
 
 Removes keys from a collection.
 
@@ -258,7 +212,7 @@ type remove = {
 };
 ```
 
-### **`anchor.clear`**
+### **`anchor.clear` - Clear Collection**
 
 Clears all entries from a collection.
 
@@ -266,9 +220,9 @@ Clears all entries from a collection.
 type clear = <T>(target: T) => void;
 ```
 
-## Helper APIs
+## **Helper APIs for State Management**
 
-### **`anchor.configure`**
+### **`anchor.configure` - Configure Global Settings**
 
 Configures global Anchor settings.
 
@@ -276,7 +230,7 @@ Configures global Anchor settings.
 type configure = (config: Partial<AnchorSettings>) => void;
 ```
 
-### **`anchor.configs`**
+### **`anchor.configs` - Get Global Settings**
 
 Gets the global Anchor settings.
 
@@ -284,7 +238,7 @@ Gets the global Anchor settings.
 type configs = () => AnchorSettings;
 ```
 
-### **`anchor.destroy`**
+### **`anchor.destroy` - Destroy Reactive State**
 
 Destroys a reactive state and cleans up all associated resources.
 
@@ -301,9 +255,9 @@ this helper is most relevant for a local state. Destroying a global state could 
 
 :::
 
-## Examples
+## **Examples of Using Anchor**
 
-### Simple Counter
+### **Simple Counter**
 
 ::: code-group
 
@@ -424,6 +378,6 @@ export function mount(component: ComponentFactory, target: HTMLElement) {
 }
 ```
 
-Congratulations! You just created a simple custom renderer! 🤣
+Congratulations! You just created a simple custom renderer! 😏
 
 :::
