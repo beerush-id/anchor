@@ -4,8 +4,8 @@ import { CodeBlock } from '../CodeBlock.js';
 
 export const AuthCode = () => {
   return (
-    <Card className="flex-1w">
-      <CodeBlock code={AuthOutputCode.split('export ')[1]} />
+    <Card className="flex-1">
+      <CodeBlock className="flex-1" code={AuthOutputCode.split('// SHOW FROM HERE //\n')[1]} />
     </Card>
   );
 };

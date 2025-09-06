@@ -1,10 +1,10 @@
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
-import { useAnchor, useDerived, useImmutable } from '@anchor/react';
-import { observed } from '@anchor/react/components';
+import { useAnchor, useImmutable } from '@anchor/react';
+import { observed, reactive } from '@anchor/react/components';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
-import { anchor, type Immutable } from '@anchor/core';
+import { type Immutable } from '@anchor/core';
 import { Bar } from 'react-chartjs-2';
 import { MainCTA } from '@components/MainCTA.js';
 import { BENCHMARK_SIZE, BENCHMARK_TOGGLE_SIZE } from '@lib/todo.js';
@@ -161,57 +161,56 @@ export const Performance = () => {
     metrics: metrics[0]?.metrics,
     current: metrics[0]?.metrics?.[0],
   });
-  const buttons = useDerived(metrics, (snap) => {
-    return snap.map((item) => {
-      return {
-        name: item.name,
-        icon: item.icon,
-        label: item.label,
-        onClick: () => {
-          anchor.assign(display, {
-            metrics: item.metrics,
-            current: item.metrics?.[0],
-          });
-        },
-      };
-    });
+
+  const NavButtons = reactive(() => {
+    const current = display.metrics;
+    const handleClick = (item: (typeof metrics)[0]) => {
+      display.current = item.metrics?.[0];
+      display.metrics = item.metrics;
+    };
+
+    return (
+      <div className="mt-8 flex justify-center gap-4 md:gap-6">
+        {metrics.map((button) => (
+          <button
+            key={button.name}
+            onClick={() => handleClick(button)}
+            className={[
+              'cursor-pointer',
+              'flex',
+              'flex-1',
+              'items-center',
+              'px-4 md:px-6',
+              'py-3 md:py-3',
+              'bg-slate-900',
+              'hover:bg-blue-500',
+              'text-slate-200',
+              'rounded-md',
+              'font-medium',
+              'btn-secondary',
+              'transition-colors',
+              current === button.metrics ? 'outline-4 outline-blue-500/50' : 'outline-4 outline-transparent',
+            ].join(' ')}>
+            {(() => {
+              const IconComponent = Icons[button.icon as keyof typeof Icons];
+              return IconComponent ? <IconComponent className="w-5 h-5 mr-2" /> : null;
+            })()}
+            {button.label}
+          </button>
+        ))}
+      </div>
+    );
   });
 
   return (
-    <Section id="metrics" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 min-h-screen">
+    <Section id="metrics" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 md:min-h-screen">
       <div className="text-center mb-12">
         <SectionTitle>Performance Metrics</SectionTitle>
         <SectionDescription className="text-center mt-4 max-w-4xl mx-auto">
           Dive into the data by selecting a benchmark scenario below. All charts will dynamically update to show a clear
           performance comparison between Classic and Anchor architectures.
         </SectionDescription>
-        <div className="mt-8 flex justify-center space-x-6">
-          {buttons.map((button) => (
-            <button
-              key={button.name}
-              onClick={button.onClick}
-              className={[
-                'cursor-pointer',
-                'flex',
-                'items-center',
-                'px-6',
-                'py-3',
-                'bg-slate-900',
-                'hover:bg-slate-100/20',
-                'text-slate-200',
-                'rounded-md',
-                'font-medium',
-                'btn-secondary',
-                'transition-colors',
-              ].join(' ')}>
-              {(() => {
-                const IconComponent = Icons[button.icon as keyof typeof Icons];
-                return IconComponent ? <IconComponent className="w-5 h-5 mr-2" /> : null;
-              })()}
-              {button.label}
-            </button>
-          ))}
-        </div>
+        <NavButtons />
       </div>
       {display.current && <PerformanceGroup display={display} />}
       <p className="text-center mt-8 max-w-4xl mx-auto italic text-slate-400 text-sm">
@@ -228,7 +227,7 @@ const PerformanceGroup: FC<{ display: MetricDisplay }> = observed(({ display }) 
 
   return (
     <>
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="w-full flex flex-col gap-3">
           {display.metrics.map((item) => (
             <div
@@ -265,7 +264,7 @@ const PerformanceChart: FC<{ data?: Record<string, number>; unit?: string }> = (
         <span className="card p-6 w-full text-center text-4xl">
           ~{(data.classic > data.anchor ? data.classic / data.anchor : data.anchor / data.classic).toFixed(2)}x
         </span>
-        <div className="grid grid-cols-2 flex-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 flex-1 gap-4">
           <div className="card flex flex-col gap-2 flex-1 justify-center items-center">
             <p>
               <span className="text-3xl">{data.classic.toLocaleString()}</span>

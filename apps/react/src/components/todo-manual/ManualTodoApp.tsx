@@ -11,6 +11,7 @@ import { BENCHMARK_SIZE } from '@lib/todo.js';
 import { ManualTodoCode } from './ManualTodoCode.js';
 import { debugRender } from '@anchor/react';
 import { ManualTodoStats } from './ManualTodoStats.js';
+import { isMobile } from '@lib/nav.js';
 
 const [loop] = microloop(5, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
@@ -162,10 +163,12 @@ export const ManualTodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">👍 Optimized Todo List</h3>
-        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
-          <Gauge size={20} />
-          <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
-        </button>
+        {!isMobile() && (
+          <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
+            <Gauge size={20} />
+            <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
+          </button>
+        )}
         <ManualTodoPanel {...panelProps} />
       </CardHeader>
       <ManualInfoPanel panel={panel} />
@@ -215,7 +218,7 @@ const ManualInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
       {panel.info && (
         <p className="px-4 pt-4">
           AI optimized version of the Classic Todo List. While it's optimized, it's still struggling to perform as the
-          Anchor's version with fine-grained reactivity, yet it has more verbose code to maintain.
+          Anchor's version with fine-grained reactivity; yet it has more verbose code to maintain.
         </p>
       )}
     </div>

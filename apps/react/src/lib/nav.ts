@@ -14,3 +14,7 @@ export const inlineNav: MouseEventHandler = (event) => {
     behavior: 'smooth',
   });
 };
+
+export function isMobile() {
+  return typeof window !== 'undefined' && window.innerWidth < 768;
+}

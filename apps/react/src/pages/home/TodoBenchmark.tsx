@@ -7,6 +7,7 @@ import { Section, SectionDescription, SectionTitle } from '@components/Section.j
 import { ManualTodoApp } from '@components/todo-manual/ManualTodoApp.js';
 import { Button } from '@components/Button.js';
 import { Zap, ZapOff } from 'lucide-react';
+import { Tooltip } from '@components/Tooltip.js';
 
 const AnchorTodoApp = memo(TodoApp);
 const OptimizedTodoApp = memo(ManualTodoApp);
@@ -22,7 +23,7 @@ export const TodoBenchmark = () => {
 
   return (
     <>
-      <Section id="todo-benchmark" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 min-h-screen">
+      <Section id="todo-benchmark" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 md:min-h-screen">
         <SectionTitle>Try It Yourself: FLOOD THE DOM!</SectionTitle>
         <SectionDescription className="text-center mt-4 max-w-4xl mx-auto">
           This demo is built with profiling enabled, allowing you to use React DevTools to analyze render times and see
@@ -33,9 +34,10 @@ export const TodoBenchmark = () => {
           <Button onClick={() => setOptimized((c) => !c)}>
             {!optimized ? <Zap size={16} /> : <ZapOff size={16} />}
             <span>Use {optimized ? 'Classic' : 'Optimized'} Version</span>
+            <Tooltip>Use the AI optimized version with optimization they can think of</Tooltip>
           </Button>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex-1 flex flex-col gap-4">
             {!optimized && (
               <>

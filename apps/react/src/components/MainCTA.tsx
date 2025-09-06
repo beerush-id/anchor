@@ -8,7 +8,7 @@ export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactN
   children,
 }) => {
   return (
-    <div className={`max-w-5xl mx-auto flex items-center justify-center gap-8 ${className}`}>
+    <div className={`max-w-6xl mx-auto flex items-center justify-center gap-4 md:gap-8 ${className}`}>
       <a
         href="/docs/getting-started"
         target="_blank"

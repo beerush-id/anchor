@@ -3,7 +3,7 @@ import { MainCTA } from '@components/MainCTA.js';
 
 export const Hero = () => {
   return (
-    <Section id="hero" className="max-w-5xl mx-auto text-center">
+    <Section id="hero" fit className="max-w-6xl mx-auto text-center px-4">
       <h2 className="text-4xl md:text-6xl font-light text-white mb-6 leading-tight tracking-tighter">
         State Management for <del className="opacity-50 font-light">Developers</del> Humans, Built for{' '}
         <del className="opacity-50 font-light">Todo Apps</del> Enterprise Apps
@@ -16,7 +16,7 @@ export const Hero = () => {
       <blockquote className="text-slate-400 italic font-light text-lg mb-10 md:mb-20">
         "We love React because it's awesome! (until it's not)"
       </blockquote>
-      <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         <div className="card p-8">
           <p className="text-4xl font-light text-sky-400 mb-3">~297x Faster</p>
           <p className="text-white text-lg font-semibold">UI Render Time on Toggle Actions</p>

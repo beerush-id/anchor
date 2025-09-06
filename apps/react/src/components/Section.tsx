@@ -1,11 +1,11 @@
 import type { FC, HTMLAttributes, ReactNode } from 'react';
 
-export const Section: FC<{ children: ReactNode; className?: string } & HTMLAttributes<HTMLDivElement>> = ({
-  children,
-  className = '',
-  ...rests
-}) => (
-  <section className={`page-section py-5 md:py-16 w-full min-h-screen flex flex-col justify-center`} {...rests}>
+export const Section: FC<
+  { children: ReactNode; className?: string; fit?: boolean } & HTMLAttributes<HTMLDivElement>
+> = ({ children, className = '', fit = false, ...rests }) => (
+  <section
+    className={`page-section py-5 md:py-16 w-full flex flex-col justify-center ${fit ? 'md:min-h-screen' : ''}`}
+    {...rests}>
     <div className={className}>{children}</div>
   </section>
 );

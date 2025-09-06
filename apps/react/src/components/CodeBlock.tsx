@@ -3,15 +3,18 @@ import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
 import { type FC, useRef } from 'react';
 import { debugRender, useObserved } from '@anchor/react';
 import { LoaderCircle } from 'lucide-react';
+import { isMobile } from '@lib/nav.js';
 
 const shiki = anchor<{ highlighter?: Highlighter }>({}, { recursive: false });
 
-createHighlighter({
-  themes: ['catppuccin-mocha'],
-  langs: ['jsx', 'javascript', 'bash', 'tsx', 'typescript', 'css', 'json'],
-}).then((highlighter) => {
-  shiki.highlighter = highlighter;
-});
+if (!isMobile()) {
+  createHighlighter({
+    themes: ['catppuccin-mocha'],
+    langs: ['jsx', 'javascript', 'bash', 'tsx', 'typescript', 'css', 'json'],
+  }).then((highlighter) => {
+    shiki.highlighter = highlighter;
+  });
+}
 
 export const CodeBlock: FC<{ code: string; lang?: string; className?: string }> = ({
   code,
@@ -25,6 +28,10 @@ export const CodeBlock: FC<{ code: string; lang?: string; className?: string }> 
   }, [code, lang]);
 
   debugRender(ref);
+
+  if (isMobile()) {
+    return;
+  }
 
   if (output) {
     return <div ref={ref} className={`code-block ${className}`} dangerouslySetInnerHTML={{ __html: output }} />;

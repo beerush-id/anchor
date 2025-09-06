@@ -11,6 +11,7 @@ import { Tooltip } from '../Tooltip.js';
 import { ClassicTodoStats } from './ClassicTodoStats.js';
 import { ClassicTodoCode } from './ClassicTodoCode.js';
 import { debugRender } from '@anchor/react';
+import { isMobile } from '@lib/nav.js';
 
 const [loop] = microloop(5, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
@@ -97,10 +98,12 @@ export const ClassicTodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">👌Classic Todo List</h3>
-        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
-          <Gauge size={20} />
-          <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
-        </button>
+        {!isMobile() && (
+          <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
+            <Gauge size={20} />
+            <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
+          </button>
+        )}
         <ClassicTodoPanel panel={panel} toggleInfo={toggleInfo} toggleCode={toggleCode} />
       </CardHeader>
       <ClassicInfoPanel panel={panel} />

@@ -74,7 +74,7 @@ export default function EditorDimensionPanel() {
 
       <PanelRow>
         <PanelColumn label="Margin">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <label>
               <Input
                 type={'number'}
@@ -106,7 +106,7 @@ export default function EditorDimensionPanel() {
           </div>
         </PanelColumn>
         <PanelColumn label="Padding">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <label>
               <Input
                 type={'number'}

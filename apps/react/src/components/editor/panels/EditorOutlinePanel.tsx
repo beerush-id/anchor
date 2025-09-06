@@ -69,7 +69,7 @@ export default function EditorOutlinePanel() {
 
       <PanelRow>
         <PanelColumn label="Border Width">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             <label className="cols-1">
               <Input
                 type={'number'}

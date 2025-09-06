@@ -5,7 +5,7 @@ import { GithubIcon } from 'lucide-react';
 
 export function EditorDemo() {
   return (
-    <Section>
+    <Section className="px-4">
       <SectionTitle>Make Complicated Things Simple</SectionTitle>
       <p className="text-center text-slate-300 mt-4 max-w-4xl mx-auto mb-10">
         To build something like this, normally you'll sacrifice either UX or DX. You pick faster build - slower

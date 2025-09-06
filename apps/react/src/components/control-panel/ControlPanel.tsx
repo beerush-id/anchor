@@ -20,7 +20,7 @@ export const ControlPanel: React.FC = () => {
             {showCode ? 'Hide Code' : 'Show Code'}
           </button>
         </CardHeader>
-        <div className="grid grid-cols-1 lg:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2">
           <BoxPanel box={box} />
           <BoxView box={box} />
         </div>

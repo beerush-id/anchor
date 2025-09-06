@@ -12,17 +12,17 @@ import { MainCTA } from '@components/MainCTA.js';
 
 export const Architecture = () => {
   return (
-    <Section id="architecture" className="max-w-5xl mx-auto gap-6 flex flex-col">
-      <div className="text-center">
+    <Section id="architecture" className="max-w-6xl px-4 mx-auto gap-6 flex flex-col">
+      <div className="text-center md:mb-12">
         <h2 className="text-4xl md:text-6xl font-light text-white mb-6 leading-tight tracking-tighter">
           Anchor's Architectural Blueprint
         </h2>
-        <p className="section-subtitle mb-12 text-slate-300 text-lg">
+        <p className="section-subtitle text-slate-300 text-lg">
           Beyond its impressive performance, the Anchor architecture introduces fundamental advancements in state
           management and developer utilities, enhancing both application capabilities and the development workflow.{' '}
         </p>
       </div>
-      <div className="card p-12 flex flex-col gap-4">
+      <div className="card p-6 md:p-12 flex flex-col gap-4">
         <h3 className="text-2xl font-light">The Anchor Mental Model</h3>
         <p className="text-slate-400">
           The core of Anchor's philosophy is built on three pillars:{' '}
@@ -110,13 +110,13 @@ export const Architecture = () => {
           </li>
         </ul>
       </div>
-      <div className="card p-12 flex flex-col gap-4">
+      <div className="card p-6 md:p-12 flex flex-col gap-4">
         <h3 className="text-2xl font-light">Seamlessly Integrated Built-ins</h3>
         <p className="text-slate-400">
           Anchor's rich suite of built-in utilities covers common application needs, providing powerful, ready-to-use
           solutions with elegant APIs.
         </p>
-        <ul className="grid md:grid-cols-2 gap-4">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <li className="card p-6 flex items-start gap-3">
             <div className="icon py-1">
               <ListTodo className="w-6 h-6 text-slate-300" />

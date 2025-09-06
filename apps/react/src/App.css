@@ -29,6 +29,14 @@
   color: rgba(115, 138, 148, 0.4);
 }
 
+.code-block.flex-1 {
+  @apply flex flex-col;
+
+  .shiki {
+    flex: 1;
+  }
+}
+
 .code-block-fit {
   @apply flex flex-col flex-1;
 

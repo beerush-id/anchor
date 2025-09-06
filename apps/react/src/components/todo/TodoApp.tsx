@@ -12,6 +12,7 @@ import { Tooltip } from '../Tooltip.js';
 import { TodoStats } from './TodoStats.js';
 import { BENCHMARK_SIZE } from '@lib/todo.js';
 import { TodoCode } from './TodoCode.js';
+import { isMobile } from '@lib/nav.js';
 
 const [loop] = microloop(5, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
@@ -42,10 +43,12 @@ export const TodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold text-slate-200 flex-1">😍 Anchor Todo List</h3>
-        <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
-          <Gauge size={20} />
-          <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
-        </button>
+        {!isMobile() && (
+          <button onClick={() => benchmark(addBenchmarkItem)} className="anchor-icon-btn">
+            <Gauge size={20} />
+            <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
+          </button>
+        )}
         <TodoPanel panel={panel} />
       </CardHeader>
       <InfoPanel panel={panel} />

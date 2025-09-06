@@ -47,17 +47,20 @@ export default function Home() {
         </Section>
 
         {/* Installation & CTA */}
-        <Section className="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center">
+        <section className="container mx-auto md:max-w-6xl px-4 py-4 md:py-10 sm:px-6 lg:px-8 text-center">
           <SectionTitle>Ready to Anchor Your State?</SectionTitle>
           <p className="mt-4 text-slate-400">
             Get started in seconds. Install the package and simplify your app today.
           </p>
           <MainCTA tiys={false} className="w-full my-10 md:my-20" />
-        </Section>
+        </section>
 
         <footer className="text-center py-8 text-slate-300 text-sm">
-          <p>
-            © {new Date().getFullYear()} Anchor. All rights reserved. Built with ❤️ by{' '}
+          <p className="flex flex-col px-4">
+            <span>© {new Date().getFullYear()} Anchor. All rights reserved.&nbsp;</span>
+          </p>
+          <p className="flex items-center justify-center">
+            <span>Built with ❤️ by&nbsp;</span>
             <a
               href="https://www.mahdaen.name"
               target="_blank"

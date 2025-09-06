@@ -1,12 +1,30 @@
 import { type FC, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Input } from '../Input.js';
-import { type AuthFormData, schema } from './auth-lib.js';
-import { observed } from '@anchor/react/components';
+import { reactive } from '@anchor/react/components';
 import { Card } from '../Card.js';
 import { debugRender } from '@anchor/react';
+import { authForm, authState, schema } from '@lib/auth.js';
+import { CodeBlock } from '../CodeBlock.js';
+import { isMobile } from '@lib/nav.js';
 
-export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ formData, className }) => {
+export const AuthForm: FC<{ className?: string }> = ({ className }) => {
+  const ref = useRef(null);
+
+  const FormControl = reactive(() => {
+    debugRender(ref);
+    const disabled = !authState.password || !authState.email || !authState.name || !schema.safeParse(authState).success;
+
+    return (
+      <div ref={ref} className="flex items-center justify-end gap-4 pt-6">
+        <Button className="btn-lg">Cancel</Button>
+        <Button className="btn-lg btn-primary" disabled={disabled}>
+          Submit
+        </Button>
+      </div>
+    );
+  });
+
   return (
     <Card className={className}>
       <form className="flex flex-col gap-4 p-10 rounded-xl">
@@ -17,14 +35,14 @@ export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ f
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Full Name</span>
-          <Input className="w-full input-md" bindTo={formData} name="name" placeholder="John Doe" autoComplete="name" />
+          <Input className="w-full input-md" bindTo={authForm} name="name" placeholder="John Doe" autoComplete="name" />
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Email</span>
           <Input
             className="w-full input-md"
-            bindTo={formData}
+            bindTo={authForm}
             name="email"
             placeholder="john@domain.com"
             autoComplete="email"
@@ -36,31 +54,29 @@ export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ f
           <Input
             className="w-full input-md"
             type="password"
-            bindTo={formData}
+            bindTo={authForm}
             name="password"
             placeholder="********"
             autoComplete="current-password"
           />
         </label>
 
-        <FormControl payload={formData} />
+        <FormControl />
       </form>
+      {!isMobile() && (
+        <CodeBlock
+          code={`// Declarative binding
+<Input
+  bind={authForm}
+  name="email"
+  placeholder="john@domain.com"
+  autoComplete="email"
+  className="w-full input-md"
+/>
+      `}
+          lang={'tsx'}
+        />
+      )}
     </Card>
   );
 };
-
-export const FormControl: FC<{ payload: AuthFormData }> = observed(({ payload }) => {
-  const ref = useRef(null);
-  debugRender(ref);
-
-  const disabled = !payload.password || !payload.email || !payload.name || !schema.safeParse(payload).success;
-
-  return (
-    <div ref={ref} className="flex items-center justify-end gap-4 pt-6">
-      <Button className="btn-lg">Cancel</Button>
-      <Button className="btn-lg btn-primary" disabled={disabled}>
-        Submit
-      </Button>
-    </div>
-  );
-}, 'AuthControl');

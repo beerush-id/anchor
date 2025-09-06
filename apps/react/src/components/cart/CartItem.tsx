@@ -4,6 +4,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import { debugRender, useInherit } from '@anchor/react';
 import { Input, observed } from '@anchor/react/components';
 import { setDebugger } from '@anchor/core';
+import { isMobile } from '@lib/nav.js';
 
 export type CartItemType = {
   id: string;
@@ -36,14 +37,17 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
     <div ref={ref} className="flex items-center justify-between">
       <div>
         <p className="font-semibold text-slate-200">
-          <Input
-            type="text"
-            bind={form}
-            name="name"
-            onKeyUp={handleNameChange}
-            onBlur={handleBlur}
-            className="outline-none"
-          />
+          {!isMobile() && (
+            <Input
+              type="text"
+              bind={form}
+              name="name"
+              onKeyUp={handleNameChange}
+              onBlur={handleBlur}
+              className="outline-none"
+            />
+          )}
+          {isMobile() && <span>{item.name}</span>}
         </p>
         <span className="text-sm text-slate-400">${item.price.toFixed(2)}</span>
       </div>
