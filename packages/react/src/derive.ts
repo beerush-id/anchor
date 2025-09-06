@@ -1,22 +1,10 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  anchor,
-  BATCH_MUTATION_KEYS,
-  type BatchMutation,
-  captureStack,
-  derive,
-  type KeyLike,
-  type Linkable,
-  type ObjLike,
-  outsideObserver,
-  type State,
-  type StateChange,
-} from '@anchor/core';
-import type { TransformFn, TransformSnapshotFn } from './types.js';
+import { anchor, captureStack, derive, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
+import type { ExceptionList, TransformFn, TransformSnapshotFn } from './types.js';
 import { useObserverRef } from './observable.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
-import { depsChanged, pickValues } from './utils.js';
-import { useMicrotask } from './hooks.js';
+import { depsChanged, isMutationOf, mutationKeys, pickValues } from './utils.js';
+import { useMicrotask, useStableRef } from './hooks.js';
 
 /**
  * React hook that allows you to derive a computed value from a reactive state.
@@ -285,22 +273,31 @@ export function useDerivedList<T extends ObjLike[], K extends keyof T[number]>(
   }, [version, state, key]);
 }
 
-export function useSnapshot<T extends Linkable>(state: T): T;
-export function useSnapshot<T extends Linkable, R>(state: T, transform: TransformSnapshotFn<T, R>): R;
 /**
- * React hook that allows you to derive a computed value from a reactive state without an explicit observer.
- * It re-computes the value whenever the state changes.
+ * React hook that creates a snapshot of a reactive state.
+ * The snapshot is a plain object that reflects the current state at the time of creation.
+ * It does not update automatically when the state changes.
  *
- * @warning This hook subscribes to ALL changes on the state object and creates a snapshot on every update,
- * making it less efficient than `useDerived` for fine-grained reactivity. Only use this hook when you need
- * to react to all changes or when working with non-observable properties.
- *
- * @param state - A reactive state from which to derive the computed value.
- * @param transform - An optional function that receives the current state snapshot and returns the computed value. If not provided, the state snapshot itself is returned.
+ * @template T - The type of the reactive state.
+ * @param {T} state - The reactive state to create a snapshot from.
+ * @returns {T} - A snapshot of the reactive state.
  */
+export function useSnapshot<T extends Linkable>(state: T): T;
+/**
+ * React hook that creates a transformed snapshot of a reactive state.
+ * The snapshot is a plain object that reflects the current state at the time of creation.
+ * It does not update automatically when the state changes.
+ * The transform function can be used to modify the snapshot before it is returned.
+ *
+ * @template T - The type of the reactive state.
+ * @template R - The type of the transformed snapshot.
+ * @param {T} state - The reactive state to create a snapshot from.
+ * @param {TransformSnapshotFn<T, R>} transform - A function that transforms the snapshot before it is returned.
+ * @returns {R} - A transformed snapshot of the reactive state.
+ */
+export function useSnapshot<T extends Linkable, R>(state: T, transform: TransformSnapshotFn<T, R>): R;
 export function useSnapshot<T extends Linkable, R>(state: T, transform?: TransformSnapshotFn<T, R>): T | R {
-  const [version, setVersion] = useState(1);
-  const value = useMemo(() => {
+  return useMemo(() => {
     return outsideObserver(() => {
       if (typeof transform === 'function') {
         return transform(anchor.snapshot(state));
@@ -308,17 +305,7 @@ export function useSnapshot<T extends Linkable, R>(state: T, transform?: Transfo
 
       return anchor.snapshot(state);
     }) as T | R;
-  }, [state, version]);
-
-  useEffect(() => {
-    return derive(state, (_, event) => {
-      if (event.type !== 'init') {
-        setVersion((prev) => prev + 1);
-      }
-    });
   }, [state]);
-
-  return value;
 }
 
 /**
@@ -357,27 +344,53 @@ export function useDerivedRef<S extends State, R>(
 }
 
 /**
- * Checks if a state change event is a mutation of a specific key.
+ * React hook that captures and manages exceptions from a reactive state.
+ * It returns an object containing the current exception states for specified keys.
+ * When an exception occurs in the reactive state, it automatically updates the corresponding key in the returned object.
  *
- * @param event - The state change event.
- * @param key - The key to check for mutation.
+ * @template T - The type of the reactive state object.
+ * @template R - The type of keys being tracked for exceptions.
+ * @param {T} state - The reactive state object to capture exceptions from.
+ * @param {ExceptionList<T, R>} init - Initial exception states for the specified keys.
+ * @returns {ExceptionList<T, R>} - An object containing the current exception states for the specified keys.
  */
-export function isMutationOf(event: StateChange, key: KeyLike) {
-  if (event.type === 'init') return false;
-  return mutationKeys(event).includes(key as string);
-}
+export function useException<T extends State, R extends keyof T>(
+  state: T,
+  init: ExceptionList<T, R>
+): ExceptionList<T, R> {
+  const stableRef = useStableRef(() => anchor(init), [state]);
 
-/**
- * Extracts the keys that were mutated in a state change event.
- *
- * @param event - The state change event.
- * @returns An array of keys that were mutated.
- */
-export function mutationKeys(event: StateChange) {
-  if (BATCH_MUTATION_KEYS.has(event.type as BatchMutation)) {
-    return Object.keys(event.prev ?? {});
-  }
+  useEffect(() => {
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to capture exception of a non-reactive state.', error);
+      return;
+    }
 
-  // Only expect one key (single level) for non-batch mutations.
-  return event.keys.slice(0, 1);
+    const release = anchor.catch(state, (event) => {
+      const key = event.keys.join('.') as R;
+
+      stableRef.stable = false;
+      stableRef.value[key] = event.error;
+    });
+
+    const unsubscribe = derive(
+      state,
+      (_, e) => {
+        if (e.type !== 'init') {
+          const key = e.keys.join('.') as R;
+          stableRef.stable = false;
+          stableRef.value[key] = null;
+        }
+      },
+      false
+    );
+
+    return () => {
+      release();
+      unsubscribe();
+    };
+  }, [state]);
+
+  return stableRef.value;
 }

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { DEV_MODE } from './dev.js';
 import { microtask, shortId, softEqual } from '@anchor/core';
+import { depsChanged } from './utils.js';
 
 /**
  * A React hook that generates a short, unique identifier string.
@@ -100,4 +101,37 @@ export function useConstant<T>(init: T | (() => T), cleanup?: (current: T) => vo
  */
 export function useMicrotask(timeout?: number) {
   return useRef(microtask(timeout)).current;
+}
+
+/**
+ * A React hook that provides a stable reference to a value, updating only when specified dependencies change.
+ *
+ * This hook ensures that the returned reference object remains stable across re-renders,
+ * only updating its value and dependencies when the provided dependencies change.
+ * It supports both direct values and factory functions for initialization.
+ *
+ * @template T - The type of the value stored in the ref.
+ * @param init - The initial value or a factory function that returns the initial value.
+ * @param deps - An array of dependencies that, when changed, will trigger an update of the ref's value.
+ * @returns A stable reference object containing the current value and a Set of dependencies.
+ */
+export function useStableRef<T>(init: T | (() => T), deps: unknown[]) {
+  const stableRef = useRef({
+    deps: new Set(deps),
+    value: typeof init === 'function' ? (init as () => T)() : init,
+    stable: false,
+  }).current;
+
+  if (stableRef.stable) {
+    const updatedDeps = depsChanged(stableRef.deps, deps);
+
+    if (updatedDeps) {
+      stableRef.deps = updatedDeps;
+      stableRef.value = typeof init === 'function' ? (init as () => T)() : init;
+    }
+  } else {
+    stableRef.stable = true;
+  }
+
+  return stableRef;
 }
