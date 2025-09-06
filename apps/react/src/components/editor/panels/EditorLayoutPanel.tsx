@@ -21,7 +21,7 @@ import {
   StretchVertical,
 } from 'lucide-react';
 import { Tooltip } from '../../Tooltip.js';
-import { ColorPicker, reactive, Toggle, ToggleGroup } from '@anchor/react/components';
+import { ColorPicker, observe, Toggle, ToggleGroup } from '@anchor/react/components';
 import { useObserved, useWriter } from '@anchor/react';
 import { editorApp, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
@@ -46,7 +46,7 @@ export default function EditorLayoutPanel() {
     (style.flexDirection ?? base.flexDirection) === 'column' ||
     (style.flexDirection ?? base.flexDirection) === 'column-reverse';
 
-  const FlexDirectionPanel = reactive(() => {
+  const FlexDirectionPanel = observe(() => {
     return (
       <PanelColumn label="Direction">
         <ToggleGroup>
@@ -76,7 +76,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const FLexWrapPanel = reactive(() => {
+  const FLexWrapPanel = observe(() => {
     return (
       <PanelColumn label="Flex Wrap">
         <ToggleGroup>
@@ -97,7 +97,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const AlignItemsPanel = reactive(() => {
+  const AlignItemsPanel = observe(() => {
     const vertical = isVertical();
 
     return (
@@ -144,7 +144,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const JustifyContentPanel = reactive(() => {
+  const JustifyContentPanel = observe(() => {
     const vertical = isVertical();
 
     return (
@@ -191,7 +191,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const AlignmentPanel = reactive(() => {
+  const AlignmentPanel = observe(() => {
     if (!isFlex()) return;
 
     return (

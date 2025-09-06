@@ -5,7 +5,7 @@ import { CardHeader } from '../CardHeader.js';
 import { type FC, useRef } from 'react';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { debugRender, useAnchor } from '@anchor/react';
-import { observed } from '@anchor/react/components';
+import { observable } from '@anchor/react/components';
 import { microloop, shortId } from '@anchor/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
@@ -66,7 +66,7 @@ export const TodoApp: FC = () => {
   );
 };
 
-const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ panel }) => {
+const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observable(({ panel }) => {
   const ref = useRef(null);
 
   debugRender(ref);
@@ -84,7 +84,7 @@ const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ p
   );
 }, 'TodoPanel');
 
-const InfoPanel: FC<{ panel: { info: boolean } }> = observed(({ panel }) => {
+const InfoPanel: FC<{ panel: { info: boolean } }> = observable(({ panel }) => {
   const ref = useRef(null);
 
   debugRender(ref);
@@ -101,7 +101,7 @@ const InfoPanel: FC<{ panel: { info: boolean } }> = observed(({ panel }) => {
   );
 }, 'InfoPanel');
 
-const CodePanel: FC<{ panel: { code: boolean } }> = observed(({ panel }) => {
+const CodePanel: FC<{ panel: { code: boolean } }> = observable(({ panel }) => {
   const ref = useRef(null);
 
   debugRender(ref);

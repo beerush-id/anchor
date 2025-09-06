@@ -112,9 +112,9 @@ settingsWriter.brightness = 90;
 
 ```jsx
 import { useAnchor } from '@anchor/react';
-import { observed } from '@anchor/react/components';
+import { observable } from '@anchor/react/components';
 
-const Counter = observed(() => {
+const Counter = observable(() => {
   const state = useAnchor({
     count: 0,
     title: 'My App',

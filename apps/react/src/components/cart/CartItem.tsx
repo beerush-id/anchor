@@ -2,7 +2,7 @@ import { type FC, type KeyboardEventHandler, memo, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { debugRender, useInherit } from '@anchor/react';
-import { Input, observed } from '@anchor/react/components';
+import { Input, observable } from '@anchor/react/components';
 import { setDebugger } from '@anchor/core';
 import { isMobile } from '@lib/nav.js';
 
@@ -56,7 +56,7 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
   );
 });
 
-export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> = observed(({ item, items }) => {
+export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> = observable(({ item, items }) => {
   const ref = useRef(null);
   debugRender(ref);
 

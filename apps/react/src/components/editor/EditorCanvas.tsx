@@ -2,7 +2,7 @@ import { debugRender, useDerivedRef, useObserved, useRefTrap, useWriter } from '
 import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { useRef } from 'react';
 import { CodeBlock } from '../CodeBlock.js';
-import { reactive, Toggle, ToggleGroup } from '@anchor/react/components';
+import { observe, Toggle, ToggleGroup } from '@anchor/react/components';
 import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 
@@ -18,7 +18,7 @@ export default function EditorCanvas() {
 
   const viewWriter = useWriter(editorApp, ['viewMode']);
 
-  const EditorPreview = reactive(() => {
+  const EditorPreview = observe(() => {
     debugRender(ref);
 
     const mode = editorApp.viewMode;

@@ -1,5 +1,5 @@
 import { type InputHTMLAttributes, useRef } from 'react';
-import { observed } from '@anchor/react/components';
+import { observable } from '@anchor/react/components';
 import { debugRender } from '@anchor/react';
 
 export type InputProps<T extends Record<string, string>> = {
@@ -25,4 +25,4 @@ function InputComp<T extends Record<string, string>>({ bindTo, name, className, 
   );
 }
 
-export const Input = observed(InputComp, 'Input');
+export const Input = observable(InputComp, 'Input');

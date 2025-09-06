@@ -8,7 +8,7 @@ import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { Input, reactive } from '@anchor/react/components';
+import { Input, observe } from '@anchor/react/components';
 import { Button, IconButton } from '../Button.js';
 import { isMobile } from '@lib/nav.js';
 
@@ -22,7 +22,7 @@ export const CartApp: FC = () => {
 
   debugRender(ref);
 
-  const Stats = reactive(function Stats() {
+  const Stats = observe(function Stats() {
     return <span className="text-sm text-slate-300">{cartItems.length} Items</span>;
   });
 

@@ -1,6 +1,6 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
 import { Button } from '../Button.js';
-import { Input, reactive } from '@anchor/react/components';
+import { Input, observe } from '@anchor/react/components';
 import { Card } from '../Card.js';
 import { anchor } from '@anchor/core';
 import { debugRender, useException, useInherit } from '@anchor/react';
@@ -31,19 +31,19 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
     anchor.assign(formErrors, { name: null, email: null });
   };
 
-  const NameError = reactive(() => {
+  const NameError = observe(() => {
     if (formErrors.name) {
       return <p className="text-sm text-red-400">Invalid name. Please try again.</p>;
     }
   });
 
-  const EmailError = reactive(() => {
+  const EmailError = observe(() => {
     if (formErrors.email) {
       return <p className="text-sm text-red-400">Invalid email format. Please try again.</p>;
     }
   });
 
-  const FormControl = reactive(() => {
+  const FormControl = observe(() => {
     debugRender(controlRef);
     const disabled = !formData.email || !formData.name;
 

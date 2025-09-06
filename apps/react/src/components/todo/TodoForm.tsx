@@ -4,10 +4,10 @@ import { Button } from '../Button.js';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoList, type ITodoStats } from '@lib/todo.js';
 import { shortId } from '@anchor/core';
-import { observed } from '@anchor/react/components';
+import { observable } from '@anchor/react/components';
 import { debugRender } from '@anchor/react';
 
-export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({ todos, stats }) => {
+export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observable(({ todos, stats }) => {
   const ref = useRef(null);
   const [newText, setNewText] = useState('');
 

@@ -1,7 +1,7 @@
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
 import { useAnchor, useImmutable } from '@anchor/react';
-import { observed, reactive } from '@anchor/react/components';
+import { observable, observe } from '@anchor/react/components';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
 import { type Immutable } from '@anchor/core';
@@ -162,7 +162,7 @@ export const Performance = () => {
     current: metrics[0]?.metrics?.[0],
   });
 
-  const NavButtons = reactive(() => {
+  const NavButtons = observe(() => {
     const current = display.metrics;
     const handleClick = (item: (typeof metrics)[0]) => {
       display.current = item.metrics?.[0];
@@ -222,7 +222,7 @@ export const Performance = () => {
   );
 };
 
-const PerformanceGroup: FC<{ display: MetricDisplay }> = observed(({ display }) => {
+const PerformanceGroup: FC<{ display: MetricDisplay }> = observable(({ display }) => {
   if (!display.metrics) return;
 
   return (

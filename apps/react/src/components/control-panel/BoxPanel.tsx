@@ -1,8 +1,8 @@
 import React from 'react';
 import type { BoxProp } from './BoxView.js';
-import { observed } from '@anchor/react/components';
+import { observable } from '@anchor/react/components';
 
-export const BoxPanel: React.FC<{ box: BoxProp }> = observed(({ box }) => {
+export const BoxPanel: React.FC<{ box: BoxProp }> = observable(({ box }) => {
   return (
     <div className="p-6">
       <h4 className="font-semibold mb-4">Control Panel</h4>
