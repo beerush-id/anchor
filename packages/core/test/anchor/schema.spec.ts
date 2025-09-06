@@ -26,6 +26,17 @@ describe('Anchor Core - Schema Validation', () => {
       expect(state.age).toBe(30);
     });
 
+    it('should create schema validated state using model shortcut', () => {
+      const schema = z.object({
+        name: z.string(),
+        age: z.number(),
+      });
+
+      const state = anchor.model(schema, { name: 'John', age: 30 });
+      expect(state.name).toBe('John');
+      expect(state.age).toBe(30);
+    });
+
     it('should validate property updates with schema', () => {
       const schema = z.object({
         name: z.string(),

@@ -1,10 +1,11 @@
-import type { ZodArray, ZodObject, ZodType } from 'zod/v4';
 import type {
   AnchorInternalFn,
   Broadcaster,
   KeyLike,
   Linkable,
-  LinkableSchema,
+  LinkableModel,
+  ModelArray,
+  ModelObject,
   ObjLike,
   StateChange,
   StateMetadata,
@@ -100,9 +101,9 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     if (configs.recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
       const childSchema = (
         isArray(init)
-          ? (schema as never as ZodArray)?.unwrap?.()
-          : (schema as never as ZodObject)?.shape?.[prop as string]
-      ) as LinkableSchema;
+          ? (schema as never as ModelArray)?.unwrap?.()
+          : (schema as never as ModelObject)?.shape?.[prop as string]
+      ) as LinkableModel;
 
       value = (anchor as AnchorInternalFn)(value as T, { ...configs, schema: childSchema }, meta.root ?? meta, meta);
     }
@@ -165,7 +166,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
     }
 
     if (schema) {
-      const childSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
+      const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
       if (childSchema) {
         const result = childSchema.safeParse(value);
@@ -179,6 +180,12 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
             configs.strict,
             setter
           );
+          broadcaster.catch(result.error, {
+            type: ObjectMutations.SET,
+            keys: [prop as string],
+            prev: current,
+            value,
+          });
 
           return !configs.strict;
         }
@@ -248,7 +255,8 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
   const { configs } = options ?? meta;
 
   const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
-    const childSchema = (schema as never as ZodObject)?.shape?.[prop as string] as ZodType;
+    const current = Reflect.get(target, prop, receiver) as Linkable;
+    const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
     if (childSchema) {
       const result = childSchema.safeParse(undefined);
@@ -260,12 +268,15 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
           configs.strict,
           remover
         );
+        broadcaster.catch(result.error, {
+          type: ObjectMutations.DELETE,
+          prev: current,
+          keys: [prop as string],
+        });
 
         return !configs.strict;
       }
     }
-
-    const current = Reflect.get(target, prop, receiver) as Linkable;
 
     Reflect.deleteProperty(target, prop);
 

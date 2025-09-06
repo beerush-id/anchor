@@ -12,6 +12,7 @@ import type {
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
+  EXCEPTION_HANDLER_REGISTRY,
   INIT_GATEWAY_REGISTRY,
   INIT_REGISTRY,
   META_INIT_REGISTRY,
@@ -221,7 +222,7 @@ export function createSubscribeFactory<T extends Linkable>(
  */
 export function createDestroyFactory<T extends Linkable>(init: T, state: State<T>, meta: StateMetadata<T>): () => void {
   const devTool = getDevTool();
-  const { observers, subscribers, subscriptions } = meta;
+  const { observers, subscribers, subscriptions, exceptionHandlers } = meta;
 
   const handler = (propagation?: boolean) => {
     // Prevents destroying a state that is already destroyed.
@@ -266,6 +267,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
 
     // Cleaning up the subscriber list.
     subscribers.clear();
+    exceptionHandlers.clear();
 
     // Remove the state from STATE_REGISTRY and STATE_LINK.
     INIT_REGISTRY.delete(init);
@@ -281,6 +283,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     CONTROLLER_REGISTRY.delete(state);
     SUBSCRIBER_REGISTRY.delete(state);
     SUBSCRIPTION_REGISTRY.delete(state);
+    EXCEPTION_HANDLER_REGISTRY.delete(state);
     META_INIT_REGISTRY.delete(meta as StateMetadata);
 
     devTool?.onDestroy?.(init, meta);

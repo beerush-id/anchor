@@ -4,6 +4,8 @@ import type {
   Broadcaster,
   Linkable,
   MethodLike,
+  ModelArray,
+  ModelError,
   ObjLike,
   StateChange,
   StateMetadata,
@@ -117,7 +119,7 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
 
       // Validate the added items.
       if (schema && addedItemsLength) {
-        const validation = schema.safeParse(addedItems);
+        const validation = (schema as ModelArray).safeParse(addedItems);
 
         // If validation is successful, update the arguments with validated data.
         if (validation.success) {
@@ -136,6 +138,11 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
             configs.strict,
             targetFn
           );
+          broadcaster.catch(validation.error as never as ModelError, {
+            type: method,
+            keys: [],
+            value: args,
+          });
 
           if (method === 'push' || method === 'unshift') {
             return currentItems.length;

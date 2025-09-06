@@ -3,6 +3,7 @@ import type {
   Linkable,
   State,
   StateController,
+  StateExceptionHandlerList,
   StateGateway,
   StateMetadata,
   StateRelation,
@@ -33,3 +34,4 @@ export const STATE_GATEWAY_REGISTRY = new WeakMap<State, StateGateway>();
 
 export const STATE_BUSY_LIST = new WeakSet<State>();
 export const META_INIT_REGISTRY = new WeakMap<StateMetadata, Linkable>();
+export const EXCEPTION_HANDLER_REGISTRY = new WeakMap<State, StateExceptionHandlerList>();

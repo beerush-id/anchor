@@ -5,11 +5,13 @@ import type {
   ArrayMutation,
   Immutable,
   Linkable,
-  LinkableSchema,
+  LinkableModel,
+  ModelObject,
   ObjLike,
   SetMutation,
   State,
   StateController,
+  StateExceptionHandlerList,
   StateGateway,
   StateGetter,
   StateMetadata,
@@ -26,6 +28,7 @@ import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from 
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
+  EXCEPTION_HANDLER_REGISTRY,
   INIT_GATEWAY_REGISTRY,
   INIT_REGISTRY,
   META_INIT_REGISTRY,
@@ -38,7 +41,7 @@ import {
   SUBSCRIBER_REGISTRY,
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { createBroadcaster, linkable } from './internal.js';
+import { linkable } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import { assign, clear, remove } from './helper.js';
@@ -50,6 +53,7 @@ import { softClone } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { createGetter, createRemover, createSetter } from './trap.js';
 import { Linkables } from './enum.js';
+import { createBroadcaster } from './broadcast.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -71,7 +75,7 @@ import { Linkables } from './enum.js';
  * @throws If `strict` mode is enabled and schema validation fails during initialization.
  * @throws If `strict` mode is enabled and schema validation fails during property updates or array mutations.
  */
-function anchorFn<T extends Linkable, S extends LinkableSchema>(
+function anchorFn<T extends Linkable, S extends LinkableModel>(
   init: T,
   schemaOptions?: S | StateOptions<S>,
   options?: StateOptions<S>,
@@ -93,12 +97,12 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     return init;
   }
 
-  if (!(schemaOptions as LinkableSchema)?._zod) {
+  if (!(schemaOptions as LinkableModel)?._zod) {
     options = schemaOptions as StateOptions<S>;
   }
 
   const cloned = options?.cloned ?? ANCHOR_SETTINGS.cloned;
-  const schema = (schemaOptions as LinkableSchema)?._zod
+  const schema = (schemaOptions as LinkableModel)?._zod
     ? (schemaOptions as S)
     : (schemaOptions as StateOptions<S>)?.schema;
   const configs: StateOptions<S> = {
@@ -113,6 +117,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
+  const exceptionHandlers: StateExceptionHandlerList = new Set();
 
   if (cloned && !configs.immutable) {
     init = softClone(init, configs.recursive);
@@ -166,15 +171,16 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
         : Linkables.OBJECT;
   const meta: StateMetadata<T, S> = {
     id: shortId(),
+    root,
     type,
+    parent,
     cloned,
     schema,
     configs,
     observers,
     subscribers,
     subscriptions,
-    root,
-    parent,
+    exceptionHandlers,
   };
   META_REGISTRY.set(init, meta as never as StateMetadata);
   META_INIT_REGISTRY.set(meta as never as StateMetadata, init);
@@ -223,6 +229,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   CONTROLLER_REGISTRY.set(state, controller as never);
   SUBSCRIBER_REGISTRY.set(state, subscribers as never);
   SUBSCRIPTION_REGISTRY.set(state, subscriptions);
+  EXCEPTION_HANDLER_REGISTRY.set(state, exceptionHandlers);
   STATE_GATEWAY_REGISTRY.set(state, gateway as StateGateway);
 
   // Trigger dev tool if it is available.
@@ -232,6 +239,22 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   return state;
 }
 
+anchorFn.immutable = <T extends Linkable, S extends LinkableModel>(
+  init: T,
+  schemaOptions?: StateOptions<S> | S,
+  options?: StateOptions<S>
+): Immutable<T> => {
+  if ((schemaOptions as ModelObject)?._zod) {
+    return anchorFn(init, schemaOptions, { ...options, immutable: true }) as Immutable<T>;
+  }
+
+  return anchorFn(init, { ...schemaOptions, immutable: true }) as Immutable<T>;
+};
+
+anchorFn.model = ((schema, init, options) => {
+  return anchorFn(init, schema, options);
+}) satisfies Anchor['model'];
+
 anchorFn.flat = ((init, options) => {
   return anchorFn(init, { ...options, recursive: 'flat' });
 }) satisfies Anchor['flat'];
@@ -239,6 +262,27 @@ anchorFn.flat = ((init, options) => {
 anchorFn.ordered = ((init, compare, options) => {
   return anchorFn(init, { ...options, ordered: true, compare });
 }) satisfies Anchor['ordered'];
+
+anchorFn.catch = ((state, handler) => {
+  const controller = CONTROLLER_REGISTRY.get(state);
+
+  if (!controller) {
+    const error = new Error('Object is not a state.');
+    captureStack.error.external(
+      'Attempted to capture exception of a state that does not exist.',
+      error,
+      anchorFn.destroy
+    );
+    return () => {};
+  }
+
+  const { exceptionHandlers } = controller.meta;
+  exceptionHandlers.add(handler);
+
+  return () => {
+    exceptionHandlers.delete(handler);
+  };
+}) satisfies Anchor['catch'];
 
 anchorFn.raw = ((init, options) => {
   return anchorFn(init, { ...options, cloned: false });
@@ -339,13 +383,6 @@ anchorFn.configure = ((config: Partial<AnchorSettings>) => {
 anchorFn.configs = ((): AnchorSettings => {
   return ANCHOR_SETTINGS;
 }) satisfies Anchor['configs'];
-
-anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
-  init: T,
-  options?: StateOptions<S>
-): Immutable<T> => {
-  return anchorFn(init, { ...options, immutable: true }) as Immutable<T>;
-};
 
 // Assign utility functions.
 anchorFn.writable = writeContract;

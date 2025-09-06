@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, type ObjLike } from '../../src/index.js';
+import { z } from 'zod';
 
 describe('Anchor Core - Read-Only', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -89,6 +90,43 @@ describe('Anchor Core - Read-Only', () => {
       expect(errorSpy).toHaveBeenCalledTimes(9);
 
       errorSpy.mockRestore();
+    });
+
+    it('should create an immutable state with schema', () => {
+      const handler = vi.fn();
+      const schema = z.object({
+        name: z.string().min(2),
+      });
+      const state = anchor.immutable({ name: 'John' }, schema);
+
+      expect(state).toEqual({ name: 'John' });
+
+      // Invalid assignment.
+      (state as { name: number }).name = 30;
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      const writer = anchor.writable(state);
+      const unsubscribe = anchor.catch(state, handler);
+
+      writer.name = 'Jane';
+      expect(state).toEqual({ name: 'Jane' });
+      expect(handler).not.toHaveBeenCalled();
+
+      writer.name = 'J';
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+
+      unsubscribe();
+    });
+
+    it('should handle catching exception of non reactive state', () => {
+      const handler = vi.fn();
+      const unsubscribe = anchor.catch({}, handler);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(() => {
+        unsubscribe();
+      }).not.toThrow();
     });
   });
 

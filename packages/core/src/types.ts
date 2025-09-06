@@ -1,5 +1,6 @@
 import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
 import { type input, type output, type ZodArray, type ZodObject } from 'zod/v4';
+import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { Linkables } from './enum.js';
 
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
@@ -12,11 +13,17 @@ export type ObjLike = {
 };
 
 export type Linkable = object | unknown[] | Set<unknown> | Map<KeyLike, unknown>;
-export type LinkableSchema = ZodObject | ZodArray;
-export type ModelInput<S> = input<S>;
-export type ModelOutput<S> = output<S>;
+export type LinkableModel = ZodObject | ZodArray;
 export type ImmutableOutput<S> = Immutable<ModelOutput<S>>;
 export type ReadonlyLink = Immutable<Linkable>;
+
+export type ModelArray = ZodArray;
+export type ModelObject = ZodObject;
+export type ModelInput<S> = input<S>;
+export type ModelOutput<S> = output<S>;
+export type ModelError = $ZodError;
+export type ModelIssue = $ZodIssue;
+export type ModelIssues = ModelIssue[];
 
 export type StateTracker = (init: Linkable, key: KeyLike) => boolean;
 export type StateKeyTracker = (key: KeyLike) => boolean;
@@ -47,7 +54,7 @@ export type StateBaseOptions = {
   observable?: boolean;
   compare?: (a: unknown, b: unknown) => number;
 };
-export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & { schema?: S };
+export type StateOptions<S extends LinkableModel = LinkableModel> = StateBaseOptions & { schema?: S };
 
 export type AnchorSettings = StateBaseOptions & {
   production: boolean;
@@ -72,11 +79,11 @@ export type StateUnlinkFn = (childState: Linkable) => void;
 export type State<T extends Linkable = Linkable> = T;
 export type StateMetadata<
   T extends Linkable = Linkable,
-  S extends LinkableSchema = LinkableSchema,
+  S extends LinkableModel = LinkableModel,
   RootType extends Linkable = Linkable,
-  RootSchema extends LinkableSchema = LinkableSchema,
+  RootSchema extends LinkableModel = LinkableModel,
   ParentType extends Linkable = Linkable,
-  ParentSchema extends LinkableSchema = LinkableSchema,
+  ParentSchema extends LinkableModel = LinkableModel,
 > = {
   id: string;
   type: Linkables;
@@ -85,6 +92,7 @@ export type StateMetadata<
   observers: StateObserverList;
   subscribers: StateSubscriberList<T>;
   subscriptions: StateSubscriptionMap;
+  exceptionHandlers: StateExceptionHandlerList;
   root?: StateMetadata<RootType, RootSchema>;
   parent?: StateMetadata<ParentType, ParentSchema>;
   schema?: S;
@@ -145,7 +153,7 @@ export type StateGateway<T extends Linkable = Linkable> = {
   mutator?: StateMutator<T>;
 };
 
-export type StateController<T extends Linkable = Linkable, S extends LinkableSchema = LinkableSchema> = {
+export type StateController<T extends Linkable = Linkable, S extends LinkableModel = LinkableModel> = {
   meta: StateMetadata<T, S>;
   destroy: StateDestroyer;
   subscribe: StateSubscribeFn<T>;
@@ -169,6 +177,14 @@ export type StateChange = {
   value?: unknown;
   emitter?: string;
 };
+
+export type StateException = StateChange & {
+  error: Error | ModelError;
+  issues?: ModelIssues;
+};
+
+export type StateExceptionHandler = (exception: StateException) => void;
+export type StateExceptionHandlerList = Set<StateExceptionHandler>;
 
 export type PipeTransformer<T, R> = (value: T) => Partial<R>;
 
@@ -280,7 +296,7 @@ export interface Anchor {
    * @param options - Configuration options for the state
    * @returns Reactive state object
    */
-  <T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
+  <T extends Linkable, S extends LinkableModel = LinkableModel>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a reactive state with schema validation.
@@ -290,7 +306,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Validated reactive state object
    */
-  <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): ModelOutput<S>;
+  <S extends LinkableModel, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): ModelOutput<S>;
 
   /**
    * Creates an immutable reactive state with schema validation.
@@ -300,7 +316,7 @@ export interface Anchor {
    * @param options - Configuration options with immutable flag
    * @returns Immutable validated reactive state object
    */
-  <S extends LinkableSchema, T extends ModelInput<S>>(
+  <S extends LinkableModel, T extends ModelInput<S>>(
     init: T,
     schema: S,
     options?: StateBaseOptions & { immutable: true }
@@ -315,7 +331,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Raw reactive state object
    */
-  raw<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
+  raw<T extends Linkable, S extends LinkableModel = LinkableModel>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates a flat reactive state that only tracks top-level properties.
@@ -324,7 +340,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Flat reactive array state
    */
-  flat<T extends unknown[], S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): State<T>;
+  flat<T extends unknown[], S extends LinkableModel = LinkableModel>(init: T, options?: StateOptions<S>): State<T>;
 
   /**
    * Creates an ordered reactive array that maintains sort order based on the provided comparison function.
@@ -336,7 +352,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Ordered reactive array state
    */
-  ordered<T extends unknown[], S extends LinkableSchema = LinkableSchema>(
+  ordered<T extends unknown[], S extends LinkableModel = LinkableModel>(
     init: T,
     compare: (a: T[number], b: T[number]) => number,
     options?: StateOptions<S>
@@ -345,16 +361,32 @@ export interface Anchor {
   /**
    * Creates a reactive state with schema validation.
    *
-   * @param init - Initial state value
    * @param schema - Zod schema for validation
+   * @param init - Initial state value
    * @param options - Configuration options
    * @returns Validated reactive state object
    */
-  model<S extends LinkableSchema, T extends ModelInput<S>>(
-    init: T,
+  model<S extends LinkableModel, T extends ModelInput<S>>(
     schema: S,
+    init: T,
     options?: StateBaseOptions
   ): ModelOutput<S>;
+
+  /**
+   * Creates an immutable reactive state with schema validation.
+   *
+   * @template S - The schema type for validation.
+   * @template T - The input type for the schema.
+   * @param schema - Zod schema for validation.
+   * @param init - Initial state value.
+   * @param options - Configuration options with immutable flag set to true.
+   * @returns Immutable validated reactive state object.
+   */
+  model<S extends LinkableModel, T extends ModelInput<S>>(
+    schema: S,
+    init: T,
+    options?: StateBaseOptions & { immutable: true }
+  ): Immutable<ModelOutput<S>>;
 
   /**
    * Creates an immutable reactive state.
@@ -363,7 +395,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Immutable reactive state object
    */
-  immutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  immutable<T extends Linkable, S extends LinkableModel = LinkableModel>(
     init: T,
     options?: StateOptions<S>
   ): Immutable<T>;
@@ -376,7 +408,7 @@ export interface Anchor {
    * @param options - Configuration options
    * @returns Immutable validated reactive state object
    */
-  immutable<S extends LinkableSchema, T extends ModelInput<S>>(
+  immutable<S extends LinkableModel, T extends ModelInput<S>>(
     init: T,
     schema: S,
     options?: StateBaseOptions
@@ -429,6 +461,20 @@ export interface Anchor {
    * @returns A read-only proxy of the state.
    */
   read<T extends State>(state: T): Immutable<T>;
+
+  /**
+   * Registers an exception handler for a given state to catch and handle errors during state mutations.
+   *
+   * This method allows you to set up error handling for a specific state. When an error occurs
+   * during a state mutation (such as a Zod validation error), the provided handler function
+   * will be called with details about the exception.
+   *
+   * @template T - The type of the state
+   * @param state - The reactive state to attach the exception handler to
+   * @param handler - The exception handler function that will be called when an error occurs
+   * @returns A function that can be called to unsubscribe/remove the exception handler
+   */
+  catch<T extends State>(state: T, handler: StateExceptionHandler): StateUnsubscribe;
 
   /**
    * Creates a snapshot of the current state.
@@ -510,7 +556,7 @@ export interface Anchor {
   configs(): AnchorSettings;
 }
 
-export type AnchorInternalFn = <T extends Linkable, S extends LinkableSchema>(
+export type AnchorInternalFn = <T extends Linkable, S extends LinkableModel>(
   init: T,
   options: StateOptions<S>,
   root?: StateMetadata,
@@ -545,6 +591,14 @@ export type Broadcaster = {
    * @param prop - Optional property key that was changed
    */
   emit: EmitFn;
+
+  /**
+   * Catches and handles Zod validation errors that occur during state mutations.
+   *
+   * @param error - The Zod validation error that occurred
+   * @param event - The state change event that triggered the error
+   */
+  catch: (error: ModelError, event: StateChange) => void;
 
   /**
    * Broadcasts a state change to all subscribers.
@@ -633,14 +687,14 @@ export type DevTool = {
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike} prop
    */
-  onGet?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  onGet?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
   /**
    * A callback that will be called when a property is set.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike} prop
    * @param {unknown} value
    */
-  onSet?: <T extends Linkable, S extends LinkableSchema>(
+  onSet?: <T extends Linkable, S extends LinkableModel>(
     meta: StateMetadata<T, S>,
     prop: KeyLike,
     value: unknown
@@ -650,14 +704,14 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {KeyLike} prop
    */
-  onDelete?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+  onDelete?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
   /**
    * A callback that will be called when a method is called.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {string} method
    * @param {unknown[]} args
    */
-  onCall?: <T extends Linkable, S extends LinkableSchema>(
+  onCall?: <T extends Linkable, S extends LinkableModel>(
     meta: StateMetadata<T, S>,
     method: string,
     args: unknown[]
@@ -666,35 +720,35 @@ export type DevTool = {
    * A callback that will be called when a state is initialized.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onInit?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
+  onInit?: <T extends Linkable, S extends LinkableModel>(init: T, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a bulk assignment is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {ObjLike} source
    */
-  onAssign?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, source: ObjLike) => void;
+  onAssign?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, source: ObjLike) => void;
   /**
    * A callback that will be called when a bulk removal is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike[]} props
    */
-  onRemove?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
+  onRemove?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
   /**
    * A callback that will be called when a state is cleared.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onClear?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
+  onClear?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a state is destroyed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
-  onDestroy?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
+  onDestroy?: <T extends Linkable, S extends LinkableModel>(init: T, meta: StateMetadata<T, S>) => void;
   /**
    * A callback that will be called when a subscriber is added.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {StateSubscriber<Linkable>} handler
    */
-  onSubscribe?: <T extends Linkable, S extends LinkableSchema>(
+  onSubscribe?: <T extends Linkable, S extends LinkableModel>(
     meta: StateMetadata<T, S>,
     handler: StateSubscriber<T>,
     receiver?: Linkable
@@ -704,7 +758,7 @@ export type DevTool = {
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {StateSubscriber<Linkable>} handler
    */
-  onUnsubscribe?: <T extends Linkable, S extends LinkableSchema>(
+  onUnsubscribe?: <T extends Linkable, S extends LinkableModel>(
     meta: StateMetadata<T, S>,
     handler: StateSubscriber<T>,
     receiver?: Linkable
@@ -714,19 +768,19 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
-  onLink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  onLink?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
   /**
    * A callback that will be called when a child reference is unlinked.
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
-  onUnlink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+  onUnlink?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
   /**
    * A callback that will be called when a state is being tracked by an observer.
    * @param {StateMetadata} meta
    * @param {StateObserver} observer
    */
-  onTrack?: <T extends Linkable, S extends LinkableSchema>(
+  onTrack?: <T extends Linkable, S extends LinkableModel>(
     meta: StateMetadata<T, S>,
     observer: StateObserver,
     key: KeyLike
@@ -736,10 +790,7 @@ export type DevTool = {
    * @param {StateMetadata} meta
    * @param {StateObserver} observer
    */
-  onUntrack?: <T extends Linkable, S extends LinkableSchema>(
-    meta: StateMetadata<T, S>,
-    observer: StateObserver
-  ) => void;
+  onUntrack?: <T extends Linkable, S extends LinkableModel>(meta: StateMetadata<T, S>, observer: StateObserver) => void;
 };
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
