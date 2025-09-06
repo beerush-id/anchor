@@ -1,3 +1,6 @@
+import { microbatch } from '@anchor/core';
+import type { RefObject } from 'react';
+
 export let DEV_MODE = true;
 export let STRICT_MODE = true;
 export let DEBUG_RENDERER = false;
@@ -23,10 +26,22 @@ export function isDebugRenderer() {
   return DEBUG_RENDERER;
 }
 
-export function debugRender<T extends HTMLElement>(element?: T | null) {
-  if (!DEBUG_RENDERER || !element) return;
+const [schedule] = microbatch(0);
+export function debugRender<T extends HTMLElement>(element: RefObject<T | null>) {
+  if (!DEBUG_RENDERER) return;
 
-  element.style.boxShadow = '0 0 0 3px rgba(255, 50, 50, 0.75)';
+  if (!element?.current) {
+    return schedule(() => flashNode(element?.current, 'rgba(252,75,75,0.75)'));
+  }
+
+  schedule(() => flashNode(element?.current));
+}
+
+function flashNode(element: HTMLElement | null = null, color = 'rgba(0,140,255,0.75)') {
+  if (!element) return;
+
+  element.style.boxShadow = `0 0 0 1px ${color}`;
+
   setTimeout(() => {
     element.style.boxShadow = '';
   }, 100);

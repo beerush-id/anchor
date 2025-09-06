@@ -22,6 +22,8 @@ export function Toggle<T, K extends WritableKeys<T>>({
   ...props
 }: ToggleProps<T, K>) {
   const ref = useRef<HTMLButtonElement>(null);
+  debugRender(ref);
+
   const checked = useValueIs(bind as never, name, value ?? true);
   const partial = useMemo(() => {
     if (!Array.isArray(inherits) || !inherits.length) return false;
@@ -56,8 +58,6 @@ export function Toggle<T, K extends WritableKeys<T>>({
     onClick?.(e);
     onChange?.(bind[name]);
   };
-
-  debugRender(ref.current);
 
   return (
     <button ref={ref} disabled={!bind} data-checked={checked} data-partial={partial} onClick={handleToggle} {...props}>

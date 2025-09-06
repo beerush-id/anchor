@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createDebugger,
   createObserver,
@@ -10,6 +10,7 @@ import {
 import { DEV_MODE, STRICT_MODE } from './dev.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
 import { depsChanged } from './utils.js';
+import { useMicrotask } from './hooks.js';
 
 /**
  * `useObserverRef` is a custom React hook that provides a stable `StateObserver` instance
@@ -162,4 +163,61 @@ export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) 
       return observe();
     }) as R;
   }, [version, ...(deps ?? [])]);
+}
+
+/**
+ * `useReactiveRef` is a custom React hook that creates a mutable ref object
+ * whose `current` property is reactive. It allows you to define a transformation
+ * function that will be re-executed whenever any reactive dependencies accessed
+ * within it change, automatically updating the ref's value.
+ *
+ * This hook is useful for scenarios where you need a mutable reference that
+ * automatically updates based on reactive state, similar to how `useRef` works
+ * but with added reactivity.
+ *
+ * The `transform` function is run within an observer context, meaning any reactive
+ * state accessed inside it will trigger a re-computation of the ref's value.
+ *
+ * @template T The type of the value held by the ref.
+ * @param init The initial value for the ref. Can be `null`.
+ * @param transform A function that takes the current (or initial) value and returns
+ *                  the new value for the ref. This function is run reactively.
+ *                  Any reactive dependencies accessed within it will cause the ref
+ *                  to update.
+ * @returns A mutable `RefObject` object whose `current` property is reactive.
+ */
+export function useReactiveRef<T>(init: T | null, transform: (value: T | null) => T | null): RefObject<T | null> {
+  const valueRef = useRef(init);
+  const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+  const [observer] = useState(() => {
+    return createObserver(() => {
+      valueRef.current = createValue(valueRef.current) ?? valueRef.current;
+    });
+  });
+
+  const createValue = (next: T | null) => {
+    return observer.run(() => {
+      return transform(next);
+    }) as T | null;
+  };
+
+  useEffect(() => {
+    cancelCleanup();
+
+    return () => {
+      cleanup(() => {
+        observer.destroy();
+      });
+    };
+  }, [init]);
+
+  return {
+    get current() {
+      return valueRef.current;
+    },
+    set current(next) {
+      observer.destroy();
+      valueRef.current = createValue(next) ?? valueRef.current;
+    },
+  };
 }

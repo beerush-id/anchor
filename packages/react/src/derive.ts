@@ -1,14 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  anchor,
-  captureStack,
-  derive,
-  type Immutable,
-  type Linkable,
-  type ObjLike,
-  outsideObserver,
-  type State,
-} from '@anchor/core';
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { anchor, captureStack, derive, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
 import type { TransformFn, TransformSnapshotFn } from './types.js';
 import { useObserverRef } from './observable.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
@@ -73,6 +64,7 @@ export function useDerived<T extends Linkable, R>(state: T, transformRecursive?:
  */
 export function usePipe<T extends State, R extends State>(source: T, target: R, transform?: TransformFn<T, R>) {
   useEffect(() => {
+    if (!source || !target) return;
     return derive.pipe(source, target, transform);
   }, [source, target]);
 }
@@ -316,24 +308,25 @@ export function useSnapshot<T extends Linkable, R>(state: T, transform?: Transfo
   return value;
 }
 
-export function useDerivedRef<T extends State>(state: T): Immutable<T>;
-export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R;
-/**
- * React hook that derives an underlying object of a reactive state.
- * It returns the underlying object of the state, or the result of applying a transform function to the underlying
- * object.
- *
- * This hook doesn't react to state changes. It's only re-compute if the state itself that changed.
- *
- * @template T - The type of the reactive state.
- * @template R - The type of the transformed value.
- * @param {T} state - A reactive state from which to derive the underlying object.
- * @param {TransformSnapshotFn<T, R>} [transform] - An optional function that receives the state snapshot and returns the transformed value.
- * @returns {R} The snapshot of the state, or the result of applying the transform function to the snapshot.
- */
-export function useDerivedRef<T extends State, R>(state: T, transform?: TransformSnapshotFn<T, R>): R {
-  return useMemo(() => {
-    const value = anchor.get(state);
-    return transform ? transform(value) : value;
-  }, [state]) as R;
+export function useDerivedRef<S extends State, R>(
+  state: S,
+  handle: (current: S, ref: R | null) => void
+): RefObject<R | null> {
+  const valueRef = useRef<R>(null);
+
+  useEffect(() => {
+    return derive(state, () => {
+      handle(anchor.read(state) as S, valueRef.current);
+    });
+  }, [state]);
+
+  return {
+    get current() {
+      return valueRef.current;
+    },
+    set current(next) {
+      valueRef.current = next;
+      handle(anchor.read(state) as S, valueRef.current);
+    },
+  };
 }

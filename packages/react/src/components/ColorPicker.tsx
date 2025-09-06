@@ -17,7 +17,7 @@ export function ColorPicker<T extends Bindable, K extends WritableKeys<T>>({
   ...props
 }: InputProps<T, K>) {
   const ref = useRef<HTMLLabelElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const inheritedPlaceholder: string | undefined = useMemo(() => {
     if (!Array.isArray(inherits) || !inherits.length) return undefined;

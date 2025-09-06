@@ -109,7 +109,7 @@ export function createObserver(
           const error = new Error('Observation limit exceeded.');
           captureStack.violation.general(
             'Unsafe observation detected:',
-            `Attempted to observe too many states (${observedSize}) within a single observer.`,
+            `Attempted to observe too many (${observedSize}) states within a single observer.`,
             error,
             [
               `We always recommend keeping observations small.`,

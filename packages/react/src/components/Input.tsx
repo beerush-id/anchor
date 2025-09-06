@@ -32,7 +32,7 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
   ...props
 }: InputProps<T, K>) {
   const ref = useRef<HTMLInputElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const inheritedPlaceholder: string | undefined = useMemo(() => {
     if (!Array.isArray(inherits) || !inherits.length) return undefined;
@@ -81,7 +81,7 @@ export function Checkbox<T extends Bindable, K extends WritableKeys<T>>({
   ...props
 }: InputProps<T, K>) {
   const ref = useRef<HTMLInputElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const current = (useValue(bind, name) ?? checked ?? false) as boolean;
 
@@ -111,7 +111,7 @@ export function Radio<T extends Bindable, K extends WritableKeys<T>>({
   ...props
 }: InputProps<T, K>) {
   const ref = useRef<HTMLInputElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const current = (useValue(bind, name) ?? checked ?? false) as boolean;
 
@@ -145,7 +145,7 @@ export function Select<T extends Bindable, K extends WritableKeys<T>>({
   ...props
 }: SelectProps<T, K>) {
   const ref = useRef<HTMLSelectElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const current = (useValue(bind, name) ?? value ?? '') as string;
 

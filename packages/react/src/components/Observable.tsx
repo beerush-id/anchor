@@ -1,7 +1,9 @@
-import type { ComponentType } from 'react';
+import { type ComponentType, type ReactNode, type Ref, useEffect, useRef, useState } from 'react';
 import { useObserverRef } from '../observable.js';
-import { anchor, type Linkable, type ObjLike, setObserver } from '@anchor/core';
+import { anchor, createObserver, type Linkable, type ObjLike, setObserver } from '@anchor/core';
 import type { AnchoredProps } from '../types.js';
+import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from '../constant.js';
+import { useMicrotask } from '../hooks.js';
 
 /**
  * `useObserverNode` is a custom React hook that leverages `useObserverRef` to manage
@@ -80,6 +82,47 @@ export function observed<T>(Component: ComponentType<T & AnchoredProps>, display
     );
   };
 
-  Observed.displayName = `Observed(${displayName || Component.displayName || Component.name || 'Component'})`;
+  Observed.displayName = `Observed(${displayName || Component.displayName || Component.name || 'Anonymous'})`;
   return Observed;
+}
+
+/**
+ * `reactive` is a utility function that creates a React component which
+ * automatically re-renders when any observable state accessed within the provided
+ * `fn` callback changes.
+ *
+ * It uses an internal `StateObserver` to track dependencies and trigger updates.
+ *
+ * @param factory A callback function that returns a `ReactNode`. This function will be
+ *           executed within an observing context.
+ * @param displayName An optional string to be used as the display name for the
+ *                    returned component in React DevTools.
+ * @returns A new React component that is reactive to observable state changes.
+ */
+export function reactive<R>(factory: (ref: Ref<R>) => ReactNode, displayName?: string) {
+  const ObservedNode: ComponentType = () => {
+    const ref = useRef<R>(null);
+    const [, setVersion] = useState(RENDERER_INIT_VERSION);
+    const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+    const [observer] = useState(() => {
+      return createObserver(() => {
+        setVersion((c) => c + 1);
+      });
+    });
+
+    useEffect(() => {
+      cancelCleanup();
+
+      return () => {
+        cleanup(() => {
+          observer.destroy();
+        });
+      };
+    });
+
+    return observer.run(() => factory(ref));
+  };
+
+  ObservedNode.displayName = `Reactive(${displayName || factory.name || 'Anonymous'})`;
+  return ObservedNode;
 }
