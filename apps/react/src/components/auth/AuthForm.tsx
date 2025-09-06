@@ -1,25 +1,59 @@
-import { type FC, useRef } from 'react';
+import { type FC, type FormEventHandler, useRef } from 'react';
 import { Button } from '../Button.js';
-import { Input } from '../Input.js';
-import { reactive } from '@anchor/react/components';
+import { Input, reactive } from '@anchor/react/components';
 import { Card } from '../Card.js';
-import { debugRender } from '@anchor/react';
-import { authForm, authState, schema } from '@lib/auth.js';
+import { anchor } from '@anchor/core';
+import { debugRender, useException, useInherit } from '@anchor/react';
+import { profileWriter } from '@lib/auth.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { isMobile } from '@lib/nav.js';
 
 export const AuthForm: FC<{ className?: string }> = ({ className }) => {
-  const ref = useRef(null);
+  const formRef = useRef(null);
+  const controlRef = useRef(null);
+  debugRender(formRef);
+
+  const formData = useInherit(profileWriter, ['name', 'email']);
+  const formErrors = useException(profileWriter, {
+    name: null,
+    email: null,
+  });
+
+  const handleSubmit: FormEventHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    anchor.assign(profileWriter, formData);
+  };
+
+  const handleCancel = () => {
+    anchor.assign(formData, profileWriter);
+    anchor.assign(formErrors, { name: null, email: null });
+  };
+
+  const NameError = reactive(() => {
+    if (formErrors.name) {
+      return <p className="text-sm text-red-400">Invalid name. Please try again.</p>;
+    }
+  });
+
+  const EmailError = reactive(() => {
+    if (formErrors.email) {
+      return <p className="text-sm text-red-400">Invalid email format. Please try again.</p>;
+    }
+  });
 
   const FormControl = reactive(() => {
-    debugRender(ref);
-    const disabled = !authState.password || !authState.email || !authState.name || !schema.safeParse(authState).success;
+    debugRender(controlRef);
+    const disabled = !formData.email || !formData.name;
 
     return (
-      <div ref={ref} className="flex items-center justify-end gap-4 pt-6">
-        <Button className="btn-lg">Cancel</Button>
-        <Button className="btn-lg btn-primary" disabled={disabled}>
-          Submit
+      <div ref={controlRef} className="flex items-center justify-end gap-4 pt-6">
+        <Button onClick={handleCancel} className="btn-lg">
+          Reset
+        </Button>
+        <Button type={'submit'} className="btn-lg btn-primary" disabled={disabled}>
+          Update
         </Button>
       </div>
     );
@@ -27,38 +61,36 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
 
   return (
     <Card className={className}>
-      <form className="flex flex-col gap-4 p-10 rounded-xl">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4 p-10 rounded-xl">
         <div className="text-center mb-2">
-          <h2 className="text-2xl font-bold text-white">🔐 Welcome</h2>
-          <p className="text-slate-400 mt-2">Sign in to your account</p>
+          <h2 className="text-2xl font-bold text-white">🧑‍💻 Edit Profile</h2>
+          <p className="text-slate-400 mt-2">Fill the form below to update your profile</p>
         </div>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Full Name</span>
-          <Input className="w-full input-md" bindTo={authForm} name="name" placeholder="John Doe" autoComplete="name" />
+          <Input
+            bind={formData}
+            pipe={profileWriter}
+            name="name"
+            placeholder="John Doe"
+            autoComplete="name"
+            className="w-full anchor-input input-md"
+          />
+          <NameError />
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Email</span>
           <Input
-            className="w-full input-md"
-            bindTo={authForm}
+            bind={formData}
+            pipe={profileWriter}
             name="email"
             placeholder="john@domain.com"
             autoComplete="email"
+            className="w-full anchor-input input-md"
           />
-        </label>
-
-        <label className="flex flex-col gap-2">
-          <span className="text-slate-300 font-medium">Password</span>
-          <Input
-            className="w-full input-md"
-            type="password"
-            bindTo={authForm}
-            name="password"
-            placeholder="********"
-            autoComplete="current-password"
-          />
+          <EmailError />
         </label>
 
         <FormControl />
@@ -67,7 +99,7 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
         <CodeBlock
           code={`// Declarative binding
 <Input
-  bind={authForm}
+  bind={profileWriter}
   name="email"
   placeholder="john@domain.com"
   autoComplete="email"

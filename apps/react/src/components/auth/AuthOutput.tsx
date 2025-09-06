@@ -4,10 +4,10 @@ import { CodeBlock } from '../CodeBlock.js';
 import { CardHeader } from '../CardHeader.js';
 // SHOW FROM HERE //
 import { observed } from '@anchor/react/components';
-import { authState, schema } from '@lib/auth.js';
+import { profileState, schema } from '@lib/auth.js';
 
 export const AuthOutput: FC = observed(() => {
-  const output = schema.safeParse(authState);
+  const output = schema.safeParse(profileState);
   const outputCode = JSON.stringify(output, null, 2);
 
   return (

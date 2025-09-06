@@ -1,5 +1,5 @@
 import { type FC, useRef } from 'react';
-import { debugRender, useSnapshot } from '@anchor/react';
+import { debugRender, useDerived } from '@anchor/react';
 
 export type RenderStatProp = {
   name: string;
@@ -8,7 +8,7 @@ export type RenderStatProp = {
 
 export const RenderStatItem: FC<{ stat: RenderStatProp }> = ({ stat }) => {
   const ref = useRef(null);
-  const snapshot = useSnapshot(stat);
+  const snapshot = useDerived(stat);
 
   debugRender(ref);
 
