@@ -36,7 +36,7 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
 }
 
 /**
- * `observed` is a Higher-Order Component (HOC) that wraps a React component
+ * `observable` is a Higher-Order Component (HOC) that wraps a React component
  * to make it reactive to changes in observable state.
  *
  * It automatically sets up and manages a `StateObserver` instance for the
@@ -56,7 +56,7 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
  *                    will derive from the original component's display name or name.
  * @returns A new React component that is reactive to observable state changes.
  */
-export function observed<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string) {
+export function observable<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string) {
   if (displayName && !Component.displayName) {
     Component.displayName = displayName;
   }
@@ -87,7 +87,7 @@ export function observed<T>(Component: ComponentType<T & AnchoredProps>, display
 }
 
 /**
- * `reactive` is a utility function that creates a React component which
+ * `observe` is a utility function that creates a React component which
  * automatically re-renders when any observable state accessed within the provided
  * `fn` callback changes.
  *
@@ -99,7 +99,7 @@ export function observed<T>(Component: ComponentType<T & AnchoredProps>, display
  *                    returned component in React DevTools.
  * @returns A new React component that is reactive to observable state changes.
  */
-export function reactive<R>(factory: (ref: Ref<R>) => ReactNode, displayName?: string) {
+export function observe<R>(factory: (ref: Ref<R>) => ReactNode, displayName?: string) {
   const ObservedNode: ComponentType = () => {
     const ref = useRef<R>(null);
     const [, setVersion] = useState(RENDERER_INIT_VERSION);

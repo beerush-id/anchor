@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import { type ComponentType, useState } from 'react';
 import { anchor } from '@anchor/core';
 import { cleanProps, setDevMode } from '../src/index.js';
-import { observed, useObserverNode } from '../src/components/index.js';
+import { observable, useObserverNode } from '../src/components/index.js';
 import type { AnchoredProps } from '../src/types.js';
 
 // Mock component for testing
@@ -69,7 +69,7 @@ describe('Anchor React - Observable Edge Cases', () => {
         return <span data-testid="inner-count">{state.count}</span>;
       };
 
-      const ObservedInner = observed(InnerComponent);
+      const ObservedInner = observable(InnerComponent);
 
       const OuterComponent: ComponentType<AnchoredProps> = () => {
         return (
@@ -80,7 +80,7 @@ describe('Anchor React - Observable Edge Cases', () => {
         );
       };
 
-      const ObservedOuter = observed(OuterComponent);
+      const ObservedOuter = observable(OuterComponent);
 
       render(<ObservedOuter />);
 
@@ -102,7 +102,7 @@ describe('Anchor React - Observable Edge Cases', () => {
         return <span data-testid="conditional-count">{state.count}</span>;
       };
 
-      const ObservedConditional = observed(ConditionalComponent);
+      const ObservedConditional = observable(ConditionalComponent);
 
       const ParentComponent: ComponentType = () => {
         const [show, setShow] = useState(false);
@@ -164,7 +164,7 @@ describe('Anchor React - Observable Edge Cases', () => {
         return <div data-testid="no-props">Count: {state.count}</div>;
       };
 
-      const ObservedNoProps = observed(NoPropsComponent);
+      const ObservedNoProps = observable(NoPropsComponent);
 
       render(<ObservedNoProps />);
 
@@ -184,7 +184,7 @@ describe('Anchor React - Observable Edge Cases', () => {
 
       ComponentWithDisplayName.displayName = 'ComponentWithDisplayName';
 
-      const ObservedWithDisplayName = observed(ComponentWithDisplayName);
+      const ObservedWithDisplayName = observable(ComponentWithDisplayName);
 
       expect(ObservedWithDisplayName.displayName).toBe('Observed(ComponentWithDisplayName)');
     });
@@ -194,7 +194,7 @@ describe('Anchor React - Observable Edge Cases', () => {
         throw new Error('Test error');
       };
 
-      const ObservedError = observed(ErrorComponent);
+      const ObservedError = observable(ErrorComponent);
 
       expect(() => render(<ObservedError />)).toThrow('Test error');
     });
@@ -252,7 +252,7 @@ describe('Anchor React - Observable Edge Cases', () => {
         return <div data-testid="render-update">{state.count}</div>;
       };
 
-      const ObservedComponent = observed(ComponentWithRenderUpdate);
+      const ObservedComponent = observable(ComponentWithRenderUpdate);
 
       // Wrap in act to handle state updates during render
       act(() => {

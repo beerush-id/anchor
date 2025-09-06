@@ -5,7 +5,7 @@ import { anchor } from '@anchor/core';
 import { cleanProps, CLEANUP_DEBOUNCE_TIME, setDevMode } from '../src/index.js';
 import { mockObserverProp } from '../mocks/observable.js';
 import type { AnchoredProps } from '../src/types.js';
-import { observed, useObserverNode } from '../src/components/index.js';
+import { observable, useObserverNode } from '../src/components/index.js';
 
 // Mock component for testing
 const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) => {
@@ -97,7 +97,7 @@ describe('Anchor React - Observable', () => {
 
   describe('Observed HoC', () => {
     it('should create an observed component that passes _state_version prop', () => {
-      const ObservedComponent = observed(TestComponent);
+      const ObservedComponent = observable(TestComponent);
 
       expect(ObservedComponent.displayName).toBe('Observed(TestComponent)');
 
@@ -118,7 +118,7 @@ describe('Anchor React - Observable', () => {
         );
       };
 
-      const ObservedCounter = observed(CounterComponent);
+      const ObservedCounter = observable(CounterComponent);
 
       render(<ObservedCounter label="Counter" />);
 
@@ -137,8 +137,8 @@ describe('Anchor React - Observable', () => {
       const TestComponentWithDisplayName: ComponentType<AnchoredProps> = () => <div>Test</div>;
       TestComponentWithDisplayName.displayName = 'CustomDisplayName';
 
-      const Observed1 = observed(TestComponentWithDisplayName);
-      const Observed2 = observed(TestComponent, 'CustomName');
+      const Observed1 = observable(TestComponentWithDisplayName);
+      const Observed2 = observable(TestComponent, 'CustomName');
 
       expect(Observed1.displayName).toBe('Observed(CustomDisplayName)');
       expect(Observed2.displayName).toBe('Observed(CustomName)');
@@ -148,7 +148,7 @@ describe('Anchor React - Observable', () => {
       const AnonymousComponent: ComponentType<AnchoredProps> = () => <div>Test</div>;
       Object.defineProperty(AnonymousComponent, 'name', { value: '' });
 
-      const ObservedComponent = observed(AnonymousComponent);
+      const ObservedComponent = observable(AnonymousComponent);
       expect(ObservedComponent.displayName).toBe('Observed(Component)');
     });
   });
@@ -210,7 +210,7 @@ describe('Anchor React - Observable', () => {
         );
       };
 
-      const ObservedUser = observed(UserComponent);
+      const ObservedUser = observable(UserComponent);
       render(<ObservedUser />);
 
       expect(screen.getByTestId('name').textContent).toBe('John');
