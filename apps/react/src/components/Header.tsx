@@ -1,6 +1,6 @@
 import { BookText, GithubIcon } from 'lucide-react';
 import { Tooltip } from './Tooltip.js';
-import { inlineNav } from '@lib/nav.js';
+import { BASE_PATH, inlineNav } from '@lib/nav.js';
 import { useEffect, useState } from 'react';
 import { useRefTrap } from '@anchor/react';
 
@@ -33,7 +33,7 @@ export const Header = () => {
       <nav className="container mx-auto px-6 py-4 flex items-center gap-6 md:gap-20 max-w-6xl">
         <h1 className="tracking-tight flex items-center select-none flex-1 md:flex-none">
           <a href="/">
-            <img src="/images/anchor-dark.svg" alt="Anchor Logo" className="h-8" />
+            <img src={`${BASE_PATH}/images/anchor-dark.svg`} alt="Anchor Logo" className="h-8" />
           </a>
           <span className="hidden">Anchor - Framework Agnostic State Management Library</span>
         </h1>

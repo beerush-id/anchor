@@ -48,11 +48,14 @@ jobs:
       - name: Build React app
         run: bun run --filter "@anchor-app/react" build
 
-      - name: Run root tests
+      - name: Build Test Coverage
         run: bun run test
 
       - name: Build documentation
         run: bun run docs:build
+
+      - name: Verify Builds
+        run: ls -la apps/react/dist
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

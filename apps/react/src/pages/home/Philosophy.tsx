@@ -1,6 +1,7 @@
 import { Section } from '@components/Section.js';
 import { Blocks, Braces, Database, GitCompare, UserCheck } from 'lucide-react';
 import { MainCTA } from '@components/MainCTA.js';
+import { BASE_PATH } from '@lib/nav.js';
 
 export const Philosophy = () => {
   return (
@@ -60,7 +61,7 @@ export const Philosophy = () => {
         </div>
         <div className="card overflow-clip md:col-span-5">
           <img
-            src="/images/illustrations/dsv.webp"
+            src={`${BASE_PATH}/images/illustrations/dsv.webp`}
             alt="DSV (Data-State-View) Illustration"
             className="object-cover object-center w-full h-full"
           />
@@ -69,7 +70,7 @@ export const Philosophy = () => {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 max-w-6xl mx-auto">
         <div className="card overflow-clip md:col-span-5">
           <img
-            src="/images/illustrations/ax.webp"
+            src={`${BASE_PATH}/images/illustrations/ax.webp`}
             alt="AX (All eXperience) Illustration"
             className="object-cover object-center w-full h-full"
           />

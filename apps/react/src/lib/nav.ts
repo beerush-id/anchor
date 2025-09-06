@@ -1,5 +1,7 @@
 import type { MouseEventHandler } from 'react';
 
+export const BASE_PATH = '/anchor';
+
 export const inlineNav: MouseEventHandler = (event) => {
   const href = (event.currentTarget as HTMLAnchorElement)?.getAttribute('href');
   if (!href) return;
