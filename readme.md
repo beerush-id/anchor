@@ -10,7 +10,7 @@ Don't forget to star ⭐ the project if you find it interesting and stay tuned f
 
 ## 🏗️ The Anchor Ecosystem
 
-Anchor is more than just a state management library - it's a comprehensive ecosystem for building modern applications. The ecosystem consists of:
+Anchor is more than just a state management library - it's a comprehensive ecosystem for building modern applications based on the **DSV (Data-State-View) model**.
 
 ### Core Packages
 
@@ -27,54 +27,67 @@ Anchor is more than just a state management library - it's a comprehensive ecosy
 
 - **[@anchor/devtool](./packages/devtool)** - Developer tools for debugging and monitoring state changes
 
-## 🧠 The Anchor Philosophy
+## ✨ Key Features
 
-Anchor is built on three core pillars:
+- **Fine-Grained Reactivity**: Only components that depend on changed state re-render, eliminating wasted renders
+- **True Immutability**: Direct mutation syntax with proxy-based write contracts for safety without performance penalties
+- **Zero Configuration**: Works out of the box with optional advanced configuration
+- **Framework Agnostic**: First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript
+- **Built-in Toolkit**: Includes optimistic UI, history tracking, reactive storage, and reactive requests out of the box
+- **Data Integrity**: Schema validation with Zod and TypeScript ensures your state always conforms to expectations
 
-### 1. True Immutability
+## 📚 Documentation
 
-Unlike other state management solutions, Anchor provides true immutability without the performance overhead of deep copying. You write intuitive "direct mutation" code within controlled "write contracts" without sacrificing state integrity.
-
-### 2. Data Integrity
-
-With built-in Zod schema validation, Anchor ensures your data always conforms to its defined structure and types, both during development and at runtime.
-
-### 3. Fine-Grained Reactivity
-
-Anchor's fine-grained reactivity means only components that depend on specific state changes are re-rendered, resulting in optimal performance even in complex applications.
-
-## 💡 Enterprise-Grade Features
-
-- **Mutable States**: Experience the simplicity and intuitiveness of directly mutable states. Say goodbye to explicit setState calls.
-- **Schema Validation**: Built-in Zod schema validation ensures data integrity throughout your application lifecycle.
-- **Cross-Framework Compatibility**: Use the same state logic across React, Vue, Svelte, and vanilla JavaScript.
-- **Persistent Stores**: Maintain state between page refreshes or across user sessions with localStorage, sessionStorage, and IndexedDB support.
-- **Built-In History**: Track state history out-of-the-box for undo/redo functionality.
-- **Integrated API Helpers**: Work with REST APIs and server-sent events (SSE) with built-in optimistic updates.
-- **Developer Tools**: Debug and monitor state changes with our dedicated devtools.
+Full documentation is available in the [docs](./docs) directory. You can also view the online documentation at [anchor.dev](https://anchor.dev) (coming soon).
 
 ## 🚀 Getting Started
 
-Here's how you can start using Anchor in your project:
+Unlike traditional React state management which requires explicit setState calls and complex state update logic, Anchor allows you to work with state naturally:
 
-1. **Installing the Library**
+```jsx
+import { useAnchor } from '@anchor/react';
+import { observable } from '@anchor/react/components';
 
-```bash
-npm install @beerush/anchor
-```
+const TodoApp = observable(() => {
+  const [todos] = useAnchor([
+    { id: 1, text: 'Learn Anchor', completed: true },
+    { id: 2, text: 'Build an app', completed: false },
+  ]);
 
-2. **Using Anchor**
+  // Add a new todo - just mutate the state directly!
+  const addTodo = (text) => {
+    todos.push({ id: Date.now(), text, completed: false });
+  };
 
-```typescript
-import { anchor } from '@anchor/core';
+  // Toggle completion status - direct mutation
+  const toggleTodo = (todo) => {
+    todo.completed = !todo.completed;
+  };
 
-const myState = anchor({ foo: 'bar', count: 1 });
+  // Remove a todo - simple array manipulation
+  const removeTodo = (todo) => {
+    const index = todos.indexOf(todo);
+    if (index !== -1) {
+      todos.splice(index, 1);
+    }
+  };
 
-myState.foo = 'baz';
-myState.count += 1;
-
-console.log(myState.foo); // baz
-console.log(myState.count); // 2
+  return (
+    <div>
+      <ul>
+        {todos.map((todo) => (
+          <li key={todo.id}>
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }} onClick={() => toggleTodo(todo)}>
+              {todo.text}
+            </span>
+            <button onClick={() => removeTodo(todo)}>Remove</button>
+          </li>
+        ))}
+      </ul>
+      <button onClick={() => addTodo('New task')}>Add Todo</button>
+    </div>
+  );
+});
 ```
 
 ## 🤝 Support and Contributions
