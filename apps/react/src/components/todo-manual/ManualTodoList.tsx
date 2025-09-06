@@ -1,4 +1,4 @@
-import { type FC, useMemo, useRef, useCallback } from 'react';
+import { type FC, useCallback, useMemo, useRef } from 'react';
 import { ManualTodoItem } from './ManualTodoItem.js';
 import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoItem } from '@lib/todo.js';
@@ -11,7 +11,7 @@ export const ManualTodoList: FC<{
 }> = ({ todos, onToggle, onRemove }) => {
   const ref = useRef<HTMLUListElement>(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     manualTodoStats.list.value++;
   });

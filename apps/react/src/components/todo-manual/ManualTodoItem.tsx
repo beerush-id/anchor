@@ -21,7 +21,7 @@ export const ManualTodoItem: FC<{
   ({ todo, onToggle, onRemove }) => {
     const ref = useRef<HTMLLIElement>(null);
 
-    debugRender(ref.current);
+    debugRender(ref);
     useUpdateStat(() => {
       manualTodoStats.item.value++;
     });

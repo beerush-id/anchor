@@ -10,7 +10,7 @@ export const CartItemList: FC<{ items: CartItemType[] }> = ({ items }) => {
     });
   });
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="p-4 space-y-4">

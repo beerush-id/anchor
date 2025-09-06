@@ -66,7 +66,7 @@ export const TodoApp: FC = () => {
 const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ panel }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="flex items-center">
@@ -84,7 +84,7 @@ const TodoPanel: FC<{ panel: { info: boolean; code: boolean } }> = observed(({ p
 const InfoPanel: FC<{ panel: { info: boolean } }> = observed(({ panel }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="text-sm text-slate-400">
@@ -101,7 +101,7 @@ const InfoPanel: FC<{ panel: { info: boolean } }> = observed(({ panel }) => {
 const CodePanel: FC<{ panel: { code: boolean } }> = observed(({ panel }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="bg-slate-950">

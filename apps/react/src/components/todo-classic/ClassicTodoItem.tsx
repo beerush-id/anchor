@@ -20,7 +20,7 @@ export const ClassicTodoItem: FC<{
 }> = memo(({ todo, onToggle, onRemove }) => {
   const ref = useRef<HTMLLIElement>(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     classicTodoStats.item.value++;
   });

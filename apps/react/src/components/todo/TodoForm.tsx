@@ -26,7 +26,7 @@ export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({
     setNewText('');
   };
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     todoStats.form.value++;
   });

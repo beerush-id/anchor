@@ -190,7 +190,7 @@ const ManualTodoPanel: FC<{
 }> = ({ panel, toggleInfo, toggleCode }) => {
   const ref = useRef<HTMLDivElement>(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="flex items-center">
@@ -208,7 +208,7 @@ const ManualTodoPanel: FC<{
 const ManualInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
   const ref = useRef<HTMLDivElement>(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="text-sm text-slate-400">
@@ -225,7 +225,7 @@ const ManualInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
 const ManualCodePanel: FC<{ panel: { code: boolean } }> = ({ panel }) => {
   const ref = useRef<HTMLDivElement>(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="bg-slate-950">

@@ -18,7 +18,7 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
   const form = useInherit(item, ['name']);
   setDebugger(undefined);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   const handleNameChange: KeyboardEventHandler<HTMLInputElement> = (event) => {
     if (event.key === 'Enter') {
@@ -54,7 +54,7 @@ export const CartItem: FC<{ items: CartItemType[]; item: CartItemType }> = memo(
 
 export const CartItemControl: FC<{ item: CartItemType; items: CartItemType[] }> = observed(({ item, items }) => {
   const ref = useRef(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const handleRemove = () => {
     const index = items.indexOf(item);

@@ -11,7 +11,7 @@ export const ClassicTodoList: FC<{
 }> = ({ todos, onToggle, onRemove }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     classicTodoStats.list.value++;
   });

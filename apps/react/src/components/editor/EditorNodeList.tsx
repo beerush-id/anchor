@@ -1,11 +1,11 @@
 import { debugRender, useObserved, useValueIs } from '@anchor/react';
-import { type CssNode, editorApp, editorWriter, parseAll, type StyleVariant } from '@lib/editor.js';
+import { type CssNode, editorApp, editorWriter, parseAllCss, type StyleVariant } from '@lib/editor.js';
 import { type FC, useRef } from 'react';
 import { type Immutable } from '@anchor/core';
 
 export default function EditorNodeList() {
   const ref = useRef<HTMLDivElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const nodes = useObserved(() => editorApp.nodes);
 
@@ -22,7 +22,7 @@ export default function EditorNodeList() {
 
 const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
   const ref = useRef<HTMLLIElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const { label, selector } = useObserved(() => ({ label: node.label, selector: node.selector }));
   const active = useValueIs(editorApp, 'current', node);
@@ -30,7 +30,7 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
   const handleSelect = () => {
     editorWriter.current = node;
     editorWriter.currentStyle = node.style;
-    editorWriter.currentCssContent = parseAll();
+    editorWriter.currentCssContent = parseAllCss();
   };
 
   return (
@@ -59,7 +59,7 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
 
 const NodeVariant: FC<{ node: CssNode | Immutable<CssNode>; variant?: StyleVariant }> = ({ node, variant }) => {
   const ref = useRef<HTMLButtonElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const active = useValueIs(editorApp, 'currentStyle', variant?.style ?? node.style);
   const isEmpty = !Object.keys(variant?.style ?? node.style).length;

@@ -5,7 +5,7 @@ import { debugRender } from '@anchor/react';
 export const ClassicTodoStats: FC<{ stats: ITodoStats }> = ({ stats }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="flex items-center justify-between px-10 pb-4">

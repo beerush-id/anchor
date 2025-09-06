@@ -23,7 +23,7 @@ export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAd
     setNewTodoText('');
   };
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     classicTodoStats.form.value++;
   });

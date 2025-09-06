@@ -3,7 +3,7 @@ import { debugRender } from '@anchor/react';
 
 export const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const ref = useRef(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div

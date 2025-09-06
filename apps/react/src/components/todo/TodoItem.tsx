@@ -17,7 +17,7 @@ export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem
   const ref = useRef<HTMLLIElement>(null);
   const [text, completed] = useObserved(() => [todo.text, todo.completed]);
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     todoStats.item.value++;
   });

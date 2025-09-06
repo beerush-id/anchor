@@ -104,10 +104,22 @@ body {
     @apply px-2 py-1 w-full text-xs font-semibold text-slate-300 h-[28px];
   }
 
-  &::-webkit-inner-spin-button {
+  &:not(:hover)::-webkit-inner-spin-button,
+  &:not(:hover)::-webkit-outer-spin-button {
     -webkit-appearance: none;
+    appearance: none;
     margin: 0;
   }
+
+  &[type='number']:not(:hover) {
+    -moz-appearance: textfield;
+  }
+}
+
+select.anchor-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .page-section {

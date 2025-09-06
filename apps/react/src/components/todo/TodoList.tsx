@@ -9,7 +9,7 @@ export const TodoList: FC<{ todos: ITodoList; stats: ITodoStats }> = observed(({
   const ref = useRef(null);
   const items = useDerivedList(todos, 'id');
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     todoStats.list.value++;
   });

@@ -10,7 +10,7 @@ export const RenderStatItem: FC<{ stat: RenderStatProp }> = ({ stat }) => {
   const ref = useRef(null);
   const snapshot = useSnapshot(stat);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="flex flex-col items-center px-4 text-center flex-1">

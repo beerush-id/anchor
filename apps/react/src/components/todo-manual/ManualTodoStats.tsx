@@ -1,4 +1,4 @@
-import { type FC, useRef, memo } from 'react';
+import { type FC, memo, useRef } from 'react';
 import type { ITodoStats } from '@lib/todo.js';
 import { debugRender } from '@anchor/react';
 
@@ -6,7 +6,7 @@ export const ManualTodoStats: FC<{ stats: ITodoStats }> = memo(
   ({ stats }) => {
     const ref = useRef<HTMLDivElement>(null);
 
-    debugRender(ref.current);
+    debugRender(ref);
 
     return (
       <div ref={ref} className="flex items-center justify-between px-10 pb-4">

@@ -125,7 +125,7 @@ const ClassicTodoPanel: FC<{
 }> = ({ panel, toggleInfo, toggleCode }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="flex items-center">
@@ -143,7 +143,7 @@ const ClassicTodoPanel: FC<{
 const ClassicInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="text-sm text-slate-400">
@@ -160,7 +160,7 @@ const ClassicInfoPanel: FC<{ panel: { info: boolean } }> = ({ panel }) => {
 const ClassicCodePanel: FC<{ panel: { code: boolean } }> = ({ panel }) => {
   const ref = useRef(null);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className="bg-slate-950">

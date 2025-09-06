@@ -7,6 +7,7 @@ import {
   CaseLower,
   CaseSensitive,
   CaseUpper,
+  ChevronDown,
   Dot,
   Italic,
   PanelBottomDashed,
@@ -40,12 +41,15 @@ export default function EditorTextPanel() {
     <>
       <PanelRow>
         <PanelColumn label="Font family">
-          <Select bind={styleWriter} name="fontFamily" className="anchor-input tool-input pr-4">
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Verdana">Verdana</option>
-          </Select>
+          <label className="relative">
+            <Select bind={styleWriter} name="fontFamily" className="anchor-input tool-input pr-4">
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+            </Select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2" />
+          </label>
         </PanelColumn>
         <PanelColumn className="flex-1" label="Size">
           <Input

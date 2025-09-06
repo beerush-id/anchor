@@ -29,6 +29,8 @@ export type Editor = {
   currentCssContent: string;
   nodes: CssNode[];
   viewMode: 'canvas' | 'code' | 'json';
+  css: () => string;
+  json: () => string;
 };
 
 export function createInitVariants(type: CssNode['type']) {
@@ -159,29 +161,34 @@ const initNodes: CssNode[] = [
   createNode('select', '.select', 'Select'),
 ];
 
-export const editorApp = anchor.immutable<Editor>({
+export const editorApp = anchor.immutable({
   current: initNodes[1],
   rootStyle: initNodes[0].style,
   currentStyle: initNodes[1].style,
   currentCssContent: '',
   nodes: initNodes,
   viewMode: 'canvas',
-});
+  css: () => parseAllCss(),
+  json: () => JSON.stringify(anchor.read(editorApp.nodes), null, 2),
+} as Editor);
 
 export const editorWriter = anchor.writable(editorApp, ['currentStyle', 'current', 'currentCssContent']);
 
-export function parseAll() {
+export function parseAllCss() {
   const contents: string[] = [];
-  for (const node of editorApp.nodes) {
+
+  for (const node of anchor.read(editorApp.nodes)) {
     const content = parseCss(node as CssNode);
     if (content) {
       contents.push(content);
     }
   }
+
   return contents.join('\n\n');
 }
 
 export function parseCss(node: CssNode) {
+  if (anchor.has(node)) node = anchor.read(node) as CssNode;
   if (!Object.keys(node?.style ?? {}).length) return '';
 
   const contents = [styleToCss(node.selector, node.style)];
@@ -199,14 +206,31 @@ export function styleToCss(selector: string, style: StyleRec) {
   const contents: string[] = [`${selector} {`];
 
   for (const [key, value] of Object.entries(style)) {
-    if (!value) continue;
-    const digit = parseFloat(value as string);
-    contents.push(`  ${toDashed(key)}: ${isNaN(digit) ? value : `${digit}px`};`);
+    if (typeof value === 'undefined' || value === null) continue;
+    contents.push(`  ${toDashed(key)}: ${typeof value === 'number' ? `${value}px` : value};`);
   }
 
   contents.push('}');
 
   return contents.join('\n');
+}
+
+export function stylize(elem: HTMLElement, style: StyleRec): StyleRec {
+  const declarations: StyleRec = {};
+
+  for (const [key, value] of Object.entries(style)) {
+    if (typeof value === 'undefined' || value === null) continue;
+    if (typeof value === 'number' && !isNaN(value)) {
+      declarations[key] = `${value}px`;
+    } else {
+      declarations[key] = value;
+    }
+  }
+
+  elem.setAttribute('style', '');
+  Object.assign(elem.style, declarations);
+
+  return declarations;
 }
 
 function toDashed(str: string) {

@@ -24,7 +24,7 @@ export const CodeBlock: FC<{ code: string; lang?: string; className?: string }> 
     return highlighter && highlighter.codeToHtml(code, { lang, theme: 'catppuccin-mocha' });
   }, [code, lang]);
 
-  debugRender(ref.current);
+  debugRender(ref);
 
   if (output) {
     return <div ref={ref} className={`code-block ${className}`} dangerouslySetInnerHTML={{ __html: output }} />;

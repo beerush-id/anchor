@@ -8,7 +8,7 @@ export const PanelColumn: FC<HTMLAttributes<HTMLDivElement> & { label?: string; 
   ...props
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <div ref={ref} className={`panel-column flex flex-col gap-2 ${className}`} {...props}>

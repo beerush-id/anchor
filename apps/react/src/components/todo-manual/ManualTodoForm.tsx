@@ -1,4 +1,4 @@
-import { type FC, type FormEventHandler, useCallback, useRef, useState, memo } from 'react';
+import { type FC, type FormEventHandler, memo, useCallback, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
 import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
@@ -25,7 +25,7 @@ export const ManualTodoForm: FC<{ onAdd: (text: string) => void }> = memo(({ onA
     setNewText(e.target.value);
   }, []);
 
-  debugRender(ref.current);
+  debugRender(ref);
   useUpdateStat(() => {
     manualTodoStats.form.value++;
   });

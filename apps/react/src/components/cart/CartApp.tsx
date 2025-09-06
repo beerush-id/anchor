@@ -8,7 +8,7 @@ import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { ListRestart, Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { Input } from '@anchor/react/components';
+import { Input, reactive } from '@anchor/react/components';
 import { Button, IconButton } from '../Button.js';
 
 export const CartApp: FC = () => {
@@ -19,14 +19,21 @@ export const CartApp: FC = () => {
     { id: '5', name: 'Pants', price: 69, quantity: 0 },
   ]);
 
-  debugRender(ref.current);
+  debugRender(ref);
+
+  const Stats = reactive(function Stats() {
+    return <span className="text-sm text-slate-300">{cartItems.length} Items</span>;
+  });
 
   return (
     <div ref={ref} className="mt-12 w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
       <Card className="col-span-2">
         <CardHeader>
-          <ShoppingCart className="w-4 h-4 mr-2" />
-          <h3 className="flex-1 font-semibold text-slate-200">Your Cart</h3>
+          <div className="flex items-center flex-1">
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            <h3 className="flex-1 font-semibold text-slate-200">Your Cart</h3>
+            <Stats />
+          </div>
           <CartHistory items={cartItems} />
         </CardHeader>
         <CartItemList items={cartItems} />
@@ -55,7 +62,7 @@ const CartForm: FC<{ items: CartItemType[] }> = ({ items }) => {
     firstInputRef.current?.focus();
   };
 
-  debugRender(formRef.current);
+  debugRender(formRef);
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="mt-4 flex items-end p-4 gap-4 border-t border-t-slate-700">

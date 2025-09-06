@@ -1,6 +1,6 @@
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
-import { useAnchor, useDerivedRef, useImmutable } from '@anchor/react';
+import { useAnchor, useDerived, useImmutable } from '@anchor/react';
 import { observed } from '@anchor/react/components';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
@@ -161,7 +161,7 @@ export const Performance = () => {
     metrics: metrics[0]?.metrics,
     current: metrics[0]?.metrics?.[0],
   });
-  const buttons = useDerivedRef(metrics, (snap) => {
+  const buttons = useDerived(metrics, (snap) => {
     return snap.map((item) => {
       return {
         name: item.name,

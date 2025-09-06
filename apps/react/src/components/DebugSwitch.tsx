@@ -5,7 +5,7 @@ import { Tooltip } from './Tooltip.js';
 
 export function DebugSwitch() {
   const ref = useRef<HTMLDivElement>(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const [debugMode, setDebugMode] = useState(isDebugRenderer());
 

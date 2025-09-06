@@ -51,7 +51,7 @@ export const AuthForm: FC<{ formData: AuthFormData; className?: string }> = ({ f
 
 export const FormControl: FC<{ payload: AuthFormData }> = observed(({ payload }) => {
   const ref = useRef(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   const disabled = !payload.password || !payload.email || !payload.name || !schema.safeParse(payload).success;
 

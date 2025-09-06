@@ -9,7 +9,7 @@ export type InputProps<T extends Record<string, string>> = {
 
 function InputComp<T extends Record<string, string>>({ bindTo, name, className, ...props }: InputProps<T>) {
   const ref = useRef(null);
-  debugRender(ref.current);
+  debugRender(ref);
 
   return (
     <input
