@@ -1,4 +1,4 @@
-import { StateNode } from './node.js';
+import type { StateNode } from './node.js';
 
 export class StateMap {
   [id: string]: StateNode | unknown;

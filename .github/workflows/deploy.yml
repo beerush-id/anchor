@@ -33,19 +33,14 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build all packages
-        run: bun run build
+      - name: Build React app
+        run: bun run build:react
 
       - name: Run root tests
         run: bun run test
 
       - name: Build documentation
         run: bun run docs:build
-
-      - name: Build React app
-        run: |
-          cd apps/react
-          bun run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

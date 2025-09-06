@@ -8,12 +8,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./components": {
-      "types": "./dist/components/index.d.ts",
-      "import": "./dist/components/index.js"
-    },
-    "./components/*": "./dist/components/*"
+    }
   },
   "files": [
     "dist"
