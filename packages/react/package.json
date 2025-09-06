@@ -12,10 +12,6 @@
     "./components": {
       "types": "./dist/components/index.d.ts",
       "import": "./dist/components/index.js"
-    },
-    "./preprocessor": {
-      "types": "./dist/preprocessor/index.d.ts",
-      "import": "./dist/preprocessor/index.js"
     }
   },
   "files": [
