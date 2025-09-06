@@ -1,23 +1,8 @@
 import { useValueIs } from '../derive.js';
-import {
-  type ButtonHTMLAttributes,
-  type MouseEventHandler,
-  type ReactNode,
-  type RefObject,
-  useMemo,
-  useRef,
-} from 'react';
+import { type HTMLAttributes, type MouseEventHandler, useMemo, useRef } from 'react';
 import type { WritableKeys } from '@anchor/core';
 import { debugRender } from '../dev.js';
-
-export type ToggleProps<T, K extends WritableKeys<T>> = ButtonHTMLAttributes<HTMLButtonElement> & {
-  ref?: RefObject<HTMLButtonElement | null>;
-  bind: T;
-  name: K;
-  value?: T[K];
-  inherits?: Record<string, string | number | undefined>[];
-  onChange?: (current: T[K] | undefined) => void;
-};
+import type { ToggleProps } from './Types.js';
 
 export function Toggle<T, K extends WritableKeys<T>>({
   bind,
@@ -81,6 +66,6 @@ export function Toggle<T, K extends WritableKeys<T>>({
   );
 }
 
-export function ToggleGroup({ children, className }: { children: ReactNode; className?: string }) {
+export function ToggleGroup({ children, className }: HTMLAttributes<HTMLDivElement>) {
   return <div className={`toggle-group ${className}`}>{children}</div>;
 }

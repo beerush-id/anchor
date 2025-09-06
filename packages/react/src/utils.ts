@@ -1,4 +1,4 @@
-import { type State } from '@anchor/core';
+import { BATCH_MUTATION_KEYS, type BatchMutation, type KeyLike, type State, type StateChange } from '@anchor/core';
 import type { AnchoredProps, Bindable } from './types.js';
 
 /**
@@ -67,4 +67,30 @@ export function pickValues<T extends State>(state: T, keys: (keyof T)[]): [T, T[
   }
 
   return [result, values] as const;
+}
+
+/**
+ * Checks if a state change event is a mutation of a specific key.
+ *
+ * @param event - The state change event.
+ * @param key - The key to check for mutation.
+ */
+export function isMutationOf(event: StateChange, key: KeyLike) {
+  if (event.type === 'init') return false;
+  return mutationKeys(event).includes(key as string);
+}
+
+/**
+ * Extracts the keys that were mutated in a state change event.
+ *
+ * @param event - The state change event.
+ * @returns An array of keys that were mutated.
+ */
+export function mutationKeys(event: StateChange) {
+  if (BATCH_MUTATION_KEYS.has(event.type as BatchMutation)) {
+    return Object.keys(event.prev ?? {});
+  }
+
+  // Only expect one key (single level) for non-batch mutations.
+  return event.keys.slice(0, 1);
 }

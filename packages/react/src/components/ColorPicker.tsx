@@ -1,9 +1,9 @@
-import { type InputProps } from './Input.js';
 import type { Bindable } from '../types.js';
 import type { WritableKeys } from '@anchor/core';
 import { useValue } from '../derive.js';
 import { useMemo, useRef } from 'react';
 import { debugRender } from '../dev.js';
+import type { InputProps } from './Types.js';
 
 export function ColorPicker<T extends Bindable, K extends WritableKeys<T>>({
   bind,
