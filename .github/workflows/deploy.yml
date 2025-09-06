@@ -33,8 +33,20 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Install MonoPKG
+        run: bun install -g monopkg
+
+      - name: Build The Core Package
+        run: bpkg run build -f packages/core
+
+      - name: Build The Storage Package
+        run: bpkg run build -f packages/storage
+
+      - name: Build The React Package
+        run: bpkg run build -f packages/react
+
       - name: Build React app
-        run: bun run build:react
+        run: bpkg run build -f apps/react
 
       - name: Run root tests
         run: bun run test
