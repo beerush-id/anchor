@@ -1,7 +1,7 @@
 import {
   type HTMLAttributes,
   type InputHTMLAttributes,
-  type Ref,
+  type RefObject,
   type SelectHTMLAttributes,
   useMemo,
   useRef,
@@ -18,11 +18,12 @@ export type BindProps<T extends Bindable, K extends WritableKeys<T>> = {
 export type ForwardProps<T extends HTMLAttributes<HTMLElement>> = Omit<T, 'name'>;
 
 export type InputProps<T extends Bindable, K extends WritableKeys<T>> = BindProps<T, K> & {
-  ref?: Ref<HTMLInputElement>;
+  ref?: RefObject<HTMLInputElement | null>;
   inherits?: Record<string, string | number | undefined>[];
 } & ForwardProps<InputHTMLAttributes<HTMLInputElement>>;
 
 export function Input<T extends Bindable, K extends WritableKeys<T>>({
+  ref,
   bind,
   name,
   value,
@@ -31,8 +32,8 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
   placeholder,
   ...props
 }: InputProps<T, K>) {
-  const ref = useRef<HTMLInputElement>(null);
-  debugRender(ref);
+  const selfRef = useRef<HTMLInputElement>(null);
+  debugRender(ref ?? selfRef);
 
   const inheritedPlaceholder: string | undefined = useMemo(() => {
     if (!Array.isArray(inherits) || !inherits.length) return undefined;
@@ -46,7 +47,7 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
 
   return (
     <input
-      ref={ref}
+      ref={ref ?? selfRef}
       name={name as string}
       value={current}
       placeholder={inheritedPlaceholder ?? placeholder}
@@ -74,20 +75,21 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
 }
 
 export function Checkbox<T extends Bindable, K extends WritableKeys<T>>({
+  ref,
   bind,
   name,
   checked,
   onChange,
   ...props
 }: InputProps<T, K>) {
-  const ref = useRef<HTMLInputElement>(null);
-  debugRender(ref);
+  const selfRef = useRef<HTMLInputElement>(null);
+  debugRender(ref ?? selfRef);
 
   const current = (useValue(bind, name) ?? checked ?? false) as boolean;
 
   return (
     <input
-      ref={ref}
+      ref={ref ?? selfRef}
       type="checkbox"
       name={name as string}
       checked={current}
@@ -104,20 +106,21 @@ export function Checkbox<T extends Bindable, K extends WritableKeys<T>>({
 }
 
 export function Radio<T extends Bindable, K extends WritableKeys<T>>({
+  ref,
   bind,
   name,
   checked,
   onChange,
   ...props
 }: InputProps<T, K>) {
-  const ref = useRef<HTMLInputElement>(null);
-  debugRender(ref);
+  const selfRef = useRef<HTMLInputElement>(null);
+  debugRender(ref ?? selfRef);
 
   const current = (useValue(bind, name) ?? checked ?? false) as boolean;
 
   return (
     <input
-      ref={ref}
+      ref={ref ?? selfRef}
       type="radio"
       name={name as string}
       checked={current}
@@ -134,24 +137,25 @@ export function Radio<T extends Bindable, K extends WritableKeys<T>>({
 }
 
 export type SelectProps<T extends Bindable, K extends WritableKeys<T>> = BindProps<T, K> & {
-  ref?: Ref<HTMLSelectElement>;
+  ref?: RefObject<HTMLSelectElement | null>;
 } & ForwardProps<SelectHTMLAttributes<HTMLSelectElement>>;
 
 export function Select<T extends Bindable, K extends WritableKeys<T>>({
+  ref,
   bind,
   name,
   value,
   onChange,
   ...props
 }: SelectProps<T, K>) {
-  const ref = useRef<HTMLSelectElement>(null);
-  debugRender(ref);
+  const selfRef = useRef<HTMLSelectElement>(null);
+  debugRender(ref ?? selfRef);
 
   const current = (useValue(bind, name) ?? value ?? '') as string;
 
   return (
     <select
-      ref={ref}
+      ref={ref ?? selfRef}
       name={name as string}
       value={current}
       onChange={(e) => {

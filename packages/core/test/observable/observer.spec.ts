@@ -498,7 +498,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       const errorMessage = errorSpy.mock.calls[0][0];
 
       expect(errorMessage).toContain('⚠️\x1b[31m\x1b[1m[anchor]');
-      expect(errorMessage).toContain('Attempted to observe too many states');
+      expect(errorMessage).toContain('Attempted to observe too many (6) states');
 
       // Restore original configuration
       anchor.configure(originalConfig);

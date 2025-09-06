@@ -1,5 +1,17 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { anchor, captureStack, derive, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
+import {
+  anchor,
+  BATCH_MUTATION_KEYS,
+  type BatchMutation,
+  captureStack,
+  derive,
+  type KeyLike,
+  type Linkable,
+  type ObjLike,
+  outsideObserver,
+  type State,
+  type StateChange,
+} from '@anchor/core';
 import type { TransformFn, TransformSnapshotFn } from './types.js';
 import { useObserverRef } from './observable.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
@@ -120,11 +132,12 @@ export function useInherit<T extends State, K extends keyof T>(state: T, picks: 
       state,
       (newValue, event) => {
         if (event.type !== 'init') {
-          const key = event.keys.join('.') as K;
-
-          if (picks.includes(key)) {
-            output[key] = newValue[key];
-          }
+          const keys = mutationKeys(event) as K[];
+          keys.forEach((key) => {
+            if (picks.includes(key)) {
+              output[key] = newValue[key];
+            }
+          });
         }
       },
       false
@@ -160,7 +173,7 @@ export function useValue<T extends State, K extends keyof T>(state: T, key: K): 
     return derive(
       state,
       (next, event) => {
-        if (event.type !== 'init' && event.keys.join('.') === key) {
+        if (isMutationOf(event, key)) {
           setVersion((c) => c + 1);
         }
       },
@@ -215,7 +228,7 @@ export function useValueIs<T extends State, K extends keyof T>(state: T, key: K,
     const unsubscribe = derive(
       state,
       (_, event) => {
-        if (event.type !== 'init' && event.keys.join('.') === key) {
+        if (isMutationOf(event, key)) {
           const next = state[key] === expect;
 
           if (next !== ref.matched) {
@@ -308,6 +321,18 @@ export function useSnapshot<T extends Linkable, R>(state: T, transform?: Transfo
   return value;
 }
 
+/**
+ * React hook that creates a derived reference from a reactive state.
+ * The handle function is called whenever the state changes, receiving the current state and the current ref value.
+ * The hook returns a RefObject that can be used to get or set the current ref value.
+ * When the ref value is set, the handle function is called with the current state and the new ref value.
+ *
+ * @template S - The type of the reactive state.
+ * @template R - The type of the ref value.
+ * @param {S} state - The reactive state to derive from.
+ * @param {(current: S, ref: R | null) => void} handle - The function to call when the state changes or the ref value is set.
+ * @returns {RefObject<R | null>} - A RefObject that can be used to get or set the current ref value.
+ */
 export function useDerivedRef<S extends State, R>(
   state: S,
   handle: (current: S, ref: R | null) => void
@@ -329,4 +354,30 @@ export function useDerivedRef<S extends State, R>(
       handle(anchor.read(state) as S, valueRef.current);
     },
   };
+}
+
+/**
+ * Checks if a state change event is a mutation of a specific key.
+ *
+ * @param event - The state change event.
+ * @param key - The key to check for mutation.
+ */
+export function isMutationOf(event: StateChange, key: KeyLike) {
+  if (event.type === 'init') return false;
+  return mutationKeys(event).includes(key as string);
+}
+
+/**
+ * Extracts the keys that were mutated in a state change event.
+ *
+ * @param event - The state change event.
+ * @returns An array of keys that were mutated.
+ */
+export function mutationKeys(event: StateChange) {
+  if (BATCH_MUTATION_KEYS.has(event.type as BatchMutation)) {
+    return Object.keys(event.prev ?? {});
+  }
+
+  // Only expect one key (single level) for non-batch mutations.
+  return event.keys.slice(0, 1);
 }
