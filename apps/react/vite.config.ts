@@ -5,7 +5,7 @@ import * as path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? './' : '/',
+  base: mode === 'production' ? '/anchor' : '/',
   resolve: {
     alias: {
       'react-dom/client': 'react-dom/profiling',

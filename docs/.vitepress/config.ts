@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitepress';
 
-const BASE_URL = '/docs';
+const BASE_URL = '/anchor/docs';
 const PAGE_URL = 'https://anchor.beerush.io/docs';
 const PAGE_TITLE = 'Anchor Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - State Management Library`;
