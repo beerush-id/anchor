@@ -33,11 +33,20 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Install MonoPKG
-        run: bun install -g monopkg
+      - name: Build Core Package
+        run: bun run --filter "@anchor/core" build
+
+      - name: Build Devtool Package
+        run: bun run --filter "@anchor/devtool" build
+
+      - name: Build Storage Package
+        run: bun run --filter "@anchor/storage" build
+
+      - name: Build React Package
+        run: bun run --filter "@anchor/react" build
 
       - name: Build React app
-        run: bpkg run build -f apps/react --sequential
+        run: bun run --filter "@anchor-app/react" build
 
       - name: Run root tests
         run: bun run test
