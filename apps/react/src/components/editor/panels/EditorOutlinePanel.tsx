@@ -1,4 +1,4 @@
-import { Dot, Eraser, Palette, Square, SquareDashed } from 'lucide-react';
+import { Eraser, GalleryThumbnails, Palette, Square, SquareDashed } from 'lucide-react';
 import { Tooltip } from '../../Tooltip.js';
 import { ColorPicker, Input, Toggle, ToggleGroup } from '@anchor/react/components';
 import { useObserved, useWriter } from '@anchor/react';
@@ -60,7 +60,7 @@ export default function EditorOutlinePanel() {
               <Tooltip>Dashed</Tooltip>
             </Toggle>
             <Toggle bind={styleWriter} name="borderStyle" value="dotted" inherits={[base]} className="toggle-btn">
-              <Dot size={TOOL_ICON_SIZE} />
+              <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>
           </ToggleGroup>
@@ -170,7 +170,7 @@ export default function EditorOutlinePanel() {
               <Tooltip>Dashed</Tooltip>
             </Toggle>
             <Toggle bind={styleWriter} name="outlineStyle" value="dotted" inherits={[base]} className="toggle-btn">
-              <Dot size={TOOL_ICON_SIZE} />
+              <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>
           </ToggleGroup>

@@ -26,9 +26,9 @@ export const TodoBenchmark = () => {
       <Section id="todo-benchmark" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 md:min-h-screen">
         <SectionTitle>Try It Yourself: FLOOD THE DOM!</SectionTitle>
         <SectionDescription className="text-center mt-4 max-w-4xl mx-auto">
-          This demo is built with profiling enabled, allowing you to use React DevTools to analyze render times and see
-          how Anchor's fine-grained reactivity prevent re-renders, while a classic approach can cause performance to
-          degrade as the app scales.
+          This demo is built with profiling enabled, allowing you to use React DevTools to analyze performance as it
+          scales. It highlights how the same complexity effort can lead to vastly different performance outcomes,
+          powered by Anchor.
         </SectionDescription>
         <div className="flex items-center mt-12 justify-center py-4">
           <Button onClick={() => setOptimized((c) => !c)}>

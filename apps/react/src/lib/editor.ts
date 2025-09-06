@@ -116,7 +116,7 @@ const initNodes: CssNode[] = [
       alignItems: 'center',
       height: 40,
       backgroundColor: '#cf942a',
-      fontWeight: 'bold',
+      fontWeight: '500',
       paddingBlock: 8,
       paddingInline: 16,
       borderRadius: 5,

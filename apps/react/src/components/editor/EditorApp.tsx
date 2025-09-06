@@ -28,7 +28,7 @@ export default function EditorApp() {
   }
 
   return (
-    <div ref={ref} className="px-8 max-w-7xl mx-auto flex flex-col w-screen">
+    <div ref={ref} className="flex flex-col w-full max-w-6xl mx-auto">
       <EditorOutput />
       <Card className="flex-1">
         <CardHeader>

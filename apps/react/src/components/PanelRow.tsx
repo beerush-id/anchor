@@ -6,7 +6,7 @@ export const PanelRow: FC<HTMLAttributes<HTMLDivElement>> = ({ children, classNa
   debugRender(ref);
 
   return (
-    <div ref={ref} className={`panel-row flex gap-2 justify-between max-w-[230px] ${className}`} {...props}>
+    <div ref={ref} className={`panel-row flex gap-2 justify-between max-w-[250px] ${className}`} {...props}>
       {children}
     </div>
   );

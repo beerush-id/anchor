@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 export let DEV_MODE = true;
 export let STRICT_MODE = true;
 export let DEBUG_RENDERER = false;
+export let DEBUG_RENDERER_DURATION = 300;
 
 export function setDevMode(enabled: boolean, strict?: boolean) {
   DEV_MODE = enabled;
@@ -18,8 +19,9 @@ export function isStrictMode() {
   return STRICT_MODE;
 }
 
-export function setDebugRenderer(enabled: boolean) {
+export function setDebugRenderer(enabled: boolean, duration?: number) {
   DEBUG_RENDERER = enabled;
+  DEBUG_RENDERER_DURATION = duration ?? DEBUG_RENDERER_DURATION;
 }
 
 export function isDebugRenderer() {
@@ -44,5 +46,5 @@ function flashNode(element: HTMLElement | null = null, color = 'rgba(0,140,255,0
 
   setTimeout(() => {
     element.style.boxShadow = '';
-  }, 100);
+  }, DEBUG_RENDERER_DURATION);
 }

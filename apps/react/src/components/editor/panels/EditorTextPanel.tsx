@@ -8,10 +8,12 @@ import {
   CaseSensitive,
   CaseUpper,
   ChevronDown,
-  Dot,
+  GalleryThumbnails,
   Italic,
-  PanelBottomDashed,
+  RemoveFormatting,
+  SpellCheck2,
   Strikethrough,
+  TextCursor,
   Type,
   Underline,
 } from 'lucide-react';
@@ -43,6 +45,7 @@ export default function EditorTextPanel() {
         <PanelColumn label="Font family">
           <label className="relative">
             <Select bind={styleWriter} name="fontFamily" className="anchor-input tool-input pr-4">
+              <option value="inherit">Default</option>
               <option value="Arial">Arial</option>
               <option value="Times New Roman">Times New Roman</option>
               <option value="Courier New">Courier New</option>
@@ -76,9 +79,13 @@ export default function EditorTextPanel() {
               <Type size={TOOL_ICON_SIZE} />
               <Tooltip>Normal</Tooltip>
             </Toggle>
-            <Toggle bind={styleWriter} name="fontWeight" value="bold" inherits={[base, root]} className="toggle-btn">
+            <Toggle bind={styleWriter} name="fontWeight" value="500" inherits={[base, root]} className="toggle-btn">
               <Bold size={TOOL_ICON_SIZE} />
               <Tooltip>Bold</Tooltip>
+            </Toggle>
+            <Toggle bind={styleWriter} name="fontWeight" value="200" inherits={[base, root]} className="toggle-btn">
+              <TextCursor size={TOOL_ICON_SIZE} />
+              <Tooltip>Thin</Tooltip>
             </Toggle>
             <Toggle bind={styleWriter} name="fontStyle" value="italic" inherits={[base, root]} className="toggle-btn">
               <Italic size={TOOL_ICON_SIZE} />
@@ -138,6 +145,10 @@ export default function EditorTextPanel() {
               <CaseUpper size={TOOL_ICON_SIZE} />
               <Tooltip>UPPERCASE</Tooltip>
             </Toggle>
+            <Toggle bind={styleWriter} name="textTransform" value="none" inherits={[base, root]} className="toggle-btn">
+              <RemoveFormatting size={TOOL_ICON_SIZE} />
+              <Tooltip>None</Tooltip>
+            </Toggle>
           </ToggleGroup>
         </PanelColumn>
         <PanelColumn label="Decoration">
@@ -166,7 +177,7 @@ export default function EditorTextPanel() {
               value="dashed"
               inherits={[base, root]}
               className="toggle-btn">
-              <PanelBottomDashed size={TOOL_ICON_SIZE} />
+              <SpellCheck2 size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
             </Toggle>
             <Toggle
@@ -175,7 +186,7 @@ export default function EditorTextPanel() {
               value="dotted"
               inherits={[base, root]}
               className="toggle-btn">
-              <Dot size={TOOL_ICON_SIZE} />
+              <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>
           </ToggleGroup>
