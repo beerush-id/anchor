@@ -204,6 +204,82 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Tutorials',
+        collapsed: true,
+        items: [
+          {
+            text: 'Form Validation',
+            link: '/react/tutorial/form-validation',
+          },
+        ],
+      },
+      {
+        text: 'API Reference',
+        collapsed: true,
+        items: [
+          {
+            text: 'Core',
+            collapsed: true,
+            items: [
+              { text: 'Initialization', link: '/apis/core/initialization' },
+              { text: 'Observation', link: '/apis/core/observation' },
+              { text: 'Derivation', link: '/apis/core/derivation' },
+              { text: 'History', link: '/apis/core/history' },
+              { text: 'Request', link: '/apis/core/request' },
+              { text: 'Context', link: '/apis/core/context' },
+              { text: 'Utilities', link: '/apis/core/utility' },
+            ],
+          },
+          {
+            text: 'Storage',
+            collapsed: true,
+            items: [
+              { text: 'Persistent Storage', link: '/apis/storage/persistent' },
+              { text: 'Session Storage', link: '/apis/storage/session' },
+              { text: 'In-Memory Storage', link: '/apis/storage/memory' },
+            ],
+          },
+          {
+            text: 'React',
+            collapsed: true,
+            items: [
+              { text: 'Initialization', link: '/apis/react/initialization' },
+              { text: 'Observation', link: '/apis/react/observation' },
+              { text: 'Derivation', link: '/apis/react/derivation' },
+              { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
+              { text: 'Request', link: '/apis/react/request' },
+              { text: 'History', link: '/apis/react/history' },
+              { text: 'Error Handling', link: '/apis/react/error-handling' },
+              { text: 'Utilities', link: '/apis/react/utilities' },
+              { text: 'Components', link: '/apis/react/components' },
+            ],
+          },
+          {
+            text: 'Svelte',
+            collapsed: true,
+            items: [
+              { text: 'Initialization', link: '/apis/svelte/initialization' },
+              { text: 'Derivation', link: '/apis/svelte/derivation' },
+            ],
+          },
+          {
+            text: 'Vue',
+            collapsed: true,
+            items: [
+              { text: 'Initialization', link: '/apis/vue/initialization' },
+              { text: 'Derivation', link: '/apis/vue/derivation' },
+              { text: 'Request', link: '/apis/vue/request' },
+              { text: 'History', link: '/apis/vue/history' },
+              { text: 'Utilities', link: '/apis/vue/utilities' },
+            ],
+          },
+          {
+            text: 'Dev Tools',
+            link: '/apis/devtool',
+          },
+        ],
+      },
+      {
         text: 'Advanced',
         collapsed: true,
         items: [
