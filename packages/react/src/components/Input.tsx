@@ -12,7 +12,6 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
   pipe,
   value,
   inherits,
-  onBlur,
   onChange,
   placeholder,
   ...props
@@ -50,16 +49,13 @@ export function Input<T extends Bindable, K extends WritableKeys<T>>({
           } else {
             bind[name] = value as T[K];
           }
+
+          if (pipe) {
+            pipe[name] = bind[name];
+          }
         }
 
         onChange?.(e);
-      }}
-      onBlur={(e) => {
-        if (pipe) {
-          pipe[name] = bind[name];
-        }
-
-        onBlur?.(e);
       }}
       {...props}
     />

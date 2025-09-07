@@ -1,18 +1,24 @@
 import {
   anchor,
+  captureStack,
   createDebugger,
+  derive,
   getDebugger,
   type Linkable,
   type LinkableSchema,
   microtask,
+  type ModelError,
   softClone,
   softEqual,
+  type State,
   type StateOptions,
 } from '@anchor/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AnchorState, Setter } from './types.js';
+import type { AnchorState, ExceptionList, Setter } from './types.js';
 import { DEV_MODE } from './dev.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
+import { useStableRef } from './hooks.js';
+import { mutationKeys, pickValues } from './utils.js';
 
 // Dedicated state update list to work with Fast Refresh (HMR) support.
 const UPDATE_LIST = new Set();
@@ -154,4 +160,98 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
 
   return [state, setCurrent];
   // -- END_DEV_MODE -- //
+}
+
+/**
+ * React hook that captures and manages exceptions from a reactive state.
+ * It returns an object containing the current exception states for specified keys.
+ * When an exception occurs in the reactive state, it automatically updates the corresponding key in the returned object.
+ *
+ * @template T - The type of the reactive state object.
+ * @template R - The type of keys being tracked for exceptions.
+ * @param {T} state - The reactive state object to capture exceptions from.
+ * @param {ExceptionList<T, R>} init - Initial exception states for the specified keys.
+ * @returns {ExceptionList<T, R>} - An object containing the current exception states for the specified keys.
+ */
+export function useException<T extends State, R extends keyof T>(
+  state: T,
+  init?: ExceptionList<T, R>
+): ExceptionList<T, R> {
+  const stableRef = useStableRef<ExceptionList<T, R>>(() => anchor(init ?? {}), [state]);
+
+  useEffect(() => {
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to capture exception of a non-reactive state.', error);
+      return;
+    }
+
+    const release = anchor.catch(state, (event) => {
+      const key = event.keys.join('.') as R;
+
+      stableRef.stable = false;
+      stableRef.value[key] = (event.issues?.[0] ?? event.error) as ModelError;
+    });
+
+    const unsubscribe = derive(
+      state,
+      (_, e) => {
+        if (e.type !== 'init') {
+          const key = e.keys.join('.') as R;
+          stableRef.stable = false;
+          stableRef.value[key] = null;
+        }
+      },
+      false
+    );
+
+    return () => {
+      release();
+      unsubscribe();
+    };
+  }, [state]);
+
+  return stableRef.value;
+}
+
+/**
+ * React hook that allows you to inherit specific properties from a reactive state object.
+ * It returns a new object containing only the specified keys and their values.
+ * The returned object is reactive and will update when the source state changes.
+ *
+ * @template T - The type of the reactive state object.
+ * @template K - The type of keys being picked from the state.
+ * @param {T} state - The reactive state object to pick values from.
+ * @param {K[]} picks - An array of keys to pick from the state object.
+ * @returns {{ [key in K]: T[key] }} - A new reactive object containing only the picked properties.
+ */
+export function useInherit<T extends State, K extends keyof T>(state: T, picks: K[]): { [key in K]: T[key] } {
+  const [init, values] = pickValues(state, picks);
+  const cached = useMemo(() => init, values);
+  const output = anchor(cached);
+
+  useEffect(() => {
+    if (!anchor.has(state)) {
+      const error = new Error('State is not reactive.');
+      captureStack.violation.derivation('Attempted to pick values from a non-reactive state.', error);
+      return;
+    }
+
+    return derive(
+      state,
+      (newValue, event) => {
+        if (event.type !== 'init') {
+          const keys = mutationKeys(event) as K[];
+          keys.forEach((key) => {
+            if (picks.includes(key)) {
+              output[key] = newValue[key];
+            }
+          });
+        }
+      },
+      false
+    );
+  }, [output]);
+
+  return output;
 }

@@ -1,10 +1,9 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { anchor, captureStack, derive, type Linkable, type ObjLike, outsideObserver, type State } from '@anchor/core';
-import type { ExceptionList, TransformFn, TransformSnapshotFn } from './types.js';
-import { useObserverRef } from './observable.js';
+import { anchor, captureStack, derive, type Linkable, type State } from '@anchor/core';
+import type { TransformFn } from './types.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
-import { depsChanged, isMutationOf, mutationKeys, pickValues } from './utils.js';
-import { useMicrotask, useStableRef } from './hooks.js';
+import { depsChanged, isMutationOf } from './utils.js';
+import { useMicrotask } from './hooks.js';
 
 /**
  * React hook that allows you to derive a computed value from a reactive state.
@@ -91,48 +90,6 @@ export function useBind<T extends State, R extends State>(
   useEffect(() => {
     return derive.bind(left, right, transformLeft, transformRight);
   }, [left, right]);
-}
-
-/**
- * React hook that allows you to inherit specific properties from a reactive state object.
- * It returns a new object containing only the specified keys and their values.
- * The returned object is reactive and will update when the source state changes.
- *
- * @template T - The type of the reactive state object.
- * @template K - The type of keys being picked from the state.
- * @param {T} state - The reactive state object to pick values from.
- * @param {K[]} picks - An array of keys to pick from the state object.
- * @returns {{ [key in K]: T[key] }} - A new reactive object containing only the picked properties.
- */
-export function useInherit<T extends State, K extends keyof T>(state: T, picks: K[]): { [key in K]: T[key] } {
-  const [init, values] = pickValues(state, picks);
-  const cached = useMemo(() => init, values);
-  const output = anchor(cached);
-
-  useEffect(() => {
-    if (!anchor.has(state)) {
-      const error = new Error('State is not reactive.');
-      captureStack.violation.derivation('Attempted to pick values from a non-reactive state.', error);
-      return;
-    }
-
-    return derive(
-      state,
-      (newValue, event) => {
-        if (event.type !== 'init') {
-          const keys = mutationKeys(event) as K[];
-          keys.forEach((key) => {
-            if (picks.includes(key)) {
-              output[key] = newValue[key];
-            }
-          });
-        }
-      },
-      false
-    );
-  }, [output]);
-
-  return output;
 }
 
 /**
@@ -242,72 +199,6 @@ export function useValueIs<T extends State, K extends keyof T>(state: T, key: K,
   return ref.matched;
 }
 
-export function useDerivedList<T extends ObjLike[]>(state: T): Array<{ key: number; value: T[number] }>;
-export function useDerivedList<T extends ObjLike[], K extends keyof T[number]>(
-  state: T,
-  key: K
-): Array<{ key: T[number][K]; value: T[number] }>;
-/**
- * React hook that derives a list of objects with their keys from a reactive array state.
- * Each item in the returned array contains a **key** and a **value** property.
- * If no key is specified, the index of each item in the array is used as the key.
- *
- * @template T - The type of the reactive array state.
- * @param {T} state - A reactive array state from which to derive the list.
- * @param {(keyof T[number]) | number} [key] - An optional property name to use as the key for each item in the list.
- */
-export function useDerivedList<T extends ObjLike[], K extends keyof T[number]>(
-  state: T,
-  key?: K
-): Array<{ key: T[number][K]; value: T[number] }> {
-  const [observer, version] = useObserverRef();
-  return useMemo(() => {
-    return observer.run(() => {
-      if (!key) {
-        return state.map((value, key) => ({ key, value }));
-      }
-
-      const snap = anchor.get(state);
-      return state.map((value, i) => ({ key: snap[i][key], value }));
-    }) as Array<{ key: T[number][K]; value: T[number] }>;
-  }, [version, state, key]);
-}
-
-/**
- * React hook that creates a snapshot of a reactive state.
- * The snapshot is a plain object that reflects the current state at the time of creation.
- * It does not update automatically when the state changes.
- *
- * @template T - The type of the reactive state.
- * @param {T} state - The reactive state to create a snapshot from.
- * @returns {T} - A snapshot of the reactive state.
- */
-export function useSnapshot<T extends Linkable>(state: T): T;
-/**
- * React hook that creates a transformed snapshot of a reactive state.
- * The snapshot is a plain object that reflects the current state at the time of creation.
- * It does not update automatically when the state changes.
- * The transform function can be used to modify the snapshot before it is returned.
- *
- * @template T - The type of the reactive state.
- * @template R - The type of the transformed snapshot.
- * @param {T} state - The reactive state to create a snapshot from.
- * @param {TransformSnapshotFn<T, R>} transform - A function that transforms the snapshot before it is returned.
- * @returns {R} - A transformed snapshot of the reactive state.
- */
-export function useSnapshot<T extends Linkable, R>(state: T, transform: TransformSnapshotFn<T, R>): R;
-export function useSnapshot<T extends Linkable, R>(state: T, transform?: TransformSnapshotFn<T, R>): T | R {
-  return useMemo(() => {
-    return outsideObserver(() => {
-      if (typeof transform === 'function') {
-        return transform(anchor.snapshot(state));
-      }
-
-      return anchor.snapshot(state);
-    }) as T | R;
-  }, [state]);
-}
-
 /**
  * React hook that creates a derived reference from a reactive state.
  * The handle function is called whenever the state changes, receiving the current state and the current ref value.
@@ -341,56 +232,4 @@ export function useDerivedRef<S extends State, R>(
       handle(anchor.read(state) as S, valueRef.current);
     },
   };
-}
-
-/**
- * React hook that captures and manages exceptions from a reactive state.
- * It returns an object containing the current exception states for specified keys.
- * When an exception occurs in the reactive state, it automatically updates the corresponding key in the returned object.
- *
- * @template T - The type of the reactive state object.
- * @template R - The type of keys being tracked for exceptions.
- * @param {T} state - The reactive state object to capture exceptions from.
- * @param {ExceptionList<T, R>} init - Initial exception states for the specified keys.
- * @returns {ExceptionList<T, R>} - An object containing the current exception states for the specified keys.
- */
-export function useException<T extends State, R extends keyof T>(
-  state: T,
-  init: ExceptionList<T, R>
-): ExceptionList<T, R> {
-  const stableRef = useStableRef(() => anchor(init), [state]);
-
-  useEffect(() => {
-    if (!anchor.has(state)) {
-      const error = new Error('State is not reactive.');
-      captureStack.violation.derivation('Attempted to capture exception of a non-reactive state.', error);
-      return;
-    }
-
-    const release = anchor.catch(state, (event) => {
-      const key = event.keys.join('.') as R;
-
-      stableRef.stable = false;
-      stableRef.value[key] = event.error;
-    });
-
-    const unsubscribe = derive(
-      state,
-      (_, e) => {
-        if (e.type !== 'init') {
-          const key = e.keys.join('.') as R;
-          stableRef.stable = false;
-          stableRef.value[key] = null;
-        }
-      },
-      false
-    );
-
-    return () => {
-      release();
-      unsubscribe();
-    };
-  }, [state]);
-
-  return stableRef.value;
 }

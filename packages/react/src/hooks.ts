@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { DEV_MODE } from './dev.js';
-import { microtask, shortId, softEqual } from '@anchor/core';
+import { anchor, type Linkable, microbatch, microtask, outsideObserver, shortId, softEqual } from '@anchor/core';
 import { depsChanged } from './utils.js';
+import type { TransformSnapshotFn } from './types.js';
 
 /**
  * A React hook that generates a short, unique identifier string.
@@ -59,6 +60,7 @@ export function useRefTrap<T>(init: T | null, handler: (value: T | null) => T | 
  * @returns The constant value.
  */
 export function useConstant<T>(init: () => T): T;
+
 /**
  * A React hook that returns a constant value that is only updated when the value changes in development mode.
  *
@@ -72,6 +74,7 @@ export function useConstant<T>(init: () => T): T;
  * @returns The constant value.
  */
 export function useConstant<T>(init: T, cleanup?: (current: T) => void): T;
+
 export function useConstant<T>(init: T | (() => T), cleanup?: (current: T) => void): T {
   const ref = useRef<T>(null);
 
@@ -101,6 +104,22 @@ export function useConstant<T>(init: T | (() => T), cleanup?: (current: T) => vo
  */
 export function useMicrotask(timeout?: number) {
   return useRef(microtask(timeout)).current;
+}
+
+/**
+ * A React hook that provides a microbatch function with an optional delay.
+ *
+ * This hook uses the **microbatch** utility from the Anchor core library to create
+ * a function that executes a callback in a microtask with batching capabilities.
+ * The created microbatch function is memoized using **useRef** to ensure it remains
+ * stable across re-renders.
+ *
+ * @param delay - An optional delay in milliseconds after which the batched callbacks
+ *                will be executed.
+ * @returns A memoized microbatch function.
+ */
+export function useMicrobatch(delay?: number) {
+  return useRef(microbatch(delay)).current;
 }
 
 /**
@@ -134,4 +153,41 @@ export function useStableRef<T>(init: T | (() => T), deps: unknown[]) {
   }
 
   return stableRef;
+}
+
+/**
+ * React hook that creates a snapshot of a reactive state.
+ * The snapshot is a plain object that reflects the current state at the time of creation.
+ * It does not update automatically when the state changes.
+ *
+ * @template T - The type of the reactive state.
+ * @param {T} state - The reactive state to create a snapshot from.
+ * @returns {T} - A snapshot of the reactive state.
+ */
+export function useSnapshot<T extends Linkable>(state: T): T;
+
+/**
+ * React hook that creates a transformed snapshot of a reactive state.
+ * The snapshot is a plain object that reflects the current state at the time of creation.
+ * It does not update automatically when the state changes.
+ * The transform function can be used to modify the snapshot before it is returned.
+ *
+ * @template T - The type of the reactive state.
+ * @template R - The type of the transformed snapshot.
+ * @param {T} state - The reactive state to create a snapshot from.
+ * @param {TransformSnapshotFn<T, R>} transform - A function that transforms the snapshot before it is returned.
+ * @returns {R} - A transformed snapshot of the reactive state.
+ */
+export function useSnapshot<T extends Linkable, R>(state: T, transform: TransformSnapshotFn<T, R>): R;
+
+export function useSnapshot<T extends Linkable, R>(state: T, transform?: TransformSnapshotFn<T, R>): T | R {
+  return useMemo(() => {
+    return outsideObserver(() => {
+      if (typeof transform === 'function') {
+        return transform(anchor.snapshot(state));
+      }
+
+      return anchor.snapshot(state);
+    }) as T | R;
+  }, [state]);
 }

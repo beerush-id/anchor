@@ -1,10 +1,12 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  anchor,
   createDebugger,
   createObserver,
   getDebugger,
   type Linkable,
   microtask,
+  type ObjLike,
   type StateObserver,
 } from '@anchor/core';
 import { DEV_MODE, STRICT_MODE } from './dev.js';
@@ -175,18 +177,19 @@ export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) 
  * automatically updates based on reactive state, similar to how `useRef` works
  * but with added reactivity.
  *
- * The `transform` function is run within an observer context, meaning any reactive
- * state accessed inside it will trigger a re-computation of the ref's value.
+ * The `observe` function is run within an observer context, meaning any reactive
+ * state accessed inside it will be registered as dependencies and will cause the
+ * ref to update when the reactive state changes.
  *
  * @template T The type of the value held by the ref.
  * @param init The initial value for the ref. Can be `null`.
- * @param transform A function that takes the current (or initial) value and returns
+ * @param observe A function that takes the current (or initial) value and returns
  *                  the new value for the ref. This function is run reactively.
  *                  Any reactive dependencies accessed within it will cause the ref
  *                  to update.
  * @returns A mutable `RefObject` object whose `current` property is reactive.
  */
-export function useReactiveRef<T>(init: T | null, transform: (value: T | null) => T | null): RefObject<T | null> {
+export function useObservedRef<T>(init: T | null, observe: (value: T | null) => T | null): RefObject<T | null> {
   const valueRef = useRef(init);
   const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
   const [observer] = useState(() => {
@@ -197,7 +200,7 @@ export function useReactiveRef<T>(init: T | null, transform: (value: T | null) =
 
   const createValue = (next: T | null) => {
     return observer.run(() => {
-      return transform(next);
+      return observe(next);
     }) as T | null;
   };
 
@@ -220,4 +223,56 @@ export function useReactiveRef<T>(init: T | null, transform: (value: T | null) =
       valueRef.current = createValue(next) ?? valueRef.current;
     },
   };
+}
+
+/**
+ * React hook that derives a list of objects with their index as keys from a reactive array state.
+ * Each item in the returned array contains a **key** (the index) and a **value** property.
+ *
+ * @template T - The type of the reactive array state.
+ * @param {T} state - A reactive array state from which to derive the list.
+ * @returns An array of objects with index keys and corresponding values.
+ */
+export function useObservedList<T extends ObjLike[]>(state: T): Array<{ key: number; value: T[number] }>;
+
+/**
+ * React hook that derives a list of objects with custom keys from a reactive array state.
+ * Each item in the returned array contains a **key** (derived from the specified property) and a **value** property.
+ *
+ * @template T - The type of the reactive array state.
+ * @template K - The type of the key property.
+ * @param {T} state - A reactive array state from which to derive the list.
+ * @param {K} key - A property name to use as the key for each item in the list.
+ * @returns An array of objects with custom keys and corresponding values.
+ */
+export function useObservedList<T extends ObjLike[], K extends keyof T[number]>(
+  state: T,
+  key: K
+): Array<{ key: T[number][K]; value: T[number] }>;
+
+/**
+ * React hook that derives a list of objects with their keys from a reactive array state.
+ * Each item in the returned array contains a **key** and a **value** property.
+ * If no key is specified, the index of each item in the array is used as the key.
+ *
+ * @template T - The type of the reactive array state.
+ * @template K - The type of the key property.
+ * @param {T} state - A reactive array state from which to derive the list.
+ * @param {K} [key] - An optional property name to use as the key for each item in the list.
+ */
+export function useObservedList<T extends ObjLike[], K extends keyof T[number]>(
+  state: T,
+  key?: K
+): Array<{ key: T[number][K]; value: T[number] }> {
+  const [observer, version] = useObserverRef();
+  return useMemo(() => {
+    return observer.run(() => {
+      if (!key) {
+        return state.map((value, key) => ({ key, value }));
+      }
+
+      const snap = anchor.get(state);
+      return state.map((value, i) => ({ key: snap[i][key], value }));
+    }) as Array<{ key: T[number][K]; value: T[number] }>;
+  }, [version, state, key]);
 }
