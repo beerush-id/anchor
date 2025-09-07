@@ -1,5 +1,6 @@
 import type { KeyLike } from '../types.js';
 import { captureStack } from '../exception.js';
+import { anchor } from '../anchor.js';
 
 export type Context<K extends KeyLike, V> = Map<K, V>;
 
@@ -25,8 +26,12 @@ export function activateContext<K extends KeyLike, V>(context: Context<K, V>): (
   return currentRestore;
 }
 
+export function getActiveContext() {
+  return currentContext;
+}
+
 export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
-  return new Map<K, V>(init);
+  return anchor(new Map<K, V>(init), { recursive: false });
 }
 
 export function withinContext<K extends KeyLike, V, T>(context: Map<K, V>, fn: () => T): T {

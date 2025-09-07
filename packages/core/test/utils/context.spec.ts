@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activateContext,
+  anchor,
   createContext,
   deactivateGlobalContext,
+  getActiveContext,
   getContext,
   setContext,
   withinContext,
@@ -24,6 +26,7 @@ describe('Anchor Utilities - Context', () => {
       const context = createContext();
       expect(context).toBeInstanceOf(Map);
       expect(context.size).toBe(0);
+      expect(anchor.has(context));
     });
 
     it('should create a context with initial values', () => {
@@ -102,6 +105,7 @@ describe('Anchor Utilities - Context', () => {
 
       const restore1 = activateContext(context1);
       setContext('key', 'value1');
+      expect(getActiveContext()).toBe(context1);
       expect(getContext('key')).toBe('value1');
 
       const restore2 = activateContext(context2);
