@@ -16,7 +16,7 @@ export const Philosophy = () => {
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 max-w-6xl mx-auto">
-        <div className="card p-12 md:col-span-7 flex flex-col gap-4">
+        <div className="card p-6 md:p-12 md:col-span-7 flex flex-col gap-4">
           <h3 className="text-2xl font-light">Data-State-View Model (DSV)</h3>
           <p className="text-slate-400">
             The DSV model introduces a simple, logical flow that makes your entire application easy to reason about.
@@ -75,7 +75,7 @@ export const Philosophy = () => {
             className="object-cover object-center w-full h-full"
           />
         </div>
-        <div className="card p-12 md:col-span-7 flex flex-col gap-4">
+        <div className="card p-6 md:p-12 md:col-span-7 flex flex-col gap-4">
           <h3 className="text-2xl font-light">The All eXperience (AX) Philosophy</h3>
           <p className="text-slate-400">
             We believe that when we improve the developer experience, we inherently improve the user experience.

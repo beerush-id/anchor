@@ -2,12 +2,12 @@ import { type FC, useRef } from 'react';
 import { TodoItem } from './TodoItem.js';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoList, type ITodoStats } from '@lib/todo.js';
-import { debugRender, useDerivedList } from '@anchor/react';
+import { debugRender, useObservedList } from '@anchor/react';
 import { observable } from '@anchor/react/components';
 
 export const TodoList: FC<{ todos: ITodoList; stats: ITodoStats }> = observable(({ todos, stats }) => {
   const ref = useRef(null);
-  const items = useDerivedList(todos, 'id');
+  const items = useObservedList(todos, 'id');
 
   debugRender(ref);
   useUpdateStat(() => {
