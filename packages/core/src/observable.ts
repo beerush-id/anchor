@@ -166,9 +166,7 @@ export function withinObserver<R>(observer: StateObserver, fn: () => R): R;
 export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrObserver: (() => R) | StateObserver): R {
   if (isFunction(observerOrFn)) return withinObserver(fnOrObserver as StateObserver, observerOrFn);
 
-  const prevObserver = currentObserver;
-  currentObserver = observerOrFn;
-
+  const restore = setObserver(observerOrFn);
   let result: R | undefined = undefined;
 
   if (typeof fnOrObserver === 'function') {
@@ -182,7 +180,7 @@ export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrO
     captureStack.error.argument('The given argument is not a function', error, withinObserver);
   }
 
-  currentObserver = prevObserver;
+  restore?.();
 
   return result as R;
 }
@@ -196,8 +194,7 @@ export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrO
  * @param fn - The function to execute outside of observer context
  */
 export function outsideObserver<R>(fn: () => R): R {
-  const prevObserver = currentObserver;
-  currentObserver = undefined;
+  const restore = setObserver(undefined as never);
 
   let result: R | undefined = undefined;
 
@@ -216,7 +213,7 @@ export function outsideObserver<R>(fn: () => R): R {
     captureStack.error.argument('The given argument is not a function', error, outsideObserver);
   }
 
-  currentObserver = prevObserver;
+  restore?.();
 
   return result as R;
 }
