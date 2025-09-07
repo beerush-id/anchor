@@ -53,6 +53,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
       for (const handler of exceptionHandlers) {
         handler({ ...event, error, issues: error.issues });
       }
+      return exceptionHandlers.size > 0;
     },
     /**
      * Broadcasts a state snapshot and change event to all subscribers.

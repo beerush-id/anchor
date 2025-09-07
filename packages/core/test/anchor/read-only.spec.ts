@@ -101,7 +101,7 @@ describe('Anchor Core - Read-Only', () => {
 
       expect(state).toEqual({ name: 'John' });
 
-      // Invalid assignment.
+      // Invalid assignment with no handler.
       (state as { name: number }).name = 30;
       expect(errorSpy).toHaveBeenCalledTimes(1);
 
@@ -112,9 +112,10 @@ describe('Anchor Core - Read-Only', () => {
       expect(state).toEqual({ name: 'Jane' });
       expect(handler).not.toHaveBeenCalled();
 
+      // Invalid assignment with handler should not log an error.
       writer.name = 'J';
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(errorSpy).toHaveBeenCalledTimes(2);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
 
       unsubscribe();
     });

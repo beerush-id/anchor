@@ -132,17 +132,20 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
             }
           }
         } else {
-          captureStack.error.validation(
-            `Attempted to mutate: "${method}" of an array with invalid input:`,
-            validation.error,
-            configs.strict,
-            targetFn
-          );
-          broadcaster.catch(validation.error as never as ModelError, {
+          const handled = broadcaster.catch(validation.error as never as ModelError, {
             type: method,
             keys: [],
             value: args,
           });
+
+          if (!handled) {
+            captureStack.error.validation(
+              `Attempted to mutate: "${method}" of an array with invalid input:`,
+              validation.error,
+              configs.strict,
+              targetFn
+            );
+          }
 
           if (method === 'push' || method === 'unshift') {
             return currentItems.length;

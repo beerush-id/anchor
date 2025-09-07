@@ -598,7 +598,7 @@ export type Broadcaster = {
    * @param error - The Zod validation error that occurred
    * @param event - The state change event that triggered the error
    */
-  catch: (error: ModelError, event: StateChange) => void;
+  catch: (error: ModelError, event: StateChange) => boolean;
 
   /**
    * Broadcasts a state change to all subscribers.

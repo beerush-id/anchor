@@ -174,18 +174,21 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
         if (result.success) {
           value = result.data as Linkable;
         } else {
-          captureStack.error.validation(
-            `Attempted to update property: "${prop as string}" of a state:`,
-            result.error,
-            configs.strict,
-            setter
-          );
-          broadcaster.catch(result.error, {
+          const handled = broadcaster.catch(result.error, {
             type: ObjectMutations.SET,
             keys: [prop as string],
             prev: current,
             value,
           });
+
+          if (!handled) {
+            captureStack.error.validation(
+              `Attempted to update property: "${prop as string}" of a state:`,
+              result.error,
+              configs.strict,
+              setter
+            );
+          }
 
           return !configs.strict;
         }
@@ -262,17 +265,20 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
       const result = childSchema.safeParse(undefined);
 
       if (!result.success) {
-        captureStack.error.validation(
-          `Attempted to delete property: "${prop as string}" of a state:`,
-          result.error,
-          configs.strict,
-          remover
-        );
-        broadcaster.catch(result.error, {
+        const handled = broadcaster.catch(result.error, {
           type: ObjectMutations.DELETE,
           prev: current,
           keys: [prop as string],
         });
+
+        if (!handled) {
+          captureStack.error.validation(
+            `Attempted to delete property: "${prop as string}" of a state:`,
+            result.error,
+            configs.strict,
+            remover
+          );
+        }
 
         return !configs.strict;
       }
