@@ -1,12 +1,12 @@
 export enum ArrayMutations {
-  PUSH = 'push',
   POP = 'pop',
-  SHIFT = 'shift',
-  UNSHIFT = 'unshift',
-  SPLICE = 'splice',
-  REVERSE = 'reverse',
   SORT = 'sort',
+  PUSH = 'push',
   FILL = 'fill',
+  SHIFT = 'shift',
+  SPLICE = 'splice',
+  UNSHIFT = 'unshift',
+  REVERSE = 'reverse',
   COPY_WITHIN = 'copyWithin',
 }
 
@@ -16,28 +16,28 @@ export enum ObjectMutations {
 }
 
 export enum BatchMutations {
+  CLEAR = 'clear',
   ASSIGN = 'assign',
   REMOVE = 'remove',
-  CLEAR = 'clear',
 }
 
 export enum MapMutations {
   SET = 'map:set',
-  DELETE = 'map:delete',
   CLEAR = 'map:clear',
+  DELETE = 'map:delete',
 }
 
 export enum SetMutations {
   ADD = 'set:add',
-  DELETE = 'set:delete',
   CLEAR = 'set:clear',
+  DELETE = 'set:delete',
 }
 
 export enum Linkables {
-  OBJECT = 'object',
-  ARRAY = 'array',
-  SET = 'set',
   MAP = 'map',
+  SET = 'set',
+  ARRAY = 'array',
+  OBJECT = 'object',
 }
 
 export enum OBSERVER_KEYS {

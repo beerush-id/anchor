@@ -37,11 +37,11 @@ export type StateObserver = {
   name?: string;
 };
 
-export type BatchMutation = (typeof BATCH_MUTATIONS)[number];
-export type SetMutation = (typeof SET_MUTATIONS)[number];
-export type MapMutation = (typeof MAP_MUTATIONS)[number];
-export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number];
-export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number];
+export type BatchMutation = (typeof BATCH_MUTATIONS)[number] | `${(typeof BATCH_MUTATIONS)[number]}`;
+export type SetMutation = (typeof SET_MUTATIONS)[number] | `${(typeof SET_MUTATIONS)[number]}`;
+export type MapMutation = (typeof MAP_MUTATIONS)[number] | `${(typeof MAP_MUTATIONS)[number]}`;
+export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number] | `${(typeof ARRAY_MUTATIONS)[number]}`;
+export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number] | `${(typeof OBJECT_MUTATIONS)[number]}`;
 export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation;
 
 export type StateBaseOptions = {

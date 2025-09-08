@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Mutable } from '../../src/index.js';
-import { anchor } from '../../src/index.js';
+import { anchor, ArrayMutations, type Mutable } from '../../src/index.js';
 
 describe('Anchor Core - Write Contract', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -36,7 +35,7 @@ describe('Anchor Core - Write Contract', () => {
 
     it('should allow to mutate array using specific method', () => {
       const readonly = anchor.immutable([1, 2, 3]);
-      const writable = anchor.writable(readonly, ['push']);
+      const writable = anchor.writable(readonly, [ArrayMutations.PUSH]);
 
       (readonly as Mutable<typeof readonly>).push(4); // Should be trapped.
       (readonly as Mutable<typeof readonly>).shift(); // Should be trapped.
@@ -51,7 +50,7 @@ describe('Anchor Core - Write Contract', () => {
 
     it('should allow to use multiple array methods with contract', () => {
       const readonly = anchor.immutable([1, 2, 3]);
-      const writable = anchor.writable(readonly, ['push', 'pop', 'shift']);
+      const writable = anchor.writable(readonly, [ArrayMutations.PUSH, ArrayMutations.POP, ArrayMutations.SHIFT]);
 
       writable.push(4); // Should be passed
       writable.shift(); // Should be passed
