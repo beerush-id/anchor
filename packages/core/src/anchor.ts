@@ -52,7 +52,7 @@ import { captureStack } from './exception.js';
 import { softClone } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { createGetter, createRemover, createSetter } from './trap.js';
-import { Linkables } from './enum.js';
+import { ArrayMutations, Linkables } from './enum.js';
 import { createBroadcaster } from './broadcast.js';
 
 /**
@@ -293,7 +293,8 @@ anchorFn.has = ((state) => {
 }) satisfies Anchor['has'];
 
 anchorFn.get = ((state, silent = false) => {
-  const target = STATE_REGISTRY.get(state);
+  // This to make sure we can find a state that defined using write contract.
+  const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
 
   if (!target && !silent) {
     const error = new Error('State does not exist.');
@@ -318,7 +319,7 @@ anchorFn.read = ((state) => {
         return anchorFn.read(value);
       }
 
-      if (ARRAY_MUTATION_KEYS.has(prop as ArrayMutation)) {
+      if (ARRAY_MUTATION_KEYS.has(prop as ArrayMutations)) {
         const fn = (...args: unknown[]) => {
           captureStack.violation.methodCall(prop as ArrayMutation, fn);
           return (createArrayMutator.mock?.[prop as never] as Array<unknown>['push'])?.(target, ...args);
@@ -352,7 +353,7 @@ anchorFn.read = ((state) => {
 }) satisfies Anchor['read'];
 
 anchorFn.snapshot = ((state, recursive = true) => {
-  const target = STATE_REGISTRY.get(state);
+  const target = anchorFn.get(state);
 
   if (!target) {
     const error = new Error('State does not exist.');
