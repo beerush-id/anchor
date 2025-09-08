@@ -353,7 +353,7 @@ anchorFn.read = ((state) => {
 }) satisfies Anchor['read'];
 
 anchorFn.snapshot = ((state, recursive = true) => {
-  const target = anchorFn.get(state);
+  const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
 
   if (!target) {
     const error = new Error('State does not exist.');
