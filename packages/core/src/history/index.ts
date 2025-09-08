@@ -4,7 +4,6 @@ import type {
   KeyLike,
   Linkable,
   MapMutator,
-  SetMutation,
   SetMutator,
   State,
   StateChange,
@@ -17,7 +16,7 @@ import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
 import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
 import { microtask } from '../utils/index.js';
 import { captureStack } from '../exception.js';
-import { BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
+import { ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
 
 export type HistoryOptions = {
   debounce?: number;
@@ -340,7 +339,7 @@ export function redoChange<T>(state: T, event: StateChange) {
     } else if (target instanceof Set) {
       (gateway.mutator as SetMutator<unknown>).clear();
     }
-  } else if (ARRAY_MUTATIONS.includes(type as ArrayMutation)) {
+  } else if (ARRAY_MUTATIONS.includes(type as ArrayMutations)) {
     ((gateway.mutator as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
       ...(value as unknown[])
     );
@@ -372,8 +371,8 @@ function getTarget<T>(state: T, event: StateChange) {
 
   if (!parentKeys.length) {
     if (
-      (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutation) ||
-        COLLECTION_MUTATION_KEYS.has(event.type as SetMutation)) &&
+      (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutations) ||
+        COLLECTION_MUTATION_KEYS.has(event.type as SetMutations)) &&
       event.type !== MapMutations.SET
     ) {
       return { key: '', target: getValue(state, key) as Linkable };

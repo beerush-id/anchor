@@ -244,8 +244,9 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           value: newValue,
         };
 
-        broadcaster.emit(event);
+        // Make sure to broadcast to subscribers first because observers might depend on a derived state.
         broadcaster.broadcast(init, event, meta.id);
+        broadcaster.emit(event);
 
         devTool?.onCall?.(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
       }
@@ -285,8 +286,9 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             keys: self instanceof Map ? [keyValue as string] : [],
           };
 
-          broadcaster.emit(event);
+          // Make sure to broadcast to subscribers first because observers might depend on a derived state.
           broadcaster.broadcast(self, event, meta.id);
+          broadcaster.emit(event);
 
           devTool?.onCall?.(meta, method, [keyValue]);
         }
@@ -316,8 +318,9 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
             keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
           };
 
-          broadcaster.emit(event);
+          // Make sure to broadcast to subscribers first because observers might depend on a derived state.
           broadcaster.broadcast(self, event, meta.id);
+          broadcaster.emit(event);
 
           devTool?.onCall?.(meta, method, []);
         }

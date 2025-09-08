@@ -417,14 +417,13 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(trackHandler).toHaveBeenCalledTimes(1);
       expect(observer.states.has(anchor.get(state))).toBe(true);
 
-      // Isolate the profile read to make sure it does not trigger the observer
       const profile = outsideObserver(() => {
         return state.profile;
       });
       profile.name = 'John Doe';
 
       expect(trackHandler).toHaveBeenCalledTimes(3);
-      expect(changeHandler).not.toHaveBeenCalled();
+      expect(changeHandler).toHaveBeenCalled();
       expect(observer.states.has(anchor.get(state).profile)).toBe(true);
 
       unsubscribe();

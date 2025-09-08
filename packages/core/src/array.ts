@@ -199,8 +199,9 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
       };
 
       // Broadcast the array mutation event to all subscribers
-      broadcaster.emit(event);
+      // Make sure to broadcast to subscribers first because observers might depend on a derived state.
       broadcaster.broadcast(init, event, meta.id);
+      broadcaster.emit(event);
 
       devTool?.onCall?.(meta, method, args);
 

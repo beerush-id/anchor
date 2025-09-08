@@ -20,6 +20,7 @@ import {
   MUTATOR_REGISTRY,
   RELATION_REGISTRY,
   STATE_BUSY_LIST,
+  STATE_REGISTRY,
 } from './registry.js';
 import { linkable } from './internal.js';
 import { anchor } from './anchor.js';
@@ -86,6 +87,13 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     if (value === init) {
       captureStack.violation.circular(prop, getter);
       return INIT_REGISTRY.get(init) as T;
+    }
+
+    if (STATE_REGISTRY.has(value)) {
+      // Unwrap the value it the init was created with Anchor's state as the value.
+      // This to make sure that state always points to the underlying object.
+      value = STATE_REGISTRY.get(value) as Linkable;
+      Reflect.set(target, prop, value);
     }
 
     if (INIT_REGISTRY.has(value)) {
@@ -213,8 +221,9 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
         value: target[prop],
       };
 
-      broadcaster.emit(event, prop);
+      // Make sure to broadcast to subscribers first because observers might depend on a derived state.
       broadcaster.broadcast(target, event, meta.id);
+      broadcaster.emit(event, prop);
 
       // Trigger the dev tool callback if available.
       devTool?.onSet?.(meta, prop, value);
@@ -301,8 +310,9 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
         keys: [prop],
       };
 
-      broadcaster.emit(event, prop);
+      // Make sure to broadcast to subscribers first because observers might depend on a derived state.
       broadcaster.broadcast(target, event, meta.id);
+      broadcaster.emit(event, prop);
 
       // Trigger the dev tool callback if available.
       devTool?.onDelete?.(meta, prop);

@@ -1,5 +1,5 @@
-import type { BatchMutation, Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
-import { OBSERVER_KEYS } from './enum.js';
+import type { Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
+import { BatchMutations, OBSERVER_KEYS } from './enum.js';
 import { BATCH_MUTATION_KEYS } from './constant.js';
 
 /**
@@ -43,7 +43,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
             }
           } else if (keys.has(prop ?? event.keys.join('.'))) {
             observer.onChange(event);
-          } else if (BATCH_MUTATION_KEYS.has(event.type as BatchMutation)) {
+          } else if (BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) {
             observer.onChange(event);
           }
         }
