@@ -17,8 +17,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AnchorState, ExceptionList, Setter } from './types.js';
 import { DEV_MODE } from './dev.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
-import { useStableRef } from './hooks.js';
+import { useSnapshot, useStableRef } from './hooks.js';
 import { mutationKeys, pickValues } from './utils.js';
+import { usePipe } from './derive.js';
 
 // Dedicated state update list to work with Fast Refresh (HMR) support.
 const UPDATE_LIST = new Set();
@@ -227,7 +228,7 @@ export function useException<T extends State, R extends keyof T>(
  */
 export function useInherit<T extends State, K extends keyof T>(state: T, picks: K[]): { [key in K]: T[key] } {
   const [init, values] = pickValues(state, picks);
-  const cached = useMemo(() => init, values);
+  const cached = useStableRef(() => init, values).value;
   const output = anchor(cached);
 
   useEffect(() => {
@@ -254,4 +255,53 @@ export function useInherit<T extends State, K extends keyof T>(state: T, picks: 
   }, [output]);
 
   return output;
+}
+
+export type FormState<T extends State, K extends keyof T> = {
+  data: { [key in K]: T[key] };
+  errors: ExceptionList<T, K>;
+  readonly isValid: boolean;
+  readonly isDirty: boolean;
+  reset(): void;
+};
+
+/**
+ * React hook that provides a comprehensive form management solution for a reactive state.
+ * It integrates data, error handling, dirty state tracking, validity checking, and reset functionality.
+ *
+ * @template T - The type of the reactive state object.
+ * @template K - The type of keys representing the form fields.
+ * @param {T} state - The reactive state object from which form data is derived.
+ * @param {K[]} keys - An array of keys that represent the fields managed by this form.
+ * @returns {FormState<T, K>} - An object containing:
+ *   - `data`: A reactive object containing the values of the specified form fields.
+ *   - `errors`: A reactive object containing exceptions/errors for the form fields.
+ *   - `isValid`: A boolean indicating if all form fields are valid (no errors).
+ *   - `isDirty`: A boolean indicating if any form field has been changed from its initial snapshot.
+ *   - `reset()`: A function to reset the form fields to their initial snapshot and clear errors.
+ */
+export function useFormWriter<T extends State, K extends keyof T>(state: T, keys: K[]): FormState<T, K> {
+  const snapshot = useSnapshot(state);
+  const formData = useInherit(state, keys);
+  const formErrors = useException(state);
+  const formRef = useStableRef<FormState<T, K>>(() => {
+    return anchor({
+      data: formData,
+      errors: formErrors,
+      get isDirty() {
+        return keys.some((key) => !softEqual(formData[key], snapshot[key]));
+      },
+      get isValid() {
+        return !keys.some((keys) => formErrors[keys]);
+      },
+      reset(): void {
+        Object.assign(formData, snapshot);
+        keys.forEach((key) => delete formErrors[key]);
+      },
+    });
+  }, [state, ...keys]);
+
+  usePipe(formData, state);
+
+  return formRef.value;
 }

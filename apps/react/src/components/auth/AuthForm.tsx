@@ -2,55 +2,49 @@ import { type FC, type FormEventHandler, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Input, observe } from '@anchor/react/components';
 import { Card } from '../Card.js';
-import { debugRender, useException, useInherit, useSnapshot } from '@anchor/react';
-import { profileState, profileWriter } from '@lib/auth.js';
+import { debugRender, useFormWriter } from '@anchor/react';
+import { profileWriter } from '@lib/auth.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { isMobile } from '@lib/nav.js';
+import { anchor } from '@anchor/core';
 
 export const AuthForm: FC<{ className?: string }> = ({ className }) => {
   const formRef = useRef(null);
   const controlRef = useRef(null);
   debugRender(formRef);
 
-  const snapshot = useSnapshot(profileState);
-  const formData = useInherit(profileWriter, ['name', 'email']);
-  const formErrors = useException(profileWriter);
+  const formWriter = useFormWriter(profileWriter, ['name', 'email']);
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    Object.assign(snapshot, formData);
+    console.log(anchor.get(profileWriter));
   };
 
   const handleReset = () => {
-    Object.assign(formData, snapshot);
-    Object.assign(formErrors, { name: null, email: null });
+    formWriter.reset();
   };
 
   const NameError = observe(() => {
-    if (formErrors.name) {
-      return <p className="text-sm text-red-400">{formErrors.name.message}</p>;
-    }
+    return formWriter.errors.name && <p className="text-sm text-red-400">{formWriter.errors.name.message}</p>;
   });
 
   const EmailError = observe(() => {
-    if (formErrors.email) {
-      return <p className="text-sm text-red-400">{formErrors.email.message}</p>;
-    }
+    return formWriter.errors.email && <p className="text-sm text-red-400">{formWriter.errors.email.message}</p>;
   });
 
   const FormControl = observe(() => {
     debugRender(controlRef);
-    const disabled = !formData.email || !formData.name;
+    const disabled = !formWriter.isValid || !formWriter.isDirty;
 
     return (
       <div ref={controlRef} className="flex items-center justify-end gap-4 pt-6">
-        <Button type="button" onClick={handleReset} className="btn-lg">
+        <Button type="button" disabled={!formWriter.isDirty} onClick={handleReset} className="btn-lg">
           Reset
         </Button>
         <Button type={'submit'} className="btn-lg btn-primary" disabled={disabled}>
-          Update
+          Submit
         </Button>
       </div>
     );
@@ -67,8 +61,7 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Full Name</span>
           <Input
-            bind={formData}
-            pipe={profileWriter}
+            bind={formWriter.data}
             name="name"
             placeholder="John Doe"
             autoComplete="name"
@@ -80,8 +73,7 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
         <label className="flex flex-col gap-2">
           <span className="text-slate-300 font-medium">Email</span>
           <Input
-            bind={formData}
-            pipe={profileWriter}
+            bind={formWriter.data}
             name="email"
             placeholder="john@domain.com"
             autoComplete="email"
@@ -96,8 +88,7 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
         <CodeBlock
           code={`// Declarative binding
 <Input
-  bind={formData}
-  pipe={profileWriter}
+  bind={form.data}
   name="email"
   placeholder="john@domain.com"
   autoComplete="email"
