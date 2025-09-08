@@ -204,16 +204,6 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Tutorials',
-        collapsed: true,
-        items: [
-          {
-            text: 'Form Validation',
-            link: '/react/tutorial/form-validation',
-          },
-        ],
-      },
-      {
         text: 'API Reference',
         collapsed: true,
         items: [
@@ -232,11 +222,12 @@ export default defineConfig({
           },
           {
             text: 'Storage',
-            collapsed: true,
+            collapsed: false,
             items: [
-              { text: 'Persistent Storage', link: '/apis/storage/persistent' },
-              { text: 'Session Storage', link: '/apis/storage/session' },
-              { text: 'In-Memory Storage', link: '/apis/storage/memory' },
+              { text: 'Persistent', link: '/apis/storage/persistent' },
+              { text: 'Session', link: '/apis/storage/session' },
+              { text: 'Key-Value', link: '/apis/storage/kv' },
+              { text: 'Table', link: '/apis/storage/table' },
             ],
           },
           {
@@ -247,11 +238,13 @@ export default defineConfig({
               { text: 'Observation', link: '/apis/react/observation' },
               { text: 'Derivation', link: '/apis/react/derivation' },
               { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
-              { text: 'Request', link: '/apis/react/request' },
+              { text: 'Components', link: '/apis/react/components' },
               { text: 'History', link: '/apis/react/history' },
+              { text: 'Request', link: '/apis/react/request' },
+              { text: 'Action', link: '/apis/react/action' },
+              { text: 'Ordered List', link: '/apis/react/ordered-list' },
               { text: 'Error Handling', link: '/apis/react/error-handling' },
               { text: 'Utilities', link: '/apis/react/utilities' },
-              { text: 'Components', link: '/apis/react/components' },
             ],
           },
           {
@@ -268,14 +261,24 @@ export default defineConfig({
             items: [
               { text: 'Initialization', link: '/apis/vue/initialization' },
               { text: 'Derivation', link: '/apis/vue/derivation' },
-              { text: 'Request', link: '/apis/vue/request' },
               { text: 'History', link: '/apis/vue/history' },
+              { text: 'Request', link: '/apis/vue/request' },
               { text: 'Utilities', link: '/apis/vue/utilities' },
             ],
           },
           {
             text: 'Dev Tools',
             link: '/apis/devtool',
+          },
+        ],
+      },
+      {
+        text: 'Tutorials',
+        collapsed: true,
+        items: [
+          {
+            text: 'Form Validation',
+            link: '/react/tutorial/form-validation',
           },
         ],
       },

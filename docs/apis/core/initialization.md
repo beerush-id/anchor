@@ -14,7 +14,7 @@ The `anchor()` function is the main entry point for creating a reactive state. I
     type anchor = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
       init: T,
       options?: StateOptions<S>
-    ): State<T>;
+    ) => State<T>;
     ```
 
     - `init`: The initial state value (e.g., an object or array).
@@ -27,7 +27,7 @@ The `anchor()` function is the main entry point for creating a reactive state. I
       init: T,
       schema: S,
       options?: StateBaseOptions
-    ): ModelOutput<S>;
+    ) => ModelOutput<S>;
     ```
 
     - `init`: The initial state value.
@@ -41,12 +41,10 @@ The `anchor()` function is the main entry point for creating a reactive state. I
       init: T,
       schema: S,
       options?: StateBaseOptions & { immutable: true }
-    ): ImmutableOutput<S>;
+    ) => ImmutableOutput<S>;
     ```
 
     - This overload is triggered when the `immutable: true` option is provided along with a schema. The returned state is deeply readonly.
-
----
 
 ## Initializer Methods
 
@@ -60,7 +58,7 @@ Creates a reactive state without cloning the initial value. This is useful for p
 type raw = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): State<T>;
+) => State<T>;
 ```
 
 - `init`: The initial state value. The object passed here will be directly wrapped in a proxy.
@@ -74,7 +72,7 @@ Creates a "flat" reactive state that only tracks top-level property changes. Nes
 type flat = <T extends unknown[], S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): State<T>;
+) => State<T>;
 ```
 
 - `init`: The initial array state.
@@ -89,7 +87,7 @@ type ordered = <T extends unknown[], S extends LinkableSchema = LinkableSchema>(
   init: T,
   compare: (a: T[number], b: T[number]) => number,
   options?: StateOptions<S>
-): State<T>;
+) => State<T>;
 ```
 
 - `init`: The initial array state.
@@ -106,14 +104,14 @@ type model = <S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options?: StateBaseOptions
-): ModelOutput<S>;
+) => ModelOutput<S>;
 
 // Immutable model
 type model = <S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options?: StateBaseOptions & { immutable: true }
-): Immutable<ModelOutput<S>>;
+) => Immutable<ModelOutput<S>>;
 ```
 
 - `schema`: The Zod schema for validation.
@@ -129,14 +127,14 @@ Creates a deeply readonly reactive state. Any attempts to mutate the state will 
 type immutable = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): Immutable<T>;
+) => Immutable<T>;
 
 // Immutable with schema
 type immutable = <S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
-): ImmutableOutput<S>;
+) => ImmutableOutput<S>;
 ```
 
 - `init`: The initial state value.
@@ -152,7 +150,7 @@ type ordered = <T extends unknown[], S extends LinkableSchema = LinkableSchema>(
   init: T,
   compare: (a: T[number], b: T[number]) => number,
   options?: StateOptions<S>
-): State<T>;
+) => State<T>;
 ```
 
 - `init`: The initial array state.
@@ -169,14 +167,14 @@ type model = <S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options?: StateBaseOptions
-): ModelOutput<S>;
+) => ModelOutput<S>;
 
 // Immutable model
 type model = <S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options?: StateBaseOptions & { immutable: true }
-): Immutable<ModelOutput<S>>;
+) => Immutable<ModelOutput<S>>;
 ```
 
 - `schema`: The Zod schema for validation.
@@ -192,21 +190,19 @@ Creates a deeply readonly reactive state. Any attempts to mutate the state will 
 type immutable = <T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): Immutable<T>;
+) => Immutable<T>;
 
 // Immutable with schema
 type immutable = <S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
-): ImmutableOutput<S>;
+) => ImmutableOutput<S>;
 ```
 
 - `init`: The initial state value.
 - `options` (optional): State configuration options.
 - `schema` (optional): A Zod schema for validation.
-
----
 
 ## Accessibility Methods
 
@@ -217,7 +213,7 @@ These methods provide ways to interact with and manage existing reactive states.
 Checks if a given object is a reactive state managed by Anchor.
 
 ```typescript
-type has = <T extends State>(state: T): boolean;
+type has = <T extends State>(state: T) => boolean;
 ```
 
 - `state`: The object to check.
@@ -228,7 +224,7 @@ type has = <T extends State>(state: T): boolean;
 Retrieves the underlying, raw value of a reactive state. This is useful for when you need to pass the state to a non-reactive context.
 
 ```typescript
-type get = <T extends Linkable>(state: State<T>): T;
+type get = <T extends Linkable>(state: State<T>) => T;
 ```
 
 - `state`: The reactive state.
@@ -239,7 +235,7 @@ type get = <T extends Linkable>(state: State<T>): T;
 Finds and returns a reactive state instance that corresponds to a given raw object.
 
 ```typescript
-type find = <T extends Linkable>(init: T): T;
+type find = <T extends Linkable>(init: T) => T;
 ```
 
 - `init`: The original, raw object used to create the state.
@@ -250,7 +246,7 @@ type find = <T extends Linkable>(init: T): T;
 Creates a deeply readonly version of a reactive state. This is useful for exposing state to consumers that should not be able to mutate it.
 
 ```typescript
-type read = <T extends State>(state: T): Immutable<T>;
+type read = <T extends State>(state: T) => Immutable<T>;
 ```
 
 - `state`: The reactive state to make readonly.
@@ -261,7 +257,7 @@ type read = <T extends State>(state: T): Immutable<T>;
 Registers an exception handler to catch errors that occur during state mutations, such as validation failures.
 
 ```typescript
-type catch = <T extends State>(state: T, handler: StateExceptionHandler): StateUnsubscribe;
+type catchFn = <T extends State>(state: T, handler: StateExceptionHandler): StateUnsubscribe;
 ```
 
 - `state`: The reactive state to monitor.
@@ -273,7 +269,7 @@ type catch = <T extends State>(state: T, handler: StateExceptionHandler): StateU
 Creates a "snapshot" or a deep clone of the state's current value.
 
 ```typescript
-type snapshot = <T extends Linkable>(state: State<T>): T;
+type snapshot = <T extends Linkable>(state: State<T>) => T;
 ```
 
 - `state`: The reactive state.
@@ -285,20 +281,15 @@ Converts a readonly state back into a mutable one. This allows you to make tempo
 
 ```typescript
 // Make fully writable
-type writable = <T extends ReadonlyLink>(state: T): Mutable<T>;
+type writable = <T extends ReadonlyLink>(state: T) => Mutable<T>;
 
 // Make partially writable
-type writable = <T extends ReadonlyLink, K extends MutationKey<T>[]>(
-  init: T,
-  contracts?: K
-): MutablePart<T, K>;
+type writable = <T extends ReadonlyLink, K extends MutationKey<T>[]>(init: T, contracts?: K) => MutablePart<T, K>;
 ```
 
 - `state` / `init`: The readonly state to make mutable.
 - `contracts` (optional): An array of keys or methods that should be made writable, while leaving the rest of the object immutable.
 - **Returns**: A mutable version of the state.
-
----
 
 ## Utility Methods
 
@@ -310,13 +301,16 @@ Performs a bulk update on a reactive object, map, or array.
 
 ```typescript
 // For Maps
-type assign = <T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>): void;
+type assign = <T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>) => void;
 
 // For Arrays
-type assign = <T extends unknown[]>(target: T, source: { [key: string]: T[number] } | Record<string, T[number]>): void;
+type assign = <T extends unknown[]>(
+  target: T,
+  source: { [key: string]: T[number] } | Record<string, T[number]>
+) => void;
 
 // For Objects
-type assign = <T extends object>(target: T, source: Partial<T>): void;
+type assign = <T extends object>(target: T, source: Partial<T>) => void;
 ```
 
 - `target`: The reactive state to update.
@@ -328,13 +322,13 @@ Removes one or more keys from a reactive object, map, or array.
 
 ```typescript
 // For Maps
-type remove = <T, K>(target: Map<T, K>, ...keys: Array<T>): void;
+type remove = <T, K>(target: Map<T, K>, ...keys: Array<T>) => void;
 
 // For Arrays
-type remove = <T extends unknown[]>(target: T, ...keys: Array<string>): void;
+type remove = <T extends unknown[]>(target: T, ...keys: Array<string>) => void;
 
 // For Objects
-type remove = <T extends object>(target: T, ...keys: Array<keyof T>): void;
+type remove = <T extends object>(target: T, ...keys: Array<keyof T>) => void;
 ```
 
 - `target`: The reactive state to update.
@@ -345,7 +339,7 @@ type remove = <T extends object>(target: T, ...keys: Array<keyof T>): void;
 Clears all entries from a reactive object, map, or array.
 
 ```typescript
-type clear = <T>(target: T): void;
+type clear = <T>(target: T) => void;
 ```
 
 - `target`: The reactive state to clear.
@@ -355,7 +349,7 @@ type clear = <T>(target: T): void;
 Completely destroys a reactive state and cleans up all its associated subscribers and observers.
 
 ```typescript
-type destroy = <T extends State>(state: T): void;
+type destroy = <T extends State>(state: T) => void;
 ```
 
 - `state`: The reactive state to destroy.
@@ -365,7 +359,7 @@ type destroy = <T extends State>(state: T): void;
 Sets global configuration options for Anchor.
 
 ```typescript
-type configure = (config: Partial<AnchorSettings>): void;
+type configure = (config: Partial<AnchorSettings>) => void;
 ```
 
 - `config`: An object with the configuration settings to change.
@@ -375,7 +369,7 @@ type configure = (config: Partial<AnchorSettings>): void;
 Retrieves the current global Anchor configuration.
 
 ```typescript
-type configs = (): AnchorSettings;
+type configs = () => AnchorSettings;
 ```
 
 - **Returns**: The current `AnchorSettings` object.

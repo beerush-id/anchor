@@ -7,7 +7,7 @@ The Derivation APIs provide powerful tools for reacting to state changes. The pr
 The `derive()` function is the main way to subscribe to changes in an anchored state. It takes a state and a handler function that will be executed whenever the state is modified.
 
 ```typescript
-type derive = <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean): StateUnsubscribe;
+type derive = <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean) => StateUnsubscribe;
 ```
 
 - `state`: The anchored state to observe.
@@ -17,18 +17,9 @@ type derive = <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean): S
 - `recursive` (optional): If `true`, the handler will also be triggered for changes in nested child states. Defaults to `false`.
 - **Returns**: An `unsubscribe` function to stop listening for changes.
 
----
+## Derivation Utilities
 
-## `derive.log()`
-
-A convenience method for debugging. It subscribes to a state and logs any changes to the console.
-
-```typescript
-type log = <T extends Linkable>(state: State<T>): StateUnsubscribe;
-```
-
-- `state`: The anchored state to log.
-- **Returns**: An `unsubscribe` function to stop logging.
+There are several utility functions available for deriving and managing state.
 
 ## `derive.pipe()`
 
@@ -39,7 +30,7 @@ type pipe = <Source extends State, Target extends Linkable>(
   source: Source,
   target: Target,
   transform?: PipeTransformer<Source, Target>
-): StateUnsubscribe;
+) => StateUnsubscribe;
 ```
 
 - `source`: The state to listen for changes on.
@@ -57,7 +48,7 @@ type bind = <Left extends State, Right extends State>(
   right: Right,
   transformLeft?: PipeTransformer<Left, Right>,
   transformRight?: PipeTransformer<Right, Left>
-): StateUnsubscribe;
+) => StateUnsubscribe;
 ```
 
 - `left`: The first state in the binding.
@@ -71,8 +62,19 @@ type bind = <Left extends State, Right extends State>(
 Retrieves the internal `StateController` for a given state. This is an advanced feature for direct interaction with the state's metadata and lifecycle.
 
 ```typescript
-type resolve = <T extends Linkable>(state: State<T>): StateController<T> | undefined;
+type resolve = <T extends Linkable>(state: State<T>) => StateController<T> | undefined;
 ```
 
 - `state`: The anchored state.
 - **Returns**: The `StateController` instance for the state, or `undefined` if not found.
+
+## `derive.log()`
+
+A convenience method for debugging. It subscribes to a state and logs any changes to the console.
+
+```typescript
+type log = <T extends Linkable>(state: State<T>) => StateUnsubscribe;
+```
+
+- `state`: The anchored state to log.
+- **Returns**: An `unsubscribe` function to stop logging.

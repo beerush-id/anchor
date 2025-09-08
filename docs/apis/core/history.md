@@ -7,7 +7,7 @@ The History APIs allow you to track changes to a reactive state and implement un
 Creates a history manager for a given anchored state. It records mutations and provides methods to move backward and forward through the change history.
 
 ```typescript
-type history = <T extends State>(state: T, options?: HistoryOptions): HistoryState;
+type history = <T extends State>(state: T, options?: HistoryOptions) => HistoryState;
 ```
 
 - `state`: The anchored state to track.
@@ -16,8 +16,6 @@ type history = <T extends State>(state: T, options?: HistoryOptions): HistorySta
   - `maxHistory` (number): The maximum number of history entries to store. Defaults to `100`.
   - `resettable` (boolean): If `true`, allows the state to be fully reset to its initial condition. Defaults to `false`.
 - **Returns**: A `HistoryState` object to control and inspect the history.
-
----
 
 ## `HistoryState` Object
 
@@ -49,8 +47,6 @@ The `history()` function returns a `HistoryState` object, which is itself a reac
 - `destroy(): void`
   - Stops listening for state changes and clears all history.
 
----
-
 ## Global Configuration
 
 You can set global default options that will apply to all `history` instances.
@@ -60,7 +56,7 @@ You can set global default options that will apply to all `history` instances.
 Sets the default options for all new history managers.
 
 ```typescript
-type setDefaultOptions = (options: HistoryOptions): void;
+type setDefaultOptions = (options: HistoryOptions) => void;
 ```
 
 - `options`: An object with any of the `HistoryOptions` to set as global defaults.
@@ -70,7 +66,7 @@ type setDefaultOptions = (options: HistoryOptions): void;
 Retrieves the current global default options.
 
 ```typescript
-type getDefaultOptions = (): HistoryOptions;
+type getDefaultOptions = () => HistoryOptions;
 ```
 
 - **Returns**: The current default `HistoryOptions` object.
