@@ -98,6 +98,16 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Tutorials',
+        collapsed: true,
+        items: [
+          {
+            text: 'Form Validation',
+            link: '/react/tutorial/form-validation',
+          },
+        ],
+      },
+      {
         text: 'Anchor - React',
         collapsed: true,
         items: [
@@ -269,16 +279,6 @@ export default defineConfig({
           {
             text: 'Dev Tools',
             link: '/apis/devtool',
-          },
-        ],
-      },
-      {
-        text: 'Tutorials',
-        collapsed: true,
-        items: [
-          {
-            text: 'Form Validation',
-            link: '/react/tutorial/form-validation',
           },
         ],
       },
