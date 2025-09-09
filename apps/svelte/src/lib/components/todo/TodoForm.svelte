@@ -3,16 +3,16 @@
 	import { flashNode } from '../../node.svelte.js';
 	import { type TodoRecList, todoTable } from '../../todos.js';
 	import type { KeyboardEventHandler } from 'svelte/elements';
-	import { anchorRef, derivedRef } from '@anchor/svelte';
+	import { anchorRef } from '@anchor/svelte';
 
 	let newText = $state('');
-	const props: { todos: TodoRecList } = $props();
-	const todos = derivedRef(props.todos);
+
+	const { todos }: { todos: TodoRecList } = $props();
 
 	const handleAdd = () => {
 		if (newText.trim() !== '') {
 			const todo = todoTable.add({ text: newText, completed: false });
-			$todos.push(todo.data);
+			todos.push(todo.data);
 			newText = '';
 		}
 	};
