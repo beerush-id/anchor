@@ -1,4 +1,13 @@
-import type { KeyLike, Linkable, StateChange, StateMetadata, StateObserver, StateTracker } from './types.js';
+import type {
+  KeyLike,
+  Linkable,
+  StateChange,
+  StateMetadata,
+  StateObserver,
+  StateObserverList,
+  StatePublicTracker,
+  StateTracker,
+} from './types.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { META_REGISTRY } from './registry.js';
@@ -216,4 +225,61 @@ export function outsideObserver<R>(fn: () => R): R {
   restore?.();
 
   return result as R;
+}
+
+let currentTracker: StatePublicTracker | undefined;
+let currentTrackerRestore: (() => void) | undefined;
+
+/**
+ * Sets the current tracker function for state observation.
+ * This function manages the tracker stack, allowing for nested tracker contexts.
+ * If the same tracker is already set, it returns the existing restore function.
+ *
+ * A tracker is meant for library author to implement global tracking, which
+ * then they control how they track the state.
+ *
+ * @param tracker - The tracker function to set as current
+ * @returns A restore function that reverts to the previous tracker when called
+ */
+export function setTracker(tracker: StatePublicTracker) {
+  if (currentTracker === tracker) return currentTrackerRestore;
+
+  let restored = false;
+  const prevTracker = currentTracker;
+
+  currentTracker = tracker;
+
+  currentTrackerRestore = () => {
+    if (!restored) {
+      currentTracker = prevTracker;
+      restored = true;
+    }
+  };
+
+  return currentTrackerRestore;
+}
+
+/**
+ * Gets the current tracker function for state observation.
+ * This function returns the currently active tracker, which is used to monitor
+ * state changes and dependencies during reactive computations.
+ *
+ * @returns The current tracker function or undefined if no tracker is set
+ */
+export function getTracker(): StatePublicTracker | undefined {
+  return currentTracker;
+}
+
+/**
+ * Tracks a state change by invoking the current tracker function if one is set.
+ * This function is used internally by the reactive system to notify observers
+ * about state changes and their dependencies.
+ *
+ * @param init - The initial state value that is being tracked
+ * @param observers - A collection of observers that are watching this state
+ * @param key - The key or property identifier for the state change
+ */
+export function track(init: Linkable, observers: StateObserverList, key: KeyLike) {
+  if (typeof currentTracker !== 'function') return;
+  currentTracker(init, observers, key);
 }

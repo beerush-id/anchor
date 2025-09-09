@@ -27,7 +27,7 @@ import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
 import { createCollectionGetter } from './collection.js';
-import { getObserver } from './observable.js';
+import { getObserver, track } from './observable.js';
 import { getDevTool } from './dev.js';
 import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
 
@@ -69,6 +69,10 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
 
   const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     const observer = getObserver();
+
+    if (configs.observable) {
+      track(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+    }
 
     if (configs.observable && observer) {
       const track = observer.assign(init, observers);

@@ -1,5 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, derive, outsideObserver, setObserver, withinObserver } from '../../src/index.js';
+import {
+  anchor,
+  createObserver,
+  derive,
+  getTracker,
+  outsideObserver,
+  setObserver,
+  setTracker,
+  withinObserver,
+} from '../../src/index.js';
 
 describe('Anchor Core - Observable Observer Management', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -13,6 +22,31 @@ describe('Anchor Core - Observable Observer Management', () => {
   });
 
   describe('Observer Management', () => {
+    it('should properly set global tracker', () => {
+      const tracker = vi.fn();
+      const state = anchor({ count: 1 });
+      expect(getTracker()).toBeUndefined();
+
+      const untrack = setTracker(tracker);
+      const untrack2 = setTracker(tracker); // Make sure to handle duplicate tracker.
+
+      expect(getTracker()).toBe(tracker);
+      expect(tracker).not.toHaveBeenCalled();
+      expect(untrack2).toBe(untrack);
+
+      const count = state.count;
+      expect(count).toBe(1);
+      expect(tracker).toHaveBeenCalledTimes(1);
+
+      untrack(); // Unset the tracker. Any state read after this point will not be tracked.
+
+      expect(getTracker()).toBeUndefined();
+      expect(tracker).toHaveBeenCalledTimes(1);
+
+      expect(state.count).toBe(1);
+      expect(tracker).toHaveBeenCalledTimes(1);
+    });
+
     it('should properly manage multiple observers', () => {
       const state = anchor({ a: 1, b: 2 }, { observable: true });
 
