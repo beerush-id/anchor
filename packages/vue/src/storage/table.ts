@@ -9,7 +9,7 @@ import {
   type RowState,
 } from '@anchor/storage/db';
 import { onUnmounted, type Ref } from 'vue';
-import { derivedRef } from '../derive.js';
+import { derivedRef } from '@base/index.js';
 
 export interface TableRef<T extends Rec, R extends Row<T> = Row<T>> {
   get(id: string): Ref<RowState<R>>;

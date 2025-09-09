@@ -1,6 +1,6 @@
 import { kv, type KVState, type Storable } from '@anchor/storage/db';
 import { onUnmounted, type Ref } from 'vue';
-import { derivedRef } from '../derive.js';
+import { derivedRef } from '@base/index.js';
 
 /**
  * Creates a Vue ref that wraps a KV store state.
