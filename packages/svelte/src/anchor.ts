@@ -9,7 +9,7 @@ import {
   type StateOptions,
 } from '@anchor/core';
 import type { ConstantRef, StateRef, VariableRef } from './types.js';
-import { REF_REGISTRY, variableRef } from './ref.js';
+import { constantRef, REF_REGISTRY } from './ref.js';
 
 /**
  * Creates a writable reference that can be used to manage state with Anchor.
@@ -73,7 +73,7 @@ export function anchorRef<T, S>(
   schemaOptions?: S | StateOptions,
   options?: StateOptions
 ): T | ModelOutput<S> | Immutable<ModelOutput<S>> {
-  const ref = variableRef((linkable(init) ? anchor(init as never, schemaOptions as never, options) : init) as never);
+  const ref = constantRef((linkable(init) ? anchor(init as never, schemaOptions as never, options) : init) as never);
   const stateRef = REF_REGISTRY.get(ref as ConstantRef<unknown>) as StateRef<T>;
 
   // Create a setter function.

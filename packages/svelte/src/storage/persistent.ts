@@ -1,6 +1,6 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
 import type { ConstantRef } from '@base/index.js';
-import { variableRef } from '@base/index.js';
+import { constantRef } from '@base/index.js';
 import { persistent } from '@anchor/storage';
 
 /**
@@ -21,5 +21,5 @@ export function persistentRef<T extends ObjLike, S extends LinkableSchema = Link
   options?: StateOptions<S>
 ): ConstantRef<T> {
   const state = persistent(name, init, options);
-  return variableRef<T>(state);
+  return constantRef<T>(state);
 }

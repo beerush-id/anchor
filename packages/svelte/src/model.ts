@@ -7,7 +7,7 @@ import {
   type StateBaseOptions,
 } from '@anchor/core';
 import type { VariableRef } from './types.js';
-import { variableRef } from './ref.js';
+import { constantRef } from './ref.js';
 
 /**
  * Creates a model reference with mutable state.
@@ -47,5 +47,5 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   options?: StateBaseOptions
 ) {
   const state = anchor(init, schema, options);
-  return variableRef(state);
+  return constantRef(state);
 }

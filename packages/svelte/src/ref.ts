@@ -13,7 +13,7 @@ export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>
  * @param init - The initial value for the reference
  * @returns A readable reference object with subscribe and publish capabilities
  */
-export function variableRef<T>(init: T) {
+export function constantRef<T>(init: T) {
   const subscribers = new Set<RefSubscriber<T>>();
   const stateRef = anchor({ value: init }, { recursive: true });
 

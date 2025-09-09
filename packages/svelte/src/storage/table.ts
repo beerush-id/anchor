@@ -1,6 +1,6 @@
 import { createTable, type FilterFn, type InferRec, type ReactiveTable, type Rec, type Row } from '@anchor/storage/db';
 import { onDestroy } from 'svelte';
-import { variableRef } from '@base/index.js';
+import { constantRef } from '@base/index.js';
 import type { TableRef } from './types.js';
 
 export function createTableRef<T extends ReactiveTable<Rec>>(table: T): TableRef<InferRec<T>>;
@@ -32,7 +32,7 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
         tableRef.leave(id);
       });
 
-      return variableRef(state);
+      return constantRef(state);
     },
     add(payload: T) {
       const state = tableRef.add(payload);
@@ -41,19 +41,19 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
         tableRef.leave(state.data.id);
       });
 
-      return variableRef(state);
+      return constantRef(state);
     },
     list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
       const state = tableRef.list(filter, limit, direction);
-      return variableRef(state);
+      return constantRef(state);
     },
     listByIndex(name: keyof R, filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
       const state = tableRef.listByIndex(name, filter, limit, direction);
-      return variableRef(state);
+      return constantRef(state);
     },
     remove(id: string) {
       const state = tableRef.remove(id);
-      return variableRef(state);
+      return constantRef(state);
     },
     seed(seeds: R[]) {
       tableRef.seed(seeds);
