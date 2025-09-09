@@ -18,81 +18,97 @@ Anchor provides multiple packages depending on your framework:
 
 Install the core package for framework-agnostic state management:
 
-```bash
+::: code-group
+
+```bash [NPM]
 npm install @anchor/core
 ```
 
-Or with yarn:
-
-```bash
+```bash [Yarn]
 yarn add @anchor/core
 ```
 
-Or with pnpm:
-
-```bash
+```bash [PNPM]
 pnpm add @anchor/core
 ```
+
+```bash [Bun]
+bun add @anchor/core
+```
+
+:::
 
 ### **React Integration**
 
 For React applications, install the React-specific package:
 
-```bash
+::: code-group
+
+```bash [NPM]
 npm install @anchor/react
 ```
 
-Or with yarn:
-
-```bash
+```bash [Yarn]
 yarn add @anchor/react
 ```
 
-Or with pnpm:
-
-```bash
+```bash [PNPM]
 pnpm add @anchor/react
 ```
+
+```bash [Bun]
+bun add @anchor/react
+```
+
+:::
 
 ### **Vue Integration**
 
 For Vue applications, install the Vue-specific package:
 
-```bash
+::: code-group
+
+```bash [NPM]
 npm install @anchor/vue
 ```
 
-Or with yarn:
-
-```bash
+```bash [Yarn]
 yarn add @anchor/vue
 ```
 
-Or with pnpm:
-
-```bash
+```bash [PNPM]
 pnpm add @anchor/vue
 ```
+
+```bash [Bun]
+bun add @anchor/vue
+```
+
+:::
 
 ### **Svelte Integration**
 
 For Svelte applications, install the Svelte-specific package:
 
-```bash
+::: code-group
+
+```bash [NPM]
 npm install @anchor/svelte
 ```
 
-Or with yarn:
-
-```bash
+```bash [Yarn]
 yarn add @anchor/svelte
 ```
 
-Or with pnpm:
-
-```bash
+```bash [PNPM]
 pnpm add @anchor/svelte
 ```
+
+```bash [Bun]
+bun add @anchor/svelte
+```
+
+:::
 
 ## **Basic Setup**
 
@@ -115,27 +131,25 @@ state.count++;
 ### **React**
 
 ```jsx
-import { useObserved } from '@anchor/react';
+import { observable } from '@anchor/react/components';
 
-function Counter() {
-  const count = useObserved(() => state.count);
-
+const Counter = observable(() => {
   return (
     <div>
       <p>Count: {count}</p>
       <button onClick={() => state.count++}>Increment</button>
     </div>
   );
-}
+});
 ```
 
 ### **Vue**
 
 ```vue
 <script setup>
-import { useObserved } from '@anchor/vue';
+import { derivedRef } from '@anchor/vue';
 
-const count = useObserved(() => state.count);
+const count = observedRef(() => state.count);
 </script>
 
 <template>
@@ -150,14 +164,14 @@ const count = useObserved(() => state.count);
 
 ```svelte
 <script>
-  import { useObserved } from '@anchor/svelte';
+  import { observed } from '@anchor/svelte';
 
-  const count = useObserved(() => state.count);
+  const count = observed(() => state.count);
 </script>
 
 <div>
   <p>Count: {$count}</p>
-  <button on:click={() => state.count++}>Increment</button>
+  <button onclick={() => state.count++}>Increment</button>
 </div>
 ```
 

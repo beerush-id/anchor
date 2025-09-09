@@ -112,12 +112,24 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
+            text: 'Introduction',
+            link: '/react/introduction',
+          },
+          {
             text: 'Getting Started',
             link: '/react/getting-started',
           },
           {
-            text: 'Usage',
-            link: '/react/usage',
+            text: 'Initialization',
+            link: '/react/initialization',
+          },
+          {
+            text: 'Observation',
+            link: '/react/observation',
+          },
+          {
+            text: 'Derivation',
+            link: '/react/derivation',
           },
           {
             text: 'Components',
@@ -126,10 +138,6 @@ export default defineConfig({
           {
             text: 'Utilities',
             link: '/react/utilities',
-          },
-          {
-            text: 'Caveats',
-            link: '/react/caveats',
           },
         ],
       },
