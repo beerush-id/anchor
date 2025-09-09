@@ -1,7 +1,7 @@
 import { kv, type KVState, type Storable } from '@anchor/storage/db';
-import type { ConstantRef } from '../types.js';
+import type { ConstantRef } from '@base/index.js';
+import { variableRef } from '@base/index.js';
 import { onDestroy } from 'svelte';
-import { variableRef } from '../ref.js';
 
 /**
  * Creates a reactive reference to a key-value store state.

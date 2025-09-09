@@ -1,6 +1,6 @@
 import { createTable, type FilterFn, type InferRec, type ReactiveTable, type Rec, type Row } from '@anchor/storage/db';
 import { onDestroy } from 'svelte';
-import { variableRef } from '../ref.js';
+import { variableRef } from '@base/index.js';
 import type { TableRef } from './types.js';
 
 export function createTableRef<T extends ReactiveTable<Rec>>(table: T): TableRef<InferRec<T>>;

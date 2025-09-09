@@ -1,6 +1,7 @@
 import {
   anchor,
   type Immutable,
+  linkable,
   type Linkable,
   type LinkableSchema,
   type ModelInput,
@@ -8,7 +9,7 @@ import {
   type StateOptions,
 } from '@anchor/core';
 import type { ConstantRef, StateRef, VariableRef } from './types.js';
-import { linkable, REF_REGISTRY, variableRef } from './ref.js';
+import { REF_REGISTRY, variableRef } from './ref.js';
 
 /**
  * Creates a writable reference that can be used to manage state with Anchor.

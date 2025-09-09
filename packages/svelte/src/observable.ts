@@ -14,7 +14,7 @@ import { onDestroy } from 'svelte';
  */
 export function observedRef<R>(observe: () => R): Readable<R> {
   const subscribers = new Set<RefSubscriber<R>>();
-  const observer = createObserver((c) => {
+  const observer = createObserver(() => {
     update();
   });
 
@@ -38,5 +38,5 @@ export function observedRef<R>(observe: () => R): Readable<R> {
     observer.destroy();
   });
 
-  return { subscribe };
+  return { subscribe, set: () => {} } as Readable<R>;
 }

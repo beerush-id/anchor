@@ -20,11 +20,18 @@ export function variableRef<T>(init: T) {
   let leaveState: ((destroy?: boolean) => void) | undefined = undefined;
 
   const subscribe = (handler: RefSubscriber<T>) => {
-    leaveState = derive(stateRef, (_, event) => {
-      if (event.type !== 'init') {
-        publish();
-      }
-    });
+    if (!anchor.has(stateRef)) {
+      handler(stateRef.value);
+      return () => {};
+    }
+
+    if (!leaveState) {
+      leaveState = derive(stateRef, (_, event) => {
+        if (event.type !== 'init') {
+          publish();
+        }
+      });
+    }
 
     handler(stateRef.value);
     subscribers.add(handler);
@@ -34,6 +41,7 @@ export function variableRef<T>(init: T) {
 
       if (!subscribers.size) {
         leaveState?.();
+        leaveState = undefined;
       }
     };
   };
@@ -54,6 +62,7 @@ export function variableRef<T>(init: T) {
     subscribers.clear();
     // Leave the ref state.
     leaveState?.();
+    leaveState = undefined;
 
     // Remove the ref from the registry.
     REF_REGISTRY.delete(ref as ConstantRef<unknown>);

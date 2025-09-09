@@ -1,7 +1,22 @@
 import { defineConfig } from 'tsup';
+import type { Plugin } from 'esbuild';
+
+const selResolve: Plugin = {
+  name: 'externalize-self',
+  setup(build) {
+    build.onResolve({ filter: /^(@base|@storage)(?:\/|$)/ }, (args) => {
+      if (args.path === '@base' || args.path === '@base/index.js') {
+        return {
+          path: '../index.js',
+          external: true,
+        };
+      }
+    });
+  },
+};
 
 export default defineConfig({
-  entry: ['./src/index.ts', './src/storage/index.ts', './src/preprocessor/index.ts'],
+  entry: ['./src/index.ts', './src/storage/index.ts'],
   outDir: './dist',
   dts: true,
   splitting: false,
@@ -12,4 +27,5 @@ export default defineConfig({
   sourcemap: true,
   platform: 'browser',
   external: ['@anchor/core', '@anchor/storage', 'svelte', 'vite'],
+  esbuildPlugins: [selResolve],
 });

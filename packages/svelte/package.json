@@ -31,11 +31,6 @@
       "svelte": "./dist/index.js",
       "import": "./dist/index.js"
     },
-    "./preprocessor": {
-      "types": "./dist/preprocessor/index.d.ts",
-      "svelte": "./dist/preprocessor/index.js",
-      "import": "./dist/preprocessor/index.js"
-    },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
       "svelte": "./dist/storage/index.js",

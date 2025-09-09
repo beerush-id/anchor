@@ -1,7 +1,7 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
-import type { ConstantRef } from '../types.js';
+import type { ConstantRef } from '@base/index.js';
+import { variableRef } from '@base/index.js';
 import { session } from '@anchor/storage';
-import { variableRef } from '../ref.js';
 
 /**
  * Creates a session-scoped reactive reference using the provided name, initial value, and options.

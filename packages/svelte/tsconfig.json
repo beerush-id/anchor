@@ -19,7 +19,10 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "@base/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["eslint.config.js", "tsup.config.ts"]
