@@ -1,7 +1,6 @@
-import { useValueIs } from '../derive.js';
+import { debugRender, useValueIs } from '@base/index.js';
 import { type HTMLAttributes, type MouseEventHandler, useMemo, useRef } from 'react';
 import type { WritableKeys } from '@anchor/core';
-import { debugRender } from '../dev.js';
 import type { ToggleProps } from './Types.js';
 
 export function Toggle<T, K extends WritableKeys<T>>({

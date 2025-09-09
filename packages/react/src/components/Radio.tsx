@@ -1,9 +1,8 @@
-import type { Bindable } from '../types.js';
+import type { Bindable } from '@base/index.js';
+import { debugRender, useValue } from '@base/index.js';
 import type { WritableKeys } from '@anchor/core';
 import type { InputProps } from './Types.js';
 import { useRef } from 'react';
-import { debugRender } from '../dev.js';
-import { useValue } from '../derive.js';
 
 export function Radio<T extends Bindable, K extends WritableKeys<T>>({
   ref,

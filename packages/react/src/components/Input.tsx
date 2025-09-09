@@ -1,8 +1,7 @@
 import { useMemo, useRef } from 'react';
-import type { Bindable } from '../types.js';
-import { useValue } from '../derive.js';
+import type { Bindable } from '@base/index.js';
+import { debugRender, useValue } from '@base/index.js';
 import type { WritableKeys } from '@anchor/core';
-import { debugRender } from '../dev.js';
 import type { InputProps } from './Types.js';
 
 export function Input<T extends Bindable, K extends WritableKeys<T>>({

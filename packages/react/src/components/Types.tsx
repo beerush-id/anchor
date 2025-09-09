@@ -1,4 +1,4 @@
-import type { Bindable } from '../types.js';
+import type { Bindable } from '@base/index.js';
 import type { WritableKeys } from '@anchor/core';
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, RefObject, SelectHTMLAttributes } from 'react';
 
