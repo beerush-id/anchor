@@ -1,11 +1,14 @@
 import {
   anchor,
   type Immutable,
+  type ImmutableOutput,
   type Linkable,
   type LinkableSchema,
+  type ModelInput,
   type Mutable,
   type MutablePart,
   type MutationKey,
+  type StateBaseOptions,
   type StateOptions,
 } from '@anchor/core';
 import type { AnchorState } from './types.js';
@@ -25,6 +28,15 @@ import { useStableRef } from './hooks.js';
  * @param options - Optional anchor configuration options
  * @returns An anchor state containing the immutable version of the input object
  */
+export function useImmutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: StateOptions<S>
+): AnchorState<Immutable<T>>;
+export function useImmutable<S extends LinkableSchema, T extends ModelInput<S>>(
+  init: T,
+  schema?: S,
+  options?: StateBaseOptions
+): AnchorState<ImmutableOutput<T>>;
 export function useImmutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>

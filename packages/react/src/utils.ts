@@ -1,4 +1,4 @@
-import { BATCH_MUTATION_KEYS, type BatchMutation, type KeyLike, type State, type StateChange } from '@anchor/core';
+import { BATCH_MUTATION_KEYS, BatchMutations, type KeyLike, type State, type StateChange } from '@anchor/core';
 import type { AnchoredProps, Bindable } from './types.js';
 
 /**
@@ -87,7 +87,7 @@ export function isMutationOf(event: StateChange, key: KeyLike) {
  * @returns An array of keys that were mutated.
  */
 export function mutationKeys(event: StateChange) {
-  if (BATCH_MUTATION_KEYS.has(event.type as BatchMutation)) {
+  if (BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) {
     return Object.keys(event.prev ?? {});
   }
 
