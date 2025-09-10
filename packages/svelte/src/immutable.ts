@@ -11,9 +11,8 @@ import {
   type StateBaseOptions,
   type StateOptions,
 } from '@anchor/core';
-import { constantRef } from './ref.js';
+import { variableRef } from './ref.js';
 import type { ConstantRef, VariableRef } from './types.js';
-import { anchorRef } from './anchor.js';
 
 /**
  * Creates an immutable ref from a state object.
@@ -52,7 +51,7 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
   options?: StateOptions<S>
 ): VariableRef<Immutable<T>> {
   const state = anchor.immutable(init as never, schemaOptions as never, options);
-  return anchorRef(state) as VariableRef<Immutable<T>>;
+  return variableRef(state) as VariableRef<Immutable<T>>;
 }
 
 /**
@@ -76,10 +75,10 @@ export function writableRef<T extends State>(state: T): ConstantRef<Mutable<T>>;
 export function writableRef<T extends State, K extends MutationKey<T>[]>(
   state: T,
   contracts: K
-): ConstantRef<MutablePart<T, K>>;
+): VariableRef<MutablePart<T, K>>;
 
 /** Implementation of `writableRef` overloads. */
 export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts?: K): ConstantRef<T> {
   const writableState = anchor.writable(state, contracts);
-  return constantRef(writableState) as ConstantRef<T>;
+  return variableRef(writableState) as ConstantRef<T>;
 }
