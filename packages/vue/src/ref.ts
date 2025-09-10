@@ -109,6 +109,9 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
         return state.value;
       },
       set(value) {
+        // Ignore if the new value is the same with the existing one.
+        if (value === state.value) return;
+
         if (!constant) {
           if (linkable(state.value)) {
             observer.destroy();

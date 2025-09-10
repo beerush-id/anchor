@@ -1,8 +1,10 @@
 import {
   anchor,
   type ImmutableOutput,
+  linkable,
   type Linkable,
   type LinkableSchema,
+  type ModelArray,
   type ModelInput,
   type ModelOutput,
   type StateBaseOptions,
@@ -68,7 +70,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schemaOptions?: S | StateOptions<S>,
   options?: StateBaseOptions
 ): VariableRef<T | ModelOutput<T> | ImmutableOutput<T>> {
-  const state = anchor<S, T>(init, schemaOptions as S, options);
+  const state = linkable(init) ? anchor<S, T>(init, schemaOptions as S, options) : init;
   return variableRef(state) as VariableRef<T>;
 }
 
@@ -82,7 +84,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
  * @param options - Configuration options
  * @returns A Vue Ref containing the flat reactive array
  */
-export function flatRef<T extends unknown[], S extends LinkableSchema = LinkableSchema>(
+export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
   init: T,
   options?: StateOptions<S>
 ): VariableRef<T> {
@@ -91,8 +93,30 @@ export function flatRef<T extends unknown[], S extends LinkableSchema = Linkable
 }
 
 /**
+ * Creates a reactive array that maintains a sorted order based on a comparison function.
+ * This is a Vue wrapper around anchor.ordered that returns a Ref.
+ *
+ * @template T - The type of the initial array
+ * @template S - The schema type for validation
+ * @param init - Initial array value
+ * @param compare - Comparison function to determine the order of elements
+ * @param options - Configuration options
+ * @returns A Vue Ref containing the ordered reactive array
+ */
+export function orderedRef<T extends unknown[], S extends ModelArray = ModelArray>(
+  init: T,
+  compare: (a: T[number], b: T[number]) => number,
+  options?: StateOptions<S>
+): VariableRef<T> {
+  const state = anchor.ordered(init, compare, options);
+  return variableRef(state) as VariableRef<T>;
+}
+
+/**
  * Creates a reactive object that mutates the original object.
  * This is a Vue wrapper around anchor.raw that returns a Ref.
+ *
+ * Unless you set the global options to `cloned: true`, you don't want to use this.
  *
  * @template T - The type of the initial object
  * @template S - The schema type for validation

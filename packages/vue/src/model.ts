@@ -1,13 +1,17 @@
 import {
   anchor,
+  captureStack,
   type ImmutableOutput,
   type LinkableSchema,
   type ModelInput,
   type ModelOutput,
+  type ObjLike,
   type StateBaseOptions,
+  type StateExceptionMap,
 } from '@anchor/core';
-import type { VariableRef } from './types.js';
-import { variableRef } from './ref.js';
+import type { ConstantRef, VariableRef } from './types.js';
+import { constantRef, REF_REGISTRY, variableRef } from './ref.js';
+import { isRef } from 'vue';
 
 /**
  * Creates a reactive reference to a model state that can be used in Vue components.
@@ -58,4 +62,34 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ) {
   const state = anchor(init, schema, options);
   return variableRef(state) as VariableRef<ModelOutput<S>>;
+}
+
+/**
+ * Creates a reactive constant reference that tracks exceptions for a given state object.
+ * This is a Vue wrapper around anchor.catch that returns a ConstantRef.
+ *
+ * @template T - The type of the state object (object or array)
+ * @param state - The state object to track exceptions for
+ * @returns A Vue constant ref containing the exception map for the state object
+ */
+export function exceptionRef<T extends ObjLike | Array<unknown>>(
+  state: T | VariableRef<T>
+): ConstantRef<StateExceptionMap<T>> {
+  if (isRef(state)) {
+    state = REF_REGISTRY.get(state as VariableRef<unknown>)!.value as T;
+
+    captureStack.violation.general(
+      'VariableRef passing detected:',
+      'Attempted to capture exception on a VariableRef.',
+      new Error('Unexpected VariableRef passing'),
+      [
+        `While it works, it won't update when the variable value itself changed.`,
+        `We always recommend passing the state directly instead of passing the VariableRef.`,
+      ],
+      exceptionRef
+    );
+  }
+
+  const exception = anchor.catch(state);
+  return constantRef(exception);
 }
