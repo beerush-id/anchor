@@ -16,7 +16,6 @@
 
 	let statsRef = anchorRef<HTMLElement | null>(null);
 	flashNode(statsRef);
-	console.log('Stats setup completed');
 </script>
 
 <div
