@@ -11,8 +11,8 @@ import {
   type StateBaseOptions,
   type StateOptions,
 } from '@anchor/core';
-import type { Ref } from 'vue';
-import { derivedRef } from './derive.js';
+import type { VariableRef } from './types.js';
+import { variableRef } from './ref.js';
 
 /**
  * Creates an immutable reactive state from the provided initial value using Anchor's immutable functionality.
@@ -27,19 +27,19 @@ import { derivedRef } from './derive.js';
 export function immutableRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): Ref<Immutable<T>>;
+): VariableRef<Immutable<T>>;
 export function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
-): Ref<ImmutableOutput<T>>;
+): VariableRef<ImmutableOutput<T>>;
 export function immutableRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   schemaOptions?: S | StateOptions,
   options?: StateOptions<S>
-): Ref<Immutable<T>> {
+): VariableRef<Immutable<T>> {
   const state = anchor.immutable(init as never, schemaOptions as never, options);
-  return derivedRef(state) as Ref<Immutable<T>>;
+  return variableRef(state) as VariableRef<Immutable<T>>;
 }
 
 /**
@@ -50,12 +50,12 @@ export function immutableRef<T extends Linkable, S extends LinkableSchema = Link
  * @param state - The readonly state to make writable
  * @returns A Vue Ref containing the writable state
  */
-export function writableRef<T extends Linkable>(state: T): Ref<Mutable<T>>;
+export function writableRef<T extends Linkable>(state: T): VariableRef<Mutable<T>>;
 export function writableRef<T extends Linkable, K extends MutationKey<T>[]>(
   state: T,
   contracts: K
-): Ref<MutablePart<T, K>>;
-export function writableRef<T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts?: K): Ref<T> {
+): VariableRef<MutablePart<T, K>>;
+export function writableRef<T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts?: K): VariableRef<T> {
   const writableState = anchor.writable(state, contracts);
-  return derivedRef(writableState) as Ref<T>;
+  return variableRef(writableState) as VariableRef<T>;
 }

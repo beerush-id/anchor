@@ -6,8 +6,8 @@ import {
   type ModelOutput,
   type StateBaseOptions,
 } from '@anchor/core';
-import { derivedRef } from './derive.js';
-import type { Ref } from 'vue';
+import type { VariableRef } from './types.js';
+import { variableRef } from './ref.js';
 
 /**
  * Creates a reactive reference to a model state that can be used in Vue components.
@@ -28,7 +28,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options?: StateBaseOptions
-): Ref<ModelOutput<S>>;
+): VariableRef<ModelOutput<S>>;
 
 /**
  * Creates an immutable reactive reference to a model state that can be used in Vue components.
@@ -49,7 +49,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options: StateBaseOptions & { immutable: true }
-): Ref<ImmutableOutput<S>>;
+): VariableRef<ImmutableOutput<S>>;
 
 export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
@@ -57,5 +57,5 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   options?: StateBaseOptions
 ) {
   const state = anchor(init, schema, options);
-  return derivedRef(state);
+  return variableRef(state) as VariableRef<ModelOutput<S>>;
 }

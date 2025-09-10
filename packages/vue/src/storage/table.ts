@@ -8,26 +8,30 @@ import {
   type RowListState,
   type RowState,
 } from '@anchor/storage/db';
-import { onUnmounted, type Ref } from 'vue';
-import { derivedRef } from '@base/index.js';
+import { onUnmounted } from 'vue';
+import { type ConstantRef, constantRef } from '@base/index.js';
 
 export interface TableRef<T extends Rec, R extends Row<T> = Row<T>> {
-  get(id: string): Ref<RowState<R>>;
-  add(payload: T): Ref<RowState<R>>;
-  remove(id: string): Ref<RowState<R>>;
-  list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection): Ref<RowListState<R>>;
+  get(id: string): ConstantRef<RowState<R>>;
+  add(payload: T): ConstantRef<RowState<R>>;
+  remove(id: string): ConstantRef<RowState<R>>;
+  list(
+    filter?: IDBKeyRange | FilterFn<R>,
+    limit?: number,
+    direction?: IDBCursorDirection
+  ): ConstantRef<RowListState<R>>;
   listByIndex(
     name: keyof R,
     filter?: IDBKeyRange | FilterFn<R>,
     limit?: number,
     direction?: IDBCursorDirection
-  ): Ref<RowListState<R>>;
+  ): ConstantRef<RowListState<R>>;
   seed<T extends R[]>(seeds: T): this;
   table(): ReactiveTable<T>;
 }
 
-export type InferRef<T> = T extends TableRef<Rec, infer R> ? Ref<R> : never;
-export type InferListRef<T> = T extends TableRef<Rec, infer R> ? Ref<R[]> : never;
+export type InferRef<T> = T extends TableRef<Rec, infer R> ? ConstantRef<R> : never;
+export type InferListRef<T> = T extends TableRef<Rec, infer R> ? ConstantRef<R[]> : never;
 
 export function createTableRef<T extends ReactiveTable<Rec>>(table: T): TableRef<InferRec<T>>;
 export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
@@ -58,7 +62,7 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
         tableRef.leave(id);
       });
 
-      return derivedRef(state);
+      return constantRef(state);
     },
     add(payload: T) {
       const state = tableRef.add(payload);
@@ -67,19 +71,19 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
         tableRef.leave(state.data.id);
       });
 
-      return derivedRef(state);
+      return constantRef(state);
     },
     list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
       const state = tableRef.list(filter, limit, direction);
-      return derivedRef(state);
+      return constantRef(state);
     },
     listByIndex(name: keyof R, filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
       const state = tableRef.listByIndex(name, filter, limit, direction);
-      return derivedRef(state);
+      return constantRef(state);
     },
     remove(id: string) {
       const state = tableRef.remove(id);
-      return derivedRef(state);
+      return constantRef(state);
     },
     seed(seeds: R[]) {
       tableRef.seed(seeds);

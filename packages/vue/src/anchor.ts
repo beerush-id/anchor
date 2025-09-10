@@ -8,8 +8,8 @@ import {
   type StateBaseOptions,
   type StateOptions,
 } from '@anchor/core';
-import { derivedRef } from './derive.js';
-import type { Ref } from 'vue';
+import { variableRef } from './ref.js';
+import type { VariableRef } from './types.js';
 
 /**
  * Creates a reactive anchor state that can be used in Vue components.
@@ -19,7 +19,7 @@ import type { Ref } from 'vue';
  * @param options - Optional configuration for the anchor
  * @returns A Vue ref containing the anchor state
  */
-export function anchorRef<T extends Linkable>(init: T, options?: StateOptions): Ref<T>;
+export function anchorRef<T extends Linkable>(init: T, options?: StateOptions): VariableRef<T>;
 
 /**
  * Creates a reactive anchor state with a schema that can be used in Vue components.
@@ -35,7 +35,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
-): Ref<ModelOutput<S>>;
+): VariableRef<ModelOutput<S>>;
 
 /**
  * Creates an immutable reactive anchor state with a schema that can be used in Vue components.
@@ -51,7 +51,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions & { immutable: true }
-): Ref<ImmutableOutput<T>>;
+): VariableRef<ImmutableOutput<T>>;
 
 /**
  * Creates a reactive anchor state that can be used in Vue components.
@@ -67,9 +67,9 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schemaOptions?: S | StateOptions<S>,
   options?: StateBaseOptions
-): Ref<T | ModelOutput<T> | ImmutableOutput<T>> {
+): VariableRef<T | ModelOutput<T> | ImmutableOutput<T>> {
   const state = anchor<S, T>(init, schemaOptions as S, options);
-  return derivedRef(state) as Ref<T>;
+  return variableRef(state) as VariableRef<T>;
 }
 
 /**
@@ -85,9 +85,9 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 export function flatRef<T extends unknown[], S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): Ref<T> {
+): VariableRef<T> {
   const state = anchor.flat(init, options);
-  return derivedRef(state) as Ref<T>;
+  return variableRef(state) as VariableRef<T>;
 }
 
 /**
@@ -103,7 +103,7 @@ export function flatRef<T extends unknown[], S extends LinkableSchema = Linkable
 export function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): Ref<T> {
+): VariableRef<T> {
   const state = anchor.raw(init, options);
-  return derivedRef(state) as Ref<T>;
+  return variableRef(state) as VariableRef<T>;
 }

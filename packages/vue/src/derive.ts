@@ -1,118 +1,66 @@
-import { createObserver, type Immutable, type PipeTransformer, setObserver, type State } from '@anchor/core';
-import { customRef, onMounted, onUnmounted, onUpdated, type Ref } from 'vue';
-import { isServer } from './utils.js';
-
-const REF_REGISTRY = new WeakMap<WeakKey, State>();
-
-let prepNextObserver: (() => void) | undefined = undefined;
+import { derive, type PipeTransformer, type State, type StateUnsubscribe } from '@anchor/core';
+import { customRef, isRef, onUnmounted, type Ref } from 'vue';
+import type { ConstantRef } from './types.js';
+import { REF_REGISTRY } from './ref.js';
 
 /**
- * Creates a Vue ref that derives its value from an Anchor state.
+ * Creates a derived ref from a state or ref without a transform function.
+ * The returned ref will have the same type as the input state.
  *
- * This function creates a reactive reference that automatically updates when the
- * source Anchor state changes. It can optionally transform the state value
- * using a provided transformer function.
- *
- * @template T - The type of the source state
- * @template R - The type of the transformed value (if a transformer is provided)
- *
- * @param state - The Anchor state to derive from
- * @param transform - Optional function to transform the state value
- *
- * @returns A Vue ref that tracks the (possibly transformed) state value
+ * @template T - The type of the state
+ * @param state - The state or ref to derive from
+ * @returns A constant ref with the same type as the input state
  */
-export function derivedRef<T extends State>(state: T | Ref<T>): Ref<T>;
-export function derivedRef<T extends State, R>(state: T | Ref<T>, transform: PipeTransformer<T, R>): Ref<Immutable<R>>;
+export function derivedRef<T extends State>(state: T | Ref<T>): ConstantRef<T>;
+
+/**
+ * Creates a derived ref from a state or ref with a transform function.
+ * The returned ref will have the type returned by the transform function.
+ *
+ * @template T - The type of the state
+ * @template R - The type of the transformed value
+ * @param state - The state or ref to derive from
+ * @param transform - A function that transforms the state into a different type
+ * @returns A constant ref with the type returned by the transform function
+ */
+export function derivedRef<T extends State, R>(state: T | Ref<T>, transform: PipeTransformer<T, R>): ConstantRef<R>;
+
 export function derivedRef<T extends State, R>(
   state: T | Ref<T>,
   transform?: PipeTransformer<T, R>
-): Ref<T | Immutable<R>> {
-  const observer = createObserver(() => {
-    if (typeof transform === 'function') {
-      const _unobserve = setObserver(observer);
-      computed = transform(state as T) as R;
-      _unobserve();
-    }
-
-    applyChanges?.();
-  });
-
-  let computed: R | undefined = undefined;
-  let destroyed = false;
-  let unobserve: (() => void) | undefined;
-  let applyChanges: (() => void) | undefined;
-
-  // When passing an existing reference as the input, we need to get the actual state
-  // to make sure we're creating a new reference that points to the same state.
-  if (REF_REGISTRY.has(state)) {
+): ConstantRef<T | R> {
+  if (isRef(state)) {
     state = REF_REGISTRY.get(state) as T;
   }
 
-  if (typeof transform === 'function') {
-    const _unobserve = setObserver(observer);
-    computed = transform(state as T) as R;
-    _unobserve();
-  }
+  let unsubscribe: StateUnsubscribe;
+  let current = typeof transform === 'function' ? transform(state) : state;
 
   onUnmounted(() => {
-    destroyed = true;
-    applyChanges = undefined;
-    observer.destroy();
-    REF_REGISTRY.delete(ref);
+    unsubscribe?.();
   });
 
-  const startObservation = () => {
-    if (isServer() || typeof unobserve === 'function') return;
+  return customRef((track, trigger) => {
+    const subscribe = () => {
+      if (typeof unsubscribe === 'function') return;
 
-    if (typeof prepNextObserver === 'function') {
-      prepNextObserver();
-    }
-
-    unobserve = setObserver(observer);
-    prepNextObserver = stopObservation;
-  };
-
-  const stopObservation = () => {
-    if (isServer() || typeof unobserve !== 'function') return;
-
-    unobserve();
-    unobserve = undefined;
-  };
-
-  onMounted(() => {
-    stopObservation();
-  });
-
-  onUpdated(() => {
-    stopObservation();
-  });
-
-  const ref = customRef((track, trigger) => {
-    if (!applyChanges) {
-      applyChanges = trigger;
-    }
+      unsubscribe = derive(state, (_, event) => {
+        if (event.type !== 'init') {
+          current = typeof transform === 'function' ? transform(state) : state;
+          trigger();
+        }
+      });
+    };
 
     return {
       get() {
-        if (!destroyed) {
-          startObservation();
-          track();
-        }
-
-        if (typeof transform === 'function') {
-          return computed;
-        }
-
-        return state;
+        track();
+        subscribe();
+        return current;
       },
       set() {
-        // No op.
+        // No-op
       },
     };
-  });
-
-  // Store the reference in the registry for future use.
-  REF_REGISTRY.set(ref, state);
-
-  return ref as Ref<T>;
+  }) as ConstantRef<T>;
 }

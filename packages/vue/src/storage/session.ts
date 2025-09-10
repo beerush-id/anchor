@@ -1,7 +1,7 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
-import { onUnmounted, type Ref } from 'vue';
+import { onUnmounted } from 'vue';
 import { session } from '@anchor/storage';
-import { derivedRef } from '@base/index.js';
+import { type ConstantRef, constantRef } from '@base/index.js';
 
 /**
  * Creates a reactive reference to a session storage value with type safety.
@@ -22,12 +22,12 @@ export function sessionRef<T extends ObjLike, S extends LinkableSchema = Linkabl
   name: string,
   init: T,
   options?: StateOptions<S>
-): Ref<T> {
+): ConstantRef<T> {
   const state = session(name, init, options);
 
   onUnmounted(() => {
     session.leave(state);
   });
 
-  return derivedRef(state);
+  return constantRef(state);
 }

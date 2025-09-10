@@ -1,6 +1,6 @@
 import { history, type HistoryOptions, type HistoryState, type State } from '@anchor/core';
-import type { Ref } from 'vue';
-import { derivedRef } from './derive.js';
+import type { ConstantRef } from './types.js';
+import { constantRef } from './ref.js';
 
 /**
  * Creates a Vue ref that wraps a history state object.
@@ -13,7 +13,7 @@ import { derivedRef } from './derive.js';
  * @param options - Optional configuration for the history behavior
  * @returns A Vue ref containing the history state
  */
-export function historyRef<T extends State>(state: T, options?: HistoryOptions): Ref<HistoryState> {
+export function historyRef<T extends State>(state: T, options?: HistoryOptions): ConstantRef<HistoryState> {
   const historyState = history(state, options);
-  return derivedRef(historyState);
+  return constantRef(historyState);
 }
