@@ -58,5 +58,8 @@
   "dependencies": {
     "@anchor/core": "workspace:*",
     "@anchor/storage": "workspace:*"
+  },
+  "optionalDependencies": {
+    "zod": "^4.1.5"
   }
 }
