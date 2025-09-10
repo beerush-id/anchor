@@ -1,7 +1,7 @@
 import { type FC, useRef, useState } from 'react';
 import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
-import { BENCHMARK_SIZE, type ITodoItem } from '@lib/todo.js';
+import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE, type ITodoItem } from '@lib/todo.js';
 import { ClassicTodoForm } from './ClassicTodoForm.js';
 import { ClassicTodoList } from './ClassicTodoList.js';
 import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
@@ -13,7 +13,7 @@ import { ClassicTodoCode } from './ClassicTodoCode.js';
 import { debugRender } from '@anchor/react';
 import { isMobile } from '@lib/nav.js';
 
-const [loop] = microloop(5, BENCHMARK_SIZE);
+const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
   loop(fn).then(() => console.log(`Profiling done in ${performance.now() - start}ms.`));

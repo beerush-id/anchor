@@ -1,58 +1,65 @@
 import { type FC, memo, useEffect, useRef } from 'react';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
-import { BENCHMARK_TOGGLE_SIZE, type ITodoItem, type ITodoList, type ITodoStats } from '@lib/todo.js';
+import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE, itemsWriter, type ITodoItem, statsWriter } from '@lib/todo.js';
 import { Button, IconButton } from '../Button.js';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
-import { debugRender, useObserved } from '@anchor/react';
+import { debugRender, useWriter } from '@anchor/react';
 import { microloop } from '@anchor/core';
 import { Tooltip } from '../Tooltip.js';
+import { observe } from '@anchor/react/components';
 
-const [loop] = microloop(5, BENCHMARK_TOGGLE_SIZE);
+const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
   loop(fn).then(() => console.log(`Profiling done in ${(performance.now() - start).toLocaleString()}ms.`));
 };
 
-export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem }> = memo(({ todos, stats, todo }) => {
-  const ref = useRef<HTMLLIElement>(null);
-  const [text, completed] = useObserved(() => [todo.text, todo.completed]);
+export const TodoItem: FC<{ todo: ITodoItem }> = memo(({ todo }) => {
+  const selfRef = useRef<HTMLLIElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
 
-  debugRender(ref);
+  debugRender(selfRef);
   useUpdateStat(() => {
     todoStats.item.value++;
   });
 
-  const handleRemove = () => {
-    todos.splice(todos.indexOf(todo), 1);
-    stats.total--;
+  const itemWriter = useWriter(todo, ['completed']);
+  const handleToggle = () => {
+    itemWriter.completed = !itemWriter.completed;
 
     if (todo.completed) {
-      stats.completed--;
+      statsWriter.completed++;
+      statsWriter.active--;
     } else {
-      stats.active--;
+      statsWriter.completed--;
+      statsWriter.active++;
     }
+
+    todoStats.item.value++;
   };
 
-  const handleToggle = () => {
-    todo.completed = !todo.completed;
+  const handleDelete = () => {
+    itemsWriter.splice(itemsWriter.indexOf(todo), 1);
+    statsWriter.total--;
 
     if (todo.completed) {
-      stats.completed++;
-      stats.active--;
+      statsWriter.completed--;
     } else {
-      stats.completed--;
-      stats.active++;
+      statsWriter.active--;
     }
   };
 
   useEffect(() => {
-    if (!ref.current || todo.id.length === 1) return;
-    ref.current.scrollIntoView({ behavior: 'instant', block: 'center' });
+    if (!selfRef.current || todo.id.length === 1) return;
+    selfRef.current.scrollIntoView({ behavior: 'instant', block: 'center' });
   }, [todo]);
 
-  return (
-    <li ref={ref} className="flex items-center gap-2">
-      <div className="flex items-center flex-1 gap-3 bg-slate-800/70 p-2 rounded-md">
+  const ItemView = observe(() => {
+    const { text, completed } = todo;
+    debugRender(viewRef);
+
+    return (
+      <div ref={viewRef} className="flex items-center flex-1 gap-3 bg-slate-800/70 p-2 rounded-md">
         <label className="text-slate-300">
           <input type="checkbox" checked={completed} onChange={handleToggle} className="sr-only" />
           {completed && <SquareCheck />}
@@ -62,11 +69,17 @@ export const TodoItem: FC<{ todos: ITodoList; stats: ITodoStats; todo: ITodoItem
           {text}
         </span>
       </div>
+    );
+  });
+
+  return (
+    <li ref={selfRef} className="flex items-center gap-2">
+      <ItemView />
       <IconButton onClick={() => benchmark(handleToggle)}>
         <Gauge size={20} />
         <Tooltip>Toggle {BENCHMARK_TOGGLE_SIZE} times</Tooltip>
       </IconButton>
-      <Button onClick={() => handleRemove()} className="btn-icon">
+      <Button onClick={() => handleDelete()} className="btn-icon">
         <Trash2 size={14} />
       </Button>
     </li>

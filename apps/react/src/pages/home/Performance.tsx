@@ -135,8 +135,8 @@ export const Performance = () => {
           description:
             'Measures the overall duration from start to finish of the benchmark action, reflecting user-perceived performance.',
           data: {
-            classic: 82603,
-            anchor: 15185,
+            classic: 178978,
+            anchor: 17482,
             ratio: 5.5,
           },
           unit: 'ms',

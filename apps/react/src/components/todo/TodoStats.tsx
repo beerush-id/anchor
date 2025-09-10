@@ -1,12 +1,13 @@
 import { type FC, useRef } from 'react';
-import type { ITodoStats } from '@lib/todo.js';
-import { debugRender, useObserved } from '@anchor/react';
+import { todoApp } from '@lib/todo.js';
+import { debugRender } from '@anchor/react';
+import { observable } from '@anchor/react/components';
 
-export const TodoStats: FC<{ stats: ITodoStats }> = ({ stats }) => {
+export const TodoStats: FC = observable(() => {
   const ref = useRef(null);
-  const [total, active, completed] = useObserved(() => [stats.total, stats.active, stats.completed], [stats]);
-
   debugRender(ref);
+
+  const { total, active, completed } = todoApp.stats;
 
   return (
     <div ref={ref} className="flex items-center justify-between px-10 pb-4">
@@ -24,4 +25,4 @@ export const TodoStats: FC<{ stats: ITodoStats }> = ({ stats }) => {
       </div>
     </div>
   );
-};
+}, 'TodoStats');
