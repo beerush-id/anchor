@@ -115,6 +115,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     recursive: options?.recursive ?? ANCHOR_SETTINGS.recursive,
     immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
     observable: options?.observable ?? ANCHOR_SETTINGS.observable,
+    silentInit: options?.silentInit ?? ANCHOR_SETTINGS.silentInit,
   };
   const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
@@ -139,7 +140,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
         } else if (isObject(init)) {
           Object.assign(init, result.data);
         }
-      } else {
+      } else if (!configs.silentInit) {
         captureStack.error.validation(
           'Attempted to initialize state with schema:',
           result.error,

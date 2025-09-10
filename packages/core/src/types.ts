@@ -53,6 +53,7 @@ export type StateBaseOptions = {
   recursive?: Recursive;
   immutable?: boolean;
   observable?: boolean;
+  silentInit?: boolean;
   compare?: (a: unknown, b: unknown) => number;
 };
 export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & { schema?: S };

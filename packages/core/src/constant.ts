@@ -26,6 +26,7 @@ export const ANCHOR_SETTINGS = {
   immutable: false,
   observable: true,
   production: true,
+  silentInit: false,
   safeObservation: true,
   safeObservationThreshold: 100,
 } satisfies AnchorSettings;
