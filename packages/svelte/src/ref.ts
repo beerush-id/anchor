@@ -1,5 +1,5 @@
 import type { ConstantRef, RefSubscriber, StateRef, VariableRef } from './types.js';
-import { anchor, derive, type Linkable } from '@anchor/core';
+import { anchor, derive } from '@anchor/core';
 import { onDestroy } from 'svelte';
 
 export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>();
@@ -53,11 +53,6 @@ export function constantRef<T>(init: T) {
   };
 
   onDestroy(() => {
-    if (anchor.has(stateRef.value as Linkable)) {
-      // Destroy the value if it was a state.
-      anchor.destroy(stateRef.value as Linkable);
-    }
-
     // Clear the subscribers.
     subscribers.clear();
     // Leave the ref state.
@@ -93,35 +88,6 @@ export function constantRef<T>(init: T) {
   REF_REGISTRY.set(ref as ConstantRef<unknown>, stateRef);
 
   return ref as ConstantRef<T>;
-}
-
-/**
- * Determines whether a given value is linkable, meaning it can be used as a state object.
- * Linkable values include objects, arrays, Sets, and Maps.
- *
- * @param init - The value to check for linkability
- * @returns True if the value is linkable, false otherwise
- */
-export function linkable(init: unknown) {
-  return (
-    (typeof init === 'object' && init !== null) || Array.isArray(init) || init instanceof Set || init instanceof Map
-  );
-}
-
-/**
- * Extracts the current value from a writable reference or returns the value itself if it's not a reference.
- * This function provides a unified way to access values regardless of whether they are wrapped in a reference or not.
- *
- * @template T The type of the value
- * @param ref The writable reference or plain value to extract from
- * @returns The current value of the reference or the value itself
- */
-export function getRefValue<T>(ref: VariableRef<T> | T): T {
-  if (isRef(ref)) {
-    return REF_REGISTRY.get(ref as VariableRef<unknown>)?.value as T;
-  }
-
-  return ref as T;
 }
 
 /**

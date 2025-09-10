@@ -26,6 +26,8 @@ export function propsRef<T extends Props>(props: T): PropsRef<T> {
   for (const [key, value] of Object.entries(props)) {
     if (anchor.has(value as State)) {
       ref[key] = constantRef(value as State) as ConstantRef<T[keyof T]>;
+    } else {
+      ref[key] = value as T[keyof T];
     }
   }
 
