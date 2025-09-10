@@ -11,7 +11,7 @@ import {
   type StateBaseOptions,
   type StateOptions,
 } from '@anchor/core';
-import { variableRef } from './ref.js';
+import { constantRef } from './ref.js';
 import type { ConstantRef, VariableRef } from './types.js';
 import { anchorRef } from './anchor.js';
 
@@ -81,5 +81,5 @@ export function writableRef<T extends State, K extends MutationKey<T>[]>(
 /** Implementation of `writableRef` overloads. */
 export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts?: K): ConstantRef<T> {
   const writableState = anchor.writable(state, contracts);
-  return variableRef(writableState) as ConstantRef<T>;
+  return constantRef(writableState) as ConstantRef<T>;
 }

@@ -1,6 +1,6 @@
 import { kv, type KVState, type Storable } from '@anchor/storage/db';
 import type { ConstantRef } from '@base/index.js';
-import { variableRef } from '@base/index.js';
+import { constantRef } from '@base/index.js';
 import { onDestroy } from 'svelte';
 
 /**
@@ -21,5 +21,5 @@ export function kvRef<T extends Storable>(name: string, init: T): ConstantRef<KV
     kv.leave(state);
   });
 
-  return variableRef(state);
+  return constantRef(state);
 }

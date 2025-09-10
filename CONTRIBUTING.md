@@ -1,15 +1,17 @@
 # Contributing to Anchor
 
-Thank you for your interest in contributing to Anchor! We welcome contributions from the community and are excited to have you join us in building a better state management ecosystem.
+Thank you for your interest in contributing to Anchor! We welcome contributions from the community and are excited to
+have you join us in building a better state management ecosystem.
 
 ## Code of Conduct
 
-Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in
+this project you agree to abide by its terms.
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/anchor.git`
+2. Clone your fork: `git clone https://github.com/beerush-id/anchor.git`
 3. Create a new branch: `git checkout -b my-feature-branch`
 4. Make your changes
 5. Commit your changes: `git commit -am 'Add some feature'`
@@ -63,11 +65,14 @@ Feature requests are welcome! Please provide:
 ## Pull Request Process
 
 1. Ensure any install or build dependencies are removed before the end of the layer when doing a build
-2. Update the README.md with details of changes to the interface, including new environment variables, exposed ports, useful file locations and container parameters
-3. Increase the version numbers in any examples files and the README.md to the new version that this Pull Request would represent
+2. Update the README.md with details of changes to the interface, including new environment variables, exposed ports,
+   useful file locations and container parameters
+3. Increase the version numbers in any examples files and the README.md to the new version that this Pull Request would
+   represent
 4. Your pull request will be reviewed by maintainers, who may request changes or ask questions
 5. Once approved, your pull request will be merged
 
 ## Questions?
 
-If you have any questions about contributing, feel free to ask by creating an issue or reaching out to the maintainers directly.
+If you have any questions about contributing, feel free to ask by creating an issue or reaching out to the maintainers
+directly.

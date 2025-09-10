@@ -1,6 +1,6 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
 import type { ConstantRef } from '@base/index.js';
-import { variableRef } from '@base/index.js';
+import { constantRef } from '@base/index.js';
 import { session } from '@anchor/storage';
 
 /**
@@ -21,5 +21,5 @@ export function sessionRef<T extends ObjLike, S extends LinkableSchema = Linkabl
   options?: StateOptions<S>
 ): ConstantRef<T> {
   const state = session(name, init, options);
-  return variableRef<T>(state);
+  return constantRef<T>(state);
 }

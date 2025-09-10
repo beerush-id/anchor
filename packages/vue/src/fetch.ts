@@ -1,6 +1,6 @@
 import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchor/core';
-import { derivedRef } from './derive.js';
-import type { Ref } from 'vue';
+import { constantRef } from './ref.js';
+import type { ConstantRef } from './types.js';
 
 /**
  * Creates a reactive reference to a fetch state.
@@ -18,14 +18,14 @@ import type { Ref } from 'vue';
  *
  * @returns A reactive reference to the fetch state
  */
-export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): Ref<FetchState<R>>;
+export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): ConstantRef<FetchState<R>>;
 export function fetchRef<R, P>(
   init: R,
   options: FetchOptions & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): Ref<FetchState<R>>;
-export function fetchRef<R>(init: R, options: FetchOptions): Ref<FetchState<R>> {
+): ConstantRef<FetchState<R>>;
+export function fetchRef<R>(init: R, options: FetchOptions): ConstantRef<FetchState<R>> {
   const state = fetchState(init, options);
-  return derivedRef(state);
+  return constantRef(state);
 }
 
 /**
@@ -45,12 +45,15 @@ export function fetchRef<R>(init: R, options: FetchOptions): Ref<FetchState<R>> 
  *
  * @returns A reactive reference to the stream state
  */
-export function streamRef<R>(init: R, options: StreamOptions<R> & { method: 'GET' | 'DELETE' }): Ref<FetchState<R>>;
+export function streamRef<R>(
+  init: R,
+  options: StreamOptions<R> & { method: 'GET' | 'DELETE' }
+): ConstantRef<FetchState<R>>;
 export function streamRef<R, P>(
   init: R,
   options: StreamOptions<R> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): Ref<FetchState<R>>;
-export function streamRef<R>(init: R, options: StreamOptions<R>): Ref<FetchState<R>> {
+): ConstantRef<FetchState<R>>;
+export function streamRef<R>(init: R, options: StreamOptions<R>): ConstantRef<FetchState<R>> {
   const state = streamState(init, options);
-  return derivedRef(state);
+  return constantRef(state);
 }

@@ -27,6 +27,7 @@ export type ModelIssues = ModelIssue[];
 
 export type StateTracker = (init: Linkable, key: KeyLike) => boolean;
 export type StateKeyTracker = (key: KeyLike) => boolean;
+export type StatePublicTracker = (init: Linkable, observers: StateObserverList, key: KeyLike) => void;
 export type StateObserver = {
   readonly id: string;
   readonly states: WeakMap<State, Set<KeyLike>>;

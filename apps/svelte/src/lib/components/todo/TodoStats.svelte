@@ -5,17 +5,17 @@
 
 	const { todos }: { todos: TodoRec[] } = $props();
 	const stats = observedRef(() => {
-		const records = todos.filter((todo) => !todo.completed);
+		const available = todos.filter((todo) => !todo.deleted_at);
+
 		return {
-			total: todos.length,
-			active: records.length,
-			completed: todos.length - records.length
+			total: available.length,
+			active: available.filter((todo) => !todo.completed).length,
+			completed: available.filter((todo) => todo.completed).length
 		};
 	});
 
 	let statsRef = anchorRef<HTMLElement | null>(null);
 	flashNode(statsRef);
-	console.log('Stats setup completed');
 </script>
 
 <div

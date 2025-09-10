@@ -1,7 +1,7 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
-import { onUnmounted, type Ref } from 'vue';
+import { onUnmounted } from 'vue';
 import { persistent } from '@anchor/storage';
-import { derivedRef } from '@base/index.js';
+import { type ConstantRef, constantRef } from '@base/index.js';
 
 /**
  * Creates a reactive reference to a localStorage value with type safety.
@@ -22,12 +22,12 @@ export function persistentRef<T extends ObjLike, S extends LinkableSchema = Link
   name: string,
   init: T,
   options?: StateOptions<S>
-): Ref<T> {
+): ConstantRef<T> {
   const state = persistent(name, init, options);
 
   onUnmounted(() => {
     persistent.leave(state);
   });
 
-  return derivedRef(state);
+  return constantRef(state);
 }

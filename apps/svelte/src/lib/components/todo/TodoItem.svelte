@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { type TodoRec, todoTable } from '../../todos.js';
-	import { anchorRef, derivedRef } from '@anchor/svelte';
+	import { anchorRef, propsRef } from '@anchor/svelte';
 	import Trash from '../icons/Trash.svelte';
 	import { flashNode } from '../../node.svelte.js';
 
-	const { todo }: { todo: TodoRec } = $props();
-	const item = derivedRef(todo, false);
+	const _props: { todo: TodoRec } = $props();
+	const { todo } = propsRef(_props);
 
 	const handleRemove = (id: string) => {
 		todoTable.remove(id);
@@ -21,18 +21,18 @@
 >
 	<input
 		type="checkbox"
-		bind:checked={$item.completed}
+		bind:checked={$todo.completed}
 		class="h-5 w-5 rounded text-blue-600 focus:ring-blue-500"
 	/>
 	<span
-		class:line-through={$item.completed}
-		class:text-gray-400={$item.completed}
+		class:line-through={$todo.completed}
+		class:text-gray-400={$todo.completed}
 		class="ml-3 flex-1 text-gray-700 dark:text-slate-200"
 	>
-		{$item.text}
+		{$todo.text}
 	</span>
 	<button
-		onclick={() => handleRemove($item.id)}
+		onclick={() => handleRemove($todo.id)}
 		class="ml-2 rounded px-2 py-1 text-red-600 opacity-80 transition duration-200 hover:opacity-100 dark:text-slate-300"
 	>
 		<Trash class="w-6" />

@@ -314,5 +314,5 @@ To learn more about form validation and Anchor:
 
 - Review the [Data Integrity Guide](/data-integrity) for advanced validation patterns
 - Explore [Immutability](/immutability) to understand write contracts
-- Check out the [API Reference](/react/usage) for detailed documentation on React hooks
+- Check out the [API Reference](/apis/react/initialization) for detailed documentation on React hooks
 - See how validation works with [Storage](/storage/getting-started) for persistent form data

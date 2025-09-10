@@ -1,6 +1,6 @@
 import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchor/core';
 import type { ConstantRef } from './types.js';
-import { variableRef } from './ref.js';
+import { constantRef } from './ref.js';
 
 /**
  * Creates a readable Svelte store that manages the state of a fetch request.
@@ -30,7 +30,7 @@ export function fetchRef<R, P>(
 /** @internal */
 export function fetchRef<R>(init: R, options: FetchOptions): ConstantRef<FetchState<R>> {
   const state = fetchState(init, options);
-  return variableRef(state);
+  return constantRef(state);
 }
 
 /**
@@ -65,5 +65,5 @@ export function streamRef<R, P>(
 /** @internal */
 export function streamRef<R>(init: R, options: StreamOptions<R>): ConstantRef<FetchState<R>> {
   const state = streamState(init, options);
-  return variableRef(state);
+  return constantRef(state);
 }
