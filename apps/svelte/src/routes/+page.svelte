@@ -2,6 +2,7 @@
 	import { derive } from '@anchor/core';
 	import { persistentRef } from '@anchor/svelte/storage';
 	import TodoApp from '$lib/components/todo/TodoApp.svelte';
+	import ProfileForm from '$lib/components/form/ProfileForm.svelte';
 
 	const settings = persistentRef('settings', {
 		theme: 'light'
@@ -14,7 +15,11 @@
 	}
 </script>
 
-<TodoApp />
+<div class="flex w-full flex-col justify-center gap-8 md:flex-row">
+	<TodoApp />
+	<ProfileForm />
+</div>
+
 <div class="mt-6 flex items-center gap-2">
 	<label for="theme-select" class="text-slate-600 dark:text-slate-300">Theme:</label>
 	<select
