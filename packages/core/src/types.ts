@@ -66,11 +66,13 @@ export type AnchorSettings = StateBaseOptions & {
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;
 export type StateUnsubscribe = () => void;
 export type StateDestroyer = () => void;
-export type StateSubscribeFn<T> = (
+export type StateSubscribeFn<T> = ((
   handle: StateSubscriber<T>,
   receiver?: Linkable,
   recursive?: boolean
-) => StateUnsubscribe;
+) => StateUnsubscribe) & {
+  all: (handle: StateSubscriber<T>, receiver?: Linkable, recursive?: boolean) => StateUnsubscribe;
+};
 export type StateSubscriberList<T extends Linkable = Linkable> = Set<StateSubscriber<T>>;
 export type StateObserverList = Set<StateObserver>;
 export type StateSubscriptionMap = Map<Linkable, StateUnsubscribe>;
@@ -176,6 +178,7 @@ export type StateChange = {
   keys: KeyLike[];
   prev?: unknown;
   value?: unknown;
+  error?: ModelError;
   emitter?: string;
 };
 
@@ -192,6 +195,29 @@ export type PipeTransformer<T, R> = (value: T) => Partial<R>;
 export type SubscribeFactoryInit = {
   link: StateLinkFn;
   unlink: StateUnlinkFn;
+};
+
+export type NestedPath<T> =
+  T extends Array<infer U>
+    ? `${number}` | (NestedPath<U> extends infer P ? (P extends string ? `${number}.${P}` : never) : never)
+    : T extends object
+      ? {
+          [K in keyof T]: K extends string
+            ? `${K}` | (NestedPath<T[K]> extends infer P ? (P extends string ? `${K}.${P}` : never) : never)
+            : never;
+        }[keyof T]
+      : never;
+
+export type ExceptionType = {
+  error: ModelError | Error;
+  message: string;
+};
+export type ExceptionMap<T extends ObjLike | Array<unknown>> = {
+  [K in NestedPath<T>]?: ExceptionType;
+};
+export type StateExceptionMap<T extends ObjLike | Array<unknown>> = {
+  errors: ExceptionMap<T>;
+  destroy: StateUnsubscribe;
 };
 
 export type Immutable<T> = T extends Primitive
@@ -462,6 +488,19 @@ export interface Anchor {
    * @returns A read-only proxy of the state.
    */
   read<T extends State>(state: T): Immutable<T>;
+
+  /**
+   * Retrieves the exception map for a given state, allowing access to validation errors and exceptions.
+   *
+   * This method returns a **StateExceptionMap** which contains:
+   * - **errors**: A map of property paths to their corresponding validation errors
+   * - **destroy**: A function to unsubscribe from the exception map
+   *
+   * @template T - The type of the state object or array
+   * @param {T} state - The reactive state object or array to get exceptions for
+   * @returns {StateExceptionMap<T>} An object containing the error map and unsubscribe function
+   */
+  catch<T extends ObjLike | Array<unknown>>(state: T): StateExceptionMap<T>;
 
   /**
    * Registers an exception handler for a given state to catch and handle errors during state mutations.

@@ -167,7 +167,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
   const { schema, subscriptions } = meta;
   const { configs } = options ?? meta;
 
-  const setter = (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
+  return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
     // Make sure to always work with the underlying object (if exist).
     if (anchor.has(value)) value = anchor.get(value);
 
@@ -178,32 +178,39 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
     }
 
     if (schema) {
+      let validation;
+
       const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
       if (childSchema) {
-        const result = childSchema.safeParse(value);
+        validation = childSchema.safeParse(value);
+      } else {
+        validation = schema.safeParse({ ...init, [prop as string]: value });
+      }
 
-        if (result.success) {
-          value = result.data as Linkable;
-        } else {
-          const handled = broadcaster.catch(result.error, {
+      if (validation.success) {
+        value = validation.data as Linkable;
+      } else {
+        broadcaster.catch(validation.error, {
+          type: ObjectMutations.SET,
+          keys: [prop as string],
+          prev: current,
+          value,
+        });
+
+        broadcaster.broadcast(
+          target,
+          {
             type: ObjectMutations.SET,
             keys: [prop as string],
             prev: current,
+            error: validation.error,
             value,
-          });
+          },
+          meta.id
+        );
 
-          if (!handled) {
-            captureStack.error.validation(
-              `Attempted to update property: "${prop as string}" of a state:`,
-              result.error,
-              configs.strict,
-              setter
-            );
-          }
-
-          return !configs.strict;
-        }
+        return !configs.strict;
       }
     }
 
@@ -235,8 +242,6 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
 
     return true;
   };
-
-  return setter;
 }
 
 /**
@@ -270,7 +275,7 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
   const { schema, subscriptions } = meta;
   const { configs } = options ?? meta;
 
-  const remover = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+  return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     const current = Reflect.get(target, prop, receiver) as Linkable;
     const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
@@ -278,20 +283,22 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
       const result = childSchema.safeParse(undefined);
 
       if (!result.success) {
-        const handled = broadcaster.catch(result.error, {
+        broadcaster.catch(result.error, {
           type: ObjectMutations.DELETE,
           prev: current,
           keys: [prop as string],
         });
 
-        if (!handled) {
-          captureStack.error.validation(
-            `Attempted to delete property: "${prop as string}" of a state:`,
-            result.error,
-            configs.strict,
-            remover
-          );
-        }
+        broadcaster.broadcast(
+          init,
+          {
+            type: ObjectMutations.DELETE,
+            prev: current,
+            keys: [prop as string],
+            error: result.error,
+          },
+          meta.id
+        );
 
         return !configs.strict;
       }
@@ -324,6 +331,4 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
 
     return true;
   };
-
-  return remover;
 }

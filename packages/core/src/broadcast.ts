@@ -1,6 +1,7 @@
 import type { Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
 import { BatchMutations, OBSERVER_KEYS } from './enum.js';
 import { BATCH_MUTATION_KEYS } from './constant.js';
+import { captureStack } from './exception.js';
 
 /**
  * Creates a broadcaster object for managing state change notifications.
@@ -53,7 +54,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
       for (const handler of exceptionHandlers) {
         handler({ ...event, error, issues: error.issues });
       }
-      return exceptionHandlers.size > 0;
+      return true;
     },
     /**
      * Broadcasts a state snapshot and change event to all subscribers.
@@ -67,6 +68,20 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
      * @param emitter - Optional identifier of the emitting instance.
      */
     broadcast(snapshot, event, emitter) {
+      if (event.error && !exceptionHandlers.size) {
+        const handlers = Array.from(subscribers).filter(
+          (fn) => (fn as never as { __internal_id__: string }).__internal_id__
+        );
+
+        if (!handlers.length) {
+          captureStack.error.validation(
+            `Unhandled schema validation of a state mutation: "${event.type}"`,
+            event.error,
+            meta.configs.strict
+          );
+        }
+      }
+
       for (const subscriber of subscribers) {
         if (typeof subscriber === 'function') {
           const receiver = (subscriber as never as { __internal_id__: string }).__internal_id__;
@@ -76,7 +91,9 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
               (subscriber as StateSubscriber<unknown>)(snapshot, event, emitter);
             }
           } else {
-            (subscriber as StateSubscriber<unknown>)(snapshot, event);
+            if (!event.error) {
+              (subscriber as StateSubscriber<unknown>)(snapshot, event);
+            }
           }
         }
       }
