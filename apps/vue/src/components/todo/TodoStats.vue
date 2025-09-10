@@ -1,11 +1,11 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { derivedRef } from '@anchor/vue';
+  import { observedRef } from '@anchor/vue';
   import { flashNode } from '../../lib/node.js';
-  import type { TodoRecList, TodoRefList } from '../../lib/todos.js';
+  import type { TodoRecList } from '../../lib/todos.js';
 
-  const { todos } = defineProps<{ todos: TodoRecList | TodoRefList }>();
-  const stats = derivedRef(todos, (todos: TodoRecList) => {
+  const { todos } = defineProps<{ todos: TodoRecList }>();
+  const stats = observedRef(() => {
     const records = todos.filter((todo) => !todo.deleted_at);
 
     return {

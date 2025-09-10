@@ -16,7 +16,7 @@
 <template>
   <ul
     ref="listRef"
-    class="todo-list bg-gray-50 dark:bg-slate-700 rounded-lg divide-y divide-gray-200 dark:divide-slate-600 overflow-clip">
+    class="todo-list bg-gray-50 dark:bg-slate-700 rounded-lg divide-y divide-gray-200 dark:divide-slate-600">
     <template v-for="todo in todos" :key="todo.id">
       <TodoItem v-if="!todo.deleted_at" :todo :todos />
     </template>
