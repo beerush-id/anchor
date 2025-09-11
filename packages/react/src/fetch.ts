@@ -1,81 +1,124 @@
-import { type FetchOptions, fetchState, type FetchState, type LinkableSchema, type StreamOptions } from '@anchor/core';
+import {
+  type FetchOptions,
+  fetchState,
+  type FetchState,
+  type LinkableSchema,
+  type StreamOptions,
+  streamState,
+} from '@anchor/core';
 import { useEffect } from 'react';
-import { useMicrotask, useStableRef } from './hooks.js';
+import { useMicrotask } from './hooks.js';
+import { useVariable } from './ref.js';
+import type { AnchorState } from './types.js';
 
+/**
+ * Fetch hook for GET or DELETE requests.
+ *
+ * @template R - The type of the initial data
+ * @template S - The schema type for linkable data
+ * @param init - Initial data or fetch configuration
+ * @param options - Fetch options with method restricted to GET or DELETE
+ * @returns Anchor state containing the fetch result
+ */
 export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: FetchOptions<S> & { method: 'GET' | 'DELETE' }
-): FetchState<R>;
+): AnchorState<FetchState<R>>;
+
+/**
+ * Fetch hook for POST, PUT, or PATCH requests.
+ *
+ * @template R - The type of the initial data
+ * @template P - The type of the request body
+ * @template S - The schema type for linkable data
+ * @param init - Initial data or fetch configuration
+ * @param options - Fetch options with method restricted to POST, PUT, or PATCH and requiring a body
+ * @returns Anchor state containing the fetch result
+ */
 export function useFetch<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: FetchOptions<S> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): FetchState<R>;
+): AnchorState<FetchState<R>>;
+
 /**
- * A React hook that provides a simple data fetching functionality.
- *
- * This hook manages the state of a fetch request and automatically updates
- * when the underlying data changes. It returns a FetchState object containing
- * the current data, loading status, and any errors.
+ * General fetch hook for any HTTP method.
  *
  * @template R - The type of the initial data
- * @template S - The schema type for linkable data structures
- * @param init - The initial value for the data
- * @param options - Configuration options for the fetch request
- * @returns A FetchState object with the current data and status
+ * @template S - The schema type for linkable data
+ * @param init - Initial data or fetch configuration
+ * @param options - Fetch options
+ * @returns Anchor state containing the fetch result
  */
 export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: FetchOptions<S>
-): FetchState<R> {
+): AnchorState<FetchState<R>> {
   const [schedule] = useMicrotask(0);
-  const state = useStableRef(() => {
+  const [state, setState] = useVariable(() => {
     return fetchState(init, { ...options, deferred: true });
-  }, [init, options]).value;
+  }, [init, options]);
 
   useEffect(() => {
     if (!options.deferred) {
-      schedule(state.fetch);
+      schedule(state.value.fetch);
     }
   }, [state]);
 
-  return state;
+  return [state.value, state, setState];
 }
 
+/**
+ * Stream hook for GET or DELETE requests.
+ *
+ * @template R - The type of the initial data
+ * @template S - The schema type for linkable data
+ * @param init - Initial data or stream configuration
+ * @param options - Stream options with method restricted to GET or DELETE
+ * @returns Anchor state containing the stream result
+ */
 export function useStream<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: StreamOptions<R, S> & { method: 'GET' | 'DELETE' }
-): FetchState<S>;
+): AnchorState<FetchState<S>>;
+
+/**
+ * Stream hook for POST, PUT, or PATCH requests.
+ *
+ * @template R - The type of the initial data
+ * @template P - The type of the request body
+ * @template S - The schema type for linkable data
+ * @param init - Initial data or stream configuration
+ * @param options - Stream options with method restricted to POST, PUT, or PATCH and requiring a body
+ * @returns Anchor state containing the stream result
+ */
 export function useStream<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: StreamOptions<R, S> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): FetchState<S>;
+): AnchorState<FetchState<S>>;
+
 /**
- * A React hook that provides a streaming data fetch functionality.
- *
- * This hook manages the state of a streaming request and automatically updates
- * when the underlying data changes. It returns a FetchState object containing
- * the current data, loading status, and any errors.
+ * General stream hook for any HTTP method.
  *
  * @template R - The type of the initial data
- * @template S - The schema type for linkable data structures
- * @param init - The initial value for the data
- * @param options - Configuration options for the stream request
- * @returns A FetchState object with the current streaming data and status
+ * @template S - The schema type for linkable data
+ * @param init - Initial data or stream configuration
+ * @param options - Stream options
+ * @returns Anchor state containing the stream result
  */
 export function useStream<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: StreamOptions<R, S>
-): FetchState<R> {
+): AnchorState<FetchState<R>> {
   const [schedule] = useMicrotask(0);
-  const state = useStableRef(() => {
-    return fetchState(init, { ...options, deferred: true });
-  }, [init, options]).value;
+  const [state, setState] = useVariable(() => {
+    return streamState(init, { ...options, deferred: true });
+  }, [init, options]);
 
   useEffect(() => {
     if (!options.deferred) {
-      schedule(state.fetch);
+      schedule(state.value.fetch);
     }
   }, [state]);
 
-  return state;
+  return [state.value, state, setState];
 }

@@ -1,4 +1,5 @@
-import type { Linkable, LinkableSchema, ModelError, State, StateOptions } from '@anchor/core';
+import type { Linkable, LinkableSchema, ModelError, State, StateOptions, StateUnsubscribe } from '@anchor/core';
+import type { RefObject } from 'react';
 
 export type StateRef<T> = {
   value: T;
@@ -29,4 +30,15 @@ export type AnchoredProps = {
 
 export type ExceptionList<T extends State, R extends keyof T> = {
   [key in R]?: Error | ModelError | null;
+};
+export type Action<T> = (value: T) => StateUnsubscribe;
+export type ActionRef<T> = RefObject<T> & {
+  destroy: () => void;
+};
+export type FormState<T extends State, K extends keyof T> = {
+  data: { [key in K]: T[key] };
+  errors: ExceptionList<T, K>;
+  readonly isValid: boolean;
+  readonly isDirty: boolean;
+  reset(): void;
 };

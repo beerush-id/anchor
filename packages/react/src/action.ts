@@ -1,12 +1,7 @@
-import type { StateUnsubscribe } from '@anchor/core';
 import { type RefObject, useEffect, useRef } from 'react';
 import { useMicrotask } from './hooks.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
-
-export type Action<T> = (value: T) => StateUnsubscribe;
-export type ActionRef<T> = RefObject<T> & {
-  destroy: () => void;
-};
+import type { Action, ActionRef } from './types.js';
 
 /**
  * Custom hook that manages an action with cleanup capabilities.

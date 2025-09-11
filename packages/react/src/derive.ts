@@ -61,7 +61,7 @@ export function useDerived<T extends Linkable, R>(state: T, transformRecursive?:
  * @param {TransformFn<T, R>} [transform] - Optional function to transform the data during piping.
  * @returns {void}
  */
-export function usePipe<T extends State, R extends State>(source: T, target: R, transform?: TransformFn<T, R>) {
+export function usePipe<T extends State, R extends State>(source: T, target: R, transform?: TransformFn<T, R>): void {
   useEffect(() => {
     if (!source || !target) return;
     return derive.pipe(source, target, transform);
