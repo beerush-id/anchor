@@ -8,7 +8,7 @@ import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { Input, observe } from '@anchor/react/components';
+import { Input, observable, observe } from '@anchor/react/components';
 import { Button, IconButton } from '../Button.js';
 import { isMobile } from '@lib/nav.js';
 
@@ -89,7 +89,7 @@ const CartForm: FC<{ items: CartItemType[] }> = ({ items }) => {
   );
 };
 
-const CartHistory: FC<{ items: CartItemType[] }> = ({ items }) => {
+const CartHistory: FC<{ items: CartItemType[] }> = observable(({ items }) => {
   const history = useHistory(items);
 
   return (
@@ -104,4 +104,4 @@ const CartHistory: FC<{ items: CartItemType[] }> = ({ items }) => {
       </IconButton>
     </div>
   );
-};
+}, 'CartHistory');

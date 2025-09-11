@@ -1,16 +1,16 @@
 import { IconButton } from '../Button.js';
 import { Redo, RotateCcw, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { debugRender, useHistory, useObserved } from '@anchor/react';
+import { debugRender, useHistory } from '@anchor/react';
 import { editorApp } from '@lib/editor.js';
-import { useRef } from 'react';
+import { type FC, useRef } from 'react';
+import { observable } from '@anchor/react/components';
 
-export default function EditorHistory() {
+const EditorHistory: FC = observable(() => {
   const ref = useRef<HTMLDivElement>(null);
   debugRender(ref);
 
-  const currentStyle = useObserved(() => editorApp.currentStyle);
-  const history = useHistory(currentStyle, { resettable: true });
+  const history = useHistory(editorApp.currentStyle, { resettable: true });
 
   return (
     <div ref={ref} className="flex items-center gap-4">
@@ -28,4 +28,6 @@ export default function EditorHistory() {
       </IconButton>
     </div>
   );
-}
+}, 'EditorHistory');
+
+export default EditorHistory;
