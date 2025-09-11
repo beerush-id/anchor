@@ -1,13 +1,6 @@
-import {
-  derive,
-  type FetchOptions,
-  fetchState,
-  type FetchState,
-  type LinkableSchema,
-  microtask,
-  type StreamOptions,
-} from '@anchor/core';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type FetchOptions, fetchState, type FetchState, type LinkableSchema, type StreamOptions } from '@anchor/core';
+import { useEffect } from 'react';
+import { useMicrotask, useStableRef } from './hooks.js';
 
 export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
@@ -34,22 +27,15 @@ export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: FetchOptions<S>
 ): FetchState<R> {
-  const [schedule] = useRef(microtask(0)).current;
-  const [, setVersion] = useState(1);
-  const state = useMemo(() => {
+  const [schedule] = useMicrotask(0);
+  const state = useStableRef(() => {
     return fetchState(init, { ...options, deferred: true });
-  }, [init, options]);
+  }, [init, options]).value;
 
   useEffect(() => {
     if (!options.deferred) {
       schedule(state.fetch);
     }
-
-    return derive(state, (_, event) => {
-      if (event.type === 'init') {
-        setVersion((c) => c + 1);
-      }
-    });
   }, [state]);
 
   return state;
@@ -80,22 +66,15 @@ export function useStream<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: StreamOptions<R, S>
 ): FetchState<R> {
-  const [schedule] = useRef(microtask(0)).current;
-  const [, setVersion] = useState(1);
-  const state = useMemo(() => {
+  const [schedule] = useMicrotask(0);
+  const state = useStableRef(() => {
     return fetchState(init, { ...options, deferred: true });
-  }, [init, options]);
+  }, [init, options]).value;
 
   useEffect(() => {
     if (!options.deferred) {
       schedule(state.fetch);
     }
-
-    return derive(state, (_, event) => {
-      if (event.type !== 'init') {
-        setVersion((c) => c + 1);
-      }
-    });
   }, [state]);
 
   return state;

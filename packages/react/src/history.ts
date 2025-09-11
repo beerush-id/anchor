@@ -1,12 +1,11 @@
-import { derive, history, type HistoryOptions, type HistoryState, softEqual, type State } from '@anchor/core';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { history, type HistoryOptions, type HistoryState, softEqual, type State } from '@anchor/core';
+import { useEffect, useMemo, useRef } from 'react';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 
 import { useMicrotask } from './hooks.js';
 
 export type HistoryRef = {
   history: HistoryState;
-  cleanup: () => void;
   options?: HistoryOptions;
 };
 /**
@@ -19,7 +18,6 @@ export type HistoryRef = {
  */
 export function useHistory<T extends State>(state: T, options?: HistoryOptions): HistoryState {
   const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
-  const [, setVersion] = useState(1);
 
   // Create reference map to hold the history states that being used in the current component.
   const historyRef = useRef(new Map<State, HistoryRef>()).current;
@@ -33,27 +31,16 @@ export function useHistory<T extends State>(state: T, options?: HistoryOptions):
     if (!current) {
       // Initialize new history state if the state is not in the reference map.
       const newHistory = history(state, options);
-      const unsubscribe = derive(newHistory, (_, event) => {
-        if (event.type !== 'init' && currentRef.current === newHistory) {
-          setVersion((prev) => prev + 1);
-        }
-      });
 
-      current = { history: newHistory, cleanup: unsubscribe, options };
+      current = { history: newHistory, options };
       historyRef.set(state, current);
     } else if (options && !softEqual(options, current.options)) {
       // Cleanup the existing history state if the options have changed before re-creating.
       current.history.destroy();
-      current.cleanup();
 
       // Re-create the history state if the options have changed.
       current.history = history(state, options);
       current.options = options;
-      current.cleanup = derive(state, (_, event) => {
-        if (event.type !== 'init') {
-          setVersion((c) => c + 1);
-        }
-      });
     }
 
     currentRef.current = current.history;
@@ -69,7 +56,6 @@ export function useHistory<T extends State>(state: T, options?: HistoryOptions):
       cleanup(() => {
         for (const ref of historyRef.values()) {
           ref.history.destroy();
-          ref.cleanup?.();
         }
 
         historyRef.clear();
