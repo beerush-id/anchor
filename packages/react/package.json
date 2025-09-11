@@ -12,6 +12,10 @@
     "./components": {
       "types": "./dist/components/index.d.ts",
       "import": "./dist/components/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js"
     }
   },
   "files": [

@@ -1,4 +1,4 @@
-import type { Linkable, LinkableSchema, ModelError, State, StateOptions, StateUnsubscribe } from '@anchor/core';
+import type { Linkable, ModelError, State, StateUnsubscribe } from '@anchor/core';
 import type { RefObject } from 'react';
 
 export type StateRef<T> = {
@@ -14,12 +14,8 @@ export type ConstantRef<T> = {
 export type RefUpdater<T> = (value: T) => void;
 export type RefInitializer<T> = (current?: T) => T;
 
-export type Setter<T extends Linkable> = (prev: T) => T;
-export type StateSetter<T extends Linkable, S extends LinkableSchema = LinkableSchema> = (
-  value: T | Setter<T>,
-  options?: StateOptions<S>
-) => void;
-export type AnchorState<T extends Linkable> = [T, VariableRef<T>, RefUpdater<T>];
+export type AnchorState<T> = [T, VariableRef<T>, RefUpdater<T>];
+export type ConstantState<T> = [T, ConstantRef<T>];
 
 export type TransformFn<T extends Linkable, R> = (current: T) => R;
 export type TransformSnapshotFn<T, R> = (snapshot: T) => R;

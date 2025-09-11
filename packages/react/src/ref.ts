@@ -65,7 +65,7 @@ export function useVariable<T>(
 
   if (initRef.stable) {
     if (typeof initRef.init === 'function') {
-      const newDeps = needUpdate(initRef.deps, softClone(Array.isArray(constantDeps) ? constantDeps : []));
+      const newDeps = getNextDeps(initRef.deps, softClone(Array.isArray(constantDeps) ? constantDeps : []));
 
       if (newDeps) {
         state.value = (init as RefInitializer<T>)(state.value);
@@ -102,13 +102,47 @@ export function useVariable<T>(
   return [stateRef, update];
 }
 
-export function useConstant<T>(init: T) {
-  return useVariable(init, true);
+/**
+ * Creates a constant reference that never changes its value.
+ *
+ * @template T - The type of the constant value
+ * @param init - The initial value or initializer function
+ * @returns A tuple containing the constant reference
+ */
+export function useConstant<T>(init: T): [ConstantRef<T>];
+
+/**
+ * Creates a constant reference that only updates when dependencies change.
+ *
+ * @template T - The type of the constant value
+ * @param init - The initializer function that computes the constant value
+ * @param deps - Dependency array that determines when the constant should be recalculated
+ * @returns A tuple containing the constant reference
+ */
+export function useConstant<T>(init: RefInitializer<T>, deps: unknown[]): [ConstantRef<T>];
+
+/**
+ * Implementation of useConstant that creates a constant reference.
+ *
+ * @template T - The type of the constant value
+ * @param init - The initial value or initializer function
+ * @param deps - Optional dependency array for computed constants
+ * @returns A tuple containing the constant reference
+ */
+export function useConstant<T>(init: T | RefInitializer<T>, deps?: unknown[]): [ConstantRef<T>] {
+  return useVariable(init as RefInitializer<T>, deps as unknown[], true);
 }
 
-const needUpdate = (prev: unknown[], next: unknown[]): unknown[] | undefined => {
+/**
+ * Determines whether an update is needed by comparing previous and next dependency arrays.
+ *
+ * @param prev - The previous dependency array
+ * @param next - The next dependency array
+ * @returns The next array if an update is needed, otherwise undefined
+ */
+export function getNextDeps(prev: unknown[], next: unknown[]): unknown[] | undefined {
   if (prev.length !== next.length) return next;
   for (let i = 0; i < prev.length; i++) {
     if (!softEqual(prev[i], next[i], true)) return next;
   }
-};
+}

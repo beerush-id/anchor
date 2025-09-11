@@ -16,7 +16,7 @@ const selResolve: Plugin = {
 };
 
 export default defineConfig({
-  entry: ['./src/index.ts', './src/components/index.tsx'],
+  entry: ['./src/index.ts', './src/storage/index.ts', './src/components/index.tsx'],
   outDir: './dist',
   dts: true,
   splitting: false,
