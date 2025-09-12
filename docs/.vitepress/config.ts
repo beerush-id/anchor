@@ -66,6 +66,7 @@ export default defineConfig({
       },
       {
         text: 'Guides',
+        collapsed: false,
         items: [
           {
             text: 'Getting Started',
@@ -98,18 +99,8 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Tutorials',
-        collapsed: true,
-        items: [
-          {
-            text: 'Form Validation',
-            link: '/react/tutorial/form-validation',
-          },
-        ],
-      },
-      {
         text: 'Anchor - React',
-        collapsed: true,
+        collapsed: false,
         items: [
           {
             text: 'Introduction',
@@ -222,6 +213,16 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Tutorials',
+        collapsed: true,
+        items: [
+          {
+            text: 'Form Validation',
+            link: '/react/tutorial/form-validation',
+          },
+        ],
+      },
+      {
         text: 'API Reference',
         collapsed: true,
         items: [
@@ -294,20 +295,6 @@ export default defineConfig({
           },
         ],
       },
-      {
-        text: 'Advanced',
-        collapsed: true,
-        items: [
-          {
-            text: 'Utilities',
-            link: '/utilities',
-          },
-          {
-            text: 'Dev Tools',
-            link: '/dev-tools',
-          },
-        ],
-      },
     ],
 
     footer: {
@@ -318,7 +305,9 @@ export default defineConfig({
       pattern: 'https://github.com/beerush-id/anchor/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
-
+    search: {
+      provider: 'local',
+    },
     socialLinks: [{ icon: 'github', link: 'https://github.com/beerush-id/anchor' }],
   },
 });
