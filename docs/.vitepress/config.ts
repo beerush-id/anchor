@@ -280,9 +280,10 @@ export default defineConfig({
             items: [
               { text: 'Initialization', link: '/apis/vue/initialization' },
               { text: 'Derivation', link: '/apis/vue/derivation' },
-              { text: 'History', link: '/apis/vue/history' },
-              { text: 'Request', link: '/apis/vue/request' },
+              { text: 'Observation', link: '/apis/vue/observation' },
+              { text: 'Error Handling', link: '/apis/vue/error-handling' },
               { text: 'Utilities', link: '/apis/vue/utilities' },
+              { text: 'Storage', link: '/apis/vue/storage' },
             ],
           },
           {

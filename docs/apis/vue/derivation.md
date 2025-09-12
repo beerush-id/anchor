@@ -1,19 +1,23 @@
 # Derivation APIs (Vue)
 
-These Vue composables are used for deriving computed values or creating reactive relationships between states.
+These Vue composables are used for deriving computed values from reactive states.
 
-## `derivedRef()`
+## Primary Derivation APIs
 
-Creates a Vue `Ref` that derives its value from an Anchor state. It automatically updates when the source Anchor state changes.
+These are the main APIs for deriving values from reactive states.
+
+### `derivedRef()`
+
+Derives a computed value from a reactive state or ref.
 
 ```typescript
-// Basic derivation
-type derivedRef = <T extends State>(state: T | Ref<T>) => Ref<T>;
+// Without transform function
+function derivedRef<T extends State>(state: T | Ref<T>): ConstantRef<T>;
 
-// With transformation
-type derivedRef = <T extends State, R>(state: T | Ref<T>, transform: PipeTransformer<T, R>) => Ref<Immutable<R>>;
+// With transform function
+function derivedRef<T extends State, R>(state: T | Ref<T>, transform: PipeTransformer<T, R>): ConstantRef<R>;
 ```
 
-- `state`: The Anchor state (or a Vue `Ref` to an Anchor state) to derive from.
-- `transform` (optional): A function to transform the state value.
-- **Returns**: A Vue `Ref` that tracks the (possibly transformed) state value.
+- `state`: The reactive state or ref to derive from.
+- `transform` (optional): A function to transform the derived value.
+- **Returns**: A constant ref with the derived value. See [ConstantRef&lt;T&gt;](./initialization.md#constantref-t) for more information.
