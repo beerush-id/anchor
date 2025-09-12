@@ -2,7 +2,9 @@
 
 This API creates a reactive state that is automatically synchronized with the browser's `sessionStorage`.
 
-## `session()`
+## Core Session Functions
+
+### `session()`
 
 Creates a reactive object that persists its data for the duration of the browser session. This is the primary, high-level API you should use for session-based state.
 
@@ -15,11 +17,11 @@ type session = <T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
 ```
 
 - `name`: A unique key for the storage instance. Versioning is also supported, just like `persistent`.
-- `init`: The initial state, used if no data exists in session storage.
-- `options` (optional): Standard anchor state options.
-- **Returns**: A reactive object that is synced with `sessionStorage`.
+- `init`: The initial state, used if no data exists in session storage. See [ObjLike](../core/types.md#objlike).
+- `options` (optional): Standard anchor state options. See [StateOptions](../core/types.md#stateoptions-s) and [LinkableSchema](../core/types.md#linkableschema).
+- **Returns**: A reactive object that is synced with `sessionStorage`. See [T](types.md#sessionstorage).
 
-## `session.leave()`
+### `session.leave()`
 
 Disconnects a session state from `sessionStorage`, stopping synchronization and cleaning up its resources.
 
@@ -27,9 +29,11 @@ Disconnects a session state from `sessionStorage`, stopping synchronization and 
 type leave = <T extends ObjLike>(state: T) => void;
 ```
 
-- `state`: The reactive state to disconnect.
+- `state`: The reactive state to disconnect. See [ObjLike](../core/types.md#objlike).
 
-## `SessionStorage`
+## Session Storage Classes
+
+### `SessionStorage`
 
 `SessionStorage` is a lower-level class that extends `MemoryStorage` to provide session storage functionality. It is used internally by the `session()` function.
 
@@ -44,27 +48,31 @@ interface SessionStorage<T extends Record<string, unknown> = Record<string, unkn
 }
 ```
 
-### `key: string`
+#### Properties
+
+##### `key: string`
 
 The storage key used in `sessionStorage` for the current version of the data. The format is `anchor-session://{name}@{version}`.
 
-### `oldKey: string`
+##### `oldKey: string`
 
 The storage key for the previous version of the data. This is used internally to clean up old data during a version migration.
 
-### `set(key: keyof T, value: T[keyof T])`
+#### Methods
+
+##### `set(key: keyof T, value: T[keyof T])`
 
 Sets a value in the storage and immediately persists it to `sessionStorage`.
 
-- `key`: The key to set.
-- `value`: The value to store.
+- `key`: The key to set. See [keyof T](types.md#sessionstorage).
+- `value`: The value to store. See [T[keyof T]](types.md#sessionstorage).
 
-### `delete(key: keyof T)`
+##### `delete(key: keyof T)`
 
 Deletes a key from storage and immediately updates `sessionStorage`.
 
-- `key`: The key to delete.
+- `key`: The key to delete. See [keyof T](types.md#sessionstorage).
 
-### `write()`
+##### `write()`
 
 Writes the entire current storage state to the `sessionStorage` adapter.

@@ -235,6 +235,7 @@ export default defineConfig({
               { text: 'History', link: '/apis/core/history' },
               { text: 'Request', link: '/apis/core/request' },
               { text: 'Context', link: '/apis/core/context' },
+              { text: 'Types', link: '/apis/core/types' },
               { text: 'Utilities', link: '/apis/core/utility' },
             ],
           },
@@ -246,6 +247,7 @@ export default defineConfig({
               { text: 'Session', link: '/apis/storage/session' },
               { text: 'Key-Value', link: '/apis/storage/kv' },
               { text: 'Table', link: '/apis/storage/table' },
+              { text: 'Types', link: '/apis/storage/types' },
             ],
           },
           {
