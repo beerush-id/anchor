@@ -12,6 +12,10 @@
   color-scheme: dark;
 }
 
+html {
+  @apply overflow-x-hidden;
+}
+
 .shiki {
   @apply p-4 overflow-auto outline-none;
   max-height: 480px;
