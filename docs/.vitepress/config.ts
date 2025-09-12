@@ -157,10 +157,6 @@ export default defineConfig({
             text: 'Usage',
             link: '/svelte/usage',
           },
-          {
-            text: 'Caveats',
-            link: '/svelte/caveats',
-          },
         ],
       },
       {
@@ -244,7 +240,7 @@ export default defineConfig({
           },
           {
             text: 'Storage',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Persistent', link: '/apis/storage/persistent' },
               { text: 'Session', link: '/apis/storage/session' },
@@ -272,6 +268,10 @@ export default defineConfig({
             items: [
               { text: 'Initialization', link: '/apis/svelte/initialization' },
               { text: 'Derivation', link: '/apis/svelte/derivation' },
+              { text: 'Observation', link: '/apis/svelte/observation' },
+              { text: 'Error Handling', link: '/apis/svelte/error-handling' },
+              { text: 'Utilities', link: '/apis/svelte/utilities' },
+              { text: 'Storage', link: '/apis/svelte/storage' },
             ],
           },
           {
