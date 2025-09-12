@@ -60,4 +60,4 @@ A React component for a toggle button, binding directly to a reactive state prop
 type Toggle = <T, K extends WritableKeys<T>>(props: ToggleProps<T, K>) => JSX.Element;
 ```
 
-- `props`: Standard button props, plus `bind` and `name`.
+- `props`: Standard button props, plus `bind`, `name`, and optionally `value`.

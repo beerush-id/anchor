@@ -120,6 +120,10 @@ export default defineConfig({
             link: '/react/getting-started',
           },
           {
+            text: 'Ref System',
+            link: '/react/ref-system',
+          },
+          {
             text: 'Initialization',
             link: '/react/initialization',
           },
@@ -256,11 +260,8 @@ export default defineConfig({
               { text: 'Observation', link: '/apis/react/observation' },
               { text: 'Derivation', link: '/apis/react/derivation' },
               { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
+              { text: 'Storage', link: '/apis/react/storage' },
               { text: 'Components', link: '/apis/react/components' },
-              { text: 'History', link: '/apis/react/history' },
-              { text: 'Request', link: '/apis/react/request' },
-              { text: 'Action', link: '/apis/react/action' },
-              { text: 'Ordered List', link: '/apis/react/ordered-list' },
               { text: 'Error Handling', link: '/apis/react/error-handling' },
               { text: 'Utilities', link: '/apis/react/utilities' },
             ],
