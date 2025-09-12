@@ -308,6 +308,9 @@ export default defineConfig({
     search: {
       provider: 'local',
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/beerush-id/anchor' }],
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/beerush-id/anchor' },
+      { icon: 'discord', link: 'https://discord.gg/aEFgpaghq2' },
+    ],
   },
 });

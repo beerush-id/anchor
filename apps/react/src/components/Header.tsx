@@ -1,8 +1,10 @@
-import { BookText, GithubIcon } from 'lucide-react';
+import { BookText } from 'lucide-react';
 import { Tooltip } from './Tooltip.js';
 import { BASE_PATH, inlineNav } from '@lib/nav.js';
 import { useEffect, useState } from 'react';
 import { useRefTrap } from '@anchor/react';
+import { DiscordIcon } from './DiscordIcon.js';
+import { GithubIcon } from './GithubIcon.js';
 
 const SCROLL_THRESHOLD = 68;
 
@@ -58,13 +60,22 @@ export const Header = () => {
             <BookText className="w-4 h-4" />
             <span className="text-sm">Docs</span>
           </a>
-          <a
-            href="https://github.com/beerush-id/anchor"
-            target="_blank"
-            className="flex items-center text-slate-300 hover:text-slate-100 transition-colors">
-            <GithubIcon className="w-4 h-4" />
-            <Tooltip>GitHub</Tooltip>
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://github.com/beerush-id/anchor"
+              target="_blank"
+              className="flex items-center text-slate-300 hover:text-slate-100 transition-colors">
+              <GithubIcon className="w-4 h-4" />
+              <Tooltip>GitHub</Tooltip>
+            </a>
+            <a
+              href="https://discord.gg/aEFgpaghq2"
+              target="_blank"
+              className="flex items-center text-slate-300 hover:text-slate-100 transition-colors">
+              <DiscordIcon className="w-4 h-4" />
+              <Tooltip>Join Discord</Tooltip>
+            </a>
+          </div>
         </div>
       </nav>
     </header>
