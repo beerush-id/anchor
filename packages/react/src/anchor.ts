@@ -17,20 +17,78 @@ import { useStableRef } from './hooks.js';
 import { mutationKeys, pickValues } from './utils.js';
 import { useVariable } from './ref.js';
 
-export function useAnchor<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+/**
+ * Custom React hook that creates and manages a reactive anchor state.
+ *
+ * This overload is used when you only provide an initial value and optional state options.
+ *
+ * @template T - The type of the initial value
+ * @template S - The schema type for the state, defaults to LinkableSchema
+ *
+ * @param init - The initial value for the state
+ * @param options - Optional configuration for the state
+ *
+ * @returns A tuple containing the current state value, the state object, and a setter function
+ */
+export function useAnchor<T, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
 ): AnchorState<T>;
+
+/**
+ * Custom React hook that creates and manages a reactive anchor state.
+ *
+ * This overload is used when you provide an initial value, a schema, and optional base options.
+ *
+ * @template S - The schema type for the state
+ * @template T - The type of the initial value, must extend ModelInput<S>
+ *
+ * @param init - The initial value for the state
+ * @param schema - The schema to validate and structure the state
+ * @param options - Optional base configuration for the state
+ *
+ * @returns A tuple containing the current state value, the state object, and a setter function
+ */
 export function useAnchor<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
 ): AnchorState<ModelOutput<S>>;
+
+/**
+ * Custom React hook that creates and manages a reactive anchor state.
+ *
+ * This overload is used when you provide an initial value, a schema, and options with immutable flag set to true.
+ *
+ * @template S - The schema type for the state
+ * @template T - The type of the initial value, must extend ModelInput<S>
+ *
+ * @param init - The initial value for the state
+ * @param schema - The schema to validate and structure the state
+ * @param options - Configuration for the state with immutable flag
+ *
+ * @returns A tuple containing the current state value, the state object, and a setter function
+ */
 export function useAnchor<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions & { immutable: true }
 ): AnchorState<ImmutableOutput<T>>;
+
+/**
+ * Custom React hook that creates and manages a reactive anchor state.
+ *
+ * This is the implementation signature that handles all the overload cases.
+ *
+ * @template T - The type of the initial value, must extend Linkable
+ * @template S - The schema type for the state, defaults to LinkableSchema
+ *
+ * @param init - The initial value for the state
+ * @param schemaOptions - Optional schema or options for the state
+ * @param options - Optional base configuration for the state
+ *
+ * @returns A tuple containing the current state value, the state object, and a setter function
+ */
 export function useAnchor<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   schemaOptions?: S,
