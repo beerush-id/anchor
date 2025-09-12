@@ -270,8 +270,8 @@ export default defineConfig({
               { text: 'Derivation', link: '/apis/svelte/derivation' },
               { text: 'Observation', link: '/apis/svelte/observation' },
               { text: 'Error Handling', link: '/apis/svelte/error-handling' },
-              { text: 'Utilities', link: '/apis/svelte/utilities' },
               { text: 'Storage', link: '/apis/svelte/storage' },
+              { text: 'Utilities', link: '/apis/svelte/utilities' },
             ],
           },
           {
@@ -282,8 +282,8 @@ export default defineConfig({
               { text: 'Derivation', link: '/apis/vue/derivation' },
               { text: 'Observation', link: '/apis/vue/observation' },
               { text: 'Error Handling', link: '/apis/vue/error-handling' },
-              { text: 'Utilities', link: '/apis/vue/utilities' },
               { text: 'Storage', link: '/apis/vue/storage' },
+              { text: 'Utilities', link: '/apis/vue/utilities' },
             ],
           },
           {
