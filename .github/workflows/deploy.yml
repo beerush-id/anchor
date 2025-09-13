@@ -34,16 +34,16 @@ jobs:
         run: bun install
 
       - name: Build Core Package
-        run: bun run --filter "@anchor/core" build
+        run: bun run --filter "@anchorlib/core" build
 
       - name: Build Devtool Package
-        run: bun run --filter "@anchor/devtool" build
+        run: bun run --filter "@anchorlib/devtool" build
 
       - name: Build Storage Package
-        run: bun run --filter "@anchor/storage" build
+        run: bun run --filter "@anchorlib/storage" build
 
       - name: Build React Package
-        run: bun run --filter "@anchor/react" build
+        run: bun run --filter "@anchorlib/react" build
 
       - name: Build Test Coverage
         run: bun run test
