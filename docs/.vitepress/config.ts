@@ -119,24 +119,40 @@ export default defineConfig({
             link: '/react/ref-system',
           },
           {
-            text: 'Initialization',
-            link: '/react/initialization',
+            text: 'Guides',
+            collapsed: false,
+            items: [
+              {
+                text: 'Initialization',
+                link: '/react/initialization',
+              },
+              {
+                text: 'Observation',
+                link: '/react/observation',
+              },
+              {
+                text: 'Derivation',
+                link: '/react/derivation',
+              },
+              {
+                text: 'Components',
+                link: '/react/components',
+              },
+              {
+                text: 'Utilities',
+                link: '/react/utilities',
+              },
+            ],
           },
           {
-            text: 'Observation',
-            link: '/react/observation',
-          },
-          {
-            text: 'Derivation',
-            link: '/react/derivation',
-          },
-          {
-            text: 'Components',
-            link: '/react/components',
-          },
-          {
-            text: 'Utilities',
-            link: '/react/utilities',
+            text: 'Tutorials',
+            collapsed: true,
+            items: [
+              {
+                text: 'Form Validation',
+                link: '/react/tutorials/form-validation',
+              },
+            ],
           },
         ],
       },
@@ -213,16 +229,6 @@ export default defineConfig({
           {
             text: 'Table Store',
             link: '/storage/table',
-          },
-        ],
-      },
-      {
-        text: 'Tutorials',
-        collapsed: true,
-        items: [
-          {
-            text: 'Form Validation',
-            link: '/react/tutorial/form-validation',
           },
         ],
       },
