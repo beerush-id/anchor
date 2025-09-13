@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { anchorRef, observedRef } from '@anchor/svelte';
+	import { anchorRef, observedRef } from '@anchorlib/svelte';
 	import type { TodoRec } from '../../todos.js';
 	import { flashNode } from '../../node.svelte.js';
 

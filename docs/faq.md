@@ -61,19 +61,19 @@ Anchor provides first-class support for:
 1. Install Anchor using npm or yarn:
 
    ```bash
-   npm install @anchor/core
+   npm install @anchorlib/core
    # For React
-   npm install @anchor/react
+   npm install @anchorlib/react
    # For Vue
-   npm install @anchor/vue
+   npm install @anchorlib/vue
    # For Svelte
-   npm install @anchor/svelte
+   npm install @anchorlib/svelte
    ```
 
 2. Import and create your first state:
 
    ```javascript
-   import { anchor } from '@anchor/core';
+   import { anchor } from '@anchorlib/core';
 
    const state = anchor({
      count: 0,

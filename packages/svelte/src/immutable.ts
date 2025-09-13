@@ -10,7 +10,7 @@ import {
   type State,
   type StateBaseOptions,
   type StateOptions,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { variableRef } from './ref.js';
 import type { ConstantRef, VariableRef } from './types.js';
 

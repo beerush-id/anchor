@@ -1,5 +1,5 @@
 import { type Readable } from 'svelte/store';
-import { createObserver } from '@anchor/core';
+import { createObserver } from '@anchorlib/core';
 import type { RefSubscriber } from './types.js';
 import { onDestroy } from 'svelte';
 

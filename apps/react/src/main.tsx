@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { StrictMode } from 'react';
-import { setDebugRenderer, setDevMode } from '@anchor/react';
+import { setDebugRenderer, setDevMode } from '@anchorlib/react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import Home from '@pages/home/Home.js';
 import { CustomRenderer } from '@pages/custom-renderer/CustomRenderer.js';

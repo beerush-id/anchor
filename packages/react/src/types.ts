@@ -1,4 +1,4 @@
-import type { Linkable, ModelError, State, StateUnsubscribe } from '@anchor/core';
+import type { Linkable, ModelError, State, StateUnsubscribe } from '@anchorlib/core';
 import type { RefObject } from 'react';
 
 export type StateRef<T> = {

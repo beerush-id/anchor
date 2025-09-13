@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { flashNode } from '../../node.svelte.js';
 	import { todoTableRef } from '../../todos.js';
-	import { anchorRef } from '@anchor/svelte';
+	import { anchorRef } from '@anchorlib/svelte';
 	import TodoForm from './TodoForm.svelte';
 	import TodoList from './TodoList.svelte';
 

@@ -9,7 +9,7 @@ After installing the appropriate packages, you can start using **Anchor** in you
 the core package:
 
 ```typescript
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 // Create a reactive state.
 const state = anchor({
@@ -44,7 +44,7 @@ global configuration or per-state options:
 You can configure Anchor's default configurations using `anchor.configure`:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 anchor.configure({
   immutable: true, // Enable true immutability as default
@@ -64,7 +64,7 @@ immutable state everywhere.
 You can also configure options when creating individual states, overriding the default configuration:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 const state = anchor(
   {
@@ -109,7 +109,7 @@ Below is a simple example of how to use Anchor.
 ::: code-group
 
 ```typescript [counter.ts]
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 const counter = anchor({ count: 0 });
 
@@ -153,7 +153,7 @@ To build your own rendering system, you need to understand the component shape.
 ::: code-group
 
 ```ts [component.ts]
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { mount, type DOMFactory } from './renderer.js';
 
 function Counter() {
@@ -187,7 +187,7 @@ mount(Counter, document.body);
 ```
 
 ```ts [renderer.ts]
-import { createObserver } from '@anchor/core';
+import { createObserver } from '@anchorlib/core';
 
 export type DOMFactory = () => HTMLElement | HTMLElement[];
 export type ComponentFactory = () => DOMFactory;

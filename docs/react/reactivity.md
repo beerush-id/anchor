@@ -420,7 +420,7 @@ They automatically re-render when their observed state changes, providing effici
 ::: details View Component Example
 
 ```tsx
-import { observe } from '@anchor/react/components';
+import { observe } from '@anchorlib/react/components';
 
 const UserView = observe(() => {
   // Only re-renders when user changes

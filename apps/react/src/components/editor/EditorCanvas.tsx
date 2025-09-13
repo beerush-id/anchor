@@ -1,8 +1,8 @@
-import { debugRender, useDerivedRef, useObserved, useRefTrap, useWriter } from '@anchor/react';
+import { debugRender, useDerivedRef, useObserved, useRefTrap, useWriter } from '@anchorlib/react';
 import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { useRef } from 'react';
 import { CodeBlock } from '../CodeBlock.js';
-import { observe, Toggle, ToggleGroup } from '@anchor/react/components';
+import { observe, Toggle, ToggleGroup } from '@anchorlib/react/components';
 import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 

@@ -2,7 +2,7 @@ import { BookText } from 'lucide-react';
 import { Tooltip } from './Tooltip.js';
 import { BASE_PATH, inlineNav } from '@lib/nav.js';
 import { useEffect, useState } from 'react';
-import { useRefTrap } from '@anchor/react';
+import { useRefTrap } from '@anchorlib/react';
 import { DiscordIcon } from './DiscordIcon.js';
 import { GithubIcon } from './GithubIcon.js';
 

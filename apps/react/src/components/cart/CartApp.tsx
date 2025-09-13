@@ -1,6 +1,6 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
-import { anchor, shortId } from '@anchor/core';
-import { debugRender, useAnchor, useHistory } from '@anchor/react';
+import { anchor, shortId } from '@anchorlib/core';
+import { debugRender, useAnchor, useHistory } from '@anchorlib/react';
 import { CartSummary } from './CartSummary.js';
 import { CartItemList } from './CartItemList.js';
 import { Card } from '../Card.js';
@@ -8,7 +8,7 @@ import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { Input, observable, observe } from '@anchor/react/components';
+import { Input, observable, observe } from '@anchorlib/react/components';
 import { Button, IconButton } from '../Button.js';
 import { isMobile } from '@lib/nav.js';
 

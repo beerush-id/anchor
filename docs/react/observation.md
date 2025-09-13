@@ -42,8 +42,8 @@ only the observed part re-renders, not the entire component where it's declared.
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observe } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
 
 const CounterManager = () => {
   const [count] = useAnchor({ value: 0 });
@@ -80,8 +80,8 @@ const CounterManager = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observe } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
 
 const Timer = () => {
   const [timer] = useAnchor({ seconds: 0 });
@@ -157,8 +157,8 @@ automatically sets up and manages a `StateObserver` instance for the wrapped com
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
 
 // A regular React component
 const UserCard = ({ user }) => {
@@ -203,8 +203,8 @@ const UserManager = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
 
 const TodoItem = ({ todo }) => {
   return (
@@ -297,8 +297,8 @@ To use `useObserved`, call it within your component body with a function that ac
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useObserved } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { useObserved } from '@anchorlib/react/components';
 
 const UserProfile = () => {
   const [user] = useAnchor({
@@ -339,8 +339,8 @@ const UserProfile = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor, useVariable } from '@anchor/react';
-import { useObserved } from '@anchor/react/components';
+import { useAnchor, useVariable } from '@anchorlib/react';
+import { useObserved } from '@anchorlib/react/components';
 
 const ProductCard = ({ currency }) => {
   const [product] = useAnchor({
@@ -409,8 +409,8 @@ when rendering lists in React where you need stable keys for efficient reconcili
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useObservedList } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { useObservedList } from '@anchorlib/react/components';
 
 const TodoList = () => {
   const [todos] = useAnchor([
@@ -445,8 +445,8 @@ const TodoList = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useObservedList } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { useObservedList } from '@anchorlib/react/components';
 
 const UserList = () => {
   const [users] = useAnchor([
@@ -511,8 +511,8 @@ Provides a stable `StateObserver` instance for tracking reactive dependencies. T
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useObserverRef } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { useObserverRef } from '@anchorlib/react/components';
 
 const CustomObserver = () => {
   const [data] = useAnchor({ value: 0, text: 'Hello' });

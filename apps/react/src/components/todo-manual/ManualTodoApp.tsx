@@ -4,12 +4,12 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import { type FC, useCallback, useMemo, useRef, useState } from 'react';
 import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
-import { microloop, shortId } from '@anchor/core';
+import { microloop, shortId } from '@anchorlib/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE } from '@lib/todo.js';
 import { ManualTodoCode } from './ManualTodoCode.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 import { ManualTodoStats } from './ManualTodoStats.js';
 import { isMobile } from '@lib/nav.js';
 

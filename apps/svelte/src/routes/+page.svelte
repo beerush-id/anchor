@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { derive } from '@anchor/core';
-	import { persistentRef } from '@anchor/svelte/storage';
+	import { derive } from '@anchorlib/core';
+	import { persistentRef } from '@anchorlib/svelte/storage';
 	import TodoApp from '$lib/components/todo/TodoApp.svelte';
 	import ProfileForm from '$lib/components/form/ProfileForm.svelte';
 

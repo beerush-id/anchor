@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { type TodoRec, todoTable } from '../../todos.js';
-	import { anchorRef, propsRef } from '@anchor/svelte';
+	import { anchorRef, propsRef } from '@anchorlib/svelte';
 	import Trash from '../icons/Trash.svelte';
 	import { flashNode } from '../../node.svelte.js';
 

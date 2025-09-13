@@ -2,7 +2,7 @@ import { type FC, useCallback, useMemo, useRef } from 'react';
 import { ManualTodoItem } from './ManualTodoItem.js';
 import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoItem } from '@lib/todo.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const ManualTodoList: FC<{
   todos: ITodoItem[];

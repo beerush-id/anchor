@@ -1,4 +1,4 @@
-import { kv, type KVState, type Storable } from '@anchor/storage/db';
+import { kv, type KVState, type Storable } from '@anchorlib/storage/db';
 import type { ConstantRef } from '@base/index.js';
 import { constantRef } from '@base/index.js';
 import { onDestroy } from 'svelte';

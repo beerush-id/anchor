@@ -1,4 +1,4 @@
-import { getObserver } from '@anchor/core';
+import { getObserver } from '@anchorlib/core';
 
 export function mockObserverProp(prop: string, value: unknown) {
   const observer = getObserver();

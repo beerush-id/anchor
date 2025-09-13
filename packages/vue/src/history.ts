@@ -1,4 +1,4 @@
-import { history, type HistoryOptions, type HistoryState, type State } from '@anchor/core';
+import { history, type HistoryOptions, type HistoryState, type State } from '@anchorlib/core';
 import type { ConstantRef } from './types.js';
 import { constantRef } from './ref.js';
 

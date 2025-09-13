@@ -1,5 +1,5 @@
 import { type FC, type HTMLAttributes, useRef } from 'react';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const PanelRow: FC<HTMLAttributes<HTMLDivElement>> = ({ children, className, ...props }) => {
   const ref = useRef<HTMLDivElement>(null);

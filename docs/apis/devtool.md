@@ -72,7 +72,7 @@ interface DevTool {
 To use a custom `DevTool` implementation, you register it using `anchor.configure()`:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 class MyCustomDevTool implements DevTool {
   onInit(init, meta) {
@@ -88,4 +88,4 @@ anchor.configure({
 
 ## `StateDevTool` (Reference Implementation)
 
-The `StateDevTool` class (exported from `@anchor/devtool`) is a built-in reference implementation of the `DevTool` interface. It provides basic logging to the console and maintains an internal representation of the state tree, which can be useful for building visualizers or more advanced debugging interfaces.
+The `StateDevTool` class (exported from `@anchorlib/devtool`) is a built-in reference implementation of the `DevTool` interface. It provides basic logging to the console and maintains an internal representation of the state tree, which can be useful for building visualizers or more advanced debugging interfaces.

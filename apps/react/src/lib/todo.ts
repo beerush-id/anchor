@@ -1,4 +1,4 @@
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 export type ITodoItem = {
   id: string;

@@ -1,7 +1,7 @@
-import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import type { ConstantRef } from '@base/index.js';
 import { constantRef } from '@base/index.js';
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 /**
  * Creates a persistent reactive reference using the provided name, initial value, and options.

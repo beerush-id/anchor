@@ -2,7 +2,7 @@ import { type FC, useRef } from 'react';
 import { type ITodoList } from '@lib/todo.js';
 import { ClassicTodoItem } from './ClassicTodoItem.js';
 import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const ClassicTodoList: FC<{
   todos: ITodoList;

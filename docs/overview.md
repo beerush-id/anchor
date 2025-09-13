@@ -24,7 +24,7 @@ which aims to empower developers with intuitive code and provide users with a bl
 
 ```tsx {17}
 import { editorApp, TOOL_ICON_SIZE } from '../lib/editor.js';
-import { useObserved, useWriter } from '@anchor/react';
+import { useObserved, useWriter } from '@anchorlib/react';
 
 export function DisplayPanel() {
   // SETUP PHASE.

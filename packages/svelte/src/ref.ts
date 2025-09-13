@@ -1,5 +1,5 @@
 import type { ConstantRef, RefSubscriber, StateRef, VariableRef } from './types.js';
-import { anchor, derive, type Linkable, linkable, type StateController } from '@anchor/core';
+import { anchor, derive, type Linkable, linkable, type StateController } from '@anchorlib/core';
 import { onDestroy } from 'svelte';
 
 export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>();

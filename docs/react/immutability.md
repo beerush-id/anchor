@@ -86,13 +86,13 @@ declared using **Anchor's Core APIs** and persist throughout the application lif
 
 ### Creating Global Immutable States
 
-To create a global immutable state, use the `anchor.immutable` method from `@anchor/core`:
+To create a global immutable state, use the `anchor.immutable` method from `@anchorlib/core`:
 
 ::: details Global State {open}
 
 ```ts
 // lib/state.ts
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Create a global immutable state
 export const userState = anchor.immutable({
@@ -119,7 +119,7 @@ To use global immutable states in React components, import them and access their
 
 ```tsx
 // components/UserProfile.tsx
-import { observe } from '@anchor/react/components';
+import { observe } from '@anchorlib/react/components';
 import { userState, userWriter } from '../lib/state';
 
 const UserProfile = observe(() => {
@@ -153,7 +153,7 @@ To create a local immutable state, use the [useImmutable](../apis/react/initiali
 ::: details Local Immutable States {open}
 
 ```tsx
-import { useImmutable } from '@anchor/react';
+import { useImmutable } from '@anchorlib/react';
 
 const UserProfile = () => {
   // Create a local immutable state
@@ -190,7 +190,7 @@ To modify local immutable states, create a writer using the [useWriter](../apis/
 ::: details Using Writers {open}
 
 ```tsx
-import { useImmutable, useWriter } from '@anchor/react';
+import { useImmutable, useWriter } from '@anchorlib/react';
 
 const SettingsPanel = () => {
   // Create local immutable state
@@ -232,7 +232,7 @@ a schema for global states:
 
 ```ts
 // lib/models.ts
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -262,7 +262,7 @@ export const userWriter = anchor.writable(userState);
 ::: details Local Immutable Models {open}
 
 ```tsx
-import { useImmutableModel, useWriter } from '@anchor/react';
+import { useImmutableModel, useWriter } from '@anchorlib/react';
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -343,7 +343,7 @@ Create global immutable states for data that should be shared across components:
 
 ```ts
 // lib/appState.ts
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Good: Configuration data that should remain consistent
 export const appConfig = anchor.immutable({
@@ -358,7 +358,7 @@ export const appConfig = anchor.immutable({
 
 ```tsx
 // components/App.tsx
-import { observe } from '@anchor/react/components';
+import { observe } from '@anchorlib/react/components';
 import { appConfig } from '../lib/appState';
 
 const Header = observe(() => (
@@ -385,7 +385,7 @@ Always define specific contracts for writers:
 
 ```ts
 // lib/userProfile.ts
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Global immutable state
 export const userProfile = anchor.immutable({
@@ -400,7 +400,7 @@ export const preferencesWriter = anchor.writable(userProfile, ['preferences']);
 
 ```tsx
 // components/ProfileEditor.tsx
-import { observe } from '@anchor/react/components';
+import { observe } from '@anchorlib/react/components';
 import { userProfile, profileWriter } from '../lib/userProfile';
 
 const ProfileEditor = observe(() => (
@@ -410,7 +410,7 @@ const ProfileEditor = observe(() => (
 
 ```tsx
 // components/Preferences.tsx
-import { observe } from '@anchor/react/components';
+import { observe } from '@anchorlib/react/components';
 import { userProfile, preferencesWriter } from '../lib/userProfile';
 
 const Preferences = observe(() => (
@@ -428,8 +428,8 @@ const Preferences = observe(() => (
 Use immutability with Anchor's reactivity patterns for optimal performance:
 
 ```tsx
-import { useImmutable, useWriter } from '@anchor/react';
-import { observe } from '@anchor/react/components';
+import { useImmutable, useWriter } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
 
 const TodoApp = () => {
   // Local immutable state

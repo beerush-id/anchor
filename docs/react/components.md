@@ -34,9 +34,9 @@ A versatile React component for text and other input types, binding directly to 
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Input } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Input } from '@anchorlib/react/components';
 
 const UserProfile = observable(() => {
   const [user] = useAnchor({
@@ -73,9 +73,9 @@ export default UserProfile;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Input } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Input } from '@anchorlib/react/components';
 
 const ProductForm = observable(() => {
   const [product] = useAnchor({
@@ -140,9 +140,9 @@ A React component for a checkbox input, binding directly to a reactive boolean s
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Checkbox } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Checkbox } from '@anchorlib/react/components';
 
 const UserPreferences = observable(() => {
   const [preferences] = useAnchor({
@@ -181,9 +181,9 @@ export default UserPreferences;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Checkbox } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Checkbox } from '@anchorlib/react/components';
 
 const FeatureToggle = observable(() => {
   const [featureFlags] = useAnchor({
@@ -240,9 +240,9 @@ A React component for a radio button input, binding directly to a reactive state
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Radio } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Radio } from '@anchorlib/react/components';
 
 const ThemeSelector = observable(() => {
   const [settings] = useAnchor({
@@ -282,9 +282,9 @@ export default ThemeSelector;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Radio } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Radio } from '@anchorlib/react/components';
 
 const PrioritySelector = observable(() => {
   const [task] = useAnchor({
@@ -349,9 +349,9 @@ A React component for a select dropdown, binding directly to a reactive state pr
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Select } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Select } from '@anchorlib/react/components';
 
 const CountrySelector = observable(() => {
   const [user] = useAnchor({
@@ -387,9 +387,9 @@ export default CountrySelector;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Select } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Select } from '@anchorlib/react/components';
 
 const RoleSelector = observable(() => {
   const [employee] = useAnchor({
@@ -450,9 +450,9 @@ A React component for a color input, binding directly to a reactive string state
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { ColorPicker } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { ColorPicker } from '@anchorlib/react/components';
 
 const ThemeCustomizer = observable(() => {
   const [theme] = useAnchor({
@@ -538,9 +538,9 @@ A React component for a toggle button, binding directly to a reactive state prop
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Toggle } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Toggle } from '@anchorlib/react/components';
 
 const NotificationToggle = observable(() => {
   const [settings] = useAnchor({
@@ -570,9 +570,9 @@ export default NotificationToggle;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Toggle } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Toggle } from '@anchorlib/react/components';
 
 const ViewModeToggle = observable(() => {
   const [ui] = useAnchor({
@@ -638,9 +638,9 @@ A React component for grouping toggle buttons.
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-import { Toggle, ToggleGroup } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+import { Toggle, ToggleGroup } from '@anchorlib/react/components';
 
 const FilterControls = observable(() => {
   const [filters] = useAnchor({

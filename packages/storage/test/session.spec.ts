@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type ObjLike } from '@anchor/core';
+import { type ObjLike } from '@anchorlib/core';
 import { flushStorageCache, session, SessionStorage, STORAGE_SYNC_DELAY } from '../src/index.js';
 import { clearStorageMocks, emitGlobalEvent, mockBrowserStorage } from '../mocks/storage-mock.js';
 

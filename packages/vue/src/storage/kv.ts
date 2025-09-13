@@ -1,4 +1,4 @@
-import { kv, type KVState, type Storable } from '@anchor/storage/db';
+import { kv, type KVState, type Storable } from '@anchorlib/storage/db';
 import { onUnmounted } from 'vue';
 import { type ConstantRef, constantRef } from '@base/index.js';
 

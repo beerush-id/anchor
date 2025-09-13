@@ -24,7 +24,7 @@ Unlike Svelte's coarse-grained reactivity, Anchor allows you to observe only spe
 
 ```svelte
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const userState = anchorRef({
     profile: { name: 'John', age: 30 },

@@ -164,7 +164,7 @@ promise: <T extends RowState<R> | RowListState<R>>(state: T) => Promise<T>;
 ### **Basic Usage**
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 // Create a reactive table
 const userTable = createTable('users', 1, ['email', 'age']);
@@ -196,7 +196,7 @@ const removedUser = userTable.remove(newUser.data.id);
 ### **Querying Data**
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type Product = {
   name: string;
@@ -243,7 +243,7 @@ console.log(productList.data.length); // Records returned (up to limit)
 ### **Working with Indexes**
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type Order = {
   customerId: string;
@@ -281,7 +281,7 @@ await orderTable.promise(pendingOrders);
 ### **Seeding Data**
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type Country = {
   name: string;
@@ -325,7 +325,7 @@ console.log(countries.data.length); // 2
 Design your schemas carefully to optimize for your query patterns:
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 // Good: Include indexes for frequently queried fields
 type User = {
@@ -347,7 +347,7 @@ const userTable = createTable<User>(
 Always handle asynchronous operations properly:
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type Product = {
   name: string;
@@ -387,7 +387,7 @@ try {
 Use the list methods for efficient pagination:
 
 ```ts
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type Article = {
   title: string;

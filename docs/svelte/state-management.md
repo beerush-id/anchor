@@ -9,7 +9,7 @@ State management in Anchor for Svelte is designed to work seamlessly with Svelte
 In Anchor, you can declare state anywhere in your application and share it across components. This is a significant improvement over Svelte's typical approach where stores need to be explicitly imported or passed as props.
 
 ```js
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Global state that can be imported anywhere
 export const userState = anchor({
@@ -24,7 +24,7 @@ For component-specific state, you can create local state within your Svelte comp
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   // Local state that's scoped to this component
   const counter = anchorRef(0);
@@ -50,7 +50,7 @@ Global states are declared outside component bodies and persist throughout the a
 - Complex business logic that needs to be accessed from different parts of the application
 
 ```js
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 export const appState = anchor({
   currentUser: null,
@@ -65,7 +65,7 @@ Local states are declared inside component bodies and are primarily used for UI 
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   // Component-scoped state
   const tabState = anchorRef({
@@ -81,7 +81,7 @@ One of the key advantages of Anchor over Svelte's built-in stores is its recursi
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const complexState = anchorRef({
     user: {
@@ -111,7 +111,7 @@ While Anchor allows direct mutations for convenience, it also provides powerful 
 
 ```sveltehtml
 <script>
-  import { immutableRef, writableRef } from '@anchor/svelte';
+  import { immutableRef, writableRef } from '@anchorlib/svelte';
 
   // Create an immutable state
   const immutableState = immutableRef({
@@ -135,7 +135,7 @@ Anchor provides several ways to observe state changes, which is more flexible th
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef, derivedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef, derivedRef } from '@anchorlib/svelte';
 
   const items = anchorRef([
     { id: 1, name: 'Item 1', completed: false },
@@ -169,7 +169,7 @@ Create specific observers for different parts of your state to minimize unnecess
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const state = anchorRef({
     user: { name: 'John' },
@@ -188,7 +188,7 @@ For global state that's shared across many components, consider using immutable 
 
 ```sveltehtml
 <script context="module">
-  import { immutableRef } from '@anchor/svelte';
+  import { immutableRef } from '@anchorlib/svelte';
 
   export const globalState = immutableRef({
     config: { theme: 'dark' },

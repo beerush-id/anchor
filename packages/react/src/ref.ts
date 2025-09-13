@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { anchor, captureStack, softClone, softEqual } from '@anchor/core';
+import { anchor, captureStack, softClone, softEqual } from '@anchorlib/core';
 import { useMicrotask } from './hooks.js';
 import type { ConstantRef, RefInitializer, RefUpdater, StateRef, VariableRef } from './types.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';

@@ -8,7 +8,7 @@ import {
   microtask,
   type ObjLike,
   type StateObserver,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { DEV_MODE, STRICT_MODE } from './dev.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
 import { depsChanged } from './utils.js';

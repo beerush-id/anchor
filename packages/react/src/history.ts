@@ -1,4 +1,4 @@
-import { history, type HistoryOptions, type HistoryState, softEqual, type State } from '@anchor/core';
+import { history, type HistoryOptions, type HistoryState, softEqual, type State } from '@anchorlib/core';
 import { useEffect, useMemo, useRef } from 'react';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 

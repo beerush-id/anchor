@@ -1,4 +1,4 @@
-import { type Linkable, type LinkableSchema, type StateBaseOptions, type StateMetadata } from '@anchor/core';
+import { type Linkable, type LinkableSchema, type StateBaseOptions, type StateMetadata } from '@anchorlib/core';
 
 import { StateMap } from './map.js';
 

@@ -1,6 +1,6 @@
 import { type FC, memo, useRef } from 'react';
 import type { ITodoStats } from '@lib/todo.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const ManualTodoStats: FC<{ stats: ITodoStats }> = memo(
   ({ stats }) => {

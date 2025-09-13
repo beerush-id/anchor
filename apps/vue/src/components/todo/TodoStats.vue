@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { observedRef } from '@anchor/vue';
+  import { observedRef } from '@anchorlib/vue';
   import { flashNode } from '../../lib/node.js';
   import type { TodoRecList } from '../../lib/todos.js';
 

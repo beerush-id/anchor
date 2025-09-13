@@ -1,4 +1,4 @@
-import { derive } from '@anchor/core';
+import { derive } from '@anchorlib/core';
 import type { Readable } from 'svelte/store';
 import type { StateRef, VariableRef } from './types.js';
 import { isRef, REF_REGISTRY } from './ref.js';

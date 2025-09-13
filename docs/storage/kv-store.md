@@ -94,7 +94,7 @@ type ready = () => Promise<true>;
 ### **Basic Usage**
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 // Create a custom KV store for application data
 const appData = createKVStore<{ name: string; age: number }>('app-data');
@@ -111,8 +111,8 @@ user2.data.age = 26;
 ### **Using the Default Store**
 
 ```typescript
-import { derive } from '@anchor/core';
-import { kv } from '@anchor/storage/db';
+import { derive } from '@anchorlib/core';
+import { kv } from '@anchorlib/storage/db';
 
 // Use the default KV store
 const userSettings = kv('user-settings', { theme: 'light' });
@@ -138,8 +138,8 @@ unsubscribe();
 ### **Subscribing to Changes**
 
 ```typescript
-import { derive } from '@anchor/core';
-import { createKVStore } from '@anchor/storage/db';
+import { derive } from '@anchorlib/core';
+import { createKVStore } from '@anchorlib/storage/db';
 
 // Create a custom KV store
 const users = createKVStore<{ name: string }>('users');
@@ -166,7 +166,7 @@ unsubscribe();
 Handle errors when performing KV store operations:
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 const users = createKVStore<{ name: string }>('users');
 
@@ -184,7 +184,7 @@ if (user1.status === 'error') {
 When you need to ensure operations are completed, use the **`.ready()`** method:
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 const users = createKVStore<{ name: string }>('users');
 
@@ -208,7 +208,7 @@ console.log('All operations completed');
 The KV store supports JSON-serializable data types:
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 const dataStore = createKVStore<any>('data');
 
@@ -251,7 +251,7 @@ const val = data('123', 'value');
 Clean up subscriptions to prevent memory leaks:
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 const users = createKVStore<{ name: string }>('users');
 
@@ -267,7 +267,7 @@ users.leave(user);
 Use the seeds parameter to initialize your store with default data:
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 const appSettings = createKVStore('app-settings', 1, 'myapp', [
   ['default-theme', 'light'],

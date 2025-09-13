@@ -1,4 +1,4 @@
-import type { KeyLike, LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
+import type { KeyLike, LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import type { SessionStorage } from './session.js';
 
 export type StorageEvent = {

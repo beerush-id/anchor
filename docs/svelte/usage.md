@@ -8,7 +8,7 @@ One of the key advantages of Anchor is its ability to create global state that c
 
 ```javascript
 // lib/store.js
-import { anchorRef } from '@anchor/svelte';
+import { anchorRef } from '@anchorlib/svelte';
 
 // Create global state that can be imported anywhere
 export const appState = anchorRef({
@@ -91,7 +91,7 @@ Anchor provides powerful tools for creating derived values that automatically up
 
 ```svelte
 <script>
-  import { anchorRef, derivedRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, derivedRef, observedRef } from '@anchorlib/svelte';
 
   const todos = anchorRef([
     { id: 1, text: 'Learn Svelte', completed: true },
@@ -172,7 +172,7 @@ Anchor integrates seamlessly with async operations, making it easy to manage loa
 
 ```svelte
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const apiState = anchorRef({
     data: null,
@@ -244,7 +244,7 @@ You can easily integrate Anchor with Svelte's existing store system:
 ```svelte
 <script>
   import { writable, derived } from 'svelte/store';
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   // Anchor ref
   const anchorCounter = anchorRef(0);
@@ -285,7 +285,7 @@ Here's a more comprehensive example of form handling with validation:
 
 ```svelte
 <script>
-  import { anchorRef, observedRef, exceptionRef } from '@anchor/svelte';
+  import { anchorRef, observedRef, exceptionRef } from '@anchorlib/svelte';
   import { z } from 'zod';
 
   // Define a schema for validation
@@ -431,7 +431,7 @@ Here are some techniques to optimize performance with Anchor:
 
 ```svelte
 <script>
-  import { anchorRef, observedRef, derivedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef, derivedRef } from '@anchorlib/svelte';
 
   const largeDataSet = anchorRef({
     items: Array.from({ length: 1000 }, (_, i) => ({

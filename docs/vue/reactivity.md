@@ -20,7 +20,7 @@ With Anchor, you can observe specific parts of your state rather than entire obj
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 const userState = anchorRef({
   profile: {
@@ -64,7 +64,7 @@ Anchor promotes the DSV pattern that clearly separates responsibilities:
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 // Data - reactive state that holds your application data
 const counterState = anchorRef({ count: 0 });
@@ -94,7 +94,7 @@ Only observing components re-render, eliminating unnecessary updates:
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 const appState = anchorRef({
   ui: { loading: false },
@@ -120,7 +120,7 @@ No need for manual memoization in most cases:
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 const products = anchorRef([
   { id: 1, name: 'Product 1', price: 100 },
@@ -144,7 +144,7 @@ Automatic cleanup of observers prevents memory leaks:
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 import { onUnmounted } from 'vue';
 
 const state = anchorRef({ value: 0 });

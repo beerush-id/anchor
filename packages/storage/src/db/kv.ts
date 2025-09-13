@@ -1,5 +1,5 @@
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
-import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchor/core';
+import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchorlib/core';
 import {
   type DBEvent,
   type DBUnsubscribe,

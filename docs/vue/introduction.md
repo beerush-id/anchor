@@ -24,7 +24,7 @@ Unlike Vue's coarse-grained reactivity, Anchor allows you to observe only specif
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 const userState = anchorRef({
   profile: { name: 'John', age: 30 },

@@ -63,7 +63,7 @@ type leave = <T>(state: T) => void;
 ### **Basic Usage**
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 // Create a persistent storage for user preferences
 const userPrefs = persistent('user-preferences', {
@@ -84,7 +84,7 @@ userPrefs.language = 'es';
 ### **Working with Complex Data**
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 // Store complex nested objects
 const userProfile = persistent('user-profile', {
@@ -111,7 +111,7 @@ userProfile.history.push({ action: 'login', timestamp: new Date() });
 ### **Using with Anchor Options**
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 // Create persistent storage with Anchor options
 const todos = persistent(
@@ -135,7 +135,7 @@ todos.push({ id: 3, text: 'Profit', done: false });
 ### **Managing Storage Lifecycle**
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 // Create persistent storage
 const appState = persistent('app-state', {
@@ -227,7 +227,7 @@ const userPreferences = persistent('user-preferences', {
 Handle potential storage errors gracefully:
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 try {
   const settings = persistent('app-settings', {
@@ -247,7 +247,7 @@ try {
 Disconnect from storage when components are unmounted or no longer needed:
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 class MyComponent {
   constructor() {

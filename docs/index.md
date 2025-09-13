@@ -19,6 +19,9 @@ hero:
     - theme: alt
       text: View on GitHub
       link: https://github.com/beerush-id/anchor
+    - theme: alt
+      text: Unit Tests
+      link: https://beerush-id.github.io/anchor/coverage
 
 features:
   - icon: ⚡

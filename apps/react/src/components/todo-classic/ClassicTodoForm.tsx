@@ -3,8 +3,8 @@ import { Plus } from 'lucide-react';
 import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { type ITodoItem } from '@lib/todo.js';
 import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
-import { shortId } from '@anchor/core';
-import { debugRender } from '@anchor/react';
+import { shortId } from '@anchorlib/core';
+import { debugRender } from '@anchorlib/react';
 
 export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAdd }) => {
   const ref = useRef(null);

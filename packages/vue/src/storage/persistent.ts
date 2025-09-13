@@ -1,6 +1,6 @@
-import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import { onUnmounted } from 'vue';
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 import { type ConstantRef, constantRef } from '@base/index.js';
 
 /**

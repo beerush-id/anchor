@@ -1,4 +1,4 @@
-import type { ConstantRef } from '@anchor/svelte';
+import type { ConstantRef } from '@anchorlib/svelte';
 
 export function flashNode(ref?: ConstantRef<HTMLElement | null>) {
 	$effect(() => {

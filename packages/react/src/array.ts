@@ -1,4 +1,4 @@
-import { anchor, type LinkableSchema, type StateOptions } from '@anchor/core';
+import { anchor, type LinkableSchema, type StateOptions } from '@anchorlib/core';
 import { useVariable } from './ref.js';
 import type { AnchorState } from './types.js';
 

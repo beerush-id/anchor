@@ -5,7 +5,7 @@ import {
   type LinkableSchema,
   type StreamOptions,
   streamState,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { useEffect } from 'react';
 import { useMicrotask } from './hooks.js';
 import { useVariable } from './ref.js';

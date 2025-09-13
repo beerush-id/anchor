@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { anchor, type Linkable, microbatch, microtask, outsideObserver, shortId } from '@anchor/core';
+import { anchor, type Linkable, microbatch, microtask, outsideObserver, shortId } from '@anchorlib/core';
 import { depsChanged } from './utils.js';
 import type { TransformSnapshotFn } from './types.js';
 

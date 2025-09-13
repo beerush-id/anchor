@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { createKVStore, type KVState } from '../../src/db/index.js';
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { sleep } from '@beerush/utils';
 
 describe('Reactive KV Module', () => {

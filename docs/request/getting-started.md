@@ -16,25 +16,25 @@ responsive UIs that react to loading states, errors, and data changes.
 
 ## **Installation**
 
-The request module is part of `@anchor/core`, so no additional installation is required if you've already installed the
+The request module is part of `@anchorlib/core`, so no additional installation is required if you've already installed the
 core package:
 
 ::: code-group
 
 ```sh [Bun]
-bun add @anchor/core
+bun add @anchorlib/core
 ```
 
 ```sh [NPM]
-npm install @anchor/core
+npm install @anchorlib/core
 ```
 
 ```sh [Yarn]
-yarn add @anchor/core
+yarn add @anchorlib/core
 ```
 
 ```sh [PNPM]
-pnpm add @anchor/core
+pnpm add @anchorlib/core
 ```
 
 :::
@@ -44,7 +44,7 @@ pnpm add @anchor/core
 ### **Simple Fetch Request**
 
 ```typescript
-import { fetchState } from '@anchor/core/fetch';
+import { fetchState } from '@anchorlib/core/fetch';
 
 // Create a reactive fetch state
 const userState = fetchState(
@@ -66,7 +66,7 @@ console.log(userState.status); // 'pending'
 ### **Streaming Request**
 
 ```typescript
-import { streamState } from '@anchor/core/fetch';
+import { streamState } from '@anchorlib/core/fetch';
 
 // Create a reactive stream state
 const streamState = streamState(
@@ -102,7 +102,7 @@ content types, the raw text is used.
 Both functions include a `promise` method to convert the reactive state back to a traditional Promise:
 
 ```typescript
-import { fetchState } from '@anchor/core/fetch';
+import { fetchState } from '@anchorlib/core/fetch';
 
 const state = fetchState({}, { url: '/api/data' });
 

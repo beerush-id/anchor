@@ -1,9 +1,9 @@
 {
-	"name": "@anchor/docs",
+	"name": "@anchorlib/docs",
 	"version": "1.0.0-beta.1",
 	"dependencies": {
-		"@anchor/storage": "workspace:*",
-		"@anchor/svelte": "workspace:*"
+		"@anchorlib/storage": "workspace:*",
+		"@anchorlib/svelte": "workspace:*"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

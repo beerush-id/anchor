@@ -1,6 +1,6 @@
-import { createTableRef, type InferListRef, type InferRef } from '@anchor/svelte/storage';
-import type { InferList, InferRow } from '@anchor/storage/db';
-import { createRecord, createTable } from '@anchor/storage/db';
+import { createTableRef, type InferListRef, type InferRef } from '@anchorlib/svelte/storage';
+import type { InferList, InferRow } from '@anchorlib/storage/db';
+import { createRecord, createTable } from '@anchorlib/storage/db';
 
 export type Todo = {
 	text: string;

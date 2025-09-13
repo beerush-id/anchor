@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 describe('Anchor - Circular References', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

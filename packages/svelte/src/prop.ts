@@ -1,4 +1,4 @@
-import { anchor, type KeyLike, type State } from '@anchor/core';
+import { anchor, type KeyLike, type State } from '@anchorlib/core';
 import { constantRef } from './ref.js';
 import type { ConstantRef } from './types.js';
 

@@ -1,5 +1,5 @@
 import { type FC, type HTMLAttributes, type ReactNode, useRef } from 'react';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const PanelColumn: FC<HTMLAttributes<HTMLDivElement> & { label?: string; children: ReactNode }> = ({
   label,

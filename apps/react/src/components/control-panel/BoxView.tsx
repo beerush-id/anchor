@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { derive } from '@anchor/core';
+import { derive } from '@anchorlib/core';
 
 export type BoxProp = {
   x: number;

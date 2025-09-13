@@ -3,9 +3,9 @@ import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
 import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE, type ITodoItem } from '@lib/todo.js';
 import { Button, IconButton } from '../Button.js';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
-import { microloop } from '@anchor/core';
+import { microloop } from '@anchorlib/core';
 import { Tooltip } from '../Tooltip.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {

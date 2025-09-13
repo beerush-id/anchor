@@ -1,10 +1,10 @@
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
-import { useAnchor, useImmutable } from '@anchor/react';
-import { observable, observe } from '@anchor/react/components';
+import { useAnchor, useImmutable } from '@anchorlib/react';
+import { observable, observe } from '@anchorlib/react/components';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
-import { type Immutable } from '@anchor/core';
+import { type Immutable } from '@anchorlib/core';
 import { Bar } from 'react-chartjs-2';
 import { MainCTA } from '@components/MainCTA.js';
 import { BENCHMARK_SIZE, BENCHMARK_TOGGLE_SIZE } from '@lib/todo.js';

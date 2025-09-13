@@ -1,7 +1,7 @@
 import { type ComponentType, type ReactNode, type Ref, useEffect, useRef, useState } from 'react';
 import type { AnchoredProps } from '@base/index.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION, useMicrotask, useObserverRef } from '@base/index.js';
-import { anchor, createObserver, type Linkable, type ObjLike, setObserver } from '@anchor/core';
+import { anchor, createObserver, type Linkable, type ObjLike, setObserver } from '@anchorlib/core';
 
 /**
  * `useObserverNode` is a custom React hook that leverages `useObserverRef` to manage

@@ -1,5 +1,5 @@
 import { type FC, useRef } from 'react';
-import { debugRender, useDerived } from '@anchor/react';
+import { debugRender, useDerived } from '@anchorlib/react';
 
 export type RenderStatProp = {
   name: string;
