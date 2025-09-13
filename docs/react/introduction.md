@@ -112,7 +112,7 @@ direct manipulation within contracts.
    Anchor fits right into your existing React projects. It uses familiar patterns like Higher-Order Components (HOCs)
    and hooks, allowing you to adopt it incrementally without a complete rewrite of your codebase.
 
-## The Value Far Exceeds Any Learning Investment
+## Learning Investment
 
 While any new technology requires learning, consider that React itself required a significant learning curve when
 introduced. Anchor's learning investment pays dividends by eliminating entire categories of common React problems:
@@ -132,7 +132,7 @@ investment for your specific needs, then **Anchor** might not be the right tool 
 
 :::
 
-## What You'll Gain with Anchor:
+## What You'll Gain:
 
 - **Superior Performance:** Zero-copy mutations, intelligent tracking, and automatic memory management
 - **Bulletproof State:** True immutability with controlled mutations eliminates entire classes of bugs

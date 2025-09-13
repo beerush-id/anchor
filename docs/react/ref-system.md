@@ -91,7 +91,7 @@ consider using a dedicated initializer like `useImmutable`.
 
 :::
 
-## A Practical Scenario: The Todo App
+## Practical Scenario
 
 Let's consider a common example: a todo application that displays statistics, such as the total number of todos and how
 many are completed.
@@ -306,6 +306,8 @@ const UserProfile = observable(({ user }) => {
 The Ref System is a foundational part of Anchor's reactivity model. To see how it integrates with other features,
 explore:
 
+- **[Initialization](/react/initialization):** Learn how to initialize a different types of state with Anchor's
+  initializers. Learn best practices for using initializers.
 - **[Observation](/react/observation):** Learn how to create reactive boundaries within your components for even more
   granular rendering control.
 - **[Derivation](/react/derivation):** Discover how to create new reactive values that are computed from other states,

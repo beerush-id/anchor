@@ -70,18 +70,22 @@ export default Counter;
 
 ::: tip Why Anchor is different:
 
-- **Direct Mutation, Safe Execution:** Unlike other state management libraries, you can directly modify your state (e.g., `counter.count++`) without worrying about breaking React's rules or causing performance issues.
+- **Direct Mutation, Safe Execution:** Unlike other state management libraries, you can directly modify your state (
+  e.g., `counter.count++`) without worrying about breaking React's rules or causing performance issues.
 
-- **Smart Reactivity:** Anchor only re-renders components that actually use the changed data, not your entire app. This means better performance without manual optimizations.
+- **Smart Reactivity:** Anchor only re-renders components that actually use the changed data, not your entire app. This
+  means better performance without manual optimizations.
 
-- **No Boilerplate:** Say goodbye to action creators, reducers, and complex update patterns. Just change your state directly and let Anchor handle the rest.
+- **No Boilerplate:** Say goodbye to action creators, reducers, and complex update patterns. Just change your state
+  directly and let Anchor handle the rest.
 
 :::
 
 ## Reactivity Principles
 
 While **Anchor** provides a suite of **React** hooks, most of them serve as initializers. Their primary purpose is to
-create reactive states and cache them, ensuring consistency and efficiency across renders.
+create reactive states and cache them, ensuring consistency and efficiency across renders. To dive deeper into the
+Anchor's **Reactivity Model**, we recommend reading the [**Reactivity**](/react/reactivity) section.
 
 ::: tip Why they don't trigger re-render?
 
@@ -104,11 +108,13 @@ to break down the UI into numerous smaller components.
 
 ## Ref System
 
-**Anchor** introduces the **[Ref System](/react/ref-system)** to the **React ecosystem**. A **Ref** is a reactive state that holds a reference to a
+**Anchor** introduces the **[Ref System](/react/ref-system)** to the **React ecosystem**. A **Ref** is a reactive state
+that holds a reference to a
 value, enabling primitives to be observed. It also allows you to pass the ref to a child component, granting them access
 and control over the value without the need to pass a setter function.
 
-This approach allows each component to control when it updates itself based on changes to the ref value, eliminating the need for the entire
+This approach allows each component to control when it updates itself based on changes to the ref value, eliminating the
+need for the entire
 component tree to re-render.
 
 ## Basic Ref Usage
@@ -199,22 +205,29 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 
 - **The "State" (`UserProfile.jsx`):** The `UserProfile` component acts as the **State** layer.
   - It uses the `useVariable` hook to create and hold the reactive `userRef` (the **Data**).
-  - Crucially, `UserProfile` itself does **not** observe the `userRef`'s value in its render path. As a result, it **never re-renders** when the user data changes. It purely manages the state and orchestrates the UI.
+  - Crucially, `UserProfile` itself does **not** observe the `userRef`'s value in its render path. As a result, it \*
+    \*never re-renders\*\* when the user data changes. It purely manages the state and orchestrates the UI.
 
 - **The "View" (`ProfileView` and `UserAccount.jsx`):** These components represent the **View** layer.
-  - `ProfileView` is wrapped in `observe`. It reads data from `userRef.value` and will only re-render when the specific values it uses (`name`, `age`, `email`, `username`) change.
-  - `UserAccount` is wrapped in `observable` and also accesses `userRef`. It will re-render only when the `account` properties it observes are modified.
+  - `ProfileView` is wrapped in `observe`. It reads data from `userRef.value` and will only re-render when the specific
+    values it uses (`name`, `age`, `email`, `username`) change.
+  - `UserAccount` is wrapped in `observable` and also accesses `userRef`. It will re-render only when the `account`
+    properties it observes are modified.
   - They are responsible for presenting the data and capturing user input, but they don't own the state itself.
 
 - **Decoupled and Efficient:**
-  - By passing the `userRef` down, the "State" (`UserProfile`) provides access to the data without creating a rendering dependency.
-  - The "View" components (`ProfileView`, `UserAccount`) subscribe to only the data they need, leading to highly optimized re-renders. The parent component is not involved in the update process of its children.
+  - By passing the `userRef` down, the "State" (`UserProfile`) provides access to the data without creating a rendering
+    dependency.
+  - The "View" components (`ProfileView`, `UserAccount`) subscribe to only the data they need, leading to highly
+    optimized re-renders. The parent component is not involved in the update process of its children.
 
-- **Direct State Mutation:** Notice how state is still modified directly (e.g., `userRef.value.age++`). Anchor's reactivity system ensures that even with direct mutation, the correct "View" components will update automatically.
+- **Direct State Mutation:** Notice how state is still modified directly (e.g., `userRef.value.age++`). Anchor's
+  reactivity system ensures that even with direct mutation, the correct "View" components will update automatically.
 
 :::
 
-This DSV approach allows you to build complex UIs where state management is centralized and rendering is granular and efficient, avoiding the common pitfall of cascading re-renders in large component trees.
+This DSV approach allows you to build complex UIs where state management is centralized and rendering is granular and
+efficient, avoiding the common pitfall of cascading re-renders in large component trees.
 
 This covers the fundamental aspects of getting started with Anchor in your React applications. In the next sections, we
 will delve deeper into more advanced features like initialization options, observation patterns, derivation, and

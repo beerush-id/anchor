@@ -111,6 +111,10 @@ export default defineConfig({
             link: '/react/getting-started',
           },
           {
+            text: 'Reactivity',
+            link: '/react/reactivity',
+          },
+          {
             text: 'Ref System',
             link: '/react/ref-system',
           },
