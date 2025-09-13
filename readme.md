@@ -2,12 +2,6 @@
 
 <p align="center">A comprehensive state management solution that embraces JavaScript's natural mutability for effortlessly managing state — from simple todos to complex enterprise applications. Anchor handles state complexity with elegance, making any app's state a breeze.</p>
 
-> 🚧 **Note:** Anchor is currently in its active development stage. While it is fully functional and ready for use, there
-> could be occasional changes as we strive to improve and optimize it. Bug reports, suggestions, and contributions are
-> very welcome and appreciated!
-
-Don't forget to star ⭐ the project if you find it interesting and stay tuned for upcoming updates.
-
 ## 🏗️ The Anchor Ecosystem
 
 Anchor is more than just a state management library - it's a comprehensive ecosystem for building modern applications based on the **DSV (Data-State-View) model**.
@@ -23,10 +17,6 @@ Anchor is more than just a state management library - it's a comprehensive ecosy
 
 - **[@anchor/storage](./packages/storage)** - Persistent storage with multiple backends (memory, localStorage, sessionStorage, IndexedDB)
 
-### Developer Tools
-
-- **[@anchor/devtool](./packages/devtool)** - Developer tools for debugging and monitoring state changes
-
 ## ✨ Key Features
 
 - **Fine-Grained Reactivity**: Only components that depend on changed state re-render, eliminating wasted renders
@@ -38,7 +28,7 @@ Anchor is more than just a state management library - it's a comprehensive ecosy
 
 ## 📚 Documentation
 
-Full documentation is available in the [docs](./docs) directory. You can also view the online documentation at [anchor.dev](https://anchor.dev) (coming soon).
+You can view the full online documentation at [Anchor Documentations](https://beerush-id.github.io/anchor/docs). You can also find the local documentation in the [docs](./docs) directory.
 
 ## 🚀 Getting Started
 
@@ -95,6 +85,8 @@ const TodoApp = observable(() => {
 If you need help, have found a bug, or want to contribute, please see
 our [contributing guidelines](./CONTRIBUTING.md). We appreciate and value
 your input!
+
+Don't forget to star ⭐ the project if you find it interesting and stay tuned for upcoming updates.
 
 ## 📄 License
 
