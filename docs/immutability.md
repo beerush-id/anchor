@@ -28,6 +28,10 @@ nested data structures, it quickly leads to:
 Anchor's approach to immutability is fundamentally different. Instead of relying on manual copying, Anchor uses a
 powerful, proxy-based system that gives you the best of both worlds:
 
+::: details Developer Friendly Error! {open}
+<img style="border-radius: 8px" src="/images/contract-violation.webp" alt="Write Contract Violation" />
+:::
+
 - **Direct Mutation:** You can write simple, intuitive code that looks like a direct mutation (e.g.,
   `state.profile.name = 'John Doe'`). This eliminates boilerplate and makes your code cleaner and easier to read.
 - **Safe and Immutable:** Behind the scenes, Anchor's write contract engine apply this change. It maintains a single,
@@ -48,6 +52,10 @@ expensive overhead of deep cloning.
 Anchor reinforces its commitment to immutability through **strong typing**. When you declare an immutable state, Anchor
 returns a
 read-only type in your IDE. This is a crucial feature for preventing accidental mutations:
+
+::: details Catch Illegal Mutation Early! {open}
+<img style="border-radius: 8px" src="/images/ide-warning.webp" alt="Write Contract Violation" />
+:::
 
 - **Compile-time Safety:** If you try to mutate a read-only state directly, your IDE will immediately warn you, or your
   build will fail. This catches potential bugs before they even reach runtime.
@@ -285,61 +293,9 @@ predictable, and maintainable code.
 
 ## APIs
 
-### **`anchor.immutable()`**
+Anchor provides a set of APIs to manage immutable state in your application. To learn more about these APIs, please refer to:
 
-Creates an immutable reactive state from the provided initial value.
-
-```typescript
-type immutable = <T extends Linkable, S extends LinkableSchema>(init: T, options?: StateOptions<S>) => Immutable<T>;
-```
-
-**Parameters:**
-
-- `init`: The initial value for the state
-- `options`: Optional configuration for the state
-
-**Example:**
-
-```typescript
-const state = anchor.immutable({ count: 0 });
-```
-
-### **`anchor.writable()`**
-
-Creates a writable version of an immutable state.
-
-```typescript
-type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts?: K) => MutablePart<T, K>;
-```
-
-**Parameters:**
-
-- `state`: The immutable state to make writable
-- `contracts`: Optional array of the allowed mutation keys
-
-**Example:**
-
-```typescript
-const immutable = anchor.immutable({ count: 0 });
-const writable = anchor.writable(immutable);
-```
-
-### **`anchor.writable()`** with Contracts
-
-Creates a writable version with specific mutation contracts.
-
-```typescript
-type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts: K) => MutablePart<T, K>;
-```
-
-**Parameters:**
-
-- `state`: The immutable state to make writable
-- `contracts`: Array of allowed mutation keys
-
-**Example:**
-
-```typescript
-const immutable = anchor.immutable({ count: 0, name: 'Anchor' });
-const writable = anchor.writable(immutable, ['count']); // Only 'count' can be mutated
-```
+- [Anchor Immutable API Reference](/apis/core/initialization#anchor-immutable) - Immutability APIs for the Core Package.
+- [Anchor for React Immutable API Reference](/apis/react/initialization#useimmutable) - Immutability APIs for the React Package.
+- [Anchor for Svelte Immutable API Reference](/apis/svelte/initialization#immutableref) - Immutability APIs for the Svelte Package.
+- [Anchor for Vue Immutable API Reference](/apis/vue/initialization#immutableref) - Immutability APIs for the Vue Package.

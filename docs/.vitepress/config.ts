@@ -115,12 +115,16 @@ export default defineConfig({
             link: '/react/reactivity',
           },
           {
+            text: 'Immutability',
+            link: '/react/immutability',
+          },
+          {
             text: 'Ref System',
             link: '/react/ref-system',
           },
           {
             text: 'Guides',
-            collapsed: false,
+            collapsed: true,
             items: [
               {
                 text: 'Initialization',
