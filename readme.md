@@ -17,10 +17,6 @@ Anchor is more than just a state management library - it's a comprehensive ecosy
 
 - **[@anchor/storage](./packages/storage)** - Persistent storage with multiple backends (memory, localStorage, sessionStorage, IndexedDB)
 
-### Developer Tools
-
-- **[@anchor/devtool](./packages/devtool)** - Developer tools for debugging and monitoring state changes
-
 ## ✨ Key Features
 
 - **Fine-Grained Reactivity**: Only components that depend on changed state re-render, eliminating wasted renders
