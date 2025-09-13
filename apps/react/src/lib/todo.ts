@@ -16,7 +16,7 @@ export type ITodoStats = {
 
 export const BENCHMARK_SIZE = 1000;
 export const BENCHMARK_TOGGLE_SIZE = 25;
-export const BENCHMARK_DEBOUNCE_TIME = 0;
+export const BENCHMARK_DEBOUNCE_TIME = 5;
 
 export const todoApp = anchor.immutable({
   todos: [
