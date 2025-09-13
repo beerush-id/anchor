@@ -99,7 +99,7 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Anchor - React',
+        text: 'Anchor for React',
         collapsed: false,
         items: [
           {
@@ -161,21 +161,33 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Anchor - Svelte',
+        text: 'Anchor for Svelte',
         collapsed: true,
         items: [
+          {
+            text: 'Introduction',
+            link: '/svelte/introduction',
+          },
           {
             text: 'Getting Started',
             link: '/svelte/getting-started',
           },
           {
-            text: 'Usage',
-            link: '/svelte/usage',
+            text: 'Reactivity',
+            link: '/svelte/reactivity',
+          },
+          {
+            text: 'Immutability',
+            link: '/svelte/immutability',
+          },
+          {
+            text: 'State Management',
+            link: '/svelte/state-management',
           },
         ],
       },
       {
-        text: 'Anchor - Vue',
+        text: 'Anchor for Vue',
         collapsed: true,
         items: [
           {
@@ -326,5 +338,20 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/beerush-id/anchor' },
       { icon: 'discord', link: 'https://discord.gg/aEFgpaghq2' },
     ],
+  },
+  markdown: {
+    config: (md) => {
+      const defaultRender = md.renderer.rules.fence;
+
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+
+        if (token.info === 'sveltehtml') {
+          token.info = 'svelte';
+        }
+
+        return defaultRender(tokens, idx, options, env, self);
+      };
+    },
   },
 });
