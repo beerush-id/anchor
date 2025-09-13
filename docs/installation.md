@@ -1,4 +1,4 @@
-# **Installing Anchor - State Management Library Setup**
+# **Installing Anchor**
 
 Learn how to install and set up Anchor, the revolutionary state management library for modern web applications.
 
@@ -6,7 +6,6 @@ Learn how to install and set up Anchor, the revolutionary state management libra
 
 Before installing Anchor, ensure you have:
 
-- **Node.js** version 14 or higher
 - A modern web browser for development
 - A package manager like npm, yarn, or pnpm
 
@@ -114,12 +113,12 @@ bun add @anchor/svelte
 
 After installation, you can start using Anchor in your project:
 
-### **Vanilla JavaScript/TypeScript**
+::: code-group
 
-```typescript
+```js [index.js]
 import { anchor } from '@anchor/core';
 
-const state = anchor({
+export const state = anchor({
   count: 0,
   name: 'My App',
 });
@@ -128,26 +127,26 @@ console.log(state.count); // 0
 state.count++;
 ```
 
-### **React**
+```jsx [Counter.jsx]
+import { useObserved } from '@anchor/react';
+import { state } from '../index.js';
 
-```jsx
-import { observable } from '@anchor/react/components';
+const Counter = () => {
+  const count = useObserved(() => state.count);
 
-const Counter = observable(() => {
   return (
     <div>
       <p>Count: {count}</p>
       <button onClick={() => state.count++}>Increment</button>
     </div>
   );
-});
+};
 ```
 
-### **Vue**
-
-```vue
+```vue [Counter.vue]
 <script setup>
-import { derivedRef } from '@anchor/vue';
+import { observedRef } from '@anchor/vue';
+import { state } from '../index.js';
 
 const count = observedRef(() => state.count);
 </script>
@@ -160,13 +159,12 @@ const count = observedRef(() => state.count);
 </template>
 ```
 
-### **Svelte**
-
-```svelte
+```svelte [Counter.svelte]
 <script>
-  import { observed } from '@anchor/svelte';
+  import { observedRef } from '@anchor/svelte';
+  import { state } from '../index.js';
 
-  const count = observed(() => state.count);
+  const count = observedRef(() => state.count);
 </script>
 
 <div>
@@ -175,31 +173,11 @@ const count = observedRef(() => state.count);
 </div>
 ```
 
+:::
+
 ## **TypeScript Support**
 
 Anchor is written in TypeScript and provides first-class TypeScript support with comprehensive type definitions included in every package.
-
-## **Troubleshooting**
-
-If you encounter issues during installation:
-
-1. **Clear Cache**: Try clearing your package manager cache:
-
-   ```bash
-   npm cache clean --force
-   # or
-   yarn cache clean
-   # or
-   pnpm store prune
-   ```
-
-2. **Check Node Version**: Ensure you're using Node.js 14 or higher:
-
-   ```bash
-   node --version
-   ```
-
-3. **Check for Conflicting Packages**: Make sure you don't have conflicting state management libraries installed.
 
 ## **Next Steps**
 

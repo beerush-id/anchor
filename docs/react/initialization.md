@@ -28,7 +28,7 @@ Global states are ideal for:
 import { anchor } from '@anchor/core';
 
 // Global state is declared outside component body.
-export const appState = anchor({
+export const appState = anchor.immutable({
   currentUser: {
     name: 'John Doe',
     age: 30,
@@ -38,9 +38,19 @@ export const appState = anchor({
 
 :::
 
+::: warning Global State Recommendations
+
+When working with global states, it's always recommended to use **`immutable`** states. This ensures that your
+application remains predictable and your states remains stable.
+
+When working with a critical data structure, it's also recommended to combine **`immutable`** with
+**`schema`** to ensure the data shape remains consistent.
+
+:::
+
 ### Local State
 
-**Local states** are declared inside **component** bodies and are primarily used for UI behavior logic such as toggle
+**Local states** are declared inside **component** bodies using React hooks and are primarily used for UI behavior logic such as toggle
 states,
 tab states, form inputs, etc. These states are created when a component mounts and are destroyed when it unmounts.
 

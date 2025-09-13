@@ -3,7 +3,7 @@
 **Anchor** redefines reactivity in **React** by providing a more intuitive and efficient approach to state
 management that aligns with how developers naturally think about UI components.
 
-Unlike traditional React where components re-render whenever their state change, **Anchor** introduces a **granular
+Unlike traditional React where components re-render whenever their state change, **Anchor** uses **granular
 reactivity** system where only the parts of your UI that actually depend on changed data are updated.
 
 ## Anchor's Reactivity

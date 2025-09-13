@@ -1,4 +1,4 @@
-# **True Immutability in Anchor - Safe State Management Without Performance Penalty**
+# **True Immutability in Anchor**
 
 Immutability is a cornerstone of robust, predictable applications. It ensures that a piece of state cannot be changed
 once it's created, preventing unintended side effects and making your application easier to reason about. However, the
@@ -9,7 +9,7 @@ offers a revolutionary solution: **True Immutability**.
   <img src="/schemas/immutable.webp" alt="Reactivity Schema" />
 </div>
 
-## **The Problem with Traditional Immutability**
+## **Traditional Immutability**
 
 Most immutable patterns rely on a "copy-on-mutation" model. When you need to update a
 state, you must create an entirely new object or array. This seems straightforward for a simple change, but for deeply
@@ -23,7 +23,7 @@ nested data structures, it quickly leads to:
 - **Source of Confusion:** It can be difficult work with data because we need to make sure that the data that is being
   read is the upto-date one. It leads to confusion and potential bugs.
 
-## **True Immutability - Anchor's Revolutionary Solution**
+## **True Immutability**
 
 Anchor's approach to immutability is fundamentally different. Instead of relying on manual copying, Anchor uses a
 powerful, proxy-based system that gives you the best of both worlds:
@@ -176,67 +176,6 @@ console.log(immutableState.name); // 'Anchor' (unchanged)
 console.log(immutableState.active); // true (unchanged)
 ```
 
-## APIs
-
-### **`anchor.immutable()`**
-
-Creates an immutable reactive state from the provided initial value.
-
-```typescript
-type immutable = <T extends Linkable, S extends LinkableSchema>(init: T, options?: StateOptions<S>) => Immutable<T>;
-```
-
-**Parameters:**
-
-- `init`: The initial value for the state
-- `options`: Optional configuration for the state
-
-**Example:**
-
-```typescript
-const state = anchor.immutable({ count: 0 });
-```
-
-### **`anchor.writable()`**
-
-Creates a writable version of an immutable state.
-
-```typescript
-type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts?: K) => MutablePart<T, K>;
-```
-
-**Parameters:**
-
-- `state`: The immutable state to make writable
-- `contracts`: Optional array of the allowed mutation keys
-
-**Example:**
-
-```typescript
-const immutable = anchor.immutable({ count: 0 });
-const writable = anchor.writable(immutable);
-```
-
-### **`anchor.writable()`** with Contracts
-
-Creates a writable version with specific mutation contracts.
-
-```typescript
-type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts: K) => MutablePart<T, K>;
-```
-
-**Parameters:**
-
-- `state`: The immutable state to make writable
-- `contracts`: Array of allowed mutation keys
-
-**Example:**
-
-```typescript
-const immutable = anchor.immutable({ count: 0, name: 'Anchor' });
-const writable = anchor.writable(immutable, ['count']); // Only 'count' can be mutated
-```
-
 ## Best Practices
 
 ### 1. Use Immutable States for Shared Data
@@ -343,3 +282,64 @@ const dataWriter = anchor.writable(data);
 
 By following these practices, you can leverage the full power of Anchor's immutability system while maintaining clean,
 predictable, and maintainable code.
+
+## APIs
+
+### **`anchor.immutable()`**
+
+Creates an immutable reactive state from the provided initial value.
+
+```typescript
+type immutable = <T extends Linkable, S extends LinkableSchema>(init: T, options?: StateOptions<S>) => Immutable<T>;
+```
+
+**Parameters:**
+
+- `init`: The initial value for the state
+- `options`: Optional configuration for the state
+
+**Example:**
+
+```typescript
+const state = anchor.immutable({ count: 0 });
+```
+
+### **`anchor.writable()`**
+
+Creates a writable version of an immutable state.
+
+```typescript
+type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts?: K) => MutablePart<T, K>;
+```
+
+**Parameters:**
+
+- `state`: The immutable state to make writable
+- `contracts`: Optional array of the allowed mutation keys
+
+**Example:**
+
+```typescript
+const immutable = anchor.immutable({ count: 0 });
+const writable = anchor.writable(immutable);
+```
+
+### **`anchor.writable()`** with Contracts
+
+Creates a writable version with specific mutation contracts.
+
+```typescript
+type writable = <T extends Linkable, K extends MutationKey<T>[]>(state: T, contracts: K) => MutablePart<T, K>;
+```
+
+**Parameters:**
+
+- `state`: The immutable state to make writable
+- `contracts`: Array of allowed mutation keys
+
+**Example:**
+
+```typescript
+const immutable = anchor.immutable({ count: 0, name: 'Anchor' });
+const writable = anchor.writable(immutable, ['count']); // Only 'count' can be mutated
+```

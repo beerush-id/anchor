@@ -1,4 +1,4 @@
-# **Fine-Grained Reactivity in Anchor - Efficient State Management**
+# **Fine-Grained Reactivity in Anchor**
 
 Anchor's reactivity system is built on a fine-grained observation model that enables efficient state management with
 minimal overhead. This document explains the core concepts of Anchor's reactivity: Observation, Derivation, and History
@@ -16,7 +16,7 @@ You can think it as an assistant of your state data. It will help you to manage 
 
 :::
 
-## **Observation - Foundation of Fine-Grained Reactivity**
+## **Observation**
 
 Observation is the foundation of Anchor's fine-grained reactivity. It maintains direct connections between specific
 pieces of state and their observers (components or functions). When a piece of state changes, only the observers that
@@ -124,76 +124,12 @@ user.settings.darkMode = false; // This will not trigger the observer callback (
 
 ## Observation APIs
 
-### **`createObserver`**
+Anchor provides a set of APIs for observing state changes. Please refer to the API Reference section for more details:
 
-Creates a new observer instance for tracking state changes. An observer manages subscriptions and provides lifecycle
-hooks for state tracking.
-
-```ts
-type createObserver = (
-  onChange: (event: StateChange) => void,
-  onTrack?: (state: State, key: KeyLike) => void
-) => StateObserver;
-```
-
-**Parameters:**
-
-- `onChange`: Callback function that is called when observed state changes
-- `onTrack`: Optional callback that is called when state properties are tracked
-
-**Returns:** A new `StateObserver` instance
-
-### **`withinObserver`**
-
-Executes a function within a specific observer context. This function temporarily sets the provided observer as the
-current context, executes the provided function, and then restores the previous observer context.
-
-```ts
-type withinObserver = {
-  <R>(fn: () => R, observer: StateObserver): R;
-  <R>(observer: StateObserver, fn: () => R): R;
-};
-```
-
-**Parameters:**
-
-- `fn`: The function to execute within the observer context
-- `observer`: The observer to use for tracking
-
-**Returns:** The result of the executed function
-
-**Example:**
-
-```ts
-const result = withinObserver(observer, () => {
-  // Access tracked state properties here
-  return state.profile.name;
-});
-```
-
-### **`outsideObserver`**
-
-Executes a function outside any observer context. This function temporarily removes the current observer context,
-executes the provided function, and then restores the previous observer context.
-
-```ts
-type outsideObserver = <R>(fn: () => R) => R;
-```
-
-**Parameters:**
-
-- `fn`: The function to execute outside observer context
-
-**Returns:** The result of the executed function
-
-**Example:**
-
-```ts
-const untrackedValue = outsideObserver(() => {
-  // This code won't track dependencies
-  return state.profile.age;
-});
-```
+- [Anchor Core Observation APIs](/apis/core/observation) - Core APIs for creating and managing observers.
+- [Anchor for React Observation APIs](/apis/react/observation) - Reactivity APIs for creating and managing observers.
+- [Anchor for Svelte Observation APIs](/apis/svelte/observation) - Svelte reactivity APIs for creating and managing observers.
+- [Anchor for Vue Observation APIs](/apis/vue/observation) - Vue reactivity APIs for creating and managing observers.
 
 ## Derivation (Subscription)
 
@@ -275,38 +211,12 @@ source.count = 5; // This will update target.value to 10
 
 ## Derivation APIs
 
-### **`derive`**
+Anchor provides a set of APIs for deriving state changes. Please refer to the API Reference section for more details:
 
-Subscribes to changes in a reactive state.
-
-```ts
-type derive = <T>(state: T, handler: StateSubscriber<T>) => StateUnsubscribe;
-```
-
-#### **`derive.pipe`**
-
-Pipe changes of the source state to a target state.
-
-```ts
-type pipe = <Source, Target>(
-  source: Source,
-  target: Target,
-  transform?: PipeTransformer<Source, Target>
-) => StateUnsubscribe;
-```
-
-#### **`derive.bind`**
-
-Create a two-way binding between two states.
-
-```ts
-type bind = <Left, Right>(
-  left: Left,
-  right: Right,
-  transformLeft?: PipeTransformer<Left, Right>,
-  transformRight?: PipeTransformer<Right, Left>
-) => StateUnsubscribe;
-```
+- [Anchor Core Derivation APIs](/apis/core/derivation)
+- [Anchor for React Derivation APIs](/apis/react/derivation)
+- [Anchor for Svelte Derivation APIs](/apis/svelte/derivation)
+- [Anchor for Vue Derivation APIs](/apis/vue/derivation)
 
 ## History Tracking
 
@@ -359,92 +269,12 @@ for changes related to the history data.
 
 ## History APIs
 
-### **`history`**
+Anchor provides a set of APIs for managing history:
 
-Creates a history management system for a reactive state object with undo/redo functionality.
-
-```ts
-type history = <T>(state: T, options?: HistoryOptions) => HistoryState;
-```
-
-**Parameters**
-
-- **`state`**: The reactive state object to be managed.
-- **`options`**: (Optional) An object containing the following properties:
-
-**Options**
-
-- **`maxHistory`**: (Optional) The maximum number of history states to keep. Defaults to 100.
-- **`debounce`**: (Optional) The debounce time in milliseconds. Defaults to 100ms.
-- **`resettable`**: (Optional) Whether the history state should be resettable. Defaults to false.
-
-::: warning Resettable History
-
-If the history is configured as **resettable**, the engine will keep track every change to the object.
-While this is useful for resetting the object, it can also be a performance issue if you have a large object.
-
-:::
-
-The history function returns a HistoryState object with the following properties and methods:
-
-| Property/Method  | Description                             |
-| ---------------- | --------------------------------------- |
-| `backwardList`   | Array of previous states (readonly)     |
-| `forwardList`    | Array of future states (readonly)       |
-| `canBackward`    | Boolean indicating if undo is possible  |
-| `canForward`     | Boolean indicating if redo is possible  |
-| `canReset`       | Boolean indicating if reset is possible |
-| **`backward()`** | Undo the last change                    |
-| **`forward()`**  | Redo the last undone change             |
-| **`clear()`**    | Clear the history                       |
-| **`reset()`**    | Reset history to initial state          |
-| **`destroy()`**  | Clean up history tracking               |
-
-## Utility APIs
-
-Utility APIs are meant for internal use, or advanced use cases such as when you build a library. Mostly
-you don't need them for daily use.
-
-### **`setObserver`**
-
-Sets the current observer context for state tracking. This function is used internally to manage the observer stack
-during state derivation.
-
-```ts
-type setObserver = (observer: StateObserver) => () => void;
-```
-
-**Parameters:**
-
-- `observer`: The observer to set as current context
-
-**Returns:** A function that restores the previous observer context when called
-
-### **`getObserver`**
-
-Gets the current observer context.
-
-```ts
-type getObserver = () => StateObserver | undefined;
-```
-
-**Returns:** The current observer context or `undefined` if no observer is active
-
-#### **`derive.log`**
-
-Subscribe to changes in the provided state and log it to the console.
-
-```ts
-type log = <T>(state: T) => StateUnsubscribe;
-```
-
-#### **`derive.resolve`**
-
-Resolves the `StateController` for a given state.
-
-```ts
-type resolve = <T>(state: State<T>) => StateController<T> | undefined;
-```
+- [Anchor Core History APIs](/apis/core/history)
+- [Anchor React History APIs](/apis/react/initialization#history-apis)
+- [Anchor Svelte History APIs](/apis/svelte/initialization#history-apis)
+- [Anchor Vue History APIs](/apis/vue/initialization#history-apis)
 
 ## Best Practices
 

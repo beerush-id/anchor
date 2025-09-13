@@ -222,6 +222,33 @@ const Counter = observable(() => {
 The `useConstant` hook creates a `Ref` with a **read-only `.value` property**. It's ideal for values that are computed
 and should only be recalculated when their dependencies change.
 
+It returns a tuple containing only the `ref` object. Attempting to reassign its `.value` will result in a
+development-mode warning. Use this hook to signal that a `Ref`'s value is managed by its dependencies and should not be
+changed imperatively.
+
+::: code-group
+
+```tsx [Example: Derived Value]
+import { useConstant } from '@anchor/react';
+import { observable } from '@anchor/react/components';
+
+const UserProfile = observable(({ user }) => {
+  // This ref will only re-calculate when the `user` prop changes.
+  const [fullNameRef] = useConstant(() => `${user.firstName} ${user.lastName}`, [user]);
+
+  return <h1>Welcome, {fullNameRef.value}!</h1>;
+});
+```
+
+```tsx [Signature]
+function useConstant<T>(init: T): [ConstantRef<T>];
+function useConstant<T>(init: RefInitializer<T>, deps: unknown[]): [ConstantRef<T>];
+```
+
+:::
+
+::: warning Important
+
 It's important to understand the distinction between this and true immutability. `useConstant` only prevents the
 `.value` property from being reassigned:
 
@@ -236,31 +263,8 @@ const [settingsRef] = useConstant({ theme: 'dark' });
 // This is NOT allowed and will warn you.
 // settingsRef.value = { theme: 'light' };
 
-// This IS allowed, because you are mutating the object, not reassigning the .value
+// This is allowed, because you are mutating the object, not reassigning the .value
 settingsRef.value.theme = 'light';
-```
-
-It returns a tuple containing only the `ref` object. Attempting to reassign its `.value` will result in a
-development-mode warning. Use this hook to signal that a `Ref`'s value is managed by its dependencies and should not be
-changed imperatively.
-
-::: code-group
-
-```tsx [Signature]
-function useConstant<T>(init: T): [ConstantRef<T>];
-function useConstant<T>(init: RefInitializer<T>, deps: unknown[]): [ConstantRef<T>];
-```
-
-```tsx [Example: Derived Value]
-import { useConstant } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-
-const UserProfile = observable(({ user }) => {
-  // This ref will only re-calculate when the `user` prop changes.
-  const [fullNameRef] = useConstant(() => `${user.firstName} ${user.lastName}`, [user]);
-
-  return <h1>Welcome, {fullNameRef.value}!</h1>;
-});
 ```
 
 :::
