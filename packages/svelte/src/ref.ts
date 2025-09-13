@@ -47,7 +47,7 @@ export function variableRef<T>(init: T, constant?: boolean | ((value: T) => T)) 
 
   const set = (value: T) => {
     // Ignore if the value is the same.
-    if (constant !== true || value === stateRef.value) return;
+    if (constant === true || value === stateRef.value) return;
 
     if (typeof constant === 'function') {
       stateRef.value = (constant as (value: T) => T)(value);
