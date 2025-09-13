@@ -31,7 +31,19 @@ export function Footer() {
         <SectionTitle>Ready to Anchor Your State?</SectionTitle>
         <p className="mt-4 text-slate-400">Get started in seconds. Install the package and simplify your app today.</p>
         <div className="w-full my-10 md:my-20">
-          <MainCTA tiys={false} className="mb-6" />
+          <MainCTA tiys={false} className="mb-6">
+            <a
+              href="https://www.producthunt.com/products/anchor-6?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-anchor&#0045;11"
+              target="_blank"
+              className="inline-flex">
+              <img
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1015951&theme=dark&t=1757806815737"
+                alt="Anchor - State&#0032;Management&#0032;For&#0032;Humans&#0044;&#0032;Built&#0032;for&#0032;Enterprise&#0032;Apps | Product Hunt"
+                width="250"
+                height="54"
+              />
+            </a>
+          </MainCTA>
           <CTAHoverInfo />
         </div>
       </section>
