@@ -1,4 +1,4 @@
-# **Data Integrity with Anchor - Ensuring Valid State in Your Applications**
+# **Data Integrity with Anchor**
 
 Learn how Anchor ensures data integrity through schema validation and type safety in your state management.
 
@@ -6,7 +6,7 @@ Learn how Anchor ensures data integrity through schema validation and type safet
   <img src="/schemas/data-integrity.webp" alt="Reactivity Schema" />
 </div>
 
-## **What is Data Integrity in State Management?**
+### **What is Data Integrity in State Management?**
 
 Data integrity in state management refers to ensuring that your application state always conforms to expected formats,
 types, and constraints. With Anchor, you can maintain data integrity through:
@@ -84,8 +84,7 @@ stability.
 
 ::: tip Concerned about verbosity?
 
-At first glance, handling validation errors might seem verbose. While this approach is perfectly fine for simple
-applications, it becomes highly beneficial in complex applications. You won't need to wrap every operation in
+At first glance, handling validation errors might seem verbose. But, it becomes highly beneficial in complex applications. You won't need to wrap every operation in
 `try-catch` blocks, and errors can be handled centrally while keeping your application stable and responsive.
 
 :::

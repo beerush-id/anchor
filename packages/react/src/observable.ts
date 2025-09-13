@@ -159,7 +159,7 @@ export function useObserverRef(deps: Linkable[] = [], displayName?: string): [St
  *          only be recomputed when its reactive dependencies or additional deps change.
  */
 export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) {
-  const [observer, version] = useObserverRef();
+  const [observer, version] = useObserverRef(deps as Linkable[]);
   return useMemo(() => {
     return observer.run(() => {
       return observe();
@@ -168,7 +168,7 @@ export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) 
 }
 
 /**
- * `useReactiveRef` is a custom React hook that creates a mutable ref object
+ * `useObservedRef` is a custom React hook that creates a mutable ref object
  * whose `current` property is reactive. It allows you to define a transformation
  * function that will be re-executed whenever any reactive dependencies accessed
  * within it change, automatically updating the ref's value.

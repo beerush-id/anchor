@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress';
 
 const BASE_URL = '/anchor/docs';
-const PAGE_URL = 'https://anchor.beerush.io/docs';
+const PAGE_URL = 'https://beerush-id.github.io/anchor/docs';
 const PAGE_TITLE = 'Anchor Docs';
-const PAGE_OPEN_TITLE = `${PAGE_TITLE} - State Management Library`;
+const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
-  'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability.';
+  'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
 const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}/social.jpg`;
 
 // https://vitepress.dev/reference/site-config
@@ -18,23 +18,35 @@ export default defineConfig({
   title: PAGE_TITLE,
   description: PAGE_OPEN_DESCRIPTION,
   head: [
+    ['link', { rel: 'canonical', href: PAGE_URL }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon.ico` }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-196x196.png`, sizes: '196x196' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-128x128.png`, sizes: '128x128' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-96x96.png`, sizes: '96x96' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-32x32.png`, sizes: '32x32' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-16x16.png`, sizes: '16x16' }],
     [
       'meta',
       {
         name: 'keywords',
         content:
-          'state management, reactivity, immutability, javascript, typescript, vue, react, svelte, fine-grained reactivity, web development',
+          'state management, reactivity, immutability, javascript, typescript, vue, react, svelte, fine-grained reactivity, web development, enterprise apps, dsv model, data state view',
       },
     ],
     ['meta', { name: 'author', content: 'Nanang Mahdaen El Agung' }],
+    ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: PAGE_OPEN_TITLE }],
     ['meta', { property: 'og:description', content: PAGE_OPEN_DESCRIPTION }],
     ['meta', { property: 'og:image', content: PAGE_OPEN_THUMBNAIL }],
+    ['meta', { property: 'og:image:alt', content: 'Anchor State Management Library' }],
     ['meta', { property: 'og:url', content: PAGE_URL }],
+    ['meta', { property: 'og:site_name', content: 'Anchor Docs' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: PAGE_OPEN_TITLE }],
     ['meta', { name: 'twitter:description', content: PAGE_OPEN_DESCRIPTION }],
     ['meta', { name: 'twitter:image', content: PAGE_OPEN_THUMBNAIL }],
+    ['meta', { name: 'twitter:image:alt', content: 'Anchor State Management Library' }],
+    ['meta', { name: 'twitter:site', content: '@beerush_id' }],
     ['link', { rel: 'canonical', href: PAGE_URL }],
   ],
   themeConfig: {
@@ -66,6 +78,7 @@ export default defineConfig({
       },
       {
         text: 'Guides',
+        collapsed: false,
         items: [
           {
             text: 'Getting Started',
@@ -98,18 +111,8 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Tutorials',
-        collapsed: true,
-        items: [
-          {
-            text: 'Form Validation',
-            link: '/react/tutorial/form-validation',
-          },
-        ],
-      },
-      {
-        text: 'Anchor - React',
-        collapsed: true,
+        text: 'Anchor for React',
+        collapsed: false,
         items: [
           {
             text: 'Introduction',
@@ -120,56 +123,104 @@ export default defineConfig({
             link: '/react/getting-started',
           },
           {
-            text: 'Initialization',
-            link: '/react/initialization',
+            text: 'Reactivity',
+            link: '/react/reactivity',
           },
           {
-            text: 'Observation',
-            link: '/react/observation',
+            text: 'Immutability',
+            link: '/react/immutability',
           },
           {
-            text: 'Derivation',
-            link: '/react/derivation',
+            text: 'Ref System',
+            link: '/react/ref-system',
           },
           {
-            text: 'Components',
-            link: '/react/components',
+            text: 'Guides',
+            collapsed: true,
+            items: [
+              {
+                text: 'Initialization',
+                link: '/react/initialization',
+              },
+              {
+                text: 'Observation',
+                link: '/react/observation',
+              },
+              {
+                text: 'Derivation',
+                link: '/react/derivation',
+              },
+              {
+                text: 'Components',
+                link: '/react/components',
+              },
+              {
+                text: 'Utilities',
+                link: '/react/utilities',
+              },
+            ],
           },
           {
-            text: 'Utilities',
-            link: '/react/utilities',
+            text: 'Tutorials',
+            collapsed: true,
+            items: [
+              {
+                text: 'Form Validation',
+                link: '/react/tutorials/form-validation',
+              },
+            ],
           },
         ],
       },
       {
-        text: 'Anchor - Svelte',
+        text: 'Anchor for Svelte',
         collapsed: true,
         items: [
+          {
+            text: 'Introduction',
+            link: '/svelte/introduction',
+          },
           {
             text: 'Getting Started',
             link: '/svelte/getting-started',
           },
           {
-            text: 'Usage',
-            link: '/svelte/usage',
+            text: 'Reactivity',
+            link: '/svelte/reactivity',
           },
           {
-            text: 'Caveats',
-            link: '/svelte/caveats',
+            text: 'Immutability',
+            link: '/svelte/immutability',
+          },
+          {
+            text: 'State Management',
+            link: '/svelte/state-management',
           },
         ],
       },
       {
-        text: 'Anchor - Vue',
+        text: 'Anchor for Vue',
         collapsed: true,
         items: [
+          {
+            text: 'Introduction',
+            link: '/vue/introduction',
+          },
           {
             text: 'Getting Started',
             link: '/vue/getting-started',
           },
           {
-            text: 'Usage',
-            link: '/vue/usage',
+            text: 'Reactivity',
+            link: '/vue/reactivity',
+          },
+          {
+            text: 'Immutability',
+            link: '/vue/immutability',
+          },
+          {
+            text: 'State Management',
+            link: '/vue/state-management',
           },
         ],
       },
@@ -235,17 +286,19 @@ export default defineConfig({
               { text: 'History', link: '/apis/core/history' },
               { text: 'Request', link: '/apis/core/request' },
               { text: 'Context', link: '/apis/core/context' },
+              { text: 'Types', link: '/apis/core/types' },
               { text: 'Utilities', link: '/apis/core/utility' },
             ],
           },
           {
             text: 'Storage',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Persistent', link: '/apis/storage/persistent' },
               { text: 'Session', link: '/apis/storage/session' },
               { text: 'Key-Value', link: '/apis/storage/kv' },
               { text: 'Table', link: '/apis/storage/table' },
+              { text: 'Types', link: '/apis/storage/types' },
             ],
           },
           {
@@ -256,11 +309,8 @@ export default defineConfig({
               { text: 'Observation', link: '/apis/react/observation' },
               { text: 'Derivation', link: '/apis/react/derivation' },
               { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
+              { text: 'Storage', link: '/apis/react/storage' },
               { text: 'Components', link: '/apis/react/components' },
-              { text: 'History', link: '/apis/react/history' },
-              { text: 'Request', link: '/apis/react/request' },
-              { text: 'Action', link: '/apis/react/action' },
-              { text: 'Ordered List', link: '/apis/react/ordered-list' },
               { text: 'Error Handling', link: '/apis/react/error-handling' },
               { text: 'Utilities', link: '/apis/react/utilities' },
             ],
@@ -271,6 +321,10 @@ export default defineConfig({
             items: [
               { text: 'Initialization', link: '/apis/svelte/initialization' },
               { text: 'Derivation', link: '/apis/svelte/derivation' },
+              { text: 'Observation', link: '/apis/svelte/observation' },
+              { text: 'Error Handling', link: '/apis/svelte/error-handling' },
+              { text: 'Storage', link: '/apis/svelte/storage' },
+              { text: 'Utilities', link: '/apis/svelte/utilities' },
             ],
           },
           {
@@ -279,28 +333,15 @@ export default defineConfig({
             items: [
               { text: 'Initialization', link: '/apis/vue/initialization' },
               { text: 'Derivation', link: '/apis/vue/derivation' },
-              { text: 'History', link: '/apis/vue/history' },
-              { text: 'Request', link: '/apis/vue/request' },
+              { text: 'Observation', link: '/apis/vue/observation' },
+              { text: 'Error Handling', link: '/apis/vue/error-handling' },
+              { text: 'Storage', link: '/apis/vue/storage' },
               { text: 'Utilities', link: '/apis/vue/utilities' },
             ],
           },
           {
             text: 'Dev Tools',
             link: '/apis/devtool',
-          },
-        ],
-      },
-      {
-        text: 'Advanced',
-        collapsed: true,
-        items: [
-          {
-            text: 'Utilities',
-            link: '/utilities',
-          },
-          {
-            text: 'Dev Tools',
-            link: '/dev-tools',
           },
         ],
       },
@@ -314,7 +355,27 @@ export default defineConfig({
       pattern: 'https://github.com/beerush-id/anchor/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
+    search: {
+      provider: 'local',
+    },
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/beerush-id/anchor' },
+      { icon: 'discord', link: 'https://discord.gg/aEFgpaghq2' },
+    ],
+  },
+  markdown: {
+    config: (md) => {
+      const defaultRender = md.renderer.rules.fence;
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/beerush-id/anchor' }],
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+
+        if (token.info === 'sveltehtml') {
+          token.info = 'svelte';
+        }
+
+        return defaultRender(tokens, idx, options, env, self);
+      };
+    },
   },
 });

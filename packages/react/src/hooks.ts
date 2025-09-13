@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { DEV_MODE } from './dev.js';
-import { anchor, type Linkable, microbatch, microtask, outsideObserver, shortId, softEqual } from '@anchor/core';
+import { anchor, type Linkable, microbatch, microtask, outsideObserver, shortId } from '@anchor/core';
 import { depsChanged } from './utils.js';
 import type { TransformSnapshotFn } from './types.js';
 
@@ -46,48 +45,6 @@ export function useRefTrap<T>(init: T | null, handler: (value: T | null) => T | 
       },
     };
   }, [ref]);
-}
-
-/**
- * A React hook that returns a constant value that is only updated when the value changes in development mode.
- *
- * In production mode, the hook will always return the initial value.
- * In development mode, the hook will update the value if it is not equal to the current value.
- * If the initial value is a factory, it will always use the initial value.
- *
- * @template T - The type of the value.
- * @param {T | (() => T)} init - The initial value, or the initial value factory.
- * @returns The constant value.
- */
-export function useConstant<T>(init: () => T): T;
-
-/**
- * A React hook that returns a constant value that is only updated when the value changes in development mode.
- *
- * In production mode, the hook will always return the initial value.
- * In development mode, the hook will update the value if it is not equal to the current value.
- * If the initial value is a factory, it will always use the initial value.
- *
- * @template T - The type of the value.
- * @param {T | (() => T)} init - The initial value, or the initial value factory.
- * @param {(current: T) => void} cleanup - An optional cleanup function to be called when the value changes.
- * @returns The constant value.
- */
-export function useConstant<T>(init: T, cleanup?: (current: T) => void): T;
-
-export function useConstant<T>(init: T | (() => T), cleanup?: (current: T) => void): T {
-  const ref = useRef<T>(null);
-
-  if (!ref.current) {
-    ref.current = typeof init === 'function' ? (init as () => T)() : init;
-  }
-
-  if (DEV_MODE && typeof init !== 'function' && !softEqual(init, ref.current)) {
-    cleanup?.(ref.current);
-    ref.current = init;
-  }
-
-  return ref.current as T;
 }
 
 /**

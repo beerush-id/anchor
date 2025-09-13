@@ -3,9 +3,11 @@ import type {
   Anchor,
   AnchorSettings,
   ArrayMutation,
+  ExceptionMap,
   Immutable,
   Linkable,
   LinkableSchema,
+  ModelError,
   ModelObject,
   ObjLike,
   SetMutation,
@@ -113,6 +115,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     recursive: options?.recursive ?? ANCHOR_SETTINGS.recursive,
     immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
     observable: options?.observable ?? ANCHOR_SETTINGS.observable,
+    silentInit: options?.silentInit ?? ANCHOR_SETTINGS.silentInit,
   };
   const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
@@ -137,7 +140,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
         } else if (isObject(init)) {
           Object.assign(init, result.data);
         }
-      } else {
+      } else if (!configs.silentInit) {
         captureStack.error.validation(
           'Attempted to initialize state with schema:',
           result.error,
@@ -253,15 +256,15 @@ anchorFn.immutable = <T extends Linkable, S extends LinkableSchema>(
 
 anchorFn.model = ((schema, init, options) => {
   return anchorFn(init, schema, options);
-}) satisfies Anchor['model'];
+}) as Anchor['model'];
 
 anchorFn.flat = ((init, options) => {
   return anchorFn(init, { ...options, recursive: 'flat' });
-}) satisfies Anchor['flat'];
+}) as Anchor['flat'];
 
 anchorFn.ordered = ((init, compare, options) => {
   return anchorFn(init, { ...options, ordered: true, compare });
-}) satisfies Anchor['ordered'];
+}) as Anchor['ordered'];
 
 anchorFn.catch = ((state, handler) => {
   const controller = CONTROLLER_REGISTRY.get(state);
@@ -276,17 +279,43 @@ anchorFn.catch = ((state, handler) => {
     return () => {};
   }
 
+  if (typeof handler !== 'function') {
+    const errors: ExceptionMap<ObjLike> = {};
+    const unsubscribe = controller.subscribe.all((_, event) => {
+      if (event.type !== 'init') {
+        const key = event.keys.join('.');
+
+        if (event.error) {
+          exceptionMap.errors[key] = {
+            error: event.error,
+            message: (event.error as ModelError).issues.map((error) => error.message).join('\n'),
+          };
+        } else {
+          delete exceptionMap.errors[key];
+        }
+      }
+    });
+    const destroy = () => {
+      anchorFn.destroy(exceptionMap.errors);
+      anchorFn.destroy(exceptionMap);
+      unsubscribe();
+    };
+
+    const exceptionMap = anchorFn({ errors, destroy });
+    return exceptionMap;
+  }
+
   const { exceptionHandlers } = controller.meta;
   exceptionHandlers.add(handler);
 
   return () => {
     exceptionHandlers.delete(handler);
   };
-}) satisfies Anchor['catch'];
+}) as Anchor['catch'];
 
 anchorFn.raw = ((init, options) => {
   return anchorFn(init, { ...options, cloned: false });
-}) satisfies Anchor['raw'];
+}) as Anchor['raw'];
 
 anchorFn.has = ((state) => {
   return CONTROLLER_REGISTRY.has(state);
@@ -302,7 +331,7 @@ anchorFn.get = ((state, silent = false) => {
   }
 
   return (target ?? state) as typeof state;
-}) satisfies Anchor['get'];
+}) as Anchor['get'];
 
 anchorFn.find = ((init) => {
   return INIT_REGISTRY.get(init) as typeof init;
@@ -361,7 +390,7 @@ anchorFn.snapshot = ((state, recursive = true) => {
   }
 
   return softClone(target ?? state, recursive) as typeof state;
-}) satisfies Anchor['snapshot'];
+}) as Anchor['snapshot'];
 
 anchorFn.destroy = ((state, silent?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);
@@ -375,15 +404,15 @@ anchorFn.destroy = ((state, silent?: boolean) => {
   }
 
   controller.destroy();
-}) satisfies Anchor['destroy'];
+}) as Anchor['destroy'];
 
 anchorFn.configure = ((config: Partial<AnchorSettings>) => {
   Object.assign(ANCHOR_SETTINGS, config);
-}) satisfies Anchor['configure'];
+}) as Anchor['configure'];
 
 anchorFn.configs = ((): AnchorSettings => {
   return ANCHOR_SETTINGS;
-}) satisfies Anchor['configs'];
+}) as Anchor['configs'];
 
 // Assign utility functions.
 anchorFn.writable = writeContract;

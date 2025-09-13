@@ -2,7 +2,11 @@
 
 The History APIs allow you to track changes to a reactive state and implement undo/redo functionality.
 
-## `history()`
+## Core History Functions
+
+These functions form the core of Anchor's history system, allowing you to create and manage history tracking for states.
+
+### `history()`
 
 Creates a history manager for a given anchored state. It records mutations and provides methods to move backward and forward through the change history.
 
@@ -10,22 +14,22 @@ Creates a history manager for a given anchored state. It records mutations and p
 type history = <T extends State>(state: T, options?: HistoryOptions) => HistoryState;
 ```
 
-- `state`: The anchored state to track.
-- `options` (optional): Configuration for the history manager.
+- `state`: The anchored state to track. See [State](types.md#state-t).
+- `options` (optional): Configuration for the history manager. See [HistoryOptions](types.md#historyoptions).
   - `debounce` (number): The time in milliseconds to wait before grouping rapid changes into a single history entry. Defaults to `100`.
   - `maxHistory` (number): The maximum number of history entries to store. Defaults to `100`.
   - `resettable` (boolean): If `true`, allows the state to be fully reset to its initial condition. Defaults to `false`.
-- **Returns**: A `HistoryState` object to control and inspect the history.
+- **Returns**: A [HistoryState](types.md#historystate) object to control and inspect the history.
 
-## `HistoryState` Object
+## History Management Object
 
 The `history()` function returns a `HistoryState` object, which is itself a reactive state. It contains the following properties and methods:
 
 ### Properties
 
-- `backwardList`: `StateChange[]`
+- `backwardList`: [StateChange](types.md#statechange)[]
   - An array of the changes that can be undone. (Readonly)
-- `forwardList`: `StateChange[]`
+- `forwardList`: [StateChange](types.md#statechange)[]
   - An array of the changes that can be redone. (Readonly)
 - `canBackward`: `boolean`
   - `true` if there are changes that can be undone.
@@ -47,9 +51,9 @@ The `history()` function returns a `HistoryState` object, which is itself a reac
 - `destroy(): void`
   - Stops listening for state changes and clears all history.
 
-## Global Configuration
+## Global Configuration Functions
 
-You can set global default options that will apply to all `history` instances.
+These functions allow you to configure global default options that will apply to all `history` instances.
 
 ### `setDefaultOptions()`
 
@@ -59,7 +63,7 @@ Sets the default options for all new history managers.
 type setDefaultOptions = (options: HistoryOptions) => void;
 ```
 
-- `options`: An object with any of the `HistoryOptions` to set as global defaults.
+- `options`: An object with any of the [HistoryOptions](types.md#historyoptions) to set as global defaults.
 
 ### `getDefaultOptions()`
 
@@ -69,4 +73,4 @@ Retrieves the current global default options.
 type getDefaultOptions = () => HistoryOptions;
 ```
 
-- **Returns**: The current default `HistoryOptions` object.
+- **Returns**: The current default [HistoryOptions](types.md#historyoptions) object.

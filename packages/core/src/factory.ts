@@ -25,7 +25,7 @@ import {
   SUBSCRIPTION_REGISTRY,
 } from './registry.js';
 import { captureStack } from './exception.js';
-import { softEntries, softValues } from './utils/index.js';
+import { shortId, softEntries, softValues } from './utils/index.js';
 import { getDevTool } from './dev.js';
 
 /**
@@ -198,6 +198,11 @@ export function createSubscribeFactory<T extends Linkable>(
 
     // Return the unsubscribe function
     return unsubscribeFn;
+  };
+
+  subscribeFn.all = (handler: StateSubscriber<T>, receiver?: State, recursive = meta.configs.recursive) => {
+    Object.defineProperty(handler, '__internal_id__', { value: shortId() });
+    return subscribeFn(handler, receiver, recursive);
   };
 
   return subscribeFn;

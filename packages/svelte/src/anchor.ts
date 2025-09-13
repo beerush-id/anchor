@@ -4,12 +4,13 @@ import {
   linkable,
   type Linkable,
   type LinkableSchema,
+  type ModelArray,
   type ModelInput,
   type ModelOutput,
   type StateOptions,
 } from '@anchor/core';
-import type { ConstantRef, StateRef, VariableRef } from './types.js';
-import { constantRef, REF_REGISTRY } from './ref.js';
+import type { VariableRef } from './types.js';
+import { variableRef } from './ref.js';
 
 /**
  * Creates a writable reference that can be used to manage state with Anchor.
@@ -68,41 +69,66 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
  * @param options - Additional state options when schema is provided
  * @returns A WritableRef containing the managed state
  */
-export function anchorRef<T, S>(
+export function anchorRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   schemaOptions?: S | StateOptions,
   options?: StateOptions
-): T | ModelOutput<S> | Immutable<ModelOutput<S>> {
-  const ref = constantRef((linkable(init) ? anchor(init as never, schemaOptions as never, options) : init) as never);
-  const stateRef = REF_REGISTRY.get(ref as ConstantRef<unknown>) as StateRef<T>;
+): VariableRef<T | ModelOutput<S> | Immutable<ModelOutput<S>>> {
+  const state = linkable(init) ? anchor<S, ModelInput<S>>(init as ModelInput<S>, schemaOptions as S, options) : init;
+  return variableRef(state);
+}
 
-  // Create a setter function.
-  const set = (value: T) => {
-    // Ignore if the value is the same.
-    if (value === stateRef.value) return;
+/**
+ * Creates a writable reference that maintains a sorted array state based on a comparison function.
+ *
+ * @template T - The type of elements in the array
+ * @template S - The schema type for array elements, extending ModelArray
+ * @param init - The initial array value for the reference
+ * @param compare - A function that defines the sort order of elements
+ * @param options - Optional state options for the reference
+ * @returns A VariableRef containing the sorted array
+ */
+export function orderedRef<T extends unknown[], S extends ModelArray = ModelArray>(
+  init: T,
+  compare: (a: T[number], b: T[number]) => number,
+  options?: StateOptions<S>
+): VariableRef<T> {
+  const state = anchor.ordered(init, compare, options);
+  return variableRef(state);
+}
 
-    // Destroy the previous value before creating new one if it was a state.
-    if (anchor.has(stateRef.value as Linkable)) {
-      anchor.destroy(stateRef.value as Linkable);
-    }
+/**
+ * Creates a writable reference that maintains a flat array state.
+ *
+ * @template T - The type of elements in the array
+ * @template S - The schema type for array elements, extending ModelArray
+ * @param init - The initial array value for the reference
+ * @param options - Optional state options for the reference
+ * @returns A VariableRef containing the flat array
+ */
+export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
+  init: T,
+  options?: StateOptions<S>
+): VariableRef<T> {
+  const state = anchor.flat(init, options);
+  return variableRef(state);
+}
 
-    // Create a new state using the same options.
-    stateRef.value = (linkable(value) ? anchor(value as never, schemaOptions as never, options) : value) as never;
-  };
-
-  Object.defineProperties(ref, {
-    set: {
-      value: set,
-    },
-    value: {
-      get() {
-        return stateRef.value;
-      },
-      set(value: T) {
-        set(value);
-      },
-    },
-  });
-
-  return ref as never;
+/**
+ * Creates a writable reference that mutates the underlying object.
+ *
+ * Unless you set the global options to `cloned: true`, you don't want to use this.
+ *
+ * @template T - The type of the initial value
+ * @template S - The schema type, extending LinkableSchema
+ * @param init - The initial value for the reference
+ * @param options - Optional state options for the reference
+ * @returns A VariableRef containing the raw value
+ */
+export function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: StateOptions<S>
+): VariableRef<T> {
+  const state = anchor.raw(init, options);
+  return variableRef(state);
 }

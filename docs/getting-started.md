@@ -1,24 +1,13 @@
 # **Getting Started with Anchor**
 
-Learn how to use Anchor, the revolutionary state management library that provides fine-grained reactivity and true immutability for modern web applications.
-
-## **What You'll Learn**
-
-In this guide, you'll learn:
-
-1. How to create reactive state with Anchor
-2. How to observe state changes
-3. How to work with immutable state
-4. How to create write contracts for state mutations
-5. Basic patterns for building reactive applications
+Learn how to use **Anchor**, the revolutionary state management library that provides fine-grained reactivity and true
+immutability for modern web applications. This guide will walk you through the basics of using **Anchor**.
 
 ## **Prerequisites**
 
 Before starting this guide, make sure you have:
 
 - Basic knowledge of JavaScript or TypeScript
-- Node.js installed (version 14 or higher)
-- A package manager like npm, yarn, or pnpm
 - Anchor [installed](/installation) in your project
 
 ## **Creating Your First State**
@@ -29,16 +18,71 @@ Let's start by creating a simple reactive state:
 import { anchor } from '@anchor/core';
 
 // Create a reactive state object
-const userState = anchor({
-  name: 'John Doe',
-  age: 30,
-  isLoggedIn: false,
+const state = anchor({
+  count: 0,
+  title: 'Hello, World!',
 });
 
 // Access state properties
-console.log(userState.name); // 'John Doe'
-console.log(userState.age); // 30
+console.log(state.count); // 0
+console.log(state.title); // "Hello, World!"
 ```
+
+::: tip Framework Quick Start
+
+::: code-group
+
+```jsx [React]
+import { useAnchor } from '@anchor/react';
+import { observable } from '@anchor/react/components';
+
+const Counter = observable(() => {
+  const [state] = useAnchor({
+    count: 0,
+    title: 'My App',
+  });
+
+  return (
+    <div>
+      <h1>{state.title}</h1>
+      <p>Count: {state.count}</p>
+      <button onClick={() => state.count++}>Increment</button>
+    </div>
+  );
+});
+```
+
+```svelte [Svelte]
+<script>
+  import { anchorRef } from '@anchor/svelte';
+
+  const state = anchorRef({ count: 0, title: 'My App' });
+</script>
+
+<div>
+  <h1>{$state.title}</h1>
+  <p>Count: {$state.count}</p>
+  <button onclick={() => state.count++}>Increment</button>
+</div>
+```
+
+```vue [Vue]
+<script setup>
+import { anchorRef } from '@anchor/vue';
+
+const state = anchorRef({ count: 0, title: 'My App' });
+</script>
+
+<template>
+  <div>
+    <h1>{{ state.title }}</h1>
+    <p>Count: {{ state.count }}</p>
+    <button @click="state.count++">Increment</button>
+  </div>
+</template>
+```
+
+:::
 
 ## **Observing State Changes**
 
@@ -104,30 +148,6 @@ settingsWriter.brightness = 90;
 
 // This would be trapped
 // settingsWriter.theme = 'dark';
-```
-
-## **Framework Integration Examples**
-
-### **React Example**
-
-```jsx
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
-
-const Counter = observable(() => {
-  const state = useAnchor({
-    count: 0,
-    title: 'My App',
-  });
-
-  return (
-    <div>
-      <h1>{state.title}</h1>
-      <p>Count: {state.count}</p>
-      <button onClick={() => state.count++}>Increment</button>
-    </div>
-  );
-});
 ```
 
 ## **Best Practices**

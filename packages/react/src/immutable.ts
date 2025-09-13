@@ -12,8 +12,8 @@ import {
   type StateOptions,
 } from '@anchor/core';
 import type { AnchorState } from './types.js';
-import { useAnchor } from './anchor.js';
 import { useStableRef } from './hooks.js';
+import { useVariable } from './ref.js';
 
 /**
  * A React hook that creates an immutable state from a linkable object.
@@ -32,16 +32,48 @@ export function useImmutable<T extends Linkable, S extends LinkableSchema = Link
   init: T,
   options?: StateOptions<S>
 ): AnchorState<Immutable<T>>;
+
+/**
+ * A React hook that creates an immutable state from a model input with a schema.
+ *
+ * This hook creates an immutable state by applying a schema to the provided model input,
+ * ensuring type safety and immutability of the resulting state.
+ *
+ * @template S - The schema type
+ * @template T - The type of the model input
+ * @param init - The initial model input to make immutable
+ * @param schema - The schema to apply to the model input
+ * @param options - Optional base state configuration options
+ * @returns An anchor state containing the immutable version of the input object
+ */
 export function useImmutable<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema?: S,
   options?: StateBaseOptions
 ): AnchorState<ImmutableOutput<T>>;
+
+/**
+ * A React hook that creates an immutable state from a linkable object or model input.
+ *
+ * This hook provides a flexible way to create immutable states, handling both direct
+ * linkable objects and model inputs with optional schemas.
+ *
+ * @template T - The type of the linkable object
+ * @template S - The schema type for the anchor options
+ * @param init - The initial object to make immutable
+ * @param schemaOptions - Either a schema or state options
+ * @param options - Optional base state configuration options
+ * @returns An anchor state containing the immutable version of the input object
+ */
 export function useImmutable<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
-  options?: StateOptions<S>
-): AnchorState<Immutable<T>> {
-  return useAnchor<Immutable<T>>(init as Immutable<T>, { ...options, immutable: true });
+  schemaOptions?: S | StateOptions<S>,
+  options?: StateBaseOptions
+): AnchorState<Immutable<T> | ImmutableOutput<T>> {
+  const [state, setState] = useVariable(() => {
+    return anchor.immutable(init as ModelInput<S>, schemaOptions as S, options);
+  }, [init, options]);
+  return [state.value, state, setState] as AnchorState<Immutable<T> | ImmutableOutput<T>>;
 }
 
 /**

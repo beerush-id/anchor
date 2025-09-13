@@ -1,9 +1,9 @@
-# **Anchor Usage Guide - Getting Started with State Management**
+# **Anchor Usage Guide**
 
 Before getting started with Anchor, ensure you have followed the [installation](/installation) instructions.
 This guide will provide a basic introduction to Anchor's core functionality for state management in web applications.
 
-## **Basic Usage of Anchor State Management**
+## **Basic Usage**
 
 After installing the appropriate packages, you can start using **Anchor** in your project. Here's a basic example with
 the core package:
@@ -34,7 +34,7 @@ state.items.push({ id: 1, text: 'First item' });
 
 > For framework-specific usage, refer to the respective framework guides.
 
-## **Configuring Anchor State Management**
+## **Configuring Anchor**
 
 Anchor works out of the box with zero configuration. However, for advanced use cases, you can customize behavior through
 global configuration or per-state options:
@@ -93,171 +93,18 @@ reactivity. This can be useful when you have a large array and you only need to 
 
 :::
 
-## **Anchor APIs for State Management**
+## **Anchor APIs**
 
-Anchor provides a set of APIs to manage state:
+Anchor provides a set of APIs to manage state. For a complete reference of the core APIs, please refer to:
 
-### **`anchor` - Create Reactive State**
+- [Anchor Core API Reference](/apis/core/initialization) - Core APIs for initializing and managing state.
+- [Anchor for React API Reference](/apis/react/initialization) - React APIs for integrating with React.
+- [Anchor for Svelte API Reference](/apis/svelte/initialization) - Svelte APIs for integrating with Svelte.
+- [Anchor for Vue API Reference](/apis/vue/initialization) - Vue APIs for integrating with Vue.
 
-This function is used to creates a reactive state with optional configuration.
+## **Example**
 
-```ts
-// Create a reactive state with optional configuration.
-type anchor = <T, S>(init: T, options?: StateOptions<S>) => T;
-```
-
-```ts
-// Create a reactive state with schema.
-type anchor = <S, T>(init: T, schema: S, options?: StateBaseOptions) => T;
-```
-
-#### Options
-
-Each option is optional and can be used to configure the state.
-
-- **`immutable`** **_boolean_**: Enable/disable true immutability.
-- **`observable`** **_boolean_**: Enable/disable observation.
-- **`recursive`** **_`true`|`false`|`'flat'`_**: Enable/disable recursive state.
-- **`schema`**: Schema to validate the state.
-
-#### Usage
-
-```typescript
-// Create a reactive state.
-const state = anchor(initialState, options);
-```
-
-```typescript
-// Create a reactive state with schema.
-const state = anchor(initialState, schema, options);
-```
-
-#### Parameters
-
-- **`initialState`**: The initial state of the state.
-- **`options`** **_[optional]_**: Options to configure the state.
-- **`schema`** **_[optional]_**: Schema to validate the state.
-
-### **`anchor.model` - Create State with Schema Validation**
-
-Creates a reactive state with schema validation.
-
-```ts
-type model = <S, T>(init: T, schema: S, options?: StateBaseOptions) => T;
-```
-
-### **`anchor.immutable` - Create Immutable State**
-
-Creates an immutable reactive state.
-
-```ts
-// Without schema
-type immutable = <T, S>(init: T, options?: StateOptions<S>) => Immutable<T>;
-
-// With schema
-type immutable = <S, T>(init: T, schema: S, options?: StateBaseOptions) => Immutable<T>;
-```
-
-### **`anchor.get` - Get Current State Value**
-
-Gets the current state value.
-
-```ts
-type get = <T>(state: State<T>) => T;
-```
-
-### **`anchor.snapshot` - Create State Snapshot**
-
-Creates a snapshot of the current state.
-
-```ts
-type snapshot = <T>(state: State<T>) => T;
-```
-
-### **`anchor.writable` - Create Write Contract**
-
-Create a write contract to mutate a state.
-
-```ts
-// Make entire state writable
-type writable = <T>(state: T) => Mutable<T>;
-
-// Make specific keys writable
-type writable = <T, K>(state: T, contracts?: K) => MutablePart<T, K>;
-```
-
-## **Batch APIs for State Operations**
-
-### **`anchor.assign` - Assign Properties**
-
-Assigns properties from source to target object.
-
-```ts
-type assign = {
-  <T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>): void;
-  <T>(target: T[], source: { [key: string]: T } | Record<string, T>): void;
-  <T>(target: T, source: Partial<T>): void;
-};
-```
-
-### **`anchor.remove` - Remove Keys**
-
-Removes keys from a collection.
-
-```ts
-type remove = {
-  <T, K>(target: Map<T, K>, ...keys: Array<T>): void;
-  <T>(target: T[], ...keys: Array<string>): void;
-  <T>(target: T, ...keys: Array<keyof T>): void;
-};
-```
-
-### **`anchor.clear` - Clear Collection**
-
-Clears all entries from a collection.
-
-```ts
-type clear = <T>(target: T) => void;
-```
-
-## **Helper APIs for State Management**
-
-### **`anchor.configure` - Configure Global Settings**
-
-Configures global Anchor settings.
-
-```ts
-type configure = (config: Partial<AnchorSettings>) => void;
-```
-
-### **`anchor.configs` - Get Global Settings**
-
-Gets the global Anchor settings.
-
-```ts
-type configs = () => AnchorSettings;
-```
-
-### **`anchor.destroy` - Destroy Reactive State**
-
-Destroys a reactive state and cleans up all associated resources.
-
-```ts
-type destroy = <T extends State>(state: T) => void;
-```
-
-::: warning Use With Caution
-
-While it's always recommended to clean up resources when they're no longer needed, it's important to note
-this helper is most relevant for a local state. Destroying a global state could lead to unexpected behavior.
-
-**Note**: This helper is designed for internal use or library authors.
-
-:::
-
-## **Examples of Using Anchor**
-
-### **Simple Counter**
+Below is a simple example of how to use Anchor.
 
 ::: code-group
 

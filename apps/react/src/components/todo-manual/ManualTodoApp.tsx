@@ -7,13 +7,13 @@ import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
 import { microloop, shortId } from '@anchor/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { BENCHMARK_SIZE } from '@lib/todo.js';
+import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE } from '@lib/todo.js';
 import { ManualTodoCode } from './ManualTodoCode.js';
 import { debugRender } from '@anchor/react';
 import { ManualTodoStats } from './ManualTodoStats.js';
 import { isMobile } from '@lib/nav.js';
 
-const [loop] = microloop(5, BENCHMARK_SIZE);
+const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
   loop(fn).then(() => console.log(`Profiling done in ${performance.now() - start}ms.`));

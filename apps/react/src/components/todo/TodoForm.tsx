@@ -2,12 +2,11 @@ import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
-import { type ITodoList, type ITodoStats } from '@lib/todo.js';
+import { itemsWriter, statsWriter } from '@lib/todo.js';
 import { shortId } from '@anchor/core';
-import { observable } from '@anchor/react/components';
 import { debugRender } from '@anchor/react';
 
-export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observable(({ todos, stats }) => {
+export const TodoForm: FC = () => {
   const ref = useRef(null);
   const [newText, setNewText] = useState('');
 
@@ -15,13 +14,13 @@ export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observable(
     e.preventDefault();
     e.stopPropagation();
 
-    todos.push({
+    itemsWriter.push({
       id: shortId(),
       text: newText,
       completed: false,
     });
-    stats.total++;
-    stats.active++;
+    statsWriter.total++;
+    statsWriter.active++;
 
     setNewText('');
   };
@@ -45,4 +44,4 @@ export const TodoForm: FC<{ todos: ITodoList; stats: ITodoStats }> = observable(
       </Button>
     </form>
   );
-}, 'TodoForm');
+};

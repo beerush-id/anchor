@@ -50,9 +50,9 @@ export default function EditorDimensionPanel() {
             inherits={[base]}
             className={'anchor-input tool-input'}
             placeholder="auto"
-            onChange={(e) => {
-              styleWriter.marginBlock = parseFloat(e.target.value);
-              styleWriter.marginInline = parseFloat(e.target.value);
+            onChange={() => {
+              delete styleWriter.marginBlock;
+              delete styleWriter.marginInline;
             }}
           />
         </PanelColumn>
@@ -64,9 +64,9 @@ export default function EditorDimensionPanel() {
             inherits={[base]}
             className={'anchor-input tool-input'}
             placeholder="auto"
-            onChange={(e) => {
-              styleWriter.paddingBlock = parseFloat(e.target.value);
-              styleWriter.paddingInline = parseFloat(e.target.value);
+            onChange={() => {
+              delete styleWriter.paddingBlock;
+              delete styleWriter.paddingInline;
             }}
           />
         </PanelColumn>
@@ -84,7 +84,7 @@ export default function EditorDimensionPanel() {
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Block"
                 onChange={() => {
-                  styleWriter.margin = '';
+                  delete styleWriter.margin;
                 }}
               />
               <Tooltip>Margin Block</Tooltip>
@@ -98,7 +98,7 @@ export default function EditorDimensionPanel() {
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Inline"
                 onChange={() => {
-                  styleWriter.margin = '';
+                  delete styleWriter.margin;
                 }}
               />
               <Tooltip>Margin Inline</Tooltip>
@@ -116,7 +116,7 @@ export default function EditorDimensionPanel() {
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Block"
                 onChange={() => {
-                  styleWriter.padding = '';
+                  delete styleWriter.padding;
                 }}
               />
               <Tooltip>Padding Block</Tooltip>
@@ -130,7 +130,7 @@ export default function EditorDimensionPanel() {
                 className={'anchor-input tool-input cols-1'}
                 placeholder="Inline"
                 onChange={() => {
-                  styleWriter.padding = '';
+                  delete styleWriter.padding;
                 }}
               />
               <Tooltip>Padding Inline</Tooltip>

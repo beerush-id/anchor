@@ -249,5 +249,41 @@ describe('Anchor Core - Schema Validation', () => {
       expect(state).toBeInstanceOf(Map);
       expect(errorSpy).toHaveBeenCalled();
     });
+
+    it('should create an exception map for schema validation', () => {
+      const schema = z
+        .object({
+          age: z.number(),
+          name: z.string(),
+          account: z.object({
+            balance: z.number(),
+          }),
+        })
+        .strict();
+
+      const state = anchor.model(schema, {
+        name: 'John',
+        age: 30,
+        account: { balance: 0 },
+      });
+      const exception = anchor.catch(state);
+
+      expect(exception.errors).toEqual({});
+
+      state.name = 20;
+      expect(exception.errors.name).toBeDefined();
+
+      state.name = 'Jane';
+      expect(exception.errors.name).toBeUndefined();
+
+      state.foo = 'bar';
+      expect(exception.errors.foo).toBeDefined();
+
+      state.account.balance = 'invalid';
+      expect(exception.errors['account.balance']).toBeDefined();
+
+      expect(errorSpy).not.toHaveBeenCalled();
+      exception.destroy();
+    });
   });
 });

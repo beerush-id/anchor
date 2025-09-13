@@ -1,436 +1,714 @@
-# Initializing Your Reactive State in React
+# Initialization
 
-Initialization is the crucial first step in using Anchor: it's how you define and set up your reactive state. In React, the primary tool for component-scoped reactive state is the `useAnchor` hook. This hook not only creates your reactive state but also seamlessly integrates with React's lifecycle, handling concerns like Fast Refresh (HMR) and Strict Mode. To ensure your React components automatically re-render when the state created by `useAnchor` changes, you'll typically wrap them with the `observable` Higher-Order Component (HOC).
+Initialization in **Anchor** for React is the process of creating reactive state objects that can be observed and
+mutated.
+Understanding how to properly initialize state is crucial for building efficient and maintainable applications with
+**Anchor**.
 
-The `observable` HOC plays a vital role by subscribing your React components to changes in the reactive state. When any part of the state managed by `useAnchor` within an `observable`-wrapped component changes, the HOC detects this and triggers a re-render of that component, ensuring your UI stays synchronized with your data.
+## State Types
 
-## Global vs. Local State
+In **Anchor**, states are categorized into two main types based on their scope and usage pattern:
 
-Anchor provides flexibility in how you manage your application's state, allowing for both local (component-scoped) and global states. The choice between them depends on the scope and complexity of the data you're managing.
+### Global State
 
-### Local State (Component-Scoped)
+**Global states** are declared outside component bodies, typically in separate files, and are shared across multiple
+components. These states are always declared using **Anchor's Core APIs** and persist throughout the application
+lifecycle.
 
-Local state is ideal for data that is only relevant to a single component or a small, isolated part of your component tree. It's initialized directly within a component using the `useAnchor` hook. When the component unmounts, its local state is typically garbage collected, making it efficient for transient or component-specific data.
+Global states are ideal for:
 
-**When to use Local State:**
+- Application-wide data (user profile, settings, etc.)
+- Data shared across multiple components
+- Complex business logic that needs to be accessed from different parts of the application
 
-- Form input values that don't need to be shared with other parts of the application.
-- UI-specific states like toggle switches, modal visibility, or tab selections.
-- Any data that is self-contained within a component and doesn't affect sibling or parent components directly.
+::: details Global State {open}
 
-The examples below for "Initializing Reactive Objects" and "Initializing Reactive Arrays" demonstrate the creation of local, component-scoped state using `useAnchor`.
+```ts
+// lib/app.ts
+import { anchor } from '@anchor/core';
 
-### Global State (Application-Wide)
-
-Global state is preferred for data that needs to be accessed and modified by multiple, potentially unrelated components across your application. To create a global reactive state that exists independently of any React component's lifecycle, you should use the core `anchor` function from `@anchor/core`. By defining your state outside of any specific React component, you create a single source of truth that can be imported and observed wherever needed. This approach simplifies data flow in complex applications and avoids prop drilling.
-
-**When to use Global State:**
-
-- User authentication status and user profile information.
-- Application-wide settings or themes.
-- Data fetched from an API that needs to be shared across many views (e.g., a list of products, a shopping cart).
-- Any core business logic data that forms the backbone of your application.
-
-#### Initializing a Global State
-
-To create a global state, define your Anchor state using the `anchor` function from `@anchor/core` in a separate file and export it. Then, import this instance into any component that needs to interact with it. Remember to wrap components that consume this global state with `observable` to ensure they re-render when the state changes.
-
-```tsx
-// store/settings.ts
-import { anchor } from '@anchor/core'; // Import the core anchor function
-
-export const appSettings = anchor({
-  theme: 'light',
-  notificationsEnabled: true,
+// Global state is declared outside component body.
+export const appState = anchor.immutable({
+  currentUser: {
+    name: 'John Doe',
+    age: 30,
+  },
 });
-
-// components/ThemeSwitcher.tsx
-import React from 'react';
-import { observable } from '@anchor/react';
-import { appSettings } from '../store/settings'; // Import the global state
-
-const ThemeSwitcher = observable(() => {
-  const toggleTheme = () => {
-    appSettings.theme = appSettings.theme === 'light' ? 'dark' : 'light';
-  };
-
-  return (
-    <div>
-      <p>Current Theme: {appSettings.theme}</p>
-      <button onClick={toggleTheme}>Toggle Theme</button>
-    </div>
-  );
-});
-
-export default ThemeSwitcher;
-
-// components/NotificationStatus.tsx
-import React from 'react';
-import { observable } from '@anchor/react';
-import { appSettings } from '../store/settings'; // Import the global state
-
-const NotificationStatus = observable(() => {
-  const toggleNotifications = () => {
-    appSettings.notificationsEnabled = !appSettings.notificationsEnabled;
-  };
-
-  return (
-    <div>
-      <p>Notifications: {appSettings.notificationsEnabled ? 'Enabled' : 'Disabled'}</p>
-      <button onClick={toggleNotifications}>Toggle Notifications</button>
-    </div>
-  );
-});
-
-export default NotificationStatus;
 ```
 
-In this example, `appSettings` is a global reactive state created with `anchor` from `@anchor/core`. Any component that imports `appSettings` and is wrapped with `observable` will automatically re-render when `appSettings.theme` or `appSettings.notificationsEnabled` changes.
+:::
 
-## The `useAnchor` Hook: Your Gateway to Reactive Data (Local State)
+::: warning Global State Recommendations
 
-The `useAnchor` hook is how you bring Anchor's powerful reactivity into your React components for component-scoped state. It takes an initial value for your state and optional configuration options.
+When working with global states, it's always recommended to use **`immutable`** states. This ensures that your
+application remains predictable and your states remains stable.
 
-When you call `useAnchor`:
+When working with a critical data structure, it's also recommended to combine **`immutable`** with
+**`schema`** to ensure the data shape remains consistent.
 
-- You provide an `initial value` for your state. This can be any plain JavaScript object, array, `Map`, or `Set`.
-- You can also pass an optional `options` object to configure advanced behaviors of your reactive state, such as schema validation, immutability, or recursion depth.
+:::
 
-`useAnchor` then gives you back two things:
+### Local State
 
-1.  The reactive state object (a special kind of JavaScript object called a Proxy). This is the object you'll interact with directly to read and update your state.
-2.  A `setter function` (like React's `useState` setter), which allows you to replace the entire state object if needed.
+**Local states** are declared inside **component** bodies using React hooks and are primarily used for UI behavior logic such as toggle
+states,
+tab states, form inputs, etc. These states are created when a component mounts and are destroyed when it unmounts.
 
-### Initializing Reactive Objects
+Local states are ideal for:
 
-This is the most common way to define your application's local state. Anchor takes your plain JavaScript object and makes all its properties reactive. Remember to wrap your component with `observable` to ensure it re-renders when the state changes.
+- Component-specific UI state
+- Temporary data that doesn't need to persist
+- Simple interactions within a component
+
+::: details Local State {open}
 
 ```tsx
-import React from 'react';
-import { useAnchor, observable } from '@anchor/react';
+// components/UserProfile.tsx
+import { useAnchor } from '@anchor/react';
 
-const UserProfileEditor = observable(() => {
-  // Initialize a reactive object state for user profile
-  const [user] = useAnchor({
-    firstName: 'John',
-    lastName: 'Doe',
-    age: 30,
+export const UserProfile = () => {
+  // Local state is declared inside component body.
+  const [tab] = useAnchor({
+    buttons: ['Tab 1', 'Tab 2', 'Tab 3'],
+    current: 0,
   });
+};
+```
+
+:::
+
+## Core State APIs
+
+These are the primary APIs for creating reactive state in your React components.
+
+### **`useAnchor(init, options?)`**
+
+The primary hook for creating and managing reactive state within React components. It's most suitable for objects and
+complex data structures. The state object can be directly mutated, and changes will be automatically tracked.
+
+**Params**
+
+- **`init`** - The initial value for the state.
+- **`schema`** _(optional)_ - Zod schema to validate and structure the state.
+- **`options`** _(optional)_ - Configuration options for the state.
+
+[API Reference](../apis/react/initialization.md#useanchor)
+
+#### Usage
+
+To use `useAnchor`, call it within your component body with an initial object value:
+
+::: details Object State {open}
+
+```jsx
+import { useAnchor } from '@anchor/react';
+
+const UserProfile = () => {
+  const [user] = useAnchor({
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    age: 30,
+    preferences: {
+      theme: 'dark',
+      notifications: true,
+    },
+  });
+
+  // Direct mutation - intuitive and natural
+  const updateTheme = () => {
+    user.preferences.theme = 'light';
+  };
 
   const updateName = () => {
-    // Directly mutate the state properties. Anchor handles the reactivity and triggers re-renders.
-    user.firstName = 'Jane';
-    user.lastName = 'Smith';
+    user.name = 'Jane Doe';
   };
-
-  return (
-    <div>
-      <h2>User Profile</h2>
-      <p>
-        Name: {user.firstName} {user.lastName}
-      </p>
-      <p>Age: {user.age}</p>
-      <button onClick={updateName}>Update Name</button>
-    </div>
-  );
-});
-
-export default UserProfileEditor;
+};
 ```
 
-### Initializing Reactive Arrays
+:::
 
-Anchor makes arrays fully reactive, allowing you to use standard array methods (`push`, `pop`, `splice`, `sort`, etc.) directly. Your component, wrapped with `observable`, will automatically re-render when the array structure or its contents change.
+::: details With Zod Schema {open}
 
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
-
-const TodoList = observable(() => {
-  // Initialize a reactive array of strings for a todo list
-  const [todos] = useAnchor<string[]>(['Learn Anchor', 'Build something awesome']);
-
-  const addTodo = () => {
-    todos.push('New Task ' + (todos.length + 1));
-  };
-
-  return (
-    <div>
-      <h2>My Todos</h2>
-      <ul>
-        {todos.map((todo, index) => (
-          <li key={index}>{todo}</li>
-        ))}
-      </ul>
-      <button onClick={addTodo}>Add Add Todo</button>
-    </div>
-  );
-});
-
-export default TodoList;
-```
-
-## Updating the Entire State Object with the Setter Function
-
-While direct property mutation is the most common way to update Anchor state, you can also replace the entire reactive state object using the setter function returned by `useAnchor`. This is particularly useful for completely resetting the state or replacing it with a new structure.
-
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
-
-const ResettingComponent = observable(() => {
-  const [data, setData] = useAnchor({
-    counter: 0,
-    message: 'Hello',
-  });
-
-  const resetState = () => {
-    // Replace the entire state object with a new one. This will trigger a full re-render.
-    setData({
-      counter: 100,
-      message: 'Reset!',
-    });
-  };
-
-  const incrementCounter = () => {
-    // You can also use a function for the setter, similar to React's useState, for derived updates.
-    setData((prevData) => ({
-      ...prevData,
-      counter: prevData.counter + 1,
-    }));
-  };
-
-  return (
-    <div>
-      <h2>Dynamic Data</h2>
-      <p>Counter: {data.counter}</p>
-      <p>Message: {data.message}</p>
-      <button onClick={incrementCounter}>Increment</button>
-      <button onClick={resetState}>Reset State</button>
-    </div>
-  );
-});
-
-export default ResettingComponent;
-```
-
-## Advanced Configuration Options
-
-The `options` object you can pass to `useAnchor` (for local state) or `anchor` (for global state) allows you to customize the behavior of your reactive state. These options provide powerful control over aspects like validation, immutability, and how deeply Anchor tracks changes.
-
-### Schema Validation with `schema`
-
-You can integrate a Zod schema to validate your state. Anchor will automatically validate the state upon initialization and any subsequent mutations. If validation fails, Anchor provides mechanisms to catch and handle these errors (more on error handling in a later section).
-
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
+```jsx
+import { useAnchor } from '@anchor/react';
 import { z } from 'zod';
 
-const UserSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  email: z.string().email('Invalid email address'),
+const userSchema = z.object({
+  name: z.string().min(1),
+  age: z.number().min(0),
+  email: z.string().email(),
+  preferences: z.object({
+    theme: z.enum(['light', 'dark']),
+    notifications: z.boolean(),
+  }),
 });
 
-const UserForm = observable(() => {
+const UserProfile = () => {
   const [user] = useAnchor(
     {
-      username: '',
-      email: '',
-    },
-    { schema: UserSchema } // Apply the Zod schema here
-  );
-
-  const handleSubmit = () => {
-    try {
-      // You can manually parse/validate if needed, or rely on Anchor's internal validation
-      UserSchema.parse(user);
-      alert('User data is valid!');
-    } catch (error: any) {
-      alert(error.errors[0].message); // Display first validation error
-    }
-  };
-
-  return (
-    <div>
-      <h2>User Registration</h2>
-      <div>
-        <label>Username:</label>
-        <input
-          type="text"
-          placeholder="Username"
-          value={user.username}
-          onChange={(e) => (user.username = e.target.value)}
-        />
-      </div>
-      <div>
-        <label>Email:</label>
-        <input type="email" placeholder="Email" value={user.email} onChange={(e) => (user.email = e.target.value)} />
-      </div>
-      <button onClick={handleSubmit}>Submit</button>
-    </div>
-  );
-});
-
-export default UserForm;
-```
-
-### Compile-Time Immutability with `immutable`
-
-Setting `immutable: true` will make the state read-only at the TypeScript level. This means if you try to directly modify a property of this state, TypeScript will give you a compile-time error, preventing accidental mutations. To modify such a state, you would explicitly use `anchor.writable()` from `@anchor/core`.
-
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
-import { anchor } from '@anchor/core'; // Import anchor from core for writable
-
-const ConfigDisplay = observable(() => {
-  const [config] = useAnchor(
-    {
-      theme: 'dark',
-      fontSize: 16,
-    },
-    { immutable: true } // State is now TypeScript read-only
-  );
-
-  const increaseFontSize = () => {
-    // To modify an immutable state, create a writable version
-    const writableConfig = anchor.writable(config, ['fontSize']);
-    writableConfig.fontSize = 18;
-  };
-
-  return (
-    <div>
-      <h2>Application Configuration</h2>
-      <p>Theme: {config.theme}</p>
-      <p>Font Size: {config.fontSize}</p>
-      <button onClick={increaseFontSize}>Increase Font Size</button>
-    </div>
-  );
-});
-
-export default ConfigDisplay;
-```
-
-### Controlling Reactivity Depth with `recursive`
-
-By default, Anchor makes all nested objects and arrays reactive. You can control this behavior using the `recursive` option. Setting `recursive: 'flat'` will only make the top-level properties reactive. This can be useful for performance in very large, deeply nested states where only top-level changes matter for a particular component.
-
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
-
-const NestedStateViewer = observable(() => {
-  const [data] = useAnchor(
-    {
-      id: 1,
-      details: {
-        name: 'Item A',
-        properties: {
-          color: 'red',
-          size: 'M',
-        },
+      name: 'John Doe',
+      age: 30,
+      email: 'john.doe@example.com',
+      preferences: {
+        theme: 'dark',
+        notifications: true,
       },
     },
-    { recursive: 'flat' } // Only top-level properties (id, details) are reactive
+    userSchema
   );
 
-  const updateColor = () => {
-    // This change to a deeply nested property will update the underlying state,
-    // but if this component only observes 'data.details.name', it won't re-render
-    // because 'properties.color' is not directly reactive due to recursive: 'flat'.
-    data.details.properties.color = 'blue';
-    console.log('Color updated (underlying state changed):', data.details.properties.color);
+  // Schema ensures data integrity while allowing direct mutations
+  const updateProfile = () => {
+    user.name = 'Jane Doe';
+    user.preferences.theme = 'light';
   };
-
-  const updateName = () => {
-    // This change WILL trigger a re-render because 'details.name' is a direct property
-    // of a top-level reactive object.
-    data.details.name = 'Item B';
-  };
-
-  return (
-    <div>
-      <h2>Nested State Example</h2>
-      <p>Item Name: {data.details.name}</p>
-      <p>Item Color (from underlying state): {data.details.properties.color}</p>
-      <button onClick={updateName}>Update Name</button>
-      <button onClick={updateColor}>Update Color (check console)</button>
-    </div>
-  );
-});
-
-export default NestedStateViewer;
+};
 ```
 
-### Other Useful Options
+:::
 
-- `cloned` (boolean): If `true` (default), Anchor creates a deep clone of your initial state. Set to `false` if you want Anchor to operate directly on your provided object (use with caution, as it means your original object will become reactive).
-- `strict` (boolean): When `true`, Anchor will throw runtime errors for schema validation failures or other violations, rather than just logging them. Defaults to `false` in production.
-- `ordered` (boolean) & `compare` (function): For arrays, `ordered: true` combined with a `compare` function ensures the array remains sorted after mutations, maintaining a consistent order.
+::: tip When to use it?
+Use `useAnchor` when you need a fully reactive object state that can be directly mutated. This is the most common hook
+for creating complex state objects in Anchor, especially when you need to mutate nested properties.
+:::
 
-## Initializing Reactive Maps and Sets (Less Common)
+### **`useVariable(init, deps?, constant?)`**
 
-While plain objects and arrays are most common, Anchor also fully supports `Map` and `Set` objects, making them reactive. This can be powerful for specific use cases, such as managing unique collections or key-value pairs where keys are not strings.
+Creates a reactive variable with update capabilities. This hook is most suitable for primitive values like numbers,
+strings, and booleans.
 
-### Initializing Reactive Maps
+**Params**
 
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
+- **`init`** - Initial value or initializer function.
+- **`deps`** _(optional)_ - Dependencies that trigger updates.
+- **`constant`** _(optional)_ - Whether to treat as constant.
 
-const SettingsMap = observable(() => {
-  // Initialize a reactive Map for user settings
-  const [settings] = useAnchor<Map<string, boolean>>(
-    new Map([
-      ['darkMode', false],
-      ['notifications', true],
-    ])
-  );
+[API Reference](../apis/react/initialization.md#usevariable)
 
-  const toggleDarkMode = () => {
-    settings.set('darkMode', !settings.get('darkMode'));
+#### Usage
+
+::: details Primitive State {open}
+
+```jsx
+import { useVariable } from '@anchor/react';
+
+const Counter = () => {
+  const [count] = useVariable(0);
+
+  // Direct mutation - simple and intuitive syntax
+  const increment = () => {
+    count.value++;
   };
 
-  return (
-    <div>
-      <h2>User Settings (Map)</h2>
-      <p>Dark Mode: {settings.get('darkMode') ? 'On' : 'Off'}</p>
-      <button onClick={toggleDarkMode}>Toggle Dark Mode</button>
-    </div>
-  );
-});
+  const decrement = () => {
+    count.value--;
+  };
 
-export default SettingsMap;
+  const reset = () => {
+    count.value = 0;
+  };
+};
 ```
 
-### Initializing Reactive Sets
+:::
 
-```tsx
-import React from '@anchor/react';
-import { useAnchor, observable } from '@anchor/react';
+::: details Computed Primitive {open}
 
-const TagsInput = observable(() => {
-  // Initialize a reactive Set for managing unique tags
-  const [tags] = useAnchor<Set<string>>(new Set(['react', 'javascript', 'state-management']));
+```jsx
+import { useVariable } from '@anchor/react';
 
-  const addTag = () => {
-    const newTag = prompt('Enter a new tag:');
-    if (newTag) {
-      tags.add(newTag);
+const ProductCard = ({ user }) => {
+  // The value is automatically updated when user changes, or manually assigned.
+  const [userId] = useVariable(() => user.id, [user]);
+
+  const switchUser = () => {
+    userId.value = 'some-id';
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useVariable` when you need a simple reactive primitive value (number, string, boolean) that can be directly
+mutated. It's the go-to hook for basic state values like counters, flags, or simple text values.
+:::
+
+### **`useConstant(init, deps?)`**
+
+Creates a constant reference that never changes its value or only updates when dependencies change. This hook is perfect
+for computed values that depend on props or other changing values.
+
+**Params**
+
+- **`init`** - The initial value or initializer function.
+- **`deps`** _(optional)_ - Dependency array that determines when the constant should be recalculated.
+
+[API Reference](../apis/react/initialization.md#useconstant)
+
+#### Usage
+
+::: details Computed Constant {open}
+
+```jsx
+import { useConstant } from '@anchor/react';
+
+const UserProfile = ({ userId }) => {
+  const [apiEndpoint] = useConstant(() => `/api/users/${userId}/profile`, [userId]);
+};
+```
+
+:::
+
+::: details Complex Computed Value {open}
+
+```jsx
+import { useConstant } from '@anchor/react';
+
+const DataProcessor = ({ rawData, multiplier }) => {
+  const [processedData] = useConstant(() => {
+    return rawData.map((item) => ({
+      ...item,
+      computedValue: item.baseValue * multiplier,
+    }));
+  }, [rawData, multiplier]);
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useConstant` when you need a stable reference to a computed value that depends on changing inputs. It's especially
+useful for derived values that would otherwise need to be recomputed on every render.
+:::
+
+## Immutability APIs
+
+These APIs provide immutability features for your state, ensuring controlled mutations.
+
+### **`useImmutable(init, options?)`**
+
+A React hook that creates an immutable state from a linkable object or model input. The resulting state is read-only and
+requires special writers for mutations.
+
+**Params**
+
+- **`init`** - The initial linkable object to make immutable.
+- **`schema`** _(optional)_ - Zod schema to apply to the model input.
+- **`options`** _(optional)_ - Optional anchor configuration options.
+
+[API Reference](../apis/react/initialization.md#useimmutable)
+
+#### Usage
+
+::: details Immutable Data {open}
+
+```jsx
+import { useImmutable, useWriter } from '@anchor/react';
+
+const Dashboard = () => {
+  const [reportData] = useImmutable({
+    generatedAt: new Date(),
+    metrics: {
+      users: 1250,
+      revenue: 35000,
+      conversion: 0.08,
+    },
+  });
+
+  // Use a writer to make changes.
+  const writer = useWriter(reportData);
+
+  // For mutations, use a writer
+  const refreshData = (newMetrics) => {
+    writer.generatedAt = new Date();
+    writer.metrics = newMetrics;
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useImmutable` when you want to create a state that is immutable by default but still reactive. This is useful for
+protecting important data from accidental mutations while still allowing controlled changes through writers.
+:::
+
+### **`useWriter(state, contracts?)`**
+
+A React hook that creates a mutation gateway of an immutable state. This allows controlled mutations of otherwise
+immutable states.
+
+**Params**
+
+- **`state`** - The immutable state to create a writer for.
+- **`contracts`** _(optional)_ - Mutation key contracts that define allowed mutations.
+
+[API Reference](../apis/react/initialization.md#usewriter)
+
+#### Usage
+
+::: details Controlled Mutations {open}
+
+```jsx
+import { useImmutable, useWriter } from '@anchor/react';
+
+const DocumentEditor = () => {
+  const [document] = useImmutable({
+    title: 'My Document',
+    content: 'Document content...',
+    lastModified: new Date(),
+  });
+
+  // Full writer allows all mutations
+  const writer = useWriter(document);
+
+  const updateTitle = (newTitle) => {
+    writer.title = newTitle;
+    writer.lastModified = new Date();
+  };
+
+  // Contracted writer only allows specific mutations
+  const contentWriter = useWriter(document, ['content', 'lastModified']);
+
+  const updateContent = (newContent) => {
+    contentWriter.content = newContent;
+    contentWriter.lastModified = new Date();
+    // writer.title = 'New Title'; // This would be restricted
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useWriter` when you need to mutate an immutable state. This provides a controlled way to make changes while
+maintaining the immutability guarantees for the rest of your application.
+:::
+
+## Data Integrity APIs
+
+These APIs provide schema-based validation and data integrity features for your state using Zod schemas.
+
+### **`useModel(schema, init, options?)`**
+
+Creates a reactive model based on the provided Zod schema and initial data. This ensures your state conforms to a
+specific structure and validates data according to the schema.
+
+**Params**
+
+- **`schema`** - The Zod schema defining the structure and types of the model.
+- **`init`** - The initial data for the model.
+- **`options`** _(optional)_ - Optional configuration for the model state.
+
+[API Reference](../apis/react/initialization.md#usemodel)
+
+#### Usage
+
+::: details Form Model {open}
+
+```jsx
+import { useModel } from '@anchor/react';
+import { z } from 'zod';
+
+const userFormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email format'),
+  age: z.number().min(18, 'Must be at least 18 years old'),
+});
+
+const UserForm = () => {
+  const [form] = useModel(userFormSchema, {
+    name: '',
+    email: '',
+    age: 18,
+  });
+
+  // Direct mutations with automatic validation
+  const updateName = (newName) => {
+    form.name = newName; // Will be validated automatically
+  };
+
+  const updateEmail = (newEmail) => {
+    form.email = newEmail; // Validation errors will be caught
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useModel` when you need to ensure your state conforms to a specific structure with validation using Zod schemas.
+This is especially useful for form data or any state that must follow a strict format with validation requirements.
+:::
+
+### **`useImmutableModel(schema, init, options?)`**
+
+Creates an immutable reactive model based on the provided Zod schema and initial data. The resulting state is read-only
+and requires special writers for mutations.
+
+**Params**
+
+- **`schema`** - The Zod schema defining the structure and types of the model.
+- **`init`** - The initial data for the model.
+- **`options`** _(optional)_ - Optional configuration for the model state.
+
+[API Reference](../apis/react/initialization.md#useimmutablemodel)
+
+#### Usage
+
+::: details Immutable Model {open}
+
+```jsx
+import { useImmutableModel, useWriter } from '@anchor/react';
+import { z } from 'zod';
+
+const configSchema = z.object({
+  theme: z.enum(['light', 'dark']),
+  language: z.string(),
+  notifications: z.boolean(),
+});
+
+const AppSettings = () => {
+  const [config] = useImmutableModel(configSchema, {
+    theme: 'light',
+    language: 'en',
+    notifications: true,
+  });
+
+  // Use a writer to make changes.
+  const writer = useWriter(config);
+
+  // Need to use a writer to make changes
+  const updateTheme = () => {
+    writer.theme = 'dark';
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useImmutableModel` when you need a strictly validated state that should be immutable by default using Zod schemas.
+Changes require explicit writers, making mutations intentional and controlled.
+:::
+
+## Array APIs
+
+These APIs provide specialized state management for array-based data.
+
+### **`useOrderedList(init, compare, options?)`**
+
+Creates a reactive ordered list state that automatically maintains sort order based on the provided comparison function.
+
+**Params**
+
+- **`init`** - The initial array state.
+- **`compare`** - A comparison function that defines the sort order.
+- **`options`** _(optional)_ - Optional state configuration options.
+
+[API Reference](../apis/react/initialization.md#useorderedlist)
+
+#### Usage
+
+::: details Sorted List {open}
+
+```jsx
+import { useOrderedList } from '@anchor/react';
+
+const TaskList = () => {
+  const [tasks] = useOrderedList(
+    [
+      { id: 1, title: 'Low priority task', priority: 'low' },
+      { id: 2, title: 'High priority task', priority: 'high' },
+      { id: 3, title: 'Medium priority task', priority: 'medium' },
+    ],
+    (a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    }
+  );
+
+  // Tasks are automatically kept sorted by priority
+  // Adding new tasks will insert them in the correct position
+  const addTask = (newTask) => {
+    tasks.push(newTask); // Will automatically sort into correct position
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useOrderedList` when you need an array that automatically maintains a specific sort order. Elements are
+automatically positioned correctly when added, modified, or when the sort criteria change.
+:::
+
+## History APIs
+
+These APIs provide undo/redo functionality for your state.
+
+### **`useHistory(state, options?)`**
+
+Provides history management (undo/redo) for a given reactive state. This allows users to undo and redo changes to the
+state.
+
+**Params**
+
+- **`state`** - The reactive state to track history for.
+- **`options`** _(optional)_ - History configuration options.
+
+[API Reference](../apis/react/initialization.md#usehistory)
+
+#### Usage
+
+::: details Document History {open}
+
+```jsx
+import { useAnchor, useHistory } from '@anchor/react';
+
+const DocumentEditor = () => {
+  const [document] = useAnchor({
+    title: 'My Document',
+    content: 'Document content...',
+  });
+
+  const history = useHistory(document, {
+    maxHistory: 50,
+    debounce: 300,
+  });
+
+  // Make changes to document
+  const updateContent = (newContent) => {
+    document.content = newContent;
+    // Change is automatically tracked in history
+  };
+
+  // Navigate history intuitively
+  const undo = () => {
+    if (history.canBackward) {
+      history.backward();
     }
   };
 
-  return (
-    <div>
-      <h2>My Tags (Set)</h2>
-      <p>Tags: {Array.from(tags).join(', ')}</p>
-      <button onClick={addTag}>Add Tag</button>
-    </div>
-  );
-});
-
-export default TagsInput;
+  const redo = () => {
+    if (history.canForward) {
+      history.forward();
+    }
+  };
+};
 ```
 
-This comprehensive guide covers the various ways to initialize and configure your reactive states using the `useAnchor` hook in React (for local state) and the `anchor` function from `@anchor/core` (for global state). In the next section, we will explore how to observe changes in your reactive states.
+:::
+
+::: tip When to use it?
+Use `useHistory` when you want to provide undo/redo functionality for a state. Changes are automatically tracked, making
+it easy to implement history navigation without manual intervention.
+:::
+
+## Request APIs
+
+These APIs provide reactive data fetching and streaming functionalities.
+
+### **`useFetch(init, options)`**
+
+Provides reactive data fetching functionality, managing the state of an HTTP request. It handles loading states, errors,
+and data updates automatically.
+
+**Params**
+
+- **`init`** - Initial data value.
+- **`options`** - Fetch configuration options.
+
+[API Reference](../apis/react/initialization.md#usefetch)
+
+#### Usage
+
+::: details Data Fetching {open}
+
+```jsx
+import { useFetch } from '@anchor/react';
+
+const UserList = () => {
+  const [users] = useFetch([], {
+    url: '/api/users',
+    method: 'GET',
+  });
+
+  // Access request state intuitively
+  const refresh = () => {
+    users.fetch(); // Trigger a new request
+  };
+
+  const cancel = () => {
+    users.abort(); // Cancel ongoing request
+  };
+};
+```
+
+:::
+
+::: details POST Request {open}
+
+```jsx
+import { useFetch } from '@anchor/react';
+
+const UserCreator = () => {
+  const [response] = useFetch(null, {
+    url: '/api/users',
+    method: 'POST',
+    deferred: true, // Defer request until fetch() is called.
+  });
+
+  const createUser = (userData) => {
+    response.fetch({
+      body: userData,
+    });
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useFetch` when you need to fetch data from an API and want automatic state management for loading, error, and
+success states. The hook provides a reactive way to handle HTTP requests with minimal boilerplate.
+:::
+
+### **`useStream(init, options)`**
+
+Provides reactive streaming data fetch functionality, updating incrementally as chunks are received.
+
+**Params**
+
+- **`init`** - Initial data value.
+- **`options`** - Stream configuration options.
+
+[API Reference](../apis/react/initialization.md#usestream)
+
+#### Usage
+
+::: details Streaming Data {open}
+
+```jsx
+import { useStream } from '@anchor/react';
+
+const EventFeed = () => {
+  const [events] = useStream([], {
+    url: '/api/events/stream',
+    method: 'GET',
+    transform: (current, chunk) => [...current, ...chunk],
+  });
+
+  const disconnect = () => {
+    events.abort();
+  };
+};
+```
+
+:::
+
+::: tip When to use it?
+Use `useStream` when you need to handle streaming data, such as server-sent events or chunked responses. The state
+automatically updates as new data arrives, making real-time features simple to implement.
+:::

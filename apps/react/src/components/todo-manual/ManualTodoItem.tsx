@@ -1,13 +1,13 @@
 import { type FC, memo, useCallback, useEffect, useRef } from 'react';
 import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
-import { BENCHMARK_TOGGLE_SIZE, type ITodoItem } from '@lib/todo.js';
+import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE, type ITodoItem } from '@lib/todo.js';
 import { Button, IconButton } from '../Button.js';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
 import { microloop } from '@anchor/core';
 import { Tooltip } from '../Tooltip.js';
 import { debugRender } from '@anchor/react';
 
-const [loop] = microloop(5, BENCHMARK_TOGGLE_SIZE);
+const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
   loop(fn).then(() => console.log(`Profiling done in ${(performance.now() - start).toLocaleString()}ms.`));

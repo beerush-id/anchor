@@ -10,11 +10,11 @@ import { microloop, shortId } from '@anchor/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { TodoStats } from './TodoStats.js';
-import { BENCHMARK_SIZE } from '@lib/todo.js';
+import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE, itemsWriter, statsWriter } from '@lib/todo.js';
 import { TodoCode } from './TodoCode.js';
 import { isMobile } from '@lib/nav.js';
 
-const [loop] = microloop(5, BENCHMARK_SIZE);
+const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE);
 const benchmark = (fn: () => void) => {
   const start = performance.now();
   loop(fn).then(() => console.log(`Profiling done in ${performance.now() - start}ms.`));
@@ -22,17 +22,11 @@ const benchmark = (fn: () => void) => {
 
 export const TodoApp: FC = () => {
   const [panel] = useAnchor({ info: false, code: false });
-  const [todos] = useAnchor([
-    { id: '1', text: 'Learn React state', completed: true },
-    { id: '2', text: 'Learn Anchor state', completed: false },
-    { id: '3', text: 'Master Anchor state', completed: false },
-  ]);
-  const [stats] = useAnchor({ total: 3, completed: 1, active: 2 });
 
   const addBenchmarkItem = () => {
-    todos.push({ id: shortId(), text: `New Todo (${todos.length + 1})`, completed: false });
-    stats.total++;
-    stats.active++;
+    itemsWriter.push({ id: shortId(), text: `New Todo (${itemsWriter.length + 1})`, completed: false });
+    statsWriter.total++;
+    statsWriter.active++;
   };
 
   useUpdateStat(() => {
@@ -53,10 +47,10 @@ export const TodoApp: FC = () => {
       </CardHeader>
       <InfoPanel panel={panel} />
       <div className="p-4">
-        <TodoForm todos={todos} stats={stats} />
-        <TodoList todos={todos} stats={stats} />
+        <TodoForm />
+        <TodoList />
       </div>
-      <TodoStats stats={stats} />
+      <TodoStats />
       <p className="text-slate-500 text-xs text-center px-10 mb-4">
         Stats are computed during mutation to prevent extensive resource usage from filtering. This also to showcase the
         complexity level of the optimization.

@@ -16,7 +16,7 @@
     },
     "apps/react": {
       "name": "@anchor-app/react",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/react": "workspace:*",
         "@anchor/storage": "workspace:*",
@@ -48,14 +48,12 @@
         "vite": "^7.0.4",
         "vite-tsconfig-paths": "^5.1.4",
         "vitest": "^3.2.4",
-      },
-      "peerDependencies": {
-        "zod": "^4.0.15",
+        "zod": "^4.1.5",
       },
     },
     "apps/svelte": {
       "name": "@anchor/docs",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/storage": "workspace:*",
         "@anchor/svelte": "workspace:*",
@@ -83,11 +81,12 @@
         "vite": "^7.0.4",
         "vite-plugin-devtools-json": "^0.2.0",
         "vitest": "^3.2.4",
+        "zod": "^4.1.5",
       },
     },
     "apps/vue": {
       "name": "@anchor-app/vue",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/vue": "workspace:*",
         "vue": "^3.5.18",
@@ -109,7 +108,7 @@
     },
     "packages/core": {
       "name": "@anchor/core",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "devDependencies": {
         "@beerush/utils": "^0.5.0",
         "@eslint/css": "^0.5.0",
@@ -129,7 +128,7 @@
         "vitest": "^3.2.4",
       },
       "optionalDependencies": {
-        "zod": "^4.0.17",
+        "zod": "^4.1.5",
       },
       "peerDependencies": {
         "typescript": "^5.8.2",
@@ -137,7 +136,7 @@
     },
     "packages/devtool": {
       "name": "@anchor/devtool",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "devDependencies": {
         "@eslint/css": "^0.5.0",
         "@eslint/js": "^9.23.0",
@@ -159,7 +158,7 @@
     },
     "packages/react": {
       "name": "@anchor/react",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
         "@anchor/storage": "workspace:*",
@@ -182,6 +181,9 @@
         "typescript-eslint": "^8.27.0",
         "vitest": "^3.2.4",
       },
+      "optionalDependencies": {
+        "zod": "^4.1.5",
+      },
       "peerDependencies": {
         "react": "^19.1.0",
         "typescript": "^5.8.2",
@@ -189,7 +191,7 @@
     },
     "packages/storage": {
       "name": "@anchor/storage",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
       },
@@ -213,7 +215,7 @@
         "vitest": "^3.2.4",
       },
       "optionalDependencies": {
-        "zod": "^4.0.17",
+        "zod": "^4.1.5",
       },
       "peerDependencies": {
         "typescript": "^5.8.2",
@@ -221,7 +223,7 @@
     },
     "packages/svelte": {
       "name": "@anchor/svelte",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
         "@anchor/storage": "workspace:*",
@@ -242,7 +244,7 @@
         "vitest": "^3.2.4",
       },
       "optionalDependencies": {
-        "zod": "^4.0.17",
+        "zod": "^4.1.5",
       },
       "peerDependencies": {
         "svelte": "^5.36.16",
@@ -251,7 +253,7 @@
     },
     "packages/vue": {
       "name": "@anchor/vue",
-      "version": "0.0.1",
+      "version": "1.0.0-beta.1",
       "dependencies": {
         "@anchor/core": "workspace:*",
         "@anchor/storage": "workspace:*",
@@ -274,7 +276,7 @@
         "vue": "^3.5.19",
       },
       "optionalDependencies": {
-        "zod": "^4.0.17",
+        "zod": "^4.1.5",
       },
       "peerDependencies": {
         "typescript": "^5.8.2",
@@ -1737,7 +1739,7 @@
 
     "zimmerframe": ["zimmerframe@1.1.2", "", {}, "sha512-rAbqEGa8ovJy4pyBxZM70hg4pE6gDgaQ0Sl9M3enG3I0d6H4XSAM3GeNGLKnsBpuijUow064sf7ww1nutC5/3w=="],
 
-    "zod": ["zod@4.0.17", "", {}, "sha512-1PHjlYRevNxxdy2JZ8JcNAw7rX8V9P1AKkP+x/xZfxB0K5FYfuV+Ug6P/6NVSR2jHQ+FzDDoDHS04nYUsOIyLQ=="],
+    "zod": ["zod@4.1.5", "", {}, "sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg=="],
 
     "zwitch": ["zwitch@2.0.4", "", {}, "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A=="],
 
