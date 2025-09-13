@@ -1,7 +1,49 @@
 {
   "name": "@anchorlib/svelte",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
+  "description": "Svelte bindings for Anchor reactive state management",
+  "keywords": [
+    "state",
+    "management",
+    "reactive",
+    "observable",
+    "svelte"
+  ],
+  "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
+  "homepage": "https://github.com/beerush-id/anchor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beerush-id/anchor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/beerush-id/anchor/issues"
+  },
+  "type": "module",
   "module": "./dist/index.js",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "svelte": "./dist/storage/index.js",
+      "import": "./dist/storage/index.js"
+    }
+  },
+  "directories": {
+    "dist": "./dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/storage": "workspace:*"
@@ -25,28 +67,6 @@
     "svelte": "^5.36.16",
     "typescript": "^5.8.2"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js",
-      "import": "./dist/index.js"
-    },
-    "./storage": {
-      "types": "./dist/storage/index.d.ts",
-      "svelte": "./dist/storage/index.js",
-      "import": "./dist/storage/index.js"
-    }
-  },
-  "directories": {
-    "dist": "./dist"
-  },
-  "files": [
-    "dist"
-  ],
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
     "clean": "rimraf dist",
@@ -54,9 +74,6 @@
     "prepublish": "rimraf dist && tsup && publint",
     "format": "prettier --write ."
   },
-  "svelte": "./dist/index.js",
-  "type": "module",
-  "types": "./dist/index.d.ts",
   "optionalDependencies": {
     "zod": "^4.1.5"
   }
