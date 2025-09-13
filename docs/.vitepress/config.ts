@@ -1,12 +1,12 @@
 import { defineConfig } from 'vitepress';
 
 const BASE_URL = '/anchor/docs';
-const PAGE_URL = 'https://beerush-id.github.io/anchor/docs';
+const PAGE_URL = 'https://beerush-id.github.io/anchor/docs/';
 const PAGE_TITLE = 'Anchor Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
   'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
-const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}/social.jpg`;
+const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}social.jpg`;
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
