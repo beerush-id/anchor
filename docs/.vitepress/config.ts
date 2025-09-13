@@ -191,12 +191,24 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
+            text: 'Introduction',
+            link: '/vue/introduction',
+          },
+          {
             text: 'Getting Started',
             link: '/vue/getting-started',
           },
           {
-            text: 'Usage',
-            link: '/vue/usage',
+            text: 'Reactivity',
+            link: '/vue/reactivity',
+          },
+          {
+            text: 'Immutability',
+            link: '/vue/immutability',
+          },
+          {
+            text: 'State Management',
+            link: '/vue/state-management',
           },
         ],
       },
