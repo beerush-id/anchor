@@ -1,4 +1,4 @@
-import { shortId } from '@anchor/core';
+import { shortId } from '@anchorlib/core';
 
 let generateId = shortId;
 

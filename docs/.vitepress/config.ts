@@ -57,6 +57,7 @@ export default defineConfig({
       { text: 'Performance', link: '/performance' },
       { text: 'Philosophy', link: '/philosophy' },
       { text: 'Architecture', link: '/architecture' },
+      { text: 'Test Coverage', link: 'https://beerush-id.github.io/anchor/coverage/details' },
     ],
 
     sidebar: [

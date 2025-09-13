@@ -11,14 +11,14 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@anchor/react": "workspace:*",
-    "@anchor/storage": "workspace:*",
+    "@anchorlib/react": "workspace:*",
+    "@anchorlib/storage": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "shiki": "^3.8.1"
   },
   "devDependencies": {
-    "@anchor/devtool": "workspace:*",
+    "@anchorlib/devtool": "workspace:*",
     "@eslint/js": "^9.30.1",
     "@tailwindcss/vite": "^4.1.11",
     "@types/react": "^19.1.8",

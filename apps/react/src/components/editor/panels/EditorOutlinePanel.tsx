@@ -1,7 +1,7 @@
 import { Eraser, GalleryThumbnails, Palette, Square, SquareDashed } from 'lucide-react';
 import { Tooltip } from '../../Tooltip.js';
-import { ColorPicker, Input, Toggle, ToggleGroup } from '@anchor/react/components';
-import { useObserved, useWriter } from '@anchor/react';
+import { ColorPicker, Input, Toggle, ToggleGroup } from '@anchorlib/react/components';
+import { useObserved, useWriter } from '@anchorlib/react';
 import { editorApp, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';

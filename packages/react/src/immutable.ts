@@ -10,7 +10,7 @@ import {
   type MutationKey,
   type StateBaseOptions,
   type StateOptions,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import type { AnchorState } from './types.js';
 import { useStableRef } from './hooks.js';
 import { useVariable } from './ref.js';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { z } from 'zod/v4';
-	import { exceptionRef, modelRef } from '@anchor/svelte';
+	import { exceptionRef, modelRef } from '@anchorlib/svelte';
 	import type { FormEventHandler } from 'svelte/elements';
 
 	const schema = z.object({

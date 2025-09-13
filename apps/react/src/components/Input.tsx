@@ -1,6 +1,6 @@
 import { type InputHTMLAttributes, useRef } from 'react';
-import { observable } from '@anchor/react/components';
-import { debugRender } from '@anchor/react';
+import { observable } from '@anchorlib/react/components';
+import { debugRender } from '@anchorlib/react';
 
 export type InputProps<T extends Record<string, string>> = {
   bindTo: T;

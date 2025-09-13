@@ -60,7 +60,7 @@ With Anchor, you can directly mutate state while maintaining immutability guaran
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const user = anchorRef({
   profile: {
@@ -84,7 +84,7 @@ You can create truly immutable states that prevent any direct mutations:
 
 ```vue
 <script setup>
-import { immutableRef, writableRef } from '@anchor/vue';
+import { immutableRef, writableRef } from '@anchorlib/vue';
 
 // Create an immutable state
 const userState = immutableRef({
@@ -121,7 +121,7 @@ Anchor's approach eliminates the deep cloning overhead of traditional immutable 
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const largeDataSet = anchorRef({
   items: Array(10000)
@@ -148,7 +148,7 @@ With controlled mutations, you always know what can change and when:
 
 ```vue
 <script setup>
-import { immutableRef, writableRef } from '@anchor/vue';
+import { immutableRef, writableRef } from '@anchorlib/vue';
 
 const appState = immutableRef({
   user: { name: 'John' },
@@ -182,7 +182,7 @@ Immutable states make it easier to track changes and debug issues:
 
 ```vue
 <script setup>
-import { immutableRef, writableRef } from '@anchor/vue';
+import { immutableRef, writableRef } from '@anchorlib/vue';
 
 const state = immutableRef({
   counter: 0,
@@ -207,7 +207,7 @@ For global state that's shared across many components, use immutable states:
 
 ```js
 // lib/App.js
-import { immutableRef } from '@anchor/vue';
+import { immutableRef } from '@anchorlib/vue';
 
 export const globalState = immutableRef({
   currentUser: null,
@@ -224,7 +224,7 @@ Create writers with specific contracts to limit what can be mutated:
 
 ```vue
 <script setup>
-import { immutableRef, writableRef } from '@anchor/vue';
+import { immutableRef, writableRef } from '@anchorlib/vue';
 
 const state = immutableRef({
   user: { name: 'John' },
@@ -245,7 +245,7 @@ Use schema validation with immutable states to ensure data integrity:
 
 ```vue
 <script setup>
-import { immutableRef } from '@anchor/vue';
+import { immutableRef } from '@anchorlib/vue';
 import { z } from 'zod';
 
 const UserSchema = z.object({

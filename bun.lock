@@ -18,14 +18,14 @@
       "name": "@anchor-app/react",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/react": "workspace:*",
-        "@anchor/storage": "workspace:*",
+        "@anchorlib/react": "workspace:*",
+        "@anchorlib/storage": "workspace:*",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "shiki": "^3.8.1",
       },
       "devDependencies": {
-        "@anchor/devtool": "workspace:*",
+        "@anchorlib/devtool": "workspace:*",
         "@eslint/js": "^9.30.1",
         "@tailwindcss/vite": "^4.1.11",
         "@types/react": "^19.1.8",
@@ -52,11 +52,11 @@
       },
     },
     "apps/svelte": {
-      "name": "@anchor/docs",
+      "name": "@anchorlib/docs",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/storage": "workspace:*",
-        "@anchor/svelte": "workspace:*",
+        "@anchorlib/storage": "workspace:*",
+        "@anchorlib/svelte": "workspace:*",
       },
       "devDependencies": {
         "@eslint/compat": "^1.2.5",
@@ -88,7 +88,7 @@
       "name": "@anchor-app/vue",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/vue": "workspace:*",
+        "@anchorlib/vue": "workspace:*",
         "vue": "^3.5.18",
       },
       "devDependencies": {
@@ -107,7 +107,7 @@
       },
     },
     "packages/core": {
-      "name": "@anchor/core",
+      "name": "@anchorlib/core",
       "version": "1.0.0-beta.1",
       "devDependencies": {
         "@beerush/utils": "^0.5.0",
@@ -135,7 +135,7 @@
       },
     },
     "packages/devtool": {
-      "name": "@anchor/devtool",
+      "name": "@anchorlib/devtool",
       "version": "1.0.0-beta.1",
       "devDependencies": {
         "@eslint/css": "^0.5.0",
@@ -151,17 +151,17 @@
         "typescript-eslint": "^8.27.0",
       },
       "peerDependencies": {
-        "@anchor/core": "workspace:*",
+        "@anchorlib/core": "workspace:*",
         "react": "^19.1.1",
         "typescript": "^5.8.2",
       },
     },
     "packages/react": {
-      "name": "@anchor/react",
+      "name": "@anchorlib/react",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/core": "workspace:*",
-        "@anchor/storage": "workspace:*",
+        "@anchorlib/core": "workspace:*",
+        "@anchorlib/storage": "workspace:*",
       },
       "devDependencies": {
         "@eslint/css": "^0.5.0",
@@ -190,10 +190,10 @@
       },
     },
     "packages/storage": {
-      "name": "@anchor/storage",
+      "name": "@anchorlib/storage",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/core": "workspace:*",
+        "@anchorlib/core": "workspace:*",
       },
       "devDependencies": {
         "@beerush/utils": "^0.5.0",
@@ -222,11 +222,11 @@
       },
     },
     "packages/svelte": {
-      "name": "@anchor/svelte",
+      "name": "@anchorlib/svelte",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/core": "workspace:*",
-        "@anchor/storage": "workspace:*",
+        "@anchorlib/core": "workspace:*",
+        "@anchorlib/storage": "workspace:*",
       },
       "devDependencies": {
         "@eslint/css": "^0.5.0",
@@ -252,11 +252,11 @@
       },
     },
     "packages/vue": {
-      "name": "@anchor/vue",
+      "name": "@anchorlib/vue",
       "version": "1.0.0-beta.1",
       "dependencies": {
-        "@anchor/core": "workspace:*",
-        "@anchor/storage": "workspace:*",
+        "@anchorlib/core": "workspace:*",
+        "@anchorlib/storage": "workspace:*",
       },
       "devDependencies": {
         "@eslint/css": "^0.5.0",
@@ -327,19 +327,19 @@
 
     "@anchor-app/vue": ["@anchor-app/vue@workspace:apps/vue"],
 
-    "@anchor/core": ["@anchor/core@workspace:packages/core"],
+    "@anchorlib/core": ["@anchorlib/core@workspace:packages/core"],
 
-    "@anchor/devtool": ["@anchor/devtool@workspace:packages/devtool"],
+    "@anchorlib/devtool": ["@anchorlib/devtool@workspace:packages/devtool"],
 
-    "@anchor/docs": ["@anchor/docs@workspace:apps/svelte"],
+    "@anchorlib/docs": ["@anchorlib/docs@workspace:apps/svelte"],
 
-    "@anchor/react": ["@anchor/react@workspace:packages/react"],
+    "@anchorlib/react": ["@anchorlib/react@workspace:packages/react"],
 
-    "@anchor/storage": ["@anchor/storage@workspace:packages/storage"],
+    "@anchorlib/storage": ["@anchorlib/storage@workspace:packages/storage"],
 
-    "@anchor/svelte": ["@anchor/svelte@workspace:packages/svelte"],
+    "@anchorlib/svelte": ["@anchorlib/svelte@workspace:packages/svelte"],
 
-    "@anchor/vue": ["@anchor/vue@workspace:packages/vue"],
+    "@anchorlib/vue": ["@anchorlib/vue@workspace:packages/vue"],
 
     "@arrows/array": ["@arrows/array@1.4.1", "", { "dependencies": { "@arrows/composition": "^1.2.2" } }, "sha512-MGYS8xi3c4tTy1ivhrVntFvufoNzje0PchjEz6G/SsWRgUKxL4tKwS6iPdO8vsaJYldagAeWMd5KRD0aX3Q39g=="],
 

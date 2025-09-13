@@ -21,7 +21,7 @@ types, and constraints. With Anchor, you can maintain data integrity through:
 Anchor integrates seamlessly with Zod, a TypeScript-first schema declaration and validation library:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod';
 
 // Define a schema for user data
@@ -95,8 +95,8 @@ In React applications, Anchor provides a seamless way to handle validation error
 The **`useException`** hook allows you to capture and display validation errors for specific state properties.
 
 ```tsx
-import { observable } from '@anchor/react/components';
-import { useException } from '@anchor/react';
+import { observable } from '@anchorlib/react/components';
+import { useException } from '@anchorlib/react';
 
 const EditProfile = observable(() => {
   // Capture validation errors for the 'state' object
@@ -117,7 +117,7 @@ const EditProfile = observable(() => {
 Combine immutability with schema validation for maximum data integrity:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod';
 
 const SettingsSchema = z.object({
@@ -155,7 +155,7 @@ user experience by guiding them towards valid input.
 Anchor provides excellent TypeScript support for compile-time type checking:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 interface User {
   id: number;
@@ -187,7 +187,7 @@ const userState = anchor<User>({
 Anchor supports nested schema validation for complex state structures:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod';
 
 const AddressSchema = z.object({
@@ -225,7 +225,7 @@ const userState = anchor(
 Validate arrays and their contents with Anchor:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod';
 
 const TagSchema = z.object({
@@ -259,7 +259,7 @@ const postState = anchor(
 Create custom validation logic for domain-specific requirements:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod';
 
 // Custom validation for password strength

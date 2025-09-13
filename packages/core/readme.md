@@ -1,4 +1,4 @@
-# @anchor/core
+# @anchorlib/core
 
 Reactive State Management for JavaScript with a focus on simplicity and developer experience.
 
@@ -16,7 +16,7 @@ Reactive State Management for JavaScript with a focus on simplicity and develope
 ## Installation
 
 ```bash
-npm install @anchor/core
+npm install @anchorlib/core
 ```
 
 ## Documentation
@@ -26,7 +26,7 @@ For full documentation, visit [Anchor Core Documentation](https://beerush-id.git
 ## Quick Start
 
 ```javascript
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 // Create a reactive state object
 const state = anchor({

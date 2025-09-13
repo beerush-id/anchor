@@ -27,8 +27,8 @@ snapshot using a transform function.
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useSnapshot } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useSnapshot } from '@anchorlib/react';
 
 const StateViewer = () => {
   const [user] = useAnchor({
@@ -67,8 +67,8 @@ export default StateViewer;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useSnapshot } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useSnapshot } from '@anchorlib/react';
 
 const UserProfile = () => {
   const [user] = useAnchor({
@@ -141,7 +141,7 @@ A tuple containing:
 
 ```tsx
 import React, { useState } from 'react';
-import { useMicrotask } from '@anchor/react';
+import { useMicrotask } from '@anchorlib/react';
 
 const SearchComponent = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,7 +182,7 @@ export default SearchComponent;
 
 ```tsx
 import React, { useState } from 'react';
-import { useMicrotask } from '@anchor/react';
+import { useMicrotask } from '@anchorlib/react';
 
 const ResizeHandler = () => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -250,7 +250,7 @@ A tuple containing:
 
 ```tsx
 import React, { useState } from 'react';
-import { useMicrobatch } from '@anchor/react';
+import { useMicrobatch } from '@anchorlib/react';
 
 const NotificationBatcher = () => {
   const [notifications, setNotifications] = useState([]);
@@ -334,7 +334,7 @@ when the provided dependencies change.
 
 ```tsx
 import React, { useState } from 'react';
-import { useStableRef } from '@anchor/react';
+import { useStableRef } from '@anchorlib/react';
 
 const StableRefExample = () => {
   const [count, setCount] = useState(0);
@@ -382,7 +382,7 @@ core library to generate a unique ID that remains stable across re-renders.
 
 ```tsx
 import React, { useState } from 'react';
-import { useShortId } from '@anchor/react';
+import { useShortId } from '@anchorlib/react';
 
 const IdGenerator = () => {
   const [items, setItems] = useState([]);
@@ -439,7 +439,7 @@ intercept and modify the value being set through a handler function.
 
 ```tsx
 import React, { useState } from 'react';
-import { useRefTrap } from '@anchor/react';
+import { useRefTrap } from '@anchorlib/react';
 
 const RefTrapExample = () => {
   const [messages, setMessages] = useState([]);
@@ -512,7 +512,7 @@ Sets the development mode and strict mode flags.
 
 ```tsx
 import React from 'react';
-import { setDevMode } from '@anchor/react';
+import { setDevMode } from '@anchorlib/react';
 
 // Enable development mode
 setDevMode(true);
@@ -553,7 +553,7 @@ Checks if development mode is enabled.
 
 ```tsx
 import React from 'react';
-import { isDevMode } from '@anchor/react';
+import { isDevMode } from '@anchorlib/react';
 
 const DebugInfo = () => {
   if (!isDevMode()) {
@@ -592,7 +592,7 @@ Checks if strict mode is enabled.
 
 ```tsx
 import React from 'react';
-import { isStrictMode } from '@anchor/react';
+import { isStrictMode } from '@anchorlib/react';
 
 const StrictModeWarning = () => {
   if (!isStrictMode()) {
@@ -636,7 +636,7 @@ Sets the debug renderer flags to visualize component renders.
 
 ```tsx
 import React from 'react';
-import { setDebugRenderer } from '@anchor/react';
+import { setDebugRenderer } from '@anchorlib/react';
 
 // Enable debug renderer with 2 second highlight duration
 setDebugRenderer(true, 2000);
@@ -674,7 +674,7 @@ Checks if debug renderer is enabled.
 
 ```tsx
 import React from 'react';
-import { isDebugRenderer } from '@anchor/react';
+import { isDebugRenderer } from '@anchorlib/react';
 
 const DebugRendererIndicator = () => {
   if (!isDebugRenderer()) {
@@ -716,7 +716,7 @@ Highlights an element to visualize when it's rendered or updated.
 
 ```tsx
 import React, { useRef, useEffect } from 'react';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 const HighlightedComponent = () => {
   const elementRef = useRef(null);
@@ -764,7 +764,7 @@ be passed down to native DOM elements or other components.
 
 ```tsx
 import React from 'react';
-import { cleanProps } from '@anchor/react';
+import { cleanProps } from '@anchorlib/react';
 
 const ParentComponent = (props) => {
   // Clean props before passing to child components
@@ -818,8 +818,8 @@ with the picked properties and their values, and an array of the values correspo
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { pickValues } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { pickValues } from '@anchorlib/react';
 
 const UserProfile = () => {
   const [user] = useAnchor({

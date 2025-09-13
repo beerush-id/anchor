@@ -1,4 +1,4 @@
-# @anchor/react
+# @anchorlib/react
 
 React integration for the Anchor reactive state management library.
 
@@ -14,7 +14,7 @@ React integration for the Anchor reactive state management library.
 ## Installation
 
 ```bash
-npm install @anchor/react
+npm install @anchorlib/react
 ```
 
 ## Documentation
@@ -24,7 +24,7 @@ For full documentation, visit [Anchor for React](https://beerush-id.github.io/an
 ## Quick Start
 
 ```jsx
-import { useAnchor } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
 
 function Counter() {
   const state = useAnchor({

@@ -10,7 +10,7 @@ import {
   softEqual,
   type State,
   type StateBaseOptions,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import type { AnchorState, ExceptionList, FormState } from './types.js';
 import { useInherit } from './anchor.js';
 import { useSnapshot, useStableRef } from './hooks.js';

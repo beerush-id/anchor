@@ -3,8 +3,8 @@ import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { itemsWriter, statsWriter } from '@lib/todo.js';
-import { shortId } from '@anchor/core';
-import { debugRender } from '@anchor/react';
+import { shortId } from '@anchorlib/core';
+import { debugRender } from '@anchorlib/react';
 
 export const TodoForm: FC = () => {
   const ref = useRef(null);

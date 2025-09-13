@@ -4,24 +4,24 @@ This guide will quickly get you up and running with Anchor in your Vue project. 
 
 ## Installation
 
-To begin, install the `@anchor/vue` package using your preferred package manager:
+To begin, install the `@anchorlib/vue` package using your preferred package manager:
 
 ::: code-group
 
 ```bash [npm]
-npm install @anchor/vue
+npm install @anchorlib/vue
 ```
 
 ```bash [Yarn]
-yarn add @anchor/vue
+yarn add @anchorlib/vue
 ```
 
 ```bash [pnpm]
-pnpm add @anchor/vue
+pnpm add @anchorlib/vue
 ```
 
 ```bash [Bun]
-bun add @anchor/vue
+bun add @anchorlib/vue
 ```
 
 :::
@@ -32,7 +32,7 @@ Let's build a simple counter to see how Anchor works with Vue:
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 // Create your reactive state with a simple primitive value
 const count = anchorRef(0);
@@ -58,7 +58,7 @@ You can also work with objects and nested structures just as easily:
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const user = anchorRef({ name: 'John Doe', age: 30 });
 
@@ -82,7 +82,7 @@ One of Anchor's key advantages over Vue's built-in reactivity is its recursive r
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const user = anchorRef({
   profile: {
@@ -124,7 +124,7 @@ One of Anchor's most powerful features is the ability to observe only specific p
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 const appState = anchorRef({
   ui: {
@@ -175,7 +175,7 @@ Here's a more complex example showing how to work with forms using Anchor:
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const formState = anchorRef({
   user: {

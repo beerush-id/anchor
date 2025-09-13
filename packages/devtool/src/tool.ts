@@ -6,7 +6,7 @@ import {
   microbatch,
   microtask,
   type StateMetadata,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { StateNode } from './node.js';
 
 export class StateDevTool implements DevTool {

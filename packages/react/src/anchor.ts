@@ -10,7 +10,7 @@ import {
   type State,
   type StateBaseOptions,
   type StateOptions,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { useEffect } from 'react';
 import type { AnchorState } from './types.js';
 import { useStableRef } from './hooks.js';

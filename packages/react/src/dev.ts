@@ -1,4 +1,4 @@
-import { microbatch } from '@anchor/core';
+import { microbatch } from '@anchorlib/core';
 import type { RefObject } from 'react';
 
 export let DEV_MODE = true;

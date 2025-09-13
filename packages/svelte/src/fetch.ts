@@ -1,4 +1,4 @@
-import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchor/core';
+import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchorlib/core';
 import type { ConstantRef } from './types.js';
 import { constantRef } from './ref.js';
 

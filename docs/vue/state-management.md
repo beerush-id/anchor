@@ -9,7 +9,7 @@ State management in Anchor for Vue is designed to work seamlessly with Vue's rea
 In Anchor, you can declare state anywhere in your application and share it across components. This is a significant improvement over Vue's typical approach where state needs to be explicitly passed as props or managed through a global store.
 
 ```js
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Global state that can be imported anywhere
 export const userState = anchor({
@@ -24,7 +24,7 @@ For component-specific state, you can create local state within your Vue compone
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 // Local state that's scoped to this component
 const counter = anchorRef(0);
@@ -50,7 +50,7 @@ Global states are declared outside component bodies and persist throughout the a
 - Complex business logic that needs to be accessed from different parts of the application
 
 ```js
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 export const appState = anchor({
   currentUser: null,
@@ -65,7 +65,7 @@ Local states are declared inside component bodies and are primarily used for UI 
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 // Component-scoped state
 const tabState = anchorRef({
@@ -81,7 +81,7 @@ One of the key advantages of Anchor over Vue's built-in reactivity is its recurs
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const complexState = anchorRef({
   user: {
@@ -111,7 +111,7 @@ While Anchor allows direct mutations for convenience, it also provides powerful 
 
 ```vue
 <script setup>
-import { immutableRef, writableRef } from '@anchor/vue';
+import { immutableRef, writableRef } from '@anchorlib/vue';
 
 // Create an immutable state
 const immutableState = immutableRef({
@@ -135,7 +135,7 @@ Anchor provides several ways to observe state changes, which is more flexible th
 
 ```vue
 <script setup>
-import { anchorRef, observedRef, derivedRef } from '@anchor/vue';
+import { anchorRef, observedRef, derivedRef } from '@anchorlib/vue';
 
 const items = anchorRef([
   { id: 1, name: 'Item 1', completed: false },
@@ -171,7 +171,7 @@ Create specific observers for different parts of your state to minimize unnecess
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchor/vue';
+import { anchorRef, observedRef } from '@anchorlib/vue';
 
 const state = anchorRef({
   user: { name: 'John' },
@@ -190,7 +190,7 @@ For global state that's shared across many components, consider using immutable 
 
 ```js
 // lib/App.js
-import { immutableRef } from '@anchor/vue';
+import { immutableRef } from '@anchorlib/vue';
 
 export const globalState = immutableRef({
   config: { theme: 'dark' },

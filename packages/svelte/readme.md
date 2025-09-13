@@ -1,4 +1,4 @@
-# @anchor/svelte
+# @anchorlib/svelte
 
 Svelte integration for the Anchor reactive state management library.
 
@@ -14,7 +14,7 @@ Svelte integration for the Anchor reactive state management library.
 ## Installation
 
 ```bash
-npm install @anchor/svelte
+npm install @anchorlib/svelte
 ```
 
 ## Documentation
@@ -25,7 +25,7 @@ For full documentation, visit [Anchor for Svelte](https://beerush-id.github.io/a
 
 ```svelte
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   // Create a reactive state object
   const state = anchorRef({

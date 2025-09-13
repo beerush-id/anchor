@@ -7,7 +7,7 @@ import {
   microbatch,
   setTracker,
   type StateObserver,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import type { ConstantRef, StateRef, VariableRef } from './types.js';
 
 export const REF_REGISTRY = new WeakMap<Ref, StateRef<unknown>>();

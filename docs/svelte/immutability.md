@@ -60,7 +60,7 @@ With Anchor, you can directly mutate state while maintaining immutability guaran
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const user = anchorRef({
     profile: {
@@ -84,7 +84,7 @@ You can create truly immutable states that prevent any direct mutations:
 
 ```sveltehtml
 <script>
-  import { immutableRef, writableRef } from '@anchor/svelte';
+  import { immutableRef, writableRef } from '@anchorlib/svelte';
 
   // Create an immutable state
   const userState = immutableRef({
@@ -121,7 +121,7 @@ Anchor's approach eliminates the deep cloning overhead of traditional immutable 
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const largeDataSet = anchorRef({
     items: Array(10000).fill().map((_, i) => ({
@@ -146,7 +146,7 @@ With controlled mutations, you always know what can change and when:
 
 ```sveltehtml
 <script>
-  import { immutableRef, writableRef } from '@anchor/svelte';
+  import { immutableRef, writableRef } from '@anchorlib/svelte';
 
   const appState = immutableRef({
     user: { name: 'John' },
@@ -180,7 +180,7 @@ Immutable states make it easier to track changes and debug issues:
 
 ```sveltehtml
 <script>
-  import { immutableRef, writableRef } from '@anchor/svelte';
+  import { immutableRef, writableRef } from '@anchorlib/svelte';
 
   const state = immutableRef({
     counter: 0,
@@ -206,7 +206,7 @@ For global state that's shared across many components, use immutable states:
 ```sveltehtml
 <!-- lib/App.svelte -->
 <script module>
-  import { immutableRef } from '@anchor/svelte';
+  import { immutableRef } from '@anchorlib/svelte';
 
   export const globalState = immutableRef({
     currentUser: null,
@@ -224,7 +224,7 @@ Create writers with specific contracts to limit what can be mutated:
 
 ```sveltehtml
 <script>
-  import { immutableRef, writableRef } from '@anchor/svelte';
+  import { immutableRef, writableRef } from '@anchorlib/svelte';
 
   const state = immutableRef({
     user: { name: 'John' },
@@ -245,7 +245,7 @@ Use schema validation with immutable states to ensure data integrity:
 
 ```sveltehtml
 <script>
-  import { immutableRef } from '@anchor/svelte';
+  import { immutableRef } from '@anchorlib/svelte';
   import { z } from 'zod';
 
   const UserSchema = z.object({

@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { anchor, captureStack, derive, type Linkable, type State } from '@anchor/core';
+import { anchor, captureStack, derive, type Linkable, type State } from '@anchorlib/core';
 import type { TransformFn } from './types.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
 import { depsChanged, isMutationOf } from './utils.js';

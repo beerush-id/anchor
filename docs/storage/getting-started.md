@@ -15,24 +15,24 @@ The storage module offers several storage mechanisms:
 
 ## **Installation**
 
-The storage module is part of the `@anchor/storage` package:
+The storage module is part of the `@anchorlib/storage` package:
 
 ::: code-group
 
 ```sh [Bun]
-bun add @anchor/storage
+bun add @anchorlib/storage
 ```
 
 ```sh [NPM]
-npm install @anchor/storage
+npm install @anchorlib/storage
 ```
 
 ```sh [Yarn]
-yarn add @anchor/storage
+yarn add @anchorlib/storage
 ```
 
 ```sh [PNPM]
-pnpm add @anchor/storage
+pnpm add @anchorlib/storage
 ```
 
 :::
@@ -44,7 +44,7 @@ pnpm add @anchor/storage
 Browser session storage that automatically syncs with `sessionStorage` and provides reactive updates.
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 const userSession = session('user', { id: null, name: '' });
 userSession.id = 123;
@@ -57,7 +57,7 @@ userSession.name = 'John';
 Persistent storage that automatically syncs with `localStorage` for data that persists across browser sessions.
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 const userSettings = persistent('user-settings', { theme: 'light', notifications: true });
 userSettings.theme = 'dark';
@@ -73,8 +73,8 @@ IndexedDB implementations providing robust client-side storage with advanced que
 A key-value store backed by IndexedDB with optimistic concurrency control.
 
 ```typescript
-import { derive } from '@anchor/core';
-import { createKVStore } from '@anchor/storage/db';
+import { derive } from '@anchorlib/core';
+import { createKVStore } from '@anchorlib/storage/db';
 
 // Create a new KV store
 const kvStore = createKVStore<{ name: string }>('my-kv-store');
@@ -94,7 +94,7 @@ const unsubscribe = derive(user, (event) => {
 Table-based IndexedDB storage with indexing support for complex queries.
 
 ```typescript
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type User = {
   name: string;

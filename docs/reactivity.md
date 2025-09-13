@@ -32,7 +32,7 @@ When you access a property of a reactive state object within an observer context
 dependency. Later, when that property is modified, only the relevant observers are re-executed.
 
 ```typescript
-import { anchor, createObserver, withinObserver } from '@anchor/core';
+import { anchor, createObserver, withinObserver } from '@anchorlib/core';
 
 const user = anchor({
   profile: {
@@ -92,7 +92,7 @@ to being tracked. To bypass observation, you can use the `outsideObserver` metho
 ::: details Bypass Sample
 
 ```typescript
-import { anchor, createObserver, withinObserver, outsideObserver } from '@anchor/core';
+import { anchor, createObserver, withinObserver, outsideObserver } from '@anchorlib/core';
 
 const state = anchor({
   profile: {
@@ -154,7 +154,7 @@ Derivation is a powerful mechanism for creating reactions to state changes. It a
 reaction to state changes.
 
 ```typescript
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 const state = anchor({
   count: 0,
@@ -194,7 +194,7 @@ You can pipe changes from one state to another, optionally transforming the data
 ::: details Piping Sample
 
 ```typescript
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 const source = anchor({ count: 0 });
 const target = anchor({ value: 0 });
@@ -225,7 +225,7 @@ Anchor provides built-in history tracking that enables undo/redo functionality w
 ### Basic History Usage
 
 ```typescript
-import { anchor, history } from '@anchor/core';
+import { anchor, history } from '@anchorlib/core';
 
 const state = anchor({
   todos: [{ id: 1, text: 'Learn Anchor', done: false }],

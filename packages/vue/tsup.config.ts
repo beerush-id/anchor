@@ -26,6 +26,6 @@ export default defineConfig({
   treeshake: true,
   sourcemap: true,
   platform: 'browser',
-  external: ['@anchor/core', '@anchor/storage', 'vue'],
+  external: ['@anchorlib/core', '@anchorlib/storage', 'vue'],
   esbuildPlugins: [selResolve],
 });

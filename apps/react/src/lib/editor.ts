@@ -1,4 +1,4 @@
-import { anchor, shortId } from '@anchor/core';
+import { anchor, shortId } from '@anchorlib/core';
 
 export const TOOL_ICON_SIZE = 16;
 

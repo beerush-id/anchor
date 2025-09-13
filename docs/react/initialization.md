@@ -25,7 +25,7 @@ Global states are ideal for:
 
 ```ts
 // lib/app.ts
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Global state is declared outside component body.
 export const appState = anchor.immutable({
@@ -64,7 +64,7 @@ Local states are ideal for:
 
 ```tsx
 // components/UserProfile.tsx
-import { useAnchor } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
 
 export const UserProfile = () => {
   // Local state is declared inside component body.
@@ -101,7 +101,7 @@ To use `useAnchor`, call it within your component body with an initial object va
 ::: details Object State {open}
 
 ```jsx
-import { useAnchor } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
 
 const UserProfile = () => {
   const [user] = useAnchor({
@@ -130,7 +130,7 @@ const UserProfile = () => {
 ::: details With Zod Schema {open}
 
 ```jsx
-import { useAnchor } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -190,7 +190,7 @@ strings, and booleans.
 ::: details Primitive State {open}
 
 ```jsx
-import { useVariable } from '@anchor/react';
+import { useVariable } from '@anchorlib/react';
 
 const Counter = () => {
   const [count] = useVariable(0);
@@ -215,7 +215,7 @@ const Counter = () => {
 ::: details Computed Primitive {open}
 
 ```jsx
-import { useVariable } from '@anchor/react';
+import { useVariable } from '@anchorlib/react';
 
 const ProductCard = ({ user }) => {
   // The value is automatically updated when user changes, or manually assigned.
@@ -251,7 +251,7 @@ for computed values that depend on props or other changing values.
 ::: details Computed Constant {open}
 
 ```jsx
-import { useConstant } from '@anchor/react';
+import { useConstant } from '@anchorlib/react';
 
 const UserProfile = ({ userId }) => {
   const [apiEndpoint] = useConstant(() => `/api/users/${userId}/profile`, [userId]);
@@ -263,7 +263,7 @@ const UserProfile = ({ userId }) => {
 ::: details Complex Computed Value {open}
 
 ```jsx
-import { useConstant } from '@anchor/react';
+import { useConstant } from '@anchorlib/react';
 
 const DataProcessor = ({ rawData, multiplier }) => {
   const [processedData] = useConstant(() => {
@@ -304,7 +304,7 @@ requires special writers for mutations.
 ::: details Immutable Data {open}
 
 ```jsx
-import { useImmutable, useWriter } from '@anchor/react';
+import { useImmutable, useWriter } from '@anchorlib/react';
 
 const Dashboard = () => {
   const [reportData] = useImmutable({
@@ -351,7 +351,7 @@ immutable states.
 ::: details Controlled Mutations {open}
 
 ```jsx
-import { useImmutable, useWriter } from '@anchor/react';
+import { useImmutable, useWriter } from '@anchorlib/react';
 
 const DocumentEditor = () => {
   const [document] = useImmutable({
@@ -408,7 +408,7 @@ specific structure and validates data according to the schema.
 ::: details Form Model {open}
 
 ```jsx
-import { useModel } from '@anchor/react';
+import { useModel } from '@anchorlib/react';
 import { z } from 'zod';
 
 const userFormSchema = z.object({
@@ -460,7 +460,7 @@ and requires special writers for mutations.
 ::: details Immutable Model {open}
 
 ```jsx
-import { useImmutableModel, useWriter } from '@anchor/react';
+import { useImmutableModel, useWriter } from '@anchorlib/react';
 import { z } from 'zod';
 
 const configSchema = z.object({
@@ -514,7 +514,7 @@ Creates a reactive ordered list state that automatically maintains sort order ba
 ::: details Sorted List {open}
 
 ```jsx
-import { useOrderedList } from '@anchor/react';
+import { useOrderedList } from '@anchorlib/react';
 
 const TaskList = () => {
   const [tasks] = useOrderedList(
@@ -565,7 +565,7 @@ state.
 ::: details Document History {open}
 
 ```jsx
-import { useAnchor, useHistory } from '@anchor/react';
+import { useAnchor, useHistory } from '@anchorlib/react';
 
 const DocumentEditor = () => {
   const [document] = useAnchor({
@@ -627,7 +627,7 @@ and data updates automatically.
 ::: details Data Fetching {open}
 
 ```jsx
-import { useFetch } from '@anchor/react';
+import { useFetch } from '@anchorlib/react';
 
 const UserList = () => {
   const [users] = useFetch([], {
@@ -651,7 +651,7 @@ const UserList = () => {
 ::: details POST Request {open}
 
 ```jsx
-import { useFetch } from '@anchor/react';
+import { useFetch } from '@anchorlib/react';
 
 const UserCreator = () => {
   const [response] = useFetch(null, {
@@ -691,7 +691,7 @@ Provides reactive streaming data fetch functionality, updating incrementally as 
 ::: details Streaming Data {open}
 
 ```jsx
-import { useStream } from '@anchor/react';
+import { useStream } from '@anchorlib/react';
 
 const EventFeed = () => {
   const [events] = useStream([], {

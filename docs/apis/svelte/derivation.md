@@ -22,7 +22,7 @@ function derivedRef<T, R>(state: T | VariableRef<T>, transform: (current: T) => 
 
 ```svelte
 <script>
-  import { anchorRef, derivedRef } from '@anchor/svelte';
+  import { anchorRef, derivedRef } from '@anchorlib/svelte';
 
   const count = anchorRef(0);
 

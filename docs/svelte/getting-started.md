@@ -4,24 +4,24 @@ This guide will quickly get you up and running with Anchor in your Svelte projec
 
 ## Installation
 
-To begin, install the `@anchor/svelte` package using your preferred package manager:
+To begin, install the `@anchorlib/svelte` package using your preferred package manager:
 
 ::: code-group
 
 ```bash [npm]
-npm install @anchor/svelte
+npm install @anchorlib/svelte
 ```
 
 ```bash [Yarn]
-yarn add @anchor/svelte
+yarn add @anchorlib/svelte
 ```
 
 ```bash [pnpm]
-pnpm add @anchor/svelte
+pnpm add @anchorlib/svelte
 ```
 
 ```bash [Bun]
-bun add @anchor/svelte
+bun add @anchorlib/svelte
 ```
 
 :::
@@ -33,7 +33,7 @@ Let's build a simple counter to see how Anchor works with Svelte:
 ```sveltehtml
 
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   // Create your reactive state with a simple primitive value
   let count = anchorRef(0);
@@ -53,7 +53,7 @@ You can also work with objects and nested structures just as easily:
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const user = anchorRef({ name: 'John Doe', age: 30 });
 </script>
@@ -74,7 +74,7 @@ One of Anchor's key advantages over Svelte's built-in stores is its recursive re
 ```sveltehtml
 
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const user = anchorRef({
     profile: {
@@ -117,7 +117,7 @@ One of Anchor's most powerful features is the ability to observe only specific p
 ```sveltehtml
 
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const appState = anchorRef({
     ui: {
@@ -166,7 +166,7 @@ Here's a more complex example showing how to work with forms using Anchor:
 ```sveltehtml
 
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const formState = anchorRef({
     user: {

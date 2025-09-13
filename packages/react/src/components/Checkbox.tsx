@@ -1,6 +1,6 @@
 import type { Bindable } from '@base/index.js';
 import { debugRender, useValue } from '@base/index.js';
-import type { WritableKeys } from '@anchor/core';
+import type { WritableKeys } from '@anchorlib/core';
 import type { InputProps } from './Types.js';
 import { useRef } from 'react';
 

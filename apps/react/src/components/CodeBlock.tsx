@@ -1,7 +1,7 @@
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
 import { type FC, useRef } from 'react';
-import { debugRender, useObserved } from '@anchor/react';
+import { debugRender, useObserved } from '@anchorlib/react';
 import { LoaderCircle } from 'lucide-react';
 import { isMobile } from '@lib/nav.js';
 

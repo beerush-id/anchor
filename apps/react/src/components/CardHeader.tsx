@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const ref = useRef(null);

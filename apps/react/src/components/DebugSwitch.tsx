@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { debugRender, isDebugRenderer, setDebugRenderer } from '@anchor/react';
+import { debugRender, isDebugRenderer, setDebugRenderer } from '@anchorlib/react';
 import { Bug, BugOff } from 'lucide-react';
 import { Tooltip } from './Tooltip.js';
 

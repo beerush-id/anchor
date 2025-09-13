@@ -7,7 +7,7 @@ import {
   type Row,
   type RowListState,
   type RowState,
-} from '@anchor/storage/db';
+} from '@anchorlib/storage/db';
 import { onUnmounted } from 'vue';
 import { type ConstantRef, constantRef } from '@base/index.js';
 

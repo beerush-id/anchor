@@ -2,7 +2,7 @@ import { type FC, useRef } from 'react';
 import { TodoItem } from './TodoItem.js';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { type ITodoList, todoApp } from '@lib/todo.js';
-import { debugRender, useObservedList } from '@anchor/react';
+import { debugRender, useObservedList } from '@anchorlib/react';
 
 export const TodoList: FC = () => {
   const ref = useRef(null);

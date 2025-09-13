@@ -1,7 +1,7 @@
-import { debugRender, useObserved, useValueIs } from '@anchor/react';
+import { debugRender, useObserved, useValueIs } from '@anchorlib/react';
 import { type CssNode, editorApp, editorWriter, parseAllCss, type StyleVariant } from '@lib/editor.js';
 import { type FC, useRef } from 'react';
-import { type Immutable } from '@anchor/core';
+import { type Immutable } from '@anchorlib/core';
 
 export default function EditorNodeList() {
   const ref = useRef<HTMLDivElement>(null);

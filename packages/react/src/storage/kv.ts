@@ -1,4 +1,4 @@
-import { kv, type KVState, type Storable } from '@anchor/storage/db';
+import { kv, type KVState, type Storable } from '@anchorlib/storage/db';
 import type { ConstantState } from '@base/index.js';
 import { useConstant } from '@base/index.js';
 

@@ -1,4 +1,4 @@
-import { setDevTool } from '@anchor/core';
+import { setDevTool } from '@anchorlib/core';
 import { StateDevTool } from '../tool.js';
 import type { FC } from 'react';
 

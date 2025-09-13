@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "@anchor/devtool",
+  "name": "@anchorlib/devtool",
   "version": "1.0.0-beta.1",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
@@ -33,7 +33,7 @@
     "typescript-eslint": "^8.27.0"
   },
   "peerDependencies": {
-    "@anchor/core": "workspace:*",
+    "@anchorlib/core": "workspace:*",
     "react": "^19.1.1",
     "typescript": "^5.8.2"
   },

@@ -1,5 +1,5 @@
 import type { Bindable } from '@base/index.js';
-import type { WritableKeys } from '@anchor/core';
+import type { WritableKeys } from '@anchorlib/core';
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, RefObject, SelectHTMLAttributes } from 'react';
 
 export type BindProps<T extends Bindable, K extends WritableKeys<T>> = {

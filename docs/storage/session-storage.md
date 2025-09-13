@@ -57,7 +57,7 @@ type leave = <T>(state: T) => void;
 ### **Basic Usage**
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 // Create a session storage for temporary data
 const sessionData = session('session-data', {
@@ -78,7 +78,7 @@ sessionData.searchQuery = 'Anchor';
 ### **Form State Persistence**
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 // Persist form state during a session
 const formState = session('contact-form', {
@@ -99,7 +99,7 @@ function handleInputChange(field, value) {
 ### **Shopping Cart Example**
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 // Temporary shopping cart that persists during the session
 const cart = session('shopping-cart', {
@@ -129,7 +129,7 @@ function applyCoupon(code) {
 ### **Using with Anchor Options**
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 // Create session storage with Anchor options
 const uiState = session(
@@ -155,7 +155,7 @@ uiState.activeTab = 'profile';
 ### **Managing Storage Lifecycle**
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 // Create session storage
 const appState = session('app-session', {
@@ -244,7 +244,7 @@ const uiPreferences = session('ui-preferences', {
 Disconnect from storage when components are unmounted or no longer needed:
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 class FormComponent {
   constructor() {
@@ -266,7 +266,7 @@ class FormComponent {
 Unlike localStorage, sessionStorage is isolated to each tab. However, Anchor's reactive system still provides benefits:
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 // Each tab will have its own independent session storage
 const tabState = session('tab-state', {

@@ -1,6 +1,6 @@
 import { type FC, useRef } from 'react';
 import type { ITodoStats } from '@lib/todo.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 
 export const ClassicTodoStats: FC<{ stats: ITodoStats }> = ({ stats }) => {
   const ref = useRef(null);

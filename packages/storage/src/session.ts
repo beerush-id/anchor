@@ -9,7 +9,7 @@ import {
   type State,
   type StateOptions,
   type StateUnsubscribe,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { isBrowser } from '@beerush/utils';
 import type { SessionFn } from './types.js';
 

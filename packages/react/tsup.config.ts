@@ -26,6 +26,6 @@ export default defineConfig({
   treeshake: true,
   sourcemap: true,
   platform: 'browser',
-  external: ['@anchor/core', '@anchor/storage', 'react'],
+  external: ['@anchorlib/core', '@anchorlib/storage', 'react'],
   esbuildPlugins: [selResolve],
 });

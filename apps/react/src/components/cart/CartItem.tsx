@@ -1,9 +1,9 @@
 import { type FC, type KeyboardEventHandler, memo, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { debugRender, useInherit } from '@anchor/react';
-import { Input, observable } from '@anchor/react/components';
-import { setDebugger } from '@anchor/core';
+import { debugRender, useInherit } from '@anchorlib/react';
+import { Input, observable } from '@anchorlib/react/components';
+import { setDebugger } from '@anchorlib/core';
 import { isMobile } from '@lib/nav.js';
 
 export type CartItemType = {

@@ -3,7 +3,7 @@
 	import { flashNode } from '../../node.svelte.js';
 	import { type TodoRecList, todoTable } from '../../todos.js';
 	import type { KeyboardEventHandler } from 'svelte/elements';
-	import { anchorRef } from '@anchor/svelte';
+	import { anchorRef } from '@anchorlib/svelte';
 
 	let newText = $state('');
 

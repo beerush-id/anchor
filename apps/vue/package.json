@@ -10,7 +10,7 @@
     "format": "prettier --write --config ./.prettierrc ."
   },
   "dependencies": {
-    "@anchor/vue": "workspace:*",
+    "@anchorlib/vue": "workspace:*",
     "vue": "^3.5.18"
   },
   "devDependencies": {

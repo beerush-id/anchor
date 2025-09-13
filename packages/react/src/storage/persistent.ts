@@ -1,7 +1,7 @@
-import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import type { ConstantState } from '@base/index.js';
 import { useConstant } from '@base/index.js';
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 /**
  * A React hook that creates a persistent state variable using the Anchor storage system.

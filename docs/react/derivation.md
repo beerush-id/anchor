@@ -36,8 +36,8 @@ Derives a computed value from a reactive state. The component re-renders automat
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useDerived } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useDerived } from '@anchorlib/react';
 
 const UserProfile = () => {
   const [user] = useAnchor({
@@ -71,8 +71,8 @@ const UserProfile = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useDerived } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useDerived } from '@anchorlib/react';
 
 const TodoList = () => {
   const [todos] = useAnchor([
@@ -139,8 +139,8 @@ Derives a specific property's value from a reactive state. The component re-rend
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useValue } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useValue } from '@anchorlib/react';
 
 const UserDashboard = () => {
   const [user] = useAnchor({
@@ -205,8 +205,8 @@ property changes.
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useValueIs } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useValueIs } from '@anchorlib/react';
 
 const TaskManager = () => {
   const [task] = useAnchor({
@@ -280,8 +280,8 @@ state. This is useful for scenarios where one state should always reflect a tran
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { usePipe } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { usePipe } from '@anchorlib/react';
 
 const InputMirror = () => {
   const [inputState] = useAnchor({ text: '' });
@@ -312,8 +312,8 @@ const InputMirror = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { usePipe } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { usePipe } from '@anchorlib/react';
 
 const DataProcessor = () => {
   const [rawData] = useAnchor({
@@ -413,8 +413,8 @@ automatically propagate to the other, with optional transformation functions for
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useBind } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useBind } from '@anchorlib/react';
 
 const BidirectionalSync = () => {
   const [stateA] = useAnchor({ value: 'Hello' });
@@ -451,8 +451,8 @@ const BidirectionalSync = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useBind } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useBind } from '@anchorlib/react';
 
 const UnitConverter = () => {
   const [celsius] = useAnchor({ temperature: 0 });
@@ -520,8 +520,8 @@ Provides a comprehensive form management solution that automatically pipes valid
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useFormWriter } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useFormWriter } from '@anchorlib/react';
 
 const UserForm = () => {
   const [user] = useAnchor({
@@ -607,7 +607,7 @@ automatic cleanup capabilities.
 
 ```tsx
 import React, { useState } from 'react';
-import { useAction } from '@anchor/react';
+import { useAction } from '@anchorlib/react';
 
 const AnimatedElement = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -661,7 +661,7 @@ const AnimatedElement = () => {
 
 ```tsx
 import React from 'react';
-import { useAction } from '@anchor/react';
+import { useAction } from '@anchorlib/react';
 
 const ScrollDetector = () => {
   const scrollRef = useAction((element) => {
@@ -734,8 +734,8 @@ it ideal for integrating with imperative APIs or external libraries that rely on
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useDerivedRef } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useDerivedRef } from '@anchorlib/react';
 
 // Mock a third-party chart library function
 const updateChart = (element, data) => {
@@ -783,8 +783,8 @@ const DataChart = () => {
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { useDerivedRef } from '@anchor/react';
+import { useAnchor } from '@anchorlib/react';
+import { useDerivedRef } from '@anchorlib/react';
 
 const ScrollingText = () => {
   const [textState] = useAnchor({

@@ -3,7 +3,7 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { Button } from '../Button.js';
-import { useObserved } from '@anchor/react';
+import { useObserved } from '@anchorlib/react';
 import { ReceiptIcon } from 'lucide-react';
 
 export const CartSummary: FC<{ items: CartItemType[] }> = ({ items }) => {

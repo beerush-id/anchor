@@ -1,12 +1,12 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
 import { Button } from '../Button.js';
-import { Input, observe } from '@anchor/react/components';
+import { Input, observe } from '@anchorlib/react/components';
 import { Card } from '../Card.js';
-import { debugRender, useFormWriter } from '@anchor/react';
+import { debugRender, useFormWriter } from '@anchorlib/react';
 import { profileWriter } from '@lib/auth.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { isMobile } from '@lib/nav.js';
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 export const AuthForm: FC<{ className?: string }> = ({ className }) => {
   const formRef = useRef(null);

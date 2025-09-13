@@ -1,4 +1,4 @@
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { useEffect } from 'react';
 
 export const classicTodoStats = anchor(

@@ -20,7 +20,7 @@ With Anchor, you can observe specific parts of your state rather than entire obj
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const userState = anchorRef({
     profile: {
@@ -62,7 +62,7 @@ Anchor promotes the DSV pattern that clearly separates responsibilities:
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   // Data - reactive state that holds your application data
   const counterState = anchorRef({ count: 0 });
@@ -90,7 +90,7 @@ Only observing components re-render, eliminating unnecessary updates:
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const appState = anchorRef({
     ui: { loading: false },
@@ -117,7 +117,7 @@ No need for manual memoization in most cases:
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
 
   const products = anchorRef([
     { id: 1, name: 'Product 1', price: 100 },
@@ -139,7 +139,7 @@ Automatic cleanup of observers prevents memory leaks:
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchor/svelte';
+  import { anchorRef, observedRef } from '@anchorlib/svelte';
   import { onDestroy } from 'svelte';
 
   const state = anchorRef({ value: 0 });

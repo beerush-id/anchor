@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { type ComponentType } from 'react';
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { cleanProps, CLEANUP_DEBOUNCE_TIME, setDevMode } from '../src/index.js';
 import { mockObserverProp } from '../mocks/observable.js';
 import type { AnchoredProps } from '../src/types.js';
-import { observable, useObserverNode } from '../src/components/index.js';
+import { observable, useObserverNode } from '../src/components/index.js'; // Mock component for testing
 
 // Mock component for testing
 const TestComponent: ComponentType<{ value: number } & AnchoredProps> = (props) => {

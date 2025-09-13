@@ -70,7 +70,7 @@ way that is both powerful and practical.
 To use Anchor's immutability feature, you need to declare your state as immutable:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Create an immutable state
 const state = anchor.immutable({ count: 0, name: 'Anchor' });
@@ -81,7 +81,7 @@ const state = anchor.immutable({ count: 0, name: 'Anchor' });
 You can create immutable states in several ways:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Using the immutable method
 const immutableState = anchor.immutable({ count: 0, items: [] });
@@ -95,7 +95,7 @@ const anotherImmutableState = anchor({ count: 0, items: [] }, { immutable: true 
 Immutable states behave like regular objects but prevent direct mutations:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 const user = anchor.immutable({
   name: 'John Doe',
@@ -120,7 +120,7 @@ user.age = 31; // This will also be trapped
 To modify an immutable state, you need to create a writable version of the state by using the `writable` method:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Declare an immutable state.
 const immutableState = anchor.immutable({ count: 0, name: 'Anchor' });
@@ -164,7 +164,7 @@ changes. The purpose of immutable is to maintain the state stable, open contract
 :::
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 const immutableState = anchor.immutable({
   count: 0,

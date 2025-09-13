@@ -8,7 +8,7 @@ import {
   type ObjLike,
   type StateBaseOptions,
   type StateExceptionMap,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import type { ConstantRef, VariableRef } from './types.js';
 import { constantRef, REF_REGISTRY, variableRef } from './ref.js';
 import { isRef } from 'vue';

@@ -44,7 +44,7 @@ The options object extends the standard **`RequestInit`** interface and includes
 ### **Usage**
 
 ```typescript
-import { fetchState, derive } from '@anchor/core';
+import { fetchState, derive } from '@anchorlib/core';
 
 // Create a reactive fetch state
 const userState = fetchState(
@@ -96,7 +96,7 @@ request fails.
 ### **Usage**
 
 ```typescript
-import { fetchState } from '@anchor/core';
+import { fetchState } from '@anchorlib/core';
 
 const userState = fetchState(null, { url: '/api/users/1' });
 
@@ -121,7 +121,7 @@ The **`FetchStatus`** enum defines the possible states of a fetch request:
 ### **Fetching JSON Data**
 
 ```typescript
-import { fetchState } from '@anchor/core';
+import { fetchState } from '@anchorlib/core';
 
 interface User {
   id: number;
@@ -148,7 +148,7 @@ derive(userState, (state) => {
 ### **Posting Data**
 
 ```typescript
-import { fetchState } from '@anchor/core';
+import { fetchState } from '@anchorlib/core';
 
 interface User {
   id: number;
@@ -172,7 +172,7 @@ const createUserState = fetchState<User | null>(null, {
 ### **Error Handling**
 
 ```typescript
-import { fetchState, derive } from '@anchor/core';
+import { fetchState, derive } from '@anchorlib/core';
 
 const dataState = fetchState([], { url: '/api/data' });
 
@@ -200,7 +200,7 @@ derive(dataState, (state) => {
 Make sure to handle all possible status states in your UI to provide a good user experience:
 
 ```typescript
-import { fetchState, derive } from '@anchor/core';
+import { fetchState, derive } from '@anchorlib/core';
 
 const state = fetchState([], { url: '/api/data' });
 
@@ -244,7 +244,7 @@ const countState = fetchState<number>(0, { url: '/api/count' });
 Network errors are common and should be handled gracefully:
 
 ```typescript
-import { fetchState, derive } from '@anchor/core';
+import { fetchState, derive } from '@anchorlib/core';
 
 const apiState = fetchState<Data | null>(null, { url: '/api/data' });
 
@@ -264,7 +264,7 @@ derive(apiState, (state) => {
 When using [derive] with fetch states, remember to clean up subscriptions when they're no longer needed:
 
 ```typescript
-import { fetchState, derive } from '@anchor/core';
+import { fetchState, derive } from '@anchorlib/core';
 
 const state = fetchState([], { url: '/api/data' });
 
@@ -282,7 +282,7 @@ const unsubscribe = derive(state, (state) => {
 For traditional async/await flows, use the promise conversion:
 
 ```typescript
-import { fetchState } from '@anchor/core';
+import { fetchState } from '@anchorlib/core';
 
 async function loadUserData() {
   const state = fetchState(null, { url: '/api/user' });

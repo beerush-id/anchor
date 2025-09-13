@@ -5,12 +5,12 @@ import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE, type ITodoItem } from '@lib/to
 import { ClassicTodoForm } from './ClassicTodoForm.js';
 import { ClassicTodoList } from './ClassicTodoList.js';
 import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
-import { microloop, shortId } from '@anchor/core';
+import { microloop, shortId } from '@anchorlib/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { ClassicTodoStats } from './ClassicTodoStats.js';
 import { ClassicTodoCode } from './ClassicTodoCode.js';
-import { debugRender } from '@anchor/react';
+import { debugRender } from '@anchorlib/react';
 import { isMobile } from '@lib/nav.js';
 
 const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE);

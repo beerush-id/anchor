@@ -5,39 +5,39 @@ create your first reactive state, and connect it to your React components to bui
 
 ## Installation
 
-To begin, install the `@anchor/react` package using your preferred package manager:
+To begin, install the `@anchorlib/react` package using your preferred package manager:
 
 ::: code-group
 
 ```bash [npm]
-npm install @anchor/react
+npm install @anchorlib/react
 ```
 
 ```bash [Yarn]
-yarn add @anchor/react
+yarn add @anchorlib/react
 ```
 
 ```bash [pnpm]
-pnpm add @anchor/react
+pnpm add @anchorlib/react
 ```
 
 ```bash [Bun]
-bun add @anchor/react
+bun add @anchorlib/react
 ```
 
 :::
 
 ## Basic Usage
 
-To get started quickly, import `useAnchor` from `@anchor/react` and `observable` from `@anchor/react/components`, then
+To get started quickly, import `useAnchor` from `@anchorlib/react` and `observable` from `@anchorlib/react/components`, then
 wrap your component with `observable` HoC.
 
 ### Your First Reactive Component
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
 
 const Counter = observable(() => {
   const [counter] = useAnchor({ count: 0 });
@@ -123,8 +123,8 @@ component tree to re-render.
 
 ```jsx [UserProfile.jsx]
 import React from 'react';
-import { useVariable } from '@anchor/react';
-import { observe } from '@anchor/react/components';
+import { useVariable } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
 import { UserAccount } from './UserAccount.jsx';
 
 export const UserProfile = () => {
@@ -176,7 +176,7 @@ export const UserProfile = () => {
 ```
 
 ```jsx [UserAccount.jsx]
-import { observable } from '@anchor/react/components';
+import { observable } from '@anchorlib/react/components';
 
 export const UserAccount = observable(({ userRef }) => {
   const { account } = userRef.value;

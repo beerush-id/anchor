@@ -1,4 +1,4 @@
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 import { z } from 'zod/v4';
 
 export const schema = z.object({

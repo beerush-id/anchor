@@ -17,7 +17,7 @@ function observedRef<R>(observe: () => R): Readable<R>;
 
 ```svelte
 <script>
-  import { observedRef } from '@anchor/svelte';
+  import { observedRef } from '@anchorlib/svelte';
   import { count } from './stores';
 
   // Create a reactive computation that doubles the count

@@ -61,7 +61,7 @@ Depending on the data type:
 ### **Usage**
 
 ```typescript
-import { streamState, derive } from '@anchor/core';
+import { streamState, derive } from '@anchorlib/core';
 
 // Stream text data
 const textStream = streamState(
@@ -123,7 +123,7 @@ Returns a Promise that resolves with the final state when the stream completes, 
 ### **Usage**
 
 ```typescript
-import { streamState } from '@anchor/core';
+import { streamState } from '@anchorlib/core';
 
 const stream = streamState('', { url: '/api/stream' });
 
@@ -140,7 +140,7 @@ try {
 ### **Streaming Text Data**
 
 ```typescript
-import { streamState } from '@anchor/core';
+import { streamState } from '@anchorlib/core';
 
 // Stream a large text file
 const logStream = streamState('', {
@@ -153,7 +153,7 @@ const logStream = streamState('', {
 ### **Streaming JSON Array**
 
 ```typescript
-import { streamState } from '@anchor/core';
+import { streamState } from '@anchorlib/core';
 
 interface Item {
   id: number;
@@ -171,7 +171,7 @@ const itemStream = streamState<Item[]>([], {
 ### **Custom Transform Function**
 
 ```typescript
-import { streamState } from '@anchor/core';
+import { streamState } from '@anchorlib/core';
 
 interface DataChunk {
   items: string[];
@@ -191,7 +191,7 @@ const customStream = streamState<DataChunk[]>([], {
 ### **Real-time Updates**
 
 ```typescript
-import { streamState, derive } from '@anchor/core';
+import { streamState, derive } from '@anchorlib/core';
 
 const chatStream = streamState<string>('', {
   url: '/api/chat/stream',
@@ -250,7 +250,7 @@ const stream = streamState<Item[]>([], {
 Make sure to handle all possible states of a stream:
 
 ```typescript
-import { streamState, derive } from '@anchor/core';
+import { streamState, derive } from '@anchorlib/core';
 
 const stream = streamState<string>('', { url: '/api/stream' });
 
@@ -277,7 +277,7 @@ derive(stream, (state) => {
 For long-running streams, ensure you clean up properly:
 
 ```typescript
-import { streamState, derive } from '@anchor/core';
+import { streamState, derive } from '@anchorlib/core';
 
 const stream = streamState('', { url: '/api/stream' });
 
@@ -294,7 +294,7 @@ const unsubscribe = derive(stream, (state) => {
 For streams that produce large amounts of data, consider throttling updates:
 
 ```typescript
-import { streamState, derive } from '@anchor/core';
+import { streamState, derive } from '@anchorlib/core';
 
 const stream = streamState('', { url: '/api/large-stream' });
 
@@ -320,7 +320,7 @@ derive(stream, (state) => {
 When working with streamed JSON data, validate chunks before processing:
 
 ```typescript
-import { streamState } from '@anchor/core';
+import { streamState } from '@anchorlib/core';
 
 interface ValidatedItem {
   id: number;

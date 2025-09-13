@@ -20,19 +20,19 @@ Install the core package for framework-agnostic state management:
 ::: code-group
 
 ```bash [NPM]
-npm install @anchor/core
+npm install @anchorlib/core
 ```
 
 ```bash [Yarn]
-yarn add @anchor/core
+yarn add @anchorlib/core
 ```
 
 ```bash [PNPM]
-pnpm add @anchor/core
+pnpm add @anchorlib/core
 ```
 
 ```bash [Bun]
-bun add @anchor/core
+bun add @anchorlib/core
 ```
 
 :::
@@ -44,19 +44,19 @@ For React applications, install the React-specific package:
 ::: code-group
 
 ```bash [NPM]
-npm install @anchor/react
+npm install @anchorlib/react
 ```
 
 ```bash [Yarn]
-yarn add @anchor/react
+yarn add @anchorlib/react
 ```
 
 ```bash [PNPM]
-pnpm add @anchor/react
+pnpm add @anchorlib/react
 ```
 
 ```bash [Bun]
-bun add @anchor/react
+bun add @anchorlib/react
 ```
 
 :::
@@ -68,19 +68,19 @@ For Vue applications, install the Vue-specific package:
 ::: code-group
 
 ```bash [NPM]
-npm install @anchor/vue
+npm install @anchorlib/vue
 ```
 
 ```bash [Yarn]
-yarn add @anchor/vue
+yarn add @anchorlib/vue
 ```
 
 ```bash [PNPM]
-pnpm add @anchor/vue
+pnpm add @anchorlib/vue
 ```
 
 ```bash [Bun]
-bun add @anchor/vue
+bun add @anchorlib/vue
 ```
 
 :::
@@ -92,19 +92,19 @@ For Svelte applications, install the Svelte-specific package:
 ::: code-group
 
 ```bash [NPM]
-npm install @anchor/svelte
+npm install @anchorlib/svelte
 ```
 
 ```bash [Yarn]
-yarn add @anchor/svelte
+yarn add @anchorlib/svelte
 ```
 
 ```bash [PNPM]
-pnpm add @anchor/svelte
+pnpm add @anchorlib/svelte
 ```
 
 ```bash [Bun]
-bun add @anchor/svelte
+bun add @anchorlib/svelte
 ```
 
 :::
@@ -116,7 +116,7 @@ After installation, you can start using Anchor in your project:
 ::: code-group
 
 ```js [index.js]
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 export const state = anchor({
   count: 0,
@@ -128,7 +128,7 @@ state.count++;
 ```
 
 ```jsx [Counter.jsx]
-import { useObserved } from '@anchor/react';
+import { useObserved } from '@anchorlib/react';
 import { state } from '../index.js';
 
 const Counter = () => {
@@ -145,7 +145,7 @@ const Counter = () => {
 
 ```vue [Counter.vue]
 <script setup>
-import { observedRef } from '@anchor/vue';
+import { observedRef } from '@anchorlib/vue';
 import { state } from '../index.js';
 
 const count = observedRef(() => state.count);
@@ -161,7 +161,7 @@ const count = observedRef(() => state.count);
 
 ```svelte [Counter.svelte]
 <script>
-  import { observedRef } from '@anchor/svelte';
+  import { observedRef } from '@anchorlib/svelte';
   import { state } from '../index.js';
 
   const count = observedRef(() => state.count);

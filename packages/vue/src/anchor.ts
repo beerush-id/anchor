@@ -9,7 +9,7 @@ import {
   type ModelOutput,
   type StateBaseOptions,
   type StateOptions,
-} from '@anchor/core';
+} from '@anchorlib/core';
 import { variableRef } from './ref.js';
 import type { VariableRef } from './types.js';
 

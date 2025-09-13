@@ -1,7 +1,7 @@
-import type { LinkableSchema, ObjLike, StateOptions } from '@anchor/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import type { ConstantState } from '@base/index.js';
 import { useConstant } from '@base/index.js';
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 /**
  * A React hook that provides session storage functionality with state management.

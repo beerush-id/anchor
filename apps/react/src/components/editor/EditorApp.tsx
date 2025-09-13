@@ -5,7 +5,7 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import EditorHistory from './EditorHistory.js';
 import { useRef } from 'react';
-import { debugRender, useObserved } from '@anchor/react';
+import { debugRender, useObserved } from '@anchorlib/react';
 import { EditorExport } from './EditorExport.js';
 import { Info, SwatchBook } from 'lucide-react';
 import { DebugSwitch } from '../DebugSwitch.js';

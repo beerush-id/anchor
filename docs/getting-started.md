@@ -15,7 +15,7 @@ Before starting this guide, make sure you have:
 Let's start by creating a simple reactive state:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Create a reactive state object
 const state = anchor({
@@ -33,8 +33,8 @@ console.log(state.title); // "Hello, World!"
 ::: code-group
 
 ```jsx [React]
-import { useAnchor } from '@anchor/react';
-import { observable } from '@anchor/react/components';
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
 
 const Counter = observable(() => {
   const [state] = useAnchor({
@@ -54,7 +54,7 @@ const Counter = observable(() => {
 
 ```svelte [Svelte]
 <script>
-  import { anchorRef } from '@anchor/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
   const state = anchorRef({ count: 0, title: 'My App' });
 </script>
@@ -68,7 +68,7 @@ const Counter = observable(() => {
 
 ```vue [Vue]
 <script setup>
-import { anchorRef } from '@anchor/vue';
+import { anchorRef } from '@anchorlib/vue';
 
 const state = anchorRef({ count: 0, title: 'My App' });
 </script>
@@ -89,7 +89,7 @@ const state = anchorRef({ count: 0, title: 'My App' });
 One of Anchor's core features is fine-grained reactivity. You can observe state changes using the `derive` function:
 
 ```typescript
-import { anchor, derive } from '@anchor/core';
+import { anchor, derive } from '@anchorlib/core';
 
 const counter = anchor({ count: 0 });
 
@@ -107,7 +107,7 @@ counter.count++;
 Anchor's true immutability system allows you to work with immutable state while maintaining intuitive syntax:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 // Create an immutable state
 const profile = anchor.immutable({
@@ -131,7 +131,7 @@ console.log(profile.name); // 'Jane Smith'
 To modify immutable state, you need to create a write contract:
 
 ```typescript
-import { anchor } from '@anchor/core';
+import { anchor } from '@anchorlib/core';
 
 const settings = anchor.immutable({
   volume: 50,

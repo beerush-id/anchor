@@ -10,7 +10,7 @@ import {
   remove,
   update,
 } from './helper.js';
-import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchor/core';
+import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchorlib/core';
 import {
   type FilterFn,
   IDBStatus,

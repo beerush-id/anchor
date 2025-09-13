@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { propsRef } from '@anchor/vue';
+  import { propsRef } from '@anchorlib/vue';
   import { ref } from 'vue';
   import { flashNode } from '../../lib/node.js';
   import { type TodoRec, type TodoRecList, todoTable } from '../../lib/todos.js';

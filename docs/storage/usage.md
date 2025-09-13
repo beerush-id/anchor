@@ -40,7 +40,7 @@ type leave<T> = (state: T) => void;
 ### **Example**
 
 ```typescript
-import { session } from '@anchor/storage';
+import { session } from '@anchorlib/storage';
 
 const userSession = session('user', { id: null, name: '' });
 userSession.id = 123;
@@ -88,7 +88,7 @@ type leave<T> = (state: T) => void;
 ### **Example**
 
 ```typescript
-import { persistent } from '@anchor/storage';
+import { persistent } from '@anchorlib/storage';
 
 const userSettings = persistent('user-settings', { theme: 'light', notifications: true });
 userSettings.theme = 'dark';
@@ -179,7 +179,7 @@ ready(): Promise<true>
 #### **Example**
 
 ```typescript
-import { createKVStore } from '@anchor/storage/db';
+import { createKVStore } from '@anchorlib/storage/db';
 
 const kvStore = createKVStore<{ name: string }>('my-kv-store');
 const user = kvStore('user', { name: 'John' });
@@ -355,7 +355,7 @@ promise<T extends RowState<R> | RowListState<R>>(state: T): Promise<T>
 #### **Example**
 
 ```typescript
-import { createTable } from '@anchor/storage/db';
+import { createTable } from '@anchorlib/storage/db';
 
 type User = {
   name: string;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TodoStats from './TodoStats.svelte';
 	import { flashNode } from '../../node.svelte.js';
-	import { anchorRef, observedRef } from '@anchor/svelte';
+	import { anchorRef, observedRef } from '@anchorlib/svelte';
 	import TodoItem from '$lib/components/todo/TodoItem.svelte';
 	import type { TodoRecList } from '../../todos.js';
 

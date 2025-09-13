@@ -1,7 +1,7 @@
 import benny from 'benny';
 import { anchor } from '../shared.js';
 import { linkable } from '../../src/internal.js';
-import type { ObjLike } from '@anchor/core';
+import type { ObjLike } from '@anchorlib/core';
 import type { KeyLike } from '../../src/index.js'; // Assuming shared.ts exists
 
 // --- More complex data for the UI scenario ---

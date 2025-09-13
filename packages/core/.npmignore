@@ -46,3 +46,15 @@ test
 .prettierrc
 tsconfig.json
 tsup.config.ts
+
+# Ignore all files by default
+*
+# Allow dist directory and its contents
+!dist/
+!dist/**
+# Allow package.json and README files
+!package.json
+!README.md
+!readme.md
+!LICENSE
+!license
