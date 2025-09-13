@@ -2,6 +2,10 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
+title: 'Anchor - State Management For Humans, Built For Enterprise Apps'
+description: 'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.'
+keywords: 'state management, reactivity, immutability, javascript, typescript, vue, react, svelte, enterprise apps, dsv model, data state view'
+
 hero:
   name: 'Anchor'
   text: 'State Management For Humans, Built For Enterprise Apps'

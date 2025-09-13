@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress';
 
 const BASE_URL = '/anchor/docs';
-const PAGE_URL = 'https://anchor.beerush.io/docs';
+const PAGE_URL = 'https://beerush-id.github.io/anchor/docs';
 const PAGE_TITLE = 'Anchor Docs';
-const PAGE_OPEN_TITLE = `${PAGE_TITLE} - State Management Library`;
+const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
-  'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability.';
+  'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
 const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}/social.jpg`;
 
 // https://vitepress.dev/reference/site-config
@@ -18,23 +18,35 @@ export default defineConfig({
   title: PAGE_TITLE,
   description: PAGE_OPEN_DESCRIPTION,
   head: [
+    ['link', { rel: 'canonical', href: PAGE_URL }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon.ico` }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-196x196.png`, sizes: '196x196' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-128x128.png`, sizes: '128x128' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-96x96.png`, sizes: '96x96' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-32x32.png`, sizes: '32x32' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-16x16.png`, sizes: '16x16' }],
     [
       'meta',
       {
         name: 'keywords',
         content:
-          'state management, reactivity, immutability, javascript, typescript, vue, react, svelte, fine-grained reactivity, web development',
+          'state management, reactivity, immutability, javascript, typescript, vue, react, svelte, fine-grained reactivity, web development, enterprise apps, dsv model, data state view',
       },
     ],
     ['meta', { name: 'author', content: 'Nanang Mahdaen El Agung' }],
+    ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: PAGE_OPEN_TITLE }],
     ['meta', { property: 'og:description', content: PAGE_OPEN_DESCRIPTION }],
     ['meta', { property: 'og:image', content: PAGE_OPEN_THUMBNAIL }],
+    ['meta', { property: 'og:image:alt', content: 'Anchor State Management Library' }],
     ['meta', { property: 'og:url', content: PAGE_URL }],
+    ['meta', { property: 'og:site_name', content: 'Anchor Docs' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: PAGE_OPEN_TITLE }],
     ['meta', { name: 'twitter:description', content: PAGE_OPEN_DESCRIPTION }],
     ['meta', { name: 'twitter:image', content: PAGE_OPEN_THUMBNAIL }],
+    ['meta', { name: 'twitter:image:alt', content: 'Anchor State Management Library' }],
+    ['meta', { name: 'twitter:site', content: '@beerush_id' }],
     ['link', { rel: 'canonical', href: PAGE_URL }],
   ],
   themeConfig: {
