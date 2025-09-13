@@ -525,4 +525,3 @@ To learn more about immutability in Anchor for React:
 
 - Review the [Getting Started](/react/getting-started) guide for basic usage
 - Explore [Reactivity](/react/reactivity) to understand how immutable state works with observation
-- Check out [Data Integrity](/react/data-integrity) to learn about schema validation with immutable states
