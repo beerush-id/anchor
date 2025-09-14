@@ -147,3 +147,28 @@
 .vp-doc [class*='language-'] code .highlighted {
   background-color: var(--vp-c-brand-soft);
 }
+
+.sp-wrapper.sp-grid {
+  margin-top: 24px;
+  border: 1px solid var(--sp-colors-surface2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sp-wrapper.sp-grid .sp-layout {
+  border: none;
+}
+
+@media screen and (min-width: 768px) {
+  .sp-wrapper.sp-grid {
+    margin-top: 48px;
+  }
+  .sp-wrapper.sp-grid .sp-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+  .sp-wrapper.sp-grid .sp-layout > div {
+    height: auto !important;
+    max-height: 512px;
+  }
+}

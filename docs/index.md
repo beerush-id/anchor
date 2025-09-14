@@ -88,32 +88,6 @@ export default Counter;
 
 :::
 
-<style>
-.sp-grid { 
-  margin-top: 24px;
-  border: 1px solid var(--sp-colors-surface2);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.sp-grid .sp-layout {
-  border: none;
-}
-
-@media screen and (min-width: 768px) {
-  .sp-grid {
-    margin-top: 48px;
-  }
-  .sp-grid .sp-layout {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
-  .sp-grid .sp-layout > div {
-    height: auto !important;
-    max-height: 512px;
-  }
-}
-</style>
-
 ## **Enterprise-Grade State Management for Modern Web Applications**
 
 Anchor is a revolutionary state management framework designed for developers who demand both performance and developer
