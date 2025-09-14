@@ -47,12 +47,39 @@ const Counter = observable(() => {
       <h1>Counter: {counter.count}</h1>
       <button onClick={() => counter.count++}>Increment</button>
       <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
     </div>
   );
 });
 
 export default Counter;
 ```
+
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx /App.tsx [active]
+import { useAnchor } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+
+const Counter = observable(() => {
+  const [counter] = useAnchor({ count: 0 });
+
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+    </div>
+  );
+});
+
+export default Counter;
+```
+
+:::
 
 ::: tip In this example:
 
@@ -223,6 +250,114 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 
 - **Direct State Mutation:** Notice how state is still modified directly (e.g., `userRef.value.age++`). Anchor's
   reactivity system ensures that even with direct mutation, the correct "View" components will update automatically.
+
+:::
+
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx /UserProfile.tsx [active]
+import { useVariable, debugRender, setDebugRenderer } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
+import { UserAccount } from './UserAccount.tsx';
+import { useRef } from 'react';
+
+setDebugRenderer(true, 500);
+
+export const UserProfile = () => {
+  const ref = useRef(null);
+  debugRender(ref);
+
+  const [userRef] = useVariable({
+    name: 'John Doe',
+    age: 30,
+    account: {
+      email: 'john@example.com',
+      username: 'johndoe',
+    },
+  });
+
+  const changeUser = () => {
+    userRef.value = {
+      name: 'Jane Doe',
+      age: 28,
+      account: {
+        email: 'jane@example.com',
+        username: 'janedoe',
+      },
+    };
+  };
+
+  // Only this ProvileView block is re-rendered when the observed value changes.
+  const ProfileView = observe((ref) => {
+    const { name, age, account } = userRef.value;
+    const { email, username } = account;
+
+    debugRender(ref);
+
+    return (
+      <div ref={ref}>
+        <h1>Profile</h1>
+        <p>Name: {name}</p>
+        <p>Age: {age}</p>
+        <p>Email: {email}</p>
+        <p>Username: {username}</p>
+      </div>
+    );
+  });
+
+  return (
+    <div ref={ref}>
+      <ProfileView />
+      <UserAccount userRef={userRef} />
+      <button onClick={() => userRef.value.age++}>Happy Birthday!</button>
+      <button onClick={changeUser}>Reset Profile</button>
+    </div>
+  );
+};
+```
+
+```tsx /UserAccount.tsx
+import { useRef } from 'react';
+import { debugRender } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/components';
+
+export const UserAccount = observable(({ userRef }) => {
+  const ref = useRef(null);
+  const { account } = userRef.value;
+  const { email, username } = account;
+
+  debugRender(ref);
+
+  return (
+    <div ref={ref}>
+      <label>
+        <span>Email:</span>
+        <input value={email} onChange={(e) => (account.email = e.target.value)} />
+      </label>
+      <label>
+        <span>Username:</span>
+        <input value={username} onChange={(e) => (account.username = e.target.value)} />
+      </label>
+    </div>
+  );
+});
+```
+
+```tsx /App.tsx
+import { UserProfile } from './UserProfile.tsx';
+
+export default function App() {
+  return <UserProfile />;
+}
+```
+
+:::
+
+::: tip Notes
+
+Red flashes means the component is first rendered. Blue flashes means the component is re-rendered.
 
 :::
 

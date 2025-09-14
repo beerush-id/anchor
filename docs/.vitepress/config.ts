@@ -1,4 +1,6 @@
 import { defineConfig } from 'vitepress';
+import container from 'markdown-it-container';
+import { renderSandbox } from 'vitepress-plugin-sandpack';
 
 const BASE_URL = '/anchor/docs';
 const PAGE_URL = 'https://beerush-id.github.io/anchor/docs/';
@@ -386,6 +388,16 @@ export default defineConfig({
 
         return defaultRender(tokens, idx, options, env, self);
       };
+
+      md.use(container, 'sandbox', {
+        render(tokens, idx) {
+          return renderSandbox(tokens, idx, 'sandbox');
+        },
+      }).use(container, 'anchor-react-sandbox', {
+        render(tokens, idx) {
+          return renderSandbox(tokens, idx, 'anchor-react-sandbox');
+        },
+      });
     },
   },
 });
