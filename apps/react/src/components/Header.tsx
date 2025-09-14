@@ -1,37 +1,36 @@
 import { BookText } from 'lucide-react';
 import { Tooltip } from './Tooltip.js';
 import { BASE_PATH, inlineNav } from '@lib/nav.js';
-import { useEffect, useState } from 'react';
-import { useRefTrap } from '@anchorlib/react';
+import { useAction } from '@anchorlib/react';
 import { DiscordIcon } from './DiscordIcon.js';
 import { GithubIcon } from './GithubIcon.js';
 
 const SCROLL_THRESHOLD = 68;
 
 export const Header = () => {
-  const ref = useRefTrap<HTMLElement>(null, (el) => {
-    if (el && document.body.scrollTop > (el.offsetHeight ?? SCROLL_THRESHOLD)) {
-      el.classList.add('backdrop-blur-xl');
-    }
+  const ref = useAction<HTMLElement>((element) => {
+    if (!element?.parentElement) return;
 
-    return el;
-  });
-  const [scrolled, setScrolled] = useState(false);
+    const toggleBlur = () => {
+      if (!element?.parentElement) return;
 
-  useEffect(() => {
-    if (!ref.current) return;
-
-    window.addEventListener('scroll', () => {
-      if (document.body.scrollTop > (ref.current?.offsetHeight ?? SCROLL_THRESHOLD)) {
-        setScrolled(true);
+      const { top } = element.parentElement.getBoundingClientRect();
+      if (top < (element.offsetHeight ?? SCROLL_THRESHOLD)) {
+        element.classList.add('scrolled');
       } else {
-        setScrolled(false);
+        element.classList.remove('scrolled');
       }
-    });
-  }, []);
+    };
+    toggleBlur();
+
+    window.addEventListener('scroll', toggleBlur);
+    return () => {
+      window.removeEventListener('scroll', toggleBlur);
+    };
+  });
 
   return (
-    <header ref={ref} className={`sticky top-0 z-50 ${scrolled ? 'bg-slate-900/10 backdrop-blur-xl' : ''}`}>
+    <header ref={ref} className={`main-header sticky top-0 z-50`}>
       <nav className="container mx-auto px-6 py-4 flex items-center gap-6 md:gap-20 max-w-6xl">
         <h1 className="tracking-tight flex items-center select-none flex-1 md:flex-none">
           <a href={BASE_PATH}>

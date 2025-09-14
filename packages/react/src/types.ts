@@ -27,7 +27,7 @@ export type AnchoredProps = {
 export type ExceptionList<T extends State, R extends keyof T> = {
   [key in R]?: Error | ModelError | null;
 };
-export type Action<T> = (value: T) => StateUnsubscribe;
+export type Action<T> = (value: T) => StateUnsubscribe | undefined;
 export type ActionRef<T> = RefObject<T> & {
   destroy: () => void;
 };

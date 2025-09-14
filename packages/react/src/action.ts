@@ -2,6 +2,7 @@ import { type RefObject, useEffect, useRef } from 'react';
 import { useMicrotask } from './hooks.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 import type { Action, ActionRef } from './types.js';
+import type { StateUnsubscribe } from '@anchorlib/core';
 
 /**
  * Custom hook that manages an action with cleanup capabilities.
@@ -49,10 +50,11 @@ export function useAction<T>(init: T | Action<T>, action?: Action<T>): RefObject
       return actionRef.current;
     },
     set current(value: T) {
-      actionRef.destroy?.();
+      if (value === actionRef.current) return;
 
+      actionRef.destroy?.();
       actionRef.current = value;
-      actionRef.destroy = (action as Action<T>)(actionRef.current);
+      actionRef.destroy = (action as Action<T>)(actionRef.current) as StateUnsubscribe;
     },
   };
 }

@@ -12,11 +12,15 @@
   color-scheme: dark;
 }
 
-body {
+html {
   width: 100vw;
   height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.main-header.scrolled {
+  @apply bg-slate-900/10 backdrop-blur-xl;
 }
 
 .shiki {

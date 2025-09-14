@@ -25,6 +25,7 @@ export default defineConfig({
     ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-96x96.png`, sizes: '96x96' }],
     ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-32x32.png`, sizes: '32x32' }],
     ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-16x16.png`, sizes: '16x16' }],
+    ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-SSMTTBW5G5' }],
     [
       'script',
       {},
