@@ -10,7 +10,8 @@
     deps: {
       react: '^19.1.1',
       'react-dom': '^19.1.1',
-      '@anchorlib/react': 'latest'
+      '@anchorlib/react': 'latest',
+      '@tailwindcss/browser': '^4.0.0'
     },
   }" :code-options="codeOptions">
     <slot />

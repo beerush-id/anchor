@@ -44,7 +44,75 @@ features:
     details: Schema validation with Zod and TypeScript ensures your state always conforms to expectations.
 ---
 
-<div>
+::: anchor-react-sandbox {class="sp-grid"}
+
+```tsx /App.tsx [active]
+import '@tailwindcss/browser';
+import { useRef } from 'react';
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
+
+const Counter = () => {
+  const [counter] = useAnchor({ count: 0 });
+
+  // 😏 Only this tiny part of the UI that need to updated!
+  const CounterView = observe(() => <h1>Counter: {counter.count}</h1>);
+
+  return (
+    <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
+      <img src="https://beerush-id.github.io/anchor/docs/icon.svg" alt="Anchor Logo" className="w-24" />
+      <CounterView />
+      <div className="flex items-center gap-2">
+        <button
+          className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
+          onClick={() => counter.count++}>
+          Increment
+        </button>
+        <button
+          className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
+          onClick={() => counter.count--}>
+          Decrement
+        </button>
+        <button
+          className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
+          onClick={() => (counter.count = 0)}>
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+:::
+
+<style>
+.sp-grid { 
+  margin-top: 24px;
+  border: 1px solid var(--sp-colors-surface2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sp-grid .sp-layout {
+  border: none;
+}
+
+@media screen and (min-width: 768px) {
+  .sp-grid {
+    margin-top: 48px;
+  }
+  .sp-grid .sp-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+  .sp-grid .sp-layout > div {
+    height: auto !important;
+    max-height: 512px;
+  }
+}
+</style>
 
 ## **Enterprise-Grade State Management for Modern Web Applications**
 
@@ -87,5 +155,3 @@ State that acts as the source of truth for your entire application:
 
 This architecture eliminates prop drilling, context hell, and state synchronization issues while providing predictable,
 scalable state management.
-
-</div>
