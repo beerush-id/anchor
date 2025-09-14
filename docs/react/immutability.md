@@ -79,6 +79,64 @@ Anchor's approach to immutability provides the benefits of immutable state witho
 <img style="border-radius: 8px" src="/images/contract-violation.webp" alt="Write Contract Violation" />
 :::
 
+::: details Try It Yourself!
+
+::: anchor-react-sandbox
+
+```tsx
+import { useImmutable, useWriter } from '@anchorlib/react';
+import { Input, observe } from '@anchorlib/react/components';
+
+export default function UserProfile() {
+  // Attempt to mutate any property of the user object will be rejected.
+  const [user] = useImmutable({
+    name: 'John Doe',
+    age: 42,
+    settings: {
+      notifications: true,
+      theme: 'light',
+    },
+  });
+
+  // Allow only name to be updated.
+  const userWriter = useWriter(user, ['name']);
+  // Allow only theme to be updated.
+  const settingsWriter = useWriter(user.settings, ['theme']);
+
+  const toggleTheme = () => {
+    // Updating theme is allowed because it's declared in the contract.
+    settingsWriter.theme = settingsWriter.theme === 'light' ? 'dark' : 'light';
+
+    // Updating notifications is not allowed because it's not declared in the contract.
+    // Thus, only the theme will be updated and you will see a warning about this line.
+    settingsWriter.notifications = !settingsWriter.notifications;
+  };
+
+  const UserView = observe(() => (
+    <div>
+      <h1>{user.name}</h1>
+      <p>Age: {user.age}</p>
+      <p>Notifications: {user.settings.notifications ? 'enabled' : 'disabled'}</p>
+      <button onClick={toggleTheme}>Toggle theme: {user.settings.theme}</button>
+    </div>
+  ));
+
+  return (
+    <div>
+      <UserView />
+      <p>Form</p>
+      <div>
+        <label>Update name: </label>
+        <Input bind={userWriter} name="name" />
+        <button onClick={() => user.age++}>Happy Birthday! (Not Allowed!)</button>
+      </div>
+    </div>
+  );
+}
+```
+
+:::
+
 ## Shared Immutable States
 
 Global states are declared outside component bodies and shared across multiple components. These states are always
@@ -106,7 +164,8 @@ export const userState = anchor.immutable({
 });
 
 // Create a writer for controlled mutations
-export const userWriter = anchor.writable(userState, ['name', 'preferences']);
+export const userWriter = anchor.writable(userState, ['name']);
+export const preferenceWriter = anchor.writable(userState.preferences, ['theme']);
 ```
 
 :::
@@ -120,16 +179,15 @@ To use global immutable states in React components, import them and access their
 ```tsx
 // components/UserProfile.tsx
 import { observe } from '@anchorlib/react/components';
-import { userState, userWriter } from '../lib/state';
+import { userState, preferenceWriter } from '../lib/state';
 
 const UserProfile = observe(() => {
   return (
     <div>
       <h1>{userState.name}</h1>
       <p>{userState.email}</p>
-      <p>Theme: {userState.preferences.theme}</p>
-      <button
-        onClick={() => (userWriter.preferences.theme = userState.preferences.theme === 'dark' ? 'light' : 'dark')}>
+      <p>Theme: {preferenceWriter.theme}</p>
+      <button onClick={() => (preferenceWriter.theme = preferenceWriter.theme === 'dark' ? 'light' : 'dark')}>
         Toggle Theme
       </button>
     </div>
@@ -137,6 +195,53 @@ const UserProfile = observe(() => {
 });
 
 export default UserProfile;
+```
+
+:::
+
+::: details Try It Yourself! {open}
+
+::: anchor-react-sandbox
+
+```tsx /App.tsx [active]
+import { observe } from '@anchorlib/react/components';
+import { userState, userWriter, preferenceWriter } from '../lib/state';
+
+const UserProfile = observe(() => {
+  return (
+    <div>
+      <h1>{userState.name}</h1>
+      <p>{userState.email}</p>
+      <p>Theme: {preferenceWriter.theme}</p>
+      <button onClick={() => (preferenceWriter.theme = preferenceWriter.theme === 'dark' ? 'light' : 'dark')}>
+        Toggle Theme
+      </button>
+      <button onClick={() => (userState.name = 'Jane Doe')}>Change Name (Illegal)</button>
+      <button onClick={() => (userWriter.name = 'Jane Doe')}>Change Name (Allowed)</button>
+    </div>
+  );
+});
+
+export default UserProfile;
+```
+
+```ts /lib/state.ts
+import { anchor } from '@anchorlib/core';
+
+// Create a global immutable state
+export const userState = anchor.immutable({
+  id: 1,
+  name: 'John Doe',
+  email: 'john@example.com',
+  preferences: {
+    theme: 'dark',
+    notifications: true,
+  },
+});
+
+// Create a writer for controlled mutations
+export const userWriter = anchor.writable(userState, ['name']);
+export const preferenceWriter = anchor.writable(userState.preferences, ['theme']);
 ```
 
 :::

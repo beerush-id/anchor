@@ -63,11 +63,10 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Docs Home', link: '/' },
+      { text: 'Home', link: '/' },
       { text: 'Overview', link: '/overview' },
-      { text: 'Performance', link: '/performance' },
-      { text: 'Philosophy', link: '/philosophy' },
-      { text: 'Architecture', link: '/architecture' },
+      { text: 'Get Started', link: '/getting-started' },
+      { text: 'Unit Tests', link: 'https://beerush-id.github.io/anchor/coverage' },
       { text: 'Test Coverage', link: 'https://beerush-id.github.io/anchor/coverage/details' },
     ],
 

@@ -1,8 +1,9 @@
 <!-- MySandbox.vue -->
 <template>
   <!-- 'code-options' is a build-in prop, do not edit it -->
-  <Sandbox :rtl="rtl" :template="'react-ts'" :light-theme="'aquaBlue'" :dark-theme="'atomDark'" :options="{
+  <Sandbox :rtl="rtl" :template="'react-ts'" :light-theme="'githubLight'" :dark-theme="'atomDark'" :options="{
     ...props, // do not forget it
+    showLineNumbers: true,
     coderHeight: props.coderHeight ?? 400,
   }" :custom-setup="{
     ...props, // do not forget it

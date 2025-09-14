@@ -35,7 +35,6 @@ wrap your component with `observable` HoC.
 ### Your First Reactive Component
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
 import { observable } from '@anchorlib/react/components';
 
@@ -84,12 +83,11 @@ export default Counter;
 ::: tip In this example:
 
 - **`observable` HOC:** By wrapping `Counter` with `observable()`, you tell Anchor to automatically track any reactive
-  state properties accessed inside `Counter`. When those properties change, `Counter` will efficiently re-render.
+  state properties accessed inside `Counter`. When those properties change, `Counter` will re-render.
 - **`useAnchor` Hook:** This hook initializes your state (`{ count: 0 }`) and makes it reactive. The `state` variable
   you get back is a special state that aware of observer and subscriber.
 - **Direct Mutation:** Notice `state.count++` and `state.count--`. With Anchor, you directly modify your state. There's
   no need for immutable updates (like `setState(prev => ({...prev, count: prev.count + 1}))`) or dispatching actions.
-  Anchor handles the reactivity behind the scenes.
 - **Automatic UI Updates:** Because `Counter` is `observable`, when `state.count` changes, the component automatically
   re-renders to display the new value.
 
@@ -98,7 +96,7 @@ export default Counter;
 ::: tip Why Anchor is different:
 
 - **Direct Mutation, Safe Execution:** Unlike other state management libraries, you can directly modify your state (
-  e.g., `counter.count++`) without worrying about breaking React's rules or causing performance issues.
+  e.g., `counter.count++`) without worrying about stale closures.
 
 - **Smart Reactivity:** Anchor only re-renders components that actually use the changed data, not your entire app. This
   means better performance without manual optimizations.
@@ -149,7 +147,6 @@ component tree to re-render.
 ::: code-group
 
 ```jsx [UserProfile.jsx]
-import React from 'react';
 import { useVariable } from '@anchorlib/react';
 import { observe } from '@anchorlib/react/components';
 import { UserAccount } from './UserAccount.jsx';
@@ -167,7 +164,7 @@ export const UserProfile = () => {
   const changeUser = () => {
     userRef.value = {
       name: 'Jane Doe',
-      age: 28,
+      age: Math.floor(Math.random() * 100),
       account: {
         email: 'jane@example.com',
         username: 'janedoe',
@@ -175,16 +172,20 @@ export const UserProfile = () => {
     };
   };
 
-  // Only this ProvileView block is re-rendered when the observed value changes.
   const ProfileView = observe(() => {
     const { name, age, account } = userRef.value;
-    const { email, username } = account;
-
     return (
       <div>
-        <h1>Profile</h1>
         <p>Name: {name}</p>
         <p>Age: {age}</p>
+      </div>
+    );
+  });
+
+  const AccountView = observe(() => {
+    const { email, username } = userRef.value.account;
+    return (
+      <div>
         <p>Email: {email}</p>
         <p>Username: {username}</p>
       </div>
@@ -193,6 +194,7 @@ export const UserProfile = () => {
 
   return (
     <div>
+      <h1>Profile</h1>
       <ProfileView />
       <UserAccount userRef={userRef} />
       <button onClick={() => userRef.value.age++}>Happy Birthday!</button>
@@ -253,7 +255,7 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 
 :::
 
-::: details Try It Yourself
+::: details Try It Yourself {open}
 
 ::: anchor-react-sandbox
 
@@ -281,7 +283,7 @@ export const UserProfile = () => {
   const changeUser = () => {
     userRef.value = {
       name: 'Jane Doe',
-      age: 28,
+      age: Math.floor(Math.random() * 100),
       account: {
         email: 'jane@example.com',
         username: 'janedoe',
@@ -290,17 +292,25 @@ export const UserProfile = () => {
   };
 
   // Only this ProvileView block is re-rendered when the observed value changes.
-  const ProfileView = observe((ref) => {
-    const { name, age, account } = userRef.value;
-    const { email, username } = account;
 
+  const ProfileView = observe((ref) => {
     debugRender(ref);
 
+    const { name, age, account } = userRef.value;
     return (
       <div ref={ref}>
-        <h1>Profile</h1>
         <p>Name: {name}</p>
         <p>Age: {age}</p>
+      </div>
+    );
+  });
+
+  const AccountView = observe((ref) => {
+    debugRender(ref);
+
+    const { email, username } = userRef.value.account;
+    return (
+      <div ref={ref}>
         <p>Email: {email}</p>
         <p>Username: {username}</p>
       </div>
@@ -309,7 +319,9 @@ export const UserProfile = () => {
 
   return (
     <div ref={ref}>
+      <h1>Profile</h1>
       <ProfileView />
+      <AccountView />
       <UserAccount userRef={userRef} />
       <button onClick={() => userRef.value.age++}>Happy Birthday!</button>
       <button onClick={changeUser}>Reset Profile</button>

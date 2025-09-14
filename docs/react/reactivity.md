@@ -49,7 +49,7 @@ const CounterManager = () => {
 
     return (
       <>
-        <h1>Count: {count.value}</h1>
+        <h1>Count: {count.count}</h1>
         <p>Render Count: {renderCount}</p>
         <p>Expensive Value: {expensiveValue}</p>
       </>
@@ -59,7 +59,7 @@ const CounterManager = () => {
   // Mutation - Directly mutates the reactive state.
   useEffect(() => {
     setInterval(() => {
-      count.value++;
+      count.count++;
     }, 1000);
   }, []);
 
@@ -123,7 +123,7 @@ const Count = observe(() => {
 
   return (
     <>
-      <h1>Count: {count.value}</h1>
+      <h1>Count: {count.count}</h1>
       <p>Render Count: {renderCount}</p>
       <p>Expensive Value: {expensiveValue}</p>
     </>
@@ -144,7 +144,7 @@ about your application's behavior.
 
 ```tsx {2,6}
 setInterval(() => {
-  count.value++;
+  count.count++;
 }, 1000);
 
 const reset = () => {
@@ -168,7 +168,7 @@ const Count = observe(() => {
 
   return (
     <>
-      <h1>Count: {count.value}</h1>
+      <h1>Count: {count.count}</h1>
       <p>Render Count: {renderCount}</p>
       <p>Expensive Value: {expensiveValue}</p>
     </>
@@ -233,25 +233,36 @@ This stability allows you to:
 
 ::: details Stable Closures
 
-```tsx
+::: anchor-react-sandbox
+
+```tsx App.tsx
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
+
 const TaskManager = () => {
   const [tasks] = useAnchor([]);
 
-  let localCounter = 0; // This remains stable!
+  let newTasks = 0; // This remains stable!
 
   // These functions are never re-created unnecessarily.
   const addTask = (text) => {
-    tasks.push({ id: Date.now(), text, completed: false });
-    localCounter++; // This works as expected!
+    tasks.push({ id: Date.now(), text: `${text} ${newTasks + 1}`, completed: false });
+    newTasks++; // This works as expected!
   };
 
   // Only this view is re-rendered when tasks change.
   const TaskListView = observe(() => (
-    <ul>
-      {tasks.map((task) => (
-        <li key={task.id}>{task.text}</li>
-      ))}
-    </ul>
+    <div>
+      {tasks.length > 0 && (
+        <ul>
+          {tasks.map((task) => (
+            <li key={task.id}>{task.text}</li>
+          ))}
+        </ul>
+      )}
+      {!tasks.length && <p>No tasks.</p>}
+      <p>New tasks: {newTasks}</p>
+    </div>
   ));
 
   return (
@@ -261,6 +272,8 @@ const TaskManager = () => {
     </div>
   );
 };
+
+export default TaskManager;
 ```
 
 :::
@@ -275,20 +288,25 @@ entire classes of bugs related to stale closures and makes your code more predic
 
 ::: details No Stale Data
 
-```tsx
+::: anchor-react-sandbox
+
+```tsx App.tsx
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
+
 const Counter = () => {
-  const [counter] = useAnchor({ value: 0 });
+  const [counter] = useAnchor({ count: 0 });
 
   // No stale closure problems
   const incrementMultiple = () => {
-    counter.value++;
-    counter.value++;
-    counter.value++;
+    counter.count++;
+    counter.count++;
+    counter.count++;
     // All changes are immediately applied
   };
 
   const Display = observe(() => {
-    return <p>Count: {counter.value}</p>;
+    return <p>Count: {counter.count}</p>;
   });
 
   return (
@@ -298,6 +316,8 @@ const Counter = () => {
     </div>
   );
 };
+
+export default Counter;
 ```
 
 :::
@@ -313,7 +333,12 @@ actions, you simply assign new values to state properties.
 
 ::: details Shopping Cart Example
 
-```tsx
+::: anchor-react-sandbox
+
+```tsx App.tsx
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/components';
+
 const ShoppingCart = () => {
   const [cart] = useAnchor({
     items: [],
@@ -337,7 +362,7 @@ const ShoppingCart = () => {
   const addItem = () => {
     cart.items.push({
       id: Date.now(),
-      name: 'Product',
+      name: `Product ${cart.items.length + 1}`,
       price: 10,
       quantity: 1,
     });
@@ -349,11 +374,12 @@ const ShoppingCart = () => {
   return (
     <div>
       <CartItems />
-      <CartTotal />
       <button onClick={addItem}>Add Item</button>
     </div>
   );
 };
+
+export default ShoppingCart;
 ```
 
 :::
@@ -420,12 +446,13 @@ They automatically re-render when their observed state changes, providing effici
 ::: details View Component Example
 
 ```tsx
-import { observe } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/components';
 
-const UserView = observe(() => {
+const UserView = observable(({ user }) => {
   // Only re-renders when user changes
   if (!user) return <div>Please log in</div>;
 
+  // Only re-renders when user.name and user.email change.
   return (
     <div>
       <h1>Welcome, {user.name}!</h1>
@@ -522,10 +549,6 @@ function TraditionalComponent() {
   }, []);
 }
 ```
-
-**Note**: In this example, each tick of the timer creates a new closure to display the updated data while keeping the
-initial closure to maintain the timer. This means we have different reference that lives in different scopes, leading to
-confusing behavior.
 
 :::
 
