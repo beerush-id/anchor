@@ -21,7 +21,7 @@ export function EditorDemo() {
         <a
           href="https://github.com/beerush-id/anchor/tree/main/apps/react/src/components/editor"
           target="_blank"
-          className="flex whitespace-nowrap items-center px-6 py-3 bg-slate-900 hover:bg-brand-main-hover text-slate-200 rounded-md font-medium btn-secondary transition-colors">
+          className="h-[54px] flex whitespace-nowrap items-center px-6 py-3 bg-slate-900 hover:bg-brand-main-hover text-slate-200 rounded-md font-medium btn-secondary transition-colors">
           <GithubIcon className="w-5 h-5 mr-2" />
           Source Code
         </a>

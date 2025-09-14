@@ -10,7 +10,7 @@ const SCROLL_THRESHOLD = 68;
 
 export const Header = () => {
   const ref = useRefTrap<HTMLElement>(null, (el) => {
-    if (el && window.scrollY > (el.offsetHeight ?? SCROLL_THRESHOLD)) {
+    if (el && document.body.scrollTop > (el.offsetHeight ?? SCROLL_THRESHOLD)) {
       el.classList.add('backdrop-blur-xl');
     }
 
@@ -22,7 +22,7 @@ export const Header = () => {
     if (!ref.current) return;
 
     window.addEventListener('scroll', () => {
-      if (window.scrollY > (ref.current?.offsetHeight ?? SCROLL_THRESHOLD)) {
+      if (document.body.scrollTop > (ref.current?.offsetHeight ?? SCROLL_THRESHOLD)) {
         setScrolled(true);
       } else {
         setScrolled(false);
