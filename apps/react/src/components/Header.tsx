@@ -14,8 +14,7 @@ export const Header = () => {
     const toggleBlur = () => {
       if (!element?.parentElement) return;
 
-      const { top } = element.parentElement.getBoundingClientRect();
-      if (top < (element.offsetHeight ?? SCROLL_THRESHOLD)) {
+      if (document.body.scrollTop > (element.offsetHeight ?? SCROLL_THRESHOLD)) {
         element.classList.add('scrolled');
       } else {
         element.classList.remove('scrolled');
@@ -23,9 +22,9 @@ export const Header = () => {
     };
     toggleBlur();
 
-    window.addEventListener('scroll', toggleBlur);
+    document.body.addEventListener('scroll', toggleBlur);
     return () => {
-      window.removeEventListener('scroll', toggleBlur);
+      document.body.removeEventListener('scroll', toggleBlur);
     };
   });
 
