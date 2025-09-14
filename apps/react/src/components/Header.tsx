@@ -33,7 +33,7 @@ export const Header = () => {
       <nav className="container mx-auto px-6 py-4 flex items-center gap-6 md:gap-20 max-w-6xl">
         <h1 className="tracking-tight flex items-center select-none flex-1 md:flex-none">
           <a href={BASE_PATH}>
-            <img src={`${BASE_PATH}/images/anchor-dark.svg`} alt="Anchor Logo" className="h-8" />
+            <img src={`${BASE_PATH}/images/logo-text.svg`} alt="Anchor Logo" className="h-8" />
           </a>
           <span className="hidden">Anchor - Framework Agnostic State Management Library</span>
         </h1>

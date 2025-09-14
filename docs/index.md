@@ -10,7 +10,7 @@ hero:
   name: 'Anchor'
   text: 'State Management For Humans, Built For Enterprise Apps'
   tagline: 'Fine-Grained Reactivity with True Immutability for Modern Web Applications'
-  image: /anchor-icon-raw.svg
+  image: /icon.svg
 
   actions:
     - theme: brand
