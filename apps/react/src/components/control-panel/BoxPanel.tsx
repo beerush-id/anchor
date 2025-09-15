@@ -1,6 +1,6 @@
 import React from 'react';
 import type { BoxProp } from './BoxView.js';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 export const BoxPanel: React.FC<{ box: BoxProp }> = observable(({ box }) => {
   return (

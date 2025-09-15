@@ -1,5 +1,5 @@
 import { Input } from '@anchorlib/react/components';
-import { useObserved, useWriter } from '@anchorlib/react';
+import { useObserver, useWriter } from '@anchorlib/react';
 import { editorApp } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';
@@ -7,7 +7,7 @@ import { Tooltip } from '../../Tooltip.js';
 
 export default function EditorRadiusPanel() {
   const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
-  const style = useObserved(() => editorApp.currentStyle);
+  const style = useObserver(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'borderRadius',
     'borderTopLeftRadius',

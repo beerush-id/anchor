@@ -1,10 +1,10 @@
 import { type FC, useRef } from 'react';
 import { CartItem, type CartItemType } from './CartItem.js';
-import { debugRender, useObserved } from '@anchorlib/react';
+import { debugRender, useObserver } from '@anchorlib/react';
 
 export const CartItemList: FC<{ items: CartItemType[] }> = ({ items }) => {
   const ref = useRef(null);
-  const cartItems = useObserved(() => {
+  const cartItems = useObserver(() => {
     return [...items].sort((a, b) => {
       return a.name.localeCompare(b.name);
     });

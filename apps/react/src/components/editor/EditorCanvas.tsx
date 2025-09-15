@@ -1,8 +1,9 @@
-import { debugRender, useDerivedRef, useObserved, useRefTrap, useWriter } from '@anchorlib/react';
+import { debugRender, useDerivedRef, useObserver, useRefTrap, useWriter } from '@anchorlib/react';
 import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { useRef } from 'react';
 import { CodeBlock } from '../CodeBlock.js';
-import { observe, Toggle, ToggleGroup } from '@anchorlib/react/components';
+import { Toggle, ToggleGroup } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 
@@ -56,7 +57,7 @@ export function CanvasView() {
   const previewRef = useRef(null);
   debugRender(previewRef);
 
-  const [node, style] = useObserved(() => [editorApp.current, editorApp.currentStyle]);
+  const [node, style] = useObserver(() => [editorApp.current, editorApp.currentStyle]);
   const defaultRef = useDerivedRef<typeof node, HTMLDivElement>(node, (snap, element) => {
     if (!element) return;
     stylize(element, snap.style);

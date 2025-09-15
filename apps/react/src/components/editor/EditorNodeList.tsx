@@ -1,4 +1,4 @@
-import { debugRender, useObserved, useValueIs } from '@anchorlib/react';
+import { debugRender, useObserver, useValueIs } from '@anchorlib/react';
 import { type CssNode, editorApp, editorWriter, parseAllCss, type StyleVariant } from '@lib/editor.js';
 import { type FC, useRef } from 'react';
 import { type Immutable } from '@anchorlib/core';
@@ -7,7 +7,7 @@ export default function EditorNodeList() {
   const ref = useRef<HTMLDivElement>(null);
   debugRender(ref);
 
-  const nodes = useObserved(() => editorApp.nodes);
+  const nodes = useObserver(() => editorApp.nodes);
 
   return (
     <div className="border-r border-r-slate-800 min-w-[150px] overflow-x-hidden overflow-y-auto">
@@ -24,7 +24,7 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
   const ref = useRef<HTMLLIElement>(null);
   debugRender(ref);
 
-  const { label, selector } = useObserved(() => ({ label: node.label, selector: node.selector }));
+  const { label, selector } = useObserver(() => ({ label: node.label, selector: node.selector }));
   const active = useValueIs(editorApp, 'current', node);
 
   const handleSelect = () => {

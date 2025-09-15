@@ -6,7 +6,7 @@ import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
 import { debugRender, useWriter } from '@anchorlib/react';
 import { microloop } from '@anchorlib/core';
 import { Tooltip } from '../Tooltip.js';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 
 const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAnchor, useVariable } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 
 function computeExpensiveValue() {
   return Math.random();

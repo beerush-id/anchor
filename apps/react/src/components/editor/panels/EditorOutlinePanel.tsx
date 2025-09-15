@@ -1,14 +1,14 @@
 import { Eraser, GalleryThumbnails, Palette, Square, SquareDashed } from 'lucide-react';
 import { Tooltip } from '../../Tooltip.js';
 import { ColorPicker, Input, Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { useObserved, useWriter } from '@anchorlib/react';
+import { useObserver, useWriter } from '@anchorlib/react';
 import { editorApp, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';
 
 export default function EditorOutlinePanel() {
   const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
-  const style = useObserved(() => editorApp.currentStyle);
+  const style = useObserver(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'borderWidth',
     'borderStyle',

@@ -3,11 +3,11 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import type { CartItemType } from './CartItem.js';
 import { Button } from '../Button.js';
-import { useObserved } from '@anchorlib/react';
+import { useObserver } from '@anchorlib/react';
 import { ReceiptIcon } from 'lucide-react';
 
 export const CartSummary: FC<{ items: CartItemType[] }> = ({ items }) => {
-  const summary = useObserved(() => {
+  const summary = useObserver(() => {
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     return {
       subtotal,

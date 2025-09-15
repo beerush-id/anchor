@@ -1,7 +1,7 @@
 import { type FC, useRef } from 'react';
 import { todoApp } from '@lib/todo.js';
 import { debugRender } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 export const TodoStats: FC = observable(() => {
   const ref = useRef(null);

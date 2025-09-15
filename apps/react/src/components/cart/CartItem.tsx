@@ -2,7 +2,8 @@ import { type FC, type KeyboardEventHandler, memo, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { debugRender, useInherit } from '@anchorlib/react';
-import { Input, observable } from '@anchorlib/react/components';
+import { Input } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 import { setDebugger } from '@anchorlib/core';
 import { isMobile } from '@lib/nav.js';
 

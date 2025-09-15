@@ -3,7 +3,7 @@ import { Card } from '../Card.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { CardHeader } from '../CardHeader.js';
 // SHOW FROM HERE //
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 import { profileState, schema } from '@lib/auth.js';
 
 export const AuthOutput: FC = observable(() => {

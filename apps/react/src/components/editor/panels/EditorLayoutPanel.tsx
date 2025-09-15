@@ -21,8 +21,9 @@ import {
   StretchVertical,
 } from 'lucide-react';
 import { Tooltip } from '../../Tooltip.js';
-import { ColorPicker, observe, Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { useObserved, useWriter } from '@anchorlib/react';
+import { ColorPicker, Toggle, ToggleGroup } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
+import { useObserver, useWriter } from '@anchorlib/react';
 import { editorApp, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';
@@ -31,7 +32,7 @@ const FLEX_KEYS = ['flex', 'inline-flex'] as (string | number | undefined)[];
 
 export default function EditorLayoutPanel() {
   const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
-  const style = useObserved(() => editorApp.currentStyle);
+  const style = useObserver(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'display',
     'alignItems',

@@ -4,7 +4,7 @@ import { Tooltip } from '../Tooltip.js';
 import { debugRender, useHistory } from '@anchorlib/react';
 import { editorApp } from '@lib/editor.js';
 import { type FC, useRef } from 'react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 const EditorHistory: FC = observable(() => {
   const ref = useRef<HTMLDivElement>(null);

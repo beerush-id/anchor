@@ -1,13 +1,13 @@
 import { Tooltip } from '../../Tooltip.js';
 import { Input } from '@anchorlib/react/components';
-import { useObserved, useWriter } from '@anchorlib/react';
+import { useObserver, useWriter } from '@anchorlib/react';
 import { editorApp } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';
 
 export default function EditorDimensionPanel() {
   const base = editorApp.current.style === editorApp.currentStyle ? {} : editorApp.current.style;
-  const style = useObserved(() => editorApp.currentStyle);
+  const style = useObserver(() => editorApp.currentStyle);
   const styleWriter = useWriter(style, [
     'width',
     'height',

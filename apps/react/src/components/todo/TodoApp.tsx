@@ -5,7 +5,7 @@ import { CardHeader } from '../CardHeader.js';
 import { type FC, useRef } from 'react';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { debugRender, useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 import { microloop, shortId } from '@anchorlib/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
