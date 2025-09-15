@@ -33,10 +33,15 @@ export function debugRender<T extends HTMLElement>(element: RefObject<T | null>)
   if (!DEBUG_RENDERER) return;
 
   if (!element?.current) {
-    return schedule(() => flashNode(element?.current, 'rgba(252,75,75,0.75)'));
+    return schedule(() => {
+      if (!(element?.current instanceof HTMLElement)) return;
+      flashNode(element?.current, 'rgba(252,75,75,0.75)');
+    });
   }
 
-  schedule(() => flashNode(element?.current));
+  if (element?.current instanceof HTMLElement) {
+    schedule(() => flashNode(element?.current));
+  }
 }
 
 function flashNode(element: HTMLElement | null = null, color = 'rgba(0,140,255,0.75)') {

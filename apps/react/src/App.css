@@ -12,7 +12,7 @@
   color-scheme: dark;
 }
 
-body {
+html {
   width: 100vw;
   height: 100vh;
   overflow-x: hidden;
@@ -146,7 +146,7 @@ select.anchor-input {
 
   &:before,
   &:after {
-    @apply absolute w-2xl aspect-square block rounded-full z-0 blur-[150px] opacity-30;
+    @apply absolute w-[80%] md:w-2xl aspect-square block rounded-full z-0 blur-[150px] opacity-30;
     content: '';
   }
 

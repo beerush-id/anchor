@@ -1,7 +1,14 @@
-import { type ComponentType, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
-import type { AnchoredProps } from '@base/index.js';
-import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION, useMicrotask, useObserverRef } from '@base/index.js';
-import { anchor, createObserver, type Linkable, type ObjLike, setObserver } from '@anchorlib/core';
+import { type ComponentType, type RefObject, useEffect, useRef, useState } from 'react';
+import {
+  type AnchoredProps,
+  CLEANUP_DEBOUNCE_TIME,
+  debugRender,
+  RENDERER_INIT_VERSION,
+  useMicrotask,
+  useObserverRef,
+} from '@base/index.js';
+import { anchor, captureStack, createObserver, type Linkable, type ObjLike, setObserver } from '@anchorlib/core';
+import type { ViewRenderer, ViewRendererFactory } from './Types.js';
 
 /**
  * `useObserverNode` is a custom React hook that leverages `useObserverRef` to manage
@@ -94,8 +101,8 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
  * automatically re-renders when any observable state accessed within the provided
  * `factory` function changes.
  *
- * @param factory A callback function that returns a `ReactNode`. This function will be
- *           executed within an observing context.
+ * @param factory A callback function that returns a `ReactNode` or a renderer factory object.
+ * This function will be executed within an observing context.
  * @param displayName An optional string to be used as the display name for the
  *                    returned component in React DevTools.
  * @returns A new React component that is reactive to observable state changes.
@@ -105,28 +112,68 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
  * the factory function should be pure and neither have any side effects nor use any React Hook inside.
  * This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
  */
-export function observe<R>(factory: (ref: RefObject<R | null>) => ReactNode, displayName?: string) {
+export function observe<R, E extends HTMLElement>(
+  factory: ViewRenderer<R, E> | ViewRendererFactory<R, E>,
+  displayName?: string
+) {
   const ObservedNode: ComponentType = () => {
-    const ref = useRef<R>(null);
+    const debugRef = useRef<E>(null);
+    const factoryRef = useRef<R>(null);
+
     const [, setVersion] = useState(RENDERER_INIT_VERSION);
     const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+    const [mounted] = useMicrotask(0);
     const [observer] = useState(() => {
       return createObserver(() => {
         setVersion((c) => c + 1);
+
+        if (typeof factory !== 'function') {
+          factory?.onUpdated?.();
+        }
       });
     });
 
     useEffect(() => {
       cancelCleanup();
 
+      if (typeof factory !== 'function') {
+        mounted(() => {
+          factory?.onMounted?.();
+        });
+      }
+
       return () => {
         cleanup(() => {
           observer.destroy();
+
+          if (typeof factory !== 'function') {
+            factory?.onDestroy?.();
+          }
         });
       };
     }, []);
 
-    return observer.run(() => factory(ref));
+    debugRender(debugRef as RefObject<HTMLElement>);
+
+    if (typeof factory === 'function') {
+      return observer.run(() => factory(factoryRef, debugRef as RefObject<E>));
+    } else if (typeof factory?.render === 'function') {
+      return observer.run(() => factory.render(factoryRef, debugRef as RefObject<E>));
+    } else {
+      captureStack.violation.general(
+        'Unsupported view renderer factory detected:',
+        'Attempted to observe a state using an invalid renderer factory.',
+        new Error('Invalid renderer factory.'),
+        [
+          'Renderer factory must be either:',
+          '- A function that returns a ReactNode.',
+          '- A factory object with a "render()" property.',
+        ],
+        ObservedNode
+      );
+
+      return null;
+    }
   };
 
   ObservedNode.displayName = `Reactive(${displayName || factory.name || 'Anonymous'})`;
