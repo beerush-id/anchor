@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   anchor,
   createDebugger,
@@ -12,7 +12,8 @@ import {
 import { DEV_MODE, STRICT_MODE } from './dev.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
 import { depsChanged } from './utils.js';
-import { useMicrotask } from './hooks.js';
+import type { ConstantRef, RefInitializer } from './types.js';
+import { useVariable } from './ref.js';
 
 /**
  * `useObserverRef` is a custom React hook that provides a stable `StateObserver` instance
@@ -139,26 +140,32 @@ export function useObserverRef(deps: Linkable[] = [], displayName?: string): [St
 }
 
 /**
- * `useObserved` is a custom React hook that allows you to create a reactive computation
- * that automatically re-runs when its observed dependencies change.
+ * **useObserver** is a custom React hook that creates a computed value by running the provided
+ * **observe** function within a reactive tracking context. It automatically tracks reactive dependencies
+ * accessed within the **observe** function and triggers re-rendering when those dependencies change.
  *
- * It combines the power of `useObserverRef` and React's `useMemo` to create a memoized
- * value that updates whenever any reactive dependencies accessed within the `transform`
- * function change. This ensures efficient re-computation only when necessary.
+ * This hook is particularly useful for creating computed values that depend on multiple reactive
+ * states without manually specifying them as dependencies. The computation is automatically
+ * re-executed when any of the accessed reactive states change.
  *
- * @template R The type of the value returned by the transform function.
- * @template D An optional tuple type representing the additional dependencies.
- * @param observe A function that performs the computation. Any reactive state
- *                  accessed within this function will be automatically tracked,
- *                  and the function will re-run when that state changes.
- * @param deps An optional array of additional dependencies. If any of these
- *             dependencies change (using React's default shallow comparison),
- *             the transform function will re-run. This is useful for incorporating
- *             non-reactive values into the computation.
- * @returns The result of the transform function. This value is memoized and will
- *          only be recomputed when its reactive dependencies or additional deps change.
+ * @template R - The type of the computed value returned by the observe function.
+ * @template D - A tuple type representing the additional dependencies.
+ *
+ * @param observe - A function that computes and returns the desired value. Any reactive state
+ *                  accessed within this function will be automatically tracked, and the function
+ *                  will re-run when that state changes.
+ * @param deps - An optional array of additional dependencies. This is useful for computations that also depend on
+ *               external state such as props. These dependencies are used to determine when the computation
+ *               should be re-executed.
+ *
+ * @returns The computed value returned by the observe function. This value is memoized and will only
+ *          be recomputed when the tracked reactive dependencies or the additional dependencies change.
+ *
+ * @remarks This hook will trigger re-render of the component who declared it. Thus, this hook is most suitable for
+ * use case where selective rendering is not possible such as feeding the output of this hook to a 3rd party
+ * component that does not support Anchor's reactive state as the input (props).
  */
-export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) {
+export function useObserver<R, D extends unknown[]>(observe: () => R, deps?: D) {
   const [observer, version] = useObserverRef(deps as Linkable[]);
   return useMemo(() => {
     return observer.run(() => {
@@ -168,61 +175,46 @@ export function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D) 
 }
 
 /**
- * `useObservedRef` is a custom React hook that creates a mutable ref object
- * whose `current` property is reactive. It allows you to define a transformation
- * function that will be re-executed whenever any reactive dependencies accessed
- * within it change, automatically updating the ref's value.
- *
- * This hook is useful for scenarios where you need a mutable reference that
- * automatically updates based on reactive state, similar to how `useRef` works
- * but with added reactivity.
- *
- * The `observe` function is run within an observer context, meaning any reactive
- * state accessed inside it will be registered as dependencies and will cause the
- * ref to update when the reactive state changes.
- *
- * @template T The type of the value held by the ref.
- * @param init The initial value for the ref. Can be `null`.
- * @param observe A function that takes the current (or initial) value and returns
- *                  the new value for the ref. This function is run reactively.
- *                  Any reactive dependencies accessed within it will cause the ref
- *                  to update.
- * @returns A mutable `RefObject` object whose `current` property is reactive.
+ * @deprecated use `useObserver` instead.
  */
-export function useObservedRef<T>(init: T | null, observe: (value: T | null) => T | null): RefObject<T | null> {
-  const valueRef = useRef(init);
-  const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+export const useObserved = useObserver;
+
+/**
+ * **useObservedRef** is a custom React hook that creates a reactive reference to a computed value.
+ * It automatically tracks reactive dependencies accessed within the **observe** function and updates the reference
+ * value when those dependencies change.
+ *
+ * This hook is particularly useful for creating computed values that depend on multiple reactive
+ * states without manually specifying them as dependencies. The computation is automatically
+ * re-executed when any of the accessed reactive states change.
+ *
+ * @template T The type of the computed value.
+ * @template D An optional tuple type representing additional dependencies.
+ *
+ * @param observe A function that computes and returns the desired value. Any reactive state
+ *                accessed within this function will be automatically tracked, and the function
+ *                will re-run when that state changes.
+ * @param deps An optional array of additional dependencies. This is useful for computation that also depends on
+ * external state such as props.
+ *
+ * @returns A constant reference (`ConstantRef<T>`) to the computed value. The reference object
+ *          remains stable, but its `.value` property updates when the computed value changes.
+ *
+ * @remarks This hook doesn't trigger a re-render when the computed value changes. Thus, this hook is most suitable
+ * for a selective rendering scenario where you want to render a component only when a specific value changes.
+ */
+export function useObservedRef<T, D extends unknown[] = []>(observe: RefInitializer<T>, deps?: D): ConstantRef<T> {
   const [observer] = useState(() => {
     return createObserver(() => {
-      valueRef.current = createValue(valueRef.current) ?? valueRef.current;
+      observedRef.value = observer.run(observe);
     });
   });
+  const [observedRef] = useVariable(() => {
+    observer.destroy();
+    return observer.run(observe);
+  }, deps ?? []);
 
-  const createValue = (next: T | null) => {
-    return observer.run(() => {
-      return observe(next);
-    }) as T | null;
-  };
-
-  useEffect(() => {
-    cancelCleanup();
-
-    return () => {
-      cleanup(() => {
-        observer.destroy();
-      });
-    };
-  }, [init]);
-
-  return {
-    get current() {
-      return valueRef.current;
-    },
-    set current(next) {
-      observer.destroy();
-      valueRef.current = createValue(next) ?? valueRef.current;
-    },
-  };
+  return observedRef;
 }
 
 /**

@@ -4,10 +4,17 @@ import type { Plugin } from 'esbuild';
 const selResolve: Plugin = {
   name: 'externalize-self',
   setup(build) {
-    build.onResolve({ filter: /^@base(?:\/|$)/ }, (args) => {
+    build.onResolve({ filter: /^@(base|view)(?:\/|$)/ }, (args) => {
       if (args.path === '@base' || args.path === '@base/index.js') {
         return {
           path: '../index.js',
+          external: true,
+        };
+      }
+
+      if (args.path === '@view' || args.path === '@view/index.js') {
+        return {
+          path: '../view/index.js',
           external: true,
         };
       }
@@ -16,7 +23,7 @@ const selResolve: Plugin = {
 };
 
 export default defineConfig({
-  entry: ['./src/index.ts', './src/storage/index.ts', './src/components/index.tsx'],
+  entry: ['./src/index.ts', './src/storage/index.ts', './src/components/index.tsx', './src/view/index.tsx'],
   outDir: './dist',
   dts: true,
   splitting: false,

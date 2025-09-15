@@ -21,7 +21,8 @@
     "target": "ES2022",
     "verbatimModuleSyntax": true,
     "paths": {
-      "@base/*": ["./src/*"]
+      "@base/*": ["./src/*"],
+      "@view/*": ["./src/view/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
