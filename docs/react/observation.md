@@ -18,8 +18,7 @@ These are Higher-Order Components that make React components reactive to **Ancho
 ### **`observe(factory, displayName?)`**
 
 A higher-order component (HOC) that creates a React component which automatically re-renders when any observable state
-accessed within the provided `factory` callback changes. It uses an internal `StateObserver` to track dependencies and
-trigger updates.
+accessed within the provided `factory` callback changes.
 
 ::: tip Recommended!
 
@@ -30,9 +29,10 @@ only the observed part re-renders, not the entire component where it's declared.
 
 **Params**
 
-- **`factory`** - A function that receives a `Ref` object and returns a `ReactNode`. The `Ref` object can be used to
-  access the component's instance.
-- **`displayName`** _(optional)_ - A name for the component, useful for debugging.
+- **`factory`** - A callback function that returns a `ReactNode`. This function will be executed within an observing context.
+- **`displayName`** _(optional)_ - A string to be used as the display name for the returned component in React DevTools.
+
+**Returns**: A new React component that is reactive to observable state changes.
 
 [API Reference](../apis/react/observation.md#observe)
 
@@ -43,7 +43,7 @@ only the observed part re-renders, not the entire component where it's declared.
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react';
 
 const CounterManager = () => {
   const [count] = useAnchor({ value: 0 });
@@ -81,7 +81,7 @@ const CounterManager = () => {
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react';
 
 const Timer = () => {
   const [timer] = useAnchor({ seconds: 0 });
@@ -123,10 +123,7 @@ const Timer = () => {
 
 Use `observe` when you want to create a reactive render function directly, often for inline rendering or when you don't
 need a separate component definition. It's particularly useful when you need to create components that are tightly
-coupled with their parent's state logic.
-
-This is the most recommended approach for observing state changes because it provides fine-grained reactivity - only the
-observed part re-renders, not the entire component where it's declared.
+coupled with their parent's state logic. This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
 
 :::
 
@@ -140,14 +137,17 @@ changes. Its main purpose is to be used as a **`View`**.
 
 ### **`observable(Component, displayName?)`**
 
-A Higher-Order Component (HOC) that wraps a React component to make it reactive to changes in observable state. It
-automatically sets up and manages a `StateObserver` instance for the wrapped component.
+A Higher-Order Component (HOC) that wraps a React component to make it reactive to changes in observable state.
+
+It automatically sets up and manages a `StateObserver` instance for the wrapped component. When any observable dependencies used within the component's render phase change, the component will automatically re-render.
 
 **Params**
 
-- **`Component`** - The React component to be made observable. It should accept its original props `T` plus an internal
-  `_state_version` prop.
-- **`displayName`** _(optional)_ - A name for the wrapped component, useful for debugging.
+- **`Component`** - The React component to be made observable. It should accept its original props `T`.
+- **`displayName`** _(optional)_ - A string to be used as the display name for the wrapped component in React DevTools. If not provided, it
+  will derive from the original component's display name or name.
+
+**Returns**: A new React component that is reactive to observable state changes.
 
 [API Reference](../apis/react/observation.md#observable)
 
@@ -158,7 +158,7 @@ automatically sets up and manages a `StateObserver` instance for the wrapped com
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react';
 
 // A regular React component
 const UserCard = ({ user }) => {
@@ -204,7 +204,7 @@ const UserManager = () => {
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react';
 
 const TodoItem = ({ todo }) => {
   return (
@@ -248,57 +248,47 @@ const TodoList = () => {
 
 ::: tip When to use it?
 
-Use `observable` when you have an existing React component that you want to make reactive, or you need the full power of a component and make it reactive. It's perfect for making
-third-party components or components from your component library reactive to Anchor's state changes.
+Use `observable` when you have an existing React component that you want to make reactive. This HOC will re-render the wrapped component whenever there are changes to the observed states. Thus, this HOC is most suitable for use case where a full re-render is needed such as wrapping a 3rd party components, or need a simple component setup without manually declare a selective rendering.
 
 :::
 
 ::: details Difference between `observable()` and `observe()`
 
-Both `observable()` and `observe()` are Higher-Order Components (HOCs) that make React components reactive to
-**Anchor**'s state changes. The key difference lies in their primary use case:
+The key difference lies in their approach and use cases:
 
-- **`observable(Component)`:** Use this when you have an _existing React component_ (class or functional) that you want
-  to make reactive. It wraps your component and passes an internal `_state_version` prop to trigger re-renders.
-- **`observe(factory)`:** Use this when you want to create a reactive _render function_ directly, often for inline
-  rendering or when you don't need a separate component definition. It takes a `factory` function that returns JSX and
-  makes that function reactive.
-
-:::
+- **`observable(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
+- **`observe(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
+  :::
 
 ## Hook APIs
 
 These are the primary React hooks for observing reactive state changes.
 
-### **`useObserved(observe, deps?)`**
+### **`useObservedRef(observe, deps?)`**
 
-The primary hook for creating a reactive computation that automatically re-runs when its observed dependencies change.
-It combines [useObserverRef](#useobserverref) and React's [useMemo](https://react.dev/reference/react/useMemo) to create
-a memoized value that updates whenever any reactive dependencies accessed within the `observe` function change.
+Creates a reactive reference to a computed value. It automatically tracks reactive dependencies accessed within the observe function and updates the reference value when those dependencies change.
 
-Unlike [observe()](#observe-factory-displayname) which provides fine-grained reactivity by creating a separate
-component, `useObserved` triggers re-render of the entire component where it's declared.
+This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
+
+The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observable()` or `observe()`).
 
 **Params**
 
-- **`observe`** - A function that performs the computation. Any reactive state accessed within this function will be
-  automatically tracked, and the function will re-run when that state changes.
-- **`deps`** _(optional)_ - An array of additional dependencies. If any of these dependencies change (using React's
-  default shallow comparison), the `observe` function will re-run. This is useful for incorporating non-reactive values
-  into the computation.
+- **`observe`** - A function that computes and returns the desired value. Any reactive state accessed within this function will be automatically tracked, and the function will re-run when that state changes.
+- **`deps`** _(optional)_ - An array of additional dependencies. This is useful for computation that also depends on external state such as props.
 
-[API Reference](../apis/react/observation.md#useobserved)
+**Returns**: A constant reference (`ConstantRef<T>`) to the computed value. The reference object remains stable, but its `.value` property updates when the computed value changes.
+
+[API Reference](../apis/react/observation.md#useobservedref)
 
 #### Usage
-
-To use `useObserved`, call it within your component body with a function that accesses reactive state:
 
 ::: details Basic Usage {open}
 
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { useObserved } from '@anchorlib/react/components';
+import { useObservedRef } from '@anchorlib/react';
 
 const UserProfile = () => {
   const [user] = useAnchor({
@@ -307,8 +297,84 @@ const UserProfile = () => {
     age: 30,
   });
 
-  // useObserved tracks user.firstName and user.lastName
-  const fullName = useObserved(() => {
+  // useObservedRef tracks user.firstName and user.lastName
+  // The returned ref can be consumed by other observers
+  const fullNameRef = useObservedRef(() => {
+    return `${user.firstName} ${user.lastName}`;
+  });
+
+  // Create a component that observes the computed ref value
+  const FullNameDisplay = observe(() => <h1>Welcome, {fullNameRef.value}!</h1>);
+
+  const incrementAge = () => {
+    user.age++;
+  };
+
+  const changeName = () => {
+    user.firstName = 'Jane';
+    user.lastName = 'Smith'; // This will update fullNameRef.value and trigger re-render of FullNameDisplay
+  };
+
+  return (
+    <div>
+      <FullNameDisplay />
+      <p>Age: {user.age}</p>
+      <button onClick={incrementAge}>Increment Age</button>
+      <button onClick={changeName}>Change Name</button>
+    </div>
+  );
+};
+```
+
+:::
+
+::: tip When to use it?
+
+Use `useObservedRef` when you need to create a computed value that can be consumed by other reactive observers. The returned ref is itself a reactive state that can be used in other computations or displayed in views.
+
+:::
+
+### **`useObserver(observe, deps?)`**
+
+A custom React hook that creates a computed value by running the provided observe function within a reactive tracking context. It automatically tracks reactive dependencies accessed within the observe function and triggers re-rendering when those dependencies change.
+
+This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
+
+Unlike [observe()](#observe-factory-displayname) which provides fine-grained reactivity by creating a separate
+component, `useObserver` triggers re-render of the entire component where it's declared.
+
+**Params**
+
+- **`observe`** - A function that computes and returns the desired value. Any reactive state accessed within this function will be
+  automatically tracked, and the function will re-run when that state changes.
+- **`deps`** _(optional)_ - An array of additional dependencies. This is useful for computations that also depend on
+  external state such as props. These dependencies are used to determine when the computation should be re-executed.
+
+**Returns**: The computed value returned by the observe function. This value is memoized and will only
+be recomputed when the tracked reactive dependencies or the additional dependencies change.
+
+[API Reference](../apis/react/observation.md#useobserver)
+
+#### Usage
+
+To use `useObserver`, call it within your component body with a function that accesses reactive state:
+
+::: details Basic Usage {open}
+
+```tsx
+import React from 'react';
+import { useAnchor } from '@anchorlib/react';
+import { useObserver } from '@anchorlib/react';
+
+const UserProfile = () => {
+  const [user] = useAnchor({
+    firstName: 'John',
+    lastName: 'Doe',
+    age: 30,
+  });
+
+  // useObserver tracks user.firstName and user.lastName
+  const fullName = useObserver(() => {
     console.log('Recalculating full name...');
     return `${user.firstName} ${user.lastName}`;
   });
@@ -340,7 +406,7 @@ const UserProfile = () => {
 ```tsx
 import React from 'react';
 import { useAnchor, useVariable } from '@anchorlib/react';
-import { useObserved } from '@anchorlib/react/components';
+import { useObserver } from '@anchorlib/react';
 
 const ProductCard = ({ currency }) => {
   const [product] = useAnchor({
@@ -349,9 +415,9 @@ const ProductCard = ({ currency }) => {
     discount: 0.1,
   });
 
-  // useObserved tracks product.price and product.discount
+  // useObserver tracks product.price and product.discount
   // It also re-runs when the currency prop changes
-  const displayPrice = useObserved(() => {
+  const displayPrice = useObserver(() => {
     const discountedPrice = product.price * (1 - product.discount);
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -382,11 +448,19 @@ const ProductCard = ({ currency }) => {
 
 ::: tip When to use it?
 
-Use `useObserved` when you need to create a reactive computation that derives values from reactive state. It's the most
+Use `useObserver` when you need to create a reactive computation that derives values from reactive state. It's the most
 common hook for creating computed values that automatically update when their dependencies change.
 
-Note that unlike [observe()](#observe-factory-displayname), `useObserved` triggers re-render of the entire component
+Note that unlike [observe()](#observe-factory-displayname), `useObserver` triggers re-render of the entire component
 where it's declared, not just the observed part.
+
+:::
+
+### **`useObserved(observe, deps?)`** (Deprecated)
+
+::: danger Deprecated
+
+This API is deprecated. Use [useObserver](#useobserver-observe-deps) instead.
 
 :::
 
@@ -410,7 +484,7 @@ when rendering lists in React where you need stable keys for efficient reconcili
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { useObservedList } from '@anchorlib/react/components';
+import { useObservedList } from '@anchorlib/react';
 
 const TodoList = () => {
   const [todos] = useAnchor([
@@ -446,7 +520,7 @@ const TodoList = () => {
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { useObservedList } from '@anchorlib/react/components';
+import { useObservedList } from '@anchorlib/react';
 
 const UserList = () => {
   const [users] = useAnchor([
@@ -512,7 +586,7 @@ Provides a stable `StateObserver` instance for tracking reactive dependencies. T
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { useObserverRef } from '@anchorlib/react/components';
+import { useObserverRef } from '@anchorlib/react';
 
 const CustomObserver = () => {
   const [data] = useAnchor({ value: 0, text: 'Hello' });
@@ -546,7 +620,7 @@ const CustomObserver = () => {
 ::: tip When to use it?
 
 Use `useObserverRef` when you need direct access to an observer instance for advanced scenarios. Most developers will
-not need to use this hook directly, as higher-level APIs like [useObserved](#useobserved-observe-deps) provide easier
+not need to use this hook directly, as higher-level APIs like [useObserver](#useobserver-observe-deps) provide easier
 ways to work with reactive computations.
 
 :::

@@ -6,17 +6,43 @@ These React hooks and components are used for observing changes in reactive stat
 
 These are the primary React hooks for observing reactive state changes.
 
-### `useObserved()`
+### `useObservedRef()`
 
-The primary hook for creating a reactive computation that automatically re-runs when its observed dependencies change. It combines `useObserverRef` and `useMemo`.
+Creates a reactive reference to a computed value. It automatically tracks reactive dependencies accessed within the observe function and updates the reference value when those dependencies change.
+
+This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
+
+The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observable()` or `observe()`).
 
 ```typescript
-function useObserved<R, D extends unknown[]>(observe: () => R, deps?: D): R;
+function useObservedRef<T, D extends unknown[] = []>(observe: RefInitializer<T>, deps?: D): ConstantRef<T>;
 ```
 
-- `observe`: A function containing the reactive computation.
-- `deps` (optional): Additional dependencies.
-- **Returns**: The result of the `observe` function.
+- `observe`: A function that computes and returns the desired value. Any reactive state accessed within this function will be automatically tracked, and the function will re-run when that state changes.
+- `deps` (optional): Additional dependencies. This is useful for computation that also depends on external state such as props.
+- **Returns**: A constant reference (`ConstantRef<T>`) to the computed value. The reference object remains stable, but its `.value` property updates when the computed value changes.
+
+### `useObserver()`
+
+A custom React hook that creates a computed value by running the provided observe function within a reactive tracking context. It automatically tracks reactive dependencies accessed within the observe function and triggers re-rendering when those dependencies change.
+
+This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
+
+```typescript
+function useObserver<R, D extends unknown[]>(observe: () => R, deps?: D): R;
+```
+
+- `observe`: A function that computes and returns the desired value. Any reactive state accessed within this function will be automatically tracked, and the function will re-run when that state changes.
+- `deps` (optional): Additional dependencies. This is useful for computations that also depend on external state such as props. These dependencies are used to determine when the computation should be re-executed.
+- **Returns**: The computed value returned by the observe function. This value is memoized and will only be recomputed when the tracked reactive dependencies or the additional dependencies change.
+
+### `useObserved()` (Deprecated)
+
+::: danger Deprecated
+
+This api is deprecated. Use [**`useObserver`**](#useobserver) instead.
+
+:::
 
 ### `useObservedList()`
 
@@ -46,12 +72,12 @@ These are Higher-Order Components that make React components reactive to Anchor'
 A higher-order component (HOC) that creates a React component which automatically re-renders when any observable state accessed within the provided `factory` callback changes. It uses an internal `StateObserver` to track dependencies and trigger updates.
 
 ```typescript
-function observe<R>(factory: (ref: Ref<R>) => ReactNode, displayName?: string): ComponentType;
+function observe<R>(factory: (ref: RefObject<R | null>) => ReactNode, displayName?: string): ComponentType;
 ```
 
-- `factory`: A function that receives a `Ref` object and returns a `ReactNode`. The `Ref` object can be used to access the component's instance.
-- `displayName` (optional): A name for the component, useful for debugging.
-- **Returns**: A new React component that is reactive.
+- `factory`: A callback function that returns a `ReactNode`. This function will be executed within an observing context.
+- `displayName` (optional): A string to be used as the display name for the returned component in React DevTools.
+- **Returns**: A new React component that is reactive to observable state changes.
 
 ### `observable()`
 
@@ -61,16 +87,16 @@ A Higher-Order Component (HOC) that wraps a React component to make it reactive 
 function observable<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string): ComponentType<T>;
 ```
 
-- `Component`: The React component to be made observable. It should accept its original props `T` plus an internal `_state_version` prop.
-- `displayName` (optional): A name for the wrapped component, useful for debugging.
+- `Component`: The React component to be made observable. It should accept its original props `T`.
+- `displayName` (optional): A string to be used as the display name for the wrapped component in React DevTools. If not provided, it will derive from the original component's display name or name.
 - **Returns**: A new React component that is reactive to observable state changes.
 
 ::: tip Difference between `observable()` and `observe()`
 
-Both `observable()` and `observe()` are Higher-Order Components (HOCs) that make React components reactive to Anchor's state changes. The key difference lies in their primary use case:
+The key difference lies in their approach and use cases:
 
-- **`observable(Component)`:** Use this when you have an _existing React component_ (class or functional) that you want to make reactive. It wraps your component and passes an internal `_state_version` prop to trigger re-renders.
-- **`observe(factory)`:** Use this when you want to create a reactive _render function_ directly, often for inline rendering or when you don't need a separate component definition. It takes a `factory` function that returns JSX and makes that function reactive.
+- **`observable(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
+- **`observe(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
   :::
 
 ## Low Level APIs
@@ -88,15 +114,3 @@ function useObserverRef(deps?: Linkable[], displayName?: string): [StateObserver
 - `deps` (optional): Dependencies that, when changed, re-establish the observer.
 - `displayName` (optional): Name for debugging.
 - **Returns**: A tuple `[observer, version]`.
-
-### `useObservedRef()`
-
-Creates a mutable ref object whose `current` property is reactive, updating automatically based on reactive state.
-
-```typescript
-function useObservedRef<T>(init: T | null, observe: (value: T | null) => T | null): RefObject<T | null>;
-```
-
-- `init`: Initial value for the ref.
-- `observe`: A function that returns the new value for the ref reactively.
-- **Returns**: A mutable `RefObject`.
