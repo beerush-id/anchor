@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAnchor, useVariable } from '@anchorlib/react';
 import { observe } from '@anchorlib/react/view';
+import BindingDemo from './Binding.js';
 
 function computeExpensiveValue() {
   return Math.random();
@@ -152,6 +153,7 @@ export default function Playground() {
       <CounterManager />
       <UserDashboard />
       <TaskManager />
+      <BindingDemo />
     </div>
   );
 }
