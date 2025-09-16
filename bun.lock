@@ -17,7 +17,7 @@
     },
     "apps/react": {
       "name": "@anchor-app/react",
-      "version": "1.0.0-beta.1",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/react": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -54,7 +54,7 @@
     },
     "apps/svelte": {
       "name": "@anchorlib/docs",
-      "version": "1.0.0-beta.1",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/storage": "workspace:*",
         "@anchorlib/svelte": "workspace:*",
@@ -87,7 +87,7 @@
     },
     "apps/vue": {
       "name": "@anchor-app/vue",
-      "version": "1.0.0-beta.1",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/vue": "workspace:*",
         "vue": "^3.5.18",
@@ -109,7 +109,7 @@
     },
     "packages/core": {
       "name": "@anchorlib/core",
-      "version": "1.0.0-beta.2",
+      "version": "1.0.0-beta.3",
       "devDependencies": {
         "@beerush/utils": "^0.5.0",
         "@eslint/css": "^0.5.0",
@@ -137,7 +137,7 @@
     },
     "packages/devtool": {
       "name": "@anchorlib/devtool",
-      "version": "1.0.0-beta.1",
+      "version": "1.0.0-beta.3",
       "devDependencies": {
         "@eslint/css": "^0.5.0",
         "@eslint/js": "^9.23.0",
@@ -159,7 +159,7 @@
     },
     "packages/react": {
       "name": "@anchorlib/react",
-      "version": "1.0.0-beta.2",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -192,7 +192,7 @@
     },
     "packages/storage": {
       "name": "@anchorlib/storage",
-      "version": "1.0.0-beta.2",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
       },
@@ -224,7 +224,7 @@
     },
     "packages/svelte": {
       "name": "@anchorlib/svelte",
-      "version": "1.0.0-beta.2",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -254,7 +254,7 @@
     },
     "packages/vue": {
       "name": "@anchorlib/vue",
-      "version": "1.0.0-beta.2",
+      "version": "1.0.0-beta.3",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",

@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import { type Bindable, type VariableRef } from '@base/index.ts';
+import type { Bindable, VariableRef } from '@base/index.ts';
 import type { WritableKeys } from '@anchorlib/core';
 
 export type ViewRenderer<T> = (ref: RefObject<T | null>) => ReactNode;

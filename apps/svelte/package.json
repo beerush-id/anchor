@@ -1,6 +1,6 @@
 {
 	"name": "@anchorlib/docs",
-	"version": "1.0.0-beta.1",
+	"version": "1.0.0-beta.3",
 	"dependencies": {
 		"@anchorlib/storage": "workspace:*",
 		"@anchorlib/svelte": "workspace:*"
