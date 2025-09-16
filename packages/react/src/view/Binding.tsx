@@ -23,6 +23,9 @@ const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']
  * @returns A new component with binding capabilities
  */
 export function bindable<Props extends InitProps>(Component: ComponentType<Props>, displayName?: string) {
+  if (displayName && !Component.displayName) {
+    Component.displayName = displayName;
+  }
   /**
    * The binding component that wraps the original component.
    *

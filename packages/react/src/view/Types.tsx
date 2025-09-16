@@ -2,10 +2,10 @@ import type { ReactNode, RefObject } from 'react';
 import { type Bindable, type VariableRef } from '@base/index.ts';
 import type { WritableKeys } from '@anchorlib/core';
 
-export type ViewRenderer<T, E> = (ref: RefObject<T | null>, debugRef: RefObject<E | null>) => ReactNode;
-export type ViewRendererFactory<T, E> = {
+export type ViewRenderer<T> = (ref: RefObject<T | null>) => ReactNode;
+export type ViewRendererFactory<T> = {
   name?: string;
-  render: ViewRenderer<T, E>;
+  render: ViewRenderer<T>;
   onMounted?: () => void;
   onUpdated?: () => void;
   onDestroy?: () => void;

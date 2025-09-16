@@ -92,7 +92,7 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
     );
   };
 
-  Observed.displayName = `Observed(${displayName || Component.displayName || Component.name || 'Anonymous'})`;
+  Observed.displayName = `Observable(${displayName || Component.displayName || Component.name || 'Anonymous'})`;
   return Observed;
 }
 
@@ -112,12 +112,8 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
  * the factory function should be pure and neither have any side effects nor use any React Hook inside.
  * This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
  */
-export function observe<R, E extends HTMLElement>(
-  factory: ViewRenderer<R, E> | ViewRendererFactory<R, E>,
-  displayName?: string
-) {
+export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, displayName?: string) {
   const ObservedNode: ComponentType = () => {
-    const debugRef = useRef<E>(null);
     const factoryRef = useRef<R>(null);
 
     const [, setVersion] = useState(RENDERER_INIT_VERSION);
@@ -153,12 +149,12 @@ export function observe<R, E extends HTMLElement>(
       };
     }, []);
 
-    debugRender(debugRef as RefObject<HTMLElement>);
+    debugRender(factoryRef as RefObject<HTMLElement>);
 
     if (typeof factory === 'function') {
-      return observer.run(() => factory(factoryRef, debugRef as RefObject<E>));
+      return observer.run(() => factory(factoryRef));
     } else if (typeof factory?.render === 'function') {
-      return observer.run(() => factory.render(factoryRef, debugRef as RefObject<E>));
+      return observer.run(() => factory.render(factoryRef));
     } else {
       captureStack.violation.general(
         'Unsupported view renderer factory detected:',
@@ -176,6 +172,6 @@ export function observe<R, E extends HTMLElement>(
     }
   };
 
-  ObservedNode.displayName = `Reactive(${displayName || factory.name || 'Anonymous'})`;
+  ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
   return ObservedNode;
 }
