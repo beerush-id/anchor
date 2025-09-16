@@ -4,6 +4,8 @@ import { useMicrotask } from './hooks.js';
 import type { ConstantRef, RefInitializer, RefUpdater, StateRef, VariableRef } from './types.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 
+const REF_REGISTRY = new WeakMap();
+
 export function useVariable<T>(init: T): [VariableRef<T>, RefUpdater<T>];
 export function useVariable<T>(init: T, constant: true): [ConstantRef<T>];
 export function useVariable<T>(init: RefInitializer<T>, deps: unknown[]): [VariableRef<T>, RefUpdater<T>];
@@ -85,12 +87,15 @@ export function useVariable<T>(
     initRef.stable = true;
   }
 
+  REF_REGISTRY.set(stateRef, state);
+
   useEffect(() => {
     cancelCleanup();
 
     return () => {
       cleanup(() => {
         anchor.destroy(state);
+        REF_REGISTRY.delete(stateRef);
       });
     };
   }, []);
@@ -145,4 +150,14 @@ export function getNextDeps(prev: unknown[], next: unknown[]): unknown[] | undef
   for (let i = 0; i < prev.length; i++) {
     if (!softEqual(prev[i], next[i], true)) return next;
   }
+}
+
+/**
+ * Checks if a value is a reference (either variable or constant).
+ *
+ * @param value - The value to check
+ * @returns True if the value is a reference, false otherwise
+ */
+export function isRef(value: unknown): value is VariableRef<unknown> | ConstantRef<unknown> {
+  return REF_REGISTRY.has(value as WeakKey);
 }
