@@ -41,9 +41,8 @@ only the observed part re-renders, not the entire component where it's declared.
 ::: details Basic Observation Usage {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/view';
 
 const CounterManager = () => {
   const [count] = useAnchor({ value: 0 });
@@ -79,9 +78,8 @@ const CounterManager = () => {
 ::: details Using the Ref Parameter
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/view';
 
 const Timer = () => {
   const [timer] = useAnchor({ seconds: 0 });
@@ -156,9 +154,8 @@ It automatically sets up and manages a `StateObserver` instance for the wrapped 
 ::: details Wrapping an Existing Component {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/view';
 
 // A regular React component
 const UserCard = ({ user }) => {
@@ -199,12 +196,11 @@ const UserManager = () => {
 
 :::
 
-::: details With Custom Display Name {open}
+::: details With Custom Display Name
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/view';
 
 const TodoItem = ({ todo }) => {
   return (
@@ -252,13 +248,223 @@ Use `observable` when you have an existing React component that you want to make
 
 :::
 
-::: details Difference between `observable()` and `observe()`
+::: details Difference between `observable()` and `observe()` {open}
 
 The key difference lies in their approach and use cases:
 
 - **`observable(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
 - **`observe(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
   :::
+
+### **`bindable(Component, displayName?)`**
+
+A higher-order component (HOC) that wraps a given component to enable two-way data binding between the component's input value and a bindable state.
+
+This HOC provides automatic synchronization between the component's input value and a bindable state. It handles various input types including text, number, range, date, checkbox, and radio inputs.
+
+::: tip Recommended!
+
+This is the most recommended way to create form inputs that automatically synchronize with **Anchor** reactive state. It eliminates the need for manual event handling and state updates.
+
+:::
+
+**Params**
+
+- **`Component`** - The React component to be wrapped with binding functionality.
+- **`displayName`** _(optional)_ - A string to be used as the display name for the resulting component in React DevTools.
+
+**Returns**: A new component with binding capabilities that accepts additional props for data binding.
+
+[API Reference](../apis/react/data-flow.md#bindable)
+
+#### Props
+
+The wrapped component accepts the following props for binding:
+
+- **`bind`** - The bindable state object or variable reference to synchronize with.
+- **`name`** or **`bindKey`** - The key of the property in the bindable state to bind to.
+- **`type`** - The input type which determines how values are parsed (e.g., 'number', 'date', 'checkbox').
+- **`value`** or **`checked`** - The value or checked state of the input (handled automatically when bound).
+- **`onChange`** - Event handler for input changes (extended with binding logic).
+
+#### Supported Input Types
+
+The `bindable()` HOC automatically handles the following input types:
+
+- Text-based inputs: `text`, `password`, `email`, `tel`, `url`, `search`, `color`, `time`
+- Number-based inputs: `number`, `range` (parsed as float)
+- Boolean inputs: `checkbox`, `radio` (parsed as boolean)
+- Date inputs: `date` (parsed as Date object)
+- Other: `file`
+
+#### Usage
+
+::: details Basic Usage {open}
+
+```tsx
+import { useAnchor } from '@anchorlib/react';
+import { bindable } from '@anchorlib/react/view';
+
+// Create a bindable input component
+const Input = bindable(function Input(props) {
+  return <input {...props} />;
+});
+
+const UserForm = () => {
+  const [user] = useAnchor({
+    name: 'John Doe',
+    email: 'john@example.com',
+    age: 30,
+    isActive: true,
+  });
+
+  return (
+    <form>
+      {/* Binding to a property by name */}
+      <div>
+        <label>Name:</label>
+        <Input bind={user} name="name" type="text" />
+      </div>
+
+      {/* Binding to a property with explicit key */}
+      <div>
+        <label>Email:</label>
+        <Input bind={user} bindKey="email" type="email" />
+      </div>
+
+      {/* Binding to a number property */}
+      <div>
+        <label>Age:</label>
+        <Input bind={user} name="age" type="number" />
+      </div>
+
+      {/* Binding to a boolean property */}
+      <div>
+        <label>Active:</label>
+        <Input bind={user} name="isActive" type="checkbox" />
+      </div>
+    </form>
+  );
+};
+```
+
+:::
+
+::: details Working with Select and Textarea
+
+```tsx
+import { useAnchor } from '@anchorlib/react';
+import { bindable } from '@anchorlib/react/view';
+
+// Create bindable components for different input types
+const Input = bindable(function Input(props) {
+  return <input {...props} />;
+});
+
+const Select = bindable(function Select(props) {
+  return <select {...props} />;
+});
+
+const TextArea = bindable(function TextArea(props) {
+  return <textarea {...props} />;
+});
+
+const ProfileForm = () => {
+  const [profile] = useAnchor({
+    username: '',
+    bio: '',
+    role: 'user',
+    subscribe: false,
+  });
+
+  return (
+    <form>
+      <div>
+        <label>Username:</label>
+        <Input bind={profile} name="username" type="text" />
+      </div>
+
+      <div>
+        <label>Bio:</label>
+        <TextArea bind={profile} name="bio" rows={4} />
+      </div>
+
+      <div>
+        <label>Role:</label>
+        <Select bind={profile} name="role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+          <option value="moderator">Moderator</option>
+        </Select>
+      </div>
+
+      <div>
+        <label>Subscribe to newsletter:</label>
+        <Input bind={profile} name="subscribe" type="checkbox" />
+      </div>
+    </form>
+  );
+};
+```
+
+:::
+
+::: details Binding to Variable References
+
+```tsx
+import { useAnchor, useVariable } from '@anchorlib/react';
+import { bindable } from '@anchorlib/react/view';
+
+const Input = bindable(function Input(props) {
+  return <input {...props} />;
+});
+
+const SearchForm = () => {
+  // Create a variable reference for a simple value
+  const [searchTerm] = useVariable('');
+
+  const [results] = useAnchor([]);
+
+  const handleSearch = () => {
+    // Perform search using searchTerm.value
+    console.log('Searching for:', searchTerm.value);
+  };
+
+  return (
+    <div>
+      <div>
+        <label>Search:</label>
+        {/* Bind directly to the variable reference */}
+        <Input bind={searchTerm} type="text" />
+        <button onClick={handleSearch}>Search</button>
+      </div>
+
+      <div>
+        <p>Current search term: {searchTerm.value}</p>
+      </div>
+    </div>
+  );
+};
+```
+
+:::
+
+::: tip When to use it?
+
+Use `bindable` when you need to create form inputs that automatically synchronize with **Anchor** reactive state. This HOC is particularly useful for:
+
+1. Creating controlled form components with minimal boilerplate
+2. Handling different input types with automatic value parsing
+3. Reducing the need for manual event handling and state updates
+4. Building forms that directly interact with reactive state
+
+:::
+
+::: warning Caveat
+
+The `bindable` HOC is specifically designed for form input components. It works best with components that accept standard HTML input props like `value`, `checked`, and `onChange`. When wrapping custom components, ensure they properly handle these props.
+
+:::
 
 ## Hook APIs
 
@@ -286,7 +492,6 @@ The returned ref is itself a reactive state that can be consumed by other observ
 ::: details Basic Usage {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
 import { useObservedRef } from '@anchorlib/react';
 
@@ -362,7 +567,6 @@ To use `useObserver`, call it within your component body with a function that ac
 ::: details Basic Usage {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
 import { useObserver } from '@anchorlib/react';
 
@@ -404,7 +608,6 @@ const UserProfile = () => {
 ::: details With Additional Dependencies {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor, useVariable } from '@anchorlib/react';
 import { useObserver } from '@anchorlib/react';
 
@@ -482,7 +685,6 @@ when rendering lists in React where you need stable keys for efficient reconcili
 ::: details Using Index as Key {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
 import { useObservedList } from '@anchorlib/react';
 
@@ -518,7 +720,6 @@ const TodoList = () => {
 ::: details Using Custom Property as Key {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
 import { useObservedList } from '@anchorlib/react';
 
@@ -584,7 +785,6 @@ Provides a stable `StateObserver` instance for tracking reactive dependencies. T
 ::: details Basic Usage {open}
 
 ```tsx
-import React from 'react';
 import { useAnchor } from '@anchorlib/react';
 import { useObserverRef } from '@anchorlib/react';
 

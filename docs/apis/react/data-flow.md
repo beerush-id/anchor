@@ -1,6 +1,50 @@
 # Data Flow & Binding APIs (React)
 
-These React hooks are used for creating data flow relationships between states without triggering component re-renders.
+These React hooks and Higher-Order Components are used for creating data flow relationships between states without triggering component re-renders.
+
+## Higher-Order Components (HOCs)
+
+These are Higher-Order Components that make React components reactive to Anchor's data flow changes.
+
+### `bindable()`
+
+A higher-order component (HOC) that wraps a given component to enable two-way data binding between the component's input value and a bindable state.
+
+This HOC provides automatic synchronization between the component's input value and a bindable state. It handles various input types including text, number, range, date, checkbox, and radio inputs.
+
+```typescript
+function bindable<Props extends InitProps>(Component: ComponentType<Props>, displayName?: string): InputBinding<Props>;
+```
+
+- `Component`: The component to be wrapped with binding functionality.
+- `displayName` (optional): A string to be used as the display name for the resulting component in React DevTools.
+- **Returns**: A new component with binding capabilities.
+
+::: tip When to use it?
+
+Use `bindable()` when you need to create controlled input components that automatically synchronize with Anchor's reactive state. This is especially useful for form inputs that need to both display and update state values.
+
+:::
+
+#### Props
+
+The wrapped component accepts the following props for binding:
+
+- `bind`: The bindable state object or variable reference to synchronize with.
+- `name` or `bindKey`: The key of the property in the bindable state to bind to.
+- `type`: The input type which determines how values are parsed (e.g., 'number', 'date', 'checkbox').
+- `value` or `checked`: The value or checked state of the input (handled automatically when bound).
+- `onChange`: Event handler for input changes (extended with binding logic).
+
+#### Supported Input Types
+
+The `bindable()` HOC automatically handles the following input types:
+
+- Text-based inputs: `text`, `password`, `email`, `tel`, `url`, `search`, `color`, `time`
+- Number-based inputs: `number`, `range` (parsed as float)
+- Boolean inputs: `checkbox`, `radio` (parsed as boolean)
+- Date inputs: `date` (parsed as Date object)
+- Other: `file`
 
 ## Primary Data Flow APIs
 
