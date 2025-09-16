@@ -161,3 +161,16 @@ export function getNextDeps(prev: unknown[], next: unknown[]): unknown[] | undef
 export function isRef(value: unknown): value is VariableRef<unknown> | ConstantRef<unknown> {
   return REF_REGISTRY.has(value as WeakKey);
 }
+
+/**
+ * Retrieves the internal state reference for a given reference.
+ *
+ * @template T - The type of the reference value
+ * @param value - The reference (variable or constant) to get the state for
+ * @returns The internal state reference if the input is a valid reference, otherwise returns the input as-is
+ */
+export function getRefState<T>(value: T): StateRef<T> {
+  if (isRef(value)) return REF_REGISTRY.get(value as WeakKey);
+
+  return value as StateRef<T>;
+}

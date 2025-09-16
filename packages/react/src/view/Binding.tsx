@@ -1,13 +1,6 @@
-import type { BindingType, InitProps, InputBinding, InputBindingProps, StateFlatBinding } from './Types.js';
-import {
-  type ChangeEvent,
-  type ComponentType,
-  type InputHTMLAttributes,
-  type RefObject,
-  useCallback,
-  useRef,
-} from 'react';
-import { type Bindable, debugRender, isRef, useValue } from '@base/index.js';
+import type { BindingType, InitProps, InputBinding, InputBindingProps } from './Types.js';
+import { type ChangeEvent, type ComponentType, type RefObject, useCallback, useRef } from 'react';
+import { type Bindable, debugRender, getRefState, isRef, useValue } from '@base/index.js';
 
 const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']);
 
@@ -35,14 +28,13 @@ export function bindable<Props extends InitProps>(Component: ComponentType<Props
   function Binding<Bind extends Bindable, Kind extends BindingType = 'text'>(
     props: InputBindingProps<Kind, Bind, Props>
   ) {
-    const { ref, type, bind, bindKey, name, onChange, value, checked, ...restProps } = props as Props &
-      StateFlatBinding<string, Kind, Bindable, InputHTMLAttributes<HTMLInputElement>>;
+    const { ref, type, bind, bindKey, name, onChange, value, checked, ...restProps } = props as Props;
 
     const key = isRef(bind) ? 'value' : (bindKey ?? name);
     const val = type === 'checkbox' || type === 'radio' ? checked : value;
 
     const selfRef = useRef(ref?.current);
-    const current = useValue(bind, key) ?? val;
+    const current = useValue(getRefState(bind), key) ?? val;
     const handleInputChange = useCallback(
       (e: ChangeEvent<HTMLInputElement>) => {
         if (!bind) return onChange?.(e);

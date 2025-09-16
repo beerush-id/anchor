@@ -59,26 +59,38 @@ export type StateBinding<Value, Kind extends BindingType, Binding extends Bindab
   | StateFlexBinding<Value, Kind, Binding, Props>
   | StateFlatBinding<Value, Kind, Binding, Props>;
 
-export type BindingProps<Value, Kind extends BindingType, Binding extends Bindable, Props extends InitProps> =
-  Binding extends VariableRef<unknown>
-    ? VariableBinding<Value, Kind, Props>
-    : StateBinding<Value, Kind, Binding, Props>;
+export type VariableBindingProps<Kind extends BindingType, Props extends InitProps> = Kind extends NumberBinding
+  ? VariableBinding<number | undefined, Kind, Props>
+  : Kind extends BooleanBinding
+    ? VariableBinding<boolean | undefined, Kind, Props>
+    : Kind extends 'date'
+      ? VariableBinding<Date | undefined, Kind, Props>
+      : Kind extends 'file'
+        ? VariableBinding<FileList | undefined, Kind, Props>
+        : VariableBinding<string | undefined, Kind, Props>;
+
+export type StateBindingProps<
+  Kind extends BindingType,
+  Binding extends Bindable,
+  Props extends InitProps,
+> = Kind extends NumberBinding
+  ? StateBinding<number | undefined, Kind, Binding, Props>
+  : Kind extends BooleanBinding
+    ? StateBinding<boolean | undefined, Kind, Binding, Props>
+    : Kind extends 'date'
+      ? StateBinding<Date | undefined, Kind, Binding, Props>
+      : Kind extends 'file'
+        ? StateBinding<FileList | undefined, Kind, Binding, Props>
+        : StateBinding<string | undefined, Kind, Binding, Props>;
 
 export type InputBindingProps<
   Kind extends BindingType,
   Binding extends Bindable,
   Props extends InitProps,
-> = Kind extends NumberBinding
-  ? BindingProps<number | undefined, Kind, Binding, Props>
-  : Kind extends BooleanBinding
-    ? BindingProps<boolean | undefined, Kind, Binding, Props>
-    : Kind extends 'date'
-      ? BindingProps<Date | undefined, Kind, Binding, Props>
-      : Kind extends 'file'
-        ? BindingProps<FileList | undefined, Kind, Binding, Props>
-        : BindingProps<string | undefined, Kind, Binding, Props>;
+> = VariableBindingProps<Kind, Props> & StateBindingProps<Kind, Binding, Props>;
 
 export interface InputBinding<Props extends InitProps> {
   (props: Props): ReactNode;
-  <Bind extends Bindable, Kind extends BindingType = 'text'>(props: InputBindingProps<Kind, Bind, Props>): ReactNode;
+  <Bind extends Bindable, Kind extends BindingType = 'text'>(props: StateBindingProps<Kind, Bind, Props>): ReactNode;
+  <Kind extends BindingType = 'text'>(props: VariableBindingProps<Kind, Props>): ReactNode;
 }
