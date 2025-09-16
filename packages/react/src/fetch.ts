@@ -2,7 +2,10 @@ import {
   type FetchOptions,
   fetchState,
   type FetchState,
+  type GetMethods,
   type LinkableSchema,
+  type PutMethods,
+  type ReqMethods,
   type StreamOptions,
   streamState,
 } from '@anchorlib/core';
@@ -22,7 +25,7 @@ import type { AnchorState } from './types.js';
  */
 export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
-  options: FetchOptions<S> & { method: 'GET' | 'DELETE' }
+  options: FetchOptions<S> & { method: GetMethods }
 ): AnchorState<FetchState<R>>;
 
 /**
@@ -37,7 +40,7 @@ export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
  */
 export function useFetch<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
-  options: FetchOptions<S> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
+  options: FetchOptions<S> & { method: PutMethods; body: P }
 ): AnchorState<FetchState<R>>;
 
 /**
@@ -49,9 +52,9 @@ export function useFetch<R, P, S extends LinkableSchema = LinkableSchema>(
  * @param options - Fetch options
  * @returns Anchor state containing the fetch result
  */
-export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
+export function useFetch<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
-  options: FetchOptions<S>
+  options: FetchOptions<S> & { method: ReqMethods; body?: P }
 ): AnchorState<FetchState<R>> {
   const [schedule] = useMicrotask(0);
   const [state, setState] = useVariable(() => {
@@ -78,7 +81,7 @@ export function useFetch<R, S extends LinkableSchema = LinkableSchema>(
  */
 export function useStream<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
-  options: StreamOptions<R, S> & { method: 'GET' | 'DELETE' }
+  options: StreamOptions<R, S> & { method: GetMethods }
 ): AnchorState<FetchState<S>>;
 
 /**
@@ -93,7 +96,7 @@ export function useStream<R, S extends LinkableSchema = LinkableSchema>(
  */
 export function useStream<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
-  options: StreamOptions<R, S> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
+  options: StreamOptions<R, S> & { method: PutMethods; body: P }
 ): AnchorState<FetchState<S>>;
 
 /**
@@ -105,9 +108,9 @@ export function useStream<R, P, S extends LinkableSchema = LinkableSchema>(
  * @param options - Stream options
  * @returns Anchor state containing the stream result
  */
-export function useStream<R, S extends LinkableSchema = LinkableSchema>(
+export function useStream<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
-  options: StreamOptions<R, S>
+  options: StreamOptions<R, S> & { method: ReqMethods; body?: P }
 ): AnchorState<FetchState<R>> {
   const [schedule] = useMicrotask(0);
   const [state, setState] = useVariable(() => {

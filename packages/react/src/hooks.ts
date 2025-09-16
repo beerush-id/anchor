@@ -94,9 +94,14 @@ export function useMicrobatch(delay?: number) {
 export function useStableRef<T>(init: T | (() => T), deps: unknown[]) {
   const stableRef = useRef({
     deps: new Set(deps),
-    value: typeof init === 'function' ? (init as () => T)() : init,
+    value: init,
     stable: false,
   }).current;
+
+  // Initialize the value if it's a factory function.
+  if (typeof stableRef.value === 'function') {
+    stableRef.value = (init as () => T)();
+  }
 
   if (stableRef.stable) {
     const updatedDeps = depsChanged(stableRef.deps, deps);
