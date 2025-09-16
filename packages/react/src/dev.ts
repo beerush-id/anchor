@@ -29,24 +29,23 @@ export function isDebugRenderer() {
 }
 
 const [schedule] = microbatch(0);
-export function debugRender<T extends HTMLElement>(element: RefObject<T | null>) {
+export function debugRender<T extends HTMLElement>(ref: RefObject<T | null>) {
   if (!DEBUG_RENDERER) return;
 
-  if (!element?.current) {
+  if (!ref?.current) {
     return schedule(() => {
-      if (!(element?.current instanceof HTMLElement)) return;
-      flashNode(element?.current, 'rgba(252,75,75,0.75)');
+      if (ref?.current?.style) {
+        flashNode(ref?.current, 'rgba(252,75,75,0.75)');
+      }
     });
   }
 
-  if (element?.current instanceof HTMLElement) {
-    schedule(() => flashNode(element?.current));
+  if (ref?.current?.style) {
+    schedule(() => flashNode(ref?.current as HTMLElement));
   }
 }
 
-function flashNode(element: HTMLElement | null = null, color = 'rgba(0,140,255,0.75)') {
-  if (!element) return;
-
+function flashNode(element: HTMLElement, color = 'rgba(0,140,255,0.75)') {
   element.style.boxShadow = `0 0 0 1px ${color}`;
 
   setTimeout(() => {
