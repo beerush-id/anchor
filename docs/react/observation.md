@@ -551,6 +551,67 @@ The `bindable` HOC is specifically designed for form input components. It works 
 
 :::
 
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx
+import { useAnchor } from '@anchorlib/react';
+import { bindable, observe } from '@anchorlib/react/view';
+
+// Create a bindable input component
+const Input = bindable(function Input(props) {
+  return <input {...props} style={{ borderRadius: '5px' }} />;
+});
+
+const UserForm = () => {
+  const [user] = useAnchor({
+    name: 'John Doe',
+    email: 'john@example.com',
+    age: 30,
+    isActive: true,
+  });
+
+  const UserView = observe(() => (
+    <div>
+      <h1>User Profile</h1>
+      <div>
+        <span>{user.name}</span>, <span>{user.email}</span>, <span>{user.age}yo</span>
+      </div>
+      <span>Active: {user.isActive ? 'Yes' : 'No'}</span>
+    </div>
+  ));
+
+  return (
+    <div>
+      <UserView />
+      <form>
+        <div>
+          <label>Name:</label>
+          <Input bind={user} name="name" type="text" />
+        </div>
+        <div>
+          <label>Email:</label>
+          <Input bind={user} bindKey="email" type="email" />
+        </div>
+        <div>
+          <label>Age:</label>
+          <Input bind={user} name="age" type="number" />
+        </div>
+        <div>
+          <label>Active:</label>
+          <Input bind={user} name="isActive" type="checkbox" />
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default UserForm;
+```
+
+:::
+
 ## Hook APIs
 
 These are the primary React hooks for observing reactive state changes.
