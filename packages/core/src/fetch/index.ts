@@ -5,9 +5,15 @@ import { linkable } from '../internal.js';
 import { captureStack } from '../exception.js';
 import { derive } from '../derive.ts';
 
-export type RequestOptions = RequestInit & {
+export type GetMethod = 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS';
+export type GetMethods = GetMethod | Lowercase<GetMethod> | string;
+export type PutMethod = 'POST' | 'PUT' | 'PATCH';
+export type PutMethods = PutMethod | Lowercase<PutMethod> | string;
+export type ReqMethods = GetMethods | PutMethods;
+export type RequestInitOptions = Omit<RequestInit, 'body' | 'method'> & {
   url: string | URL;
 };
+export type RequestOptions = { [K in keyof RequestInitOptions]: RequestInitOptions[K] } & {};
 export type FetchOptions<S extends LinkableSchema = LinkableSchema> = StateOptions<S> & RequestOptions;
 
 export type StreamOptions<T, S extends LinkableSchema = LinkableSchema> = FetchOptions<S> & {
@@ -21,17 +27,24 @@ export enum FetchStatus {
   Error = 'error',
 }
 
-export type FetchState<T> = {
+export type FetchState<T, P = undefined> = {
   data: T;
   status: FetchStatus;
   error?: Error;
   response?: Response;
-  fetch: () => void;
+  fetch: (options?: Partial<RequestOptions & { body?: P | string }>) => void;
   abort: () => void;
 };
 
 export interface FetchFn {
-  <T, S extends LinkableSchema = LinkableSchema>(init: T, options: FetchOptions<S>): FetchState<T>;
+  <T, S extends LinkableSchema = LinkableSchema>(
+    init: T,
+    options: FetchOptions<S> & { method?: GetMethods }
+  ): FetchState<T>;
+  <T, P, S extends LinkableSchema = LinkableSchema>(
+    init: T,
+    options: FetchOptions<S> & { method?: PutMethods; body: P }
+  ): FetchState<T, P>;
 
   promise<T, S extends FetchState<T>>(state: S): Promise<S>;
 }
@@ -55,14 +68,19 @@ function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, opt
   const signal = controller.signal;
 
   let started = false;
-  const start = () => {
+  const start = (newOptions?: RequestOptions & { body: string }) => {
     if (started) return;
 
     if (state.status !== FetchStatus.Pending) {
       state.status = FetchStatus.Pending;
     }
 
-    fetch(options.url, { ...options, signal })
+    const reqOptions = { ...options, ...newOptions, signal };
+    if (typeof reqOptions.body === 'object') {
+      reqOptions.body = JSON.stringify(reqOptions.body) as never;
+    }
+
+    fetch(options.url, reqOptions)
       .then(async (response) => {
         if (response.ok) {
           const contentType = response.headers.get('content-type');
@@ -118,7 +136,7 @@ function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, opt
     {
       data: init,
       status: options.deferred ? FetchStatus.Idle : FetchStatus.Pending,
-      fetch: start,
+      fetch: start as FetchState<T>['fetch'],
       abort() {
         controller.abort();
       },
@@ -140,7 +158,14 @@ fetchStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
 export const fetchState = fetchStateFn as FetchFn;
 
 export interface StreamFn {
-  <T, S extends LinkableSchema = LinkableSchema>(init: T, options?: StreamOptions<T, S>): FetchState<T>;
+  <T, S extends LinkableSchema = LinkableSchema>(
+    init: T,
+    options?: StreamOptions<T, S> & { method?: GetMethods }
+  ): FetchState<T>;
+  <T, P, S extends LinkableSchema = LinkableSchema>(
+    init: T,
+    options?: StreamOptions<T, S> & { method?: PutMethods; body: P }
+  ): FetchState<T, P>;
 
   promise<T, S extends FetchState<T>>(state: S): Promise<S>;
 }
@@ -167,14 +192,19 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
   const signal = controller.signal;
 
   let started = false;
-  const start = () => {
+  const start = (newOptions?: RequestOptions & { body: string }) => {
     if (started) return;
 
     if (state.status !== FetchStatus.Pending) {
       state.status = FetchStatus.Pending;
     }
 
-    fetch(options.url, { ...options, signal })
+    const reqOptions = { ...options, ...newOptions, signal };
+    if (typeof reqOptions.body === 'object') {
+      reqOptions.body = JSON.stringify(reqOptions.body) as never;
+    }
+
+    fetch(options.url, reqOptions)
       .then(async (response) => {
         if (response.ok) {
           const readable = response.body?.getReader?.();
@@ -228,7 +258,7 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
     {
       data: init,
       status: options.deferred ? FetchStatus.Idle : FetchStatus.Pending,
-      fetch: start,
+      fetch: start as FetchState<T>['fetch'],
       abort() {
         controller.abort();
       },

@@ -83,6 +83,49 @@ describe('Reactive Request', () => {
       );
     });
 
+    it('should handle successful upstream fetch response', async () => {
+      const mockResponse = new Response(JSON.stringify(mockUserData), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      });
+
+      const mockFetch = vi.fn(() => {
+        return Promise.resolve(mockResponse);
+      });
+      global.fetch = mockFetch as never;
+
+      const initialState = {};
+      const state = fetchState(initialState, {
+        url: 'https://api.example.com/users/1',
+        method: 'post',
+        body: {
+          name: 'John Doe',
+          email: 'john@example.com',
+        },
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Success);
+      expect(state.data).toEqual(mockUserData);
+      expect(state.response).toBe(mockResponse);
+      expect(state.error).toBeUndefined();
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/users/1',
+        expect.objectContaining({
+          url: 'https://api.example.com/users/1',
+          method: 'post',
+          body: JSON.stringify({
+            name: 'John Doe',
+            email: 'john@example.com',
+          }),
+          signal: expect.any(AbortSignal),
+        })
+      );
+    });
+
     it('should handle fetch error response', async () => {
       const mockResponse = new Response(null, {
         status: 404,
@@ -198,7 +241,8 @@ describe('Reactive Request', () => {
 
       const state = fetchState('', {
         url: 'https://jsonplaceholder.typicode.com/posts',
-        method: 'GET',
+        method: 'post',
+        body: { title: 'foo' },
         deferred: true,
       });
 
@@ -210,6 +254,15 @@ describe('Reactive Request', () => {
       expect(state.status).toBe(FetchStatus.Pending);
       expect(state.data).toEqual('');
       expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://jsonplaceholder.typicode.com/posts',
+        expect.objectContaining({
+          url: 'https://jsonplaceholder.typicode.com/posts',
+          method: 'post',
+          body: JSON.stringify({ title: 'foo' }),
+          signal: expect.any(AbortSignal),
+        })
+      );
 
       state.fetch(); // Should not re-trigger the fetch.
       expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -218,6 +271,20 @@ describe('Reactive Request', () => {
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toEqual('Hello World');
+
+      state.fetch({ body: { title: 'bar' } });
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://jsonplaceholder.typicode.com/posts',
+        expect.objectContaining({
+          url: 'https://jsonplaceholder.typicode.com/posts',
+          method: 'post',
+          body: JSON.stringify({ title: 'bar' }),
+          signal: expect.any(AbortSignal),
+        })
+      );
+
+      await vi.runAllTimersAsync();
     });
 
     it('should handle aborting the fetch request', async () => {

@@ -73,6 +73,53 @@ describe('Reactive Request', () => {
       expect(state.error).toBeUndefined();
     });
 
+    it('should handle successful upstream stream response with string chunks', async () => {
+      const textChunks = ['Hello', ' ', 'World', '!'];
+
+      const encoder = new TextEncoder();
+      const mockReadable = new ReadableStream({
+        async start(controller) {
+          for (const chunk of textChunks) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+
+          controller.close();
+        },
+      });
+
+      const mockResponse = new Response(mockReadable, { status: 200 });
+
+      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
+
+      const initialState = '';
+      const state = streamState(initialState, {
+        url: 'https://api.example.com/stream',
+        method: 'post',
+        body: {
+          name: 'John Doe',
+          age: 30,
+        },
+      });
+
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Success);
+      expect(state.data).toBe('Hello World!');
+      expect(state.error).toBeUndefined();
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.example.com/stream',
+        expect.objectContaining({
+          url: 'https://api.example.com/stream',
+          method: 'post',
+          body: JSON.stringify({
+            name: 'John Doe',
+            age: 30,
+          }),
+          signal: expect.any(AbortSignal),
+        })
+      );
+    });
+
     it('should handle successful stream response with JSON chunks', async () => {
       const jsonChunks = [JSON.stringify({ id: 1, name: 'John' }), JSON.stringify({ id: 2, name: 'Jane' })];
 
@@ -362,7 +409,8 @@ describe('Reactive Request', () => {
 
       const state = streamState('', {
         url: 'https://jsonplaceholder.typicode.com/posts',
-        method: 'GET',
+        method: 'post',
+        body: { title: 'foo' },
         deferred: true,
       });
 
@@ -374,6 +422,16 @@ describe('Reactive Request', () => {
       expect(state.status).toBe(FetchStatus.Pending);
       expect(state.data).toEqual('');
       expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        'https://jsonplaceholder.typicode.com/posts',
+        expect.objectContaining({
+          url: 'https://jsonplaceholder.typicode.com/posts',
+          method: 'post',
+          body: JSON.stringify({ title: 'foo' }),
+          signal: expect.any(AbortSignal),
+        })
+      );
 
       state.fetch(); // Should not re-trigger the fetch.
       expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -382,6 +440,20 @@ describe('Reactive Request', () => {
 
       expect(state.status).toBe(FetchStatus.Success);
       expect(state.data).toEqual('Hello World');
+
+      state.fetch({ body: { title: 'bar' } });
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://jsonplaceholder.typicode.com/posts',
+        expect.objectContaining({
+          url: 'https://jsonplaceholder.typicode.com/posts',
+          method: 'post',
+          body: JSON.stringify({ title: 'bar' }),
+          signal: expect.any(AbortSignal),
+        })
+      );
+
+      await vi.runAllTimersAsync();
     });
 
     it('should handle aborting the fetch request', async () => {
