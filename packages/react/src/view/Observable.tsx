@@ -1,4 +1,4 @@
-import { type ComponentType, type RefObject, useEffect, useRef, useState } from 'react';
+import { type ComponentType, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type AnchoredProps,
   CLEANUP_DEBOUNCE_TIME,
@@ -113,65 +113,67 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
  * This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
  */
 export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, displayName?: string) {
-  const ObservedNode: ComponentType = () => {
-    const factoryRef = useRef<R>(null);
+  return useMemo(() => {
+    const ObservedNode: ComponentType = () => {
+      const factoryRef = useRef<R>(null);
 
-    const [, setVersion] = useState(RENDERER_INIT_VERSION);
-    const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
-    const [mounted] = useMicrotask(0);
-    const [observer] = useState(() => {
-      return createObserver(() => {
-        setVersion((c) => c + 1);
-
-        if (typeof factory !== 'function') {
-          factory?.onUpdated?.();
-        }
-      });
-    });
-
-    useEffect(() => {
-      cancelCleanup();
-
-      if (typeof factory !== 'function') {
-        mounted(() => {
-          factory?.onMounted?.();
-        });
-      }
-
-      return () => {
-        cleanup(() => {
-          observer.destroy();
+      const [, setVersion] = useState(RENDERER_INIT_VERSION);
+      const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+      const [mounted] = useMicrotask(0);
+      const [observer] = useState(() => {
+        return createObserver(() => {
+          setVersion((c) => c + 1);
 
           if (typeof factory !== 'function') {
-            factory?.onDestroy?.();
+            factory?.onUpdated?.();
           }
         });
-      };
-    }, []);
+      });
 
-    debugRender(factoryRef as RefObject<HTMLElement>);
+      useEffect(() => {
+        cancelCleanup();
 
-    if (typeof factory === 'function') {
-      return observer.run(() => factory(factoryRef));
-    } else if (typeof factory?.render === 'function') {
-      return observer.run(() => factory.render(factoryRef));
-    } else {
-      captureStack.violation.general(
-        'Unsupported view renderer factory detected:',
-        'Attempted to observe a state using an invalid renderer factory.',
-        new Error('Invalid renderer factory.'),
-        [
-          'Renderer factory must be either:',
-          '- A function that returns a ReactNode.',
-          '- A factory object with a "render()" property.',
-        ],
-        ObservedNode
-      );
+        if (typeof factory !== 'function') {
+          mounted(() => {
+            factory?.onMounted?.();
+          });
+        }
 
-      return null;
-    }
-  };
+        return () => {
+          cleanup(() => {
+            observer.destroy();
 
-  ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
-  return ObservedNode;
+            if (typeof factory !== 'function') {
+              factory?.onDestroy?.();
+            }
+          });
+        };
+      }, []);
+
+      debugRender(factoryRef as RefObject<HTMLElement>);
+
+      if (typeof factory === 'function') {
+        return observer.run(() => factory(factoryRef));
+      } else if (typeof factory?.render === 'function') {
+        return observer.run(() => factory.render(factoryRef));
+      } else {
+        captureStack.violation.general(
+          'Unsupported view renderer factory detected:',
+          'Attempted to observe a state using an invalid renderer factory.',
+          new Error('Invalid renderer factory.'),
+          [
+            'Renderer factory must be either:',
+            '- A function that returns a ReactNode.',
+            '- A factory object with a "render()" property.',
+          ],
+          ObservedNode
+        );
+
+        return null;
+      }
+    };
+
+    ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
+    return ObservedNode;
+  }, [displayName]);
 }
