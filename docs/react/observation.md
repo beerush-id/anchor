@@ -29,12 +29,22 @@ only the observed part re-renders, not the entire component where it's declared.
 
 **Params**
 
-- **`factory`** - A callback function that returns a `ReactNode`. This function will be executed within an observing context.
+- **`factory`** - A callback function that returns a `ReactNode` or a renderer factory object with lifecycle methods. This function will be executed within an observing context.
 - **`displayName`** _(optional)_ - A string to be used as the display name for the returned component in React DevTools.
 
 **Returns**: A new React component that is reactive to observable state changes.
 
 [API Reference](../apis/react/observation.md#observe)
+
+#### Factory Object Properties
+
+When using a factory object instead of a simple function, the following properties are supported:
+
+- **`name`** _(optional)_ - A string to be used as the display name for the returned component in React DevTools.
+- **`render`** - A function that returns a `ReactNode`. This function will be executed within an observing context.
+- **`onMounted`** _(optional)_ - A function that is called when the component is mounted.
+- **`onUpdated`** _(optional)_ - A function that is called when the component is updated due to reactive state changes.
+- **`onDestroy`** _(optional)_ - A function that is called when the component is unmounted.
 
 #### Usage
 
@@ -75,7 +85,7 @@ const CounterManager = () => {
 
 :::
 
-::: details Using the Ref Parameter
+::: details Using Factory Object with Lifecycle Methods
 
 ```tsx
 import { useAnchor } from '@anchorlib/react';
@@ -84,24 +94,36 @@ import { observe } from '@anchorlib/react/view';
 const Timer = () => {
   const [timer] = useAnchor({ seconds: 0 });
 
-  // The factory function receives a ref parameter
-  const TimerDisplay = observe((ref) => {
-    // Store data on the ref for later use
-    if (!ref.current) {
-      ref.current = {
-        renderCount: 0,
-      };
-    }
+  // Create an observed component using a factory object with lifecycle methods
+  const TimerDisplay = observe({
+    name: 'TimerDisplay',
+    onMounted() {
+      console.log('TimerDisplay mounted');
+    },
+    onUpdated() {
+      console.log('TimerDisplay updated');
+    },
+    onDestroy() {
+      console.log('TimerDisplay will be destroyed');
+    },
+    render(ref) {
+      // Store data on the ref for later use
+      if (!ref.current) {
+        ref.current = {
+          renderCount: 0,
+        };
+      }
 
-    ref.current.renderCount++;
+      ref.current.renderCount++;
 
-    return (
-      <div>
-        <h1>Timer: {timer.seconds}s</h1>
-        <p>Renders: {ref.current.renderCount}</p>
-      </div>
-    );
-  }, 'TimerDisplay');
+      return (
+        <div>
+          <h1>Timer: {timer.seconds}s</h1>
+          <p>Renders: {ref.current.renderCount}</p>
+        </div>
+      );
+    },
+  });
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -112,6 +134,67 @@ const Timer = () => {
   }, []);
 
   return <TimerDisplay />;
+};
+```
+
+:::
+
+::: details Using the Ref Parameter
+
+```tsx
+import { useAnchor } from '@anchorlib/react';
+import { observe } from '@anchorlib/react/view';
+
+const DataList = () => {
+  const [data] = useAnchor({
+    items: ['Item 1', 'Item 2', 'Item 3'],
+    selected: null,
+  });
+
+  // The factory function receives a ref parameter
+  const ListView = observe((ref) => {
+    // Store data on the ref for later use
+    if (!ref.current) {
+      ref.current = {
+        lastSelected: null,
+      };
+    }
+
+    const handleSelect = (item) => {
+      data.selected = item;
+      ref.current.lastSelected = item;
+    };
+
+    return (
+      <div>
+        <ul>
+          {data.items.map((item, index) => (
+            <li
+              key={index}
+              onClick={() => handleSelect(item)}
+              style={{
+                backgroundColor: data.selected === item ? '#e0e0e0' : 'transparent',
+                fontWeight: ref.current.lastSelected === item ? 'bold' : 'normal',
+              }}>
+              {item}
+            </li>
+          ))}
+        </ul>
+        <p>Last selected: {ref.current.lastSelected || 'None'}</p>
+      </div>
+    );
+  });
+
+  const addItem = () => {
+    data.items = [...data.items, `Item ${data.items.length + 1}`];
+  };
+
+  return (
+    <div>
+      <ListView />
+      <button onClick={addItem}>Add Item</button>
+    </div>
+  );
 };
 ```
 
@@ -130,6 +213,8 @@ coupled with their parent's state logic. This HOC is most suitable for selective
 When using the **`observe()`** API you are not creating a component. Thus, you cannot use React hooks such as `useEffect()`
 inside it. This API is designed to be an intuitive way to render a template and re-render when the required state
 changes. Its main purpose is to be used as a **`View`**.
+
+Additionally, when using a factory object, the render function should be pure and not have any side effects.
 
 :::
 
@@ -605,7 +690,7 @@ const UserProfile = () => {
 
 :::
 
-::: details With Additional Dependencies {open}
+::: details With Additional Dependencies
 
 ```tsx
 import { useAnchor, useVariable } from '@anchorlib/react';
@@ -717,7 +802,7 @@ const TodoList = () => {
 
 :::
 
-::: details Using Custom Property as Key {open}
+::: details Using Custom Property as Key
 
 ```tsx
 import { useAnchor } from '@anchorlib/react';

@@ -73,11 +73,22 @@ A higher-order component (HOC) that creates a React component which automaticall
 
 ```typescript
 function observe<R>(factory: (ref: RefObject<R | null>) => ReactNode, displayName?: string): ComponentType;
+function observe<R>(factory: ViewRendererFactory<R>, displayName?: string): ComponentType;
 ```
 
-- `factory`: A callback function that returns a `ReactNode`. This function will be executed within an observing context.
+- `factory`: A callback function that returns a `ReactNode` or a renderer factory object with lifecycle methods. This function will be executed within an observing context.
 - `displayName` (optional): A string to be used as the display name for the returned component in React DevTools.
 - **Returns**: A new React component that is reactive to observable state changes.
+
+#### Factory Object Properties
+
+When using a factory object, the following properties are supported:
+
+- `name` (optional): A string to be used as the display name for the returned component in React DevTools.
+- `render`: A function that returns a `ReactNode`. This function will be executed within an observing context.
+- `onMounted` (optional): A function that is called when the component is mounted.
+- `onUpdated` (optional): A function that is called when the component is updated due to reactive state changes.
+- `onDestroy` (optional): A function that is called when the component is unmounted.
 
 ### `observable()`
 
