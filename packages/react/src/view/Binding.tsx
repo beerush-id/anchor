@@ -31,7 +31,7 @@ export function bindable<Props extends InitProps>(Component: ComponentType<Props
     const { ref, type, bind, bindKey, name, onChange, value, checked, ...restProps } = props as Props;
 
     const key = isRef(bind) ? 'value' : (bindKey ?? name);
-    const val = type === 'checkbox' || type === 'radio' ? checked : value;
+    const val = type === 'checkbox' || type === 'radio' ? (checked ?? false) : (value ?? '');
 
     const selfRef = useRef(ref?.current);
     const current = useValue(getRefState(bind), key) ?? val;
@@ -39,7 +39,7 @@ export function bindable<Props extends InitProps>(Component: ComponentType<Props
       (e: ChangeEvent<HTMLInputElement>) => {
         if (!bind) return onChange?.(e);
 
-        if (e.target.value === null || e.target.value === undefined) {
+        if (type !== 'checkbox' && type !== 'radio' && (e.target.value === null || e.target.value === undefined)) {
           delete bind[key];
           return onChange?.(e);
         }
@@ -54,7 +54,7 @@ export function bindable<Props extends InitProps>(Component: ComponentType<Props
         } else if (type === 'date') {
           bind[key] = new Date(e.target.value);
         } else if (type === 'checkbox' || type === 'radio') {
-          bind[key] = e.target.checked;
+          bind[key] = e.target.checked ?? false;
         } else {
           bind[key] = e.target.value;
         }
@@ -91,6 +91,6 @@ export function bindable<Props extends InitProps>(Component: ComponentType<Props
     }
   }
 
-  Binding.displayName = `Binding(${displayName || Component.displayName || Component.name || 'Anonymous'})`;
+  Binding.displayName = `Binding(${displayName || Component.displayName || 'Anonymous'})`;
   return Binding as never as InputBinding<Props>;
 }

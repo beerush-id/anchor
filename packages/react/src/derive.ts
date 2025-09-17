@@ -109,6 +109,7 @@ export function useValue<T extends State, K extends keyof T>(state: T, key: K): 
   }, [state, key, version]);
 
   useEffect(() => {
+    if (typeof state === 'undefined') return;
     if (!anchor.has(state)) {
       const error = new Error('State is not reactive.');
       captureStack.violation.derivation('Attempted to derive value from a non-reactive state.', error);
