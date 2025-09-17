@@ -129,10 +129,10 @@ export function useObserverRef(deps: Linkable[] = [], displayName?: string): [St
         observer.destroy();
         debug.ok('Observer updated:', observer.name);
       }
-    } else {
-      // Store the dependencies
-      depsRef.current = new Set<Linkable>(deps);
     }
+  } else {
+    // Store the dependencies
+    depsRef.current = new Set<Linkable>(deps);
   }
 
   return [observer, version];
@@ -204,12 +204,19 @@ export const useObserved = useObserver;
  * for a selective rendering scenario where you want to render a component only when a specific value changes.
  */
 export function useObservedRef<T, D extends unknown[] = []>(observe: RefInitializer<T>, deps?: D): ConstantRef<T> {
+  let recompute = false;
   const [observer] = useState(() => {
     return createObserver(() => {
-      observedRef.value = observe as never;
+      recompute = true;
+      observedRef.value = observer.run(observe);
     });
   });
-  const [observedRef] = useVariable(() => {
+  const [observedRef] = useVariable<T>((newValue) => {
+    if (recompute) {
+      recompute = false;
+      return newValue as T;
+    }
+
     observer.destroy();
     return observer.run(observe);
   }, deps ?? []);
