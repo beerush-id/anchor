@@ -70,9 +70,12 @@ export function useImmutable<T extends Linkable, S extends LinkableSchema = Link
   schemaOptions?: S | StateOptions<S>,
   options?: StateBaseOptions
 ): AnchorState<Immutable<T> | ImmutableOutput<T>> {
-  const [state, setState] = useVariable(() => {
-    return anchor.immutable(init as ModelInput<S>, schemaOptions as S, options);
-  }, [init, options]);
+  const [state, setState] = useVariable<ModelInput<T>>(
+    (replace) => {
+      return anchor.immutable(replace ?? (init as ModelInput<S>), schemaOptions as S, options) as ModelInput<T>;
+    },
+    [init, options]
+  );
   return [state.value, state, setState] as AnchorState<Immutable<T> | ImmutableOutput<T>>;
 }
 

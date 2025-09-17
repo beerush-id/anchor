@@ -26,9 +26,12 @@ export function useOrderedList<T extends unknown[], S extends LinkableSchema = L
   compare: (a: T[number], b: T[number]) => number,
   options?: StateOptions<S>
 ): AnchorState<T> {
-  const [state, setState] = useVariable(() => {
-    return anchor.ordered(init, compare, options);
-  }, [init, options]);
+  const [state, setState] = useVariable<T>(
+    (newValue) => {
+      return anchor.ordered(newValue ?? init, compare, options);
+    },
+    [init, options]
+  );
   return [state.value, state, setState];
 }
 
@@ -50,8 +53,11 @@ export function useFlatList<T extends unknown[], S extends LinkableSchema = Link
   init: T,
   options?: StateOptions<S>
 ): AnchorState<T> {
-  const [state, setState] = useVariable(() => {
-    return anchor.flat(init, options);
-  }, [init, options]);
+  const [state, setState] = useVariable<T>(
+    (newValue) => {
+      return anchor.flat(newValue ?? init, options);
+    },
+    [init, options]
+  );
   return [state.value, state, setState];
 }

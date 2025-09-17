@@ -67,9 +67,12 @@ export function useModel<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   options?: StateBaseOptions
 ): AnchorState<ModelOutput<S>> {
-  const [state, setState] = useVariable(() => {
-    return anchor.model(schema, init, options);
-  }, [schema, init, options]);
+  const [state, setState] = useVariable<ModelOutput<S>>(
+    (newInit) => {
+      return anchor.model(schema, (newInit ?? init) as T, options) as ModelOutput<S>;
+    },
+    [schema, init, options]
+  );
   return [state.value, state, setState];
 }
 
@@ -89,9 +92,12 @@ export function useImmutableModel<S extends LinkableSchema, T extends ModelInput
   init: T,
   options?: StateBaseOptions
 ): AnchorState<ImmutableOutput<S>> {
-  const [state, setState] = useVariable(() => {
-    return anchor.immutable(init, schema, options);
-  }, [schema, init, options]);
+  const [state, setState] = useVariable<ImmutableOutput<S>>(
+    (newValue) => {
+      return anchor.immutable((newValue ?? init) as T, schema, options) as ImmutableOutput<S>;
+    },
+    [schema, init, options]
+  );
   return [state.value, state, setState];
 }
 

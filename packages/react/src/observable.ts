@@ -206,7 +206,7 @@ export const useObserved = useObserver;
 export function useObservedRef<T, D extends unknown[] = []>(observe: RefInitializer<T>, deps?: D): ConstantRef<T> {
   const [observer] = useState(() => {
     return createObserver(() => {
-      observedRef.value = observer.run(observe);
+      observedRef.value = observe as never;
     });
   });
   const [observedRef] = useVariable(() => {

@@ -94,9 +94,12 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
   schemaOptions?: S,
   options?: StateBaseOptions
 ): AnchorState<T | ModelOutput<S> | ImmutableOutput<T>> {
-  const [state, setState] = useVariable(() => {
-    return anchor(init as ModelInput<S>, schemaOptions as S, options);
-  }, [init, schemaOptions, options]);
+  const [state, setState] = useVariable<ModelInput<T>>(
+    (newInit) => {
+      return anchor(newInit ?? (init as ModelInput<S>), schemaOptions as S, options) as ModelInput<T>;
+    },
+    [init, schemaOptions, options]
+  );
   return [state.value, state, setState] as AnchorState<T | ModelOutput<S> | ImmutableOutput<T>>;
 }
 
@@ -118,9 +121,12 @@ export function useRaw<T extends Linkable, S extends LinkableSchema = LinkableSc
   init: T,
   options?: StateOptions<S>
 ): AnchorState<T> {
-  const [state, setState] = useVariable(() => {
-    return anchor.raw(init, options);
-  }, [init, options]);
+  const [state, setState] = useVariable<T>(
+    (newValue) => {
+      return anchor.raw(newValue ?? init, options);
+    },
+    [init, options]
+  );
   return [state.value, state, setState];
 }
 

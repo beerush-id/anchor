@@ -42,7 +42,7 @@ export function useVariable<T>(
 
     if (value === state.value) return;
 
-    state.value = value;
+    state.value = typeof initRef.init === 'function' ? (init as RefInitializer<T>)(value) : value;
   }, []);
 
   const initRef = useRef({

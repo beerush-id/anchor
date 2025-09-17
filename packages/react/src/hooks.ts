@@ -114,7 +114,7 @@ export function useStableRef<T>(init: T | (() => T), deps: unknown[]) {
     stableRef.stable = true;
   }
 
-  return stableRef;
+  return stableRef as { deps: Set<unknown>; value: T; stable: boolean };
 }
 
 /**

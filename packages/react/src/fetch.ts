@@ -57,9 +57,12 @@ export function useFetch<R, P, S extends LinkableSchema = LinkableSchema>(
   options: FetchOptions<S> & { method: ReqMethods; body?: P }
 ): AnchorState<FetchState<R>> {
   const [schedule] = useMicrotask(0);
-  const [state, setState] = useVariable(() => {
-    return fetchState(init, { ...options, deferred: true });
-  }, [init, options]);
+  const [state, setState] = useVariable<FetchState<R>>(
+    (newInit) => {
+      return fetchState((newInit ?? init) as R, { ...options, deferred: true }) as FetchState<R>;
+    },
+    [init, options]
+  );
 
   useEffect(() => {
     if (!options.deferred) {
@@ -113,9 +116,12 @@ export function useStream<R, P, S extends LinkableSchema = LinkableSchema>(
   options: StreamOptions<R, S> & { method: ReqMethods; body?: P }
 ): AnchorState<FetchState<R>> {
   const [schedule] = useMicrotask(0);
-  const [state, setState] = useVariable(() => {
-    return streamState(init, { ...options, deferred: true });
-  }, [init, options]);
+  const [state, setState] = useVariable<FetchState<R>>(
+    (newInit) => {
+      return streamState((newInit ?? init) as R, { ...options, deferred: true }) as FetchState<R>;
+    },
+    [init, options]
+  );
 
   useEffect(() => {
     if (!options.deferred) {
