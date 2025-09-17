@@ -67,6 +67,21 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
  * or need a simple component setup without manually declare a selective rendering.
  */
 export function observable<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string) {
+  if (typeof Component !== 'function') {
+    const error = new Error('[observable] Component must be a function component.');
+    captureStack.violation.general(
+      'Observable factory violation detected:',
+      'Attempted to use observable HOC on a non-functional component.',
+      error,
+      undefined,
+      observable
+    );
+
+    const Observed = () => <>{error.message}</>;
+    Observed.displayName = `Error(${displayName || 'Anonymous'})`;
+    return Observed;
+  }
+
   if (displayName && !Component.displayName) {
     Component.displayName = displayName;
   }
@@ -114,6 +129,21 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
  */
 export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, displayName?: string) {
   return useMemo(() => {
+    if (typeof factory !== 'function' && (typeof factory !== 'object' || factory === null)) {
+      const error = new Error('Factory must be a function or factory object.');
+      captureStack.violation.general(
+        'View observer factory violation detected:',
+        'Attempted to use observe() HOC with a non function and object factory.',
+        error,
+        undefined,
+        observe
+      );
+
+      const Observed = () => <>{error.message}</>;
+      Observed.displayName = `Error(${displayName || 'Anonymous'})`;
+      return Observed;
+    }
+
     const ObservedNode: ComponentType = () => {
       const factoryRef = useRef<R>(null);
 
