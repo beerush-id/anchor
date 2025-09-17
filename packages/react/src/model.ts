@@ -129,16 +129,16 @@ export function useException<T extends State, R extends keyof T>(
       const key = event.keys.join('.') as R;
 
       stableRef.stable = false;
-      stableRef.value[key] = (event.issues?.[0] ?? event.error) as ModelError;
+      stableRef.value[key] = event.issues?.[0] as never as ModelError;
     });
 
     const unsubscribe = derive(
       state,
       (_, e) => {
-        if (e.type !== 'init') {
+        if (e.type !== 'init' && e.keys.length) {
           const key = e.keys.join('.') as R;
           stableRef.stable = false;
-          stableRef.value[key] = null;
+          delete stableRef.value[key];
         }
       },
       false
