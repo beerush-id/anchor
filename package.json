@@ -34,6 +34,7 @@
     "monopkg": "^0.3.10",
     "prettier": "^3.2.5",
     "vitepress": "^1.6.4",
+    "vitepress-plugin-llms": "^1.7.5",
     "vitepress-plugin-sandpack": "^1.1.4",
     "vitest": "^3.2.4"
   },

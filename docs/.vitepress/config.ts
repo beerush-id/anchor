@@ -2,6 +2,7 @@ import { defineConfig, type HeadConfig } from 'vitepress';
 // @ts-ignore
 import container from 'markdown-it-container';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
+import llmstxt from 'vitepress-plugin-llms';
 
 const BASE_URL = '/anchor/docs';
 const PAGE_URL = 'https://beerush-id.github.io/anchor/docs/';
@@ -410,5 +411,8 @@ export default defineConfig({
         },
       });
     },
+  },
+  vite: {
+    plugins: [llmstxt() as never],
   },
 });
