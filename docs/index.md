@@ -57,7 +57,7 @@ const Counter = () => {
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
-      <img src="https://anchor.mahdaen.name/anchor/docs/icon.svg" alt="Anchor Logo" className="w-24" />
+      <img src="https://anchor.mahdaen.name/docs/icon.svg" alt="Anchor Logo" className="w-24" />
       <CounterView />
       <div className="flex items-center gap-2">
         <button
