@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Checkbox } from '../../src/components/Checkbox';
 import { anchor } from '@anchorlib/core';
-import { debugRender, useValue } from '../../src/index.js';
+import { useValue } from '../../src/index.js';
 
 // Mock debugRender to avoid console logs
 vi.mock('../../src/index.js', async () => {
@@ -26,7 +26,7 @@ describe('Checkbox Component', () => {
   describe('Rendering', () => {
     it('should render a checkbox input element', () => {
       (useValue as any).mockReturnValue(false);
-      render(<Checkbox bind={{}} name="test" />);
+      render(<Checkbox bind={{ test: '' }} name="test" />);
 
       const checkbox = screen.getByRole('checkbox');
       expect(checkbox).toBeTruthy();
@@ -36,7 +36,7 @@ describe('Checkbox Component', () => {
 
     it('should render with checked state from useValue', () => {
       (useValue as any).mockReturnValue(true);
-      render(<Checkbox bind={{}} name="test" />);
+      render(<Checkbox bind={{ test: '' }} name="test" />);
 
       const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
       expect(checkbox.checked).toBe(true);
@@ -44,7 +44,7 @@ describe('Checkbox Component', () => {
 
     it('should render with fallback to checked prop', () => {
       (useValue as any).mockReturnValue(undefined);
-      render(<Checkbox bind={{}} name="test" checked={true} />);
+      render(<Checkbox bind={{ test: '' }} name="test" checked={true} />);
 
       const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
       expect(checkbox.checked).toBe(true);
@@ -52,7 +52,7 @@ describe('Checkbox Component', () => {
 
     it('should render with fallback to false', () => {
       (useValue as any).mockReturnValue(undefined);
-      render(<Checkbox bind={{}} name="test" />);
+      render(<Checkbox bind={{ test: '' }} name="test" />);
 
       const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
       expect(checkbox.checked).toBe(false);
@@ -62,7 +62,7 @@ describe('Checkbox Component', () => {
   describe('Props Handling', () => {
     it('should pass additional props to the input element', () => {
       (useValue as any).mockReturnValue(false);
-      render(<Checkbox bind={{}} name="test" disabled={true} />);
+      render(<Checkbox bind={{ test: '' }} name="test" disabled={true} />);
 
       const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
       expect(checkbox.disabled).toBe(true);
@@ -108,7 +108,7 @@ describe('Checkbox Component', () => {
     it('should not update bind when no bind object provided', () => {
       (useValue as any).mockReturnValue(false);
       const onChange = vi.fn();
-      render(<Checkbox name="test" onChange={onChange} />);
+      render(<Checkbox bind={undefined} name="test" onChange={onChange} />);
 
       const checkbox = screen.getByRole('checkbox');
       fireEvent.click(checkbox);

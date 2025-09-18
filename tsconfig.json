@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./docs",
+    "rootDir": "./docs",
+    "outDir": "./dist",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM"],
+    "module": "NodeNext",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "verbatimModuleSyntax": true
+  },
+  "include": ["docs/**/*.ts", "docs/**/*.tsx"],
+  "exclude": ["eslint.config.js", "tsup.config.ts", "packages", "apps"]
+}

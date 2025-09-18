@@ -172,3 +172,7 @@
     max-height: 512px;
   }
 }
+
+.sp-wrapper.preview-flex .sp-stack.sp-preset-column {
+  min-height: 640px;
+}

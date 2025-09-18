@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitepress';
+import { defineConfig, type HeadConfig } from 'vitepress';
 import container from 'markdown-it-container';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 
@@ -9,6 +9,21 @@ const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immut
 const PAGE_OPEN_DESCRIPTION =
   'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
 const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}social.jpg`;
+
+const analytics =
+  process.env.NODE_ENV === 'production'
+    ? [
+        ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-SSMTTBW5G5' }],
+        [
+          'script',
+          {},
+          `window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-SSMTTBW5G5');`,
+        ],
+      ]
+    : [];
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -27,15 +42,7 @@ export default defineConfig({
     ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-96x96.png`, sizes: '96x96' }],
     ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-32x32.png`, sizes: '32x32' }],
     ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-16x16.png`, sizes: '16x16' }],
-    ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-SSMTTBW5G5' }],
-    [
-      'script',
-      {},
-      `window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-SSMTTBW5G5');`,
-    ],
+    ...(analytics as HeadConfig[]),
     [
       'meta',
       {
@@ -175,6 +182,10 @@ export default defineConfig({
             text: 'Tutorials',
             collapsed: true,
             items: [
+              {
+                text: 'Scalable Todo App',
+                link: '/react/tutorials/todo-app',
+              },
               {
                 text: 'Form Validation',
                 link: '/react/tutorials/form-validation',
@@ -385,15 +396,15 @@ export default defineConfig({
           token.info = 'svelte';
         }
 
-        return defaultRender(tokens, idx, options, env, self);
+        return defaultRender?.(tokens, idx, options, env, self) ?? '';
       };
 
       md.use(container, 'sandbox', {
-        render(tokens, idx) {
+        render(tokens: any[], idx: number) {
           return renderSandbox(tokens, idx, 'sandbox');
         },
       }).use(container, 'anchor-react-sandbox', {
-        render(tokens, idx) {
+        render(tokens: any[], idx: number) {
           return renderSandbox(tokens, idx, 'anchor-react-sandbox');
         },
       });
