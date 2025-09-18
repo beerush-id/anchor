@@ -22,7 +22,7 @@ function TodoForm({ todos }: { todos: RowListState<Row<Todo>> }) {
   };
 
   return (
-    <form ref={ref} className="mb-6 flex gap-2" onSubmit={handleSubmit}>
+    <form ref={ref} className="my-6 flex gap-2" onSubmit={handleSubmit}>
       <input
         type="text"
         placeholder="Add a new todo"

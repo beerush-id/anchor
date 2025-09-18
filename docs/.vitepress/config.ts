@@ -1,4 +1,5 @@
 import { defineConfig, type HeadConfig } from 'vitepress';
+// @ts-ignore
 import container from 'markdown-it-container';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 

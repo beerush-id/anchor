@@ -91,7 +91,7 @@ Let's start by creating the data structure.
 
 :::
 
-Then let's create the actions, a set of actions that will be used to manage the todos and stats.
+Then let's create the mutators, a set of handlers that will be used to manage the todos and stats.
 
 ::: code-group
 
@@ -101,8 +101,8 @@ Then let's create the actions, a set of actions that will be used to manage the 
 
 ::: tip What we have done here?
 
-- ✓ We created a set of actions that will be used to manage the todos.
-- ✓ We created a set of actions that will be used to manage the stats.
+- ✓ We created a set of handlers that will be used to manage the todos.
+- ✓ We created a set of handlers that will be used to manage the stats.
 
 :::
 
@@ -120,6 +120,10 @@ Now let's create the components. Let's start with the `TodoItem` component.
 - ✓ We created a view for the todo item, since only these elements that need to be **re-rendered**.
 - ✓ We created a **toggle** handler that handles toggling the completed status and update the stats.
 - ✓ We created a **delete** handler that handles deleting a todo and update the stats.
+- ✓ We created an **edit** handler that handles editing the todo text with a simple syntax.
+- ✓ We created an observer using `useObservedRef()` that observes the search term to hide itself if the text doesn't
+  match the search term. It re-renders only when the variable is actually changes (`false` to `true` or `true` to
+  `false`).
 - ✓ We only display the todo item if it's not deleted by checking the `deleted_at` property.
 - ✓ We used `observe()` **HOC** to selectively render partial elements.
 - ✓ We **memoized** the component to prevent re-render when the todo list is updated.
@@ -179,6 +183,8 @@ Now let's create the components. Let's start with the `TodoItem` component.
 - ✓ We created a view to render the app.
 - ✓ We don't use any observation due to the component is not displaying any data directly.
 - ✓ We created a state to query the list of todos.
+- ✓ We created a search state and register it to the global context.
+- ✓ We created a simple search input that only re-render itself.
 
 :::
 

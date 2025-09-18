@@ -1,13 +1,13 @@
 import { memo, useRef } from 'react';
 import { observe } from '@anchorlib/react/view';
 import { type TodoRec } from './todos';
-import { debugRender } from '@anchorlib/react';
+import { debugRender, useObservedRef, type VariableRef } from '@anchorlib/react';
 import { todoActions } from './actions';
+import { getContext } from '@anchorlib/core';
 
 // Create a component that renders a single todo. This component is rendered once for each todo.
 function TodoItem({ todo }: { todo: TodoRec }) {
   const itemRef = useRef(null);
-  debugRender(itemRef);
 
   const handleToggle = () => {
     // Call the action to toggle the todo.
@@ -29,17 +29,38 @@ function TodoItem({ todo }: { todo: TodoRec }) {
           className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500"
           onChange={handleToggle}
         />
-        <span className={`ml-3 flex-1 text-gray-700 dark:text-slate-200 ${todo.completed ? 'line-through' : ''}`}>
-          {todo.text}
-        </span>
+        <input
+          type="text"
+          value={todo.text}
+          onChange={(e) => (todo.text = e.target.value)}
+          className={`ml-3 flex-1 text-gray-700 dark:text-slate-200 outline-none ${todo.completed ? 'line-through' : ''}`}
+        />
       </div>
     );
   });
 
-  // Only re-render when the deleted status change.
-  // This prevents the TodoList component to re-render when a todo is deleted.
+  // Get the search variable from the global context.
+  const search = getContext('search') as VariableRef<string>;
+
+  // Observe the search variable to know when to hide the todo item.
+  const shouldHide = useObservedRef(() => {
+    // Make sure to check if the search variable is defined and have a value.
+    if (!search?.value) return false;
+
+    // Mark the todo as hidden if there is an active search and the todo is not matching the search query.
+    return !todo.text.toLowerCase().includes(search.value.toLowerCase());
+  });
+
+  // This prevents the TodoList component to re-render.
   const TodoItemBody = observe<HTMLLIElement>(() => {
+    // Remove itself if the hidden variable is true.
+    // This only re-renders when the hidden variable changes.
+    if (shouldHide.value) return;
+
+    // Remove itself if the todo is deleted.
     if (todo.deleted_at) return;
+
+    debugRender(itemRef);
 
     return (
       <li
