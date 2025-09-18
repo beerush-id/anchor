@@ -4,7 +4,7 @@ import container from 'markdown-it-container';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 import llmstxt from 'vitepress-plugin-llms';
 
-const BASE_URL = !process.env.WORKER_BUILD ? '/anchor/docs' : '';
+const BASE_URL = !process.env.WORKER_BUILD ? '/anchor/docs' : '/docs';
 const PAGE_URL = process.env.WORKER_BUILD_URL ?? 'https://beerush-id.github.io/anchor/docs/';
 const PAGE_TITLE = 'Anchor Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
