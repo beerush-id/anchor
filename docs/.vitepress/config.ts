@@ -4,8 +4,8 @@ import container from 'markdown-it-container';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 import llmstxt from 'vitepress-plugin-llms';
 
-const BASE_URL = !process.env.WORKER_BUILD ? '/anchor/docs' : '/docs';
-const PAGE_URL = process.env.WORKER_BUILD_URL ?? 'https://beerush-id.github.io/anchor/docs/';
+const BASE_URL = !process.env.VITE_WORKER_BUILD ? '/anchor/docs' : '/docs';
+const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchor.mahdaen.name/docs/';
 const PAGE_TITLE = 'Anchor Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
@@ -75,8 +75,8 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Overview', link: '/overview' },
       { text: 'Get Started', link: '/getting-started' },
-      { text: 'Unit Tests', link: 'https://beerush-id.github.io/anchor/coverage' },
-      { text: 'Test Coverage', link: 'https://beerush-id.github.io/anchor/coverage/details' },
+      { text: 'Unit Tests', link: 'https://anchor.mahdaen.name/coverage' },
+      { text: 'Test Coverage', link: 'https://anchor.mahdaen.name/coverage/details' },
     ],
 
     sidebar: [

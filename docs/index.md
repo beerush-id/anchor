@@ -19,9 +19,6 @@ hero:
     - theme: alt
       text: View on GitHub
       link: https://github.com/beerush-id/anchor
-    - theme: alt
-      text: Unit Tests
-      link: https://beerush-id.github.io/anchor/coverage
 
 features:
   - icon: ⚡
@@ -60,7 +57,7 @@ const Counter = () => {
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
-      <img src="https://beerush-id.github.io/anchor/docs/icon.svg" alt="Anchor Logo" className="w-24" />
+      <img src="https://anchor.mahdaen.name/anchor/docs/icon.svg" alt="Anchor Logo" className="w-24" />
       <CounterView />
       <div className="flex items-center gap-2">
         <button

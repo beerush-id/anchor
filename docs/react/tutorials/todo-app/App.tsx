@@ -36,7 +36,7 @@ export default function App() {
       ref={ref}
       className="my-10 w-full max-w-md mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white p-10 dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-10 flex flex-col items-center justify-center">
-        <img src="https://beerush-id.github.io/anchor/docs/icon.svg" alt="Anchor Logo" className="mb-4 w-16" />
+        <img src="https://anchor.mahdaen.name/docs/icon.svg" alt="Anchor Logo" className="mb-4 w-16" />
         <h1 className="text-3xl font-medium text-gray-800 dark:text-white">Todo App</h1>
       </div>
       <Search />

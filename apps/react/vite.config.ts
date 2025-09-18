@@ -5,7 +5,7 @@ import * as path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  base: !process.env.WORKER_BUILD ? '/anchor' : '/',
+  base: !process.env.VITE_WORKER_BUILD ? '/anchor' : '/',
   resolve: {
     alias: {
       'react-dom/client': 'react-dom/profiling',
