@@ -3,7 +3,9 @@ import {
   type AnchoredProps,
   CLEANUP_DEBOUNCE_TIME,
   debugRender,
+  type ReactiveProps,
   RENDERER_INIT_VERSION,
+  resolveProps,
   useMicrotask,
   useObserverRef,
 } from '@base/index.js';
@@ -66,7 +68,7 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
  * a full re-render is needed such as wrapping a 3rd party components,
  * or need a simple component setup without manually declare a selective rendering.
  */
-export function observable<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string) {
+export function observable<P>(Component: ComponentType<P & AnchoredProps>, displayName?: string) {
   if (typeof Component !== 'function') {
     const error = new Error('[observable] Component must be a function component.');
     captureStack.violation.general(
@@ -86,7 +88,7 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
     Component.displayName = displayName;
   }
 
-  const Observed: ComponentType<T> = (props: T) => {
+  const Observed = (props: ReactiveProps<P>) => {
     // Creates a dependency used to track changes to the component's props.
     // This list will then be used to determine if the observer need to be re-created
     // to make sure there is no obsolete states are being tracked.
@@ -95,20 +97,23 @@ export function observable<T>(Component: ComponentType<T & AnchoredProps>, displ
     // Creates an observer instance to be used as a tracking context.
     const [Unobserve, version] = useObserverNode(dependencies, displayName);
 
+    // Resolve the props to make sure all the observable state are tracked.
+    const restProps = resolveProps(props);
+
     // Trigger the `Unobserve` component to make sure the current context is either restored
     // to the previous context, or set to undefined so no tracking is allowed after.
     // This make sure that the tracking is happening only in the rendering phase,
     // to prevent unnecessary tracking (not being used by the UI/logics).
     return (
       <>
-        <Component {...{ ...props, _state_version: version }} />
+        <Component {...{ ...restProps, _state_version: version }} />
         <Unobserve />
       </>
     );
   };
 
   Observed.displayName = `Observable(${displayName || Component.displayName || Component.name || 'Anonymous'})`;
-  return Observed;
+  return Observed as ComponentType<ReactiveProps<P>>;
 }
 
 /**

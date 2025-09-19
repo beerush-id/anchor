@@ -3,7 +3,7 @@ import { act, render, renderHook } from '@testing-library/react';
 import { observable, observe, useObserverNode } from '../../src/view/index.js';
 import { anchor } from '@anchorlib/core';
 import { useState } from 'react';
-import { useAnchor } from '../../src/index.js';
+import { useAnchor, useVariable } from '../../src/index.js';
 
 // Mock the debugRender function since it's not available in tests
 vi.mock('../../src', async () => {
@@ -15,7 +15,7 @@ vi.mock('../../src', async () => {
 });
 
 describe('Anchor React - View Observable', () => {
-  let errorSpy;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -71,6 +71,22 @@ describe('Anchor React - View Observable', () => {
         const ObservableComponent = observable<{ value: string }>(TestComponent);
 
         const { getByTestId } = render(<ObservableComponent value="test value" />);
+
+        expect(getByTestId('test-component').textContent).toBe('test value');
+      });
+
+      it('should render observable component with reactive props', () => {
+        const TestComponent = (props: { value: string; _state_version?: number }) => {
+          return <div data-testid="test-component">{props.value}</div>;
+        };
+
+        const ObservableComponent = observable<{ value: string }>(TestComponent);
+        const TestParentComponent = () => {
+          const [value] = useVariable('test value');
+          return <ObservableComponent value={value} />;
+        };
+
+        const { getByTestId } = render(<TestParentComponent />);
 
         expect(getByTestId('test-component').textContent).toBe('test value');
       });

@@ -38,3 +38,7 @@ export type FormState<T extends State, K extends keyof T> = {
   readonly isDirty: boolean;
   reset(): void;
 };
+
+export type ReactiveProps<T> = {
+  [K in keyof T]: VariableRef<T[K]> | T[K];
+};

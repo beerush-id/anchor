@@ -92,7 +92,7 @@ describe('Anchor React - Action', () => {
 
       // Set first value - no previous cleanup
       act(() => {
-        result.current.current = 'updated';
+        result.current.current = 'updated' as never;
       });
 
       expect(cleanup1).not.toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe('Anchor React - Action', () => {
 
       // Set second value - first cleanup should be called
       act(() => {
-        result.current.current = 'final';
+        result.current.current = 'final' as never;
       });
 
       expect(cleanup1).toHaveBeenCalled();
@@ -179,7 +179,7 @@ describe('Anchor React - Action', () => {
 
       // First update
       act(() => {
-        result.current.current = 'updated';
+        result.current.current = 'updated' as never;
       });
 
       expect(cleanup1).not.toHaveBeenCalled(); // No previous cleanup
@@ -187,7 +187,7 @@ describe('Anchor React - Action', () => {
 
       // Second update - first cleanup should be called
       act(() => {
-        result.current.current = 'final';
+        result.current.current = 'final' as never;
       });
 
       expect(cleanup1).toHaveBeenCalled();

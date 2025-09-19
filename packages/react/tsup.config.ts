@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 import type { Plugin } from 'esbuild';
 
-const selResolve: Plugin = {
+const pathResolve: Plugin = {
   name: 'externalize-self',
   setup(build) {
     build.onResolve({ filter: /^@(base|view)(?:\/|$)/ }, (args) => {
@@ -34,5 +34,5 @@ export default defineConfig({
   sourcemap: true,
   platform: 'browser',
   external: ['@anchorlib/core', '@anchorlib/storage', 'react'],
-  esbuildPlugins: [selResolve],
+  esbuildPlugins: [pathResolve],
 });

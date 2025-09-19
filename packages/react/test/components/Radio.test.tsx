@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Radio } from '../../src/components/Radio';
 import { anchor } from '@anchorlib/core';
-import { debugRender, useValue } from '../../src/index.js';
+import { useValue } from '../../src/index.js';
 
 // Mock debugRender to avoid console logs
 vi.mock('../../src/index.js', async () => {
@@ -26,7 +26,7 @@ describe('Radio Component', () => {
   describe('Rendering', () => {
     it('should render a radio input element', () => {
       (useValue as any).mockReturnValue(false);
-      render(<Radio bind={{}} name="test" />);
+      render(<Radio bind={{ test: '' }} name="test" />);
 
       const radio = screen.getByRole('radio');
       expect(radio).toBeTruthy();
@@ -36,7 +36,7 @@ describe('Radio Component', () => {
 
     it('should render with checked state from useValue', () => {
       (useValue as any).mockReturnValue(true);
-      render(<Radio bind={{}} name="test" />);
+      render(<Radio bind={{ test: '' }} name="test" />);
 
       const radio = screen.getByRole('radio') as HTMLInputElement;
       expect(radio.checked).toBe(true);
@@ -44,7 +44,7 @@ describe('Radio Component', () => {
 
     it('should render with fallback to checked prop', () => {
       (useValue as any).mockReturnValue(undefined);
-      render(<Radio bind={{}} name="test" checked={true} />);
+      render(<Radio bind={{ test: '' }} name="test" checked={true} />);
 
       const radio = screen.getByRole('radio') as HTMLInputElement;
       expect(radio.checked).toBe(true);
@@ -52,7 +52,7 @@ describe('Radio Component', () => {
 
     it('should render with fallback to false', () => {
       (useValue as any).mockReturnValue(undefined);
-      render(<Radio bind={{}} name="test" />);
+      render(<Radio bind={{ test: '' }} name="test" />);
 
       const radio = screen.getByRole('radio') as HTMLInputElement;
       expect(radio.checked).toBe(false);
@@ -62,7 +62,7 @@ describe('Radio Component', () => {
   describe('Props Handling', () => {
     it('should pass additional props to the input element', () => {
       (useValue as any).mockReturnValue(false);
-      render(<Radio bind={{}} name="test" disabled={true} />);
+      render(<Radio bind={{ test: '' }} name="test" disabled={true} />);
 
       const radio = screen.getByRole('radio') as HTMLInputElement;
       expect(radio.disabled).toBe(true);
@@ -97,6 +97,7 @@ describe('Radio Component', () => {
     it('should not update bind when no bind object provided', () => {
       (useValue as any).mockReturnValue(false);
       const onChange = vi.fn();
+      // @ts-expect-error
       render(<Radio name="test" onChange={onChange} />);
 
       const radio = screen.getByRole('radio');

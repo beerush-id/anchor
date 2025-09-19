@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useAnchor, useInherit, useRaw } from '../../src/anchor';
+import { useAnchor, useInherit, useRaw } from '../../src/anchor.js';
 
 describe('Anchor React - Anchor System', () => {
-  let errorSpy;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

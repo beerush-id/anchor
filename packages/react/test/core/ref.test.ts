@@ -82,7 +82,7 @@ describe('Anchor React - Ref System', () => {
         expect(ref1.value).toBe(1);
         expect(compute).toHaveBeenCalledTimes(1);
 
-        rerender({ deps: undefined });
+        rerender({ deps: undefined as never });
         const [ref2] = result.current;
         expect(ref2.value).toBe(2);
         expect(compute).toHaveBeenCalledTimes(2);

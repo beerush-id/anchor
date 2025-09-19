@@ -10,6 +10,7 @@ export * from './history.js';
 export * from './immutable.js';
 export * from './model.js';
 export * from './observable.js';
+export * from './props.js';
 export * from './ref.js';
 export * from './utils.js';
 export * from './types.js';
