@@ -27,25 +27,56 @@ export enum FetchStatus {
   Error = 'error',
 }
 
-export type FetchState<T, P = undefined> = {
+export type ReadableState<T> = {
   data: T;
   status: FetchStatus;
   error?: Error;
+};
+
+export type FetchState<T, P = undefined> = ReadableState<T> & {
   response?: Response;
   fetch: (options?: Partial<RequestOptions & { body?: P | string }>) => void;
   abort: () => void;
 };
 
 export interface FetchFn {
+  /**
+   * Create a reactive fetch state object for GET-like requests.
+   *
+   * @template T - The type of data being fetched
+   * @template S - The linkable schema type
+   * @param init - Initial data value
+   * @param options - Fetch configuration options including URL and request settings for GET-like methods
+   * @returns A reactive state object containing data, status, error and response
+   */
   <T, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options: FetchOptions<S> & { method?: GetMethods }
   ): FetchState<T>;
+
+  /**
+   * Create a reactive fetch state object for POST-like requests with body.
+   *
+   * @template T - The type of data being fetched
+   * @template P - The type of request body
+   * @template S - The linkable schema type
+   * @param init - Initial data value
+   * @param options - Fetch configuration options including URL, request settings and body for POST-like methods
+   * @returns A reactive state object containing data, status, error, response and body type
+   */
   <T, P, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options: FetchOptions<S> & { method?: PutMethods; body: P }
   ): FetchState<T, P>;
 
+  /**
+   * Converts a FetchState object to a Promise that resolves when the fetch operation completes.
+   *
+   * @template T - The type of data in the FetchState object
+   * @template S - The type of the FetchState object
+   * @param state - The FetchState object to convert to a promise
+   * @returns A promise that resolves with the final state or rejects with an error
+   */
   promise<T, S extends FetchState<T>>(state: S): Promise<S>;
 }
 
@@ -158,16 +189,58 @@ fetchStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
 export const fetchState = fetchStateFn as FetchFn;
 
 export interface StreamFn {
+  /**
+   * Create a reactive stream state object for GET-like requests.
+   *
+   * @template T - The type of data being streamed
+   * @template S - The linkable schema type
+   * @param init - Initial data value
+   * @param options - Stream configuration options including URL, request settings, and optional transform function for GET-like methods
+   * @returns A reactive state object containing data, status, error and response
+   */
   <T, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options?: StreamOptions<T, S> & { method?: GetMethods }
   ): FetchState<T>;
+
+  /**
+   * Create a reactive stream state object for POST-like requests with body.
+   *
+   * @template T - The type of data being streamed
+   * @template P - The type of request body
+   * @template S - The linkable schema type
+   * @param init - Initial data value
+   * @param options - Stream configuration options including URL, request settings, body, and optional transform function for POST-like methods
+   * @returns A reactive state object containing data, status, error, response and body type
+   */
   <T, P, S extends LinkableSchema = LinkableSchema>(
     init: T,
     options?: StreamOptions<T, S> & { method?: PutMethods; body: P }
   ): FetchState<T, P>;
 
+  /**
+   * Converts a FetchState object to a Promise that resolves when the fetch operation completes.
+   * If the state is still pending, it creates a promise that listens for state changes and resolves
+   * or rejects based on the final status. If the state is already completed (success or error),
+   * it returns a resolved promise with the current state.
+   *
+   * @template T - The type of data in the FetchState object
+   * @template S - The type of the FetchState object
+   * @param {S} state - The FetchState object to convert to a promise
+   * @returns {Promise<S>} A promise that resolves with the final state or rejects with an error
+   */
   promise<T, S extends FetchState<T>>(state: S): Promise<S>;
+
+  /**
+   * Creates a readable stream from an initial value, returning both a reactive state object
+   * and a ReadableStream. The state object tracks whether the stream is done and contains
+   * the current piped value. The ReadableStream emits values as they change in the state.
+   *
+   * @template T - The type of data being streamed
+   * @param {T} init - The initial value for the stream
+   * @returns {[ReadableState<T>, ReadableStream<T>]} A tuple containing the reactive state and the ReadableStream
+   */
+  readable<T>(init: T): [ReadableState<T>, ReadableStream<T>];
 }
 
 /**
@@ -275,6 +348,40 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
 
 streamStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
   return toPromise(state);
+};
+
+streamStateFn.readable = <T>(init: T) => {
+  const state = anchor<ReadableState<T>>({
+    data: init,
+    status: FetchStatus.Idle,
+  });
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      derive(state, (current) => {
+        const { data, status, error } = current;
+
+        if (status === FetchStatus.Success) {
+          controller.close();
+          anchor.destroy(state);
+        } else if (status === FetchStatus.Error) {
+          controller.error(error ?? new Error('Unknown error'));
+          anchor.destroy(state);
+        } else {
+          if (typeof data === 'string') {
+            controller.enqueue(encoder.encode(data));
+          } else if (typeof data === 'object') {
+            controller.enqueue(encoder.encode(JSON.stringify(data)));
+          } else if (typeof data !== 'undefined') {
+            controller.enqueue(encoder.encode(String(data)));
+          }
+        }
+      });
+    },
+  });
+
+  return [state, stream];
 };
 
 export const streamState = streamStateFn as StreamFn;

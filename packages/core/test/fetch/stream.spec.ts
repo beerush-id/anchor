@@ -270,81 +270,67 @@ describe('Reactive Request', () => {
     });
 
     it('should handle done stream contains value', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let jsonChunk: any = undefined;
-
       const encoder = new TextEncoder();
-      const reader = {
-        read() {
-          return {
-            done: true,
-            value: encoder.encode(jsonChunk ? JSON.stringify(jsonChunk) : 'done' + ' chunk'),
-          };
+
+      // Test with different types of chunks
+      const testCases = [
+        {
+          initialData: '',
+          expected: 'done chunk',
+          chunk: 'done chunk',
         },
-      };
-      const mockReadable = {
-        getReader: () => reader,
-      };
-      const mockResponse = {
-        body: mockReadable,
-        status: 200,
-        ok: true,
-      } as never as Response;
+        {
+          initialData: undefined,
+          expected: 'done chunk',
+          chunk: 'done chunk',
+        },
+        {
+          initialData: undefined,
+          expected: { text: 'done chunk' },
+          chunk: { text: 'done chunk' },
+        },
+        {
+          initialData: undefined,
+          expected: ['done chunk'],
+          chunk: ['done chunk'],
+        },
+      ];
 
-      global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
+      for (const testCase of testCases) {
+        const reader = {
+          read() {
+            return {
+              done: true,
+              value: encoder.encode(
+                typeof testCase.chunk === 'string' ? testCase.chunk : JSON.stringify(testCase.chunk)
+              ),
+            };
+          },
+        };
 
-      const state = streamState('', {
-        url: 'https://example.com',
-        method: 'GET',
-      });
+        const mockReadable = {
+          getReader: () => reader,
+        };
 
-      await vi.runAllTimersAsync();
+        const mockResponse = {
+          body: mockReadable,
+          status: 200,
+          ok: true,
+        } as never as Response;
 
-      expect(state.status).toBe(FetchStatus.Success);
-      expect(state.data).toBe('done chunk');
-      expect(state.response?.status).toBe(mockResponse.status);
+        global.fetch = vi.fn().mockResolvedValue(mockResponse) as never;
 
-      // Handle undefined as Init.
+        const state = streamState(testCase.initialData, {
+          url: 'https://example.com',
+          method: 'GET',
+        });
 
-      // Text chunk.
-      const undefState = streamState(undefined, {
-        url: 'https://example.com',
-        method: 'GET',
-      });
+        await vi.runAllTimersAsync();
 
-      await vi.runAllTimersAsync();
-
-      expect(undefState.status).toBe(FetchStatus.Success);
-      expect(undefState.data).toBe('done chunk');
-      expect(undefState.response?.status).toBe(mockResponse.status);
-
-      expect(state.response?.status).toBe(mockResponse.status);
-
-      // Object chunk.
-      jsonChunk = { text: 'done chunk' };
-      const objState = streamState(undefined, {
-        url: 'https://example.com',
-        method: 'GET',
-      });
-
-      await vi.runAllTimersAsync();
-
-      expect(objState.status).toBe(FetchStatus.Success);
-      expect(objState.data).toEqual(jsonChunk);
-      expect(objState.response?.status).toBe(mockResponse.status);
-
-      // Array chunk.
-      jsonChunk = ['done chunk'];
-      const arrState = streamState(undefined, {
-        url: 'https://example.com',
-        method: 'GET',
-      });
-
-      await vi.runAllTimersAsync();
-
-      expect(arrState.status).toBe(FetchStatus.Success);
-      expect(arrState.data).toEqual(jsonChunk);
-      expect(arrState.response?.status).toBe(mockResponse.status);
+        expect(state.status).toBe(FetchStatus.Success);
+        expect(state.data).toEqual(testCase.expected);
+        expect(state.response?.status).toBe(mockResponse.status);
+      }
     });
 
     it('should handle conversion to promise', async () => {
@@ -567,6 +553,252 @@ describe('Reactive Request', () => {
         },
       });
       unsubscribe();
+    });
+  });
+
+  describe('Stream - Readable', () => {
+    it('should create a readable stream from initial value', () => {
+      const initialState = 'initial';
+      const [state, stream] = streamState.readable(initialState);
+
+      expect(state.data).toBe(initialState);
+      expect(state.status).toBe(FetchStatus.Idle);
+      expect(stream).toBeInstanceOf(ReadableStream);
+    });
+
+    it('should enqueue string data to the stream', async () => {
+      const initialState = '';
+      const [state, stream] = streamState.readable(initialState);
+
+      const chunks: string[] = [];
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      // Read in background
+      (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(decoder.decode(value as never));
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
+          // Ignore for this test
+        }
+      })().catch(() => {});
+
+      // Update state
+      state.data = 'Hello';
+      state.data = 'Hello World';
+
+      // Mark as success to close stream
+      state.status = FetchStatus.Success;
+
+      // Wait a bit for async operations
+      await vi.runAllTimersAsync();
+
+      expect(chunks).toEqual(['', 'Hello', 'Hello World']);
+    });
+
+    it('should enqueue JSON stringifies object data to the stream', async () => {
+      const initialState = {};
+      const [state, stream] = streamState.readable(initialState);
+
+      const chunks: string[] = [];
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      // Read in background
+      (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(decoder.decode(value as never));
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+          // Ignore for this test
+        }
+      })().catch(() => {});
+
+      // Update state
+      state.data = { message: 'Hello' };
+      state.data = { message: 'Hello', count: 1 };
+
+      // Mark as success to close stream
+      state.status = FetchStatus.Success;
+
+      // Wait a bit for async operations
+      await vi.runAllTimersAsync();
+
+      expect(chunks).toEqual([
+        JSON.stringify({}),
+        JSON.stringify({ message: 'Hello' }),
+        JSON.stringify({ message: 'Hello', count: 1 }),
+      ]);
+    });
+
+    it('should close the stream when status becomes Success', async () => {
+      const initialState = '';
+      const [state, stream] = streamState.readable(initialState);
+
+      let value: string | undefined;
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      // Start reading
+      (async () => {
+        try {
+          while (true) {
+            const result = await reader.read();
+            if (result.done) break;
+            value = decoder.decode(result.value as never);
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+          // Ignore for this test
+        }
+      })().catch(() => {});
+
+      // Update state
+      state.data = 'test';
+      state.status = FetchStatus.Success;
+
+      // Wait a bit for async operations
+      await vi.runAllTimersAsync();
+
+      expect(state.status).toBe(FetchStatus.Success);
+      expect(value).toBe('test');
+    });
+
+    it('should error the stream when status becomes Error', async () => {
+      const initialState = '';
+      const [state, stream] = streamState.readable(initialState);
+
+      let errorThrown = false;
+      let errorValue: Error | undefined;
+
+      const reader = stream.getReader();
+
+      // Start reading
+      const promise = (async () => {
+        try {
+          while (true) {
+            const result = await reader.read();
+            if (result.done) break;
+          }
+        } catch (error) {
+          errorThrown = true;
+          errorValue = error as Error;
+        }
+      })();
+
+      // Update state
+      state.data = 'test';
+      state.status = FetchStatus.Error;
+
+      // Wait a bit for async operations
+      await promise.catch();
+      await vi.runAllTimersAsync();
+
+      expect(errorThrown).toBe(true);
+      expect(errorValue).toBeInstanceOf(Error);
+    });
+
+    it('should handle edge case with undefined initial data', async () => {
+      const [state, stream] = streamState.readable(undefined);
+
+      const chunks: string[] = [];
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      // Read in background
+      const promise = (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(decoder.decode(value as never));
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
+          // Ignore for this test
+        }
+      })().catch(() => {});
+
+      // Update state
+      state.data = 'defined value' as never;
+      state.status = FetchStatus.Success;
+
+      // Wait a bit for async operations
+      await promise.catch();
+
+      expect(chunks).toEqual(['defined value']);
+      expect(state.data).toBe('defined value');
+    });
+
+    it('should handle edge case with null initial data', async () => {
+      const [state, stream] = streamState.readable(null);
+
+      const chunks: string[] = [];
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      // Read in background
+      const promise = (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(decoder.decode(value as never));
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
+          // Ignore for this test
+        }
+      })().catch(() => {});
+
+      // Update state
+      state.data = 'not null' as never;
+      state.status = FetchStatus.Success;
+
+      // Wait a bit for async operations
+      await promise;
+
+      expect(chunks).toEqual([JSON.stringify(null), 'not null']);
+    });
+
+    it('should handle edge case with number initial data', async () => {
+      const [state, stream] = streamState.readable(42);
+
+      const chunks: string[] = [];
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      // Read in background
+      const promise = (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(decoder.decode(value as never));
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_error) {
+          // Ignore for this test
+        }
+      })().catch(() => {});
+
+      // Update state
+      state.data = 100;
+      state.status = FetchStatus.Success;
+
+      // Wait a bit for async operations
+      await promise;
+
+      expect(chunks).toEqual(['42', '100']);
     });
   });
 });
