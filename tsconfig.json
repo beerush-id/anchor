@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "baseUrl": "./docs",
-    "rootDir": "./docs",
     "outDir": "./dist",
     "allowJs": true,
     "jsx": "react-jsx",
