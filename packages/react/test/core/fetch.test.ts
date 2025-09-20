@@ -6,7 +6,7 @@ import { FetchStatus } from '@anchorlib/core';
 
 describe('Anchor React - Fetch', () => {
   const originalFetch = global.fetch;
-  let errorSpy;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

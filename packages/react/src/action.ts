@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMicrotask } from './hooks.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 import type { Action, ActionRef } from './types.js';
@@ -15,7 +15,7 @@ import type { StateUnsubscribe } from '@anchorlib/core';
  * @param action - A function that takes the current value and returns a cleanup function
  * @returns An object with getter and setter for the current value
  */
-export function useAction<T>(action: Action<T>): RefObject<T>;
+export function useAction<T>(action: Action<T>): ActionRef<T>;
 
 /**
  * Custom hook that manages an action with cleanup capabilities.
@@ -29,9 +29,9 @@ export function useAction<T>(action: Action<T>): RefObject<T>;
  * @param action - A function that takes the current value and returns a cleanup function
  * @returns An object with getter and setter for the current value
  */
-export function useAction<T>(init: T, action: Action<T>): RefObject<T>;
+export function useAction<T>(init: T, action: Action<T>): ActionRef<T>;
 
-export function useAction<T>(init: T | Action<T>, action?: Action<T>): RefObject<T> {
+export function useAction<T>(init: T | Action<T>, action?: Action<T>): ActionRef<T> {
   if (typeof init === 'function') action = init as Action<T>;
 
   const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
@@ -56,5 +56,41 @@ export function useAction<T>(init: T | Action<T>, action?: Action<T>): RefObject
       actionRef.current = value;
       actionRef.destroy = (action as Action<T>)(actionRef.current) as StateUnsubscribe;
     },
+    destroy() {
+      actionRef.current = null as T;
+      cleanup(() => actionRef.destroy?.());
+    },
   };
+}
+
+/**
+ * Custom hook that combines multiple action references into a single action reference.
+ *
+ * This hook allows you to synchronize multiple action references so that when the
+ * combined action's value is updated, all individual actions are updated with the
+ * same value. It also handles cleanup for all actions when the combined action is destroyed.
+ *
+ * Use cases: Apply class binding, style binding, and event listeners to the same element.
+ *
+ * @template T - The type of the value being managed
+ * @param actions - An array of action references to be combined
+ * @returns A single action reference that controls all provided actions
+ */
+export function useActions<T>(...actions: ActionRef<T>[]): ActionRef<T> {
+  const selfRef = useRef<T>(null);
+  return useMemo(() => {
+    return {
+      get current() {
+        return selfRef.current as T;
+      },
+      set current(value: T) {
+        selfRef.current = value;
+        actions.forEach((action) => (action.current = value));
+      },
+      destroy() {
+        selfRef.current = null;
+        actions.forEach((action) => action.destroy?.());
+      },
+    };
+  }, actions);
 }

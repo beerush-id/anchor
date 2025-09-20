@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useAction } from '../../src/action';
+import { useAction, useActions } from '../../src/action';
 import { CLEANUP_DEBOUNCE_TIME } from '../../src/constant';
+import type { ActionRef } from '@anchorlib/react';
 
 describe('Anchor React - Action', () => {
   beforeEach(() => {
@@ -192,6 +193,111 @@ describe('Anchor React - Action', () => {
 
       expect(cleanup1).toHaveBeenCalled();
       expect(action).toHaveBeenNthCalledWith(2, 'final');
+    });
+  });
+
+  describe('Actions Combination', () => {
+    it('should combine multiple action refs into a single action ref', () => {
+      const action1 = vi.fn(() => undefined);
+      const action2 = vi.fn(() => undefined);
+
+      const { result: actionResult1 } = renderHook(() => useAction(action1));
+      const { result: actionResult2 } = renderHook(() => useAction(action2));
+
+      const { result } = renderHook(() => useActions(actionResult1.current, actionResult2.current));
+
+      expect(result.current.current).toBe(null);
+
+      act(() => {
+        result.current.current = 'test-value';
+      });
+
+      expect(result.current.current).toBe('test-value');
+      expect(actionResult1.current.current).toBe('test-value');
+      expect(actionResult2.current.current).toBe('test-value');
+      expect(action1).toHaveBeenCalledWith('test-value');
+      expect(action2).toHaveBeenCalledWith('test-value');
+    });
+
+    it('should update all actions when setting value on combined action', () => {
+      const action1 = vi.fn(() => undefined);
+      const action2 = vi.fn(() => undefined);
+      const action3 = vi.fn(() => undefined);
+
+      const { result: actionResult1 } = renderHook(() => useAction('initial1', action1));
+      const { result: actionResult2 } = renderHook(() => useAction('initial2', action2));
+      const { result: actionResult3 } = renderHook(() => useAction('initial3', action3));
+
+      const { result } = renderHook(() =>
+        useActions(actionResult1.current, actionResult2.current, actionResult3.current)
+      );
+
+      // Combined action starts with null regardless of individual action values
+      expect(result.current.current).toBe(null);
+
+      act(() => {
+        result.current.current = 'synced-value';
+      });
+
+      // All actions should now have the same value
+      expect(result.current.current).toBe('synced-value');
+      expect(actionResult1.current.current).toBe('synced-value');
+      expect(actionResult2.current.current).toBe('synced-value');
+      expect(actionResult3.current.current).toBe('synced-value');
+    });
+
+    it('should call destroy on all actions when combined action is destroyed', () => {
+      const destroy1 = vi.fn();
+      const destroy2 = vi.fn();
+      const destroy3 = vi.fn();
+
+      const actionRef1 = { current: null, destroy: destroy1 };
+      const actionRef2 = { current: null, destroy: destroy2 };
+      const actionRef3 = { current: null, destroy: destroy3 };
+
+      const { result } = renderHook(() => useActions(actionRef1, actionRef2, actionRef3));
+
+      // Initially, no destroy functions should be called
+      expect(destroy1).not.toHaveBeenCalled();
+      expect(destroy2).not.toHaveBeenCalled();
+      expect(destroy3).not.toHaveBeenCalled();
+
+      // Call destroy on the combined action
+      act(() => {
+        result.current.destroy();
+      });
+
+      // All destroy functions should be called
+      expect(destroy1).toHaveBeenCalled();
+      expect(destroy2).toHaveBeenCalled();
+      expect(destroy3).toHaveBeenCalled();
+      expect(result.current.current).toBe(null);
+    });
+
+    it('should handle actions without destroy methods', () => {
+      const action1 = vi.fn(() => undefined);
+
+      const { result: actionResult1 } = renderHook(() => useAction(action1));
+      const actionRef2 = { current: null }; // No destroy method
+
+      const { result } = renderHook(() => useActions(actionResult1.current, actionRef2 as ActionRef<null>));
+
+      expect(result.current.current).toBe(null);
+
+      act(() => {
+        result.current.current = 'test';
+      });
+
+      expect(result.current.current).toBe('test');
+      expect(actionResult1.current.current).toBe('test');
+      expect(actionRef2.current).toBe('test');
+
+      // Should not throw when destroying
+      expect(() => {
+        act(() => {
+          result.current.destroy();
+        });
+      }).not.toThrow();
     });
   });
 });
