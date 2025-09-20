@@ -85,7 +85,7 @@ export function useFetch<R, P, S extends LinkableSchema = LinkableSchema>(
 export function useStream<R, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: StreamOptions<R, S> & { method: GetMethods }
-): AnchorState<FetchState<S>>;
+): AnchorState<FetchState<R>>;
 
 /**
  * Stream hook for POST, PUT, or PATCH requests.
@@ -100,7 +100,7 @@ export function useStream<R, S extends LinkableSchema = LinkableSchema>(
 export function useStream<R, P, S extends LinkableSchema = LinkableSchema>(
   init: R,
   options: StreamOptions<R, S> & { method: PutMethods; body: P }
-): AnchorState<FetchState<S>>;
+): AnchorState<FetchState<R>>;
 
 /**
  * General stream hook for any HTTP method.
