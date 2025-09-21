@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMicrotask } from './hooks.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 import type { Action, ActionRef } from './types.js';
-import type { StateUnsubscribe } from '@anchorlib/core';
+import { createObserver, type StateUnsubscribe } from '@anchorlib/core';
 
 /**
  * Custom hook that manages an action with cleanup capabilities.
@@ -35,13 +35,22 @@ export function useAction<T>(init: T | Action<T>, action?: Action<T>): ActionRef
   if (typeof init === 'function') action = init as Action<T>;
 
   const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+  const [observer] = useState(() => {
+    return createObserver(() => {
+      actionRef.destroy?.();
+      actionRef.destroy = (action as Action<T>)(actionRef.current) as StateUnsubscribe;
+    });
+  });
   const actionRef = useRef(typeof init === 'function' ? null : init) as ActionRef<T>;
 
   useEffect(() => {
     cancelCleanup();
 
     return () => {
-      cleanup(() => actionRef.destroy?.());
+      cleanup(() => {
+        observer.destroy();
+        actionRef.destroy?.();
+      });
     };
   }, []);
 
@@ -54,11 +63,12 @@ export function useAction<T>(init: T | Action<T>, action?: Action<T>): ActionRef
 
       actionRef.destroy?.();
       actionRef.current = value;
-      actionRef.destroy = (action as Action<T>)(actionRef.current) as StateUnsubscribe;
+      actionRef.destroy = observer.run(() => (action as Action<T>)(actionRef.current)) as StateUnsubscribe;
     },
     destroy() {
       actionRef.current = null as T;
-      cleanup(() => actionRef.destroy?.());
+      observer.destroy();
+      actionRef.destroy?.();
     },
   };
 }

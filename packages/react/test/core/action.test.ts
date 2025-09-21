@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useAction, useActions } from '../../src/action';
 import { CLEANUP_DEBOUNCE_TIME } from '../../src/constant';
 import type { ActionRef } from '@anchorlib/react';
+import { anchor } from '@anchorlib/core';
 
 describe('Anchor React - Action', () => {
   beforeEach(() => {
@@ -108,6 +109,42 @@ describe('Anchor React - Action', () => {
       expect(action).toHaveBeenNthCalledWith(2, 'final');
     });
 
+    it('should call cleanup function when state changes', () => {
+      const cleanup1 = vi.fn();
+
+      const state = anchor({ count: 1 });
+      let count = 0;
+      const action = vi
+        .fn()
+        .mockImplementationOnce(() => {
+          count = state.count;
+          return cleanup1;
+        })
+        .mockImplementationOnce(() => {
+          count = state.count;
+          return cleanup1;
+        });
+      const { result } = renderHook(() => useAction(action));
+
+      // Count should be 0 before setting a value.
+      expect(count).toBe(0);
+
+      // Set first value - no previous cleanup
+      act(() => {
+        result.current.current = 'updated' as never;
+      });
+
+      expect(count).toBe(1);
+      expect(cleanup1).not.toHaveBeenCalled();
+      expect(action).toHaveBeenNthCalledWith(1, 'updated');
+
+      state.count++;
+
+      expect(count).toBe(2);
+      expect(cleanup1).toHaveBeenCalledTimes(1);
+      expect(action).toHaveBeenNthCalledWith(2, 'updated');
+    });
+
     it('should call cleanup function on unmount', () => {
       const cleanup = vi.fn();
       const action = vi.fn(() => cleanup);
@@ -141,7 +178,6 @@ describe('Anchor React - Action', () => {
 
     it('should handle undefined cleanup functions', () => {
       const action1 = vi.fn(() => undefined);
-      const action2 = vi.fn(() => undefined);
       const { result } = renderHook(() => useAction('initial', action1));
 
       act(() => {
@@ -149,6 +185,40 @@ describe('Anchor React - Action', () => {
       });
 
       expect(action1).toHaveBeenCalledWith('updated');
+    });
+
+    it('should handle destroy call without defined callback', () => {
+      const action1 = vi.fn(() => undefined);
+      const { result } = renderHook(() => useAction(action1));
+
+      act(() => {
+        result.current.current = 'updated';
+      });
+
+      expect(action1).toHaveBeenCalledWith('updated');
+
+      act(() => {
+        result.current.destroy();
+      });
+      expect(result.current.current).toBe(null);
+    });
+
+    it('should handle destroy call with a defined callback', () => {
+      const cleanup = vi.fn();
+      const action = vi.fn(() => cleanup);
+      const { result } = renderHook(() => useAction(action));
+
+      act(() => {
+        result.current.current = 'updated';
+      });
+
+      expect(action).toHaveBeenCalledWith('updated');
+
+      act(() => {
+        result.current.destroy();
+      });
+      expect(result.current.current).toBe(null);
+      expect(cleanup).toHaveBeenCalled();
     });
   });
 
