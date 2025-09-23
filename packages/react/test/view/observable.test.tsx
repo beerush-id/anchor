@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, renderHook } from '@testing-library/react';
 import { observable, observe, useObserverNode } from '../../src/view/index.js';
-import { anchor } from '@anchorlib/core';
+import { anchor, getObserver } from '@anchorlib/core';
 import { useState } from 'react';
 import { useAnchor, useVariable } from '../../src/index.js';
 
@@ -46,6 +46,9 @@ describe('Anchor React - View Observable', () => {
 
         expect(Unobserve).toBeInstanceOf(Function);
         expect(typeof version).toBe('number');
+        expect(getObserver()).toBeDefined();
+
+        render(<Unobserve />);
       });
     });
   });

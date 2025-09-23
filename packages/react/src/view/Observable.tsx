@@ -1,6 +1,5 @@
-import { type ComponentType, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentType, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  type AnchoredProps,
   CLEANUP_DEBOUNCE_TIME,
   debugRender,
   type ReactiveProps,
@@ -50,14 +49,9 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
  * wrapped component. When any observable dependencies used within the component's
  * render phase change, the component will automatically re-render.
  *
- * The HOC also injects an internal `_state_version` prop into the wrapped component.
- * This prop is used internally to force re-renders and should typically be
- * filtered out before passing props to native DOM elements or other components
- * that don't expect it (e.g., using `cleanProps`).
- *
- * @template T The type of the original component's props.
+ * @template P The type of the original component's props.
  * @param Component The React component to be made observable. It should accept
- *                  its original props `T` plus an `_state_version: number` prop.
+ *                  its original props `P`.
  * @param displayName An optional string to be used as the display name for the
  *                    wrapped component in React DevTools. If not provided, it
  *                    will derive from the original component's display name or name.
@@ -68,7 +62,7 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
  * a full re-render is needed such as wrapping a 3rd party components,
  * or need a simple component setup without manually declare a selective rendering.
  */
-export function observable<P>(Component: ComponentType<P & AnchoredProps>, displayName?: string) {
+export function observable<P>(Component: ComponentType<P>, displayName?: string) {
   if (typeof Component !== 'function') {
     const error = new Error('[observable] Component must be a function component.');
     captureStack.violation.general(
@@ -88,6 +82,12 @@ export function observable<P>(Component: ComponentType<P & AnchoredProps>, displ
     Component.displayName = displayName;
   }
 
+  // Creates a name for the observed component for debugging purposes.
+  const componentName = displayName || Component.displayName || Component.name || 'Anonymous';
+
+  // Creates a rendered component that uses the provided factory function to render.
+  const render = Component as (props: P) => ReactNode;
+
   const Observed = (props: ReactiveProps<P>) => {
     // Creates a dependency used to track changes to the component's props.
     // This list will then be used to determine if the observer need to be re-created
@@ -95,24 +95,13 @@ export function observable<P>(Component: ComponentType<P & AnchoredProps>, displ
     const dependencies = (Object.values(props as ObjLike) as Linkable[]).filter((v) => anchor.has(v));
 
     // Creates an observer instance to be used as a tracking context.
-    const [Unobserve, version] = useObserverNode(dependencies, displayName);
+    const [observer] = useObserverRef(dependencies, componentName);
 
-    // Resolve the props to make sure all the observable state are tracked.
-    const restProps = resolveProps(props);
-
-    // Trigger the `Unobserve` component to make sure the current context is either restored
-    // to the previous context, or set to undefined so no tracking is allowed after.
-    // This make sure that the tracking is happening only in the rendering phase,
-    // to prevent unnecessary tracking (not being used by the UI/logics).
-    return (
-      <>
-        <Component {...{ ...restProps, _state_version: version }} />
-        <Unobserve />
-      </>
-    );
+    // Runs the provided factory function within the observer context.
+    return observer.run(() => render({ ...resolveProps(props) }));
   };
 
-  Observed.displayName = `Observable(${displayName || Component.displayName || Component.name || 'Anonymous'})`;
+  Observed.displayName = `Observable(${componentName})`;
   return Observed as ComponentType<ReactiveProps<P>>;
 }
 
