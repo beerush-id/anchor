@@ -8,14 +8,6 @@ Tracking.
   <img src="/schemas/reactivity.webp" alt="Reactivity Schema" />
 </div>
 
-::: tip Mental Model
-
-Anchor's state is a gateway to the underlying state data. By default, Anchor is neither make a copy of the state data,
-nor modifying its signature.
-You can think it as an assistant of your state data. It will help you to manage it and notify anyone that depend on it.
-
-:::
-
 ## **Observation**
 
 Observation is the foundation of Anchor's fine-grained reactivity. It maintains direct connections between specific
@@ -128,7 +120,8 @@ Anchor provides a set of APIs for observing state changes. Please refer to the A
 
 - [Anchor Core Observation APIs](/apis/core/observation) - Core APIs for creating and managing observers.
 - [Anchor for React Observation APIs](/apis/react/observation) - Reactivity APIs for creating and managing observers.
-- [Anchor for Svelte Observation APIs](/apis/svelte/observation) - Svelte reactivity APIs for creating and managing observers.
+- [Anchor for Svelte Observation APIs](/apis/svelte/observation) - Svelte reactivity APIs for creating and managing
+  observers.
 - [Anchor for Vue Observation APIs](/apis/vue/observation) - Vue reactivity APIs for creating and managing observers.
 
 ## Derivation (Subscription)
@@ -286,6 +279,6 @@ Anchor provides a set of APIs for managing history:
 4. **Clean Up Observers**: Always clean up observers when they're no longer needed to prevent memory leaks.
 5. **Avoid Mutating The Underlying State Object Directly**: Mutating the underlying state object directly can lead to
    unexpected behavior.
-6. **Don't Mutate Events**: Don't mutate events passed to observers, subscribers, or histories. Events are the source of truth.
-   Mutating it can lead to unexpected behavior. We can make event immutable, but we don't want to add another overhead
+6. **Don't Mutate Events**: Don't mutate events passed to observers, subscribers, or histories. Events are the source of
+   truth. Mutating it can lead to unexpected behavior. We can make event immutable, but we don't want to add another overhead
    for this.
