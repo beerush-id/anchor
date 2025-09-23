@@ -86,7 +86,7 @@ export function useAction<T>(init: T | Action<T>, action?: Action<T>): ActionRef
  * @param actions - An array of action references to be combined
  * @returns A single action reference that controls all provided actions
  */
-export function useActions<T>(...actions: ActionRef<T>[]): ActionRef<T> {
+export function useActions<T>(...actions: (ActionRef<T> | undefined)[]): ActionRef<T> {
   const selfRef = useRef<T>(null);
   return useMemo(() => {
     return {
@@ -95,11 +95,11 @@ export function useActions<T>(...actions: ActionRef<T>[]): ActionRef<T> {
       },
       set current(value: T) {
         selfRef.current = value;
-        actions.forEach((action) => (action.current = value));
+        actions.filter((action) => typeof action === 'object').forEach((action) => (action.current = value));
       },
       destroy() {
         selfRef.current = null;
-        actions.forEach((action) => action.destroy?.());
+        actions.filter((action) => typeof action === 'object').forEach((action) => action.destroy?.());
       },
     };
   }, actions);

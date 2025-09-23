@@ -29,8 +29,8 @@ export function isDebugRenderer() {
 }
 
 const [schedule] = microbatch(0);
-export function debugRender<T extends HTMLElement>(ref: RefObject<T | null>) {
-  if (!DEBUG_RENDERER) return;
+export function debugRender<T extends HTMLElement>(ref?: RefObject<T | null>) {
+  if (!DEBUG_RENDERER || !ref) return;
 
   if (!ref?.current) {
     return schedule(() => {

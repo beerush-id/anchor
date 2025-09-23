@@ -1,7 +1,6 @@
-import { type FunctionComponent, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
+import { type FunctionComponent, type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   CLEANUP_DEBOUNCE_TIME,
-  debugRender,
   type ReactiveProps,
   RENDERER_INIT_VERSION,
   resolveProps,
@@ -172,8 +171,6 @@ export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, di
         });
       };
     }, []);
-
-    debugRender(factoryRef as RefObject<HTMLElement>);
 
     if (typeof factory === 'function') {
       return observer.run(() => factory(factoryRef));

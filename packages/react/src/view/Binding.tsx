@@ -1,6 +1,6 @@
 import type { BindingType, InitProps, InputBinding, InputBindingProps } from './Types.js';
-import { type ChangeEvent, type FunctionComponent, type RefObject, useCallback, useRef } from 'react';
-import { type Bindable, debugRender, getRefState, isRef, useValue } from '@base/index.js';
+import { type ChangeEvent, type FunctionComponent, useCallback } from 'react';
+import { type Bindable, getRefState, isRef, useValue } from '@base/index.js';
 
 const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']);
 
@@ -28,12 +28,11 @@ export function bindable<Props extends InitProps>(Component: FunctionComponent<P
   function Binding<Bind extends Bindable, Kind extends BindingType = 'text'>(
     props: InputBindingProps<Kind, Bind, Props>
   ) {
-    const { ref, type, bind, bindKey, name, onChange, value, checked, ...restProps } = props as Props;
+    const { type, bind, bindKey, name, onChange, value, checked, ...restProps } = props as Props;
 
     const key = isRef(bind) ? 'value' : (bindKey ?? name);
     const val = type === 'checkbox' || type === 'radio' ? (checked ?? false) : (value ?? '');
 
-    const selfRef = useRef(ref?.current);
     const current = useValue(getRefState(bind), key) ?? val;
     const handleInputChange = useCallback(
       (e: ChangeEvent<HTMLInputElement>) => {
@@ -64,12 +63,9 @@ export function bindable<Props extends InitProps>(Component: FunctionComponent<P
       [bind, key]
     );
 
-    debugRender(selfRef as RefObject<HTMLInputElement | null>);
-
     if (type === 'checkbox' || type === 'radio') {
       return (
         <Component
-          ref={selfRef}
           type={type}
           name={name}
           checked={current}
@@ -80,7 +76,6 @@ export function bindable<Props extends InitProps>(Component: FunctionComponent<P
     } else {
       return (
         <Component
-          ref={selfRef}
           type={type}
           name={name}
           value={current}
