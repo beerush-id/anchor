@@ -276,6 +276,9 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
   const { configs } = options ?? meta;
 
   return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+    // Escape directly if the property doesn't exist to prevent unnecessary work.
+    if (!Object.getOwnPropertyDescriptor(target, prop)) return true;
+
     const current = Reflect.get(target, prop, receiver) as Linkable;
     const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 

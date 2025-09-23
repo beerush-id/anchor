@@ -7,6 +7,8 @@ describe('Anchor Dev Tool', () => {
   let restoreDevTool: () => void;
 
   beforeEach(() => {
+    // eslint-disable-next-line
+    // @ts-ignore
     restoreDevTool = setDevTool(createDevTool());
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -23,7 +25,7 @@ describe('Anchor Dev Tool', () => {
       const unset = setDevTool(devTool);
       expect(getDevTool()).toBe(devTool);
 
-      unset();
+      unset?.();
     });
 
     it('should unregister a dev tool', () => {
@@ -32,7 +34,7 @@ describe('Anchor Dev Tool', () => {
       const unset = setDevTool(devTool);
       expect(getDevTool()).toBe(devTool);
 
-      unset();
+      unset?.();
       expect(getDevTool()).not.toBe(devTool);
     });
 
@@ -47,12 +49,16 @@ describe('Anchor Dev Tool', () => {
       const unset = setDevTool(devTool2);
       expect(getDevTool()).toBe(devTool2);
 
-      unset();
+      unset?.();
       expect(getDevTool()).toBe(devTool);
     });
 
     it('should handle invalid dev tool registration', () => {
+      // eslint-disable-next-line
+      // @ts-ignore
       expect(setDevTool(null)).toBeUndefined();
+      // eslint-disable-next-line
+      // @ts-ignore
       expect(setDevTool(undefined)).toBeUndefined();
       expect(setDevTool('invalid' as never)).toBeUndefined();
       expect(setDevTool(123 as never)).toBeUndefined();
@@ -89,6 +95,8 @@ describe('Anchor Dev Tool', () => {
 
       expect(state.name).toBe('John');
       expect(() => {
+        // eslint-disable-next-line
+        // @ts-ignore
         delete state.name;
       }).not.toThrow();
     });
@@ -153,6 +161,18 @@ describe('Anchor Dev Tool', () => {
         }),
         'count'
       );
+    });
+
+    it('should not get notified when deleting non existent property', () => {
+      const devTool = getDevTool();
+      const state = anchor<{ count?: number }>({ count: 1 });
+
+      // Delete property
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (state as any).foo;
+      expect(state.count).toBe(1);
+
+      expect(devTool?.onDelete).not.toHaveBeenCalled();
     });
 
     it('should get notified when a method is called (array mutation)', () => {

@@ -230,6 +230,11 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       const oldValue = init instanceof Map ? init.get(keyValue) : undefined;
       const newValue = (method === 'set' ? value : keyValue) as Linkable;
 
+      // Escape directly if the Set already have the value, or the Map already have the value.
+      // This prevents unnecessary state changes notifications.
+      if (init instanceof Set && init.has(newValue)) return INIT_REGISTRY.get(init);
+      if (init instanceof Map && oldValue === newValue) return INIT_REGISTRY.get(init);
+
       methodFn.apply(init, method === 'set' ? [keyValue, newValue] : [newValue]);
 
       if (INIT_REGISTRY.has(oldValue as Linkable)) {
@@ -267,11 +272,19 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
   for (const method of ['delete', 'clear']) {
     const methodFn = init[method as never] as (...args: unknown[]) => unknown;
     const targetFn = (keyValue?: unknown) => {
+      // Escape early if the Set/Map is empty.
+      // This prevents unnecessary state changes notifications.
+      if (!init.size) return false;
+
       const self = init as Set<Linkable> | Map<unknown, Linkable>;
 
       if (method === 'delete') {
         // Make sure to always work with the underlying object (if exist).
         if (anchor.has(keyValue as Linkable)) keyValue = anchor.get(keyValue as Linkable);
+
+        // Escape early if the Set/Map doesn't have the value.
+        // This prevents unnecessary state changes notifications.
+        if (!self.has(keyValue as Linkable)) return false;
 
         const current = (self instanceof Set ? keyValue : self.get(keyValue)) as Linkable;
         const result = methodFn.apply(self, [keyValue]);

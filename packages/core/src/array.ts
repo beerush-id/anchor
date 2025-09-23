@@ -86,6 +86,58 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
       // Make sure to always work with the underlying object (if exist).
       args = args.map((arg) => (anchor.has(arg as Linkable) ? anchor.get(arg as Linkable) : arg));
 
+      // Early traps to prevent unnecessary state changes for no-op operations.
+      if (method === 'splice') {
+        const [startArg, delCountArg, ...items] = args as [number, number, ...unknown[]];
+
+        // Normalize negative start index
+        let start = startArg;
+        if (start < 0) {
+          start = Math.max(init.length + start, 0);
+        }
+
+        // Ensure delCount is non-negative
+        const delCount = Math.max(delCountArg ?? 0, 0);
+
+        // No-op cases where we can return early without making any changes
+        if (
+          // Empty array with no items to add
+          (!init.length && !items.length) ||
+          // Empty array but trying to delete (nothing to delete)
+          (!init.length && delCount > 0) ||
+          // Start position beyond array length with no items to add
+          (start >= init.length && !items.length) ||
+          // Nothing to delete and no items to add
+          (delCount === 0 && !items.length)
+        ) {
+          return [];
+        }
+      }
+
+      if ((method === 'push' || method === 'unshift') && args.length === 0) {
+        return init.length;
+      }
+
+      if ((method === 'pop' || method === 'shift') && init.length === 0) {
+        return undefined;
+      }
+
+      if ((method === 'reverse' || method === 'sort') && init.length <= 1) {
+        return INIT_REGISTRY.get(init);
+      }
+
+      if (method === 'fill' && init.length === 0) {
+        return INIT_REGISTRY.get(init);
+      }
+
+      if (method === 'copyWithin') {
+        const [target, start, end = init.length] = args as [number, number, number];
+
+        if (target >= init.length || start >= init.length || end <= start) {
+          return INIT_REGISTRY.get(init);
+        }
+      }
+
       // Capture the current items to track the removed items.
       const currentItems = [...(init as ObjLike[])];
 

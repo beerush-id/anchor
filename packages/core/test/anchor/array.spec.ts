@@ -88,6 +88,126 @@ describe('Anchor Core - Array Methods', () => {
     });
   });
 
+  describe('Array Method Early Traps', () => {
+    it('should early return for splice no-op cases', () => {
+      // Empty array with no items to add
+      const emptyState = anchor([]);
+      expect(emptyState.splice(0, 0)).toEqual([]);
+      expect(emptyState.length).toBe(0);
+
+      // Empty array but trying to delete (nothing to delete)
+      expect(emptyState.splice(0, 1)).toEqual([]);
+      expect(emptyState.length).toBe(0);
+
+      // Start position beyond array length with no items to add
+      const state1 = anchor([1, 2, 3]);
+      expect(state1.splice(5, 0)).toEqual([]);
+      expect(state1).toEqual([1, 2, 3]);
+
+      // Nothing to delete and no items to add
+      expect(state1.splice(1, 0)).toEqual([]);
+      expect(state1).toEqual([1, 2, 3]);
+
+      // Nothing to delete and no items to add
+      expect(state1.splice(1, undefined as never)).toEqual([]);
+      expect(state1).toEqual([1, 2, 3]);
+
+      // Start equals array length and no items to insert
+      expect(state1.splice(3, 0)).toEqual([]);
+      expect(state1).toEqual([1, 2, 3]);
+
+      expect(anchor([]).splice(0, 1, 1 as never)).toEqual([]);
+      expect(anchor([1]).splice(1)).toEqual([]);
+    });
+
+    it('should early return for push/unshift with no arguments', () => {
+      const state = anchor([1, 2, 3]);
+      expect(state.push()).toBe(3);
+      expect(state.unshift()).toBe(3);
+      expect(state).toEqual([1, 2, 3]);
+    });
+
+    it('should early return for pop/shift on empty arrays', () => {
+      const emptyState = anchor([]);
+      expect(emptyState.pop()).toBeUndefined();
+      expect(emptyState.shift()).toBeUndefined();
+    });
+
+    it('should early return for reverse/sort on arrays with 0 or 1 elements', () => {
+      const emptyState = anchor([]);
+      const singleState = anchor([1]);
+
+      expect(emptyState.reverse()).toBe(emptyState);
+      expect(emptyState.sort()).toBe(emptyState);
+      expect(singleState.reverse()).toBe(singleState);
+      expect(singleState.sort()).toBe(singleState);
+    });
+
+    it('should early return for fill on empty arrays', () => {
+      const emptyState = anchor([]);
+      expect(emptyState.fill(1 as never)).toBe(emptyState);
+      expect(emptyState).toEqual([]);
+    });
+
+    it('should early return for copyWithin with no-op conditions', () => {
+      const state = anchor([1, 2, 3, 4, 5]);
+      const originalState = [...state];
+
+      // No-op if target is at or beyond array length
+      expect(state.copyWithin(5, 0)).toBe(state);
+      expect(state).toEqual(originalState);
+
+      // No-op if start is at or beyond array length
+      expect(state.copyWithin(0, 5)).toBe(state);
+      expect(state).toEqual(originalState);
+
+      // No-op if end <= start
+      expect(state.copyWithin(0, 2, 1)).toBe(state);
+      expect(state).toEqual(originalState);
+    });
+
+    it('should handle uncovered splice edge cases (lines 100, 107, 113)', () => {
+      // Line 100: Testing splice with start === init.length and no items to insert
+      const state1 = anchor([1, 2, 3]);
+      expect(state1.splice(3, 0)).toEqual([]); // start === init.length (3 === 3) and no items
+      expect(state1).toEqual([1, 2, 3]);
+
+      // Line 107: Testing splice with delCount === 0 and no items to add
+      const state2 = anchor([1, 2, 3]);
+      expect(state2.splice(1, 0)).toEqual([]); // delCount === 0 and no items to add
+      expect(state2).toEqual([1, 2, 3]);
+
+      // Line 113: Testing splice with start >= init.length and no items to add
+      const state3 = anchor([1, 2, 3]);
+      expect(state3.splice(5, 1)).toEqual([]); // start (5) >= init.length (3) and no items to add
+      expect(state3).toEqual([1, 2, 3]);
+    });
+
+    it('should handle negative start index in splice', () => {
+      const state = anchor([1, 2, 3, 4, 5]);
+
+      // Normal negative index
+      const removed = state.splice(-2, 1);
+      expect(removed).toEqual([4]);
+      expect(state).toEqual([1, 2, 3, 5]);
+
+      // Negative index that becomes 0
+      const state2 = anchor([1, 2, 3]);
+      const removed2 = state2.splice(-10, 1);
+      expect(removed2).toEqual([1]);
+      expect(state2).toEqual([2, 3]);
+    });
+
+    it('should ensure delCount is non-negative in splice', () => {
+      const state = anchor([1, 2, 3, 4, 5]);
+
+      // Negative delCount should be treated as 0
+      const removed = state.splice(1, -1, 99);
+      expect(removed).toEqual([]);
+      expect(state).toEqual([1, 99, 2, 3, 4, 5]);
+    });
+  });
+
   describe('Ordered Array Methods', () => {
     it('should maintain order when pushing items to an ordered array', () => {
       const state = anchor.ordered([1, 3, 5], (a, b) => a - b);
@@ -150,7 +270,7 @@ describe('Anchor Core - Array Methods', () => {
     it('should handle edge cases with ordered arrays', () => {
       // Empty array
       const emptyState = anchor.ordered([], (a: number, b: number) => a - b);
-      emptyState.push(1);
+      emptyState.push(1 as never);
       expect(emptyState).toEqual([1]);
 
       // Single item array
