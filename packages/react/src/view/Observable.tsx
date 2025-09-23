@@ -141,7 +141,6 @@ export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, di
 
     const [, setVersion] = useState(RENDERER_INIT_VERSION);
     const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
-    const [mounted] = useMicrotask(0);
     const [observer] = useState(() => {
       return createObserver(() => {
         setVersion((c) => c + 1);
@@ -156,9 +155,7 @@ export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, di
       cancelCleanup();
 
       if (typeof factory !== 'function') {
-        mounted(() => {
-          factory?.onMounted?.();
-        });
+        factory?.onMounted?.();
       }
 
       return () => {
