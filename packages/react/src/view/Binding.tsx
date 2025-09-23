@@ -1,5 +1,5 @@
 import type { BindingType, InitProps, InputBinding, InputBindingProps } from './Types.js';
-import { type ChangeEvent, type ComponentType, type RefObject, useCallback, useRef } from 'react';
+import { type ChangeEvent, type FunctionComponent, type RefObject, useCallback, useRef } from 'react';
 import { type Bindable, debugRender, getRefState, isRef, useValue } from '@base/index.js';
 
 const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']);
@@ -15,7 +15,7 @@ const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']
  * @param displayName - Optional display name for the resulting component
  * @returns A new component with binding capabilities
  */
-export function bindable<Props extends InitProps>(Component: ComponentType<Props>, displayName?: string) {
+export function bindable<Props extends InitProps>(Component: FunctionComponent<Props>, displayName?: string) {
   if (displayName && !Component.displayName) {
     Component.displayName = displayName;
   }

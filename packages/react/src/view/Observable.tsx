@@ -1,4 +1,4 @@
-import { type ComponentType, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type FunctionComponent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CLEANUP_DEBOUNCE_TIME,
   debugRender,
@@ -25,10 +25,10 @@ import type { ViewRenderer, ViewRendererFactory } from './Types.js';
  *             will cause the underlying observer to be re-established.
  * @param displayName An optional name for the observer, useful for debugging.
  * @returns A tuple containing:
- *          - `ComponentType`: An `Unobserve` component that restores the observer context.
+ *          - `FunctionComponent`: An `Unobserve` component that restores the observer context.
  *          - `number`: A version counter that increments on state changes, forcing re-renders.
  */
-export function useObserverNode(deps: Linkable[] = [], displayName?: string): [ComponentType, number] {
+export function useObserverNode(deps: Linkable[] = [], displayName?: string): [FunctionComponent, number] {
   const [observer, version] = useObserverRef(deps, displayName);
 
   // Setting the observer as the current observing context.
@@ -62,7 +62,7 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [C
  * a full re-render is needed such as wrapping a 3rd party components,
  * or need a simple component setup without manually declare a selective rendering.
  */
-export function observable<P>(Component: ComponentType<P>, displayName?: string) {
+export function observable<P>(Component: FunctionComponent<P>, displayName?: string) {
   if (typeof Component !== 'function') {
     const error = new Error('[observable] Component must be a function component.');
     captureStack.violation.general(
@@ -102,7 +102,7 @@ export function observable<P>(Component: ComponentType<P>, displayName?: string)
   };
 
   Observed.displayName = `Observable(${componentName})`;
-  return Observed as ComponentType<ReactiveProps<P>>;
+  return Observed as FunctionComponent<ReactiveProps<P>>;
 }
 
 /**
@@ -138,7 +138,7 @@ export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, di
       return Observed;
     }
 
-    const ObservedNode: ComponentType = () => {
+    const ObservedNode: FunctionComponent = () => {
       const factoryRef = useRef<R>(null);
 
       const [, setVersion] = useState(RENDERER_INIT_VERSION);
