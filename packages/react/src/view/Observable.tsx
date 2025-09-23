@@ -1,4 +1,4 @@
-import { type FunctionComponent, type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type FunctionComponent, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import {
   CLEANUP_DEBOUNCE_TIME,
   debugRender,
@@ -122,82 +122,80 @@ export function observable<P>(Component: FunctionComponent<P>, displayName?: str
  * This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
  */
 export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, displayName?: string) {
-  return useMemo(() => {
-    if (typeof factory !== 'function' && (typeof factory !== 'object' || factory === null)) {
-      const error = new Error('Factory must be a function or factory object.');
-      captureStack.violation.general(
-        'View observer factory violation detected:',
-        'Attempted to use observe() HOC with a non function and object factory.',
-        error,
-        undefined,
-        observe
-      );
+  if (typeof factory !== 'function' && (typeof factory !== 'object' || factory === null)) {
+    const error = new Error('Factory must be a function or factory object.');
+    captureStack.violation.general(
+      'View observer factory violation detected:',
+      'Attempted to use observe() HOC with a non function and object factory.',
+      error,
+      undefined,
+      observe
+    );
 
-      const Observed = () => <>{error.message}</>;
-      Observed.displayName = `Error(${displayName || 'Anonymous'})`;
-      return Observed;
-    }
+    const Observed = () => <>{error.message}</>;
+    Observed.displayName = `Error(${displayName || 'Anonymous'})`;
+    return Observed;
+  }
 
-    const ObservedNode: FunctionComponent = () => {
-      const factoryRef = useRef<R>(null);
+  const ObservedNode: FunctionComponent = () => {
+    const factoryRef = useRef<R>(null);
 
-      const [, setVersion] = useState(RENDERER_INIT_VERSION);
-      const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
-      const [mounted] = useMicrotask(0);
-      const [observer] = useState(() => {
-        return createObserver(() => {
-          setVersion((c) => c + 1);
-
-          if (typeof factory !== 'function') {
-            factory?.onUpdated?.();
-          }
-        });
-      });
-
-      useEffect(() => {
-        cancelCleanup();
+    const [, setVersion] = useState(RENDERER_INIT_VERSION);
+    const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+    const [mounted] = useMicrotask(0);
+    const [observer] = useState(() => {
+      return createObserver(() => {
+        setVersion((c) => c + 1);
 
         if (typeof factory !== 'function') {
-          mounted(() => {
-            factory?.onMounted?.();
-          });
+          factory?.onUpdated?.();
         }
+      });
+    });
 
-        return () => {
-          cleanup(() => {
-            observer.destroy();
+    useEffect(() => {
+      cancelCleanup();
 
-            if (typeof factory !== 'function') {
-              factory?.onDestroy?.();
-            }
-          });
-        };
-      }, []);
-
-      debugRender(factoryRef as RefObject<HTMLElement>);
-
-      if (typeof factory === 'function') {
-        return observer.run(() => factory(factoryRef));
-      } else if (typeof factory?.render === 'function') {
-        return observer.run(() => factory.render(factoryRef));
-      } else {
-        captureStack.violation.general(
-          'Unsupported view renderer factory detected:',
-          'Attempted to observe a state using an invalid renderer factory.',
-          new Error('Invalid renderer factory.'),
-          [
-            'Renderer factory must be either:',
-            '- A function that returns a ReactNode.',
-            '- A factory object with a "render()" property.',
-          ],
-          ObservedNode
-        );
-
-        return null;
+      if (typeof factory !== 'function') {
+        mounted(() => {
+          factory?.onMounted?.();
+        });
       }
-    };
 
-    ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
-    return ObservedNode;
-  }, [displayName]);
+      return () => {
+        cleanup(() => {
+          observer.destroy();
+
+          if (typeof factory !== 'function') {
+            factory?.onDestroy?.();
+          }
+        });
+      };
+    }, []);
+
+    debugRender(factoryRef as RefObject<HTMLElement>);
+
+    if (typeof factory === 'function') {
+      return observer.run(() => factory(factoryRef));
+    } else if (typeof factory?.render === 'function') {
+      return observer.run(() => factory.render(factoryRef));
+    } else {
+      captureStack.violation.general(
+        'Unsupported view renderer factory detected:',
+        'Attempted to observe a state using an invalid renderer factory.',
+        new Error('Invalid renderer factory.'),
+        [
+          'Renderer factory must be either:',
+          '- A function that returns a ReactNode.',
+          '- A factory object with a "render()" property.',
+        ],
+        ObservedNode
+      );
+
+      return null;
+    }
+  };
+
+  ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
+  return ObservedNode;
 }
