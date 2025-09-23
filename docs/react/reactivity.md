@@ -237,7 +237,7 @@ This stability allows you to:
 
 ```tsx App.tsx
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 
 const TaskManager = () => {
   const [tasks] = useAnchor([]);
@@ -248,6 +248,7 @@ const TaskManager = () => {
   const addTask = (text) => {
     tasks.push({ id: Date.now(), text: `${text} ${newTasks + 1}`, completed: false });
     newTasks++; // This works as expected!
+    console.log(newTasks);
   };
 
   // Only this view is re-rendered when tasks change.
@@ -292,7 +293,7 @@ entire classes of bugs related to stale closures and makes your code more predic
 
 ```tsx App.tsx
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 
 const Counter = () => {
   const [counter] = useAnchor({ count: 0 });
@@ -337,7 +338,7 @@ actions, you simply assign new values to state properties.
 
 ```tsx App.tsx
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 
 const ShoppingCart = () => {
   const [cart] = useAnchor({
@@ -446,7 +447,7 @@ They automatically re-render when their observed state changes, providing effici
 ::: details View Component Example
 
 ```tsx
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 const UserView = observable(({ user }) => {
   // Only re-renders when user changes

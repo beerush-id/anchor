@@ -47,7 +47,7 @@ features:
 import '@tailwindcss/browser';
 import { useRef } from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 
 const Counter = () => {
   const [counter] = useAnchor({ count: 0 });

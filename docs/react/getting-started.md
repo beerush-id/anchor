@@ -36,7 +36,7 @@ wrap your component with `observable` HoC.
 
 ```tsx
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 const Counter = observable(() => {
   const [counter] = useAnchor({ count: 0 });
@@ -60,7 +60,7 @@ export default Counter;
 
 ```tsx /App.tsx [active]
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 const Counter = observable(() => {
   const [counter] = useAnchor({ count: 0 });
@@ -148,7 +148,7 @@ component tree to re-render.
 
 ```jsx [UserProfile.jsx]
 import { useVariable } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 import { UserAccount } from './UserAccount.jsx';
 
 export const UserProfile = () => {
@@ -205,7 +205,7 @@ export const UserProfile = () => {
 ```
 
 ```jsx [UserAccount.jsx]
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 export const UserAccount = observable(({ userRef }) => {
   const { account } = userRef.value;
@@ -261,7 +261,7 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 
 ```tsx /UserProfile.tsx [active]
 import { useVariable, debugRender, setDebugRenderer } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/components';
+import { observe } from '@anchorlib/react/view';
 import { UserAccount } from './UserAccount.tsx';
 import { useRef } from 'react';
 
@@ -333,7 +333,7 @@ export const UserProfile = () => {
 ```tsx /UserAccount.tsx
 import { useRef } from 'react';
 import { debugRender } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 export const UserAccount = observable(({ userRef }) => {
   const ref = useRef(null);

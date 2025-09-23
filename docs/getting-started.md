@@ -34,7 +34,7 @@ console.log(state.title); // "Hello, World!"
 
 ```jsx [React]
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/components';
+import { observable } from '@anchorlib/react/view';
 
 const Counter = observable(() => {
   const [state] = useAnchor({

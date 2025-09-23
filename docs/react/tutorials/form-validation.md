@@ -27,8 +27,9 @@ For simple forms that don't need to be shared across components, you can use a l
 
 ```tsx
 import { type FC, type FormEventHandler } from 'react';
-import { Input, observable } from '@anchorlib/react/components';
+import { Input } from '@anchorlib/react/components';
 import { useFormWriter, useModel } from '@anchorlib/react';
+import { observable } from '@anchorlib/react/view';
 import { z } from 'zod';
 
 const ProfileForm: FC = observable(() => {
@@ -112,7 +113,8 @@ The component for the shared form is almost identical to the basic example. The 
 ```tsx
 import { type FC, type FormEventHandler } from 'react';
 import { Button } from '../Button.js';
-import { Input, observe } from '@anchorlib/react/components';
+import { Input } from '@anchorlib/react/components';
+import { Input, observe } from '@anchorlib/react/view';
 import { Card } from '../Card.js';
 import { useFormWriter } from '@anchorlib/react';
 import { profileWriter } from '@lib/auth.js';
