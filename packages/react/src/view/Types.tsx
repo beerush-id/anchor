@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import type { Bindable, VariableRef } from '@base/index.ts';
+import type { Bindable, ReactiveProps, VariableRef } from '@base/index.ts';
 import type { WritableKeys } from '@anchorlib/core';
 
 export type ViewRenderer<T> = (ref: RefObject<T | null>) => ReactNode;
@@ -19,7 +19,7 @@ export type NumberBinding = 'number' | 'range';
 export type BooleanBinding = 'checkbox' | 'radio';
 export type BindingType = TextBinding | NumberBinding | BooleanBinding | 'file' | 'date';
 
-export type VariableBinding<Value, Kind extends BindingType, Props extends InitProps> = Props & {
+export type VariableBinding<Value, Kind extends BindingType, Props extends InitProps> = ReactiveProps<Props> & {
   bind: VariableRef<Value>;
   type?: Kind;
   ref?: RefObject<unknown>;
@@ -38,7 +38,7 @@ export type StateFlexBinding<
   Kind extends BindingType,
   Binding extends Bindable,
   Props extends InitProps,
-> = Props & {
+> = ReactiveProps<Props> & {
   bind: Binding;
   name: BindingKeys<Value, Binding>;
   type?: Kind;
@@ -49,7 +49,7 @@ export type StateFlatBinding<
   Kind extends BindingType,
   Binding extends Bindable,
   Props extends InitProps,
-> = Props & {
+> = ReactiveProps<Props> & {
   bind: Binding;
   bindKey: BindingKeys<Value, Binding>;
   type?: Kind;

@@ -40,5 +40,5 @@ export type FormState<T extends State, K extends keyof T> = {
 };
 
 export type ReactiveProps<T> = {
-  [K in keyof T]: VariableRef<T[K]> | ConstantRef<T[K]> | T[K];
+  [K in keyof T]: K extends 'children' ? T[K] : VariableRef<T[K]> | ConstantRef<T[K]> | T[K];
 };
