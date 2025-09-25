@@ -17,6 +17,7 @@ import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '
 import { microtask } from '../utils/index.js';
 import { captureStack } from '../exception.js';
 import { ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
+import { setInspector } from '../broadcast.js';
 
 export type HistoryOptions = {
   debounce?: number;
@@ -30,10 +31,10 @@ export const DEFAULT_HISTORY_OPTION = {
   resettable: false,
 };
 
-export function setDefaultOptions(options: HistoryOptions) {
+function setDefaultOptions(options: HistoryOptions) {
   Object.assign(DEFAULT_HISTORY_OPTION, options);
 }
-export function getDefaultOptions() {
+function getDefaultOptions() {
   return DEFAULT_HISTORY_OPTION;
 }
 
@@ -207,6 +208,57 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   return historyState;
 }
 
+history.setDefaultOptions = setDefaultOptions;
+history.getDefaultOptions = getDefaultOptions;
+
+/**
+ * Creates an undoable operation that can be executed and later reverted.
+ *
+ * This function wraps a given function execution and captures any state changes
+ * that occur during its execution. It returns a tuple containing two functions:
+ * the first one undoes the changes, and the second one clears the captured changes.
+ *
+ * @param operation - The function to execute and make undoable
+ * @returns A tuple containing two functions: [undo, clear]
+ *   - undo: A function that, when called, will undo the changes made by the original function
+ *   - clear: A function that, when called, will clear the captured changes (marking as completed)
+ */
+export function undoable(operation: () => void): [() => void, () => void] {
+  if (typeof operation !== 'function') {
+    const error = new Error('Invalid argument.');
+    captureStack.error.argument('The given argument is not a function.', error, undoable);
+
+    return [() => {}, () => {}];
+  }
+
+  const changes: { state: State; change: StateChange }[] = [];
+
+  setInspector((init: Linkable, event: StateChange) => {
+    changes.unshift({ state: anchor.find(init), change: event });
+  });
+
+  try {
+    operation();
+  } catch (error) {
+    captureStack.error.external('Undoable execution failed.', error as Error);
+  } finally {
+    setInspector(undefined);
+  }
+
+  const undo = () => {
+    changes.forEach(({ state, change }) => {
+      undoChange(state, change);
+    });
+    changes.length = 0;
+  };
+
+  const clear = () => {
+    changes.length = 0;
+  };
+
+  return [undo, clear];
+}
+
 /**
  * Reverts a state change by applying the previous value to the target.
  *
@@ -373,7 +425,8 @@ function getTarget<T>(state: T, event: StateChange) {
     if (
       (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutations) ||
         COLLECTION_MUTATION_KEYS.has(event.type as SetMutations)) &&
-      event.type !== MapMutations.SET
+      event.type !== MapMutations.SET &&
+      event.type !== MapMutations.DELETE
     ) {
       return { key: '', target: getValue(state, key) as Linkable };
     }

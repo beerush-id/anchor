@@ -1,7 +1,22 @@
-import type { Broadcaster, KeyLike, Linkable, StateMetadata, StateSubscriber } from './types.js';
+import type { Broadcaster, KeyLike, Linkable, StateChange, StateMetadata, StateSubscriber } from './types.js';
 import { BatchMutations, OBSERVER_KEYS } from './enum.js';
 import { BATCH_MUTATION_KEYS } from './constant.js';
 import { captureStack } from './exception.js';
+
+let currentInspector: ((init: Linkable, event: StateChange) => void) | undefined = undefined;
+
+/**
+ * Sets a global inspector function that will be called once for the next state change event.
+ *
+ * This function is used internally to capture the next state change event for debugging
+ * or inspection purposes. The inspector function is automatically cleared after being
+ * called once.
+ *
+ * @param fn - A function that will be called with the next state change event.
+ */
+export function setInspector(fn?: (init: Linkable, event: StateChange) => void) {
+  currentInspector = fn;
+}
 
 /**
  * Creates a broadcaster object for managing state change notifications.
@@ -30,6 +45,10 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
      * @param prop - Optional property key that was changed.
      */
     emit(event, prop) {
+      if (typeof currentInspector === 'function') {
+        currentInspector(init, event);
+      }
+
       if (observers.size) {
         for (const observer of observers) {
           const keys = observer.states.get(init) as Set<KeyLike>;

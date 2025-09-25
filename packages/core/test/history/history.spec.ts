@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, getDefaultOptions, history, setDefaultOptions, softEntries, softValues } from '../../src/index.js';
+import { anchor, history, softEntries, softValues } from '../../src/index.js';
 
-const defaultOptions = { ...getDefaultOptions() };
+const defaultOptions = { ...history.getDefaultOptions() };
 const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
 
 describe('Anchor History', () => {
@@ -51,13 +51,13 @@ describe('Anchor History', () => {
     });
 
     it('should update the default options', () => {
-      setDefaultOptions({ maxHistory: 25 });
+      history.setDefaultOptions({ maxHistory: 25 });
 
-      expect(getDefaultOptions().maxHistory).toBe(25);
-      expect(getDefaultOptions().debounce).toBe(defaultOptions.debounce);
-      expect(getDefaultOptions().maxHistory).not.toBe(defaultOptions.maxHistory);
+      expect(history.getDefaultOptions().maxHistory).toBe(25);
+      expect(history.getDefaultOptions().debounce).toBe(defaultOptions.debounce);
+      expect(history.getDefaultOptions().maxHistory).not.toBe(defaultOptions.maxHistory);
 
-      setDefaultOptions(defaultOptions);
+      history.setDefaultOptions(defaultOptions);
     });
   });
 

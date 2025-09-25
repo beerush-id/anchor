@@ -24,7 +24,7 @@ export function micropush() {
   const push: Pusher = (fn: PushHandler) => {
     if (typeof fn !== 'function') {
       const error = new Error('Invalid argument.');
-      captureStack.error.argument('The given argument is not a function', error, push);
+      captureStack.error.argument('The given argument is not a function.', error, push);
       return () => {};
     }
 
