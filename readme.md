@@ -28,7 +28,7 @@ Anchor is more than just a state management library - it's a comprehensive ecosy
 
 ## 📚 Documentation
 
-You can view the full online documentation at [Anchor Documentations](https://beerush-id.github.io/anchor/docs). You can also find the local documentation in the [docs](./docs) directory.
+You can view the full online documentation at [Anchor Documentations](https://anchor.mahdaen.name/docs). You can also find the local documentation in the [docs](./docs) directory.
 
 ## 🚀 Getting Started
 
