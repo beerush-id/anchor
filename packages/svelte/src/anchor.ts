@@ -79,6 +79,12 @@ export function anchorRef<T extends Linkable, S extends LinkableSchema = Linkabl
 }
 
 /**
+ * Reactive reference alias for anchorRef.
+ * @type {{<T, S=LinkableSchema extends LinkableSchema>(init: T, options?: StateOptions<S>): VariableRef<T>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema?: S, options?: StateOptions): VariableRef<ModelOutput<S>>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema?: S, options?: (StateOptions & {immutable: true})): VariableRef<Immutable<ModelOutput<S>>>}}
+ */
+export const reactiveRef = anchorRef;
+
+/**
  * Creates a writable reference that maintains a sorted array state based on a comparison function.
  *
  * @template T - The type of elements in the array
