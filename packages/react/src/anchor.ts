@@ -1,7 +1,6 @@
 import {
   anchor,
   captureStack,
-  derive,
   type ImmutableOutput,
   type Linkable,
   type LinkableSchema,
@@ -10,6 +9,7 @@ import {
   type State,
   type StateBaseOptions,
   type StateOptions,
+  subscribe,
 } from '@anchorlib/core';
 import { useEffect } from 'react';
 import type { AnchorState } from './types.js';
@@ -167,7 +167,7 @@ export function useInherit<T extends State, K extends keyof T>(state: T, picks: 
       return;
     }
 
-    return derive(
+    return subscribe(
       state,
       (newValue, event) => {
         if (event.type !== 'init') {

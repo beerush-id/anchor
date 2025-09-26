@@ -1,7 +1,6 @@
 import {
   anchor,
   captureStack,
-  derive,
   type ImmutableOutput,
   type LinkableSchema,
   type ModelError,
@@ -10,6 +9,7 @@ import {
   softEqual,
   type State,
   type StateBaseOptions,
+  subscribe,
 } from '@anchorlib/core';
 import type { AnchorState, ExceptionList, FormState } from './types.js';
 import { useInherit } from './anchor.js';
@@ -132,7 +132,7 @@ export function useException<T extends State, R extends keyof T>(
       stableRef.value[key] = event.issues?.[0] as never as ModelError;
     });
 
-    const unsubscribe = derive(
+    const unsubscribe = subscribe(
       state,
       (_, e) => {
         if (e.type !== 'init' && e.keys.length) {

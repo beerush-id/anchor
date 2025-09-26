@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { anchor, captureStack, derive, type Linkable, type State } from '@anchorlib/core';
+import { anchor, captureStack, type Linkable, type State, subscribe } from '@anchorlib/core';
 import type { TransformFn } from './types.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
 import { depsChanged, isMutationOf } from './utils.js';
@@ -35,7 +35,7 @@ export function useDerived<T extends Linkable, R>(state: T, transformRecursive?:
       return;
     }
 
-    return derive(
+    return subscribe(
       state,
       (_, event) => {
         if (event.type !== 'init') {
@@ -64,7 +64,7 @@ export function useDerived<T extends Linkable, R>(state: T, transformRecursive?:
 export function usePipe<T extends State, R extends State>(source: T, target: R, transform?: TransformFn<T, R>): void {
   useEffect(() => {
     if (!source || !target) return;
-    return derive.pipe(source, target, transform);
+    return subscribe.pipe(source, target, transform);
   }, [source, target]);
 }
 
@@ -88,7 +88,7 @@ export function useBind<T extends State, R extends State>(
   transformRight?: TransformFn<R, T>
 ) {
   useEffect(() => {
-    return derive.bind(left, right, transformLeft, transformRight);
+    return subscribe.bind(left, right, transformLeft, transformRight);
   }, [left, right]);
 }
 
@@ -116,7 +116,7 @@ export function useValue<T extends State, K extends keyof T>(state: T, key: K): 
       return;
     }
 
-    return derive(
+    return subscribe(
       state,
       (next, event) => {
         if (isMutationOf(event, key)) {
@@ -171,7 +171,7 @@ export function useValueIs<T extends State, K extends keyof T>(state: T, key: K,
 
     cancelCleanup();
 
-    const unsubscribe = derive(
+    const unsubscribe = subscribe(
       state,
       (_, event) => {
         if (isMutationOf(event, key)) {
@@ -219,7 +219,7 @@ export function useDerivedRef<S extends State, R>(
   const valueRef = useRef<R>(null);
 
   useEffect(() => {
-    return derive(state, () => {
+    return subscribe(state, () => {
       handle(anchor.read(state) as S, valueRef.current);
     });
   }, [state]);
