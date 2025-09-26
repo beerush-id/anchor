@@ -2,13 +2,13 @@ import { MemoryStorage } from './memory.js';
 import {
   anchor,
   captureStack,
-  derive,
   type LinkableSchema,
   microtask,
   type ObjLike,
   type State,
   type StateOptions,
   type StateUnsubscribe,
+  subscribe,
 } from '@anchorlib/core';
 import { isBrowser } from '@beerush/utils';
 import type { SessionFn } from './types.js';
@@ -188,7 +188,7 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
     const storage = new storageClass(cName, state, cNewVersion, cOldVersion) as SessionStorage;
     STORAGE_REGISTRY.set(state, storage);
 
-    const controller = derive.resolve(state);
+    const controller = subscribe.resolve(state);
 
     if (typeof controller?.subscribe === 'function') {
       const [schedule] = microtask(STORAGE_SYNC_DELAY);

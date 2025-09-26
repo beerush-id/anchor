@@ -10,7 +10,7 @@ import {
   remove,
   update,
 } from './helper.js';
-import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchorlib/core';
+import { anchor, captureStack, microtask, type StateUnsubscribe, subscribe } from '@anchorlib/core';
 import {
   type FilterFn,
   IDBStatus,
@@ -539,7 +539,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     rowMaps.set(id, state);
     rowUsages.set(id, 1);
 
-    const stateUnsubscribe = derive(state, (snapshot, event) => {
+    const stateUnsubscribe = subscribe(state, (snapshot, event) => {
       if (event.type !== 'init' && event.keys.includes('data')) {
         schedule(() => {
           state.status = 'pending';
@@ -765,7 +765,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     async promise<T extends RowState<R> | RowListState<R>>(state: T): Promise<T> {
       if (state.status === 'pending') {
         return await new Promise<T>((resolve, reject) => {
-          const unsubscribe = derive(state, (snapshot, event) => {
+          const unsubscribe = subscribe(state, (snapshot, event) => {
             if (event.type !== 'init' && !event.keys.includes('data')) {
               if (state.error) {
                 reject(state.error);

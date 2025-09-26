@@ -1,5 +1,5 @@
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
-import { anchor, captureStack, derive, microtask, type StateUnsubscribe } from '@anchorlib/core';
+import { anchor, captureStack, microtask, type StateUnsubscribe, subscribe } from '@anchorlib/core';
 import {
   type DBEvent,
   type DBUnsubscribe,
@@ -391,7 +391,7 @@ export function createKVStore<T extends Storable>(
       }
 
       // Create synchronization if the given state data is a linkable value.
-      const stateUnsubscribe = derive(state, (snapshot, event) => {
+      const stateUnsubscribe = subscribe(state, (snapshot, event) => {
         if (event.type !== 'init' && event.keys.includes('data')) {
           schedule(() => {
             const prev = event.prev as T;
