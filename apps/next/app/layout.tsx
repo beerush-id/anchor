@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@components/Header';
 import Script from 'next/script.js';
+import { cookies } from 'next/headers.js';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -146,13 +147,17 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookie = await cookies();
+  const userSettings = cookie.get('app-settings');
+  const settings = userSettings?.value ? JSON.parse(userSettings.value) : {};
+
   return (
-    <html lang="en">
+    <html lang="en" className={settings.theme === 'system' ? settings.systemTheme : settings.theme}>
       <head>
         {process.env.NODE_ENV === 'production' && (
           <>

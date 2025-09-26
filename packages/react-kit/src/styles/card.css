@@ -1,0 +1,5 @@
+@utility ark-card {
+  @apply rounded-xl shadow-sm dark:shadow-lg;
+  @apply bg-background/50 backdrop-blur;
+  @apply border border-slate-300/50 dark:border-slate-700/50;
+}

@@ -1,12 +1,10 @@
-import { useRef, useState } from 'react';
-import { debugRender, isDebugRenderer, setDebugRenderer } from '@anchorlib/react';
+import { useState } from 'react';
+import { isDebugRenderer, setDebugRenderer } from '@anchorlib/react';
 import { Bug, BugOff } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
+import { classx } from '@utils/classx.js';
 
 export function DebugSwitch() {
-  const ref = useRef<HTMLDivElement>(null);
-  debugRender(ref);
-
   const [debugMode, setDebugMode] = useState(isDebugRenderer());
 
   const handleToggle = () => {
@@ -15,7 +13,7 @@ export function DebugSwitch() {
   };
 
   return (
-    <button onClick={handleToggle} className="anchor-btn btn-icon btn-alternate tool-btn">
+    <button onClick={handleToggle} className={classx('icon-button', 'button-alternative')}>
       {debugMode && <Bug size={16} />}
       {!debugMode && <BugOff size={16} />}
       <Tooltip>{debugMode ? 'Disable' : 'Enable'} Render Debugger</Tooltip>

@@ -1,16 +1,10 @@
-import { useRef } from 'react';
-import { debugRender, resolveProps, useObserver } from '@anchorlib/react';
+import { type HTMLAttributes } from 'react';
 import { classx } from '@utils/index.js';
-import type { RFC } from '@utils/types.js';
+import type { EFC } from '@base/index.js';
 
-export const CardHeader: RFC<HTMLDivElement> = (props) => {
-  const { ref, className, children, ...rest } = useObserver(() => resolveProps(props), [props]);
-  const cardHeaderRef = useRef(null);
-
-  debugRender(ref ?? cardHeaderRef);
-
+export const CardHeader: EFC<HTMLAttributes<HTMLDivElement>, HTMLDivElement> = ({ className, children, ...props }) => {
   return (
-    <div ref={ref ?? cardHeaderRef} className={classx('anchor-card-header', className)} {...rest}>
+    <div className={classx(classx.brand('card-header'), className)} {...props}>
       {children}
     </div>
   );

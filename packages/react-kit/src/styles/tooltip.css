@@ -1,0 +1,36 @@
+@utility ark-tooltip {
+  --ark-tooltip-top: auto;
+  --ark-tooltip-left: auto;
+
+  @apply fixed -translate-x-1/2 z-50;
+  @apply text-xs whitespace-nowrap;
+  @apply px-2 py-1;
+  @apply backdrop-blur-sm rounded-sm;
+  @apply invisible opacity-0 pointer-events-none;
+
+  top: var(--ark-tooltip-top);
+  left: var(--ark-tooltip-left);
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
+}
+
+@utility ark-tooltip-x-after {
+  @apply ml-2;
+}
+
+@utility ark-tooltip-before {
+  @apply -ml-2;
+}
+
+@utility ark-tooltip-y-above {
+  @apply -mt-2;
+}
+
+@utility ark-tooltip-y-below {
+  @apply mt-2;
+}
+
+@utility ark-tooltip-visible {
+  @apply visible opacity-100;
+}

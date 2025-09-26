@@ -1,15 +1,13 @@
-import { useRef } from 'react';
-import { debugRender, resolveProps, useObserver } from '@anchorlib/react';
-import type { RFC } from '@utils/types.js';
+import { type HTMLAttributes } from 'react';
+import { resolveProps, useObserver } from '@anchorlib/react';
+import type { EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
 
-export const PanelRow: RFC<HTMLDivElement> = (props) => {
-  const { ref, children, className, ...rest } = useObserver(() => resolveProps(props), [props]);
-  const panelRowRef = useRef<HTMLDivElement>(null);
-  debugRender(ref ?? panelRowRef);
+export const PanelRow: EFC<HTMLAttributes<HTMLDivElement>, HTMLDivElement> = (props) => {
+  const { children, className, ...rest } = useObserver(() => resolveProps(props), [props]);
 
   return (
-    <div ref={ref ?? panelRowRef} className={classx('anchor-panel-row', className)} {...rest}>
+    <div className={classx('anchor-panel-row', className)} {...rest}>
       {children}
     </div>
   );

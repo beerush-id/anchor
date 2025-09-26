@@ -1,6 +1,6 @@
-import { type HTMLAttributes, useRef } from 'react';
-import { debugRender, resolveProps, useObserver } from '@anchorlib/react';
-import type { ClassList, ClassName, RFC } from '@utils/types.js';
+import { type HTMLAttributes } from 'react';
+import { resolveProps, useObserver } from '@anchorlib/react';
+import type { ClassList, ClassName, EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
 
 export type PanelColumnProps = {
@@ -8,13 +8,11 @@ export type PanelColumnProps = {
   labelClassName?: ClassName | ClassList;
 };
 
-export const PanelColumn: RFC<HTMLDivElement, HTMLAttributes<HTMLDivElement> & PanelColumnProps> = (props) => {
-  const { ref, label, children, className, labelClassName, ...rest } = useObserver(() => resolveProps(props), [props]);
-  const panelColumnRef = useRef(null);
-  debugRender(ref ?? panelColumnRef);
+export const PanelColumn: EFC<HTMLAttributes<HTMLDivElement> & PanelColumnProps, HTMLDivElement> = (props) => {
+  const { label, children, className, labelClassName, ...rest } = useObserver(() => resolveProps(props), [props]);
 
   return (
-    <div ref={ref ?? panelColumnRef} className={classx('anchor-panel-column', className)} {...rest}>
+    <div className={classx('anchor-panel-column', className)} {...rest}>
       {label && <h4 className={classx('anchor-panel-column-label', labelClassName)}>{label}</h4>}
       {children}
     </div>

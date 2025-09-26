@@ -1,7 +1,7 @@
-import type { ClassList, ClassName, RFC } from '@utils/types.js';
-import { debugRender, resolveProps, useObserver } from '@anchorlib/react';
-import { type HTMLAttributes, type RefObject, useRef } from 'react';
+import type { ClassList, ClassName } from '@base/index.js';
+import { type HTMLAttributes } from 'react';
 import { classx } from '@utils/index.js';
+import { optimized } from '@view/Optimized.js';
 
 export type PanelProps = {
   label?: string;
@@ -13,34 +13,26 @@ export type PanelCollapsibleProps = PanelProps & {
   open?: boolean;
 };
 
-export const Panel: RFC<
-  HTMLDivElement | HTMLDetailsElement,
-  HTMLAttributes<HTMLDivElement | HTMLDetailsElement> & PanelCollapsibleProps
-> = (props) => {
-  const { ref, label, className, labelClassName, collapsible, children, open, ...rest } = useObserver(
-    () => resolveProps(props),
-    [props]
-  );
-  const panelRef = useRef<HTMLDivElement | HTMLDetailsElement>(null);
-  debugRender(ref ?? panelRef);
+export const Panel = optimized<HTMLAttributes<HTMLDivElement | HTMLDetailsElement> & PanelCollapsibleProps>(
+  ({ label, labelClassName, className, collapsible, open, children, ...rest }) => {
+    if (collapsible) {
+      return (
+        <details
+          open={open}
+          className={classx('anchor-panel', 'anchor-panel-collapsible', { 'anchor-panel-open': open }, className)}
+          {...(rest as HTMLAttributes<HTMLDetailsElement>)}>
+          <summary className={classx('anchor-panel-label', labelClassName)}>{label}</summary>
+          {children}
+        </details>
+      );
+    }
 
-  if (collapsible) {
     return (
-      <details
-        ref={(ref ?? panelRef) as RefObject<HTMLDetailsElement>}
-        open={open}
-        className={classx('anchor-panel', 'anchor-panel-collapsible', { 'anchor-panel-open': open }, className)}
-        {...rest}>
-        <summary className={classx('anchor-panel-label', labelClassName)}>{label}</summary>
+      <div className={classx('anchor-panel', className)} {...(rest as HTMLAttributes<HTMLDivElement>)}>
+        {label && <h3 className={classx('anchor-panel-label', labelClassName)}>{label}</h3>}
         {children}
-      </details>
+      </div>
     );
-  }
-
-  return (
-    <div ref={(ref ?? panelRef) as RefObject<HTMLDivElement>} className={classx('anchor-panel', className)} {...rest}>
-      {label && <h3 className={classx('anchor-panel-label', labelClassName)}>{label}</h3>}
-      {children}
-    </div>
-  );
-};
+  },
+  'Panel'
+);

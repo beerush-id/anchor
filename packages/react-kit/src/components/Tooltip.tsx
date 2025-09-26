@@ -1,23 +1,22 @@
-import type { RFC } from '@utils/types.js';
-import { debugRender, resolveProps, useObserver } from '@anchorlib/react';
+import type { EFC } from '@base/index.js';
+import { resolveProps, useObserver } from '@anchorlib/react';
 import { classx } from '@utils/index.js';
-import { type TooltipOptions, useTooltip } from '@actions/index.js';
+import { type TooltipOptions, TooltipXDir, TooltipYDir, useTooltip } from '@actions/index.js';
 import type { HTMLAttributes } from 'react';
 
 export type TooltipProps = TooltipOptions;
 
 const { brand } = classx;
 
-export const Tooltip: RFC<HTMLSpanElement, HTMLAttributes<HTMLSpanElement> & TooltipProps> = (props) => {
+export const Tooltip: EFC<HTMLAttributes<HTMLSpanElement> & TooltipProps, HTMLSpanElement> = (props) => {
   const {
     children,
-    xDir = 'between',
-    yDir = 'below',
+    xDir = TooltipXDir.Between,
+    yDir = TooltipYDir.Below,
     className,
     ...rest
-  } = useObserver(() => resolveProps(props), [props]);
+  } = useObserver(() => resolveProps(props));
   const ref = useTooltip({ xDir, yDir });
-  debugRender(ref);
 
   const dirClasses = [xDir ? brand(`tooltip-x-${xDir}`) : '', yDir ? brand(`tooltip-y-${yDir}`) : ''];
 

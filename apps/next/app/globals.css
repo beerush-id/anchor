@@ -3,31 +3,51 @@
 
 @source '../../../node_modules/@anchorlib/react-kit/dist';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
 .ark-tooltip {
-  @apply text-slate-100 bg-slate-900/80;
+  @apply text-background bg-foreground;
+}
+
+.ark-section {
+  @apply max-w-6xl mx-auto flex flex-col justify-center items-center;
+}
+
+.ark-section-offset.min-h-screen .ark-section {
+  @apply min-h-screen;
+}
+
+.page-section {
+  @apply relative;
+
+  &:before,
+  &:after {
+    @apply absolute w-[80%] md:w-2xl aspect-square block rounded-full z-0 blur-[150px] opacity-30;
+    content: '';
+  }
+
+  &:before {
+    @apply bg-brand-red/25 dark:bg-brand-red;
+    top: 5%;
+    left: 10%;
+  }
+
+  &:after {
+    @apply bg-brand-main/25 dark:bg-brand-main;
+    right: 10%;
+    bottom: 5%;
+  }
+
+  & > * {
+    @apply relative z-10;
+  }
 }

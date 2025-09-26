@@ -21,10 +21,12 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true,
     "paths": {
+      "@base/*": ["./src/*"],
       "@actions/*": ["./src/actions/*"],
       "@components/*": ["./src/components/*"],
       "@icons/*": ["./src/icons/*"],
-      "@utils/*": ["./src/utils/*"]
+      "@utils/*": ["./src/utils/*"],
+      "@view/*": ["./src/view/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

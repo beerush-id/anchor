@@ -1,5 +1,6 @@
-import type { ClassList, ClassName } from './types.js';
+import type { ClassList, ClassName, StyleRef } from '@base/index.js';
 import { isRef } from '@anchorlib/react';
+import type { CSSProperties } from 'react';
 
 export let BRAND_PREFIX = 'ark';
 
@@ -55,3 +56,55 @@ classFn.props = <P>(props: { className?: ClassName | ClassList }) => {
 };
 
 export const classx = classFn as ClassxFn;
+
+export function stylex(style?: StyleRef): Partial<CSSProperties> {
+  if (!style) return {};
+  if (isRef(style)) return { ...style.value } as Partial<CSSProperties>;
+
+  return { ...style } as Partial<CSSProperties>;
+}
+
+const UNITLESS_PROPERTIES = new Set([
+  'animationIterationCount',
+  'borderImageOutset',
+  'borderImageSlice',
+  'borderImageWidth',
+  'boxFlex',
+  'boxFlexGroup',
+  'boxOrdinalGroup',
+  'columnCount',
+  'flex',
+  'flexGrow',
+  'flexPositive',
+  'flexShrink',
+  'flexNegative',
+  'flexOrder',
+  'gridRow',
+  'gridColumn',
+  'fontWeight',
+  'lineHeight',
+  'opacity',
+  'order',
+  'orphans',
+  'tabSize',
+  'widows',
+  'zIndex',
+  'zoom',
+  'fillOpacity',
+  'floodOpacity',
+  'stopOpacity',
+  'strokeDasharray',
+  'strokeDashoffset',
+  'strokeMiterlimit',
+  'strokeOpacity',
+  'strokeWidth',
+  'scale',
+  'rotate',
+]);
+
+export function styleUnit(prop: string, value: string | number | undefined, unit = 'px'): string {
+  if (typeof value === 'number' && !UNITLESS_PROPERTIES.has(prop)) {
+    return `${value}${unit}`;
+  }
+  return typeof value === 'string' ? value : String(value ?? '');
+}

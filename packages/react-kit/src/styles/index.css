@@ -1,38 +1,51 @@
+@import 'tailwindcss';
+
+@import 'button.css';
+@import 'card.css';
 @import 'header.css';
+@import 'input.css';
+@import 'panel.css';
+@import 'section.css';
+@import 'tooltip.css';
 
-@utility ark-tooltip {
-  --ark-tooltip-top: auto;
-  --ark-tooltip-left: auto;
-
-  @apply fixed -translate-x-1/2 z-50;
-  @apply text-xs whitespace-nowrap;
-  @apply px-2 py-1;
-  @apply backdrop-blur-sm rounded-sm;
-  @apply invisible opacity-0 pointer-events-none;
-
-  top: var(--ark-tooltip-top);
-  left: var(--ark-tooltip-left);
-  transition:
-    opacity 0.2s ease-in-out,
-    visibility 0.2s ease-in-out;
+@theme {
+  --color-background: var(--color-slate-50);
+  --color-foreground: var(--color-slate-900);
+  --color-brand-main: #533ddd;
+  --color-brand-main-hover: #4a2d9b;
+  --color-brand-main-active: #3b1e8c;
+  --color-brand-orange: #ffa500;
+  --color-brand-orange-hover: #e68a00;
+  --color-brand-orange-active: #c86c00;
+  --color-brand-red: #fb2c36;
 }
 
-@utility ark-tooltip-x-after {
-  @apply ml-2;
+@layer theme {
+  :root.dark {
+    --color-background: var(--color-slate-950);
+    --color-foreground: var(--color-slate-50);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background: var(--color-slate-900);
+      --color-foreground: var(--color-slate-50);
+    }
+  }
 }
 
-@utility ark-tooltip-before {
-  @apply -ml-2;
-}
+@utility ark-theme-switch {
+  @apply flex items-center bg-slate-200 dark:bg-slate-950 rounded-3xl p-1 gap-1;
 
-@utility ark-tooltip-y-above {
-  @apply -mt-2;
-}
+  & > button svg {
+    @apply w-4 h-4;
+  }
 
-@utility ark-tooltip-y-below {
-  @apply mt-2;
-}
+  & > button {
+    @apply p-1 rounded-3xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors;
+  }
 
-@utility ark-tooltip-visible {
-  @apply visible opacity-100;
+  & > button.active {
+    @apply bg-slate-50 dark:bg-slate-800;
+  }
 }

@@ -6,10 +6,15 @@ import * as fs from 'node:fs';
 const pathResolve: Plugin = {
   name: 'externalize-self',
   setup(build) {
-    build.onResolve({ filter: /^@(actions|utils|components|icons)(?:\/|$)/ }, (args) => {
+    build.onResolve({ filter: /^@(base|actions|utils|components|icons|view)(?:\/|$)/ }, (args) => {
       const dirs = args.path.split('/').map((dir) => {
         if (dir.startsWith('@')) {
           return `../${dir.replace('@', '')}`;
+        }
+
+        if (dir.match(/\.(ts|js|tsx|jsx)$/)) {
+          const [ext] = dir.match(/\.(ts|js|tsx|jsx)$/) ?? [];
+          return `index${ext}`;
         }
 
         return dir;
@@ -47,6 +52,7 @@ export default defineConfig({
     './src/icons/index.tsx',
     './src/utils/index.ts',
     './src/styles/index.css',
+    './src/view/index.tsx',
   ],
   outDir: './dist',
   dts: true,
@@ -58,6 +64,6 @@ export default defineConfig({
   sourcemap: true,
   platform: 'browser',
   publicDir: './public',
-  external: ['@anchorlib/core', '@anchorlib/storage', '@anchorlib/react', 'react'],
+  external: ['@anchorlib/core', '@anchorlib/storage', '@anchorlib/react', 'react', 'tailwindcss'],
   esbuildPlugins: [pathResolve, useClientPlugin],
 });

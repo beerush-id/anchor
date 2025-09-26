@@ -78,6 +78,7 @@ export const Header = () => {
         logo={{ text: 'Anchor - Framework Agnostic State Management Library', image: LogoText }}
         links={links}
         socials={socials}
+        offset={SCROLL_THRESHOLD}
       />
     </>
   );

@@ -1,14 +1,15 @@
-import { type ComponentType, type HTMLAttributes, type SVGAttributes, useRef } from 'react';
-import type { RFC } from '@utils/index.js';
+import { type ComponentType, type HTMLAttributes, type SVGAttributes } from 'react';
+import type { EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
-import { debugRender, resolveProps, useObserver } from '@anchorlib/react';
+import { resolveProps, useObserver } from '@anchorlib/react';
 import { observe } from '@anchorlib/react/view';
 import { Tooltip } from './Tooltip.js';
 import { useScrollNav } from '@actions/index.js';
+import { ThemeSwitch } from './ThemeSwitch.js';
 
 export type HeaderLogo = {
   text?: string;
-  image?: ComponentType<SVGAttributes<SVGSVGElement>>;
+  image?: EFC<SVGAttributes<SVGGElement>, SVGSVGElement> | ComponentType<SVGAttributes<SVGSVGElement>>;
   height?: number;
 };
 
@@ -22,7 +23,7 @@ export type HeaderSocial = {
   href: string;
   text?: string;
   tips?: string;
-  icon?: ComponentType<SVGAttributes<SVGSVGElement>>;
+  icon?: EFC<SVGAttributes<SVGGElement>, SVGSVGElement> | ComponentType<SVGAttributes<SVGSVGElement>>;
 };
 
 export type HeaderProps = {
@@ -30,27 +31,23 @@ export type HeaderProps = {
   links?: HeaderLink[];
   label?: string;
   socials?: HeaderSocial[];
+  offset?: number;
 };
 
 const { brand } = classx;
 
-export const Header: RFC<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement> & HeaderProps> = (props) => {
-  const { ref, logo, label, links, socials, children, className, ...rest } = useObserver(
+export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLHeadingElement> = (props) => {
+  const { logo, label, offset, links, socials, children, className, ...rest } = useObserver(
     () => resolveProps(props),
     [props]
   );
-  const headerRef = useRef(null);
 
-  debugRender(ref ?? headerRef);
-
-  const LogoView = observe<HTMLHeadingElement>((ref) => {
+  const LogoView = observe<HTMLHeadingElement>(() => {
     if (!logo?.text) return;
-
-    debugRender(ref);
 
     const { text, image: LogoImage, height } = logo;
     return (
-      <h1 ref={ref} className={brand('header-logo')}>
+      <h1 className={brand('header-logo')}>
         {LogoImage && (
           <a href="/">
             <LogoImage height={height ?? 32} />
@@ -61,19 +58,17 @@ export const Header: RFC<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement> 
     );
   });
 
-  const LinksView = observe<HTMLUListElement>((ref) => {
+  const LinksView = observe<HTMLUListElement>(() => {
     if (!links?.length) return;
 
-    debugRender(ref);
-
     return (
-      <ul ref={ref} className={brand('header-links')}>
+      <ul className={brand('header-links')}>
         {links.map((link) => {
           const { href, text, icon: Icon } = link;
 
           return (
             <li key={href}>
-              <a ref={useScrollNav()} href={href} className={brand('header-link')}>
+              <a ref={useScrollNav(offset)} href={href} className={brand('header-link')}>
                 {Icon && <Icon />}
                 <span>{text}</span>
               </a>
@@ -84,13 +79,11 @@ export const Header: RFC<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement> 
     );
   });
 
-  const SocialsView = observe<HTMLUListElement>((ref) => {
+  const SocialsView = observe<HTMLUListElement>(() => {
     if (!socials?.length) return;
 
-    debugRender(ref);
-
     return (
-      <ul ref={ref} className={brand('header-socials')}>
+      <ul className={brand('header-socials')}>
         {socials.map((social) => {
           const { href, text, tips, icon: Icon } = social;
 
@@ -109,12 +102,13 @@ export const Header: RFC<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement> 
   });
 
   return (
-    <header ref={ref ?? headerRef} className={classx(brand('header'), className)} {...rest}>
+    <header className={classx(brand('header'), className)} {...rest}>
       <nav className={brand('header-nav')} aria-label={label ?? 'Main Navigation'}>
         <LogoView />
         <LinksView />
         {children}
         <SocialsView />
+        <ThemeSwitch />
       </nav>
     </header>
   );
