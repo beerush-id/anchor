@@ -1,4 +1,17 @@
-# Introduction to Anchor for React
+---
+title: 'Introduction to Anchor for React: High-Performance State Management'
+description: 'Discover why Anchor is the ideal state management solution for React. Learn how it solves common problems like unnecessary re-renders, complex state, and immutability.'
+keywords:
+  - anchor for react
+  - react state management
+  - anchor introduction
+  - react performance
+  - fine-grained reactivity react
+  - immutable state react
+  - react state management library
+---
+
+# Why Anchor is the Ultimate State Management Solution for React
 
 As a React developer, you're constantly building dynamic user interfaces. While React excels at declarative UI, managing
 state effectively and ensuring your application remains fast and responsive as it grows can often become a significant

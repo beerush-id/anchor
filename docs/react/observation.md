@@ -1,3 +1,19 @@
+---
+title: 'Observation in Anchor for React: observe HOC and useObserver Hook'
+description: 'A comprehensive guide to observation in Anchor for React. Learn how to use the observe and observer HOCs, and the useObserver hook to create performant, reactive components.'
+keywords:
+  - anchor for react
+  - react observation
+  - react reactivity
+  - observe hoc
+  - observer hoc
+  - useObserver hook
+  - fine-grained reactivity
+  - react performance
+  - anchor components
+  - bindable hoc
+---
+
 # Observation in Anchor for React
 
 Observation is a core concept in **Anchor**, enabling your React components to automatically react to changes in your

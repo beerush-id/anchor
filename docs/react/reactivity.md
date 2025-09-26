@@ -1,4 +1,18 @@
-# Reactivity in Anchor for React
+---
+title: 'Reactivity in Anchor for React: The DSV Pattern Explained'
+description: 'A deep dive into the reactivity model of Anchor for React. Learn about the DSV (Data-State-View) pattern, selective re-rendering, and how it improves performance.'
+keywords:
+  - anchor for react
+  - react reactivity
+  - dsv pattern
+  - data-state-view
+  - fine-grained reactivity
+  - react performance
+  - selective re-rendering
+  - anchor reactivity model
+---
+
+# Understanding Reactivity in Anchor for React
 
 **Anchor** redefines reactivity in **React** by providing a more intuitive and efficient approach to state
 management that aligns with how developers naturally think about UI components.

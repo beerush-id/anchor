@@ -1,4 +1,20 @@
-# Utilities in Anchor for React
+---
+title: 'Anchor for React: A Guide to Utility Hooks & Functions'
+description: 'Explore the utility hooks and functions in Anchor for React. This guide covers useSnapshot, useMicrotask, debugging tools, and other utilities to enhance your development workflow.'
+keywords:
+  - anchor for react
+  - react utility hooks
+  - anchor utilities
+  - useSnapshot hook
+  - useMicrotask hook
+  - useMicrobatch
+  - react debugging
+  - state management utilities
+  - useShortId
+  - debugRender
+---
+
+# A Guide to Anchor's React Utility Hooks & Functions
 
 **Anchor** provides a collection of utility hooks and functions that enhance your development experience when working
 with reactive state. These utilities help with common tasks such as creating snapshots, managing microtasks, generating

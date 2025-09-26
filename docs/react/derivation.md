@@ -1,4 +1,19 @@
-# Derivation in Anchor for React
+---
+title: 'A Guide to Derivation in Anchor for React: Computed Values & Data Flow'
+description: 'Learn about derivation in Anchor for React. This guide covers hooks like useDerived, useValue, usePipe, and useBind to create computed values and synchronized states.'
+keywords:
+  - anchor for react
+  - react derivation
+  - computed state react
+  - useDerived hook
+  - useValue hook
+  - usePipe hook
+  - useBind hook
+  - state synchronization
+  - reactive data flow
+---
+
+# A Guide to Derivation in Anchor for React
 
 Derivation in **Anchor** refers to the process of creating new reactive data or relationships from existing reactive
 states. This allows you to build complex data flows, computed values, and synchronized states that automatically update

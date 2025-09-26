@@ -1,4 +1,18 @@
-# Anchor vs Other State Management Libraries
+---
+title: 'Anchor vs. Redux, MobX, Jotai: A React State Management Comparison'
+description: 'A detailed comparison of Anchor for React against other popular state management libraries like Redux, MobX, and Jotai, focusing on performance, complexity, and bundle size.'
+keywords:
+  - anchor vs redux
+  - anchor vs mobx
+  - anchor vs jotai
+  - react state management comparison
+  - state management benchmarks
+  - react performance comparison
+  - anchor performance
+  - best react state management
+---
+
+# Anchor vs. Other State Management Libraries
 
 When choosing a state management solution for your React application, it's important to consider both developer
 experience (DX) and performance. This document provides a comprehensive comparison between Anchor and other popular

@@ -1,4 +1,19 @@
-# Immutability in Anchor for React
+---
+title: 'A Deep Dive into Immutability with Anchor for React'
+description: 'Explore how Anchor for React revolutionizes immutability. This guide covers useImmutable, useWriter, and how to achieve high performance without complex update logic.'
+keywords:
+  - anchor for react
+  - react immutability
+  - immutable state react
+  - useImmutable hook
+  - useWriter hook
+  - true immutability
+  - react state management
+  - performance react
+  - write contract
+---
+
+# A Deep Dive into Immutability in Anchor for React
 
 Immutability is a cornerstone of robust, predictable React applications. It ensures that state objects cannot be changed
 once created, preventing unintended side effects and making your application easier to reason about. Anchor provides

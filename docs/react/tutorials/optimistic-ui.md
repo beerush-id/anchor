@@ -1,4 +1,17 @@
-# Optimistic UI with Anchor in React
+---
+title: 'React Optimistic UI Tutorial with Anchor: A Step-by-Step Guide'
+description: 'Learn how to implement optimistic UI in your React applications using Anchor. This tutorial covers the `undoable` utility for instant UI feedback and easy rollbacks.'
+keywords:
+  - react optimistic ui
+  - anchor react tutorial
+  - optimistic updates react
+  - undoable utility
+  - react performance
+  - responsive ui react
+  - anchor optimistic ui
+---
+
+# Building Optimistic UI in React with Anchor
 
 Learn how to build responsive user interfaces with optimistic updates using Anchor's reactive state management and
 undoable utility.

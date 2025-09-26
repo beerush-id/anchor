@@ -1,4 +1,19 @@
-# The Ref System
+---
+title: 'The Ref System in Anchor for React: useVariable & useConstant'
+description: "A deep dive into Anchor's Ref System for React. Learn how to use useVariable and useConstant to manage state, decouple components, and optimize rendering."
+keywords:
+  - anchor for react
+  - react ref system
+  - useVariable hook
+  - useConstant hook
+  - reactive state react
+  - component decoupling
+  - react performance
+  - dsv pattern
+  - anchor ref
+---
+
+# Understanding the Ref System in Anchor for React
 
 In the React ecosystem, managing and sharing state between components can often lead to complex patterns like prop
 drilling or context providers. Anchor introduces the **Ref System**, a powerful and intuitive way to handle state that

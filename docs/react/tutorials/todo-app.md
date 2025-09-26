@@ -1,4 +1,19 @@
-# Persistent Todo App in React with Anchor
+---
+title: 'React Todo App Tutorial: Building a Scalable & Persistent App with Anchor'
+description: 'A step-by-step tutorial on building a high-performance, persistent Todo App with React and Anchor. Learn state architecture, selective rendering, and data persistence.'
+keywords:
+  - react todo app tutorial
+  - anchor react tutorial
+  - react state management tutorial
+  - scalable react app
+  - persistent state react
+  - react indexeddb
+  - anchor storage
+  - dsv pattern react
+  - selective rendering react
+---
+
+# Building a Scalable & Persistent Todo App with Anchor and React
 
 Learn how to build a scalable, persistent todo app in React using Anchor as the State Management.
 

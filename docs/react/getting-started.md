@@ -1,4 +1,17 @@
-# Getting Started with Anchor for React
+---
+title: "Getting Started with Anchor for React: A Beginner's Tutorial"
+description: 'A step-by-step guide to getting started with Anchor for React. Learn to install, create reactive state, and build high-performance components with this tutorial.'
+keywords:
+  - anchor for react tutorial
+  - react state management getting started
+  - anchor react guide
+  - useAnchor hook
+  - anchor observer hoc
+  - react reactive state
+  - getting started react state
+---
+
+# Getting Started with Anchor for React: A Beginner's Tutorial
 
 This guide will quickly get you up and running with Anchor in your React project. You'll learn how to install Anchor,
 create your first reactive state, and connect it to your React components to build dynamic and performant UIs.

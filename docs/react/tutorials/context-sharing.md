@@ -1,4 +1,17 @@
-# Context Sharing
+---
+title: 'React Context Sharing Tutorial: Anchor Global Context vs. React Context API'
+description: "Learn how to share state in React applications using Anchor's Global Context and React's Context API. This tutorial covers when and how to use each for effective dependency injection."
+keywords:
+  - react context tutorial
+  - anchor global context
+  - dependency injection react
+  - prop drilling
+  - react context vs anchor context
+  - state management react
+  - anchor react tutorial
+---
+
+# Sharing State with Context in React
 
 Learn how to share data throughout your application using both React's Context API and Anchor's Global Context.
 

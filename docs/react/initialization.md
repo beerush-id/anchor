@@ -1,4 +1,20 @@
-# Initialization
+---
+title: 'Anchor for React: A Guide to State Initialization Hooks'
+description: 'Learn how to initialize state in Anchor for React using hooks like useAnchor, useImmutable, useVariable, useModel, and more. A complete guide to creating reactive state.'
+keywords:
+  - anchor for react
+  - react state initialization
+  - useAnchor
+  - useImmutable
+  - useVariable
+  - useConstant
+  - useModel
+  - react hooks
+  - anchor hooks
+  - state management hooks
+---
+
+# A Guide to State Initialization in Anchor for React
 
 Initialization in **Anchor** for React is the process of creating reactive state objects that can be observed and
 mutated.

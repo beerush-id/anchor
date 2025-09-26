@@ -1,4 +1,20 @@
-# Components in Anchor for React
+---
+title: 'Anchor for React: A Guide to Built-in UI Components'
+description: "Explore Anchor's built-in React components like Input, Checkbox, Radio, and Select. Learn how to bind them directly to reactive state for simplified form handling."
+keywords:
+  - anchor for react
+  - react ui components
+  - anchor components
+  - input component
+  - checkbox component
+  - radio component
+  - select component
+  - toggle component
+  - form handling react
+  - reactive forms
+---
+
+# A Guide to Anchor's Built-in React Components
 
 **Anchor** provides a set of UI components that integrate directly with reactive state, simplifying form handling and ensuring optimal performance. These components automatically bind to state properties, reducing boilerplate and ensuring that only the necessary parts of your UI re-render when state changes.
 
@@ -628,7 +644,7 @@ A React component for grouping toggle buttons.
 
 **Props**
 
-- **All standard HTML div attributes** - All standard HTML div attributes are supported
+- **All standard HTML div attributes** - All other standard HTML div attributes are supported
 
 [API Reference](../apis/react/components.md#togglegroup)
 
