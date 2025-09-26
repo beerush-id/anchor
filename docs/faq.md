@@ -110,7 +110,7 @@ Yes, Anchor can coexist with existing state management solutions. You can gradua
 Anchor provides several debugging tools:
 
 - **Built-in DevTools**: Visualize state changes and component dependencies
-- **Derivation Logging**: Log state changes to the console with `derive.log`
+- **Subscription Logging**: Log state changes to the console with `subscribe.log`
 - **State Snapshots**: Capture and inspect state at any point in time
 - **Error Handling**: Comprehensive error messages for common issues
 

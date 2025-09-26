@@ -9,7 +9,7 @@ After installing the appropriate packages, you can start using **Anchor** in you
 the core package:
 
 ```typescript
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, subscribe } from '@anchorlib/core';
 
 // Create a reactive state.
 const state = anchor({
@@ -19,7 +19,7 @@ const state = anchor({
 });
 
 // Logs each state change to console.
-derive(state, console.log);
+subscribe(state, console.log);
 
 // Access state properties.
 console.log(state.count); // 0
@@ -109,13 +109,13 @@ Below is a simple example of how to use Anchor.
 ::: code-group
 
 ```typescript [counter.ts]
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, subscribe } from '@anchorlib/core';
 
 const counter = anchor({ count: 0 });
 
 // Subscribe to changes
 const view = document.getElementById('counter');
-derive(counter, () => {
+subscribe(counter, () => {
   view.innerHTML = counter.count;
 });
 

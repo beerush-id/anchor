@@ -87,7 +87,8 @@ export default Counter;
 - **`useAnchor` Hook:** This hook initializes your state (`{ count: 0 }`) and makes it reactive. The `state` variable
   you get back is a special state that aware of observer and subscriber.
 - **Direct Mutation:** Notice `state.count++` and `state.count--`. With Anchor, you directly modify your state. There's
-  no need for immutable pattern updates (like `setState(prev => ({...prev, count: prev.count + 1}))`) or dispatching actions.
+  no need for immutable pattern updates (like `setState(prev => ({...prev, count: prev.count + 1}))`) or dispatching
+  actions.
 - **Automatic UI Updates:** Because `Counter` is an `observer`, when `state.count` changes, the component automatically
   re-renders to display the new value.
 
@@ -108,14 +109,14 @@ export default Counter;
 
 ## Global State
 
-To work with global state, you can use the Anchor's core API to create global state and then observe it in your
-components.
+For managing global state that can be shared across multiple components, you can use Anchor's core API to create a
+global reactive state object and observe it in any component that needs it.
 
 ```tsx
 import { anchor } from '@anchorlib/core';
 import { observer } from '@anchorlib/react/view';
 
-// Create a global state.
+// Create a global state that can be shared across components.
 const counter = anchor({ count: 0 });
 
 // Observe the global state in your component.
@@ -161,8 +162,9 @@ export default Counter;
 
 ## Computed Properties
 
-In Anchor, JavaScript's native getter syntax works perfectly for creating computed properties. These are properties that
-are automatically derived from other reactive properties and update whenever their dependencies change.
+In Anchor, you can use JavaScript's native getter syntax to create computed properties. These are reactive properties
+that are automatically calculated based on other reactive state values and will update whenever their dependencies
+change. This allows you to create dynamic values that are always in sync with your state without manual updates.
 
 ```tsx
 import { observer } from '@anchorlib/react/view';
@@ -273,6 +275,11 @@ export default Counter;
 :::
 
 ## Advanced Properties
+
+Beyond simple computed properties, Anchor fully supports JavaScript's native getter and setter syntax for creating
+advanced properties. This allows you to define properties that not only derive their value from other state properties
+but also enable two-way data binding or complex transformations when the property is set. This is particularly useful
+for encapsulating complex logic related to a property's value.
 
 ```tsx
 import { observer } from '@anchorlib/react/view';

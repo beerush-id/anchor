@@ -192,6 +192,10 @@ export default defineConfig({
                 text: 'Optimistic UI',
                 link: '/react/tutorials/optimistic-ui',
               },
+              // {
+              //   text: 'Context Sharing',
+              //   link: '/react/tutorials/context-sharing',
+              // },
               {
                 text: 'Scalable Todo App',
                 link: '/react/tutorials/todo-app',
@@ -314,7 +318,7 @@ export default defineConfig({
             items: [
               { text: 'Initialization', link: '/apis/core/initialization' },
               { text: 'Observation', link: '/apis/core/observation' },
-              { text: 'Derivation', link: '/apis/core/derivation' },
+              { text: 'Subscription', link: '/apis/core/derivation' },
               { text: 'History', link: '/apis/core/history' },
               { text: 'Request', link: '/apis/core/request' },
               { text: 'Context', link: '/apis/core/context' },

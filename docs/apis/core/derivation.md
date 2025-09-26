@@ -1,14 +1,14 @@
-# Derivation APIs
+# Subscription APIs
 
-The Derivation APIs provide powerful tools for reacting to state changes. The primary function is `derive`, which allows you to subscribe to updates, log changes, and synchronize states.
+The Subscription APIs provide powerful tools for reacting to state changes. The primary function is `derive`, which allows you to subscribe to updates, log changes, and synchronize states.
 
-## Core Derivation Functions
+## Core Subscription Functions
 
 These functions form the core of Anchor's derivation system, allowing you to create subscriptions and react to state changes.
 
-### `derive()`
+### `subscribe()`
 
-The `derive()` function is the main way to subscribe to changes in an anchored state. It takes a state and a handler function that will be executed whenever the state is modified.
+The `subscribe()` function is the main way to subscribe to changes in an anchored state. It takes a state and a handler function that will be executed whenever the state is modified.
 
 ```typescript
 type derive = <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean) => StateUnsubscribe;
@@ -21,7 +21,15 @@ type derive = <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean) =>
 - `recursive` (optional): If `true`, the handler will also be triggered for changes in nested child states. Defaults to `false`.
 - **Returns**: An [StateUnsubscribe](types.md#stateunsubscribe) function to stop listening for changes.
 
-### `derive.log()`
+### `derive()` **`DEPRECATED`**
+
+::: danger Deprecated Symbol
+
+The `derive()` function and `derive.*` functions are deprecated and will be removed in the next stable release. Use [subscribe()](#subscribe) instead.
+
+:::
+
+### `subscribe.log()`
 
 A convenience method for debugging. It subscribes to a state and logs any changes to the console.
 
@@ -36,7 +44,7 @@ type log = <T extends Linkable>(state: State<T>) => StateUnsubscribe;
 
 These functions allow you to synchronize states with each other, with optional transformations.
 
-### `derive.pipe()`
+### `subscribe.pipe()`
 
 Synchronizes changes from a source state to a target state, with an optional transformation step.
 
@@ -53,7 +61,7 @@ type pipe = <Source extends State, Target extends Linkable>(
 - `transform` (optional): A function that receives the source state's value and can return a modified value to be applied to the target. See [PipeTransformer](types.md#pipetransformer-t-u).
 - **Returns**: An [StateUnsubscribe](types.md#stateunsubscribe) function to stop the synchronization.
 
-### `derive.bind()`
+### `subscribe.bind()`
 
 Creates a two-way binding between two states. Changes in one state are reflected in the other, and vice-versa.
 
@@ -76,7 +84,7 @@ type bind = <Left extends State, Right extends State>(
 
 These are utility functions for advanced use cases and debugging.
 
-### `derive.resolve()`
+### `subscribe.resolve()`
 
 Retrieves the internal `StateController` for a given state. This is an advanced feature for direct interaction with the state's metadata and lifecycle.
 

@@ -61,7 +61,7 @@ Depending on the data type:
 ### **Usage**
 
 ```typescript
-import { streamState, derive } from '@anchorlib/core';
+import { streamState, subscribe } from '@anchorlib/core';
 
 // Stream text data
 const textStream = streamState(
@@ -84,7 +84,7 @@ const arrayStream = streamState(
 );
 
 // Subscribe to state changes
-derive(textStream, (state) => {
+subscribe(textStream, (state) => {
   switch (state.status) {
     case 'pending':
       console.log('Stream connecting...');
@@ -191,14 +191,14 @@ const customStream = streamState<DataChunk[]>([], {
 ### **Real-time Updates**
 
 ```typescript
-import { streamState, derive } from '@anchorlib/core';
+import { streamState, subscribe } from '@anchorlib/core';
 
 const chatStream = streamState<string>('', {
   url: '/api/chat/stream',
 });
 
 // Update UI in real-time as messages arrive
-derive(chatStream, (state) => {
+subscribe(chatStream, (state) => {
   if (state.status === 'success') {
     // Stream completed
     document.getElementById('status')!.textContent = 'Connection closed';
@@ -250,11 +250,11 @@ const stream = streamState<Item[]>([], {
 Make sure to handle all possible states of a stream:
 
 ```typescript
-import { streamState, derive } from '@anchorlib/core';
+import { streamState, subscribe } from '@anchorlib/core';
 
 const stream = streamState<string>('', { url: '/api/stream' });
 
-derive(stream, (state) => {
+subscribe(stream, (state) => {
   switch (state.status) {
     case 'pending':
       showConnectingStatus();
@@ -277,11 +277,11 @@ derive(stream, (state) => {
 For long-running streams, ensure you clean up properly:
 
 ```typescript
-import { streamState, derive } from '@anchorlib/core';
+import { streamState, subscribe } from '@anchorlib/core';
 
 const stream = streamState('', { url: '/api/stream' });
 
-const unsubscribe = derive(stream, (state) => {
+const unsubscribe = subscribe(stream, (state) => {
   // Handle streaming data
 });
 
@@ -294,14 +294,14 @@ const unsubscribe = derive(stream, (state) => {
 For streams that produce large amounts of data, consider throttling updates:
 
 ```typescript
-import { streamState, derive } from '@anchorlib/core';
+import { streamState, subscribe, subscribe } from '@anchorlib/core';
 
 const stream = streamState('', { url: '/api/large-stream' });
 
 let lastUpdate = Date.now();
 const UPDATE_INTERVAL = 100; // ms
 
-derive(stream, (state) => {
+subscribe(stream, (state) => {
   const now = Date.now();
 
   // Only update UI at most every 100ms to prevent performance issues

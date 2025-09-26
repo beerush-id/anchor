@@ -89,12 +89,12 @@ const state = anchorRef({ count: 0, title: 'My App' });
 One of Anchor's core features is fine-grained reactivity. You can observe state changes using the `derive` function:
 
 ```typescript
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, subscribe } from '@anchorlib/core';
 
 const counter = anchor({ count: 0 });
 
 // Observe all changes to the counter
-derive(counter, (snapshot, event) => {
+subscribe(counter, (snapshot, event) => {
   console.log('Counter changed:', snapshot, event);
 });
 

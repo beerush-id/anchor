@@ -50,7 +50,7 @@ Even though React may batch the resulting re-renders for performance, when the c
 read the latest, correct value from `countRef.value`. This synchronous behavior simplifies state logic and eliminates an
 entire class of bugs related to state updates.
 
-::: warning Anchor Ref vs. React Ref: A Critical Distinction
+::: warning Anchor Ref vs. React Ref
 
 It is crucial to understand that Anchor's `Ref` is fundamentally different from React's `ref` (created with `useRef`).
 
@@ -166,8 +166,8 @@ The Ref System addresses several common challenges in React development:
    creates a tight coupling; the child component is dependent on the parent's implementation and forces the parent to
    re-render whenever the state changes, even if the parent doesn't use the state itself. By passing a single `Ref`
    object instead, you empower the child component. It can read and write to the `Ref` and control its own rendering
-   cycle based on its own observations, completely independent of the parent. This is the foundation of the \*
-   \*Data-State-View (DSV)\*\* pattern.
+   cycle based on its own observations, completely independent of the parent.
+   This is the foundation of the **Data-State-View (DSV)** pattern.
 
 3. **Avoiding Prop Drilling:** Instead of passing props through multiple layers of intermediate components, you can pass
    a single `Ref` object directly to the components that need it (or provide it via context), simplifying your component
@@ -179,17 +179,13 @@ The Ref System addresses several common challenges in React development:
 
 ## Creating Refs
 
-Anchor provides two primary hooks for creating Refs: `useVariable` for mutable state and `useConstant` for a read-only
+Anchor provides two primary hooks for creating Refs: `useVariable` for mutable value and `useConstant` for a read-only
 value.
 
 ### `useVariable`
 
 The `useVariable` hook creates a mutable `Ref`. It's the most common way to create reactive state that can be changed
 over time.
-
-While it returns a tuple containing `[ref, updateFn]`, the most intuitive and common way to modify the state is through
-direct mutation of the `.value` property (e.g., `counterRef.value++`). The `update` function is provided mainly for
-convenience in scenarios where a stable function reference is needed (e.g., dependency arrays of other hooks).
 
 ::: code-group
 
@@ -214,6 +210,14 @@ const Counter = observer(() => {
   );
 });
 ```
+
+:::
+
+::: info Note
+
+While it returns a tuple containing `[ref, updateFn]`, the most intuitive and common way to modify the state is through
+direct mutation of the `.value` property (e.g., `counterRef.value++`). The `update` function is provided mainly for
+fallback in case you prefer to use the `update` function.
 
 :::
 

@@ -111,7 +111,7 @@ user2.data.age = 26;
 ### **Using the Default Store**
 
 ```typescript
-import { derive } from '@anchorlib/core';
+import { subscribe } from '@anchorlib/core';
 import { kv } from '@anchorlib/storage/db';
 
 // Use the default KV store
@@ -122,7 +122,7 @@ userSettings.data.theme = 'dark';
 userSettings.data.notifications = true;
 
 // Listen for changes
-const unsubscribe = derive(userSettings, (event) => {
+const unsubscribe = subscribe(userSettings, (event) => {
   if (event.type === 'set') {
     console.log('Settings updated:', event.value);
   }
@@ -138,7 +138,7 @@ unsubscribe();
 ### **Subscribing to Changes**
 
 ```typescript
-import { derive } from '@anchorlib/core';
+import { subscribe } from '@anchorlib/core';
 import { createKVStore } from '@anchorlib/storage/db';
 
 // Create a custom KV store
@@ -148,7 +148,7 @@ const users = createKVStore<{ name: string }>('users');
 const user1 = users('user1', { name: 'John' });
 
 // Subscribe to all changes
-const unsubscribe = derive(user1, (event) => {
+const unsubscribe = subscribe(user1, (event) => {
   console.log(event); // Logs changes
 });
 

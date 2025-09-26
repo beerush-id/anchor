@@ -1,7 +1,7 @@
 # **Fine-Grained Reactivity in Anchor**
 
 Anchor's reactivity system is built on a fine-grained observation model that enables efficient state management with
-minimal overhead. This document explains the core concepts of Anchor's reactivity: Observation, Derivation, and History
+minimal overhead. This document explains the core concepts of Anchor's reactivity: Observation, Subscription, and History
 Tracking.
 
 <div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
@@ -124,37 +124,37 @@ Anchor provides a set of APIs for observing state changes. Please refer to the A
   observers.
 - [Anchor for Vue Observation APIs](/apis/vue/observation) - Vue reactivity APIs for creating and managing observers.
 
-## Derivation (Subscription)
+## Subscription
 
-While Observation handles fine-grained reactivity at the property level, Derivation provides a mechanism for creating
+While Observation handles fine-grained reactivity at the property level, Subscription provides a mechanism for creating
 reactions to state changes at a higher level, recursively. This means that when a state changes at the deeper level,
-the higher-level derivation is also gets notified.
+the higher-level subscription is also gets notified.
 
 <div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
-  <img src="/schemas/derivation.webp" alt="Derivation Schema" />
+  <img src="/schemas/derivation.webp" alt="Subscription Schema" />
 </div>
 
 ::: tip Use Cases
 
-Derivation is useful when you want to work with state regardless of which props that are used such as mirroring state or
+Subscription is useful when you want to work with state regardless of which props that are used such as mirroring state or
 binding to another source. You have full control of what you want to do with each change.
 
 :::
 
-### Basic Derivation Usage
+### Basic Subscription Usage
 
-Derivation is a powerful mechanism for creating reactions to state changes. It allows you to create a higher-level
+Subscription is a powerful mechanism for creating reactions to state changes. It allows you to create a higher-level
 reaction to state changes.
 
 ```typescript
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, subscribe } from '@anchorlib/core';
 
 const state = anchor({
   count: 0,
 });
 
 // Subscribe to state changes
-const unsubscribe = derive(state, (current, event) => {
+const unsubscribe = subscribe(state, (current, event) => {
   console.log('Current state:', current, event);
 });
 
@@ -187,13 +187,13 @@ You can pipe changes from one state to another, optionally transforming the data
 ::: details Piping Sample
 
 ```typescript
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, subscribe } from '@anchorlib/core';
 
 const source = anchor({ count: 0 });
 const target = anchor({ value: 0 });
 
 // Pipe changes from source to target
-derive.pipe(source, target, (snapshot) => ({
+subscribe.pipe(source, target, (snapshot) => ({
   value: snapshot.count * 2,
 }));
 
@@ -202,11 +202,11 @@ source.count = 5; // This will update target.value to 10
 
 :::
 
-## Derivation APIs
+## Subscription & Derivation APIs
 
 Anchor provides a set of APIs for deriving state changes. Please refer to the API Reference section for more details:
 
-- [Anchor Core Derivation APIs](/apis/core/derivation)
+- [Anchor Core Subscription APIs](/apis/core/derivation)
 - [Anchor for React Derivation APIs](/apis/react/derivation)
 - [Anchor for Svelte Derivation APIs](/apis/svelte/derivation)
 - [Anchor for Vue Derivation APIs](/apis/vue/derivation)

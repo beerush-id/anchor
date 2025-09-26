@@ -73,7 +73,7 @@ IndexedDB implementations providing robust client-side storage with advanced que
 A key-value store backed by IndexedDB with optimistic concurrency control.
 
 ```typescript
-import { derive } from '@anchorlib/core';
+import { subscribe } from '@anchorlib/core';
 import { createKVStore } from '@anchorlib/storage/db';
 
 // Create a new KV store
@@ -84,7 +84,7 @@ const user = kvStore('user', { name: 'John' });
 user.data.name = 'Jane';
 
 // Subscribe to changes
-const unsubscribe = derive(user, (event) => {
+const unsubscribe = subscribe(user, (event) => {
   console.log(`KV Event: ${event.type}`, event.key, event.value);
 });
 ```

@@ -44,7 +44,7 @@ The options object extends the standard **`RequestInit`** interface and includes
 ### **Usage**
 
 ```typescript
-import { fetchState, derive } from '@anchorlib/core';
+import { fetchState, subscribe } from '@anchorlib/core';
 
 // Create a reactive fetch state
 const userState = fetchState(
@@ -59,7 +59,7 @@ const userState = fetchState(
 );
 
 // Subscribe to state changes
-derive(userState, (state) => {
+subscribe(userState, (state) => {
   switch (state.status) {
     case 'pending':
       console.log('Loading...');
@@ -137,8 +137,8 @@ const userState = fetchState<User | null>(null, {
   },
 });
 
-// Using with derive to react to state changes
-derive(userState, (state) => {
+// Using with subscription to react to state changes
+subscribe(userState, (state) => {
   if (state.status === 'success' && state.data) {
     document.getElementById('user-name')!.textContent = state.data.name;
   }
@@ -172,11 +172,11 @@ const createUserState = fetchState<User | null>(null, {
 ### **Error Handling**
 
 ```typescript
-import { fetchState, derive } from '@anchorlib/core';
+import { fetchState, subscribe } from '@anchorlib/core';
 
 const dataState = fetchState([], { url: '/api/data' });
 
-derive(dataState, (state) => {
+subscribe(dataState, (state) => {
   switch (state.status) {
     case 'pending':
       showLoadingIndicator();
@@ -200,11 +200,11 @@ derive(dataState, (state) => {
 Make sure to handle all possible status states in your UI to provide a good user experience:
 
 ```typescript
-import { fetchState, derive } from '@anchorlib/core';
+import { fetchState, subscribe } from '@anchorlib/core';
 
 const state = fetchState([], { url: '/api/data' });
 
-derive(state, (state) => {
+subscribe(state, (state) => {
   switch (state.status) {
     case 'pending':
       // Show loading indicator
@@ -244,11 +244,11 @@ const countState = fetchState<number>(0, { url: '/api/count' });
 Network errors are common and should be handled gracefully:
 
 ```typescript
-import { fetchState, derive } from '@anchorlib/core';
+import { fetchState, subscribe } from '@anchorlib/core';
 
 const apiState = fetchState<Data | null>(null, { url: '/api/data' });
 
-derive(apiState, (state) => {
+subscribe(apiState, (state) => {
   if (state.status === 'error') {
     // Log error for debugging
     console.error('API Error:', state.error);
@@ -261,15 +261,15 @@ derive(apiState, (state) => {
 
 ### **4. Clean Up Subscriptions**
 
-When using [derive] with fetch states, remember to clean up subscriptions when they're no longer needed:
+When using [subscribe] with fetch states, remember to clean up subscriptions when they're no longer needed:
 
 ```typescript
-import { fetchState, derive } from '@anchorlib/core';
+import { fetchState, subscribe, subscribe } from '@anchorlib/core';
 
 const state = fetchState([], { url: '/api/data' });
 
 // Store the unsubscribe function
-const unsubscribe = derive(state, (state) => {
+const unsubscribe = subscribe(state, (state) => {
   // Handle state changes
 });
 
