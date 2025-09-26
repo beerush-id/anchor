@@ -1,6 +1,6 @@
 import { debugRender, useVariable } from '@anchorlib/react';
 import { type FormEventHandler, useRef } from 'react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { type Todo } from './todos';
 import type { Row, RowListState } from '@anchorlib/storage/db';
 import { todoActions } from './actions';
@@ -40,4 +40,4 @@ function TodoForm({ todos }: { todos: RowListState<Row<Todo>> }) {
   );
 }
 
-export default observable(TodoForm);
+export default observer(TodoForm);

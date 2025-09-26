@@ -29,10 +29,10 @@ For simple forms that don't need to be shared across components, you can use a l
 import { type FC, type FormEventHandler } from 'react';
 import { Input } from '@anchorlib/react/components';
 import { useFormWriter, useModel } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { z } from 'zod';
 
-const ProfileForm: FC = observable(() => {
+const ProfileForm: FC = observer(() => {
   // 1. Define a schema for the form.
   const schema = z.object({
     name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
@@ -180,14 +180,14 @@ export const ProfileForm: FC<{ className?: string }> = ({ className }) => {
 };
 ```
 
-### Performance: `observable` vs. `observe`
+### Performance: `observer()` vs. `observe()`
 
 A key difference between the "Basic" and "Advanced" examples lies in their rendering strategy, which has significant performance implications.
 
-In the **Basic Validation** example, the entire `ProfileForm` component is wrapped in the `observable` HoC (Higher-Order Component).
+In the **Basic Validation** example, the entire `ProfileForm` component is wrapped in the `observer()` HoC (Higher-Order Component).
 
 ```tsx
-const ProfileForm: FC = observable(() => {
+const ProfileForm: FC = observer(() => {
   // ... entire form logic and JSX
 });
 ```

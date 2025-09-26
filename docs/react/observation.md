@@ -218,7 +218,7 @@ Additionally, when using a factory object, the render function should be pure an
 
 :::
 
-### **`observable(Component, displayName?)`**
+### **`observer(Component, displayName?)`**
 
 A Higher-Order Component (HOC) that wraps a React component to make it reactive to changes in observable state.
 
@@ -232,18 +232,18 @@ It automatically sets up and manages a `StateObserver` instance for the wrapped 
 
 **Returns**: A new React component that is reactive to observable state changes.
 
-[API Reference](../apis/react/observation.md#observable)
+[API Reference](../apis/react/observation.md#observer)
 
 #### Usage
 
-::: details Wrapping an Existing Component {open}
+::: details Wrapping a Component {open}
 
 ```tsx
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-// A regular React component
-const UserCard = ({ user }) => {
+// Mark a component as observer.
+const UserCard = observer(({ user }) => {
   return (
     <div className="user-card">
       <h2>{user.name}</h2>
@@ -251,10 +251,7 @@ const UserCard = ({ user }) => {
       <p>Age: {user.profile.age}</p>
     </div>
   );
-};
-
-// Make it observable
-const ObservableUserCard = observable(UserCard);
+});
 
 const UserManager = () => {
   const [user] = useAnchor({
@@ -272,7 +269,7 @@ const UserManager = () => {
   return (
     <div>
       {/* This component will re-render when user.profile.age changes */}
-      <ObservableUserCard user={user} />
+      <UserCard user={user} />
       <button onClick={updateAge}>Increment Age</button>
     </div>
   );
@@ -285,59 +282,43 @@ const UserManager = () => {
 
 ```tsx
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const TodoItem = ({ todo }) => {
+export const TodoItem = observer(({ todo }) => {
   return (
     <div>
       <input type="checkbox" checked={todo.completed} readOnly />
       <span>{todo.text}</span>
     </div>
   );
-};
+}, 'TodoItem'); // Set a custom display name
+```
 
-// Wrap with a custom display name for debugging
-const ObservableTodoItem = observable(TodoItem, 'ObservableTodoItem');
+:::
 
-const TodoList = () => {
-  const [todos] = useAnchor([
-    { id: 1, text: 'Learn Anchor', completed: false },
-    { id: 2, text: 'Build an app', completed: true },
-  ]);
+::: details With Existing Component
 
-  const toggleTodo = (id) => {
-    const todo = todos.find((t) => t.id === id);
-    if (todo) {
-      todo.completed = !todo.completed;
-    }
-  };
+```tsx
+import CounterComponent from './Counter';
+import { observer } from '@anchorlib/react/view';
 
-  return (
-    <div>
-      {todos.map((todo) => (
-        <div key={todo.id} onClick={() => toggleTodo(todo.id)}>
-          {/* This component will re-render when todo.completed changes */}
-          <ObservableTodoItem todo={todo} />
-        </div>
-      ))}
-    </div>
-  );
-};
+// Wrap the existing component and make it reactive, and optionally set a custom name.
+export const Counter = observer(CounterComponent, 'Counter');
 ```
 
 :::
 
 ::: tip When to use it?
 
-Use `observable` when you have an existing React component that you want to make reactive. This HOC will re-render the wrapped component whenever there are changes to the observed states. Thus, this HOC is most suitable for use case where a full re-render is needed such as wrapping a 3rd party components, or need a simple component setup without manually declare a selective rendering.
+Use `observer` when you have an existing React component that you want to make reactive. This HOC will re-render the wrapped component whenever there are changes to the observed states. Thus, this HOC is most suitable for use case where a full re-render is needed such as wrapping a 3rd party components, or need a simple component setup without manually declare a selective rendering.
 
 :::
 
-::: details Difference between `observable()` and `observe()` {open}
+::: details Difference between `observer()` and `observe()` {open}
 
 The key difference lies in their approach and use cases:
 
-- **`observable(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
+- **`observer(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
 - **`observe(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
   :::
 
@@ -622,7 +603,7 @@ Creates a reactive reference to a computed value. It automatically tracks reacti
 
 This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
 
-The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observable()` or `observe()`).
+The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observer()` or `observe()`).
 
 **Params**
 

@@ -21,6 +21,19 @@ type history = <T extends State>(state: T, options?: HistoryOptions) => HistoryS
   - `resettable` (boolean): If `true`, allows the state to be fully reset to its initial condition. Defaults to `false`.
 - **Returns**: A [HistoryState](types.md#historystate) object to control and inspect the history.
 
+### `undoable()`
+
+Creates an undoable operation that can be executed and later reverted. This function wraps a given function execution and captures any state changes that occur during its execution. It returns a tuple containing two functions: the first one undoes the changes, and the second one clears the captured changes.
+
+```typescript
+type undoable = (operation: () => void) => [() => void, () => void];
+```
+
+- `operation`: The function to execute and make undoable.
+- **Returns**: A tuple containing two functions:
+  - `undo`: A function that, when called, will undo the changes made by the original function.
+  - `clear`: A function that, when called, will clear the captured changes (marking as completed).
+
 ## History Management Object
 
 The `history()` function returns a `HistoryState` object, which is itself a reactive state. It contains the following properties and methods:
@@ -55,7 +68,7 @@ The `history()` function returns a `HistoryState` object, which is itself a reac
 
 These functions allow you to configure global default options that will apply to all `history` instances.
 
-### `setDefaultOptions()`
+### `history.setDefaultOptions()`
 
 Sets the default options for all new history managers.
 
@@ -65,7 +78,7 @@ type setDefaultOptions = (options: HistoryOptions) => void;
 
 - `options`: An object with any of the [HistoryOptions](types.md#historyoptions) to set as global defaults.
 
-### `getDefaultOptions()`
+### `history.getDefaultOptions()`
 
 Retrieves the current global default options.
 

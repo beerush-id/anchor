@@ -12,7 +12,7 @@ Creates a reactive reference to a computed value. It automatically tracks reacti
 
 This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
 
-The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observable()` or `observe()`).
+The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observer()` or `observe()`).
 
 ```typescript
 function useObservedRef<T, D extends unknown[] = []>(observe: RefInitializer<T>, deps?: D): ConstantRef<T>;
@@ -36,11 +36,11 @@ function useObserver<R, D extends unknown[]>(observe: () => R, deps?: D): R;
 - `deps` (optional): Additional dependencies. This is useful for computations that also depend on external state such as props. These dependencies are used to determine when the computation should be re-executed.
 - **Returns**: The computed value returned by the observe function. This value is memoized and will only be recomputed when the tracked reactive dependencies or the additional dependencies change.
 
-### `useObserved()` (Deprecated)
+### `useObserved()` **`DEPRECATED`**
 
-::: danger Deprecated
+::: danger Deprecated Symbol
 
-This api is deprecated. Use [**`useObserver`**](#useobserver) instead.
+This API is deprecated and will be removed in the next major release. Use [**`useObserver`**](#useobserver) instead.
 
 :::
 
@@ -90,25 +90,33 @@ When using a factory object, the following properties are supported:
 - `onUpdated` (optional): A function that is called when the component is updated due to reactive state changes.
 - `onDestroy` (optional): A function that is called when the component is unmounted.
 
-### `observable()`
+### `observer()`
 
 A Higher-Order Component (HOC) that wraps a React component to make it reactive to changes in observable state. It automatically sets up and manages a `StateObserver` instance for the wrapped component.
 
 ```typescript
-function observable<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string): ComponentType<T>;
+function observer<T>(Component: ComponentType<T & AnchoredProps>, displayName?: string): ComponentType<T>;
 ```
 
 - `Component`: The React component to be made observable. It should accept its original props `T`.
 - `displayName` (optional): A string to be used as the display name for the wrapped component in React DevTools. If not provided, it will derive from the original component's display name or name.
 - **Returns**: A new React component that is reactive to observable state changes.
 
-::: tip Difference between `observable()` and `observe()`
+::: tip Difference between `observer()` and `observe()`
 
 The key difference lies in their approach and use cases:
 
-- **`observable(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
+- **`observer(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
 - **`observe(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
   :::
+
+### `observable()` **`DEPRECATED`**
+
+::: danger Deprecated Symbol
+
+This API is deprecated and will be removed in the next major release. Use [**`observer()`**](#observer) instead.
+
+:::
 
 ## Low Level APIs
 

@@ -95,10 +95,10 @@ In React applications, Anchor provides a seamless way to handle validation error
 The **`useException`** hook allows you to capture and display validation errors for specific state properties.
 
 ```tsx
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { useException } from '@anchorlib/react';
 
-const EditProfile = observable(() => {
+const EditProfile = observer(() => {
   // Capture validation errors for the 'state' object
   const formErrors = useException(state);
 

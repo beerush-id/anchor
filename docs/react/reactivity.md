@@ -447,9 +447,9 @@ They automatically re-render when their observed state changes, providing effici
 ::: details View Component Example
 
 ```tsx
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const UserView = observable(({ user }) => {
+const UserView = observer(({ user }) => {
   // Only re-renders when user changes
   if (!user) return <div>Please log in</div>;
 

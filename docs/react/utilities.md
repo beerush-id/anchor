@@ -746,60 +746,6 @@ issues or identifying when specific parts of your UI are being refreshed.
 
 These are utility functions that are not React hooks but are useful when working with Anchor's reactive system.
 
-### **`cleanProps(props)`**
-
-A utility function designed to remove the internal `_state_version` prop from a component's props object. When a
-component is wrapped by the `observable` HOC, it receives an additional `_state_version` prop that should typically not
-be passed down to native DOM elements or other components.
-
-**Params**
-
-- **`props`** - The props object that might contain `_state_version`
-
-[API Reference](../apis/react/utilities.md#cleanprops)
-
-#### Usage
-
-::: details Cleaning Props for Child Components
-
-```tsx
-import React from 'react';
-import { cleanProps } from '@anchorlib/react';
-
-const ParentComponent = (props) => {
-  // Clean props before passing to child components
-  const childProps = cleanProps(props);
-
-  return (
-    <div>
-      <h1>Parent Component</h1>
-      {/* Pass cleaned props to children */}
-      <ChildComponent {...childProps} />
-    </div>
-  );
-};
-
-const ChildComponent = ({ className, children, ...rest }) => {
-  // rest will not contain _state_version
-  return (
-    <div className={className} {...rest}>
-      {children}
-    </div>
-  );
-};
-
-export default ParentComponent;
-```
-
-:::
-
-::: tip When to use it?
-
-Use `cleanProps` when you need to pass props from an observable component to child components or DOM elements. This
-prevents the internal `_state_version` prop from being passed down where it's not needed or might cause issues.
-
-:::
-
 ### **`pickValues(state, keys)`**
 
 Helper function that extracts specific properties from a reactive state object. It returns a tuple containing an object
@@ -874,6 +820,4 @@ When working with Anchor's utility APIs, keep these best practices in mind:
 5. **Unique IDs**: Use `useShortId` for generating unique identifiers that remain stable across re-renders.
 6. **Development Tools**: Enable development mode and debug rendering during development to catch issues early and
    optimize performance.
-7. **Clean Props**: Always use `cleanProps` when passing props from observable components to children to prevent
-   internal props from leaking.
-8. **Selective Value Extraction**: Use `pickValues` when you only need a subset of properties from a state object.
+7. **Selective Value Extraction**: Use `pickValues` when you only need a subset of properties from a state object.

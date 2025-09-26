@@ -1,4 +1,4 @@
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { todoStats } from './todos';
 import { useRef } from 'react';
 import { debugRender } from '@anchorlib/react';
@@ -30,4 +30,4 @@ function TodoStats() {
   );
 }
 
-export default observable(TodoStats);
+export default observer(TodoStats);

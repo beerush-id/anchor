@@ -29,16 +29,16 @@ bun add @anchorlib/react
 
 ## Basic Usage
 
-To get started quickly, import `useAnchor` from `@anchorlib/react` and `observable` from `@anchorlib/react/components`, then
-wrap your component with `observable` HoC.
+To get started quickly, import `useAnchor` from `@anchorlib/react` and `observer` from `@anchorlib/react/view`,
+then wrap your component with `observer` HoC.
 
 ### Your First Reactive Component
 
 ```tsx
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const Counter = observable(() => {
+const Counter = observer(() => {
   const [counter] = useAnchor({ count: 0 });
 
   return (
@@ -60,9 +60,9 @@ export default Counter;
 
 ```tsx /App.tsx [active]
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const Counter = observable(() => {
+const Counter = observer(() => {
   const [counter] = useAnchor({ count: 0 });
 
   return (
@@ -82,13 +82,13 @@ export default Counter;
 
 ::: tip In this example:
 
-- **`observable` HOC:** By wrapping `Counter` with `observable()`, you tell Anchor to automatically track any reactive
+- **`observer` HOC:** By wrapping `Counter` with `observer()`, you tell Anchor to automatically track any reactive
   state properties accessed inside `Counter`. When those properties change, `Counter` will re-render.
 - **`useAnchor` Hook:** This hook initializes your state (`{ count: 0 }`) and makes it reactive. The `state` variable
   you get back is a special state that aware of observer and subscriber.
 - **Direct Mutation:** Notice `state.count++` and `state.count--`. With Anchor, you directly modify your state. There's
-  no need for immutable updates (like `setState(prev => ({...prev, count: prev.count + 1}))`) or dispatching actions.
-- **Automatic UI Updates:** Because `Counter` is `observable`, when `state.count` changes, the component automatically
+  no need for immutable pattern updates (like `setState(prev => ({...prev, count: prev.count + 1}))`) or dispatching actions.
+- **Automatic UI Updates:** Because `Counter` is an `observer`, when `state.count` changes, the component automatically
   re-renders to display the new value.
 
 :::
@@ -103,6 +103,272 @@ export default Counter;
 
 - **No Boilerplate:** Say goodbye to action creators, reducers, and complex update patterns. Just change your state
   directly and let Anchor handle the rest.
+
+:::
+
+## Global State
+
+To work with global state, you can use the Anchor's core API to create global state and then observe it in your
+components.
+
+```tsx
+import { anchor } from '@anchorlib/core';
+import { observer } from '@anchorlib/react/view';
+
+// Create a global state.
+const counter = anchor({ count: 0 });
+
+// Observe the global state in your component.
+export const Counter = observer(() => {
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+    </div>
+  );
+});
+```
+
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx
+import { anchor } from '@anchorlib/core';
+import { observer } from '@anchorlib/react/view';
+
+// Create a global state.
+const counter = anchor({ count: 0 });
+
+// Observe the global state in your component.
+const Counter = observer(() => {
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+    </div>
+  );
+});
+
+export default Counter;
+```
+
+:::
+
+## Computed Properties
+
+In Anchor, JavaScript's native getter syntax works perfectly for creating computed properties. These are properties that
+are automatically derived from other reactive properties and update whenever their dependencies change.
+
+```tsx
+import { observer } from '@anchorlib/react/view';
+import { useAnchor } from '@anchorlib/react';
+
+export const Counter = observer(() => {
+  const [counter] = useAnchor({
+    count: 0,
+    firstName: 'John',
+    lastName: 'Doe',
+
+    // Create read-only doubled value.
+    get double() {
+      return this.count * 2;
+    },
+    // Create read-only full name.
+    get fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+  });
+
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <h2>Doubled: {counter.double}</h2>
+      <h2>Full Name: {counter.fullName}</h2>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+      <button
+        onClick={() => {
+          counter.firstName = 'Jane';
+          counter.lastName = 'Smith';
+        }}>
+        Change Name
+      </button>
+    </div>
+  );
+});
+```
+
+::: tip JavaScript's Native Getter API
+
+JavaScript's getter syntax provides a natural way to define properties that are computed on-the-fly. Rather than storing
+a value directly, getters allow you to define a function that is executed whenever the property is accessed.
+
+This aligns perfectly with how modern JavaScript developers think about data:
+
+1. **Natural Syntax**: Getters use standard JavaScript syntax, requiring no special libraries or frameworks to
+   understand.
+2. **Dynamic Values**: They allow you to define values that are computed based on other properties, without needing to
+   manually manage when those computations happen.
+3. **Encapsulation**: Getters encapsulate the logic for computing a value within the object itself, keeping related
+   functionality together.
+4. **Transparent Access**: Properties defined with getters are accessed the same way as regular properties, making the
+   API consistent and intuitive.
+5. **Clean Separation**: Getters separate the concern of how a value is computed from how it's used, leading to more
+   maintainable code.
+
+Anchor embraces this native JavaScript feature, allowing you to use getters exactly as you would in any other JavaScript
+context, while adding reactivity to make them update automatically when dependencies change.
+
+:::
+
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx
+import { observer } from '@anchorlib/react/view';
+import { useAnchor } from '@anchorlib/react';
+
+const Counter = observer(() => {
+  const [counter] = useAnchor({
+    count: 0,
+    firstName: 'John',
+    lastName: 'Doe',
+    get double() {
+      return this.count * 2;
+    },
+    get fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    },
+  });
+
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <h2>Doubled: {counter.double}</h2>
+      <h2>Full Name: {counter.fullName}</h2>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+      <button
+        onClick={() => {
+          counter.firstName = 'Jane';
+          counter.lastName = 'Smith';
+        }}>
+        Change Name
+      </button>
+    </div>
+  );
+});
+
+export default Counter;
+```
+
+:::
+
+## Advanced Properties
+
+```tsx
+import { observer } from '@anchorlib/react/view';
+import { useAnchor } from '@anchorlib/react';
+
+const Unit = observer(() => {
+  const [unit] = useAnchor({
+    value: 0,
+    unit: 'px',
+
+    // Get the css value string.
+    get css() {
+      return `${this.value}${this.unit}`;
+    },
+
+    // Change the value and unit using css value string.
+    set css(newValue: string) {
+      const [, v, u] = newValue.match(/^(\d+)([a-z]+)$/) || [];
+      this.value = parseFloat(v ?? '0');
+      this.unit = u ?? 'px';
+    },
+  });
+
+  return (
+    <div>
+      <div>
+        <strong>
+          {unit.value}
+          {unit.unit}
+        </strong>
+      </div>
+      <hr />
+      <input type="number" value={unit.value} onChange={(e) => (unit.value = parseFloat(e.target.value))} />
+      <input type="text" value={unit.unit} onChange={(e) => (unit.unit = e.target.value)} />
+      <hr />
+      <button onClick={() => (unit.css = '0px')}>Reset</button>
+      <button onClick={() => (unit.value += 10)}>Increment</button>
+      <button onClick={() => (unit.value -= 10)}>Decrement</button>
+      <button onClick={() => (unit.css = '30vw')}>Change Unit</button>
+      <button onClick={() => (unit.css = '40px')}>Change Value</button>
+      <button onClick={() => (unit.css = '50em')}>Change Both</button>
+    </div>
+  );
+});
+```
+
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx
+import { observer } from '@anchorlib/react/view';
+import { useAnchor } from '@anchorlib/react';
+
+const Unit = observer(() => {
+  const [unit] = useAnchor({
+    value: 0,
+    unit: 'px',
+
+    // Get the css value string.
+    get css() {
+      return `${this.value}${this.unit}`;
+    },
+
+    // Change the value and unit using css value string.
+    set css(newValue: string) {
+      const [, v, u] = newValue.match(/^(\d+)([a-z]+)$/) || [];
+      this.value = parseFloat(v ?? '0');
+      this.unit = u ?? 'px';
+    },
+  });
+
+  return (
+    <div>
+      <div>
+        <strong>
+          {unit.value}
+          {unit.unit}
+        </strong>
+      </div>
+      <hr />
+      <input type="number" value={unit.value} onChange={(e) => (unit.value = parseFloat(e.target.value))} />
+      <input type="text" value={unit.unit} onChange={(e) => (unit.unit = e.target.value)} />
+      <hr />
+      <button onClick={() => (unit.css = '0px')}>Reset</button>
+      <button onClick={() => (unit.value += 10)}>Increment</button>
+      <button onClick={() => (unit.value -= 10)}>Decrement</button>
+      <button onClick={() => (unit.css = '30vw')}>Change Unit</button>
+      <button onClick={() => (unit.css = '40px')}>Change Value</button>
+      <button onClick={() => (unit.css = '50em')}>Change Both</button>
+    </div>
+  );
+});
+
+export default Unit;
+```
 
 :::
 
@@ -205,9 +471,9 @@ export const UserProfile = () => {
 ```
 
 ```jsx [UserAccount.jsx]
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-export const UserAccount = observable(({ userRef }) => {
+export const UserAccount = observer(({ userRef }) => {
   const { account } = userRef.value;
   const { email, username } = account;
 
@@ -240,7 +506,7 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 - **The "View" (`ProfileView` and `UserAccount.jsx`):** These components represent the **View** layer.
   - `ProfileView` is wrapped in `observe`. It reads data from `userRef.value` and will only re-render when the specific
     values it uses (`name`, `age`, `email`, `username`) change.
-  - `UserAccount` is wrapped in `observable` and also accesses `userRef`. It will re-render only when the `account`
+  - `UserAccount` is wrapped in `observer()` and also accesses `userRef`. It will re-render only when the `account`
     properties it observes are modified.
   - They are responsible for presenting the data and capturing user input, but they don't own the state itself.
 
@@ -333,9 +599,9 @@ export const UserProfile = () => {
 ```tsx /UserAccount.tsx
 import { useRef } from 'react';
 import { debugRender } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-export const UserAccount = observable(({ userRef }) => {
+export const UserAccount = observer(({ userRef }) => {
   const ref = useRef(null);
   const { account } = userRef.value;
   const { email, username } = account;

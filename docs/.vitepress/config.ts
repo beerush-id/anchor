@@ -139,6 +139,10 @@ export default defineConfig({
             link: '/react/introduction',
           },
           {
+            text: 'Anchor vs Friends',
+            link: '/react/comparison',
+          },
+          {
             text: 'Getting Started',
             link: '/react/getting-started',
           },
@@ -184,6 +188,10 @@ export default defineConfig({
             text: 'Tutorials',
             collapsed: true,
             items: [
+              {
+                text: 'Optimistic UI',
+                link: '/react/tutorials/optimistic-ui',
+              },
               {
                 text: 'Scalable Todo App',
                 link: '/react/tutorials/todo-app',
@@ -413,6 +421,6 @@ export default defineConfig({
     },
   },
   vite: {
-    plugins: [llmstxt() as never],
+    plugins: process.env.NODE_ENV === 'production' ? [llmstxt() as never] : [],
   },
 });

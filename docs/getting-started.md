@@ -34,9 +34,9 @@ console.log(state.title); // "Hello, World!"
 
 ```jsx [React]
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const Counter = observable(() => {
+const Counter = observer(() => {
   const [state] = useAnchor({
     count: 0,
     title: 'My App',

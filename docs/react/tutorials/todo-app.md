@@ -154,7 +154,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 ::: tip What we have done here?
 
 - ✓ We created a view to render the stats.
-- ✓ We used `observable()` **HOC** to observe the stats.
+- ✓ We used `observer()` **HOC** to observe the stats.
 
 :::
 
@@ -167,7 +167,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 ::: tip What we have done here?
 
 - ✓ We created a view to render the form to add a todo.
-- ✓ We used `observable()` **HOC** to observe the form.
+- ✓ We used `observer()` **HOC** to observe the form.
 - ✓ We created a submit handler that adds a todo to the list and update the stats.
 
 :::

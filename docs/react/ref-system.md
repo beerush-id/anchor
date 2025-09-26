@@ -200,9 +200,9 @@ function useVariable<T>(init: RefInitializer<T>, deps: unknown[]): [VariableRef<
 
 ```tsx [Example: Direct Mutation]
 import { useVariable } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const Counter = observable(() => {
+const Counter = observer(() => {
   const [countRef] = useVariable(0);
 
   return (
@@ -230,9 +230,9 @@ changed imperatively.
 
 ```tsx [Example: Derived Value]
 import { useConstant } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 
-const UserProfile = observable(({ user }) => {
+const UserProfile = observer(({ user }) => {
   // This ref will only re-calculate when the `user` prop changes.
   const [fullNameRef] = useConstant(() => `${user.firstName} ${user.lastName}`, [user]);
 
@@ -294,7 +294,7 @@ settingsRef.value.theme = 'light';
 2. **Use Observation/Derivation for Controlled Renders:** A component only re-renders when a `Ref`'s value is accessed
    within an **Observation** or **Derivation** context.
 
-- The `observable` HOC is the simplest way to make a whole component reactive, but it may cause the entire component
+- The `observer()` HOC is the simplest way to make a whole component reactive, but it may cause the entire component
   to re-render if any observed value changes.
 - For more controlled, fine-grained rendering, use the `observe` HOC or hooks like `useObserved()` and `useDerived()`.
   These tools allow you to create reactive boundaries, ensuring that only the necessary parts of your UI update.

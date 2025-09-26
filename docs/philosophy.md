@@ -42,7 +42,6 @@ The Data layer represents all external sources of information:
 
 The State layer is the single source of truth for your application:
 
-- Immutable by default
 - Reactive and observable
 - Validated through schemas
 - Centralized and predictable

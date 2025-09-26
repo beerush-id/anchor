@@ -171,21 +171,6 @@ function debugRender<T extends HTMLElement>(element: RefObject<T | null>): void;
 
 These are utility functions that are not React hooks but are useful when working with Anchor's reactive system.
 
-### `cleanProps()`
-
-A utility function designed to remove the internal `_state_version` prop from a component's props object.
-
-When a component is wrapped by the `observable` HOC, it receives an additional `_state_version` prop. This prop is used internally by the `observable` HOC to force re-renders and should typically not be passed down to native DOM elements or other components that don't expect it.
-
-Use this function to filter out `_state_version` before spreading props onto child components or DOM elements.
-
-```typescript
-function cleanProps<T extends Bindable>(props: T): Omit<T, '_state_version'>;
-```
-
-- `props`: The props object that might contain `_state_version`.
-- **Returns**: A new object containing all original props except `_state_version`.
-
 ### `depsChanged()`
 
 Compares two arrays for shallow equality, ignoring the order of elements.

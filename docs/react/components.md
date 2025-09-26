@@ -35,10 +35,10 @@ A versatile React component for text and other input types, binding directly to 
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Input } from '@anchorlib/react/components';
 
-const UserProfile = observable(() => {
+const UserProfile = observer(() => {
   const [user] = useAnchor({
     name: '',
     email: '',
@@ -74,10 +74,10 @@ export default UserProfile;
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Input } from '@anchorlib/react/components';
 
-const ProductForm = observable(() => {
+const ProductForm = observer(() => {
   const [product] = useAnchor({
     name: '',
     price: 0,
@@ -141,10 +141,10 @@ A React component for a checkbox input, binding directly to a reactive boolean s
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Checkbox } from '@anchorlib/react/components';
 
-const UserPreferences = observable(() => {
+const UserPreferences = observer(() => {
   const [preferences] = useAnchor({
     receiveNewsletter: true,
     acceptTerms: false,
@@ -182,10 +182,10 @@ export default UserPreferences;
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Checkbox } from '@anchorlib/react/components';
 
-const FeatureToggle = observable(() => {
+const FeatureToggle = observer(() => {
   const [featureFlags] = useAnchor({
     betaFeatures: undefined, // Initially undefined
   });
@@ -241,10 +241,10 @@ A React component for a radio button input, binding directly to a reactive state
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Radio } from '@anchorlib/react/components';
 
-const ThemeSelector = observable(() => {
+const ThemeSelector = observer(() => {
   const [settings] = useAnchor({
     theme: 'light', // Default theme
   });
@@ -283,10 +283,10 @@ export default ThemeSelector;
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Radio } from '@anchorlib/react/components';
 
-const PrioritySelector = observable(() => {
+const PrioritySelector = observer(() => {
   const [task] = useAnchor({
     priority: 'medium',
   });
@@ -350,10 +350,10 @@ A React component for a select dropdown, binding directly to a reactive state pr
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Select } from '@anchorlib/react/components';
 
-const CountrySelector = observable(() => {
+const CountrySelector = observer(() => {
   const [user] = useAnchor({
     country: '',
   });
@@ -388,10 +388,10 @@ export default CountrySelector;
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Select } from '@anchorlib/react/components';
 
-const RoleSelector = observable(() => {
+const RoleSelector = observer(() => {
   const [employee] = useAnchor({
     role: undefined, // No initial role
   });
@@ -451,10 +451,10 @@ A React component for a color input, binding directly to a reactive string state
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { ColorPicker } from '@anchorlib/react/components';
 
-const ThemeCustomizer = observable(() => {
+const ThemeCustomizer = observer(() => {
   const [theme] = useAnchor({
     primaryColor: '#3498db',
     secondaryColor: '#2ecc71',
@@ -539,10 +539,10 @@ A React component for a toggle button, binding directly to a reactive state prop
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Toggle } from '@anchorlib/react/components';
 
-const NotificationToggle = observable(() => {
+const NotificationToggle = observer(() => {
   const [settings] = useAnchor({
     notifications: false,
   });
@@ -571,10 +571,10 @@ export default NotificationToggle;
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Toggle } from '@anchorlib/react/components';
 
-const ViewModeToggle = observable(() => {
+const ViewModeToggle = observer(() => {
   const [ui] = useAnchor({
     viewMode: 'grid', // Default view mode
   });
@@ -639,10 +639,10 @@ A React component for grouping toggle buttons.
 ```tsx
 import React from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { Toggle, ToggleGroup } from '@anchorlib/react/components';
 
-const FilterControls = observable(() => {
+const FilterControls = observer(() => {
   const [filters] = useAnchor({
     category: 'all',
   });
