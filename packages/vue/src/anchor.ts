@@ -75,6 +75,13 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 }
 
 /**
+ * Creates a reactive anchor state that can be used in Vue components.
+ * This is an alias for anchorRef.
+ * @type {{<T>(init: T, options?: StateOptions): VariableRef<T>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): VariableRef<ModelOutput<S>>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: (StateBaseOptions & {immutable: true})): VariableRef<ImmutableOutput<T>>}}
+ */
+export const reactiveRef = anchorRef;
+
+/**
  * Creates a reactive array that only reacts to changes in the array.
  * This is a Vue wrapper around anchor.flat that returns a Ref.
  *
