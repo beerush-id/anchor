@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Derivation Edge Cases', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -21,7 +21,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const plainObject = { count: 0 };
       const handler = vi.fn();
 
-      const unsubscribe = derive(plainObject, handler);
+      const unsubscribe = subscribe(plainObject, handler);
 
       // Should call handler once with init event
       expect(handler).toHaveBeenCalledTimes(1);
@@ -41,8 +41,8 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const handler1 = vi.fn();
       const handler2 = vi.fn();
 
-      const unsubscribe1 = derive(state, handler1);
-      const unsubscribe2 = derive(state, handler2);
+      const unsubscribe1 = subscribe(state, handler1);
+      const unsubscribe2 = subscribe(state, handler2);
 
       // Both handlers should be called for initialization
       expect(handler1).toHaveBeenCalledTimes(1);
@@ -83,8 +83,8 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       });
       const normalHandler = vi.fn();
 
-      const unsubscribe1 = derive(state, errorHandler);
-      const unsubscribe2 = derive(state, normalHandler);
+      const unsubscribe1 = subscribe(state, errorHandler);
+      const unsubscribe2 = subscribe(state, normalHandler);
 
       // Updating state should not be affected by one subscriber throwing
       state.count = 1;
@@ -104,10 +104,10 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const parentHandler = vi.fn();
       const childHandler = vi.fn();
 
-      const unsubscribeParent = derive(parentState, (parentValue) => {
+      const unsubscribeParent = subscribe(parentState, (parentValue) => {
         parentHandler(parentValue);
         // Subscribe to child state within parent subscription
-        return derive(childState, childHandler); // This return value is ignored by derive
+        return subscribe(childState, childHandler);
       });
 
       expect(parentHandler).toHaveBeenCalledTimes(1);
@@ -130,7 +130,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const state = anchor({ count: 0 });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Perform rapid updates
       for (let i = 1; i <= 100; i++) {
@@ -155,7 +155,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       });
 
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Change deeply nested value
       state.level1.level2.level3.value = 'updated';
@@ -175,10 +175,10 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       unsubscribe();
     });
 
-    it('should handle derive.log() method', () => {
+    it('should handle subscribe.log() method', () => {
       const state = anchor({ count: 1 });
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const unsubscribe = derive.log(state);
+      const unsubscribe = subscribe.log(state);
 
       expect(logSpy).toHaveBeenCalled();
 
@@ -186,12 +186,12 @@ describe('Anchor Core - Derivation Edge Cases', () => {
     });
 
     it('should handle invalid state and subscription handler', () => {
-      derive(10 as never, 10 as never);
+      subscribe(10 as never, 10 as never);
 
       expect(warnSpy).toHaveBeenCalledTimes(1);
       expect(errorSpy).toHaveBeenCalledTimes(1);
 
-      derive(10 as never, () => {
+      subscribe(10 as never, () => {
         throw new Error('Invalid state');
       });
 
@@ -204,14 +204,14 @@ describe('Anchor Core - Derivation Edge Cases', () => {
     it('should handle resolve with non-reactive objects', () => {
       const plainObject = { count: 0 };
 
-      const controller = derive.resolve(plainObject);
+      const controller = subscribe.resolve(plainObject);
       expect(controller).toBeUndefined();
       expect(errorSpy).not.toHaveBeenCalled();
     });
 
     it('should handle subscribing to non-reactive objects', () => {
       const handler = vi.fn();
-      const unsubscribe = derive({}, handler);
+      const unsubscribe = subscribe({}, handler);
 
       expect(handler).toHaveBeenCalledTimes(1); // Init.
       expect(warnSpy).toHaveBeenCalled();
@@ -222,8 +222,8 @@ describe('Anchor Core - Derivation Edge Cases', () => {
     it('should handle multiple resolves to the same state', () => {
       const state = anchor({ count: 0 });
 
-      const controller1 = derive.resolve(state);
-      const controller2 = derive.resolve(state);
+      const controller1 = subscribe.resolve(state);
+      const controller2 = subscribe.resolve(state);
 
       // Should return the same controller
       expect(controller1).toBe(controller2);
@@ -234,7 +234,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
 
     it('should handle destroying controller and then trying to use it', () => {
       const state = anchor({ count: 0 });
-      const controller = derive.resolve(state);
+      const controller = subscribe.resolve(state);
 
       expect(controller).toBeDefined();
 
@@ -248,17 +248,17 @@ describe('Anchor Core - Derivation Edge Cases', () => {
 
     it('should handle controller after all subscribers unsubscribe', () => {
       const state = anchor({ count: 0 });
-      const controller = derive.resolve(state);
+      const controller = subscribe.resolve(state);
 
-      const unsubscribe1 = derive(state, vi.fn());
-      const unsubscribe2 = derive(state, vi.fn());
+      const unsubscribe1 = subscribe(state, vi.fn());
+      const unsubscribe2 = subscribe(state, vi.fn());
 
       // Unsubscribe all
       unsubscribe1();
       unsubscribe2();
 
       // Controller should still be accessible
-      const controllerAgain = derive.resolve(state);
+      const controllerAgain = subscribe.resolve(state);
       expect(controllerAgain).toBe(controller);
     });
   });
@@ -267,7 +267,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
     it('should handle piping without transform function', () => {
       const state = anchor({ count: 1 });
       const target = { count: 0 };
-      const unsubscribe = derive.pipe(state, target);
+      const unsubscribe = subscribe.pipe(state, target);
 
       expect(state.count).toBe(1);
       expect(target.count).toBe(1); // Should be updated by pipe.
@@ -281,13 +281,13 @@ describe('Anchor Core - Derivation Edge Cases', () => {
     });
 
     it('should handle piping between non-object states', () => {
-      derive.pipe(42 as never, {} as never);
+      subscribe.pipe(42 as never, {} as never);
       expect(errorSpy).toHaveBeenCalledTimes(1);
 
-      derive.pipe({} as never, 42 as never);
+      subscribe.pipe({} as never, 42 as never);
       expect(errorSpy).toHaveBeenCalledTimes(2);
 
-      derive.pipe(anchor({}) as never, 42 as never);
+      subscribe.pipe(anchor({}) as never, 42 as never);
       expect(errorSpy).toHaveBeenCalledTimes(3);
     });
 
@@ -295,7 +295,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const source = anchor({ count: 5 });
       const target = anchor({ value: 0 });
 
-      const unsubscribe = derive.pipe(source, target, (src) => ({
+      const unsubscribe = subscribe.pipe(source, target, (src) => ({
         value: src.count * 2,
       }));
 
@@ -322,7 +322,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
         years: 0,
       });
 
-      const unsubscribe = derive.pipe(source, target, (src) => ({
+      const unsubscribe = subscribe.pipe(source, target, (src) => ({
         fullName: src.user.profile.name,
         years: src.user.profile.age,
       }));
@@ -345,7 +345,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const left = { value: 1 };
       const right = { value: 2 };
 
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Should log error but not throw
       expect(errorSpy).toHaveBeenCalled();
@@ -361,7 +361,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const left = { value: 1 };
       const right = anchor({ value: 2 });
 
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Should log error but not throw
       expect(errorSpy).toHaveBeenCalled();
@@ -377,7 +377,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const left = anchor({ value: 2 });
       const right = { value: 1 };
 
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Should log error but not throw
       expect(errorSpy).toHaveBeenCalled();
@@ -394,7 +394,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const right = anchor({ count: 0 });
 
       // Create binding without transformations (which could cause loops)
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Initial sync - right should take left's value
       expect(left.count).toBe(0);
@@ -418,10 +418,10 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const left = anchor<Shape>({ items: [1, 2, 3] });
       const right = anchor<Shape>({ count: 0 });
 
-      const unsubscribe = derive.bind(
+      const unsubscribe = subscribe.bind(
         left,
         right,
-        (current) => ({ count: current.items.length }),
+        (current) => ({ count: current.items?.length }),
         (current) => ({ items: Array(current.count).fill(0) })
       );
 
@@ -446,11 +446,11 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const left = anchor({ value: 1 });
       const right = anchor({ value: 2 });
 
-      const unsubscribe = derive.bind(
+      const unsubscribe = subscribe.bind(
         left,
         right,
-        () => undefined, // Return undefined
-        () => undefined // Return undefined
+        (() => undefined) as never, // Return undefined
+        (() => undefined) as never // Return undefined
       );
 
       // Initial binding - no transformations should be applied
@@ -476,11 +476,11 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const rightHandler = vi.fn();
 
       // Set up additional listeners to verify cleanup
-      const unsubscribeDeriveLeft = derive(left, leftHandler);
-      const unsubscribeDeriveRight = derive(right, rightHandler);
+      const unsubscribeDeriveLeft = subscribe(left, leftHandler);
+      const unsubscribeDeriveRight = subscribe(right, rightHandler);
 
       // Bind the states
-      const unsubscribeBind = derive.bind(left, right);
+      const unsubscribeBind = subscribe.bind(left, right);
 
       // Clear initial calls
       leftHandler.mockClear();
@@ -513,7 +513,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
       const left = anchor({ value: 0 });
       const right = anchor({ value: 0 });
 
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Perform rapid updates
       left.value = 1;
@@ -547,7 +547,7 @@ describe('Anchor Core - Derivation Edge Cases', () => {
         },
       });
 
-      const unsubscribe = derive.bind(
+      const unsubscribe = subscribe.bind(
         left,
         right,
         (current) => ({

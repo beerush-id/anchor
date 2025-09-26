@@ -3,7 +3,7 @@ import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
 import { captureStack } from '../exception.js';
-import { derive } from '../derive.ts';
+import { subscribe } from '../derive.ts';
 
 export type GetMethod = 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS';
 export type GetMethods = GetMethod | Lowercase<GetMethod> | string;
@@ -359,7 +359,7 @@ streamStateFn.readable = <T>(init: T) => {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      derive(state, (current) => {
+      subscribe(state, (current) => {
         const { data, status, error } = current;
 
         if (status === FetchStatus.Success) {
@@ -495,7 +495,7 @@ function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T,
 const toPromise = <T, S extends FetchState<T>>(state: S): Promise<S> => {
   if (state.status === FetchStatus.Pending) {
     return new Promise((resolve, reject) => {
-      const unsubscribe = derive(state, (_s, event) => {
+      const unsubscribe = subscribe(state, (_s, event) => {
         if (event.type !== 'init' && !event.keys.includes('data')) {
           if (state.status === FetchStatus.Error) {
             reject(state.error);

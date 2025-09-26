@@ -10,7 +10,7 @@ import type {
   StateGateway,
 } from '../types.js';
 import { anchor } from '../anchor.js';
-import { derive } from '../derive.js';
+import { subscribe } from '../derive.js';
 import { assign } from '../helper.js';
 import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
 import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
@@ -77,7 +77,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   const backwardList: StateChange[] = [];
   const forwardList: StateChange[] = [];
   const mergeList = new Set<StateChange>();
-  const controller = derive.resolve(state);
+  const controller = subscribe.resolve(state);
 
   if (!anchor.has(state)) {
     const error = new Error('Object is not reactive.');

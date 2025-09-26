@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, type StateController, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Controller', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -18,7 +18,7 @@ describe('Anchor Core - Controller', () => {
   describe('Controller', () => {
     it('should provide subscribe function to listen for changes', () => {
       const state = anchor({ count: 0 });
-      const controller = derive.resolve(state);
+      const controller = subscribe.resolve(state);
 
       expect(controller).toBeDefined();
       expect(typeof controller?.subscribe).toBe('function');
@@ -27,14 +27,14 @@ describe('Anchor Core - Controller', () => {
 
     it('should provide destroy function to clean up', () => {
       const state = anchor({ count: 0 });
-      const controller = derive.resolve(state);
+      const controller = subscribe.resolve(state);
 
       expect(controller).toBeDefined();
       expect(typeof controller?.destroy).toBe('function');
 
       controller?.destroy();
 
-      expect(derive.resolve(state)).toBeUndefined();
+      expect(subscribe.resolve(state)).toBeUndefined();
 
       // Ensure destroying multiple times should not throw.
       expect(() => {
@@ -46,10 +46,10 @@ describe('Anchor Core - Controller', () => {
       const state = anchor({ count: 0, profile: { name: 'test' } });
       const profile = state.profile;
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
-      const stateCtrl = derive.resolve(state);
-      const profileCtrl = derive.resolve(profile);
+      const stateCtrl = subscribe.resolve(state) as StateController;
+      const profileCtrl = subscribe.resolve(profile) as StateController;
 
       expect(stateCtrl).toBeDefined();
       expect(profileCtrl).toBeDefined();
@@ -59,8 +59,8 @@ describe('Anchor Core - Controller', () => {
 
       stateCtrl.destroy();
 
-      expect(derive.resolve(state)).toBeUndefined();
-      expect(derive.resolve(profile)).toBeUndefined();
+      expect(subscribe.resolve(state)).toBeUndefined();
+      expect(subscribe.resolve(profile)).toBeUndefined();
 
       unsubscribe(); // Should not throw.
     });
@@ -69,14 +69,14 @@ describe('Anchor Core - Controller', () => {
       const state = anchor({ count: 0, profile: { name: 'test' } });
       const profile = state.profile;
 
-      const controller = derive.resolve(state);
-      const profileController = derive.resolve(profile);
+      const controller = subscribe.resolve(state) as StateController;
+      const profileController = subscribe.resolve(profile) as StateController;
 
       const handler = vi.fn();
       const profileHandler = vi.fn();
 
-      derive(state, handler);
-      derive(profile, profileHandler);
+      subscribe(state, handler);
+      subscribe(profile, profileHandler);
 
       expect(controller).toBeDefined();
       expect(profileController).toBeDefined();
@@ -86,23 +86,23 @@ describe('Anchor Core - Controller', () => {
 
       controller?.destroy();
 
-      expect(derive.resolve(state)).toBeUndefined();
-      expect(derive.resolve(profile)).toBe(profileController);
+      expect(subscribe.resolve(state)).toBeUndefined();
+      expect(subscribe.resolve(profile)).toBe(profileController);
 
       // Simulate internal destroy and should be prevented with warning.
       (profileController.destroy as (force?: boolean) => void)(true);
 
-      expect(derive.resolve(profile)).toBe(profileController);
+      expect(subscribe.resolve(profile)).toBe(profileController);
       expect(errorSpy).toHaveBeenCalledTimes(1);
 
       profileController.destroy();
-      expect(derive.resolve(profile)).toBeUndefined();
+      expect(subscribe.resolve(profile)).toBeUndefined();
     });
 
     it('should not get notified for changes after destroying state', () => {
       const state = anchor({ count: 0, profile: { name: 'test' } });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       const profile = state.profile; // This trigger subscription to profile state.
 
       expect(handler).toHaveBeenCalledTimes(1); // Init.
@@ -115,7 +115,7 @@ describe('Anchor Core - Controller', () => {
       expect(handler).toHaveBeenCalledTimes(3);
       expect(state.profile.name).toBe('John Doe');
 
-      const controller = derive.resolve(state);
+      const controller = subscribe.resolve(state);
       expect(typeof controller?.destroy).toBe('function');
 
       controller?.destroy();
@@ -133,8 +133,8 @@ describe('Anchor Core - Controller', () => {
     it('should prevent duplicated subscription handler', () => {
       const state = anchor({ count: 0 });
       const handler = vi.fn();
-      const unsubscribeFirst = derive(state, handler);
-      const unsubscribeSecond = derive(state, handler);
+      const unsubscribeFirst = subscribe(state, handler);
+      const unsubscribeSecond = subscribe(state, handler);
 
       expect(handler).toHaveBeenCalledTimes(2); // Init (1st + 2nd).
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, subscribe } from '@anchorlib/core';
 
 describe('Anchor - Circular References', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -143,7 +143,7 @@ describe('Anchor - Circular References', () => {
 
       const state = anchor(obj);
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Update a property
       state.name = 'updated';
@@ -170,7 +170,7 @@ describe('Anchor - Circular References', () => {
 
       const state = anchor({ arr1, arr2 });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Perform array mutation
       state.arr1.push('new-item');
@@ -195,7 +195,7 @@ describe('Anchor - Circular References', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = anchor({ container: {} as any });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Assign circular object
       state.container = obj;
@@ -220,7 +220,7 @@ describe('Anchor - Circular References', () => {
 
       const state = anchor(obj);
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Delete a property
       delete state.ref;
@@ -282,7 +282,7 @@ describe('Anchor - Circular References', () => {
 
       const state = anchor({ parent, child });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Update through the circular reference
       state.parent.children[0].id = 'updated-child';
@@ -307,8 +307,8 @@ describe('Anchor - Circular References', () => {
       const handler1 = vi.fn();
       const handler2 = vi.fn();
 
-      const unsubscribe1 = derive(state, handler1);
-      const unsubscribe2 = derive(state, handler2);
+      const unsubscribe1 = subscribe(state, handler1);
+      const unsubscribe2 = subscribe(state, handler2);
 
       // Update value
       state.value = 2;
@@ -331,7 +331,7 @@ describe('Anchor - Circular References', () => {
 
       const state = anchor(obj);
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Unsubscribe
       unsubscribe();

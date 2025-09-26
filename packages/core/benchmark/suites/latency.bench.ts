@@ -1,5 +1,5 @@
 import benny from 'benny';
-import { anchor, createTestData, derive, type StateChangeEvent, type TestData } from '../shared.js';
+import { anchor, createTestData, type StateChange, subscribe, type TestData } from '../shared.js';
 
 benny.suite(
   '⚡ Subscription Latency (Time from change to notification)',
@@ -7,8 +7,8 @@ benny.suite(
   benny.add('Notify on nested property write', async () => {
     const state: TestData = anchor(createTestData());
     await new Promise<void>((resolve) => {
-      const unsubscribe = derive(state, (_, event?: StateChangeEvent) => {
-        if (event?.type === 'set' && event.path === 'user.profile.bio') {
+      const unsubscribe = subscribe(state, (_, event?: StateChange) => {
+        if (event?.type === 'set' && event.keys.join('.') === 'user.profile.bio') {
           unsubscribe();
           resolve();
         }
@@ -20,7 +20,7 @@ benny.suite(
   benny.add('Notify on array mutation (push)', async () => {
     const state: TestData = anchor(createTestData());
     await new Promise<void>((resolve) => {
-      const unsubscribe = derive(state, (_, event?: StateChangeEvent) => {
+      const unsubscribe = subscribe(state, (_, event?: StateChange) => {
         if (event?.type === 'push') {
           unsubscribe();
           resolve();

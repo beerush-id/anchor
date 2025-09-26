@@ -1,4 +1,4 @@
-import type { DeriveFn, Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe } from './types.js';
+import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from './types.js';
 import { CONTROLLER_REGISTRY } from './registry.js';
 import { isFunction } from '@beerush/utils';
 import { assign } from './helper.js';
@@ -6,16 +6,16 @@ import { captureStack } from './exception.js';
 import { anchor } from './anchor.js';
 
 /**
- * Derives a new subscription from an existing anchored state.
+ * Create a new subscription from an existing anchored state.
  * This is a convenience function to subscribe to changes of an already anchored state.
  *
  * @template T The type of the state.
  * @param state - The anchored state object to derive from.
  * @param handler - The subscriber function to call on state changes.
  * @param recursive - Whether to recursively subscribe to child states (Default: follow).
- * @returns A function to unsubscribe from the derived state.
+ * @returns A function to unsubscribe from the subscribed state.
  */
-function deriveFn<T extends Linkable>(
+function subscribeFn<T extends Linkable>(
   state: State<T>,
   handler: StateSubscriber<T>,
   recursive?: boolean
@@ -27,8 +27,8 @@ function deriveFn<T extends Linkable>(
       'Invalid subscription target:',
       'Attempted to subscribe to non-reactive state.',
       'Object is not reactive',
-      deriveFn,
-      deriveFn.pipe
+      subscribeFn,
+      subscribeFn.pipe
     );
 
     try {
@@ -37,8 +37,8 @@ function deriveFn<T extends Linkable>(
       captureStack.error.external(
         'Unable to execute the subscription handler function.',
         error as Error,
-        deriveFn,
-        deriveFn.pipe
+        subscribeFn,
+        subscribeFn.pipe
       );
     }
 
@@ -50,15 +50,15 @@ function deriveFn<T extends Linkable>(
   return ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
 }
 
-deriveFn.log = ((state) => {
-  return deriveFn(state, console.log);
-}) satisfies DeriveFn['log'];
+subscribeFn.log = ((state) => {
+  return subscribeFn(state, console.log);
+}) satisfies SubscribeFn['log'];
 
-deriveFn.resolve = ((state) => {
+subscribeFn.resolve = ((state) => {
   return CONTROLLER_REGISTRY.get(state) as never;
-}) satisfies DeriveFn['resolve'];
+}) satisfies SubscribeFn['resolve'];
 
-deriveFn.pipe = ((source, target, transform) => {
+subscribeFn.pipe = ((source, target, transform) => {
   if (!anchor.has(source)) {
     const error = new Error('State is not reactive.');
     captureStack.violation.derivation('Attempted to pipe state from a non-reactive state.', error);
@@ -72,17 +72,17 @@ deriveFn.pipe = ((source, target, transform) => {
   }
 
   if (!isFunction(transform)) {
-    return deriveFn(source, (current) => {
+    return subscribeFn(source, (current) => {
       assign(target as ObjLike, current as ObjLike);
     });
   }
 
-  return deriveFn(source, (current) => {
+  return subscribeFn(source, (current) => {
     assign(target as ObjLike, transform(current));
   });
-}) satisfies DeriveFn['pipe'];
+}) satisfies SubscribeFn['pipe'];
 
-deriveFn.bind = ((left, right, transformLeft, transformRight) => {
+subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
   if (!anchor.has(left)) {
     const error = new Error('State is not reactive.');
     captureStack.violation.derivation('Attempted to bind state from a non-reactive state.', error);
@@ -98,7 +98,7 @@ deriveFn.bind = ((left, right, transformLeft, transformRight) => {
   let updatingLeft = false;
   let updatingRight = false;
 
-  const unsubscribeLeft = deriveFn(left, (current) => {
+  const unsubscribeLeft = subscribeFn(left, (current) => {
     if (updatingLeft) return;
 
     updatingRight = true;
@@ -122,7 +122,7 @@ deriveFn.bind = ((left, right, transformLeft, transformRight) => {
     updatingRight = false;
   });
 
-  const unsubscribeRight = deriveFn(right, (current) => {
+  const unsubscribeRight = subscribeFn(right, (current) => {
     if (updatingRight) return;
 
     updatingLeft = true;
@@ -150,6 +150,13 @@ deriveFn.bind = ((left, right, transformLeft, transformRight) => {
     unsubscribeLeft();
     unsubscribeRight();
   };
-}) satisfies DeriveFn['bind'];
+}) satisfies SubscribeFn['bind'];
 
-export const derive = deriveFn as DeriveFn;
+export const subscribe: SubscribeFn = subscribeFn as SubscribeFn;
+
+/**
+ * @deprecated Use `subscribe` instead.
+ * The `derive` function is an alias for the `subscribe` function.
+ * @type {SubscribeFn}
+ */
+export const derive: SubscribeFn = subscribeFn as SubscribeFn;

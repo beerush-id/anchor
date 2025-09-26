@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, type Linkable } from '../../src/index.js';
+import { anchor, type Linkable, subscribe } from '../../src/index.js';
 import { createGetter, createRemover, createSetter } from '../../src/trap.js';
 import { createCollectionGetter, createCollectionMutator } from '../../src/collection.js';
 import { createArrayMutator } from '../../src/array.js';
@@ -22,7 +22,7 @@ describe('Anchor Core - Edge Cases', () => {
       const state = anchor({ count: 1 });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       state.count = 1; // Same value
 
       // Should not trigger update
@@ -154,7 +154,7 @@ describe('Anchor Core - Edge Cases', () => {
       });
       const profile = state.profile;
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       state.id = 2;
       expect(handler).toHaveBeenCalledTimes(2); // Init + change id.
@@ -189,7 +189,7 @@ describe('Anchor Core - Edge Cases', () => {
       });
       const profile = state.profile;
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       profile.name = 'Jane Doe';
       expect(handler).toHaveBeenCalledTimes(2); // Init + name change.
@@ -213,7 +213,7 @@ describe('Anchor Core - Edge Cases', () => {
     it('should unlink the previous item after mutating array', () => {
       const state = anchor([{ name: 'John Smith' }]);
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       const profile = state[0];
 
       expect(profile.name).toBe('John Smith');
@@ -241,7 +241,7 @@ describe('Anchor Core - Edge Cases', () => {
     it('should unlink the previous subscriptions after mutating Map', () => {
       const state = anchor(new Map([['profile', { name: 'John Smith' }]]));
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       const profile = state.get('profile') as { name: string };
 
       expect(profile.name).toBe('John Smith');

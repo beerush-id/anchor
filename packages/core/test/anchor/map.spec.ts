@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, type Linkable, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Map Operations', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -39,8 +39,8 @@ describe('Anchor Core - Map Operations', () => {
       expect(map.size).toBe(2);
       expect(map.get('john')).toBe(user);
       expect(map.get('jane')).toEqual({ name: 'Jane' });
-      expect(anchor.get(map.get('john'))).toBe(anchor.get(user));
-      expect(anchor.get(map.get('john'))).not.toBe(user);
+      expect(anchor.get(map.get('john') as Linkable)).toBe(anchor.get(user));
+      expect(anchor.get(map.get('john') as Linkable)).not.toBe(user);
     });
 
     it('should handle Map delete operations', () => {
@@ -76,7 +76,7 @@ describe('Anchor Core - Map Operations', () => {
       ]);
       const state = anchor({ map });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       const values: number[] = [];
       state.map.forEach((value) => values.push(value));
@@ -96,7 +96,7 @@ describe('Anchor Core - Map Operations', () => {
       ]);
       const state = anchor({ map });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       expect(state.map).toBeInstanceOf(Map);
 
@@ -105,8 +105,8 @@ describe('Anchor Core - Map Operations', () => {
       });
 
       expect(handler).toHaveBeenCalledTimes(3); // Init + increment.
-      expect(state.map.get('a').count).toBe(2);
-      expect(state.map.get('b').count).toBe(3);
+      expect(state.map.get('a')?.count).toBe(2);
+      expect(state.map.get('b')?.count).toBe(3);
 
       const values = Array.from(state.map.values());
       for (const value of values) {
@@ -114,8 +114,8 @@ describe('Anchor Core - Map Operations', () => {
       }
 
       expect(handler).toHaveBeenCalledTimes(5); // ... + increment.
-      expect(state.map.get('a').count).toBe(3);
-      expect(state.map.get('b').count).toBe(4);
+      expect(state.map.get('a')?.count).toBe(3);
+      expect(state.map.get('b')?.count).toBe(4);
 
       const entries = Array.from(state.map.entries());
       for (const [, value] of entries) {
@@ -123,8 +123,8 @@ describe('Anchor Core - Map Operations', () => {
       }
 
       expect(handler).toHaveBeenCalledTimes(7); // ... + increment.
-      expect(state.map.get('a').count).toBe(4);
-      expect(state.map.get('b').count).toBe(5);
+      expect(state.map.get('a')?.count).toBe(4);
+      expect(state.map.get('b')?.count).toBe(5);
 
       unsubscribe();
     });

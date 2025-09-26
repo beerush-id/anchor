@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Set Operations', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -83,7 +83,7 @@ describe('Anchor Core - Set Operations', () => {
       const set = new Set([1, 2]);
       const state = anchor({ set });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       const values: number[] = [];
       state.set.forEach((value) => values.push(value));

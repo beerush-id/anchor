@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Basic Operations', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -67,7 +67,7 @@ describe('Anchor Core - Basic Operations', () => {
       );
       const profile = anchor.get(state).profile;
 
-      expect(derive.resolve(profile)).toBeUndefined(); // Should be undefined due to child state haven't been accessed.
+      expect(subscribe.resolve(profile)).toBeUndefined(); // Should be undefined due to child state haven't been accessed.
     });
 
     it('should change the default options', () => {

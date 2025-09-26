@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, derive, getDevTool, setDevTool } from '../../src/index.js';
+import { anchor, createObserver, getDevTool, setDevTool, subscribe } from '../../src/index.js';
 import { createDevTool } from '../../mocks/devtool.js';
 
 describe('Anchor Dev Tool', () => {
@@ -336,7 +336,7 @@ describe('Anchor Dev Tool', () => {
       const state = anchor({ count: 1 });
 
       // Subscribe to state
-      const unsubscribe = derive(state, () => {
+      const unsubscribe = subscribe(state, () => {
         // Do nothing
       });
 
@@ -357,7 +357,7 @@ describe('Anchor Dev Tool', () => {
       const state = anchor({ count: 1 });
 
       // Subscribe to state
-      const unsubscribe = derive(state, () => {
+      const unsubscribe = subscribe(state, () => {
         // Do nothing
       });
 
@@ -379,7 +379,7 @@ describe('Anchor Dev Tool', () => {
       const child = anchor({ value: 1 });
       const parent = anchor({ child, name: 'parent' });
       const handler = vi.fn();
-      const unsubscribe = derive(parent, handler);
+      const unsubscribe = subscribe(parent, handler);
 
       // Access child to trigger linking
       const _ = parent.child.value;
@@ -399,7 +399,7 @@ describe('Anchor Dev Tool', () => {
       const child = anchor({ value: 1 });
       const parent = anchor({ child, name: 'parent' });
       const handler = vi.fn();
-      const unsubscribe = derive(parent, handler);
+      const unsubscribe = subscribe(parent, handler);
 
       // Access child to trigger linking
       const _ = parent.child.value;

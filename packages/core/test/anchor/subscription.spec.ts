@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, MapMutations, SetMutations } from '../../src/index.js';
+import { anchor, MapMutations, SetMutations, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Subscription', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -19,7 +19,7 @@ describe('Anchor Core - Subscription', () => {
 
       let sameState = false;
 
-      const unsubscribe = derive(state, (value, event) => {
+      const unsubscribe = subscribe(state, (value, event) => {
         handler(value, event);
 
         if (event?.type !== 'init') {
@@ -41,7 +41,7 @@ describe('Anchor Core - Subscription', () => {
       const state = anchor({ count: 0 });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       state.count = 1;
 
       expect(handler).toHaveBeenCalledTimes(2); // init + set
@@ -54,9 +54,9 @@ describe('Anchor Core - Subscription', () => {
     it('should handle property deletion and notify subscribers', () => {
       const state = anchor({ a: 1, b: 2 });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
-      delete state.a;
+      delete (state as { a?: number }).a;
 
       expect(state).toEqual({ b: 2 }); // Check final state
       expect(handler).toHaveBeenCalledTimes(2); // init + delete
@@ -69,7 +69,7 @@ describe('Anchor Core - Subscription', () => {
       const state = anchor([1, 2, 3]);
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       state.push(4);
 
       expect(handler).toHaveBeenCalledTimes(2); // init + push
@@ -83,7 +83,7 @@ describe('Anchor Core - Subscription', () => {
       const map = new Map([['a', 1]]);
       const state = anchor({ map });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       state.map.set('b', 2);
 
@@ -104,7 +104,7 @@ describe('Anchor Core - Subscription', () => {
       const state = anchor({ set });
 
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       state.set.add(3);
 
@@ -126,7 +126,7 @@ describe('Anchor Core - Subscription', () => {
       });
 
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       state.todos[0].completed = true;
       state.todos.push({ id: 2, title: 'bar', completed: false });
@@ -153,7 +153,7 @@ describe('Anchor Core - Subscription', () => {
       const state = anchor({ count: 0 });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       unsubscribe();
 
       state.count = 1;
@@ -166,7 +166,7 @@ describe('Anchor Core - Subscription', () => {
       const state = anchor(['a', 'b'], { recursive: 'flat' });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
       state.push('c');
 
       expect(handler).toHaveBeenCalledTimes(2);
@@ -186,8 +186,8 @@ describe('Anchor Core - Subscription', () => {
       const state = anchor([{ name: 'John' }], { recursive: 'flat' });
       const handler = vi.fn();
       const childHandler = vi.fn();
-      const unsubscribe = derive(state, handler);
-      const childUnsubscribe = derive(state[0], childHandler);
+      const unsubscribe = subscribe(state, handler);
+      const childUnsubscribe = subscribe(state[0], childHandler);
 
       // This change should trigger a notification.
       state.push({ name: 'Jane' });

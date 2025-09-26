@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { derive, fetchState, FetchStatus } from '../../src/index.js';
+import { fetchState, FetchStatus, subscribe } from '../../src/index.js';
 
 describe('Reactive Request', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -185,7 +185,7 @@ describe('Reactive Request', () => {
 
       expect(state.data).toEqual(initialState);
       expect(typeof state.data).toBe('object');
-      expect(derive.resolve(state.data)).toBeDefined();
+      expect(subscribe.resolve(state.data)).toBeDefined();
     });
 
     it('should handle conversion to promise', async () => {
@@ -348,7 +348,7 @@ describe('Reactive Request', () => {
         url: 'https://api.example.com/stream',
         method: 'GET',
       });
-      const unsubscribe = derive(state, subscriber);
+      const unsubscribe = subscribe(state, subscriber);
 
       expect(state.status).toBe(FetchStatus.Pending);
       expect(state.data).toBe('');

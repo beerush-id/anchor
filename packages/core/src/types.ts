@@ -651,16 +651,16 @@ export type Broadcaster = {
   broadcast: BroadcastFn;
 };
 
-export interface DeriveFn {
+export interface SubscribeFn {
   /**
-   * Derives a new subscription from an existing anchored state.
+   * Create a new subscription from an existing anchored state.
    * This is a convenience function to subscribe to changes of an already anchored state.
    *
    * @template T The type of the state.
-   * @param state - The anchored state object to derive from.
+   * @param state - The anchored state object to subscribe from.
    * @param handler - The subscriber function to call on state changes.
    * @param recursive - Whether to recursively subscribe to child states (Default: follow).
-   * @returns A function to unsubscribe from the derived state.
+   * @returns A function to unsubscribe from the subscribed state.
    */ <T>(state: T, handler: StateSubscriber<T>, recursive?: boolean): StateUnsubscribe;
 
   /**

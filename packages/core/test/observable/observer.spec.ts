@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   anchor,
   createObserver,
-  derive,
   getTracker,
   outsideObserver,
   setObserver,
   setTracker,
+  subscribe,
   withinObserver,
 } from '../../src/index.js';
 
@@ -38,7 +38,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(count).toBe(1);
       expect(tracker).toHaveBeenCalledTimes(1);
 
-      untrack(); // Unset the tracker. Any state read after this point will not be tracked.
+      untrack?.(); // Unset the tracker. Any state read after this point will not be tracked.
 
       expect(getTracker()).toBeUndefined();
       expect(tracker).toHaveBeenCalledTimes(1);
@@ -416,7 +416,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(observer.states.has(anchor.get(state))).toBe(true);
       expect(trackHandler).toHaveBeenCalledTimes(1);
 
-      const unsubscribe = derive(state, () => {
+      const unsubscribe = subscribe(state, () => {
         // Any property access here should trigger a dependency tracking.
         const name = state.profile.name; // (2 tracks): .profile + .profile.name
         expect(name).toBe('John');
@@ -437,7 +437,7 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       const unobserve = setObserver(observer);
 
-      const unsubscribe = derive(state, (_s, event) => {
+      const unsubscribe = subscribe(state, (_s, event) => {
         // Any property access here should trigger a dependency tracking.
         const count = state.count;
         expect(count).toBe(1);
@@ -477,7 +477,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(observer.states.has(anchor.get(state))).toBe(true);
       expect(trackHandler).toHaveBeenCalledTimes(1);
 
-      const unsubscribe = derive(state, (_s, event) => {
+      const unsubscribe = subscribe(state, (_s, event) => {
         // Isolate the handler to be called outside of observer.
         outsideObserver(() => {
           // Any property access here should not trigger a dependency tracking.

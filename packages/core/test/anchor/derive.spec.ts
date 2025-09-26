@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive } from '../../src/index.js';
+import { anchor, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Derivation', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -20,7 +20,7 @@ describe('Anchor Core - Derivation', () => {
       const state = anchor({ count: 0 });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       // Handler should be called with init event
       expect(handler).toHaveBeenCalledWith(state, { type: 'init', keys: [] });
@@ -45,7 +45,7 @@ describe('Anchor Core - Derivation', () => {
       const nonReactive = { count: 0 };
       const handler = vi.fn();
 
-      const unsubscribe = derive(nonReactive, handler);
+      const unsubscribe = subscribe(nonReactive, handler);
 
       // Handler should be called with init event even for non-reactive state
       expect(handler).toHaveBeenCalledWith(nonReactive, { type: 'init', keys: [] });
@@ -65,7 +65,7 @@ describe('Anchor Core - Derivation', () => {
       });
       const handler = vi.fn();
 
-      const unsubscribe = derive(state, handler, true);
+      const unsubscribe = subscribe(state, handler, true);
 
       // Initial call
       expect(handler).toHaveBeenCalledWith(state, { type: 'init', keys: [] });
@@ -88,7 +88,7 @@ describe('Anchor Core - Derivation', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const state = anchor({ message: 'hello' });
 
-      const unsubscribe = derive.log(state);
+      const unsubscribe = subscribe.log(state);
 
       // Check initial log
       expect(consoleSpy).toHaveBeenCalledWith(state, { type: 'init', keys: [] });
@@ -112,7 +112,7 @@ describe('Anchor Core - Derivation', () => {
       const source = anchor({ count: 0 });
       const target: { count?: number } = {};
 
-      const unsubscribe = derive.pipe(source, target);
+      const unsubscribe = subscribe.pipe(source, target);
 
       // Initial state
       expect(target).toEqual({ count: 0 });
@@ -130,7 +130,7 @@ describe('Anchor Core - Derivation', () => {
       const source = anchor({ count: 1 });
       const target: { doubled?: number } = {};
 
-      const unsubscribe = derive.pipe(source, target, (current) => ({ doubled: current.count * 2 }));
+      const unsubscribe = subscribe.pipe(source, target, (current) => ({ doubled: current.count * 2 }));
 
       // Initial state
       expect(target).toEqual({ doubled: 2 });
@@ -146,7 +146,7 @@ describe('Anchor Core - Derivation', () => {
       const source = { count: 0 };
       const target: { count?: number } = {};
 
-      const unsubscribe = derive.pipe(source, target);
+      const unsubscribe = subscribe.pipe(source, target);
 
       // Should log error but not throw
       expect(errorSpy).toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe('Anchor Core - Derivation', () => {
       const target = 'not-an-object';
 
       // @ts-expect-error Testing invalid target
-      const unsubscribe = derive.pipe(source, target);
+      const unsubscribe = subscribe.pipe(source, target);
 
       // Should log error but not throw
       expect(errorSpy).toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe('Anchor Core - Derivation', () => {
       const left = anchor({ value: 1 });
       const right = anchor({ value: 2 });
 
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Initial binding - right should take left's value
       expect(left.value).toBe(1);
@@ -197,7 +197,7 @@ describe('Anchor Core - Derivation', () => {
       const left = anchor({ celsius: 0 });
       const right = anchor({ fahrenheit: 32 });
 
-      const unsubscribe = derive.bind(
+      const unsubscribe = subscribe.bind(
         left,
         right,
         (current) => ({ fahrenheit: (current.celsius * 9) / 5 + 32 }),
@@ -225,7 +225,7 @@ describe('Anchor Core - Derivation', () => {
       const left = { value: 1 };
       const right = anchor({ value: 2 });
 
-      const unsubscribe = derive.bind(left, right);
+      const unsubscribe = subscribe.bind(left, right);
 
       // Should log error but not throw
       expect(errorSpy).toHaveBeenCalled();
@@ -237,7 +237,7 @@ describe('Anchor Core - Derivation', () => {
   describe('Resolve', () => {
     it('should resolve controller for anchored state', () => {
       const state = anchor({ count: 0 });
-      const controller = derive.resolve(state);
+      const controller = subscribe.resolve(state);
 
       expect(controller).toBeDefined();
       expect(controller?.meta).toBeDefined();
@@ -247,7 +247,7 @@ describe('Anchor Core - Derivation', () => {
 
     it('should return undefined for non-reactive state', () => {
       const nonReactive = { count: 0 };
-      const controller = derive.resolve(nonReactive);
+      const controller = subscribe.resolve(nonReactive);
 
       expect(controller).toBeUndefined();
     });

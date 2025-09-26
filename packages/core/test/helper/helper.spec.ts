@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, derive, type ObjLike } from '../../src/index.js';
+import { anchor, type ObjLike, subscribe } from '../../src/index.js';
 
 describe('Anchor Helpers', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -70,7 +70,7 @@ describe('Anchor Helpers', () => {
     it('should notify for an assignment changes', () => {
       const state = anchor({ a: 1, b: 2, c: 3 });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       anchor.assign(state, { a: 4, c: 5 });
 
@@ -154,7 +154,7 @@ describe('Anchor Helpers', () => {
     it('should notify for removal changes', () => {
       const state = anchor({ a: 1, b: 2, c: 3 });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       anchor.remove(state, 'a', 'c');
 
@@ -174,7 +174,7 @@ describe('Anchor Helpers', () => {
     it('should handle removing non-existent properties', () => {
       const state = anchor({ a: 1, b: 2 });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       anchor.remove(state, 'nonexistent' as never, 'a');
 
@@ -251,7 +251,7 @@ describe('Anchor Helpers', () => {
     it('should notify for clear changes', () => {
       const state = anchor({ a: 1, b: 2, c: 3 });
       const handler = vi.fn();
-      const unsubscribe = derive(state, handler);
+      const unsubscribe = subscribe(state, handler);
 
       anchor.clear(state);
 
