@@ -104,6 +104,20 @@ export function useAnchor<T extends Linkable, S extends LinkableSchema = Linkabl
 }
 
 /**
+ * React hook that creates a reactive state.
+ * This hook is an alias for **useAnchor**.
+ *
+ * @template T - The type of the initial value, must extend Linkable
+ * @template S - The schema type for the state, defaults to LinkableSchema
+ *
+ * @param init - The initial value for the state
+ * @param options - Optional configuration for the state
+ *
+ * @returns A tuple containing the current state value, the state object, and a setter function
+ */
+export const useReactive = useAnchor;
+
+/**
  * Custom React hook that creates and manages a raw anchor state.
  * This hook is similar to **useAnchor** but creates a raw state that mutates the underlying state object.
  *

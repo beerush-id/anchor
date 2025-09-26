@@ -1,5 +1,5 @@
 import type { Linkable, ModelError, State, StateUnsubscribe } from '@anchorlib/core';
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 export type StateRef<T> = {
   value: T;
@@ -41,4 +41,13 @@ export type FormState<T extends State, K extends keyof T> = {
 
 export type ReactiveProps<T> = {
   [K in keyof T]: K extends 'children' ? T[K] : VariableRef<T[K]> | ConstantRef<T[K]> | T[K];
+};
+
+export type ViewRenderer<T> = (ref: RefObject<T | null>) => ReactNode;
+export type ViewRendererFactory<T> = {
+  name?: string;
+  render: ViewRenderer<T>;
+  onMounted?: () => void;
+  onUpdated?: () => void;
+  onDestroy?: () => void;
 };

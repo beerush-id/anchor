@@ -5,6 +5,7 @@ export * from './constant.js';
 export * from './derive.js';
 export * from './dev.js';
 export * from './fetch.js';
+export * from './hoc.js';
 export * from './hooks.js';
 export * from './history.js';
 export * from './immutable.js';

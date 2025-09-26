@@ -2,15 +2,6 @@ import type { ReactNode, RefObject } from 'react';
 import type { Bindable, ReactiveProps, VariableRef } from '@base/index.ts';
 import type { WritableKeys } from '@anchorlib/core';
 
-export type ViewRenderer<T> = (ref: RefObject<T | null>) => ReactNode;
-export type ViewRendererFactory<T> = {
-  name?: string;
-  render: ViewRenderer<T>;
-  onMounted?: () => void;
-  onUpdated?: () => void;
-  onDestroy?: () => void;
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type InitProps = { [key: string]: any };
 
