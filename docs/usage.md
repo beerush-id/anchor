@@ -1,4 +1,17 @@
-# **Anchor Usage Guide**
+---
+title: 'Anchor Usage Guide: Getting Started with Anchor State Management'
+description: 'Learn how to use Anchor for state management in your web applications. This guide covers basic usage, configuration options, and provides examples to get you started.'
+keywords:
+  - anchor usage
+  - anchor guide
+  - javascript state management
+  - anchor configuration
+  - anchor api
+  - anchor examples
+  - state management guide
+---
+
+# Anchor Usage Guide: Getting Started
 
 Before getting started with Anchor, ensure you have followed the [installation](/installation) instructions.
 This guide will provide a basic introduction to Anchor's core functionality for state management in web applications.

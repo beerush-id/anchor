@@ -1,4 +1,18 @@
-# **Installing Anchor**
+---
+title: 'Anchor Installation Guide: How to Install for React, Vue, Svelte & JS'
+description: 'Learn how to install the Anchor state management library for your JavaScript, React, Vue, or Svelte project. Get started quickly with simple installation commands.'
+keywords:
+  - anchor installation
+  - install anchor
+  - anchor setup
+  - javascript state management installation
+  - react state management installation
+  - vue state management installation
+  - svelte state management installation
+  - '@anchorlib/core'
+---
+
+# How to Install Anchor
 
 Learn how to install and set up Anchor, the revolutionary state management library for modern web applications.
 

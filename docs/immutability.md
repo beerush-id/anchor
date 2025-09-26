@@ -1,4 +1,17 @@
-# **True Immutability in Anchor**
+---
+title: 'Understanding True Immutability in Anchor State Management'
+description: "Learn about Anchor's revolutionary 'True Immutability' approach. See how it combines direct mutation syntax with proxy-based safety for high-performance, predictable state management."
+keywords:
+  - anchor immutability
+  - true immutability
+  - javascript immutable state
+  - state management immutability
+  - proxy-based immutability
+  - anchor write contract
+  - immutable state management
+---
+
+# Understanding True Immutability in Anchor
 
 Immutability is a cornerstone of robust, predictable applications. It ensures that a piece of state cannot be changed
 once it's created, preventing unintended side effects and making your application easier to reason about. However, the

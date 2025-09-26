@@ -1,4 +1,18 @@
-# **Fine-Grained Reactivity in Anchor**
+---
+title: "Anchor's Reactivity Model: A Deep Dive into Fine-Grained State Management"
+description: "Understand Anchor's fine-grained reactivity model. This guide covers observation, subscription, and history tracking for efficient, high-performance state management in JavaScript."
+keywords:
+  - anchor reactivity
+  - fine-grained reactivity
+  - javascript reactivity
+  - state management reactivity
+  - anchor observation
+  - anchor subscription
+  - state history tracking
+  - undo/redo javascript
+---
+
+# Anchor's Reactivity Model: Fine-Grained State Management
 
 Anchor's reactivity system is built on a fine-grained observation model that enables efficient state management with
 minimal overhead. This document explains the core concepts of Anchor's reactivity: Observation, Subscription, and History

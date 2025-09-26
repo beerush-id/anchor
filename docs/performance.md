@@ -1,4 +1,17 @@
-# **Anchor Performance - Blazingly Fast State Management for Web Applications**
+---
+title: 'Anchor Performance: A Deep Dive into Speed and Efficiency'
+description: "Explore how Anchor achieves blazing-fast performance through fine-grained reactivity and optimized state updates. See benchmark results and understand why it's faster."
+keywords:
+  - anchor performance
+  - javascript performance
+  - state management performance
+  - fine-grained reactivity
+  - web app performance
+  - state management benchmark
+  - anchor benchmarks
+---
+
+# Anchor Performance: A Deep Dive into Speed and Efficiency
 
 Anchor is designed from the ground up to deliver a blazingly fast and fluid user experience. Our performance philosophy
 is rooted in a single principle: doing the absolute minimum amount of work necessary to keep the UI in perfect sync with

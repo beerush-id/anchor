@@ -1,10 +1,18 @@
 ---
-title: 'Overview - Anchor State Management Library'
-description: 'Discover Anchor, a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. Learn about the DSV (Data-State-View) model.'
-keywords: 'anchor overview, state management, reactivity, immutability, dsv model, data state view, enterprise apps, javascript, typescript'
+title: 'Anchor State Management: A Technical Overview'
+description: 'Get a high-level overview of the Anchor state management library. Understand its core concepts like the DSV model, fine-grained reactivity, and true immutability.'
+keywords:
+  - anchor overview
+  - anchor state management
+  - javascript state management
+  - technical overview
+  - dsv model
+  - fine-grained reactivity
+  - true immutability
+  - enterprise javascript
 ---
 
-# **Overview**
+# A Technical Overview of Anchor State Management
 
 State Management for Humans, Built for Enterprise Apps. Anchor values the AX (All eXperience) philosophy. Anchor not just makes apps work, but also efficient. Intuitive
 code makes developers happy, high performance makes users happy.

@@ -1,4 +1,17 @@
-# **Anchor Philosophy - The AX (All eXperience) Approach to State Management**
+---
+title: "Anchor's State Management Philosophy: The AX Approach"
+description: 'Explore the core philosophy behind Anchor, the All-eXperience (AX) state management solution that prioritizes both developer and user experience.'
+keywords:
+  - anchor state management
+  - javascript state management
+  - anchor philosophy
+  - developer experience
+  - user experience
+  - ax philosophy
+  - reactive programming
+---
+
+# Anchor's Philosophy: The All-Experience (AX) Approach
 
 Discover the foundational principles that guide Anchor's revolutionary approach to state management for modern web applications.
 

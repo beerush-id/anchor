@@ -1,4 +1,17 @@
-# **Anchor Architecture - Technical Deep Dive into State Management**
+---
+title: "Anchor's Architecture: A Technical Deep Dive"
+description: 'Explore the technical architecture of Anchor, from its proxy-based reactivity and immutable state engine to its framework integrations and performance optimizations.'
+keywords:
+  - anchor architecture
+  - state management architecture
+  - javascript architecture
+  - reactivity system
+  - immutable state
+  - proxy-based reactivity
+  - technical deep dive
+---
+
+# Anchor's Architecture: A Technical Deep Dive
 
 Explore the technical architecture that makes Anchor a revolutionary state management solution for modern web applications.
 

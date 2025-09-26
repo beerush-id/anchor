@@ -1,4 +1,17 @@
-# **Getting Started with Anchor**
+---
+title: "Getting Started with Anchor: A Beginner's Guide to State Management"
+description: 'Learn the basics of Anchor state management. This getting started guide walks you through creating your first state, observing changes, and working with immutability.'
+keywords:
+  - anchor getting started
+  - anchor tutorial
+  - javascript state management tutorial
+  - react state management tutorial
+  - vue state management tutorial
+  - svelte state management tutorial
+  - anchor basics
+---
+
+# Getting Started with Anchor: Your First Steps
 
 Learn how to use **Anchor**, the revolutionary state management library that provides fine-grained reactivity and true
 immutability for modern web applications. This guide will walk you through the basics of using **Anchor**.

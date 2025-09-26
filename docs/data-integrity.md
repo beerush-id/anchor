@@ -1,4 +1,17 @@
-# **Data Integrity with Anchor**
+---
+title: 'Ensuring Data Integrity in State Management with Anchor'
+description: 'Learn how Anchor uses schema validation with Zod, type safety with TypeScript, and immutability to ensure data integrity in your application state.'
+keywords:
+  - anchor data integrity
+  - state management data integrity
+  - schema validation
+  - zod validation
+  - typescript type safety
+  - immutable state validation
+  - anchor validation
+---
+
+# Ensuring Data Integrity with Anchor
 
 Learn how Anchor ensures data integrity through schema validation and type safety in your state management.
 
