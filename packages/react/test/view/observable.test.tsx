@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, renderHook } from '@testing-library/react';
-import { observable, observe, useObserverNode } from '../../src/view/index.js';
+import { observable, observe, observer, useObserverNode } from '../../src/view/index.js';
 import { anchor, getObserver } from '@anchorlib/core';
 import { useState } from 'react';
 import { useAnchor, useVariable } from '../../src/index.js';
@@ -121,7 +121,7 @@ describe('Anchor React - View Observable', () => {
         };
 
         TestComponent.displayName = 'NamedComponent';
-        const ObservableComponent = observable(TestComponent);
+        const ObservableComponent = observer(TestComponent);
 
         expect(ObservableComponent.displayName).toBe('Observable(NamedComponent)');
       });
@@ -132,7 +132,7 @@ describe('Anchor React - View Observable', () => {
         // Mock console.error to capture the error
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const TestComponent = observable(null as never);
+        const TestComponent = observer(null as never);
 
         render(<TestComponent />);
 
@@ -302,7 +302,7 @@ describe('Anchor React - View Observable', () => {
 
   describe('Integration', () => {
     it('should work with complex components that have their own state', async () => {
-      const CounterComponent = observable(() => {
+      const CounterComponent = observer(() => {
         const [count, setCount] = useState(0);
         const [state] = useAnchor({ value: 10 });
 
@@ -320,7 +320,7 @@ describe('Anchor React - View Observable', () => {
         );
       });
 
-      const ObservableCounter = observable(CounterComponent);
+      const ObservableCounter = observer(CounterComponent);
 
       const { getByTestId } = render(<ObservableCounter />);
 

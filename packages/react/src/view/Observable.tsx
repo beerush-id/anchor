@@ -41,7 +41,7 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [F
 }
 
 /**
- * **`observable`** is a Higher-Order Component (HOC) that wraps a React component
+ * **`observer`** is a Higher-Order Component (HOC) that wraps a React component
  * to make it reactive to changes in observable state.
  *
  * It automatically sets up and manages a `StateObserver` instance for the
@@ -61,15 +61,15 @@ export function useObserverNode(deps: Linkable[] = [], displayName?: string): [F
  * a full re-render is needed such as wrapping a 3rd party components,
  * or need a simple component setup without manually declare a selective rendering.
  */
-export function observable<P>(Component: FunctionComponent<P>, displayName?: string) {
+export function observer<P>(Component: FunctionComponent<P>, displayName?: string) {
   if (typeof Component !== 'function') {
-    const error = new Error('[observable] Component must be a function component.');
+    const error = new Error('[observer] Component must be a function component.');
     captureStack.violation.general(
       'Observable factory violation detected:',
-      'Attempted to use observable HOC on a non-functional component.',
+      'Attempted to use observer HOC on a non-functional component.',
       error,
       undefined,
-      observable
+      observer
     );
 
     const Observed = () => <>{error.message}</>;
@@ -103,6 +103,13 @@ export function observable<P>(Component: FunctionComponent<P>, displayName?: str
   Observed.displayName = `Observable(${componentName})`;
   return Observed as FunctionComponent<ReactiveProps<P>>;
 }
+
+/**
+ * @deprecated Use `observer` instead.
+ *
+ * This API is deprecated and will be removed in the future.
+ */
+export const observable = observer;
 
 /**
  * **`observe`** is a utility function that creates a React component which
