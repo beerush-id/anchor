@@ -3,6 +3,7 @@ import {
   activateContext,
   anchor,
   createContext,
+  createObserver,
   deactivateGlobalContext,
   getActiveContext,
   getContext,
@@ -142,6 +143,18 @@ describe('Anchor Utilities - Context', () => {
       expect(getContext('key')).toBeUndefined();
       expect(errorSpy).toHaveBeenCalled();
     });
+
+    it('should return the fallback value', () => {
+      const context = createContext();
+      const restore = activateContext(context);
+
+      setContext('key1', 'value1');
+
+      expect(getContext('key1', 'fallback')).toBe('value1');
+      expect(getContext('key2', 'fallback')).toBe('fallback');
+
+      restore();
+    });
   });
 
   describe('withinContext', () => {
@@ -225,6 +238,67 @@ describe('Anchor Utilities - Context', () => {
       expect(getContext('level')).toBe(1);
 
       restore1();
+    });
+  });
+
+  describe('Reactivity', () => {
+    it('should react to context changes', () => {
+      const context = createContext();
+      const restore = activateContext(context);
+
+      const handler = vi.fn();
+      const observer = createObserver(handler);
+
+      setContext('key1', 'value1');
+
+      expect(handler).not.toHaveBeenCalled();
+
+      observer.run(() => expect(getContext('key1')).toBe('value1'));
+      observer.run(() => expect(getContext('key2')).toBeUndefined());
+
+      setContext('key2', 'value2');
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      setContext('key1', 'value3');
+      expect(handler).toHaveBeenCalledTimes(2);
+
+      expect(getContext('key1')).toBe('value3');
+      expect(getContext('key2')).toBe('value2');
+
+      restore();
+    });
+
+    it('should react to context changes with object value', () => {
+      const context = createContext();
+      const restore = activateContext(context);
+
+      const handler = vi.fn();
+      const observer = createObserver(handler);
+
+      setContext('object', { count: 0 });
+      expect(handler).not.toHaveBeenCalled();
+
+      observer.run(() => expect(getContext('object')).toEqual({ count: 0 }));
+
+      const state = getContext('object') as { count: number };
+      expect(state).toEqual({ count: 0 });
+
+      state.count++;
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(getContext('object')).toEqual({ count: 1 });
+
+      state.count++;
+      expect(handler).toHaveBeenCalledTimes(2);
+      expect(getContext('object')).toEqual({ count: 2 });
+
+      // Replace the context value.
+      setContext('object', { count: 0 });
+
+      expect(handler).toHaveBeenCalledTimes(3);
+      expect(getContext('object')).toEqual({ count: 0 }); // New value is reflected.
+      expect(state).toEqual({ count: 2 }); // Stale state is not updated.
+
+      restore();
     });
   });
 

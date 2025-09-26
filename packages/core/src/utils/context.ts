@@ -54,7 +54,7 @@ export function getActiveContext() {
  * @returns A new anchored Map instance representing the context.
  */
 export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
-  return anchor(new Map<K, V>(init), { recursive: false });
+  return anchor(new Map<K, V>(init), { recursive: true });
 }
 
 /**
@@ -104,6 +104,30 @@ export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): vo
 
   currentContext.set(key, value);
 }
+/**
+ * Retrieves a value from the currently active context by key.
+ * If no context is active, an error is logged and undefined is returned.
+ *
+ * @template V - The type of the value to retrieve.
+ * @template K - The type of the key (must extend KeyLike).
+ * @param key - The key to retrieve the value for.
+ * @returns The value associated with the key, or undefined if not found or if called outside a context.
+ * @throws {Error} If called outside a context.
+ */
+export function getContext<V, K extends KeyLike = KeyLike>(key: K): V | undefined;
+
+/**
+ * Retrieves a value from the currently active context by key.
+ * If no context is active, an error is logged and the fallback value is returned.
+ *
+ * @template V - The type of the value to retrieve.
+ * @template K - The type of the key (must extend KeyLike).
+ * @param key - The key to retrieve the value for.
+ * @param fallback - A fallback value to return if the key is not found.
+ * @returns The value associated with the key, or the fallback value if not found or if called outside a context.
+ * @throws {Error} If called outside a context.
+ */
+export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback: V): V;
 
 /**
  * Retrieves a value from the currently active context by key.
@@ -112,10 +136,11 @@ export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): vo
  * @template V - The type of the value to retrieve.
  * @template K - The type of the key (must extend KeyLike).
  * @param key - The key to retrieve the value for.
- * @returns The value associated with the key, or undefined if not found or if called outside of a context.
- * @throws {Error} If called outside of a context.
+ * @param fallback - An optional fallback value to return if the key is not found.
+ * @returns The value associated with the key, or undefined if not found or if called outside a context.
+ * @throws {Error} If called outside a context.
  */
-export function getContext<V, K extends KeyLike = KeyLike>(key: K): V | undefined {
+export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V): V | undefined {
   activateGlobalContext();
 
   if (!currentContext) {
@@ -127,25 +152,33 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K): V | undefine
     return;
   }
 
-  return currentContext.get(key) as V | undefined;
+  const result = currentContext.get(key);
+
+  if (result !== undefined) {
+    return result as V;
+  } else {
+    return fallback;
+  }
 }
 
 let globalContextActivated = false;
-
 /**
  * Activates the global context if it hasn't been activated yet and if the environment is a browser.
  * This function ensures that a default context is available for client-side operations.
  * It creates a new context and activates it, setting the global context activation flag to true.
  *
+ * @template V - The type of values in the context.
+ * @template K - The type of keys in the context.
+ * @param context - Optional context to activate. If not provided, a new context will be created.
  * @remarks
  * This function is a no-op if:
  * - The global context has already been activated (`globalContextActivated` is true)
  * - The code is running in a non-browser environment (e.g., Node.js)
  */
-export function activateGlobalContext() {
+export function activateGlobalContext<V, K extends KeyLike = KeyLike>(context?: Context<K, V>) {
   if (globalContextActivated || typeof window === 'undefined') return;
 
-  activateContext(createContext());
+  activateContext(context ?? createContext());
   globalContextActivated = true;
 }
 
