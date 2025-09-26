@@ -21,7 +21,7 @@ npm install @anchorlib/core
 
 ## Documentation
 
-For full documentation, visit [Anchor Core Documentation](https://beerush-id.github.io/anchor/docs/overview.html)
+For full documentation, visit [Anchor Core Documentation](https://anchor.mahdaen.name/docs/overview.html)
 
 ## Quick Start
 

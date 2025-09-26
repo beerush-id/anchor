@@ -19,7 +19,7 @@ npm install @anchorlib/react
 
 ## Documentation
 
-For full documentation, visit [Anchor for React](https://beerush-id.github.io/anchor/docs/react/introduction.html)
+For full documentation, visit [Anchor for React](https://anchor.mahdaen.name/docs/react/introduction.html)
 
 ## Quick Start
 

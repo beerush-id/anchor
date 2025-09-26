@@ -19,7 +19,7 @@ npm install @anchorlib/storage
 
 ## Documentation
 
-For full documentation, visit [Anchor Storage Documentation](https://beerush-id.github.io/anchor/docs/storage/getting-started.html)
+For full documentation, visit [Anchor Storage Documentation](https://anchor.mahdaen.name/docs/storage/getting-started.html)
 
 ## Quick Start
 
