@@ -12,6 +12,7 @@
     :custom-setup="{
       ...props, // do not forget it
       deps: {
+        'lucide-react': '^0.542.0',
         react: '^19.1.1',
         'react-dom': '^19.1.1',
         '@anchorlib/react': 'latest',
