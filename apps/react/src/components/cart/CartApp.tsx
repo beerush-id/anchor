@@ -9,7 +9,7 @@ import type { CartItemType } from './CartItem.js';
 import { Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { Input } from '@anchorlib/react/components';
-import { observable, observe } from '@anchorlib/react/view';
+import { observe, observer } from '@anchorlib/react/view';
 import { Button, IconButton } from '../Button.js';
 import { isMobile } from '@lib/nav.js';
 
@@ -90,7 +90,7 @@ const CartForm: FC<{ items: CartItemType[] }> = ({ items }) => {
   );
 };
 
-const CartHistory: FC<{ items: CartItemType[] }> = observable(({ items }) => {
+const CartHistory: FC<{ items: CartItemType[] }> = observer(({ items }) => {
   const history = useHistory(items);
 
   return (

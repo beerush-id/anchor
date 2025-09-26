@@ -1,7 +1,7 @@
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@components/Section.js';
 import { useAnchor, useImmutable } from '@anchorlib/react';
-import { observable, observe } from '@anchorlib/react/view';
+import { observe, observer } from '@anchorlib/react/view';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
 import { type Immutable } from '@anchorlib/core';
@@ -222,7 +222,7 @@ export const Performance = () => {
   );
 };
 
-const PerformanceGroup: FC<{ display: MetricDisplay }> = observable(({ display }) => {
+const PerformanceGroup: FC<{ display: MetricDisplay }> = observer(({ display }) => {
   if (!display.metrics) return;
 
   return (

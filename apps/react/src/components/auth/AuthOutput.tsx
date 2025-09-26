@@ -3,10 +3,10 @@ import { Card } from '../Card.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { CardHeader } from '../CardHeader.js';
 // SHOW FROM HERE //
-import { observable } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react/view';
 import { profileState, schema } from '@lib/auth.js';
 
-export const AuthOutput: FC = observable(() => {
+export const AuthOutput: FC = observer(() => {
   const output = schema.safeParse(profileState);
   const outputCode = JSON.stringify(output, null, 2);
 
