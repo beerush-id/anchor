@@ -1,29 +1,69 @@
 # Context Sharing
 
-Learn how to share data throughout your application using both Anchor's Global Context and React's Context API.
+Learn how to share data throughout your application using both React's Context API and Anchor's Global Context.
 
 ## What You'll Learn
 
 In this tutorial, you'll learn:
 
-1. How to use Anchor's Global Context for dependency injection
-2. How to integrate React's Context API with Anchor
-3. When to use each approach for optimal state management
+1. How to integrate React's Context API with Anchor for dependency injection.
+2. How to use Anchor's Global Context for dependency injection.
+3. When to use each approach for optimal state management.
 
 ## Understanding Context Systems
 
 Context systems allow you to share data throughout your application without prop drilling. Both Anchor and React provide
 powerful context mechanisms, and they can be used together to create flexible and scalable applications.
 
+### React's Context API
+
+React's Context API is a built-in feature that allows you to share values between components without explicitly passing
+a prop through every level of the tree. This is the preferred method for dependency injection in most cases.
+
 ### Anchor's Global Context
 
 Anchor's Global Context is a reactive dependency injection system that allows you to store and retrieve values by key.
 It's particularly useful for sharing services, configurations, or global state throughout your application.
 
-### React's Context API
+Anchor's global context is intended for easy context sharing without needing to create a specific context and wrap the
+component using the Context Provider. The constraint is, it's a global context which means the whole app shares the same
+place.
 
-React's Context API is a built-in feature that allows you to share values between components without explicitly passing
-a prop through every level of the tree.
+::: warning
+Anchor's global context doesn't support NextJS server components at the moment. We will try to support it, but it's not a
+priority at the moment.
+:::
+
+## Using React's Context API
+
+React's Context API is perfect for sharing values that don't change frequently or when you want to leverage React's
+built-in context system. When using React's context with Anchor, you pass the reactive state directly to the context,
+which means you don't need to manually update the context value - it automatically updates when the state changes.
+
+::: code-group
+
+<<< @/react/tutorials/context-sharing/ReactContext.tsx
+
+:::
+
+::: details Try it Yourself
+
+::: anchor-react-sandbox
+
+<<< @/react/tutorials/context-sharing/ReactContext.tsx [active]
+
+:::
+
+::: tip In This Example
+
+1. We create a React context using `createContext()`
+2. We build a custom hook `useSettingsContext()` for easier consumption
+3. We use `useAnchor` to manage the reactive state
+4. We pass the reactive state directly to React's context provider using the `value` prop
+5. Child components consume the context using `useContext()` or our custom hook
+6. When the Anchor state changes, React's context automatically updates
+
+:::
 
 ## Using Anchor's Global Context
 
@@ -36,7 +76,7 @@ use it in a React application.
 
 :::
 
-::: details Try it Yourself {open}
+::: details Try it Yourself
 
 ::: anchor-react-sandbox
 
@@ -46,442 +86,30 @@ use it in a React application.
 
 ::: tip In This Example
 
-1. We create an Anchor context using `createContext()`
-2. We use `withinContext()` to establish the context scope
-3. We set values in the context using `setContext()`
-4. We retrieve values using `getContext()`
-5. The context values are reactive and will update when the Anchor state changes
-
-:::
-
-## Using React's Context API
-
-React's Context API is perfect for sharing values that don't change frequently or when you want to leverage React's
-built-in context system.
-
-::: code-group
-
-```tsx [AppWithReactContext.tsx]
-import React, { createContext, useContext } from 'react';
-import { useAnchor } from '@anchorlib/react';
-
-// Create React context
-const AppContext = createContext();
-
-// Custom hook to use our context
-const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within AppProvider');
-  }
-  return context;
-};
-
-// Components that consume the context
-const UserDisplay = () => {
-  const { user } = useAppContext();
-
-  return (
-    <div>
-      <h2>User: {user.name}</h2>
-      <p>Email: {user.email}</p>
-    </div>
-  );
-};
-
-const ThemeToggle = () => {
-  const { theme, toggleTheme } = useAppContext();
-
-  return (
-    <button
-      onClick={toggleTheme}
-      style={{
-        background: theme === 'dark' ? '#333' : '#fff',
-        color: theme === 'dark' ? '#fff' : '#000',
-      }}>
-      Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-    </button>
-  );
-};
-
-// Provider component
-const AppProvider = ({ children }) => {
-  const [state] = useAnchor({
-    user: {
-      name: 'John Doe',
-      email: 'john@example.com',
-    },
-    theme: 'light',
-  });
-
-  const toggleTheme = () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  };
-
-  return (
-    <AppContext.Provider
-      value={{
-        user: state.user,
-        theme: state.theme,
-        toggleTheme,
-      }}>
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-// Main app component
-const App = () => {
-  return (
-    <AppProvider>
-      <div>
-        <h1>React Context Example</h1>
-        <UserDisplay />
-        <ThemeToggle />
-      </div>
-    </AppProvider>
-  );
-};
-
-export default App;
-```
-
-:::
-
-::: details Try it Yourself
-
-::: anchor-react-sandbox
-
-```tsx /App.tsx [active]
-import React, { createContext, useContext } from 'react';
-import { useAnchor } from '@anchorlib/react';
-
-// Create React context
-const AppContext = createContext();
-
-// Custom hook to use our context
-const useAppContext = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useAppContext must be used within AppProvider');
-  }
-  return context;
-};
-
-// Components that consume the context
-const UserDisplay = () => {
-  const { user } = useAppContext();
-
-  return (
-    <div>
-      <h2>User: {user.name}</h2>
-      <p>Email: {user.email}</p>
-    </div>
-  );
-};
-
-const ThemeToggle = () => {
-  const { theme, toggleTheme } = useAppContext();
-
-  return (
-    <button
-      onClick={toggleTheme}
-      style={{
-        background: theme === 'dark' ? '#333' : '#fff',
-        color: theme === 'dark' ? '#fff' : '#000',
-        padding: '10px 20px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-      }}>
-      Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-    </button>
-  );
-};
-
-// Provider component
-const AppProvider = ({ children }) => {
-  const [state] = useAnchor({
-    user: {
-      name: 'John Doe',
-      email: 'john@example.com',
-    },
-    theme: 'light',
-  });
-
-  const toggleTheme = () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  };
-
-  return (
-    <AppContext.Provider
-      value={{
-        user: state.user,
-        theme: state.theme,
-        toggleTheme,
-      }}>
-      {children}
-    </AppContext.Provider>
-  );
-};
-
-// Main app component
-const App = () => {
-  return (
-    <AppProvider>
-      <div>
-        <h1>React Context Example</h1>
-        <UserDisplay />
-        <ThemeToggle />
-      </div>
-    </AppProvider>
-  );
-};
-
-export default App;
-```
-
-:::
-
-::: tip In This Example
-
-1. We create a React context using `createContext()`
-2. We build a custom hook `useAppContext()` for easier consumption
-3. We create a provider component that wraps our application
-4. We use `useAnchor` to manage the reactive state within the provider
-5. Child components consume the context using `useContext()` or our custom hook
+1. We use `useAnchor` to create a reactive state object
+2. We directly set values in the context using `setContext()`
+3. We retrieve values using `getContext()`
+4. The context values are reactive and will update when the Anchor state changes
+5. We don't need a provider component as with React's Context API
 
 :::
 
 ## Combining Both Context Systems
 
-You can combine both context systems to leverage the strengths of each. Use React's Context API for UI-related values and
-Anchor's Global Context for services and cross-cutting concerns.
+You can combine both context systems to leverage the strengths of each. Use React's Context API for UI-related values
+and Anchor's Global Context for services and cross-cutting concerns.
 
 ::: code-group
 
-```tsx [CombinedContextExample.tsx]
-import React, { createContext, useContext } from 'react';
-import { createContext as createAnchorContext, withinContext, setContext, getContext } from '@anchorlib/core/context';
-import { useAnchor } from '@anchorlib/react';
-
-// React context for UI state
-const UIContext = createContext();
-
-// Service that might be shared across the app
-class UserService {
-  getCurrentUser() {
-    return {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-    };
-  }
-}
-
-// Custom hook for UI context
-const useUIContext = () => {
-  const context = useContext(UIContext);
-  if (!context) {
-    throw new Error('useUIContext must be used within UIProvider');
-  }
-  return context;
-};
-
-// Component using React context
-const Header = () => {
-  const { theme } = useUIContext();
-
-  return (
-    <header
-      style={{
-        background: theme === 'dark' ? '#333' : '#f5f5f5',
-        padding: '1rem',
-        borderBottom: '1px solid #ccc',
-      }}>
-      <h1>My App</h1>
-    </header>
-  );
-};
-
-// Component using Anchor context
-const UserProfile = () => {
-  // Get user service from Anchor context
-  const userService = getContext(UserService.name);
-  const user = userService?.getCurrentUser();
-
-  if (!user) return <div>No user found</div>;
-
-  return (
-    <div>
-      <h2>Welcome, {user.name}!</h2>
-      <p>Email: {user.email}</p>
-    </div>
-  );
-};
-
-// Providers component
-const AppProviders = ({ children }) => {
-  const [uiState] = useAnchor({
-    theme: 'light',
-    sidebarOpen: false,
-  });
-
-  const toggleTheme = () => {
-    uiState.theme = uiState.theme === 'dark' ? 'light' : 'dark';
-  };
-
-  // Create and provide user service through Anchor context
-  const userService = new UserService();
-
-  // Create Anchor context
-  const serviceContext = createAnchorContext();
-
-  return (
-    <UIContext.Provider
-      value={{
-        theme: uiState.theme,
-        sidebarOpen: uiState.sidebarOpen,
-        toggleTheme,
-      }}>
-      {withinContext(serviceContext, () => {
-        setContext(UserService.name, userService);
-        return children;
-      })}
-    </UIContext.Provider>
-  );
-};
-
-// Main app
-const App = () => {
-  return (
-    <AppProviders>
-      <div>
-        <Header />
-        <main style={{ padding: '1rem' }}>
-          <UserProfile />
-        </main>
-      </div>
-    </AppProviders>
-  );
-};
-
-export default App;
-```
+<<< @/react/tutorials/context-sharing/ComboContext.tsx
 
 :::
 
 ::: details Try it Yourself
 
-::: anchor-react-sandbox
+::: anchor-react-sandbox {class="preview-flex"}
 
-```tsx /App.tsx [active]
-import React, { createContext, useContext } from 'react';
-import { createContext as createAnchorContext, withinContext, setContext, getContext } from '@anchorlib/core/context';
-import { useAnchor } from '@anchorlib/react';
-
-// React context for UI state
-const UIContext = createContext();
-
-// Service that might be shared across the app
-class UserService {
-  getCurrentUser() {
-    return {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-    };
-  }
-}
-
-// Custom hook for UI context
-const useUIContext = () => {
-  const context = useContext(UIContext);
-  if (!context) {
-    throw new Error('useUIContext must be used within UIProvider');
-  }
-  return context;
-};
-
-// Component using React context
-const Header = () => {
-  const { theme } = useUIContext();
-
-  return (
-    <header
-      style={{
-        background: theme === 'dark' ? '#333' : '#f5f5f5',
-        padding: '1rem',
-        borderBottom: '1px solid #ccc',
-      }}>
-      <h1>My App</h1>
-    </header>
-  );
-};
-
-// Component using Anchor context
-const UserProfile = () => {
-  // Get user service from Anchor context
-  const userService = getContext(UserService.name);
-  const user = userService?.getCurrentUser();
-
-  if (!user) return <div>No user found</div>;
-
-  return (
-    <div>
-      <h2>Welcome, {user.name}!</h2>
-      <p>Email: {user.email}</p>
-    </div>
-  );
-};
-
-// Providers component
-const AppProviders = ({ children }) => {
-  const [uiState] = useAnchor({
-    theme: 'light',
-    sidebarOpen: false,
-  });
-
-  const toggleTheme = () => {
-    uiState.theme = uiState.theme === 'dark' ? 'light' : 'dark';
-  };
-
-  // Create and provide user service through Anchor context
-  const userService = new UserService();
-
-  // Create Anchor context
-  const serviceContext = createAnchorContext();
-
-  return (
-    <UIContext.Provider
-      value={{
-        theme: uiState.theme,
-        sidebarOpen: uiState.sidebarOpen,
-        toggleTheme,
-      }}>
-      {withinContext(serviceContext, () => {
-        setContext(UserService.name, userService);
-        return children;
-      })}
-    </UIContext.Provider>
-  );
-};
-
-// Main app
-const App = () => {
-  return (
-    <AppProviders>
-      <div>
-        <Header />
-        <main style={{ padding: '1rem' }}>
-          <UserProfile />
-        </main>
-      </div>
-    </AppProviders>
-  );
-};
-
-export default App;
-```
+<<< @/react/tutorials/context-sharing/ComboContext.tsx [active]
 
 :::
 
@@ -489,8 +117,10 @@ export default App;
 
 1. We use React's Context API for UI-related state (theme, sidebar state)
 2. We use Anchor's Global Context for services (UserService)
-3. The `AppProviders` component sets up both context systems
-4. Different components consume the appropriate context based on their needs
+3. We pass reactive state directly to React's context provider using the `value` prop
+4. We directly set services in Anchor's context using `setContext`
+5. Different components consume the appropriate context based on their needs
+6. Both context systems automatically update when the Anchor state changes
 
 :::
 
@@ -501,3 +131,5 @@ export default App;
 3. **Combine both when needed**: Leverage the strengths of each system
 4. **Keep context values stable**: Avoid creating new objects on every render
 5. **Use custom hooks**: Encapsulate context consumption logic in custom hooks for better reusability
+6. **Pass reactive state to React context**: When using React's context with Anchor, pass the reactive state directly to
+   avoid manual updates

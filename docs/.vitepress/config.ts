@@ -192,10 +192,10 @@ export default defineConfig({
                 text: 'Optimistic UI',
                 link: '/react/tutorials/optimistic-ui',
               },
-              // {
-              //   text: 'Context Sharing',
-              //   link: '/react/tutorials/context-sharing',
-              // },
+              {
+                text: 'Context Sharing',
+                link: '/react/tutorials/context-sharing',
+              },
               {
                 text: 'Scalable Todo App',
                 link: '/react/tutorials/todo-app',
