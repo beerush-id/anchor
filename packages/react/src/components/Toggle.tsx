@@ -66,5 +66,5 @@ export function Toggle<T, K extends WritableKeys<T>>({
 }
 
 export function ToggleGroup({ children, className }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={`toggle-group ${className}`}>{children}</div>;
+  return <div className={`ark-toggle-group ${className}`}>{children}</div>;
 }
