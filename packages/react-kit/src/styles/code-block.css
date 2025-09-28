@@ -30,6 +30,7 @@ html.dark .shiki span {
 
 @utility ark-code-block {
   @apply bg-code-block-background;
+  max-height: var(--code-max-height);
 
   & > .shiki {
     @apply p-4 outline-none;
@@ -57,11 +58,10 @@ html.dark .shiki span {
 
   &.code-block-fit {
     @apply flex flex-col flex-1;
+    overflow: auto;
   }
 
   &.code-block-fit > .shiki {
-    @apply flex-1;
-    max-height: var(--canvas-height, 512px);
     background-color: transparent !important;
   }
 }

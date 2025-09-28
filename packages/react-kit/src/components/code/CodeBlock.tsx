@@ -5,7 +5,7 @@ import { useObserver } from '@anchorlib/react';
 import { LoaderCircle } from '@icons/index.js';
 import { isMobile } from '@utils/platform.js';
 import type { EFC } from '../../types.js';
-import { classx } from '@utils/classx.js';
+import { classx, stylex } from '@utils/classx.js';
 
 const shiki = anchor<{ highlighter?: Highlighter }>({}, { recursive: false });
 
@@ -25,11 +25,13 @@ export type CodeBlockProps = {
   code: string;
   lang?: string;
   className?: string;
+  maxHeight?: number;
 };
 
 export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTMLDivElement> = ({
   code,
   lang = 'jsx',
+  maxHeight,
   className,
 }) => {
   const output = useObserver(() => {
@@ -46,11 +48,15 @@ export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTM
 
   useEffect(() => {
     schedule(initialize);
-  }, []);
+  }, [shiki.highlighter]);
 
   if (output) {
     return (
-      <div className={classx(classx.brand('code-block'), className)} dangerouslySetInnerHTML={{ __html: output }} />
+      <div
+        className={classx(classx.brand('code-block'), className)}
+        dangerouslySetInnerHTML={{ __html: output }}
+        style={stylex({ '--code-max-height': maxHeight })}
+      />
     );
   } else {
     return (

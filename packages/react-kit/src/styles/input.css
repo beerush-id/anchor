@@ -1,0 +1,32 @@
+@utility ark-input {
+  @apply px-3 py-2 rounded-md outline-none transition-all duration-200 text-sm;
+  @apply bg-slate-200 placeholder-slate-500;
+  @apply dark:bg-slate-800 dark:text-white;
+  @apply focus:ring-2 focus:ring-brand-orange/50 dark:focus:ring-brand-orange/75;
+
+  &.input-md {
+    @apply px-4 py-3 rounded-lg text-[1rem];
+  }
+
+  &.tool-input {
+    @apply text-slate-800 dark:text-slate-300;
+    @apply px-2 py-1 w-full text-xs h-[28px];
+  }
+
+  &:not(:hover)::-webkit-inner-spin-button,
+  &:not(:hover)::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+
+  &[type='number']:not(:hover) {
+    -moz-appearance: textfield;
+  }
+}
+
+select.ark-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
