@@ -1,44 +1,62 @@
-import { anchor } from '@anchorlib/core';
+import { anchor, microtask } from '@anchorlib/core';
 import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
-import { type FC } from 'react';
+import { type HTMLAttributes, useEffect } from 'react';
 import { useObserver } from '@anchorlib/react';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle } from '@icons/index.js';
 import { isMobile } from '@utils/platform.js';
+import type { EFC } from '../../types.js';
+import { classx } from '@utils/classx.js';
 
 const shiki = anchor<{ highlighter?: Highlighter }>({}, { recursive: false });
 
-if (!isMobile()) {
+const [schedule] = microtask(0);
+const initialize = () => {
+  if (shiki.highlighter) return;
+
   createHighlighter({
-    themes: ['catppuccin-mocha'],
-    langs: ['jsx', 'javascript', 'bash', 'tsx', 'typescript', 'css', 'json'],
+    themes: ['catppuccin-mocha', 'catppuccin-latte'],
+    langs: ['html', 'jsx', 'javascript', 'bash', 'tsx', 'typescript', 'css', 'json', 'vue', 'svelte'],
   }).then((highlighter) => {
     shiki.highlighter = highlighter;
   });
-}
+};
 
-export const CodeBlock: FC<{ code: string; lang?: string; className?: string }> = ({
+export type CodeBlockProps = {
+  code: string;
+  lang?: string;
+  className?: string;
+};
+
+export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTMLDivElement> = ({
   code,
   lang = 'jsx',
   className,
 }) => {
   const output = useObserver(() => {
     const { highlighter } = shiki;
-    return highlighter && highlighter.codeToHtml(code, { lang, theme: 'catppuccin-mocha' });
+    return (
+      highlighter &&
+      highlighter.codeToHtml(code.trim(), { lang, themes: { dark: 'catppuccin-mocha', light: 'catppuccin-latte' } })
+    );
   }, [code, lang]);
 
   if (isMobile()) {
     return;
   }
 
+  useEffect(() => {
+    schedule(initialize);
+  }, []);
+
   if (output) {
-    return <div className={`code-block ${className}`} dangerouslySetInnerHTML={{ __html: output }} />;
+    return (
+      <div className={classx(classx.brand('code-block'), className)} dangerouslySetInnerHTML={{ __html: output }} />
+    );
   } else {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <LoaderCircle size={32} className="mx-auto mb-4 text-slate-500 animate-spin" />
-          <p className="text-slate-500 text-xs font-bold">Loading code block...</p>
-        </div>
+      <div className={classx(classx.brand('code-block'), classx.brand('code-block-loading'), className)}>
+        <LoaderCircle className="mx-auto mb-4 text-slate-500 animate-spin" width={32} height={32} />
+        <p className="text-slate-500 text-xs font-bold">Loading code block...</p>
       </div>
     );
   }

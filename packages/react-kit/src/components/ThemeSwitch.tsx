@@ -4,6 +4,7 @@ import { observable } from '@anchorlib/react/view';
 import { useVariable } from '@anchorlib/react';
 import { useEffect } from 'react';
 import { anchor } from '@anchorlib/core';
+import { Tooltip } from './Tooltip.js';
 
 export const ThemeSwitch = observable(() => {
   const [current] = useVariable(ThemeSetting.System);
@@ -36,6 +37,7 @@ export const ThemeSwitch = observable(() => {
         className={classx({ active: current.value === ThemeSetting.Light })}
         onClick={() => switchMode(ThemeSetting.Light)}>
         <LightMode />
+        <Tooltip>Switch to Light Mode</Tooltip>
       </button>
       <button
         type="button"
@@ -43,6 +45,7 @@ export const ThemeSwitch = observable(() => {
         className={classx({ active: current.value === ThemeSetting.System })}
         onClick={() => switchMode(ThemeSetting.System)}>
         <SystemMode />
+        <Tooltip>Follow System Theme</Tooltip>
       </button>
       <button
         type="button"
@@ -50,6 +53,7 @@ export const ThemeSwitch = observable(() => {
         className={classx({ active: current.value === ThemeSetting.Dark })}
         onClick={() => switchMode(ThemeSetting.Dark)}>
         <DarkMode />
+        <Tooltip>Switch to Dark Mode</Tooltip>
       </button>
     </div>
   );

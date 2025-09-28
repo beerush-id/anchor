@@ -1,31 +1,41 @@
-import { type FC, useState } from 'react';
+import { type HTMLAttributes, useState } from 'react';
 import { CodeBlock } from './CodeBlock.js';
+import { classx } from '@utils/classx.js';
+import type { EFC } from '../../types.js';
 
 export type CodeItem = {
   name: string;
   code: string;
+  lang?: string;
+  icon?: string;
+  iconAlt?: string;
 };
 
-export const CodeViewer: FC<{ items: CodeItem[] }> = ({ items }) => {
+export type CodeViewerProps = HTMLAttributes<HTMLDivElement> & {
+  items: CodeItem[];
+};
+
+export const CodeViewer: EFC<CodeViewerProps, HTMLDivElement> = ({ items, className }) => {
   const [active, setActive] = useState(items[0].name);
 
   return (
-    <div className="todo-tabs">
-      <div className="tabs flex items-center gap-2 overflow-x-auto">
+    <div className={classx(classx.brand('code-viewer'), className)}>
+      <div className={classx.brand('code-viewer-buttons')}>
         {items.map((block) => (
           <button
             key={block.name}
-            className={'tab px-3 py-2 text-sm font-medium' + (active === block.name ? ' bg-slate-900' : '')}
+            className={classx(classx.brand('code-viewer-button'), { active: block.name === active })}
             onClick={() => setActive(block.name)}>
-            {block.name}
+            {block.icon && <img src={block.icon} alt={block.iconAlt} />}
+            <span>{block.name}</span>
           </button>
         ))}
       </div>
       {items
         .filter((block) => block.name === active)
         .map((block) => (
-          <div key={block.name} className="tab-content flex flex-col">
-            <CodeBlock code={block.code} />
+          <div key={block.name} className={classx.brand('code-viewer-body')}>
+            <CodeBlock code={block.code} lang={block.lang} />
           </div>
         ))}
     </div>

@@ -1,5 +1,10 @@
 @utility ark-card {
-  @apply rounded-xl shadow-sm dark:shadow-lg;
+  @apply flex flex-col;
+  @apply rounded-xl shadow-sm dark:shadow-lg overflow-clip;
   @apply bg-background/50 backdrop-blur;
   @apply border border-slate-300/50 dark:border-slate-700/50;
+}
+
+@utility ark-card-content {
+  @apply w-full;
 }

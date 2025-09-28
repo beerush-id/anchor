@@ -20,6 +20,17 @@ export const SectionTitle: EFC<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingEl
   );
 };
 
+export const SectionSubtitle: EFC<HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement> = ({
+  className,
+  ...props
+}) => {
+  return (
+    <h3 {...props} className={classx(brand('section-subtitle'), className)}>
+      <span className={brand('section-subtitle-text')}>{props.children}</span>
+    </h3>
+  );
+};
+
 export const SectionDescription: EFC<HTMLAttributes<HTMLDivElement>, HTMLDivElement> = ({ className, ...props }) => {
   return (
     <div {...props} className={classx(brand('section-description'), className)}>
