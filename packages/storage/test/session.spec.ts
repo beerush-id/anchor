@@ -51,7 +51,7 @@ describe('Storage Module', () => {
     });
 
     it('should clear storage when empty', () => {
-      const storage = new SessionStorage('test', { a: 1 });
+      const storage = new SessionStorage('test-clear', { a: 1 });
 
       expect(storage.length).toBe(1);
 
@@ -79,7 +79,7 @@ describe('Storage Module', () => {
     });
 
     it('should generate JSON representation', () => {
-      const storage = new SessionStorage('test', { a: 1, b: 'test' });
+      const storage = new SessionStorage('test-json', { a: 1, b: 'test' });
       const json = storage.json();
 
       expect(json).toBe(JSON.stringify({ a: 1, b: 'test' }));
@@ -212,6 +212,16 @@ describe('Mocked Storage Module', () => {
 
       expect(storage.a).toBe(1);
       expect(errorSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle missing adapter', () => {
+      const storage = new SessionStorage('test-invalid-adapter', { a: 1 });
+
+      // eslint-disable-next-line
+      delete (storage as any).adapter;
+      storage.set('b' as never, 2);
+
+      expect(storage.get('b' as never)).toBe(2);
     });
   });
 });

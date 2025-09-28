@@ -22,6 +22,9 @@ bun run --filter "@anchorlib/storage" build
 echo "🔨 Building React Package..."
 bun run --filter "@anchorlib/react" build
 
+echo "🔨 Building React Kit Package..."
+bun run --filter "@anchorlib/react-kit" build
+
 # Run tests
 echo "🧪 Running tests..."
 bun run test

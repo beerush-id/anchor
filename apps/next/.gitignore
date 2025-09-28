@@ -22,6 +22,7 @@
 /public/coverage
 /public/docs
 /.open-next
+/.wrangler
 
 # misc
 .DS_Store

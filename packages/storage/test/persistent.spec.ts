@@ -51,7 +51,7 @@ describe('Storage Module', () => {
     });
 
     it('should clear storage when empty', () => {
-      const storage = new PersistentStorage('test', { a: 1 });
+      const storage = new PersistentStorage('test-clear', { a: 1 });
 
       expect(storage.length).toBe(1);
 
@@ -79,10 +79,23 @@ describe('Storage Module', () => {
     });
 
     it('should generate JSON representation', () => {
-      const storage = new PersistentStorage('test', { a: 1, b: 'test' });
+      const storage = new PersistentStorage('test-json', { a: 1, b: 'test' });
       const json = storage.json();
 
       expect(json).toBe(JSON.stringify({ a: 1, b: 'test' }));
+    });
+
+    it('should handle non supporting environment', () => {
+      const currentGlobalStorage = global.localStorage;
+      global.localStorage = undefined as never;
+
+      const storage = new PersistentStorage('test-json', { a: 1, b: 'test' });
+
+      expect(storage.get('a')).toBe(1);
+      expect(global.localStorage).toBeUndefined();
+
+      global.localStorage = currentGlobalStorage;
+      expect(global.localStorage).toBe(currentGlobalStorage);
     });
   });
 });

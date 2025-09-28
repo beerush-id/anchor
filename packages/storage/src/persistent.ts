@@ -2,7 +2,7 @@ import { session, SessionStorage, STORAGE_KEY } from './session.js';
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import type { PersistentFn } from './types.js';
 
-const hasLocalStorage = () => typeof sessionStorage !== 'undefined';
+const hasLocalStorage = () => typeof localStorage !== 'undefined';
 
 /**
  * PersistentStorage class that extends SessionStorage to provide persistent storage functionality.
