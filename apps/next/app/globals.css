@@ -4,6 +4,7 @@
 @source '../../../node_modules/@anchorlib/react-kit/dist';
 
 @theme inline {
+  --header-height: 0;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -18,12 +19,38 @@ body {
   @apply text-background bg-foreground;
 }
 
+.ark-header.scrolled {
+  @apply bg-background/75 dark:bg-background/10 backdrop-blur-xl;
+}
+
 .ark-section {
   @apply max-w-6xl mx-auto flex flex-col justify-center items-center;
 }
 
 .ark-section-offset.min-h-screen .ark-section {
   @apply min-h-screen;
+}
+
+.ark-code-viewer.flex-1 .ark-code-viewer-body {
+  @apply flex-1 flex flex-col;
+
+  .ark-code-block {
+    @apply flex flex-col;
+  }
+
+  .ark-code-block,
+  .shiki {
+    @apply flex-1;
+  }
+}
+
+.tight-code-viewer .ark-code-viewer-body {
+  max-height: 320px;
+}
+
+.fill-screen-section {
+  @apply flex flex-col justify-center;
+  height: calc(100vh - var(--header-height));
 }
 
 .page-section {

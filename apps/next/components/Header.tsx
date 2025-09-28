@@ -19,16 +19,16 @@ const links: HeaderLink[] = [
     text: 'Overview',
   },
   {
-    href: '#metrics',
+    href: '#features',
+    text: 'Core Features',
+  },
+  {
+    href: '#performance',
     text: 'Performance',
   },
   {
-    href: '#philosophy',
-    text: 'Philosophy',
-  },
-  {
-    href: '#architecture',
-    text: 'Architecture',
+    href: '#demos',
+    text: 'Demos',
   },
 ];
 
@@ -54,6 +54,7 @@ export const Header = () => {
   const ref = useAction<HTMLHeadingElement>((element) => {
     if (!element?.parentElement) return;
 
+    document.documentElement.style.setProperty('--header-height', `${element.offsetHeight}px`);
     const toggleBlur = () => {
       if (!element?.parentElement) return;
 
