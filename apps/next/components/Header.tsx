@@ -5,11 +5,8 @@ import { setDebugRenderer, useAction } from '@anchorlib/react';
 import { Header as MainHeader, type HeaderLink, type HeaderSocial } from '@anchorlib/react-kit/components';
 import { DiscordIcon, GithubIcon } from '@anchorlib/react-kit/icons';
 import { LogoText } from './LogoText';
-import { isBrowser } from '@anchorlib/react-kit/utils';
 
-if (isBrowser()) {
-  setDebugRenderer(true);
-}
+setDebugRenderer(true);
 
 const SCROLL_THRESHOLD = 68;
 
@@ -27,7 +24,7 @@ const links: HeaderLink[] = [
     text: 'Performance',
   },
   {
-    href: '#demos',
+    href: '#todo-benchmark',
     text: 'Demos',
   },
 ];

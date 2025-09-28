@@ -32,19 +32,19 @@ bun run docs:build
 
 # Build React app
 echo "⚛️  Building React app..."
-bun run --filter "@anchor-app/react" build
+bun run --filter "@anchor-app/next" cf:build
 
 # Verify builds
 echo "✅ Verifying builds..."
-if [ -d "apps/react/dist" ]; then
+if [ -d "apps/next/.open-next" ]; then
     echo "📁 Build output contents:"
-    ls -la apps/react/dist
+    ls -la apps/next/.open-next
     
     # For Cloudflare, we typically deploy to a dist directory
     echo "📂 Preparing Cloudflare deployment..."
     # The dist directory is already created by the build process
     echo "✅ Cloudflare build completed successfully!"
 else
-    echo "❌ Build output directory not found: apps/react/dist"
+    echo "❌ Build output directory not found: apps/next/.open-next"
     exit 1
 fi

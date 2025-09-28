@@ -19,6 +19,9 @@
 
 # production
 /build
+/public/coverage
+/public/docs
+/.open-next
 
 # misc
 .DS_Store

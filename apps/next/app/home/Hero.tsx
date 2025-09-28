@@ -13,10 +13,6 @@ export const Hero = () => {
 
       <StateSharing className={'mb-4 md:mb-10'} />
       <MainCTA className="mb-6" />
-
-      <blockquote className="text-slate-600 dark:text-slate-400 italic font-light text-lg text-center">
-        "Frameworks may come and go, but your state remains consistent everywhere."
-      </blockquote>
     </Section>
   );
 };

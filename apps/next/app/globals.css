@@ -3,10 +3,29 @@
 
 @source '../../../node_modules/@anchorlib/react-kit/dist';
 
-@theme inline {
+@theme {
+  --color-section-blur-red: --alpha(var(--color-brand-red) / 25%);
+  --color-section-blur-blue: --alpha(var(--color-brand-main) / 25%);
+  --color-header-background: --alpha(var(--color-background) / 75%);
+  --color-canvs-dots: #c6cfe7;
+
   --header-height: 0;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer theme {
+  :root.dark {
+    --color-section-blur-red: var(--color-brand-red);
+    --color-section-blur-blue: var(--color-brand-main);
+    --color-header-background: --alpha(var(--color-background) / 50%);
+    --color-canvs-dots: #2f3642;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-anchor: none;
 }
 
 body {
@@ -20,7 +39,7 @@ body {
 }
 
 .ark-header.scrolled {
-  @apply bg-background/75 dark:bg-background/10 backdrop-blur-xl;
+  @apply bg-header-background backdrop-blur-xl;
 }
 
 .ark-section {
@@ -50,7 +69,7 @@ body {
 
 .fill-screen-section {
   @apply flex flex-col justify-center;
-  height: calc(100vh - var(--header-height));
+  min-height: calc(100vh - var(--header-height));
 }
 
 .page-section {
@@ -63,13 +82,13 @@ body {
   }
 
   &:before {
-    @apply bg-brand-red/25 dark:bg-brand-red;
+    @apply bg-section-blur-red;
     top: 5%;
     left: 10%;
   }
 
   &:after {
-    @apply bg-brand-main/25 dark:bg-brand-main;
+    @apply bg-section-blur-blue;
     right: 10%;
     bottom: 5%;
   }
@@ -77,4 +96,17 @@ body {
   & > * {
     @apply relative z-10;
   }
+}
+
+.editor-app {
+  max-height: 640px;
+}
+
+.canvas-content {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(var(--color-canvs-dots) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
