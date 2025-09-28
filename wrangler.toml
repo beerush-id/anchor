@@ -1,8 +1,9 @@
 name = "anchor"
-main = "apps/next/.open-next/worker.js"
-compatibility_date = "2025-03-25"
+main = "./apps/next/.open-next/worker.js"
+compatibility_date = "2025-08-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [assets]
-directory = "apps/next/.open-next/assets"
+directory = "./apps/next/.open-next/assets"
 binding = "ASSETS"
