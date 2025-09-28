@@ -29,7 +29,7 @@ const analytics =
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  outDir: '../apps/react/public/docs',
+  outDir: '../apps/next/public/docs',
   base: BASE_URL,
   sitemap: {
     hostname: PAGE_URL,
