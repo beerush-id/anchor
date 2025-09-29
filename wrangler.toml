@@ -7,3 +7,8 @@ workers_dev = true
 [assets]
 directory = "./apps/next/.open-next/assets"
 binding = "ASSETS"
+
+[vars]
+VITE_ROOT_URL="https://anchor.mahdaen.name"
+VITE_WORKER_BUILD=true
+VITE_WORKER_BUILD_URL="https://anchor.mahdaen.name/docs/"
