@@ -2,12 +2,16 @@ import { type FC, memo, useEffect, useRef } from 'react';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
 import { debugRender, observe, useWriter } from '@anchorlib/react';
 import { Button, IconButton, Tooltip } from '@anchorlib/react-kit/components';
-import { itemsWriter, type ITodoItem, statsWriter } from '@utils/todo';
+import { anchorReport, itemsWriter, type ITodoItem, statsWriter } from '@utils/todo';
 import { todoStats, useUpdateStat } from '@utils/stats';
 import { BENCHMARK_TOGGLE_SIZE, evaluate } from '@utils/benchmark';
 
 const benchmark = async (fn: () => void) => {
-  await evaluate(fn, BENCHMARK_TOGGLE_SIZE);
+  const { metrics, renderStats, progress } = await evaluate(fn, BENCHMARK_TOGGLE_SIZE);
+
+  anchorReport.enabled = true;
+  anchorReport.stats = { ...renderStats, duration: progress.renderDuration };
+  anchorReport.metrics = metrics;
 };
 
 export const TodoItem: FC<{ todo: ITodoItem }> = memo(function TodoItem({ todo }) {

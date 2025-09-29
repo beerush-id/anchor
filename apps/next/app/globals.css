@@ -15,7 +15,7 @@
 }
 
 @layer theme {
-  :root.dark {
+  .dark {
     --color-section-blur-red: var(--color-brand-red);
     --color-section-blur-blue: var(--color-brand-main);
     --color-header-background: --alpha(var(--color-background) / 50%);

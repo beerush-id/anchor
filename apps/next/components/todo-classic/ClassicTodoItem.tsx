@@ -2,12 +2,16 @@ import { type FC, memo, useEffect, useRef } from 'react';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
 import { debugRender } from '@anchorlib/react';
 import { Button, IconButton, Tooltip } from '@anchorlib/react-kit/components';
-import { type ITodoItem } from '@utils/todo';
+import { classicReport, type ITodoItem } from '@utils/todo';
 import { classicTodoStats, useUpdateStat } from '@utils/stats';
 import { BENCHMARK_TOGGLE_SIZE, evaluate } from '@utils/benchmark';
 
 const benchmark = async (fn: () => void) => {
-  await evaluate(fn, BENCHMARK_TOGGLE_SIZE);
+  const { metrics, renderStats, progress } = await evaluate(fn, BENCHMARK_TOGGLE_SIZE);
+
+  classicReport.enabled = true;
+  classicReport.stats = { ...renderStats, duration: progress.renderDuration };
+  classicReport.metrics = metrics;
 };
 
 export const ClassicTodoItem: FC<{

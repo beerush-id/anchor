@@ -7,11 +7,25 @@ import { classicTodoStats, todoStats } from '@utils/stats';
 import { RenderStats } from '@components/stats/RenderStats';
 import { ClassicTodoApp } from '@components/todo-classic/ClassicTodoApp';
 import { TodoApp } from '@components/todo/TodoApp';
+import { observe } from '@anchorlib/react';
+import { anchorReport, classicReport } from '@utils/todo';
+import { BenchmarkReport } from '@components/stats/BenchmarkReport';
 
 const AnchorTodoApp = memo(TodoApp);
 const DefaultTodoApp = memo(ClassicTodoApp);
 
 export const TodoDemo = () => {
+  const ClassicReport = observe(() => {
+    if (!classicReport.enabled) return;
+
+    return <BenchmarkReport metrics={classicReport.metrics} stats={classicReport.stats} />;
+  });
+  const AnchorReport = observe(() => {
+    if (!anchorReport.enabled) return;
+
+    return <BenchmarkReport metrics={anchorReport.metrics} stats={anchorReport.stats} />;
+  });
+
   return (
     <Section id="todo-benchmark" className="page-section fill-screen-section">
       <SectionTitle className={'text-center'}>Performance Comparison: Anchor vs Traditional React</SectionTitle>
@@ -23,12 +37,14 @@ export const TodoDemo = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex-1 flex flex-col gap-4">
           <DefaultTodoApp />
+          <ClassicReport />
           <RenderStats
             stats={[classicTodoStats.app, classicTodoStats.form, classicTodoStats.list, classicTodoStats.item]}
           />
         </div>
         <div className="flex-1 flex flex-col gap-4">
           <AnchorTodoApp />
+          <AnchorReport />
           <RenderStats stats={[todoStats.app, todoStats.form, todoStats.list, todoStats.item]} />
         </div>
       </div>

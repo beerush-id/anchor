@@ -3,7 +3,7 @@ import { shortId } from '@anchorlib/core';
 import { debugRender } from '@anchorlib/react';
 import { Card, CardHeader, Tooltip } from '@anchorlib/react-kit/components';
 
-import { type ITodoItem } from '@utils/todo';
+import { classicReport, type ITodoItem } from '@utils/todo';
 import { classicTodoStats, useUpdateStat } from '@utils/stats';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { ClassicTodoStats } from './ClassicTodoStats';
@@ -13,7 +13,11 @@ import { ClassicTodoList } from './ClassicTodoList';
 import { BENCHMARK_SIZE, evaluate } from '@utils/benchmark';
 
 const benchmark = async (fn: () => void) => {
-  await evaluate(fn);
+  const { metrics, renderStats, progress } = await evaluate(fn);
+
+  classicReport.enabled = true;
+  classicReport.stats = { ...renderStats, duration: progress.renderDuration };
+  classicReport.metrics = metrics;
 };
 
 export const ClassicTodoApp: FC = () => {
@@ -28,7 +32,11 @@ export const ClassicTodoApp: FC = () => {
   const handleOnAdd = (todo: ITodoItem) => {
     setTodos((current) => {
       const updated = [...current, todo];
-      setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
+      setStats((stats) => ({
+        ...stats,
+        total: updated.length,
+        active: updated.length - stats.completed,
+      }));
       return updated;
     });
   };

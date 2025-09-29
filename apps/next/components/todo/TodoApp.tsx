@@ -6,7 +6,7 @@ import { isMobile } from '@anchorlib/react-kit/utils';
 import { Card, CardHeader, Tooltip } from '@anchorlib/react-kit/components';
 import { todoStats, useUpdateStat } from '@utils/stats';
 
-import { itemsWriter, statsWriter } from '@utils/todo';
+import { anchorReport, itemsWriter, statsWriter } from '@utils/todo';
 
 import { TodoStats } from './TodoStats';
 import { TodoForm } from './TodoForm';
@@ -15,7 +15,11 @@ import { TodoCode } from './TodoCode';
 import { BENCHMARK_SIZE, evaluate } from '@utils/benchmark';
 
 const benchmark = async (fn: () => void) => {
-  await evaluate(fn);
+  const { metrics, renderStats, progress } = await evaluate(fn);
+
+  anchorReport.enabled = true;
+  anchorReport.stats = { ...renderStats, duration: progress.renderDuration };
+  anchorReport.metrics = metrics;
 };
 
 export const TodoApp: FC = () => {

@@ -13,7 +13,7 @@ export async function evaluate(fn: () => void, iterations = BENCHMARK_SIZE) {
   const metrics: TimeMetric[] = [];
   const progress = { index: 0, duration: 0, renderDuration: 0 };
   const stats = { lowest: 0, highest: 0, average: 0 };
-  const renderStats = { lowest: 0, highest: 0, average: 0 };
+  const renderStats = { lowest: 0, average: 0, highest: 0 };
 
   const tick = async () => {
     const start = performance.now();

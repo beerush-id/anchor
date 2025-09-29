@@ -1,4 +1,5 @@
 import { anchor } from '@anchorlib/core';
+import type { TimeMetric } from './benchmark.js';
 
 export type ITodoItem = {
   id: string;
@@ -13,6 +14,24 @@ export type ITodoStats = {
   active: number;
   completed: number;
 };
+
+export type TodoRenderStats = {
+  duration: number;
+  lowest: number;
+  average: number;
+  highest: number;
+};
+
+export const classicReport = anchor({
+  stats: { duration: 0, lowest: 0, highest: 0, average: 0 } as TodoRenderStats,
+  enabled: false,
+  metrics: [] as TimeMetric[],
+});
+export const anchorReport = anchor({
+  stats: { duration: 0, lowest: 0, highest: 0, average: 0 } as TodoRenderStats,
+  enabled: false,
+  metrics: [] as TimeMetric[],
+});
 
 export const BENCHMARK_SIZE = 1000;
 export const BENCHMARK_TOGGLE_SIZE = 25;
