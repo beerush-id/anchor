@@ -200,7 +200,7 @@ describe('ToggleGroup Component', () => {
 
     const div = screen.getByText('Content').closest('div');
     expect(div).toBeTruthy();
-    expect(div?.classList.contains('toggle-group')).toBe(true);
+    expect(div?.classList.contains('ark-toggle-group')).toBe(true);
   });
 
   it('should render with additional className', () => {
@@ -208,7 +208,7 @@ describe('ToggleGroup Component', () => {
 
     const div = screen.getByText('Content').closest('div');
     expect(div).toBeTruthy();
-    expect(div?.classList.contains('toggle-group')).toBe(true);
+    expect(div?.classList.contains('ark-toggle-group')).toBe(true);
     expect(div?.classList.contains('custom')).toBe(true);
   });
 });

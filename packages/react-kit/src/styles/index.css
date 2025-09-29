@@ -2,6 +2,7 @@
 
 @import 'button.css';
 @import 'card.css';
+@import 'code-block.css';
 @import 'header.css';
 @import 'input.css';
 @import 'panel.css';
@@ -18,24 +19,25 @@
   --color-brand-orange-hover: #e68a00;
   --color-brand-orange-active: #c86c00;
   --color-brand-red: #fb2c36;
+
+  --color-switch-background: var(--color-slate-200);
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer theme {
   :root.dark {
     --color-background: var(--color-slate-950);
     --color-foreground: var(--color-slate-50);
-  }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --color-background: var(--color-slate-900);
-      --color-foreground: var(--color-slate-50);
-    }
+    --color-switch-background: var(--color-slate-950);
+
+    color-scheme: only dark;
   }
 }
 
 @utility ark-theme-switch {
-  @apply flex items-center bg-slate-200 dark:bg-slate-950 rounded-3xl p-1 gap-1;
+  @apply flex items-center bg-switch-background rounded-3xl p-1 gap-1;
 
   & > button svg {
     @apply w-4 h-4;

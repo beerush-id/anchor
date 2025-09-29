@@ -1,0 +1,11 @@
+@utility ark-panel-row {
+  @apply flex gap-2 justify-between max-w-[250px];
+}
+
+@utility ark-panel-col {
+  @apply flex flex-col gap-2;
+}
+
+@utility ark-panel-col-label {
+  @apply text-xs text-slate-400;
+}

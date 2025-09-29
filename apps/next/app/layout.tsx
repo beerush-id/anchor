@@ -155,10 +155,25 @@ export default async function RootLayout({
   const cookie = await cookies();
   const userSettings = cookie.get('app-settings');
   const settings = userSettings?.value ? JSON.parse(userSettings.value) : {};
+  const darkClass =
+    settings.theme === 'dark' || (settings.theme === 'system' && settings.systemTheme === 'dark') ? 'dark' : '';
 
   return (
-    <html lang="en" className={settings.theme === 'system' ? settings.systemTheme : settings.theme}>
+    <html lang="en" className={darkClass}>
       <head>
+        {!userSettings?.value && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                const dark = window.matchMedia('prefers-color-scheme: dark').matches;
+                if (dark) document.documentElement.classList.add('dark');              
+              `,
+            }}></script>
+        )}
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Header />
+        {children}
         {process.env.NODE_ENV === 'production' && (
           <>
             <Script async src={`https://www.googletagmanager.com/gtag/js?id=G-SSMTTBW5G5`} />
@@ -172,10 +187,6 @@ export default async function RootLayout({
             </Script>
           </>
         )}
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Header />
-        {children}
       </body>
     </html>
   );

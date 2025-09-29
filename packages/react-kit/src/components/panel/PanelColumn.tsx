@@ -8,12 +8,14 @@ export type PanelColumnProps = {
   labelClassName?: ClassName | ClassList;
 };
 
+const { brand } = classx;
+
 export const PanelColumn: EFC<HTMLAttributes<HTMLDivElement> & PanelColumnProps, HTMLDivElement> = (props) => {
   const { label, children, className, labelClassName, ...rest } = useObserver(() => resolveProps(props), [props]);
 
   return (
-    <div className={classx('anchor-panel-column', className)} {...rest}>
-      {label && <h4 className={classx('anchor-panel-column-label', labelClassName)}>{label}</h4>}
+    <div className={classx(brand('panel-col'), className)} {...rest}>
+      {label && <h4 className={classx(brand('panel-col-label'), labelClassName)}>{label}</h4>}
       {children}
     </div>
   );

@@ -30,7 +30,6 @@ describe('ColorPicker Component', () => {
       const input = label.querySelector('input');
       expect(input).toBeTruthy();
       expect(input?.getAttribute('type')).toBe('color');
-      expect(input?.classList.contains('sr-only')).toBe(true);
     });
 
     it('should render with value from useValue', () => {

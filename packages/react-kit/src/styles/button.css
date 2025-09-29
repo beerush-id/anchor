@@ -1,0 +1,85 @@
+@utility ark-button-icon {
+  @apply px-2.5;
+}
+
+@utility ark-button {
+  @apply inline-flex items-center gap-2 px-3 py-2 rounded-md outline-none;
+  @apply font-semibold text-sm whitespace-nowrap select-none;
+  @apply transition-all duration-200;
+
+  @apply bg-slate-200 text-slate-900;
+  @apply dark:bg-slate-700 dark:text-white;
+  @apply hover:bg-slate-300 active:bg-slate-200 active:ring-0;
+  @apply dark:hover:bg-slate-600 dark:active:bg-slate-800 active:ring-0;
+
+  @apply focus:ring-2 focus:ring-brand-orange/75;
+  @apply disabled:pointer-events-none disabled:opacity-50 disabled:text-slate-500;
+
+  &.btn-primary {
+    @apply bg-brand-orange text-white;
+    @apply focus:ring-brand-red/75;
+    @apply hover:bg-brand-orange-hover;
+    @apply active:bg-brand-orange-active;
+  }
+
+  &.btn-alternate {
+    @apply px-4 py-2 rounded-md;
+    @apply bg-slate-900 dark:bg-slate-950 text-white;
+    @apply hover:bg-brand-orange active:bg-slate-900;
+    @apply disabled:opacity-25 disabled:pointer-events-none;
+  }
+
+  &.btn-lg {
+    @apply px-8 py-3.5 text-[1rem];
+  }
+
+  &.btn-icon {
+    @apply ark-button-icon;
+  }
+}
+
+@utility ark-icon-button {
+  @apply inline-flex items-center justify-center transition-all duration-200 outline-none;
+  @apply disabled:opacity-25 disabled:pointer-events-none;
+
+  @apply text-slate-800 dark:text-slate-400;
+  @apply focus:text-slate-900 dark:focus:text-slate-300;
+  @apply hover:text-slate-600 dark:hover:text-slate-200;
+  @apply active:text-slate-800 dark:active:text-slate-400;
+}
+
+@utility ark-toggle-button {
+  @apply ark-button px-0 py-0 rounded-sm w-[30px] aspect-square justify-center;
+  @apply focus:z-10;
+
+  &[data-inherit='true'],
+  &[data-partial='true'] {
+    @apply bg-brand-orange/30;
+  }
+
+  &[data-checked='true'] {
+    @apply bg-brand-orange;
+  }
+
+  & > input {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+  }
+}
+
+@utility ark-toggle-group {
+  @apply flex items-center;
+
+  & > .ark-toggle-button {
+    @apply rounded-none;
+
+    &:first-child {
+      @apply rounded-l-sm;
+    }
+
+    &:last-child {
+      @apply rounded-r-sm;
+    }
+  }
+}

@@ -7,7 +7,7 @@ export const PanelRow: EFC<HTMLAttributes<HTMLDivElement>, HTMLDivElement> = (pr
   const { children, className, ...rest } = useObserver(() => resolveProps(props), [props]);
 
   return (
-    <div className={classx('anchor-panel-row', className)} {...rest}>
+    <div className={classx(classx.brand('panel-row'), className)} {...rest}>
       {children}
     </div>
   );

@@ -1,4 +1,4 @@
-import type { ClassList, ClassName, StyleRef } from '@base/index.js';
+import type { ClassList, ClassName, StyleDeclaration, StyleRef } from '@base/index.js';
 import { isRef } from '@anchorlib/react';
 import type { CSSProperties } from 'react';
 
@@ -59,9 +59,19 @@ export const classx = classFn as ClassxFn;
 
 export function stylex(style?: StyleRef): Partial<CSSProperties> {
   if (!style) return {};
-  if (isRef(style)) return { ...style.value } as Partial<CSSProperties>;
+  if (isRef(style)) return parseStyle({ ...style.value }) as Partial<CSSProperties>;
 
-  return { ...style } as Partial<CSSProperties>;
+  return parseStyle({ ...style }) as Partial<CSSProperties>;
+}
+
+function parseStyle(style: Partial<StyleDeclaration>): Partial<CSSProperties> {
+  const parsedStyle: Partial<CSSProperties> = {};
+
+  for (const [key, value] of Object.entries(style)) {
+    parsedStyle[key as never] = styleUnit(key, value) as never;
+  }
+
+  return parsedStyle;
 }
 
 const UNITLESS_PROPERTIES = new Set([

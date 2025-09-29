@@ -32,7 +32,6 @@ export function ColorPicker<T extends Bindable, K extends WritableKeys<T>>({
     <label ref={ref} className={className} style={{ backgroundColor: current }}>
       <input
         type={'color'}
-        className="sr-only"
         name={name as string}
         value={current}
         onChange={(e) => {

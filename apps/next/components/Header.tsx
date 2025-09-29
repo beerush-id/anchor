@@ -5,11 +5,8 @@ import { setDebugRenderer, useAction } from '@anchorlib/react';
 import { Header as MainHeader, type HeaderLink, type HeaderSocial } from '@anchorlib/react-kit/components';
 import { DiscordIcon, GithubIcon } from '@anchorlib/react-kit/icons';
 import { LogoText } from './LogoText';
-import { isBrowser } from '@anchorlib/react-kit/utils';
 
-if (isBrowser()) {
-  setDebugRenderer(true);
-}
+setDebugRenderer(true);
 
 const SCROLL_THRESHOLD = 68;
 
@@ -19,16 +16,16 @@ const links: HeaderLink[] = [
     text: 'Overview',
   },
   {
-    href: '#metrics',
+    href: '#features',
+    text: 'Core Features',
+  },
+  {
+    href: '#performance',
     text: 'Performance',
   },
   {
-    href: '#philosophy',
-    text: 'Philosophy',
-  },
-  {
-    href: '#architecture',
-    text: 'Architecture',
+    href: '#todo-benchmark',
+    text: 'Demos',
   },
 ];
 
@@ -54,6 +51,7 @@ export const Header = () => {
   const ref = useAction<HTMLHeadingElement>((element) => {
     if (!element?.parentElement) return;
 
+    document.documentElement.style.setProperty('--header-height', `${element.offsetHeight}px`);
     const toggleBlur = () => {
       if (!element?.parentElement) return;
 

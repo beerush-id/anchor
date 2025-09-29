@@ -1,4 +1,4 @@
-import { useAction } from '@anchorlib/react';
+import { useAction, useMicrotask } from '@anchorlib/react';
 import { classx } from '@utils/index.js';
 
 const { brand } = classx;
@@ -63,12 +63,17 @@ export type TooltipOptions = {
  * @returns A function that can be used as a ref callback to attach the tooltip behavior to an element
  */
 export function useTooltip({ xDir = TooltipXDir.Between, yDir = TooltipYDir.Below }: TooltipOptions = {}) {
+  const [runTask, cancelTask] = useMicrotask(300);
+
   return useAction<HTMLSpanElement>((element) => {
     if (!element?.parentElement) return;
 
     const parent = element.parentElement;
 
     const mouseenter = () => {
+      cancelTask();
+      document.body.appendChild(element);
+
       const { top, left, width, height } = parent.getBoundingClientRect();
 
       const x =
@@ -97,15 +102,25 @@ export function useTooltip({ xDir = TooltipXDir.Between, yDir = TooltipYDir.Belo
       element.classList.add(brand('tooltip-visible'));
     };
 
-    const mouseleave = () => element.classList.remove(brand('tooltip-visible'));
+    const mouseleave = () => {
+      element.classList.remove(brand('tooltip-visible'));
+      runTask(() => restore());
+    };
+
+    const restore = () => {
+      element.classList.remove(brand('tooltip-visible'));
+      parent.appendChild(element);
+    };
 
     parent.addEventListener('mouseenter', mouseenter);
     parent.addEventListener('mouseleave', mouseleave);
+    parent.addEventListener('pointerdown', restore);
 
     return () => {
       parent.classList.remove(brand('tooltip-container'));
       parent.removeEventListener('mouseenter', mouseenter);
       parent.removeEventListener('mouseleave', mouseleave);
+      parent.removeEventListener('pointerdown', restore);
     };
   });
 }

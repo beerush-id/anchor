@@ -181,7 +181,8 @@ select.anchor-input {
   }
 }
 
-.toggle-group {
+.toggle-group,
+.ark-toggle-group {
   @apply flex items-center;
 
   & > .toggle-btn {

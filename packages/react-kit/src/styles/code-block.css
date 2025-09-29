@@ -1,0 +1,97 @@
+@theme {
+  --color-code-block-background: #eff1f5;
+}
+
+@layer theme {
+  :root.dark {
+    --color-code-block-background: rgb(30, 30, 46);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-code-block-background: rgb(30, 30, 46);
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
+@utility ark-code-block {
+  @apply bg-code-block-background;
+  max-height: var(--code-max-height);
+
+  & > .shiki {
+    @apply p-4 outline-none;
+    counter-reset: step;
+    counter-increment: step 0;
+  }
+
+  & > .shiki .line::before {
+    content: counter(step);
+    counter-increment: step;
+    width: 1rem;
+    margin-right: 1.5rem;
+    display: inline-block;
+    text-align: right;
+    color: rgba(115, 138, 148, 0.4);
+  }
+
+  &.flex-1 {
+    @apply flex flex-col;
+  }
+
+  &.flex-1 > .shiki {
+    flex: 1;
+  }
+
+  &.code-block-fit {
+    @apply flex flex-col flex-1;
+    overflow: auto;
+  }
+
+  &.code-block-fit > .shiki {
+    background-color: transparent !important;
+  }
+}
+
+@utility ark-code-block-loading {
+  @apply flex flex-col items-center justify-center p-6;
+}
+
+@utility ark-code-viewer {
+  @apply flex flex-col w-full;
+}
+
+@utility ark-code-viewer-body {
+  @apply flex flex-col w-full bg-code-block-background overflow-auto;
+}
+
+@utility ark-code-viewer-buttons {
+  @apply flex items-center bg-foreground;
+}
+
+@utility ark-code-viewer-button {
+  @apply flex items-center gap-1;
+  @apply px-4 py-2 text-sm font-medium text-background  hover:text-foreground hover:bg-code-block-background;
+  @apply transition-colors;
+
+  &.active {
+    @apply text-foreground bg-code-block-background;
+  }
+
+  & > img {
+    @apply w-4 h-4;
+  }
+}

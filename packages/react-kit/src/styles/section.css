@@ -1,0 +1,19 @@
+@utility ark-section-offset {
+  @apply px-4 py-4 md:py-8;
+}
+
+@utility ark-section {
+  @apply flex flex-col gap-6;
+}
+
+@utility ark-section-title {
+  @apply text-3xl md:text-5xl font-light leading-tight tracking-tighter;
+}
+
+@utility ark-section-subtitle {
+  @apply text-2xl md:text-4xl font-light leading-tight tracking-tighter;
+}
+
+@utility ark-section-description {
+  @apply text-foreground/70 text-lg;
+}

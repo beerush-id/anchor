@@ -1,27 +1,14 @@
-import { classx, settings, settingsKey, ThemeSetting } from '@utils/index.js';
+import { classx, settings, ThemeSetting } from '@utils/index.js';
 import { DarkMode, LightMode, SystemMode } from '@icons/index.js';
-import { observable } from '@anchorlib/react/view';
-import { useVariable } from '@anchorlib/react';
+import { observer, useVariable } from '@anchorlib/react';
 import { useEffect } from 'react';
-import { anchor } from '@anchorlib/core';
+import { Tooltip } from './Tooltip.js';
 
-export const ThemeSwitch = observable(() => {
+export const ThemeSwitch = observer(() => {
   const [current] = useVariable(ThemeSetting.System);
 
   const switchMode = (theme: ThemeSetting) => {
-    if (theme === ThemeSetting.System) {
-      document.documentElement.classList.remove(settings.systemTheme === ThemeSetting.Dark ? 'light' : 'dark');
-      document.documentElement.classList.add(settings.systemTheme);
-    } else if (theme === ThemeSetting.Dark) {
-      document.documentElement.classList.remove('light');
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-
     settings.theme = current.value = theme;
-    document.cookie = `${settingsKey}=${JSON.stringify(anchor.read(settings))}; path=/; max-age=31536000;`;
   };
 
   useEffect(() => {
@@ -36,6 +23,7 @@ export const ThemeSwitch = observable(() => {
         className={classx({ active: current.value === ThemeSetting.Light })}
         onClick={() => switchMode(ThemeSetting.Light)}>
         <LightMode />
+        <Tooltip>Switch to Light Mode</Tooltip>
       </button>
       <button
         type="button"
@@ -43,6 +31,7 @@ export const ThemeSwitch = observable(() => {
         className={classx({ active: current.value === ThemeSetting.System })}
         onClick={() => switchMode(ThemeSetting.System)}>
         <SystemMode />
+        <Tooltip>Follow System Theme</Tooltip>
       </button>
       <button
         type="button"
@@ -50,6 +39,7 @@ export const ThemeSwitch = observable(() => {
         className={classx({ active: current.value === ThemeSetting.Dark })}
         onClick={() => switchMode(ThemeSetting.Dark)}>
         <DarkMode />
+        <Tooltip>Switch to Dark Mode</Tooltip>
       </button>
     </div>
   );
