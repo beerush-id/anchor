@@ -1,9 +1,9 @@
 @utility ark-section-offset {
-  @apply px-4 py-4 md:py-8;
+  @apply px-4 py-4 md:py-8 lg:py-16;
 }
 
 @utility ark-section {
-  @apply flex flex-col gap-6;
+  @apply w-full flex flex-col gap-6;
 }
 
 @utility ark-section-title {

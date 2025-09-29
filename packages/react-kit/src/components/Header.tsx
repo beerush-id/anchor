@@ -1,5 +1,5 @@
 import { type ComponentType, type HTMLAttributes, type SVGAttributes } from 'react';
-import type { EFC } from '@base/index.js';
+import type { ClassList, ClassName, EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
 import { resolveProps, useObserver } from '@anchorlib/react';
 import { observe } from '@anchorlib/react/view';
@@ -11,12 +11,14 @@ export type HeaderLogo = {
   text?: string;
   image?: EFC<SVGAttributes<SVGGElement>, SVGSVGElement> | ComponentType<SVGAttributes<SVGSVGElement>>;
   height?: number;
+  className?: ClassName | ClassList;
 };
 
 export type HeaderLink = {
   href: string;
   text: string;
   icon?: ComponentType;
+  className?: ClassName | ClassList;
 };
 
 export type HeaderSocial = {
@@ -24,6 +26,7 @@ export type HeaderSocial = {
   text?: string;
   tips?: string;
   icon?: EFC<SVGAttributes<SVGGElement>, SVGSVGElement> | ComponentType<SVGAttributes<SVGSVGElement>>;
+  className?: ClassName | ClassList;
 };
 
 export type HeaderProps = {
@@ -47,7 +50,7 @@ export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLH
 
     const { text, image: LogoImage, height } = logo;
     return (
-      <h1 className={brand('header-logo')}>
+      <h1 className={classx(brand('header-logo'), logo.className)}>
         {LogoImage && (
           <a href="/">
             <LogoImage height={height ?? 32} />
@@ -68,7 +71,7 @@ export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLH
 
           return (
             <li key={href}>
-              <a ref={useScrollNav(offset)} href={href} className={brand('header-link')}>
+              <a ref={useScrollNav(offset)} href={href} className={classx(brand('header-link'), link.className)}>
                 {Icon && <Icon />}
                 <span>{text}</span>
               </a>
@@ -89,7 +92,7 @@ export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLH
 
           return (
             <li key={href}>
-              <a href={href} className={brand('header-social')}>
+              <a href={href} className={classx(brand('header-social'), social.className)}>
                 {Icon && <Icon className="w-4 h-4" />}
                 {text && <span>{text}</span>}
                 {tips && <Tooltip>{tips}</Tooltip>}

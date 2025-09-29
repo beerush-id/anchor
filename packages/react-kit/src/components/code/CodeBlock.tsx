@@ -3,7 +3,6 @@ import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
 import { type HTMLAttributes, useEffect } from 'react';
 import { useObserver } from '@anchorlib/react';
 import { LoaderCircle } from '@icons/index.js';
-import { isMobile } from '@utils/platform.js';
 import type { EFC } from '../../types.js';
 import { classx, stylex } from '@utils/classx.js';
 
@@ -43,10 +42,6 @@ export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTM
       highlighter.codeToHtml(code.trim(), { lang, themes: { dark: 'catppuccin-mocha', light: 'catppuccin-latte' } })
     );
   }, [code, lang]);
-
-  if (isMobile()) {
-    return;
-  }
 
   useEffect(() => {
     schedule(initialize);
