@@ -14,11 +14,11 @@ const DefaultTodoApp = memo(ClassicTodoApp);
 export const TodoDemo = () => {
   return (
     <Section id="todo-benchmark" className="page-section fill-screen-section">
-      <SectionTitle>Try It Yourself: FLOOD THE DOM!</SectionTitle>
+      <SectionTitle>Performance Comparison: Anchor vs Traditional React</SectionTitle>
       <SectionDescription className="text-center">
-        This demo is built with profiling enabled, allowing you to use React DevTools to analyze performance as it
-        scales. It highlights how the same complexity effort can lead to vastly different performance outcomes, powered
-        by Anchor.
+        Both implementations follow the same development patterns with equal effort. The difference in performance comes
+        from Anchor's optimized design, not from extreme optimization techniques. As you interact with both versions,
+        detailed performance metrics are automatically logged to your browser's console.
       </SectionDescription>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex-1 flex flex-col gap-4">

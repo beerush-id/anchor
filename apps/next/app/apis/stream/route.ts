@@ -1,7 +1,9 @@
 import { FetchStatus, streamState } from '@anchorlib/core';
+import { NextRequest } from 'next/server.js';
 
-export async function GET() {
-  const messages = 'Hello, world! Welcome to the one line magic of Anchor!'.split('');
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const messages = `Hello, ${body?.name ?? 'World'}! My name is Anchor. How can I help you today?`.split('');
 
   // Create a reactive stream state with an initial value of an empty string.
   const [state, stream] = streamState.readable('');
@@ -20,7 +22,6 @@ export async function GET() {
     }
   };
 
-  // Begin sending characters.
   enqueue();
 
   return new Response(stream, { status: 200 });

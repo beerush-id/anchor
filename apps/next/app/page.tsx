@@ -4,6 +4,7 @@ import { CoreFeatures } from './home/CoreFeatures';
 import { Performance } from './home/Performance';
 import { TodoDemo } from './home/TodoDemo';
 import { EditorDemo } from './home/EditorDemo';
+import { BeyondFrontend } from './home/BeyondFrontend';
 import { Footer } from '@components/Footer';
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
       <CoreFeatures />
       <Performance />
       <TodoDemo />
+      <BeyondFrontend />
       <EditorDemo />
       <Footer />
     </main>
