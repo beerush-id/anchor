@@ -206,7 +206,7 @@ export const Performance = () => {
   return (
     <Section id="performance" className="page-section">
       <div className="flex flex-col gap-6 text-center mb-6">
-        <SectionTitle>React App Performance Showdown</SectionTitle>
+        <SectionTitle className={'text-center'}>React App Performance Showdown</SectionTitle>
         <SectionDescription className="text-center max-w-5xl mx-auto">
           Explore the performance differences between traditional React and Anchor architecture. Select a benchmark
           scenario below to see real-time metrics and visual comparisons of rendering speed, frame rates, and overall

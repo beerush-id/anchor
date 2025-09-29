@@ -7,7 +7,7 @@ import EditorApp from '@components/editor/EditorApp';
 export function EditorDemo() {
   return (
     <Section className="page-section">
-      <SectionTitle>Make Complicated Things Simple</SectionTitle>
+      <SectionTitle className={'text-center'}>Make Complicated Things Simple</SectionTitle>
       <SectionDescription className={'text-center md:mb-12'}>
         To build something like this, normally you'll sacrifice either UX or DX. You pick faster build - slower
         performance, or faster performance - slower build. With Anchor, you can have both; faster build and superior

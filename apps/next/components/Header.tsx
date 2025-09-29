@@ -39,11 +39,13 @@ const socials: HeaderSocial[] = [
     href: 'https://github.com/beerush-id/anchor',
     tips: 'GitHub',
     icon: GithubIcon,
+    className: 'hidden md:inline-flex',
   },
   {
     href: 'https://discord.gg/aEFgpaghq2',
     tips: 'Discord',
     icon: DiscordIcon,
+    className: 'hidden md:inline-flex',
   },
 ];
 

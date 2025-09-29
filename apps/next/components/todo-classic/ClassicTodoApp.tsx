@@ -2,7 +2,6 @@ import { type FC, useRef, useState } from 'react';
 import { shortId } from '@anchorlib/core';
 import { debugRender } from '@anchorlib/react';
 import { Card, CardHeader, Tooltip } from '@anchorlib/react-kit/components';
-import { isMobile } from '@anchorlib/react-kit/utils';
 
 import { type ITodoItem } from '@utils/todo';
 import { classicTodoStats, useUpdateStat } from '@utils/stats';
@@ -96,12 +95,10 @@ export const ClassicTodoApp: FC = () => {
     <Card>
       <CardHeader>
         <h3 className="font-semibold flex-1">👌Classic Todo List</h3>
-        {!isMobile() && (
-          <button onClick={() => benchmark(addBenchmarkItem)} className="ark-icon-button">
-            <Gauge size={20} />
-            <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
-          </button>
-        )}
+        <button onClick={() => benchmark(addBenchmarkItem)} className="ark-icon-button">
+          <Gauge size={20} />
+          <Tooltip>Benchmark - Add {BENCHMARK_SIZE} items</Tooltip>
+        </button>
         <ClassicTodoPanel panel={panel} toggleInfo={toggleInfo} toggleCode={toggleCode} />
       </CardHeader>
       <ClassicInfoPanel panel={panel} />

@@ -299,7 +299,7 @@ export const CoreFeatures = () => (
       performance, True Immutability for predictable state changes, and Data Integrity for reliable applications.
     </SectionDescription>
     <div className="flex flex-col gap-8 md:gap-24">
-      <div className="grid md:grid-cols-2 gap-4 md:gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
         <Card>
           <CodeViewer items={fineGrainedCodes} className={'tight-code-viewer'} />
         </Card>
@@ -313,7 +313,7 @@ export const CoreFeatures = () => (
           <MainCTA className={'justify-start w-full'} />
         </div>
       </div>
-      <div className="grid md:grid-cols-2 gap-4 md:gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
         <div className="flex flex-col gap-6 justify-center">
           <SectionSubtitle>True-Immutability — Built for Readability, Maintainability, and Scalability</SectionSubtitle>
           <p className="mb-4 text-slate-700 dark:text-slate-300">
@@ -328,7 +328,7 @@ export const CoreFeatures = () => (
           <CodeViewer items={trueImmutabilityCodes} className={'tight-code-viewer'} />
         </Card>
       </div>
-      <div className="grid md:grid-cols-2 gap-4 md:gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
         <Card>
           <CodeViewer items={integrityCodes} className={'tight-code-viewer'} />
         </Card>

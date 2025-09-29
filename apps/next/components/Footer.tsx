@@ -11,7 +11,7 @@ export function Footer() {
           Get started in seconds. Install the package and simplify your app today.
         </SectionDescription>
         <div className="w-full my-4 md:my-8">
-          <MainCTA tiys={false}>
+          <MainCTA tiys={false} className={'flex-col md:flex-row items-center'}>
             <a
               href="https://www.producthunt.com/products/anchor-6?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-anchor&#0045;11"
               target="_blank"

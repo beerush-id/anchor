@@ -4,9 +4,11 @@ import { MainCTA } from '@components/MainCTA';
 export function About() {
   return (
     <Section id="overview" className={['page-section', 'fill-screen-section']}>
-      <div className="grid md:grid-cols-12 gap-4 md:gap-12">
-        <div className="col-span-7 flex flex-col gap-4 justify-center">
-          <SectionTitle>State Management for Humans, Built for Enterprise Scale</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-12">
+        <div className="md:col-span-7 flex flex-col gap-4 justify-center">
+          <SectionTitle className={'text-center md:text-left'}>
+            State Management for Humans, Built for Enterprise Scale
+          </SectionTitle>
           <SectionDescription className={'text-base'}>
             Anchor is built on the AX (All eXperience) philosophy - prioritizing both developer and user experience. We
             believe intuitive code shouldn't compromise performance, making developers productive while ensuring users
@@ -19,7 +21,7 @@ export function About() {
           </SectionDescription>
           <MainCTA className={'justify-start w-full'} />
         </div>
-        <div className="col-span-5 flex flex-col gap-4 md:gap-6 text-center">
+        <div className="md:col-span-5 flex flex-col gap-4 md:gap-6 text-center">
           <div className="ark-card p-8">
             <p className="text-4xl font-light text-sky-400 mb-3">~297x Faster</p>
             <p className="text-slate-700 dark:text-white text-lg font-semibold">UI Render Time on Toggle Actions</p>

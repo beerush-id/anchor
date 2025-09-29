@@ -14,7 +14,7 @@ const DefaultTodoApp = memo(ClassicTodoApp);
 export const TodoDemo = () => {
   return (
     <Section id="todo-benchmark" className="page-section fill-screen-section">
-      <SectionTitle>Performance Comparison: Anchor vs Traditional React</SectionTitle>
+      <SectionTitle className={'text-center'}>Performance Comparison: Anchor vs Traditional React</SectionTitle>
       <SectionDescription className="text-center">
         Both implementations follow the same development patterns with equal effort. The difference in performance comes
         from Anchor's optimized design, not from extreme optimization techniques. As you interact with both versions,

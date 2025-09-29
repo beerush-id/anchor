@@ -5,7 +5,7 @@ import { StateSharing } from './StateSharing';
 export const Hero = () => {
   return (
     <Section id="hero" className={['page-section', 'fill-screen-section']}>
-      <SectionTitle>Declare Your State Once, Use It Everywhere</SectionTitle>
+      <SectionTitle className={'text-center'}>Declare Your State Once, Use It Everywhere</SectionTitle>
       <SectionDescription className="md:mb-6 text-center">
         Anchor lets you define state in one place and share it across React, Vue, Svelte, and even VanillaJS — with
         fine-grained reactivity, true-immutability, and data integrity built in, backed with superior performance.

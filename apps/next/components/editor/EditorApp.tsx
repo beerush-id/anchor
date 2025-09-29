@@ -11,7 +11,6 @@ import { EditorExport } from './EditorExport';
 import { Info, SwatchBook } from 'lucide-react';
 import { editorApp, parseAllCss } from '@utils/editor';
 import { isMobile } from '@anchorlib/react-kit/utils';
-import Image from 'next/image.js';
 
 export default function EditorApp() {
   const ref = useRef<HTMLDivElement>(null);
@@ -20,7 +19,7 @@ export default function EditorApp() {
   if (isMobile()) {
     return (
       <div className="flex flex-col gap-4">
-        <Image src={`/images/editor.webp`} alt="CSS Editor Demo" />
+        <img src={`/images/editor.webp`} alt="CSS Editor Demo" />
         <p className="text-center px-4 text-sm">
           Open in a desktop browser to experience the live CSS Editor Demo app.
         </p>
