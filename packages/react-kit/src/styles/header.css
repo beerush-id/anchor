@@ -24,6 +24,10 @@
 
 @utility ark-header-socials {
   @apply flex items-center gap-2 md:gap-4;
+
+  & > li {
+    @apply inline-flex items-center;
+  }
 }
 
 @utility ark-header-social {
