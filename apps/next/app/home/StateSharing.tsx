@@ -29,7 +29,7 @@ import { settings, toggleTheme } from '../lib/state.ts';
 const App = observer(() => (
   <>
     <div>{settings.theme}</div>
-    <button onClick={toggle}>Toggle</button>
+    <button onClick={toggleTheme}>Toggle</button>
   </>
 ));
 `,
