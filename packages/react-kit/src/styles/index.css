@@ -26,7 +26,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer theme {
-  :root.dark {
+  .dark {
     --color-background: var(--color-slate-950);
     --color-foreground: var(--color-slate-50);
 
