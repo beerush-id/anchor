@@ -14,9 +14,10 @@ export type CodeItem = {
 export type CodeViewerProps = HTMLAttributes<HTMLDivElement> & {
   items: CodeItem[];
   maxHeight?: number;
+  minHeight?: number;
 };
 
-export const CodeViewer: EFC<CodeViewerProps, HTMLDivElement> = ({ items, maxHeight, className }) => {
+export const CodeViewer: EFC<CodeViewerProps, HTMLDivElement> = ({ items, minHeight, maxHeight, className }) => {
   const [active, setActive] = useState(items[0].name);
 
   return (
@@ -36,7 +37,7 @@ export const CodeViewer: EFC<CodeViewerProps, HTMLDivElement> = ({ items, maxHei
         .filter((block) => block.name === active)
         .map((block) => (
           <div key={block.name} className={classx.brand('code-viewer-body')}>
-            <CodeBlock code={block.code} lang={block.lang} maxHeight={maxHeight} />
+            <CodeBlock code={block.code} lang={block.lang} minHeight={minHeight} maxHeight={maxHeight} />
           </div>
         ))}
     </div>
