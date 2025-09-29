@@ -22,7 +22,7 @@ export const TodoItem: FC<{ todo: ITodoItem }> = memo(function TodoItem({ todo }
     todoStats.item.value++;
   });
 
-  const itemWriter = useWriter(todo, ['completed']);
+  const itemWriter = useWriter(todo, ['completed', 'text']);
   const handleToggle = () => {
     itemWriter.completed = !itemWriter.completed;
 
@@ -53,19 +53,23 @@ export const TodoItem: FC<{ todo: ITodoItem }> = memo(function TodoItem({ todo }
     selfRef.current.scrollIntoView({ behavior: 'instant', block: 'center' });
   }, [todo]);
 
-  const ItemView = observe<HTMLButtonElement>((ref) => {
-    const { text, completed } = todo;
+  const ItemView = observe<HTMLDivElement>((ref) => {
+    const { completed } = todo;
     debugRender(ref);
 
     return (
-      <button
-        ref={ref}
-        onClick={handleToggle}
-        className="flex items-center flex-1 gap-3 bg-slate-200/70 dark:bg-slate-800/70 p-2 rounded-md dark:text-slate-300">
-        {completed && <SquareCheck />}
-        {!completed && <Square />}
-        <span className={`text-semibold text-sm ${completed ? 'line-through' : ''}`}>{text}</span>
-      </button>
+      <div ref={ref} className="flex items-center flex-1 gap-3">
+        <button onClick={handleToggle}>
+          {completed && <SquareCheck />}
+          {!completed && <Square />}
+        </button>
+        <input
+          type="text"
+          value={todo.text}
+          onChange={(e) => (itemWriter.text = e.target.value)}
+          className={`ark-input flex-1 text-semibold text-sm ${todo.completed ? 'line-through' : ''}`}
+        />
+      </div>
     );
   });
 

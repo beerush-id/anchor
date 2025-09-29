@@ -41,6 +41,17 @@ export const ClassicTodoApp: FC = () => {
     });
   };
 
+  const handleTextChange = (id: string, text: string) => {
+    setTodos((current) =>
+      current.map((item) => {
+        if (item.id === id) {
+          return { ...item, text };
+        }
+        return item;
+      })
+    );
+  };
+
   const handleToggle = (id: string) => {
     const todo = todos.find((todo) => todo.id === id);
     if (!todo) return;
@@ -112,7 +123,12 @@ export const ClassicTodoApp: FC = () => {
       <ClassicInfoPanel panel={panel} />
       <div className="py-4">
         <ClassicTodoForm onAdd={handleOnAdd} />
-        <ClassicTodoList todos={todos} onToggle={handleToggle} onRemove={handleRemove} />
+        <ClassicTodoList
+          todos={todos}
+          onToggle={handleToggle}
+          onRemove={handleRemove}
+          onTextChange={handleTextChange}
+        />
       </div>
       <ClassicTodoStats stats={stats} />
       <p className="text-slate-500 text-xs text-center px-10 mb-4">

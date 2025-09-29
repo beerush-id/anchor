@@ -9,7 +9,8 @@ export const ClassicTodoList: FC<{
   todos: ITodoList;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
-}> = ({ todos, onToggle, onRemove }) => {
+  onTextChange: (id: string, text: string) => void;
+}> = ({ todos, onToggle, onRemove, onTextChange }) => {
   const ref = useRef(null);
 
   debugRender(ref);
@@ -24,7 +25,13 @@ export const ClassicTodoList: FC<{
   return (
     <ul ref={ref} className="p-4 space-y-2 max-h-[360px] overflow-y-auto">
       {todos.map((todo) => (
-        <ClassicTodoItem key={todo.id} todo={todo} onToggle={onToggle} onRemove={onRemove} />
+        <ClassicTodoItem
+          key={todo.id}
+          todo={todo}
+          onToggle={onToggle}
+          onRemove={onRemove}
+          onTextChange={onTextChange}
+        />
       ))}
     </ul>
   );

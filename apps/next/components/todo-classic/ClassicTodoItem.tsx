@@ -18,7 +18,8 @@ export const ClassicTodoItem: FC<{
   todo: ITodoItem;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
-}> = memo(function ClassicTodoItem({ todo, onToggle, onRemove }) {
+  onTextChange: (id: string, text: string) => void;
+}> = memo(function ClassicTodoItem({ todo, onToggle, onRemove, onTextChange }) {
   const ref = useRef<HTMLLIElement>(null);
 
   debugRender(ref);
@@ -41,13 +42,16 @@ export const ClassicTodoItem: FC<{
 
   return (
     <li ref={ref} className="flex items-center gap-2">
-      <button
-        onClick={handleToggle}
-        className="flex items-center flex-1 gap-3 bg-slate-200/70 dark:bg-slate-800/70 p-2 rounded-md">
+      <button onClick={handleToggle} className="flex items-center">
         {todo.completed && <SquareCheck />}
         {!todo.completed && <Square />}
-        <span className={`text-semibold text-sm ${todo.completed ? 'line-through' : ''}`}>{todo.text}</span>
       </button>
+      <input
+        type="text"
+        value={todo.text}
+        onChange={(e) => onTextChange(todo.id, e.target.value)}
+        className={`ark-input flex-1 text-semibold text-sm ${todo.completed ? 'line-through' : ''}`}
+      />
       <IconButton onClick={() => benchmark(() => onToggle(todo.id))}>
         <Gauge size={20} />
         <Tooltip>Toggle {BENCHMARK_TOGGLE_SIZE} times</Tooltip>
