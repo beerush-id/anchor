@@ -94,18 +94,20 @@ const App = observer(() => (
 
 export const StateSharing: EFC<HTMLAttributes<HTMLDivElement>, HTMLDivElement> = ({ className }) => {
   return (
-    <div className={classx('grid md:grid-cols-2 items-stretch gap-4 md:gap-8 w-full md:min-h-[164px]', className)}>
+    <div className={classx('grid md:grid-cols-2 items-stretch gap-4 md:gap-8 w-full', className)}>
       <Card className={'flex-1'}>
-        <CardContent className={'flex flex-col flex-1 bg-code-block-background'}>
+        <CardContent className={'flex flex-col flex-1 bg-code-block-background md:h-[284px]'}>
           <CodeViewer
             className={'flex-1 flex flex-col'}
+            minHeight={248}
+            maxHeight={248}
             items={[{ name: 'lib/state.ts', icon: '/anchor-logo.svg', iconAlt: 'Anchor Logo', code: sharedCode }]}
           />
         </CardContent>
       </Card>
       <Card className={'flex-1'}>
-        <CardContent className={'flex-1 bg-code-block-background'}>
-          <CodeViewer items={codeBlocks} />
+        <CardContent className={'flex-1 bg-code-block-background md:h-[284px]'}>
+          <CodeViewer items={codeBlocks} minHeight={248} maxHeight={248} />
         </CardContent>
       </Card>
     </div>
