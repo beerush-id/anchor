@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
+  htmlLimitedBots: /.*/,
 };
 
 export default nextConfig;

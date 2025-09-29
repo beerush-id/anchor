@@ -3,6 +3,14 @@
 # Build script for Cloudflare deployments
 # Adapted from .github/workflows/deploy.yml
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "🔧 Loading environment variables from .env file..."
+    export $(grep -v '^#' .env | xargs)
+else
+    echo "ℹ️  No .env file found, using default environment variables"
+fi
+
 echo "🚀 Starting Cloudflare build process..."
 
 # Install dependencies
