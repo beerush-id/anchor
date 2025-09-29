@@ -1,4 +1,4 @@
-name = "anchor"
+name = "anchor-next"
 main = "./apps/next/.open-next/worker.js"
 compatibility_date = "2025-08-01"
 compatibility_flags = ["nodejs_compat"]
