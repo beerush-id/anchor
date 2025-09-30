@@ -10,7 +10,7 @@ import { MainCTA } from '@components/MainCTA';
 
 const fineGrainedCodes = [
   {
-    name: 'App.tsx',
+    name: 'React.tsx',
     icon: '/images/logos/react.svg',
     iconAlt: 'React Logo',
     lang: 'tsx',
@@ -40,6 +40,36 @@ const App = () => {
   return (
     <>
       <Profile />
+      <button onClick={changeName}>Change Name</button>
+    </>
+  );
+};
+`,
+  },
+  {
+    name: 'Solid.tsx',
+    icon: '/images/logos/solid.svg',
+    iconAlt: 'SolidJS Logo',
+    lang: 'tsx',
+    code: `
+import { anchorRef } from '@anchorlib/solid';
+
+const App = () => {
+  const profile = anchorRef({
+    name: 'John Doe', 
+    email: 'johndoe@example.com' 
+  });
+  
+  const changeName = () => {
+    profile.name = 'Jane Smith';
+  }
+  
+  return (
+    <>
+      <div>
+        <h1>{profile.name}</h1>
+        <p>{profile.email}</p>
+      </div>
       <button onClick={changeName}>Change Name</button>
     </>
   );
@@ -104,7 +134,7 @@ const App = () => {
 
 const trueImmutabilityCodes = [
   {
-    name: 'App.tsx',
+    name: 'React.tsx',
     icon: '/images/logos/react.svg',
     iconAlt: 'React Logo',
     lang: 'tsx',
@@ -117,6 +147,35 @@ const App = () => {
     email: 'johndoe@example.com' 
   });
   const writer = useWriter(profile, ['name'])
+  
+  const changeName = () => {
+    // Expected and allowed mutation.
+    writer.name = 'Jane Smith';
+
+    // Unexpected mutation will never reach the state.
+    // This mutation will be caught and warned at the IDE level,
+    // build time, and runtime due to immutability.
+    writer.email = 'johndoe@example.com';
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+};
+`,
+  },
+  {
+    name: 'Solid.tsx',
+    icon: '/images/logos/solid.svg',
+    iconAlt: 'SolidJS Logo',
+    lang: 'tsx',
+    code: `
+import { immutableRef, writableRef } from '@anchorlib/solid';
+
+const App = () => {
+  const profile = immutableRef({
+    name: 'John Doe', 
+    email: 'johndoe@example.com' 
+  });
+  const writer = writableRef(profile, ['name'])
   
   const changeName = () => {
     // Expected and allowed mutation.
@@ -194,7 +253,7 @@ const App = () => {
 
 const integrityCodes = [
   {
-    name: 'App.tsx',
+    name: 'React.tsx',
     icon: '/images/logos/react.svg',
     iconAlt: 'React Logo',
     lang: 'tsx',
@@ -209,6 +268,38 @@ const schema = z.object({
   
 const App = () => {
   const [profile] = useModel(schema, {
+    name: 'John Doe', 
+    email: 'johndoe@example.com' 
+  });
+  
+  const changeName = () => {
+    // Valid mutation.
+    profile.name = 'Jane Smith';
+
+    // Invalid mutation will never reach the state.
+    profile.email = 10;
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+};
+`,
+  },
+  {
+    name: 'Solid.tsx',
+    icon: '/images/logos/solid.svg',
+    iconAlt: 'SolidJS Logo',
+    lang: 'tsx',
+    code: `
+import { z } from 'zod/v4';
+import { modelRef } from '@anchorlib/solid';
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.email("Invalid email format")
+});
+  
+const App = () => {
+  const profile = modelRef(schema, {
     name: 'John Doe', 
     email: 'johndoe@example.com' 
   });

@@ -18,7 +18,7 @@ export const toggleTheme = () => {
 
 const codeBlocks = [
   {
-    name: 'App.tsx',
+    name: 'React.tsx',
     icon: '/images/logos/react.svg',
     iconAlt: 'React Logo',
     lang: 'tsx',
@@ -32,6 +32,23 @@ const App = observer(() => (
     <button onClick={toggleTheme}>Toggle</button>
   </>
 ));
+`,
+  },
+  {
+    name: 'Solid.tsx',
+    icon: '/images/logos/solid.svg',
+    iconAlt: 'SolidJS Logo',
+    lang: 'tsx',
+    code: `
+import '@anchorlib/solid/binding';
+import { settings, toggleTheme } from '../lib/state.ts';
+
+const App = () => (
+  <>
+    <div>{settings.theme}</div>
+    <button onClick={toggleTheme}>Toggle</button>
+  </>
+);
 `,
   },
   {
