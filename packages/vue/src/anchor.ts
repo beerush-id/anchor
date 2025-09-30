@@ -21,7 +21,10 @@ import type { VariableRef } from './types.js';
  * @param options - Optional configuration for the anchor
  * @returns A Vue ref containing the anchor state
  */
-export function anchorRef<T>(init: T, options?: StateOptions): VariableRef<T>;
+export function anchorRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
+  init: T,
+  options?: StateOptions<S>
+): VariableRef<T>;
 
 /**
  * Creates a reactive anchor state with a schema that can be used in Vue components.

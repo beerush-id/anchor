@@ -30,7 +30,7 @@ import { useVariable } from './ref.js';
  *
  * @returns A tuple containing the current state value, the state object, and a setter function
  */
-export function useAnchor<T, S extends LinkableSchema = LinkableSchema>(
+export function useAnchor<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
 ): AnchorState<T>;

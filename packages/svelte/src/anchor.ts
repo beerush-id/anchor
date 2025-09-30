@@ -22,7 +22,7 @@ import { variableRef } from './ref.js';
  * @param options - Optional state options for the reference
  * @returns A WritableRef containing the initial value
  */
-export function anchorRef<T, S extends LinkableSchema = LinkableSchema>(
+export function anchorRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
 ): VariableRef<T>;
