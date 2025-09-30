@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorlib/solid",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "Solid bindings for Anchor reactive state management",
   "keywords": [
     "state",
@@ -20,7 +20,6 @@
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
   },
-  "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "exports": {
@@ -41,7 +40,7 @@
     "dist"
   ],
   "directories": {
-    "dist": "dist"
+    "dist": "./dist"
   },
   "publishConfig": {
     "access": "public"
@@ -56,10 +55,12 @@
     "prettier": "^3.5.3",
     "publint": "^0.3.9",
     "rimraf": "^6.0.1",
+    "solid-js": "^1.9.9",
     "tsup": "^8.4.0",
     "typescript-eslint": "^8.27.0"
   },
   "peerDependencies": {
+    "solid-js": "^1.9.9",
     "typescript": "^5.8.2"
   },
   "scripts": {
@@ -73,6 +74,6 @@
     "@anchorlib/storage": "workspace:*"
   },
   "optionalDependencies": {
-    "solid-js": "^1.9.9"
+    "zod": "^4.1.5"
   }
 }

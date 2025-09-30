@@ -23,7 +23,7 @@
     },
     "apps/next": {
       "name": "@anchor-app/next",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/react": "workspace:*",
         "@anchorlib/react-kit": "workspace:*",
@@ -54,7 +54,7 @@
     },
     "apps/react": {
       "name": "@anchor-app/react",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/react": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -91,7 +91,7 @@
     },
     "apps/solid": {
       "name": "@anchor-app/solid",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/solid": "workspace:*",
@@ -107,7 +107,7 @@
     },
     "apps/svelte": {
       "name": "@anchorlib/docs",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/storage": "workspace:*",
         "@anchorlib/svelte": "workspace:*",
@@ -140,7 +140,7 @@
     },
     "apps/vue": {
       "name": "@anchor-app/vue",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/vue": "workspace:*",
         "vue": "^3.5.18",
@@ -162,7 +162,7 @@
     },
     "packages/core": {
       "name": "@anchorlib/core",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "devDependencies": {
         "@beerush/utils": "^0.5.0",
         "@eslint/css": "^0.5.0",
@@ -190,7 +190,7 @@
     },
     "packages/devtool": {
       "name": "@anchorlib/devtool",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "devDependencies": {
         "@eslint/css": "^0.5.0",
         "@eslint/js": "^9.23.0",
@@ -212,7 +212,7 @@
     },
     "packages/react": {
       "name": "@anchorlib/react",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -245,7 +245,7 @@
     },
     "packages/react-kit": {
       "name": "@anchorlib/react-kit",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/react": "workspace:*",
       },
@@ -273,7 +273,7 @@
     },
     "packages/solid": {
       "name": "@anchorlib/solid",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -288,19 +288,21 @@
         "prettier": "^3.5.3",
         "publint": "^0.3.9",
         "rimraf": "^6.0.1",
+        "solid-js": "^1.9.9",
         "tsup": "^8.4.0",
         "typescript-eslint": "^8.27.0",
       },
       "optionalDependencies": {
-        "solid-js": "^1.9.9",
+        "zod": "^4.1.5",
       },
       "peerDependencies": {
+        "solid-js": "^1.9.9",
         "typescript": "^5.8.2",
       },
     },
     "packages/storage": {
       "name": "@anchorlib/storage",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
       },
@@ -332,7 +334,7 @@
     },
     "packages/svelte": {
       "name": "@anchorlib/svelte",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -362,7 +364,7 @@
     },
     "packages/vue": {
       "name": "@anchorlib/vue",
-      "version": "1.0.0-beta.6",
+      "version": "1.0.0-beta.7",
       "dependencies": {
         "@anchorlib/core": "workspace:*",
         "@anchorlib/storage": "workspace:*",
@@ -2968,9 +2970,19 @@
 
     "@anchor-app/vue/tailwindcss": ["tailwindcss@4.1.12", "", {}, "sha512-DzFtxOi+7NsFf7DBtI3BJsynR+0Yp6etH+nRPTbpWnS2pZBaSksv/JGctNwSWzbFjp0vxSqknaUylseZqMDGrA=="],
 
+    "@anchorlib/core/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
+
     "@anchorlib/docs/@tailwindcss/vite": ["@tailwindcss/vite@4.1.13", "", { "dependencies": { "@tailwindcss/node": "4.1.13", "@tailwindcss/oxide": "4.1.13", "tailwindcss": "4.1.13" }, "peerDependencies": { "vite": "^5.2.0 || ^6 || ^7" } }, "sha512-0PmqLQ010N58SbMTJ7BVJ4I2xopiQn/5i6nlb4JmxzQf8zcS5+m2Cv6tqh+sfDwtIdjoEnOvwsGQ1hkUi8QEHQ=="],
 
     "@anchorlib/docs/vite": ["vite@7.1.7", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.5.0", "picomatch": "^4.0.3", "postcss": "^8.5.6", "rollup": "^4.43.0", "tinyglobby": "^0.2.15" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-VbA8ScMvAISJNJVbRDTJdCwqQoAareR/wutevKanhR2/1EkoXVZVkkORaYm/tNVCjP/UDTKtcw3bAkwOUdedmA=="],
+
+    "@anchorlib/docs/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
+
+    "@anchorlib/solid/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
+
+    "@anchorlib/storage/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
+
+    "@anchorlib/svelte/zod": ["zod@4.1.11", "", {}, "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="],
 
     "@anchorlib/vue/zod": ["zod@4.1.5", "", {}, "sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg=="],
 
