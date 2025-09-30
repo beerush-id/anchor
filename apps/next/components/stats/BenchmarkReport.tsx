@@ -87,3 +87,76 @@ export const BenchmarkReport: FC<BenchmarkReportProps> = ({ metrics, stats, clas
     </Card>
   );
 };
+
+export type BenchmarkCompareProps = {
+  anchor: { stats: TodoRenderStats; metrics: number[] };
+  classic: { stats: TodoRenderStats; metrics: number[] };
+  className?: string;
+};
+
+export const BenchmarkCompare: FC<BenchmarkCompareProps> = ({ anchor, classic, className }) => {
+  const chartData: { anchor: ChartData<'line'>; classic: ChartData<'line'> } = useMemo(() => {
+    return {
+      anchor: {
+        labels: anchor.metrics.map((m, i) => (i + 1).toString()),
+        datasets: [
+          {
+            label: 'Anchor Render Duration',
+            data: anchor.metrics.map((m) => Math.round(m)),
+            borderColor: 'rgb(251,175,17)',
+            backgroundColor: 'rgba(251,175,17,0.6)',
+            tension: 0.1,
+          },
+        ],
+      },
+      classic: {
+        labels: anchor.metrics.map((m, i) => (i + 1).toString()),
+        datasets: [
+          {
+            label: 'React Render Duration',
+            data: classic.metrics.map((m) => Math.round(m)),
+            borderColor: 'rgb(78, 152, 182)',
+            backgroundColor: 'rgba(78,152,182,0.6)',
+            tension: 0.1,
+          },
+        ],
+      },
+    };
+  }, [anchor, classic]);
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: false,
+        text: 'Benchmark Performance Report',
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Time (milliseconds)',
+        },
+      },
+      x: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Iteration (times)',
+        },
+      },
+    },
+  };
+
+  return (
+    <Card className={classx('p-4', className)}>
+      <Line data={chartData.classic} options={options} />
+      <Line data={chartData.anchor} options={options} />
+    </Card>
+  );
+};

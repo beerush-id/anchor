@@ -310,7 +310,7 @@ export const CoreFeatures = () => (
             and blazing-fast rendering that keeps your application responsive under any workload.
           </p>
 
-          <MainCTA className={'justify-start w-full'} />
+          <MainCTA className={'md:justify-start w-full'} />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
@@ -322,7 +322,7 @@ export const CoreFeatures = () => (
             about, test, and refactor as your application grows in complexity.
           </p>
 
-          <MainCTA className={'justify-start w-full'} />
+          <MainCTA className={'md:justify-start w-full'} />
         </div>
         <Card>
           <CodeViewer items={trueImmutabilityCodes} className={'tight-code-viewer'} />
@@ -340,7 +340,7 @@ export const CoreFeatures = () => (
             across all components.
           </p>
 
-          <MainCTA className={'justify-start w-full'} />
+          <MainCTA className={'md:justify-start w-full'} />
         </div>
       </div>
     </div>
