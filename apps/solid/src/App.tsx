@@ -1,34 +1,15 @@
-import { createSignal, onCleanup } from 'solid-js';
 import solidLogo from './assets/solid.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
-import { anchor, subscribe } from '@anchorlib/core';
+import '@anchorlib/solid/binding';
+import { observedRef, variableRef } from '@anchorlib/solid';
+import { anchor } from '@anchorlib/core';
 
-function anchorRef<T>(init: T): [{ value: T }] {
-  const [count, setCount] = createSignal(0);
-  const state = anchor({ value: init });
-  const unsubscribe = subscribe(state, (_, event) => {
-    if (event.type === 'init') return;
-    setCount(count() + 1);
-  });
-
-  onCleanup(() => unsubscribe());
-
-  return [
-    {
-      get value() {
-        count();
-        return state.value;
-      },
-      set value(value: T) {
-        state.value = value;
-      },
-    },
-  ];
-}
+const state = anchor({ count: 0 });
 
 function App() {
-  const [counter] = anchorRef(0);
+  const counter = variableRef(0);
+  const doubled = observedRef(() => state.count * 2);
 
   return (
     <>
@@ -42,7 +23,9 @@ function App() {
       </div>
       <h1>Vite + Solid</h1>
       <div class="card">
-        <button onClick={() => counter.value++}>count is {counter.value}</button>
+        <button onClick={() => counter.value++}>Count is {counter.value}</button>
+        <button onClick={() => state.count++}>Count is {state.count}</button>
+        <button>Doubled is {doubled.value}</button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
