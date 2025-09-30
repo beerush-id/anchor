@@ -34,5 +34,5 @@ export default defineConfig({
   sourcemap: true,
   platform: 'browser',
   external: ['@anchorlib/core', '@anchorlib/storage', 'react'],
-  esbuildPlugins: [pathResolve],
+  esbuildPlugins: [pathResolve as never],
 });
