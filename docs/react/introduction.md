@@ -29,7 +29,7 @@ While React's built-in state management with hooks like useState, useReducer, an
 | Automatic memory management | ❌ (inefficient deep copy)      | ✅               |
 | Schema validation           | ❌                              | ✅               |
 | Portability                 | ❌ (limited to React)           | ✅               |
-| History Tracking            | ❌ (limited to React)           | ✅               |
+| History Tracking            | ❌                              | ✅               |
 | Nested reactivity           | Deep                            | Deep by default  |
 | Performance optimization    | Manual                          | Automatic        |
 | Debugging experience        | Complex                         | Simplified       |

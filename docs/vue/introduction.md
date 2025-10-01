@@ -18,15 +18,15 @@ Despite Vue's excellent reactivity system, many developers encounter recurring i
 
 While Vue's built-in reactivity is already quite powerful, Anchor adds several enhancements:
 
-| Feature                 | Vue Built-in          | Anchor for Vue  |
-| ----------------------- | --------------------- | --------------- |
-| Fine-grained reactivity | ✅                    | ✅              |
-| Direct mutation         | ✅                    | ✅              |
-| True immutability       | ❌                    | ✅              |
-| Schema validation       | ❌                    | ✅              |
-| Nested reactivity       | Partial               | Deep by default |
-| Portability             | ❌ (limited to Vue)   | ✅              |
-| History Tracking        | ❌ (limited to React) | ✅              |
+| Feature                 | Vue Built-in        | Anchor for Vue  |
+| ----------------------- | ------------------- | --------------- |
+| Fine-grained reactivity | ✅                  | ✅              |
+| Direct mutation         | ✅                  | ✅              |
+| True immutability       | ❌                  | ✅              |
+| Schema validation       | ❌                  | ✅              |
+| Nested reactivity       | Partial             | Deep by default |
+| Portability             | ❌ (limited to Vue) | ✅              |
+| History Tracking        | ❌                  | ✅              |
 
 ## The Solution: Anchor for Vue
 

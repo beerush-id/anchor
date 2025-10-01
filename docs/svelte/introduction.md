@@ -26,7 +26,7 @@ While Svelte's built-in reactivity is already excellent, Anchor adds several enh
 | Schema validation       | ❌                     | ✅                |
 | Nested reactivity       | Partial (Runes only)   | Deep by default   |
 | Portability             | ❌ (limited to Svelte) | ✅                |
-| History Tracking        | ❌ (limited to React)  | ✅                |
+| History Tracking        | ❌                     | ✅                |
 
 ## The Solution: Anchor for Svelte
 
