@@ -14,6 +14,20 @@ Despite Vue's excellent reactivity system, many developers encounter recurring i
 
 - **Lack of Explicit Reactivity Control**: Vue doesn't provide fine-grained control over what triggers reactivity, making it difficult to optimize performance in complex applications with many interconnected components.
 
+## Comparison with Vue's Built-in Reactivity
+
+While Vue's built-in reactivity is already quite powerful, Anchor adds several enhancements:
+
+| Feature                 | Vue Built-in          | Anchor for Vue  |
+| ----------------------- | --------------------- | --------------- |
+| Fine-grained reactivity | ✅                    | ✅              |
+| Direct mutation         | ✅                    | ✅              |
+| True immutability       | ❌                    | ✅              |
+| Schema validation       | ❌                    | ✅              |
+| Nested reactivity       | Partial               | Deep by default |
+| Portability             | ❌ (limited to Vue)   | ✅              |
+| History Tracking        | ❌ (limited to React) | ✅              |
+
 ## The Solution: Anchor for Vue
 
 Anchor addresses these challenges by providing a revolutionary approach to state management that complements Vue's existing reactivity system:

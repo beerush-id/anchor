@@ -31,6 +31,33 @@ All implementations follow each library's best practices and optimization effort
 optimization work and deep understanding of each library's patterns.
 :::
 
+## Feature Comparison
+
+Beyond performance benchmarks, it's important to understand the feature differences between Anchor and other state management libraries. This comparison focuses on the capabilities and developer experience each solution provides.
+
+| Feature                       | Anchor  | Redux | MobX   | Jotai  | React |
+| ----------------------------- | ------- | ----- | ------ | ------ | ----- |
+| Direct State Mutation         | ✅      | ❌    | ✅     | ❌     | ❌    |
+| Fine-grained Reactivity       | ✅      | ❌    | ✅     | ✅     | ❌    |
+| Automatic Dependency Tracking | ✅      | ❌    | ✅     | ✅     | ❌    |
+| True Immutable State          | ✅      | ❌    | ❌     | ❌     | ❌    |
+| Schema Validation             | ✅      | ❌    | ❌     | ❌     | ❌    |
+| Nested State Handling         | ✅      | ❌    | ✅     | ❌     | ❌    |
+| TypeScript Support            | ✅      | ✅    | ✅     | ✅     | ✅    |
+| Boilerplate                   | Minimal | High  | Low    | Medium | Low   |
+| Bundle Size                   | Small   | Large | Medium | Small  | -     |
+| Learning Curve                | Low     | High  | Medium | Medium | Low   |
+
+::: tip Key Takeaways
+
+- **Anchor** provides the most comprehensive feature set with direct mutations, fine-grained reactivity, and built-in validation
+- **Redux** offers mature tooling and middleware but with higher complexity and boilerplate
+- **MobX** balances simplicity with reactivity but lacks some of Anchor's advanced features
+- **Jotai** provides atomic state management with minimal bundle size but requires more manual work for complex features
+- **React Built-in** solutions are lightweight but lack advanced capabilities for complex applications
+
+:::
+
 ## Complexity and Bundle Size
 
 The complexity assessment is based on code verbosity, readability, and maintainability from

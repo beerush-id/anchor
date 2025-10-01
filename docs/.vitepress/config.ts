@@ -4,7 +4,7 @@ import container from 'markdown-it-container';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 import llmstxt from 'vitepress-plugin-llms';
 
-const BASE_URL = !process.env.VITE_WORKER_BUILD ? '/anchor/docs' : '/docs';
+const BASE_URL = '/docs';
 const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchor.mahdaen.name/docs/';
 const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://anchor.mahdaen.name';
 const PAGE_TITLE = 'Anchor Docs';

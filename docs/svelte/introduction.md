@@ -14,6 +14,20 @@ Despite Svelte's excellent reactivity system, many developers encounter recurrin
 
 - **Lack of Explicit Reactivity Control**: Svelte doesn't provide fine-grained control over what triggers reactivity, making it difficult to optimize performance in complex applications with many interconnected components.
 
+## Comparison with Svelte's Built-in Reactivity
+
+While Svelte's built-in reactivity is already excellent, Anchor adds several enhancements:
+
+| Feature                 | Svelte Built-in        | Anchor for Svelte |
+| ----------------------- | ---------------------- | ----------------- |
+| Fine-grained reactivity | ✅                     | ✅                |
+| Direct mutation         | ✅                     | ✅                |
+| True immutability       | ❌                     | ✅                |
+| Schema validation       | ❌                     | ✅                |
+| Nested reactivity       | Partial (Runes only)   | Deep by default   |
+| Portability             | ❌ (limited to Svelte) | ✅                |
+| History Tracking        | ❌ (limited to React)  | ✅                |
+
 ## The Solution: Anchor for Svelte
 
 Anchor addresses these challenges by providing a revolutionary approach to state management that complements Svelte's existing reactivity system:

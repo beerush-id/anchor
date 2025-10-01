@@ -42,6 +42,8 @@ While Solid's built-in reactivity is already excellent, Anchor adds several enha
 | Schema validation       | ❌                        | ✅               |
 | Nested reactivity       | Shallow by default        | Deep by default  |
 | Data integrity          | Manual                    | Automatic        |
+| Portability             | ❌ (limited to Solid)     | ✅               |
+| History Tracking        | ❌ (limited to React)     | ✅               |
 
 ## Key Benefits
 
