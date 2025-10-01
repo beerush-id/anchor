@@ -42,13 +42,13 @@ describe('Anchor Solid - Ref System', () => {
 
   describe('isRef', () => {
     it('should return true for variableRef', () => {
-      const ref = variableRef(42);
-      expect(isRef(ref)).toBe(true);
+      const ref = renderHook(() => variableRef(42));
+      expect(isRef(ref.result)).toBe(true);
     });
 
     it('should return true for constantRef', () => {
-      const ref = constantRef(42);
-      expect(isRef(ref)).toBe(true);
+      const ref = renderHook(() => constantRef(42));
+      expect(isRef(ref.result)).toBe(true);
     });
 
     it('should return false for plain objects', () => {

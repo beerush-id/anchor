@@ -18,6 +18,7 @@
     "format": "bpkg run format -f apps/* packages/* && git add --renormalize .",
     "lint": "bpkg run lint",
     "test": "rimraf apps/next/public/coverage && vitest --run",
+    "test:all": "mpkg run test -f packages/* --sequential",
     "test:preview": "rimraf apps/next/public/coverage && vitest --run && vite preview --outDir apps/next/public/coverage",
     "prepare": "husky",
     "docs:dev": "vitepress dev docs --port 6611",

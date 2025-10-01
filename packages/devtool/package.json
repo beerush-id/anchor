@@ -42,9 +42,7 @@
     "build": "rimraf dist && tsup && publint",
     "clean": "rimraf dist",
     "format": "prettier --write .",
-    "prepublish": "rimraf dist && tsup && publint",
-    "test": "rimraf coverage && vitest --run",
-    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
+    "prepublish": "rimraf dist && tsup && publint"
   },
   "license": "MIT"
 }
