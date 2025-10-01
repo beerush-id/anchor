@@ -18,7 +18,7 @@ export const toggleTheme = () => {
 
 const codeBlocks = [
   {
-    name: 'React.tsx',
+    name: 'React',
     icon: '/images/logos/react.svg',
     iconAlt: 'React Logo',
     lang: 'tsx',
@@ -35,7 +35,7 @@ const App = observer(() => (
 `,
   },
   {
-    name: 'Solid.tsx',
+    name: 'Solid',
     icon: '/images/logos/solid.svg',
     iconAlt: 'SolidJS Logo',
     lang: 'tsx',
@@ -52,7 +52,7 @@ const App = () => (
 `,
   },
   {
-    name: 'App.svelte',
+    name: 'Svelte',
     icon: '/images/logos/svelte.svg',
     iconAlt: 'Svelte Logo',
     lang: 'svelte',
@@ -69,7 +69,7 @@ const App = () => (
 `,
   },
   {
-    name: 'App.vue',
+    name: 'Vue',
     icon: '/images/logos/vue.svg',
     iconAlt: 'Vue Logo',
     lang: 'vue',
@@ -88,7 +88,7 @@ const App = () => (
 `,
   },
   {
-    name: 'Vanilla.html',
+    name: 'Vanilla',
     icon: '/images/logos/html.svg',
     iconAlt: 'HTML Logo',
     lang: 'html',

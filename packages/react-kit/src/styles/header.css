@@ -11,10 +11,14 @@
 }
 
 @utility ark-header-links {
-  @apply hidden md:flex flex-1 justify-end gap-14;
+  @apply hidden lg:flex flex-1 justify-end gap-14;
 
   li {
     @apply inline-flex items-center;
+  }
+
+  a {
+    @apply whitespace-nowrap;
   }
 }
 
@@ -23,7 +27,7 @@
 }
 
 @utility ark-header-socials {
-  @apply flex items-center gap-2 md:gap-4;
+  @apply flex items-center gap-2 md:gap-4 flex-1 lg:flex-none justify-end;
 
   & > li {
     @apply inline-flex items-center;

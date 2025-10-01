@@ -80,12 +80,12 @@ html.dark .shiki span {
 }
 
 @utility ark-code-viewer-buttons {
-  @apply flex items-center bg-foreground w-full overflow-x-auto flex-nowrap;
+  @apply flex items-center bg-foreground/10 w-full overflow-x-auto flex-nowrap;
 }
 
 @utility ark-code-viewer-button {
   @apply flex items-center gap-1 flex-none;
-  @apply px-4 py-2 text-sm font-medium text-background  hover:text-foreground hover:bg-code-block-background;
+  @apply px-4 py-2 text-sm font-medium hover:bg-code-block-background/75;
   @apply transition-colors;
 
   &.active {
