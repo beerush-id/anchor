@@ -10,8 +10,9 @@ Anchor is more than just a state management library - it's a comprehensive ecosy
 
 - **[@anchor/core](./packages/core)** - The heart of the ecosystem with reactive state management
 - **[@anchor/react](./packages/react)** - React integration with hooks and components
-- **[@anchor/vue](./packages/vue)** - Vue integration with composables
+- **[@anchor/solid](./packages/solid)** - Solid integration with reactive state
 - **[@anchor/svelte](./packages/svelte)** - Svelte integration
+- **[@anchor/vue](./packages/vue)** - Vue integration with composables
 
 ### Storage Solutions
 
