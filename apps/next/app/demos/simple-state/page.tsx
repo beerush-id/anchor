@@ -2,7 +2,7 @@
 
 import { Card, CodeViewer, Section, SectionTitle } from '@anchorlib/react-kit/components';
 import ReactSnippet from './React?raw';
-import SolidSnippet from './Solid?raw';
+import SolidSnippet from './Solid.txt?raw';
 import SvelteSnippet from './Svelte.svelte?raw';
 import VueSnippet from './Vue.vue?raw';
 
