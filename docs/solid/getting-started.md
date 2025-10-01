@@ -44,28 +44,51 @@ The most common way to create reactive state in Anchor is using the [anchorRef](
 
 ### Your First Reactive Component
 
-```tsx
+To get started, create a component that uses the `anchorRef` function to create a reactive reference:
+
+```tsx /App.tsx [active]
 import { anchorRef } from '@anchorlib/solid';
 
 const Counter = () => {
   const counter = anchorRef({ count: 0 });
 
-  const increment = () => counter.count++;
-  const decrement = () => counter.count--;
-  const reset = () => (counter.count = 0);
-
   return (
     <div>
       <h1>Counter: {counter.count}</h1>
-      <button onClick={increment}>Increment</button>
-      <button onClick={decrement}>Decrement</button>
-      <button onClick={reset}>Reset</button>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
     </div>
   );
 };
 
 export default Counter;
 ```
+
+::: details Try it Yourself
+
+::: anchor-solid-sandbox
+
+```tsx /App.tsx [active]
+import { anchorRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const counter = anchorRef({ count: 0 });
+
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+:::
 
 ::: tip Key Points:
 
@@ -78,27 +101,55 @@ export default Counter;
 
 ## Global State
 
-For state that needs to be shared across multiple components, you can create the state outside of your components:
+For state that needs to be shared across multiple components, you can create the state outside your components:
 
-```tsx
+```tsx /App.tsx [active]
 import { anchorRef } from '@anchorlib/solid';
 
-// Create global state outside of any component
-const globalCounter = anchorRef({ count: 0 });
+// Global state declared outside your component
+const counter = anchorRef({ count: 0 });
 
-const CounterDisplay = () => {
-  return <h1>Count: {globalCounter.count}</h1>;
-};
-
-const CounterControls = () => {
+const Counter = () => {
+  // Work with the state as normally you would
   return (
     <div>
-      <button onClick={() => globalCounter.count++}>Increment</button>
-      <button onClick={() => globalCounter.count--}>Decrement</button>
+      <h1>Counter: {counter.count}</h1>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
     </div>
   );
 };
+
+export default Counter;
 ```
+
+::: details Try it Yourself
+
+::: anchor-solid-sandbox
+
+```tsx /App.tsx [active]
+import { anchorRef } from '@anchorlib/solid';
+
+// Global state declared outside your component
+const counter = anchorRef({ count: 0 });
+
+const Counter = () => {
+  // Work with the state as normally you would
+  return (
+    <div>
+      <h1>Counter: {counter.count}</h1>
+      <button onClick={() => counter.count++}>Increment</button>
+      <button onClick={() => counter.count--}>Decrement</button>
+      <button onClick={() => (counter.count = 0)}>Reset</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+:::
 
 ## Working with Arrays
 

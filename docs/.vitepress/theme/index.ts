@@ -7,6 +7,8 @@ import 'vitepress-plugin-sandpack/dist/style.css';
 import './style.css';
 // @ts-ignore
 import AnchorReactSandbox from './AnchorReactSandbox.vue';
+// @ts-ignore
+import AnchorSolidSandbox from './AnchorSolidSandbox.vue';
 
 export default {
   extends: DefaultTheme,
@@ -20,5 +22,6 @@ export default {
     // DefaultTheme.enhanceApp({ app, router, siteData });
     app.component('Sandbox', Sandbox);
     app.component('AnchorReactSandbox', AnchorReactSandbox);
+    app.component('AnchorSolidSandbox', AnchorSolidSandbox);
   },
 } satisfies Theme;

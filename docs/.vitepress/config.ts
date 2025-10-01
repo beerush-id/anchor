@@ -455,11 +455,17 @@ export default defineConfig({
         render(tokens: any[], idx: number) {
           return renderSandbox(tokens, idx, 'sandbox');
         },
-      }).use(container, 'anchor-react-sandbox', {
-        render(tokens: any[], idx: number) {
-          return renderSandbox(tokens, idx, 'anchor-react-sandbox');
-        },
-      });
+      })
+        .use(container, 'anchor-react-sandbox', {
+          render(tokens: any[], idx: number) {
+            return renderSandbox(tokens, idx, 'anchor-react-sandbox');
+          },
+        })
+        .use(container, 'anchor-solid-sandbox', {
+          render(tokens: any[], idx: number) {
+            return renderSandbox(tokens, idx, 'anchor-solid-sandbox');
+          },
+        });
     },
   },
   vite: {
