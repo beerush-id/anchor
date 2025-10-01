@@ -210,6 +210,32 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Anchor for Solid',
+        collapsed: true,
+        items: [
+          {
+            text: 'Introduction',
+            link: '/solid/introduction',
+          },
+          {
+            text: 'Getting Started',
+            link: '/solid/getting-started',
+          },
+          {
+            text: 'Reactivity',
+            link: '/solid/reactivity',
+          },
+          {
+            text: 'Immutability',
+            link: '/solid/immutability',
+          },
+          {
+            text: 'State Management',
+            link: '/solid/state-management',
+          },
+        ],
+      },
+      {
         text: 'Anchor for Svelte',
         collapsed: true,
         items: [
@@ -350,6 +376,17 @@ export default defineConfig({
               { text: 'Components', link: '/apis/react/components' },
               { text: 'Error Handling', link: '/apis/react/error-handling' },
               { text: 'Utilities', link: '/apis/react/utilities' },
+            ],
+          },
+          {
+            text: 'Solid',
+            collapsed: true,
+            items: [
+              { text: 'Initialization', link: '/apis/solid/initialization' },
+              { text: 'Observation', link: '/apis/solid/observation' },
+              { text: 'Fetch', link: '/apis/solid/fetch' },
+              { text: 'History', link: '/apis/solid/history' },
+              { text: 'Storage', link: '/apis/solid/storage' },
             ],
           },
           {
