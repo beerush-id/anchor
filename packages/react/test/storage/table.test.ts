@@ -79,7 +79,7 @@ describe('Storage - Table', () => {
       const name = 'test-table';
       const version = 1;
       const indexes = ['name'];
-      const remIndexes = [];
+      const remIndexes = [] as string[];
       const dbName = 'test-db';
 
       const result = createTableRef(name, version, indexes, remIndexes, dbName);
@@ -250,14 +250,14 @@ describe('Storage - Table', () => {
       const cleanup = vi.fn();
       (useMicrotask as never as Mock).mockReturnValue([cleanup, cancelCleanup]);
 
-      renderHook(() => useTableRow(mockTable, mockRowState as unknown as RowState<any>));
+      renderHook(() => useTableRow(mockTable as never, mockRowState as unknown as RowState<any>));
 
       expect(cancelCleanup).toHaveBeenCalled();
       expect(useEffect).toHaveBeenCalled();
     });
 
     it('should call table.leave on cleanup', () => {
-      let cleanupFn;
+      let cleanupFn: (() => void) | undefined;
       const mockUseEffect = vi.fn((fn) => {
         const cleanup = fn();
         if (cleanup) {
@@ -272,7 +272,7 @@ describe('Storage - Table', () => {
         status: 'ready',
       };
 
-      const { unmount } = renderHook(() => useTableRow(mockTable, rowState as unknown as RowState<any>));
+      const { unmount } = renderHook(() => useTableRow(mockTable as never, rowState as unknown as RowState<any>));
 
       unmount();
 
@@ -297,7 +297,7 @@ describe('Storage - Table', () => {
       });
       mockTable.get.mockReturnValueOnce(mockState);
 
-      const { result } = renderHook(() => useTableGet(mockTable, 'row-1'));
+      const { result } = renderHook(() => useTableGet(mockTable as never, 'row-1'));
 
       expect(mockTable.get).toHaveBeenCalledWith('row-1');
       expect(useConstant).toHaveBeenCalled();
@@ -319,14 +319,14 @@ describe('Storage - Table', () => {
       });
       mockTable.get.mockReturnValueOnce(mockState);
 
-      renderHook(() => useTableGet(mockTable, 'row-1'));
+      renderHook(() => useTableGet(mockTable as never, 'row-1'));
 
       expect(cancelCleanup).toHaveBeenCalled();
       expect(useEffect).toHaveBeenCalled();
     });
 
     it('should call table.leave on cleanup', () => {
-      let cleanupFn;
+      let cleanupFn: (() => void) | undefined;
       const mockUseEffect = vi.fn((fn) => {
         const cleanup = fn();
         if (cleanup && typeof cleanup === 'function') {
@@ -347,7 +347,7 @@ describe('Storage - Table', () => {
       });
       mockTable.get.mockReturnValueOnce(mockState);
 
-      const { unmount } = renderHook(() => useTableGet(mockTable, 'row-1'));
+      const { unmount } = renderHook(() => useTableGet(mockTable as never, 'row-1'));
 
       unmount();
 
@@ -373,7 +373,7 @@ describe('Storage - Table', () => {
       });
       mockTable.list.mockReturnValueOnce(mockState);
 
-      const { result } = renderHook(() => useTableList(mockTable));
+      const { result } = renderHook(() => useTableList(mockTable as never));
 
       expect(mockTable.list).toHaveBeenCalled();
       expect(useConstant).toHaveBeenCalled();
@@ -395,7 +395,7 @@ describe('Storage - Table', () => {
       });
       mockTable.listByIndex.mockReturnValueOnce(mockState);
 
-      const { result } = renderHook(() => useTableListByIndex(mockTable, 'name'));
+      const { result } = renderHook(() => useTableListByIndex(mockTable as never, 'name'));
 
       expect(mockTable.listByIndex).toHaveBeenCalledWith('name', undefined, undefined, undefined);
       expect(useConstant).toHaveBeenCalledWith(expect.any(Function), [

@@ -36,7 +36,7 @@ export function createTableRef<P extends Rec, R extends Row<P> = Row<P>>(table: 
  */
 export function createTableRef<P extends Rec, R extends Row<P> = Row<P>>(
   name: string,
-  version: number,
+  version?: number,
   indexes?: (keyof R)[],
   remIndexes?: (keyof R)[],
   dbName?: string

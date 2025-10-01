@@ -19,7 +19,7 @@ export type StyleDeclaration = {
 export type StyleRef = StyleDeclaration | VariableRef<StyleDeclaration>;
 
 export type RefProps<E> = {
-  ref?: RefObject<E>;
+  ref?: RefObject<E | null>;
 };
 export type StylingProps = {
   className?: ClassName | ClassList;
