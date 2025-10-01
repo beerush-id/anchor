@@ -75,6 +75,30 @@ bun add @anchorlib/react
 
 :::
 
+### **Solid Integration**
+
+For Solid applications, install the Solid-specific package:
+
+::: code-group
+
+```bash [NPM]
+npm install @anchorlib/solid
+```
+
+```bash [Yarn]
+yarn add @anchorlib/solid
+```
+
+```bash [PNPM]
+pnpm add @anchorlib/solid
+```
+
+```bash [Bun]
+bun add @anchorlib/solid
+```
+
+:::
+
 ### **Vue Integration**
 
 For Vue applications, install the Vue-specific package:
@@ -141,12 +165,28 @@ console.log(state.count); // 0
 state.count++;
 ```
 
-```jsx [Counter.jsx]
+```jsx [ReactCounter.jsx]
 import { useObserved } from '@anchorlib/react';
 import { state } from '../index.js';
 
 const Counter = () => {
   const count = useObserved(() => state.count);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => state.count++}>Increment</button>
+    </div>
+  );
+};
+```
+
+```jsx [SolidCounter.jsx]
+import { observedRef } from '@anchorlib/solid';
+import { state } from '../index.js';
+
+const Counter = () => {
+  const count = observedRef(() => state.count);
 
   return (
     <div>

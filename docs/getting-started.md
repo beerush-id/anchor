@@ -65,6 +65,25 @@ const Counter = observer(() => {
 });
 ```
 
+```jsx [Solid]
+import { anchorRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const state = anchorRef({
+    count: 0,
+    title: 'My App',
+  });
+
+  return (
+    <div>
+      <h1>{state.title}</h1>
+      <p>Count: {state.count}</p>
+      <button onClick={() => state.count++}>Increment</button>
+    </div>
+  );
+};
+```
+
 ```svelte [Svelte]
 <script>
   import { anchorRef } from '@anchorlib/svelte';
