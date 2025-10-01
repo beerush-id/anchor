@@ -44,7 +44,7 @@ if (!bindingInitialized) {
 
     // Batch the tracking to unblock the property reads.
     batch(() => {
-      OWNER_REGISTRY.get(owner)!.assign(init, observers)(key);
+      OWNER_REGISTRY.get(owner)?.assign(init, observers)(key);
     });
   });
 }
