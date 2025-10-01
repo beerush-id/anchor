@@ -2,7 +2,7 @@ import type { MouseEventHandler } from 'react';
 import { getContext, setContext } from '@anchorlib/core';
 import { useVariable, type VariableRef } from '@anchorlib/react';
 
-export const BASE_PATH = !import.meta.env.VITE_WORKER_BUILD ? '/anchor' : '';
+export const BASE_PATH = '';
 
 export const inlineNav: MouseEventHandler = (event) => {
   const href = (event.currentTarget as HTMLAnchorElement)?.getAttribute('href');

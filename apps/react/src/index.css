@@ -1,2 +1,5 @@
 @import 'tailwindcss';
+@import '@anchorlib/react-kit/styles/index.css';
 @import './App.css';
+
+@source '../../../node_modules/@anchorlib/react-kit/dist';

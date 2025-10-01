@@ -1,16 +1,57 @@
 import { BookText } from 'lucide-react';
-import { Tooltip } from './Tooltip.js';
-import { BASE_PATH, inlineNav } from '@lib/nav.js';
-import { useAction } from '@anchorlib/react';
-import { DiscordIcon } from './DiscordIcon.js';
-import { GithubIcon } from './GithubIcon.js';
+import { setDebugRenderer, useAction } from '@anchorlib/react';
+import { Header as MainHeader, type HeaderLink, type HeaderSocial } from '@anchorlib/react-kit/components';
+import { DiscordIcon, GithubIcon } from '@anchorlib/react-kit/icons';
+import { LogoText } from './LogoText';
+
+setDebugRenderer(true);
 
 const SCROLL_THRESHOLD = 68;
 
+const links: HeaderLink[] = [
+  {
+    href: '#hero',
+    text: 'Overview',
+  },
+  {
+    href: '#performance',
+    text: 'Performance',
+  },
+  {
+    href: '#features',
+    text: 'Core Features',
+  },
+  {
+    href: '#todo-benchmark',
+    text: 'Demos',
+  },
+];
+
+const socials: HeaderSocial[] = [
+  {
+    href: '/docs',
+    text: 'Docs',
+    icon: BookText,
+  },
+  {
+    href: 'https://github.com/beerush-id/anchor',
+    tips: 'GitHub',
+    icon: GithubIcon,
+    className: 'hidden md:inline-flex',
+  },
+  {
+    href: 'https://discord.gg/aEFgpaghq2',
+    tips: 'Discord',
+    icon: DiscordIcon,
+    className: 'hidden md:inline-flex',
+  },
+];
+
 export const Header = () => {
-  const ref = useAction<HTMLElement>((element) => {
+  const ref = useAction<HTMLHeadingElement>((element) => {
     if (!element?.parentElement) return;
 
+    document.documentElement.style.setProperty('--header-height', `${element.offsetHeight}px`);
     const toggleBlur = () => {
       if (!element?.parentElement) return;
 
@@ -29,53 +70,14 @@ export const Header = () => {
   });
 
   return (
-    <header ref={ref} className={`main-header sticky top-0 z-50`}>
-      <nav className="container mx-auto px-6 py-4 flex items-center gap-6 md:gap-20 max-w-6xl">
-        <h1 className="tracking-tight flex items-center select-none flex-1 md:flex-none">
-          <a href={BASE_PATH}>
-            <img src={`${BASE_PATH}/images/logo-text.svg`} alt="Anchor Logo" className="h-8" />
-          </a>
-          <span className="hidden">Anchor - Framework Agnostic State Management Library</span>
-        </h1>
-        <div className="hidden md:flex flex-1 justify-end gap-14">
-          <a href="#hero" onClick={inlineNav} className="text-slate-300 hover:text-slate-100 transition-colors">
-            Overview
-          </a>
-          <a href="#metrics" onClick={inlineNav} className="text-slate-300 hover:text-slate-100 transition-colors">
-            Performance
-          </a>
-          <a href="#philosophy" onClick={inlineNav} className="text-slate-300 hover:text-slate-100 transition-colors">
-            Philosophy
-          </a>
-          <a href="#architecture" onClick={inlineNav} className="text-slate-300 hover:text-slate-100 transition-colors">
-            Architecture
-          </a>
-        </div>
-        <div className="flex items-center gap-4 md:gap-6">
-          <a
-            href={`${BASE_PATH}/docs`}
-            className="flex items-center text-slate-300 hover:text-slate-100 gap-2 transition-colors">
-            <BookText className="w-4 h-4" />
-            <span className="text-sm">Docs</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/beerush-id/anchor"
-              target="_blank"
-              className="flex items-center text-slate-300 hover:text-slate-100 transition-colors">
-              <GithubIcon className="w-4 h-4" />
-              <Tooltip>GitHub</Tooltip>
-            </a>
-            <a
-              href="https://discord.gg/aEFgpaghq2"
-              target="_blank"
-              className="flex items-center text-slate-300 hover:text-slate-100 transition-colors">
-              <DiscordIcon className="w-4 h-4" />
-              <Tooltip>Join Discord</Tooltip>
-            </a>
-          </div>
-        </div>
-      </nav>
-    </header>
+    <>
+      <MainHeader
+        ref={ref}
+        logo={{ text: 'Anchor - Framework Agnostic State Management Library', image: LogoText }}
+        links={links}
+        socials={socials}
+        offset={SCROLL_THRESHOLD}
+      />
+    </>
   );
 };
