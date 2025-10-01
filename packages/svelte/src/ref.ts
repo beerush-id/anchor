@@ -1,5 +1,5 @@
 import type { ConstantRef, RefSubscriber, StateRef, VariableRef } from './types.js';
-import { anchor, type Linkable, linkable, type StateController, subscribe as derive } from '@anchorlib/core';
+import { anchor, type StateController, subscribe as derive } from '@anchorlib/core';
 import { onDestroy } from 'svelte';
 
 export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>();
@@ -11,10 +11,9 @@ export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>
  *
  * @template T The type of the value being referenced
  * @param init - The initial value for the reference
- * @param updater
  * @returns A readable reference object with subscribe and publish capabilities
  */
-export function variableRef<T>(init: T, updater?: (value: T) => T): VariableRef<T>;
+export function variableRef<T>(init: T): VariableRef<T>;
 
 /**
  * Creates a constant (read-only) reference that can be subscribed to for reactive updates.
@@ -38,7 +37,7 @@ export function variableRef<T>(init: T, constant: true): ConstantRef<T>;
  * @param constant - If true, the reference will be read-only and cannot be updated.
  * @returns A readable reference object with subscribe and publish capabilities
  */
-export function variableRef<T>(init: T, constant?: boolean | ((value: T) => T)) {
+export function variableRef<T>(init: T, constant?: boolean) {
   const subscribers = new Set<RefSubscriber<T>>();
   const stateRef = anchor({ value: init }, { recursive: true });
   const controller = derive.resolve(stateRef) as StateController;
@@ -49,30 +48,10 @@ export function variableRef<T>(init: T, constant?: boolean | ((value: T) => T)) 
     // Ignore if the value is the same.
     if (constant === true || value === stateRef.value) return;
 
-    if (typeof constant === 'function') {
-      stateRef.value = (constant as (value: T) => T)(value);
-      return;
-    }
-
-    if (!linkable(value)) {
-      stateRef.value = value;
-      return;
-    }
-
-    const { schema, configs } = anchor.has(stateRef.value as Linkable)
-      ? (derive.resolve(stateRef.value as Linkable)?.meta ?? {})
-      : {};
-
-    // Create a new state using the same options.
-    stateRef.value = anchor(value as never, (schema ?? configs) as never, configs);
+    stateRef.value = value;
   };
 
   const subscribe = (handler: RefSubscriber<T>) => {
-    if (!anchor.has(stateRef)) {
-      handler(stateRef.value);
-      return () => {};
-    }
-
     if (!leaveState) {
       leaveState = controller.subscribe.all((_, event) => {
         if (event.type !== 'init' && !event.error) {
