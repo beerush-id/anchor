@@ -99,6 +99,151 @@ export default Counter;
 
 :::
 
+### Computed Property
+
+```tsx /App.tsx [active]
+import { anchorRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const state = anchorRef({
+    count: 0,
+    firstName: 'John',
+    lastName: 'Doe',
+    // Computed property using getter just works
+    get fullName() {
+      return `${state.firstName} ${state.lastName}`;
+    },
+    get doubleCount() {
+      return state.count * 2;
+    },
+  });
+
+  const changeName = () => {
+    state.firstName = 'Jane';
+    state.lastName = 'Smith';
+  };
+
+  return (
+    <div>
+      <h1>Counter: {state.count}</h1>
+      <h1>Double Count: {state.doubleCount}</h1>
+      <h1>Full Name: {state.fullName}</h1>
+      <button onClick={() => state.count++}>Increment</button>
+      <button onClick={() => state.count--}>Decrement</button>
+      <button onClick={() => (state.count = 0)}>Reset</button>
+      <button onClick={changeName}>Change Name</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+::: details Try it Yourself
+
+::: anchor-solid-sandbox
+
+```tsx /App.tsx [active]
+import { anchorRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const state = anchorRef({
+    count: 0,
+    firstName: 'John',
+    lastName: 'Doe',
+    get fullName() {
+      return `${state.firstName} ${state.lastName}`;
+    },
+    get doubleCount() {
+      return state.count * 2;
+    },
+  });
+
+  const changeName = () => {
+    state.firstName = 'Jane';
+    state.lastName = 'Doe';
+  };
+
+  return (
+    <div>
+      <h1>Counter: {state.count}</h1>
+      <h1>Double Count: {state.doubleCount}</h1>
+      <h1>Full Name: {state.fullName}</h1>
+      <button onClick={() => state.count++}>Increment</button>
+      <button onClick={() => state.count--}>Decrement</button>
+      <button onClick={() => (state.count = 0)}>Reset</button>
+      <button onClick={changeName}>Change Name</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+:::
+
+### Derived State
+
+```tsx /App.tsx [active]
+import { anchorRef, observedRef, variableRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const count = variableRef(1);
+  const count2 = variableRef(5);
+  const counter = anchorRef({ count: 3 });
+
+  // Derived state that automatically updates when any of its dependencies change
+  const total = observedRef(() => count.value + count2.value + counter.count);
+
+  return (
+    <div>
+      <h1>Counter 1: {count.value}</h1>
+      <h1>Counter 2: {count2.value}</h1>
+      <h1>Counter 3: {counter.count}</h1>
+      <h1>Total: {total.value}</h1>
+      <button onClick={() => count.value++}>Increment 1</button>
+      <button onClick={() => count2.value++}>Increment 2</button>
+      <button onClick={() => counter.count++}>Increment 3</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+::: details Try it Yourself
+
+::: anchor-solid-sandbox
+
+```tsx /App.tsx [active]
+import { anchorRef, observedRef, variableRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const count = variableRef(1);
+  const count2 = variableRef(5);
+  const counter = anchorRef({ count: 3 });
+
+  // Derived state that automatically updates when any of its dependencies change
+  const total = observedRef(() => count.value + count2.value + counter.count);
+
+  return (
+    <div>
+      <h1>Counter 1: {count.value}</h1>
+      <h1>Counter 2: {count2.value}</h1>
+      <h1>Counter 3: {counter.count}</h1>
+      <h1>Total: {total.value}</h1>
+      <button onClick={() => count.value++}>Increment 1</button>
+      <button onClick={() => count2.value++}>Increment 2</button>
+      <button onClick={() => counter.count++}>Increment 3</button>
+    </div>
+  );
+};
+
+export default Counter;
+```
+
+:::
+
 ## Global State
 
 For state that needs to be shared across multiple components, you can create the state outside your components:
