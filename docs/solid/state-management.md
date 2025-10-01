@@ -113,7 +113,7 @@ const TodoStats = () => {
 
 ### Using observedRef
 
-For more complex derived state, use the [observedRef](/solid/api/observedref) function:
+For more complex derived state, use the [observedRef](/apis/solid/observation#observedref) function:
 
 ```tsx
 import { anchorRef, observedRef } from '@anchorlib/solid';

@@ -40,7 +40,7 @@ bun add @anchorlib/solid
 
 ## Basic Usage
 
-The most common way to create reactive state in Anchor is using the [anchorRef](/solid/api/anchorRef) function. This creates a reactive reference that integrates seamlessly with Solid's reactivity system.
+The most common way to create reactive state in Anchor is using the [anchorRef](/apis/solid/initialization#anchorref) function. This creates a reactive reference that integrates seamlessly with Solid's reactivity system.
 
 ### Your First Reactive Component
 
