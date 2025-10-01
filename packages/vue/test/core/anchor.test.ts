@@ -37,8 +37,6 @@ describe('Anchor Vue - Anchor System', () => {
 
         state!.value = { count: 43, name: 'test2' };
 
-        console.log(state!.value);
-
         await wrapper.vm.$nextTick();
 
         // expect(wrapper.text()).toBe('43-test2');

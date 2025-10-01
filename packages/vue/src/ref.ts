@@ -75,7 +75,14 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
       INSTANCE_REGISTRY.get(component)!.add(observer);
 
       onUnmounted(() => {
+        // Destroy the observer.
         observer.destroy();
+
+        // Destroy the state.
+        anchor.destroy(state);
+
+        // Remove the state ref from registry.
+        REF_REGISTRY.delete(stateRef);
 
         if (component) {
           const observers = INSTANCE_REGISTRY.get(component);
@@ -110,14 +117,6 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
   });
 
   REF_REGISTRY.set(stateRef, state);
-
-  onUnmounted(() => {
-    // Destroy the state.
-    anchor.destroy(state);
-
-    // Remove the state ref from registry.
-    REF_REGISTRY.delete(stateRef);
-  });
 
   return stateRef;
 }
