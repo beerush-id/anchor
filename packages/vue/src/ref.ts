@@ -1,13 +1,5 @@
 import { type ComponentInternalInstance, customRef, getCurrentInstance, onUnmounted, type Ref } from 'vue';
-import {
-  anchor,
-  captureStack,
-  createObserver,
-  linkable,
-  microbatch,
-  setTracker,
-  type StateObserver,
-} from '@anchorlib/core';
+import { anchor, captureStack, createObserver, microbatch, setTracker, type StateObserver } from '@anchorlib/core';
 import type { ConstantRef, StateRef, VariableRef } from './types.js';
 
 export const REF_REGISTRY = new WeakMap<Ref, StateRef<unknown>>();
@@ -81,6 +73,19 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
       }
 
       INSTANCE_REGISTRY.get(component)!.add(observer);
+
+      onUnmounted(() => {
+        observer.destroy();
+
+        if (component) {
+          const observers = INSTANCE_REGISTRY.get(component);
+          observers?.delete(observer);
+
+          if (!observers?.size) {
+            INSTANCE_REGISTRY.delete(component);
+          }
+        }
+      });
     } else {
       const error = new Error('Outside of component scope.');
       captureStack.violation.general(
@@ -90,35 +95,16 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
       );
     }
 
-    onUnmounted(() => {
-      observer.destroy();
-
-      if (component) {
-        const observers = INSTANCE_REGISTRY.get(component);
-        observers?.delete(observer);
-
-        if (!observers?.size) {
-          INSTANCE_REGISTRY.delete(component);
-        }
-      }
-    });
-
     return {
       get() {
         track();
         return state.value;
       },
       set(value) {
-        // Ignore if the new value is the same with the existing one.
-        if (value === state.value) return;
+        // Ignore if ref is read-only or the new value is the same with the existing one.
+        if (constant || value === state.value) return;
 
-        if (!constant) {
-          if (linkable(state.value)) {
-            observer.destroy();
-          }
-
-          state.value = value;
-        }
+        state.value = value;
       },
     };
   });

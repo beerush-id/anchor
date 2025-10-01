@@ -1,7 +1,6 @@
 import {
   anchor,
   type ImmutableOutput,
-  linkable,
   type Linkable,
   type LinkableSchema,
   type ModelArray,
@@ -73,7 +72,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schemaOptions?: S | StateOptions<S>,
   options?: StateBaseOptions
 ): VariableRef<T | ModelOutput<T> | ImmutableOutput<T>> {
-  const state = linkable(init) ? anchor<S, T>(init, schemaOptions as S, options) : init;
+  const state = anchor<S, T>(init, schemaOptions as S, options);
   return variableRef(state) as VariableRef<T>;
 }
 

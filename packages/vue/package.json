@@ -75,8 +75,8 @@
     "build": "rimraf dist && tsup && publint",
     "format": "prettier --write .",
     "prepublish": "rimraf dist && tsup && publint",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test": "rimraf coverage && vitest --run",
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },
   "optionalDependencies": {
     "zod": "^4.1.5"

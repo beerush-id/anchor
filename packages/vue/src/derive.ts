@@ -1,4 +1,4 @@
-import { derive, type PipeTransformer, type State, type StateUnsubscribe } from '@anchorlib/core';
+import { type PipeTransformer, type State, type StateUnsubscribe, subscribe as derive } from '@anchorlib/core';
 import { customRef, isRef, onUnmounted, type Ref } from 'vue';
 import type { ConstantRef } from './types.js';
 import { REF_REGISTRY } from './ref.js';
@@ -29,12 +29,12 @@ export function derivedRef<T extends State, R>(
   state: T | Ref<T>,
   transform?: PipeTransformer<T, R>
 ): ConstantRef<T | R> {
-  if (isRef(state)) {
-    state = REF_REGISTRY.get(state) as T;
-  }
+  const _isRef = isRef(state);
+  state = _isRef ? (REF_REGISTRY.get(state as Ref<T>) as T) : state;
+  const value = () => (_isRef ? (state as Ref<T>).value : state) as T;
 
   let unsubscribe: StateUnsubscribe;
-  let current = typeof transform === 'function' ? transform(state) : state;
+  let current = typeof transform === 'function' ? transform(value()) : state;
 
   onUnmounted(() => {
     unsubscribe?.();
@@ -46,7 +46,7 @@ export function derivedRef<T extends State, R>(
 
       unsubscribe = derive(state, (_, event) => {
         if (event.type !== 'init') {
-          current = typeof transform === 'function' ? transform(state) : state;
+          current = typeof transform === 'function' ? transform(value()) : state;
           trigger();
         }
       });
