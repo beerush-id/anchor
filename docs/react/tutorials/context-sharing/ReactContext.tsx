@@ -1,7 +1,6 @@
 import '@tailwindcss/browser';
 import React, { createContext, useContext } from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { observer, useAnchor } from '@anchorlib/react';
 
 interface Settings {
   theme: 'light' | 'dark';

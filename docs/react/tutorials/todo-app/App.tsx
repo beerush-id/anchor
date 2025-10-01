@@ -4,9 +4,8 @@ import TodoForm from './TodoForm';
 import TodoList from './TodoList';
 import TodoStats from './TodoStats';
 import { useRef } from 'react';
-import { debugRender, useVariable } from '@anchorlib/react';
+import { debugRender, observe, useVariable } from '@anchorlib/react';
 import { setContext } from '@anchorlib/core';
-import { observe } from '@anchorlib/react/view';
 
 export default function App() {
   const ref = useRef(null);

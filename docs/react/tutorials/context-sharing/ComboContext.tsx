@@ -1,8 +1,7 @@
 import '@tailwindcss/browser';
 import React, { createContext, useContext } from 'react';
 import { getContext, setContext } from '@anchorlib/core';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { observer, useAnchor } from '@anchorlib/react';
 
 // Define our state interfaces
 interface UIState {

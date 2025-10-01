@@ -210,8 +210,7 @@ function useVariable<T>(init: RefInitializer<T>, deps: unknown[]): [VariableRef<
 ```
 
 ```tsx [Example: Direct Mutation]
-import { useVariable } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useVariable, observer } from '@anchorlib/react';
 
 const Counter = observer(() => {
   const [countRef] = useVariable(0);
@@ -248,8 +247,7 @@ changed imperatively.
 ::: code-group
 
 ```tsx [Example: Derived Value]
-import { useConstant } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useConstant, observer } from '@anchorlib/react';
 
 const UserProfile = observer(({ user }) => {
   // This ref will only re-calculate when the `user` prop changes.

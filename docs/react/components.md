@@ -50,8 +50,7 @@ A versatile React component for text and other input types, binding directly to 
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Input } from '@anchorlib/react/components';
 
 const UserProfile = observer(() => {
@@ -89,8 +88,7 @@ export default UserProfile;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Input } from '@anchorlib/react/components';
 
 const ProductForm = observer(() => {
@@ -156,8 +154,7 @@ A React component for a checkbox input, binding directly to a reactive boolean s
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Checkbox } from '@anchorlib/react/components';
 
 const UserPreferences = observer(() => {
@@ -197,8 +194,7 @@ export default UserPreferences;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Checkbox } from '@anchorlib/react/components';
 
 const FeatureToggle = observer(() => {
@@ -256,8 +252,7 @@ A React component for a radio button input, binding directly to a reactive state
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Radio } from '@anchorlib/react/components';
 
 const ThemeSelector = observer(() => {
@@ -298,8 +293,7 @@ export default ThemeSelector;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Radio } from '@anchorlib/react/components';
 
 const PrioritySelector = observer(() => {
@@ -365,8 +359,7 @@ A React component for a select dropdown, binding directly to a reactive state pr
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Select } from '@anchorlib/react/components';
 
 const CountrySelector = observer(() => {
@@ -403,8 +396,7 @@ export default CountrySelector;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Select } from '@anchorlib/react/components';
 
 const RoleSelector = observer(() => {
@@ -466,8 +458,7 @@ A React component for a color input, binding directly to a reactive string state
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { ColorPicker } from '@anchorlib/react/components';
 
 const ThemeCustomizer = observer(() => {
@@ -554,8 +545,7 @@ A React component for a toggle button, binding directly to a reactive state prop
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Toggle } from '@anchorlib/react/components';
 
 const NotificationToggle = observer(() => {
@@ -586,8 +576,7 @@ export default NotificationToggle;
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Toggle } from '@anchorlib/react/components';
 
 const ViewModeToggle = observer(() => {
@@ -654,8 +643,7 @@ A React component for grouping toggle buttons.
 
 ```tsx
 import React from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 import { Toggle, ToggleGroup } from '@anchorlib/react/components';
 
 const FilterControls = observer(() => {

@@ -1,7 +1,6 @@
-import { observer } from '@anchorlib/react/view';
 import { todoStats } from './todos';
 import { useRef } from 'react';
-import { debugRender } from '@anchorlib/react';
+import { debugRender, observer } from '@anchorlib/react';
 
 // We don't need selective rendering here because the component is small.
 function TodoStats() {

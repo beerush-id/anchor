@@ -42,14 +42,13 @@ bun add @anchorlib/react
 
 ## Basic Usage
 
-To get started quickly, import `useAnchor` from `@anchorlib/react` and `observer` from `@anchorlib/react/view`,
+To get started quickly, import `useAnchor` and `observer` from `@anchorlib/react`,
 then wrap your component with `observer` HoC.
 
 ### Your First Reactive Component
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Counter = observer(() => {
   const [counter] = useAnchor({ count: 0 });
@@ -72,8 +71,7 @@ export default Counter;
 ::: anchor-react-sandbox
 
 ```tsx /App.tsx [active]
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Counter = observer(() => {
   const [counter] = useAnchor({ count: 0 });
@@ -127,7 +125,7 @@ global reactive state object and observe it in any component that needs it.
 
 ```tsx
 import { anchor } from '@anchorlib/core';
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react';
 
 // Create a global state that can be shared across components.
 const counter = anchor({ count: 0 });
@@ -151,7 +149,7 @@ export const Counter = observer(() => {
 
 ```tsx
 import { anchor } from '@anchorlib/core';
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react';
 
 // Create a global state.
 const counter = anchor({ count: 0 });
@@ -180,8 +178,7 @@ that are automatically calculated based on other reactive state values and will 
 change. This allows you to create dynamic values that are always in sync with your state without manual updates.
 
 ```tsx
-import { observer } from '@anchorlib/react/view';
-import { useAnchor } from '@anchorlib/react';
+import { useAnchor, observer } from '@anchorlib/react';
 
 export const Counter = observer(() => {
   const [counter] = useAnchor({
@@ -247,8 +244,7 @@ context, while adding reactivity to make them update automatically when dependen
 ::: anchor-react-sandbox
 
 ```tsx
-import { observer } from '@anchorlib/react/view';
-import { useAnchor } from '@anchorlib/react';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Counter = observer(() => {
   const [counter] = useAnchor({
@@ -295,8 +291,7 @@ but also enable two-way data binding or complex transformations when the propert
 for encapsulating complex logic related to a property's value.
 
 ```tsx
-import { observer } from '@anchorlib/react/view';
-import { useAnchor } from '@anchorlib/react';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Unit = observer(() => {
   const [unit] = useAnchor({
@@ -344,8 +339,7 @@ const Unit = observer(() => {
 ::: anchor-react-sandbox
 
 ```tsx
-import { observer } from '@anchorlib/react/view';
-import { useAnchor } from '@anchorlib/react';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Unit = observer(() => {
   const [unit] = useAnchor({
@@ -433,8 +427,7 @@ component tree to re-render.
 ::: code-group
 
 ```jsx [UserProfile.jsx]
-import { useVariable } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useVariable, observer } from '@anchorlib/react';
 import { UserAccount } from './UserAccount.jsx';
 
 export const UserProfile = () => {
@@ -491,7 +484,7 @@ export const UserProfile = () => {
 ```
 
 ```jsx [UserAccount.jsx]
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react';
 
 export const UserAccount = observer(({ userRef }) => {
   const { account } = userRef.value;
@@ -546,8 +539,7 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 ::: anchor-react-sandbox
 
 ```tsx /UserProfile.tsx [active]
-import { useVariable, debugRender, setDebugRenderer } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useVariable, debugRender, setDebugRenderer, observe } from '@anchorlib/react';
 import { UserAccount } from './UserAccount.tsx';
 import { useRef } from 'react';
 
@@ -618,8 +610,7 @@ export const UserProfile = () => {
 
 ```tsx /UserAccount.tsx
 import { useRef } from 'react';
-import { debugRender } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { debugRender, observer } from '@anchorlib/react';
 
 export const UserAccount = observer(({ userRef }) => {
   const ref = useRef(null);

@@ -1,7 +1,6 @@
 import '@tailwindcss/browser';
 import { getContext, setContext } from '@anchorlib/core';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { observer, useAnchor } from '@anchorlib/react';
 import React from 'react';
 
 interface Settings {

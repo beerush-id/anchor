@@ -67,8 +67,7 @@ When using a factory object instead of a simple function, the following properti
 ::: details Basic Observation Usage {open}
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
 
 const CounterManager = () => {
   const [count] = useAnchor({ value: 0 });
@@ -104,8 +103,7 @@ const CounterManager = () => {
 ::: details Using Factory Object with Lifecycle Methods
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
 
 const Timer = () => {
   const [timer] = useAnchor({ seconds: 0 });
@@ -158,8 +156,7 @@ const Timer = () => {
 ::: details Using the Ref Parameter
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
 
 const DataList = () => {
   const [data] = useAnchor({
@@ -255,8 +252,7 @@ It automatically sets up and manages a `StateObserver` instance for the wrapped 
 ::: details Wrapping a Component {open}
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 
 // Mark a component as observer.
 const UserCard = observer(({ user }) => {
@@ -297,8 +293,7 @@ const UserManager = () => {
 ::: details With Custom Display Name
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 
 export const TodoItem = observer(({ todo }) => {
   return (
@@ -316,7 +311,7 @@ export const TodoItem = observer(({ todo }) => {
 
 ```tsx
 import CounterComponent from './Counter';
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react';
 
 // Wrap the existing component and make it reactive, and optionally set a custom name.
 export const Counter = observer(CounterComponent, 'Counter');
@@ -553,8 +548,8 @@ The `bindable` HOC is specifically designed for form input components. It works 
 ::: anchor-react-sandbox
 
 ```tsx
-import { useAnchor } from '@anchorlib/react';
-import { bindable, observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
+import { bindable } from '@anchorlib/react/view';
 
 // Create a bindable input component
 const Input = bindable(function Input(props) {

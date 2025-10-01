@@ -1,7 +1,6 @@
 import '@tailwindcss/browser';
 import { undoable } from '@anchorlib/core';
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { observer, useAnchor } from '@anchorlib/react';
 import { LoaderCircle } from 'lucide-react';
 
 const Counter = observer(() => {

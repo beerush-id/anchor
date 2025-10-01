@@ -250,8 +250,7 @@ This stability allows you to:
 ::: anchor-react-sandbox
 
 ```tsx App.tsx
-import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
 
 const TaskManager = () => {
   const [tasks] = useAnchor([]);
@@ -306,8 +305,7 @@ entire classes of bugs related to stale closures and makes your code more predic
 ::: anchor-react-sandbox
 
 ```tsx App.tsx
-import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
 
 const Counter = () => {
   const [counter] = useAnchor({ count: 0 });
@@ -351,8 +349,7 @@ actions, you simply assign new values to state properties.
 ::: anchor-react-sandbox
 
 ```tsx App.tsx
-import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { useAnchor, observe } from '@anchorlib/react';
 
 const ShoppingCart = () => {
   const [cart] = useAnchor({
@@ -461,7 +458,7 @@ They automatically re-render when their observed state changes, providing effici
 ::: details View Component Example
 
 ```tsx
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react';
 
 const UserView = observer(({ user }) => {
   // Only re-renders when user changes

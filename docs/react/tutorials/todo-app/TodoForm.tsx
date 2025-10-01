@@ -1,6 +1,5 @@
-import { debugRender, useVariable } from '@anchorlib/react';
+import { debugRender, observer, useVariable } from '@anchorlib/react';
 import { type FormEventHandler, useRef } from 'react';
-import { observer } from '@anchorlib/react/view';
 import { type Todo } from './todos';
 import type { Row, RowListState } from '@anchorlib/storage/db';
 import { todoActions } from './actions';

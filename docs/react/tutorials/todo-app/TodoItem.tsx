@@ -1,7 +1,6 @@
 import { memo, useRef } from 'react';
-import { observe } from '@anchorlib/react/view';
 import { type TodoRec } from './todos';
-import { debugRender, useObservedRef, type VariableRef } from '@anchorlib/react';
+import { debugRender, observe, useObservedRef, type VariableRef } from '@anchorlib/react';
 import { todoActions } from './actions';
 import { getContext } from '@anchorlib/core';
 
