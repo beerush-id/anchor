@@ -85,11 +85,48 @@ html.dark .shiki span {
 
 @utility ark-code-viewer-button {
   @apply flex items-center gap-1 flex-none;
-  @apply px-4 py-2 text-sm font-medium hover:bg-code-block-background/75;
-  @apply transition-colors;
+  @apply px-4 py-2.5 text-sm font-medium;
+  @apply transition-all relative rounded-t-lg;
+
+  & > * {
+    @apply z-10;
+  }
+
+  &:not(.active):hover:before {
+    @apply bg-code-block-background/75 rounded-lg;
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    content: '';
+    display: block;
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    z-index: 0;
+  }
 
   &.active {
     @apply text-foreground bg-code-block-background;
+
+    &:before,
+    &:after {
+      content: '';
+      display: block;
+      width: 10px;
+      height: 10px;
+      position: absolute;
+      bottom: 0;
+      background-color: blue;
+    }
+
+    &:before {
+      right: -10px;
+      background: radial-gradient(circle at 100% 0, transparent 70%, var(--color-code-block-background) 75%);
+    }
+
+    &:after {
+      left: -10px;
+      background: radial-gradient(circle at 0 0, transparent 70%, var(--color-code-block-background) 75%);
+    }
   }
 
   & > img {
