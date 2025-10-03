@@ -36,8 +36,7 @@ You can view the full online documentation at [Anchor Documentations](https://an
 ### React
 
 ```jsx
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Counter = observer(() => {
   const [state] = useAnchor({

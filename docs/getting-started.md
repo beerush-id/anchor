@@ -46,8 +46,7 @@ console.log(state.title); // "Hello, World!"
 ::: code-group
 
 ```jsx [React]
-import { useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { useAnchor, observer } from '@anchorlib/react';
 
 const Counter = observer(() => {
   const [state] = useAnchor({
