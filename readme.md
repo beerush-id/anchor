@@ -33,13 +33,90 @@ You can view the full online documentation at [Anchor Documentations](https://an
 
 ## 🚀 Getting Started
 
+### React
+
+```jsx
+import { useAnchor } from '@anchorlib/react';
+import { observer } from '@anchorlib/react/view';
+
+const Counter = observer(() => {
+  const [state] = useAnchor({
+    count: 0,
+    title: 'My App',
+  });
+
+  return (
+    <div>
+      <h1>{state.title}</h1>
+      <p>Count: {state.count}</p>
+      <button onClick={() => state.count++}>Increment</button>
+    </div>
+  );
+});
+```
+
+### SolidJS
+
+```jsx
+import { anchorRef } from '@anchorlib/solid';
+
+const Counter = () => {
+  const state = anchorRef({
+    count: 0,
+    title: 'My App',
+  });
+
+  return (
+    <div>
+      <h1>{state.title}</h1>
+      <p>Count: {state.count}</p>
+      <button onClick={() => state.count++}>Increment</button>
+    </div>
+  );
+};
+```
+
+### Svelte
+
+```svelte
+<script>
+  import { anchorRef } from '@anchorlib/svelte';
+
+  const state = anchorRef({ count: 0, title: 'My App' });
+</script>
+
+<div>
+  <h1>{$state.title}</h1>
+  <p>Count: {$state.count}</p>
+  <button onclick={() => state.count++}>Increment</button>
+</div>
+```
+
+### Vue
+
+```vue
+<script setup>
+import { anchorRef } from '@anchorlib/vue';
+
+const state = anchorRef({ count: 0, title: 'My App' });
+</script>
+
+<template>
+  <div>
+    <h1>{{ state.title }}</h1>
+    <p>Count: {{ state.count }}</p>
+    <button @click="state.count++">Increment</button>
+  </div>
+</template>
+```
+
 Unlike traditional React state management which requires explicit setState calls and complex state update logic, Anchor allows you to work with state naturally:
 
 ```jsx
-import { useAnchor } from '@anchor/react';
+import { useAnchor, observer } from '@anchor/react';
 import { observable } from '@anchor/react/components';
 
-const TodoApp = observable(() => {
+const TodoApp = observer(() => {
   const [todos] = useAnchor([
     { id: 1, text: 'Learn Anchor', completed: true },
     { id: 2, text: 'Build an app', completed: false },
