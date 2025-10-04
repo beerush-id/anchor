@@ -86,50 +86,28 @@ export default defineConfig({
         link: '/overview',
       },
       {
-        text: 'Performance',
-        link: '/performance',
+        text: 'Getting Started',
+        link: '/getting-started',
       },
       {
-        text: 'Philosophy',
-        link: '/philosophy',
+        text: 'Installation',
+        link: '/installation',
       },
       {
-        text: 'Architecture',
-        link: '/architecture',
+        text: 'Configuration',
+        link: '/configuration',
       },
       {
-        text: 'Guides',
-        collapsed: false,
-        items: [
-          {
-            text: 'Getting Started',
-            link: '/getting-started',
-          },
-          {
-            text: 'Installation',
-            link: '/installation',
-          },
-          {
-            text: 'Usage',
-            link: '/usage',
-          },
-          {
-            text: 'Reactivity',
-            link: '/reactivity',
-          },
-          {
-            text: 'Immutability',
-            link: '/immutability',
-          },
-          {
-            text: 'Data Integrity',
-            link: '/data-integrity',
-          },
-          {
-            text: 'FAQ',
-            link: '/faq',
-          },
-        ],
+        text: 'Reactivity',
+        link: '/reactivity',
+      },
+      {
+        text: 'Immutability',
+        link: '/immutability',
+      },
+      {
+        text: 'Data Integrity',
+        link: '/data-integrity',
       },
       {
         text: 'Anchor for React',
@@ -418,6 +396,22 @@ export default defineConfig({
             link: '/apis/devtool',
           },
         ],
+      },
+      {
+        text: 'Architecture',
+        link: '/architecture',
+      },
+      {
+        text: 'Performance',
+        link: '/performance',
+      },
+      {
+        text: 'Philosophy',
+        link: '/philosophy',
+      },
+      {
+        text: 'FAQ',
+        link: '/faq',
       },
     ],
 

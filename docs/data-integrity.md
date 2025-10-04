@@ -338,5 +338,4 @@ To learn more about data integrity and validation with Anchor:
 
 - Review the [Immutability Guide](/immutability) for safe state mutations
 - Explore [Reactivity](/reactivity) to understand how validated state works with observation
-- Check out the [API Reference](/usage) for detailed function documentation
 - See how validation works with [Storage](/storage/getting-started) for persistent data

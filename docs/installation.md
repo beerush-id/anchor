@@ -75,9 +75,9 @@ bun add @anchorlib/react
 
 :::
 
-### **Solid Integration**
+### **SolidJS Integration**
 
-For Solid applications, install the Solid-specific package:
+For SolidJS applications, install the SolidJS-specific package:
 
 ::: code-group
 
@@ -95,30 +95,6 @@ pnpm add @anchorlib/solid
 
 ```bash [Bun]
 bun add @anchorlib/solid
-```
-
-:::
-
-### **Vue Integration**
-
-For Vue applications, install the Vue-specific package:
-
-::: code-group
-
-```bash [NPM]
-npm install @anchorlib/vue
-```
-
-```bash [Yarn]
-yarn add @anchorlib/vue
-```
-
-```bash [PNPM]
-pnpm add @anchorlib/vue
-```
-
-```bash [Bun]
-bun add @anchorlib/vue
 ```
 
 :::
@@ -147,29 +123,52 @@ bun add @anchorlib/svelte
 
 :::
 
+### **Vue Integration**
+
+For Vue applications, install the Vue-specific package:
+
+::: code-group
+
+```bash [NPM]
+npm install @anchorlib/vue
+```
+
+```bash [Yarn]
+yarn add @anchorlib/vue
+```
+
+```bash [PNPM]
+pnpm add @anchorlib/vue
+```
+
+```bash [Bun]
+bun add @anchorlib/vue
+```
+
+:::
+
 ## **Basic Setup**
 
 After installation, you can start using Anchor in your project:
 
 ::: code-group
 
-```js [index.js]
+```js [state.js]
 import { anchor } from '@anchorlib/core';
 
+// Create a shared, reactive state object.
 export const state = anchor({
   count: 0,
   name: 'My App',
 });
-
-console.log(state.count); // 0
-state.count++;
 ```
 
 ```jsx [ReactCounter.jsx]
 import { useObserved } from '@anchorlib/react';
-import { state } from '../index.js';
+import { state } from '../state.js';
 
 const Counter = () => {
+  // Observe the count value.
   const count = useObserved(() => state.count);
 
   return (
@@ -183,9 +182,10 @@ const Counter = () => {
 
 ```jsx [SolidCounter.jsx]
 import { observedRef } from '@anchorlib/solid';
-import { state } from '../index.js';
+import { state } from '../state.js';
 
 const Counter = () => {
+  // Observe the count value.
   const count = observedRef(() => state.count);
 
   return (
@@ -197,11 +197,27 @@ const Counter = () => {
 };
 ```
 
+```svelte [Counter.svelte]
+<script>
+  import { observedRef } from '@anchorlib/svelte';
+  import { state } from '../state.js';
+
+  // Observe the count value.
+  const count = observedRef(() => state.count);
+</script>
+
+<div>
+  <p>Count: {$count}</p>
+  <button onclick={() => state.count++}>Increment</button>
+</div>
+```
+
 ```vue [Counter.vue]
 <script setup>
 import { observedRef } from '@anchorlib/vue';
-import { state } from '../index.js';
+import { state } from '../state.js';
 
+// Observe the count value.
 const count = observedRef(() => state.count);
 </script>
 
@@ -211,20 +227,6 @@ const count = observedRef(() => state.count);
     <button @click="state.count++">Increment</button>
   </div>
 </template>
-```
-
-```svelte [Counter.svelte]
-<script>
-  import { observedRef } from '@anchorlib/svelte';
-  import { state } from '../index.js';
-
-  const count = observedRef(() => state.count);
-</script>
-
-<div>
-  <p>Count: {$count}</p>
-  <button onclick={() => state.count++}>Increment</button>
-</div>
 ```
 
 :::
@@ -237,13 +239,15 @@ Anchor is written in TypeScript and provides first-class TypeScript support with
 
 After installing Anchor, check out these guides to get started:
 
-- [Usage Guide](/usage) - Learn how to use Anchor's core features
+- [Configuration Guide](/configuration) - Learn how to configure Anchor
 - [Reactivity](/reactivity) - Understand Anchor's fine-grained reactivity system
 - [Immutability](/immutability) - Learn about Anchor's true immutability approach
+- [Data Integrity](/data-integrity) - Learn about Anchor's Data Integrity
 - Framework-specific guides:
   - [React Guide](/react/getting-started)
-  - [Vue Guide](/vue/getting-started)
+  - [Solid Guide](/react/getting-started)
   - [Svelte Guide](/svelte/getting-started)
+  - [Vue Guide](/vue/getting-started)
 
 ## **Need Help?**
 

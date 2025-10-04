@@ -11,41 +11,10 @@ keywords:
   - state management guide
 ---
 
-# Anchor Usage Guide: Getting Started
+# Anchor Configuration Guide
 
 Before getting started with Anchor, ensure you have followed the [installation](/installation) instructions.
 This guide will provide a basic introduction to Anchor's core functionality for state management in web applications.
-
-## **Basic Usage**
-
-After installing the appropriate packages, you can start using **Anchor** in your project. Here's a basic example with
-the core package:
-
-```typescript
-import { anchor, subscribe } from '@anchorlib/core';
-
-// Create a reactive state.
-const state = anchor({
-  count: 0,
-  name: 'Anchor',
-  items: [],
-});
-
-// Logs each state change to console.
-subscribe(state, console.log);
-
-// Access state properties.
-console.log(state.count); // 0
-
-// Mutate state directly
-state.count++;
-state.name = 'Updated Name';
-state.items.push({ id: 1, text: 'First item' });
-
-// Each change above will logs the event to console.
-```
-
-> For framework-specific usage, refer to the respective framework guides.
 
 ## **Configuring Anchor**
 

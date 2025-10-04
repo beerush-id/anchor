@@ -58,6 +58,17 @@ Beyond performance benchmarks, it's important to understand the feature differen
 
 :::
 
+### When to Choose Anchor
+
+Choose Anchor when you want:
+
+- A minimal, intuitive API for state management
+- Automatic performance optimizations
+- Fine-grained reactivity without manual subscription
+- Built-in history tracking and undo/redo capabilities
+- Schema validation for data integrity
+- A solution that works out of the box with minimal configuration
+
 ## Complexity and Bundle Size
 
 The complexity assessment is based on code verbosity, readability, and maintainability from
