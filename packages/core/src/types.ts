@@ -844,5 +844,5 @@ export type BindingRef<T> = {
   get value(): T;
   set value(value: T);
 };
-export type BindingProp<T, O extends ObjLike> = [O, BindingKeys<T, O>];
-export type BindingKeys<T, O extends ObjLike> = { [K in keyof O]: O[K] extends T ? K : never }[keyof O];
+export type BindingProp<T, O> = [O, BindingKeys<T, O>];
+export type BindingKeys<T, O> = { [K in keyof O]: O[K] extends T ? K : never }[keyof O];
