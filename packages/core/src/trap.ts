@@ -27,7 +27,7 @@ import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { isArray } from '@beerush/utils';
 import { createCollectionGetter } from './collection.js';
-import { getObserver, track } from './observable.js';
+import { getObserver, track } from './observation.js';
 import { getDevTool } from './dev.js';
 import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
 

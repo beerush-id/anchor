@@ -25,7 +25,7 @@ import type {
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { COLLECTION_MUTATION_KEYS } from './constant.js';
-import { getObserver, track } from './observable.js';
+import { getObserver, track } from './observation.js';
 import { getDevTool } from './dev.js';
 import { MapMutations, OBSERVER_KEYS, SetMutations } from './enum.js';
 

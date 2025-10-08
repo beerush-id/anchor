@@ -10,7 +10,7 @@ import type {
   StateGateway,
 } from '../types.js';
 import { anchor } from '../anchor.js';
-import { subscribe } from '../derive.js';
+import { subscribe } from '../subscription.js';
 import { assign } from '../helper.js';
 import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
 import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';

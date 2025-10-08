@@ -205,6 +205,14 @@ describe('Anchor Helpers - Edge Cases', () => {
   });
 
   describe('Error Cases', () => {
+    it('should handle assign with empty source', () => {
+      const state = anchor({});
+
+      expect(() => {
+        anchor.assign(state, {});
+      }).not.toThrow();
+    });
+
     it('should handle assign with non-object sources', () => {
       const state = anchor({});
 

@@ -3,7 +3,7 @@ import { anchor } from '../anchor.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
 import { linkable } from '../internal.js';
 import { captureStack } from '../exception.js';
-import { subscribe } from '../derive.ts';
+import { subscribe } from '../subscription.ts';
 
 export type GetMethod = 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS';
 export type GetMethods = GetMethod | Lowercase<GetMethod> | string;

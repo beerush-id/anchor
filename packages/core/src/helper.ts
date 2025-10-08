@@ -37,6 +37,8 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   const prev: AssignablePart<T> = {};
+  const entries = softEntries(source);
+  if (!entries.length) return;
 
   for (const [key, val] of softEntries(source)) {
     if (isMap(target)) {
