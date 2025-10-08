@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useDerived, usePipe, useBind, useValue, useValueIs, useDerivedRef } from '../../src/derive';
+import { useBind, useDerived, useDerivedRef, usePipe, useValue, useValueIs } from '../../src/index.js';
 import { anchor } from '@anchorlib/core';
 
 describe('Anchor React - Derive', () => {
-  let errorSpy;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -119,10 +119,10 @@ describe('Anchor React - Derive', () => {
         const source = anchor(sourceValue);
 
         // Test with null target
-        renderHook(() => usePipe(source, null));
+        renderHook(() => usePipe(source, null as never));
 
         // Test with null source
-        renderHook(() => usePipe(null, source));
+        renderHook(() => usePipe(null as never, source));
 
         // Should not throw errors
         expect(errorSpy).not.toHaveBeenCalled();

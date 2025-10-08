@@ -1,8 +1,9 @@
-import type { Linkable, ModelError, State, StateUnsubscribe } from '@anchorlib/core';
+import type { BindingKeys, Linkable, ModelError, State, StateUnsubscribe } from '@anchorlib/core';
 import type { ReactNode, RefObject } from 'react';
 
 export type StateRef<T> = {
   value: T;
+  constant?: boolean;
 };
 export type VariableRef<T> = {
   get value(): T;
@@ -51,3 +52,5 @@ export type ViewRendererFactory<T> = {
   onUpdated?: () => void;
   onDestroy?: () => void;
 };
+
+export type BindingProp<T, B> = B extends VariableRef<T> ? [B, 'value'] : [B, BindingKeys<T, B>];

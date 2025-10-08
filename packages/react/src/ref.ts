@@ -21,6 +21,7 @@ export function useVariable<T>(
   const [state] = useState<StateRef<T>>(() => {
     return anchor({
       value: typeof init === 'function' ? (init as RefInitializer<T>)() : init,
+      constant,
     });
   });
 
@@ -170,7 +171,7 @@ export function isRef(value: unknown): value is VariableRef<unknown> | ConstantR
  * @returns The internal state reference if the input is a valid reference, otherwise returns the input as-is
  */
 export function getRefState<T>(value: T): StateRef<T> {
-  if (isRef(value)) return REF_REGISTRY.get(value as WeakKey);
+  if (REF_REGISTRY.has(value as WeakKey)) return REF_REGISTRY.get(value as WeakKey);
 
   return value as StateRef<T>;
 }

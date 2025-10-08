@@ -15,7 +15,7 @@ import type { AnchorState, ExceptionList, FormState } from './types.js';
 import { useInherit } from './anchor.js';
 import { useSnapshot, useStableRef } from './hooks.js';
 import { useEffect } from 'react';
-import { usePipe } from './derive.js';
+import { usePipe } from './derivation.js';
 import { useVariable } from './ref.js';
 
 /**

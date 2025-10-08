@@ -1,10 +1,10 @@
-import { type FunctionComponent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type FunctionComponent, memo, type ReactNode, useEffect, useRef, useState } from 'react';
 import { anchor, captureStack, createObserver, type Linkable, type ObjLike, outsideObserver } from '@anchorlib/core';
 import type { ReactiveProps, ViewRenderer, ViewRendererFactory } from './types.js';
-import { useObserverRef } from './observable.js';
+import { useObserverRef } from './observation.js';
 import { resolveProps } from './props.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
-import { useMicrotask, useStableRef } from './hooks.js';
+import { useMicrotask } from './hooks.js';
 
 /**
  * **`observer`** is a Higher-Order Component (HOC) that wraps a React component
@@ -191,35 +191,70 @@ export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, di
  * effective for components that are expensive to render or are used frequently
  * in lists or other high-frequency rendering scenarios.
  */
-export function stable<P>(Component: FunctionComponent<P>, displayName?: string) {
+export function setup<C>(Component: C, displayName?: string): C {
   if (typeof Component !== 'function') {
-    const error = new Error('[stable] Component must be a function component.');
+    const error = new Error('[setup] Component must be a function component.');
     captureStack.violation.general(
       'Stable factory violation detected:',
-      'Attempted to use stable HOC on a non-functional component.',
+      'Attempted to use setup HOC on a non-functional component.',
       error,
       undefined,
-      stable
+      setup
     );
 
     const Observed = () => error.message;
     Observed.displayName = `Error(${displayName || 'Anonymous'})`;
-    return Observed;
+    return Observed as FunctionComponent as C;
   }
 
-  if (displayName && !Component.displayName) {
-    Component.displayName = displayName;
+  if (displayName && !(Component as FunctionComponent).displayName) {
+    (Component as FunctionComponent).displayName = displayName;
   }
 
-  // Creates a name for the stable component for debugging purposes.
-  const componentName = displayName || Component.displayName || Component.name || 'Anonymous';
+  // Creates a name for the setup component for debugging purposes.
+  const componentName = displayName || (Component as FunctionComponent).displayName || Component.name || 'Anonymous';
 
-  const render = Component as (props: P) => ReactNode;
+  const render = Component as (props: unknown) => ReactNode;
 
-  const Stable = (props: P) => {
-    return useStableRef(() => outsideObserver(() => render(props)), Object.values(props as ObjLike)).value;
-  };
+  const Setup = memo((props) => {
+    return outsideObserver(() => render(props));
+  });
 
-  Stable.displayName = `Stable(${componentName})`;
-  return Stable as FunctionComponent<P>;
+  Setup.displayName = `Setup(${componentName})`;
+  return Setup as FunctionComponent as C;
+}
+
+/**
+ * **`named`** is a utility function that assigns a display name to a React functional component.
+ *
+ * This is primarily used for debugging purposes in React DevTools to provide a meaningful
+ * name for components that might otherwise appear as "Anonymous" components.
+ *
+ * @template P The type of the component's props.
+ * @param Component The React functional component to be named.
+ * @param name The display name to assign to the component.
+ * @returns The same component with the assigned display name.
+ *
+ * @remarks This function directly modifies the `displayName` property of the component.
+ * It's useful when you want to give a meaningful name to anonymous or higher-order components
+ * for better debugging experience.
+ */
+export function named<P>(Component: FunctionComponent<P>, name: string) {
+  if (typeof Component !== 'function') {
+    const error = new Error('[named] Component must be a function component.');
+    captureStack.violation.general(
+      'Named factory violation detected:',
+      'Attempted to use named utility on a non-functional component.',
+      error,
+      undefined,
+      named
+    );
+
+    const Named = () => error.message;
+    Named.displayName = `Error(${name || 'Anonymous'})`;
+    return Named;
+  }
+
+  Component.displayName = name;
+  return Component as FunctionComponent<P>;
 }
