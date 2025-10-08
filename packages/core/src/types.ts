@@ -839,3 +839,10 @@ export type DevTool = {
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
 export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
+export type Binding<T, B> = B extends BindingRef<T> ? BindingRef<T> : B extends ObjLike ? BindingProp<T, B> : never;
+export type BindingRef<T> = {
+  get value(): T;
+  set value(value: T);
+};
+export type BindingProp<T, O extends ObjLike> = [O, BindingKeys<T, O>];
+export type BindingKeys<T, O extends ObjLike> = { [K in keyof O]: O[K] extends T ? K : never }[keyof O];
