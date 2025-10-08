@@ -1,10 +1,10 @@
-import { type FunctionComponent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type FunctionComponent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { anchor, captureStack, createObserver, type Linkable, type ObjLike, outsideObserver } from '@anchorlib/core';
 import type { ReactiveProps, ViewRenderer, ViewRendererFactory } from './types.js';
 import { useObserverRef } from './observable.js';
 import { resolveProps } from './props.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
-import { useMicrotask } from './hooks.js';
+import { useMicrotask, useStableRef } from './hooks.js';
 
 /**
  * **`observer`** is a Higher-Order Component (HOC) that wraps a React component
@@ -217,12 +217,7 @@ export function stable<P>(Component: FunctionComponent<P>, displayName?: string)
   const render = Component as (props: P) => ReactNode;
 
   const Stable = (props: P) => {
-    return useMemo(
-      () => {
-        return outsideObserver(() => render(props));
-      },
-      Object.values(props as ObjLike)
-    );
+    return useStableRef(() => outsideObserver(() => render(props)), Object.values(props as ObjLike)).value;
   };
 
   Stable.displayName = `Stable(${componentName})`;
