@@ -1,5 +1,5 @@
-import { type FunctionComponent, type ReactNode, useEffect, useRef, useState } from 'react';
-import { anchor, captureStack, createObserver, type Linkable, type ObjLike } from '@anchorlib/core';
+import { type FunctionComponent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { anchor, captureStack, createObserver, type Linkable, type ObjLike, outsideObserver } from '@anchorlib/core';
 import type { ReactiveProps, ViewRenderer, ViewRendererFactory } from './types.js';
 import { useObserverRef } from './observable.js';
 import { resolveProps } from './props.js';
@@ -31,7 +31,7 @@ export function observer<P>(Component: FunctionComponent<P>, displayName?: strin
   if (typeof Component !== 'function') {
     const error = new Error('[observer] Component must be a function component.');
     captureStack.violation.general(
-      'Observable factory violation detected:',
+      'Observer factory violation detected:',
       'Attempted to use observer HOC on a non-functional component.',
       error,
       undefined,
@@ -66,7 +66,7 @@ export function observer<P>(Component: FunctionComponent<P>, displayName?: strin
     return observer.run(() => render({ ...resolveProps(props) }));
   };
 
-  Observed.displayName = `Observable(${componentName})`;
+  Observed.displayName = `Observer(${componentName})`;
   return Observed as FunctionComponent<ReactiveProps<P>>;
 }
 
@@ -165,4 +165,66 @@ export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, di
 
   ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
   return ObservedNode;
+}
+
+/**
+ * **`stable`** is a Higher-Order Component (HOC) that wraps a React component
+ * to make it stable by memoizing its output based on props and render it outside observer.
+ *
+ * It uses React's `useMemo` hook to prevent unnecessary re-renders of the wrapped
+ * component when the props haven't changed. The component will only re-render
+ * when one or more of its prop values have actually changed.
+ *
+ * The wrapped component will be rendered outside observer to make sure it's not affecting the parent
+ * observers.
+ *
+ * @template P The type of the original component's props.
+ * @param Component The React component to be made stable. It should accept
+ *                  its original props `P`.
+ * @param displayName An optional string to be used as the display name for the
+ *                    wrapped component in React DevTools. If not provided, it
+ *                    will derive from the original component's display name or name.
+ * @returns A new React component that is memoized based on its props.
+ *
+ * @remarks This HOC is useful for optimizing performance by preventing re-renders
+ * of components whose output doesn't change with the same props. It's particularly
+ * effective for components that are expensive to render or are used frequently
+ * in lists or other high-frequency rendering scenarios.
+ */
+export function stable<P>(Component: FunctionComponent<P>, displayName?: string) {
+  if (typeof Component !== 'function') {
+    const error = new Error('[stable] Component must be a function component.');
+    captureStack.violation.general(
+      'Stable factory violation detected:',
+      'Attempted to use stable HOC on a non-functional component.',
+      error,
+      undefined,
+      stable
+    );
+
+    const Observed = () => error.message;
+    Observed.displayName = `Error(${displayName || 'Anonymous'})`;
+    return Observed;
+  }
+
+  if (displayName && !Component.displayName) {
+    Component.displayName = displayName;
+  }
+
+  // Creates a name for the stable component for debugging purposes.
+  const componentName = displayName || Component.displayName || Component.name || 'Anonymous';
+
+  const render = Component as (props: P) => ReactNode;
+
+  const Stable = (props: P) => {
+    return useMemo(
+      () => {
+        return outsideObserver(() => render(props));
+      },
+      Object.values(props as ObjLike)
+    );
+  };
+
+  Stable.displayName = `Stable(${componentName})`;
+  return Stable as FunctionComponent<P>;
 }

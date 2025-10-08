@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, renderHook } from '@testing-library/react';
-import { observable, observe, observer, useObserverNode } from '../../src/view/index.js';
+import { useObserverNode } from '../../src/view/index.js';
+import { observe, observer, stable, useAnchor, useVariable } from '../../src/index.js';
 import { anchor, getObserver } from '@anchorlib/core';
 import { useState } from 'react';
-import { useAnchor, useVariable } from '../../src/index.js';
 
 // Mock the debugRender function since it's not available in tests
 vi.mock('../../src', async () => {
@@ -14,7 +14,7 @@ vi.mock('../../src', async () => {
   };
 });
 
-describe('Anchor React - View Observable', () => {
+describe('Anchor React - View Observer', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -53,40 +53,40 @@ describe('Anchor React - View Observable', () => {
     });
   });
 
-  describe('observable', () => {
+  describe('observer', () => {
     describe('Basic Usage', () => {
-      it('should create an observable component', () => {
+      it('should create an observer component', () => {
         const TestComponent = (props: { value: string; _state_version?: number }) => {
           return <div data-testid="test-component">{props.value}</div>;
         };
 
-        const ObservableComponent = observable(TestComponent, 'TestObservable');
+        const ObserverComponent = observer(TestComponent, 'TestObserver');
 
-        expect(ObservableComponent).toBeInstanceOf(Function);
-        expect(ObservableComponent.displayName).toBe('Observable(TestObservable)');
+        expect(ObserverComponent).toBeInstanceOf(Function);
+        expect(ObserverComponent.displayName).toBe('Observer(TestObserver)');
       });
 
-      it('should render observable component with props', () => {
+      it('should render observer component with props', () => {
         const TestComponent = (props: { value: string; _state_version?: number }) => {
           return <div data-testid="test-component">{props.value}</div>;
         };
 
-        const ObservableComponent = observable<{ value: string }>(TestComponent);
+        const ObserverComponent = observer<{ value: string }>(TestComponent);
 
-        const { getByTestId } = render(<ObservableComponent value="test value" />);
+        const { getByTestId } = render(<ObserverComponent value="test value" />);
 
         expect(getByTestId('test-component').textContent).toBe('test value');
       });
 
-      it('should render observable component with reactive props', () => {
+      it('should render observer component with reactive props', () => {
         const TestComponent = (props: { value: string; _state_version?: number }) => {
           return <div data-testid="test-component">{props.value}</div>;
         };
 
-        const ObservableComponent = observable<{ value: string }>(TestComponent);
+        const ObserverComponent = observer<{ value: string }>(TestComponent);
         const TestParentComponent = () => {
           const [value] = useVariable('test value');
-          return <ObservableComponent value={value} />;
+          return <ObserverComponent value={value} />;
         };
 
         const { getByTestId } = render(<TestParentComponent />);
@@ -94,16 +94,16 @@ describe('Anchor React - View Observable', () => {
         expect(getByTestId('test-component').textContent).toBe('test value');
       });
 
-      it('should re-render when observable dependencies change', () => {
+      it('should re-render when observer dependencies change', () => {
         const state = anchor({ count: 42 });
 
         const TestComponent = (props: { state: typeof state; _state_version?: number }) => {
           return <div data-testid="test-component">{props.state.count}</div>;
         };
 
-        const ObservableComponent = observable<{ state: typeof state }>(TestComponent);
+        const ObserverComponent = observer<{ state: typeof state }>(TestComponent);
 
-        const { getByTestId } = render(<ObservableComponent state={state} />);
+        const { getByTestId } = render(<ObserverComponent state={state} />);
 
         expect(getByTestId('test-component').textContent).toBe('42');
 
@@ -121,9 +121,9 @@ describe('Anchor React - View Observable', () => {
         };
 
         TestComponent.displayName = 'NamedComponent';
-        const ObservableComponent = observer(TestComponent);
+        const ObserverComponent = observer(TestComponent);
 
-        expect(ObservableComponent.displayName).toBe('Observable(NamedComponent)');
+        expect(ObserverComponent.displayName).toBe('Observer(NamedComponent)');
       });
     });
 
@@ -300,6 +300,130 @@ describe('Anchor React - View Observable', () => {
     });
   });
 
+  describe('stable', () => {
+    describe('Basic Usage', () => {
+      it('should create a stable component', () => {
+        const TestComponent = (props: { value: string }) => {
+          return <div data-testid="test-component">{props.value}</div>;
+        };
+
+        const StableComponent = stable(TestComponent, 'TestStable');
+
+        expect(StableComponent).toBeInstanceOf(Function);
+        expect(StableComponent.displayName).toBe('Stable(TestStable)');
+      });
+
+      it('should render stable component with props', () => {
+        const TestComponent = (props: { value: string }) => {
+          return <div data-testid="test-component">{props.value}</div>;
+        };
+
+        const StableComponent = stable<{ value: string }>(TestComponent);
+
+        const { getByTestId } = render(<StableComponent value="test value" />);
+
+        expect(getByTestId('test-component').textContent).toBe('test value');
+      });
+
+      it('should not re-render when parent re-renders with same props', () => {
+        const renderSpy = vi.fn();
+
+        const StableComponent = stable((props: { value: string }) => {
+          renderSpy();
+          return <div data-testid="test-component">{props.value}</div>;
+        });
+
+        const ParentComponent = () => {
+          const [, setCount] = useState(0);
+          // Trigger re-render after initial render
+          setTimeout(() => setCount(1), 0);
+
+          return (
+            <div>
+              <StableComponent value="stable value" />
+              <button data-testid="rerender-button" onClick={() => setCount((c) => c + 1)}>
+                Re-render
+              </button>
+            </div>
+          );
+        };
+
+        const { getByTestId } = render(<ParentComponent />);
+
+        expect(getByTestId('test-component').textContent).toBe('stable value');
+        expect(renderSpy).toHaveBeenCalledTimes(1);
+
+        // Click button to trigger parent re-render
+        act(() => {
+          getByTestId('rerender-button').click();
+        });
+
+        // Component should not re-render because props are the same
+        expect(renderSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it('should re-render when props change', () => {
+        const renderSpy = vi.fn();
+
+        const TestComponent = (props: { value: string }) => {
+          renderSpy(props.value);
+          return <div data-testid="test-component">{props.value}</div>;
+        };
+
+        const StableComponent = stable(TestComponent);
+
+        const ParentComponent = () => {
+          const [value, setValue] = useState('initial value');
+
+          return (
+            <div>
+              <StableComponent value={value} />
+              <button data-testid="change-button" onClick={() => setValue('updated value')}>
+                Change Props
+              </button>
+            </div>
+          );
+        };
+
+        const { getByTestId } = render(<ParentComponent />);
+
+        expect(getByTestId('test-component').textContent).toBe('initial value');
+        expect(renderSpy).toHaveBeenCalledWith('initial value');
+
+        // Click button to change props
+        act(() => {
+          getByTestId('change-button').click();
+        });
+
+        // Component should re-render because props changed
+        expect(getByTestId('test-component').textContent).toBe('updated value');
+        expect(renderSpy).toHaveBeenCalledWith('updated value');
+      });
+
+      it('should set component display name', () => {
+        const TestComponent = (props: { value: string }) => {
+          return <div>{props.value}</div>;
+        };
+
+        TestComponent.displayName = 'NamedComponent';
+        const StableComponent = stable(TestComponent);
+
+        expect(StableComponent.displayName).toBe('Stable(NamedComponent)');
+      });
+    });
+
+    describe('Error Handling', () => {
+      it('should handle invalid component and log error', () => {
+        const TestComponent = stable(null as never);
+
+        render(<TestComponent />);
+
+        vi.runAllTimers();
+        expect(errorSpy).toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('Integration', () => {
     it('should work with complex components that have their own state', async () => {
       const CounterComponent = observer(() => {
@@ -320,9 +444,9 @@ describe('Anchor React - View Observable', () => {
         );
       });
 
-      const ObservableCounter = observer(CounterComponent);
+      const ObserverCounter = observer(CounterComponent);
 
-      const { getByTestId } = render(<ObservableCounter />);
+      const { getByTestId } = render(<ObserverCounter />);
 
       // Test local state
       expect(getByTestId('local-count').textContent).toBe('0');
