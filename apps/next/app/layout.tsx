@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://anchorlib.dev'),
+  alternates: {
+    canonical: '/',
+  },
   title: {
     default: 'Anchor - State Management For Humans',
     template: '%s | Anchor',
