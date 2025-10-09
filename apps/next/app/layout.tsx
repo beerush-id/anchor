@@ -123,11 +123,11 @@ export const metadata: Metadata = {
       'Anchor - A revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.',
     images: [
       {
-        url: 'https://anchor.mahdaen.name/docs/social.jpg',
+        url: 'https://anchorlib.dev/docs/social.jpg',
         alt: 'Anchor State Management Library',
       },
     ],
-    url: 'https://anchor.mahdaen.name/',
+    url: 'https://anchorlib.dev/',
     siteName: 'Anchor',
   },
   twitter: {
@@ -135,8 +135,20 @@ export const metadata: Metadata = {
     title: 'Anchor - State Management For Humans',
     description:
       'Anchor - A revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.',
-    images: ['https://anchor.mahdaen.name/docs/social.jpg'],
+    images: ['https://anchorlib.dev/docs/social.jpg'],
     site: '@beerush_id',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
