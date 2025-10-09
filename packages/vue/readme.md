@@ -10,7 +10,7 @@ npm install @anchorlib/vue
 
 ## Documentation
 
-For full documentation, visit [Anchor for Vue](https://anchor.mahdaen.name/docs/vue/introduction.html)
+For full documentation, visit [Anchor for Vue](https://anchorlib.dev/docs/vue/introduction.html)
 
 ## Quick Start
 

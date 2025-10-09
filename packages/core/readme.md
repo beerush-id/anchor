@@ -21,7 +21,7 @@ npm install @anchorlib/core
 
 ## Documentation
 
-For full documentation, visit [Anchor Core Documentation](https://anchor.mahdaen.name/docs/overview.html)
+For full documentation, visit [Anchor Core Documentation](https://anchorlib.dev/docs/overview.html)
 
 ## Quick Start
 

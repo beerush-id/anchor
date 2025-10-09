@@ -19,7 +19,7 @@ npm install @anchorlib/svelte
 
 ## Documentation
 
-For full documentation, visit [Anchor for Svelte](https://anchor.mahdaen.name/docs/svelte/introduction.html)
+For full documentation, visit [Anchor for Svelte](https://anchorlib.dev/docs/svelte/introduction.html)
 
 ## Quick Start
 

@@ -5,8 +5,8 @@ import { renderSandbox } from 'vitepress-plugin-sandpack';
 import llmstxt from 'vitepress-plugin-llms';
 
 const BASE_URL = '/docs';
-const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchor.mahdaen.name/docs/';
-const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://anchor.mahdaen.name';
+const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchorlib.dev/docs/';
+const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://anchorlib.dev';
 const PAGE_TITLE = 'Anchor Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
@@ -76,8 +76,8 @@ export default defineConfig({
       { text: 'Home', link: ROOT_URL },
       { text: 'Overview', link: '/overview' },
       { text: 'Get Started', link: '/getting-started' },
-      { text: 'Unit Tests', link: 'https://anchor.mahdaen.name/coverage' },
-      { text: 'Test Coverage', link: 'https://anchor.mahdaen.name/coverage/details' },
+      { text: 'Unit Tests', link: 'https://anchorlib.dev/coverage' },
+      { text: 'Test Coverage', link: 'https://anchorlib.dev/coverage/details' },
     ],
 
     sidebar: [
