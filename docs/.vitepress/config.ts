@@ -438,8 +438,8 @@ export default defineConfig({
       md.renderer.rules.fence = (tokens, idx, options, env, self) => {
         const token = tokens[idx];
 
-        if (token.info === 'sveltehtml') {
-          token.info = 'svelte';
+        if (token.info.includes('sveltehtml')) {
+          token.info = token.info.replace('sveltehtml', 'svelte');
         }
 
         return defaultRender?.(tokens, idx, options, env, self) ?? '';
@@ -458,6 +458,16 @@ export default defineConfig({
         .use(container, 'anchor-solid-sandbox', {
           render(tokens: any[], idx: number) {
             return renderSandbox(tokens, idx, 'anchor-solid-sandbox');
+          },
+        })
+        .use(container, 'anchor-svelte-sandbox', {
+          render(tokens: any[], idx: number) {
+            return renderSandbox(tokens, idx, 'anchor-svelte-sandbox');
+          },
+        })
+        .use(container, 'anchor-vue-sandbox', {
+          render(tokens: any[], idx: number) {
+            return renderSandbox(tokens, idx, 'anchor-vue-sandbox');
           },
         });
     },

@@ -9,6 +9,10 @@ import './style.css';
 import AnchorReactSandbox from './AnchorReactSandbox.vue';
 // @ts-ignore
 import AnchorSolidSandbox from './AnchorSolidSandbox.vue';
+// @ts-ignore
+import AnchorSvelteSandbox from './AnchorSvelteSandbox.vue';
+// @ts-ignore
+import AnchorVueSandbox from './AnchorVueSandbox.vue';
 
 export default {
   extends: DefaultTheme,
@@ -23,5 +27,7 @@ export default {
     app.component('Sandbox', Sandbox);
     app.component('AnchorReactSandbox', AnchorReactSandbox);
     app.component('AnchorSolidSandbox', AnchorSolidSandbox);
+    app.component('AnchorSvelteSandbox', AnchorSvelteSandbox);
+    app.component('AnchorVueSandbox', AnchorVueSandbox);
   },
 } satisfies Theme;

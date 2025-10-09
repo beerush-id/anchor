@@ -71,7 +71,7 @@ const Counter = () => {
 };
 ```
 
-```svelte [Svelte]
+```sveltehtml [Svelte]
 <script>
   import { anchorRef } from '@anchorlib/svelte';
 

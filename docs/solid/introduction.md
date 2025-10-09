@@ -17,6 +17,17 @@ Anchor enhances Solid's already excellent reactivity system by providing intuiti
 and data integrity. While Solid's fine-grained reactivity is powerful, Anchor adds additional capabilities that make
 state management even more intuitive and robust.
 
+| Feature                 | Solid                 | Anchor for Solid |
+| ----------------------- | --------------------- | ---------------- |
+| Fine-grained reactivity | ✅                    | ✅               |
+| Direct mutation         | ❌                    | ✅               |
+| Nested reactivity       | ✅                    | ✅               |
+| True immutability       | ❌                    | ✅               |
+| Schema validation       | ❌                    | ✅               |
+| Data integrity          | ❌                    | ✅               |
+| Portability             | ❌ (limited to Solid) | ✅               |
+| History Tracking        | ❌                    | ✅               |
+
 ## Why Anchor for Solid?
 
 Solid's reactivity system is built on signals and effects, providing excellent performance through fine-grained updates.
@@ -29,21 +40,6 @@ However, as applications grow in complexity, developers often face challenges:
 - Working with structured data that requires validation
 
 Anchor addresses these challenges while maintaining full compatibility with Solid's reactivity model.
-
-## Comparison with Solid's Built-in Reactivity
-
-While Solid's built-in reactivity is already excellent, Anchor adds several enhancements:
-
-| Feature                 | Solid                     | Anchor for Solid |
-| ----------------------- | ------------------------- | ---------------- |
-| Fine-grained reactivity | ✅                        | ✅               |
-| Direct mutation         | ❌ (requires createStore) | ✅               |
-| True immutability       | Partial                   | ✅               |
-| Schema validation       | ❌                        | ✅               |
-| Nested reactivity       | Shallow by default        | Deep by default  |
-| Data integrity          | Manual                    | Automatic        |
-| Portability             | ❌ (limited to Solid)     | ✅               |
-| History Tracking        | ❌                        | ✅               |
 
 ## Key Benefits
 
