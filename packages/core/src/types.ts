@@ -845,4 +845,4 @@ export type BindingRef<T> = {
   set value(value: T);
 };
 export type BindingProp<T, O> = [O, BindingKeys<T, O>];
-export type BindingKeys<T, O> = { [K in keyof O]: O[K] extends T ? K : never }[keyof O];
+export type BindingKeys<T, O> = WritableKeys<{ [K in keyof O]: O[K] extends T ? K : never }>;

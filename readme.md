@@ -113,7 +113,6 @@ Unlike traditional React state management which requires explicit setState calls
 
 ```jsx
 import { useAnchor, observer } from '@anchor/react';
-import { observable } from '@anchor/react/components';
 
 const TodoApp = observer(() => {
   const [todos] = useAnchor([
