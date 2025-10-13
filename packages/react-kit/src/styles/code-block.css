@@ -14,17 +14,12 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .shiki,
-  .shiki span {
-    color: var(--shiki-dark) !important;
-    background-color: var(--shiki-dark-bg) !important;
-  }
-}
-
 html.dark .shiki,
 html.dark .shiki span {
   color: var(--shiki-dark) !important;
+}
+
+html.dark .shiki {
   background-color: var(--shiki-dark-bg) !important;
 }
 
@@ -64,6 +59,18 @@ html.dark .shiki span {
 
   &.code-block-fit > .shiki {
     background-color: transparent !important;
+  }
+
+  .line.diff.add {
+    background-color: rgba(0, 255, 0, 0.1);
+    border-radius: 3px;
+    padding-right: 6px;
+  }
+
+  .line.diff.remove {
+    background-color: rgba(255, 0, 0, 0.1);
+    border-radius: 3px;
+    padding-right: 6px;
   }
 }
 

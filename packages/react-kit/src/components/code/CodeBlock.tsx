@@ -5,6 +5,7 @@ import { useObserver } from '@anchorlib/react';
 import { LoaderCircle } from '@icons/index.js';
 import type { EFC } from '../../types.js';
 import { classx, stylex } from '@utils/classx.js';
+import { transformerNotationDiff, transformerNotationHighlight } from '@shikijs/transformers';
 
 const shiki = anchor<{ highlighter?: Highlighter }>({}, { recursive: false });
 
@@ -39,7 +40,14 @@ export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTM
     const { highlighter } = shiki;
     return (
       highlighter &&
-      highlighter.codeToHtml(code.trim(), { lang, themes: { dark: 'catppuccin-mocha', light: 'catppuccin-latte' } })
+      highlighter.codeToHtml(code.trim(), {
+        lang,
+        themes: {
+          dark: 'catppuccin-mocha',
+          light: 'catppuccin-latte',
+        },
+        transformers: [transformerNotationDiff(), transformerNotationHighlight()],
+      })
     );
   }, [code, lang]);
 

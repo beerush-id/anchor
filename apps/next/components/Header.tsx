@@ -16,12 +16,12 @@ const links: HeaderLink[] = [
     text: 'Overview',
   },
   {
-    href: '#performance',
-    text: 'Performance',
-  },
-  {
     href: '#features',
     text: 'Core Features',
+  },
+  {
+    href: '#performance',
+    text: 'Performance',
   },
   {
     href: '#todo-benchmark',

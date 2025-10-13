@@ -4,10 +4,11 @@ import { BookText, Gauge } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useScrollNav } from '@anchorlib/react-kit/actions';
 
-export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactNode }> = ({
+export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactNode; href?: string }> = ({
   className,
   tiys = true,
   children,
+  href = '/docs/getting-started',
 }) => {
   const tryItRef = useScrollNav<HTMLAnchorElement>();
 
@@ -15,7 +16,7 @@ export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactN
     <>
       <div className={`max-w-6xl mx-auto flex items-center justify-center gap-4 md:gap-8 ${className}`}>
         <a
-          href={`/docs/getting-started`}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="h-[54px] md:self-end inline-flex flex-none items-center px-6 py-3 bg-brand-main hover:bg-brand-main-hover text-white transition-colors rounded-md font-medium btn-primary">

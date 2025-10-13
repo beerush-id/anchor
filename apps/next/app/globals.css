@@ -43,7 +43,7 @@ body {
 }
 
 .ark-section {
-  @apply max-w-6xl mx-auto flex flex-col justify-center items-center;
+  @apply max-w-6xl lg:max-w-7xl mx-auto flex flex-col justify-center items-center;
 }
 
 .ark-section-offset.min-h-screen .ark-section {

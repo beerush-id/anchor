@@ -1,18 +1,22 @@
 import { Hero } from './home/Hero';
-import { About } from './home/About';
+import { Performance } from './home/Performance';
 import { CoreFeatures } from './home/CoreFeatures';
 import { TodoDemo } from './home/TodoDemo';
 import { EditorDemo } from './home/EditorDemo';
 import { BeyondFrontend } from './home/BeyondFrontend';
 import { Footer } from '@components/Footer';
+import { RedefineReact } from './home/RedefineReact';
+import { FrameworkAgnostic } from './home/FrameworkAgnostic';
 
 export default function Home() {
   return (
     <main>
       <Hero />
-      <About />
+      <RedefineReact />
       <CoreFeatures />
+      <Performance />
       <TodoDemo />
+      <FrameworkAgnostic />
       <BeyondFrontend />
       <EditorDemo />
       <Footer />
