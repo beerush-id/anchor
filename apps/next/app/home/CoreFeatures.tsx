@@ -10,19 +10,25 @@ import { MainCTA } from '@components/MainCTA';
 
 const fineGrainedCodes = [
   {
-    name: 'React',
-    icon: '/images/logos/react.svg',
-    iconAlt: 'React Logo',
+    name: 'Anchor',
+    icon: '/anchor-logo.svg',
+    iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { useAnchor, view } from '@anchorlib/react';
+import { useAnchor, view, setup } from '@anchorlib/react';
 
-const App = () => {
+const App = setup(() => {
+  // State can be co-located with the component, similar to useState.
   const [profile] = useAnchor({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
+    name: 'John Doe',
+    email: 'johndoe@example.com',
   });
-
+  
+  // Stable reference, no need useCallback.
+  const changeName = () => {
+    profile.name = 'Jane Smith';
+  }
+  
   // Only this part re-renders when the state changes.
   const Profile = view(() => (
     <div>
@@ -31,12 +37,140 @@ const App = () => {
     </div>
   ));
   
-  // Stable reference, no need useCallback.
+  // This part only rendered once.
+  return () => (
+    <>
+      <Profile />
+      <button onClick={changeName}>Change Name</button>
+    </>
+  );
+});
+`,
+  },
+  {
+    name: 'React',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'React Logo',
+    lang: 'tsx',
+    code: `
+import { useState, useMemo, useCallback } from 'react';
+
+const App = () => {
+  // State is co-located with the component.
+  const [profile, setProfile] = useState({
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  });
+
+  // This part re-renders only when its dependencies change.
+  const Profile = useMemo(() => {
+    return (
+      <div>
+        <h1>{profile.name}</h1>
+        <p>{profile.email}</p>
+      </div>
+    );
+  }, [profile.name, profile.email]);
+  
+  // Unstable reference, need useCallback.
+  const changeName = useCallback(() => {
+    setProfile((p) => ({ ...p, name: 'Jane Smith' }));
+  }, []);
+  
+  // This part re-rendered everytime the button is clicked.
+  return (
+    <>
+      {Profile}
+      <button onClick={changeName}>Change Name</button>
+    </>
+  );
+};
+`,
+  },
+  {
+    name: 'Redux',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Redux Logo',
+    lang: 'tsx',
+    code: `
+import { createSlice, configureStore } from '@reduxjs/toolkit';
+import { Provider, useSelector, useDispatch } from 'react-redux';
+import { memo } from 'react';
+
+// State is defined externally and connected to the component.
+const profileSlice = createSlice({
+  name: 'profile',
+  initialState: {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  },
+  reducers: {
+    setName: (state, action) => { state.name = action.payload; },
+  }
+});
+const store = configureStore({ reducer: { profile: profileSlice.reducer } });
+
+// This component re-renders when the state changes.
+const Profile = memo(() => {
+  const profile = useSelector((state) => state.profile);
+  return (
+    <div>
+      <h1>{profile.name}</h1>
+      <p>{profile.email}</p>
+    </div>
+  );
+});
+
+// This component does not re-render.
+const App = () => {
+  const dispatch = useDispatch();
   const changeName = () => {
-    profile.name = 'Jane Smith';
+    dispatch(profileSlice.actions.setName('Jane Smith'));
   }
   
-  // This part only rendered once.
+  return (
+    <Provider store={store}>
+      <Profile />
+      <button onClick={changeName}>Change Name</button>
+    </Provider>
+  );
+};
+`,
+  },
+  {
+    name: 'MobX',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'MobX Logo',
+    lang: 'tsx',
+    code: `
+import { makeAutoObservable } from 'mobx';
+import { observer } from 'mobx-react-lite';
+
+// State is defined externally in a class-based store.
+class ProfileStore {
+  name = 'John Doe';
+  email = 'johndoe@example.com';
+
+  constructor() { makeAutoObservable(this); }
+
+  setName(name) { this.name = name; }
+}
+const store = new ProfileStore();
+
+// This component re-renders when the state changes.
+const Profile = observer(() => (
+  <div>
+    <h1>{store.name}</h1>
+    <p>{store.email}</p>
+  </div>
+));
+
+// This component does not re-render.
+const App = () => {
+  const changeName = () => {
+    store.setName('Jane Smith');
+  }
+  
   return (
     <>
       <Profile />
@@ -47,29 +181,41 @@ const App = () => {
 `,
   },
   {
-    name: 'Solid',
-    icon: '/images/logos/solid.svg',
-    iconAlt: 'SolidJS Logo',
+    name: 'Jotai',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Jotai Logo',
     lang: 'tsx',
     code: `
-import { anchorRef } from '@anchorlib/solid';
+import { atom, useAtom } from 'jotai';
+import { memo } from 'react';
 
+// State is defined externally as an atom.
+const profileAtom = atom({
+  name: 'John Doe',
+  email: 'johndoe@example.com',
+});
+
+// This component re-renders when the state changes.
+const Profile = memo(() => {
+  const [profile] = useAtom(profileAtom);
+  return (
+    <div>
+      <h1>{profile.name}</h1>
+      <p>{profile.email}</p>
+    </div>
+  );
+});
+
+// This component does not re-render.
 const App = () => {
-  const profile = anchorRef({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
-  
+  const [, setProfile] = useAtom(profileAtom);
   const changeName = () => {
-    profile.name = 'Jane Smith';
+    setProfile(p => ({ ...p, name: 'Jane Smith' }));
   }
   
   return (
     <>
-      <div>
-        <h1>{profile.name}</h1>
-        <p>{profile.email}</p>
-      </div>
+      <Profile />
       <button onClick={changeName}>Change Name</button>
     </>
   );
@@ -77,74 +223,67 @@ const App = () => {
 `,
   },
   {
-    name: 'Svelte',
-    icon: '/images/logos/svelte.svg',
-    iconAlt: 'Svelte Logo',
-    lang: 'svelte',
+    name: 'Zustand',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Zustand Logo',
+    lang: 'tsx',
     code: `
-<script lang="ts">
-  import { anchorRef } from '@anchorlib/svelte'; 
+import { create } from 'zustand';
+import { memo } from 'react';
 
-  const profile = anchorRef({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
-  
-  const changeName = () => {
-    $profile.name = 'Jane Smith';
-  };
-</script>
-
-<div>
-  <h1>{$profile.name}</h1>
-  <p>{$profile.email}</p>
-</div>
-
-<button onclick={changeName}>Change Name</button>
-    `,
+// State is defined externally in a store.
+const useStore = create((set) => ({
+  profile: {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
   },
-  {
-    name: 'Vue',
-    icon: '/images/logos/vue.svg',
-    iconAlt: 'Vue Logo',
-    lang: 'vue',
-    code: `
-<script setup lang="ts">
-  import { anchorRef } from '@anchorlib/vue';
+  setName: (name) => set((state) => ({
+    profile: { ...state.profile, name }
+  })),
+}));
 
-  const profile = anchorRef({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
-  
+// This component re-renders when the state changes.
+const Profile = memo(() => {
+  const profile = useStore((state) => state.profile);
+  return (
+    <div>
+      <h1>{profile.name}</h1>
+      <p>{profile.email}</p>
+    </div>
+  );
+});
+
+// This component does not re-render.
+const App = () => {
+  const setName = useStore((state) => state.setName);
   const changeName = () => {
-    profile.value.name = 'Jane Smith';
-  };
-</script>
-
-<div>
-  <h1>{{ profile.name }}</h1>
-  <p>{{ profile.email }}</p>
-</div>
-
-<button @click="changeName">Change Name</button>
+    setName('Jane Smith');
+  }
+  
+  return (
+    <>
+      <Profile />
+      <button onClick={changeName}>Change Name</button>
+    </>
+  );
+};
 `,
   },
 ];
 
 const trueImmutabilityCodes = [
   {
-    name: 'React',
-    icon: '/images/logos/react.svg',
-    iconAlt: 'React Logo',
+    name: 'Anchor',
+    icon: '/anchor-logo.svg',
+    iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { useImmutable, useWriter } from '@anchorlib/react';
+import { useImmutable, useWriter, setup } from '@anchorlib/react';
 
-const App = () => {
+const App = setup(() => {
   const [profile] = useImmutable({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
+    name: 'John Doe',
+    email: 'johndoe@example.com',
   });
   const writer = useWriter(profile, ['name'])
   
@@ -158,126 +297,37 @@ const App = () => {
     writer.email = 'johndoe@example.com';
   }
   
-  return <button onClick={changeName}>Change Name</button>;
-};
+  return () => <button onClick={changeName}>Change Name</button>;
+});
 `,
   },
-  {
-    name: 'Solid',
-    icon: '/images/logos/solid.svg',
-    iconAlt: 'SolidJS Logo',
-    lang: 'tsx',
-    code: `
-import { immutableRef, writableRef } from '@anchorlib/solid';
-
-const App = () => {
-  const profile = immutableRef({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
-  const writer = writableRef(profile, ['name'])
-  
-  const changeName = () => {
-    // Expected and allowed mutation.
-    writer.name = 'Jane Smith';
-
-    // Unexpected mutation will never reach the state.
-    // This mutation will be caught and warned at the IDE level,
-    // build time, and runtime due to immutability.
-    writer.email = 'johndoe@example.com';
-  }
-  
-  return <button onClick={changeName}>Change Name</button>;
-};
-`,
-  },
-  {
-    name: 'Svelte',
-    icon: '/images/logos/svelte.svg',
-    iconAlt: 'Svelte Logo',
-    lang: 'svelte',
-    code: `
-<script lang="ts">
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
-
-  const profile = immutableRef({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
-  const writer = writableRef($profile, ['name']);
-  
-  const changeName = () => {
-    // Expected and allowed mutation.
-    $writer.name = 'Jane Smith';
-
-    // Unexpected mutation will never reach the state.
-    // This mutation will be caught and warned at the IDE level,
-    // build time, and runtime due to immutability.
-    $writer.email = 'johndoe@example.com';
-  }
-</script>
-
-<button onclick={changeName}>Change Name</button>
-    `,
-  },
-  {
-    name: 'Vue',
-    icon: '/images/logos/vue.svg',
-    iconAlt: 'Vue Logo',
-    lang: 'vue',
-    code: `
-<script setup lang="ts">
-  import { immutableRef, writableRef } from '@anchorlib/vue';
-
-  const profile = immutableRef({
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
-  const writer = writableRef(profile.value, ['name']);
-  
-  const changeName = () => {
-    // Expected and allowed mutation.
-    writer.value.name = 'Jane Smith';
-
-    // Unexpected mutation will never reach the state.
-    // This mutation will be caught and warned at the IDE level,
-    // build time, and runtime due to immutability.
-    writer.value.email = 'johndoe@example.com';
-  };
-</script>
-
-<button @click="changeName">Change Name</button>
-`,
-  },
-];
-
-const integrityCodes = [
   {
     name: 'React',
     icon: '/images/logos/react.svg',
     iconAlt: 'React Logo',
     lang: 'tsx',
     code: `
-import { z } from 'zod/v4';
-import { useModel } from '@anchorlib/react';
+import { useState } from 'react';
 
-const schema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.email("Invalid email format")
-});
-  
 const App = () => {
-  const [profile] = useModel(schema, {
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
+  const [profile, setProfile] = useState({
+    name: 'John Doe',
+    email: 'johndoe@example.com',
   });
   
   const changeName = () => {
-    // Valid mutation.
-    profile.name = 'Jane Smith';
+    // Immutability is enforced by convention, not by the library.
+    // Expected and allowed mutation.
+    setProfile(currentProfile => ({
+      ...currentProfile,
+      name: 'Jane Smith',
+    }));
 
-    // Invalid mutation will never reach the state.
-    profile.email = 10;
+    // Unexpected mutation can still happen and reach the state.
+    setProfile(currentProfile => ({
+      ...currentProfile,
+      email: 'jane.smith@example.com',
+    }));
   }
   
   return <button onClick={changeName}>Change Name</button>;
@@ -285,23 +335,167 @@ const App = () => {
 `,
   },
   {
-    name: 'Solid',
-    icon: '/images/logos/solid.svg',
-    iconAlt: 'SolidJS Logo',
+    name: 'Redux',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Redux Logo',
     lang: 'tsx',
     code: `
-import { z } from 'zod/v4';
-import { modelRef } from '@anchorlib/solid';
+import { createSlice, configureStore } from '@reduxjs/toolkit';
+import { Provider, useDispatch } from 'react-redux';
+
+const profileSlice = createSlice({
+  name: 'profile',
+  initialState: {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  },
+  reducers: {
+    updateProfile: (state, action) => {
+      // Mutations are allowed inside reducers
+      state.name = action.payload.name || state.name;
+      state.email = action.payload.email || state.email;
+    },
+  }
+});
+const store = configureStore({ reducer: { profile: profileSlice.reducer } });
+
+const App = () => {
+  const dispatch = useDispatch();
+  
+  const changeName = () => {
+    // Redux Toolkit with Immer helps enforce immutability within reducers.
+    // Expected and allowed mutation.
+    dispatch(profileSlice.actions.updateProfile({ name: 'Jane Smith' }));
+
+    // However, unexpected mutations can still be dispatched from components.
+    dispatch(profileSlice.actions.updateProfile({ email: 'new@example.com' }));
+  }
+  
+  return (
+    <Provider store={store}>
+      <button onClick={changeName}>Change Name</button>
+    </Provider>
+  );
+};
+`,
+  },
+  {
+    name: 'Jotai',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Jotai Logo',
+    lang: 'tsx',
+    code: `
+import { atom, useAtom } from 'jotai';
+
+const profileAtom = atom({
+  name: 'John Doe',
+  email: 'johndoe@example.com',
+});
+
+const App = () => {
+  const [, setProfile] = useAtom(profileAtom);
+  
+  const changeName = () => {
+    // Immutability is managed by convention.
+    // Expected and allowed mutation.
+    setProfile(profile => ({ ...profile, name: 'Jane Smith' }));
+
+    // Unexpected mutation can still happen.
+    setProfile(profile => ({ ...profile, email: 'new@example.com' }));
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+};
+`,
+  },
+  {
+    name: 'Zustand',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Zustand Logo',
+    lang: 'tsx',
+    code: `
+import { create } from 'zustand';
+
+const useStore = create((set) => ({
+  profile: {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  },
+  updateProfile: (updater) => set((state) => ({ profile: { ...state.profile, ...updater } })),
+}));
+
+const App = () => {
+  const { updateProfile } = useStore();
+  
+  const changeName = () => {
+    // Immutability is managed by convention.
+    // Expected and allowed mutation.
+    updateProfile({ name: 'Jane Smith' });
+
+    // Unexpected mutation can still happen.
+    updateProfile({ email: 'new@example.com' });
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+};
+`,
+  },
+  {
+    name: 'MobX',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'MobX Logo',
+    lang: 'tsx',
+    code: `
+import { makeAutoObservable, action } from 'mobx';
+import { observer } from 'mobx-react-lite';
+
+class ProfileStore {
+  name = 'John Doe';
+  email = 'johndoe@example.com';
+
+  constructor() { makeAutoObservable(this); }
+
+  updateProfile(updates) {
+    Object.assign(this, updates);
+  }
+}
+const store = new ProfileStore();
+
+const App = observer(() => {
+  const changeName = () => {
+    // MobX encourages direct mutation of state within actions.
+    // Expected and allowed mutation.
+    store.updateProfile({ name: 'Jane Smith' });
+
+    // Unexpected mutation can still happen.
+    store.updateProfile({ email: 'new@example.com' });
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+});
+`,
+  },
+];
+
+const integrityCodes = [
+  {
+    name: 'Anchor',
+    icon: '/anchor-logo.svg',
+    iconAlt: 'Anchor Logo',
+    lang: 'tsx',
+    code: `
+import { z } from 'zod';
+import { useModel, setup } from '@anchorlib/react';
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
-  email: z.email("Invalid email format")
+  email: z.string().email("Invalid email format")
 });
   
-const App = () => {
-  const profile = modelRef(schema, {
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
+const App = setup(() => {
+  const [profile] = useModel(schema, {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
   });
   
   const changeName = () => {
@@ -312,72 +506,221 @@ const App = () => {
     profile.email = 10;
   }
   
+  return () => <button onClick={changeName}>Change Name</button>;
+});
+`,
+  },
+  {
+    name: 'React',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'React Logo',
+    lang: 'tsx',
+    code: `
+import { z } from 'zod';
+import { useState } from 'react';
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format")
+});
+  
+const App = () => {
+  const [profile, setProfile] = useState({
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  });
+  
+  const changeName = () => {
+    // Validation must be manually applied before state updates.
+    // Valid mutation.
+    const parsed = schema.safeParse({ ...profile, name: 'Jane Smith' });
+    if (parsed.success) setProfile(parsed.data);
+
+    // Invalid mutation will still reach the state without proper check,
+    // a common source of bugs in manual validation scenarios.
+    setProfile({ ...profile, email: 10 });
+  }
+  
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
   },
   {
-    name: 'Svelte',
-    icon: '/images/logos/svelte.svg',
-    iconAlt: 'Svelte Logo',
-    lang: 'svelte',
+    name: 'Redux',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Redux Logo',
+    lang: 'tsx',
     code: `
-<script lang="ts">
-  import { z } from 'zod/v4';
-  import { modelRef } from '@anchorlib/svelte';
+import { z } from 'zod';
+import { createSlice, configureStore } from '@reduxjs/toolkit';
+import { Provider, useDispatch } from 'react-redux';
 
-  const schema = z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.email("Invalid email format")
-  });
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format")
+});
 
-  const profile = modelRef(schema, {
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
+const profileSlice = createSlice({
+  name: 'profile',
+  initialState: {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  },
+  reducers: {
+    setProfile: (state, action) => {
+      const parsed = schema.safeParse(action.payload);
+      if (parsed.success) {
+        return parsed.data;
+      }
+      return state;
+    },
+  }
+});
+const store = configureStore({ reducer: { profile: profileSlice.reducer } });
+
+const App = () => {
+  const dispatch = useDispatch();
   
   const changeName = () => {
+    // Validation is handled within the reducer.
     // Valid mutation.
-    $profile.name = 'Jane Smith';
+    dispatch(profileSlice.actions.setProfile({ name: 'Jane Smith', email: 'johndoe@example.com' }));
 
-    // Invalid mutation will never reach the state.
-    $profile.email = 10;
+    // Invalid mutation will be ignored by the reducer.
+    dispatch(profileSlice.actions.setProfile({ name: 'Jane Smith', email: 10 }));
   }
-</script>
-
-<button onclick={changeName}>Change Name</button>
-    `,
+  
+  return (
+    <Provider store={store}>
+      <button onClick={changeName}>Change Name</button>
+    </Provider>
+  );
+};
+`,
   },
   {
-    name: 'Vue',
-    icon: '/images/logos/vue.svg',
-    iconAlt: 'Vue Logo',
-    lang: 'vue',
+    name: 'Jotai',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Jotai Logo',
+    lang: 'tsx',
     code: `
-<script setup lang="ts">
-  import { z } from 'zod/v4';
-  import { modelRef } from '@anchorlib/vue';
+import { z } from 'zod';
+import { atom, useAtom } from 'jotai';
 
-  const schema = z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.email("Invalid email format")
-  });
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format")
+});
 
-  const profile = modelRef(schema, {
-    name: 'John Doe', 
-    email: 'johndoe@example.com' 
-  });
+const profileAtom = atom({
+  name: 'John Doe',
+  email: 'johndoe@example.com',
+});
+
+const App = () => {
+  const [, setProfile] = useAtom(profileAtom);
   
   const changeName = () => {
+    // Validation must be manually applied before state updates.
     // Valid mutation.
-    profile.value.name = 'Jane Smith';
+    const parsed = schema.safeParse({ name: 'Jane Smith', email: 'johndoe@example.com' });
+    if (parsed.success) setProfile(parsed.data);
 
-    // Invalid mutation will never reach the state.
-    profile.value.email = 10;
+    // Invalid mutation can still reach the state without proper check.
+    setProfile(p => ({...p, email: 10}));
   }
-</script>
+  
+  return <button onClick={changeName}>Change Name</button>;
+};
+`,
+  },
+  {
+    name: 'Zustand',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'Zustand Logo',
+    lang: 'tsx',
+    code: `
+import { z } from 'zod';
+import { create } from 'zustand';
 
-<button @click="changeName">Change Name</button>
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format")
+});
+
+const useStore = create((set) => ({
+  profile: {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  },
+  setProfile: (newProfile) => {
+    const parsed = schema.safeParse(newProfile);
+    if (parsed.success) {
+      set({ profile: parsed.data });
+    }
+  },
+}));
+
+const App = () => {
+  const { setProfile } = useStore();
+  
+  const changeName = () => {
+    // Validation is handled within the store.
+    // Valid mutation.
+    setProfile({ name: 'Jane Smith', email: 'johndoe@example.com' });
+
+    // Invalid mutation will be ignored.
+    setProfile({ name: 'Jane Smith', email: 10 });
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+};
+`,
+  },
+  {
+    name: 'MobX',
+    icon: '/images/logos/react.svg',
+    iconAlt: 'MobX Logo',
+    lang: 'tsx',
+    code: `
+import { z } from 'zod';
+import { makeAutoObservable, action } from 'mobx';
+import { observer } from 'mobx-react-lite';
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format")
+});
+
+class ProfileStore {
+  profile = {
+    name: 'John Doe',
+    email: 'johndoe@example.com',
+  };
+
+  constructor() { makeAutoObservable(this); }
+
+  setProfile(newProfile) {
+    const parsed = schema.safeParse(newProfile);
+    if (parsed.success) {
+      this.profile = parsed.data;
+    }
+  }
+}
+const store = new ProfileStore();
+
+const App = observer(() => {
+  const changeName = () => {
+    // Validation is handled within the action.
+    // Valid mutation.
+    store.setProfile({ name: 'Jane Smith', email: 'johndoe@example.com' });
+
+    // Invalid mutation will be ignored.
+    store.setProfile({ name: 'Jane Smith', email: 10 });
+  }
+  
+  return <button onClick={changeName}>Change Name</button>;
+});
 `,
   },
 ];

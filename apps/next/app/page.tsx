@@ -14,9 +14,9 @@ export default function Home() {
       <Hero />
       <RedefineReact />
       <CoreFeatures />
+      <FrameworkAgnostic />
       <Performance />
       <TodoDemo />
-      <FrameworkAgnostic />
       <BeyondFrontend />
       <EditorDemo />
       <Footer />

@@ -14,7 +14,7 @@ export const FrameworkAgnostic = () => {
       </SectionDescription>
 
       <StateSharing className={'mb-4 md:mb-10'} />
-      <MainCTA className="mb-6" />
+      <MainCTA className="mb-6" tiys={false} />
     </Section>
   );
 };

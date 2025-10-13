@@ -9,12 +9,12 @@ import { createContext, useContext } from 'react';
 
 const TabContext = createContext(null);
 
-export const TabButton = setup(({ name, children, ...props }) => {
+export const TabButton = setup(({ name, children, ...props }) => { // [!code ++]
   const tab = useContext(TabContext);
 
-  if (tab && !tab.active) tab.select(name);
+  if (tab && !tab.active) tab.select(name); // [!code ++]
 
-  const Template = view(() => (
+  const Template = view(() => ( // [!code ++]
     <button
       onClick={() => tab?.select(name)}
       disabled={tab?.disabled}
@@ -45,11 +45,13 @@ const TabContext = createContext(null);
 export const TabButton = ({ name, children, ...props }) => {
   const tab = useContext(TabContext);
 
-  useEffect(() => {
-    if (tab && tab.active === null) {
-      tab.select(name);
-    }
-  }, [tab, name]);
+  // The tricky and scary part. Wrong dependency can cause infinite loops
+  // leading to DDOS-ing ourselves - a true story.
+  useEffect(() => { // [!code --]
+    if (tab && !tab.active) { // [!code --]
+      tab.select(name); // [!code --]
+    } // [!code --]
+  }, [tab, name]); // [!code --]
 
   const handleClick = () => {
     tab?.select(name);
