@@ -2,7 +2,7 @@ import { type ComponentType, type HTMLAttributes, type SVGAttributes } from 'rea
 import type { ClassList, ClassName, EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
 import { resolveProps, useObserver } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react/view';
 import { Tooltip } from './Tooltip.js';
 import { useScrollNav } from '@actions/index.js';
 import { ThemeSwitch } from './ThemeSwitch.js';
@@ -45,7 +45,7 @@ export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLH
     [props]
   );
 
-  const LogoView = observe<HTMLHeadingElement>(() => {
+  const LogoView = view(() => {
     if (!logo?.text) return;
 
     const { text, image: LogoImage, height } = logo;
@@ -61,7 +61,7 @@ export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLH
     );
   });
 
-  const LinksView = observe<HTMLUListElement>(() => {
+  const LinksView = view(() => {
     if (!links?.length) return;
 
     return (
@@ -82,7 +82,7 @@ export const Header: EFC<HTMLAttributes<HTMLHeadingElement> & HeaderProps, HTMLH
     );
   });
 
-  const SocialsView = observe<HTMLUListElement>(() => {
+  const SocialsView = view(() => {
     if (!socials?.length) return;
 
     return (

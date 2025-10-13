@@ -65,5 +65,5 @@ export default defineConfig({
   platform: 'browser',
   publicDir: './public',
   external: ['@anchorlib/core', '@anchorlib/storage', '@anchorlib/react', 'react', 'tailwindcss'],
-  esbuildPlugins: [pathResolve, useClientPlugin],
+  esbuildPlugins: [pathResolve as never, useClientPlugin as never],
 });

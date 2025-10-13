@@ -2,7 +2,7 @@
 
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@anchorlib/react-kit/components';
-import { observe, observer, useAnchor } from '@anchorlib/react';
+import { observer, useAnchor, view } from '@anchorlib/react';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
 import { type Immutable } from '@anchorlib/core';
@@ -163,7 +163,7 @@ export const Performance = () => {
     current: metrics[0]?.metrics?.[0],
   });
 
-  const NavButtons = observe(() => {
+  const NavButtons = view(() => {
     const current = display.metrics;
     const handleClick = (item: (typeof metrics)[0]) => {
       display.current = item.metrics?.[0];

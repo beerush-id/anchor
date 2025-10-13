@@ -15,7 +15,7 @@ const fineGrainedCodes = [
     iconAlt: 'React Logo',
     lang: 'tsx',
     code: `
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 
 const App = () => {
   const [profile] = useAnchor({
@@ -24,7 +24,7 @@ const App = () => {
   });
 
   // Only this part re-renders when the state changes.
-  const Profile = observe(() => (
+  const Profile = view(() => (
     <div>
       <h1>{profile.name}</h1>
       <p>{profile.email}</p>

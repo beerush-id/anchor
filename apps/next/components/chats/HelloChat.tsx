@@ -3,7 +3,7 @@ import { LoaderCircle } from 'lucide-react';
 import { CardContent, CardFooter, CardHeader, Input } from '@anchorlib/react-kit/components';
 
 import { FetchStatus } from '@anchorlib/core';
-import { observe, useStream, useVariable } from '@anchorlib/react';
+import { useStream, useVariable, view } from '@anchorlib/react';
 
 export const HelloChat = () => {
   const [name] = useVariable('');
@@ -27,7 +27,7 @@ export const HelloChat = () => {
     name.value = '';
   };
 
-  const ChatStream = observe(() => {
+  const ChatStream = view(() => {
     if (state.status === FetchStatus.Idle) {
       return <div className={'flex-1 flex flex-col items-center justify-center gap-2'}>It's lonely here 😔</div>;
     }
@@ -40,7 +40,7 @@ export const HelloChat = () => {
     );
   });
 
-  const LoaderBar = observe(() => state.status === FetchStatus.Pending && <LoaderCircle className="animate-spin" />);
+  const LoaderBar = view(() => state.status === FetchStatus.Pending && <LoaderCircle className="animate-spin" />);
 
   return (
     <>

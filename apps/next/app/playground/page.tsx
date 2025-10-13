@@ -3,7 +3,7 @@
 import { useActions, useAnchor, useVariable } from '@anchorlib/react';
 import { useClassName, useStyle } from '@anchorlib/react-kit/actions';
 import type { StyleDeclaration } from '@anchorlib/react-kit';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react/view';
 import { Input } from '@anchorlib/react-kit/components';
 import { optimized } from '@anchorlib/react-kit/view';
 import type { HTMLAttributes } from 'react';
@@ -53,7 +53,7 @@ const NameForm = () => {
     },
   });
 
-  const FullName = observe(() => <span>{state.fullName || 'Unknown'}</span>);
+  const FullName = view(() => <span>{state.fullName || 'Unknown'}</span>);
 
   return (
     <div className="flex flex-col">

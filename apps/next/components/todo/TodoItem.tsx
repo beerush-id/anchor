@@ -1,6 +1,6 @@
 import { type FC, memo, useEffect, useRef } from 'react';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
-import { debugRender, observe, useWriter } from '@anchorlib/react';
+import { debugRender, useWriter, view } from '@anchorlib/react';
 import { Button, IconButton, Tooltip } from '@anchorlib/react-kit/components';
 import { anchorReport, itemsWriter, type ITodoItem, statsWriter } from '@utils/todo';
 import { todoStats, useUpdateStat } from '@utils/stats';
@@ -16,6 +16,7 @@ const benchmark = async (fn: () => void) => {
 
 export const TodoItem: FC<{ todo: ITodoItem }> = memo(function TodoItem({ todo }) {
   const selfRef = useRef<HTMLLIElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
 
   debugRender(selfRef);
   useUpdateStat(() => {
@@ -53,12 +54,12 @@ export const TodoItem: FC<{ todo: ITodoItem }> = memo(function TodoItem({ todo }
     selfRef.current.scrollIntoView({ behavior: 'instant', block: 'center' });
   }, [todo]);
 
-  const ItemView = observe<HTMLDivElement>((ref) => {
+  const ItemView = view(() => {
     const { completed } = todo;
-    debugRender(ref);
+    debugRender(viewRef);
 
     return (
-      <div ref={ref} className="flex items-center flex-1 gap-3">
+      <div ref={viewRef} className="flex items-center flex-1 gap-3">
         <button onClick={handleToggle}>
           {completed && <SquareCheck />}
           {!completed && <Square />}

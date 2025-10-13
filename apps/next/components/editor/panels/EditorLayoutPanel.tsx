@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { PanelColumn, PanelRow, Tooltip } from '@anchorlib/react-kit/components';
 import { ColorPicker, Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { observe, useObserver, useWriter } from '@anchorlib/react';
+import { useObserver, useWriter, view } from '@anchorlib/react';
 import { editorApp, TOOL_ICON_SIZE } from '@utils/editor';
 
 const FLEX_KEYS = ['flex', 'inline-flex'] as (string | number | undefined)[];
@@ -44,7 +44,7 @@ export default function EditorLayoutPanel() {
     (style.flexDirection ?? base.flexDirection) === 'column' ||
     (style.flexDirection ?? base.flexDirection) === 'column-reverse';
 
-  const FlexDirectionPanel = observe(() => {
+  const FlexDirectionPanel = view(() => {
     return (
       <PanelColumn label="Direction">
         <ToggleGroup>
@@ -84,7 +84,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const FLexWrapPanel = observe(() => {
+  const FLexWrapPanel = view(() => {
     return (
       <PanelColumn label="Flex Wrap">
         <ToggleGroup>
@@ -110,7 +110,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const AlignItemsPanel = observe(() => {
+  const AlignItemsPanel = view(() => {
     const vertical = isVertical();
 
     return (
@@ -157,7 +157,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const JustifyContentPanel = observe(() => {
+  const JustifyContentPanel = view(() => {
     const vertical = isVertical();
 
     return (
@@ -204,7 +204,7 @@ export default function EditorLayoutPanel() {
     );
   });
 
-  const AlignmentPanel = observe(() => {
+  const AlignmentPanel = view(() => {
     if (!isFlex()) return;
 
     return (

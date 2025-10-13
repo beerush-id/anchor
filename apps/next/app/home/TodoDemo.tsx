@@ -7,7 +7,7 @@ import { classicTodoStats, todoStats } from '@utils/stats';
 import { RenderStats } from '@components/stats/RenderStats';
 import { ClassicTodoApp } from '@components/todo-classic/ClassicTodoApp';
 import { TodoApp } from '@components/todo/TodoApp';
-import { observe } from '@anchorlib/react';
+import { view } from '@anchorlib/react';
 import { anchorReport, classicReport } from '@utils/todo';
 import { BenchmarkReport } from '@components/stats/BenchmarkReport';
 
@@ -15,12 +15,12 @@ const AnchorTodoApp = memo(TodoApp);
 const DefaultTodoApp = memo(ClassicTodoApp);
 
 export const TodoDemo = () => {
-  const ClassicReport = observe(() => {
+  const ClassicReport = view(() => {
     if (!classicReport.enabled) return;
 
     return <BenchmarkReport metrics={classicReport.metrics} stats={classicReport.stats} />;
   });
-  const AnchorReport = observe(() => {
+  const AnchorReport = view(() => {
     if (!anchorReport.enabled) return;
 
     return <BenchmarkReport metrics={anchorReport.metrics} stats={anchorReport.stats} />;

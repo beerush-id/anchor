@@ -2,13 +2,13 @@
 
 import { useStream } from '@anchorlib/react';
 import { LoaderCircle } from 'lucide-react';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react/view';
 import { FetchStatus } from '@anchorlib/core';
 
 export default function Page() {
   const [state] = useStream('', { url: '/apis/stream', method: 'get' });
 
-  const Hello = observe(() => {
+  const Hello = view(() => {
     if (state.status === FetchStatus.Idle) {
       return <div>Please wait...</div>;
     }

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CodeBlock } from '@anchorlib/react-kit/components';
 import { type WritableKeys } from '@anchorlib/core';
-import { debugRender, observe, useImmutable, useWriter } from '@anchorlib/react';
+import { debugRender, useImmutable, useWriter, view } from '@anchorlib/react';
 import { useRef } from 'react';
 
 export function AnchorImmutable() {
@@ -41,7 +41,7 @@ export function AnchorImmutable() {
     settings.notification = notification;
   };
 
-  const ProfileForm = observe(() => (
+  const ProfileForm = view(() => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
@@ -64,7 +64,7 @@ export function AnchorImmutable() {
     </div>
   ));
 
-  const ThemeSetting = observe(() => (
+  const ThemeSetting = view(() => (
     <div className={'flex items-center gap-3'}>
       <label className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
       <div className="flex space-x-4">
@@ -90,7 +90,7 @@ export function AnchorImmutable() {
     </div>
   ));
 
-  const NotificationSetting = observe(() => (
+  const NotificationSetting = view(() => (
     <div className={'flex items-center gap-3'}>
       <label className="inline-flex items-center">
         <input
@@ -114,7 +114,7 @@ export function AnchorImmutable() {
     </div>
   ));
 
-  const JsonOutput = observe(() => <CodeBlock code={JSON.stringify(user, null, 2)} lang={'json'} />);
+  const JsonOutput = view(() => <CodeBlock code={JSON.stringify(user, null, 2)} lang={'json'} />);
 
   return (
     <Card ref={ref}>

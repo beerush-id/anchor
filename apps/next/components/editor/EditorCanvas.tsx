@@ -1,4 +1,4 @@
-import { debugRender, observe, useDerivedRef, useObserver, useRefTrap, useWriter } from '@anchorlib/react';
+import { debugRender, useDerivedRef, useObserver, useRefTrap, useWriter, view } from '@anchorlib/react';
 import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@utils/editor';
 import { useRef } from 'react';
 import { CodeBlock, Tooltip } from '@anchorlib/react-kit/components';
@@ -17,7 +17,7 @@ export default function EditorCanvas() {
 
   const viewWriter = useWriter(editorApp, ['viewMode']);
 
-  const EditorPreview = observe(() => {
+  const EditorPreview = view(() => {
     debugRender(ref);
 
     const mode = editorApp.viewMode;
