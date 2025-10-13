@@ -18,27 +18,27 @@ describe('Anchor React - Binding', () => {
 
   describe('Basic Usage', () => {
     it('should bind a state property to another state property', () => {
-      const source = anchor({ value: 'test' });
+      const source = anchor({ text: 'test' });
       const target = anchor({ text: 'initial' });
 
-      renderHook(() => useBinding(target, 'text', [source, 'value']));
+      renderHook(() => useBinding(target, 'text', [source, 'text']));
 
       // Initial binding - target should take source value
       expect(target.text).toBe('test');
 
       // When source changes, target should update
       act(() => {
-        source.value = 'updated';
+        source.text = 'updated';
       });
 
       expect(target.text).toBe('updated');
     });
 
     it('should return the target state', () => {
-      const source = anchor({ value: 'test' });
+      const source = anchor({ text: 'test' });
       const target = anchor({ text: 'initial' });
 
-      const { result } = renderHook(() => useBinding(target, 'text', [source, 'value']));
+      const { result } = renderHook(() => useBinding(target, 'text', [source, 'text']));
 
       expect(result.current).toBe(target);
     });
@@ -46,12 +46,12 @@ describe('Anchor React - Binding', () => {
 
   describe('No Binding', () => {
     it('should not bind when no bind parameter is given', () => {
-      const target = anchor({ value: 'initial' });
+      const target = anchor({ text: 'initial' });
 
-      renderHook(() => useBinding(target, 'value'));
+      renderHook(() => useBinding(target, 'text'));
 
-      // Target value should remain unchanged
-      expect(target.value).toBe('initial');
+      // Target text should remain unchanged
+      expect(target.text).toBe('initial');
 
       // Should not have called console.error
       expect(errorSpy).not.toHaveBeenCalled();
@@ -64,7 +64,7 @@ describe('Anchor React - Binding', () => {
       const [constantRef] = constantResult.current;
       const target = anchor({ value: 'initial' });
 
-      renderHook(() => useBinding(target, 'value', [constantRef, 'value' as never]));
+      renderHook(() => useBinding(target, 'value', [constantRef as never] as never));
       vi.runAllTimers();
 
       expect(errorSpy).toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('Anchor React - Binding', () => {
       const [variableRef] = variableResult.current;
       const target = anchor({ value: 'initial' });
 
-      const { unmount } = renderHook(() => useBinding(target, 'value', [variableRef, 'value'] as any));
+      const { unmount } = renderHook(() => useBinding(target, 'value', [variableRef] as any));
 
       // Initial binding - target should take variable value
       expect(target.value).toBe(42);
@@ -96,11 +96,11 @@ describe('Anchor React - Binding', () => {
 
   describe('Unmounting', () => {
     it('should call unbind function when component unmounts', () => {
-      const source = anchor({ value: 'test' });
+      const source = anchor({ text: 'test' });
       const target = anchor({ text: 'initial' });
       const unbindFn = vi.fn();
 
-      const { unmount } = renderHook(() => useBinding(target, 'text', [source, 'value']));
+      const { unmount } = renderHook(() => useBinding(target, 'text', [source, 'text']));
 
       // Unmount the component
       unmount();

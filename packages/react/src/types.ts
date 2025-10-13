@@ -44,13 +44,25 @@ export type ReactiveProps<T> = {
   [K in keyof T]: K extends 'children' ? T[K] : VariableRef<T[K]> | ConstantRef<T[K]> | T[K];
 };
 
-export type ViewRenderer<T> = (ref: RefObject<T | null>) => ReactNode;
-export type ViewRendererFactory<T> = {
+export type ViewRenderer<P> = (props: P) => ReactNode;
+export type ViewRendererFactory<P> = {
   name?: string;
-  render: ViewRenderer<T>;
+  render: ViewRenderer<P>;
   onMounted?: () => void;
   onUpdated?: () => void;
   onDestroy?: () => void;
 };
 
-export type BindingProp<T, B> = B extends VariableRef<T> ? [B, 'value'] : [B, BindingKeys<T, B>];
+export type BindingParam<T, B> = B extends VariableRef<T> ? [VariableRef<T>] : [B, BindingKeys<T, B>];
+export type BindingProps<P, T, B> = P & {
+  bind?: B extends VariableRef<T> ? [VariableRef<T>, never] : [B, BindingKeys<T, B>];
+};
+
+export type BindingInit<T, B> = B extends VariableRef<T> ? RefBinding<T> : StateBinding<T, B>;
+export type RefBinding<T> = {
+  bind?: [VariableRef<T>];
+};
+export type StateBinding<T, S> = {
+  bind?: BindingLink<T, S>;
+};
+export type BindingLink<T, B> = [B, BindingKeys<T, B>];

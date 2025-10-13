@@ -1,4 +1,4 @@
-import { type FunctionComponent, memo, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type FunctionComponent, memo, type ReactNode, useEffect, useState } from 'react';
 import { anchor, captureStack, createObserver, type Linkable, type ObjLike, outsideObserver } from '@anchorlib/core';
 import type { ReactiveProps, ViewRenderer, ViewRendererFactory } from './types.js';
 import { useObserverRef } from './observation.js';
@@ -71,101 +71,15 @@ export function observer<P>(Component: FunctionComponent<P>, displayName?: strin
 }
 
 /**
+ * **`observable`** is an alias for the `observer` function.
+ *
+ * This alias is provided for backward compatibility and convenience.
+ *
  * @deprecated Use `observer` instead.
  *
- * This API is deprecated and will be removed in the future.
+ * @see {@link observer}
  */
 export const observable = observer;
-
-/**
- * **`observe`** is a utility function that creates a React component which
- * automatically re-renders when any observable state accessed within the provided
- * `factory` function changes.
- *
- * @param factory A callback function that returns a `ReactNode` or a renderer factory object.
- * This function will be executed within an observing context.
- * @param displayName An optional string to be used as the display name for the
- *                    returned component in React DevTools.
- * @returns A new React component that is reactive to observable state changes.
- *
- * @remarks This HOC doesn't wrap a component in a way that **`observable`** does, and expect
- * the factory function to returns a React Node or any value that can be rendered directly. Thus,
- * the factory function should be pure and neither have any side effects nor use any React Hook inside.
- * This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
- */
-export function observe<R>(factory: ViewRenderer<R> | ViewRendererFactory<R>, displayName?: string) {
-  if (typeof factory !== 'function' && (typeof factory !== 'object' || factory === null)) {
-    const error = new Error('Factory must be a function or factory object.');
-    captureStack.violation.general(
-      'View observer factory violation detected:',
-      'Attempted to use observe() HOC with a non function and object factory.',
-      error,
-      undefined,
-      observe
-    );
-
-    const Observed = () => error.message;
-    Observed.displayName = `Error(${displayName || 'Anonymous'})`;
-    return Observed;
-  }
-
-  const ObservedNode: FunctionComponent = () => {
-    const factoryRef = useRef<R>(null);
-
-    const [, setVersion] = useState(RENDERER_INIT_VERSION);
-    const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
-    const [observer] = useState(() => {
-      return createObserver(() => {
-        setVersion((c) => c + 1);
-
-        if (typeof factory !== 'function') {
-          factory?.onUpdated?.();
-        }
-      });
-    });
-
-    useEffect(() => {
-      cancelCleanup();
-
-      if (typeof factory !== 'function') {
-        factory?.onMounted?.();
-      }
-
-      return () => {
-        cleanup(() => {
-          observer.destroy();
-
-          if (typeof factory !== 'function') {
-            factory?.onDestroy?.();
-          }
-        });
-      };
-    }, []);
-
-    if (typeof factory === 'function') {
-      return observer.run(() => factory(factoryRef));
-    } else if (typeof factory?.render === 'function') {
-      return observer.run(() => factory.render(factoryRef));
-    } else {
-      captureStack.violation.general(
-        'Unsupported view renderer factory detected:',
-        'Attempted to observe a state using an invalid renderer factory.',
-        new Error('Invalid renderer factory.'),
-        [
-          'Renderer factory must be either:',
-          '- A function that returns a ReactNode.',
-          '- A factory object with a "render()" property.',
-        ],
-        ObservedNode
-      );
-
-      return null;
-    }
-  };
-
-  ObservedNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
-  return ObservedNode;
-}
 
 /**
  * **`stable`** is a Higher-Order Component (HOC) that wraps a React component
@@ -223,6 +137,105 @@ export function setup<C>(Component: C, displayName?: string): C {
   Setup.displayName = `Setup(${componentName})`;
   return Setup as FunctionComponent as C;
 }
+
+/**
+ * **`view`** is a utility function that creates a React component which
+ * automatically re-renders when any observable state accessed within the provided
+ * `factory` function changes.
+ *
+ * @param factory A callback function that returns a `ReactNode` or a renderer factory object.
+ * This function will be executed within an observing context.
+ * @param displayName An optional string to be used as the display name for the
+ *                    returned component in React DevTools.
+ * @returns A new React component that is reactive to observable state changes.
+ *
+ * @remarks This HOC doesn't wrap a component in a way that **`observer`** does, and expect
+ * the factory function to returns a React Node or any value that can be rendered directly. Thus,
+ * the factory function should be pure and neither have any side effects nor use any React Hook inside.
+ * This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
+ */
+export function view<P>(factory: ViewRenderer<P> | ViewRendererFactory<P>, displayName?: string) {
+  if (typeof factory !== 'function' && (typeof factory !== 'object' || factory === null)) {
+    const error = new Error('Factory must be a function or factory object.');
+    captureStack.violation.general(
+      'View observer factory violation detected:',
+      'Attempted to use view() HOC with a non function and object factory.',
+      error,
+      undefined,
+      view
+    );
+
+    const Observed = () => error.message;
+    Observed.displayName = `Error(${displayName || 'Anonymous'})`;
+    return Observed;
+  }
+
+  const ViewNode = (props: P) => {
+    const [, setVersion] = useState(RENDERER_INIT_VERSION);
+    const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
+    const [observer] = useState(() => {
+      return createObserver(() => {
+        setVersion((c) => c + 1);
+
+        if (typeof factory !== 'function') {
+          factory?.onUpdated?.();
+        }
+      });
+    });
+
+    useEffect(() => {
+      cancelCleanup();
+
+      if (typeof factory === 'object' && factory !== null) {
+        factory?.onMounted?.();
+      }
+
+      return () => {
+        cleanup(() => {
+          observer.destroy();
+
+          if (typeof factory === 'object' && factory !== null) {
+            factory?.onDestroy?.();
+          }
+        });
+      };
+    }, []);
+
+    if (typeof factory === 'function') {
+      return observer.run(() => factory(props));
+    } else if (typeof factory?.render === 'function') {
+      return observer.run(() => factory.render(props));
+    } else {
+      captureStack.violation.general(
+        'Unsupported view renderer factory detected:',
+        'Attempted to observe a state using an invalid renderer factory.',
+        new Error('Invalid renderer factory.'),
+        [
+          'Renderer factory must be either:',
+          '- A function that returns a ReactNode.',
+          '- A factory object with a "render()" property.',
+        ],
+        ViewNode
+      );
+
+      return null;
+    }
+  };
+
+  ViewNode.displayName = `View(${displayName || factory.name || 'Anonymous'})`;
+  return ViewNode as FunctionComponent<P>;
+}
+
+/**
+ * **`observe`** is an alias for the `view` function.
+ *
+ * This alias is provided for backward compatibility and convenience.
+ *
+ * @deprecated Use `view` instead.
+ *
+ * @see {@link view}
+ */
+export const observe = view;
 
 /**
  * **`named`** is a utility function that assigns a display name to a React functional component.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
-import { named, observe, observer, setup, useAnchor, useVariable } from '../../src/index.js';
+import { named, observer, setup, useAnchor, useVariable, view } from '../../src/index.js';
 import { anchor } from '@anchorlib/core';
 import { type FunctionComponent, useState } from 'react';
 
@@ -117,16 +117,12 @@ describe('Anchor React - HOC', () => {
     });
   });
 
-  describe('observe', () => {
+  describe('view', () => {
     describe('With Function Factory', () => {
       it('should create component from function factory', () => {
         const TestComponent = () => {
-          const factory = (ref: any) => (
-            <div ref={ref} data-testid="observed">
-              Observed Content
-            </div>
-          );
-          const ObservedComponent = observe(factory, 'TestObserve');
+          const factory = () => <div data-testid="observed">Observed Content</div>;
+          const ObservedComponent = view(factory, 'TestObserve');
           return <ObservedComponent />;
         };
 
@@ -140,7 +136,7 @@ describe('Anchor React - HOC', () => {
 
         const TestComponent = () => {
           const factory = () => <div data-testid="observed">{state.count}</div>;
-          const ObservedComponent = observe(factory);
+          const ObservedComponent = view(factory);
           return <ObservedComponent />;
         };
 
@@ -168,11 +164,9 @@ describe('Anchor React - HOC', () => {
 
           const factory = {
             name: 'TestFactory',
-            render: (ref: any) => (
+            render: () => (
               <>
-                <div ref={ref} data-testid="observed">
-                  Factory Content
-                </div>
+                <div data-testid="observed">Factory Content</div>
                 <span data-testid="count">{state.count}</span>
                 <button data-testid="increment" onClick={() => state.count++}>
                   Increment
@@ -184,7 +178,7 @@ describe('Anchor React - HOC', () => {
             onDestroy,
           };
 
-          const ObservedComponent = observe(factory);
+          const ObservedComponent = view(factory);
           return <ObservedComponent />;
         };
 
@@ -211,14 +205,10 @@ describe('Anchor React - HOC', () => {
 
         const TestComponent = () => {
           const factory = {
-            render: (ref: any) => (
-              <div ref={ref} data-testid="observed">
-                {state.message}
-              </div>
-            ),
+            render: () => <div data-testid="observed">{state.message}</div>,
           };
 
-          const ObservedComponent = observe(factory);
+          const ObservedComponent = view(factory);
           return <ObservedComponent />;
         };
 
@@ -242,7 +232,7 @@ describe('Anchor React - HOC', () => {
 
         const TestComponent = () => {
           const invalidFactory = null as any;
-          const ObservedComponent = observe(invalidFactory);
+          const ObservedComponent = view(invalidFactory);
           return <ObservedComponent />;
         };
 
@@ -259,7 +249,7 @@ describe('Anchor React - HOC', () => {
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         const TestComponent = () => {
-          const ObservedComponent = observe({} as never);
+          const ObservedComponent = view({} as never);
           return <ObservedComponent />;
         };
 
@@ -416,9 +406,7 @@ describe('Anchor React - HOC', () => {
         );
       });
 
-      const ObserverCounter = observer(CounterComponent);
-
-      const { getByTestId } = render(<ObserverCounter />);
+      const { getByTestId } = render(<CounterComponent />);
 
       // Test local state
       expect(getByTestId('local-count').textContent).toBe('0');

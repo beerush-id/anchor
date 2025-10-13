@@ -3,7 +3,7 @@ import { useMicrotask } from './hooks.js';
 import { CLEANUP_DEBOUNCE_TIME } from './constant.js';
 import { useEffect } from 'react';
 import { getRefState } from './ref.js';
-import type { BindingProp } from './types.js';
+import type { BindingLink, BindingParam } from './types.js';
 
 /**
  * A React hook that creates a binding between a property of a reactive object and another value.
@@ -23,9 +23,9 @@ import type { BindingProp } from './types.js';
  * @returns The same state object with the specified property now bound to the provided source
  * @throws {Error} When attempting to bind to a constant value, as constants cannot be modified after creation
  */
-export function useBinding<S extends ObjLike, T, B>(state: S, key: keyof S, bind?: BindingProp<T, B>): S {
+export function useBinding<S extends ObjLike, T, B>(state: S, key: keyof S, bind?: BindingParam<T, B>): S {
   const [cleanup, cancelCleanup] = useMicrotask(CLEANUP_DEBOUNCE_TIME);
-  const [bindObj, bindKey] = (bind ?? []) as BindingProp<T, B>;
+  const [bindObj, bindKey] = (Array.isArray(bind) ? bind : [bind]) as BindingLink<T, B>;
   const bindRef = getRefState(bindObj);
 
   if (bindRef?.constant) {
@@ -44,7 +44,7 @@ export function useBinding<S extends ObjLike, T, B>(state: S, key: keyof S, bind
   }
 
   const unbind =
-    bindRef && !bindRef.constant ? binding([getRefState(bindObj), bindKey] as never, state, key) : undefined;
+    bindRef && !bindRef.constant ? binding((bindKey ? [bindObj, bindKey] : bindRef) as never, state, key) : undefined;
 
   useEffect(() => {
     cancelCleanup();
