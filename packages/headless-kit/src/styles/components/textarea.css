@@ -1,0 +1,51 @@
+@utility ark-textarea {
+  @apply ark-base-input;
+  min-height: calc(var(--ark-input-height) * 2);
+  resize: vertical;
+  field-sizing: content;
+
+  &:disabled,
+  &.ark-disabled,
+  & > :disabled,
+  & > .ark-disabled {
+    resize: none;
+  }
+}
+
+/* Textarea variants */
+@utility ark-textarea-sm {
+  @apply ark-input-sm;
+}
+
+@utility ark-textarea-md {
+  @apply ark-input-md;
+}
+
+@utility ark-textarea-lg {
+  @apply ark-input-lg;
+}
+
+@utility ark-textarea-error {
+  @apply ark-input-error;
+}
+
+@utility ark-textarea-success {
+  @apply ark-input-success;
+}
+
+/* Textarea resize variants */
+@utility ark-textarea-none {
+  resize: none;
+}
+
+@utility ark-textarea-horizontal {
+  resize: horizontal;
+}
+
+@utility ark-textarea-vertical {
+  resize: vertical;
+}
+
+@utility ark-textarea-both {
+  resize: both;
+}

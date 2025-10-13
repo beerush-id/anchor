@@ -1,0 +1,155 @@
+/* Input component theme variables */
+@theme {
+  --ark-input-background: var(--color-background);
+  --ark-input-background-disabled: var(--color-accent-disabled);
+
+  --ark-input-foreground: var(--color-foreground);
+  --ark-input-foreground-disabled: var(--color-accent-disabled-foreground);
+
+  --ark-input-placeholder: color-mix(in oklab, var(--ark-input-foreground) 65%, transparent);
+  --ark-input-placeholder-disabled: color-mix(in oklab, var(--ark-input-foreground) 50%, transparent);
+
+  --ark-input-padding-block: calc(var(--spacing) * 2.5);
+  --ark-input-padding-inline: calc(var(--spacing) * 3);
+
+  --ark-input-height: 36px;
+  --ark-input-font-size: var(--text-sm);
+  --ark-input-font-weight: var(--font-weight-normal);
+  --ark-input-line-height: var(--leading-tight);
+
+  --ark-input-border: var(--color-border);
+  --ark-input-border-focus: var(--color-border-focus);
+  --ark-input-border-hover: var(--color-border-hover);
+  --ark-input-border-active: var(--color-border-active);
+  --ark-input-border-disabled: var(--color-border-disabled);
+  --ark-input-border-size: 1px;
+  --ark-input-border-radius: var(--radius-md);
+
+  --ark-input-ring-size: 3px;
+  --ark-input-ring-opacity: 25%;
+  --ark-input-ring-color: var(--color-primary-ring);
+  --ark-input-ring-offset: 0;
+}
+
+/* Base input utility */
+@utility ark-base-input {
+  display: flex;
+  align-items: center;
+  padding: var(--ark-input-padding-block) var(--ark-input-padding-inline);
+  font-size: var(--ark-input-font-size);
+  font-weight: var(--ark-input-font-weight);
+  line-height: var(--ark-input-line-height);
+  color: var(--ark-input-foreground);
+  background-color: var(--ark-input-background);
+  border-radius: var(--ark-input-border-radius);
+  border: var(--ark-input-border-size) solid var(--ark-input-border);
+  outline: var(--ark-input-ring-size) solid transparent;
+  outline-offset: var(--ark-input-ring-offset);
+  transition-property: color, background-color, border-color, outline-color;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+
+  /* Focus state - must be first */
+  &:focus,
+  &:has(:focus),
+  &.ark-focus {
+    border-color: var(--ark-input-border-focus);
+    outline-color: var(--ark-input-ring-color);
+  }
+
+  /* Hover state */
+  &:hover,
+  &.ark-hover {
+    border-color: var(--ark-input-border-hover);
+  }
+
+  /* Active state */
+  &:active,
+  &.ark-active {
+    border-color: var(--ark-input-border-active);
+  }
+
+  /* Disabled state */
+  &:disabled,
+  &:has(:disabled),
+  &.ark-disabled {
+    color: var(--ark-input-foreground-disabled);
+    border-color: var(--ark-input-border-disabled);
+    background-color: var(--ark-input-background-disabled);
+
+    &::placeholder,
+    & > ::placeholder,
+    & > .ark-placeholder {
+      color: var(--ark-input-placeholder-disabled);
+    }
+  }
+
+  /* Placeholder */
+  &::placeholder,
+  & > ::placeholder,
+  & > .ark-placeholder {
+    color: var(--ark-input-placeholder);
+  }
+}
+
+@utility ark-input {
+  @apply ark-base-input;
+  height: var(--ark-input-height);
+}
+
+/* Input variants */
+@utility ark-input-sm {
+  height: calc(var(--ark-input-height) * 0.75);
+  font-size: calc(var(--ark-input-font-size) * 0.75);
+  outline-width: calc(var(--ark-input-ring-size) * 0.75);
+  border-radius: calc(var(--ark-input-border-radius) * 0.75);
+  padding-inline: calc(var(--ark-input-padding-inline) * 0.75);
+}
+
+@utility ark-input-md {
+  height: calc(var(--ark-input-height) * 1.25);
+  font-size: calc(var(--ark-input-font-size) * 1.25);
+  outline-width: calc(var(--ark-input-ring-size) * 1.25);
+  border-radius: calc(var(--ark-input-border-radius) * 1.25);
+  padding-inline: calc(var(--ark-input-padding-inline) * 1.25);
+}
+
+@utility ark-input-lg {
+  height: calc(var(--ark-input-height) * 1.5);
+  font-size: calc(var(--ark-input-font-size) * 1.5);
+  outline-width: calc(var(--ark-input-ring-size) * 1.5);
+  border-radius: calc(var(--ark-input-border-radius) * 1.5);
+  padding-inline: calc(var(--ark-input-padding-inline) * 1.5);
+}
+
+@utility ark-input-error {
+  --ark-input-foreground: var(--color-error);
+  --ark-input-background: color-mix(in oklab, var(--color-error) 5%, transparent);
+  --ark-input-placeholder: color-mix(in oklab, var(--color-error) 65%, transparent);
+
+  --ark-input-border: var(--color-error);
+  --ark-input-border-focus: var(--color-error-focus);
+  --ark-input-border-hover: var(--color-error-hover);
+  --ark-input-border-active: var(--color-error-active);
+  --ark-input-ring-color: var(--color-error-ring);
+}
+
+@utility ark-input-success {
+  --ark-input-foreground: var(--color-success);
+  --ark-input-background: color-mix(in oklab, var(--color-success) 5%, transparent);
+  --ark-input-placeholder: color-mix(in oklab, var(--color-success) 65%, transparent);
+
+  --ark-input-border: var(--color-success);
+  --ark-input-border-focus: var(--color-success-focus);
+  --ark-input-border-hover: var(--color-success-hover);
+  --ark-input-border-active: var(--color-success-active);
+  --ark-input-ring-color: var(--color-success-ring);
+}
+
+@utility ark-tool-input {
+  --ark-input-background: var(--color-accent);
+  --ark-input-border: transparent;
+  --ark-input-border-disabled: transparent;
+  --ark-input-font-weight: var(--font-weight-medium);
+  @apply ark-base-input ark-input-sm;
+}

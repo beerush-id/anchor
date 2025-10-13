@@ -1,0 +1,23 @@
+@layer theme {
+  .theme-rose {
+    --color-primary: var(--color-rose-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-rose-500) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-rose-700);
+    --color-primary-active: var(--color-rose-600);
+    --color-primary-focus: var(--color-rose-600);
+    --color-primary-disabled: var(--color-rose-300);
+    --color-primary-disabled-foreground: var(--color-rose-400);
+  }
+
+  .dark.theme-rose {
+    --color-primary: var(--color-rose-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-rose-800) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-rose-700);
+    --color-primary-active: var(--color-rose-800);
+    --color-primary-focus: var(--color-rose-500);
+    --color-primary-disabled: color-mix(in oklab, var(--color-rose-600) 50%, black 50%);
+    --color-primary-disabled-foreground: var(--color-rose-800);
+  }
+}

@@ -1,0 +1,23 @@
+@layer theme {
+  .theme-emerald {
+    --color-primary: var(--color-emerald-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-emerald-500) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-emerald-700);
+    --color-primary-active: var(--color-emerald-600);
+    --color-primary-focus: var(--color-emerald-600);
+    --color-primary-disabled: var(--color-emerald-300);
+    --color-primary-disabled-foreground: var(--color-emerald-400);
+  }
+
+  .dark.theme-emerald {
+    --color-primary: var(--color-emerald-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-emerald-800) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-emerald-700);
+    --color-primary-active: var(--color-emerald-800);
+    --color-primary-focus: var(--color-emerald-500);
+    --color-primary-disabled: color-mix(in oklab, var(--color-emerald-600) 50%, black 50%);
+    --color-primary-disabled-foreground: var(--color-emerald-800);
+  }
+}

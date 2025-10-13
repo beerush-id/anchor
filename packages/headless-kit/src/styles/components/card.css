@@ -1,0 +1,82 @@
+/* Card component theme variables */
+@theme {
+  --ark-card-background: var(--color-background);
+  --ark-card-foreground: var(--color-foreground);
+  --ark-card-gap: calc(var(--spacing) * 6);
+  --ark-card-padding: calc(var(--spacing) * 6);
+  --ark-card-border: var(--color-border);
+  --ark-card-border-radius: var(--radius-xl);
+  --ark-card-shadow: var(--shadow-sm);
+  --ark-card-title-font-size: var(--text-base);
+  --ark-card-title-font-weight: var(--font-weight-semibold);
+  --ark-card-description-font-size: var(--text-sm);
+}
+
+@layer theme {
+  .dark {
+    --ark-card-background: var(--color-zinc-900);
+  }
+}
+
+/* Base card utility */
+@utility ark-card {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid var(--ark-card-border);
+  border-radius: var(--ark-card-border-radius);
+
+  color: var(--ark-card-foreground);
+  background-color: var(--ark-card-background);
+  box-shadow: var(--ark-card-shadow);
+}
+
+/* Card header utility */
+@utility ark-card-header {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--ark-card-padding);
+  padding-inline: var(--ark-card-padding);
+}
+
+/* Card title utility */
+@utility ark-card-title {
+  font-size: var(--ark-card-title-font-size);
+  font-weight: var(--ark-card-title-font-weight);
+  line-height: var(--leading-tight);
+}
+
+/* Card description utility */
+@utility ark-card-description {
+  font-size: var(--ark-card-description-font-size);
+  line-height: var(--leading-tight);
+  color: var(--color-muted-foreground);
+}
+
+/* Card content utility */
+@utility ark-card-content {
+  padding: var(--ark-card-padding);
+}
+
+/* Card footer utility */
+@utility ark-card-footer {
+  display: flex;
+  align-items: center;
+  padding: var(--ark-card-padding);
+  padding-top: 0;
+}
+
+/* Card variants */
+@utility ark-elevated-card {
+  --ark-card-shadow: var(--shadow-lg);
+}
+
+@utility ark-outlined-card {
+  --ark-card-border-size: 2px;
+  --ark-card-shadow: none;
+}
+
+@utility ark-filled-card {
+  --ark-card-background: var(--color-accent);
+  --ark-card-border: none;
+}

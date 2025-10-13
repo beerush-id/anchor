@@ -1,0 +1,25 @@
+/* Import TailwindCSS v4 */
+@import 'tailwindcss';
+
+/* Import theme variables */
+@import './theme.css';
+
+/* Import component styles */
+@import './components/button.css';
+@import './components/card.css';
+@import './components/input.css';
+@import './components/checkbox.css';
+@import './components/radio.css';
+@import './components/switch.css';
+@import './components/select.css';
+@import './components/textarea.css';
+@import './components/dialog.css';
+@import './components/tabs.css';
+@import './components/alert.css';
+@import './components/badge.css';
+@import './components/tooltip.css';
+@import './components/dropdown.css';
+
+body {
+  @apply bg-background text-foreground text-sm;
+}

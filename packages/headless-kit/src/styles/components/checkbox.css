@@ -1,0 +1,122 @@
+/* Checkbox component theme variables */
+@theme {
+  --ark-checkbox-background: var(--color-background);
+  --ark-checkbox-background-hover: var(--color-primary-hover);
+  --ark-checkbox-background-checked: var(--color-primary);
+  --ark-checkbox-background-disabled: var(--ark-input-background-disabled);
+
+  --ark-checkbox-foreground: var(--color-foreground);
+  --ark-checkbox-foreground-checked: var(--color-primary-foreground);
+  --ark-checkbox-foreground-disabled: var(--ark-input-foreground-disabled);
+
+  --ark-checkbox-border: var(--color-border);
+  --ark-checkbox-border-hover: var(--color-border-hover);
+  --ark-checkbox-border-active: var(--color-border-active);
+  --ark-checkbox-border-radius: 4px;
+  --ark-checkbox-thumb-size: 2px;
+
+  --ark-checkbox-outline: var(--color-ring);
+  --ark-checkbox-outline-size: 3px;
+
+  --ark-checkbox-gap: var(--spacing-sm);
+  --ark-checkbox-size: calc(var(--spacing) * 4);
+  --ark-checkbox-font-size: var(--text-sm);
+  --ark-checkbox-shadow: var(--shadow-xs);
+}
+
+@utility ark-checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ark-checkbox-size);
+  height: var(--ark-checkbox-size);
+  border-radius: var(--ark-checkbox-border-radius);
+  border: 1px solid var(--ark-checkbox-border);
+  outline: var(--ark-checkbox-outline-size) solid transparent;
+  color: var(--ark-checkbox-foreground);
+  background-color: var(--ark-checkbox-background);
+  box-shadow: var(--ark-checkbox-shadow);
+  transition-property: color, background-color, border-color, outline-color;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60%;
+    height: 0;
+    opacity: 0;
+    visibility: hidden;
+    border-left: var(--ark-checkbox-thumb-size) solid var(--ark-checkbox-foreground-checked);
+    border-bottom: var(--ark-checkbox-thumb-size) solid var(--ark-checkbox-foreground-checked);
+    transform-origin: left top;
+    transform: rotate(0) translate(-50%, -50%);
+    transition-property: all;
+    transition-duration: var(--transition-duration-fast);
+    transition-timing-function: var(--transition-timing);
+  }
+
+  & > input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+  }
+
+  &:focus {
+    outline-color: var(--ark-checkbox-outline);
+  }
+
+  &:focus,
+  &:hover {
+    border-color: var(--ark-checkbox-border-hover);
+  }
+
+  &:active,
+  &[aria-checked='true'],
+  &[aria-checked='mixed'],
+  &.ark-checked,
+  &.ark-indeterminate {
+    border-color: var(--ark-checkbox-border-active);
+    background-color: var(--ark-checkbox-background-checked);
+  }
+
+  &[aria-checked='mixed']:before,
+  &.ark-indeterminate:before {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  &[aria-checked='true']:before,
+  &.ark-checked:before {
+    opacity: 1;
+    visibility: visible;
+    height: 40%;
+    transform: rotate(-45deg) translate(-50%, -50%);
+    margin-top: -7.5%;
+  }
+
+  &:disabled,
+  &.ark-disabled {
+    color: var(--ark-checkbox-foreground-disabled);
+    pointer-events: none;
+    border-color: var(--ark-checkbox-background-disabled);
+    background-color: var(--ark-checkbox-background-disabled);
+
+    &:before {
+      border-color: var(--ark-checkbox-foreground-disabled);
+    }
+  }
+}
+
+@utility ark-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  gap: var(--ark-checkbox-gap);
+  font-size: var(--ark-checkbox-font-size);
+  line-height: var(--leading-tight);
+  user-select: none;
+}

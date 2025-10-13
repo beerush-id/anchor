@@ -1,0 +1,239 @@
+/* Dropdown component theme variables */
+@theme {
+  --ark-dropdown-background: var(--color-popover);
+  --ark-dropdown-foreground: var(--color-popover-foreground);
+  --ark-dropdown-border: var(--color-border);
+  --ark-dropdown-item-hover: var(--color-accent);
+  --ark-dropdown-item-hover-foreground: var(--color-accent-foreground);
+  --ark-dropdown-trigger-padding: var(--spacing-sm) var(--spacing-md);
+  --ark-dropdown-trigger-border-radius: calc(var(--radius-md) - var(--spacing-xs));
+  --ark-dropdown-trigger-font-size: var(--text-sm);
+  --ark-dropdown-trigger-font-weight: var(--font-weight-medium);
+  --ark-dropdown-content-min-width: calc(var(--spacing-xl) * 2);
+  --ark-dropdown-content-padding: var(--spacing-xs);
+  --ark-dropdown-content-border-radius: calc(var(--radius-md) - var(--spacing-xs));
+  --ark-dropdown-item-padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-xs));
+  --ark-dropdown-item-font-size: var(--text-sm);
+  --ark-dropdown-item-border-radius: calc(var(--radius-md) - var(--spacing-xs));
+  --ark-dropdown-gap: var(--spacing-sm);
+  --ark-dropdown-disabled-opacity: 0.5;
+}
+
+/* Base dropdown trigger utility */
+@utility ark-base-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--ark-dropdown-trigger-border-radius);
+  border: 1px solid var(--color-input);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  padding: var(--ark-dropdown-trigger-padding);
+  font-size: var(--ark-dropdown-trigger-font-size);
+  font-weight: var(--ark-dropdown-trigger-font-weight);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+  cursor: pointer;
+  gap: var(--ark-dropdown-gap);
+
+  /* Focus state - must be first */
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-ring);
+  }
+
+  /* Hover state */
+  &:hover {
+    background-color: var(--color-accent-hover);
+    color: var(--color-accent-foreground);
+  }
+
+  /* Active state */
+  &:active {
+    background-color: var(--color-accent-active);
+  }
+
+  /* Disabled state */
+  &:disabled {
+    pointer-events: none;
+    opacity: var(--ark-dropdown-disabled-opacity);
+  }
+}
+
+@utility ark-dropdown-trigger {
+  @apply ark-base-dropdown-trigger;
+}
+
+/* Base dropdown content utility */
+@utility ark-dropdown-content {
+  position: relative;
+  z-index: var(--z-index-dropdown);
+  min-width: var(--ark-dropdown-content-min-width);
+  overflow: hidden;
+  border-radius: var(--ark-dropdown-content-border-radius);
+  border: 1px solid var(--ark-dropdown-border);
+  background-color: var(--ark-dropdown-background);
+  color: var(--ark-dropdown-foreground);
+  box-shadow: var(--shadow-lg);
+  padding: var(--ark-dropdown-content-padding);
+  animation: fadeIn var(--transition-duration-fast) var(--transition-timing);
+
+  /* Focus state - must be first */
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}
+
+/* Base dropdown item utility */
+@utility ark-base-dropdown-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+  align-items: center;
+  border-radius: var(--ark-dropdown-item-border-radius);
+  padding: var(--ark-dropdown-item-padding);
+  font-size: var(--ark-dropdown-item-font-size);
+  line-height: var(--leading-tight);
+  outline: none;
+  transition-property: color, background-color, text-decoration-color, fill, stroke;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+  gap: var(--ark-dropdown-gap);
+
+  /* Focus state - must be first */
+  &:focus {
+    background-color: var(--ark-dropdown-item-hover);
+    color: var(--ark-dropdown-item-hover-foreground);
+  }
+
+  /* Hover state */
+  &:hover {
+    background-color: var(--ark-dropdown-item-hover);
+    color: var(--ark-dropdown-item-hover-foreground);
+  }
+
+  /* Active state */
+  &:active {
+    background-color: var(--color-accent-active);
+  }
+
+  /* Disabled state */
+  &:disabled {
+    pointer-events: none;
+    opacity: var(--ark-dropdown-disabled-opacity);
+  }
+
+  /* Selected state */
+  &[data-state='checked'] {
+    background-color: var(--ark-dropdown-item-hover);
+    color: var(--ark-dropdown-item-hover-foreground);
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+@utility ark-dropdown-item {
+  @apply ark-base-dropdown-item;
+}
+
+/* Dropdown separator utility */
+@utility ark-dropdown-separator {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--spacing-xs) 0;
+}
+
+/* Dropdown label utility */
+@utility ark-dropdown-label {
+  padding: var(--ark-dropdown-item-padding);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1rem;
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Dropdown group utility */
+@utility ark-dropdown-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Dropdown variants */
+@utility ark-dropdown-submenu {
+  .ark-dropdown-item {
+    justify-content: space-between;
+
+    &::after {
+      content: '›';
+      margin-left: auto;
+    }
+  }
+}
+
+@utility ark-dropdown-checkbox {
+  .ark-dropdown-item {
+    justify-content: space-between;
+
+    &[data-state='checked']::before {
+      content: '✓';
+      margin-right: auto;
+    }
+  }
+}
+
+@utility ark-dropdown-radio {
+  .ark-dropdown-item {
+    justify-content: space-between;
+
+    &[data-state='checked']::before {
+      content: '•';
+      margin-right: auto;
+    }
+  }
+}
+
+/* Dropdown states */
+@utility ark-dropdown-item-active {
+  background-color: var(--ark-dropdown-item-hover);
+  color: var(--ark-dropdown-item-hover-foreground);
+}
+
+@utility ark-dropdown-item-disabled {
+  pointer-events: none;
+  opacity: var(--ark-dropdown-disabled-opacity);
+}
+
+/* Dropdown positions */
+@utility ark-dropdown-top {
+  bottom: calc(100% + var(--spacing-sm));
+}
+
+@utility ark-dropdown-bottom {
+  top: calc(100% + var(--spacing-sm));
+}
+
+@utility ark-dropdown-left {
+  right: 0;
+}
+
+@utility ark-dropdown-right {
+  left: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,4 @@
+@utility ark-select {
+  @apply ark-input;
+  --ark-input-padding-block: 0;
+}

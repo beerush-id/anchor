@@ -1,0 +1,126 @@
+@theme {
+  --ark-tab-background: var(--ark-card-background);
+  --ark-tab-foreground: var(--ark-card-foreground);
+
+  --ark-tab-list-gap: 3px;
+  --ark-tab-list-padding: 3px;
+  --ark-tab-list-background: var(--color-muted);
+  --ark-tab-list-border-radius: var(--radius-lg);
+
+  --ark-tab-button-background: transparent;
+  --ark-tab-button-background-hover: var(--color-zinc-50);
+  --ark-tab-button-background-active: var(--color-background);
+  --ark-tab-button-background-disabled: transparent;
+  --ark-tab-button-foreground: var(--color-foreground);
+  --ark-tab-button-foreground-disabled: var(--color-muted-foreground);
+
+  --ark-tab-button-height: calc(var(--spacing) * 7.5);
+  --ark-tab-button-padding-block: 0;
+  --ark-tab-button-padding-inline: calc(var(--spacing-sm) * 1.5);
+
+  --ark-tab-button-border: var(--color-border);
+  --ark-tab-button-border-radius: var(--radius-md);
+  --ark-tab-button-outline: transparent;
+  --ark-tab-button-outline-size: 2px;
+  --ark-tab-button-font-size: var(--text-sm);
+  --ark-tab-button-font-weight: var(--font-weight-medium);
+
+  --ark-tab-button-shadow: var(--shadow-sm);
+
+  @keyframes ark-tab-enter {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, var(--spacing), 0);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+}
+
+@layer theme {
+  .dark {
+    --ark-tab-button-background-hover: var(--color-zinc-700);
+    --ark-tab-button-background-active: var(--color-zinc-800);
+  }
+}
+
+@utility ark-tab {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+@utility ark-tab-list {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ark-tab-list-gap);
+  border-radius: var(--ark-tab-list-border-radius);
+  background-color: var(--ark-tab-list-background);
+  padding: var(--ark-tab-list-padding);
+}
+
+@utility ark-tab-button {
+  height: var(--ark-tab-button-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--ark-tab-button-border-radius);
+  padding-block: var(--ark-tab-button-padding-block);
+  padding-inline: var(--ark-tab-button-padding-inline);
+  font-size: var(--ark-tab-button-font-size);
+  font-weight: var(--ark-tab-button-font-weight);
+  transition-property:
+    color, background-color, border-bottom-color, border-top-color, border-left-color, border-right-color, outline-color;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+  border: 1px solid transparent;
+  outline: var(--ark-tab-button-outline-size) solid transparent;
+
+  &:focus-visible {
+    outline-color: var(--ark-tab-button-outline);
+  }
+
+  &:focus,
+  &:hover {
+    background-color: var(--ark-tab-button-background-hover);
+  }
+
+  &:active,
+  &.ark-active {
+    background-color: var(--ark-tab-button-background-active);
+    box-shadow: var(--ark-tab-button-shadow);
+    border-color: var(--ark-tab-button-border);
+  }
+
+  &:disabled,
+  &.ark-disabled {
+    color: var(--ark-tab-button-foreground-disabled);
+    background-color: var(--ark-tab-button-background-disabled);
+    pointer-events: none;
+  }
+}
+
+@utility ark-tab-content {
+  @apply ark-card;
+  opacity: 0;
+  visibility: hidden;
+  width: 100%;
+  color: var(--ark-tab-foreground);
+  background-color: var(--ark-tab-background);
+
+  &:not(.ark-active) {
+    position: absolute;
+  }
+
+  &.ark-active {
+    opacity: 1;
+    visibility: visible;
+    animation: ark-tab-enter var(--transition-duration-fast) var(--transition-timing);
+  }
+}

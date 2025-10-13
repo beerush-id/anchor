@@ -1,0 +1,169 @@
+/* TailwindCSS v4 theme variables */
+@theme {
+  /* Base colors */
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-zinc-900);
+  --color-overlay: color-mix(in oklab, var(--color-zinc-900) 50%, transparent);
+
+  /* Semantic colors */
+  --ring-opacity: 25%;
+  --color-primary: var(--color-zinc-900);
+  --color-primary-foreground: var(--color-zinc-50);
+  --color-primary-ring: color-mix(in oklab, var(--color-zinc-900) var(--ring-opacity), transparent);
+  --color-primary-focus: var(--color-primary);
+  --color-primary-hover: var(--color-zinc-800);
+  --color-primary-active: var(--color-primary);
+  --color-primary-disabled: var(--color-zinc-400);
+  --color-primary-disabled-foreground: var(--color-zinc-300);
+
+  --color-muted: var(--color-zinc-100);
+  --color-muted-foreground: var(--color-zinc-500);
+  --color-muted-ring: color-mix(in oklab, var(--color-muted) var(--ring-opacity), transparent);
+  --color-muted-focus: var(--color-muted);
+  --color-muted-hover: var(--color-zinc-200);
+  --color-muted-active: var(--color-muted);
+  --color-muted-disabled: var(--color-zinc-300);
+  --color-muted-disabled-foreground: var(--color-zinc-400);
+
+  --color-accent: var(--color-zinc-100);
+  --color-accent-foreground: var(--color-zinc-900);
+  --color-accent-ring: color-mix(in oklab, var(--color-zinc-400) var(--ring-opacity), transparent);
+  --color-accent-focus: var(--color-accent);
+  --color-accent-hover: var(--color-zinc-200);
+  --color-accent-active: var(--color-accent);
+  --color-accent-disabled: var(--color-zinc-300);
+  --color-accent-disabled-foreground: var(--color-zinc-400);
+
+  --color-destructive: var(--color-red-600);
+  --color-destructive-foreground: var(--color-red-50);
+  --color-destructive-ring: color-mix(in oklab, var(--color-destructive) var(--ring-opacity), transparent);
+  --color-destructive-focus: var(--color-destructive);
+  --color-destructive-hover: var(--color-red-500);
+  --color-destructive-active: var(--color-destructive);
+  --color-destructive-disabled: var(--color-red-300);
+  --color-destructive-disabled-foreground: var(--color-red-400);
+
+  /* Status colors */
+  --color-success: var(--color-green-600);
+  --color-success-foreground: var(--color-white);
+  --color-success-ring: color-mix(in oklab, var(--color-success) var(--ring-opacity), transparent);
+  --color-success-focus: var(--color-success);
+  --color-success-hover: var(--color-green-700);
+  --color-success-active: var(--color-success);
+  --color-success-disabled: var(--color-green-400);
+  --color-success-disabled-foreground: var(--color-green-300);
+
+  --color-warning: var(--color-yellow-600);
+  --color-warning-foreground: var(--color-white);
+  --color-warning-ring: color-mix(in oklab, var(--color-warning) var(--ring-opacity), transparent);
+  --color-warning-focus: var(--color-warning);
+  --color-warning-hover: var(--color-yellow-700);
+  --color-warning-active: var(--color-warning);
+  --color-warning-disabled: var(--color-yellow-400);
+  --color-warning-disabled-foreground: var(--color-yellow-300);
+
+  --color-error: var(--color-red-600);
+  --color-error-foreground: var(--color-white);
+  --color-error-ring: color-mix(in oklab, var(--color-error) var(--ring-opacity), transparent);
+  --color-error-focus: var(--color-error);
+  --color-error-hover: var(--color-red-700);
+  --color-error-active: var(--color-error);
+  --color-error-disabled: var(--color-red-400);
+  --color-error-disabled-foreground: var(--color-red-300);
+
+  --color-info: var(--color-blue-600);
+  --color-info-foreground: var(--color-white);
+  --color-info-ring: color-mix(in oklab, var(--color-info) var(--ring-opacity), transparent);
+  --color-info-focus: var(--color-info);
+  --color-info-hover: var(--color-blue-700);
+  --color-info-active: var(--color-info);
+  --color-info-disabled: var(--color-blue-400);
+  --color-info-disabled-foreground: var(--color-blue-300);
+
+  /* Border and input colors */
+  --color-ring: color-mix(in oklab, var(--color-primary) var(--ring-opacity), transparent);
+  --color-border: var(--color-zinc-200);
+  --color-border-focus: var(--color-primary-focus);
+  --color-border-hover: var(--color-primary-hover);
+  --color-border-active: var(--color-primary-active);
+  --color-border-disabled: var(--color-zinc-100);
+  --color-input: var(--color-zinc-200);
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-duration-fast: 200ms;
+  --transition-duration-normal: 300ms;
+  --transition-duration-slow: 500ms;
+  --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer theme {
+  .dark {
+    color-scheme: only dark;
+    /* Base colors */
+    --color-background: var(--color-zinc-950);
+    --color-foreground: var(--color-zinc-50);
+    --color-overlay: color-mix(in oklab, var(--color-zinc-950) 90%, transparent);
+
+    /* Semantic colors */
+    --ring-opacity: 50%;
+    --color-primary: var(--color-zinc-50);
+    --color-primary-foreground: var(--color-zinc-900);
+    --color-primary-ring: color-mix(in oklab, var(--color-zinc-50) var(--ring-opacity), transparent);
+    --color-primary-focus: var(--color-primary);
+    --color-primary-hover: var(--color-zinc-200);
+    --color-primary-active: var(--color-primary);
+    --color-primary-disabled: var(--color-zinc-400);
+    --color-primary-disabled-foreground: var(--color-zinc-500);
+
+    --color-muted: var(--color-zinc-800);
+    --color-muted-foreground: var(--color-zinc-400);
+    --color-muted-ring: color-mix(in oklab, var(--color-muted) var(--ring-opacity), transparent);
+    --color-muted-focus: var(--color-muted);
+    --color-muted-hover: var(--color-zinc-700);
+    --color-muted-active: var(--color-muted);
+    --color-muted-disabled: var(--color-zinc-700);
+    --color-muted-disabled-foreground: var(--color-zinc-600);
+
+    --color-accent: var(--color-zinc-800);
+    --color-accent-foreground: var(--color-zinc-50);
+    --color-accent-ring: color-mix(in oklab, var(--color-zinc-800) var(--ring-opacity), transparent);
+    --color-accent-focus: var(--color-accent);
+    --color-accent-hover: var(--color-zinc-700);
+    --color-accent-active: var(--color-zinc-800);
+    --color-accent-disabled: var(--color-zinc-900);
+    --color-accent-disabled-foreground: var(--color-zinc-600);
+
+    --color-destructive-active: var(--color-red-700);
+    --color-destructive-ring: color-mix(in oklab, var(--color-destructive) var(--ring-opacity), transparent);
+
+    /* Border and input colors */
+    --color-border: var(--color-zinc-700);
+    --color-border-disabled: var(--color-zinc-700);
+    --color-input: var(--color-zinc-700);
+
+    /* Status colors */
+    --color-success: var(--color-green-500);
+    --color-success-hover: var(--color-green-400);
+    --color-success-disabled: var(--color-green-600);
+    --color-success-disabled-foreground: var(--color-green-200);
+
+    --color-warning: var(--color-yellow-500);
+    --color-warning-hover: var(--color-yellow-400);
+    --color-warning-disabled: var(--color-yellow-600);
+    --color-warning-disabled-foreground: var(--color-yellow-200);
+
+    --color-error: var(--color-red-500);
+    --color-error-hover: var(--color-red-400);
+    --color-error-disabled: var(--color-red-600);
+    --color-error-disabled-foreground: var(--color-red-200);
+  }
+}

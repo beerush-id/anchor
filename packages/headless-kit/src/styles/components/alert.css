@@ -1,0 +1,91 @@
+/* Alert component theme variables */
+@theme {
+  --ark-alert-background: var(--color-background);
+  --ark-alert-foreground: var(--color-foreground);
+
+  --ark-alert-padding: var(--spacing-md);
+  --ark-alert-gap: calc(var(--spacing) * 3);
+
+  --ark-alert-border: var(--color-border);
+  --ark-alert-border-radius: var(--radius-lg);
+
+  --ark-alert-title-font-size: var(--text-base);
+  --ark-alert-title-font-weight: var(--font-weight-semibold);
+  --ark-alert-description-font-size: var(--text-sm);
+  --ark-alert-description-foreground: color-mix(in oklab, var(--ark-alert-foreground) 75%, transparent);
+
+  --ark-alert-icon-size: calc(var(--spacing) * 4.25);
+}
+
+/* Base alert utility */
+@utility ark-alert {
+  position: relative;
+  width: 100%;
+  border-radius: var(--ark-alert-border-radius);
+  border: 1px solid var(--ark-alert-border);
+  padding: var(--ark-alert-padding);
+  display: flex;
+  align-items: start;
+  gap: var(--ark-alert-gap);
+  background-color: var(--ark-alert-background);
+  color: var(--ark-alert-foreground);
+}
+
+@utility ark-alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Alert title utility */
+@utility ark-alert-title {
+  color: var(--ark-alert-foreground);
+  font-weight: var(--ark-alert-title-font-weight);
+  line-height: var(--leading-tight);
+}
+
+/* Alert description utility */
+@utility ark-alert-description {
+  color: var(--ark-alert-description-foreground);
+  font-size: var(--ark-alert-description-font-size);
+  line-height: var(--leading-tight);
+}
+
+@utility ark-destructive-alert {
+  --ark-alert-foreground: var(--color-error);
+  --ark-alert-description-foreground: color-mix(in oklab, var(--color-error) 75%, transparent);
+  --ark-alert-border: var(--color-error);
+}
+
+@utility ark-warning-alert {
+  --ark-alert-foreground: var(--color-warning);
+  --ark-alert-description-foreground: color-mix(in oklab, var(--color-warning) 75%, transparent);
+  --ark-alert-border: var(--color-warning);
+}
+
+@utility ark-success-alert {
+  --ark-alert-foreground: var(--color-success);
+  --ark-alert-description-foreground: color-mix(in oklab, var(--color-success) 75%, transparent);
+  --ark-alert-border: var(--color-success);
+}
+
+@utility ark-info-alert {
+  --ark-alert-foreground: var(--color-info);
+  --ark-alert-description-foreground: color-mix(in oklab, var(--color-info) 75%, transparent);
+  --ark-alert-border: var(--color-info);
+}
+
+/* Alert icon utility */
+@utility ark-alert-icon {
+  width: var(--ark-alert-icon-size);
+  height: var(--ark-alert-icon-size);
+  flex-shrink: 0;
+  color: var(--ark-alert-foreground);
+
+  & > svg,
+  & > img,
+  & > .ark-icon {
+    width: 100%;
+    height: 100%;
+  }
+}

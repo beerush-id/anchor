@@ -1,0 +1,186 @@
+/* Dialog component theme variables */
+@theme {
+  --ark-dialog-background: var(--color-popover);
+  --ark-dialog-foreground: var(--color-popover-foreground);
+  --ark-dialog-border: var(--color-border);
+  --ark-dialog-overlay: rgb(0 0 0 / 0.8);
+  --ark-dialog-width: 90vw;
+  --ark-dialog-max-width: calc(var(--spacing-xl) * 8);
+  --ark-dialog-max-height: 85vh;
+  --ark-dialog-padding: var(--spacing-lg);
+  --ark-dialog-gap: var(--spacing-md);
+  --ark-dialog-border-radius: var(--radius-md);
+  --ark-dialog-title-font-size: var(--text-lg);
+  --ark-dialog-title-font-weight: var(--font-weight-semibold);
+  --ark-dialog-description-font-size: var(--text-sm);
+  --ark-dialog-close-size: calc(var(--radius-md) - var(--spacing-xs));
+  --ark-dialog-close-opacity: 0.7;
+  --ark-dialog-disabled-opacity: 0.5;
+}
+
+/* Base dialog overlay utility */
+@utility ark-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal-backdrop);
+  background-color: var(--ark-dialog-overlay);
+  animation: fadeIn var(--transition-duration-fast) var(--transition-timing);
+}
+
+/* Base dialog utility */
+@utility ark-base-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: var(--z-index-modal);
+  display: grid;
+  width: var(--ark-dialog-width);
+  max-width: var(--ark-dialog-max-width);
+  max-height: var(--ark-dialog-max-height);
+  transform: translate(-50%, -50%);
+  gap: var(--ark-dialog-gap);
+  border-radius: var(--ark-dialog-border-radius);
+  border: 1px solid var(--ark-dialog-border);
+  background-color: var(--ark-dialog-background);
+  color: var(--ark-dialog-foreground);
+  box-shadow: var(--shadow-xl);
+  padding: var(--ark-dialog-padding);
+  animation: slideUp var(--transition-duration-fast) var(--transition-timing);
+
+  /* Focus state - must be first */
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}
+
+@utility ark-dialog {
+  @apply ark-base-dialog;
+}
+
+/* Dialog header utility */
+@utility ark-dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ark-dialog-gap) + var(--spacing-sm));
+  text-align: center;
+}
+
+/* Dialog footer utility */
+@utility ark-dialog-footer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-sm) + var(--spacing-xs));
+
+  /* Responsive */
+  @media (min-width: 40rem) {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+/* Dialog title utility */
+@utility ark-dialog-title {
+  font-size: var(--ark-dialog-title-font-size);
+  font-weight: var(--ark-dialog-title-font-weight);
+  line-height: var(--leading-tight);
+  color: var(--ark-dialog-foreground);
+}
+
+/* Dialog description utility */
+@utility ark-dialog-description {
+  font-size: var(--ark-dialog-description-font-size);
+  line-height: var(--leading-tight);
+  color: var(--color-muted-foreground);
+}
+
+/* Dialog close utility */
+@utility ark-dialog-close {
+  position: absolute;
+  right: var(--spacing-md);
+  top: var(--spacing-md);
+  border-radius: var(--ark-dialog-close-size);
+  opacity: var(--ark-dialog-close-opacity);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+
+  /* Focus state - must be first */
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-ring);
+  }
+
+  /* Hover state */
+  &:hover {
+    opacity: 1;
+  }
+
+  /* Active state */
+  &:active {
+    opacity: 0.8;
+  }
+
+  /* Disabled state */
+  &:disabled {
+    pointer-events: none;
+    opacity: var(--ark-dialog-disabled-opacity);
+  }
+}
+
+/* Dialog variants */
+@utility ark-dialog-sm {
+  --ark-dialog-max-width: calc(var(--spacing-xl) * 6);
+}
+
+@utility ark-dialog-lg {
+  --ark-dialog-max-width: calc(var(--spacing-xl) * 12);
+}
+
+@utility ark-dialog-full {
+  --ark-dialog-width: 100vw;
+  --ark-dialog-max-height: 100vh;
+  --ark-dialog-max-width: none;
+  --ark-dialog-border-radius: 0;
+  transform: none;
+  left: 0;
+  top: 0;
+}
+
+/* Dialog states */
+@utility ark-dialog-active {
+  animation: slideUp var(--transition-duration-fast) var(--transition-timing);
+}
+
+@utility ark-dialog-disabled {
+  pointer-events: none;
+  opacity: var(--ark-dialog-disabled-opacity);
+}
+
+/* Dialog content utility */
+@utility ark-dialog-content {
+  overflow-y: auto;
+  max-height: var(--ark-dialog-max-height);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}

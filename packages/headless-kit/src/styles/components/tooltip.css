@@ -1,0 +1,212 @@
+/* Tooltip component theme variables */
+@theme {
+  --ark-tooltip-background: var(--color-popover);
+  --ark-tooltip-foreground: var(--color-popover-foreground);
+  --ark-tooltip-border: var(--color-border);
+  --ark-tooltip-padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-xs));
+  --ark-tooltip-border-radius: calc(var(--radius-md) - var(--spacing-xs));
+  --ark-tooltip-font-size: var(--text-sm);
+  --ark-tooltip-max-width: calc(var(--spacing-xl) * 4);
+  --ark-tooltip-disabled-opacity: 0.5;
+  --ark-tooltip-arrow-size: calc(var(--spacing-sm) - var(--spacing-xs));
+  --ark-tooltip-offset: var(--spacing-sm);
+}
+
+/* Base tooltip utility */
+@utility ark-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+/* Base tooltip content utility */
+@utility ark-base-tooltip-content {
+  position: absolute;
+  z-index: var(--z-index-tooltip);
+  overflow: hidden;
+  border-radius: var(--ark-tooltip-border-radius);
+  border: 1px solid var(--ark-tooltip-border);
+  background-color: var(--ark-tooltip-background);
+  color: var(--ark-tooltip-foreground);
+  padding: var(--ark-tooltip-padding);
+  font-size: var(--ark-tooltip-font-size);
+  line-height: var(--leading-tight);
+  max-width: var(--ark-tooltip-max-width);
+  word-wrap: break-word;
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn var(--transition-duration-fast) var(--transition-timing);
+
+  /* Focus state - must be first */
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+}
+
+@utility ark-tooltip-content {
+  @apply ark-base-tooltip-content;
+}
+
+/* Tooltip positions */
+@utility ark-tooltip-top {
+  bottom: calc(100% + var(--ark-tooltip-offset));
+  left: 50%;
+  transform: translateX(-50%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: var(--ark-tooltip-arrow-size) solid transparent;
+    border-top-color: var(--ark-tooltip-background);
+  }
+}
+
+@utility ark-tooltip-bottom {
+  top: calc(100% + var(--ark-tooltip-offset));
+  left: 50%;
+  transform: translateX(-50%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: var(--ark-tooltip-arrow-size) solid transparent;
+    border-bottom-color: var(--ark-tooltip-background);
+  }
+}
+
+@utility ark-tooltip-left {
+  right: calc(100% + var(--ark-tooltip-offset));
+  top: 50%;
+  transform: translateY(-50%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: var(--ark-tooltip-arrow-size) solid transparent;
+    border-left-color: var(--ark-tooltip-background);
+  }
+}
+
+@utility ark-tooltip-right {
+  left: calc(100% + var(--ark-tooltip-offset));
+  top: 50%;
+  transform: translateY(-50%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: var(--ark-tooltip-arrow-size) solid transparent;
+    border-right-color: var(--ark-tooltip-background);
+  }
+}
+
+/* Tooltip variants */
+@utility ark-default-tooltip {
+  --ark-tooltip-background: var(--color-popover);
+  --ark-tooltip-foreground: var(--color-popover-foreground);
+  --ark-tooltip-border: var(--color-border);
+}
+
+@utility ark-primary-tooltip {
+  --ark-tooltip-background: var(--color-primary);
+  --ark-tooltip-foreground: var(--color-primary-foreground);
+  --ark-tooltip-border: var(--color-primary);
+}
+
+@utility ark-secondary-tooltip {
+  --ark-tooltip-background: var(--color-secondary);
+  --ark-tooltip-foreground: var(--color-secondary-foreground);
+  --ark-tooltip-border: var(--color-secondary);
+}
+
+@utility ark-destructive-tooltip {
+  --ark-tooltip-background: var(--color-destructive);
+  --ark-tooltip-foreground: var(--color-destructive-foreground);
+  --ark-tooltip-border: var(--color-destructive);
+}
+
+@utility ark-success-tooltip {
+  --ark-tooltip-background: var(--color-success);
+  --ark-tooltip-foreground: var(--color-success-foreground);
+  --ark-tooltip-border: var(--color-success);
+}
+
+@utility ark-warning-tooltip {
+  --ark-tooltip-background: var(--color-warning);
+  --ark-tooltip-foreground: var(--color-warning-foreground);
+  --ark-tooltip-border: var(--color-warning);
+}
+
+@utility ark-info-tooltip {
+  --ark-tooltip-background: var(--color-info);
+  --ark-tooltip-foreground: var(--color-info-foreground);
+  --ark-tooltip-border: var(--color-info);
+}
+
+/* Tooltip states */
+@utility ark-tooltip-disabled {
+  pointer-events: none;
+  opacity: var(--ark-tooltip-disabled-opacity);
+}
+
+/* Tooltip sizes */
+@utility ark-tooltip-sm {
+  --ark-tooltip-padding: calc(var(--spacing-sm) - var(--spacing-xs)) var(--spacing-sm);
+  --ark-tooltip-font-size: var(--text-xs);
+  --ark-tooltip-max-width: calc(var(--spacing-xl) * 3);
+}
+
+@utility ark-tooltip-lg {
+  --ark-tooltip-padding: calc(var(--spacing-sm) + var(--spacing-xs)) calc(var(--spacing-md) - var(--spacing-xs));
+  --ark-tooltip-font-size: var(--text-base);
+  --ark-tooltip-max-width: calc(var(--spacing-xl) * 5);
+}
+
+/* Tooltip trigger utility */
+@utility ark-tooltip-trigger {
+  cursor: help;
+
+  /* Focus state - must be first */
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  /* Disabled state */
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@utility ark-tooltip-delay-short {
+  animation-delay: var(--transition-duration-fast);
+}
+
+@utility ark-tooltip-delay-medium {
+  animation-delay: var(--transition-duration-normal);
+}
+
+@utility ark-tooltip-delay-long {
+  animation-delay: var(--transition-duration-slow);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

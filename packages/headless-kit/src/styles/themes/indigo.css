@@ -1,0 +1,23 @@
+@layer theme {
+  .theme-indigo {
+    --color-primary: var(--color-indigo-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-indigo-500) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-indigo-700);
+    --color-primary-active: var(--color-indigo-600);
+    --color-primary-focus: var(--color-indigo-600);
+    --color-primary-disabled: var(--color-indigo-300);
+    --color-primary-disabled-foreground: var(--color-indigo-400);
+  }
+
+  .dark.theme-indigo {
+    --color-primary: var(--color-indigo-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-indigo-800) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-indigo-700);
+    --color-primary-active: var(--color-indigo-800);
+    --color-primary-focus: var(--color-indigo-500);
+    --color-primary-disabled: color-mix(in oklab, var(--color-indigo-600) 50%, black 50%);
+    --color-primary-disabled-foreground: var(--color-indigo-800);
+  }
+}

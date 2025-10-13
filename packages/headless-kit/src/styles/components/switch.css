@@ -1,0 +1,106 @@
+/* Switch component theme variables */
+@theme {
+  --ark-switch-background: var(--color-input);
+  --ark-switch-background-hover: var(--color-primary);
+  --ark-switch-background-active: var(--color-primary-hover);
+  --ark-switch-background-checked: var(--color-primary);
+  --ark-switch-background-disabled: var(--color-muted);
+
+  --ark-switch-thumb-background: var(--color-white);
+  --ark-switch-thumb-background-disabled: var(--ark-input-foreground-disabled);
+  --ark-switch-thumb-size: calc(var(--spacing) * 4);
+  --ark-switch-thumb-shadow: var(--shadow-sm);
+
+  --ark-switch-space: 3px;
+  --ark-switch-width: calc((var(--ark-switch-thumb-size) * 2) + (var(--ark-switch-space) * 2));
+  --ark-switch-height: calc(var(--ark-switch-thumb-size) + (var(--ark-switch-space) * 2));
+
+  --ark-switch-gap: var(--spacing-sm);
+  --ark-switch-outline: var(--color-ring);
+  --ark-switch-outline-size: 3px;
+  --ark-switch-border-radius: var(--radius-full);
+  --ark-switch-label-font-size: var(--text-sm);
+  --ark-switch-shadow: var(--shadow-xs);
+}
+
+@utility ark-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: var(--ark-switch-width);
+  height: var(--ark-switch-height);
+  border-radius: var(--ark-switch-border-radius);
+  outline: 3px solid transparent;
+  background-color: var(--ark-switch-background);
+  box-shadow: var(--ark-switch-shadow);
+  transition-property: background-color, outline-color;
+  transition-timing-function: var(--transition-timing);
+  transition-duration: var(--transition-duration-fast);
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: var(--ark-switch-space);
+    left: var(--ark-switch-space);
+    display: block;
+    width: var(--ark-switch-thumb-size);
+    height: var(--ark-switch-thumb-size);
+    border-radius: var(--radius-full);
+    background-color: var(--ark-switch-thumb-background);
+    transition-property: width, transform;
+    transition-timing-function: var(--transition-timing);
+    transition-duration: var(--transition-duration-fast);
+    transform: translateX(0);
+    box-shadow: var(--ark-switch-thumb-shadow);
+  }
+
+  & > input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+  }
+
+  &:focus {
+    outline-color: var(--ark-switch-outline);
+  }
+
+  &:not(.ark-checked, [aria-checked='true']):not(:focus):hover:before {
+    width: calc(var(--ark-switch-thumb-size) * 1.25);
+  }
+
+  &:is(.ark-checked, [aria-checked='true']):not(:focus):hover:before {
+    width: calc(var(--ark-switch-thumb-size) * 1.25);
+    transform: translateX(calc(var(--ark-switch-thumb-size) * 0.75));
+  }
+
+  &[aria-checked='true'],
+  &.ark-checked {
+    background-color: var(--ark-switch-background-checked);
+
+    &:before {
+      transform: translateX(var(--ark-switch-thumb-size));
+    }
+  }
+
+  &:active {
+    outline-color: transparent;
+  }
+
+  &:disabled,
+  &.ark-disabled {
+    pointer-events: none;
+    background-color: var(--ark-switch-background-disabled);
+
+    &:before {
+      background-color: var(--ark-switch-thumb-background-disabled);
+    }
+  }
+}
+
+/* Switch label utility */
+@utility ark-switch-label {
+  font-size: var(--ark-switch-label-font-size);
+  line-height: var(--leading-tight);
+  color: var(--color-foreground);
+  cursor: pointer;
+}

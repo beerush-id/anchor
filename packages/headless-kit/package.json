@@ -1,0 +1,73 @@
+{
+  "type": "module",
+  "name": "@anchorlib/headless-kit",
+  "version": "1.0.0-beta.9",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./actions": {
+      "types": "./dist/actions/index.d.ts",
+      "import": "./dist/actions/index.js"
+    },
+    "./actions/*": "./dist/actions/*",
+    "./states": {
+      "types": "./dist/states/index.d.ts",
+      "import": "./dist/states/index.js"
+    },
+    "./states/*": "./dist/states/*",
+    "./styles": {
+      "types": "./dist/styles/index.d.ts",
+      "import": "./dist/styles/index.js"
+    },
+    "./styles/*": "./dist/styles/*",
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js"
+    },
+    "./utils/*": "./dist/utils/*"
+  },
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "dist": "./dist"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@eslint/css": "^0.5.0",
+    "@eslint/js": "^9.23.0",
+    "@eslint/markdown": "^6.3.0",
+    "esbuild-raw-plugin": "^0.2.0",
+    "eslint": "^9.23.0",
+    "eslint-plugin-prettier": "^5.2.3",
+    "jsdom": "^27.0.0",
+    "prettier": "^3.5.3",
+    "publint": "^0.3.9",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^4.1.14",
+    "tsup": "^8.4.0",
+    "typescript-eslint": "^8.27.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "dev": "rimraf dist && tsup --watch",
+    "clean": "rimraf dist",
+    "build": "rimraf dist && tsup && publint",
+    "prepublish": "rimraf dist && tsup && publint",
+    "format": "prettier --write .",
+    "test": "rimraf coverage && vitest --run",
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anchorlib/core": "workspace:*"
+  }
+}

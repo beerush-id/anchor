@@ -1,0 +1,23 @@
+@layer theme {
+  .theme-amber {
+    --color-primary: var(--color-amber-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-amber-500) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-amber-700);
+    --color-primary-active: var(--color-amber-600);
+    --color-primary-focus: var(--color-amber-600);
+    --color-primary-disabled: var(--color-amber-300);
+    --color-primary-disabled-foreground: var(--color-amber-400);
+  }
+
+  .dark.theme-amber {
+    --color-primary: var(--color-amber-600);
+    --color-primary-ring: color-mix(in oklab, var(--color-amber-800) var(--ring-opacity), transparent);
+    --color-primary-foreground: var(--color-white);
+    --color-primary-hover: var(--color-amber-700);
+    --color-primary-active: var(--color-amber-800);
+    --color-primary-focus: var(--color-amber-500);
+    --color-primary-disabled: color-mix(in oklab, var(--color-amber-600) 50%, black 50%);
+    --color-primary-disabled-foreground: var(--color-amber-800);
+  }
+}
