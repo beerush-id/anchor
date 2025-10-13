@@ -118,10 +118,6 @@ export default defineConfig({
             link: '/react/introduction',
           },
           {
-            text: 'Anchor vs Friends',
-            link: '/react/comparison',
-          },
-          {
             text: 'Getting Started',
             link: '/react/getting-started',
           },
@@ -136,6 +132,10 @@ export default defineConfig({
           {
             text: 'Ref System',
             link: '/react/ref-system',
+          },
+          {
+            text: 'Anchor vs Friends',
+            link: '/react/comparison',
           },
           {
             text: 'Guides',
