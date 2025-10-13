@@ -1,6 +1,6 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
 import { anchor, shortId } from '@anchorlib/core';
-import { debugRender, useAnchor, useHistory } from '@anchorlib/react';
+import { debugRender, observer, useAnchor, useHistory, view } from '@anchorlib/react';
 import { CartSummary } from './CartSummary.js';
 import { CartItemList } from './CartItemList.js';
 import { Card } from '../Card.js';
@@ -9,7 +9,6 @@ import type { CartItemType } from './CartItem.js';
 import { Redo, ShoppingCart, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { Input } from '@anchorlib/react/components';
-import { observe, observer } from '@anchorlib/react/view';
 import { Button, IconButton } from '../Button.js';
 import { isMobile } from '@lib/nav.js';
 
@@ -23,7 +22,7 @@ export const CartApp: FC = () => {
 
   debugRender(ref);
 
-  const Stats = observe(function Stats() {
+  const Stats = view(function Stats() {
     return <span className="text-sm text-slate-300">{cartItems.length} Items</span>;
   });
 

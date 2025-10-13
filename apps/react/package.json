@@ -1,7 +1,7 @@
 {
   "name": "@anchor-app/react",
   "private": true,
-  "version": "1.0.0-beta.8",
+  "version": "1.0.0-beta.9",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5275",
@@ -10,15 +10,12 @@
     "preview": "vite preview",
     "format": "prettier --write ."
   },
-  "dependencies": {
+  "devDependencies": {
+    "@anchorlib/headless-kit": "workspace:*",
     "@anchorlib/react": "workspace:*",
     "@anchorlib/react-kit": "workspace:*",
     "@anchorlib/storage": "workspace:*",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "shiki": "^3.8.1"
-  },
-  "devDependencies": {
+    "@anchorkit/react": "workspace:*",
     "@anchorlib/devtool": "workspace:*",
     "@eslint/js": "^9.30.1",
     "@tailwindcss/vite": "^4.1.11",
@@ -35,8 +32,11 @@
     "jsdom": "^27.0.0",
     "lucide-react": "^0.542.0",
     "prettier": "^3.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "react-chartjs-2": "^5.3.0",
     "react-router": "^7.8.2",
+    "shiki": "^3.8.1",
     "tailwindcss": "^4.1.11",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",

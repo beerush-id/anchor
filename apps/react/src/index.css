@@ -1,5 +1,30 @@
 @import 'tailwindcss';
-@import '@anchorlib/react-kit/styles/index.css';
-@import './App.css';
+@import '@anchorlib/headless-kit/styles/index.css';
 
-@source '../../../node_modules/@anchorlib/react-kit/dist';
+@import '@anchorlib/headless-kit/styles/themes/amber.css';
+@import '@anchorlib/headless-kit/styles/themes/blue.css';
+@import '@anchorlib/headless-kit/styles/themes/cyan.css';
+@import '@anchorlib/headless-kit/styles/themes/emerald.css';
+@import '@anchorlib/headless-kit/styles/themes/fuchsia.css';
+@import '@anchorlib/headless-kit/styles/themes/green.css';
+@import '@anchorlib/headless-kit/styles/themes/indigo.css';
+@import '@anchorlib/headless-kit/styles/themes/lime.css';
+@import '@anchorlib/headless-kit/styles/themes/orange.css';
+@import '@anchorlib/headless-kit/styles/themes/pink.css';
+@import '@anchorlib/headless-kit/styles/themes/purple.css';
+@import '@anchorlib/headless-kit/styles/themes/red.css';
+@import '@anchorlib/headless-kit/styles/themes/rose.css';
+@import '@anchorlib/headless-kit/styles/themes/sky.css';
+@import '@anchorlib/headless-kit/styles/themes/slate.css';
+@import '@anchorlib/headless-kit/styles/themes/teal.css';
+@import '@anchorlib/headless-kit/styles/themes/violet.css';
+@import '@anchorlib/headless-kit/styles/themes/yellow.css';
+
+@source '../../../node_modules/@anchorkit/react/dist';
+
+body {
+  font-family: 'Geist', sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}

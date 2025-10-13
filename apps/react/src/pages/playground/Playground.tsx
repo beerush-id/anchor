@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAnchor, useVariable } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react/view';
 import BindingDemo from './Binding.js';
 
 function computeExpensiveValue() {
@@ -47,8 +47,8 @@ const CounterManager = () => {
   // Expensive computation only runs once.
   const expensiveValue = computeExpensiveValue();
 
-  // View - only re-renders when the observed data changes.
-  const Counter = observe(() => {
+  // View - only re-renders when the viewd data changes.
+  const Counter = view(() => {
     // Assigning to local variable works as normally would.
     renderCount++;
 
@@ -87,12 +87,12 @@ const UserDashboard = () => {
   const [user] = useAnchor({ name: 'John Doe', age: 30 });
 
   // Only re-renders when user.name changes
-  const UserName = observe(() => {
+  const UserName = view(() => {
     return <h1>Hello, {user.name}!</h1>;
   });
 
   // Only re-renders when user.age changes
-  const UserAge = observe(() => {
+  const UserAge = view(() => {
     return <p>You are {user.age} years old</p>;
   });
 
@@ -125,7 +125,7 @@ const TaskManager = () => {
     localCounter++; // This works as expected!
   };
 
-  const TaskListView = observe(() => (
+  const TaskListView = view(() => (
     <div>
       <ul className="list-disc flex flex-col w-full">
         {tasks.map((task) => (

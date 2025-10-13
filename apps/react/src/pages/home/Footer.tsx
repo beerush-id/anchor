@@ -1,15 +1,14 @@
 import { getCtaHoverCount } from '@lib/nav.js';
-import { observe } from '@anchorlib/react/view';
+import { debugRender, view } from '@anchorlib/react';
 import { SectionTitle } from '@components/Section.js';
 import { MainCTA } from '@components/MainCTA.js';
 import { useRef } from 'react';
-import { debugRender } from '@anchorlib/react';
 
 export function Footer() {
   const ref = useRef<HTMLParagraphElement>(null);
   const ctaHoverCount = getCtaHoverCount();
 
-  const CTAHoverInfo = observe(() => {
+  const CTAHoverInfo = view(() => {
     if (!ctaHoverCount || ctaHoverCount.value < 3) return;
 
     debugRender(ref);

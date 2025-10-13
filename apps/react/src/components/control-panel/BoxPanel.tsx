@@ -1,20 +1,23 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import type { BoxProp } from './BoxView.js';
-import { Input } from '../Input.js';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react';
+import { Input } from '@anchorlib/react/components';
 
 export const BoxPanel: React.FC<{ box: BoxProp }> = ({ box }) => {
-  const XView = observe<HTMLLabelElement>(
-    (ref) => (
-      <label ref={ref} className="block text-sm font-medium text-slate-400">
+  const viewRef = useRef(null);
+  const scaleRef = useRef(null);
+
+  const XView = view(
+    () => (
+      <label ref={viewRef} className="block text-sm font-medium text-slate-400">
         X Position: {box.x}%
       </label>
     ),
     'XLabel'
   );
-  const ScaleView = observe<HTMLLabelElement>(
-    (ref) => (
-      <label ref={ref} className="block text-sm font-medium text-slate-400">
+  const ScaleView = view(
+    () => (
+      <label ref={scaleRef} className="block text-sm font-medium text-slate-400">
         Scale: {box.scale}
       </label>
     ),
@@ -30,7 +33,7 @@ export const BoxPanel: React.FC<{ box: BoxProp }> = ({ box }) => {
           <Input
             type={'range'}
             bind={box}
-            bindKey="x"
+            name="x"
             min="0"
             max="100"
             step={0.01}
@@ -42,7 +45,7 @@ export const BoxPanel: React.FC<{ box: BoxProp }> = ({ box }) => {
           <Input
             type={'range'}
             bind={box}
-            bindKey="scale"
+            name="scale"
             min="-2"
             max="2"
             step={0.01}

@@ -3,10 +3,9 @@ import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE, itemsWriter, type ITodoItem, statsWriter } from '@lib/todo.js';
 import { Button, IconButton } from '../Button.js';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
-import { debugRender, useWriter } from '@anchorlib/react';
+import { debugRender, useWriter, view } from '@anchorlib/react';
 import { microloop } from '@anchorlib/core';
 import { Tooltip } from '../Tooltip.js';
-import { observe } from '@anchorlib/react/view';
 
 const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_TOGGLE_SIZE);
 const benchmark = (fn: () => void) => {
@@ -54,7 +53,7 @@ export const TodoItem: FC<{ todo: ITodoItem }> = memo(({ todo }) => {
     selfRef.current.scrollIntoView({ behavior: 'instant', block: 'center' });
   }, [todo]);
 
-  const ItemView = observe(() => {
+  const ItemView = view(() => {
     const { text, completed } = todo;
     debugRender(viewRef);
 

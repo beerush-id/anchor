@@ -1,4 +1,4 @@
-import { bindable, observe } from '@anchorlib/react/view';
+import { bindable, view } from '@anchorlib/react/view';
 import { useAnchor, useVariable } from '@anchorlib/react';
 import type { InputHTMLAttributes } from 'react';
 import { Card } from '@components/Card.js';
@@ -13,7 +13,7 @@ export default function BindingDemo() {
   const [age] = useVariable(30);
   const [verified] = useVariable(false);
 
-  const Display = observe(() => (
+  const Display = view(() => (
     <div className="flex flex-col p-4 pb-0">
       <div className="flex flex-col">
         <h3>Name: {user.name || 'N/A'}</h3>
@@ -23,7 +23,7 @@ export default function BindingDemo() {
     </div>
   ));
 
-  const VarDisplay = observe(() => (
+  const VarDisplay = view(() => (
     <div className="flex flex-col p-4 pb-0">
       <div className="flex flex-col">
         <h3>Name: {name.value || 'N/A'}</h3>

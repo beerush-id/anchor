@@ -1,9 +1,8 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
 import { Button } from '../Button.js';
 import { Input } from '@anchorlib/react/components';
-import { observe } from '@anchorlib/react/view';
+import { debugRender, useFormWriter, view } from '@anchorlib/react';
 import { Card } from '../Card.js';
-import { debugRender, useFormWriter } from '@anchorlib/react';
 import { profileWriter } from '@lib/auth.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { isMobile } from '@lib/nav.js';
@@ -27,15 +26,15 @@ export const AuthForm: FC<{ className?: string }> = ({ className }) => {
     formWriter.reset();
   };
 
-  const NameError = observe(() => {
+  const NameError = view(() => {
     return formWriter.errors.name && <p className="text-sm text-red-400">{formWriter.errors.name.message}</p>;
   });
 
-  const EmailError = observe(() => {
+  const EmailError = view(() => {
     return formWriter.errors.email && <p className="text-sm text-red-400">{formWriter.errors.email.message}</p>;
   });
 
-  const FormControl = observe(() => {
+  const FormControl = view(() => {
     debugRender(controlRef);
     const disabled = !formWriter.isValid || !formWriter.isDirty;
 

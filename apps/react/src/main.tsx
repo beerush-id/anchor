@@ -7,6 +7,7 @@ import Home from '@pages/home/Home.js';
 import { CustomRenderer } from '@pages/custom-renderer/CustomRenderer.js';
 import { BASE_PATH } from '@lib/nav.js';
 import Playground from '@pages/playground/Playground.js';
+import TodoApp from '@pages/playground/TodoApp.js';
 
 setDevMode(process.env.NODE_ENV === 'development');
 setDebugRenderer(true);
@@ -17,6 +18,7 @@ createRoot(document.body).render(
       <Routes>
         <Route index element={<Home />} />
         <Route path="/playground" element={<Playground />} />
+        <Route path="/playground/todo-app" element={<TodoApp />} />
         <Route path="/custom-renderer" element={<CustomRenderer />} />
       </Routes>
     </BrowserRouter>

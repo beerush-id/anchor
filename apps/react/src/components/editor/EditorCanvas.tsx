@@ -3,7 +3,7 @@ import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@lib
 import { useRef } from 'react';
 import { CodeBlock } from '../CodeBlock.js';
 import { Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react/view';
 import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 
@@ -19,7 +19,7 @@ export default function EditorCanvas() {
 
   const viewWriter = useWriter(editorApp, ['viewMode']);
 
-  const EditorPreview = observe(() => {
+  const EditorPreview = view(() => {
     debugRender(ref);
 
     const mode = editorApp.viewMode;
