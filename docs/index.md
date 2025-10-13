@@ -56,13 +56,13 @@ features:
 import '@tailwindcss/browser';
 import { useRef } from 'react';
 import { useAnchor } from '@anchorlib/react';
-import { observe } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react/view';
 
 const Counter = () => {
   const [counter] = useAnchor({ count: 0 });
 
   // 😏 Only this tiny part of the UI that need to updated!
-  const CounterView = observe(() => <h1>Counter: {counter.count}</h1>);
+  const CounterView = view(() => <h1>Counter: {counter.count}</h1>);
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">

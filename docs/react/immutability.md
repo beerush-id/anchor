@@ -99,7 +99,7 @@ Anchor's approach to immutability provides the benefits of immutable state witho
 ::: anchor-react-sandbox
 
 ```tsx
-import { useImmutable, useWriter, observe } from '@anchorlib/react';
+import { useImmutable, useWriter, view } from '@anchorlib/react';
 import { Input } from '@anchorlib/react/components';
 
 export default function UserProfile() {
@@ -127,7 +127,7 @@ export default function UserProfile() {
     settingsWriter.notifications = !settingsWriter.notifications;
   };
 
-  const UserView = observe(() => (
+  const UserView = view(() => (
     <div>
       <h1>{user.name}</h1>
       <p>Age: {user.age}</p>
@@ -193,10 +193,10 @@ To use global immutable states in React components, import them and access their
 
 ```tsx
 // components/UserProfile.tsx
-import { observe } from '@anchorlib/react';
+import { view } from '@anchorlib/react';
 import { userState, preferenceWriter } from '../lib/state';
 
-const UserProfile = observe(() => {
+const UserProfile = view(() => {
   return (
     <div>
       <h1>{userState.name}</h1>
@@ -219,10 +219,10 @@ export default UserProfile;
 ::: anchor-react-sandbox
 
 ```tsx /App.tsx [active]
-import { observe } from '@anchorlib/react';
+import { view } from '@anchorlib/react';
 import { userState, userWriter, preferenceWriter } from '../lib/state';
 
-const UserProfile = observe(() => {
+const UserProfile = view(() => {
   return (
     <div>
       <h1>{userState.name}</h1>
@@ -478,16 +478,16 @@ export const appConfig = anchor.immutable({
 
 ```tsx
 // components/App.tsx
-import { observe } from '@anchorlib/react';
+import { view } from '@anchorlib/react';
 import { appConfig } from '../lib/appState';
 
-const Header = observe(() => (
+const Header = view(() => (
   <header>
     <h1>App v{appConfig.version}</h1>
   </header>
 ));
 
-const Main = observe(() => <main>{/* Content using appConfig */}</main>);
+const Main = view(() => <main>{/* Content using appConfig */}</main>);
 
 const App = () => {
   return (
@@ -520,20 +520,20 @@ export const preferencesWriter = anchor.writable(userProfile, ['preferences']);
 
 ```tsx
 // components/ProfileEditor.tsx
-import { observe } from '@anchorlib/react';
+import { view } from '@anchorlib/react';
 import { userProfile, profileWriter } from '../lib/userProfile';
 
-const ProfileEditor = observe(() => (
+const ProfileEditor = view(() => (
   <input value={userProfile.personal.name} onChange={(e) => (profileWriter.personal.name = e.target.value)} />
 ));
 ```
 
 ```tsx
 // components/Preferences.tsx
-import { observe } from '@anchorlib/react';
+import { view } from '@anchorlib/react';
 import { userProfile, preferencesWriter } from '../lib/userProfile';
 
-const Preferences = observe(() => (
+const Preferences = view(() => (
   <select
     value={userProfile.preferences.theme}
     onChange={(e) => (preferencesWriter.preferences.theme = e.target.value)}>
@@ -548,7 +548,7 @@ const Preferences = observe(() => (
 Use immutability with Anchor's reactivity patterns for optimal performance:
 
 ```tsx
-import { useImmutable, useWriter, observe } from '@anchorlib/react';
+import { useImmutable, useWriter, view } from '@anchorlib/react';
 
 const TodoApp = () => {
   // Local immutable state
@@ -558,7 +558,7 @@ const TodoApp = () => {
   const todosWriter = useWriter(todos);
 
   // View that only re-renders when todos change
-  const TodoList = observe(() => (
+  const TodoList = view(() => (
     <ul>
       {todos.map((todo) => (
         <li key={todo.id}>{todo.text}</li>

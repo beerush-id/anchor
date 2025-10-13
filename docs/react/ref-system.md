@@ -313,7 +313,7 @@ settingsRef.value.theme = 'light';
 
 - The `observer()` HOC is the simplest way to make a whole component reactive, but it may cause the entire component
   to re-render if any observed value changes.
-- For more controlled, fine-grained rendering, use the `observe` HOC or hooks like `useObserved()` and `useDerived()`.
+- For more controlled, fine-grained rendering, use the `view` HOC or hooks like `useObserved()` and `useDerived()`.
   These tools allow you to create reactive boundaries, ensuring that only the necessary parts of your UI update.
 
 3. **Use `useConstant` for Derived Data:** When a value is derived from other props or state, use `useConstant` with a

@@ -57,7 +57,7 @@ const CounterManager = () => {
   const expensiveValue = computeExpensiveValue();
 
   // View - only re-renders when the observed data changes.
-  const Count = observe(() => {
+  const Count = view(() => {
     // Assignment to local variable works as normally would.
     renderCount++;
 
@@ -132,7 +132,7 @@ properties are accessed and creates a dependency map.
 ::: details State Observation {open}
 
 ```tsx {6}
-const Count = observe(() => {
+const Count = view(() => {
   renderCount++;
 
   return (
@@ -177,7 +177,7 @@ so efficient compared to traditional React.
 ::: details Re-rendered part {open}
 
 ```tsx {6}
-const Count = observe(() => {
+const Count = view(() => {
   renderCount++;
 
   return (
@@ -207,12 +207,12 @@ const UserDashboard = () => {
   const [user] = useAnchor({ name: 'John Doe', age: 30 });
 
   // Only re-renders when user.name changes
-  const UserName = observe(() => {
+  const UserName = view(() => {
     return <h1>Hello, {user.name}!</h1>;
   });
 
   // Only re-renders when user.age changes
-  const UserAge = observe(() => {
+  const UserAge = view(() => {
     return <p>You are {user.age} years old</p>;
   });
 
@@ -250,7 +250,7 @@ This stability allows you to:
 ::: anchor-react-sandbox
 
 ```tsx App.tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 
 const TaskManager = () => {
   const [tasks] = useAnchor([]);
@@ -265,7 +265,7 @@ const TaskManager = () => {
   };
 
   // Only this view is re-rendered when tasks change.
-  const TaskListView = observe(() => (
+  const TaskListView = view(() => (
     <div>
       {tasks.length > 0 && (
         <ul>
@@ -305,7 +305,7 @@ entire classes of bugs related to stale closures and makes your code more predic
 ::: anchor-react-sandbox
 
 ```tsx App.tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 
 const Counter = () => {
   const [counter] = useAnchor({ count: 0 });
@@ -318,7 +318,7 @@ const Counter = () => {
     // All changes are immediately applied
   };
 
-  const Display = observe(() => {
+  const Display = view(() => {
     return <p>Count: {counter.count}</p>;
   });
 
@@ -349,7 +349,7 @@ actions, you simply assign new values to state properties.
 ::: anchor-react-sandbox
 
 ```tsx App.tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 
 const ShoppingCart = () => {
   const [cart] = useAnchor({
@@ -358,7 +358,7 @@ const ShoppingCart = () => {
   });
 
   // Automatically updates when cart.items changes
-  const CartItems = observe(() => (
+  const CartItems = view(() => (
     <div>
       <h2>Total: ${cart.total.toFixed(2)}</h2>
       <ul>
@@ -495,7 +495,7 @@ They often contain both presentation elements (like buttons or forms) and logic 
 ```tsx
 const ThemeToggle = ({ ui }) => {
   // Observes theme changes
-  const ThemeIndicator = observe(() => {
+  const ThemeIndicator = view(() => {
     return <span>Current theme: {ui.theme}</span>;
   });
 

@@ -140,7 +140,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
   match the search term. It re-renders only when the variable is actually changes (`false` to `true` or `true` to
   `false`).
 - ✓ We only display the todo item if it's not deleted by checking the `deleted_at` property.
-- ✓ We used `observe()` **HOC** to selectively render partial elements.
+- ✓ We used `view()` **HOC** to selectively render partial elements.
 - ✓ We **memoized** the component to prevent re-render when the todo list is updated.
 
 :::
@@ -233,8 +233,8 @@ library.
 
 ### Optimization Achievements
 
-- ✓ Utilized `observe()` **HOC** for selective rendering of partial elements, enhancing performance.
-- ✓ Employed `observe()` **HOC** to conditionally display/hide todo items based on the `deleted_at` property. This
+- ✓ Utilized `view()` **HOC** for selective rendering of partial elements, enhancing performance.
+- ✓ Employed `view()` **HOC** to conditionally display/hide todo items based on the `deleted_at` property. This
   significantly
   reduces computational overhead for list filtering and prevents unnecessary re-renders of the parent component when an
   item is deleted.

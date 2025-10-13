@@ -427,7 +427,7 @@ component tree to re-render.
 ::: code-group
 
 ```jsx [UserProfile.jsx]
-import { useVariable, observer } from '@anchorlib/react';
+import { useVariable, view } from '@anchorlib/react';
 import { UserAccount } from './UserAccount.jsx';
 
 export const UserProfile = () => {
@@ -451,7 +451,7 @@ export const UserProfile = () => {
     };
   };
 
-  const ProfileView = observe(() => {
+  const ProfileView = view(() => {
     const { name, age, account } = userRef.value;
     return (
       <div>
@@ -461,7 +461,7 @@ export const UserProfile = () => {
     );
   });
 
-  const AccountView = observe(() => {
+  const AccountView = view(() => {
     const { email, username } = userRef.value.account;
     return (
       <div>
@@ -517,7 +517,7 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
     \*never re-renders\*\* when the user data changes. It purely manages the state and orchestrates the UI.
 
 - **The "View" (`ProfileView` and `UserAccount.jsx`):** These components represent the **View** layer.
-  - `ProfileView` is wrapped in `observe`. It reads data from `userRef.value` and will only re-render when the specific
+  - `ProfileView` is wrapped in `view`. It reads data from `userRef.value` and will only re-render when the specific
     values it uses (`name`, `age`, `email`, `username`) change.
   - `UserAccount` is wrapped in `observer()` and also accesses `userRef`. It will re-render only when the `account`
     properties it observes are modified.
@@ -539,7 +539,7 @@ This example demonstrates the **Data-State-View (DSV)** pattern, a core concept 
 ::: anchor-react-sandbox
 
 ```tsx /UserProfile.tsx [active]
-import { useVariable, debugRender, setDebugRenderer, observe } from '@anchorlib/react';
+import { useVariable, debugRender, setDebugRenderer, view } from '@anchorlib/react';
 import { UserAccount } from './UserAccount.tsx';
 import { useRef } from 'react';
 
@@ -571,7 +571,7 @@ export const UserProfile = () => {
 
   // Only this ProvileView block is re-rendered when the observed value changes.
 
-  const ProfileView = observe((ref) => {
+  const ProfileView = view((ref) => {
     debugRender(ref);
 
     const { name, age, account } = userRef.value;
@@ -583,7 +583,7 @@ export const UserProfile = () => {
     );
   });
 
-  const AccountView = observe((ref) => {
+  const AccountView = view((ref) => {
     debugRender(ref);
 
     const { email, username } = userRef.value.account;

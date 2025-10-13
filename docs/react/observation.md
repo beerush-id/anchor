@@ -1,11 +1,11 @@
 ---
-title: 'Observation in Anchor for React: observe HOC and useObserver Hook'
-description: 'A comprehensive guide to observation in Anchor for React. Learn how to use the observe and observer HOCs, and the useObserver hook to create performant, reactive components.'
+title: 'Observation in Anchor for React: view HOC and useObserver Hook'
+description: 'A comprehensive guide to observation in Anchor for React. Learn how to use the view and observer HOCs, and the useObserver hook to create performant, reactive components.'
 keywords:
   - anchor for react
   - react observation
   - react reactivity
-  - observe hoc
+  - view hoc
   - observer hoc
   - useObserver hook
   - fine-grained reactivity
@@ -31,7 +31,7 @@ rest of your application.
 
 These are Higher-Order Components that make React components reactive to **Anchor**'s state changes.
 
-### **`observe(factory, displayName?)`**
+### **`view(factory, displayName?)`**
 
 A higher-order component (HOC) that creates a React component which automatically re-renders when any observable state
 accessed within the provided `factory` callback changes.
@@ -50,7 +50,7 @@ only the observed part re-renders, not the entire component where it's declared.
 
 **Returns**: A new React component that is reactive to observable state changes.
 
-[API Reference](../apis/react/observation.md#observe)
+[API Reference](../apis/react/observation.md#view)
 
 #### Factory Object Properties
 
@@ -67,13 +67,13 @@ When using a factory object instead of a simple function, the following properti
 ::: details Basic Observation Usage {open}
 
 ```tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 
 const CounterManager = () => {
   const [count] = useAnchor({ value: 0 });
 
   // Create an observed component that re-renders when count.value changes
-  const CountDisplay = observe(() => (
+  const CountDisplay = view(() => (
     <div>
       <h1>Count: {count.value}</h1>
       <p>This component only re-renders when count.value changes</p>
@@ -103,13 +103,15 @@ const CounterManager = () => {
 ::: details Using Factory Object with Lifecycle Methods
 
 ```tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
+import { useRef } from 'react';
 
 const Timer = () => {
+  const ref = useRef({ renderCount: 0 });
   const [timer] = useAnchor({ seconds: 0 });
 
   // Create an observed component using a factory object with lifecycle methods
-  const TimerDisplay = observe({
+  const TimerDisplay = view({
     name: 'TimerDisplay',
     onMounted() {
       console.log('TimerDisplay mounted');
@@ -120,7 +122,7 @@ const Timer = () => {
     onDestroy() {
       console.log('TimerDisplay will be destroyed');
     },
-    render(ref) {
+    render() {
       // Store data on the ref for later use
       if (!ref.current) {
         ref.current = {
@@ -156,7 +158,7 @@ const Timer = () => {
 ::: details Using the Ref Parameter
 
 ```tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 
 const DataList = () => {
   const [data] = useAnchor({
@@ -165,7 +167,7 @@ const DataList = () => {
   });
 
   // The factory function receives a ref parameter
-  const ListView = observe((ref) => {
+  const ListView = view((ref) => {
     // Store data on the ref for later use
     if (!ref.current) {
       ref.current = {
@@ -215,7 +217,7 @@ const DataList = () => {
 
 ::: tip When to use it?
 
-Use `observe` when you want to create a reactive render function directly, often for inline rendering or when you don't
+Use `view` when you want to create a reactive render function directly, often for inline rendering or when you don't
 need a separate component definition. It's particularly useful when you need to create components that are tightly
 coupled with their parent's state logic. This HOC is most suitable for selective rendering, acting as the **View** in the **DSV** pattern.
 
@@ -223,7 +225,7 @@ coupled with their parent's state logic. This HOC is most suitable for selective
 
 ::: warning Caveat
 
-When using the **`observe()`** API you are not creating a component. Thus, you cannot use React hooks such as `useEffect()`
+When using the **`view()`** API you are not creating a component. Thus, you cannot use React hooks such as `useEffect()`
 inside it. This API is designed to be an intuitive way to render a template and re-render when the required state
 changes. Its main purpose is to be used as a **`View`**.
 
@@ -325,12 +327,12 @@ Use `observer` when you have an existing React component that you want to make r
 
 :::
 
-::: details Difference between `observer()` and `observe()` {open}
+::: details Difference between `observer()` and `view()` {open}
 
 The key difference lies in their approach and use cases:
 
 - **`observer(Component)`:** Wraps an existing component and is best for full component re-renders, especially when working with third-party components or when you need a simple setup without selective rendering.
-- **`observe(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
+- **`view(factory)`:** Creates a new component from a factory function and is best for selective rendering within the DSV pattern, where you want fine-grained control over what gets re-rendered.
   :::
 
 ### **`bindable(Component, displayName?)`**
@@ -548,7 +550,7 @@ The `bindable` HOC is specifically designed for form input components. It works 
 ::: anchor-react-sandbox
 
 ```tsx
-import { useAnchor, observe } from '@anchorlib/react';
+import { useAnchor, view } from '@anchorlib/react';
 import { bindable } from '@anchorlib/react/view';
 
 // Create a bindable input component
@@ -564,7 +566,7 @@ const UserForm = () => {
     isActive: true,
   });
 
-  const UserView = observe(() => (
+  const UserView = view(() => (
     <div>
       <h1>User Profile</h1>
       <div>
@@ -614,7 +616,7 @@ Creates a reactive reference to a computed value. It automatically tracks reacti
 
 This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
 
-The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observer()` or `observe()`).
+The returned ref is itself a reactive state that can be consumed by other observers or displayed in views (`observer()` or `view()`).
 
 **Params**
 
@@ -647,7 +649,7 @@ const UserProfile = () => {
   });
 
   // Create a component that observes the computed ref value
-  const FullNameDisplay = observe(() => <h1>Welcome, {fullNameRef.value}!</h1>);
+  const FullNameDisplay = view(() => <h1>Welcome, {fullNameRef.value}!</h1>);
 
   const incrementAge = () => {
     user.age++;
@@ -683,7 +685,7 @@ A custom React hook that creates a computed value by running the provided observ
 
 This hook is particularly useful for creating computed values that depend on multiple reactive states without manually specifying them as dependencies. The computation is automatically re-executed when any of the accessed reactive states change.
 
-Unlike [observe()](#observe-factory-displayname) which provides fine-grained reactivity by creating a separate
+Unlike [view()](#view-factory-displayname) which provides fine-grained reactivity by creating a separate
 component, `useObserver` triggers re-render of the entire component where it's declared.
 
 **Params**
@@ -792,8 +794,16 @@ const ProductCard = ({ currency }) => {
 Use `useObserver` when you need to create a reactive computation that derives values from reactive state. It's the most
 common hook for creating computed values that automatically update when their dependencies change.
 
-Note that unlike [observe()](#observe-factory-displayname), `useObserver` triggers re-render of the entire component
+Note that unlike [view()](#view-factory-displayname), `useObserver` triggers re-render of the entire component
 where it's declared, not just the observed part.
+
+:::
+
+### **`observe(factory, displayName?)`** (Deprecated)
+
+::: danger Deprecated
+
+This API is deprecated. Use [view()](#view-factory-displayname) instead.
 
 :::
 

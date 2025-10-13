@@ -128,7 +128,7 @@ import { type FC, type FormEventHandler } from 'react';
 import { Button } from '../Button.js';
 import { Input } from '@anchorlib/react/components';
 import { Card } from '../Card.js';
-import { useFormWriter, observe } from '@anchorlib/react';
+import { useFormWriter, view } from '@anchorlib/react';
 import { profileWriter } from '@lib/auth.js';
 
 export const ProfileForm: FC<{ className?: string }> = ({ className }) => {
@@ -142,15 +142,15 @@ export const ProfileForm: FC<{ className?: string }> = ({ className }) => {
     console.log('Profile updated!');
   };
 
-  const NameError = observe(() => {
+  const NameError = view(() => {
     return form.errors.name && <p className="text-sm text-red-400">{form.errors.name.message}</p>;
   });
 
-  const EmailError = observe(() => {
+  const EmailError = view(() => {
     return form.errors.email && <p className="text-sm text-red-400">{form.errors.email.message}</p>;
   });
 
-  const FormControl = observe(() => {
+  const FormControl = view(() => {
     const disabled = !form.isValid || !form.isDirty;
 
     return (
@@ -192,7 +192,7 @@ export const ProfileForm: FC<{ className?: string }> = ({ className }) => {
 };
 ```
 
-### Performance: `observer()` vs. `observe()`
+### Performance: `observer()` vs. `view()`
 
 A key difference between the "Basic" and "Advanced" examples lies in their rendering strategy, which has significant performance implications.
 
@@ -206,14 +206,14 @@ const ProfileForm: FC = observer(() => {
 
 This is simple to set up, but it means the **entire form will re-render** whenever any reactive value it depends on changes. This includes every keystroke in an input, the appearance of an error message, or a change in the `form.isDirty` state. For small forms, this is often acceptable.
 
-In the **Advanced Validation** example, we use a more granular approach. Instead of wrapping the whole form, we create smaller, dedicated components for reactive parts of the UI and wrap each of them with `observe`.
+In the **Advanced Validation** example, we use a more granular approach. Instead of wrapping the whole form, we create smaller, dedicated components for reactive parts of the UI and wrap each of them with `view`.
 
 ```tsx
-const NameError = observe(() => {
+const NameError = view(() => {
   // ... only renders when form.errors.name changes
 });
 
-const FormControl = observe(() => {
+const FormControl = view(() => {
   // ... only renders when form.isValid or form.isDirty changes
 });
 ```
