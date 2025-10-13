@@ -19,10 +19,6 @@
       "import": "./dist/states/index.js"
     },
     "./states/*": "./dist/states/*",
-    "./styles": {
-      "types": "./dist/styles/index.d.ts",
-      "import": "./dist/styles/index.js"
-    },
     "./styles/*": "./dist/styles/*",
     "./utils": {
       "types": "./dist/utils/index.d.ts",
