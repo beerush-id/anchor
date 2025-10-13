@@ -1,0 +1,21 @@
+import { type ActionRef, useAction } from '@anchorlib/react';
+
+export type ClassNameRef<E> = ActionRef<E> & {
+  className: string;
+};
+
+export function useClassName<E>(action: () => string) {
+  const ref = useAction<E>((element) => {
+    if (!(element instanceof HTMLElement)) return;
+
+    const assign = () => {
+      element.setAttribute('class', action());
+    };
+
+    assign();
+  }) as ClassNameRef<E>;
+
+  ref.className = action();
+
+  return ref;
+}

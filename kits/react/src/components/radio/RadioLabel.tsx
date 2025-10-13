@@ -1,0 +1,13 @@
+import type { HTMLAttributes } from 'react';
+import { classx } from '@anchorlib/headless-kit/utils';
+import { named } from '@anchorlib/react';
+
+export type RadioLabelProps = HTMLAttributes<HTMLLabelElement>;
+
+export const RadioLabel = named<RadioLabelProps>(({ children, className, ...props }) => {
+  return (
+    <label className={classx('ark-radio-label', className)} {...props}>
+      {children}
+    </label>
+  );
+}, 'RadioLabel');
