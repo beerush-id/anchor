@@ -4,7 +4,7 @@ import TodoForm from './TodoForm';
 import TodoList from './TodoList';
 import TodoStats from './TodoStats';
 import { useRef } from 'react';
-import { debugRender, observe, useVariable } from '@anchorlib/react';
+import { debugRender, useVariable, view } from '@anchorlib/react';
 import { setContext } from '@anchorlib/core';
 
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
   setContext('search', search);
 
   // Create a view for the search input. Only re-rendered when the search value changes.
-  const Search = observe<HTMLInputElement>((ref) => {
+  const Search = view(() => {
     return (
       <input
         type="text"

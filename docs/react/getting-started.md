@@ -547,6 +547,8 @@ setDebugRenderer(true, 500);
 
 export const UserProfile = () => {
   const ref = useRef(null);
+  const profileRef = useRef(null);
+  const accountRef = useRef(null);
   debugRender(ref);
 
   const [userRef] = useVariable({
@@ -570,25 +572,24 @@ export const UserProfile = () => {
   };
 
   // Only this ProvileView block is re-rendered when the observed value changes.
-
-  const ProfileView = view((ref) => {
-    debugRender(ref);
+  const ProfileView = view(() => {
+    debugRender(profileRef);
 
     const { name, age, account } = userRef.value;
     return (
-      <div ref={ref}>
+      <div ref={profileRef}>
         <p>Name: {name}</p>
         <p>Age: {age}</p>
       </div>
     );
   });
 
-  const AccountView = view((ref) => {
-    debugRender(ref);
+  const AccountView = view(() => {
+    debugRender(accountRef);
 
     const { email, username } = userRef.value.account;
     return (
-      <div ref={ref}>
+      <div ref={accountRef}>
         <p>Email: {email}</p>
         <p>Username: {username}</p>
       </div>
@@ -614,7 +615,7 @@ import { debugRender, observer } from '@anchorlib/react';
 
 export const UserAccount = observer(({ userRef }) => {
   const ref = useRef(null);
-  const { account } = userRef.value;
+  const { account } = userRef;
   const { email, username } = account;
 
   debugRender(ref);

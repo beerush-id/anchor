@@ -1,6 +1,6 @@
 import { memo, useRef } from 'react';
 import { type TodoRec } from './todos';
-import { debugRender, observe, useObservedRef, type VariableRef } from '@anchorlib/react';
+import { debugRender, useObservedRef, type VariableRef, view } from '@anchorlib/react';
 import { todoActions } from './actions';
 import { getContext } from '@anchorlib/core';
 
@@ -19,9 +19,9 @@ function TodoItem({ todo }: { todo: TodoRec }) {
   };
 
   // Create a view for the todo item, since only these elements that need to be re-rendered.
-  const TodoItemView = observe<HTMLDivElement>((ref) => {
+  const TodoItemView = view(() => {
     return (
-      <div ref={ref} className="flex items-center gap-2 flex-1">
+      <div className="flex items-center gap-2 flex-1">
         <input
           type="checkbox"
           checked={todo.completed}
@@ -51,7 +51,7 @@ function TodoItem({ todo }: { todo: TodoRec }) {
   });
 
   // This prevents the TodoList component to re-render.
-  const TodoItemBody = observe<HTMLLIElement>(() => {
+  const TodoItemBody = view(() => {
     // Remove itself if the hidden variable is true.
     // This only re-renders when the hidden variable changes.
     if (shouldHide.value) return;

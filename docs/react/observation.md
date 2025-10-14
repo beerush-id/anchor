@@ -155,66 +155,6 @@ const Timer = () => {
 
 :::
 
-::: details Using the Ref Parameter
-
-```tsx
-import { useAnchor, view } from '@anchorlib/react';
-
-const DataList = () => {
-  const [data] = useAnchor({
-    items: ['Item 1', 'Item 2', 'Item 3'],
-    selected: null,
-  });
-
-  // The factory function receives a ref parameter
-  const ListView = view((ref) => {
-    // Store data on the ref for later use
-    if (!ref.current) {
-      ref.current = {
-        lastSelected: null,
-      };
-    }
-
-    const handleSelect = (item) => {
-      data.selected = item;
-      ref.current.lastSelected = item;
-    };
-
-    return (
-      <div>
-        <ul>
-          {data.items.map((item, index) => (
-            <li
-              key={index}
-              onClick={() => handleSelect(item)}
-              style={{
-                backgroundColor: data.selected === item ? '#e0e0e0' : 'transparent',
-                fontWeight: ref.current.lastSelected === item ? 'bold' : 'normal',
-              }}>
-              {item}
-            </li>
-          ))}
-        </ul>
-        <p>Last selected: {ref.current.lastSelected || 'None'}</p>
-      </div>
-    );
-  });
-
-  const addItem = () => {
-    data.items = [...data.items, `Item ${data.items.length + 1}`];
-  };
-
-  return (
-    <div>
-      <ListView />
-      <button onClick={addItem}>Add Item</button>
-    </div>
-  );
-};
-```
-
-:::
-
 ::: tip When to use it?
 
 Use `view` when you want to create a reactive render function directly, often for inline rendering or when you don't
