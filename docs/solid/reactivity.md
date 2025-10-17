@@ -22,21 +22,7 @@ accessed it will re-execute.
 
 ## Anchor's Integration
 
-Anchor builds on Solid's reactivity model by setting up automatic tracking when you create reactive references. The
-integration works through a global tracker that binds Anchor's observer system with Solid's component instances.
-
-### Binding Mechanism
-
-When you create an Anchor reference and access its properties within a Solid component, here's what happens:
-
-1. Anchor's tracker detects the property access
-2. It identifies the current Solid component owner using `getOwner()`
-3. It creates or reuses a Solid signal for that owner
-4. It associates the Anchor state with the Solid signal
-5. When the Anchor state changes, it triggers the Solid signal update
-
-This mechanism ensures that only the components that actually access specific state properties will re-render when those
-properties change.
+Anchor builds on Solid's reactivity model by setting up automatic tracking when you create reactive references.
 
 ### Example
 
@@ -70,43 +56,13 @@ const TodoList = () => {
 };
 ```
 
-## Fine-Grained Reactivity
-
-One of Anchor's strengths is its ability to provide even more fine-grained reactivity than Solid's default behavior:
-
-### Nested Object Reactivity
-
-```tsx
-import { anchorRef } from '@anchorlib/solid';
-
-const state = anchorRef({
-  user: {
-    profile: {
-      name: 'John',
-      settings: { theme: 'dark' },
-    },
-  },
-});
-
-const UserName = () => {
-  // This component only re-renders when user.profile.name changes
-  return <div>Name: {state.user.profile.name}</div>;
-};
-
-const Theme = () => {
-  // This component only re-renders when user.profile.settings.theme changes
-  return <div>Theme: {state.user.profile.settings.theme}</div>;
-};
-```
-
 ## Performance Benefits
 
 Anchor's integration with Solid provides several performance benefits:
 
 1. **Minimal Re-renders**: Only components that access changed properties re-render
 2. **Automatic Cleanup**: Observers are automatically cleaned up when components are destroyed
-3. **Batched Updates**: Multiple state changes can be batched to minimize re-renders
-4. **Lazy Initialization**: Nested states are only made reactive when accessed
+3. **Lazy Initialization**: Nested states are only made reactive when accessed
 
 ## Best Practices
 
