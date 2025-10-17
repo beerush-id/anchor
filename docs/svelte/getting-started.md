@@ -270,7 +270,7 @@ console.log(readOnlyRef.value); // 42
 
 ## API Reference
 
-- [API Reference](/apis/svelte/) - Complete documentation of all functions and types
+- [API Reference](/apis/svelte/initialization) - Complete documentation of all functions and types
 
 ## Next Steps
 
