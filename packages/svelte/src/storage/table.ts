@@ -7,7 +7,6 @@ import {
   type Row,
 } from '@anchorlib/storage/db';
 import { onDestroy } from 'svelte';
-import { constantRef } from '@base/index.js';
 import type { TableRef } from './types.js';
 
 export function createTableRef<T extends ReactiveTable<Rec>>(table: T): TableRef<InferRec<T>>;
@@ -39,7 +38,7 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
         tableRef.leave(id);
       });
 
-      return constantRef(state);
+      return state;
     },
     add(payload: T) {
       const state = tableRef.add(payload);
@@ -48,19 +47,16 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
         tableRef.leave(state.data.id);
       });
 
-      return constantRef(state);
+      return state;
     },
     list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
-      const state = tableRef.list(filter, limit, direction);
-      return constantRef(state);
+      return tableRef.list(filter, limit, direction);
     },
     listByIndex(name: keyof R, filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection) {
-      const state = tableRef.listByIndex(name, filter, limit, direction);
-      return constantRef(state);
+      return tableRef.listByIndex(name, filter, limit, direction);
     },
     remove(id: string) {
-      const state = tableRef.remove(id);
-      return constantRef(state);
+      return tableRef.remove(id);
     },
     seed(seeds: R[]) {
       tableRef.seed(seeds);

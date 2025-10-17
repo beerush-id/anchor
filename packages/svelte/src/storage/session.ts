@@ -1,7 +1,6 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
-import type { ConstantRef } from '@base/index.js';
-import { constantRef } from '@base/index.js';
 import { session } from '@anchorlib/storage';
+import { onDestroy } from 'svelte';
 
 /**
  * Creates a session-scoped reactive reference using the provided name, initial value, and options.
@@ -19,7 +18,12 @@ export function sessionRef<T extends ObjLike, S extends LinkableSchema = Linkabl
   name: string,
   init: T,
   options?: StateOptions<S>
-): ConstantRef<T> {
+): T {
   const state = session(name, init, options);
-  return constantRef<T>(state);
+
+  onDestroy(() => {
+    session.leave(state);
+  });
+
+  return state;
 }

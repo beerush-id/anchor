@@ -1,6 +1,4 @@
 import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchorlib/core';
-import type { ConstantRef } from './types.js';
-import { constantRef } from './ref.js';
 
 /**
  * Creates a readable Svelte store that manages the state of a fetch request.
@@ -11,7 +9,7 @@ import { constantRef } from './ref.js';
  * @param options The options for the fetch request, including the URL and method.
  * @returns A `ReadableRef` containing the `FetchState` of the request.
  */
-export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): ConstantRef<FetchState<R>>;
+export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 /**
  * Creates a readable Svelte store that manages the state of a fetch request.
@@ -26,11 +24,10 @@ export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | '
 export function fetchRef<R, P>(
   init: R,
   options: FetchOptions & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): ConstantRef<FetchState<R>>;
-/** @internal */
-export function fetchRef<R>(init: R, options: FetchOptions): ConstantRef<FetchState<R>> {
-  const state = fetchState(init, options);
-  return constantRef(state);
+): FetchState<R>;
+
+export function fetchRef<R>(init: R, options: FetchOptions): FetchState<R> {
+  return fetchState(init, options);
 }
 
 /**
@@ -42,10 +39,7 @@ export function fetchRef<R>(init: R, options: FetchOptions): ConstantRef<FetchSt
  * @param options The options for the stream request, including the URL and method.
  * @returns A `ReadableRef` containing the `FetchState` of the request.
  */
-export function streamRef<R>(
-  init: R,
-  options: StreamOptions<R> & { method: 'GET' | 'DELETE' }
-): ConstantRef<FetchState<R>>;
+export function streamRef<R>(init: R, options: StreamOptions<R> & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 /**
  * Creates a readable Svelte store that manages the state of a streaming request.
@@ -60,10 +54,8 @@ export function streamRef<R>(
 export function streamRef<R, P>(
   init: R,
   options: StreamOptions<R> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): ConstantRef<FetchState<R>>;
+): FetchState<R>;
 
-/** @internal */
-export function streamRef<R>(init: R, options: StreamOptions<R>): ConstantRef<FetchState<R>> {
-  const state = streamState(init, options);
-  return constantRef(state);
+export function streamRef<R>(init: R, options: StreamOptions<R>): FetchState<R> {
+  return streamState(init, options);
 }

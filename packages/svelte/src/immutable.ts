@@ -11,8 +11,6 @@ import {
   type StateBaseOptions,
   type StateOptions,
 } from '@anchorlib/core';
-import { variableRef } from './ref.js';
-import type { ConstantRef, VariableRef } from './types.js';
 
 /**
  * Creates an immutable ref from a state object.
@@ -26,7 +24,7 @@ import type { ConstantRef, VariableRef } from './types.js';
 export function immutableRef<T extends State, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): VariableRef<Immutable<T>>;
+): Immutable<T>;
 
 /**
  * Creates an immutable ref from a model input and a schema.
@@ -42,16 +40,15 @@ export function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
-): VariableRef<ImmutableOutput<S>>;
+): ImmutableOutput<S>;
 
 /** Implementation of `immutableRef` overloads. */
 export function immutableRef<T extends State, S extends LinkableSchema = LinkableSchema>(
   init: T,
   schemaOptions?: S | StateOptions,
   options?: StateOptions<S>
-): VariableRef<Immutable<T>> {
-  const state = anchor.immutable(init as never, schemaOptions as never, options);
-  return variableRef(state) as VariableRef<Immutable<T>>;
+): Immutable<T> {
+  return anchor.immutable(init as never, schemaOptions as never, options);
 }
 
 /**
@@ -61,7 +58,7 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
  * @param state The initial state object.
  * @returns A ConstantRef containing the mutable state.
  */
-export function writableRef<T extends State>(state: T): ConstantRef<Mutable<T>>;
+export function writableRef<T extends State>(state: T): Mutable<T>;
 
 /**
  * Creates a writable ref from a state object and a list of contracts.
@@ -72,13 +69,9 @@ export function writableRef<T extends State>(state: T): ConstantRef<Mutable<T>>;
  * @param contracts A list of mutation keys.
  * @returns A ConstantRef containing the mutable part of the state.
  */
-export function writableRef<T extends State, K extends MutationKey<T>[]>(
-  state: T,
-  contracts: K
-): VariableRef<MutablePart<T, K>>;
+export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts: K): MutablePart<T, K>;
 
 /** Implementation of `writableRef` overloads. */
-export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts?: K): ConstantRef<T> {
-  const writableState = anchor.writable(state, contracts);
-  return variableRef(writableState) as ConstantRef<T>;
+export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts?: K): T {
+  return anchor.writable(state, contracts) as T;
 }

@@ -8,8 +8,6 @@ import {
   type ModelOutput,
   type StateOptions,
 } from '@anchorlib/core';
-import type { VariableRef } from './types.js';
-import { variableRef } from './ref.js';
 
 /**
  * Creates a writable reference that can be used to manage state with Anchor.
@@ -24,7 +22,7 @@ import { variableRef } from './ref.js';
 export function anchorRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): VariableRef<T>;
+): T;
 
 /**
  * Creates a writable reference with a defined schema for validation and type inference.
@@ -40,7 +38,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema?: S,
   options?: StateOptions
-): VariableRef<ModelOutput<S>>;
+): ModelOutput<S>;
 
 /**
  * Creates an immutable writable reference with a defined schema.
@@ -56,7 +54,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema?: S,
   options?: StateOptions & { immutable: true }
-): VariableRef<Immutable<ModelOutput<S>>>;
+): Immutable<ModelOutput<S>>;
 
 /**
  * Creates a writable reference for state management with optional schema validation.
@@ -72,9 +70,8 @@ export function anchorRef<T extends Linkable, S extends LinkableSchema = Linkabl
   init: T,
   schemaOptions?: S | StateOptions,
   options?: StateOptions
-): VariableRef<T | ModelOutput<S> | Immutable<ModelOutput<S>>> {
-  const state = anchor<S, ModelInput<S>>(init as ModelInput<S>, schemaOptions as S, options);
-  return variableRef(state);
+): T | ModelOutput<S> | Immutable<ModelOutput<S>> {
+  return anchor<S, ModelInput<S>>(init as ModelInput<S>, schemaOptions as S, options);
 }
 
 /**
@@ -97,9 +94,8 @@ export function orderedRef<T extends unknown[], S extends ModelArray = ModelArra
   init: T,
   compare: (a: T[number], b: T[number]) => number,
   options?: StateOptions<S>
-): VariableRef<T> {
-  const state = anchor.ordered(init, compare, options);
-  return variableRef(state);
+): T {
+  return anchor.ordered(init, compare, options);
 }
 
 /**
@@ -111,12 +107,8 @@ export function orderedRef<T extends unknown[], S extends ModelArray = ModelArra
  * @param options - Optional state options for the reference
  * @returns A VariableRef containing the flat array
  */
-export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
-  init: T,
-  options?: StateOptions<S>
-): VariableRef<T> {
-  const state = anchor.flat(init, options);
-  return variableRef(state);
+export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(init: T, options?: StateOptions<S>): T {
+  return anchor.flat(init, options);
 }
 
 /**
@@ -133,7 +125,6 @@ export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
 export function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): VariableRef<T> {
-  const state = anchor.raw(init, options);
-  return variableRef(state);
+): T {
+  return anchor.raw(init, options);
 }

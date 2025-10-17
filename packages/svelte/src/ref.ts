@@ -1,5 +1,5 @@
-import type { ConstantRef, RefSubscriber, StateRef, VariableRef } from './types.js';
-import { anchor, type StateController, subscribe as derive } from '@anchorlib/core';
+import type { ConstantRef, StateRef, VariableRef } from './types.js';
+import { anchor } from '@anchorlib/core';
 import { onDestroy } from 'svelte';
 
 export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>();
@@ -38,85 +38,35 @@ export function variableRef<T>(init: T, constant: true): ConstantRef<T>;
  * @returns A readable reference object with subscribe and publish capabilities
  */
 export function variableRef<T>(init: T, constant?: boolean) {
-  const subscribers = new Set<RefSubscriber<T>>();
-  const stateRef = anchor({ value: init }, { recursive: true });
-  const controller = derive.resolve(stateRef) as StateController;
-
-  let leaveState: ((destroy?: boolean) => void) | undefined = undefined;
+  const valueRef = anchor({ value: init }, { recursive: true });
 
   const set = (value: T) => {
     // Ignore if the value is the same.
-    if (constant === true || value === stateRef.value) return;
+    if (constant === true || value === valueRef.value) return;
 
-    stateRef.value = value;
-  };
-
-  const subscribe = (handler: RefSubscriber<T>) => {
-    if (!leaveState) {
-      leaveState = controller.subscribe.all((_, event) => {
-        if (event.type !== 'init' && !event.error) {
-          publish();
-        }
-      });
-    }
-
-    handler(stateRef.value);
-    subscribers.add(handler);
-
-    return () => {
-      subscribers.delete(handler);
-
-      if (!subscribers.size) {
-        leaveState?.();
-        leaveState = undefined;
-      }
-    };
-  };
-
-  const publish = () => {
-    for (const subscriber of subscribers) {
-      subscriber(stateRef.value);
-    }
+    valueRef.value = value;
   };
 
   onDestroy(() => {
-    // Clear the subscribers.
-    subscribers.clear();
-    // Leave the ref state.
-    leaveState?.();
-    leaveState = undefined;
-
     // Remove the ref from the registry.
-    REF_REGISTRY.delete(ref as ConstantRef<unknown>);
+    REF_REGISTRY.delete(stateRef as ConstantRef<unknown>);
 
     // Destroy the ref state.
-    anchor.destroy(stateRef);
+    anchor.destroy(valueRef);
   });
 
-  const ref = {
+  const stateRef = {
     get value() {
-      return stateRef.value;
+      return valueRef.value;
     },
     set value(value: T) {
       set(value);
     },
   } as never;
 
-  Object.defineProperties(ref, {
-    publish: {
-      value: publish,
-    },
-    subscribe: {
-      value: subscribe,
-    },
-    set: {
-      value: set,
-    },
-  });
+  REF_REGISTRY.set(stateRef as ConstantRef<unknown>, valueRef);
 
-  REF_REGISTRY.set(ref as ConstantRef<unknown>, stateRef);
-
-  return ref as ConstantRef<T>;
+  return stateRef as ConstantRef<T>;
 }
 
 /**

@@ -1,7 +1,7 @@
-import { type Readable } from 'svelte/store';
-import { createObserver } from '@anchorlib/core';
-import type { RefSubscriber } from './types.js';
+import { anchor, createObserver } from '@anchorlib/core';
+import type { ConstantRef, StateRef } from './types.js';
 import { onDestroy } from 'svelte';
+import { REF_REGISTRY } from './ref.js';
 
 /**
  * Creates a Svelte readable store that observes a reactive function and updates its subscribers
@@ -12,31 +12,28 @@ import { onDestroy } from 'svelte';
  * @param observe - A function that returns the value to be observed
  * @returns A Svelte readable store containing the observed value
  */
-export function observedRef<R>(observe: () => R): Readable<R> {
-  const subscribers = new Set<RefSubscriber<R>>();
+export function observedRef<R>(observe: () => R): ConstantRef<R> {
   const observer = createObserver(() => {
     update();
   });
 
-  let current = observer.run(observe);
+  const valueRef = anchor({ value: observer.run(observe) }, { recursive: false }) as StateRef<R>;
+  const stateRef = {
+    get value() {
+      return valueRef.value;
+    },
+  } as ConstantRef<R>;
+
+  REF_REGISTRY.set(stateRef, valueRef);
 
   const update = () => {
-    current = observer.run(observe);
-    subscribers.forEach((handler) => handler(current));
-  };
-
-  const subscribe = (handler: RefSubscriber<R>) => {
-    handler(current);
-    subscribers.add(handler);
-
-    return () => {
-      subscribers.delete(handler);
-    };
+    valueRef.value = observer.run(observe);
   };
 
   onDestroy(() => {
     observer.destroy();
+    REF_REGISTRY.delete(stateRef);
   });
 
-  return { subscribe, set: () => {} } as Readable<R>;
+  return stateRef;
 }

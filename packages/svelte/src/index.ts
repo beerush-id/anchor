@@ -1,3 +1,5 @@
+import './reactive.js';
+
 export * from './anchor.js';
 export * from './derive.js';
 export * from './fetch.js';
