@@ -179,7 +179,7 @@ const Profile = () => {
 };
 ```
 
-```svelte [Svelte]
+```sveltehtml [Svelte]
 <script>
   import { immutableRef } from '@anchorlib/svelte';
 
@@ -192,13 +192,13 @@ const Profile = () => {
   const changeName = () => {
     // This line will trigger a warning in your IDE, a build error,
     // and a runtime error log without crashing the app.
-    $profile.name = 'Jane Smith';
+    profile.name = 'Jane Smith';
   }
 </script>
 
 <div>
-  <h1>{$profile.name}</h1>
-  <p>Email: {$profile.email}</p>
+  <h1>{profile.name}</h1>
+  <p>Email: {profile.email}</p>
 </div>
 ```
 
@@ -215,7 +215,7 @@ const profile = immutableRef({
 const changeName = () => {
   // This line will trigger a warning in your IDE, a build error,
   // and a runtime error log without crashing the app.
-  profile.name = 'Jane Smith';
+  profile.value.name = 'Jane Smith';
 };
 </script>
 
@@ -318,7 +318,7 @@ const Profile = () => {
 };
 ```
 
-```svelte [Svelte]
+```sveltehtml [Svelte]
 <script>
   import { immutableRef, writableRef } from '@anchorlib/svelte';
 
@@ -333,16 +333,16 @@ const Profile = () => {
 
   const changeName = () => {
     // This is allowed because 'name' is in the contract.
-    $writer.name = 'Jane Smith';
+    writer.name = 'Jane Smith';
 
     // This will trigger a warning because 'email' is not in the contract.
-    $writer.email = 'new@example.com';
+    writer.email = 'new@example.com';
   };
 </script>
 
 <div>
-  <h1>{$profile.name}</h1>
-  <p>Email: {$profile.email}</p>
+  <h1>{profile.name}</h1>
+  <p>Email: {profile.email}</p>
   <button on:click={changeName}>Change Name</button>
 </div>
 ```
@@ -476,7 +476,7 @@ const Profile = () => {
 };
 ```
 
-```svelte [Svelte]
+```sveltehtml [Svelte]
 <script>
   import { z } from 'zod';
   import { modelRef } from '@anchorlib/svelte';
@@ -493,16 +493,16 @@ const Profile = () => {
 
   const changeName = () => {
     // This is a valid change.
-    $user.name = 'Jane Smith';
+    user.name = 'Jane Smith';
 
     // This will trigger a validation error and the change will be ignored.
-    $user.name = 'J';
+    user.name = 'J';
   };
 </script>
 
 <div>
-  <h1>{$user.name}</h1>
-  <p>Email: {$user.email}</p>
+  <h1>{user.name}</h1>
+  <p>Email: {user.email}</p>
   <button on:click={changeName}>Change Name</button>
 </div>
 ```

@@ -167,47 +167,36 @@ export const state = anchor({
 import { useObserved } from '@anchorlib/react';
 import { state } from '../state.js';
 
-const Counter = () => {
-  // Observe the count value.
-  const count = useObserved(() => state.count);
-
+const Counter = observer(() => {
   return (
     <div>
-      <p>Count: {count}</p>
+      <p>Count: {state.count}</p>
       <button onClick={() => state.count++}>Increment</button>
     </div>
   );
-};
+});
 ```
 
 ```jsx [SolidCounter.jsx]
-import { observedRef } from '@anchorlib/solid';
 import { state } from '../state.js';
 
 const Counter = () => {
-  // Observe the count value.
-  const count = observedRef(() => state.count);
-
   return (
     <div>
-      <p>Count: {count}</p>
+      <p>Count: {state.count}</p>
       <button onClick={() => state.count++}>Increment</button>
     </div>
   );
 };
 ```
 
-```svelte [Counter.svelte]
+```sveltehtml [Counter.svelte]
 <script>
-  import { observedRef } from '@anchorlib/svelte';
   import { state } from '../state.js';
-
-  // Observe the count value.
-  const count = observedRef(() => state.count);
 </script>
 
 <div>
-  <p>Count: {$count}</p>
+  <p>Count: {state.count}</p>
   <button onclick={() => state.count++}>Increment</button>
 </div>
 ```

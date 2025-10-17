@@ -40,7 +40,7 @@ const App = observer(() => (
     iconAlt: 'SolidJS Logo',
     lang: 'tsx',
     code: `
-import '@anchorlib/solid/binding';
+import '@anchorlib/solid/reactive';
 import { settings, toggleTheme } from '../lib/state.ts';
 
 const App = () => (
@@ -58,13 +58,11 @@ const App = () => (
     lang: 'svelte',
     code: `
 <script lang="ts">
-  import { observedRef } from '@anchorlib/svelte';
+  import '@anchorlib/svelte/reactive';
   import { settings, toggleTheme } from '../lib/state.ts';
-  
-  const theme = observedRef(() => settings.theme);
 </script>
 
-<div>{$theme}</div>
+<div>{settings.theme}</div>
 <button onclick={toggleTheme}>Toggle</button>
 `,
   },
