@@ -8,7 +8,7 @@
 		email: z.email('Email is required and must be a valid format.')
 	});
 	const profile = modelRef(schema, { name: '', email: '' }, { silentInit: true });
-	const profileError = exceptionRef($profile);
+	const profileError = exceptionRef(profile);
 
 	const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
 		e.preventDefault();
@@ -27,30 +27,30 @@
 		<label class="flex flex-col gap-1">
 			<span class="text-sm text-gray-500">Name</span>
 			<input
-				bind:value={$profile.name}
+				bind:value={profile.name}
 				placeholder="Enter your name"
 				class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
 			/>
-			{#if $profileError.errors.name}
-				<span class="text-xs text-red-500">{$profileError.errors.name.message}</span>
+			{#if profileError.errors.name}
+				<span class="text-xs text-red-500">{profileError.errors.name.message}</span>
 			{/if}
 		</label>
 		<label class="flex flex-col gap-1">
 			<span class="text-sm text-gray-500">Email</span>
 			<input
-				bind:value={$profile.email}
+				bind:value={profile.email}
 				placeholder="Enter your email"
 				class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
 			/>
-			{#if $profileError.errors.email}
-				<span class="text-xs text-red-500">{$profileError.errors.email.message}</span>
+			{#if profileError.errors.email}
+				<span class="text-xs text-red-500">{profileError.errors.email.message}</span>
 			{/if}
 		</label>
 	</div>
 	<div class="form-control flex items-center gap-4">
 		<button
 			type="submit"
-			disabled={!$profile.name || !$profile.email}
+			disabled={!profile.name || !profile.email}
 			class="w-full rounded-lg bg-blue-500 py-2 text-white hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
 		>
 			Submit

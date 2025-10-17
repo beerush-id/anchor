@@ -1,9 +1,7 @@
 <script lang="ts">
 	import Plus from '../icons/Plus.svelte';
-	import { flashNode } from '../../node.svelte.js';
 	import { type TodoRecList, todoTable } from '../../todos.js';
 	import type { KeyboardEventHandler } from 'svelte/elements';
-	import { anchorRef } from '@anchorlib/svelte';
 
 	let newText = $state('');
 
@@ -21,12 +19,9 @@
 		if (e.key !== 'Enter') return;
 		handleAdd();
 	};
-
-	let formRef = anchorRef<HTMLElement | null>(null);
-	flashNode(formRef);
 </script>
 
-<div bind:this={$formRef} class="todo-form mb-6">
+<div class="todo-form mb-6">
 	<div class="flex gap-2">
 		<input
 			type="text"
