@@ -30,8 +30,7 @@ state management even more intuitive and robust.
 
 ## Why Anchor for Svelte?
 
-Svelte's reactivity system is built on signals and effects, providing excellent performance through fine-grained updates.
-However, as applications grow in complexity, developers often face challenges:
+Svelte's new rune-based reactivity system provides excellent performance through fine-grained updates. However, as applications grow in complexity, developers often face challenges:
 
 - Managing complex state sharing across components
 - Ensuring true immutability without performance penalties
