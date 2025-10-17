@@ -12,76 +12,70 @@ The primary function for creating and managing reactive state within Svelte comp
 
 ```typescript
 // Basic usage
-function anchorRef<T, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): VariableRef<T>;
+function anchorRef<T, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): T;
 
 // With schema
 function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema?: S,
   options?: StateOptions
-): VariableRef<ModelOutput<S>>;
+): ModelOutput<S>;
 
 // With schema and immutable option
 function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema?: S,
   options?: StateOptions & { immutable: true }
-): VariableRef<Immutable<ModelOutput<S>>>;
+): Immutable<ModelOutput<S>>;
 ```
 
 - `init`: The initial value for the state.
 - `schema` (optional): Schema to validate and structure the state.
 - `options` (optional): Configuration options for the state.
-- **Returns**: A [VariableRef](#variableref-t) containing the reactive state.
+- **Returns**: A reactive state.
 
 ### `orderedRef()`
 
-Creates a writable reference that maintains a sorted array state based on a comparison function.
+Creates a reactive state that maintains a sorted array state based on a comparison function.
 
 ```typescript
 function orderedRef<T extends unknown[], S extends ModelArray = ModelArray>(
   init: T,
   compare: (a: T[number], b: T[number]) => number,
   options?: StateOptions<S>
-): VariableRef<T>;
+): T;
 ```
 
-- `init`: The initial array value for the reference.
+- `init`: The initial array value for the state.
 - `compare`: A function that defines the sort order of elements.
-- `options` (optional): Optional state options for the reference.
-- **Returns**: A [VariableRef](#variableref-t) containing the sorted array.
+- `options` (optional): Optional state options for the state.
+- **Returns**: A reactive state containing the sorted array.
 
 ### `flatRef()`
 
-Creates a writable reference that maintains a flat array state.
+Creates a reactive state that maintains a flat array state.
 
 ```typescript
-function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
-  init: T,
-  options?: StateOptions<S>
-): VariableRef<T>;
+function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(init: T, options?: StateOptions<S>): T;
 ```
 
-- `init`: The initial array value for the reference.
-- `options` (optional): Optional state options for the reference.
-- **Returns**: A [VariableRef](#variableref-t) containing the flat array.
+- `init`: The initial array value for the state.
+- `options` (optional): Optional state options for the state.
+- **Returns**: A reactive state containing the flat array.
 
 ### `rawRef()`
 
-Creates a writable reference that mutates the underlying object.
+Creates a reactive state that mutates the underlying object.
 
 Unless you set the global options to `cloned: true`, you don't want to use this.
 
 ```typescript
-function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
-  init: T,
-  options?: StateOptions<S>
-): VariableRef<T>;
+function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(init: T, options?: StateOptions<S>): T;
 ```
 
-- `init`: The initial value for the reference.
-- `options` (optional): Optional state options for the reference.
-- **Returns**: A [VariableRef](#variableref-t) containing the raw value.
+- `init`: The initial value for the state.
+- `options` (optional): Optional state options for the state.
+- **Returns**: A reactive state containing the raw value.
 
 ## Data Integrity APIs
 
@@ -89,7 +83,7 @@ These APIs provide schema-based validation and data integrity features for your 
 
 ### `modelRef()`
 
-Creates a model reference with mutable state.
+Creates a model with mutable state.
 
 ```typescript
 // Mutable model
@@ -97,20 +91,20 @@ function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options?: StateBaseOptions
-): VariableRef<ModelOutput<S>>;
+): ModelOutput<S>;
 
 // Immutable model
 function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
   init: T,
   options: StateBaseOptions & { immutable: true }
-): VariableRef<ImmutableOutput<S>>;
+): ImmutableOutput<S>;
 ```
 
 - `schema`: The schema defining the structure and types of the model.
 - `init`: The initial data for the model.
 - `options` (optional): Optional configuration for the model state.
-- **Returns**: A [VariableRef](#variableref-t) containing the model output.
+- **Returns**: A model output.
 
 ## Immutability APIs
 
@@ -118,46 +112,43 @@ These APIs provide immutability features for your state, ensuring controlled mut
 
 ### `immutableRef()`
 
-Creates an immutable ref from a state object.
+Creates an immutable state from a state object.
 
 ```typescript
 // Basic usage
 function immutableRef<T extends State, S extends LinkableSchema = LinkableSchema>(
   init: T,
   options?: StateOptions<S>
-): VariableRef<Immutable<T>>;
+): Immutable<T>;
 
 // With schema
 function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
   schema: S,
   options?: StateBaseOptions
-): VariableRef<ImmutableOutput<S>>;
+): ImmutableOutput<S>;
 ```
 
 - `init`: The initial state object.
 - `schema` (optional): The linkable schema.
 - `options` (optional): Optional state options.
-- **Returns**: A [VariableRef](#variableref-t) containing the immutable state.
+- **Returns**: An immutable state.
 
 ### `writableRef()`
 
-Creates a writable ref from a state object.
+Creates a writable state from a state object.
 
 ```typescript
 // Basic usage
-function writableRef<T extends State>(state: T): ConstantRef<Mutable<T>>;
+function writableRef<T extends State>(state: T): Mutable<T>;
 
 // With contracts
-function writableRef<T extends State, K extends MutationKey<T>[]>(
-  state: T,
-  contracts: K
-): VariableRef<MutablePart<T, K>>;
+function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts: K): MutablePart<T, K>;
 ```
 
 - `state`: The initial state object.
 - `contracts` (optional): A list of mutation keys.
-- **Returns**: A [ConstantRef](#constantref-t) containing the mutable state.
+- **Returns**: A mutable state.
 
 ## History APIs
 
@@ -165,15 +156,15 @@ These APIs provide undo/redo functionality for your state.
 
 ### `historyRef()`
 
-Creates a readable Svelte store that reflects the history state of a given Anchor state.
+Creates a reactive state that reflects the history state of a given Anchor state.
 
 ```typescript
-function historyRef<T extends State>(state: T, options?: HistoryOptions): ConstantRef<HistoryState>;
+function historyRef<T extends State>(state: T, options?: HistoryOptions): HistoryState;
 ```
 
 - `state`: The initial Anchor state.
 - `options` (optional): Optional history options.
-- **Returns**: A [ConstantRef](#constantref-t) containing the [HistoryState](#historystate).
+- **Returns**: A [HistoryState](/apis/core/types.html#historystate).
 
 ## Request APIs
 
@@ -181,41 +172,38 @@ These APIs provide reactive data fetching and streaming functionalities.
 
 ### `fetchRef()`
 
-Creates a readable Svelte store that manages the state of a fetch request.
+Creates a reactive state that manages the state of a fetch request.
 
 ```typescript
 // GET or DELETE
-function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): ConstantRef<FetchState<R>>;
+function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 // POST, PUT, PATCH
-function fetchRef<R, P>(
-  init: R,
-  options: FetchOptions & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): ConstantRef<FetchState<R>>;
+function fetchRef<R, P>(init: R, options: FetchOptions & { method: 'POST' | 'PUT' | 'PATCH'; body: P }): FetchState<R>;
 ```
 
 - `init`: The initial value for the fetch state.
 - `options`: The options for the fetch request, including the URL and method.
-- **Returns**: A [ConstantRef](#constantref-t) containing the [FetchState](#fetchstate).
+- **Returns**: A [FetchState](/apis/core/types.html#fetchstate).
 
 ### `streamRef()`
 
-Creates a readable Svelte store that manages the state of a streaming request.
+Creates a reactive state that manages the state of a streaming request.
 
 ```typescript
 // GET or DELETE
-function streamRef<R>(init: R, options: StreamOptions<R> & { method: 'GET' | 'DELETE' }): ConstantRef<FetchState<R>>;
+function streamRef<R>(init: R, options: StreamOptions<R> & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 // POST, PUT, PATCH
 function streamRef<R, P>(
   init: R,
   options: StreamOptions<R> & { method: 'POST' | 'PUT' | 'PATCH'; body: P }
-): ConstantRef<FetchState<R>>;
+): FetchState<R>;
 ```
 
 - `init`: The initial value for the fetch state.
 - `options`: The options for the stream request, including the URL and method.
-- **Returns**: A [ConstantRef](#constantref-t) containing the [FetchState](#fetchstate).
+- **Returns**: A [FetchState](/apis/core/types.html#fetchstate).
 
 ## Reference APIs
 
@@ -280,8 +268,6 @@ A reference object that allows getting and setting the value.
 ```typescript
 type ConstantRef<T> = {
   get value(): T;
-  publish(): void;
-  subscribe(fn: RefSubscriber<T>): RefUnsubscribe;
 };
 ```
 

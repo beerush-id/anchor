@@ -8,20 +8,20 @@ These APIs synchronize reactive state with the browser's `localStorage` for data
 
 ### `persistentRef()`
 
-Creates a persistent reactive reference using the provided name, initial value, and options. The persistentRef is tied to the browser's local storage, meaning its value will persist across page reloads and browser sessions until explicitly cleared.
+Creates a persistent reactive state using the provided name, initial value, and options. The persistentRef is tied to the browser's local storage, meaning its value will persist across page reloads and browser sessions until explicitly cleared.
 
 ```typescript
 function persistentRef<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
   options?: StateOptions<S>
-): ConstantRef<T>;
+): T;
 ```
 
 - `name`: A unique string identifier for the local storage key.
 - `init`: The initial value to be stored in local storage.
 - `options` (optional): Optional configuration for state behavior and validation schema.
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) that provides reactive access to the stored value.
+- **Returns**: A reactive state that provides reactive access to the stored value.
 
 ## Session Storage APIs
 
@@ -29,20 +29,20 @@ These APIs synchronize reactive state with the browser's `sessionStorage` for da
 
 ### `sessionRef()`
 
-Creates a session-scoped reactive reference using the provided name, initial value, and options. The sessionRef is tied to the browser's session storage, meaning its value will persist across page reloads but not after the session ends (e.g., tab/window closed).
+Creates a session-scoped reactive state using the provided name, initial value, and options. The sessionRef is tied to the browser's session storage, meaning its value will persist across page reloads but not after the session ends (e.g., tab/window closed).
 
 ```typescript
 function sessionRef<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,
   init: T,
   options?: StateOptions<S>
-): ConstantRef<T>;
+): T;
 ```
 
 - `name`: A unique string identifier for the session storage key.
 - `init`: The initial value to be stored in session storage.
 - `options` (optional): Optional configuration for state behavior and validation schema.
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) that provides reactive access to the stored value.
+- **Returns**: A reactive state that provides reactive access to the stored value.
 
 ## Key-Value Storage APIs
 
@@ -50,17 +50,17 @@ These APIs provide access to IndexedDB-based key-value storage with reactive sta
 
 ### `kvRef()`
 
-Creates a reactive reference to a key-value store state.
+Creates a reactive key-value store state.
 
 This function initializes a key-value store with the given name and initial value, and automatically cleans up the store subscription when the component is destroyed.
 
 ```typescript
-function kvRef<T extends Storable>(name: string, init: T): ConstantRef<KVState<T>>;
+function kvRef<T extends Storable>(name: string, init: T): KVState<T>;
 ```
 
 - `name`: The unique identifier for the key-value store
 - `init`: The initial value for the store
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) containing the [KVState](#kvstate)
+- **Returns**: A [KVState](/apis/storage/types.html#kvstate) containing the key-value store state.
 
 ## Table Storage APIs
 
@@ -99,50 +99,46 @@ function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
 Gets a specific row from the table by its ID.
 
 ```typescript
-function get(id: string): ConstantRef<RowState<R>>;
+function get(id: string): RowState<R>;
 ```
 
 - `id`: The ID of the row to retrieve.
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) containing the [RowState](#rowstate)
+- **Returns**: A [RowState](/apis/storage/types.html#rowstate)
 
 #### `add()`
 
 Adds a new row to the table.
 
 ```typescript
-function add(payload: T): ConstantRef<RowState<R>>;
+function add(payload: T): RowState<R>;
 ```
 
 - `payload`: The data to add as a new row.
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) containing the [RowState](#rowstate)
+- **Returns**: A [RowState](/apis/storage/types.html#rowstate)
 
 #### `remove()`
 
 Removes a row from the table by its ID.
 
 ```typescript
-function remove(id: string): ConstantRef<RowState<R>>;
+function remove(id: string): RowState<R>;
 ```
 
 - `id`: The ID of the row to remove.
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) containing the [RowState](#rowstate)
+- **Returns**: A [RowState](/apis/storage/types.html#rowstate)
 
 #### `list()`
 
 Gets a list of rows from the table based on filter criteria.
 
 ```typescript
-function list(
-  filter?: IDBKeyRange | FilterFn<R>,
-  limit?: number,
-  direction?: IDBCursorDirection
-): ConstantRef<RowListState<R>>;
+function list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection): RowListState<R>;
 ```
 
 - `filter` (optional): Filter criteria (IDBKeyRange or custom filter function).
 - `limit` (optional): Limit on the number of rows to retrieve.
 - `direction` (optional): Cursor direction for sorting (e.g., 'next', 'prev').
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) containing the [RowListState](#rowliststate)
+- **Returns**: A [RowListState](/apis/storage/types.html#rowliststate)
 
 #### `listByIndex()`
 
@@ -154,14 +150,14 @@ function listByIndex(
   filter?: IDBKeyRange | FilterFn<R>,
   limit?: number,
   direction?: IDBCursorDirection
-): ConstantRef<RowListState<R>>;
+): RowListState<R>;
 ```
 
 - `name`: The name of the index to use for querying.
 - `filter` (optional): Filter criteria (IDBKeyRange or custom filter function).
 - `limit` (optional): Limit on the number of rows to retrieve.
 - `direction` (optional): Cursor direction for sorting (e.g., 'next', 'prev').
-- **Returns**: A [ConstantRef](/apis/svelte/initialization.html#constantref-t) containing the [RowListState](#rowliststate)
+- **Returns**: A [RowListState](/apis/storage/types.html#rowliststate)
 
 #### `seed()`
 
@@ -202,20 +198,16 @@ Represents the state of a list of rows in a table.
 
 ```typescript
 interface TableRef<T extends Rec, R extends Row<T> = Row<T>> {
-  get(id: string): ConstantRef<RowState<R>>;
-  add(payload: T): ConstantRef<RowState<R>>;
-  remove(id: string): ConstantRef<RowState<R>>;
-  list(
-    filter?: IDBKeyRange | FilterFn<R>,
-    limit?: number,
-    direction?: IDBCursorDirection
-  ): ConstantRef<RowListState<R>>;
+  get(id: string): RowState<R>;
+  add(payload: T): RowState<R>;
+  remove(id: string): RowState<R>;
+  list(filter?: IDBKeyRange | FilterFn<R>, limit?: number, direction?: IDBCursorDirection): RowListState<R>;
   listByIndex(
     name: keyof R,
     filter?: IDBKeyRange | FilterFn<R>,
     limit?: number,
     direction?: IDBCursorDirection
-  ): ConstantRef<RowListState<R>>;
+  ): RowListState<R>;
   seed<T extends R[]>(seeds: T): this;
   table(): ReactiveTable<T>;
 }

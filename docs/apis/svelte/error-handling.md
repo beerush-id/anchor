@@ -7,8 +7,8 @@ These Svelte functions are used for capturing and managing exceptions from a rea
 Captures and manages exceptions (e.g., validation errors) from a reactive state, providing a reactive object of errors keyed by property path.
 
 ```typescript
-function exceptionRef<T extends ObjLike | Array<unknown>>(state: T | VariableRef<T>): ConstantRef<StateExceptionMap<T>>;
+function exceptionRef<T extends ObjLike | Array<unknown>>(state: T): StateExceptionMap<T>;
 ```
 
 - `state`: The reactive state to capture exceptions from.
-- **Returns**: A ConstantRef containing current exception states.
+- **Returns**: A `StateExceptionMap` containing current exception states.

@@ -4,19 +4,15 @@ These Svelte functions are used for deriving computed values or creating reactiv
 
 ## `derivedRef()`
 
-Creates a derived store from a state or a writable reference with optional transformation.
+Creates a derived state from a source state with an optional transformation.
 
 ```typescript
-// Basic derivation
-function derivedRef<T>(state: T | VariableRef<T>, recursive?: boolean): Readable<T>;
-
-// With transformation
-function derivedRef<T, R>(state: T | VariableRef<T>, transform: (current: T) => R): Readable<R>;
+function derivedRef<T, R>(state: T, derive: (current: T) => R): ConstantRef<R>;
 ```
 
-- `state`: The input state or writable reference.
-- `transformRecursive` (optional): An optional function that transforms the current state value, or a boolean indicating whether to recursively derive the state.
-- **Returns**: A Svelte store-compatible object that holds the derived value.
+- `state`: The source state.
+- `derive`: A function that transforms the current state value.
+- **Returns**: A read-only reference containing the derived state value.
 
 ### Example
 
