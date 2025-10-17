@@ -4,13 +4,13 @@ import { onDestroy } from 'svelte';
 import { REF_REGISTRY } from './ref.js';
 
 /**
- * Creates a Svelte readable store that observes a reactive function and updates its subscribers
+ * Creates a read-only reference that observes a reactive function and updates its value
  * when the observed value changes. The function automatically handles observer lifecycle
  * and cleanup using Svelte's onDestroy hook.
  *
  * @template R - The type of the observed value
  * @param observe - A function that returns the value to be observed
- * @returns A Svelte readable store containing the observed value
+ * @returns A read-only reference containing the observed value
  */
 export function observedRef<R>(observe: () => R): ConstantRef<R> {
   const observer = createObserver(() => {

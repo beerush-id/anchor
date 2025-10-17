@@ -4,13 +4,13 @@ import { onDestroy } from 'svelte';
 import { REF_REGISTRY } from './ref.js';
 
 /**
- * Creates a derived store from a state or a writable reference with optional transformation.
+ * Creates a derived state from a source state with an optional transformation.
  *
  * @template T - The type of the input state
  * @template R - The type of the transformed output
- * @param state - The input state or writable reference
- * @param derive - An function that transforms the current state value
- * @returns A readable store containing the state value or transformed value
+ * @param state - The source state
+ * @param derive - A function that transforms the current state value
+ * @returns A read-only reference containing the derived state value
  */
 export function derivedRef<T, R>(state: T, derive: (current: T) => R): ConstantRef<R> {
   const valueRef = anchor({}, { recursive: false }) as StateRef<R>;

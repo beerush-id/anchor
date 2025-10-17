@@ -13,13 +13,13 @@ import {
 } from '@anchorlib/core';
 
 /**
- * Creates an immutable ref from a state object.
+ * Creates an immutable state from a state object.
  *
  * @template T The type of the state object.
  * @template S The type of the linkable schema.
  * @param init The initial state object.
  * @param options Optional state options.
- * @returns A VariableRef containing the immutable state.
+ * @returns An immutable state.
  */
 export function immutableRef<T extends State, S extends LinkableSchema = LinkableSchema>(
   init: T,
@@ -27,14 +27,14 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
 ): Immutable<T>;
 
 /**
- * Creates an immutable ref from a model input and a schema.
+ * Creates an immutable state from a model input and a schema.
  *
  * @template S The type of the linkable schema.
  * @template T The type of the model input.
  * @param init The initial model input.
  * @param schema The linkable schema.
  * @param options Optional base state options.
- * @returns A VariableRef containing the immutable output of the schema.
+ * @returns An immutable state.
  */
 export function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T,
@@ -52,22 +52,22 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
 }
 
 /**
- * Creates a writable ref from a state object.
+ * Creates a writable state from a state object.
  *
  * @template T The type of the state object.
  * @param state The initial state object.
- * @returns A ConstantRef containing the mutable state.
+ * @returns A mutable state.
  */
 export function writableRef<T extends State>(state: T): Mutable<T>;
 
 /**
- * Creates a writable ref from a state object and a list of contracts.
+ * Creates a writable state from a state object and a list of contracts.
  *
  * @template T The type of the state object.
  * @template K The type of the mutation keys.
  * @param state The initial state object.
  * @param contracts A list of mutation keys.
- * @returns A ConstantRef containing the mutable part of the state.
+ * @returns A mutable part of the state.
  */
 export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts: K): MutablePart<T, K>;
 

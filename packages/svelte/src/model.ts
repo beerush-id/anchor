@@ -10,14 +10,14 @@ import {
 } from '@anchorlib/core';
 
 /**
- * Creates a model reference with mutable state.
+ * Creates a model with mutable state.
  *
  * @template S - The linkable schema type
  * @template T - The model input type that extends the schema
  * @param schema - The schema to use for the model
  * @param init - The initial value for the model
  * @param options - Optional state configuration
- * @returns A variable reference containing the model output
+ * @returns A model output.
  */
 export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
@@ -26,14 +26,14 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ModelOutput<S>;
 
 /**
- * Creates a model reference with immutable state.
+ * Creates a model with immutable state.
  *
  * @template S - The linkable schema type
  * @template T - The model input type that extends the schema
  * @param schema - The schema to use for the model
  * @param init - The initial value for the model
  * @param options - State configuration with immutable flag set to true
- * @returns A variable reference containing the immutable output
+ * @returns An immutable model output.
  */
 export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
   schema: S,
@@ -50,11 +50,11 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 }
 
 /**
- * Creates a constant reference that maps exceptions for a given state object or array.
+ * Creates a state that maps exceptions for a given state object or array.
  *
  * @template T - The type of the input state, must be an object-like or array type
  * @param state - The input state object or array to create exception mappings for
- * @returns A ConstantRef containing the StateExceptionMap for the provided state
+ * @returns A StateExceptionMap for the provided state.
  */
 export function exceptionRef<T extends ObjLike | Array<unknown>>(state: T): StateExceptionMap<T> {
   return anchor.catch(state);

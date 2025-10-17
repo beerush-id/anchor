@@ -3,7 +3,7 @@ import { session } from '@anchorlib/storage';
 import { onDestroy } from 'svelte';
 
 /**
- * Creates a session-scoped reactive reference using the provided name, initial value, and options.
+ * Creates a session-scoped reactive state using the provided name, initial value, and options.
  * The sessionRef is tied to the browser's session storage, meaning its value will persist
  * across page reloads but not after the session ends (e.g., tab/window closed).
  *
@@ -12,7 +12,7 @@ import { onDestroy } from 'svelte';
  * @param name - A unique string identifier for the session storage key.
  * @param init - The initial value to be stored in session storage.
  * @param options - Optional configuration for state behavior and validation schema.
- * @returns A WritableRef<T> that provides reactive access and modification capabilities.
+ * @returns A reactive state that provides reactive access and modification capabilities.
  */
 export function sessionRef<T extends ObjLike, S extends LinkableSchema = LinkableSchema>(
   name: string,

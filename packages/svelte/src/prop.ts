@@ -10,14 +10,14 @@ export type PropsRef<T extends Props> = {
 };
 
 /**
- * Creates a reactive reference object from the provided props.
+ * Creates a reactive state object from the provided props.
  * For each property in the input props:
- * - If the value is a State object, it will be converted to a derived ref using derivedRef
+ * - If the value is a State object, it will be converted to a derived state
  * - Otherwise, the value will be kept as is
  * @deprecated
  * @template T - The type of props extending Props
  * @param {T} props - The input props object containing KeyLike or State values
- * @returns {PropsRef<T>} A new object with State values converted to Refs
+ * @returns {PropsRef<T>} A new object with State values converted to reactive states
  */
 export function propsRef<T extends Props>(props: T): PropsRef<T> {
   return props as never as PropsRef<T>;
