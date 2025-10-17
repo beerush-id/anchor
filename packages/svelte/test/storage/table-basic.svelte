@@ -48,9 +48,9 @@
 {#if test === 'methods'}
   <span data-testid="method-check">{typeof tableRef.get}</span>
 {:else if test === 'get' || test === 'add' || test === 'remove'}
-  <span data-testid="row-state">{$rowState.data.id}</span>
+  <span data-testid="row-state">{rowState.data.id}</span>
 {:else if test === 'list' || test === 'listByIndex'}
-  <span data-testid="list-state">{$listState.data.length}</span>
+  <span data-testid="list-state">{listState.data.length}</span>
 {:else if test === 'seed'}
   <span data-testid="seed-check">seeded</span>
 {/if}

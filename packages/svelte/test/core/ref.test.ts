@@ -17,6 +17,7 @@ describe('Anchor Svelte - Ref System', () => {
         await button.click();
 
         expect(screen.getByTestId('state-value').textContent).toBe('43');
+        expect(screen.getByTestId('state-created').textContent).toBe('true');
         result.unmount();
       });
 

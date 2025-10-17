@@ -8,4 +8,4 @@
   const state = sessionRef(name, init, options);
 </script>
 
-<span data-testid="state-value">{$state.value.key}</span>
+<span data-testid="state-value">{state.key}</span>

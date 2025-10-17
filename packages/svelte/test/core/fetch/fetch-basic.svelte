@@ -6,4 +6,4 @@
   const state = fetchRef(initialData, options);
 </script>
 
-<span data-testid="data-name">{$state.data.name}</span>
+<span data-testid="data-name">{state.data.name}</span>

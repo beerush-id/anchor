@@ -7,4 +7,4 @@
   const state = kvRef(name, init);
 </script>
 
-<span data-testid="state-value">{$state.value}</span>
+<span data-testid="state-value">{state.data}</span>

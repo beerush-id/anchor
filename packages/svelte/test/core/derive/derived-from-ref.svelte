@@ -5,4 +5,4 @@
   const derivedValue = derivedRef(source, (s) => s.count * 2);
 </script>
 
-<span data-testid="derived-value">{$derivedValue}</span>
+<span data-testid="derived-value">{derivedValue.value}</span>

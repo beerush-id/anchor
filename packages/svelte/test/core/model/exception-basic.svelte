@@ -6,4 +6,4 @@
   const exception = exceptionRef(state);
 </script>
 
-<span data-testid="exception-errors">{Object.keys($exception.errors).length}</span>
+<span data-testid="exception-errors">{Object.keys(exception.errors).length}</span>

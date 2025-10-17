@@ -5,4 +5,4 @@
   const state = flatRef(initialArray);
 </script>
 
-<span data-testid="array-length">{$state.length}</span>
+<span data-testid="array-length">{state.length}</span>

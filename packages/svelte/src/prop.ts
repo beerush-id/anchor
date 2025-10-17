@@ -19,6 +19,6 @@ export type PropsRef<T extends Props> = {
  * @param {T} props - The input props object containing KeyLike or State values
  * @returns {PropsRef<T>} A new object with State values converted to reactive states
  */
-export function propsRef<T extends Props>(props: T): PropsRef<T> {
-  return props as never as PropsRef<T>;
+export function propsRef<T extends Props>(props: T): T {
+  return props as never;
 }

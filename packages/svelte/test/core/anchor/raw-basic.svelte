@@ -5,4 +5,4 @@
   const state = rawRef(initialValue);
 </script>
 
-<span data-testid="state-value">{$state.count}-{$state.name}</span>
+<span data-testid="state-value">{state.count}-{state.name}</span>

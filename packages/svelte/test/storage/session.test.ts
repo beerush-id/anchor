@@ -13,9 +13,7 @@ vi.mock('@anchorlib/storage', () => {
 });
 
 describe('Storage - Session', () => {
-  const mockSessionState = {
-    value: { key: 'value' },
-  };
+  const mockSessionState = { key: 'value' };
 
   beforeEach(() => {
     vi.clearAllMocks();

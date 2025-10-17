@@ -14,7 +14,7 @@ vi.mock('@anchorlib/storage', () => {
 
 describe('Storage - Persistent', () => {
   const mockPersistentState = {
-    value: { key: 'value' },
+    key: 'value',
   };
 
   beforeEach(() => {

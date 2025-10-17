@@ -14,8 +14,7 @@ vi.mock('@anchorlib/storage/db', () => {
 
 describe('Storage - KV', () => {
   const mockKvState = {
-    value: 'test-value',
-    set: vi.fn(),
+    data: 'test-value',
   };
 
   beforeEach(() => {

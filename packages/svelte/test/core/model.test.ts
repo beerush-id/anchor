@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import ModelBasic from './model/model-basic.svelte';
 import ExceptionBasic from './model/exception-basic.svelte';
-import ExceptionWithRef from './model/exception-with-ref.svelte';
+import ModelError from './model/model-error.svelte';
 
 describe('Anchor Svelte - Model', () => {
   describe('modelRef', () => {
@@ -23,16 +23,16 @@ describe('Anchor Svelte - Model', () => {
         expect(screen.getByTestId('exception-errors').textContent).toBe('0');
       });
 
-      it('should log error for passing ref to exceptionRef', () => {
+      it('should log error for invalid mutation', () => {
         vi.useFakeTimers();
 
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        render(ExceptionWithRef);
+        render(ModelError);
 
         vi.runAllTimers();
 
-        expect(screen.getByTestId('exception-errors').textContent).toBe('0');
+        expect(screen.getByTestId('exception-errors').textContent).toBe('42');
         expect(errorSpy).toHaveBeenCalled();
         errorSpy.mockRestore();
         vi.useRealTimers();

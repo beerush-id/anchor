@@ -11,4 +11,4 @@
   const state = modelRef(UserSchema, initialValue);
 </script>
 
-<span data-testid="state-value">{$state.name}-{$state.age}</span>
+<span data-testid="state-value">{state.name}-{state.age}</span>

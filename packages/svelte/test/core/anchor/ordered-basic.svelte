@@ -6,4 +6,4 @@
   const state = orderedRef(initialArray, compareFn);
 </script>
 
-<span data-testid="array-value">{$state.join(",")}</span>
+<span data-testid="array-value">{state.join(",")}</span>
