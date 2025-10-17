@@ -80,9 +80,9 @@ const Counter = () => {
 </script>
 
 <div>
-  <h1>{$state.title}</h1>
-  <p>Count: {$state.count}</p>
-  <button on:click={() => $state.count++}>Increment</button>
+  <h1>{state.title}</h1>
+  <p>Count: {state.count}</p>
+  <button on:click={() => state.count++}>Increment</button>
 </div>
 ```
 

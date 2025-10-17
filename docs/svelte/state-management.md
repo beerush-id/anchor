@@ -24,10 +24,10 @@ For component-specific state, you can create local state within your Svelte comp
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchorlib/svelte';
+  import { variableRef } from '@anchorlib/svelte';
 
   // Local state that's scoped to this component
-  const counter = anchorRef(0);
+  const counter = variableRef(0);
 
   const increment = () => {
     counter.value++;
@@ -35,7 +35,7 @@ For component-specific state, you can create local state within your Svelte comp
 </script>
 
 <button onclick={increment}>
-  Count: {$counter}
+  Count: {counter.value}
 </button>
 ```
 
@@ -100,7 +100,7 @@ One of the key advantages of Anchor over Svelte's built-in stores is its recursi
 
   // This works seamlessly with full reactivity at all levels
   const updateUserName = (newName) => {
-    complexState.value.user.profile.personal.name = newName;
+    complexState.user.profile.personal.name = newName;
   };
 </script>
 ```
@@ -120,11 +120,11 @@ While Anchor allows direct mutations for convenience, it also provides powerful 
   });
 
   // Create a writable version with specific contracts
-  const writer = writableRef(immutableState.value, ['count']);
+  const writer = writableRef(immutableState, ['count']);
 
   const updateCount = () => {
-    writer.value.count++; // This is allowed
-    // writer.value.message = 'New message'; // This would be restricted
+    writer.count++; // This is allowed
+    // writer.message = 'New message'; // This would be restricted
   };
 </script>
 ```
@@ -144,7 +144,7 @@ Anchor provides several ways to observe state changes, which is more flexible th
 
   // Observe specific computations
   const completedCount = observedRef(() => {
-    return items.value.filter(item => item.completed).length;
+    return items.filter(item => item.completed).length;
   });
 
   // Derived state with transformation
@@ -153,8 +153,8 @@ Anchor provides several ways to observe state changes, which is more flexible th
   });
 </script>
 
-<p>{$itemSummary}</p>
-<p>Completed items: {$completedCount}</p>
+<p>{itemSummary.value}</p>
+<p>Completed items: {completedCount.value}</p>
 ```
 
 ## Best Practices
@@ -177,8 +177,8 @@ Create specific observers for different parts of your state to minimize unnecess
   });
 
   // Separate observers for different parts
-  const userName = observedRef(() => state.value.user.name);
-  const loading = observedRef(() => state.value.ui.loading);
+  const userName = observedRef(() => state.user.name);
+  const loading = observedRef(() => state.ui.loading);
 </script>
 ```
 

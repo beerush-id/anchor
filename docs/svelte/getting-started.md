@@ -33,17 +33,17 @@ Let's build a simple counter to see how Anchor works with Svelte:
 ```sveltehtml
 
 <script>
-  import { anchorRef } from '@anchorlib/svelte';
+  import { variableRef } from '@anchorlib/svelte';
 
   // Create your reactive state with a simple primitive value
-  let count = anchorRef(0);
+  let count = variableRef(0);
 </script>
 
 <div>
-  <h1>Counter: {$count}</h1>
-  <button onclick={() => $count++}>Increment</button>
-  <button onclick={() => $count--}>Decrement</button>
-  <button onclick={() => $count = 0}>Reset</button>
+  <h1>Counter: {count.value}</h1>
+  <button onclick={() => count.value++}>Increment</button>
+  <button onclick={() => count.value--}>Decrement</button>
+  <button onclick={() => count.value = 0}>Reset</button>
 </div>
 ```
 
@@ -60,10 +60,10 @@ You can also work with objects and nested structures just as easily:
 
 <div>
   <h2>User Profile</h2>
-  <input bind:value="{$user.name}" placeholder="Name" />
+  <input bind:value={user.name} placeholder="Name" />
 
-  <p>Age: {$user.age}</p>
-  <button onclick={() => $user.age++}>$user.age++}>Increment Age</button>
+  <p>Age: {user.age}</p>
+  <button onclick={() => user.age++}>Increment Age</button>
 </div>
 ```
 
@@ -92,20 +92,20 @@ One of Anchor's key advantages over Svelte's built-in stores is its recursive re
   });
 
   const toggleTheme = () => {
-    $user.preferences.theme = $user.preferences.theme === 'dark' ? 'light' : 'dark';
+    user.preferences.theme = user.preferences.theme === 'dark' ? 'light' : 'dark';
   };
 </script>
 
 <div>
   <h2>User Profile</h2>
-  <input bind:value={$user.profile.name} placeholder="Name" />
-  <input bind:value={$user.profile.address.city} placeholder="City" />
+  <input bind:value={user.profile.name} placeholder="Name" />
+  <input bind:value={user.profile.address.city} placeholder="City" />
 
-  <p>Age: {$user.profile.age}</p>
+  <p>Age: {user.profile.age}</p>
 
-  <p>Theme: {$user.preferences.theme}</p>
+  <p>Theme: {user.preferences.theme}</p>
   <button onclick={toggleTheme}>
-    Switch to {$user.preferences.theme === 'dark' ? 'Light' : 'Dark'} Theme
+    Switch to {user.preferences.theme === 'dark' ? 'Light' : 'Dark'} Theme
   </button>
 </div>
 ```
@@ -131,28 +131,28 @@ One of Anchor's most powerful features is the ability to observe only specific p
   });
 
   // These observers only re-run when their specific dependencies change
-  const loading = observedRef(() => $appState.ui.loading);
-  const userCount = observedRef(() => $appState.data.users.length);
-  const postCount = observedRef(() => $appState.data.posts.length);
+  const loading = observedRef(() => appState.ui.loading);
+  const userCount = observedRef(() => appState.data.users.length);
+  const postCount = observedRef(() => appState.data.posts.length);
 
   const fetchData = async () => {
-    $appState.ui.loading = true;
+    appState.ui.loading = true;
 
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    $appState.data.users = [{ id: 1, name: 'John' }];
-    $appState.data.posts = [{ id: 1, title: 'Hello World' }];
-    $appState.ui.loading = false;
+    appState.data.users = [{ id: 1, name: 'John' }];
+    appState.data.posts = [{ id: 1, title: 'Hello World' }];
+    appState.ui.loading = false;
   };
 </script>
 
 <div>
-  {#if $loading}
+  {#if loading.value}
     <p>Loading...</p>
   {:else}
-    <p>Users: {$userCount}</p>
-    <p>Posts: {$postCount}</p>
+    <p>Users: {userCount.value}</p>
+    <p>Posts: {postCount.value}</p>
   {/if}
 
   <button onclick={fetchData}>Fetch Data</button>
@@ -182,44 +182,44 @@ Here's a more complex example showing how to work with forms using Anchor:
   const validate = () => {
     const errors = {};
 
-    if (!$formState.user.firstName) {
+    if (!formState.user.firstName) {
       errors.firstName = 'First name is required';
     }
 
-    if (!$formState.user.email) {
+    if (!formState.user.email) {
       errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test($formState.user.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(formState.user.email)) {
       errors.email = 'Email is invalid';
     }
 
-    $formState.errors = errors;
+    formState.errors = errors;
     return Object.keys(errors).length === 0;
   };
 
   const submitForm = () => {
     if (validate()) {
       // Process form submission
-      console.log('Submitting:', $formState.user);
-      $formState.submitted = true;
+      console.log('Submitting:', formState.user);
+      formState.submitted = true;
     }
   };
 
   const resetForm = () => {
-    $formState.user = {
+    formState.user = {
       firstName: '',
       lastName: '',
       email: '',
       age: 0,
     };
-    $formState.errors = {};
-    $formState.submitted = false;
+    formState.errors = {};
+    formState.submitted = false;
   };
 </script>
 
-{#if $formState.submitted}
+{#if formState.submitted}
   <div>
     <h2>Form Submitted Successfully!</h2>
-    <p>Welcome, {$formState.user.firstName}!</p>
+    <p>Welcome, {formState.user.firstName}!</p>
     <button onclick={resetForm}>Submit Another</button>
   </div>
 {:else}
@@ -227,27 +227,27 @@ Here's a more complex example showing how to work with forms using Anchor:
     <div>
       <label>
         First Name:
-        <input type="text" bind:value={$formState.user.firstName} />
+        <input type="text" bind:value={formState.user.firstName} />
       </label>
-      {#if $formState.errors.firstName}
-        <span class="error">{$formState.errors.firstName}</span>
+      {#if formState.errors.firstName}
+        <span class="error">{formState.errors.firstName}</span>
       {/if}
     </div>
 
     <div>
       <label>
         Email:
-        <input type="email" bind:value={$formState.user.email} />
+        <input type="email" bind:value={formState.user.email} />
       </label>
-      {#if $formState.errors.email}
-        <span class="error">{$formState.errors.email}</span>
+      {#if formState.errors.email}
+        <span class="error">{formState.errors.email}</span>
       {/if}
     </div>
 
     <div>
       <label>
         Age:
-        <input type="number" bind:value={$formState.user.age} />
+        <input type="number" bind:value={formState.user.age} />
       </label>
     </div>
 

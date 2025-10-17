@@ -34,10 +34,10 @@ With Anchor, you can observe specific parts of your state rather than entire obj
   });
 
   // Only re-runs when profile.name changes
-  const displayName = observedRef(() => userState.value.profile.name);
+  const displayName = observedRef(() => userState.profile.name);
 
   // Only re-runs when preferences.theme changes
-  const currentTheme = observedRef(() => userState.value.preferences.theme);
+  const currentTheme = observedRef(() => userState.preferences.theme);
 
   // Only re-runs when the number of notifications changes
   const notificationCount = observedRef(() => {
@@ -46,9 +46,9 @@ With Anchor, you can observe specific parts of your state rather than entire obj
   });
 </script>
 
-<h1>Welcome, {$displayName}!</h1>
-<div class="theme-{$currentTheme}">
-  <p>You have {$notificationCount} notifications</p>
+<h1>Welcome, {displayName.value}!</h1>
+<div class="theme-{currentTheme.value}">
+  <p>You have {notificationCount.value} notifications</p>
 </div>
 ```
 
@@ -68,16 +68,16 @@ Anchor promotes the DSV pattern that clearly separates responsibilities:
   const counterState = anchorRef({ count: 0 });
 
   // View - only re-renders when the observed data changes
-  const counterDisplay = observedRef(() => counterState.value.count);
+  const counterDisplay = observedRef(() => counterState.count);
 
   // Mutation - directly mutates the reactive state
   const increment = () => {
-    counterState.value.count++;
+    counterState.count++;
   };
 </script>
 
-<h1>Count: {$counterDisplay}</h1>
-<button onclick={increment}>Increment</button>
+<h1>Count: {counterDisplay.value}</h1>
+<button on:click={increment}>Increment</button>
 ```
 
 ## Performance Characteristics
@@ -98,17 +98,17 @@ Only observing components re-render, eliminating unnecessary updates:
   });
 
   // This only re-renders when ui.loading changes
-  const isLoading = observedRef(() => appState.value.ui.loading);
+  const isLoading = observedRef(() => appState.ui.loading);
 
   // This only re-renders when data.users changes
-  const userCount = observedRef(() => appState.value.data.users.length);
+  const userCount = observedRef(() => appState.data.users.length);
 </script>
 
-{#if $isLoading}
+{#if isLoading.value}
   <p>Loading...</p>
 {/if}
 
-<p>Users: {$userCount}</p>
+<p>Users: {userCount.value}</p>
 ```
 
 ### Automatic Optimization
@@ -126,11 +126,11 @@ No need for manual memoization in most cases:
 
   // Automatically optimized - only re-runs when products array changes
   const totalPrice = observedRef(() => {
-    return products.value.reduce((sum, product) => sum + product.price, 0);
+    return products.reduce((sum, product) => sum + product.price, 0);
   });
 </script>
 
-<p>Total Price: ${$totalPrice}</p>
+<p>Total Price: ${totalPrice.value}</p>
 ```
 
 ### Memory Efficiency

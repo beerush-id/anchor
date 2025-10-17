@@ -73,7 +73,7 @@ With Anchor, you can directly mutate state while maintaining immutability guaran
 
   // Direct mutation - simple and intuitive
   const updateName = (newName) => {
-    $user.profile.personal.name = newName;
+    user.profile.personal.name = newName;
   };
 </script>
 ```
@@ -98,18 +98,18 @@ You can create truly immutable states that prevent any direct mutations:
   });
 
   // This will log an error, also the IDE will show a warning.
-  // $userState.profile.name = 'Jane'; // ❌ Not allowed
+  // userState.profile.name = 'Jane'; // ❌ Not allowed
 
   // Create a controlled writer for specific mutations
-  const userWriter = writableRef($userState, ['profile']);
+  const userWriter = writableRef(userState, ['profile']);
 
   // This is allowed within the contract
   const updateProfile = (newProfile) => {
-    $userWriter.profile = newProfile;
+    userWriter.profile = newProfile;
   };
 
   // This would be restricted
-  // $userWriter.preferences = { theme: 'light' }; // ❌ Not in contract
+  // userWriter.preferences = { theme: 'light' }; // ❌ Not in contract
 </script>
 ```
 
