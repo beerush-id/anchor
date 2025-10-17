@@ -1,152 +1,117 @@
+---
+title: 'Reactivity in Anchor for Svelte'
+description: "Learn how Anchor integrates with Svelte's reactivity system to provide fine-grained updates and optimal performance."
+keywords:
+  - anchor for svelte
+  - svelte reactivity
+  - fine-grained reactivity
+  - svelte performance
+  - anchor reactivity model
+---
+
 # Reactivity in Anchor for Svelte
 
-Anchor's reactivity system provides fine-grained control over what triggers component updates, going beyond Svelte's built-in reactivity to deliver even better performance and more predictable behavior.
+Anchor seamlessly integrates with Svelte's reactivity system, enhancing it with additional capabilities while maintaining
+the fine-grained reactivity that makes Svelte so performant.
 
-## How Svelte's Reactivity Works
+## How Svelte Reactivity Works
 
-Svelte's reactivity is based on compile-time analysis that automatically subscribes components to the stores they reference. However, this approach has limitations:
+Svelte's reactivity is powered by **runes**, which are special symbols that provide instructions to the Svelte compiler. The most fundamental rune is `$state`, used to create reactive variables. When the value of a `$state` variable changes, Svelte knows precisely which parts of the DOM need to be updated, without the overhead of a virtual DOM.
 
-- Stores are observed as wholes, not individual properties
-- Nested objects require manual handling for reactivity
-- Complex derived state can lead to unnecessary re-computations
+This system allows for fine-grained, surgical updates that are both highly efficient and easy to reason about. Other runes, like `$derived`, let you create reactive values that are computed from other reactive states.
 
-## Anchor's Approach to Reactivity
+## Anchor's Integration
 
-Anchor introduces a fundamentally different approach that eliminates these issues by providing granular control over reactivity:
+Anchor builds on Svelte's reactivity model by leveraging the `createSubscriber` API from `svelte/reactivity`. This allows Anchor to create subscribers that are deeply integrated with Svelte's reactivity system, ensuring that components update efficiently when the underlying state changes.
 
-### Fine-Grained Observation
-
-With Anchor, you can observe specific parts of your state rather than entire objects:
+### Example
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
+  import { anchorRef } from '@anchorlib/svelte';
 
-  const userState = anchorRef({
-    profile: {
-      name: 'John Doe',
-      email: 'john@example.com'
-    },
-    preferences: {
-      theme: 'dark',
-      notifications: true
-    }
-  });
-
-  // Only re-runs when profile.name changes
-  const displayName = observedRef(() => userState.profile.name);
-
-  // Only re-runs when preferences.theme changes
-  const currentTheme = observedRef(() => userState.preferences.theme);
-
-  // Only re-runs when the number of notifications changes
-  const notificationCount = observedRef(() => {
-    // Some expensive computation
-    return getNotificationCount();
+  const state = anchorRef({
+    user: { name: 'John', age: 30 },
+    todos: [{ id: 1, text: 'Learn Anchor', completed: false }],
   });
 </script>
 
-<h1>Welcome, {displayName.value}!</h1>
-<div class="theme-{currentTheme.value}">
-  <p>You have {notificationCount.value} notifications</p>
+<div>
+    <!-- Only this component will re-render when user.name changes -->
+    <p>Name: {state.user.name}</p>
+
+    <!-- Only this component will re-render when user.age changes -->
+    <p>Age: {state.user.age}</p>
+
+    <!-- This component will re-render when the todos array changes -->
+    <ul>
+        {#each state.todos as todo}
+            <li key={todo.id}>{todo.text}</li>
+        {/each}
+    </ul>
 </div>
 ```
 
-### The DSV (Data-State-View) Pattern
+## Performance Benefits
 
-Anchor promotes the DSV pattern that clearly separates responsibilities:
+Anchor's integration with Svelte provides several performance benefits:
 
-- **Data**: Reactive state objects that hold your application data
-- **State**: Components that manage data but rarely re-render
-- **View**: Small components that observe specific state changes and re-render efficiently
+1. **Minimal Re-renders**: Only components that access changed properties re-render
+2. **Automatic Cleanup**: Observers are automatically cleaned up when components are destroyed
+3. **Lazy Initialization**: Nested states are only made reactive when accessed
 
-```sveltehtml
-<script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
+## Best Practices
 
-  // Data - reactive state that holds your application data
-  const counterState = anchorRef({ count: 0 });
+### 1. Use Direct Property Access
 
-  // View - only re-renders when the observed data changes
-  const counterDisplay = observedRef(() => counterState.count);
-
-  // Mutation - directly mutates the reactive state
-  const increment = () => {
-    counterState.count++;
-  };
-</script>
-
-<h1>Count: {counterDisplay.value}</h1>
-<button on:click={increment}>Increment</button>
-```
-
-## Performance Characteristics
-
-Anchor's reactivity model provides several performance benefits over traditional approaches:
-
-### Precision
-
-Only observing components re-render, eliminating unnecessary updates:
+Access properties directly rather than destructuring primitive value to maintain reactivity:
 
 ```sveltehtml
 <script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
+    import { anchorRef } from '@anchorlib/svelte';
 
-  const appState = anchorRef({
-    ui: { loading: false },
-    data: { users: [], posts: [] }
-  });
+    const state = anchorRef({
+        user: { name: 'John', age: 30 },
+    });
 
-  // This only re-renders when ui.loading changes
-  const isLoading = observedRef(() => appState.ui.loading);
+    // ✅ Good - maintains reactivity
+    const { user } = state;
 
-  // This only re-renders when data.users changes
-  const userCount = observedRef(() => appState.data.users.length);
+    // ❌ Avoid - loses reactivity tracking
+    const { name } = state.user; // Destructuring primitive value will lose reactivity
 </script>
 
-{#if isLoading.value}
-  <p>Loading...</p>
-{/if}
-
-<p>Users: {userCount.value}</p>
+<!-- Won't update when state.user.name changes -->
+<p>{name}</p>
 ```
 
-### Automatic Optimization
+### 2. Leverage Global State
 
-No need for manual memoization in most cases:
+Use global state for shared data to avoid prop drilling:
 
-```sveltehtml
+```ts /store.ts
+// Create global state outside components
+export const globalState = anchorRef({
+  user: { name: 'John' },
+  theme: 'dark',
+});
+```
+
+```sveltehtml /App.svelte
 <script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
-
-  const products = anchorRef([
-    { id: 1, name: 'Product 1', price: 100 },
-    { id: 2, name: 'Product 2', price: 200 }
-  ]);
-
-  // Automatically optimized - only re-runs when products array changes
-  const totalPrice = observedRef(() => {
-    return products.reduce((sum, product) => sum + product.price, 0);
-  });
+    import { globalState } from './store.ts';
 </script>
 
-<p>Total Price: ${totalPrice.value}</p>
+<!-- Use directly in any component -->
+<header>Welcome, {globalState.user.name}!</header>
 ```
 
-### Memory Efficiency
+### 3. Use Appropriate Ref Types
 
-Automatic cleanup of observers prevents memory leaks:
+Choose the right ref type for your use case:
 
-```sveltehtml
-<script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
-  import { onDestroy } from 'svelte';
-
-  const state = anchorRef({ value: 0 });
-
-  // Observer automatically cleaned up when component is destroyed
-  const observedValue = observedRef(() => state.value * 2);
-</script>
-```
-
-By leveraging Anchor's fine-grained reactivity system, you can build Svelte applications that are not only more performant but also more maintainable and easier to reason about.
+- `anchorRef` - General purpose reactive objects
+- `flatRef` - Arrays where you want reactivity on the array itself
+- `orderedRef` - Arrays that should maintain sorted order
+- `variableRef` - Simple reactive values with getter/setter
+- `constantRef` - Read-only reactive values

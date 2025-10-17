@@ -1,200 +1,184 @@
+---
+title: 'State Management in Anchor for Svelte'
+description: 'Learn advanced patterns for managing complex state in Svelte applications with Anchor, including global state, derived state, and persistence.'
+keywords:
+  - anchor for svelte
+  - svelte state management
+  - global state
+  - derived state
+  - state persistence
+  - svelte state patterns
+---
+
 # State Management in Anchor for Svelte
 
-State management in Anchor for Svelte is designed to work seamlessly with Svelte's reactivity model while providing enhanced capabilities that address common challenges in complex applications.
+Anchor provides powerful tools for managing state in Svelte applications, from simple local state to complex global state patterns with persistence and derived values.
 
-## Core Concepts
+## Global State Patterns
 
-### State Declaration
+Anchor provides elegant solutions for global state management that integrate seamlessly with Svelte's reactivity.
 
-In Anchor, you can declare state anywhere in your application and share it across components. This is a significant improvement over Svelte's typical approach where stores need to be explicitly imported or passed as props.
+### Simple Global State
 
-```js
-import { anchor } from '@anchorlib/core';
+Create global state by defining it outside of components:
 
-// Global state that can be imported anywhere
-export const userState = anchor({
-  profile: { name: 'John', age: 30 },
-  preferences: { theme: 'dark' },
-});
-```
+```javascript
+import { anchorRef } from '@anchorlib/svelte';
 
-### Local State
-
-For component-specific state, you can create local state within your Svelte components:
-
-```sveltehtml
-<script>
-  import { variableRef } from '@anchorlib/svelte';
-
-  // Local state that's scoped to this component
-  const counter = variableRef(0);
-
-  const increment = () => {
-    counter.value++;
-  };
-</script>
-
-<button onclick={increment}>
-  Count: {counter.value}
-</button>
-```
-
-## State Types
-
-### Global State
-
-Global states are declared outside component bodies and persist throughout the application lifecycle. These are ideal for:
-
-- Application-wide data (user profile, settings, etc.)
-- Data shared across multiple components
-- Complex business logic that needs to be accessed from different parts of the application
-
-```js
-import { anchor } from '@anchorlib/core';
-
-export const appState = anchor({
-  currentUser: null,
+// Define global state outside of any component
+export const globalState = anchorRef({
+  user: null,
   theme: 'light',
   notifications: [],
 });
 ```
 
-### Local State
+Use it in any component, and Svelte's reactivity will handle the rest.
 
-Local states are declared inside component bodies and are primarily used for UI behavior logic such as toggle states, tab states, form inputs, etc.
+### Modular Global State
 
-```sveltehtml
-<script>
-  import { anchorRef } from '@anchorlib/svelte';
+For larger applications, organize state into modules:
 
-  // Component-scoped state
-  const tabState = anchorRef({
-    activeTab: 0,
-    tabs: ['Home', 'Profile', 'Settings']
-  });
-</script>
+```javascript
+// stores/userStore.js
+import { anchorRef } from '@anchorlib/svelte';
+
+export const userStore = anchorRef({
+  currentUser: null,
+  permissions: [],
+  preferences: {
+    language: 'en',
+    timezone: 'UTC',
+  },
+});
+
+// stores/uiStore.js
+import { anchorRef } from '@anchorlib/svelte';
+
+export const uiStore = anchorRef({
+  sidebarOpen: true,
+  modal: null,
+  loading: false,
+});
 ```
 
-## Working with Nested Objects
+## Derived State
 
-One of the key advantages of Anchor over Svelte's built-in stores is its recursive reactivity. With Svelte stores, you need to manually handle nested object changes, but Anchor automatically tracks changes at any depth:
+Anchor makes it easy to create derived state that automatically updates when dependencies change.
 
-```sveltehtml
-<script>
-  import { anchorRef } from '@anchorlib/svelte';
+### Using Getters
 
-  const complexState = anchorRef({
-    user: {
-      profile: {
-        personal: {
-          name: 'John',
-          age: 30
-        },
-        preferences: {
-          theme: 'dark',
-          notifications: true
-        }
-      }
-    }
-  });
+Create computed properties using JavaScript getters for simple derivations:
 
-  // This works seamlessly with full reactivity at all levels
-  const updateUserName = (newName) => {
-    complexState.user.profile.personal.name = newName;
-  };
-</script>
+```javascript
+import { anchorRef } from '@anchorlib/svelte';
+
+const todoStore = anchorRef({
+  todos: [
+    { id: 1, text: 'Learn Anchor', completed: true },
+    { id: 2, text: 'Build an app', completed: false },
+  ],
+
+  // Computed property - automatically updates when todos change
+  get completedCount() {
+    return this.todos.filter((todo) => todo.completed).length;
+  },
+
+  get totalCount() {
+    return this.todos.length;
+  },
+
+  get remainingCount() {
+    return this.totalCount - this.completedCount;
+  },
+});
 ```
 
-## Immutability and Controlled Mutations
+### Using derivedRef and observedRef
 
-While Anchor allows direct mutations for convenience, it also provides powerful immutability features:
+For more complex derived state, use the `derivedRef` or `observedRef` functions from Anchor:
 
-```sveltehtml
-<script>
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
+```javascript
+import { anchorRef, derivedRef } from '@anchorlib/svelte';
 
-  // Create an immutable state
-  const immutableState = immutableRef({
-    count: 0,
-    message: 'Hello'
-  });
+const products = anchorRef([
+  { id: 1, name: 'Product 1', price: 100, category: 'electronics' },
+  { id: 2, name: 'Product 2', price: 200, category: 'clothing' },
+  { id: 3, name: 'Product 3', price: 150, category: 'electronics' },
+]);
 
-  // Create a writable version with specific contracts
-  const writer = writableRef(immutableState, ['count']);
-
-  const updateCount = () => {
-    writer.count++; // This is allowed
-    // writer.message = 'New message'; // This would be restricted
-  };
-</script>
+// Create derived state that filters and sorts products
+const expensiveElectronics = derivedRef(products, (currentProducts) =>
+  currentProducts
+    .filter((item) => item.category === 'electronics' && item.price > 100)
+    .sort((a, b) => b.price - a.price)
+);
 ```
 
-## State Observation
+## State Persistence
 
-Anchor provides several ways to observe state changes, which is more flexible than Svelte's built-in reactivity:
+Anchor provides built-in support for persisting state across sessions.
 
-```sveltehtml
-<script>
-  import { anchorRef, observedRef, derivedRef } from '@anchorlib/svelte';
+### Local Storage Persistence
 
-  const items = anchorRef([
-    { id: 1, name: 'Item 1', completed: false },
-    { id: 2, name: 'Item 2', completed: true }
-  ]);
+```javascript
+import { persistentRef } from '@anchorlib/svelte/storage';
 
-  // Observe specific computations
-  const completedCount = observedRef(() => {
-    return items.filter(item => item.completed).length;
-  });
+// Create state that persists to localStorage
+const userPreferences = persistentRef('user-preferences', {
+  theme: 'light',
+  language: 'en',
+  notifications: true,
+});
 
-  // Derived state with transformation
-  const itemSummary = derivedRef(items, (currentItems) => {
-    return `You have ${currentItems.length} items, ${currentItems.filter(i => i.completed).length} completed`;
-  });
-</script>
-
-<p>{itemSummary.value}</p>
-<p>Completed items: {completedCount.value}</p>
+// State automatically loads from localStorage on init
+// and saves to localStorage on changes
 ```
 
-## Best Practices
+### Session Storage Persistence
 
-### 1. Choose the Right State Type
+```javascript
+import { sessionRef } from '@anchorlib/svelte/storage';
 
-Use global state for data that needs to be shared across components, and local state for component-specific UI logic.
-
-### 2. Leverage Fine-Grained Reactivity
-
-Create specific observers for different parts of your state to minimize unnecessary re-renders:
-
-```sveltehtml
-<script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
-
-  const state = anchorRef({
-    user: { name: 'John' },
-    ui: { loading: false }
-  });
-
-  // Separate observers for different parts
-  const userName = observedRef(() => state.user.name);
-  const loading = observedRef(() => state.ui.loading);
-</script>
+// Create state that persists to sessionStorage
+const sessionData = sessionRef('session-data', {
+  lastRoute: '/',
+  tempSettings: {},
+});
 ```
 
-### 3. Use Immutable State for Shared Data
+### Custom Storage
 
-For global state that's shared across many components, consider using immutable state with explicit writers:
+You can also implement custom storage solutions using `kvRef`:
 
-```sveltehtml
-<script context="module">
-  import { immutableRef } from '@anchorlib/svelte';
+```javascript
+import { kvRef } from '@anchorlib/svelte/storage';
 
-  export const globalState = immutableRef({
-    config: { theme: 'dark' },
-    data: []
-  });
-</script>
+// Create a key-value store
+const userSettings = kvRef('user-settings', {
+  volume: 0.8,
+  subtitles: false,
+});
 ```
 
-By following these patterns, you can harness the full power of Anchor's state management system while maintaining the simplicity and performance that makes Svelte so appealing.
+## Asynchronous State
+
+Handle asynchronous operations with `fetchRef`.
+
+### HTTP Requests
+
+```javascript
+import { fetchRef } from '@anchorlib/svelte';
+
+// Create a fetch state for API calls
+const userProfile = fetchRef(
+  {},
+  {
+    url: '/api/user/profile',
+    method: 'GET',
+    auto: true, // Automatically fetch on creation
+  }
+);
+```
+
+You can then use Svelte's `{#await}` block to handle the different states of the fetch operation (pending, success, error).

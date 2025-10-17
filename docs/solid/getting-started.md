@@ -12,7 +12,8 @@ keywords:
 
 # Getting Started with Anchor for Solid
 
-This guide will help you get up and running with Anchor in your Solid project. You'll learn how to install Anchor, create reactive state, and integrate it with your Solid components.
+This guide will help you get up and running with Anchor in your Solid project. You'll learn how to install Anchor,
+create reactive state, and integrate it with your Solid components.
 
 ## Installation
 
@@ -40,7 +41,23 @@ bun add @anchorlib/solid
 
 ## Basic Usage
 
-The most common way to create reactive state in Anchor is using the [anchorRef](/apis/solid/initialization#anchorref) function. This creates a reactive reference that integrates seamlessly with Solid's reactivity system.
+The most common way to create reactive state in Anchor is using the [anchorRef](/apis/solid/initialization#anchorref)
+function. This creates a reactive reference that integrates seamlessly with Solid's reactivity system.
+
+::: tip Reactive Binding
+
+If you are working with external states (not declared with Solid's integration APIs like `anchorRef`), you can enable
+reactive binding by importing `@anchorlib/solid/reactive` in your main entry file:
+
+::: code-group
+
+```tsx [index.tsx]
+import '@anchorlib/solid/reactive';
+```
+
+**Note:** This step is optional, but recommended in case you are going to fully utilize [Anchor's core APIs](/apis/core/initialization).
+
+:::
 
 ### Your First Reactive Component
 
@@ -95,7 +112,6 @@ export default Counter;
 - **`anchorRef`**: Creates a reactive reference that integrates with Solid's reactivity system
 - **Direct Mutation**: You can directly modify state properties (e.g., `counter.count++`)
 - **Automatic Updates**: Components automatically re-render when the state they access changes
-- **No Providers Needed**: Unlike some state management solutions, Anchor doesn't require context providers
 
 :::
 

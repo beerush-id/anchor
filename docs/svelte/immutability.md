@@ -1,266 +1,184 @@
+---
+title: 'Immutability in Anchor for Svelte'
+description: 'Learn how Anchor provides true immutability in Svelte applications while allowing intuitive direct mutations through controlled contracts.'
+keywords:
+  - anchor for svelte
+  - svelte immutability
+  - immutable state
+  - data integrity
+  - mutation contracts
+---
+
 # Immutability in Anchor for Svelte
 
-Immutability is a core principle in Anchor that ensures predictable state management while still allowing intuitive direct mutations through controlled contracts.
+Anchor provides true immutability for your state while still allowing intuitive direct mutations through controlled
+contracts. This approach gives you the safety of immutability with the convenience of direct state manipulation.
 
-## Understanding Immutability
+## Understanding True Immutability
 
-Immutability means that once a state object is created, it cannot be changed. Instead of modifying existing objects, you create new ones with the desired changes. This approach provides several benefits:
+True immutability means that your state objects cannot be modified except through explicitly defined contracts. This
+prevents accidental mutations and makes your application more predictable and easier to debug.
 
-- Predictable state changes
-- Easier debugging
-- Prevention of accidental mutations
-- Simplified reasoning about data flow
-
-## Traditional Immutability Challenges in Svelte
-
-In traditional Svelte applications, achieving true immutability often requires:
-
-- Deep cloning of objects for nested changes
-- Complex update patterns
-- Performance overhead from copying large data structures
-- Verbose code for simple mutations
+With Svelte 5, runes simplify state management by embracing mutability, but this means immutability is not enforced by default:
 
 ```sveltehtml
-<!-- Traditional approach with verbose updates -->
 <script>
-  import { writable } from 'svelte/store';
+  // Svelte 5's typical mutable pattern
+  let count = $state(0);
 
-  const user = writable({
-    profile: {
-      personal: {
-        name: 'John',
-        age: 30
-      }
-    }
-  });
-
-  // Verbose update pattern
-  const updateName = (newName) => {
-    user.update(current => ({
-      ...current,
-      profile: {
-        ...current.profile,
-        personal: {
-          ...current.profile.personal,
-          name: newName
-        }
-      }
-    }));
+  // Direct mutation is the standard way, which can be risky
+  const increment = () => {
+    count++;
   };
 </script>
 ```
 
-## Anchor's Approach to Immutability
+## Anchor's Approach
 
-Anchor provides a better approach that combines the safety of immutability with the convenience of direct mutations:
-
-### Direct Mutations with Safety
-
-With Anchor, you can directly mutate state while maintaining immutability guarantees:
+Anchor allows direct mutations while maintaining true immutability behind the scenes:
 
 ```sveltehtml
 <script>
-  import { anchorRef } from '@anchorlib/svelte';
+  import { immutableRef, writableRef } from '@anchorlib/svelte';
+
+  const state = immutableRef({ count: 0, name: 'Svelte' });
+  const writer = writableRef(state, ['count']);
+
+  // Direct mutation that looks simple but maintains immutability guarantees
+  const increment = () => {
+    writer.count++;
+  };
+
+  // This will be trapped and logs an error
+  const changeName = () => {
+    writer.name = 'Changed';
+  };
+</script>
+```
+
+Behind the scenes, Anchor ensures that:
+
+1. Changes are tracked through a controlled mutation system
+2. Only authorized mutations can occur based on defined contracts
+
+## Creating Immutable State
+
+You can explicitly create immutable state using the `immutableRef` function:
+
+```sveltehtml
+<script>
+  import { immutableRef } from '@anchorlib/svelte';
+
+  // Create immutable state
+  const immutableState = immutableRef({ count: 0, name: 'Svelte' });
+
+  const mutateCount = () => {
+    immutableState.count++; // Trapped: Cannot mutate immutable state
+  };
+</script>
+```
+
+## Benefits of True Immutability
+
+### 1. Predictable State Changes
+
+With true immutability, you always know when and how state can change:
+
+```sveltehtml
+<script>
+  import { anchorRef, writableRef } from '@anchorlib/svelte';
 
   const user = anchorRef({
-    profile: {
-      personal: {
-        name: 'John',
-        age: 30
-      }
-    }
+    profile: { name: 'John', age: 30 },
   });
+  const profile = writableRef(user.profile, ['name']);
 
-  // Direct mutation - simple and intuitive
-  const updateName = (newName) => {
-    user.profile.personal.name = newName;
+  // You can be confident that direct mutations are safe and tracked
+  const changeName = () => {
+    profile.name = 'Jane'; // Tracked and safe
+  };
+
+  // Don't worry about this since state won't change
+  const changeProfile = () => {
+    user.profile = { name: 'John', age: 25 }; // `profile` is read-only
+    profile.age = 25; // `age` is read-only
   };
 </script>
 ```
 
-### Immutable States
+### 2. Easier Debugging
 
-You can create truly immutable states that prevent any direct mutations:
+Since mutations are controlled, you can track exactly what changes occur:
 
 ```sveltehtml
+
 <script>
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
+  import { writableRef, immutableRef } from '@anchorlib/svelte';
 
-  // Create an immutable state
-  const userState = immutableRef({
-    profile: {
-      name: 'John',
-      email: 'john@example.com'
-    },
-    preferences: {
-      theme: 'dark'
-    }
-  });
+  const state = immutableRef({ items: [] });
+  const writer = writableRef(state.items, ['push']);
 
-  // This will log an error, also the IDE will show a warning.
-  // userState.profile.name = 'Jane'; // ❌ Not allowed
-
-  // Create a controlled writer for specific mutations
-  const userWriter = writableRef(userState, ['profile']);
-
-  // This is allowed within the contract
-  const updateProfile = (newProfile) => {
-    userWriter.profile = newProfile;
-  };
-
-  // This would be restricted
-  // userWriter.preferences = { theme: 'light' }; // ❌ Not in contract
-</script>
-```
-
-## Benefits of Anchor's Immutability
-
-### 1. Performance Without Compromise
-
-Anchor's approach eliminates the deep cloning overhead of traditional immutable patterns while maintaining all the benefits:
-
-```sveltehtml
-<script>
-  import { anchorRef } from '@anchorlib/svelte';
-
-  const largeDataSet = anchorRef({
-    items: Array(10000).fill().map((_, i) => ({
-      id: i,
-      data: `Item ${i}`
-    })),
-    metadata: {
-      lastUpdated: Date.now()
-    }
-  });
-
-  // Efficient mutation - only the changed parts are tracked
-  const updateMetadata = () => {
-    largeDataSet.value.metadata.lastUpdated = Date.now();
+  // Every mutation is tracked and can be traced
+  const addItem = () => {
+    writer.push({ id: 1, text: 'New item' });
   };
 </script>
 ```
 
-### 2. Predictable State Changes
+### 3. Prevention of Accidental Mutations
 
-With controlled mutations, you always know what can change and when:
-
-```sveltehtml
-<script>
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
-
-  const appState = immutableRef({
-    user: { name: 'John' },
-    ui: { loading: false },
-    data: []
-  });
-
-  // Writers clearly define what can be mutated
-  const userWriter = writableRef(appState.value, ['user']);
-  const uiWriter = writableRef(appState.value, ['ui']);
-  const dataWriter = writableRef(appState.value, ['data']);
-
-  // Clear separation of concerns
-  const updateUserName = (name) => {
-    userWriter.value.user.name = name;
-  };
-
-  const setLoading = (loading) => {
-    uiWriter.value.ui.loading = loading;
-  };
-
-  const updateData = (newData) => {
-    dataWriter.value.data = newData;
-  };
-</script>
-```
-
-### 3. Easy Debugging and Testing
-
-Immutable states make it easier to track changes and debug issues:
-
-```sveltehtml
-<script>
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
-
-  const state = immutableRef({
-    counter: 0,
-    history: []
-  });
-
-  const writer = writableRef(state.value, ['counter', 'history']);
-
-  // Every mutation is explicit and trackable
-  const increment = () => {
-    writer.value.history.push(writer.value.counter);
-    writer.value.counter++;
-  };
-</script>
-```
-
-## Best Practices
-
-### 1. Use Immutable States for Shared Data
-
-For global state that's shared across many components, use immutable states:
-
-```sveltehtml
-<!-- lib/App.svelte -->
-<script module>
-  import { immutableRef } from '@anchorlib/svelte';
-
-  export const globalState = immutableRef({
-    currentUser: null,
-    appConfig: {
-      theme: 'dark',
-      language: 'en'
-    }
-  });
-</script>
-```
-
-### 2. Create Specific Writers
-
-Create writers with specific contracts to limit what can be mutated:
-
-```sveltehtml
-<script>
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
-
-  const state = immutableRef({
-    user: { name: 'John' },
-    preferences: { theme: 'dark' },
-    session: { token: null }
-  });
-
-  // Specific writers for different parts of the application
-  const userProfileWriter = writableRef(state.value, ['user']);
-  const preferencesWriter = writableRef(state.value, ['preferences']);
-  const sessionWriter = writableRef(state.value, ['session']);
-</script>
-```
-
-### 3. Combine with Schema Validation
-
-Use schema validation with immutable states to ensure data integrity:
+True immutability prevents accidental state changes:
 
 ```sveltehtml
 <script>
   import { immutableRef } from '@anchorlib/svelte';
+
+  const state = immutableRef({ data: { value: 42 } });
+
+  // Passing state to a function
+  someFunction(state.data);
+
+  // Function cannot accidentally mutate the state
+  function someFunction(data) {
+    // This will logs an error
+    data.value = 100; // Error: "value" is read-only
+  }
+</script>
+```
+
+## Schema-Based Immutability
+
+When using schemas, you can define which parts of your state should be mutable:
+
+```sveltehtml
+<script>
+  import { modelRef, writableRef } from '@anchorlib/svelte';
   import { z } from 'zod';
 
-  const UserSchema = z.object({
-    name: z.string().min(1),
-    email: z.string().email()
+  const schema = z.object({
+    user: z.object({
+      name: z.string(),
+      age: z.number(),
+    }),
+    settings: z.object({
+      theme: z.enum(['light', 'dark']),
+    }),
   });
 
-  const userState = immutableRef(
+  const state = modelRef(
+    schema,
     {
-      name: 'John Doe',
-      email: 'john@example.com'
+      user: { name: 'John', age: 30 },
+      settings: { theme: 'dark' },
     },
-    UserSchema
+    { immutable: true } // Set the immutable flag
   );
+
+  const settings = writableRef(state.settings);
+
+  // state.user.name = 'Jane'; // Not allowed - state won't change.
+
+  settings.theme = 'light'; // Allowed and valid - state will change.
+  // settings.theme = 10; // Allowed but invalid - state won't change.
 </script>
 ```
-
-By leveraging Anchor's immutability system, you can build Svelte applications with predictable state management that's both safe and performant.

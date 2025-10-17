@@ -1,6 +1,19 @@
+---
+title: 'Getting Started with Anchor for Svelte'
+description: 'A step-by-step guide to getting started with Anchor for Svelte. Learn to install, create reactive state, and build high-performance components.'
+keywords:
+  - anchor for svelte tutorial
+  - svelte state management getting started
+  - anchor svelte guide
+  - anchorRef
+  - svelte reactive state
+  - getting started svelte state
+---
+
 # Getting Started with Anchor for Svelte
 
-This guide will quickly get you up and running with Anchor in your Svelte project. You'll learn how to install Anchor, create your first reactive state, and connect it to your Svelte components to build dynamic and performant UIs.
+This guide will help you get up and running with Anchor in your Svelte project. You'll learn how to install Anchor,
+create reactive state, and integrate it with your Svelte components.
 
 ## Installation
 
@@ -28,264 +41,241 @@ bun add @anchorlib/svelte
 
 ## Basic Usage
 
-Let's build a simple counter to see how Anchor works with Svelte:
+The most common way to create reactive state in Anchor is using the [anchorRef](/apis/svelte/initialization#anchorref)
+function. This creates a reactive reference that integrates seamlessly with Svelte's reactivity system.
 
-```sveltehtml
+::: tip Reactive Binding
 
+If you are working with external states (not declared with Svelte's integration APIs like `anchorRef`), you can enable
+reactive binding by importing `@anchorlib/svelte/reactive` in your root component:
+
+::: code-group
+
+```sveltehtml [+layout.svelte]
 <script>
-  import { variableRef } from '@anchorlib/svelte';
-
-  // Create your reactive state with a simple primitive value
-  let count = variableRef(0);
+  import '@anchorlib/svelte/reactive';
 </script>
-
-<div>
-  <h1>Counter: {count.value}</h1>
-  <button onclick={() => count.value++}>Increment</button>
-  <button onclick={() => count.value--}>Decrement</button>
-  <button onclick={() => count.value = 0}>Reset</button>
-</div>
 ```
 
-## Working with Objects
+**Note:** This step is optional, but recommended in case you are going to fully utilize [Anchor's core APIs](/apis/core/initialization).
 
-You can also work with objects and nested structures just as easily:
+:::
 
-```sveltehtml
-<script>
-  import { anchorRef } from '@anchorlib/svelte';
+### Your First Reactive Component
 
-  const user = anchorRef({ name: 'John Doe', age: 30 });
-</script>
-
-<div>
-  <h2>User Profile</h2>
-  <input bind:value={user.name} placeholder="Name" />
-
-  <p>Age: {user.age}</p>
-  <button onclick={() => user.age++}>Increment Age</button>
-</div>
-```
-
-## Nested Objects
-
-One of Anchor's key advantages over Svelte's built-in stores is its recursive reactivity. Let's see how it handles nested objects:
+To get started, create a component that uses the `anchorRef` function to create a reactive reference:
 
 ```sveltehtml
 
 <script>
   import { anchorRef } from '@anchorlib/svelte';
 
-  const user = anchorRef({
-    profile: {
-      name: 'John Doe',
-      age: 30,
-      address: {
-        street: '123 Main St',
-        city: 'Anytown',
-      },
-    },
-    preferences: {
-      theme: 'dark',
-      notifications: true,
-    },
-  });
-
-  const toggleTheme = () => {
-    user.preferences.theme = user.preferences.theme === 'dark' ? 'light' : 'dark';
-  };
+  const counter = anchorRef({ count: 0 });
 </script>
 
 <div>
-  <h2>User Profile</h2>
-  <input bind:value={user.profile.name} placeholder="Name" />
-  <input bind:value={user.profile.address.city} placeholder="City" />
-
-  <p>Age: {user.profile.age}</p>
-
-  <p>Theme: {user.preferences.theme}</p>
-  <button onclick={toggleTheme}>
-    Switch to {user.preferences.theme === 'dark' ? 'Light' : 'Dark'} Theme
-  </button>
+  <h1>Counter: {counter.count}</h1>
+  <button on:click={() => counter.count++}>Increment</button>
+  <button on:click={() => counter.count--}>Decrement</button>
+  <button on:click={() => (counter.count = 0)}>Reset</button>
 </div>
 ```
 
-## Observing Specific State
+::: tip Key Points:
 
-One of Anchor's most powerful features is the ability to observe only specific parts of your state, leading to more efficient updates:
+- **`anchorRef`**: Creates a reactive reference that integrates with Svelte's reactivity system
+- **Direct Mutation**: You can directly modify state properties (e.g., `counter.count++`)
+- **Automatic Updates**: Components automatically re-render when the state they access changes
 
-```sveltehtml
+:::
 
-<script>
-  import { anchorRef, observedRef } from '@anchorlib/svelte';
-
-  const appState = anchorRef({
-    ui: {
-      loading: false,
-      modalOpen: false
-    },
-    data: {
-      users: [],
-      posts: []
-    }
-  });
-
-  // These observers only re-run when their specific dependencies change
-  const loading = observedRef(() => appState.ui.loading);
-  const userCount = observedRef(() => appState.data.users.length);
-  const postCount = observedRef(() => appState.data.posts.length);
-
-  const fetchData = async () => {
-    appState.ui.loading = true;
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    appState.data.users = [{ id: 1, name: 'John' }];
-    appState.data.posts = [{ id: 1, title: 'Hello World' }];
-    appState.ui.loading = false;
-  };
-</script>
-
-<div>
-  {#if loading.value}
-    <p>Loading...</p>
-  {:else}
-    <p>Users: {userCount.value}</p>
-    <p>Posts: {postCount.value}</p>
-  {/if}
-
-  <button onclick={fetchData}>Fetch Data</button>
-</div>
-```
-
-## Working with Forms
-
-Here's a more complex example showing how to work with forms using Anchor:
+### Computed Property
 
 ```sveltehtml
 
 <script>
   import { anchorRef } from '@anchorlib/svelte';
 
-  const formState = anchorRef({
-    user: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      age: 0,
+  const state = anchorRef({
+    count: 0,
+    firstName: 'John',
+    lastName: 'Doe',
+    // Computed property using getter just works
+    get fullName() {
+      return `${ this.firstName } ${ this.lastName }`;
     },
-    errors: {},
-    submitted: false,
+    get doubleCount() {
+      return this.count * 2;
+    },
   });
 
-  const validate = () => {
-    const errors = {};
-
-    if (!formState.user.firstName) {
-      errors.firstName = 'First name is required';
-    }
-
-    if (!formState.user.email) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formState.user.email)) {
-      errors.email = 'Email is invalid';
-    }
-
-    formState.errors = errors;
-    return Object.keys(errors).length === 0;
-  };
-
-  const submitForm = () => {
-    if (validate()) {
-      // Process form submission
-      console.log('Submitting:', formState.user);
-      formState.submitted = true;
-    }
-  };
-
-  const resetForm = () => {
-    formState.user = {
-      firstName: '',
-      lastName: '',
-      email: '',
-      age: 0,
-    };
-    formState.errors = {};
-    formState.submitted = false;
+  const changeName = () => {
+    state.firstName = 'Jane';
+    state.lastName = 'Smith';
   };
 </script>
 
-{#if formState.submitted}
-  <div>
-    <h2>Form Submitted Successfully!</h2>
-    <p>Welcome, {formState.user.firstName}!</p>
-    <button onclick={resetForm}>Submit Another</button>
-  </div>
-{:else}
-  <form onsubmit={submitForm}>
-    <div>
-      <label>
-        First Name:
-        <input type="text" bind:value={formState.user.firstName} />
-      </label>
-      {#if formState.errors.firstName}
-        <span class="error">{formState.errors.firstName}</span>
-      {/if}
-    </div>
-
-    <div>
-      <label>
-        Email:
-        <input type="email" bind:value={formState.user.email} />
-      </label>
-      {#if formState.errors.email}
-        <span class="error">{formState.errors.email}</span>
-      {/if}
-    </div>
-
-    <div>
-      <label>
-        Age:
-        <input type="number" bind:value={formState.user.age} />
-      </label>
-    </div>
-
-    <button type="submit">Submit</button>
-    <button type="button" onclick={resetForm}>Reset</button>
-  </form>
-{/if}
-
-<style>
-  .error {
-    color: red;
-    font-size: 0.8rem;
-  }
-
-  form div {
-    margin-bottom: 1rem;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  input {
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-</style>
+<div>
+  <h1>Counter: {state.count}</h1>
+  <h1>Double Count: {state.doubleCount}</h1>
+  <h1>Full Name: {state.fullName}</h1>
+  <button on:click={() => state.count++}>Increment</button>
+  <button on:click={() => state.count--}>Decrement</button>
+  <button on:click={() => (state.count = 0)}>Reset</button>
+  <button on:click={changeName}>Change Name</button>
+</div>
 ```
+
+### Derived State
+
+```sveltehtml
+
+<script>
+  import { anchorRef, variableRef } from '@anchorlib/svelte';
+
+  const count = variableRef(1);
+  const count2 = variableRef(5);
+  const counter = anchorRef({ count: 3 });
+
+  // Derived state that automatically updates when any of its dependencies change
+  const total = $derived(count.value + count2.value + counter.count);
+</script>
+
+<div>
+  <h1>Counter 1: {count.value}</h1>
+  <h1>Counter 2: {count2.value}</h1>
+  <h1>Counter 3: {counter.count}</h1>
+  <h1>Total: {total}</h1>
+  <button on:click={() => count.value++}>Increment 1</button>
+  <button on:click={() => count2.value++}>Increment 2</button>
+  <button on:click={() => counter.count++}>Increment 3</button>
+</div>
+```
+
+## Global State
+
+For state that needs to be shared across multiple components, you can create the state outside your components:
+
+```ts /store.ts
+import { anchorRef } from '@anchorlib/svelte';
+
+// Global state declared outside your component
+export const counter = anchorRef({ count: 0 });
+```
+
+```sveltehtml /App.svelte
+
+<script>
+  import { counter } from './store.ts';
+</script>
+
+<div>
+  <h1>Counter: {counter.count}</h1>
+  <button on:click={() => counter.count++}>Increment</button>
+  <button on:click={() => counter.count--}>Decrement</button>
+  <button on:click={() => (counter.count = 0)}>Reset</button>
+</div>
+```
+
+## Working with Arrays
+
+Anchor provides specialized functions for working with arrays:
+
+### flatRef
+
+For arrays where you want reactivity on the array itself but not on individual elements:
+
+```ts
+import { flatRef } from '@anchorlib/svelte';
+
+const todos = flatRef([
+  { id: 1, text: 'Learn Anchor', completed: false },
+  { id: 2, text: 'Build an app', completed: false },
+]);
+
+// Adding an item triggers reactivity
+const addTodo = (text) => {
+  todos.push({ id: Date.now(), text, completed: false });
+};
+```
+
+### orderedRef
+
+For arrays that should maintain a specific order:
+
+```ts
+import { orderedRef } from '@anchorlib/svelte';
+
+const sortedNumbers = orderedRef([3, 1, 4, 1, 5], (a, b) => a - b);
+// Result: [1, 1, 3, 4, 5]
+```
+
+## Schema Support
+
+Anchor supports defining schemas for your state, providing runtime validation and better type safety:
+
+````ts
+import { modelRef } from '@anchorlib/svelte';
+import { z } from 'zod';
+
+const UserSchema = z.object({
+  name: z.string(),
+  age: z.number(),
+});
+
+const user = modelRef(UserSchema, { name: 'John', age: 30 });
+
+// This will work
+user.name = 'Jane';
+
+// This will throw a validation error at runtime
+// user.age = 'not a number'; // Error!```
+````
+
+## Ref System
+
+Anchor provides a Ref system that gives you more control over reactivity:
+
+### variableRef
+
+Creates a reactive reference with both getter and setter:
+
+```ts
+import { variableRef } from '@anchorlib/svelte';
+
+const countRef = variableRef(0);
+
+// Access value
+console.log(countRef.value); // 0
+
+// Update value
+countRef.value = 42;
+```
+
+### constantRef
+
+Creates a read-only reactive reference:
+
+```ts
+import { constantRef } from '@anchorlib/svelte';
+
+const readOnlyRef = constantRef(42);
+
+// Access value
+console.log(readOnlyRef.value); // 42
+
+// This would cause a TypeScript error:
+// readOnlyRef.value = 100; // Error!
+```
+
+## API Reference
+
+- [API Reference](/apis/svelte/) - Complete documentation of all functions and types
 
 ## Next Steps
 
-Now that you've seen the basics of Anchor with Svelte, you might want to explore:
+Now that you've learned the basics of Anchor for Svelte, you can explore:
 
-- [Reactivity](/svelte/reactivity) - Learn how Anchor's fine-grained reactivity works
-- [Immutability](/svelte/immutability) - Discover how Anchor handles immutable state
-- [State Management](/svelte/state-management) - Understand how to structure your application state
-- [API References](/apis/svelte/initialization) - Dive into the complete API documentation
-
-With Anchor, you can build Svelte applications that are not only more performant but also easier to maintain and reason about. The combination of Svelte's compile-time optimizations and Anchor's fine-grained reactivity creates a powerful foundation for modern web applications.
+- [Reactivity](/svelte/reactivity) - How Anchor's reactivity system works with Svelte
+- [Immutability](/svelte/immutability) - How Anchor provides true immutability
+- [State Management](/svelte/state-management) - Advanced patterns for managing complex state
