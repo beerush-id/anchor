@@ -85,8 +85,8 @@ const Counter = () => {
 </script>
 
 <div>
-  <h1>{$state.title}</h1>
-  <p>Count: {$state.count}</p>
+  <h1>{state.title}</h1>
+  <p>Count: {state.count}</p>
   <button onclick={() => state.count++}>Increment</button>
 </div>
 ```
