@@ -1,4 +1,4 @@
-import '../binding.js';
+import '../reactive.js';
 
 export * from './kv.js';
 export * from './persistent.js';

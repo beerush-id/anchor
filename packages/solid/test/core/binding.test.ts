@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OWNER_REGISTRY, REF_REGISTRY } from '../../src/binding';
+import { OWNER_REGISTRY, REF_REGISTRY } from '../../src/reactive.js';
 
 describe('Anchor Solid - Binding System', () => {
   describe('REF_REGISTRY', () => {

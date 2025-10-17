@@ -28,8 +28,12 @@
       "import": "./dist/index.js"
     },
     "./binding": {
-      "types": "./dist/binding.d.ts",
-      "import": "./dist/binding.js"
+      "types": "./dist/reactive.d.ts",
+      "import": "./dist/reactive.js"
+    },
+    "./reactive": {
+      "types": "./dist/reactive.d.ts",
+      "import": "./dist/reactive.js"
     },
     "./storage": {
       "types": "./dist/storage/index.d.ts",

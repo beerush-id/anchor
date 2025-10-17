@@ -1,7 +1,7 @@
 import { anchor } from '@anchorlib/core';
 import { onCleanup } from 'solid-js';
 import type { ConstantRef, VariableRef } from './types.js';
-import { REF_REGISTRY } from './binding.js';
+import { REF_REGISTRY } from './reactive.js';
 
 /**
  * Creates a reactive variable reference that can be used in Solid components.

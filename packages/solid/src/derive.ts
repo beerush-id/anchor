@@ -1,7 +1,7 @@
 import { anchor, type Immutable, subscribe } from '@anchorlib/core';
 import type { ConstantRef, StateRef } from './types.js';
 import { onCleanup } from 'solid-js';
-import { REF_REGISTRY } from './binding.js';
+import { REF_REGISTRY } from './reactive.js';
 
 /**
  * Creates a derived reference that transforms the value of a source state.

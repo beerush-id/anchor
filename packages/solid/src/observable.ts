@@ -1,6 +1,6 @@
 import { anchor, createObserver, type Immutable } from '@anchorlib/core';
 import type { ConstantRef, StateRef } from './types.js';
-import { REF_REGISTRY } from './binding.js';
+import { REF_REGISTRY } from './reactive.js';
 import { onCleanup } from 'solid-js';
 
 /**
