@@ -9,6 +9,7 @@ import {
   getContext,
   setContext,
   withinContext,
+  withinGlobalContext,
 } from '../../src/index.js';
 
 describe('Anchor Utilities - Context', () => {
@@ -154,6 +155,24 @@ describe('Anchor Utilities - Context', () => {
       expect(getContext('key2', 'fallback')).toBe('fallback');
 
       restore();
+    });
+
+    it('should run inside of global context', () => {
+      vi.stubGlobal('window', {});
+      const foo = withinGlobalContext(() => 10);
+
+      expect(foo).toBe(10);
+      expect(errorSpy).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+
+    it('should detect withinGlobalContext error', () => {
+      expect(() =>
+        withinGlobalContext(() => {
+          throw new Error('test');
+        })
+      ).not.toThrow();
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 

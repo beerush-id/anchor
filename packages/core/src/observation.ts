@@ -67,6 +67,7 @@ export function createObserver(
   onTrack?: (state: Linkable, key: KeyLike) => void
 ): StateObserver {
   let observedSize = 0;
+  let isObserving = false;
 
   const states = new WeakMap();
   const destroyers = new Set<() => void>();
@@ -135,7 +136,31 @@ export function createObserver(
   }) satisfies StateObserver['assign'];
 
   const run = <R>(fn: () => R): R => {
-    return withinObserver(fn, observer);
+    isObserving = true;
+    const result = withinObserver(fn, observer);
+    isObserving = false;
+    return result;
+  };
+
+  const propagate = (event: StateChange) => {
+    if (isObserving) {
+      const error = new Error('Circular mutation.');
+      captureStack.violation.general(
+        'Circular mutation detected:',
+        `Attempted to mutate a state while observing the state itself.`,
+        error,
+        [
+          'Circular state mutation is highly discouraged as it can lead to infinite loops and unpredictable behavior.',
+          '- This happens when you mutate a reactive property inside a function that’s tracking that same property.',
+          '- To prevent this, avoid mutating properties that you depend on inside an observer, or use the "untrack" utility to mark the read as non-reactive.',
+        ],
+        propagate
+      );
+
+      return;
+    }
+
+    onChange(event);
   };
 
   const observer = {
@@ -144,7 +169,7 @@ export function createObserver(
       return states;
     },
     get onChange() {
-      return onChange;
+      return propagate;
     },
     get destroy() {
       return destroy;
@@ -193,7 +218,6 @@ export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrO
 
   return result as R;
 }
-
 /**
  * Executes a function outside any observer context.
  * This function temporarily removes the current observer context,
@@ -202,7 +226,7 @@ export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrO
  *
  * @param fn - The function to execute outside of observer context
  */
-export function outsideObserver<R>(fn: () => R): R {
+export function untrack<R>(fn: () => R): R {
   const restore = setObserver(undefined as never);
 
   let result: R | undefined = undefined;
@@ -211,21 +235,22 @@ export function outsideObserver<R>(fn: () => R): R {
     try {
       result = fn();
     } catch (error) {
-      captureStack.error.external(
-        'Unable to execute the outside of observer function',
-        error as Error,
-        outsideObserver
-      );
+      captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
     }
   } else {
     const error = new Error('Invalid argument.');
-    captureStack.error.argument('The given argument is not a function', error, outsideObserver);
+    captureStack.error.argument('The given argument is not a function', error, untrack);
   }
 
   restore?.();
 
   return result as R;
 }
+
+/**
+ * @deprecated Use {@link untrack} instead
+ */
+export const outsideObserver = untrack;
 
 let currentTracker: StatePublicTracker | undefined;
 let currentTrackerRestore: (() => void) | undefined;

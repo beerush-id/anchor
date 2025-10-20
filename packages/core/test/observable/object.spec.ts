@@ -85,7 +85,7 @@ describe('Anchor Core - Observable Object', () => {
         value: 3,
       });
 
-      delete state.b;
+      delete (state as { b?: number }).b;
 
       expect(state.b).toBeUndefined();
       expect(onChange).toHaveBeenCalledTimes(2);
@@ -156,6 +156,30 @@ describe('Anchor Core - Observable Object', () => {
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('a')).toBe(true);
       expect(trackedProps?.has('self')).toBe(true);
+    });
+
+    it('should detect circular mutation in observation', () => {
+      vi.useFakeTimers();
+
+      const state = anchor({ a: 1 }, { observable: true });
+      const observer = createObserver(() => {});
+
+      // Access properties to track them
+      const valueA = observer.run(() => {
+        if (state.a === 1) {
+          state.a = 2;
+        }
+
+        return state.a;
+      });
+
+      vi.runAllTimers();
+
+      expect(valueA).toBe(2);
+      expect(state.a).toBe(2);
+      expect(errorSpy).toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
 
     it('should handle multiple observers on the same property', () => {

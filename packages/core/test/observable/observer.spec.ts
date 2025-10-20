@@ -3,10 +3,10 @@ import {
   anchor,
   createObserver,
   getTracker,
-  outsideObserver,
   setObserver,
   setTracker,
   subscribe,
+  untrack,
   withinObserver,
 } from '../../src/index.js';
 
@@ -292,7 +292,7 @@ describe('Anchor Core - Observable Observer Management', () => {
 
     it('should handle outside of observer function', () => {
       const handler = vi.fn().mockImplementation(() => 'Success');
-      const result = outsideObserver<string>(handler);
+      const result = untrack<string>(handler);
 
       expect(result).toBe('Success');
     });
@@ -301,14 +301,14 @@ describe('Anchor Core - Observable Observer Management', () => {
       const handler = vi.fn().mockImplementation(() => {
         throw new Error('Execution error');
       });
-      const result = outsideObserver(handler);
+      const result = untrack(handler);
 
       expect(result).toBeUndefined();
       expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should handle outside of observer function with invalid function', () => {
-      const result = outsideObserver(null as never);
+      const result = untrack(null as never);
 
       expect(result).toBeUndefined();
       expect(errorSpy).toHaveBeenCalled();
@@ -327,7 +327,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(observer.states.has(anchor.get(state))).toBe(true);
       expect(trackHandler).toHaveBeenCalledTimes(1);
 
-      outsideObserver(() => {
+      untrack(() => {
         const name = state.profile.name;
         expect(name).toBe('John');
       });
@@ -451,7 +451,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(trackHandler).toHaveBeenCalledTimes(1);
       expect(observer.states.has(anchor.get(state))).toBe(true);
 
-      const profile = outsideObserver(() => {
+      const profile = untrack(() => {
         return state.profile;
       });
       profile.name = 'John Doe';
@@ -479,7 +479,7 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       const unsubscribe = subscribe(state, (_s, event) => {
         // Isolate the handler to be called outside of observer.
-        outsideObserver(() => {
+        untrack(() => {
           // Any property access here should not trigger a dependency tracking.
           if (event.type === 'init') {
             const name = state.profile.name;
@@ -492,7 +492,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       });
 
       // Isolate profile read to make sure it's not tracked.
-      const profile = outsideObserver(() => state.profile);
+      const profile = untrack(() => state.profile);
       profile.name = 'John Doe';
 
       expect(trackHandler).toHaveBeenCalledTimes(1);

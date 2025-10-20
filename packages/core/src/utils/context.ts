@@ -81,6 +81,26 @@ export function withinContext<K extends KeyLike, V, T>(context: Map<K, V>, fn: (
 }
 
 /**
+ * Executes a function within the global context.
+ * The global context is activated before the function is called.
+ * If an error occurs during execution, it is captured and logged.
+ *
+ * @template T - The return type of the function.
+ * @param fn - The function to execute within the global context.
+ * @returns The result of the function execution, or void if an error occurs.
+ */
+export function withinGlobalContext<T>(fn: () => T): T | void {
+  activateGlobalContext();
+
+  try {
+    return fn();
+  } catch (_error) {
+    const error = new Error((_error as Error)?.message);
+    captureStack.error.external('Exception occurred within global context execution.', error, withinGlobalContext);
+  }
+}
+
+/**
  * Sets a value in the currently active context.
  * If no context is active, an error is logged.
  *
