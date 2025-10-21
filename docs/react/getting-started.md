@@ -105,18 +105,85 @@ export default Counter;
 
 :::
 
-::: tip Why Anchor is different:
+## Optimized Usage
 
-- **Direct Mutation, Safe Execution:** Unlike other state management libraries, you can directly modify your state (
-  e.g., `counter.count++`) without worrying about stale closures.
+For better performance, the `setup`/`view` model provides fine-grained control, ensuring only the necessary parts of your component re-render.
 
-- **Smart Reactivity:** Anchor only re-renders components that actually use the changed data, not your entire app. This
-  means better performance without manual optimizations.
+```tsx
+import { anchor, effect, onCleanup, onMount, setup, view } from '@anchorlib/react';
 
-- **No Boilerplate:** Say goodbye to action creators, reducers, and complex update patterns. Just change your state
-  directly and let Anchor handle the rest.
+export const DualCounter = setup(() => {
+  // SETUP PHASE (runs once)
+  const state = anchor({ countA: 0, countB: 0 });
+
+  // VIEW PHASE: create fine-grained views for only the parts that change.
+  const CountA = view(() => <h2>Counter A: {state.countA}</h2>);
+  const CountB = view(() => <h2>Counter B: {state.countB}</h2>);
+
+  // STATIC VIEW: the static view is created once and never re-created.
+  return (
+    <>
+      <h1>Dual Counter</h1>
+      <div>
+        <CountA />
+        <button onClick={() => state.countA++}>Increment A</button>
+      </div>
+      <div>
+        <CountB />
+        <button onClick={() => state.countB++}>Increment B</button>
+      </div>
+    </>
+  );
+});
+```
+
+::: details Try It Yourself
+
+::: anchor-react-sandbox
+
+```tsx /App.tsx [active]
+import { anchor } from '@anchorlib/core';
+import { setup, view } from '@anchorlib/react';
+
+const DualCounter = setup(() => {
+  // SETUP PHASE (runs once)
+  const state = anchor({ countA: 0, countB: 0 });
+
+  // VIEW PHASE: create fine-grained views for only the parts that change.
+  const CountA = view(() => <h2>Counter A: {state.countA}</h2>);
+  const CountB = view(() => <h2>Counter B: {state.countB}</h2>);
+
+  // STATIC VIEW: the static view is created once and never re-created.
+  return (
+    <>
+      <h1>Dual Counter</h1>
+      <div>
+        <CountA />
+        <button onClick={() => state.countA++}>Increment A</button>
+      </div>
+      <div>
+        <CountB />
+        <button onClick={() => state.countB++}>Increment B</button>
+      </div>
+    </>
+  );
+});
+
+export default DualCounter;
+```
 
 :::
+
+::: tip In this example:
+
+- **`setup` Phase:** The `state` object is created once in the `setup` function. It is stable and never re-created.
+- **`view` Phase:** The `CountA` and `CountB` components are fine-grained views. `CountA` only subscribes to `state.countA`, and `CountB` only subscribes to `state.countB`.
+- **Optimized Rendering:** When you click "Increment A", only the `CountA` component re-renders. The `CountB` component is completely unaffected, preventing a wasted render.
+- **No Manual Optimizations:** This fine-grained reactivity is automatic. There is no need for `useMemo`, `useCallback`, or `React.memo`.
+
+:::
+
+To learn more, read the full guide on our [Component Architecture](/react/component-architecture).
 
 ## Global State
 

@@ -122,6 +122,10 @@ export default defineConfig({
             link: '/react/getting-started',
           },
           {
+            text: 'Component',
+            link: '/react/component-architecture',
+          },
+          {
             text: 'Reactivity',
             link: '/react/reactivity',
           },
@@ -137,32 +141,32 @@ export default defineConfig({
             text: 'Anchor vs Friends',
             link: '/react/comparison',
           },
-          {
-            text: 'Guides',
-            collapsed: true,
-            items: [
-              {
-                text: 'Initialization',
-                link: '/react/initialization',
-              },
-              {
-                text: 'Observation',
-                link: '/react/observation',
-              },
-              {
-                text: 'Derivation',
-                link: '/react/derivation',
-              },
-              {
-                text: 'Components',
-                link: '/react/components',
-              },
-              {
-                text: 'Utilities',
-                link: '/react/utilities',
-              },
-            ],
-          },
+          // {
+          //   text: 'Guides',
+          //   collapsed: true,
+          //   items: [
+          //     {
+          //       text: 'Initialization',
+          //       link: '/react/initialization',
+          //     },
+          //     {
+          //       text: 'Observation',
+          //       link: '/react/observation',
+          //     },
+          //     {
+          //       text: 'Derivation',
+          //       link: '/react/derivation',
+          //     },
+          //     {
+          //       text: 'Components',
+          //       link: '/react/components',
+          //     },
+          //     {
+          //       text: 'Utilities',
+          //       link: '/react/utilities',
+          //     },
+          //   ],
+          // },
           {
             text: 'Tutorials',
             collapsed: true,
@@ -351,7 +355,7 @@ export default defineConfig({
               { text: 'Derivation', link: '/apis/react/derivation' },
               { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
               { text: 'Storage', link: '/apis/react/storage' },
-              { text: 'Components', link: '/apis/react/components' },
+              // { text: 'Components', link: '/apis/react/components' },
               { text: 'Error Handling', link: '/apis/react/error-handling' },
               { text: 'Utilities', link: '/apis/react/utilities' },
             ],

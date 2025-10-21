@@ -67,28 +67,6 @@ function useObservedList<T extends ObjLike[], K extends keyof T[number]>(
 
 These are Higher-Order Components that make React components reactive to Anchor's state changes.
 
-### `view()`
-
-A higher-order component (HOC) that creates a React component which automatically re-renders when any observable state accessed within the provided `factory` callback changes. It uses an internal `StateObserver` to track dependencies and trigger updates.
-
-```typescript
-function view<P>(factory: ViewRenderer<P> | ViewRendererFactory<P>, displayName?: string): FunctionComponent<P>;
-```
-
-- `factory`: A callback function that returns a `ReactNode` or a renderer factory object with lifecycle methods. This function will be executed within an observing context.
-- `displayName` (optional): A string to be used as the display name for the returned component in React DevTools.
-- **Returns**: A new React component that is reactive to observable state changes.
-
-#### Factory Object Properties
-
-When using a factory object, the following properties are supported:
-
-- `name` (optional): A string to be used as the display name for the returned component in React DevTools.
-- `render`: A function that returns a `ReactNode`. This function will be executed within an observing context.
-- `onMounted` (optional): A function that is called when the component is mounted.
-- `onUpdated` (optional): A function that is called when the component is updated due to reactive state changes.
-- `onDestroy` (optional): A function that is called when the component is unmounted.
-
 ### `observer()`
 
 A Higher-Order Component (HOC) that wraps a React component to make it reactive to changes in observable state. It automatically sets up and manages a `StateObserver` instance for the wrapped component.
@@ -113,7 +91,7 @@ The key difference lies in their approach and use cases:
 
 ::: danger Deprecated Symbol
 
-This API is deprecated and will be removed in the next major release. Use [**`view()`**](#view) instead.
+This API is deprecated and will be removed in the next major release. Use [**`view()`**](./initialization#view) instead.
 
 :::
 

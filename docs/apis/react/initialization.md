@@ -2,6 +2,99 @@
 
 These React hooks are primarily used for creating and initializing reactive states or stable references within your components.
 
+## Lifecycle APIs
+
+These APIs provide component lifecycle management capabilities, allowing you to handle component mounting, cleanup, and side effects within your components.
+
+### `setup()`
+
+A Higher-Order Component (HOC) that wraps a React component to provide lifecycle management capabilities. It creates a component with built-in mount and cleanup handling, making it suitable for components that need to manage resources or side effects.
+
+The wrapped component will have access to lifecycle hooks like [`onMount()`](#onmount) and [`onCleanup()`](#oncleanup), and can register effects with [`effect()`](#effect).
+
+```typescript
+function setup<C>(Component: C, displayName?: string): C;
+```
+
+- `Component`: The React component to be wrapped with lifecycle management.
+- `displayName` (optional): A string to be used as the display name for the wrapped component in React DevTools. If not provided, it will derive from the original component's display name or name.
+- **Returns**: A new React component with lifecycle management capabilities.
+
+### `view()`
+
+A higher-order component (HOC) that creates a React component which automatically re-renders when any observable state accessed within the provided `factory` callback changes. It uses an internal `StateObserver` to track dependencies and trigger updates.
+
+```typescript
+function view<P>(factory: ViewRenderer<P> | ViewRendererFactory<P>, displayName?: string): FunctionComponent<P>;
+```
+
+- `factory`: A callback function that returns a `ReactNode` or a renderer factory object with lifecycle methods. This function will be executed within an observing context.
+- `displayName` (optional): A string to be used as the display name for the returned component in React DevTools.
+- **Returns**: A new React component that is reactive to observable state changes.
+
+#### Factory Object Properties
+
+When using a factory object, the following properties are supported:
+
+- `name` (optional): A string to be used as the display name for the returned component in React DevTools.
+- `render`: A function that returns a `ReactNode`. This function will be executed within an observing context.
+- `onMounted` (optional): A function that is called when the component is mounted.
+- `onUpdated` (optional): A function that is called when the component is updated due to reactive state changes.
+- `onDestroy` (optional): A function that is called when the component is unmounted.
+
+### `effect()`
+
+Registers an effect handler function that will be executed during the component's lifecycle.
+
+Effects are used for side effects that need to be cleaned up, such as subscriptions or timers. They are executed after the component is mounted and will re-run when any state accessed within the effect handler changes. Effects can optionally return a cleanup function which will be executed before the effect runs again or when the component is unmounted.
+
+Note: Effects should typically not mutate state that they also observe, as this can lead to circular updates and infinite loops.
+
+```typescript
+function effect(fn: EffectHandler): void;
+```
+
+- `fn`: The effect handler function to register
+- **Throws**: {Error} If called outside of a Setup component context
+
+### `onMount()`
+
+Registers a mount handler function that will be executed when the component is mounted.
+
+Mount handlers are executed when the component is being set up and can optionally return a cleanup function that will be called when the component is unmounted.
+
+```typescript
+function onMount(fn: MountHandler): void;
+```
+
+- `fn`: The mount handler function to register
+- **Throws**: {Error} If called outside of a Setup component context
+
+### `onCleanup()`
+
+Registers a cleanup handler function that will be executed when the component is cleaned up.
+
+Cleanup handlers are executed when the component is being torn down, typically to clean up resources like event listeners, timers, or subscriptions.
+
+```typescript
+function onCleanup(fn: CleanupHandler): void;
+```
+
+- `fn`: The cleanup handler function to register
+- **Throws**: {Error} If called outside of a Setup component context
+
+### `named()`
+
+A utility function that assigns a display name to a React functional component. This is primarily used for debugging purposes in React DevTools to provide a meaningful name for components that might otherwise appear as "Anonymous" components.
+
+```typescript
+function named<P>(Component: FunctionComponent<P>, name: string): FunctionComponent<P>;
+```
+
+- `Component`: The React functional component to be named.
+- `name`: The display name to assign to the component.
+- **Returns**: The same component with the assigned display name.
+
 ## Core State APIs
 
 These are the primary APIs for creating reactive state in your React components.
