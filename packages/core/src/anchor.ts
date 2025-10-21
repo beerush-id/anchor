@@ -422,6 +422,9 @@ anchorFn.clear = clear;
 
 export const anchor = anchorFn as Anchor;
 
+export const model = anchorFn.model as Anchor['model'];
 export const mutable = anchorFn as Anchor;
-export const immutable = anchorFn.immutable as Anchor['immutable'];
+export const ordered = anchorFn.ordered as Anchor['ordered'];
 export const writable = anchorFn.writable as Anchor['writable'];
+export const immutable = anchorFn.immutable as Anchor['immutable'];
+export const exception = anchorFn.catch as Anchor['catch'];
