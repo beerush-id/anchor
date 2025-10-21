@@ -24,7 +24,7 @@ html.dark .shiki {
 }
 
 @utility ark-code-block {
-  @apply bg-code-block-background;
+  @apply bg-code-block-background rounded-t-xl;
   max-height: var(--code-max-height);
   min-height: var(--code-min-height);
 
@@ -32,6 +32,10 @@ html.dark .shiki {
     @apply p-4 outline-none;
     counter-reset: step;
     counter-increment: step 0;
+  }
+
+  & > .has-focused:not(:hover) .line:not(.focused) {
+    filter: blur(2px);
   }
 
   & > .shiki .line::before {
@@ -87,13 +91,18 @@ html.dark .shiki {
 }
 
 @utility ark-code-viewer-buttons {
-  @apply flex items-center bg-foreground/10 w-full overflow-x-auto flex-nowrap;
+  @apply flex items-center bg-foreground/10 w-full overflow-x-auto flex-nowrap pt-2;
 }
 
 @utility ark-code-viewer-button {
   @apply flex items-center gap-1 flex-none;
   @apply px-4 py-2.5 text-sm font-medium;
-  @apply transition-all relative rounded-t-lg;
+  @apply relative rounded-t-lg;
+  filter: drop-shadow(-0 -2px 4px rgba(0, 0, 0, 0.1));
+
+  &:first-child {
+    @apply ml-4;
+  }
 
   & > * {
     @apply z-10;

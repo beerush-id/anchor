@@ -10,7 +10,7 @@
 @import 'tooltip.css';
 
 @theme {
-  --color-background: var(--color-slate-50);
+  --color-background: var(--color-white);
   --color-foreground: var(--color-slate-900);
   --color-brand-main: #533ddd;
   --color-brand-main-hover: #4a2d9b;

@@ -7,7 +7,7 @@
 }
 
 @utility ark-section-title {
-  @apply text-3xl md:text-5xl font-light leading-tight tracking-tighter;
+  @apply text-3xl md:text-6xl font-light leading-tight tracking-tighter;
 }
 
 @utility ark-section-subtitle {
