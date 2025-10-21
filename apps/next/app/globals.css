@@ -68,8 +68,12 @@ body {
 
   .ark-code-block,
   .shiki {
-    @apply flex-1 text-sm;
+    @apply flex-1;
   }
+}
+
+.shiki {
+  @apply text-sm;
 }
 
 .tight-code-viewer .ark-code-viewer-body {
