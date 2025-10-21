@@ -1,7 +1,7 @@
 import { type HTMLAttributes } from 'react';
 import { type BindingParam, setup, useBinding, type VariableRef, view } from '@anchorlib/react';
-import { createCheckbox } from '@anchorlib/headless-kit/states';
-import { type ClassList, type ClassName, classx } from '@anchorlib/headless-kit/utils';
+import { createCheckbox } from '@anchorkit/headless/states';
+import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import type { ObjLike } from '@anchorlib/core';
 
 export type CheckboxProps<B> = HTMLAttributes<HTMLButtonElement> & {

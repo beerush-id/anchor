@@ -1,6 +1,6 @@
 import { type HTMLAttributes } from 'react';
-import { createRadioGroup, type RadioValue } from '@anchorlib/headless-kit/states';
-import { type ClassList, type ClassName, classx } from '@anchorlib/headless-kit/utils';
+import { createRadioGroup, type RadioValue } from '@anchorkit/headless/states';
+import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import { RadioGroupContext } from './context.js';
 import { setup } from '@anchorlib/react';
 

@@ -1,7 +1,7 @@
 import { type HTMLAttributes, useContext, useMemo } from 'react';
 import { setup, view } from '@anchorlib/react';
-import { createRadio, type RadioValue } from '@anchorlib/headless-kit/states';
-import { type ClassList, type ClassName, classx } from '@anchorlib/headless-kit/utils';
+import { createRadio, type RadioValue } from '@anchorkit/headless/states';
+import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import { RadioGroupContext } from './context.js';
 
 export type RadioProps = HTMLAttributes<HTMLButtonElement> & {

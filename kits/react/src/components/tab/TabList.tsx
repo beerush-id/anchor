@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { type ClassList, type ClassName, classx } from '@anchorlib/headless-kit/utils';
+import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import { named } from '@anchorlib/react';
 
 export type TabListProps = HTMLAttributes<HTMLDivElement> & {

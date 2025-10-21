@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { classx } from '@anchorlib/headless-kit/utils';
+import { classx } from '@anchorkit/headless/utils';
 import { named } from '@anchorlib/react';
 
 export type CheckboxLabelProps = HTMLAttributes<HTMLLabelElement>;

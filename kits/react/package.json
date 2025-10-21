@@ -18,6 +18,11 @@
       "import": "./dist/components/index.js"
     },
     "./components/*": "./dist/components/*",
+    "./icons": {
+      "types": "./dist/icons/index.d.ts",
+      "import": "./dist/icons/index.js"
+    },
+    "./icons/*": "./dist/icons/*",
     "./layouts": {
       "types": "./dist/layouts/index.d.ts",
       "import": "./dist/layouts/index.js"
@@ -69,7 +74,7 @@
     "react-dom": "^19.1.1"
   },
   "dependencies": {
-    "@anchorlib/headless-kit": "workspace:*",
+    "@anchorkit/headless": "workspace:*",
     "@anchorlib/react": "workspace:*"
   }
 }

@@ -19,3 +19,15 @@ export function useClassName<E>(action: () => string) {
 
   return ref;
 }
+
+export function useHeight<E>(height?: number) {
+  return useAction<E>((element) => {
+    if (!(element instanceof HTMLElement)) return;
+
+    const assign = () => {
+      element.style.setProperty('--ark-content-height', `${height ?? element.scrollHeight}px`);
+    };
+
+    assign();
+  });
+}
