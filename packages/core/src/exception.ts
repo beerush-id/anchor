@@ -1,6 +1,6 @@
 import type { KeyLike, StateMutation } from './types.js';
 import { typeOf } from '@beerush/utils';
-import { microtask } from './utils/index.js';
+import { microbatch } from './utils/index.js';
 
 const generator = {
   init(message: string) {
@@ -182,7 +182,7 @@ const generator = {
   },
 };
 
-const [schedule] = microtask(0);
+const [schedule] = microbatch(0);
 export const captureStack = {
   warning: {
     external(title: string, body: string, trace: string | unknown, ...excludeStacks: unknown[]) {

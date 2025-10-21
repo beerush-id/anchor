@@ -115,7 +115,7 @@ export function createObserver(
       if (ANCHOR_SETTINGS.safeObservation) {
         observedSize += 1;
 
-        if (observedSize >= ANCHOR_SETTINGS.safeObservationThreshold) {
+        if (observedSize > ANCHOR_SETTINGS.safeObservationThreshold) {
           const error = new Error('Observation limit exceeded.');
           captureStack.violation.general(
             'Unsafe observation detected:',
