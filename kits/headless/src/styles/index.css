@@ -5,6 +5,7 @@
 @import './theme.css';
 
 /* Import component styles */
+@import './components/accordion.css';
 @import './components/button.css';
 @import './components/card.css';
 @import './components/input.css';
@@ -21,5 +22,5 @@
 @import './components/dropdown.css';
 
 body {
-  @apply bg-background text-foreground text-sm;
+  @apply bg-background text-foreground text-sm w-full;
 }

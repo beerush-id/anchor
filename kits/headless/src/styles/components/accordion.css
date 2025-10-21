@@ -1,0 +1,85 @@
+@theme {
+  --ark-accordion-border-color: var(--color-border);
+
+  --ark-accordion-icon-color: var(--color-muted-foreground);
+  --ark-accordion-icon-size: calc(var(--spacing) * 5);
+
+  --ark-accordion-trigger-padding-block: calc(var(--spacing) * 4);
+  --ark-accordion-trigger-padding-inline: 0;
+
+  --ark-accordion-content-gap: calc(var(--spacing) * 4);
+
+  @keyframes accordion-expand {
+    0% {
+      transform: translate3d(0, var(--ark-content-height), 0);
+    }
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+}
+
+@utility ark-accordion-group {
+  @apply flex flex-col;
+
+  & > .ark-accordion {
+    border-bottom-color: var(--ark-accordion-border-color);
+  }
+}
+
+@utility ark-accordion {
+  @apply flex flex-col;
+  border-bottom: 1px solid transparent;
+}
+
+@utility ark-accordion-trigger {
+  @apply flex items-center justify-between w-full font-medium;
+
+  padding-block: var(--ark-accordion-trigger-padding-block);
+  padding-inline: var(--ark-accordion-trigger-padding-inline);
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible,
+  &:hover {
+    text-decoration: underline;
+  }
+
+  & > svg,
+  & > img,
+  & > .ark-icon {
+    width: var(--ark-accordion-icon-size);
+    height: var(--ark-accordion-icon-size);
+    color: var(--ark-accordion-icon-color);
+    transition-property: transform;
+    transition-duration: var(--transition-duration-normal);
+    transition-timing-function: var(--default-transition-timing-function);
+  }
+
+  &.ark-open > svg,
+  &.ark-open > img,
+  &.ark-open > .ark-icon {
+    transform: rotate(180deg);
+  }
+}
+
+@utility ark-accordion-content {
+  @apply overflow-hidden flex flex-col;
+
+  gap: var(--ark-accordion-content-gap);
+  margin-bottom: 0;
+  transition-property: height, margin-bottom;
+  transition-duration: var(--transition-duration-normal);
+  transition-timing-function: var(--default-transition-timing-function);
+
+  &:not(.ark-open) {
+    height: 0;
+  }
+
+  &.ark-open {
+    height: var(--ark-content-height, 'auto');
+    margin-bottom: var(--ark-accordion-trigger-padding-block);
+  }
+}

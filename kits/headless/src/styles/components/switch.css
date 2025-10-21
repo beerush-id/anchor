@@ -99,6 +99,9 @@
 
 /* Switch label utility */
 @utility ark-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ark-switch-gap);
   font-size: var(--ark-switch-label-font-size);
   line-height: var(--leading-tight);
   color: var(--color-foreground);

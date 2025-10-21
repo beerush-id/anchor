@@ -107,15 +107,12 @@
 }
 
 @utility ark-tab-content {
-  @apply ark-card;
-  opacity: 0;
-  visibility: hidden;
-  width: 100%;
+  @apply ark-card w-full opacity-0 invisible;
   color: var(--ark-tab-foreground);
   background-color: var(--ark-tab-background);
 
   &:not(.ark-active) {
-    position: absolute;
+    display: none;
   }
 
   &.ark-active {

@@ -1,16 +1,16 @@
 @theme {
-  --ark-button-background: var(--color-accent);
-  --ark-button-background-hover: var(--color-accent-hover);
-  --ark-button-background-active: var(--color-accent-active);
-  --ark-button-background-disabled: var(--color-accent-disabled);
+  --ark-button-background: var(--color-white);
+  --ark-button-background-hover: var(--color-zinc-100);
+  --ark-button-background-active: var(--color-zinc-50);
+  --ark-button-background-disabled: var(--color-zinc-200);
 
   --ark-button-foreground: var(--color-accent-foreground);
   --ark-button-foreground-hover: var(--color-accent-foreground);
   --ark-button-foreground-active: var(--color-accent-foreground);
-  --ark-button-foreground-disabled: var(--color-accent-disabled-foreground);
+  --ark-button-foreground-disabled: var(--color-zinc-400);
 
   --ark-button-padding-block: 0;
-  --ark-button-padding-inline: calc(var(--spacing) * 3);
+  --ark-button-padding-inline: calc(var(--spacing) * 4);
   --ark-button-gap: calc(var(--spacing) * 2);
   --ark-button-height: 36px;
 
@@ -18,12 +18,13 @@
   --ark-button-font-weight: var(--font-weight-medium);
 
   --ark-button-border-size: 1px;
-  --ark-button-border-color: transparent;
+  --ark-button-border-color: var(--color-border);
   --ark-button-border-color-disabled: transparent;
-  --ark-button-border-radius: var(--radius-md);
+  --ark-button-border-radius: var(--radius-lg);
+  --ark-button-shadow: var(--shadow-xs);
 
   --ark-button-ring-size: 3px;
-  --ark-button-ring-opacity: 25%;
+  --ark-button-ring-opacity: 60%;
   --ark-button-ring-color: var(--color-accent-ring);
   --ark-button-ring-offset: 0;
 
@@ -35,8 +36,15 @@
 
 @layer theme {
   .dark {
+    --ark-button-background: var(--color-zinc-900);
+    --ark-button-background-hover: var(--color-zinc-800);
+    --ark-button-background-active: var(--color-zinc-950);
+    --ark-button-background-disabled: var(--color-zinc-700);
+    --ark-button-foreground-disabled: var(--color-zinc-500);
+
     --ark-button-group-background: var(--color-zinc-100);
     --ark-button-group-foreground: var(--color-zinc-900);
+    --ark-button-ring-opacity: 95%;
   }
 }
 
@@ -54,8 +62,7 @@
   white-space: nowrap;
   user-select: none;
 
-  transition-property:
-    color, background-color, outline-color, border-bottom-color, border-top-color, border-left-color, border-right-color;
+  transition-property: color, background-color, outline-color, border-color;
   transition-timing-function: var(--transition-timing);
   transition-duration: var(--transition-duration-fast);
 
@@ -82,19 +89,12 @@
   &:has(> .ark-icon:last-child:not(:only-child)) {
     padding-right: var(--ark-button-gap);
   }
-
-  &.ark-button-icon-prefix {
-    /*padding-left: var(--ark-button-gap);*/
-  }
-
-  &.ark-button-icon-suffix {
-    /*padding-right: var(--ark-button-gap);*/
-  }
 }
 
 @utility ark-button-style {
   color: var(--ark-button-foreground);
   background-color: var(--ark-button-background);
+  box-shadow: var(--ark-button-shadow);
 
   border: var(--ark-button-border-size) solid var(--ark-button-border-color);
   outline: var(--ark-button-ring-size) solid transparent;
@@ -102,7 +102,7 @@
 
   &:focus,
   &.ark-focus {
-    outline-color: var(--ark-button-ring-color);
+    outline-color: color-mix(in oklab, var(--ark-button-ring-color) var(--ark-button-ring-opacity), transparent);
   }
 
   &:hover,
@@ -135,6 +135,8 @@
   --ark-button-background-hover: var(--color-primary-hover);
   --ark-button-background-active: var(--color-primary-active);
   --ark-button-background-disabled: var(--color-primary-disabled);
+  --ark-button-border-color: transparent;
+  --ark-button-border-color-disabled: transparent;
 
   --ark-button-foreground: var(--color-primary-foreground);
   --ark-button-foreground-hover: var(--color-primary-foreground);
@@ -148,6 +150,8 @@
   --ark-button-background-hover: var(--color-destructive-hover);
   --ark-button-background-active: var(--color-destructive-active);
   --ark-button-background-disabled: var(--color-destructive-disabled);
+  --ark-button-border-color: transparent;
+  --ark-button-border-color-disabled: transparent;
 
   --ark-button-foreground: var(--color-destructive-foreground);
   --ark-button-foreground-hover: var(--color-destructive-foreground);
@@ -173,6 +177,8 @@
 
 @utility ark-ghost-button {
   --ark-button-background: transparent;
+  --ark-button-border-color: transparent;
+  --ark-button-shadow: none;
   --ark-button-background-hover: var(--color-primary-hover);
   --ark-button-background-active: var(--color-primary-active);
   --ark-button-background-disabled: transparent;
@@ -186,6 +192,8 @@
 
 @utility ark-link-button {
   --ark-button-background: transparent;
+  --ark-button-border-color: transparent;
+  --ark-button-shadow: none;
   --ark-button-background-hover: transparent;
   --ark-button-background-active: transparent;
   --ark-button-background-disabled: transparent;

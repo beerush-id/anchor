@@ -14,7 +14,7 @@
   --ark-badge-font-weight: var(--font-weight-medium);
 
   --ark-badge-size: 28px;
-  --ark-badge-icon-size: 60%;
+  --ark-badge-icon-size: 62%;
 }
 
 @utility ark-badge-layout {
@@ -116,6 +116,7 @@
 }
 
 @utility ark-icon-badge {
+  --ark-badge-padding-block: 0;
   --ark-badge-padding-inline: 0;
   width: var(--ark-badge-size);
 }
