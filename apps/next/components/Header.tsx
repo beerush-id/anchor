@@ -79,6 +79,7 @@ export const Header = () => {
         links={links}
         socials={socials}
         offset={SCROLL_THRESHOLD}
+        className={'border-b border-b-white dark:border-b-transparent'}
       />
     </>
   );

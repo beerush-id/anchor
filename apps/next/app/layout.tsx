@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Header } from '@components/Header';
 import Script from 'next/script.js';
@@ -15,13 +15,18 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const playfairDisplay = Playfair_Display({
+  variable: '--font-playfair-display',
+  subsets: ['latin'],
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://anchorlib.dev'),
   alternates: {
     canonical: '/',
   },
   title: {
-    default: 'Anchor - State Management For Humans',
+    default: 'Anchor - Evolving React Architecture',
     template: '%s | Anchor',
   },
   description:
@@ -175,7 +180,7 @@ export default async function RootLayout({
     settings.theme === 'dark' || (settings.theme === 'system' && settings.systemTheme === 'dark') ? 'dark' : '';
 
   return (
-    <html lang="en" className={darkClass}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${darkClass}`}>
       <head>
         {!userSettings?.value && (
           <script
@@ -187,7 +192,7 @@ export default async function RootLayout({
             }}></script>
         )}
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`antialiased`}>
         <Header />
         {children}
         {process.env.NODE_ENV === 'production' && (

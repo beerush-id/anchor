@@ -733,22 +733,25 @@ export const CoreFeatures = () => (
       performance, True Immutability for predictable state changes, and Data Integrity for reliable applications.
     </SectionDescription>
     <div className="flex flex-col gap-8 md:gap-24">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-8 md:gap-12">
+        <Card className={'md:shadow-2xl bg-code-block-background md:order-2 xl:col-span-7'}>
           <CodeViewer items={fineGrainedCodes} className={'tight-code-viewer'} />
         </Card>
-        <div className="flex flex-col gap-6 justify-center">
+        <div className="flex flex-col gap-6 justify-center xl:col-span-5">
           <SectionSubtitle>Fine-Grained Reactivity — Built for Performance and Efficiency</SectionSubtitle>
           <p className="mb-4 text-slate-700 dark:text-slate-300">
             Anchor delivers unmatched performance with its fine-grained reactivity system, enabling efficient updates
             and blazing-fast rendering that keeps your application responsive under any workload.
           </p>
 
-          <MainCTA className={'md:justify-start w-full'} />
+          <MainCTA className={'md:justify-start w-full'} tiys={false} />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
-        <div className="flex flex-col gap-6 justify-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-8 md:gap-12">
+        <Card className={'md:shadow-2xl bg-code-block-background xl:col-span-7'}>
+          <CodeViewer items={trueImmutabilityCodes} className={'tight-code-viewer'} />
+        </Card>
+        <div className="flex flex-col gap-6 justify-center xl:col-span-5">
           <SectionSubtitle>True-Immutability — Built for Readability, Maintainability, and Scalability</SectionSubtitle>
           <p className="mb-4 text-slate-700 dark:text-slate-300">
             With Anchor's true immutability guarantees, state changes are explicit and predictable. This design
@@ -756,17 +759,14 @@ export const CoreFeatures = () => (
             about, test, and refactor as your application grows in complexity.
           </p>
 
-          <MainCTA className={'md:justify-start w-full'} />
+          <MainCTA className={'md:justify-start w-full'} tiys={false} />
         </div>
-        <Card>
-          <CodeViewer items={trueImmutabilityCodes} className={'tight-code-viewer'} />
-        </Card>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-8 md:gap-12">
+        <Card className={'md:shadow-2xl bg-code-block-background md:order-2 xl:col-span-7'}>
           <CodeViewer items={integrityCodes} className={'tight-code-viewer'} />
         </Card>
-        <div className="flex flex-col gap-6 justify-center">
+        <div className="flex flex-col gap-6 justify-center xl:col-span-5">
           <SectionSubtitle>Data Integrity — Built for Reliability, and Safety</SectionSubtitle>
           <p className="mb-4 text-slate-700 dark:text-slate-300">
             Anchor ensures data integrity through Zod schema validation, providing strong type safety and runtime
@@ -774,7 +774,7 @@ export const CoreFeatures = () => (
             across all components.
           </p>
 
-          <MainCTA className={'md:justify-start w-full'} />
+          <MainCTA className={'md:justify-start w-full'} tiys={false} />
         </div>
       </div>
     </div>

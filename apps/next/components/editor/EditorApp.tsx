@@ -30,7 +30,7 @@ export default function EditorApp() {
   return (
     <div ref={ref} className="flex flex-col w-full max-w-6xl mx-auto">
       <EditorOutput />
-      <Card className="flex-1">
+      <Card className="flex-1 shadow-2xl">
         <CardHeader>
           <h1 className="flex items-center gap-2">
             <SwatchBook />

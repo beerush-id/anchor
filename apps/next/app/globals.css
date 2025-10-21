@@ -12,6 +12,7 @@
   --header-height: 0;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-title: var(--font-playfair-display);
 }
 
 @layer theme {
@@ -43,7 +44,15 @@ body {
 }
 
 .ark-section {
-  @apply max-w-6xl lg:max-w-7xl mx-auto flex flex-col justify-center items-center;
+  @apply max-w-6xl lg:max-w-6xl mx-auto flex flex-col justify-center items-center;
+}
+
+.ark-section-title {
+  @apply max-w-4xl font-title;
+}
+
+.ark-section-description {
+  @apply max-w-5xl;
 }
 
 .ark-section-offset.min-h-screen .ark-section {
@@ -59,7 +68,7 @@ body {
 
   .ark-code-block,
   .shiki {
-    @apply flex-1;
+    @apply flex-1 text-sm;
   }
 }
 
@@ -74,23 +83,23 @@ body {
 .page-section {
   @apply relative;
 
-  &:before,
-  &:after {
-    @apply absolute w-[80%] md:w-2xl aspect-square block rounded-full z-0 blur-[150px] opacity-30;
-    content: '';
-  }
+  /*&:before,*/
+  /*&:after {*/
+  /*  @apply absolute w-[80%] md:w-2xl aspect-square block rounded-full z-0 blur-[150px] opacity-30;*/
+  /*  content: '';*/
+  /*}*/
 
-  &:before {
-    @apply bg-section-blur-red;
-    top: 5%;
-    left: 10%;
-  }
+  /*&:before {*/
+  /*  @apply bg-section-blur-red;*/
+  /*  top: 5%;*/
+  /*  left: 10%;*/
+  /*}*/
 
-  &:after {
-    @apply bg-section-blur-blue;
-    right: 10%;
-    bottom: 5%;
-  }
+  /*&:after {*/
+  /*  @apply bg-section-blur-blue;*/
+  /*  right: 10%;*/
+  /*  bottom: 5%;*/
+  /*}*/
 
   & > * {
     @apply relative z-10;

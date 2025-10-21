@@ -32,10 +32,10 @@ export function BeyondFrontend() {
       </SectionDescription>
 
       <div className="grid grid-cols-1 md:grid-cols-12 w-full gap-4 md:gap-6">
-        <Card className={'flex-1 md:col-span-7'}>
+        <Card className={'flex-1 md:col-span-7 md:shadow-2xl bg-code-block-background'}>
           <CodeViewer items={codeBlocks} maxHeight={360} />
         </Card>
-        <Card className={'flex-1 md:col-span-5'}>
+        <Card className={'flex-1 md:col-span-5 md:shadow-2xl bg-code-block-background'}>
           <HelloChat />
         </Card>
       </div>

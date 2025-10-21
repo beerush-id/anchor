@@ -1,7 +1,15 @@
 'use client';
 
-import { Card, CodeViewer, Section, SectionDescription, SectionTitle } from '@anchorlib/react-kit/components';
-import { MainCTA } from '@components/MainCTA';
+import {
+  Card,
+  CardContent,
+  CodeViewer,
+  Section,
+  SectionDescription,
+  SectionSubtitle,
+  SectionTitle,
+} from '@anchorlib/react-kit/components';
+import { LayoutTemplate, Scaling, SquareFunction } from 'lucide-react';
 
 const anchorCode = `
 import { setup, view, useAnchor } from '@anchorlib/react';
@@ -12,13 +20,13 @@ const TabContext = createContext(null);
 export const TabButton = setup(({ name, children, ...props }) => { // [!code ++]
   const tab = useContext(TabContext);
 
-  if (tab && !tab.active) tab.select(name); // [!code ++]
+  if (tab && !tab.value) tab.select(name); // [!code ++]
 
   const Template = view(() => ( // [!code ++]
     <button
       onClick={() => tab?.select(name)}
       disabled={tab?.disabled}
-      className={tab?.active === name ? 'active' : ''}
+      className={tab?.value === name ? 'active' : ''}
       {...props}>
       {children}
     </button>
@@ -28,7 +36,7 @@ export const TabButton = setup(({ name, children, ...props }) => { // [!code ++]
 });
 
 const createTab = (options) => useAnchor({
-  active: options?.active ?? null,
+  active: options?.value ?? null,
   disabled: options?.disabled ?? false,
   select(name) {
     if (this.disabled) return;
@@ -48,7 +56,7 @@ export const TabButton = ({ name, children, ...props }) => {
   // The tricky and scary part. Wrong dependency can cause infinite loops
   // leading to DDOS-ing ourselves - a true story.
   useEffect(() => { // [!code --]
-    if (tab && !tab.active) { // [!code --]
+    if (tab && !tab.value) { // [!code --]
       tab.select(name); // [!code --]
     } // [!code --]
   }, [tab, name]); // [!code --]
@@ -61,7 +69,7 @@ export const TabButton = ({ name, children, ...props }) => {
     <button
       onClick={handleClick}
       disabled={tab?.disabled}
-      className={tab?.active === name ? 'active' : ''}
+      className={tab?.value === name ? 'active' : ''}
       {...props}>
       {children}
     </button>
@@ -69,7 +77,7 @@ export const TabButton = ({ name, children, ...props }) => {
 };
 
 const createTab = (options) => {
-  const [active, setActive] = useState(options?.active ?? null);
+  const [active, setActive] = useState(options?.value ?? null);
   const [disabled, setDisabled] = useState(options?.disabled ?? false);
 
   return {
@@ -94,7 +102,7 @@ export const TabButton = ({ name, children, ...props }) => {
   const tab = useContext(TabContext);
 
   useEffect(() => {
-    if (tab && tab.active === null) {
+    if (tab && tab.value === null) {
       tab.select(name);
     }
   }, [tab, name]);
@@ -107,7 +115,7 @@ export const TabButton = ({ name, children, ...props }) => {
     <button
       onClick={handleClick}
       disabled={tab?.disabled}
-      className={tab?.active === name ? 'active' : ''}
+      className={tab?.value === name ? 'active' : ''}
       {...props}>
       {children}
     </button>
@@ -128,7 +136,7 @@ const tabReducer = (state, action) => {
 
 const createTab = (options) => {
   const [state, dispatch] = useReducer(tabReducer, {
-    active: options?.active ?? null,
+    active: options?.value ?? null,
     disabled: options?.disabled ?? false
   });
   return {
@@ -154,7 +162,7 @@ export const TabButton = observer(({ name, children, ...props }) => {
   const tab = useContext(TabContext);
 
   useEffect(() => {
-    if (tab && tab.active === null) {
+    if (tab && tab.value === null) {
       tab.select(name);
     }
   }, [tab, name]);
@@ -167,7 +175,7 @@ export const TabButton = observer(({ name, children, ...props }) => {
     <button
       onClick={handleClick}
       disabled={tab?.disabled}
-      className={tab?.active === name ? 'active' : ''}
+      className={tab?.value === name ? 'active' : ''}
       {...props}>
       {children}
     </button>
@@ -179,7 +187,7 @@ class TabStore {
   disabled = false;
   
   constructor(options) {
-    this.active = options?.active ?? null;
+    this.active = options?.value ?? null;
     this.disabled = options?.disabled ?? false;
     makeAutoObservable(this);
   }
@@ -205,7 +213,7 @@ export const TabButton = ({ name, children, ...props }) => {
   const setTab = useSetAtom(tabAtom);
 
   useEffect(() => {
-    if (tab.active === null) {
+    if (tab.value === null) {
       setTab(prev => {
         const newTab = { ...prev };
         newTab.select(name);
@@ -226,7 +234,7 @@ export const TabButton = ({ name, children, ...props }) => {
     <button
       onClick={handleClick}
       disabled={tab?.disabled}
-      className={tab?.active === name ? 'active' : ''}
+      className={tab?.value === name ? 'active' : ''}
       {...props}>
       {children}
     </button>
@@ -235,7 +243,7 @@ export const TabButton = ({ name, children, ...props }) => {
 
 const createTab = (options) => {
   const tabAtoms = {
-    active: atom(options?.active ?? null),
+    active: atom(options?.value ?? null),
     disabled: atom(options?.disabled ?? false),
   };
   
@@ -264,7 +272,7 @@ export const TabButton = ({ name, children, ...props }) => {
   const tab = useStore(tabStore, state => state);
   
   useEffect(() => {
-    if (tab && tab.active === null) {
+    if (tab && tab.value === null) {
       tab.select(name);
     }
   }, [tab, name]);
@@ -277,7 +285,7 @@ export const TabButton = ({ name, children, ...props }) => {
     <button
       onClick={handleClick}
       disabled={tab?.disabled}
-      className={tab?.active === name ? 'active' : ''}
+      className={tab?.value === name ? 'active' : ''}
       {...props}>
       {children}
     </button>
@@ -289,7 +297,7 @@ const createTab = (options) => {
 };
 
 const createTabStore = (options) => create((set, get) => ({
-  active: options?.active ?? null,
+  active: options?.value ?? null,
   disabled: options?.disabled ?? false,
   select: (name) => {
     if (get().disabled) return;
@@ -348,23 +356,62 @@ const otherBlocks = [
 export function RedefineReact() {
   return (
     <Section id="redefine-react" className="page-section">
-      <SectionTitle className={'text-center'}>Redefine React Components</SectionTitle>
+      <SectionTitle className={'text-center'}>Redefine React Component</SectionTitle>
       <SectionDescription className={'md:mb-6 text-center'}>
-        Anchor separates component initialization from rendering, creating cleaner components that eliminate boilerplate
-        state management code, prevent unnecessary re-renders, and provide stable references. A fresh approach to React
-        component architecture.
+        Tired of useEffect dependency arrays, useCallback, and useMemo? Anchor redefines the React component. By
+        separating the one-time setup from the reactive view, it eliminates an entire class of boilerplate, prevents
+        unnecessary re-renders, and provides stable references. It's a fresh, more reasonable approach to React
+        architecture that delivers truly fine-grained performance by default.{' '}
       </SectionDescription>
 
       <div className={'grid grid-cols-1 md:grid-cols-2 items-stretch gap-4 md:gap-8 w-full mb-4 mb-4 md:mb-10'}>
-        <Card className={'flex-1'}>
+        <Card className={'flex-1 md:shadow-2xl bg-code-block-background'}>
           <CodeViewer className={'flex-1 flex flex-col'} minHeight={380} maxHeight={380} items={[anchorBlock]} />
         </Card>
-        <Card className={'flex-1'}>
+        <Card className={'flex-1 md:shadow-2xl bg-code-block-background'}>
           <CodeViewer className={'flex-1 flex flex-col'} minHeight={380} maxHeight={380} items={otherBlocks} />
         </Card>
       </div>
 
-      <MainCTA className="md:mb-6" href={'/docs/react/getting-started'} />
+      <div className={'grid grid-cols-1 md:grid-cols-3 items-stretch gap-4 md:gap-8 w-full mb-4 mb-4 md:mb-10'}>
+        <Card className={'flex-1'}>
+          <CardContent className={'p-4'}>
+            <Scaling size={32} />
+            <div className="flex flex-col gap-3 mt-4">
+              <SectionSubtitle className={'text-xl font-medium'}>Scalable</SectionSubtitle>
+              <p className={'text-sm text-foreground/70'}>
+                <strong>Performance by Design, Not by Discipline</strong>. Anchor's fine-grained reactivity is O(1) by
+                nature, meaning performance remains flat and predictable as your application grows.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={'flex-1'}>
+          <CardContent className={'p-4'}>
+            <LayoutTemplate size={32} />
+            <div className="flex flex-col gap-3 mt-4">
+              <SectionSubtitle className={'text-xl font-medium'}>Predictable</SectionSubtitle>
+              <p className={'text-sm text-foreground/70'}>
+                <strong>Reason about your code with confidence</strong>. A clean separation between a setup that runs
+                once and a reactive view, combined with explicit lifecycles, eliminates the guesswork.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={'flex-1'}>
+          <CardContent className={'p-4'}>
+            <SquareFunction size={32} />
+            <div className="flex flex-col gap-3 mt-4">
+              <SectionSubtitle className={'text-xl font-medium'}>Reasonable</SectionSubtitle>
+              <p className={'text-sm text-foreground/70'}>
+                <strong>A Tool That Works With You, Not Against You</strong>. Architecture that respects your time. By
+                embracing JavaScript's nature instead of fighting it, Anchor provides an intuitive, boilerplate-free
+                experience.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </Section>
   );
 }

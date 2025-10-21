@@ -28,8 +28,8 @@ export const TodoDemo = () => {
 
   return (
     <Section id="todo-benchmark" className="page-section fill-screen-section">
-      <SectionTitle className={'text-center'}>Performance Comparison: Anchor vs Traditional React</SectionTitle>
-      <SectionDescription className="text-center">
+      <SectionTitle className={'text-center'}>Anchor vs Classic React</SectionTitle>
+      <SectionDescription className="text-center mb-6">
         Both implementations follow the same development patterns with equal effort. The difference in performance comes
         from Anchor's optimized design, not from extreme optimization techniques. As you interact with both versions,
         detailed performance metrics are automatically logged to your browser's console.
