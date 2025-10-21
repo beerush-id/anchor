@@ -66,3 +66,33 @@ export type StateBinding<T, S> = {
   bind?: BindingLink<T, S>;
 };
 export type BindingLink<T, B> = [B, BindingKeys<T, B>];
+
+export type MountHandler = () => void | CleanupHandler;
+export type CleanupHandler = () => void;
+export type EffectHandler = () => void | CleanupHandler;
+export type EffectCleanup = () => void;
+export type Lifecycle = {
+  /**
+   * Mounts the component by executing all registered mount handlers and effects.
+   * Cancels any pending cleanup operations and schedules mount operations.
+   * Mount handlers can return cleanup functions which will be stored for later execution.
+   */
+  mount(): void;
+
+  /**
+   * Cleans up the component by executing all registered cleanup handlers.
+   * Cancels any pending mount operations and schedules cleanup operations.
+   * After execution, clears all registered mount and cleanup handlers.
+   */
+  cleanup(): void;
+
+  /**
+   * Renders the component by executing the provided function within the component's context.
+   * Temporarily sets the current lifecycle handlers to this component's handlers,
+   * executes the render function, and then restores the previous handlers.
+   *
+   * @param fn - The render function to execute
+   * @returns The result of the render function
+   */
+  render<R>(fn: () => R): R;
+};

@@ -1,10 +1,11 @@
 import { type FunctionComponent, memo, type ReactNode, useEffect, useState } from 'react';
-import { anchor, captureStack, createObserver, type Linkable, type ObjLike, outsideObserver } from '@anchorlib/core';
+import { anchor, captureStack, createObserver, type Linkable, type ObjLike } from '@anchorlib/core';
 import type { ReactiveProps, ViewRenderer, ViewRendererFactory } from './types.js';
 import { useObserverRef } from './observation.js';
 import { resolveProps } from './props.js';
 import { CLEANUP_DEBOUNCE_TIME, RENDERER_INIT_VERSION } from './constant.js';
 import { useMicrotask } from './hooks.js';
+import { createLifecycle } from './lifecycle.js';
 
 /**
  * **`observer`** is a Higher-Order Component (HOC) that wraps a React component
@@ -131,7 +132,15 @@ export function setup<C>(Component: C, displayName?: string): C {
   const render = Component as (props: unknown) => ReactNode;
 
   const Setup = memo((props) => {
-    return outsideObserver(() => render(props));
+    const lifecycle = createLifecycle();
+
+    useEffect(() => {
+      lifecycle.mount();
+
+      return () => lifecycle.cleanup();
+    }, Object.values(props));
+
+    return lifecycle.render(() => render(props));
   });
 
   Setup.displayName = `Setup(${componentName})`;

@@ -10,6 +10,7 @@ export * from './hoc.js';
 export * from './hooks.js';
 export * from './history.js';
 export * from './immutable.js';
+export * from './lifecycle.js';
 export * from './model.js';
 export * from './observation.js';
 export * from './props.js';
