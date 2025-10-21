@@ -3,7 +3,6 @@ import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHand
 
 let currentMountHandlers: Set<MountHandler> | null = null;
 let currentMountCleanups: Set<CleanupHandler> | null = null;
-let currentEffectHandlers: Set<EffectHandler> | null = null;
 let currentEffectCleanups: Set<EffectCleanup> | null = null;
 
 /**
@@ -43,10 +42,6 @@ export function createLifecycle(): Lifecycle {
             mountCleanups.add(cleanup);
           }
         });
-
-        effectHandlers.forEach((runEffect) => {
-          runEffect({ type: 'init', keys: [] });
-        });
       });
     },
     cleanup() {
@@ -66,12 +61,10 @@ export function createLifecycle(): Lifecycle {
     },
     render<R>(fn: () => R) {
       const prevMountHandlers = currentMountHandlers,
-        prevEffectHandlers = currentEffectHandlers,
         prevCleanupHandlers = currentMountCleanups,
         prevEffectCleanups = currentEffectCleanups;
 
       currentMountHandlers = mountHandlers;
-      currentEffectHandlers = effectHandlers;
       currentMountCleanups = mountCleanups;
       currentEffectCleanups = effectCleanups;
 
@@ -79,7 +72,6 @@ export function createLifecycle(): Lifecycle {
         return withinGlobalContext(() => untrack(fn)) as R;
       } finally {
         currentMountHandlers = prevMountHandlers;
-        currentEffectHandlers = prevEffectHandlers;
         currentMountCleanups = prevCleanupHandlers;
         currentEffectCleanups = prevEffectCleanups;
       }
@@ -103,7 +95,7 @@ export function createLifecycle(): Lifecycle {
  * @throws {Error} If called outside of a Setup component context
  */
 export function effect(fn: EffectHandler) {
-  if (!currentEffectHandlers || !currentEffectCleanups) {
+  if (!currentEffectCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
       'Effect handler declaration violation detected:',
@@ -128,7 +120,10 @@ export function effect(fn: EffectHandler) {
     cleanup?.();
   };
 
-  currentEffectHandlers?.add(runEffect);
+  if (typeof window !== 'undefined') {
+    runEffect({ type: 'init', keys: [] });
+  }
+
   currentEffectCleanups?.add(leaveEffect);
 }
 
