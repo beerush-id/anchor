@@ -1,24 +1,24 @@
 @import 'tailwindcss';
-@import '@anchorlib/headless-kit/styles/index.css';
+@import '@anchorkit/headless/styles/index.css';
 
-@import '@anchorlib/headless-kit/styles/themes/amber.css';
-@import '@anchorlib/headless-kit/styles/themes/blue.css';
-@import '@anchorlib/headless-kit/styles/themes/cyan.css';
-@import '@anchorlib/headless-kit/styles/themes/emerald.css';
-@import '@anchorlib/headless-kit/styles/themes/fuchsia.css';
-@import '@anchorlib/headless-kit/styles/themes/green.css';
-@import '@anchorlib/headless-kit/styles/themes/indigo.css';
-@import '@anchorlib/headless-kit/styles/themes/lime.css';
-@import '@anchorlib/headless-kit/styles/themes/orange.css';
-@import '@anchorlib/headless-kit/styles/themes/pink.css';
-@import '@anchorlib/headless-kit/styles/themes/purple.css';
-@import '@anchorlib/headless-kit/styles/themes/red.css';
-@import '@anchorlib/headless-kit/styles/themes/rose.css';
-@import '@anchorlib/headless-kit/styles/themes/sky.css';
-@import '@anchorlib/headless-kit/styles/themes/slate.css';
-@import '@anchorlib/headless-kit/styles/themes/teal.css';
-@import '@anchorlib/headless-kit/styles/themes/violet.css';
-@import '@anchorlib/headless-kit/styles/themes/yellow.css';
+@import '@anchorkit/headless/styles/themes/amber.css';
+@import '@anchorkit/headless/styles/themes/blue.css';
+@import '@anchorkit/headless/styles/themes/cyan.css';
+@import '@anchorkit/headless/styles/themes/emerald.css';
+@import '@anchorkit/headless/styles/themes/fuchsia.css';
+@import '@anchorkit/headless/styles/themes/green.css';
+@import '@anchorkit/headless/styles/themes/indigo.css';
+@import '@anchorkit/headless/styles/themes/lime.css';
+@import '@anchorkit/headless/styles/themes/orange.css';
+@import '@anchorkit/headless/styles/themes/pink.css';
+@import '@anchorkit/headless/styles/themes/purple.css';
+@import '@anchorkit/headless/styles/themes/red.css';
+@import '@anchorkit/headless/styles/themes/rose.css';
+@import '@anchorkit/headless/styles/themes/sky.css';
+@import '@anchorkit/headless/styles/themes/slate.css';
+@import '@anchorkit/headless/styles/themes/teal.css';
+@import '@anchorkit/headless/styles/themes/violet.css';
+@import '@anchorkit/headless/styles/themes/yellow.css';
 
 @source '../../../node_modules/@anchorkit/react/dist';
 

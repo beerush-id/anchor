@@ -1,6 +1,6 @@
 import { persistent } from '@anchorlib/storage';
 import { subscribe } from '@anchorlib/core';
-import { COLOR_THEMES } from '@anchorlib/headless-kit';
+import { COLOR_THEMES } from '@anchorkit/headless';
 import { Bell, CircleUser } from '@icons/index.js';
 import type { ChangeEventHandler } from 'react';
 import { view } from '@anchorlib/react';
@@ -9,6 +9,10 @@ import { Tabs } from './Tabs.js';
 import { Radios } from './Radios.js';
 import { Switches } from './Switches.js';
 import { Checkboxes } from './Checkboxes.js';
+import { AccordionGroup } from '@anchorkit/react/components/accordion/AccordionGroup.js';
+import { Accordion } from '@anchorkit/react/components/accordion/Accordion.js';
+import { AccordionTrigger } from '@anchorkit/react/components/accordion/AccordionTrigger.js';
+import { AccordionContent } from '@anchorkit/react/components/accordion/AccordionContent.js';
 
 const settings = persistent('settings', {
   theme: 'system',
@@ -59,6 +63,60 @@ export default function Home() {
     <>
       <main className="p-8">
         <ThemeControl />
+
+        {/* Accordion */}
+        <div className="mb-8 flex flex-col gap-2">
+          <h2 className="text-xl font-semibold mb-2">Accordions</h2>
+          <div className="flex flex-wrap gap-2 items-center">
+            <AccordionGroup>
+              <Accordion open>
+                <AccordionTrigger>
+                  <span>Product Information</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <p>
+                    Our flagship product combines cutting-edge technology with sleek design. Built with premium
+                    materials, it offers unparalleled performance and reliability.
+                  </p>
+                  <p>
+                    Key features include advanced processing capabilities, and an intuitive user interface designed for
+                    both beginners and experts.
+                  </p>
+                </AccordionContent>
+              </Accordion>
+              <Accordion>
+                <AccordionTrigger>
+                  <span>Shipping Details</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <p>
+                    We offer worldwide shipping through trusted courier partners. Standard delivery takes 3-5 business
+                    days, while express shipping ensures delivery within 1-2 business days.
+                  </p>
+                  <p>
+                    All orders are carefully packaged and fully insured. Track your shipment in real-time through our
+                    dedicated tracking portal.
+                  </p>
+                </AccordionContent>
+              </Accordion>
+              <Accordion>
+                <AccordionTrigger>
+                  <span>Return Policy</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <p>
+                    We stand behind our products with a comprehensive 30-day return policy. If you're not completely
+                    satisfied, simply return the item in its original condition.
+                  </p>
+                  <p>
+                    Our hassle-free return process includes free return shipping and full refunds processed within 48
+                    hours of receiving the returned item.
+                  </p>
+                </AccordionContent>
+              </Accordion>
+            </AccordionGroup>
+          </div>
+        </div>
 
         {/* Buttons */}
         <div className="mb-8 flex flex-col gap-2">

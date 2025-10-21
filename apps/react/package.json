@@ -11,7 +11,7 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
-    "@anchorlib/headless-kit": "workspace:*",
+    "@anchorkit/headless": "workspace:*",
     "@anchorlib/react": "workspace:*",
     "@anchorlib/react-kit": "workspace:*",
     "@anchorlib/storage": "workspace:*",

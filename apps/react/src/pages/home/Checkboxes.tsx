@@ -1,6 +1,5 @@
 import { Checkbox, CheckboxLabel } from '@anchorkit/react/components';
-import { useImmutable, useVariable, useWriter, view } from '@anchorlib/react';
-import { CodeBlock } from '@anchorlib/react-kit/components';
+import { useImmutable, useVariable, useWriter } from '@anchorlib/react';
 
 export function Checkboxes() {
   const [notification] = useVariable(true);
@@ -22,16 +21,9 @@ export function Checkboxes() {
   });
   const settings = useWriter(user.settings);
 
-  const Output = view(() => <CodeBlock code={JSON.stringify(user, null, 2)} />);
-
   return (
     <div className="mb-8 flex flex-col gap-2">
       <h2 className="text-xl font-semibold flex-1">Checkbox</h2>
-      <div className="ark-card">
-        <div className="ark-card-content">
-          <Output />
-        </div>
-      </div>
       <div className="flex gap-2">
         <CheckboxLabel>
           <Checkbox bind={[settings, 'notification']} />
@@ -46,7 +38,7 @@ export function Checkboxes() {
           <span>Indeterminate</span>
         </CheckboxLabel>
         <CheckboxLabel>
-          <Checkbox bind={[notification]} />
+          <Checkbox bind={[notification]} disabled />
           <span>Checked Disabled</span>
         </CheckboxLabel>
         <CheckboxLabel>

@@ -71,11 +71,16 @@ const TodoApp = setup(() => {
     'TodoItem'
   );
 
+  const handlerClear = () => {
+    state.todos.length = 0;
+  };
+
   return (
     <div>
       <h1>Todo App</h1>
       <TodoForm />
       <TodoList />
+      <button onClick={handlerClear}>Clear</button>
     </div>
   );
 }, 'TodoApp');
