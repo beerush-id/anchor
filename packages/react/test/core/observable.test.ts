@@ -11,7 +11,7 @@ import {
 import { anchor, setDebugger } from '@anchorlib/core';
 
 describe('Anchor React - Observable', () => {
-  let errorSpy;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

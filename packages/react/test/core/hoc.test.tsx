@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
-import { named, observer, setup, useAnchor, useVariable, view } from '../../src/index.js';
+import { effect, named, observer, onCleanup, onMount, setup, useAnchor, useVariable, view } from '../../src/index.js';
 import { anchor } from '@anchorlib/core';
 import { type FunctionComponent, useState } from 'react';
 
@@ -372,6 +372,59 @@ describe('Anchor React - HOC', () => {
 
         expect(SetupComponent.displayName).toBe('Setup(NamedComponent)');
       });
+
+      it('should handle component lifecycle', () => {
+        const state = anchor({ count: 1 });
+
+        const handleUnmount = vi.fn();
+        const handleMountCleanup = vi.fn();
+        const handleEffectCleanup = vi.fn();
+        const handleMount = vi.fn().mockReturnValue(handleMountCleanup);
+        const handleEffect = vi.fn();
+        const handleSecondEffect = vi.fn();
+
+        const TestComponent = (props: { value: string }) => {
+          effect(() => {
+            expect(state.count).greaterThan(0);
+            handleEffect();
+            return handleEffectCleanup;
+          });
+
+          effect(() => {
+            expect(state.count).greaterThan(0);
+            handleSecondEffect();
+          });
+
+          onMount(handleMount);
+          onCleanup(handleUnmount);
+
+          return <div data-testid="test-component">{props.value}</div>;
+        };
+        const SetupComponent = setup(TestComponent);
+
+        const { getByTestId, unmount } = render(<SetupComponent value="test value" />);
+        expect(getByTestId('test-component').textContent).toBe('test value');
+
+        vi.runAllTimers();
+
+        expect(handleMount).toHaveBeenCalled();
+        expect(handleEffect).toHaveBeenCalled();
+        expect(handleSecondEffect).toHaveBeenCalled();
+
+        state.count++;
+        vi.runAllTimers();
+
+        expect(state.count).toBe(2);
+        expect(handleEffect).toHaveBeenCalledTimes(2);
+        expect(handleEffectCleanup).toHaveBeenCalled();
+
+        unmount();
+        vi.runAllTimers();
+
+        expect(handleUnmount).toHaveBeenCalled();
+        expect(handleMountCleanup).toHaveBeenCalled();
+        expect(handleEffectCleanup).toHaveBeenCalledTimes(2);
+      });
     });
 
     describe('Error Handling', () => {
@@ -382,6 +435,19 @@ describe('Anchor React - HOC', () => {
 
         vi.runAllTimers();
         expect(errorSpy).toHaveBeenCalled();
+      });
+
+      it('should handle lifecycle function usage outside of setup', () => {
+        const handler = vi.fn();
+
+        effect(handler);
+        onMount(handler);
+        onCleanup(handler);
+
+        vi.runAllTimers();
+
+        expect(errorSpy).toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalledTimes(3);
       });
     });
   });

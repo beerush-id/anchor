@@ -2,8 +2,9 @@ import { captureStack, createObserver, microtask, untrack, withinGlobalContext }
 import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
 
 let currentMountHandlers: Set<MountHandler> | null = null;
-let currentCleanupHandlers: Set<CleanupHandler> | null = null;
+let currentMountCleanups: Set<CleanupHandler> | null = null;
 let currentEffectHandlers: Set<EffectHandler> | null = null;
+let currentEffectCleanups: Set<EffectCleanup> | null = null;
 
 /**
  * Creates a new lifecycle manager for handling component mount, cleanup, and rendering operations.
@@ -27,23 +28,9 @@ export function createLifecycle(): Lifecycle {
   const [scheduleCleanup, cancelCleanup] = microtask(0);
 
   const mountHandlers = new Set<MountHandler>();
-  const destroyHandlers = new Set<CleanupHandler>();
+  const mountCleanups = new Set<CleanupHandler>();
   const effectHandlers = new Set<EffectHandler>();
   const effectCleanups = new Set<EffectCleanup>();
-
-  const observer = createObserver(() => {
-    effectCleanups.forEach((effectCleanup) => {
-      effectCleanup();
-    });
-
-    effectCleanups.clear();
-    effectHandlers.forEach((effectHandler) => {
-      const effectCleanup = observer.run(effectHandler);
-      if (typeof effectCleanup === 'function') {
-        effectCleanups.add(effectCleanup);
-      }
-    });
-  });
 
   return {
     mount() {
@@ -53,46 +40,48 @@ export function createLifecycle(): Lifecycle {
           const cleanup = mount();
 
           if (typeof cleanup === 'function') {
-            destroyHandlers.add(cleanup);
+            mountCleanups.add(cleanup);
           }
         });
 
-        effectHandlers.forEach((effectHandler) => {
-          const effectCleanup = observer.run(effectHandler);
-          if (typeof effectCleanup === 'function') {
-            effectCleanups.add(effectCleanup);
-          }
+        effectHandlers.forEach((runEffect) => {
+          runEffect({ type: 'init', keys: [] });
         });
       });
     },
     cleanup() {
       cancelMount();
       scheduleCleanup(() => {
-        destroyHandlers.forEach((cleanup) => {
+        mountCleanups.forEach((cleanup) => {
           cleanup();
         });
-      });
+        effectCleanups.forEach((effectCleanup) => {
+          effectCleanup();
+        });
 
-      mountHandlers.clear();
-      destroyHandlers.clear();
+        mountHandlers.clear();
+        mountCleanups.clear();
+        effectHandlers.clear();
+      });
     },
     render<R>(fn: () => R) {
-      const [prevMountHandlers, prevEffectHandlers, prevCleanupHandlers] = [
-        currentMountHandlers,
-        currentEffectHandlers,
-        currentCleanupHandlers,
-      ];
+      const prevMountHandlers = currentMountHandlers,
+        prevEffectHandlers = currentEffectHandlers,
+        prevCleanupHandlers = currentMountCleanups,
+        prevEffectCleanups = currentEffectCleanups;
 
       currentMountHandlers = mountHandlers;
       currentEffectHandlers = effectHandlers;
-      currentCleanupHandlers = destroyHandlers;
+      currentMountCleanups = mountCleanups;
+      currentEffectCleanups = effectCleanups;
 
       try {
-        return withinGlobalContext(() => untrack(fn) ?? '') as R;
+        return withinGlobalContext(() => untrack(fn)) as R;
       } finally {
         currentMountHandlers = prevMountHandlers;
         currentEffectHandlers = prevEffectHandlers;
-        currentCleanupHandlers = prevCleanupHandlers;
+        currentMountCleanups = prevCleanupHandlers;
+        currentEffectCleanups = prevEffectCleanups;
       }
     },
   };
@@ -114,7 +103,7 @@ export function createLifecycle(): Lifecycle {
  * @throws {Error} If called outside of a Setup component context
  */
 export function effect(fn: EffectHandler) {
-  if (!currentEffectHandlers) {
+  if (!currentEffectHandlers || !currentEffectCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
       'Effect handler declaration violation detected:',
@@ -125,7 +114,22 @@ export function effect(fn: EffectHandler) {
     );
   }
 
-  currentEffectHandlers?.add(fn);
+  let cleanup: EffectCleanup | void;
+
+  const observer = createObserver((event) => {
+    cleanup?.();
+    runEffect(event);
+  });
+
+  const runEffect: EffectHandler = (event) => {
+    cleanup = observer.run(() => fn(event));
+  };
+  const leaveEffect = () => {
+    cleanup?.();
+  };
+
+  currentEffectHandlers?.add(runEffect);
+  currentEffectCleanups?.add(leaveEffect);
 }
 
 /**
@@ -164,7 +168,7 @@ export function onMount(fn: MountHandler) {
  * @throws {Error} If called outside of a Setup component context
  */
 export function onCleanup(fn: CleanupHandler) {
-  if (!currentCleanupHandlers) {
+  if (!currentMountCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
       'Cleanup handler declaration violation detected:',
@@ -175,5 +179,5 @@ export function onCleanup(fn: CleanupHandler) {
     );
   }
 
-  currentCleanupHandlers?.add(fn);
+  currentMountCleanups?.add(fn);
 }

@@ -1,4 +1,4 @@
-import type { BindingKeys, Linkable, ModelError, State, StateUnsubscribe } from '@anchorlib/core';
+import type { BindingKeys, Linkable, ModelError, State, StateChange, StateUnsubscribe } from '@anchorlib/core';
 import type { ReactNode, RefObject } from 'react';
 
 export type StateRef<T> = {
@@ -69,7 +69,7 @@ export type BindingLink<T, B> = [B, BindingKeys<T, B>];
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
-export type EffectHandler = () => void | CleanupHandler;
+export type EffectHandler = (event: StateChange) => void | EffectCleanup;
 export type EffectCleanup = () => void;
 export type Lifecycle = {
   /**
