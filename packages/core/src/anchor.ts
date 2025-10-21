@@ -421,3 +421,7 @@ anchorFn.remove = remove;
 anchorFn.clear = clear;
 
 export const anchor = anchorFn as Anchor;
+
+export const mutable = anchorFn as Anchor;
+export const immutable = anchorFn.immutable as Anchor['immutable'];
+export const writable = anchorFn.writable as Anchor['writable'];
