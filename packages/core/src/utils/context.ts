@@ -4,45 +4,46 @@ import { anchor } from '../anchor.js';
 
 export type Context<K extends KeyLike, V> = Map<K, V>;
 
+export type ContextStore = {
+  run<R>(ctx: Context<KeyLike, unknown>, fn: () => R): void;
+  getStore(): Context<KeyLike, unknown>;
+};
+
+let currentStore: ContextStore | undefined = undefined;
+
+/**
+ * Sets the current context store to be used for context management.
+ *
+ * @param store - The context store implementation to use
+ */
+export function setContextStore(store: ContextStore) {
+  currentStore = store;
+}
+
+/**
+ * Executes a function within the specified context using the current context store.
+ * If no context store is available, executes the function directly and logs an error.
+ *
+ * @template R - The return type of the function
+ * @param ctx - The context to run the function within
+ * @param fn - The function to execute
+ * @returns The result of the function execution
+ * @throws {Error} If called outside a context and no context store is available
+ */
+export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
+  if (!currentStore) {
+    const error = new Error('Outside of context.');
+    captureStack.error.external(
+      'Run in context is called outside of context. Make sure you are calling it within a context.',
+      error,
+      withContext
+    );
+  }
+
+  return currentStore?.run(ctx, fn) ?? fn();
+}
+
 let currentContext: Context<KeyLike, unknown> | undefined = undefined;
-let currentRestore: (() => void) | undefined = undefined;
-
-/**
- * Activates the given context and returns a restore function that can be used to revert to the previous context.
- * If the given context is already active, the current restore function is returned.
- *
- * @template K - The type of keys in the context.
- * @template V - The type of values in the context.
- * @param context - The context to activate.
- * @returns A function that restores the previous context when called.
- */
-export function activateContext<K extends KeyLike, V>(context: Context<K, V>): () => void {
-  if (currentContext === context) return currentRestore as () => void;
-
-  let restored = false;
-  const prevContext = currentContext;
-  const prevRestore = currentRestore;
-
-  currentContext = context;
-  currentRestore = () => {
-    if (!restored) {
-      restored = true;
-      currentContext = prevContext;
-      currentRestore = prevRestore;
-    }
-  };
-
-  return currentRestore;
-}
-
-/**
- * Retrieves the currently active context.
- *
- * @returns The currently active context, or undefined if no context is active.
- */
-export function getActiveContext() {
-  return currentContext;
-}
 
 /**
  * Creates a new context with optional initial key-value pairs.
@@ -58,49 +59,6 @@ export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
 }
 
 /**
- * Executes a function within the specified context.
- * The context is activated before the function is called and restored afterward.
- *
- * @template K - The type of keys in the context.
- * @template V - The type of values in the context.
- * @template T - The return type of the function.
- * @param context - The context to execute the function within.
- * @param fn - The function to execute.
- * @returns The result of the function execution.
- */
-export function withinContext<K extends KeyLike, V, T>(context: Map<K, V>, fn: () => T): T {
-  activateGlobalContext();
-
-  const restore = activateContext(context);
-
-  try {
-    return fn();
-  } finally {
-    restore();
-  }
-}
-
-/**
- * Executes a function within the global context.
- * The global context is activated before the function is called.
- * If an error occurs during execution, it is captured and logged.
- *
- * @template T - The return type of the function.
- * @param fn - The function to execute within the global context.
- * @returns The result of the function execution, or void if an error occurs.
- */
-export function withinGlobalContext<T>(fn: () => T): T | void {
-  activateGlobalContext();
-
-  try {
-    return fn();
-  } catch (_error) {
-    const error = new Error((_error as Error)?.message);
-    captureStack.error.external('Exception occurred within global context execution.', error, withinGlobalContext);
-  }
-}
-
-/**
  * Sets a value in the currently active context.
  * If no context is active, an error is logged.
  *
@@ -108,12 +66,13 @@ export function withinGlobalContext<T>(fn: () => T): T | void {
  * @template K - The type of the key (must extend KeyLike).
  * @param key - The key to set the value for.
  * @param value - The value to set.
- * @throws {Error} If called outside of a context.
+ * @throws {Error} If called outside a context.
  */
 export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): void {
-  activateGlobalContext();
+  ensureContext();
 
-  if (!currentContext) {
+  const context = currentStore?.getStore() ?? currentContext;
+  if (!context) {
     const error = new Error('Outside of context.');
     captureStack.error.external(
       'Set context is called outside of context. Make sure you are calling it within a context.',
@@ -122,8 +81,9 @@ export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): vo
     return;
   }
 
-  currentContext.set(key, value);
+  context.set(key, value);
 }
+
 /**
  * Retrieves a value from the currently active context by key.
  * If no context is active, an error is logged and undefined is returned.
@@ -161,9 +121,10 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback: V):
  * @throws {Error} If called outside a context.
  */
 export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V): V | undefined {
-  activateGlobalContext();
+  ensureContext();
 
-  if (!currentContext) {
+  const context = currentStore?.getStore() ?? currentContext;
+  if (!context) {
     const error = new Error('Outside of context.');
     captureStack.error.external(
       'Get context is called outside of context. Make sure you are calling it within a context.',
@@ -172,7 +133,7 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V)
     return;
   }
 
-  const result = currentContext.get(key);
+  const result = context.get(key);
 
   if (result !== undefined) {
     return result as V;
@@ -181,37 +142,27 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V)
   }
 }
 
-let globalContextActivated = false;
 /**
- * Activates the global context if it hasn't been activated yet and if the environment is a browser.
- * This function ensures that a default context is available for client-side operations.
- * It creates a new context and activates it, setting the global context activation flag to true.
+ * Ensures a context is available in browser environments.
  *
- * @template V - The type of values in the context.
- * @template K - The type of keys in the context.
- * @param context - Optional context to activate. If not provided, a new context will be created.
- * @remarks
- * This function is a no-op if:
- * - The global context has already been activated (`globalContextActivated` is true)
- * - The code is running in a non-browser environment (e.g., Node.js)
- */
-export function activateGlobalContext<V, K extends KeyLike = KeyLike>(context?: Context<K, V>) {
-  if (globalContextActivated || typeof window === 'undefined') return;
-
-  activateContext(context ?? createContext());
-  globalContextActivated = true;
-}
-
-/**
- * Deactivates the global context if it is currently active.
- * This function resets the global context activation flag to false and clears the current context.
+ * This function checks if the code is running in a browser environment (where `window` is defined)
+ * and if no context is currently active. If both conditions are met, it creates a new context
+ * and sets it as the current context with an empty restore function.
+ *
+ * This is primarily used to ensure that client-side code has a default context available
+ * when no explicit context has been set up.
  *
  * @remarks
- * This function is a no-op if the global context has not been activated yet.
+ * This function is a no-op in server-side environments (where `window` is undefined)
+ * or when a context is already active.
  */
-export function deactivateGlobalContext() {
-  if (!globalContextActivated) return;
+export function ensureContext(context?: Context<KeyLike, unknown>, force?: boolean) {
+  if (force) {
+    currentContext = context;
+    return;
+  }
 
-  globalContextActivated = false;
-  currentContext = undefined;
+  if (typeof window !== 'undefined' && typeof currentContext === 'undefined') {
+    currentContext = context ?? createContext();
+  }
 }
