@@ -7,7 +7,5 @@ export default defineConfig({
   minify: false,
   unbundle: true,
   sourcemap: true,
-  treeshake: true,
   platform: 'browser',
-  noExternal: ['@beerush/utils'],
 });
