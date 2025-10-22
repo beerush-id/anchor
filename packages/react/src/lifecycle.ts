@@ -1,4 +1,4 @@
-import { captureStack, createObserver, microtask, untrack, withinGlobalContext } from '@anchorlib/core';
+import { captureStack, createObserver, microtask, untrack } from '@anchorlib/core';
 import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
 
 let currentMountHandlers: Set<MountHandler> | null = null;
@@ -69,7 +69,7 @@ export function createLifecycle(): Lifecycle {
       currentEffectCleanups = effectCleanups;
 
       try {
-        return withinGlobalContext(() => untrack(fn)) as R;
+        return untrack(fn) as R;
       } finally {
         currentMountHandlers = prevMountHandlers;
         currentMountCleanups = prevCleanupHandlers;
@@ -92,7 +92,7 @@ export function createLifecycle(): Lifecycle {
  *
  * @param fn - The effect handler function to register
  *
- * @throws {Error} If called outside of a Setup component context
+ * @throws {Error} If called outside a Setup component context
  */
 export function effect(fn: EffectHandler) {
   if (!currentEffectCleanups) {
@@ -135,7 +135,7 @@ export function effect(fn: EffectHandler) {
  *
  * @param fn - The mount handler function to register
  *
- * @throws {Error} If called outside of a Setup component context
+ * @throws {Error} If called outside a Setup component context
  */
 export function onMount(fn: MountHandler) {
   if (!currentMountHandlers) {
@@ -160,7 +160,7 @@ export function onMount(fn: MountHandler) {
  *
  * @param fn - The cleanup handler function to register
  *
- * @throws {Error} If called outside of a Setup component context
+ * @throws {Error} If called outside a Setup component context
  */
 export function onCleanup(fn: CleanupHandler) {
   if (!currentMountCleanups) {
