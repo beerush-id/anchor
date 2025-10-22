@@ -16,7 +16,7 @@ import { BROADCASTER_REGISTRY, INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, 
 import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from './constant.js';
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
-import { isFunction } from '@beerush/utils';
+import { isFunction } from './utils/index.js';
 import { anchor } from './anchor.js';
 
 const mockReturn = {

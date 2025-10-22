@@ -1,4 +1,4 @@
-import { isFunction, isString } from '@beerush/utils';
+import { isFunction, isString } from './inspector.js';
 
 export type DebugFn = (...args: unknown[]) => void;
 

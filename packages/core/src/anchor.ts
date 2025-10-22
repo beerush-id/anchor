@@ -1,4 +1,4 @@
-import { isArray, isFunction, isMap, isObject, isSet } from '@beerush/utils';
+import { isArray, isFunction, isMap, isObject, isSet, shortId } from './utils/index.js';
 import type {
   Anchor,
   AnchorSettings,
@@ -47,7 +47,6 @@ import { linkable } from './internal.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import { assign, clear, remove } from './helper.js';
-import { shortId } from './utils/index.js';
 import { createArrayMutator } from './array.js';
 import { createCollectionMutator } from './collection.js';
 import { captureStack } from './exception.js';

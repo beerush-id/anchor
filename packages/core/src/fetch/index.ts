@@ -1,6 +1,6 @@
 import type { Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
 import { anchor } from '../anchor.js';
-import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '@beerush/utils';
+import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '../utils/index.js';
 import { linkable } from '../internal.js';
 import { captureStack } from '../exception.js';
 import { subscribe } from '../subscription.js';

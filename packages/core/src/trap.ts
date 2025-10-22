@@ -25,7 +25,7 @@ import {
 import { linkable } from './internal.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
-import { isArray } from '@beerush/utils';
+import { isArray } from './utils/index.js';
 import { createCollectionGetter } from './collection.js';
 import { getObserver, track } from './observation.js';
 import { getDevTool } from './dev.js';

@@ -1,6 +1,6 @@
 import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from './types.js';
 import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
-import { isArray, isDefined, isMap, isSet } from '@beerush/utils';
+import { isArray, isDefined, isMap, isSet } from './utils/index.js';
 import { softEntries, softKeys } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { BatchMutations } from './enum.js';

@@ -1,4 +1,4 @@
-import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from '@beerush/utils';
+import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from './inspector.js';
 import type { Linkable, ObjLike, Recursive } from '../types.js';
 
 /**

@@ -1,6 +1,6 @@
 import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from './types.js';
 import { CONTROLLER_REGISTRY } from './registry.js';
-import { isFunction } from '@beerush/utils';
+import { isFunction } from './utils/index.js';
 import { assign } from './helper.js';
 import { captureStack } from './exception.js';
 import { anchor } from './anchor.js';

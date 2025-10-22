@@ -11,8 +11,7 @@ import type {
 import { captureStack } from './exception.js';
 import { getDevTool } from './dev.js';
 import { META_REGISTRY } from './registry.js';
-import { shortId } from './utils/index.js';
-import { isFunction } from '@beerush/utils';
+import { isFunction, shortId } from './utils/index.js';
 import { ANCHOR_SETTINGS } from './constant.js';
 
 let currentObserver: StateObserver | undefined = undefined;

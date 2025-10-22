@@ -1,14 +1,13 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
   entry: ['./src/**/*.ts'],
   outDir: './dist',
   dts: true,
-  splitting: false,
   minify: false,
-  format: ['esm'],
-  bundle: false,
-  treeshake: true,
+  unbundle: true,
   sourcemap: true,
+  treeshake: true,
   platform: 'browser',
+  noExternal: ['@beerush/utils'],
 });

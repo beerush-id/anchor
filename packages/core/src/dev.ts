@@ -1,5 +1,5 @@
 import type { DevTool } from './types.js';
-import { isFunction, isObjectLike } from '@beerush/utils';
+import { isFunction, isObjectLike } from './utils/index.js';
 import { captureStack } from './exception.js';
 import { DEV_TOOL_KEYS } from './constant.js';
 

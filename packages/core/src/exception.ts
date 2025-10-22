@@ -1,6 +1,5 @@
 import type { KeyLike, StateMutation } from './types.js';
-import { typeOf } from '@beerush/utils';
-import { microbatch } from './utils/index.js';
+import { microbatch, typeOf } from './utils/index.js';
 
 const generator = {
   init(message: string) {
