@@ -1,5 +1,5 @@
-import { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
-import { type input, type output, type ZodArray, type ZodObject } from 'zod/v4';
+import type { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
+import type { input, output, ZodArray, ZodObject } from 'zod/v4';
 import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { Linkables } from './enum.js';
 

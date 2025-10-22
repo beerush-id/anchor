@@ -16,7 +16,7 @@ import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
 import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
 import { microtask } from '../utils/index.js';
 import { captureStack } from '../exception.js';
-import { ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
+import { type ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
 import { setInspector } from '../broadcast.js';
 
 export type HistoryOptions = {

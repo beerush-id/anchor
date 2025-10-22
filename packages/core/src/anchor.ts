@@ -54,7 +54,7 @@ import { captureStack } from './exception.js';
 import { softClone } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { createGetter, createRemover, createSetter } from './trap.js';
-import { ArrayMutations, Linkables } from './enum.js';
+import { type ArrayMutations, Linkables } from './enum.js';
 import { createBroadcaster } from './broadcast.js';
 
 /**

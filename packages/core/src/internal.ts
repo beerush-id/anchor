@@ -1,7 +1,7 @@
 import type { Linkable } from './types.js';
+import type { Linkables } from './enum.js';
 import { LINKABLE } from './constant.js';
 import { typeOf } from '@beerush/utils';
-import { Linkables } from './enum.js';
 
 /**
  * Checks if a given value is linkable.

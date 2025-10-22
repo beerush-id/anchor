@@ -1,5 +1,5 @@
 import type { Broadcaster, KeyLike, Linkable, StateChange, StateMetadata, StateSubscriber } from './types.js';
-import { BatchMutations, OBSERVER_KEYS } from './enum.js';
+import { type BatchMutations, OBSERVER_KEYS } from './enum.js';
 import { BATCH_MUTATION_KEYS } from './constant.js';
 import { captureStack } from './exception.js';
 

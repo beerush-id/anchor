@@ -5,7 +5,7 @@ export * from './subscription.js';
 export * from './enum.js';
 export * from './internal.js';
 export * from './observation.js';
-export * from './types.ts';
+export * from './types.js';
 
 export * from './dev.js';
 export * from './exception.js';
