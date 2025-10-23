@@ -1,5 +1,5 @@
 import type { KeyLike, StateMutation } from './types.js';
-import { microbatch, typeOf } from './utils/index.js';
+import { typeOf } from './utils/index.js';
 
 const generator = {
   init(message: string) {
@@ -181,7 +181,7 @@ const generator = {
   },
 };
 
-const [schedule] = microbatch(0);
+const schedule = (fn: () => void) => setTimeout(fn, 0);
 export const captureStack = {
   warning: {
     external(title: string, body: string, trace: string | unknown, ...excludeStacks: unknown[]) {
@@ -347,10 +347,12 @@ export const captureStack = {
  */
 function shiftStack(error: Error, caller: unknown, excludedStacks: unknown[]) {
   if (excludedStacks.length) {
-    Error.captureStackTrace?.(error, caller as () => void);
+    // eslint-disable-next-line
+    (Error as any).captureStackTrace?.(error, caller as () => void);
 
     for (const fn of [...excludedStacks]) {
-      Error.captureStackTrace?.(error, fn as () => void);
+      // eslint-disable-next-line
+      (Error as any).captureStackTrace?.(error, fn as () => void);
     }
   }
 }
