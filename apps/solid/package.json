@@ -9,11 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@anchorlib/core": "workspace:*",
     "@anchorlib/solid": "workspace:*",
     "solid-js": "^1.9.9"
   },
   "devDependencies": {
+    "@anchorlib/core": "workspace:*",
     "@tailwindcss/vite": "^4.1.13",
     "jsdom": "^27.0.0",
     "tailwindcss": "^4.1.13",

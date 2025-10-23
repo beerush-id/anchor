@@ -24,6 +24,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@anchorlib/core": "workspace:*",
     "@eslint/eslintrc": "^3",
     "@opennextjs/cloudflare": "^1.9.0",
     "@tailwindcss/postcss": "^4",
