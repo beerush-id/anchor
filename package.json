@@ -63,7 +63,6 @@
   "bugs": {
     "url": "https://github.com/beerush-id/anchor/issues"
   },
-  "lint-staged": {},
   "catalogs": {
     "app": {
       "@tailwindcss/vite": "4.1.16",
