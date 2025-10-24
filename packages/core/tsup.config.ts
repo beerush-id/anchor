@@ -1,11 +1,14 @@
-import { defineConfig } from 'tsdown';
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['./src/**/*.ts'],
   outDir: './dist',
   dts: true,
+  splitting: false,
   minify: false,
-  unbundle: true,
+  format: ['esm'],
+  bundle: false,
+  treeshake: true,
   sourcemap: true,
   platform: 'browser',
 });
