@@ -50,28 +50,28 @@
     "access": "public"
   },
   "devDependencies": {
-    "@eslint/css": "^0.5.0",
-    "@eslint/js": "^9.23.0",
-    "@eslint/markdown": "^6.3.0",
-    "@testing-library/react": "^16.3.0",
-    "@types/react": "^19.1.8",
-    "@vitest/coverage-v8": "3.2.4",
-    "@vitest/ui": "3.2.4",
-    "eslint": "^9.23.0",
-    "eslint-plugin-prettier": "^5.2.3",
-    "jsdom": "^27.0.0",
-    "prettier": "^3.5.3",
-    "publint": "^0.3.9",
-    "react": "^19.1.0",
-    "rimraf": "^6.0.1",
-    "tsup": "^8.4.0",
-    "typescript-eslint": "^8.27.0",
-    "vite": "^7.1.11",
-    "vitest": "3.2.4"
+    "@eslint/css": "catalog:",
+    "@eslint/js": "catalog:",
+    "@eslint/markdown": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:lib",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "publint": "catalog:",
+    "react": "catalog:lib",
+    "rimraf": "catalog:",
+    "tsup": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
-    "react": "^19.1.0",
-    "typescript": "^5.8.2"
+    "react": "catalog:lib",
+    "typescript": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
@@ -87,6 +87,6 @@
     "@anchorlib/storage": "workspace:*"
   },
   "optionalDependencies": {
-    "zod": "^4.1.5"
+    "zod": "catalog:lib"
   }
 }

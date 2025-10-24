@@ -41,30 +41,30 @@
     "access": "public"
   },
   "devDependencies": {
-    "@eslint/css": "^0.5.0",
-    "@eslint/js": "^9.23.0",
-    "@eslint/markdown": "^6.3.0",
-    "@shikijs/transformers": "^3.13.0",
-    "@types/react": "^19.2.2",
-    "@vitest/coverage-v8": "3.2.4",
-    "@vitest/ui": "3.2.4",
-    "esbuild-raw-plugin": "^0.2.0",
-    "eslint": "^9.23.0",
-    "eslint-plugin-prettier": "^5.2.3",
-    "jsdom": "^27.0.0",
-    "lucide-react": "^0.546.0",
-    "prettier": "^3.5.3",
-    "publint": "^0.3.9",
-    "rimraf": "^6.0.1",
-    "tailwindcss": "^4.1.14",
-    "tsup": "^8.4.0",
-    "typescript-eslint": "^8.27.0",
-    "vite": "^7.1.11",
-    "vitest": "3.2.4"
+    "@eslint/css": "catalog:",
+    "@eslint/js": "catalog:",
+    "@eslint/markdown": "catalog:",
+    "@shikijs/transformers": "catalog:lib",
+    "@types/react": "catalog:lib",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "esbuild-raw-plugin": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "jsdom": "catalog:",
+    "lucide-react": "catalog:lib",
+    "prettier": "catalog:",
+    "publint": "catalog:",
+    "rimraf": "catalog:",
+    "tailwindcss": "catalog:lib",
+    "tsup": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
-    "tailwindcss": "^4.1.14",
-    "typescript": "^5.8.2"
+    "tailwindcss": "catalog:lib",
+    "typescript": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
@@ -74,9 +74,9 @@
   },
   "license": "MIT",
   "optionalDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "shiki": "^3.12.2"
+    "react": "catalog:lib",
+    "react-dom": "catalog:lib",
+    "shiki": "catalog:lib"
   },
   "dependencies": {
     "@anchorlib/core": "workspace:*",

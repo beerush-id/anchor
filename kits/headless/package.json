@@ -36,23 +36,23 @@
     "access": "public"
   },
   "devDependencies": {
-    "@eslint/css": "^0.5.0",
-    "@eslint/js": "^9.23.0",
-    "@eslint/markdown": "^6.3.0",
-    "esbuild-raw-plugin": "^0.2.0",
-    "eslint": "^9.23.0",
-    "eslint-plugin-prettier": "^5.2.3",
-    "jsdom": "^27.0.0",
-    "prettier": "^3.5.3",
-    "publint": "^0.3.9",
-    "rimraf": "^6.0.1",
-    "tailwindcss": "^4.1.14",
-    "tsup": "^8.4.0",
-    "typescript-eslint": "^8.27.0"
+    "@eslint/css": "catalog:",
+    "@eslint/js": "catalog:",
+    "@eslint/markdown": "catalog:",
+    "esbuild-raw-plugin": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "publint": "catalog:",
+    "rimraf": "catalog:",
+    "tailwindcss": "catalog:lib",
+    "tsup": "catalog:",
+    "typescript-eslint": "catalog:"
   },
   "peerDependencies": {
-    "tailwindcss": "^4.1.14",
-    "typescript": "^5.8.2"
+    "tailwindcss": "catalog:lib",
+    "typescript": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
