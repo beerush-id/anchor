@@ -57,6 +57,17 @@ describe('Anchor Utilities - Context', () => {
       expect(errorSpy).toHaveBeenCalled();
     });
 
+    it('should handle error when running outside store in server', () => {
+      vi.stubGlobal('window', undefined);
+
+      withContext(createContext(), () => {
+        // Do nothing
+      });
+
+      expect(errorSpy).toHaveBeenCalled();
+      vi.unstubAllGlobals();
+    });
+
     it('should register context store', () => {
       const ctx = createContext([['foo', 'bar']]);
 

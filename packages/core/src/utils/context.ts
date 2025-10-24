@@ -1,6 +1,7 @@
 import type { KeyLike } from '../types.js';
 import { captureStack } from '../exception.js';
 import { anchor } from '../anchor.js';
+import { isBrowser } from './inspector.js';
 
 export type Context<K extends KeyLike, V> = Map<K, V>;
 
@@ -34,6 +35,17 @@ export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
   if (!(ctx instanceof Map)) {
     const error = new Error('Invalid context argument.');
     captureStack.error.validation('Run in context is called with invalid context argument.', error, false, withContext);
+
+    return fn();
+  }
+
+  if (!isBrowser() && !currentStore) {
+    const error = new Error('Outside of context.');
+    captureStack.error.external(
+      'Run in context is called outside of context. Make sure you are calling it within a context.',
+      error,
+      withContext
+    );
 
     return fn();
   }
