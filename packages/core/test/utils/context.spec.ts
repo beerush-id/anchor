@@ -50,8 +50,7 @@ describe('Anchor Utilities - Context', () => {
 
   describe('Context Store', () => {
     it('should handle error when running outside store', () => {
-      const ctx = createContext();
-      withContext(ctx, () => {
+      withContext(null as never, () => {
         // Do nothing
       });
 
@@ -98,6 +97,31 @@ describe('Anchor Utilities - Context', () => {
       withContext(ctx2, () => {
         expect(getContext('foo')).toBe('boz');
       });
+    });
+
+    it('should handle running inside a context', () => {
+      vi.useFakeTimers();
+
+      setContextStore(undefined as never);
+      ensureContext(null as never, true);
+      const ctx = createContext([['foo', 'bar']]);
+
+      withContext(ctx, () => {
+        const value = getContext('foo');
+        expect(value).toBe('bar');
+      });
+
+      expect(errorSpy).not.toHaveBeenCalled();
+
+      // Context no longer active after timer fire.
+      const foo = getContext('foo');
+
+      vi.runAllTimers();
+
+      expect(foo).toBeUndefined();
+      expect(errorSpy).toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
   });
 

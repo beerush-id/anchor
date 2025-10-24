@@ -31,13 +31,22 @@ export function setContextStore(store: ContextStore) {
  * @throws {Error} If called outside a context and no context store is available
  */
 export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
+  if (!(ctx instanceof Map)) {
+    const error = new Error('Invalid context argument.');
+    captureStack.error.validation('Run in context is called with invalid context argument.', error, false, withContext);
+
+    return fn();
+  }
+
   if (!currentStore) {
-    const error = new Error('Outside of context.');
-    captureStack.error.external(
-      'Run in context is called outside of context. Make sure you are calling it within a context.',
-      error,
-      withContext
-    );
+    const prevContext = currentContext;
+    currentContext = ctx;
+
+    try {
+      return fn();
+    } finally {
+      currentContext = prevContext;
+    }
   }
 
   return currentStore?.run(ctx, fn) ?? fn();
