@@ -1,3 +1,4 @@
+export * from './async.js';
 export * from './anchor.js';
 export * from './binding.js';
 export * from './broadcast.js';

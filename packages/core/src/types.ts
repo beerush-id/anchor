@@ -846,3 +846,30 @@ export type BindingRef<T> = {
 };
 export type BindingProp<T, O> = [O, BindingKeys<T, O>];
 export type BindingKeys<T, O> = WritableKeys<{ [K in keyof O]: O[K] extends T ? K : never }>;
+
+export enum AsyncStatus {
+  Idle = 'idle',
+  Error = 'error',
+  Success = 'success',
+  Pending = 'pending',
+}
+
+export type AsyncState<T, E extends Error = Error> = {
+  readonly data: T;
+  readonly status: AsyncStatus;
+  readonly promise: Promise<T | undefined>;
+  readonly start: (init?: T) => Promise<T | undefined>;
+  readonly abort: (error?: E) => void;
+  readonly error?: E;
+};
+export type AsyncOptions = StateOptions & {
+  deferred?: boolean;
+};
+
+/**
+ * A function type that represents an asynchronous operation that can be cancelled.
+ * @template R - The return type of the async operation
+ * @param signal - An AbortSignal that can be used to cancel the operation or check for cancellation.
+ * @returns A Promise that resolves with the result of the operation
+ */
+export type AsyncHandler<R> = (signal: AbortSignal) => Promise<R>;
