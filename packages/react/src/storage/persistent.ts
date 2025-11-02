@@ -1,6 +1,6 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
-import type { ConstantState } from '@base/index.js';
-import { useConstant } from '@base/index.js';
+import type { ConstantState } from '../index.js';
+import { useConstant } from '../index.js';
 import { persistent } from '@anchorlib/storage';
 
 /**

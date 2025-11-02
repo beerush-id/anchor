@@ -1,5 +1,5 @@
 import { type FunctionComponent } from 'react';
-import { useObserverRef } from '@base/index.js';
+import { useObserverRef } from '../index.js';
 import { type Linkable, setObserver } from '@anchorlib/core';
 
 /**

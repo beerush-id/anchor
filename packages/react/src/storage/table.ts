@@ -7,8 +7,8 @@ import {
   type RowListState,
   type RowState,
 } from '@anchorlib/storage/db';
-import type { ConstantState } from '@base/index.js';
-import { CLEANUP_DEBOUNCE_TIME, useConstant, useMicrotask } from '@base/index.js';
+import type { ConstantState } from '../index.js';
+import { CLEANUP_DEBOUNCE_TIME, useConstant, useMicrotask } from '../index.js';
 import { useEffect } from 'react';
 import type { TableRef } from './types.js';
 

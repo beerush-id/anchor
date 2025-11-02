@@ -1,6 +1,6 @@
 import type { BindingType, InitProps, InputBinding, InputBindingProps } from './Types.js';
 import { type ChangeEvent, type FunctionComponent, useCallback } from 'react';
-import { type Bindable, getRefState, isRef, resolveProps, useObserverRef, useValue } from '@base/index.js';
+import { type Bindable, getRefState, isRef, resolveProps, useObserverRef, useValue } from '../index.js';
 
 const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']);
 

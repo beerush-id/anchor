@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import type { Bindable, ReactiveProps, VariableRef } from '@base/index.ts';
+import type { Bindable, ReactiveProps, VariableRef } from '../index.ts';
 import type { WritableKeys } from '@anchorlib/core';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

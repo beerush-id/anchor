@@ -1,6 +1,6 @@
 import { kv, type KVState, type Storable } from '@anchorlib/storage/db';
-import type { ConstantState } from '@base/index.js';
-import { useConstant } from '@base/index.js';
+import type { ConstantState } from '../index.js';
+import { useConstant } from '../index.js';
 
 /**
  * A React hook that provides access to a key-value storage with reactive state management.

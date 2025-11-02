@@ -1,4 +1,4 @@
-import { debugRender, useValueIs } from '@base/index.js';
+import { debugRender, useValueIs } from '../index.js';
 import { type HTMLAttributes, type MouseEventHandler, useMemo, useRef } from 'react';
 import type { WritableKeys } from '@anchorlib/core';
 import type { ToggleProps } from './Types.js';

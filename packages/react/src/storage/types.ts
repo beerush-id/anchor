@@ -1,5 +1,5 @@
 import type { FilterFn, ReactiveTable, Rec, Row, RowListState, RowState } from '@anchorlib/storage/db';
-import type { ConstantRef, ConstantState } from '@base/index.js';
+import type { ConstantRef, ConstantState } from '../index.js';
 
 export type TableRef<T extends Rec, R extends Row<T> = Row<T>> = {
   get(id: string): ConstantState<RowState<R>>;
