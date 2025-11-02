@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
 import { bindable } from '../../src/view/Binding';
-import { activateContext, anchor, createContext, getContext, setContext } from '@anchorlib/core';
+import { anchor, createContext } from '@anchorlib/core';
 import { type ChangeEvent, useRef } from 'react';
 import { useVariable } from '../../src/index.js';
 
@@ -131,8 +131,7 @@ describe('Anchor React - View Binding', () => {
       });
 
       it('should handle usage on checkbox input', async () => {
-        const ctx = createContext();
-        const restore = activateContext(ctx);
+        const ctx = createContext<string, { value: boolean }>();
 
         const Radio = bindable(MockInput);
         const mockOnChange = vi.fn();
@@ -140,7 +139,7 @@ describe('Anchor React - View Binding', () => {
         const App = () => {
           const ref = useRef(null);
           const [checked] = useVariable(false);
-          setContext('checked', checked);
+          ctx.set('checked', checked);
 
           return <Radio ref={ref} type="checkbox" bind={checked} onChange={mockOnChange} />;
         };
@@ -161,7 +160,7 @@ describe('Anchor React - View Binding', () => {
         await vi.runAllTimersAsync();
 
         expect(mockOnChange).toHaveBeenCalledWith(mockEvent);
-        expect(getContext<{ value: boolean }>('checked')?.value).toBe(true);
+        expect(ctx.get('checked')?.value).toBe(true);
 
         const emptyEvent = {
           target: {},
@@ -173,20 +172,17 @@ describe('Anchor React - View Binding', () => {
         await vi.runAllTimersAsync();
 
         expect(mockOnChange).toHaveBeenCalledWith(emptyEvent);
-        expect(getContext<{ value: boolean }>('checked')?.value).toBe(false);
-
-        restore();
+        expect(ctx.get('checked')?.value).toBe(false);
       });
 
       it('should handle usage on number input', async () => {
-        const ctx = createContext();
-        const restore = activateContext(ctx);
+        const ctx = createContext<string, { value: number }>();
         const NumberInput = bindable(MockInput);
         const mockOnChange = vi.fn();
 
         const App = () => {
           const [count] = useVariable(0);
-          setContext('count', count);
+          ctx.set('count', count);
 
           return <NumberInput type="number" bind={count} onChange={mockOnChange} />;
         };
@@ -206,7 +202,7 @@ describe('Anchor React - View Binding', () => {
 
         await vi.runAllTimersAsync();
 
-        expect(getContext<{ value: boolean }>('count')?.value).toBe(10);
+        expect(ctx.get('count')?.value).toBe(10);
         expect(mockOnChange).toHaveBeenCalledWith(mockEvent);
 
         const emptyEvent = {
@@ -218,20 +214,17 @@ describe('Anchor React - View Binding', () => {
 
         await vi.runAllTimersAsync();
 
-        expect(getContext<{ value: boolean }>('count')?.value).toBeUndefined();
-
-        restore();
+        expect(ctx.get('count')?.value).toBeUndefined();
       });
 
       it('should handle usage on date input', async () => {
-        const ctx = createContext();
-        const restore = activateContext(ctx);
+        const ctx = createContext<string, { value: Date }>();
         const NumberInput = bindable(MockInput);
         const mockOnChange = vi.fn();
 
         const App = () => {
           const [date] = useVariable(new Date());
-          setContext('date', date);
+          ctx.set('date', date);
 
           return <NumberInput type="date" bind={date} onChange={mockOnChange} />;
         };
@@ -251,10 +244,8 @@ describe('Anchor React - View Binding', () => {
 
         await vi.runAllTimersAsync();
 
-        expect(getContext<{ value: Date }>('date')?.value?.toDateString()).toBe('Thu Sep 18 2025');
+        expect(ctx.get('date')?.value?.toDateString()).toBe('Thu Sep 18 2025');
         expect(mockOnChange).toHaveBeenCalledWith(mockEvent);
-
-        restore();
       });
     });
 
