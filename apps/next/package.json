@@ -1,6 +1,6 @@
 {
   "name": "@anchor-app/next",
-  "version": "1.0.0-beta.11",
+  "version": "1.0.0-beta.12",
   "private": true,
   "scripts": {
     "dev": "next dev",
