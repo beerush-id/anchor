@@ -60,7 +60,9 @@
     "tsup": "catalog:",
     "typescript-eslint": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "esbuild": "catalog:",
+    "@types/bun": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",
