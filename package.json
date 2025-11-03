@@ -40,7 +40,8 @@
     "vitepress-plugin-llms": "catalog:",
     "vitepress-plugin-sandpack": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "rimraf": "catalog:"
   },
   "engines": {
     "bun": ">=1.3.0"

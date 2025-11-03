@@ -80,6 +80,7 @@
   },
   "dependencies": {
     "@anchorlib/core": "workspace:*",
-    "@anchorlib/react": "workspace:*"
+    "@anchorlib/react": "workspace:*",
+    "@anchorlib/storage": "workspace:*"
   }
 }
