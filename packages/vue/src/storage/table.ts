@@ -9,7 +9,7 @@ import {
   type RowState,
 } from '@anchorlib/storage/db';
 import { onUnmounted } from 'vue';
-import { type ConstantRef, constantRef } from '@base/index.js';
+import { type ConstantRef, constantRef } from '../index.js';
 
 export interface TableRef<T extends Rec, R extends Row<T> = Row<T>> {
   get(id: string): ConstantRef<RowState<R>>;

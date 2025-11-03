@@ -3,4 +3,4 @@ export * from './kv.js';
 export * from './table.js';
 export * from './types.js';
 export * from './uuid.js';
-export { createRecord } from './helper.ts';
+export { createRecord } from './helper.js';

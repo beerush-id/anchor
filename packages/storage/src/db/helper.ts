@@ -134,7 +134,7 @@ export const put = <T>(table: IDBObjectStore, key: string, value: T): Promise<T>
  *
  * @param {IDBObjectStore} table - The object store to remove the record from.
  * @param {string} key - The key of the record to remove.
- * @returns {Promise<true>} A promise that resolves with [true](file://G:\Domains\beerush\anchor\node_modules\@types\chai\index.d.ts#L181-L181) when the record is successfully removed.
+ * @returns {Promise<true>} A promise that resolves with true when the record is successfully removed.
  */
 export const remove = (table: IDBObjectStore, key: string): Promise<true> => {
   return new Promise((resolve, reject) => {

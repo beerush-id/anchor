@@ -1,7 +1,7 @@
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
 import { onUnmounted } from 'vue';
 import { session } from '@anchorlib/storage';
-import { type ConstantRef, constantRef } from '@base/index.js';
+import { type ConstantRef, constantRef } from '../index.js';
 
 /**
  * Creates a reactive reference to a session storage value with type safety.
