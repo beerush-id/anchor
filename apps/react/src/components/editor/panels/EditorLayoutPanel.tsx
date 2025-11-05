@@ -68,7 +68,8 @@ export default function EditorLayoutPanel() {
             name="flexDirection"
             value="column-reverse"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <GalleryVerticalEnd size={TOOL_ICON_SIZE} className="-scale-y-100" />
             <Tooltip>Vertical Reverse</Tooltip>
           </Toggle>
@@ -109,7 +110,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="flex-start"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <AlignHorizontalJustifyStart size={TOOL_ICON_SIZE} />
             <Tooltip>Left</Tooltip>
           </Toggle>
@@ -118,7 +120,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="center"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <AlignHorizontalJustifyCenter size={TOOL_ICON_SIZE} />
             <Tooltip>Center</Tooltip>
           </Toggle>
@@ -127,7 +130,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="flex-end"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <AlignHorizontalJustifyEnd size={TOOL_ICON_SIZE} />
             <Tooltip>Right</Tooltip>
           </Toggle>
@@ -136,7 +140,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="stretch"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <StretchHorizontal size={TOOL_ICON_SIZE} />
             <Tooltip>Stretch</Tooltip>
           </Toggle>
@@ -156,7 +161,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="flex-start"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <AlignVerticalJustifyStart size={TOOL_ICON_SIZE} />
             <Tooltip>Top</Tooltip>
           </Toggle>
@@ -165,7 +171,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="center"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <AlignVerticalJustifyCenter size={TOOL_ICON_SIZE} />
             <Tooltip>Middle</Tooltip>
           </Toggle>
@@ -174,7 +181,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="flex-end"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <AlignVerticalJustifyEnd size={TOOL_ICON_SIZE} />
             <Tooltip>Bottom</Tooltip>
           </Toggle>
@@ -183,7 +191,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="stretch"
             inherits={[base]}
-            className="toggle-btn">
+            className="toggle-btn"
+          >
             <StretchVertical size={TOOL_ICON_SIZE} />
             <Tooltip>Stretch</Tooltip>
           </Toggle>
@@ -246,7 +255,8 @@ export default function EditorLayoutPanel() {
             bind={styleWriter}
             name="backgroundColor"
             inherits={[base]}
-            className="toggle-btn cursor-pointer">
+            className="toggle-btn cursor-pointer"
+          >
             <PaintBucket size={TOOL_ICON_SIZE} />
             <Tooltip>Background Color</Tooltip>
           </ColorPicker>

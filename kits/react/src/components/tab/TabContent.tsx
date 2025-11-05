@@ -27,7 +27,8 @@ export const TabContent = setup(({ name, children, className, ...props }: TabCon
         id={`${name}-panel-${tab?.id}`}
         aria-labelledby={`${name}-tab-${tab?.id}`}
         className={ref.className}
-        {...props}>
+        {...props}
+      >
         {children}
       </div>
     );

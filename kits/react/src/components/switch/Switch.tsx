@@ -40,7 +40,8 @@ export const Switch = setup(function Switch<C, D>({
         className={classx('ark-switch', className)}
         disabled={state.disabled}
         onClick={toggle}
-        {...props}></button>
+        {...props}
+      ></button>
     );
   }, 'Switch');
 

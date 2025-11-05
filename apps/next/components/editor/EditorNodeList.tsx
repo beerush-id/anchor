@@ -37,7 +37,8 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
     <li ref={ref} className={`node-item w-full`}>
       <button
         onClick={handleSelect}
-        className={`w-full text-left px-3 py-2 text-sm flex items-center text-slate-700 dark:text-slate-300 gap-4 border-l-4 hover:border-l-brand-orange transition-all ${active ? 'border-l-brand-orange' : 'border-l-transparent'}`}>
+        className={`w-full text-left px-3 py-2 text-sm flex items-center text-slate-700 dark:text-slate-300 gap-4 border-l-4 hover:border-l-brand-orange transition-all ${active ? 'border-l-brand-orange' : 'border-l-transparent'}`}
+      >
         <span className="flex-1">{label}</span>
         <code className="inline-code">{selector}</code>
       </button>
@@ -77,7 +78,8 @@ const NodeVariant: FC<{ node: CssNode | Immutable<CssNode>; variant?: StyleVaria
     <button
       ref={ref}
       className={`w-full pl-4 py-1 pr-2 flex items-center text-xs font-mono font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 border-l-4 ${active ? 'bg-slate-200 dark:bg-slate-800 border-l-brand-orange/50' : 'border-l-brand-orange/25'}`}
-      onClick={() => handleSelectVariant(variant)}>
+      onClick={() => handleSelectVariant(variant)}
+    >
       <code className="inline-code">{variant?.selector || 'NORMAL'}</code>
       <span className="flex-1"></span>
       {!isEmpty && <span className="bg-brand-orange w-2 h-2 rounded-full"></span>}

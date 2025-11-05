@@ -20,7 +20,8 @@ export const Panel = optimized<HTMLAttributes<HTMLDivElement | HTMLDetailsElemen
         <details
           open={open}
           className={classx('anchor-panel', 'anchor-panel-collapsible', { 'anchor-panel-open': open }, className)}
-          {...(rest as HTMLAttributes<HTMLDetailsElement>)}>
+          {...(rest as HTMLAttributes<HTMLDetailsElement>)}
+        >
           <summary className={classx('anchor-panel-label', labelClassName)}>{label}</summary>
           {children}
         </details>

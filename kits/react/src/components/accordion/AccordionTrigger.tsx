@@ -27,7 +27,8 @@ export const AccordionTrigger = setup(({ children, className, onClick, ...props 
         aria-disabled={state?.disabled}
         onClick={handleClick}
         className={classList}
-        {...props}>
+        {...props}
+      >
         {children}
         <ChevronDown />
       </button>

@@ -16,7 +16,8 @@ export const CodeViewer: FC<{ items: CodeItem[] }> = ({ items }) => {
           <button
             key={block.name}
             className={'tab px-3 py-2 text-sm font-medium' + (active === block.name ? ' bg-slate-900' : '')}
-            onClick={() => setActive(block.name)}>
+            onClick={() => setActive(block.name)}
+          >
             {block.name}
           </button>
         ))}

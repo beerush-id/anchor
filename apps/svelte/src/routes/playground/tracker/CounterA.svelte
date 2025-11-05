@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { counter } from '$lib/todos.js';
+  import { counter } from '$lib/todos.js';
 
-	const doubled = $derived(counter.count * 2);
+  const doubled = $derived(counter.count * 2);
 </script>
 
 <div>

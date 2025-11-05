@@ -191,7 +191,8 @@ export const Performance = () => {
               'btn-secondary',
               'transition-colors',
               current === button.metrics ? 'outline-4 outline-blue-500/50' : 'outline-4 outline-transparent',
-            ].join(' ')}>
+            ].join(' ')}
+          >
             {(() => {
               const IconComponent = Icons[button.icon as keyof typeof Icons];
               return IconComponent ? <IconComponent className="w-5 h-5 mr-2" /> : null;
@@ -241,7 +242,8 @@ const PerformanceGroup: FC<{ display: MetricDisplay }> = observer(({ display }) 
               onClick={() => (display.current = item)}
               className={`ark-card flex-row gap-4 items-start cursor-pointer px-8 py-6 outline-4 hover:outline-blue-200/75 dark:hover:outline-blue-200/10 transition-all ${
                 display.current === item ? ' outline-blue-500/50' : 'outline-transparent'
-              }`}>
+              }`}
+            >
               {(() => {
                 const IconComponent = Icons[item.icon as keyof typeof Icons];
                 return IconComponent ? <IconComponent className="w-10 h-10 mt-1" /> : null;

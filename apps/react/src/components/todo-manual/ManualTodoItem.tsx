@@ -52,7 +52,8 @@ export const ManualTodoItem: FC<{
             {!todo.completed && <Square />}
           </label>
           <span
-            className={`text-semibold text-sm ${todo.completed ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+            className={`text-semibold text-sm ${todo.completed ? 'line-through text-slate-500' : 'text-slate-300'}`}
+          >
             {todo.text}
           </span>
         </div>

@@ -3,13 +3,7 @@
   "name": "@anchorlib/storage",
   "version": "1.0.0-beta.12",
   "description": "Persistent storage solutions for Anchor state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "storage"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "storage"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -32,9 +26,7 @@
       "import": "./dist/db/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -73,7 +65,7 @@
     "dev": "rimraf dist && tsup --watch",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
-    "format": "prettier --write .",
+    "format": "biome format --write",
     "prepublish": "rimraf dist && tsup && publint",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",

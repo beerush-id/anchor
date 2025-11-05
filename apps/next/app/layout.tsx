@@ -189,7 +189,8 @@ export default async function RootLayout({
                 const dark = window.matchMedia('prefers-color-scheme: dark').matches;
                 if (dark) document.documentElement.classList.add('dark');              
               `,
-            }}></script>
+            }}
+          ></script>
         )}
       </head>
       <body className={`antialiased`}>

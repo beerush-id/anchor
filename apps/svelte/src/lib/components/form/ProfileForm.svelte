@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { z } from 'zod/v4';
-	import { exceptionRef, modelRef } from '@anchorlib/svelte';
-	import type { FormEventHandler } from 'svelte/elements';
+  import { z } from 'zod/v4';
+  import { exceptionRef, modelRef } from '@anchorlib/svelte';
+  import type { FormEventHandler } from 'svelte/elements';
 
-	const schema = z.object({
-		name: z.string().min(3, 'Name must be 3 characters min.'),
-		email: z.email('Email is required and must be a valid format.')
-	});
-	const profile = modelRef(schema, { name: '', email: '' }, { silentInit: true });
-	const profileError = exceptionRef(profile);
+  const schema = z.object({
+    name: z.string().min(3, 'Name must be 3 characters min.'),
+    email: z.email('Email is required and must be a valid format.'),
+  });
+  const profile = modelRef(schema, { name: '', email: '' }, { silentInit: true });
+  const profileError = exceptionRef(profile);
 
-	const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
-		e.preventDefault();
-	};
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+  };
 </script>
 
 <form

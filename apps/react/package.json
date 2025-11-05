@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "format": "prettier --write ."
+    "format": "biome format --write"
   },
   "devDependencies": {
     "@anchorkit/headless": "workspace:*",

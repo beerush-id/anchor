@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { TodoRec } from '../../todos.js';
+  import type { TodoRec } from '../../todos.js';
 
-	const { todos }: { todos: TodoRec[] } = $props();
-	const stats = $derived.by(() => {
-		const available = todos.filter((todo) => !todo.deleted_at);
+  const { todos }: { todos: TodoRec[] } = $props();
+  const stats = $derived.by(() => {
+    const available = todos.filter((todo) => !todo.deleted_at);
 
-		return {
-			total: available.length,
-			active: available.filter((todo) => !todo.completed).length,
-			completed: available.filter((todo) => todo.completed).length
-		};
-	});
+    return {
+      total: available.length,
+      active: available.filter((todo) => !todo.completed).length,
+      completed: available.filter((todo) => todo.completed).length,
+    };
+  });
 </script>
 
 <div

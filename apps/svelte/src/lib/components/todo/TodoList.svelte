@@ -1,10 +1,10 @@
 <script lang="ts">
-	import TodoStats from './TodoStats.svelte';
-	import TodoItem from '$lib/components/todo/TodoItem.svelte';
-	import type { TodoRecList } from '../../todos.js';
+  import TodoStats from './TodoStats.svelte';
+  import TodoItem from '$lib/components/todo/TodoItem.svelte';
+  import type { TodoRecList } from '../../todos.js';
 
-	const { todos }: { todos: TodoRecList } = $props();
-	const items = $derived(todos.filter((todo) => !todo.deleted_at));
+  const { todos }: { todos: TodoRecList } = $props();
+  const items = $derived(todos.filter((todo) => !todo.deleted_at));
 </script>
 
 <ul

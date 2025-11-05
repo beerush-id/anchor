@@ -3,13 +3,7 @@
   "name": "@anchorlib/solid",
   "version": "1.0.0-beta.12",
   "description": "Solid bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "solid"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "solid"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -40,9 +34,7 @@
       "import": "./dist/storage/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -82,7 +74,7 @@
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
     "prepublish": "rimraf dist && tsup && publint",
-    "format": "prettier --write .",
+    "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { type TodoRec, todoTable } from '../../todos.js';
-	import Trash from '../icons/Trash.svelte';
+  import { type TodoRec, todoTable } from '../../todos.js';
+  import Trash from '../icons/Trash.svelte';
 
-	const { todo } = $props<{ todo: TodoRec }>();
+  const { todo } = $props<{ todo: TodoRec }>();
 
-	const handleRemove = (id: string) => {
-		todoTable.remove(id);
-	};
+  const handleRemove = (id: string) => {
+    todoTable.remove(id);
+  };
 </script>
 
 <li

@@ -15,7 +15,8 @@ export const SystemMode: EFC<SVGAttributes<SVGGElement>, SVGSVGElement> = ({ cla
       strokeLinecap="round"
       strokeLinejoin="round"
       className={classx(classx.brand('icon'), className)}
-      {...props}>
+      {...props}
+    >
       <path d="M12 17v4" />
       <path d="m14.305 7.53.923-.382" />
       <path d="m15.228 4.852-.923-.383" />

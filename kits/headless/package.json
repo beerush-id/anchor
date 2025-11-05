@@ -26,9 +26,7 @@
     },
     "./utils/*": "./dist/utils/*"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -60,7 +58,7 @@
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
     "prepublish": "rimraf dist && tsup && publint",
-    "format": "prettier --write .",
+    "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },

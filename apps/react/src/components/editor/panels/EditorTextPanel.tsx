@@ -123,7 +123,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="lowercase"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <CaseLower size={TOOL_ICON_SIZE} />
               <Tooltip>lowercase</Tooltip>
             </Toggle>
@@ -132,7 +133,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="capitalize"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <CaseSensitive size={TOOL_ICON_SIZE} />
               <Tooltip>Titlecase</Tooltip>
             </Toggle>
@@ -141,7 +143,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="uppercase"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <CaseUpper size={TOOL_ICON_SIZE} />
               <Tooltip>UPPERCASE</Tooltip>
             </Toggle>
@@ -158,7 +161,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="line-through"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <Strikethrough size={TOOL_ICON_SIZE} />
               <Tooltip>Strikethrough</Tooltip>
             </Toggle>
@@ -167,7 +171,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="underline"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <Underline size={TOOL_ICON_SIZE} />
               <Tooltip>Underline</Tooltip>
             </Toggle>
@@ -176,7 +181,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="dashed"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <SpellCheck2 size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
             </Toggle>
@@ -185,7 +191,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="dotted"
               inherits={[base, root]}
-              className="toggle-btn">
+              className="toggle-btn"
+            >
               <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>

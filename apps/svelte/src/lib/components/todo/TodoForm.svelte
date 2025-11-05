@@ -1,24 +1,24 @@
 <script lang="ts">
-	import Plus from '../icons/Plus.svelte';
-	import { type TodoRecList, todoTable } from '../../todos.js';
-	import type { KeyboardEventHandler } from 'svelte/elements';
+  import Plus from '../icons/Plus.svelte';
+  import { type TodoRecList, todoTable } from '../../todos.js';
+  import type { KeyboardEventHandler } from 'svelte/elements';
 
-	let newText = $state('');
+  let newText = $state('');
 
-	const { todos }: { todos: TodoRecList } = $props();
+  const { todos }: { todos: TodoRecList } = $props();
 
-	const handleAdd = () => {
-		if (newText.trim() !== '') {
-			const todo = todoTable.add({ text: newText, completed: false });
-			todos.push(todo.data);
-			newText = '';
-		}
-	};
+  const handleAdd = () => {
+    if (newText.trim() !== '') {
+      const todo = todoTable.add({ text: newText, completed: false });
+      todos.push(todo.data);
+      newText = '';
+    }
+  };
 
-	const handleEnter: KeyboardEventHandler<HTMLInputElement> = (e) => {
-		if (e.key !== 'Enter') return;
-		handleAdd();
-	};
+  const handleEnter: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.key !== 'Enter') return;
+    handleAdd();
+  };
 </script>
 
 <div class="todo-form mb-6">

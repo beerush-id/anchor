@@ -38,7 +38,8 @@ export const Radio = setup(({ className, value, checked, disabled, onChange, ...
         className={classx('ark-radio', className)}
         disabled={radio.disabled}
         onClick={select}
-        {...props}></button>
+        {...props}
+      ></button>
     );
   }, 'Radio');
 

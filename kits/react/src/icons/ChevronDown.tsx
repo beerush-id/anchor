@@ -14,7 +14,8 @@ export const ChevronDown: FC<ReactProps<SVGAttributes<SVGSVGElement>>> = ({ clas
     strokeLinecap="round"
     strokeLinejoin="round"
     className={classx('ark-icon', className)}
-    {...props}>
+    {...props}
+  >
     <path d="m6 9 6 6 6-6" />
   </svg>
 );

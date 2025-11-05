@@ -10,14 +10,13 @@ export type NumberBinding = 'number' | 'range';
 export type BooleanBinding = 'checkbox' | 'radio';
 export type BindingType = TextBinding | NumberBinding | BooleanBinding | 'file' | 'date';
 
-export type BindingKeys<Value, Binding extends Bindable> =
-  WritableKeys<Binding> extends infer K
-    ? K extends keyof Binding
-      ? Binding[K] extends Value
-        ? K
-        : never
+export type BindingKeys<Value, Binding extends Bindable> = WritableKeys<Binding> extends infer K
+  ? K extends keyof Binding
+    ? Binding[K] extends Value
+      ? K
       : never
-    : never;
+    : never
+  : never;
 
 // Base binding props that are common to all binding types
 type BaseBindingProps<Kind extends BindingType, Props extends InitProps> = ReactiveProps<Props> & {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { anchorRef } from '@anchorlib/vue';
+  import { anchorRef } from '@anchorlib/vue';
 
-const counter = anchorRef({ count: 0 });
+  const counter = anchorRef({ count: 0 });
 </script>
 
 <template>

@@ -21,7 +21,8 @@ export const ThemeSwitch = observer(() => {
         type="button"
         aria-label="Switch to light mode"
         className={classx({ active: current.value === ThemeSetting.Light })}
-        onClick={() => switchMode(ThemeSetting.Light)}>
+        onClick={() => switchMode(ThemeSetting.Light)}
+      >
         <LightMode />
         <Tooltip>Switch to Light Mode</Tooltip>
       </button>
@@ -29,7 +30,8 @@ export const ThemeSwitch = observer(() => {
         type="button"
         aria-label="Switch to system theme"
         className={classx({ active: current.value === ThemeSetting.System })}
-        onClick={() => switchMode(ThemeSetting.System)}>
+        onClick={() => switchMode(ThemeSetting.System)}
+      >
         <SystemMode />
         <Tooltip>Follow System Theme</Tooltip>
       </button>
@@ -37,7 +39,8 @@ export const ThemeSwitch = observer(() => {
         type="button"
         aria-label="Switch to dark mode"
         className={classx({ active: current.value === ThemeSetting.Dark })}
-        onClick={() => switchMode(ThemeSetting.Dark)}>
+        onClick={() => switchMode(ThemeSetting.Dark)}
+      >
         <DarkMode />
         <Tooltip>Switch to Dark Mode</Tooltip>
       </button>

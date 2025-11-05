@@ -40,7 +40,8 @@ export default function EditorOutlinePanel() {
               bind={styleWriter}
               name="borderColor"
               inherits={[base]}
-              className="ark-toggle-button cursor-pointer">
+              className="ark-toggle-button cursor-pointer"
+            >
               <Palette size={TOOL_ICON_SIZE} />
               <Tooltip>Border Color</Tooltip>
             </ColorPicker>
@@ -62,7 +63,8 @@ export default function EditorOutlinePanel() {
               name="borderStyle"
               value="dashed"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <SquareDashed size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
             </Toggle>
@@ -71,7 +73,8 @@ export default function EditorOutlinePanel() {
               name="borderStyle"
               value="dotted"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>
@@ -164,7 +167,8 @@ export default function EditorOutlinePanel() {
               bind={styleWriter}
               name="outlineColor"
               inherits={[base]}
-              className="ark-toggle-button cursor-pointer">
+              className="ark-toggle-button cursor-pointer"
+            >
               <Palette size={TOOL_ICON_SIZE} />
               <Tooltip>Outline Color</Tooltip>
             </ColorPicker>
@@ -182,7 +186,8 @@ export default function EditorOutlinePanel() {
               name="outlineStyle"
               value="solid"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <Square size={TOOL_ICON_SIZE} />
               <Tooltip>Solid</Tooltip>
             </Toggle>
@@ -191,7 +196,8 @@ export default function EditorOutlinePanel() {
               name="outlineStyle"
               value="dashed"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <SquareDashed size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
             </Toggle>
@@ -200,7 +206,8 @@ export default function EditorOutlinePanel() {
               name="outlineStyle"
               value="dotted"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>

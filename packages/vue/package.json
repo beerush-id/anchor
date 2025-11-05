@@ -2,13 +2,7 @@
   "name": "@anchorlib/vue",
   "version": "1.0.0-beta.12",
   "description": "Vue bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "vue"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "vue"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -35,9 +29,7 @@
   "directories": {
     "dist": "./dist"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -76,7 +68,7 @@
     "dev": "rimraf dist && tsup --watch",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsup && publint",
-    "format": "prettier --write .",
+    "format": "biome format --write",
     "prepublish": "rimraf dist && tsup && publint",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"

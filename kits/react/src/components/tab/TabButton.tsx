@@ -28,7 +28,8 @@ export const TabButton = setup(({ name, children, className, disabled, ...props 
         className={classList}
         disabled={disabled ?? tab?.disabled}
         onClick={() => tab?.select(name)}
-        {...props}>
+        {...props}
+      >
         {children}
       </button>
     );

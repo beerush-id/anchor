@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { subscribe } from '@anchorlib/core';
-	import { persistentRef } from '@anchorlib/svelte/storage';
-	import TodoApp from '$lib/components/todo/TodoApp.svelte';
-	import ProfileForm from '$lib/components/form/ProfileForm.svelte';
+  import { subscribe } from '@anchorlib/core';
+  import { persistentRef } from '@anchorlib/svelte/storage';
+  import TodoApp from '$lib/components/todo/TodoApp.svelte';
+  import ProfileForm from '$lib/components/form/ProfileForm.svelte';
 
-	const settings = persistentRef('settings', {
-		theme: 'light'
-	});
+  const settings = persistentRef('settings', {
+    theme: 'light',
+  });
 
-	if (typeof window !== 'undefined') {
-		subscribe(settings, (snapshot) => {
-			document.documentElement.classList.toggle('dark', snapshot.theme === 'dark');
-		});
-	}
+  if (typeof window !== 'undefined') {
+    subscribe(settings, (snapshot) => {
+      document.documentElement.classList.toggle('dark', snapshot.theme === 'dark');
+    });
+  }
 </script>
 
 <div class="flex w-full flex-col justify-center gap-8 md:flex-row">

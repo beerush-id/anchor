@@ -57,7 +57,8 @@ export default function EditorLayoutPanel() {
             name="flexDirection"
             value="row-reverse"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <GalleryHorizontalEnd size={TOOL_ICON_SIZE} className="-scale-x-100" />
             <Tooltip>Horizontal Reverse</Tooltip>
           </Toggle>
@@ -66,7 +67,8 @@ export default function EditorLayoutPanel() {
             name="flexDirection"
             value="column"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <GalleryVerticalEnd size={TOOL_ICON_SIZE} />
             <Tooltip>Vertical</Tooltip>
           </Toggle>
@@ -75,7 +77,8 @@ export default function EditorLayoutPanel() {
             name="flexDirection"
             value="column-reverse"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <GalleryVerticalEnd size={TOOL_ICON_SIZE} className="-scale-y-100" />
             <Tooltip>Vertical Reverse</Tooltip>
           </Toggle>
@@ -101,7 +104,8 @@ export default function EditorLayoutPanel() {
             name="flexWrap"
             value="wrap-reverse"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <CornerDownRight size={TOOL_ICON_SIZE} />
             <Tooltip>Wrap Reverse</Tooltip>
           </Toggle>
@@ -121,7 +125,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="flex-start"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <AlignHorizontalJustifyStart size={TOOL_ICON_SIZE} />
             <Tooltip>Left</Tooltip>
           </Toggle>
@@ -130,7 +135,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="center"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <AlignHorizontalJustifyCenter size={TOOL_ICON_SIZE} />
             <Tooltip>Center</Tooltip>
           </Toggle>
@@ -139,7 +145,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="flex-end"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <AlignHorizontalJustifyEnd size={TOOL_ICON_SIZE} />
             <Tooltip>Right</Tooltip>
           </Toggle>
@@ -148,7 +155,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'alignItems' : 'justifyContent'}
             value="stretch"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <StretchHorizontal size={TOOL_ICON_SIZE} />
             <Tooltip>Stretch</Tooltip>
           </Toggle>
@@ -168,7 +176,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="flex-start"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <AlignVerticalJustifyStart size={TOOL_ICON_SIZE} />
             <Tooltip>Top</Tooltip>
           </Toggle>
@@ -177,7 +186,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="center"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <AlignVerticalJustifyCenter size={TOOL_ICON_SIZE} />
             <Tooltip>Middle</Tooltip>
           </Toggle>
@@ -186,7 +196,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="flex-end"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <AlignVerticalJustifyEnd size={TOOL_ICON_SIZE} />
             <Tooltip>Bottom</Tooltip>
           </Toggle>
@@ -195,7 +206,8 @@ export default function EditorLayoutPanel() {
             name={vertical ? 'justifyContent' : 'alignItems'}
             value="stretch"
             inherits={[base]}
-            className="ark-toggle-button">
+            className="ark-toggle-button"
+          >
             <StretchVertical size={TOOL_ICON_SIZE} />
             <Tooltip>Stretch</Tooltip>
           </Toggle>
@@ -239,7 +251,8 @@ export default function EditorLayoutPanel() {
               name="display"
               value="inline-flex"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <LayoutTemplate size={TOOL_ICON_SIZE} />
               <Tooltip>Inline Flex</Tooltip>
             </Toggle>
@@ -252,7 +265,8 @@ export default function EditorLayoutPanel() {
               name="display"
               value="inline-block"
               inherits={[base]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <SquareSquare size={TOOL_ICON_SIZE} />
               <Tooltip>Inline Block</Tooltip>
             </Toggle>
@@ -268,7 +282,8 @@ export default function EditorLayoutPanel() {
             bind={styleWriter}
             name="backgroundColor"
             inherits={[base]}
-            className="ark-toggle-button cursor-pointer">
+            className="ark-toggle-button cursor-pointer"
+          >
             <PaintBucket size={TOOL_ICON_SIZE} />
             <Tooltip>Background Color</Tooltip>
           </ColorPicker>

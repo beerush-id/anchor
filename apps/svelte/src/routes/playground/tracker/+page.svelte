@@ -1,14 +1,14 @@
 <script lang="ts">
-	import '@anchorlib/svelte/reactive';
-	import { counter } from '$lib/todos.js';
-	import CounterA from './CounterA.svelte';
-	import CounterB from './CounterB.svelte';
+  import '@anchorlib/svelte/reactive';
+  import { counter } from '$lib/todos.js';
+  import CounterA from './CounterA.svelte';
+  import CounterB from './CounterB.svelte';
 
-	const doubled = $derived(counter.count * 2);
+  const doubled = $derived(counter.count * 2);
 
-	let runeCounter = $state(0);
-	let showA = $state(true);
-	let showB = $state(true);
+  let runeCounter = $state(0);
+  let showA = $state(true);
+  let showB = $state(true);
 </script>
 
 {#if showA}

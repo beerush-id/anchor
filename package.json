@@ -16,7 +16,7 @@
     "build:react": "bpkg run build -f apps/react --sequential",
     "build": "bpkg run build -f packages/* --sequential",
     "prepublish": "bpkg run prepublish -f packages/* --sequential",
-    "format": "bpkg run format -f apps/* packages/* && git add --renormalize .",
+    "format": "bpkg run format -f apps/* packages/* kits/* --sequential && git add --renormalize .",
     "lint": "bpkg run lint",
     "test": "rimraf apps/next/public/coverage && vitest --run",
     "test:all": "mpkg run test -f packages/* --sequential",

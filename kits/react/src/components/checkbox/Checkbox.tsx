@@ -38,7 +38,8 @@ function CheckboxSetup<B extends VariableRef<boolean> | ObjLike>({
         className={classx('ark-checkbox', className)}
         disabled={state.disabled}
         onClick={toggle}
-        {...props}></button>
+        {...props}
+      ></button>
     );
   }, 'Checkbox');
 

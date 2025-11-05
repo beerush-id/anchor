@@ -34,7 +34,8 @@ export const TodoForm: FC = () => {
     <form
       ref={ref}
       className="flex gap-3 px-4 pb-4 border-b border-b-slate-300/50 dark:border-b-slate-600/50"
-      onSubmit={addTodo}>
+      onSubmit={addTodo}
+    >
       <input
         type="text"
         value={newText}

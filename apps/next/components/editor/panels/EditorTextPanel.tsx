@@ -67,7 +67,8 @@ export default function EditorTextPanel() {
             bind={styleWriter}
             name="color"
             inherits={[base, root]}
-            className="ark-toggle-button cursor-pointer">
+            className="ark-toggle-button cursor-pointer"
+          >
             <Type size={TOOL_ICON_SIZE} />
             <Tooltip>Text Color</Tooltip>
           </ColorPicker>
@@ -82,7 +83,8 @@ export default function EditorTextPanel() {
               name="fontWeight"
               value="normal"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <Type size={TOOL_ICON_SIZE} />
               <Tooltip>Normal</Tooltip>
             </Toggle>
@@ -91,7 +93,8 @@ export default function EditorTextPanel() {
               name="fontWeight"
               value="500"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <Bold size={TOOL_ICON_SIZE} />
               <Tooltip>Bold</Tooltip>
             </Toggle>
@@ -100,7 +103,8 @@ export default function EditorTextPanel() {
               name="fontWeight"
               value="200"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <TextCursor size={TOOL_ICON_SIZE} />
               <Tooltip>Thin</Tooltip>
             </Toggle>
@@ -109,7 +113,8 @@ export default function EditorTextPanel() {
               name="fontStyle"
               value="italic"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <Italic size={TOOL_ICON_SIZE} />
               <Tooltip>Italic</Tooltip>
             </Toggle>
@@ -122,7 +127,8 @@ export default function EditorTextPanel() {
               name="textAlign"
               value="left"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <AlignLeft size={TOOL_ICON_SIZE} />
               <Tooltip>Left</Tooltip>
             </Toggle>
@@ -131,7 +137,8 @@ export default function EditorTextPanel() {
               name="textAlign"
               value="center"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <AlignCenter size={TOOL_ICON_SIZE} />
               <Tooltip>Center</Tooltip>
             </Toggle>
@@ -140,7 +147,8 @@ export default function EditorTextPanel() {
               name="textAlign"
               value="right"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <AlignRight size={TOOL_ICON_SIZE} />
               <Tooltip>Right</Tooltip>
             </Toggle>
@@ -149,7 +157,8 @@ export default function EditorTextPanel() {
               name="textAlign"
               value="justify"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <AlignJustify size={TOOL_ICON_SIZE} />
               <Tooltip>Justify</Tooltip>
             </Toggle>
@@ -165,7 +174,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="lowercase"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <CaseLower size={TOOL_ICON_SIZE} />
               <Tooltip>lowercase</Tooltip>
             </Toggle>
@@ -174,7 +184,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="capitalize"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <CaseSensitive size={TOOL_ICON_SIZE} />
               <Tooltip>Titlecase</Tooltip>
             </Toggle>
@@ -183,7 +194,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="uppercase"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <CaseUpper size={TOOL_ICON_SIZE} />
               <Tooltip>UPPERCASE</Tooltip>
             </Toggle>
@@ -192,7 +204,8 @@ export default function EditorTextPanel() {
               name="textTransform"
               value="none"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <RemoveFormatting size={TOOL_ICON_SIZE} />
               <Tooltip>None</Tooltip>
             </Toggle>
@@ -205,7 +218,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="line-through"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <Strikethrough size={TOOL_ICON_SIZE} />
               <Tooltip>Strikethrough</Tooltip>
             </Toggle>
@@ -214,7 +228,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="underline"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <Underline size={TOOL_ICON_SIZE} />
               <Tooltip>Underline</Tooltip>
             </Toggle>
@@ -223,7 +238,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="dashed"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <SpellCheck2 size={TOOL_ICON_SIZE} />
               <Tooltip>Dashed</Tooltip>
             </Toggle>
@@ -232,7 +248,8 @@ export default function EditorTextPanel() {
               name="textDecoration"
               value="dotted"
               inherits={[base, root]}
-              className="ark-toggle-button">
+              className="ark-toggle-button"
+            >
               <GalleryThumbnails size={TOOL_ICON_SIZE} />
               <Tooltip>Dotted</Tooltip>
             </Toggle>

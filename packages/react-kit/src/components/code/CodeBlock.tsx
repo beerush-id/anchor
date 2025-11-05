@@ -67,7 +67,8 @@ export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTM
     return (
       <div
         className={classx(classx.brand('code-block'), classx.brand('code-block-loading'), className)}
-        style={stylex({ '--code-max-height': maxHeight, '--code-min-height': minHeight })}>
+        style={stylex({ '--code-max-height': maxHeight, '--code-min-height': minHeight })}
+      >
         <LoaderCircle className="mx-auto mb-4 text-slate-500 animate-spin" width={32} height={32} />
         <p className="text-slate-500 text-xs font-bold">Loading code block...</p>
       </div>

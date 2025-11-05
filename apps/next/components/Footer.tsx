@@ -15,7 +15,8 @@ export function Footer() {
             <a
               href="https://www.producthunt.com/products/anchor-6?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-anchor&#0045;11"
               target="_blank"
-              className="inline-flex">
+              className="inline-flex"
+            >
               <Image
                 src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1015951&theme=dark&t=1757806815737"
                 alt="Anchor - State&#0032;Management&#0032;For&#0032;Humans&#0044;&#0032;Built&#0032;for&#0032;Enterprise&#0032;Apps | Product Hunt"
@@ -36,7 +37,8 @@ export function Footer() {
           <a
             href="https://www.mahdaen.name"
             target="_blank"
-            className="font-medium hover:text-brand-main dark:hover:text-brand-orange transition-colors">
+            className="font-medium hover:text-brand-main dark:hover:text-brand-orange transition-colors"
+          >
             Nanang Mahdaen El Agung
           </a>
         </p>

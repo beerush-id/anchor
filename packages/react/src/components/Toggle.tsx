@@ -59,7 +59,8 @@ export function Toggle<T, K extends WritableKeys<T>>({
       data-checked={checked}
       data-partial={partial}
       onClick={handleToggle}
-      {...props}>
+      {...props}
+    >
       {children}
     </button>
   );

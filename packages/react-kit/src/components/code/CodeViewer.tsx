@@ -27,7 +27,8 @@ export const CodeViewer: EFC<CodeViewerProps, HTMLDivElement> = ({ items, minHei
           <button
             key={block.name}
             className={classx(classx.brand('code-viewer-button'), { active: block.name === active })}
-            onClick={() => setActive(block.name)}>
+            onClick={() => setActive(block.name)}
+          >
             {block.icon && <img src={block.icon} alt={block.iconAlt} />}
             <span>{block.name}</span>
           </button>

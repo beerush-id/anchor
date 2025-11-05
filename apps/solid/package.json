@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --port 5274",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "biome format --write"
   },
   "dependencies": {
     "@anchorlib/solid": "workspace:*",

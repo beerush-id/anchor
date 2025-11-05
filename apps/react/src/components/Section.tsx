@@ -5,7 +5,8 @@ export const Section: FC<
 > = ({ children, className = '', fit = false, ...rests }) => (
   <section
     className={`page-section py-5 md:py-16 w-full flex flex-col justify-center ${fit ? 'md:min-h-screen' : ''}`}
-    {...rests}>
+    {...rests}
+  >
     <div className={className}>{children}</div>
   </section>
 );

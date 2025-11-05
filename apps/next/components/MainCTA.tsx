@@ -19,7 +19,8 @@ export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactN
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="h-[54px] md:self-end inline-flex flex-none items-center px-6 py-3 bg-brand-orange hover:bg-brand-orange-hover text-black transition-colors rounded-md font-medium btn-primary">
+          className="h-[54px] md:self-end inline-flex flex-none items-center px-6 py-3 bg-brand-orange hover:bg-brand-orange-hover text-black transition-colors rounded-md font-medium btn-primary"
+        >
           <BookText className="w-5 h-5 mr-2" />
           Get Started
         </a>
@@ -27,7 +28,8 @@ export const MainCTA: FC<{ className?: string; tiys?: boolean; children?: ReactN
           <a
             ref={tryItRef}
             href="#todo-benchmark"
-            className="h-[54px] flex whitespace-nowrap items-center px-6 py-3 bg-slate-900 hover:bg-brand-main-hover text-slate-200 rounded-md font-medium btn-secondary transition-colors">
+            className="h-[54px] flex whitespace-nowrap items-center px-6 py-3 bg-slate-900 hover:bg-brand-main-hover text-slate-200 rounded-md font-medium btn-secondary transition-colors"
+          >
             <Gauge className="w-5 h-5 mr-2" />
             Try It Yourself
           </a>

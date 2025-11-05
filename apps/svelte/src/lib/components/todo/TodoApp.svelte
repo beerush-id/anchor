@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { todoTable } from '../../todos.js';
-	import TodoForm from './TodoForm.svelte';
-	import TodoList from './TodoList.svelte';
+  import { todoTable } from '../../todos.js';
+  import TodoForm from './TodoForm.svelte';
+  import TodoList from './TodoList.svelte';
 
-	const todos = todoTable.list();
+  const todos = todoTable.list();
 </script>
 
 <div

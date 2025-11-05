@@ -15,7 +15,8 @@ export const LightMode: EFC<SVGAttributes<SVGGElement>, SVGSVGElement> = ({ clas
       strokeLinecap="round"
       strokeLinejoin="round"
       className={classx(classx.brand('icon'), className)}
-      {...props}>
+      {...props}
+    >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2" />
       <path d="M12 20v2" />

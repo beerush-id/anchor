@@ -3,7 +3,7 @@
 
   const source = anchorRef({ count: 42 });
   const derivedValue = derivedRef(source, (s) => s.count * 2);
-  
+
   const increment = () => {
     source.count = 50;
   };
