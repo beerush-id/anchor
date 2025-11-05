@@ -38,27 +38,20 @@
     "@anchorlib/storage": "workspace:*"
   },
   "devDependencies": {
-    "@eslint/css": "catalog:",
-    "@eslint/js": "catalog:",
-    "@eslint/markdown": "catalog:",
+    "@biomejs/biome": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "@vue/test-utils": "catalog:",
-    "eslint": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
     "jsdom": "catalog:",
-    "prettier": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsup": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "vue": "catalog:lib",
-    "@biomejs/biome": "catalog:"
+    "vue": "catalog:lib"
   },
   "peerDependencies": {
     "typescript": "catalog:lib",

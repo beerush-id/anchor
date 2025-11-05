@@ -15,20 +15,15 @@
   },
   "devDependencies": {
     "@anchorlib/core": "workspace:*",
-    "@eslint/js": "catalog:",
+    "@biomejs/biome": "catalog:",
     "@tailwindcss/vite": "catalog:app",
     "@vitejs/plugin-vue": "catalog:",
     "@vue/tsconfig": "catalog:",
-    "eslint": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
     "jsdom": "catalog:",
-    "prettier": "catalog:",
     "tailwindcss": "catalog:app",
     "typescript": "catalog:app",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
-    "vue-tsc": "catalog:",
-    "@biomejs/biome": "catalog:"
+    "vue-tsc": "catalog:"
   },
   "optionalDependencies": {
     "zod": "catalog:"

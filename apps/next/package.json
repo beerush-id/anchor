@@ -25,23 +25,18 @@
   },
   "devDependencies": {
     "@anchorlib/core": "workspace:*",
-    "@eslint/eslintrc": "catalog:",
+    "@biomejs/biome": "catalog:",
     "@opennextjs/cloudflare": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:app",
     "@types/react-dom": "catalog:app",
     "chart.js": "^4.5.0",
-    "eslint": "catalog:",
-    "eslint-config-next": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
     "lucide-react": "catalog:app",
-    "prettier": "catalog:",
     "raw-loader": "catalog:",
     "react-chartjs-2": "^5.3.0",
     "tailwindcss": "catalog:app",
     "typescript": "catalog:app",
-    "zod": "catalog:",
-    "@biomejs/biome": "catalog:"
+    "zod": "catalog:"
   }
 }

@@ -42,25 +42,18 @@
     "access": "public"
   },
   "devDependencies": {
-    "@eslint/css": "catalog:",
-    "@eslint/js": "catalog:",
-    "@eslint/markdown": "catalog:",
+    "@biomejs/biome": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:lib",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "eslint": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
     "jsdom": "catalog:",
-    "prettier": "catalog:",
     "publint": "catalog:",
     "react": "catalog:lib",
     "rimraf": "catalog:",
     "tsup": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@biomejs/biome": "catalog:"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:lib",

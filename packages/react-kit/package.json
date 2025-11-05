@@ -39,29 +39,22 @@
     "access": "public"
   },
   "devDependencies": {
-    "@eslint/css": "catalog:",
-    "@eslint/js": "catalog:",
-    "@eslint/markdown": "catalog:",
+    "@biomejs/biome": "catalog:",
     "@shikijs/transformers": "catalog:lib",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:lib",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
+    "esbuild": "catalog:",
     "esbuild-raw-plugin": "catalog:",
-    "eslint": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
     "jsdom": "catalog:",
     "lucide-react": "catalog:lib",
-    "prettier": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tailwindcss": "catalog:lib",
     "tsup": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "esbuild": "catalog:",
-    "@types/bun": "catalog:",
-    "@biomejs/biome": "catalog:"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",
