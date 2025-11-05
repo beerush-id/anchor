@@ -30,7 +30,8 @@
 		"vite": "catalog:",
 		"vite-plugin-devtools-json": "catalog:",
 		"vitest": "catalog:",
-		"zod": "catalog:"
+		"zod": "catalog:",
+		"@biomejs/biome": "catalog:"
 	},
 	"private": true,
 	"scripts": {

@@ -72,7 +72,8 @@
     "tsup": "catalog:",
     "typescript-eslint": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@biomejs/biome": "catalog:"
   },
   "peerDependencies": {
     "svelte": "catalog:lib",

@@ -62,7 +62,8 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "esbuild": "catalog:",
-    "@types/bun": "catalog:"
+    "@types/bun": "catalog:",
+    "@biomejs/biome": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",

@@ -19,7 +19,8 @@
     "tailwindcss": "catalog:app",
     "typescript": "catalog:app",
     "vite": "catalog:",
-    "vite-plugin-solid": "catalog:"
+    "vite-plugin-solid": "catalog:",
+    "@biomejs/biome": "catalog:"
   },
   "optionalDependencies": {
     "zod": "catalog:"

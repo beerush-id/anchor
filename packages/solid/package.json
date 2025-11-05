@@ -70,7 +70,8 @@
     "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vite-plugin-solid": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@biomejs/biome": "catalog:"
   },
   "peerDependencies": {
     "solid-js": "catalog:lib",

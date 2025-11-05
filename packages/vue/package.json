@@ -65,7 +65,8 @@
     "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "vue": "catalog:lib"
+    "vue": "catalog:lib",
+    "@biomejs/biome": "catalog:"
   },
   "peerDependencies": {
     "typescript": "catalog:lib",

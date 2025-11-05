@@ -51,7 +51,8 @@
     "rimraf": "catalog:",
     "tailwindcss": "catalog:lib",
     "tsup": "catalog:",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "@biomejs/biome": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",

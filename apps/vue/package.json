@@ -27,7 +27,8 @@
     "typescript": "catalog:app",
     "typescript-eslint": "catalog:",
     "vite": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "@biomejs/biome": "catalog:"
   },
   "optionalDependencies": {
     "zod": "catalog:"
