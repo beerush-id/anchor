@@ -1,7 +1,7 @@
-import type { Binding, ObjLike, StateUnsubscribe } from './types.js';
-import { subscribe } from './subscription.js';
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
+import { subscribe } from './subscription.js';
+import type { ObjLike, StateBinding, StateUnsubscribe } from './types.js';
 
 /**
  * Creates a two-way binding between a source and target reactive object properties.
@@ -27,7 +27,7 @@ import { captureStack } from './exception.js';
  * @throws Will throw an error if either source or target objects are not reactive
  */
 export function binding<T, B, S extends ObjLike = ObjLike>(
-  source: Binding<T, B>,
+  source: StateBinding<T, B>,
   target: S,
   targetKey: keyof S
 ): StateUnsubscribe {

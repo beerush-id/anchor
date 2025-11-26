@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, type BindingRef, subscribe } from '../../src/index.js';
 import { binding } from '../../src/binding.js';
+import { anchor, type StateBindingRef, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Binding Function', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -18,7 +18,7 @@ describe('Anchor Core - Binding Function', () => {
 
   describe('Basic Binding', () => {
     it('should bind source ref to target property and sync values', () => {
-      const source = anchor({ value: 10 }) as BindingRef<number>;
+      const source = anchor({ value: 10 }) as StateBindingRef<number>;
       const target = anchor({ result: 5 });
       const targetHandler = vi.fn();
 
@@ -98,7 +98,7 @@ describe('Anchor Core - Binding Function', () => {
     });
 
     it('should properly unsubscribe and stop syncing', () => {
-      const source = anchor({ value: 1 }) as BindingRef<number>;
+      const source = anchor({ value: 1 }) as StateBindingRef<number>;
       const target = anchor({ result: 2 });
       const targetHandler = vi.fn();
 
@@ -146,7 +146,7 @@ describe('Anchor Core - Binding Function', () => {
     });
 
     it('should handle binding with non-reactive target', () => {
-      const source = anchor({ value: 1 }) as BindingRef<number>;
+      const source = anchor({ value: 1 }) as StateBindingRef<number>;
       const target = { result: 2 }; // Not reactive
 
       // This should not throw but log an error
@@ -163,7 +163,7 @@ describe('Anchor Core - Binding Function', () => {
     });
 
     it('should handle rapid successive updates without conflicts', () => {
-      const source = anchor({ value: 0 }) as BindingRef<number>;
+      const source = anchor({ value: 0 }) as StateBindingRef<number>;
       const target = anchor({ result: 0 });
 
       const unsubscribe = binding<number, typeof source>(source, target, 'result');
@@ -184,7 +184,7 @@ describe('Anchor Core - Binding Function', () => {
     });
 
     it('should not update when values are already equal', () => {
-      const source = anchor({ value: 5 }) as BindingRef<number>;
+      const source = anchor({ value: 5 }) as StateBindingRef<number>;
       const target = anchor({ result: 5 });
       const targetHandler = vi.fn();
 

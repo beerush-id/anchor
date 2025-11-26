@@ -1,8 +1,8 @@
-import type { BindingRef } from '@anchorlib/core';
+import type { StateBindingRef } from '@anchorlib/core';
 
-let REF_CHECKER: ((value: unknown) => boolean) | undefined = undefined;
+let REF_CHECKER: ((value: unknown) => boolean) | undefined;
 
-export function isRef<T>(value: unknown): value is BindingRef<T> {
+export function isRef<T>(value: unknown): value is StateBindingRef<T> {
   return REF_CHECKER?.(value) ?? false;
 }
 
