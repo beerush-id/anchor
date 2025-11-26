@@ -1,55 +1,69 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
-	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-	"files": { "ignoreUnknown": false },
+  "$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": { "ignoreUnknown": false },
   "root": true,
-	"formatter": {
-		"enabled": true,
-		"formatWithErrors": false,
-		"indentStyle": "space",
-		"indentWidth": 2,
-		"lineEnding": "lf",
-		"lineWidth": 120,
-		"attributePosition": "auto",
-		"bracketSameLine": false,
-		"bracketSpacing": true,
-		"expand": "auto",
-		"useEditorconfig": true,
-		"includes": [
-			"**",
-			"!**/.DS_Store",
-			"!**/node_modules",
-			"!**/build",
-			"!**/.svelte-kit",
-			"!**/package",
-			"!**/.env",
-			"!**/.env.*",
-			"**/.env.example",
-			"!**/pnpm-lock.yaml",
-			"!**/package-lock.json",
-			"!**/yarn.lock"
-		]
-	},
-	"linter": { "enabled": true, "rules": { "recommended": true } },
-	"javascript": {
-		"formatter": {
-			"jsxQuoteStyle": "double",
-			"quoteProperties": "asNeeded",
-			"trailingCommas": "es5",
-			"semicolons": "always",
-			"arrowParentheses": "always",
-			"bracketSameLine": false,
-			"quoteStyle": "single",
-			"attributePosition": "auto",
-			"bracketSpacing": true
-		}
-	},
-	"html": {
-		"formatter": {
-			"indentScriptAndStyle": true,
-			"selfCloseVoidElements": "always"
-		}
-	},
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto",
+    "bracketSameLine": false,
+    "bracketSpacing": true,
+    "expand": "auto",
+    "useEditorconfig": true,
+    "includes": [
+      "**",
+      "!**/.DS_Store",
+      "!**/node_modules",
+      "!**/build",
+      "!**/.svelte-kit",
+      "!**/package",
+      "!**/.env",
+      "!**/.env.*",
+      "**/.env.example",
+      "!**/pnpm-lock.yaml",
+      "!**/package-lock.json",
+      "!**/yarn.lock"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "useIterableCallbackReturn": "off",
+        "noAssignInExpressions": "off",
+        "noConfusingVoidType": "off"
+      },
+      "a11y": {
+        "useSemanticElements": "off",
+        "noSvgWithoutTitle": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "es5",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSameLine": false,
+      "quoteStyle": "single",
+      "attributePosition": "auto",
+      "bracketSpacing": true
+    }
+  },
+  "html": {
+    "formatter": {
+      "indentScriptAndStyle": true,
+      "selfCloseVoidElements": "always"
+    }
+  },
   "css": {
     "parser": {
       "tailwindDirectives": true
@@ -58,8 +72,8 @@
       "quoteStyle": "single"
     }
   },
-	"assist": {
-		"enabled": true,
-		"actions": { "source": { "organizeImports": "on" } }
-	}
+  "assist": {
+    "enabled": true,
+    "actions": { "source": { "organizeImports": "on" } }
+  }
 }

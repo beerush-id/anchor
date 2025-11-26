@@ -1,5 +1,5 @@
-import type { FC, SVGAttributes } from 'react';
 import { classx } from '@anchorkit/headless/utils';
+import type { FC, SVGAttributes } from 'react';
 import type { ReactProps } from '../types.js';
 
 export const ChevronDown: FC<ReactProps<SVGAttributes<SVGSVGElement>>> = ({ className, ...props }) => (

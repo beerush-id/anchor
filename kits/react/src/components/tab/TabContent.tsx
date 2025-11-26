@@ -1,8 +1,8 @@
-import { type HTMLAttributes } from 'react';
-import { setup, view } from '@anchorlib/react';
-import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { useClassName } from '../../actions/index.js';
+import { classAction } from '@anchorkit/headless/actions';
 import { getTab } from '@anchorkit/headless/states';
+import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
+import { setup, view } from '@anchorlib/react';
+import type { HTMLAttributes } from 'react';
 
 export type TabContentProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
@@ -11,7 +11,7 @@ export type TabContentProps = HTMLAttributes<HTMLDivElement> & {
 
 export const TabContent = setup(({ name, children, className, ...props }: TabContentProps) => {
   const tab = getTab();
-  const ref = useClassName<HTMLDivElement>(() =>
+  const ref = classAction<HTMLDivElement>(() =>
     classx('ark-tab-content', className, {
       'ark-active': tab?.active === name,
     })

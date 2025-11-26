@@ -1,7 +1,7 @@
-import { type HTMLAttributes } from 'react';
-import { setup, view } from '@anchorlib/react';
-import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import { getTab } from '@anchorkit/headless/states';
+import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
+import { setup, view } from '@anchorlib/react';
+import type { HTMLAttributes } from 'react';
 
 export type TabButtonProps = HTMLAttributes<HTMLButtonElement> & {
   name: string;

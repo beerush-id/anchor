@@ -1,6 +1,6 @@
-import type { KeyLike } from '../types.js';
-import { captureStack } from '../exception.js';
 import { anchor } from '../anchor.js';
+import { captureStack } from '../exception.js';
+import type { KeyLike } from '../types.js';
 import { isBrowser } from './inspector.js';
 
 export type Context<K extends KeyLike, V> = Map<K, V>;
@@ -10,7 +10,7 @@ export type ContextStore = {
   getStore(): Context<KeyLike, unknown>;
 };
 
-let currentStore: ContextStore | undefined = undefined;
+let currentStore: ContextStore | undefined;
 
 /**
  * Sets the current context store to be used for context management.
@@ -64,7 +64,7 @@ export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
   return currentStore?.run(ctx, fn) ?? fn();
 }
 
-let currentContext: Context<KeyLike, unknown> | undefined = undefined;
+let currentContext: Context<KeyLike, unknown> | undefined;
 
 /**
  * Creates a new context with optional initial key-value pairs.

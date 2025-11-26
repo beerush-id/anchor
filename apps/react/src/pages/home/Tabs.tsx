@@ -1,8 +1,36 @@
 import { Switch, SwitchLabel, Tab, TabButton, TabContent, TabList, TabVisibility } from '@anchorkit/react/components';
-import { observer, useAnchor, view } from '@anchorlib/react';
+import { anchor, mutable } from '@anchorlib/core';
+import { effect, setup, view } from '@anchorlib/react-next';
+import type { FC } from 'react';
 
-export const Tabs = observer(() => {
-  const [tabs] = useAnchor({
+const ActiveTab: FC<{ name: string; tab: Record<string, string | boolean>; active?: string }> = setup((props) => {
+  const { name, tab } = props;
+  const renderCount = mutable(0);
+  renderCount.value++;
+
+  effect(() => {
+    console.log('Active tab:', tab.active, renderCount.value);
+  });
+
+  const Template = view(
+    () => (
+      <span className={props.active === 'account' ? 'bg-red-100' : 'bg-blue-100'}>
+        {name}: {tab.active}
+      </span>
+    ),
+    'ActiveTab'
+  );
+
+  return (
+    <>
+      <Template />
+      <span className="text-xs">Render Counts: {renderCount.value}</span>
+    </>
+  );
+}, 'ActiveTab');
+
+export const Tabs = setup(() => {
+  const tabs = anchor({
     tab1: {
       active: 'account',
       disabled: false,
@@ -13,12 +41,18 @@ export const Tabs = observer(() => {
     },
   });
 
-  const ActiveTabs = view(() => (
-    <div className={'flex items-center gap-2'}>
-      <span>Tab 1: {tabs.tab1.active}</span>
-      <span>Tab 2: {tabs.tab2.active}</span>
-    </div>
-  ));
+  console.log('Tab list rendered.');
+
+  const ActiveTabs = view(() => {
+    console.log('Active tabs rendered.');
+
+    return (
+      <div className={'flex items-center gap-2'}>
+        <ActiveTab name={'Tab 1'} tab={tabs.tab1} active={tabs.tab1.active} />
+        <ActiveTab name={'Tab 2'} tab={tabs.tab2} active={tabs.tab2.active} />
+      </div>
+    );
+  });
 
   return (
     <div className="mb-8 flex flex-col gap-2">

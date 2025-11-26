@@ -1,4 +1,4 @@
-import { anchor, getContext, setContext, shortId } from '@anchorlib/core';
+import { createContext, getContext, mutable, setContext, shortId, withContext } from '@anchorlib/core';
 
 export enum TabVisibility {
   HIDDEN = 'hidden',
@@ -22,7 +22,7 @@ export type TabInit = {
 export const TabCtx = Symbol('ark-tab');
 
 export function createTab(options?: TabInit): TabState {
-  return anchor<TabState>({
+  return mutable<TabState>({
     id: shortId(),
     active: options?.active ?? '',
     disabled: options?.disabled ?? false,
@@ -42,4 +42,11 @@ export function setTab(options?: TabInit) {
 
 export function getTab() {
   return getContext<TabState>(TabCtx);
+}
+
+export function withTab<T>(fn: () => T, options?: TabInit): T {
+  const tab = createTab(options);
+  const ctx = createContext([[TabCtx, tab]]);
+
+  return withContext(ctx, fn);
 }

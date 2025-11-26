@@ -1,21 +1,13 @@
-import type { Action } from './types.js';
-import { createObserver, type StateUnsubscribe } from '@anchorlib/core';
+import { createObserver } from '@anchorlib/core';
+import type { Action, ActionRef, ActionRefObj } from './types.js';
 
-export function createAction(factory: Action): StateUnsubscribe {
+export function actionRef<T>(action: Action<T>, init?: T): ActionRefObj<T> {
+  let current: T | null = init ?? null;
+
   const observer = createObserver(() => {
-    if (!instance) return;
-    observer.run(() => instance?.update?.());
+    instance?.update?.(current as T);
   });
-  const instance = observer.run(() => factory?.());
-
-  return () => {
-    observer.destroy();
-    instance?.destroy?.();
-  };
-}
-
-export function actionRef<T>(factory: Action) {
-  let current: T | null = null;
+  const instance: ActionRef<T> | null = observer.run(() => action(current as T));
 
   return {
     get current() {
@@ -25,10 +17,12 @@ export function actionRef<T>(factory: Action) {
       if (value === current) return;
 
       current = value;
-      createAction(factory);
+      instance?.update?.(current as T);
     },
     destroy() {
       current = null;
+      instance?.destroy?.();
+      observer.destroy();
     },
   };
 }

@@ -11,10 +11,15 @@ export type StyleDeclaration = {
 };
 export type StyleRef = StyleDeclaration;
 
-export type Action = () => ActionRef | void;
-export type ActionRef = {
-  update?: ActionUpdater;
+export type Action<T> = (current?: T) => ActionRef<T>;
+export type ActionRef<T> = {
+  update: ActionUpdater<T>;
   destroy?: ActionDestroyer;
 };
-export type ActionUpdater = () => void;
+export type ActionUpdater<T> = (current?: T) => undefined;
 export type ActionDestroyer = () => void;
+export type ActionRefObj<T> = {
+  get current(): T | null;
+  set current(value: T | null);
+  destroy(): void;
+};

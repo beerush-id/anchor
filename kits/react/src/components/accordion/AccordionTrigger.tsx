@@ -1,14 +1,14 @@
-import { setup, view } from '@anchorlib/react';
-import { type HTMLAttributes, type MouseEventHandler } from 'react';
-import { useAccordion } from './context.js';
-import type { ReactProps } from '../../types.js';
+import { getCollapsible } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
+import { setup, view } from '@anchorlib/react';
+import type { HTMLAttributes, MouseEventHandler } from 'react';
 import { ChevronDown } from '../../icons/index.js';
+import type { ReactProps } from '../../types.js';
 
 export type AccordionTriggerProps = ReactProps<HTMLAttributes<HTMLButtonElement>>;
 
 export const AccordionTrigger = setup(({ children, className, onClick, ...props }: AccordionTriggerProps) => {
-  const state = useAccordion();
+  const state = getCollapsible();
 
   const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
     state?.toggle();
@@ -17,13 +17,13 @@ export const AccordionTrigger = setup(({ children, className, onClick, ...props 
 
   const AccordionTriggerView = view(() => {
     const classList = classx('ark-accordion-trigger', className, {
-      'ark-open': state?.open,
+      'ark-open': state?.expanded,
     });
 
     return (
       <button
         type="button"
-        aria-expanded={state?.open}
+        aria-expanded={state?.expanded}
         aria-disabled={state?.disabled}
         onClick={handleClick}
         className={classList}

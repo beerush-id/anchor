@@ -1,7 +1,8 @@
-import { type HTMLAttributes, type ReactNode } from 'react';
 import { setTab, type TabVisibility } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { type BindingParam, effect, setup, useBinding } from '@anchorlib/react';
+import { type BindingParam, useBinding } from '@anchorlib/react';
+import { setup } from '@anchorlib/react-next';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 export { TabVisibility } from '@anchorkit/headless/states';
 
@@ -29,12 +30,6 @@ export const Tab = setup(function Tab<V, D>({
 
   useBinding(tab, 'active', bindValue);
   useBinding(tab, 'disabled', bindDisabled);
-
-  effect(() => {
-    if (tab.active === 'password') {
-      tab.active = 'profile';
-    }
-  });
 
   return (
     <div className={classx('ark-tab', className)} {...props}>

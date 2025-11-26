@@ -1,10 +1,9 @@
-import { type BindingParam, setup, useBinding } from '@anchorlib/react';
-import { type CollapsibleInit, createCollapsible } from '@anchorkit/headless/states';
-import { AccordionContext, useAccordionGroup } from './context.js';
-import type { ReactProps } from '../../types.js';
-import { type HTMLAttributes } from 'react';
+import { classAction } from '@anchorkit/headless/actions';
+import { type CollapsibleInit, getCollapsibleGroup, setCollapsible } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { useClassName } from '../../actions/index.js';
+import { type BindingParam, setup, useBinding } from '@anchorlib/react';
+import type { HTMLAttributes } from 'react';
+import type { ReactProps } from '../../types.js';
 
 export type AccordionProps<O, D> = ReactProps<HTMLAttributes<HTMLDivElement> & CollapsibleInit> & {
   onChange?(open: boolean): void;
@@ -22,24 +21,24 @@ export const Accordion = setup(function Accordion<O, D>({
   className,
   ...props
 }: AccordionProps<O, D>) {
-  const group = useAccordionGroup();
-  const state = createCollapsible({ open, group, disabled, onChange });
-  const clsRef = useClassName<HTMLDivElement>(() =>
+  const group = getCollapsibleGroup();
+  const state = setCollapsible({ open, group, disabled, onChange });
+  const classRef = classAction<HTMLDivElement>(() =>
     classx('ark-accordion', className, {
-      'ark-open': state?.open,
+      'ark-open': state?.expanded,
     })
   );
+
+  if (group && !group.value && open) {
+    group.value = state.id;
+  }
 
   useBinding(state, 'open', bindOpen);
   useBinding(state, 'disabled', bindDisabled);
 
-  group?.items.add(state);
-
   return (
-    <AccordionContext value={state}>
-      <div ref={clsRef} className={clsRef.className} {...props}>
-        {children}
-      </div>
-    </AccordionContext>
+    <div ref={classRef} className={classRef.className} {...props}>
+      {children}
+    </div>
   );
 }, 'Accordion');

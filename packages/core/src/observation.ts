@@ -1,3 +1,7 @@
+import { ANCHOR_SETTINGS } from './constant.js';
+import { getDevTool } from './dev.js';
+import { captureStack } from './exception.js';
+import { META_REGISTRY } from './registry.js';
 import type {
   KeyLike,
   Linkable,
@@ -8,14 +12,10 @@ import type {
   StatePublicTracker,
   StateTracker,
 } from './types.js';
-import { captureStack } from './exception.js';
-import { getDevTool } from './dev.js';
-import { META_REGISTRY } from './registry.js';
 import { isFunction, shortId } from './utils/index.js';
-import { ANCHOR_SETTINGS } from './constant.js';
 
-let currentObserver: StateObserver | undefined = undefined;
-let currentRestorer: (() => void) | undefined = undefined;
+let currentObserver: StateObserver | undefined;
+let currentRestorer: (() => void) | undefined;
 
 /**
  * Sets the current observer context for state tracking.
@@ -94,6 +94,7 @@ export function createObserver(
       }
     }
 
+    observedSize = 0;
     destroyers.clear();
   };
 
@@ -228,7 +229,7 @@ export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrO
 export function untrack<R>(fn: () => R): R {
   const restore = setObserver(undefined as never);
 
-  let result: R | undefined = undefined;
+  let result: R | undefined;
 
   if (typeof fn === 'function') {
     try {

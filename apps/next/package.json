@@ -18,6 +18,7 @@
   "dependencies": {
     "@anchorlib/react": "workspace:*",
     "@anchorlib/react-kit": "workspace:*",
+    "@anchorlib/react-next": "workspace:*",
     "@anchorlib/storage": "workspace:*",
     "next": "catalog:app",
     "react": "catalog:app",

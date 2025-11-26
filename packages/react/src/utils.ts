@@ -1,4 +1,4 @@
-import { BATCH_MUTATION_KEYS, BatchMutations, type KeyLike, type State, type StateChange } from '@anchorlib/core';
+import { BATCH_MUTATION_KEYS, type BatchMutations, type KeyLike, type State, type StateChange } from '@anchorlib/core';
 import type { AnchoredProps, Bindable } from './types.js';
 
 /**

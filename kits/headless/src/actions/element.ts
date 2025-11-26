@@ -1,15 +1,47 @@
-import { createAction } from '../utils/index.js';
+import { actionRef, type ActionRefObj } from '../utils/index.js';
 
-export function classAction<E>(element: E, classList: () => string) {
-  return createAction(() => {
-    if (!(element instanceof HTMLElement)) return;
+export type ClassActionRef<E> = ActionRefObj<E> & {
+  get className(): string;
+};
 
-    const update = () => {
-      element?.setAttribute('class', classList());
+export function classAction<E extends HTMLElement>(classList: () => string): ClassActionRef<E> {
+  let className: string;
+
+  const ref = actionRef<E>(() => {
+    className = classList();
+
+    return {
+      update(element) {
+        className = classList();
+        element?.setAttribute('class', className);
+      },
     };
+  });
 
-    update();
+  return {
+    get current() {
+      return ref.current;
+    },
+    set current(value) {
+      ref.current = value;
+    },
+    get className() {
+      return className;
+    },
+    destroy() {
+      ref.destroy();
+    },
+  };
+}
 
-    return { update };
+export function heightAction<E extends HTMLElement>(height?: number): ActionRefObj<E> {
+  return actionRef<E>(() => {
+    return {
+      update(element) {
+        if (!(element instanceof HTMLElement)) return;
+
+        element.style.setProperty('--ark-content-height', `${height ?? element.scrollHeight}px`);
+      },
+    };
   });
 }

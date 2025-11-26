@@ -38,6 +38,10 @@
     "vite": "catalog:",
     "vite-tsconfig-paths": "catalog:",
     "vitest": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@types/bun": "catalog:"
+  },
+  "dependencies": {
+    "@anchorlib/react-next": "workspace:*"
   }
 }

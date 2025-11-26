@@ -20,7 +20,7 @@
 
   --ark-tab-button-border: var(--color-border);
   --ark-tab-button-border-radius: var(--radius-md);
-  --ark-tab-button-outline: transparent;
+  --ark-tab-button-outline: var(--color-primary-ring);
   --ark-tab-button-outline-size: 2px;
   --ark-tab-button-font-size: var(--text-sm);
   --ark-tab-button-font-weight: var(--font-weight-medium);

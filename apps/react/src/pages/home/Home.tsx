@@ -1,18 +1,20 @@
-import { persistent } from '@anchorlib/storage';
-import { subscribe } from '@anchorlib/core';
 import { COLOR_THEMES } from '@anchorkit/headless';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionGroup,
+  AccordionTrigger,
+} from '@anchorkit/react/components/accordion/index.js';
+import { subscribe } from '@anchorlib/core';
+import { view } from '@anchorlib/react';
+import { persistent } from '@anchorlib/storage';
 import { Bell, CircleUser } from '@icons/index.js';
 import type { ChangeEventHandler } from 'react';
-import { view } from '@anchorlib/react';
 import { Badges } from './Badges.js';
-import { Tabs } from './Tabs.js';
+import { Checkboxes } from './Checkboxes.js';
 import { Radios } from './Radios.js';
 import { Switches } from './Switches.js';
-import { Checkboxes } from './Checkboxes.js';
-import { AccordionGroup } from '@anchorkit/react/components/accordion/AccordionGroup.js';
-import { Accordion } from '@anchorkit/react/components/accordion/Accordion.js';
-import { AccordionTrigger } from '@anchorkit/react/components/accordion/AccordionTrigger.js';
-import { AccordionContent } from '@anchorkit/react/components/accordion/AccordionContent.js';
+import { Tabs } from './Tabs.js';
 
 const settings = persistent('settings', {
   theme: 'system',
@@ -53,282 +55,294 @@ export default function Home() {
           </option>
         ))}
       </select>
-      <button className={'ark-button'} onClick={handleToggleDark}>
+      <button type={'button'} className={'ark-button'} onClick={handleToggleDark}>
         <span>{settings.theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
       </button>
     </div>
   ));
 
   return (
-    <>
-      <main className="p-8">
-        <ThemeControl />
+    <main className="p-8">
+      <ThemeControl />
 
-        {/* Accordion */}
-        <div className="mb-8 flex flex-col gap-2">
-          <h2 className="text-xl font-semibold mb-2">Accordions</h2>
-          <div className="flex flex-wrap gap-2 items-center">
-            <AccordionGroup>
-              <Accordion open>
-                <AccordionTrigger>
-                  <span>Product Information</span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p>
-                    Our flagship product combines cutting-edge technology with sleek design. Built with premium
-                    materials, it offers unparalleled performance and reliability.
-                  </p>
-                  <p>
-                    Key features include advanced processing capabilities, and an intuitive user interface designed for
-                    both beginners and experts.
-                  </p>
-                </AccordionContent>
-              </Accordion>
-              <Accordion>
-                <AccordionTrigger>
-                  <span>Shipping Details</span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p>
-                    We offer worldwide shipping through trusted courier partners. Standard delivery takes 3-5 business
-                    days, while express shipping ensures delivery within 1-2 business days.
-                  </p>
-                  <p>
-                    All orders are carefully packaged and fully insured. Track your shipment in real-time through our
-                    dedicated tracking portal.
-                  </p>
-                </AccordionContent>
-              </Accordion>
-              <Accordion>
-                <AccordionTrigger>
-                  <span>Return Policy</span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <p>
-                    We stand behind our products with a comprehensive 30-day return policy. If you're not completely
-                    satisfied, simply return the item in its original condition.
-                  </p>
-                  <p>
-                    Our hassle-free return process includes free return shipping and full refunds processed within 48
-                    hours of receiving the returned item.
-                  </p>
-                </AccordionContent>
-              </Accordion>
-            </AccordionGroup>
+      {/* Accordion */}
+      <div className="mb-8 flex flex-col gap-2">
+        <h2 className="text-xl font-semibold mb-2">Accordions</h2>
+        <div className="flex flex-wrap gap-2 items-center">
+          <AccordionGroup>
+            <Accordion>
+              <AccordionTrigger>
+                <span>Product Information</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p>
+                  Our flagship product combines cutting-edge technology with sleek design. Built with premium materials,
+                  it offers unparalleled performance and reliability.
+                </p>
+                <p>
+                  Key features include advanced processing capabilities, and an intuitive user interface designed for
+                  both beginners and experts.
+                </p>
+              </AccordionContent>
+            </Accordion>
+            <Accordion>
+              <AccordionTrigger>
+                <span>Shipping Details</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p>
+                  We offer worldwide shipping through trusted courier partners. Standard delivery takes 3-5 business
+                  days, while express shipping ensures delivery within 1-2 business days.
+                </p>
+                <p>
+                  All orders are carefully packaged and fully insured. Track your shipment in real-time through our
+                  dedicated tracking portal.
+                </p>
+              </AccordionContent>
+            </Accordion>
+            <Accordion>
+              <AccordionTrigger>
+                <span>Return Policy</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p>
+                  We stand behind our products with a comprehensive 30-day return policy. If you're not completely
+                  satisfied, simply return the item in its original condition.
+                </p>
+                <p>
+                  Our hassle-free return process includes free return shipping and full refunds processed within 48
+                  hours of receiving the returned item.
+                </p>
+              </AccordionContent>
+            </Accordion>
+          </AccordionGroup>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="mb-8 flex flex-col gap-2">
+        <h2 className="text-xl font-semibold mb-2">Buttons</h2>
+        <div className="flex flex-wrap gap-2 items-center">
+          <button type={'button'} className="ark-button">
+            Normal
+          </button>
+          <button type={'button'} className="ark-button ark-primary-button">
+            Primary
+          </button>
+          <button type={'button'} className="ark-button ark-destructive-button">
+            Destructive
+          </button>
+          <button type={'button'} className="ark-button ark-outline-button">
+            Outline
+          </button>
+          <button type={'button'} className="ark-button ark-ghost-button">
+            Ghost
+          </button>
+          <button type={'button'} className="ark-button ark-link-button">
+            Link
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <button type={'button'} className="ark-button" disabled>
+            Normal
+          </button>
+          <button type={'button'} className="ark-button ark-primary-button" disabled>
+            Primary
+          </button>
+          <button type={'button'} className="ark-button ark-destructive-button" disabled>
+            Destructive
+          </button>
+          <button type={'button'} className="ark-button ark-outline-button" disabled>
+            Outline
+          </button>
+          <button type={'button'} className="ark-button ark-ghost-button" disabled>
+            Ghost
+          </button>
+          <button type={'button'} className="ark-button ark-link-button" disabled>
+            Link
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center mt-4">
+          <button type={'button'} className="ark-button ark-primary-button ark-sm-button">
+            <CircleUser />
+            <span>Small</span>
+          </button>
+          <button type={'button'} className="ark-button ark-primary-button">
+            <CircleUser />
+            <span>Default</span>
+          </button>
+          <button type={'button'} className="ark-button ark-primary-button ark-md-button">
+            <CircleUser />
+            <span>Medium</span>
+          </button>
+          <button type={'button'} className="ark-button ark-primary-button ark-lg-button">
+            <CircleUser />
+            <span>Large</span>
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center mt-4">
+          <button type={'button'} className="ark-icon-button ark-sm-button">
+            <CircleUser />
+          </button>
+          <button type={'button'} className="ark-icon-button">
+            <CircleUser />
+          </button>
+          <button type={'button'} className="ark-icon-button ark-md-button">
+            <CircleUser />
+          </button>
+          <button type={'button'} className="ark-icon-button ark-lg-button">
+            <CircleUser />
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center mt-4">
+          <div className="ark-button-group">
+            <button type={'button'} className="ark-tool-button">
+              <CircleUser />
+            </button>
+            <button type={'button'} className="ark-tool-button ark-active">
+              <CircleUser />
+            </button>
+            <button type={'button'} className="ark-tool-button">
+              <CircleUser />
+            </button>
+            <button type={'button'} className="ark-tool-button">
+              <CircleUser />
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Buttons */}
-        <div className="mb-8 flex flex-col gap-2">
-          <h2 className="text-xl font-semibold mb-2">Buttons</h2>
-          <div className="flex flex-wrap gap-2 items-center">
-            <button className="ark-button">Normal</button>
-            <button className="ark-button ark-primary-button">Primary</button>
-            <button className="ark-button ark-destructive-button">Destructive</button>
-            <button className="ark-button ark-outline-button">Outline</button>
-            <button className="ark-button ark-ghost-button">Ghost</button>
-            <button className="ark-button ark-link-button">Link</button>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <button className="ark-button" disabled>
-              Normal
-            </button>
-            <button className="ark-button ark-primary-button" disabled>
-              Primary
-            </button>
-            <button className="ark-button ark-destructive-button" disabled>
-              Destructive
-            </button>
-            <button className="ark-button ark-outline-button" disabled>
-              Outline
-            </button>
-            <button className="ark-button ark-ghost-button" disabled>
-              Ghost
-            </button>
-            <button className="ark-button ark-link-button" disabled>
-              Link
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center mt-4">
-            <button className="ark-button ark-primary-button ark-sm-button">
-              <CircleUser />
-              <span>Small</span>
-            </button>
-            <button className="ark-button ark-primary-button">
-              <CircleUser />
-              <span>Default</span>
-            </button>
-            <button className="ark-button ark-primary-button ark-md-button">
-              <CircleUser />
-              <span>Medium</span>
-            </button>
-            <button className="ark-button ark-primary-button ark-lg-button">
-              <CircleUser />
-              <span>Large</span>
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center mt-4">
-            <button className="ark-icon-button ark-sm-button">
-              <CircleUser />
-            </button>
-            <button className="ark-icon-button">
-              <CircleUser />
-            </button>
-            <button className="ark-icon-button ark-md-button">
-              <CircleUser />
-            </button>
-            <button className="ark-icon-button ark-lg-button">
-              <CircleUser />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center mt-4">
-            <div className="ark-button-group">
-              <button className="ark-tool-button">
-                <CircleUser />
+      {/* Cards */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-2">Cards</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="ark-card">
+            <div className="ark-card-header">
+              <h3 className="ark-card-title">Default Card</h3>
+              <p className="ark-card-description">This is a default card.</p>
+            </div>
+            <div className="ark-card-content">
+              <p>Card content goes here.</p>
+            </div>
+            <div className="ark-card-footer">
+              <button type={'button'} className="ark-button ark-primary-button">
+                Action
               </button>
-              <button className="ark-tool-button ark-active">
-                <CircleUser />
-              </button>
-              <button className="ark-tool-button">
-                <CircleUser />
-              </button>
-              <button className="ark-tool-button">
-                <CircleUser />
-              </button>
+            </div>
+          </div>
+          <div className="ark-card ark-elevated-card">
+            <div className="ark-card-header">
+              <h3 className="ark-card-title">Elevated Card</h3>
+              <p className="ark-card-description">This is an elevated card.</p>
+            </div>
+          </div>
+          <div className="ark-card ark-outlined-card">
+            <div className="ark-card-header">
+              <h3 className="ark-card-title">Outlined Card</h3>
+              <p className="ark-card-description">This is an outlined card.</p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Cards */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">Cards</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div className="ark-card">
-              <div className="ark-card-header">
-                <h3 className="ark-card-title">Default Card</h3>
-                <p className="ark-card-description">This is a default card.</p>
-              </div>
-              <div className="ark-card-content">
-                <p>Card content goes here.</p>
-              </div>
-              <div className="ark-card-footer">
-                <button className="ark-button ark-primary-button">Action</button>
-              </div>
+      {/* Alerts */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-2">Alerts</h2>
+        <div className="space-y-4">
+          <div className="ark-alert">
+            <div className="ark-alert-icon">
+              <Bell />
             </div>
-            <div className="ark-card ark-elevated-card">
-              <div className="ark-card-header">
-                <h3 className="ark-card-title">Elevated Card</h3>
-                <p className="ark-card-description">This is an elevated card.</p>
-              </div>
+            <div className="ark-alert-content">
+              <h4 className="ark-alert-title">Default Alert</h4>
+              <p className="ark-alert-description">This is a default alert.</p>
             </div>
-            <div className="ark-card ark-outlined-card">
-              <div className="ark-card-header">
-                <h3 className="ark-card-title">Outlined Card</h3>
-                <p className="ark-card-description">This is an outlined card.</p>
-              </div>
+          </div>
+          <div className="ark-alert ark-destructive-alert">
+            <div className="ark-alert-icon">
+              <CircleUser />
+            </div>
+            <div className="ark-alert-content">
+              <h4 className="ark-alert-title">Destructive Alert</h4>
+              <p className="ark-alert-description">This is a destructive alert.</p>
+            </div>
+          </div>
+          <div className="ark-alert ark-warning-alert">
+            <div className="ark-alert-icon">
+              <CircleUser />
+            </div>
+            <div className="ark-alert-content">
+              <h4 className="ark-alert-title">Warning Alert</h4>
+              <p className="ark-alert-description">This is a warning alert.</p>
+            </div>
+          </div>
+          <div className="ark-alert ark-success-alert">
+            <div className="ark-alert-icon">
+              <CircleUser />
+            </div>
+            <div className="ark-alert-content">
+              <h4 className="ark-alert-title">Success Alert</h4>
+              <p className="ark-alert-description">This is a success alert.</p>
+            </div>
+          </div>
+          <div className="ark-alert ark-info-alert">
+            <div className="ark-alert-icon">
+              <CircleUser />
+            </div>
+            <div className="ark-alert-content">
+              <h4 className="ark-alert-title">Info Alert</h4>
+              <p className="ark-alert-description">This is an info alert.</p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Alerts */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">Alerts</h2>
-          <div className="space-y-4">
-            <div className="ark-alert">
-              <div className="ark-alert-icon">
-                <Bell />
-              </div>
-              <div className="ark-alert-content">
-                <h4 className="ark-alert-title">Default Alert</h4>
-                <p className="ark-alert-description">This is a default alert.</p>
-              </div>
-            </div>
-            <div className="ark-alert ark-destructive-alert">
-              <div className="ark-alert-icon">
-                <CircleUser />
-              </div>
-              <div className="ark-alert-content">
-                <h4 className="ark-alert-title">Destructive Alert</h4>
-                <p className="ark-alert-description">This is a destructive alert.</p>
-              </div>
-            </div>
-            <div className="ark-alert ark-warning-alert">
-              <div className="ark-alert-icon">
-                <CircleUser />
-              </div>
-              <div className="ark-alert-content">
-                <h4 className="ark-alert-title">Warning Alert</h4>
-                <p className="ark-alert-description">This is a warning alert.</p>
-              </div>
-            </div>
-            <div className="ark-alert ark-success-alert">
-              <div className="ark-alert-icon">
-                <CircleUser />
-              </div>
-              <div className="ark-alert-content">
-                <h4 className="ark-alert-title">Success Alert</h4>
-                <p className="ark-alert-description">This is a success alert.</p>
-              </div>
-            </div>
-            <div className="ark-alert ark-info-alert">
-              <div className="ark-alert-icon">
-                <CircleUser />
-              </div>
-              <div className="ark-alert-content">
-                <h4 className="ark-alert-title">Info Alert</h4>
-                <p className="ark-alert-description">This is an info alert.</p>
-              </div>
-            </div>
-          </div>
+      {/* Inputs */}
+      <div className="mb-8 flex flex-col gap-2">
+        <h2 className="text-xl font-semibold mb-2">Inputs</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" placeholder="Default" className="ark-input" />
+          <input type="text" placeholder="Error" className="ark-input ark-input-error" />
+          <input type="text" placeholder="Success" className="ark-input ark-input-success" />
         </div>
-
-        {/* Inputs */}
-        <div className="mb-8 flex flex-col gap-2">
-          <h2 className="text-xl font-semibold mb-2">Inputs</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input type="text" placeholder="Default" className="ark-input" />
-            <input type="text" placeholder="Error" className="ark-input ark-input-error" />
-            <input type="text" placeholder="Success" className="ark-input ark-input-success" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input type="text" placeholder="Disabled" className="ark-input" disabled />
-            <input type="text" placeholder="Error Disabled" className="ark-input ark-input-error" disabled />
-            <input type="text" placeholder="Success Disabled" className="ark-input ark-input-success" disabled />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input type="text" placeholder="Small" className="ark-input ark-input-sm" />
-            <input type="text" placeholder="Normal" className="ark-input" />
-            <input type="text" placeholder="Large" className="ark-input ark-input-lg" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input type="text" placeholder="Small" className="ark-tool-input" />
-            <input type="text" placeholder="Small" className="ark-tool-input ark-input-error" />
-            <input type="text" placeholder="Small" className="ark-tool-input ark-input-success" />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" placeholder="Disabled" className="ark-input" disabled />
+          <input type="text" placeholder="Error Disabled" className="ark-input ark-input-error" disabled />
+          <input type="text" placeholder="Success Disabled" className="ark-input ark-input-success" disabled />
         </div>
-
-        {/* Textarea */}
-        <div className="mb-8 flex flex-col gap-2">
-          <h2 className="text-xl font-semibold mb-2">Textarea</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <textarea placeholder="Default" className="ark-textarea"></textarea>
-            <textarea placeholder="Default" className="ark-textarea ark-textarea-error"></textarea>
-            <textarea placeholder="Default" className="ark-textarea ark-textarea-success"></textarea>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <textarea placeholder="Default" className="ark-textarea" disabled></textarea>
-            <textarea placeholder="Default" className="ark-textarea ark-textarea-error" disabled></textarea>
-            <textarea placeholder="Default" className="ark-textarea ark-textarea-success" disabled></textarea>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" placeholder="Small" className="ark-input ark-input-sm" />
+          <input type="text" placeholder="Normal" className="ark-input" />
+          <input type="text" placeholder="Large" className="ark-input ark-input-lg" />
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input type="text" placeholder="Small" className="ark-tool-input" />
+          <input type="text" placeholder="Small" className="ark-tool-input ark-input-error" />
+          <input type="text" placeholder="Small" className="ark-tool-input ark-input-success" />
+        </div>
+      </div>
 
-        {/* Checkbox */}
-        <Checkboxes />
-        <Radios />
-        <Switches />
-        <Badges />
-        <Tabs />
-      </main>
-    </>
+      {/* Textarea */}
+      <div className="mb-8 flex flex-col gap-2">
+        <h2 className="text-xl font-semibold mb-2">Textarea</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <textarea placeholder="Default" className="ark-textarea"></textarea>
+          <textarea placeholder="Default" className="ark-textarea ark-textarea-error"></textarea>
+          <textarea placeholder="Default" className="ark-textarea ark-textarea-success"></textarea>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <textarea placeholder="Default" className="ark-textarea" disabled></textarea>
+          <textarea placeholder="Default" className="ark-textarea ark-textarea-error" disabled></textarea>
+          <textarea placeholder="Default" className="ark-textarea ark-textarea-success" disabled></textarea>
+        </div>
+      </div>
+
+      {/* Checkbox */}
+      <Checkboxes />
+      <Radios />
+      <Switches />
+      <Badges />
+      <Tabs />
+    </main>
   );
 }

@@ -1,4 +1,31 @@
-import { isArray, isFunction, isMap, isObject, isSet, shortId } from './utils/index.js';
+import { createArrayMutator } from './array.js';
+import { createBroadcaster } from './broadcast.js';
+import { createCollectionMutator } from './collection.js';
+import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from './constant.js';
+import { getDevTool } from './dev.js';
+import { type ArrayMutations, Linkables } from './enum.js';
+import { captureStack } from './exception.js';
+import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
+import { assign, clear, remove } from './helper.js';
+import { linkable } from './internal.js';
+import { createProxyHandler, writeContract } from './proxy.js';
+import {
+  BROADCASTER_REGISTRY,
+  CONTROLLER_REGISTRY,
+  EXCEPTION_HANDLER_REGISTRY,
+  INIT_GATEWAY_REGISTRY,
+  INIT_REGISTRY,
+  META_INIT_REGISTRY,
+  META_REGISTRY,
+  MUTATOR_REGISTRY,
+  RELATION_REGISTRY,
+  SORTER_REGISTRY,
+  STATE_GATEWAY_REGISTRY,
+  STATE_REGISTRY,
+  SUBSCRIBER_REGISTRY,
+  SUBSCRIPTION_REGISTRY,
+} from './registry.js';
+import { createGetter, createRemover, createSetter } from './trap.js';
 import type {
   Anchor,
   AnchorSettings,
@@ -26,35 +53,8 @@ import type {
   StateSubscriberList,
   StateSubscriptionMap,
 } from './types.js';
-import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from './constant.js';
-import {
-  BROADCASTER_REGISTRY,
-  CONTROLLER_REGISTRY,
-  EXCEPTION_HANDLER_REGISTRY,
-  INIT_GATEWAY_REGISTRY,
-  INIT_REGISTRY,
-  META_INIT_REGISTRY,
-  META_REGISTRY,
-  MUTATOR_REGISTRY,
-  RELATION_REGISTRY,
-  SORTER_REGISTRY,
-  STATE_GATEWAY_REGISTRY,
-  STATE_REGISTRY,
-  SUBSCRIBER_REGISTRY,
-  SUBSCRIPTION_REGISTRY,
-} from './registry.js';
-import { linkable } from './internal.js';
-import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
-import { createProxyHandler, writeContract } from './proxy.js';
-import { assign, clear, remove } from './helper.js';
-import { createArrayMutator } from './array.js';
-import { createCollectionMutator } from './collection.js';
-import { captureStack } from './exception.js';
 import { softClone } from './utils/clone.js';
-import { getDevTool } from './dev.js';
-import { createGetter, createRemover, createSetter } from './trap.js';
-import { type ArrayMutations, Linkables } from './enum.js';
-import { createBroadcaster } from './broadcast.js';
+import { isArray, isFunction, isMap, isObject, isSet, shortId } from './utils/index.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -422,8 +422,6 @@ anchorFn.clear = clear;
 export const anchor = anchorFn as Anchor;
 
 export const model = anchorFn.model as Anchor['model'];
-export const mutable = anchorFn as Anchor;
 export const ordered = anchorFn.ordered as Anchor['ordered'];
 export const writable = anchorFn.writable as Anchor['writable'];
-export const immutable = anchorFn.immutable as Anchor['immutable'];
 export const exception = anchorFn.catch as Anchor['catch'];
