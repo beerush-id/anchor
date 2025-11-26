@@ -1,12 +1,10 @@
 'use client';
 
-import { useAnchor } from '@anchorlib/react';
-import { observable } from '@anchorlib/react/view';
-import { undoable } from '@anchorlib/core';
+import { mutable, setup, template, undoable } from '@anchorlib/react-next';
 import { LoaderCircle } from 'lucide-react';
 
-const Counter = observable(() => {
-  const [state] = useAnchor({ count: 0, loading: false });
+const Counter = setup(() => {
+  const state = mutable({ count: 0, loading: false });
 
   const incrementAsync = () => {
     if (state.loading) return;
@@ -35,12 +33,18 @@ const Counter = observable(() => {
     }, 1000);
   };
 
+  const Template = template(() => (
+    <h2 className="flex items-center gap-4">
+      Counter: {state.count} {state.loading ? <LoaderCircle size={16} className="animate-spin" /> : null}
+    </h2>
+  ));
+
   return (
     <div>
-      <h2 className="flex items-center gap-4">
-        Counter: {state.count} {state.loading ? <LoaderCircle size={16} className="animate-spin" /> : null}
-      </h2>
-      <button onClick={incrementAsync}>Increment Async (Optimistic)</button>
+      <Template />
+      <button type={'button'} onClick={incrementAsync}>
+        Increment Async (Optimistic)
+      </button>
     </div>
   );
 });

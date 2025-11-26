@@ -19,6 +19,7 @@ export {
   shortId,
   streamState,
   subscribe,
+  undoable,
   writable,
 } from '@anchorlib/core';
 export * from './binding.js';

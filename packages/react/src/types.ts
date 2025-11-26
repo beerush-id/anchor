@@ -58,11 +58,11 @@ export type BindingProps<P, T, B> = P & {
   bind?: B extends VariableRef<T> ? [VariableRef<T>, never] : [B, BindingKeys<T, B>];
 };
 
-export type BindingInit<T, B> = B extends VariableRef<T> ? RefBinding<T> : StateBinding<T, B>;
+export type BindingInit<T, B> = B extends VariableRef<T> ? RefBinding<T> : PropBinding<T, B>;
 export type RefBinding<T> = {
   bind?: [VariableRef<T>];
 };
-export type StateBinding<T, S> = {
+export type PropBinding<T, S> = {
   bind?: BindingLink<T, S>;
 };
 export type BindingLink<T, B> = [B, BindingKeys<T, B>];
