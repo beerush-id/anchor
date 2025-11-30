@@ -1,7 +1,7 @@
-import { classAction } from '@anchorkit/headless/actions';
 import { getTab } from '@anchorkit/headless/states';
+import { TabVisibility } from '@anchorkit/headless/states/tab.js';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { setup, view } from '@anchorlib/react';
+import { propsRef, setup, template } from '@anchorlib/react-next';
 import type { HTMLAttributes } from 'react';
 
 export type TabContentProps = HTMLAttributes<HTMLDivElement> & {
@@ -9,30 +9,25 @@ export type TabContentProps = HTMLAttributes<HTMLDivElement> & {
   className?: ClassName | ClassList;
 };
 
-export const TabContent = setup(({ name, children, className, ...props }: TabContentProps) => {
+export const TabContent = setup((props: TabContentProps) => {
   const tab = getTab();
-  const ref = classAction<HTMLDivElement>(() =>
-    classx('ark-tab-content', className, {
-      'ark-active': tab?.active === name,
-    })
-  );
+  const ref = propsRef<HTMLDivElement>(() => ({
+    id: `${props.name}-panel-${tab?.id}`,
+    className: classx('ark-tab-content', props.className, {
+      'ark-active': tab?.active === props.name,
+    }),
+    'aria-labelledby': `${props.name}-tab-${tab?.id}`,
+  }));
 
-  const TabContentView = view(() => {
-    if (tab?.visibility === 'blank' && tab?.active !== name) return;
+  const Template = template(() => {
+    if (tab?.visibility === TabVisibility.BLANK && tab?.active !== props.name) return;
 
     return (
-      <div
-        ref={ref}
-        role="tabpanel"
-        id={`${name}-panel-${tab?.id}`}
-        aria-labelledby={`${name}-tab-${tab?.id}`}
-        className={ref.className}
-        {...props}
-      >
-        {children}
+      <div role="tabpanel" ref={ref} {...ref.props}>
+        {props.children}
       </div>
     );
   }, 'TabContent');
 
-  return <TabContentView />;
+  return <Template />;
 }, 'TabContent');

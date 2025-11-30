@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 export type TreeNode<T> = {
   value: T;
@@ -66,5 +66,5 @@ export class TreeState<T> {
 }
 
 export function createTree<T>(init: TreeInit<T>): TreeState<T> {
-  return anchor(new TreeState(init));
+  return mutable(new TreeState(init));
 }

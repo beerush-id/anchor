@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 export enum SelectableDisplay {
   HIDDEN = 'hidden',
@@ -19,7 +19,7 @@ export type SelectableInit<T> = {
 };
 
 export function createSelectable<T>(options?: SelectableInit<T>): SelectableState<T> {
-  return anchor<SelectableState<T>>({
+  return mutable<SelectableState<T>>({
     value: options?.value ?? null,
     disabled: options?.disabled ?? false,
     visibility: options?.visibility ?? SelectableDisplay.HIDDEN,

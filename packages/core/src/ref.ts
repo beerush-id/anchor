@@ -3,7 +3,7 @@ import { ANCHOR_SETTINGS } from './constant.js';
 import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
 import { createObserver } from './observation.js';
-import type { Immutable, Linkable, Primitive, StateObserver, StateOptions } from './types.js';
+import type { Immutable, Linkable, Primitive, StateObserver, StateOptions, StateUnsubscribe } from './types.js';
 import { softClone, softEqual } from './utils/index.js';
 
 type RefScopeValue = {
@@ -238,6 +238,34 @@ export function immutable<T>(init: T, options?: StateOptions) {
  */
 export function derived<T>(derive: () => T): DerivedRef<T> {
   return new DerivedRef(derive);
+}
+
+/**
+ * Creates a reactive effect that automatically tracks dependencies and re-runs when they change.
+ * The effect function is executed immediately and then re-executed whenever any tracked state changes.
+ *
+ * @param observe - A function that may contain reactive state reads. This function will be executed
+ *                  immediately and re-executed whenever its dependencies change.
+ * @returns A cleanup function that stops the effect and releases all subscriptions
+ *
+ * @remarks
+ * - The effect automatically tracks all reactive state accessed within the observe function
+ * - When any tracked state changes, the effect is re-executed with the updated values
+ * - The previous effect execution is cleaned up before re-running
+ * - Calling the returned unsubscribe function stops the effect and releases all resources
+ */
+export function effect(observe: () => StateUnsubscribe | void): StateUnsubscribe {
+  const observer = createObserver(() => {
+    unobserve?.();
+    unobserve = observer.run(observe);
+  });
+
+  let unobserve = observer.run(observe);
+
+  return () => {
+    unobserve?.();
+    observer.destroy();
+  };
 }
 
 export function destroyRef(ref: MutableRef<unknown> | ImmutableRef<unknown> | Linkable) {

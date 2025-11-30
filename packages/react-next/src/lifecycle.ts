@@ -1,5 +1,5 @@
-import { captureStack, createObserver, microtask, untrack } from '@anchorlib/core';
-import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
+import { captureStack, createObserver, untrack } from '@anchorlib/core';
+import type { CleanupHandler, Effect, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
 
 let currentMountHandlers: Set<MountHandler> | null = null;
 let currentMountCleanups: Set<CleanupHandler> | null = null;
@@ -23,9 +23,6 @@ let currentEffectCleanups: Set<EffectCleanup> | null = null;
  * @returns A Lifecycle object with mount, cleanup, and render methods
  */
 export function createLifecycle(): Lifecycle {
-  const [scheduleMount, cancelMount] = microtask(0);
-  const [scheduleCleanup, cancelCleanup] = microtask(0);
-
   const mountHandlers = new Set<MountHandler>();
   const mountCleanups = new Set<CleanupHandler>();
   const effectHandlers = new Set<EffectHandler>();
@@ -33,31 +30,25 @@ export function createLifecycle(): Lifecycle {
 
   return {
     mount() {
-      cancelCleanup();
-      scheduleMount(() => {
-        mountHandlers.forEach((mount) => {
-          const cleanup = mount();
+      mountHandlers.forEach((mount) => {
+        const cleanup = mount();
 
-          if (typeof cleanup === 'function') {
-            mountCleanups.add(cleanup);
-          }
-        });
+        if (typeof cleanup === 'function') {
+          mountCleanups.add(cleanup);
+        }
       });
     },
     cleanup() {
-      cancelMount();
-      scheduleCleanup(() => {
-        mountCleanups.forEach((cleanup) => {
-          cleanup();
-        });
-        effectCleanups.forEach((effectCleanup) => {
-          effectCleanup();
-        });
-
-        mountHandlers.clear();
-        mountCleanups.clear();
-        effectHandlers.clear();
+      mountCleanups.forEach((cleanup) => {
+        cleanup();
       });
+      effectCleanups.forEach((effectCleanup) => {
+        effectCleanup();
+      });
+
+      mountHandlers.clear();
+      mountCleanups.clear();
+      effectHandlers.clear();
     },
     render<R>(fn: () => R) {
       const prevMountHandlers = currentMountHandlers,
@@ -90,11 +81,10 @@ export function createLifecycle(): Lifecycle {
  * Note: Effects should typically not mutate state that they also observe, as this can lead to
  * circular updates and infinite loops.
  *
- * @param fn - The effect handler function to register
- *
+ * @param handler - The effect handler function to register
  * @throws {Error} If called outside a Setup component context
  */
-export function effect(fn: EffectHandler) {
+export function effectFn(handler: EffectHandler) {
   if (!currentEffectCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
@@ -102,7 +92,7 @@ export function effect(fn: EffectHandler) {
       'Attempted to use effect handler outside of Setup component.',
       error,
       undefined,
-      effect
+      effectFn
     );
   }
 
@@ -114,9 +104,10 @@ export function effect(fn: EffectHandler) {
   });
 
   const runEffect: EffectHandler = (event): undefined => {
-    cleanup = observer.run(() => fn(event));
+    cleanup = observer.run(() => handler(event));
   };
   const leaveEffect = () => {
+    observer.destroy();
     cleanup?.();
   };
 
@@ -126,6 +117,29 @@ export function effect(fn: EffectHandler) {
 
   currentEffectCleanups?.add(leaveEffect);
 }
+
+effectFn.any = (handlers: EffectHandler[]) => {
+  let updating = false;
+
+  for (const handler of handlers) {
+    if (typeof handler !== 'function') {
+      const error = new Error('Binding handler must be a function');
+      captureStack.error.argument('Invalid binding handler.', error);
+      continue;
+    }
+
+    effectFn((event) => {
+      if (updating) return;
+
+      updating = true;
+      const result = handler(event);
+      updating = false;
+      return result;
+    });
+  }
+};
+
+export const effect = effectFn as Effect;
 
 /**
  * Registers a mount handler function that will be executed when the component is mounted.

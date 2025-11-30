@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 export type ToggleState = {
   checked: boolean;
@@ -12,7 +12,7 @@ export type ToggleOptions = {
 };
 
 export function createToggle(options?: ToggleOptions): ToggleState {
-  return anchor<ToggleState>({
+  return mutable<ToggleState>({
     checked: options?.checked ?? false,
     disabled: options?.disabled ?? false,
     toggle() {

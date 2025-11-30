@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 export type RadioValue = string | number | boolean;
 
@@ -29,7 +29,7 @@ export type RadioInit = {
 };
 
 export function createRadioGroup(options?: RadioGroupInit): RadioGroupState {
-  return anchor<RadioGroupState>({
+  return mutable<RadioGroupState>({
     value: options?.value ?? '',
     disabled: options?.disabled ?? false,
     select(value: RadioValue) {
@@ -43,7 +43,7 @@ export function createRadioGroup(options?: RadioGroupInit): RadioGroupState {
 
 export function createRadio(options?: RadioInit): RadioState {
   if (options?.group) {
-    return anchor<RadioState>({
+    return mutable<RadioState>({
       value: options?.value ?? '',
       disabled: options?.disabled ?? options?.group.disabled,
       get checked() {
@@ -53,7 +53,7 @@ export function createRadio(options?: RadioInit): RadioState {
     });
   }
 
-  return anchor<RadioState>({
+  return mutable<RadioState>({
     value: options?.value ?? '',
     checked: options?.checked ?? false,
     disabled: options?.disabled ?? false,

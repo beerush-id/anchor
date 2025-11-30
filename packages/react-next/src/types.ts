@@ -33,3 +33,29 @@ export type Lifecycle = {
    */
   render<R>(fn: () => R): R;
 };
+
+export interface Effect {
+  /**
+   * Registers an effect handler function that will be executed during the component's lifecycle.
+   *
+   * Effects are used for side effects that need to be cleaned up, such as subscriptions or timers.
+   * They are executed after the component is mounted and will re-run when any state accessed within
+   * the effect handler changes. Effects can optionally return a cleanup function which will be
+   * executed before the effect runs again or when the component is unmounted.
+   *
+   * Note: Effects should typically not mutate state that they also observe, as this can lead to
+   * circular updates and infinite loops.
+   *
+   * @param handler - The effect handler function to register
+   * @throws {Error} If called outside a Setup component context
+   */
+  (handler: EffectHandler): void;
+
+  /**
+   * Registers multiple effect handlers that will be executed when the state changes.
+   * Only the first handler that receives an event will run, similar to Promise.any.
+   *
+   * @param handlers - An array of effect handler functions
+   */
+  any(handlers: EffectHandler[]): void;
+}

@@ -1,6 +1,7 @@
 import { anchor, captureStack, createObserver, createStack, microtask, withinStack } from '@anchorlib/core';
 import type { FunctionComponent, ReactNode } from 'react';
 import { memo } from 'react';
+import { bindingProps } from './binding.js';
 import { createEffect, createState } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import type { ViewRenderer } from './types.js';
@@ -51,6 +52,7 @@ export function setup<C>(Component: C, displayName?: string): C {
 
   const Setup = memo(
     (currentProps: Record<string, unknown>) => {
+      const [[scheduleMount, cancelMount]] = createState(() => microtask(5));
       const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(5));
       const [scope] = createState(() => createStack());
       const [lifecycle] = createState(() => createLifecycle());
@@ -59,14 +61,19 @@ export function setup<C>(Component: C, displayName?: string): C {
       propsMap.set(currentProps, reactiveProps);
 
       createEffect(() => {
+        cancelMount();
         cancelCleanup();
-        lifecycle.mount();
+
+        scheduleMount(() => {
+          lifecycle.mount();
+        });
 
         return () => {
           propsMap.delete(currentProps);
-          lifecycle.cleanup();
 
           scheduleCleanup(() => {
+            // @important Actual cleanup should be scheduled to prevent cleaning up the current effects.
+            lifecycle.cleanup();
             scope.states.clear();
           });
         };
@@ -74,7 +81,17 @@ export function setup<C>(Component: C, displayName?: string): C {
 
       scope.index = 0;
 
-      return withinStack(scope, () => lifecycle.render(() => render(reactiveProps)));
+      /**
+       * Cleanup the previous effect handlers to make sure each render is isolated.
+       * This also necessary to cover HMR (Fast Refresh) where re-render is expected.
+       */
+      lifecycle.cleanup();
+
+      return withinStack(scope, () => {
+        return lifecycle.render(() => {
+          return render(bindingProps(reactiveProps));
+        });
+      });
     },
     (prevProps, nextProps) => {
       const prevPropsRef = propsMap.get(prevProps);
@@ -110,7 +127,7 @@ export function setup<C>(Component: C, displayName?: string): C {
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {FunctionComponent<P>} A reactive renderer that auto-updates on state changes
  */
-export function templateFn<P>(render: ViewRenderer<P>, displayName?: string): FunctionComponent<P> {
+export function template<P>(render: ViewRenderer<P>, displayName?: string): FunctionComponent<P> {
   if (typeof render !== 'function' && (typeof render !== 'object' || render === null)) {
     const error = new Error('Renderer must be a function.');
     captureStack.violation.general(
@@ -118,7 +135,7 @@ export function templateFn<P>(render: ViewRenderer<P>, displayName?: string): Fu
       'Attempted to use view() HOC on a non-functional component.',
       error,
       undefined,
-      templateFn
+      template
     );
 
     const Template = () => error.message;
@@ -146,5 +163,4 @@ export function templateFn<P>(render: ViewRenderer<P>, displayName?: string): Fu
   return Template as FunctionComponent<P>;
 }
 
-export const view = templateFn;
-export const template = templateFn;
+export const view = template;

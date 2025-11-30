@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor, mutable } from '@anchorlib/core';
 
 export type SelectionInit<T> = {
   selected?: Set<T>;
@@ -60,5 +60,5 @@ export class SelectionState<T> {
 }
 
 export function createSelection<T>(options?: SelectionInit<T>): SelectionState<T> {
-  return anchor(new SelectionState(options));
+  return mutable(new SelectionState(options));
 }

@@ -1,5 +1,13 @@
-import type { MutableRef, StateObserver, StateOptions } from '@anchorlib/core';
-import { createObserver, isValueRef, mutable } from '@anchorlib/core';
+import {
+  createObserver,
+  isMutableRef,
+  isValueRef,
+  mutable,
+  type MutableRef,
+  type StateObserver,
+  type StateOptions,
+  untrack,
+} from '@anchorlib/core';
 
 export type Binding<T> = BindingRef<MutableRef<unknown> | Record<string, unknown>, T>;
 
@@ -67,14 +75,38 @@ export function isBindable<S, T>(value: unknown): value is BindableRef<S, T> {
   return value instanceof BindableRef;
 }
 
-export function bind<V, T extends MutableRef<V>>(source: T): BindingRef<T, T['value']>;
-export function bind<T extends Record<string, unknown>, K extends keyof T>(source: T, key: K): BindingRef<T, T[K]>;
-export function bind<T>(source: T, key?: keyof T): BindingRef<T, T[keyof T]> {
+export function bind<T extends MutableRef<unknown>>(source: T): T['value'];
+export function bind<T extends Record<string, unknown>, K extends keyof T>(source: T, key: K): T[K];
+export function bind<T>(source: T, key?: keyof T) {
   return new BindingRef(source, key);
 }
 
-export function bindable<S, T>(init: S, target: BindingRef<T, S> | S, options?: StateOptions): BindableRef<S, T> {
-  return new BindableRef(init, target, options);
+export function bindable<T, S, K extends keyof S>(
+  init: T,
+  target: S,
+  key?: S[K] extends T ? K : never,
+  options?: StateOptions
+): MutableRef<T> {
+  const state = mutable(init as never, options) as MutableRef<T>;
+  const observer = createObserver(() => {
+    state.value = key ? (target[key] as T) : (target as MutableRef<T>).value;
+  });
+  observer.run(() => {
+    state.value = key ? (target[key] as T) : (target as MutableRef<T>).value;
+  });
+
+  return {
+    get value() {
+      return state.value;
+    },
+    set value(value) {
+      (target as MutableRef<T>)[(key ?? 'value') as 'value'] = value as T;
+    },
+    destroy() {
+      observer.destroy();
+      state.destroy();
+    },
+  } as MutableRef<T>;
 }
 
 export type BindableProps = {
@@ -90,4 +122,31 @@ export function bindableProps<P extends BindableProps>(props: P): BindableProp[]
   return Object.entries(props)
     .filter(([, value]) => isBindable(value))
     .map(([key, value]) => ({ key, value }) as BindableProp);
+}
+
+export function bindingProps<P>(props: P) {
+  return new Proxy(props as BindableProps, {
+    get(target, key, receiver) {
+      const bindingRef = Reflect.get(target, key, receiver);
+
+      if (isBinding(bindingRef)) {
+        return (bindingRef.source as Record<string, unknown>)[bindingRef.key];
+      } else if (isMutableRef(bindingRef)) {
+        return bindingRef.value;
+      }
+
+      return bindingRef;
+    },
+    set(target, key, value, receiver) {
+      const bindingRef = untrack(() => Reflect.get(target, key, receiver));
+
+      if (isBinding(bindingRef)) {
+        (bindingRef.source as Record<string, unknown>)[bindingRef.key] = value;
+      } else if (isMutableRef(bindingRef)) {
+        bindingRef.value = value;
+      }
+
+      return true;
+    },
+  });
 }

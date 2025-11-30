@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 export type PaginationOptions = {
   total?: number;
@@ -42,5 +42,5 @@ export class PaginationState {
 }
 
 export function createPagination(options?: PaginationOptions): PaginationState {
-  return anchor(new PaginationState(options));
+  return mutable(new PaginationState(options));
 }

@@ -1,25 +1,26 @@
-import { bindable, setup, template } from '@anchorlib/react-next';
-import type { ChangeEventHandler } from 'react';
+import { classx } from '@anchorkit/headless/utils';
+import { bindable, callback, setup, template } from '@anchorlib/react-next';
 import type { TextInputProps } from './types.js';
 
-export const TextInput = setup(function TextInput({
-  type = 'text',
-  value = '',
-  disabled = false,
-  onChange,
-  ...props
-}: TextInputProps) {
-  const valueRef = bindable('', value);
-  const disabledRef = bindable(false, disabled);
-
-  const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    valueRef.value = e.currentTarget.value ?? '';
-    onChange?.(e);
-  };
+export const TextInput = setup((props: TextInputProps) => {
+  const valueRef = bindable('', props, 'value');
 
   const Template = template(() => {
-    return <input type={type} value={valueRef.value} disabled={disabledRef.value} onChange={handleChange} {...props} />;
-  });
+    const { value: _value, onChange, disabled, className, ...restProps } = props;
+
+    return (
+      <input
+        value={valueRef.value}
+        disabled={disabled}
+        className={classx('ark-input', className)}
+        onChange={callback((e) => {
+          valueRef.value = e.currentTarget.value;
+          onChange?.(e);
+        })}
+        {...restProps}
+      />
+    );
+  }, 'TextInput');
 
   return <Template />;
 }, 'TextInput');

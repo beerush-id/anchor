@@ -1,6 +1,6 @@
 'use client';
 
-import { mutable, setup, template, undoable } from '@anchorlib/react-next';
+import { callback, mutable, setup, template, undoable } from '@anchorlib/react-next';
 import { LoaderCircle } from 'lucide-react';
 
 const Counter = setup(() => {
@@ -42,7 +42,7 @@ const Counter = setup(() => {
   return (
     <div>
       <Template />
-      <button type={'button'} onClick={incrementAsync}>
+      <button type={'button'} onClick={callback(incrementAsync)}>
         Increment Async (Optimistic)
       </button>
     </div>

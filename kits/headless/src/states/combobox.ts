@@ -1,5 +1,5 @@
+import { mutable } from '@anchorlib/core';
 import { type SelectionInit, SelectionState } from './selection.js';
-import { anchor } from '@anchorlib/core';
 
 export type ComboboxInit<T> = SelectionInit<T> & {
   open?: boolean;
@@ -19,5 +19,5 @@ export class ComboboxState<T> extends SelectionState<T> {
 }
 
 export function createCombobox<T>(options?: ComboboxInit<T>): ComboboxState<T> {
-  return anchor(new ComboboxState(options));
+  return mutable(new ComboboxState(options));
 }

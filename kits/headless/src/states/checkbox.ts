@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 export type CheckboxState = {
   checked: boolean;
@@ -11,7 +11,7 @@ export type CheckboxState = {
 export type CheckboxInit = Partial<Omit<CheckboxState, 'toggle' | 'ariaChecked'>>;
 
 export function createCheckbox(init?: CheckboxInit): CheckboxState {
-  return anchor({
+  return mutable({
     checked: init?.checked ?? false,
     disabled: init?.disabled ?? false,
     indeterminate: init?.indeterminate ?? false,

@@ -69,7 +69,7 @@ export function createObserver(
   let isObserving = false;
 
   const states = new WeakMap();
-  const destroyers = new Set<() => void>();
+  const cleaners = new Set<() => void>();
 
   const track = ((state, key) => {
     const keys = states.get(state) as Set<KeyLike>;
@@ -88,21 +88,21 @@ export function createObserver(
   }) satisfies StateTracker;
 
   const destroy = () => {
-    for (const fn of destroyers) {
-      if (typeof fn === 'function') {
-        fn();
+    for (const clean of cleaners) {
+      if (typeof clean === 'function') {
+        clean();
       }
     }
 
     observedSize = 0;
-    destroyers.clear();
+    cleaners.clear();
   };
 
   const assign = ((init, observers) => {
     if (!observers.has(observer)) {
       observers.add(observer);
 
-      destroyers.add(() => {
+      cleaners.add(() => {
         states.delete(init);
         observers.delete(observer);
         getDevTool()?.onUntrack?.(META_REGISTRY.get(init) as StateMetadata, observer);

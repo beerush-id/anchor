@@ -1,6 +1,5 @@
 import { Switch, SwitchLabel, Tab, TabButton, TabContent, TabList, TabVisibility } from '@anchorkit/react/components';
-import { anchor, mutable } from '@anchorlib/core';
-import { effect, setup, view } from '@anchorlib/react-next';
+import { bind, effect, mutable, setup, view } from '@anchorlib/react-next';
 import type { FC } from 'react';
 
 const ActiveTab: FC<{ name: string; tab: Record<string, string | boolean>; active?: string }> = setup((props) => {
@@ -14,23 +13,18 @@ const ActiveTab: FC<{ name: string; tab: Record<string, string | boolean>; activ
 
   const Template = view(
     () => (
-      <span className={props.active === 'account' ? 'bg-red-100' : 'bg-blue-100'}>
+      <span className={props.active === 'account' ? 'bg-red-200' : 'bg-blue-200'}>
         {name}: {tab.active}
       </span>
     ),
     'ActiveTab'
   );
 
-  return (
-    <>
-      <Template />
-      <span className="text-xs">Render Counts: {renderCount.value}</span>
-    </>
-  );
+  return <Template />;
 }, 'ActiveTab');
 
 export const Tabs = setup(() => {
-  const tabs = anchor({
+  const tabs = mutable({
     tab1: {
       active: 'account',
       disabled: false,
@@ -60,7 +54,7 @@ export const Tabs = setup(() => {
         <h2 className="text-xl font-semibold flex-1">Tabs</h2>
         <ActiveTabs />
       </div>
-      <Tab bindValue={[tabs.tab1, 'active']} bindDisabled={[tabs.tab1, 'disabled']}>
+      <Tab value={bind(tabs.tab1, 'active')} disabled={bind(tabs.tab1, 'disabled')}>
         <div className="flex items-center w-full">
           <TabList>
             <TabButton name={'account'}>Account</TabButton>
@@ -83,7 +77,7 @@ export const Tabs = setup(() => {
           <p>Content for Profile</p>
         </TabContent>
       </Tab>
-      <Tab bindValue={[tabs.tab2, 'active']} visibility={TabVisibility.BLANK} bindDisabled={[tabs.tab2, 'disabled']}>
+      <Tab value={bind(tabs.tab2, 'active')} disabled={bind(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
         <div className="flex items-center w-full">
           <TabList>
             <TabButton name={'disabled-account'}>Account</TabButton>
