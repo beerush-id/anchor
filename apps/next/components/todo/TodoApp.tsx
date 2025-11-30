@@ -1,7 +1,7 @@
 import { type FC, useRef } from 'react';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { shortId } from '@anchorlib/core';
-import { debugRender, observer, useAnchor } from '@anchorlib/react';
+import { debugRender, observer, useAnchor } from '@anchorlib/react-classic';
 import { isMobile } from '@anchorlib/react-kit/utils';
 import { Card, CardHeader, Tooltip } from '@anchorlib/react-kit/components';
 import { todoStats, useUpdateStat } from '@utils/stats';
@@ -26,7 +26,11 @@ export const TodoApp: FC = () => {
   const [panel] = useAnchor({ info: false, code: false });
 
   const addBenchmarkItem = () => {
-    itemsWriter.push({ id: shortId(), text: `New Todo (${itemsWriter.length + 1})`, completed: false });
+    itemsWriter.push({
+      id: shortId(),
+      text: `New Todo (${itemsWriter.length + 1})`,
+      completed: false,
+    });
     statsWriter.total++;
     statsWriter.active++;
   };

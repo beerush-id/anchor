@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CodeBlock } from '@anchorlib/react-kit/components';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { useRef, useState } from 'react';
 
 export function ReactImmutable() {

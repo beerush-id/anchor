@@ -1,4 +1,4 @@
-import { observer, useAnchor } from '@anchorlib/react';
+import { observer, useAnchor } from '@anchorlib/react-classic';
 
 export const Counter = observer(() => {
   const [counter] = useAnchor({ count: 0 });

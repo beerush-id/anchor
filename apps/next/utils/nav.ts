@@ -1,5 +1,5 @@
 import { getContext, setContext } from '@anchorlib/core';
-import { useVariable, type VariableRef } from '@anchorlib/react';
+import { useVariable, type VariableRef } from '@anchorlib/react-classic';
 
 export const CtaHoverCount = Symbol('cta:hover-count');
 export const useCtaHoverCount = () => {

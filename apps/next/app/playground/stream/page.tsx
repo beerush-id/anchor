@@ -1,8 +1,8 @@
 'use client';
 
-import { useStream } from '@anchorlib/react';
+import { useStream } from '@anchorlib/react-classic';
 import { LoaderCircle } from 'lucide-react';
-import { view } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react-classic/view';
 import { FetchStatus } from '@anchorlib/core';
 
 export default function Page() {

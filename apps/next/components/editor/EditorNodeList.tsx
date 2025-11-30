@@ -1,4 +1,4 @@
-import { debugRender, useObserver, useValueIs } from '@anchorlib/react';
+import { debugRender, useObserver, useValueIs } from '@anchorlib/react-classic';
 import { type CssNode, editorApp, editorWriter, parseAllCss, type StyleVariant } from '@utils/editor';
 import { type FC, useRef } from 'react';
 import { type Immutable } from '@anchorlib/core';
@@ -24,7 +24,10 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
   const ref = useRef<HTMLLIElement>(null);
   debugRender(ref);
 
-  const { label, selector } = useObserver(() => ({ label: node.label, selector: node.selector }));
+  const { label, selector } = useObserver(() => ({
+    label: node.label,
+    selector: node.selector,
+  }));
   const active = useValueIs(editorApp, 'current', node);
 
   const handleSelect = () => {
@@ -58,7 +61,10 @@ const NodeItem: FC<{ node: CssNode | Immutable<CssNode> }> = ({ node }) => {
   );
 };
 
-const NodeVariant: FC<{ node: CssNode | Immutable<CssNode>; variant?: StyleVariant }> = ({ node, variant }) => {
+const NodeVariant: FC<{
+  node: CssNode | Immutable<CssNode>;
+  variant?: StyleVariant;
+}> = ({ node, variant }) => {
   const ref = useRef<HTMLButtonElement>(null);
   debugRender(ref);
 

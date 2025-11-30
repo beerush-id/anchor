@@ -15,7 +15,7 @@
     "@anchorkit/react": "workspace:*",
     "@anchorlib/core": "workspace:*",
     "@anchorlib/devtool": "workspace:*",
-    "@anchorlib/react": "workspace:*",
+    "@anchorlib/react-classic": "workspace:*",
     "@anchorlib/react-kit": "workspace:*",
     "@anchorlib/storage": "workspace:*",
     "@biomejs/biome": "catalog:",

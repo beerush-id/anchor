@@ -6,7 +6,7 @@ import EditorPanel from './EditorPanel';
 import { Card, CardHeader, DebugSwitch } from '@anchorlib/react-kit/components';
 import EditorHistory from './EditorHistory';
 import { useRef } from 'react';
-import { debugRender, useObserver } from '@anchorlib/react';
+import { debugRender, useObserver } from '@anchorlib/react-classic';
 import { EditorExport } from './EditorExport';
 import { Info, SwatchBook } from 'lucide-react';
 import { editorApp, parseAllCss } from '@utils/editor';

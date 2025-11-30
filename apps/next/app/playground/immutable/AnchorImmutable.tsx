@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CodeBlock } from '@anchorlib/react-kit/components';
 import { type WritableKeys } from '@anchorlib/core';
-import { debugRender, useImmutable, useWriter, view } from '@anchorlib/react';
+import { debugRender, useImmutable, useWriter, view } from '@anchorlib/react-classic';
 import { useRef } from 'react';
 
 export function AnchorImmutable() {

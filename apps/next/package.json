@@ -16,7 +16,7 @@
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@anchorlib/react": "workspace:*",
+    "@anchorlib/react-classic": "workspace:*",
     "@anchorlib/react-kit": "workspace:*",
     "@anchorlib/react-next": "workspace:*",
     "@anchorlib/storage": "workspace:*",

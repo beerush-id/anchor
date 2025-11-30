@@ -3,7 +3,7 @@ import { LoaderCircle } from 'lucide-react';
 import { CardContent, CardFooter, CardHeader, Input } from '@anchorlib/react-kit/components';
 
 import { FetchStatus } from '@anchorlib/core';
-import { useStream, useVariable, view } from '@anchorlib/react';
+import { useStream, useVariable, view } from '@anchorlib/react-classic';
 
 export const HelloChat = () => {
   const [name] = useVariable('');

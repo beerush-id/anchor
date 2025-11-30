@@ -1,5 +1,5 @@
 import { type FC, useRef } from 'react';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 
 import { type ITodoList } from '@utils/todo';
 import { classicTodoStats, useUpdateStat } from '@utils/stats';

@@ -21,8 +21,8 @@ import {
   StretchVertical,
 } from 'lucide-react';
 import { PanelColumn, PanelRow, Tooltip } from '@anchorlib/react-kit/components';
-import { ColorPicker, Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { useObserver, useWriter, view } from '@anchorlib/react';
+import { ColorPicker, Toggle, ToggleGroup } from '@anchorlib/react-classic/components';
+import { useObserver, useWriter, view } from '@anchorlib/react-classic';
 import { editorApp, TOOL_ICON_SIZE } from '@utils/editor';
 
 const FLEX_KEYS = ['flex', 'inline-flex'] as (string | number | undefined)[];

@@ -2,7 +2,7 @@
 
 import 'chart.js/auto';
 import { Section, SectionDescription, SectionTitle } from '@anchorlib/react-kit/components';
-import { observer, useAnchor, view } from '@anchorlib/react';
+import { observer, useAnchor, view } from '@anchorlib/react-classic';
 import { Gauge, ListPlus, LucideScan, Timer, ToggleRight, TrendingDown } from 'lucide-react';
 import { type FC } from 'react';
 import { type Immutable } from '@anchorlib/core';
@@ -263,7 +263,10 @@ const PerformanceGroup: FC<{ display: MetricDisplay }> = observer(({ display }) 
   );
 });
 
-const PerformanceChart: FC<{ data?: Record<string, number>; unit?: string }> = ({ data, unit }) => {
+const PerformanceChart: FC<{
+  data?: Record<string, number>;
+  unit?: string;
+}> = ({ data, unit }) => {
   if (!data) return;
 
   return (

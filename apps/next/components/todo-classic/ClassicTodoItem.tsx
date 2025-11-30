@@ -1,6 +1,6 @@
 import { type FC, memo, useEffect, useRef } from 'react';
 import { Gauge, Square, SquareCheck, Trash2 } from 'lucide-react';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { Button, IconButton, Tooltip } from '@anchorlib/react-kit/components';
 import { classicReport, type ITodoItem } from '@utils/todo';
 import { classicTodoStats, useUpdateStat } from '@utils/stats';

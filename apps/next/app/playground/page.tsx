@@ -1,9 +1,9 @@
 'use client';
 
-import { useActions, useAnchor, useVariable } from '@anchorlib/react';
+import { useActions, useAnchor, useVariable } from '@anchorlib/react-classic';
 import { useClassName, useStyle } from '@anchorlib/react-kit/actions';
 import type { StyleDeclaration } from '@anchorlib/react-kit';
-import { view } from '@anchorlib/react/view';
+import { view } from '@anchorlib/react-classic/view';
 import { Input } from '@anchorlib/react-kit/components';
 import { optimized } from '@anchorlib/react-kit/view';
 import type { HTMLAttributes } from 'react';

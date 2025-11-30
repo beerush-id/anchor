@@ -1,8 +1,8 @@
-import { debugRender, useDerivedRef, useObserver, useRefTrap, useWriter, view } from '@anchorlib/react';
+import { debugRender, useDerivedRef, useObserver, useRefTrap, useWriter, view } from '@anchorlib/react-classic';
 import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@utils/editor';
 import { useRef } from 'react';
 import { CodeBlock, Tooltip } from '@anchorlib/react-kit/components';
-import { Toggle, ToggleGroup } from '@anchorlib/react/components';
+import { Toggle, ToggleGroup } from '@anchorlib/react-classic/components';
 import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react';
 
 export default function EditorCanvas() {

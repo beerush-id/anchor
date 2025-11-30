@@ -4,7 +4,7 @@ import { Card, CodeViewer, Section, SectionDescription, SectionTitle } from '@an
 import { MainCTA } from '@components/MainCTA';
 
 const anchorCode = `
-import { useAnchor, observer } from '@anchorlib/react';
+import { useAnchor, observer } from '@anchorlib/react-classic';
 
 const Form = observer(() => {
   const [form] = useAnchor({ // [!code ++]
@@ -17,13 +17,13 @@ const Form = observer(() => {
 
   return (
     <form>
-      <input 
-        type="email" 
+      <input
+        type="email"
         value={form.email}
         onChange={(e) => form.email = e.target.value} // [!code ++]
       />
-      <input 
-        type="password" 
+      <input
+        type="password"
         value={form.password}
         onChange={(e) => form.password = e.target.value} // [!code ++]
       />
@@ -93,13 +93,13 @@ const Form = () => {
   return (
     <Provider store={store}>
       <form>
-        <input 
-          type="email" 
+        <input
+          type="email"
           value={form.email}
           onChange={(e) => dispatch(formSlice.actions.setEmail(e.target.value))} // [!code --]
         />
-        <input 
-          type="password" 
+        <input
+          type="password"
           value={form.password}
           onChange={(e) => dispatch(formSlice.actions.setPassword(e.target.value))} // [!code --]
         />

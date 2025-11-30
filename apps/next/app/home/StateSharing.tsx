@@ -23,7 +23,7 @@ const codeBlocks = [
     iconAlt: 'React Logo',
     lang: 'tsx',
     code: `
-import { observer } from '@anchorlib/react';
+import { observer } from '@anchorlib/react-classic';
 import { settings, toggleTheme } from '../lib/state.ts';
 
 const App = observer(() => (
@@ -75,7 +75,7 @@ const App = () => (
 <script lang="ts">
   import { observedRef } from '@anchorlib/vue';
   import { settings, toggleTheme } from '../lib/state.ts';
-  
+
   const theme = observedRef(() => settings.theme);
 </script>
 
@@ -94,11 +94,11 @@ const App = () => (
 <script type="module">
   import { subscribe } from '@anchorlib/core';
   import { settings, toggleTheme } from '../lib/state.ts';
-  
+
   subscribe(settings, () => {
     document.body.className = settings.theme;
   });
-  
+
   document
   .querySelector('button')
   .addEventListener('click', toggleTheme);
@@ -116,7 +116,14 @@ export const StateSharing: EFC<HTMLAttributes<HTMLDivElement>, HTMLDivElement> =
             className={'flex-1 flex flex-col'}
             minHeight={248}
             maxHeight={248}
-            items={[{ name: 'lib/state.ts', icon: '/anchor-logo.svg', iconAlt: 'Anchor Logo', code: sharedCode }]}
+            items={[
+              {
+                name: 'lib/state.ts',
+                icon: '/anchor-logo.svg',
+                iconAlt: 'Anchor Logo',
+                code: sharedCode,
+              },
+            ]}
           />
         </CardContent>
       </Card>

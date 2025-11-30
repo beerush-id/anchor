@@ -18,8 +18,8 @@ import {
   Underline,
 } from 'lucide-react';
 import { PanelColumn, PanelRow, Tooltip } from '@anchorlib/react-kit/components';
-import { ColorPicker, Input, Select, Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { useObserver, useWriter } from '@anchorlib/react';
+import { ColorPicker, Input, Select, Toggle, ToggleGroup } from '@anchorlib/react-classic/components';
+import { useObserver, useWriter } from '@anchorlib/react-classic';
 import { editorApp, TOOL_ICON_SIZE } from '@utils/editor';
 
 export default function EditorTextPanel() {

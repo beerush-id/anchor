@@ -1,7 +1,7 @@
 import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { shortId } from '@anchorlib/core';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { Button } from '@anchorlib/react-kit/components';
 
 import { type ITodoItem } from '@utils/todo';

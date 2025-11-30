@@ -12,7 +12,7 @@ import {
 import { LayoutTemplate, Scaling, SquareFunction } from 'lucide-react';
 
 const anchorCode = `
-import { setup, view, useAnchor } from '@anchorlib/react';
+import { setup, view, useAnchor } from '@anchorlib/react-classic';
 import { createContext, useContext } from 'react';
 
 const TabContext = createContext(null);
@@ -185,13 +185,13 @@ export const TabButton = observer(({ name, children, ...props }) => {
 class TabStore {
   active = null;
   disabled = false;
-  
+
   constructor(options) {
     this.active = options?.value ?? null;
     this.disabled = options?.disabled ?? false;
     makeAutoObservable(this);
   }
-  
+
   select(name) {
     if (this.disabled) return;
     this.active = name;
@@ -246,9 +246,9 @@ const createTab = (options) => {
     active: atom(options?.value ?? null),
     disabled: atom(options?.disabled ?? false),
   };
-  
+
   tabAtoms.isActive = atom((get) => get(tabAtoms.active) === name);
-  
+
   tabAtoms.select = atom(
     null,
     (get, set, name) => {
@@ -256,7 +256,7 @@ const createTab = (options) => {
       set(tabAtoms.active, name);
     }
   );
-  
+
   return tabAtoms;
 };
 `.trim();
@@ -270,7 +270,7 @@ const TabContext = createContext(null);
 export const TabButton = ({ name, children, ...props }) => {
   const tabStore = useContext(TabContext);
   const tab = useStore(tabStore, state => state);
-  
+
   useEffect(() => {
     if (tab && tab.value === null) {
       tab.select(name);

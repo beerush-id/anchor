@@ -1,7 +1,7 @@
 import { Button } from '@anchorlib/react-kit/components';
 import { ClipboardCheck, ClipboardCopy } from 'lucide-react';
 import { parseAllCss } from '@utils/editor';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { useRef, useState } from 'react';
 
 export function EditorExport() {

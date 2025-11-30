@@ -1,6 +1,6 @@
 import { IconButton, Tooltip } from '@anchorlib/react-kit/components';
 import { Redo, RotateCcw, Undo } from 'lucide-react';
-import { debugRender, observer, useHistory } from '@anchorlib/react';
+import { debugRender, observer, useHistory } from '@anchorlib/react-classic';
 import { editorApp } from '@utils/editor';
 import { type FC, useRef } from 'react';
 

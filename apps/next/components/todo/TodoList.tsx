@@ -1,5 +1,5 @@
 import { type FC, useRef } from 'react';
-import { debugRender, useObservedList } from '@anchorlib/react';
+import { debugRender, useObservedList } from '@anchorlib/react-classic';
 import { todoStats, useUpdateStat } from '@utils/stats';
 import { type ITodoList, todoApp } from '@utils/todo';
 import { TodoItem } from './TodoItem';

@@ -1,5 +1,5 @@
 import { type FC, useRef } from 'react';
-import { debugRender, observer } from '@anchorlib/react';
+import { debugRender, observer } from '@anchorlib/react-classic';
 import { todoApp } from '@utils/todo';
 
 export const TodoStats: FC = observer(() => {

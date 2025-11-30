@@ -15,7 +15,7 @@ const fineGrainedCodes = [
     iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { useAnchor, view, setup } from '@anchorlib/react';
+import { useAnchor, view, setup } from '@anchorlib/react-classic';
 
 const App = setup(() => {
   // State can be co-located with the component, similar to useState.
@@ -23,12 +23,12 @@ const App = setup(() => {
     name: 'John Doe',
     email: 'johndoe@example.com',
   });
-  
+
   // Stable reference, no need useCallback.
   const changeName = () => {
     profile.name = 'Jane Smith';
   }
-  
+
   // Only this part re-renders when the state changes.
   const Profile = view(() => (
     <div>
@@ -36,7 +36,7 @@ const App = setup(() => {
       <p>{profile.email}</p>
     </div>
   ));
-  
+
   // This part only rendered once.
   return () => (
     <>
@@ -71,12 +71,12 @@ const App = () => {
       </div>
     );
   }, [profile.name, profile.email]);
-  
+
   // Unstable reference, need useCallback.
   const changeName = useCallback(() => {
     setProfile((p) => ({ ...p, name: 'Jane Smith' }));
   }, []);
-  
+
   // This part re-rendered everytime the button is clicked.
   return (
     <>
@@ -127,7 +127,7 @@ const App = () => {
   const changeName = () => {
     dispatch(profileSlice.actions.setName('Jane Smith'));
   }
-  
+
   return (
     <Provider store={store}>
       <Profile />
@@ -170,7 +170,7 @@ const App = () => {
   const changeName = () => {
     store.setName('Jane Smith');
   }
-  
+
   return (
     <>
       <Profile />
@@ -212,7 +212,7 @@ const App = () => {
   const changeName = () => {
     setProfile(p => ({ ...p, name: 'Jane Smith' }));
   }
-  
+
   return (
     <>
       <Profile />
@@ -259,7 +259,7 @@ const App = () => {
   const changeName = () => {
     setName('Jane Smith');
   }
-  
+
   return (
     <>
       <Profile />
@@ -278,7 +278,7 @@ const trueImmutabilityCodes = [
     iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { useImmutable, useWriter, setup } from '@anchorlib/react';
+import { useImmutable, useWriter, setup } from '@anchorlib/react-classic';
 
 const App = setup(() => {
   const [profile] = useImmutable({
@@ -286,7 +286,7 @@ const App = setup(() => {
     email: 'johndoe@example.com',
   });
   const writer = useWriter(profile, ['name'])
-  
+
   const changeName = () => {
     // Expected and allowed mutation.
     writer.name = 'Jane Smith';
@@ -296,7 +296,7 @@ const App = setup(() => {
     // build time, and runtime due to immutability.
     writer.email = 'johndoe@example.com';
   }
-  
+
   return () => <button onClick={changeName}>Change Name</button>;
 });
 `,
@@ -314,7 +314,7 @@ const App = () => {
     name: 'John Doe',
     email: 'johndoe@example.com',
   });
-  
+
   const changeName = () => {
     // Immutability is enforced by convention, not by the library.
     // Expected and allowed mutation.
@@ -329,7 +329,7 @@ const App = () => {
       email: 'jane.smith@example.com',
     }));
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
@@ -361,7 +361,7 @@ const store = configureStore({ reducer: { profile: profileSlice.reducer } });
 
 const App = () => {
   const dispatch = useDispatch();
-  
+
   const changeName = () => {
     // Redux Toolkit with Immer helps enforce immutability within reducers.
     // Expected and allowed mutation.
@@ -370,7 +370,7 @@ const App = () => {
     // However, unexpected mutations can still be dispatched from components.
     dispatch(profileSlice.actions.updateProfile({ email: 'new@example.com' }));
   }
-  
+
   return (
     <Provider store={store}>
       <button onClick={changeName}>Change Name</button>
@@ -394,7 +394,7 @@ const profileAtom = atom({
 
 const App = () => {
   const [, setProfile] = useAtom(profileAtom);
-  
+
   const changeName = () => {
     // Immutability is managed by convention.
     // Expected and allowed mutation.
@@ -403,7 +403,7 @@ const App = () => {
     // Unexpected mutation can still happen.
     setProfile(profile => ({ ...profile, email: 'new@example.com' }));
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
@@ -426,7 +426,7 @@ const useStore = create((set) => ({
 
 const App = () => {
   const { updateProfile } = useStore();
-  
+
   const changeName = () => {
     // Immutability is managed by convention.
     // Expected and allowed mutation.
@@ -435,7 +435,7 @@ const App = () => {
     // Unexpected mutation can still happen.
     updateProfile({ email: 'new@example.com' });
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
@@ -470,7 +470,7 @@ const App = observer(() => {
     // Unexpected mutation can still happen.
     store.updateProfile({ email: 'new@example.com' });
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 });
 `,
@@ -485,19 +485,19 @@ const integrityCodes = [
     lang: 'tsx',
     code: `
 import { z } from 'zod';
-import { useModel, setup } from '@anchorlib/react';
+import { useModel, setup } from '@anchorlib/react-classic';
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email format")
 });
-  
+
 const App = setup(() => {
   const [profile] = useModel(schema, {
     name: 'John Doe',
     email: 'johndoe@example.com',
   });
-  
+
   const changeName = () => {
     // Valid mutation.
     profile.name = 'Jane Smith';
@@ -505,7 +505,7 @@ const App = setup(() => {
     // Invalid mutation will never reach the state.
     profile.email = 10;
   }
-  
+
   return () => <button onClick={changeName}>Change Name</button>;
 });
 `,
@@ -523,13 +523,13 @@ const schema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email format")
 });
-  
+
 const App = () => {
   const [profile, setProfile] = useState({
     name: 'John Doe',
     email: 'johndoe@example.com',
   });
-  
+
   const changeName = () => {
     // Validation must be manually applied before state updates.
     // Valid mutation.
@@ -540,7 +540,7 @@ const App = () => {
     // a common source of bugs in manual validation scenarios.
     setProfile({ ...profile, email: 10 });
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
@@ -580,7 +580,7 @@ const store = configureStore({ reducer: { profile: profileSlice.reducer } });
 
 const App = () => {
   const dispatch = useDispatch();
-  
+
   const changeName = () => {
     // Validation is handled within the reducer.
     // Valid mutation.
@@ -589,7 +589,7 @@ const App = () => {
     // Invalid mutation will be ignored by the reducer.
     dispatch(profileSlice.actions.setProfile({ name: 'Jane Smith', email: 10 }));
   }
-  
+
   return (
     <Provider store={store}>
       <button onClick={changeName}>Change Name</button>
@@ -619,7 +619,7 @@ const profileAtom = atom({
 
 const App = () => {
   const [, setProfile] = useAtom(profileAtom);
-  
+
   const changeName = () => {
     // Validation must be manually applied before state updates.
     // Valid mutation.
@@ -629,7 +629,7 @@ const App = () => {
     // Invalid mutation can still reach the state without proper check.
     setProfile(p => ({...p, email: 10}));
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
@@ -663,7 +663,7 @@ const useStore = create((set) => ({
 
 const App = () => {
   const { setProfile } = useStore();
-  
+
   const changeName = () => {
     // Validation is handled within the store.
     // Valid mutation.
@@ -672,7 +672,7 @@ const App = () => {
     // Invalid mutation will be ignored.
     setProfile({ name: 'Jane Smith', email: 10 });
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 };
 `,
@@ -718,7 +718,7 @@ const App = observer(() => {
     // Invalid mutation will be ignored.
     store.setProfile({ name: 'Jane Smith', email: 10 });
   }
-  
+
   return <button onClick={changeName}>Change Name</button>;
 });
 `,

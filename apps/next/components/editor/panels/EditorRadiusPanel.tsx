@@ -1,5 +1,5 @@
-import { Input } from '@anchorlib/react/components';
-import { useObserver, useWriter } from '@anchorlib/react';
+import { Input } from '@anchorlib/react-classic/components';
+import { useObserver, useWriter } from '@anchorlib/react-classic';
 import { editorApp } from '@utils/editor';
 import { PanelColumn, PanelRow, Tooltip } from '@anchorlib/react-kit/components';
 

@@ -1,6 +1,6 @@
 import { type FC, useRef, useState } from 'react';
 import { shortId } from '@anchorlib/core';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { Card, CardHeader, Tooltip } from '@anchorlib/react-kit/components';
 
 import { classicReport, type ITodoItem } from '@utils/todo';
@@ -100,8 +100,19 @@ export const ClassicTodoApp: FC = () => {
 
   const addBenchmarkItem = () => {
     setTodos((current) => {
-      const updated = [...current, { id: shortId(), text: `New todo (${current.length + 1})`, completed: false }];
-      setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
+      const updated = [
+        ...current,
+        {
+          id: shortId(),
+          text: `New todo (${current.length + 1})`,
+          completed: false,
+        },
+      ];
+      setStats((stats) => ({
+        ...stats,
+        total: updated.length,
+        active: updated.length - stats.completed,
+      }));
       return updated;
     });
   };
