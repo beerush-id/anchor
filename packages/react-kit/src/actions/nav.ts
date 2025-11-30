@@ -1,4 +1,4 @@
-import { useAction } from '@anchorlib/react';
+import { useAction } from '@anchorlib/react-classic';
 
 /**
  * A custom hook that enables smooth scrolling navigation for anchor links.

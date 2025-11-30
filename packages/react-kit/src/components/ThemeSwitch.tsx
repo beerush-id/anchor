@@ -1,6 +1,6 @@
 import { classx, settings, ThemeSetting } from '@utils/index.js';
 import { DarkMode, LightMode, SystemMode } from '@icons/index.js';
-import { observer, useVariable } from '@anchorlib/react';
+import { observer, useVariable } from '@anchorlib/react-classic';
 import { useEffect } from 'react';
 import { Tooltip } from './Tooltip.js';
 

@@ -1,5 +1,5 @@
 import type { ClassList, ClassName, StyleDeclaration, StyleRef } from '@base/index.js';
-import { isRef } from '@anchorlib/react';
+import { isRef } from '@anchorlib/react-classic';
 import type { CSSProperties } from 'react';
 
 export let BRAND_PREFIX = 'ark';

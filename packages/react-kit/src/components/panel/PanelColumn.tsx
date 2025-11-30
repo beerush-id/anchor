@@ -1,5 +1,5 @@
 import { type HTMLAttributes } from 'react';
-import { resolveProps, useObserver } from '@anchorlib/react';
+import { resolveProps, useObserver } from '@anchorlib/react-classic';
 import type { ClassList, ClassName, EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
 

@@ -1,5 +1,5 @@
 import { type InputHTMLAttributes } from 'react';
-import { bindable } from '@anchorlib/react/view';
+import { bindable } from '@anchorlib/react-classic/view';
 import type { StylingProps } from '../types.js';
 import { classx, stylex } from '@utils/classx.js';
 

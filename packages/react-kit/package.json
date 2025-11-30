@@ -75,7 +75,7 @@
   },
   "dependencies": {
     "@anchorlib/core": "workspace:*",
-    "@anchorlib/react": "workspace:*",
+    "@anchorlib/react-classic": "workspace:*",
     "@anchorlib/storage": "workspace:*"
   }
 }

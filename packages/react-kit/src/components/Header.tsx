@@ -1,8 +1,8 @@
 import { type ComponentType, type HTMLAttributes, type SVGAttributes } from 'react';
 import type { ClassList, ClassName, EFC } from '@base/index.js';
 import { classx } from '@utils/index.js';
-import { resolveProps, useObserver } from '@anchorlib/react';
-import { view } from '@anchorlib/react/view';
+import { resolveProps, useObserver } from '@anchorlib/react-classic';
+import { view } from '@anchorlib/react-classic';
 import { Tooltip } from './Tooltip.js';
 import { useScrollNav } from '@actions/index.js';
 import { ThemeSwitch } from './ThemeSwitch.js';

@@ -1,5 +1,5 @@
 import type { CSSProperties, FunctionComponent, RefObject } from 'react';
-import { type ConstantRef, type ReactiveProps as BaseProps, type VariableRef } from '@anchorlib/react';
+import { type ConstantRef, type ReactiveProps as BaseProps, type VariableRef } from '@anchorlib/react-classic';
 
 export type ClassRef = {
   [key: string]: boolean | undefined;

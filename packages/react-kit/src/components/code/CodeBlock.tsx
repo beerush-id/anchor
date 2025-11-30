@@ -1,7 +1,7 @@
 import { anchor, microtask } from '@anchorlib/core';
 import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
 import { type HTMLAttributes, useEffect } from 'react';
-import { useObserver } from '@anchorlib/react';
+import { useObserver } from '@anchorlib/react-classic';
 import { LoaderCircle } from '@icons/index.js';
 import type { EFC } from '../../types.js';
 import { classx, stylex } from '@utils/classx.js';
@@ -60,14 +60,20 @@ export const CodeBlock: EFC<HTMLAttributes<HTMLDivElement> & CodeBlockProps, HTM
       <div
         className={classx(classx.brand('code-block'), className)}
         dangerouslySetInnerHTML={{ __html: output }}
-        style={stylex({ '--code-max-height': maxHeight, '--code-min-height': minHeight })}
+        style={stylex({
+          '--code-max-height': maxHeight,
+          '--code-min-height': minHeight,
+        })}
       />
     );
   } else {
     return (
       <div
         className={classx(classx.brand('code-block'), classx.brand('code-block-loading'), className)}
-        style={stylex({ '--code-max-height': maxHeight, '--code-min-height': minHeight })}
+        style={stylex({
+          '--code-max-height': maxHeight,
+          '--code-min-height': minHeight,
+        })}
       >
         <LoaderCircle className="mx-auto mb-4 text-slate-500 animate-spin" width={32} height={32} />
         <p className="text-slate-500 text-xs font-bold">Loading code block...</p>

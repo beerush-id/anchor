@@ -64,6 +64,6 @@ export default defineConfig({
   sourcemap: true,
   platform: 'browser',
   publicDir: './public',
-  external: ['@anchorlib/core', '@anchorlib/storage', '@anchorlib/react', 'react', 'tailwindcss'],
+  external: ['@anchorlib/core', '@anchorlib/storage', '@anchorlib/react-classic', 'react', 'tailwindcss'],
   esbuildPlugins: [pathResolve as never, useClientPlugin as never],
 });

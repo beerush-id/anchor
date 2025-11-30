@@ -1,5 +1,5 @@
 import type { EFC } from '@base/index.js';
-import { resolveProps, useObserver } from '@anchorlib/react';
+import { resolveProps, useObserver } from '@anchorlib/react-classic';
 import { classx } from '@utils/index.js';
 import { type TooltipOptions, TooltipXDir, TooltipYDir, useTooltip } from '@actions/index.js';
 import type { HTMLAttributes } from 'react';

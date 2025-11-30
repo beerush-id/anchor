@@ -1,4 +1,4 @@
-import { useAction, useMicrotask } from '@anchorlib/react';
+import { useAction, useMicrotask } from '@anchorlib/react-classic';
 import { classx } from '@utils/index.js';
 
 const { brand } = classx;

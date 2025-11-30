@@ -1,5 +1,5 @@
 import { type FunctionComponent, type ReactNode } from 'react';
-import { type ActionRef, resolveProps, useActions, useObserverRef, type VariableRef } from '@anchorlib/react';
+import { type ActionRef, resolveProps, useActions, useObserverRef, type VariableRef } from '@anchorlib/react-classic';
 import { classx, stylex } from '@utils/index.js';
 import type { ClassList, ClassName, ExtendedProps, ReactiveProps, RefProps } from '@base/index.js';
 import { useClassName, useStyle } from '@actions/index.js';

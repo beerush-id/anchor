@@ -1,4 +1,4 @@
-import { isRef, useAction } from '@anchorlib/react';
+import { isRef, useAction } from '@anchorlib/react-classic';
 import { type StateChange } from '@anchorlib/core';
 import { classx, styleUnit } from '@utils/index.js';
 import type { ClassList, StyleRef } from '@base/index.js';
