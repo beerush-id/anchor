@@ -2,7 +2,7 @@ import { type FC, type FormEventHandler, memo, useCallback, useRef, useState } f
 import { Plus } from 'lucide-react';
 import { Button } from '../Button.js';
 import { manualTodoStats, useUpdateStat } from '@lib/stats.js';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 
 export const ManualTodoForm: FC<{ onAdd: (text: string) => void }> = memo(({ onAdd }) => {
   const ref = useRef<HTMLFormElement>(null);

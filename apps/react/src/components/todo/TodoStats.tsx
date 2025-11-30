@@ -1,7 +1,7 @@
 import { type FC, useRef } from 'react';
 import { todoApp } from '@lib/todo.js';
-import { debugRender } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { debugRender } from '@anchorlib/react-classic';
+import { observer } from '@anchorlib/react-classic/view';
 
 export const TodoStats: FC = observer(() => {
   const ref = useRef(null);

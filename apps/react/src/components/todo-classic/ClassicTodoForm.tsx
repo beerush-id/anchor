@@ -4,7 +4,7 @@ import { type FC, type FormEventHandler, useRef, useState } from 'react';
 import { type ITodoItem } from '@lib/todo.js';
 import { classicTodoStats, useUpdateStat } from '@lib/stats.js';
 import { shortId } from '@anchorlib/core';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 
 export const ClassicTodoForm: FC<{ onAdd: (todo: ITodoItem) => void }> = ({ onAdd }) => {
   const ref = useRef(null);

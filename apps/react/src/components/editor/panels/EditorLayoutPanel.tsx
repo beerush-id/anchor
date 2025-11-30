@@ -21,9 +21,9 @@ import {
   StretchVertical,
 } from 'lucide-react';
 import { Tooltip } from '../../Tooltip.js';
-import { ColorPicker, Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { view } from '@anchorlib/react/view';
-import { useObserver, useWriter } from '@anchorlib/react';
+import { ColorPicker, Toggle, ToggleGroup } from '@anchorlib/react-classic/components';
+import { view } from '@anchorlib/react-classic/view';
+import { useObserver, useWriter } from '@anchorlib/react-classic';
 import { editorApp, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';

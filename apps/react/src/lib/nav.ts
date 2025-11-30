@@ -1,6 +1,6 @@
 import type { MouseEventHandler } from 'react';
 import { getContext, setContext } from '@anchorlib/core';
-import { useVariable, type VariableRef } from '@anchorlib/react';
+import { useVariable, type VariableRef } from '@anchorlib/react-classic';
 
 export const BASE_PATH = '';
 

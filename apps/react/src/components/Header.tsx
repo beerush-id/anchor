@@ -1,5 +1,5 @@
 import { BookText } from 'lucide-react';
-import { setDebugRenderer, useAction } from '@anchorlib/react';
+import { setDebugRenderer, useAction } from '@anchorlib/react-classic';
 import { Header as MainHeader, type HeaderLink, type HeaderSocial } from '@anchorlib/react-kit/components';
 import { DiscordIcon, GithubIcon } from '@anchorlib/react-kit/icons';
 import { LogoText } from './LogoText';
@@ -73,7 +73,10 @@ export const Header = () => {
     <>
       <MainHeader
         ref={ref}
-        logo={{ text: 'Anchor - Framework Agnostic State Management Library', image: LogoText }}
+        logo={{
+          text: 'Anchor - Framework Agnostic State Management Library',
+          image: LogoText,
+        }}
         links={links}
         socials={socials}
         offset={SCROLL_THRESHOLD}

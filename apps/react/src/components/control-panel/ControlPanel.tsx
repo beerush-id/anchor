@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '../Card.js';
-import { useAnchor } from '@anchorlib/react';
+import { useAnchor } from '@anchorlib/react-classic';
 import { BoxPanel } from './BoxPanel.js';
 import { BoxView } from './BoxView.js';
 import { ControlPanelCode } from './ControlPanelCode.js';

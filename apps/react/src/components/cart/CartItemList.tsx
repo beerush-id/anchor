@@ -1,6 +1,6 @@
 import { type FC, useRef } from 'react';
 import { CartItem, type CartItemType } from './CartItem.js';
-import { debugRender, useObserver } from '@anchorlib/react';
+import { debugRender, useObserver } from '@anchorlib/react-classic';
 
 export const CartItemList: FC<{ items: CartItemType[] }> = ({ items }) => {
   const ref = useRef(null);

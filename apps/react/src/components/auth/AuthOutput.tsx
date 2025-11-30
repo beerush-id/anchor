@@ -3,7 +3,7 @@ import { Card } from '../Card.js';
 import { CodeBlock } from '../CodeBlock.js';
 import { CardHeader } from '../CardHeader.js';
 // SHOW FROM HERE //
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react-classic/view';
 import { profileState, schema } from '@lib/auth.js';
 
 export const AuthOutput: FC = observer(() => {

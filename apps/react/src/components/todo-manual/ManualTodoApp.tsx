@@ -9,7 +9,7 @@ import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE } from '@lib/todo.js';
 import { ManualTodoCode } from './ManualTodoCode.js';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { ManualTodoStats } from './ManualTodoStats.js';
 import { isMobile } from '@lib/nav.js';
 

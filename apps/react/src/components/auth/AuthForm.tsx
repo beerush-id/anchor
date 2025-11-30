@@ -1,7 +1,7 @@
 import { type FC, type FormEventHandler, useRef } from 'react';
 import { Button } from '../Button.js';
-import { Input } from '@anchorlib/react/components';
-import { debugRender, useFormWriter, view } from '@anchorlib/react';
+import { Input } from '@anchorlib/react-classic/components';
+import { debugRender, useFormWriter, view } from '@anchorlib/react-classic';
 import { Card } from '../Card.js';
 import { profileWriter } from '@lib/auth.js';
 import { CodeBlock } from '../CodeBlock.js';

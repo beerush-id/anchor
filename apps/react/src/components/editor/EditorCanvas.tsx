@@ -1,9 +1,9 @@
-import { debugRender, useDerivedRef, useObserver, useRefTrap, useWriter } from '@anchorlib/react';
+import { debugRender, useDerivedRef, useObserver, useRefTrap, useWriter } from '@anchorlib/react-classic';
 import { type CssNode, editorApp, parseCss, stylize, TOOL_ICON_SIZE } from '@lib/editor.js';
 import { useRef } from 'react';
 import { CodeBlock } from '../CodeBlock.js';
-import { Toggle, ToggleGroup } from '@anchorlib/react/components';
-import { view } from '@anchorlib/react/view';
+import { Toggle, ToggleGroup } from '@anchorlib/react-classic/components';
+import { view } from '@anchorlib/react-classic/view';
 import { Braces, SquareDashedBottomCode, SquareMousePointer } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 

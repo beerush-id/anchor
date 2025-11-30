@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAnchor, useVariable } from '@anchorlib/react';
-import { view } from '@anchorlib/react/view';
+import { useAnchor, useVariable } from '@anchorlib/react-classic';
+import { view } from '@anchorlib/react-classic/view';
 import BindingDemo from './Binding.js';
 
 function computeExpensiveValue() {

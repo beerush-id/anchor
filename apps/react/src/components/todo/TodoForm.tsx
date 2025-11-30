@@ -4,7 +4,7 @@ import { Button } from '../Button.js';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
 import { itemsWriter, statsWriter } from '@lib/todo.js';
 import { shortId } from '@anchorlib/core';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 
 export const TodoForm: FC = () => {
   const ref = useRef(null);

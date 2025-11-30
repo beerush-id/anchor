@@ -1,6 +1,6 @@
 import { Tooltip } from '../../Tooltip.js';
-import { Input } from '@anchorlib/react/components';
-import { useObserver, useWriter } from '@anchorlib/react';
+import { Input } from '@anchorlib/react-classic/components';
+import { useObserver, useWriter } from '@anchorlib/react-classic';
 import { editorApp } from '@lib/editor.js';
 import { PanelColumn } from '../../PanelColumn.js';
 import { PanelRow } from '../../PanelRow.js';

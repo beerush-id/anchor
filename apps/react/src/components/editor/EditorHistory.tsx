@@ -1,10 +1,10 @@
 import { IconButton } from '../Button.js';
 import { Redo, RotateCcw, Undo } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
-import { debugRender, useHistory } from '@anchorlib/react';
+import { debugRender, useHistory } from '@anchorlib/react-classic';
 import { editorApp } from '@lib/editor.js';
 import { type FC, useRef } from 'react';
-import { observer } from '@anchorlib/react/view';
+import { observer } from '@anchorlib/react-classic/view';
 
 const EditorHistory: FC = observer(() => {
   const ref = useRef<HTMLDivElement>(null);

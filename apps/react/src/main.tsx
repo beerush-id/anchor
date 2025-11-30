@@ -1,7 +1,7 @@
 import '@anchorlib/react-next/client';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import { anchor, setDebugRenderer, setDevMode } from '@anchorlib/react';
+import { anchor, setDebugRenderer, setDevMode } from '@anchorlib/react-classic';
 import { BASE_PATH } from '@lib/nav.js';
 import { CustomRenderer } from '@pages/custom-renderer/CustomRenderer.js';
 import Home from '@pages/home/Home.js';

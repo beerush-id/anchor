@@ -1,4 +1,4 @@
-import { setup, useAnchor, view } from '@anchorlib/react';
+import { setup, useAnchor, view } from '@anchorlib/react-classic';
 import type { FormEventHandler } from 'react';
 
 type Todo = {

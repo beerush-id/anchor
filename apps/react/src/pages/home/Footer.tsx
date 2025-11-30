@@ -1,5 +1,5 @@
 import { getCtaHoverCount } from '@lib/nav.js';
-import { debugRender, view } from '@anchorlib/react';
+import { debugRender, view } from '@anchorlib/react-classic';
 import { SectionTitle } from '@components/Section.js';
 import { MainCTA } from '@components/MainCTA.js';
 import { useRef } from 'react';

@@ -1,7 +1,7 @@
 import { anchor } from '@anchorlib/core';
 import { createHighlighter, type Highlighter } from 'shiki/bundle/web';
 import { type FC, useRef } from 'react';
-import { debugRender, useObserver } from '@anchorlib/react';
+import { debugRender, useObserver } from '@anchorlib/react-classic';
 import { LoaderCircle } from 'lucide-react';
 import { isMobile } from '@lib/nav.js';
 
@@ -16,11 +16,11 @@ if (!isMobile()) {
   });
 }
 
-export const CodeBlock: FC<{ code: string; lang?: string; className?: string }> = ({
-  code,
-  lang = 'jsx',
-  className,
-}) => {
+export const CodeBlock: FC<{
+  code: string;
+  lang?: string;
+  className?: string;
+}> = ({ code, lang = 'jsx', className }) => {
   const ref = useRef(null);
   const output = useObserver(() => {
     const { highlighter } = shiki;

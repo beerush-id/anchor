@@ -1,4 +1,4 @@
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import type { ITodoStats } from '@lib/todo.js';
 import { type FC, memo, useRef } from 'react';
 

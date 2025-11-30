@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import type { BoxProp } from './BoxView.js';
-import { view } from '@anchorlib/react';
-import { Input } from '@anchorlib/react/components';
+import { view } from '@anchorlib/react-classic';
+import { Input } from '@anchorlib/react-classic/components';
 
 export const BoxPanel: React.FC<{ box: BoxProp }> = ({ box }) => {
   const viewRef = useRef(null);

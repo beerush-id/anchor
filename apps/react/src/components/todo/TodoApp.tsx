@@ -4,8 +4,8 @@ import { Card } from '../Card.js';
 import { CardHeader } from '../CardHeader.js';
 import { type FC, useRef } from 'react';
 import { todoStats, useUpdateStat } from '@lib/stats.js';
-import { debugRender, useAnchor } from '@anchorlib/react';
-import { observer } from '@anchorlib/react/view';
+import { debugRender, useAnchor } from '@anchorlib/react-classic';
+import { observer } from '@anchorlib/react-classic/view';
 import { microloop, shortId } from '@anchorlib/core';
 import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
@@ -24,7 +24,11 @@ export const TodoApp: FC = () => {
   const [panel] = useAnchor({ info: false, code: false });
 
   const addBenchmarkItem = () => {
-    itemsWriter.push({ id: shortId(), text: `New Todo (${itemsWriter.length + 1})`, completed: false });
+    itemsWriter.push({
+      id: shortId(),
+      text: `New Todo (${itemsWriter.length + 1})`,
+      completed: false,
+    });
     statsWriter.total++;
     statsWriter.active++;
   };

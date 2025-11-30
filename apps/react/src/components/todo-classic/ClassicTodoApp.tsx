@@ -10,7 +10,7 @@ import { CircleQuestionMark, Gauge } from 'lucide-react';
 import { Tooltip } from '../Tooltip.js';
 import { ClassicTodoStats } from './ClassicTodoStats.js';
 import { ClassicTodoCode } from './ClassicTodoCode.js';
-import { debugRender } from '@anchorlib/react';
+import { debugRender } from '@anchorlib/react-classic';
 import { isMobile } from '@lib/nav.js';
 
 const [loop] = microloop(BENCHMARK_DEBOUNCE_TIME, BENCHMARK_SIZE);
@@ -31,7 +31,11 @@ export const ClassicTodoApp: FC = () => {
   const handleOnAdd = (todo: ITodoItem) => {
     setTodos((current) => {
       const updated = [...current, todo];
-      setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
+      setStats((stats) => ({
+        ...stats,
+        total: updated.length,
+        active: updated.length - stats.completed,
+      }));
       return updated;
     });
   };
@@ -84,8 +88,19 @@ export const ClassicTodoApp: FC = () => {
 
   const addBenchmarkItem = () => {
     setTodos((current) => {
-      const updated = [...current, { id: shortId(), text: `New todo (${current.length + 1})`, completed: false }];
-      setStats((stats) => ({ ...stats, total: updated.length, active: updated.length - stats.completed }));
+      const updated = [
+        ...current,
+        {
+          id: shortId(),
+          text: `New todo (${current.length + 1})`,
+          completed: false,
+        },
+      ];
+      setStats((stats) => ({
+        ...stats,
+        total: updated.length,
+        active: updated.length - stats.completed,
+      }));
       return updated;
     });
   };

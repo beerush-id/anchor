@@ -1,5 +1,5 @@
-import { bindable, view } from '@anchorlib/react/view';
-import { useAnchor, useVariable } from '@anchorlib/react';
+import { bindable, view } from '@anchorlib/react-classic/view';
+import { useAnchor, useVariable } from '@anchorlib/react-classic';
 import type { InputHTMLAttributes } from 'react';
 import { Card } from '@components/Card.js';
 
@@ -8,7 +8,13 @@ const Input = bindable<InputHTMLAttributes<HTMLInputElement>>(function Input(pro
 });
 
 export default function BindingDemo() {
-  const [user] = useAnchor({ name: '', firstName: '', lastName: '', verified: false, age: 30 });
+  const [user] = useAnchor({
+    name: '',
+    firstName: '',
+    lastName: '',
+    verified: false,
+    age: 30,
+  });
   const [name] = useVariable('');
   const [age] = useVariable(30);
   const [verified] = useVariable(false);

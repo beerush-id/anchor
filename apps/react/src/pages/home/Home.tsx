@@ -6,7 +6,7 @@ import {
   AccordionTrigger,
 } from '@anchorkit/react/components/accordion/index.js';
 import { subscribe } from '@anchorlib/core';
-import { view } from '@anchorlib/react';
+import { view } from '@anchorlib/react-classic';
 import { persistent } from '@anchorlib/storage';
 import { Bell, CircleUser } from '@icons/index.js';
 import type { ChangeEventHandler } from 'react';

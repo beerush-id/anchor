@@ -1,5 +1,5 @@
 import { anchor, createObserver, type StateObserver } from '@anchorlib/core';
-import { useRefTrap } from '@anchorlib/react';
+import { useRefTrap } from '@anchorlib/react-classic';
 
 type DOMFactory = () => HTMLElement | HTMLElement[];
 type ComponentFactory = () => DOMFactory;

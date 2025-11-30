@@ -1,5 +1,5 @@
 import { Checkbox, CheckboxLabel } from '@anchorkit/react/components';
-import { useImmutable, useVariable, useWriter } from '@anchorlib/react';
+import { useImmutable, useVariable, useWriter } from '@anchorlib/react-classic';
 
 export function Checkboxes() {
   const [notification] = useVariable(true);
