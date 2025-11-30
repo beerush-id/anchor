@@ -1,4 +1,4 @@
-import { callback, mutable, setup, template } from '@anchorlib/react-next';
+import { callback, mutable, setup, template } from '@anchorlib/react';
 import type { FormEvent } from 'react';
 
 type Todo = {

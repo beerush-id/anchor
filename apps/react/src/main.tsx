@@ -1,4 +1,4 @@
-import '@anchorlib/react-next/client';
+import '@anchorlib/react/client';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { anchor, setDebugRenderer, setDevMode } from '@anchorlib/react-classic';

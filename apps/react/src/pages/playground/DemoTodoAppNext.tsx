@@ -1,5 +1,5 @@
 import { derived, mutable } from '@anchorlib/core';
-import { setup, view } from '@anchorlib/react-next';
+import { setup, view } from '@anchorlib/react';
 import type { FormEvent } from 'react';
 
 type Todo = {

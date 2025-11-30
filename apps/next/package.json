@@ -18,7 +18,7 @@
   "dependencies": {
     "@anchorlib/react-classic": "workspace:*",
     "@anchorlib/react-kit": "workspace:*",
-    "@anchorlib/react-next": "workspace:*",
+    "@anchorlib/react": "workspace:*",
     "@anchorlib/storage": "workspace:*",
     "next": "catalog:app",
     "react": "catalog:app",

@@ -1,8 +1,12 @@
 import { Switch, SwitchLabel, Tab, TabButton, TabContent, TabList, TabVisibility } from '@anchorkit/react/components';
-import { bind, effect, mutable, setup, view } from '@anchorlib/react-next';
+import { bind, effect, mutable, setup, view } from '@anchorlib/react';
 import type { FC } from 'react';
 
-const ActiveTab: FC<{ name: string; tab: Record<string, string | boolean>; active?: string }> = setup((props) => {
+const ActiveTab: FC<{
+  name: string;
+  tab: Record<string, string | boolean>;
+  active?: string;
+}> = setup((props) => {
   const { name, tab } = props;
   const renderCount = mutable(0);
   renderCount.value++;

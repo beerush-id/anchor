@@ -1,4 +1,4 @@
-import { callback, mutable, setup, template } from '@anchorlib/react-next';
+import { callback, mutable, setup, template } from '@anchorlib/react';
 
 export const Counter = setup(() => {
   const state = mutable({ count: 0 });

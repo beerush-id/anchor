@@ -1,6 +1,6 @@
 'use client';
 
-import { callback, mutable, setup, template, undoable } from '@anchorlib/react-next';
+import { callback, mutable, setup, template, undoable } from '@anchorlib/react';
 import { LoaderCircle } from 'lucide-react';
 
 const Counter = setup(() => {

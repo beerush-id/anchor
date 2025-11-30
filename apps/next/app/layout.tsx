@@ -1,4 +1,4 @@
-import '@anchorlib/react-next/client';
+import '@anchorlib/react/client';
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google';
 import './globals.css';
@@ -188,7 +188,7 @@ export default async function RootLayout({
             dangerouslySetInnerHTML={{
               __html: `
                 const dark = window.matchMedia('prefers-color-scheme: dark').matches;
-                if (dark) document.documentElement.classList.add('dark');              
+                if (dark) document.documentElement.classList.add('dark');
               `,
             }}
           ></script>

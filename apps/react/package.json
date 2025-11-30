@@ -42,6 +42,6 @@
     "@types/bun": "catalog:"
   },
   "dependencies": {
-    "@anchorlib/react-next": "workspace:*"
+    "@anchorlib/react": "workspace:*"
   }
 }
