@@ -1,15 +1,13 @@
 # @anchorlib/react
 
-React integration for the Anchor reactive state management library.
+The next-generation React component architecture, featuring stable components and fine-grained reactivity.
 
 ## Features
 
-- **Reactive State Management** - Directly mutate state without needing setState patterns
-- **Automatic Re-renders** - Components automatically re-render when state changes
-- **Hooks-based API** - Designed specifically for React's hooks system
-- **Dependency Tracking** - Fine-grained control over when components re-render
-- **Schema Validation** - Built-in Zod schema validation support
-- **Type Safety** - Full TypeScript support with comprehensive type definitions
+- **Modern Architecture** - Components that render once and update only when necessary
+- **Fine-Grained Reactivity** - Modern `setup` and `template` pattern for optimal performance
+- **Universal Component** - Component that work safely in both Server and Client.
+- **Backward Compatibility** - Can co-exist with the standard React components, supporting gradual migration.
 
 ## Installation
 
@@ -17,34 +15,68 @@ React integration for the Anchor reactive state management library.
 npm install @anchorlib/react
 ```
 
-## Documentation
+## Setup
 
-For full documentation, visit [Anchor for React](https://anchorlib.dev/docs/react/introduction.html)
+To enable reactivity, you must initialize the binding in your client entry file (e.g., `app/layout.tsx` or `pages/_app.tsx`).
 
-## Quick Start
+```tsx
+// app/layout.tsx or client entry
+import '@anchorlib/react/client';
 
-```jsx
-import { useAnchor } from '@anchorlib/react';
-
-function Counter() {
-  const state = useAnchor({
-    count: 0,
-    user: {
-      name: 'John Doe',
-      email: 'john@example.com',
-    },
-  });
-
+export default function RootLayout({ children }) {
   return (
-    <div>
-      <h1>Hello {state.user.name}</h1>
-      <p>Count: {state.count}</p>
-      <button onClick={() => state.count++}>Increment</button>
-      <button onClick={() => (state.user.name = 'Jane Doe')}>Change Name</button>
-    </div>
+    <html>
+      <body>{children}</body>
+    </html>
   );
 }
 ```
+
+## Usage
+
+### Modern Component Architecture
+
+Use `setup` and `template` to separate logic from rendering, ensuring components are stable and only re-render when necessary.
+
+```tsx
+import { setup, template, mutable } from '@anchorlib/react';
+
+// 1. Define the logic (runs once per component instance)
+const Counter = setup(() => {
+  const counter = mutable({ count: 0 });
+  
+  // Define the reactive template.
+  const Template = template(() => (
+    <h1>Count: {counter.count}</h1>
+  ));
+
+  // Return a static template.
+  return (
+    <div>
+      <Template />
+      <button onClick={() => counter.count++}>Increment</button>
+    </div>
+  );
+});
+```
+
+The `Counter` component is a universal component that works safely in both Server and Client. On the client side, the `Counter` component itself is rendered once. Only the reactive template is re-rendered when the state changes.
+
+## Migration Guide
+
+### Upgrading from v1.0.0-beta.12 or earlier
+
+**Breaking Change:** In v1.0.0-beta.13, we've simplified the API by replacing the hook-based pattern with the `setup()` + `template()` pattern.
+
+To keep your existing code working, install the classic package and update your imports:
+
+```bash
+npm install @anchorlib/react-classic
+```
+
+Then replace all imports from `@anchorlib/react` to `@anchorlib/react-classic` in your project.
+
+For migration guide to the new API, see the [documentation](https://anchorlib.dev).
 
 ## License
 

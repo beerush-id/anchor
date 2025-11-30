@@ -1,155 +1,211 @@
-import { useMemo, useRef, useState } from 'react';
-import { anchor, type Linkable, microbatch, microtask, outsideObserver, shortId } from '@anchorlib/core';
-import { depsChanged } from './utils.js';
-import type { TransformSnapshotFn } from './types.js';
+import { captureStack } from '@anchorlib/core';
+import type { useEffect, useMemo, useRef, useState } from 'react';
 
 /**
- * A React hook that generates a short, unique identifier string.
- *
- * This hook uses the **shortId** function from the Anchor core library
- * to generate a unique ID that remains stable across re-renders.
- *
- * @returns The generated short ID string.
+ * Internal effect hook implementation that safely no-ops on the server.
+ * On the client, this throws an error if used before initialization.
+ * This hook is replaced by the actual React useEffect hook when setEffectHook is called.
  */
-export function useShortId() {
-  const [id] = useState(() => {
-    return shortId();
-  });
-  return id;
-}
+let effectHook = (() => {
+  if (typeof window !== 'undefined') {
+    const error = new Error('createEffect hook binding is not initialized.');
+    captureStack.violation.general(
+      'Uninitialized createEffect hook detected.',
+      'Attempted to use createEffect before the React hook binding is initialized. This usually happens when @anchorlib/react/client is not imported in your client entry file.',
+      error,
+      [
+        'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
+        'Ensure the import runs before any components that use createEffect.',
+        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+      ],
+      effectHook
+    );
+  }
+}) as typeof useEffect;
 
 /**
- * A React hook that creates a ref with a custom setter handler.
- *
- * This hook returns a ref-like object that allows you to intercept and modify
- * the value being set through a handler function. The handler function is called
- * whenever the current property is set, enabling you to apply custom logic
- * (e.g., validation, transformation) before updating the ref's value.
- *
- * @template T - The type of the value stored in the ref.
- * @param init - The initial value for the ref.
- * @param handler - A function that processes the value before it's set.
- *                  It receives the new value and returns the value to be stored.
- * @returns A ref-like object with a custom setter.
+ * Internal state hook implementation that safely no-ops on the server.
+ * On the client, this throws an error if used before initialization.
+ * This hook is replaced by the actual React useState hook when setStateHook is called.
  */
-export function useRefTrap<T>(init: T | null, handler: (value: T | null) => T | null) {
-  const ref = useRef(init);
-
-  return useMemo(() => {
-    return {
-      get current() {
-        return ref.current;
-      },
-      set current(value) {
-        ref.current = handler(value);
-      },
-    };
-  }, [ref]);
-}
-
-/**
- * A React hook that provides a microtask function with an optional timeout.
- *
- * This hook uses the **microtask** utility from the Anchor core library to create
- * a function that executes a callback in a microtask.
- * The created microtask function is memoized using **useRef** to ensure it remains
- * stable across re-renders.
- *
- * @param timeout - An optional timeout in milliseconds after which the callback
- *                  will be executed.
- * @returns A memoized microtask function.
- */
-export function useMicrotask(timeout?: number) {
-  return useRef(microtask(timeout)).current;
-}
-
-/**
- * A React hook that provides a microbatch function with an optional delay.
- *
- * This hook uses the **microbatch** utility from the Anchor core library to create
- * a function that executes a callback in a microtask with batching capabilities.
- * The created microbatch function is memoized using **useRef** to ensure it remains
- * stable across re-renders.
- *
- * @param delay - An optional delay in milliseconds after which the batched callbacks
- *                will be executed.
- * @returns A memoized microbatch function.
- */
-export function useMicrobatch(delay?: number) {
-  return useRef(microbatch(delay)).current;
-}
-
-/**
- * A React hook that provides a stable reference to a value, updating only when specified dependencies change.
- *
- * This hook ensures that the returned reference object remains stable across re-renders,
- * only updating its value and dependencies when the provided dependencies change.
- * It supports both direct values and factory functions for initialization.
- *
- * @template T - The type of the value stored in the ref.
- * @param init - The initial value or a factory function that returns the initial value.
- * @param deps - An array of dependencies that, when changed, will trigger an update of the ref's value.
- * @returns A stable reference object containing the current value and a Set of dependencies.
- */
-export function useStableRef<T>(init: T | (() => T), deps: unknown[]) {
-  const stableRef = useRef({
-    deps: new Set(deps),
-    value: init,
-    stable: false,
-  }).current;
-
-  // Initialize the value if it's a factory function.
-  if (typeof stableRef.value === 'function') {
-    stableRef.value = (init as () => T)();
+let stateHook = ((init) => {
+  if (typeof window !== 'undefined') {
+    const error = new Error('createState hook binding is not initialized.');
+    captureStack.violation.general(
+      'Uninitialized createState hook detected.',
+      'Attempted to use createState before the React hook binding is initialized. This usually happens when @anchorlib/react/client is not imported in your client entry file.',
+      error,
+      [
+        'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
+        'Ensure the import runs before any components that use createState.',
+        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+      ],
+      stateHook
+    );
   }
 
-  if (stableRef.stable) {
-    const updatedDeps = depsChanged(stableRef.deps, deps);
+  let current = typeof init === 'function' ? (init as () => unknown)() : init;
+  const setCurrent = (value: unknown | ((current: unknown) => unknown)) => {
+    current = value;
+  };
 
-    if (updatedDeps) {
-      stableRef.deps = updatedDeps;
-      stableRef.value = typeof init === 'function' ? (init as () => T)() : init;
-    }
-  } else {
-    stableRef.stable = true;
+  return [current, setCurrent];
+}) as typeof useState;
+
+/**
+ * Internal ref hook implementation that safely no-ops on the server.
+ * On the client, this throws an error if used before initialization.
+ * This hook is replaced by the actual React useRef hook when setRefHook is called.
+ *
+ * @template T - The type of the ref value
+ * @param init - The initial value for the ref
+ * @returns A ref object with a current property
+ */
+let refHook = <T>(init: T) => {
+  if (typeof window !== 'undefined') {
+    const error = new Error('createRef hook binding is not initialized.');
+    captureStack.violation.general(
+      'Uninitialized createRef hook detected.',
+      'Attempted to use createRef before the React hook binding is initialized. This usually happens when @anchorlib/react/client is not imported in your client entry file.',
+      error,
+      [
+        'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
+        'Ensure the import runs before any components that use createRef.',
+        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+      ],
+      refHook
+    );
   }
 
-  return stableRef as { deps: Set<unknown>; value: T; stable: boolean };
-}
+  return {
+    get current() {
+      return init;
+    },
+    set current(value: T) {
+      init = value;
+    },
+  };
+};
 
 /**
- * React hook that creates a snapshot of a reactive state.
- * The snapshot is a plain object that reflects the current state at the time of creation.
- * It does not update automatically when the state changes.
- *
- * @template T - The type of the reactive state.
- * @param {T} state - The reactive state to create a snapshot from.
- * @returns {T} - A snapshot of the reactive state.
+ * Internal memo hook implementation that safely no-ops on the server.
+ * On the client, this throws an error if used before initialization.
+ * This hook is replaced by the actual React useMemo hook when setMemoHook is called.
  */
-export function useSnapshot<T extends Linkable>(state: T): T;
+let memoHook = ((fn) => {
+  if (typeof window !== 'undefined') {
+    const error = new Error('createMemo hook binding is not initialized.');
+    captureStack.violation.general(
+      'Uninitialized createMemo hook detected.',
+      'Attempted to use createMemo before the React hook binding is initialized. This usually happens when @anchorlib/react/client is not imported in your client entry file.',
+      error,
+      [
+        'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
+        'Ensure the import runs before any components that use createMemo.',
+        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+      ],
+      memoHook
+    );
+  }
+
+  return fn();
+}) as typeof useMemo;
 
 /**
- * React hook that creates a transformed snapshot of a reactive state.
- * The snapshot is a plain object that reflects the current state at the time of creation.
- * It does not update automatically when the state changes.
- * The transform function can be used to modify the snapshot before it is returned.
+ * Sets the effect hook implementation to use React's useEffect.
+ * This should be called during initialization by @anchorlib/react/client.
  *
- * @template T - The type of the reactive state.
- * @template R - The type of the transformed snapshot.
- * @param {T} state - The reactive state to create a snapshot from.
- * @param {TransformSnapshotFn<T, R>} transform - A function that transforms the snapshot before it is returned.
- * @returns {R} - A transformed snapshot of the reactive state.
+ * @param hook - The React useEffect hook to use
  */
-export function useSnapshot<T extends Linkable, R>(state: T, transform: TransformSnapshotFn<T, R>): R;
+export const setEffectHook = (hook: typeof useEffect) => {
+  effectHook = hook;
+};
 
-export function useSnapshot<T extends Linkable, R>(state: T, transform?: TransformSnapshotFn<T, R>): T | R {
-  return useMemo(() => {
-    return outsideObserver(() => {
-      if (typeof transform === 'function') {
-        return transform(anchor.snapshot(state));
-      }
+/**
+ * Sets the state hook implementation to use React's useState.
+ * This should be called during initialization by @anchorlib/react/client.
+ *
+ * @template T - The type of the state value
+ * @param hook - The React useState hook to use
+ */
+export const setStateHook = <T>(hook: typeof useState<T>) => {
+  stateHook = hook;
+};
 
-      return anchor.snapshot(state);
-    }) as T | R;
-  }, [state]);
-}
+/**
+ * Sets the ref hook implementation to use React's useRef.
+ * This should be called during initialization by @anchorlib/react/client.
+ *
+ * @template T - The type of the ref value
+ * @param hook - The React useRef hook to use
+ */
+export const setRefHook = <T>(hook: typeof useRef<T>) => {
+  refHook = hook;
+};
+
+/**
+ * Sets the memo hook implementation to use React's useMemo.
+ * This should be called during initialization by @anchorlib/react/client.
+ *
+ * @template T - The type of the memoized value
+ * @param hook - The React useMemo hook to use
+ */
+export const setMemoHook = <T>(hook: typeof useMemo<T>) => {
+  memoHook = hook as typeof memoHook;
+};
+
+/**
+ * Creates a side effect that runs after render, similar to React's useEffect.
+ * This hook can be used in both server and client components, enabling component reusability.
+ * On the server, this safely no-ops since effects don't run during SSR.
+ * On the client, the effect runs after render and is cleaned up on unmount or before re-running.
+ *
+ * @param cb - The effect callback function, optionally returning a cleanup function
+ * @param deps - Optional array of dependencies that trigger the effect when changed
+ * @returns void
+ */
+export const createEffect = ((cb, deps) => {
+  return effectHook(cb, deps);
+}) as typeof useEffect;
+
+/**
+ * Creates a stateful value that persists across renders, similar to React's useState.
+ * This hook can be used in both server and client components, enabling component reusability.
+ * On the server, this returns the initial value without state management.
+ * On the client, this provides full stateful behavior with re-rendering on updates.
+ *
+ * @template T - The type of the state value
+ * @param init - The initial state value or a function that returns the initial state
+ * @returns A tuple of [state, setState]
+ */
+export const createState = <T>(init: T | (() => T)) => {
+  return stateHook(init);
+};
+
+/**
+ * Creates a mutable ref object that persists across renders, similar to React's useRef.
+ * This hook can be used in both server and client components, enabling component reusability.
+ * On the server, this returns a simple object with the initial value.
+ * On the client, this provides a persistent ref object that survives re-renders.
+ *
+ * @template T - The type of the ref value
+ * @param init - The initial value for the ref
+ * @returns A ref object with a current property
+ */
+export const createRef = <T>(init: T) => {
+  return refHook(init);
+};
+
+/**
+ * Creates a memoized value that only recomputes when dependencies change, similar to React's useMemo.
+ * This hook can be used in both server and client components, enabling component reusability.
+ * On the server, this simply executes the function and returns the value without memoization.
+ * On the client, this caches the computed value and only recomputes when dependencies change.
+ *
+ * @param fn - A function that computes and returns the memoized value
+ * @param deps - Optional array of dependencies that trigger recomputation when changed
+ * @returns The memoized value
+ */
+export const createMemo = ((fn, deps) => {
+  return memoHook(fn, deps);
+}) as typeof useMemo;

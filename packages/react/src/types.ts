@@ -1,76 +1,13 @@
-import type { BindingKeys, Linkable, ModelError, State, StateChange, StateUnsubscribe } from '@anchorlib/core';
-import type { ReactNode, RefObject } from 'react';
-
-export type StateRef<T> = {
-  value: T;
-  constant?: boolean;
-};
-export type VariableRef<T> = {
-  get value(): T;
-  set value(value: T);
-};
-export type ConstantRef<T> = {
-  get value(): T;
-};
-export type RefUpdater<T> = (value: T) => void;
-export type RefInitializer<T> = (current?: T) => T;
-
-export type AnchorState<T> = [T, VariableRef<T>, RefUpdater<T>];
-export type ConstantState<T> = [T, ConstantRef<T>];
-
-export type TransformFn<T extends Linkable, R> = (current: T) => R;
-export type TransformSnapshotFn<T, R> = (snapshot: T) => R;
-export type Bindable = Record<string, unknown>;
-export type AnchoredProps = {
-  _state_version: number;
-};
-
-export type ExceptionList<T extends State, R extends keyof T> = {
-  [key in R]?: Error | ModelError | null;
-};
-export type Action<T> = (value: T) => StateUnsubscribe | void;
-export type ActionRef<T> = RefObject<T> & {
-  destroy: () => void;
-};
-export type FormState<T extends State, K extends keyof T> = {
-  data: { [key in K]: T[key] };
-  errors: ExceptionList<T, K>;
-  readonly isValid: boolean;
-  readonly isDirty: boolean;
-  reset(): void;
-};
-
-export type ReactiveProps<T> = {
-  [K in keyof T]: K extends 'children' ? T[K] : VariableRef<T[K]> | ConstantRef<T[K]> | T[K];
-};
+import type { StateChange } from '@anchorlib/core';
+import type { ReactNode } from 'react';
 
 export type ViewRenderer<P> = (props: P) => ReactNode;
-export type ViewRendererFactory<P> = {
-  name?: string;
-  render: ViewRenderer<P>;
-  onMounted?: () => void;
-  onUpdated?: () => void;
-  onDestroy?: () => void;
-};
-
-export type BindingParam<T, B> = B extends VariableRef<T> ? [VariableRef<T>] : [B, BindingKeys<T, B>];
-export type BindingProps<P, T, B> = P & {
-  bind?: B extends VariableRef<T> ? [VariableRef<T>, never] : [B, BindingKeys<T, B>];
-};
-
-export type BindingInit<T, B> = B extends VariableRef<T> ? RefBinding<T> : PropBinding<T, B>;
-export type RefBinding<T> = {
-  bind?: [VariableRef<T>];
-};
-export type PropBinding<T, S> = {
-  bind?: BindingLink<T, S>;
-};
-export type BindingLink<T, B> = [B, BindingKeys<T, B>];
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
 export type EffectHandler = (event: StateChange) => void | EffectCleanup;
 export type EffectCleanup = () => void;
+
 export type Lifecycle = {
   /**
    * Mounts the component by executing all registered mount handlers and effects.
@@ -96,3 +33,29 @@ export type Lifecycle = {
    */
   render<R>(fn: () => R): R;
 };
+
+export interface Effect {
+  /**
+   * Registers an effect handler function that will be executed during the component's lifecycle.
+   *
+   * Effects are used for side effects that need to be cleaned up, such as subscriptions or timers.
+   * They are executed after the component is mounted and will re-run when any state accessed within
+   * the effect handler changes. Effects can optionally return a cleanup function which will be
+   * executed before the effect runs again or when the component is unmounted.
+   *
+   * Note: Effects should typically not mutate state that they also observe, as this can lead to
+   * circular updates and infinite loops.
+   *
+   * @param handler - The effect handler function to register
+   * @throws {Error} If called outside a Setup component context
+   */
+  (handler: EffectHandler): void;
+
+  /**
+   * Registers multiple effect handlers that will be executed when the state changes.
+   * Only the first handler that receives an event will run, similar to Promise.any.
+   *
+   * @param handlers - An array of effect handler functions
+   */
+  any(handlers: EffectHandler[]): void;
+}

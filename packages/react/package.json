@@ -6,7 +6,6 @@
   "keywords": ["state", "management", "reactive", "observable", "react"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
-  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beerush-id/anchor.git"
@@ -21,17 +20,13 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./components": {
-      "types": "./dist/components/index.d.ts",
-      "import": "./dist/components/index.js"
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
     },
-    "./storage": {
-      "types": "./dist/storage/index.d.ts",
-      "import": "./dist/storage/index.js"
-    },
-    "./view": {
-      "types": "./dist/view/index.d.ts",
-      "import": "./dist/view/index.js"
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
     }
   },
   "files": ["dist"],
@@ -43,36 +38,36 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@testing-library/react": "catalog:",
-    "@types/react": "catalog:lib",
-    "@vitest/coverage-v8": "catalog:",
-    "@vitest/ui": "catalog:",
-    "jsdom": "catalog:",
     "publint": "catalog:",
     "react": "catalog:lib",
     "rimraf": "catalog:",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/bun": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "jsdom": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@types/react": "catalog:lib"
   },
   "peerDependencies": {
-    "react": "catalog:lib",
-    "typescript": "catalog:lib"
+    "typescript": "catalog:lib",
+    "react": "catalog:lib"
   },
   "scripts": {
-    "dev": "rimraf dist && tsup --watch",
+    "dev": "tsdown --watch",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsup && publint",
-    "prepublish": "rimraf dist && tsup && publint",
+    "build": "tsdown && publint",
+    "prepublish": "tsdown && publint",
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },
+  "license": "MIT",
   "dependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/storage": "workspace:*"
-  },
-  "optionalDependencies": {
-    "zod": "catalog:lib"
   }
 }
