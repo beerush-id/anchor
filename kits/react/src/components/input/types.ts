@@ -1,4 +1,4 @@
-import type { Binding } from '@anchorlib/react-next';
+import type { Binding } from '@anchorlib/react';
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 export type InputBaseProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'disabled'> & {

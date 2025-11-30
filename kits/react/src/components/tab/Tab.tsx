@@ -1,6 +1,6 @@
 import { setTab, TabVisibility } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { effect, propsRef, setup, template } from '@anchorlib/react-next';
+import { effect, propsRef, setup, template } from '@anchorlib/react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 export { TabVisibility } from '@anchorkit/headless/states';

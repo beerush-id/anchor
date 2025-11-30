@@ -1,5 +1,5 @@
 import { classx } from '@anchorkit/headless/utils';
-import { bindable, callback, setup, template } from '@anchorlib/react-next';
+import { bindable, callback, setup, template } from '@anchorlib/react';
 import type { TextInputProps } from './types.js';
 
 export const TextInput = setup((props: TextInputProps) => {

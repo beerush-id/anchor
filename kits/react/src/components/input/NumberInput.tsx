@@ -1,4 +1,4 @@
-import { bindable, setup, template } from '@anchorlib/react-next';
+import { bindable, setup, template } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
 import type { NumberInputProps } from './types.js';
 

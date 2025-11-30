@@ -1,7 +1,7 @@
 import { getTab } from '@anchorkit/headless/states';
 import { TabVisibility } from '@anchorkit/headless/states/tab.js';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { propsRef, setup, template } from '@anchorlib/react-next';
+import { propsRef, setup, template } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type TabContentProps = HTMLAttributes<HTMLDivElement> & {
