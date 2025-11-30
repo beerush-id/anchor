@@ -62,6 +62,22 @@ const Counter = setup(() => {
 
 The `Counter` component is a universal component that works safely in both Server and Client. On the client side, the `Counter` component itself is rendered once. Only the reactive template is re-rendered when the state changes.
 
+## Migration Guide
+
+### Upgrading from v1.0.0-beta.12 or earlier
+
+**Breaking Change:** In v1.0.0-beta.13, we've simplified the API by replacing the hook-based pattern with the `setup()` + `template()` pattern.
+
+To keep your existing code working, install the classic package and update your imports:
+
+```bash
+npm install @anchorlib/react-classic
+```
+
+Then replace all imports from `@anchorlib/react` to `@anchorlib/react-classic` in your project.
+
+For migration guide to the new API, see the [documentation](https://anchorlib.dev).
+
 ## License
 
 MIT
