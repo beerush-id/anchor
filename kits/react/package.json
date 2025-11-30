@@ -71,7 +71,7 @@
   "dependencies": {
     "@anchorkit/headless": "workspace:*",
     "@anchorlib/core": "workspace:*",
-    "@anchorlib/react": "workspace:*",
+    "@anchorlib/react-classic": "workspace:*",
     "@anchorlib/react-next": "workspace:*"
   }
 }

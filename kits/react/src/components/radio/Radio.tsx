@@ -1,5 +1,5 @@
 import { type HTMLAttributes, useContext, useMemo } from 'react';
-import { setup, view } from '@anchorlib/react';
+import { setup, view } from '@anchorlib/react-classic';
 import { createRadio, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import { RadioGroupContext } from './context.js';

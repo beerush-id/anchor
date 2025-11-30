@@ -1,4 +1,4 @@
-import { type ActionRef, useAction } from '@anchorlib/react';
+import { type ActionRef, useAction } from '@anchorlib/react-classic';
 
 export type ClassNameRef<E> = ActionRef<E> & {
   className: string;

@@ -2,7 +2,7 @@ import { type HTMLAttributes } from 'react';
 import { createRadioGroup, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import { RadioGroupContext } from './context.js';
-import { setup } from '@anchorlib/react';
+import { setup } from '@anchorlib/react-classic';
 
 export type RadioGroupProps = HTMLAttributes<HTMLDivElement> & {
   value?: RadioValue;

@@ -1,6 +1,6 @@
 import type { StateUnsubscribe } from '@anchorlib/core';
 import { type RefObject, useEffect, useRef } from 'react';
-import { CLEANUP_DEBOUNCE_TIME, useMicrotask } from '@anchorlib/react';
+import { CLEANUP_DEBOUNCE_TIME, useMicrotask } from '@anchorlib/react-classic';
 
 export type ElementAction<E> = {
   value: E | null;

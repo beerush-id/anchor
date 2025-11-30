@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { anchor } from '@anchorlib/core';
 import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAction, useActions } from '../../src/action';
 import { CLEANUP_DEBOUNCE_TIME } from '../../src/constant';
-import type { ActionRef } from '@anchorlib/react';
-import { anchor } from '@anchorlib/core';
+import type { ActionRef } from '../../src/types';
 
 describe('Anchor React - Action', () => {
   beforeEach(() => {

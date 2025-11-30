@@ -1,5 +1,5 @@
 import { type HTMLAttributes } from 'react';
-import { type BindingParam, setup, useBinding, type VariableRef, view } from '@anchorlib/react';
+import { type BindingParam, setup, useBinding, type VariableRef, view } from '@anchorlib/react-classic';
 import { createCheckbox } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import type { ObjLike } from '@anchorlib/core';

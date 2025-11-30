@@ -1,6 +1,6 @@
 import { getCollapsible } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { setup, view } from '@anchorlib/react';
+import { setup, view } from '@anchorlib/react-classic';
 import type { HTMLAttributes, MouseEventHandler } from 'react';
 import { ChevronDown } from '../../icons/index.js';
 import type { ReactProps } from '../../types.js';

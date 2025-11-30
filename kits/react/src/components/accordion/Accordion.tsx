@@ -1,7 +1,7 @@
 import { classAction } from '@anchorkit/headless/actions';
 import { type CollapsibleInit, getCollapsibleGroup, setCollapsible } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { type BindingParam, setup, useBinding } from '@anchorlib/react';
+import { type BindingParam, setup, useBinding } from '@anchorlib/react-classic';
 import type { HTMLAttributes } from 'react';
 import type { ReactProps } from '../../types.js';
 

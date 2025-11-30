@@ -1,6 +1,6 @@
 import { type CollapsibleGroupInit, setCollapsibleGroup } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { setup } from '@anchorlib/react';
+import { setup } from '@anchorlib/react-classic';
 import type { HTMLAttributes } from 'react';
 import type { ReactProps } from '../../types.js';
 

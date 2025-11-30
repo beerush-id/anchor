@@ -1,7 +1,7 @@
 import { heightAction } from '@anchorkit/headless/actions';
 import { getCollapsible } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { setup, view } from '@anchorlib/react';
+import { setup, view } from '@anchorlib/react-classic';
 import type { HTMLAttributes } from 'react';
 import type { ReactProps } from '../../types.js';
 

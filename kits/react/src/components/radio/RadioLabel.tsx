@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react';
 import { classx } from '@anchorkit/headless/utils';
-import { named } from '@anchorlib/react';
+import { named } from '@anchorlib/react-classic';
 
 export type RadioLabelProps = HTMLAttributes<HTMLLabelElement>;
 

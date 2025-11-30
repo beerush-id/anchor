@@ -1,5 +1,5 @@
 import { type HTMLAttributes } from 'react';
-import { type BindingParam, setup, useBinding, view } from '@anchorlib/react';
+import { type BindingParam, setup, useBinding, view } from '@anchorlib/react-classic';
 import { createToggle } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 
