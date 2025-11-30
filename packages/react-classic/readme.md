@@ -24,7 +24,7 @@ For full documentation, visit [Anchor for React](https://anchorlib.dev/docs/reac
 ## Quick Start
 
 ```jsx
-import { useAnchor } from '@anchorlib/react';
+import { useAnchor } from '@anchorlib/react-classic';
 
 function Counter() {
   const state = useAnchor({

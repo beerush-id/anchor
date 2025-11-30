@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useAction, useActions } from '../../src/action';
 import { CLEANUP_DEBOUNCE_TIME } from '../../src/constant';
-import type { ActionRef } from '@anchorlib/react';
+import type { ActionRef } from '@anchorlib/react-classic';
 import { anchor } from '@anchorlib/core';
 
 describe('Anchor React - Action', () => {
