@@ -1,5 +1,6 @@
-import type { StateChange } from '@anchorlib/core';
+import type { MutableRef, StateChange } from '@anchorlib/core';
 import type { ReactNode } from 'react';
+import type { BindingRef } from './binding.js';
 
 export type ViewRenderer<P> = (props: P) => ReactNode;
 
@@ -53,9 +54,14 @@ export interface Effect {
 
   /**
    * Registers multiple effect handlers that will be executed when the state changes.
-   * Only the first handler that receives an event will run, similar to Promise.any.
+   * Only the first handler that receives an event will run.
    *
    * @param handlers - An array of effect handler functions
    */
   any(handlers: EffectHandler[]): void;
 }
+
+export type BindableProps = {
+  [key: string]: unknown;
+};
+export type Binding<T> = BindingRef<MutableRef<unknown> | Record<string, unknown>, T>;

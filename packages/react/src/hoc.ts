@@ -1,9 +1,9 @@
 import { anchor, captureStack, createObserver, createStack, microtask, withinStack } from '@anchorlib/core';
 import type { FunctionComponent, ReactNode } from 'react';
 import { memo } from 'react';
-import { bindingProps } from './binding.js';
 import { createEffect, createState } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
+import { bindingProps } from './props.js';
 import type { ViewRenderer } from './types.js';
 
 const RENDERER_INIT_VERSION = 1;

@@ -12,9 +12,11 @@ import { Bell, CircleUser } from '@icons/index.js';
 import type { ChangeEventHandler } from 'react';
 import { Badges } from './Badges.js';
 import { Checkboxes } from './Checkboxes.js';
+import { TextInputs } from './Inputs.js';
 import { Radios } from './Radios.js';
 import { Switches } from './Switches.js';
 import { Tabs } from './Tabs.js';
+import { TextAreas } from './TextAreas.js';
 
 const settings = persistent('settings', {
   theme: 'system',
@@ -300,41 +302,13 @@ export default function Home() {
       {/* Inputs */}
       <div className="mb-8 flex flex-col gap-2">
         <h2 className="text-xl font-semibold mb-2">Inputs</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <input type="text" placeholder="Default" className="ark-input" />
-          <input type="text" placeholder="Error" className="ark-input ark-input-error" />
-          <input type="text" placeholder="Success" className="ark-input ark-input-success" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <input type="text" placeholder="Disabled" className="ark-input" disabled />
-          <input type="text" placeholder="Error Disabled" className="ark-input ark-input-error" disabled />
-          <input type="text" placeholder="Success Disabled" className="ark-input ark-input-success" disabled />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <input type="text" placeholder="Small" className="ark-input ark-input-sm" />
-          <input type="text" placeholder="Normal" className="ark-input" />
-          <input type="text" placeholder="Large" className="ark-input ark-input-lg" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <input type="text" placeholder="Small" className="ark-tool-input" />
-          <input type="text" placeholder="Small" className="ark-tool-input ark-input-error" />
-          <input type="text" placeholder="Small" className="ark-tool-input ark-input-success" />
-        </div>
+        <TextInputs />
       </div>
 
       {/* Textarea */}
       <div className="mb-8 flex flex-col gap-2">
         <h2 className="text-xl font-semibold mb-2">Textarea</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <textarea placeholder="Default" className="ark-textarea"></textarea>
-          <textarea placeholder="Default" className="ark-textarea ark-textarea-error"></textarea>
-          <textarea placeholder="Default" className="ark-textarea ark-textarea-success"></textarea>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <textarea placeholder="Default" className="ark-textarea" disabled></textarea>
-          <textarea placeholder="Default" className="ark-textarea ark-textarea-error" disabled></textarea>
-          <textarea placeholder="Default" className="ark-textarea ark-textarea-success" disabled></textarea>
-        </div>
+        <TextAreas />
       </div>
 
       {/* Checkbox */}

@@ -1,25 +1,28 @@
-import { bindable, setup, template } from '@anchorlib/react';
+import { classx } from '@anchorkit/headless/utils';
+import { setup, template } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
 import type { NumberInputProps } from './types.js';
 
-export const NumberInput = setup(function NumberInput({
-  type = 'number',
-  value = 0,
-  disabled,
-  onChange,
-  ...props
-}: NumberInputProps) {
-  const valueRef = bindable(0, value);
-  const disabledRef = bindable(false, disabled);
-
+export const NumberInput = setup((props: NumberInputProps) => {
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const value = parseFloat(e.currentTarget.value);
-    valueRef.value = Number.isNaN(value) ? 0 : value;
-    onChange?.(e);
+    props.value = Number.isNaN(value) ? 0 : value;
+    props.onChange?.(e);
   };
 
   const Template = template(() => {
-    return <input type={type} value={valueRef.value} onChange={handleChange} disabled={disabledRef.value} {...props} />;
+    const { type: _type, onChange: _onChange, value = '', disabled, className, ...restProps } = props;
+
+    return (
+      <input
+        type={'number'}
+        value={value}
+        disabled={disabled}
+        onChange={handleChange}
+        className={classx('ark-input', className)}
+        {...restProps}
+      />
+    );
   });
 
   return <Template />;

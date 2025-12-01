@@ -1,18 +1,42 @@
 import { createObserver, isBrowser } from '@anchorlib/core';
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, InputHTMLAttributes } from 'react';
+import { onCleanup } from './lifecycle.js';
 
+/**
+ * A reference object that holds an HTML element and its props.
+ * Provides reactive updates when props change.
+ *
+ * @template E - The HTMLElement type
+ * @template P - The HTML attributes type
+ */
 export type PropsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>> = {
+  /** Get the current HTML element */
   get current(): E;
+  /** Set the current HTML element and trigger prop updates */
   set current(value: E);
+  /** Get the current props */
   get props(): P;
+  /** Destroy the observer and clean up resources */
   destroy(): void;
 };
 
+/**
+ * Mapping of React prop names to HTML attribute names.
+ */
 const propsMap = {
   className: 'class',
   htmlFor: 'for',
 };
 
+/**
+ * Creates a reactive reference to an HTML element and its props.
+ * Automatically updates the element's attributes when props change.
+ *
+ * @template E - The HTMLElement type
+ * @template P - The HTML attributes type
+ * @param factory - A function that produces props for the element
+ * @returns A PropsRef object with reactive prop updates
+ */
 export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>>(
   factory: (node?: E) => P
 ): PropsRef<E, P> {
@@ -34,6 +58,10 @@ export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HT
   let props = escapeProps(observer.run(() => factory(current))) as Record<string, unknown>;
   prevProps = props;
 
+  onCleanup(() => {
+    observer.destroy();
+  });
+
   return {
     get props() {
       return props as P;
@@ -51,6 +79,14 @@ export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HT
   };
 }
 
+/**
+ * Processes props to make them compatible with server-side rendering.
+ * Removes event handlers and converts value props to defaultValue for inputs.
+ *
+ * @template P - The props type
+ * @param props - The props to process
+ * @returns Processed props suitable for SSR
+ */
 export function escapeProps<P>(props: P) {
   if (isBrowser()) return props;
 
@@ -58,11 +94,26 @@ export function escapeProps<P>(props: P) {
     if (key.startsWith('on')) {
       delete props[key as keyof P];
     }
+
+    if (key === 'value') {
+      (props as InputHTMLAttributes<HTMLInputElement>).defaultValue =
+        (props as InputHTMLAttributes<HTMLInputElement>).defaultValue || (props[key as keyof P] as string);
+    }
   }
 
   return props;
 }
 
+/**
+ * Applies props to an HTML element by setting attributes.
+ * Handles style objects and attribute mapping.
+ *
+ * @template E - The HTMLElement type
+ * @template P - The props type
+ * @param element - The HTML element to apply props to
+ * @param props - The props to apply
+ * @param prevProps - The previous props for diffing (optional)
+ */
 export function applyProps<E extends HTMLElement, P>(element: E, props: P, prevProps: P = {} as P) {
   if (!(element instanceof HTMLElement)) return;
 
@@ -108,6 +159,13 @@ export function applyProps<E extends HTMLElement, P>(element: E, props: P, prevP
   }
 }
 
+/**
+ * Converts a style object to a CSS string.
+ * Transforms camelCase properties to kebab-case.
+ *
+ * @param styles - The style object to convert
+ * @returns A CSS string representation of the styles
+ */
 export function flattenStyles(styles: Record<string, string | number>) {
   return Object.entries(styles)
     .map(([key, value]) => {

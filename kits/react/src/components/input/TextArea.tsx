@@ -1,19 +1,27 @@
-import { bindable, setup, template } from '@anchorlib/react';
+import { classx } from '@anchorkit/headless/utils';
+import { callback, setup, template } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
 import type { TextAreaProps } from './types.js';
 
-export const TextArea = setup(function TextArea({ value = '', disabled = false, onChange, ...props }: TextAreaProps) {
-  const valueRef = bindable('', value);
-  const disabledRef = bindable(false, disabled);
-
+export const TextArea = setup(function TextArea(props: TextAreaProps) {
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (e) => {
-    valueRef.value = e.currentTarget.value ?? '';
-    onChange?.(e);
+    props.value = e.currentTarget.value ?? '';
+    props.onChange?.(e);
   };
 
   const Template = template(() => {
-    return <textarea value={valueRef.value} disabled={disabledRef.value} onChange={handleChange} {...props} />;
-  });
+    const { value = '', onChange: _onChange, disabled, className, ...restProps } = props;
+
+    return (
+      <textarea
+        value={value}
+        disabled={disabled}
+        onChange={callback(handleChange)}
+        className={classx('ark-textarea', className)}
+        {...restProps}
+      />
+    );
+  }, 'TextAreaElement');
 
   return <Template />;
 }, 'TextArea');

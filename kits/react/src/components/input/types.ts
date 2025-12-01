@@ -1,4 +1,3 @@
-import type { Binding } from '@anchorlib/react';
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 export type InputBaseProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'disabled'> & {
@@ -8,16 +7,16 @@ export type InputBaseProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' 
 export type TextInputType = 'text' | 'password' | 'email' | 'tel' | 'url' | 'search';
 export type TextInputProps = InputBaseProps & {
   type?: TextInputType;
-  value: string;
+  value?: string;
 };
 
 export type NumberInputType = 'number' | 'range';
 export type NumberInputProps = InputBaseProps & {
   type?: NumberInputType;
-  value: number | Binding<number>;
+  value?: number;
 };
 
 export type TextAreaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'disabled'> & {
-  value: string;
+  value?: string;
   disabled?: boolean;
 };
