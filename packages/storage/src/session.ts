@@ -1,5 +1,15 @@
-import type { LinkableSchema, ObjLike, State, StateOptions, StateUnsubscribe } from '@anchorlib/core';
-import { anchor, captureStack, microtask, subscribe } from '@anchorlib/core';
+import {
+  anchor,
+  captureStack,
+  type LinkableSchema,
+  microtask,
+  mutable,
+  type ObjLike,
+  type State,
+  type StateOptions,
+  type StateUnsubscribe,
+  subscribe,
+} from '@anchorlib/core';
 import { isBrowser } from '@beerush/utils';
 import { MemoryStorage } from './memory.js';
 import type { SessionFn } from './types.js';
@@ -170,7 +180,7 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
     return STORAGE_MAP.get(key) as T;
   }
 
-  const state = anchor(init, options);
+  const state = mutable(init, options);
 
   STORAGE_MAP.set(key, state);
   STORAGE_USAGE.set(key, 1);

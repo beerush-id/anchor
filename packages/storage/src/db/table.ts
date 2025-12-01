@@ -1,3 +1,4 @@
+import { anchor, captureStack, microtask, mutable, type StateUnsubscribe, subscribe } from '@anchorlib/core';
 import { isArray, isDefined, isFunction } from '@beerush/utils';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import {
@@ -10,7 +11,6 @@ import {
   remove,
   update,
 } from './helper.js';
-import { anchor, captureStack, microtask, type StateUnsubscribe, subscribe } from '@anchorlib/core';
 import {
   type FilterFn,
   IDBStatus,
@@ -533,7 +533,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       return rowMaps.get(id) as RowState<R>;
     }
 
-    const state = anchor.raw({ data, status }) as RowState<R>;
+    const state = mutable({ data, status }) as RowState<R>;
     const [schedule] = microtask(DB_SYNC_DELAY);
 
     rowMaps.set(id, state);
@@ -639,7 +639,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
      * @returns A state object containing the list of records
      */
     list(filter?: IDBKeyRange | FilterFn<R>, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
-      const state = anchor.raw<RowListState<R>>({
+      const state = mutable<RowListState<R>>({
         data: [],
         count: 0,
         status: 'pending',
@@ -680,7 +680,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       limit?: number,
       direction?: IDBCursorDirection
     ): RowListState<R> {
-      const state = anchor.raw<RowListState<R>>({
+      const state = mutable<RowListState<R>>({
         data: [],
         count: 0,
         status: 'pending',

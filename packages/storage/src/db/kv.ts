@@ -1,5 +1,6 @@
+import { anchor, captureStack, microtask, mutable, type StateUnsubscribe, subscribe } from '@anchorlib/core';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
-import { anchor, captureStack, microtask, type StateUnsubscribe, subscribe } from '@anchorlib/core';
+import { put, remove } from './helper.js';
 import {
   type DBEvent,
   type DBUnsubscribe,
@@ -12,7 +13,6 @@ import {
   type Operation,
   type Storable,
 } from './types.js';
-import { put, remove } from './helper.js';
 
 /**
  * IndexedKV is an optimistic KV Storage that uses IndexedDB as its backend.
@@ -373,7 +373,7 @@ export function createKVStore<T extends Storable>(
       return state;
     }
 
-    const state = anchor.raw({ data: init, status: 'init' } as KVState<T>);
+    const state = mutable({ data: init, status: 'init' } as KVState<T>);
     const [schedule] = microtask(DB_SYNC_DELAY);
 
     const readKv = () => {
