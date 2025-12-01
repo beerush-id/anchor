@@ -86,6 +86,8 @@ export function bindingProps<P>(props: P) {
         (bindingRef.source as Record<string, unknown>)[bindingRef.key] = value;
       } else if (isMutableRef(bindingRef)) {
         bindingRef.value = value;
+      } else {
+        Reflect.set(target, key, value, receiver);
       }
 
       return true;
