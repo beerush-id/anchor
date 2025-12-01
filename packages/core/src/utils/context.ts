@@ -1,5 +1,5 @@
-import { anchor } from '../anchor.js';
 import { captureStack } from '../exception.js';
+import { mutable } from '../ref.js';
 import type { KeyLike } from '../types.js';
 import { isBrowser } from './inspector.js';
 
@@ -76,7 +76,7 @@ let currentContext: Context<KeyLike, unknown> | undefined;
  * @returns A new anchored Map instance representing the context.
  */
 export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
-  return anchor(new Map<K, V>(init), { recursive: true });
+  return mutable(new Map<K, V>(init), { recursive: true });
 }
 
 /**

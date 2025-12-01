@@ -1,9 +1,10 @@
-import type { Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
 import { anchor } from '../anchor.js';
-import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '../utils/index.js';
-import { linkable } from '../internal.js';
 import { captureStack } from '../exception.js';
+import { linkable } from '../internal.js';
+import { mutable } from '../ref.js';
 import { subscribe } from '../subscription.js';
+import type { Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
+import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '../utils/index.js';
 
 export type GetMethod = 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS';
 export type GetMethods = GetMethod | Lowercase<GetMethod> | string;
@@ -92,7 +93,7 @@ export interface FetchFn {
  */
 function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, options: FetchOptions<S>): FetchState<T> {
   if (linkable(init)) {
-    init = anchor(init, options);
+    init = mutable(init, options);
   }
 
   const controller = new AbortController();
@@ -258,7 +259,7 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
   options: StreamOptions<T, S>
 ): FetchState<T> {
   if (linkable(init)) {
-    init = anchor(init, options);
+    init = mutable(init, options);
   }
 
   const controller = new AbortController();
@@ -351,7 +352,7 @@ streamStateFn.promise = <T extends FetchState<Linkable>>(state: T) => {
 };
 
 streamStateFn.readable = <T>(init: T) => {
-  const state = anchor<ReadableState<T>>({
+  const state = mutable<ReadableState<T>>({
     data: init,
     status: FetchStatus.Idle,
   });

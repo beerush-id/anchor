@@ -1,5 +1,6 @@
-import { type AsyncHandler, type AsyncOptions, type AsyncState, AsyncStatus, type Linkable } from './types.js';
 import { anchor } from './anchor.js';
+import { mutable } from './ref.js';
+import { type AsyncHandler, type AsyncOptions, type AsyncState, AsyncStatus, type Linkable } from './types.js';
 
 export function asyncState<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>
@@ -48,7 +49,7 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
     }
 
     if (newInit) {
-      writer.data = anchor(newInit, options);
+      writer.data = mutable(newInit, options);
     }
 
     controller = new AbortController();
@@ -57,7 +58,7 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
     try {
       activePromise = cancelable(fn, controller.signal);
       const data = await activePromise;
-      anchor.assign(writer, { status: AsyncStatus.Success, data: data ? anchor(data, options) : data });
+      anchor.assign(writer, { status: AsyncStatus.Success, data: data ? mutable(data, options) : data });
       return data;
     } catch (error) {
       if (controller.signal.aborted && abortError) {
@@ -78,9 +79,9 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
     controller?.abort(error);
   }) as AsyncState<T, E>['abort'];
 
-  const state = anchor<AsyncState<T, E>>(
+  const state = mutable<AsyncState<T, E>>(
     {
-      data: (init ? anchor(init, options) : undefined) as T,
+      data: (init ? mutable(init, options) : undefined) as T,
       status: AsyncStatus.Idle,
       start,
       abort,
