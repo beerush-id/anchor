@@ -1,5 +1,5 @@
-import type { AnchorSettings } from './types.js';
 import { ArrayMutations, BatchMutations, Linkables, MapMutations, ObjectMutations, SetMutations } from './enum.js';
+import type { AnchorSettings } from './types.js';
 
 export const SET_MUTATIONS = [SetMutations.ADD, SetMutations.DELETE, SetMutations.CLEAR] as const;
 export const MAP_MUTATIONS = [MapMutations.SET, MapMutations.DELETE, MapMutations.CLEAR] as const;
@@ -29,6 +29,7 @@ export const ANCHOR_SETTINGS = {
   silentInit: false,
   safeObservation: true,
   safeObservationThreshold: 100,
+  closureWarning: false,
 } satisfies AnchorSettings;
 
 export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);

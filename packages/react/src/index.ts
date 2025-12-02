@@ -1,6 +1,5 @@
 export {
   anchor,
-  createContext,
   derived,
   exception,
   fetchState,
@@ -22,7 +21,14 @@ export {
   writable,
 } from '@anchorlib/core';
 export * from './binding.js';
+export * from './context.js';
 export * from './hoc.js';
+export {
+  createEffect,
+  createMemo,
+  createRef,
+  createState,
+} from './hooks.js';
 export { effect, onCleanup, onMount } from './lifecycle.js';
 export * from './node.js';
 export * from './props.js';

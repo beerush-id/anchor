@@ -1,4 +1,4 @@
-import { anchor, captureStack, createObserver, createStack, microtask, withinStack } from '@anchorlib/core';
+import { anchor, captureStack, createObserver, createStack, microtask, withStack } from '@anchorlib/core';
 import type { FunctionComponent, ReactNode } from 'react';
 import { memo } from 'react';
 import { createEffect, createState } from './hooks.js';
@@ -87,7 +87,7 @@ export function setup<C>(Component: C, displayName?: string): C {
      */
     lifecycle.cleanup();
 
-    return withinStack(scope, () => {
+    return withStack(scope, () => {
       return withProps(props, () => {
         return lifecycle.render(() => {
           return render(props);

@@ -1,22 +1,22 @@
-import { captureStack, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
+import { captureStack, closure, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
 import { isBinding } from './binding.js';
 import type { BindableProps } from './types.js';
 
-let currentProps: BindableProps | undefined;
+const PROPS_SYMBOL = Symbol('setup-props');
 
 export function withProps<P, R>(props: P, fn: () => R) {
-  const prevProps = currentProps;
-  currentProps = props as BindableProps;
+  const prevProps = closure.get<BindableProps>(PROPS_SYMBOL);
+  closure.set(PROPS_SYMBOL, props);
 
   try {
     return fn();
   } finally {
-    currentProps = prevProps;
+    closure.set(PROPS_SYMBOL, prevProps);
   }
 }
 
 export function getProps<P>(): P {
-  return currentProps as P;
+  return closure.get(PROPS_SYMBOL) as P;
 }
 
 /**
@@ -88,16 +88,4 @@ export function setupProps<P>(props: P) {
       return true;
     },
   });
-}
-
-export function childProps<R, P>(parentProps: R, childProps: P) {
-  return new Proxy(
-    { ...(parentProps as Record<string, unknown>), ...(childProps as Record<string, unknown>) },
-    {
-      get(target, key, receiver) {},
-      set(target, key, value, receiver) {
-        return true;
-      },
-    }
-  );
 }

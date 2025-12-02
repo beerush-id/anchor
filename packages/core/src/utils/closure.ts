@@ -1,16 +1,17 @@
+import { ANCHOR_SETTINGS } from '../constant.js';
 import { captureStack } from '../exception.js';
 import type { KeyLike } from '../types.js';
 import { isBrowser } from './inspector.js';
 
-export type Closure = Map<KeyLike, unknown>;
-export type ClosureMap = Map<string | symbol, Closure>;
+export type Closure = Map<unknown, unknown>;
+export type ClosureMap = Map<KeyLike, Closure>;
 
 /**
  * A storage mechanism for closures with context isolation.
  *
  * @template T - The type of data stored in the closure
  */
-export type ClosureStorage<K extends KeyLike, V> = {
+export type ClosureStorage<K, V> = {
   /**
    * Retrieves a value by key from the closure
    *
@@ -85,7 +86,7 @@ export class ClosureAdapter {
   }
 
   private warn() {
-    if (!isBrowser()) {
+    if (!isBrowser() && ANCHOR_SETTINGS.closureWarning) {
       const error = new Error('AsyncLocalStorage not implemented.');
       captureStack.violation.general(
         'Missing AsyncLocalStorage implementation detected.',
@@ -106,6 +107,50 @@ export class ClosureAdapter {
 
 let currentClosure: ClosureMap = new Map();
 let closureAdapter = new ClosureAdapter();
+
+/**
+ * A global closure utility object for managing context values.
+ * Provides simple get/set operations on the current context.
+ */
+export const closure = {
+  /**
+   * Retrieves a value by key from the current closure context.
+   *
+   * @template V - The type of the value being retrieved
+   * @param key - The key to retrieve the value for
+   * @returns The value associated with the key, or undefined if not found
+   * @throws {Error} If no closure adapter is available
+   */
+  get<V>(key: KeyLike): V | undefined {
+    const storage = closureAdapter?.getStore();
+
+    if (!storage) {
+      throw new Error('Closure adapter is missing.');
+    }
+
+    return storage.get(key as never) as V;
+  },
+
+  /**
+   * Sets a value by key in the current closure context.
+   *
+   * @template V - The type of the value being set
+   * @param key - The key to set the value for
+   * @param value - The value to set
+   * @returns The closure object for chaining
+   * @throws {Error} If no closure adapter is available
+   */
+  set<V>(key: KeyLike, value: V) {
+    const storage = closureAdapter?.getStore();
+
+    if (!storage) {
+      throw new Error('Closure adapter is missing.');
+    }
+
+    storage.set(key as never, value as Closure);
+    return this;
+  },
+};
 
 /**
  * Sets a custom async storage adapter for server-side context management.
@@ -132,7 +177,7 @@ export function setAsyncStorageAdapter<A extends ClosureAdapter>(adapter: A) {
  * @returns A ClosureStorage instance for managing context values
  * @throws {Error} If the closure adapter is missing
  */
-export function createClosure<K extends KeyLike = KeyLike, V = unknown>(id: string | symbol): ClosureStorage<K, V> {
+export function createClosure<K = KeyLike, V = unknown>(id: KeyLike): ClosureStorage<K, V> {
   const ensureStorage = () => {
     const storage = closureAdapter?.getStore();
 

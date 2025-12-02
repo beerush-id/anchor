@@ -1,8 +1,9 @@
+import { closure } from './closure.js';
 import { isFunction, isString } from './inspector.js';
 
 export type DebugFn = (...args: unknown[]) => void;
 
-let currentLogger: DebugFn | undefined = undefined;
+const LOGGER_SYMBOL = Symbol('debug-logger');
 
 /**
  * Sets the current debugger function and returns a restore function.
@@ -19,12 +20,12 @@ export function setDebugger(debugFn: DebugFn | undefined) {
 
   let restored = false;
 
-  const prevLogger = currentLogger;
-  currentLogger = debugFn;
+  const prevLogger = closure.get<DebugFn>(LOGGER_SYMBOL);
+  closure.set(LOGGER_SYMBOL, debugFn);
 
   return () => {
     if (!restored) {
-      currentLogger = prevLogger;
+      closure.set(LOGGER_SYMBOL, prevLogger);
       restored = true;
     }
   };
@@ -36,7 +37,7 @@ export function setDebugger(debugFn: DebugFn | undefined) {
  * @returns The current debugger function, or undefined if debugging is disabled
  */
 export function getDebugger(): DebugFn | undefined {
-  return currentLogger;
+  return closure.get(LOGGER_SYMBOL);
 }
 
 /**
@@ -50,6 +51,7 @@ export function getDebugger(): DebugFn | undefined {
  */
 export function withDebugger<R>(fn: () => R, debugFn: DebugFn): R {
   const restoreDebugger = setDebugger(debugFn);
+  const currentLogger = closure.get<DebugFn>(LOGGER_SYMBOL);
 
   let result: R | undefined = undefined;
 
@@ -114,6 +116,7 @@ export interface Debugger {
 
 export function createDebugger(prefix?: string, logger?: DebugFn): Debugger {
   const log = (scope: keyof Debugger | 'default', ...args: unknown[]) => {
+    const currentLogger = closure.get<DebugFn>(LOGGER_SYMBOL);
     const logFn =
       scope === 'default'
         ? (logger ?? currentLogger)

@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ClosureAdapter, createClosure, isolated, setAsyncStorageAdapter } from '../../src/index.js';
+import {
+  anchor,
+  closure as rootClosure,
+  ClosureAdapter,
+  createClosure,
+  isolated,
+  setAsyncStorageAdapter,
+} from '../../src/index.js';
 
 describe('Anchor Utilities - Closure', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -261,6 +268,8 @@ describe('Anchor Utilities - Closure', () => {
 
   describe('Error Handling', () => {
     it('should warn when no server adapter implemented', () => {
+      anchor.configure({ closureWarning: true });
+
       vi.stubGlobal('window', undefined);
       vi.useFakeTimers();
 
@@ -274,6 +283,8 @@ describe('Anchor Utilities - Closure', () => {
 
       vi.restoreAllMocks();
       vi.useRealTimers();
+
+      anchor.configure({ closureWarning: false });
     });
 
     it('should handle missing adapter error', () => {
@@ -285,6 +296,14 @@ describe('Anchor Utilities - Closure', () => {
 
       expect(() => {
         return closure.get('missing-adapter-key');
+      }).toThrow('Closure adapter is missing.');
+
+      expect(() => {
+        rootClosure.get('missing-adapter-key');
+      }).toThrow('Closure adapter is missing.');
+
+      expect(() => {
+        rootClosure.set('missing-adapter-key', 'missing-adapter-value');
       }).toThrow('Closure adapter is missing.');
     });
 

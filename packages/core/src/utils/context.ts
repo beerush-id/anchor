@@ -10,7 +10,7 @@ import { createClosure } from './closure.js';
  */
 export type Context<K extends KeyLike = KeyLike, V = unknown> = Map<K, V>;
 
-const contextStorage = createClosure(Symbol('context'));
+const ctxClosure = createClosure(Symbol('context'));
 
 /**
  * Executes a function within the specified context using the current context store.
@@ -30,7 +30,7 @@ export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
     return fn();
   }
 
-  return contextStorage.run(ctx, fn);
+  return ctxClosure.run(ctx, fn);
 }
 
 /**
@@ -44,7 +44,7 @@ export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
  * @throws {Error} If called outside a context.
  */
 export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): void {
-  contextStorage.set(key, value as never);
+  ctxClosure.set(key, value as never);
 }
 
 /**
@@ -84,7 +84,7 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback: V):
  * @throws {Error} If called outside a context.
  */
 export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V): V | undefined {
-  const result = contextStorage.get(key);
+  const result = ctxClosure.get(key);
 
   if (typeof result !== 'undefined') {
     return result as V;
@@ -103,7 +103,7 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V)
  *          or an empty Context if no context is active
  */
 export function getAllContext<K extends KeyLike, V>() {
-  return contextStorage.all() as Context<K, V>;
+  return ctxClosure.all() as Context<K, V>;
 }
 
 /**
@@ -133,13 +133,13 @@ export type ContextProvider = <R>(fn: () => R) => R;
  */
 export function contextProvider<K extends KeyLike, V>(key: K, value: V): ContextProvider {
   return <R>(fn: () => R) => {
-    const currentValue = contextStorage.get(key);
-    contextStorage.set(key, value);
+    const currentValue = ctxClosure.get(key);
+    ctxClosure.set(key, value);
 
     try {
       return fn();
     } finally {
-      contextStorage.set(key, currentValue);
+      ctxClosure.set(key, currentValue);
     }
   };
 }

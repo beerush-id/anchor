@@ -1,4 +1,4 @@
-import { createContext, getContext, mutable, setContext, shortId, withContext } from '@anchorlib/core';
+import { getContext, mutable, shortId } from '@anchorlib/core';
 
 export enum TabVisibility {
   HIDDEN = 'hidden',
@@ -34,19 +34,6 @@ export function createTab(options?: TabInit): TabState {
   });
 }
 
-export function setTab(options?: TabInit) {
-  const tab = createTab(options);
-  setContext(TabCtx, tab);
-  return tab;
-}
-
 export function getTab() {
   return getContext<TabState>(TabCtx);
-}
-
-export function withTab<T>(fn: () => T, options?: TabInit): T {
-  const tab = createTab(options);
-  const ctx = createContext([[TabCtx, tab]]);
-
-  return withContext(ctx, fn);
 }

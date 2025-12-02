@@ -12,10 +12,10 @@ import type {
   StatePublicTracker,
   StateTracker,
 } from './types.js';
-import { isFunction, shortId } from './utils/index.js';
+import { closure, isFunction, shortId } from './utils/index.js';
 
-let currentObserver: StateObserver | undefined;
-let currentRestorer: (() => void) | undefined;
+const OBSERVER_SYMBOL = Symbol('state-observer');
+const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
 
 /**
  * Sets the current observer context for state tracking.
@@ -25,23 +25,26 @@ let currentRestorer: (() => void) | undefined;
  * @returns A cleanup function that restores the previous observer context
  */
 export function setObserver(observer: StateObserver) {
+  const currentObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
+  const currentRestorer = closure.get<() => void>(OBSERVER_RESTORER_SYMBOL);
+
   // Make sure it handles duplicate observer such as when evaluated in React's strict mode.
   if (currentObserver === observer) return currentRestorer as () => void;
 
   let restored = false;
-  const prevObserver = currentObserver;
-  const prevRestorer = currentRestorer;
 
-  currentObserver = observer;
-  currentRestorer = () => {
+  const nextRestore = () => {
     if (!restored) {
+      closure.set(OBSERVER_SYMBOL, currentObserver);
+      closure.set(OBSERVER_RESTORER_SYMBOL, currentRestorer);
       restored = true;
-      currentObserver = prevObserver;
-      currentRestorer = prevRestorer;
     }
   };
 
-  return currentRestorer;
+  closure.set(OBSERVER_SYMBOL, observer);
+  closure.set(OBSERVER_RESTORER_SYMBOL, nextRestore);
+
+  return nextRestore;
 }
 
 /**
@@ -50,7 +53,7 @@ export function setObserver(observer: StateObserver) {
  * @returns The current observer or undefined if none is set
  */
 export function getObserver(): StateObserver | undefined {
-  return currentObserver;
+  return closure.get(OBSERVER_SYMBOL);
 }
 
 /**
@@ -252,8 +255,8 @@ export function untrack<R>(fn: () => R): R {
  */
 export const outsideObserver = untrack;
 
-let currentTracker: StatePublicTracker | undefined;
-let currentTrackerRestore: (() => void) | undefined;
+const TRACKER_SYMBOL = Symbol('state-tracker');
+const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
 
 /**
  * Sets the current tracker function for state observation.
@@ -267,21 +270,25 @@ let currentTrackerRestore: (() => void) | undefined;
  * @returns A restore function that reverts to the previous tracker when called
  */
 export function setTracker(tracker: StatePublicTracker) {
+  const currentTracker = closure.get<StatePublicTracker>(TRACKER_SYMBOL);
+  const currentTrackerRestore = closure.get<() => void>(TRACKER_RESTORE_SYMBOL);
+
   if (currentTracker === tracker) return currentTrackerRestore;
 
   let restored = false;
-  const prevTracker = currentTracker;
 
-  currentTracker = tracker;
-
-  currentTrackerRestore = () => {
+  const nextRestore = () => {
     if (!restored) {
-      currentTracker = prevTracker;
+      closure.set(TRACKER_SYMBOL, currentTracker);
+      closure.set(TRACKER_RESTORE_SYMBOL, currentTrackerRestore);
       restored = true;
     }
   };
 
-  return currentTrackerRestore;
+  closure.set(TRACKER_SYMBOL, tracker);
+  closure.set(TRACKER_RESTORE_SYMBOL, nextRestore);
+
+  return nextRestore;
 }
 
 /**
@@ -292,7 +299,7 @@ export function setTracker(tracker: StatePublicTracker) {
  * @returns The current tracker function or undefined if no tracker is set
  */
 export function getTracker(): StatePublicTracker | undefined {
-  return currentTracker;
+  return closure.get<StatePublicTracker>(TRACKER_SYMBOL);
 }
 
 /**
@@ -305,6 +312,7 @@ export function getTracker(): StatePublicTracker | undefined {
  * @param key - The key or property identifier for the state change
  */
 export function track(init: Linkable, observers: StateObserverList, key: KeyLike) {
+  const currentTracker = closure.get<StatePublicTracker>(TRACKER_SYMBOL);
   if (typeof currentTracker !== 'function') return;
   currentTracker(init, observers, key);
 }

@@ -4,7 +4,7 @@ import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
 import { createObserver } from './observation.js';
 import type { Immutable, Linkable, Primitive, StateObserver, StateOptions } from './types.js';
-import { softClone, softEqual } from './utils/index.js';
+import { closure, softClone, softEqual } from './utils/index.js';
 
 type RefScopeValue = {
   init: unknown;
@@ -17,6 +17,8 @@ type RefStack = {
 };
 
 export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;
+
+const STACK_SYMBOL = Symbol('call-stack');
 
 /**
  * A mutable reference wrapper for primitive values that provides reactive capabilities.
@@ -296,8 +298,6 @@ export function isValueRef<T>(value: unknown): value is MutableRef<T> | Immutabl
   return value instanceof MutableRef || value instanceof ImmutableRef || value instanceof DerivedRef;
 }
 
-let currentStack: RefStack;
-
 /**
  * Creates a new reference stack scope for managing reactive references.
  *
@@ -318,14 +318,14 @@ export function createStack(): RefStack {
  * @param fn - The function to execute within the given scope
  * @returns The result of the executed function
  */
-export function withinStack<T>(scope: RefStack, fn: () => T) {
-  const prevStack = currentStack;
-  currentStack = scope;
+export function withStack<T>(scope: RefStack, fn: () => T) {
+  const prevStack = closure.get<RefStack>(STACK_SYMBOL);
+  closure.set(STACK_SYMBOL, scope);
 
   try {
     return fn();
   } finally {
-    currentStack = prevStack;
+    closure.set(STACK_SYMBOL, prevStack);
   }
 }
 /**
@@ -334,7 +334,7 @@ export function withinStack<T>(scope: RefStack, fn: () => T) {
  * @returns The current RefStack if one exists, undefined otherwise
  */
 export function getCurrentStack() {
-  return currentStack;
+  return closure.get<RefStack>(STACK_SYMBOL);
 }
 
 /**
@@ -349,6 +349,7 @@ export function getCurrentStack() {
  * @returns The created or cached reference value
  */
 function createRef<T>(fn: () => T, init: unknown) {
+  const currentStack = closure.get<RefStack>(STACK_SYMBOL);
   if (!currentStack || ANCHOR_SETTINGS.production) return fn();
 
   let current = currentStack.states.get(currentStack.index);

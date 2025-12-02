@@ -13,7 +13,7 @@ import {
   isValueRef,
   mutable,
   MutableRef,
-  withinStack,
+  withStack,
 } from '../../src/ref.js';
 
 describe('Anchor Core - Ref', () => {
@@ -285,7 +285,7 @@ describe('Anchor Core - Ref', () => {
     it('should execute function within stack context', () => {
       const stack = createStack();
 
-      const result = withinStack(stack, () => {
+      const result = withStack(stack, () => {
         expect(getCurrentStack()).toBe(stack);
         return 'test-result';
       });
@@ -300,12 +300,12 @@ describe('Anchor Core - Ref', () => {
       stack1.index = 5;
       stack2.index = 10;
 
-      withinStack(stack1, () => {
+      withStack(stack1, () => {
         expect(stack1.index).toBe(5);
         expect(stack2.index).toBe(10);
       });
 
-      withinStack(stack2, () => {
+      withStack(stack2, () => {
         expect(stack1.index).toBe(5);
         expect(stack2.index).toBe(10);
       });
@@ -317,8 +317,8 @@ describe('Anchor Core - Ref', () => {
 
       outerStack.index = 1;
 
-      withinStack(outerStack, () => {
-        withinStack(innerStack, () => {
+      withStack(outerStack, () => {
+        withStack(innerStack, () => {
           innerStack.index = 2;
         });
         expect(outerStack.index).toBe(1);
@@ -343,14 +343,14 @@ describe('Anchor Core - Ref', () => {
       let ref1, ref2;
 
       // Call withinStack twice with the same stack and init value
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref1 = mutable(initValue);
       });
 
       // Reset index to simulate the same position in stack
       stack.index = 0;
 
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref2 = mutable(initValue);
       });
 
@@ -365,14 +365,14 @@ describe('Anchor Core - Ref', () => {
       let ref1, ref2;
 
       // Call withinStack twice with the same stack and init value
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref1 = immutable(initValue);
       });
 
       // Reset index to simulate the same position in stack
       stack.index = 0;
 
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref2 = immutable(initValue);
       });
 
@@ -386,14 +386,14 @@ describe('Anchor Core - Ref', () => {
       let ref1, ref2;
 
       // Call withinStack twice with the same stack but different init values
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref1 = mutable(42);
       });
 
       // Reset index to simulate the same position in stack
       stack.index = 0;
 
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref2 = mutable(43);
       });
 
@@ -414,14 +414,14 @@ describe('Anchor Core - Ref', () => {
       let ref1, ref2;
 
       // Call withinStack twice with the same stack and init value
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref1 = mutable(initValue);
       });
 
       // Reset index to simulate the same position in stack
       stack.index = 0;
 
-      withinStack(stack, () => {
+      withStack(stack, () => {
         ref2 = mutable(initValue);
       });
 
@@ -434,7 +434,7 @@ describe('Anchor Core - Ref', () => {
     it('should properly increment stack index', () => {
       const stack = createStack();
 
-      withinStack(stack, () => {
+      withStack(stack, () => {
         mutable(1);
         expect(stack.index).toBe(1);
 
