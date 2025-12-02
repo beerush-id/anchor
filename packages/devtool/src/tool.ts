@@ -1,4 +1,3 @@
-import { StateMap } from './map.js';
 import {
   type DevTool,
   type Linkable,
@@ -7,6 +6,7 @@ import {
   microtask,
   type StateMetadata,
 } from '@anchorlib/core';
+import { StateMap } from './map.js';
 import { StateNode } from './node.js';
 
 export class StateDevTool implements DevTool {

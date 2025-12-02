@@ -1,7 +1,7 @@
 {
   "name": "@anchor-app/solid",
   "private": true,
-  "version": "1.0.0-beta.12",
+  "version": "1.0.0-beta.13",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5274",
