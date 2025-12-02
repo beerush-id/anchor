@@ -141,9 +141,12 @@ export class DerivedRef<T> {
     this.observer = createObserver(() => {
       this.state.value = this.observer.run(derive);
     });
-    this.state = anchor({
-      value: this.observer.run(derive),
-    });
+    this.state = anchor(
+      {
+        value: this.observer.run(derive),
+      },
+      { recursive: false }
+    );
   }
 
   /**

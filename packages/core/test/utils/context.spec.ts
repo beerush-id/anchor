@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createContext, createObserver, getContext, setContext, withContext } from '../../src/index.js';
+import {
+  anchor,
+  contextProvider,
+  createContext,
+  getAllContext,
+  getContext,
+  setContext,
+  withContext,
+} from '../../src/index.js';
 
 describe('Anchor Utilities - Context', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -91,64 +99,11 @@ describe('Anchor Utilities - Context', () => {
     });
   });
 
-  describe('Reactivity', () => {
-    it('should react to context changes', () => {
-      const handler = vi.fn();
-      const observer = createObserver(handler);
-      const context = createContext();
-
-      withContext(context, () => {
-        setContext('key1', 'value1');
-
-        expect(handler).not.toHaveBeenCalled();
-
-        observer.run(() => expect(getContext('key1')).toBe('value1'));
-        observer.run(() => expect(getContext('key2')).toBeUndefined());
-
-        setContext('key2', 'value2');
-        expect(handler).toHaveBeenCalledTimes(1);
-
-        setContext('key1', 'value3');
-        expect(handler).toHaveBeenCalledTimes(2);
-
-        expect(getContext('key1')).toBe('value3');
-        expect(getContext('key2')).toBe('value2');
-      });
-    });
-
-    it('should react to context changes with object value', () => {
-      const handler = vi.fn();
-      const observer = createObserver(handler);
-      const context = createContext();
-
-      withContext(context, () => {
-        setContext('object', { count: 0 });
-        expect(handler).not.toHaveBeenCalled();
-
-        observer.run(() => expect(getContext('object')).toEqual({ count: 0 }));
-
-        const state = getContext('object') as { count: number };
-        expect(state).toEqual({ count: 0 });
-
-        state.count++;
-        expect(handler).toHaveBeenCalledTimes(1);
-        expect(getContext('object')).toEqual({ count: 1 });
-
-        state.count++;
-        expect(handler).toHaveBeenCalledTimes(2);
-        expect(getContext('object')).toEqual({ count: 2 });
-
-        // Replace the context value.
-        setContext('object', { count: 0 });
-
-        expect(handler).toHaveBeenCalledTimes(3);
-        expect(getContext('object')).toEqual({ count: 0 }); // New value is reflected.
-        expect(state).toEqual({ count: 2 }); // Stale state is not updated.
-      });
-    });
-  });
-
   describe('Edge cases', () => {
+    it('should get all context value', () => {
+      expect(getAllContext()).toBeInstanceOf(Map);
+    });
+
     it('should handle falsy values correctly', () => {
       const context = createContext();
       withContext(context, () => {
@@ -195,6 +150,7 @@ describe('Anchor Utilities - Context', () => {
 
     it('should handle complex nested objects', () => {
       const context = createContext();
+
       withContext(context, () => {
         const complexObject = {
           nested: {
@@ -210,6 +166,16 @@ describe('Anchor Utilities - Context', () => {
 
         expect(retrieved).toEqual(complexObject);
         expect(retrieved?.nested.array).toEqual(complexObject.nested.array);
+      });
+    });
+
+    it('should run context provider', () => {
+      setContext('provider-key', 'value1');
+      const provide = contextProvider('provider-key', 'value2');
+
+      expect(getContext('provider-key')).toBe('value1');
+      provide(() => {
+        expect(getContext('provider-key')).toBe('value2');
       });
     });
   });

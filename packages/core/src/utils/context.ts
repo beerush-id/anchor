@@ -1,5 +1,4 @@
 import { captureStack } from '../exception.js';
-import { mutable } from '../ref.js';
 import type { KeyLike } from '../types.js';
 import { createClosure } from './closure.js';
 
@@ -95,6 +94,19 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V)
 }
 
 /**
+ * Retrieves all key-value pairs from the currently active context.
+ * If no context is active, an empty context is returned.
+ *
+ * @template K - The type of keys in the context, must extend KeyLike
+ * @template V - The type of values in the context
+ * @returns A new Context instance containing all key-value pairs from the current context,
+ *          or an empty Context if no context is active
+ */
+export function getAllContext<K extends KeyLike, V>() {
+  return contextStorage.all() as Context<K, V>;
+}
+
+/**
  * Creates a new context with optional initial key-value pairs.
  * The context is anchored with non-recursive behavior.
  *
@@ -103,6 +115,31 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V)
  * @param init - Optional array of key-value pairs to initialize the context with.
  * @returns A new anchored Map instance representing the context.
  */
-export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
-  return mutable(new Map<K, V>(init), { recursive: true });
+export function createContext<K extends KeyLike, V>(init?: [K, V][]): Context<K, V> {
+  return new Map(init);
+}
+
+export type ContextProvider = <R>(fn: () => R) => R;
+
+/**
+ * Creates a context provider function that temporarily sets a key-value pair in the context storage
+ * and restores the previous value after the provided function executes.
+ *
+ * @template K - The type of the key (must extend KeyLike)
+ * @template V - The type of the value
+ * @param key - The key to set in the context
+ * @param value - The value to associate with the key
+ * @returns A function that takes another function to execute within the modified context
+ */
+export function contextProvider<K extends KeyLike, V>(key: K, value: V): ContextProvider {
+  return <R>(fn: () => R) => {
+    const currentValue = contextStorage.get(key);
+    contextStorage.set(key, value);
+
+    try {
+      return fn();
+    } finally {
+      contextStorage.set(key, currentValue);
+    }
+  };
 }

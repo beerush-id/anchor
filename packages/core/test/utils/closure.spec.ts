@@ -252,6 +252,11 @@ describe('Anchor Utilities - Closure', () => {
 
       expect(closure.get('symbol-key')).toBe('symbol-value');
     });
+
+    it('should get all context values', () => {
+      const closure = createClosure<string, string>('get-all-closure');
+      expect(closure.all()).toBeInstanceOf(Map);
+    });
   });
 
   describe('Error Handling', () => {
@@ -299,6 +304,16 @@ describe('Anchor Utilities - Closure', () => {
 
       closure.run(undefined as never, () => {
         closure.set('outside-context-key', 'outside-context-value');
+      });
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle calling closure.all outside of a context', () => {
+      const closure = createClosure<string, string>('outside-context');
+
+      closure.run(undefined as never, () => {
+        expect(closure.all()).toBeUndefined();
       });
 
       expect(errorSpy).toHaveBeenCalled();

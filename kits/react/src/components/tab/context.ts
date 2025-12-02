@@ -1,5 +1,5 @@
-import { createContext, useContext } from 'react';
 import type { TabState } from '@anchorkit/headless/states';
+import { createContext, useContext } from 'react';
 
 export const TabContext = createContext<TabState | null>(null);
 

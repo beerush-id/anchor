@@ -1,5 +1,4 @@
 import { captureStack } from '../exception.js';
-import { mutable } from '../ref.js';
 import type { KeyLike } from '../types.js';
 import { isBrowser } from './inspector.js';
 
@@ -28,6 +27,13 @@ export type ClosureStorage<K extends KeyLike, V> = {
    * @returns The closure storage instance for chaining
    */
   set(key: K, value: V): ClosureStorage<K, V>;
+
+  /**
+   * Retrieves all key-value pairs from the closure
+   *
+   * @returns A Map containing all key-value pairs in the closure, or undefined if called outside of context
+   */
+  all(): Closure;
 
   /**
    * Executes a function within the provided context
@@ -135,7 +141,7 @@ export function createClosure<K extends KeyLike = KeyLike, V = unknown>(id: stri
     }
 
     if (!storage.has(id)) {
-      storage.set(id, mutable(new Map(), { recursive: true }));
+      storage.set(id, new Map());
     }
 
     return storage;
@@ -173,6 +179,22 @@ export function createClosure<K extends KeyLike = KeyLike, V = unknown>(id: stri
 
       context.set(key, value);
       return this;
+    },
+    all() {
+      const storage = ensureStorage();
+      const context = storage.get(id);
+
+      if (!context) {
+        const error = new Error('Outside of context.');
+        captureStack.error.external(
+          'All context is called outside of context. Make sure you are calling it within a context.',
+          error
+        );
+
+        return;
+      }
+
+      return context as Closure;
     },
     run<R>(ctx: Closure, fn: () => R) {
       const storage = ensureStorage();
