@@ -1,9 +1,9 @@
-import type { DevTool } from './types.js';
-import { isFunction, isObjectLike } from './utils/index.js';
-import { captureStack } from './exception.js';
 import { DEV_TOOL_KEYS } from './constant.js';
+import { captureStack } from './exception.js';
+import type { DevTool } from './types.js';
+import { closure, isFunction, isObjectLike } from './utils/index.js';
 
-let activeDevTool: DevTool | undefined = undefined;
+const DEV_TOOL_SYMBOL = Symbol('dev-tool');
 
 /**
  * Sets the active development tool. This tool will receive callbacks for various state-related events.
@@ -30,11 +30,11 @@ export function setDevTool(devTool: DevTool) {
     return;
   }
 
-  const prevDevTool = activeDevTool;
-  activeDevTool = devTool;
+  const prevDevTool = closure.get<DevTool>(DEV_TOOL_SYMBOL);
+  closure.set(DEV_TOOL_SYMBOL, devTool);
 
   return () => {
-    activeDevTool = prevDevTool;
+    closure.set(DEV_TOOL_SYMBOL, prevDevTool);
   };
 }
 
@@ -43,5 +43,5 @@ export function setDevTool(devTool: DevTool) {
  * @returns {DevTool | undefined} The active development tool, or `undefined` if none is set.
  */
 export function getDevTool(): DevTool | undefined {
-  return activeDevTool;
+  return closure.get(DEV_TOOL_SYMBOL);
 }
