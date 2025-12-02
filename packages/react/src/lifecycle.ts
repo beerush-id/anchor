@@ -1,9 +1,9 @@
-import { captureStack, createObserver, untrack } from '@anchorlib/core';
+import { captureStack, closure, createObserver, untrack } from '@anchorlib/core';
 import type { CleanupHandler, Effect, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
 
-let currentMountHandlers: Set<MountHandler> | null = null;
-let currentMountCleanups: Set<CleanupHandler> | null = null;
-let currentEffectCleanups: Set<EffectCleanup> | null = null;
+const MOUNT_HANDLER_SYMBOL = Symbol('mount-handler');
+const MOUNT_CLEANUP_SYMBOL = Symbol('mount-cleanup');
+const EFFECT_CLEANUP_SYMBOL = Symbol('effect-cleanup');
 
 /**
  * Creates a new lifecycle manager for handling component mount, cleanup, and rendering operations.
@@ -25,7 +25,6 @@ let currentEffectCleanups: Set<EffectCleanup> | null = null;
 export function createLifecycle(): Lifecycle {
   const mountHandlers = new Set<MountHandler>();
   const mountCleanups = new Set<CleanupHandler>();
-  const effectHandlers = new Set<EffectHandler>();
   const effectCleanups = new Set<EffectCleanup>();
 
   return {
@@ -48,23 +47,23 @@ export function createLifecycle(): Lifecycle {
 
       mountHandlers.clear();
       mountCleanups.clear();
-      effectHandlers.clear();
+      effectCleanups.clear();
     },
     render<R>(fn: () => R) {
-      const prevMountHandlers = currentMountHandlers,
-        prevCleanupHandlers = currentMountCleanups,
-        prevEffectCleanups = currentEffectCleanups;
+      const prevMountHandlers = closure.get<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL),
+        prevCleanupHandlers = closure.get<Set<CleanupHandler>>(MOUNT_CLEANUP_SYMBOL),
+        prevEffectCleanups = closure.get<Set<EffectCleanup>>(EFFECT_CLEANUP_SYMBOL);
 
-      currentMountHandlers = mountHandlers;
-      currentMountCleanups = mountCleanups;
-      currentEffectCleanups = effectCleanups;
+      closure.set(MOUNT_HANDLER_SYMBOL, mountHandlers);
+      closure.set(MOUNT_CLEANUP_SYMBOL, mountCleanups);
+      closure.set(EFFECT_CLEANUP_SYMBOL, effectCleanups);
 
       try {
         return untrack(fn) as R;
       } finally {
-        currentMountHandlers = prevMountHandlers;
-        currentMountCleanups = prevCleanupHandlers;
-        currentEffectCleanups = prevEffectCleanups;
+        closure.set(MOUNT_HANDLER_SYMBOL, prevMountHandlers);
+        closure.set(MOUNT_CLEANUP_SYMBOL, prevCleanupHandlers);
+        closure.set(EFFECT_CLEANUP_SYMBOL, prevEffectCleanups);
       }
     },
   };
@@ -85,6 +84,8 @@ export function createLifecycle(): Lifecycle {
  * @throws {Error} If called outside a Setup component context
  */
 export function effectFn(handler: EffectHandler) {
+  const currentEffectCleanups = closure.get<Set<CleanupHandler>>(EFFECT_CLEANUP_SYMBOL);
+
   if (!currentEffectCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
@@ -152,6 +153,8 @@ export const effect = effectFn as Effect;
  * @throws {Error} If called outside a Setup component context
  */
 export function onMount(fn: MountHandler) {
+  const currentMountHandlers = closure.get<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL);
+
   if (!currentMountHandlers) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
@@ -177,6 +180,8 @@ export function onMount(fn: MountHandler) {
  * @throws {Error} If called outside a Setup component context
  */
 export function onCleanup(fn: CleanupHandler) {
+  const currentMountCleanups = closure.get<Set<CleanupHandler>>(MOUNT_CLEANUP_SYMBOL);
+
   if (!currentMountCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(

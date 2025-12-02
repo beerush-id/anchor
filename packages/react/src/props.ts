@@ -4,6 +4,19 @@ import type { BindableProps } from './types.js';
 
 const PROPS_SYMBOL = Symbol('setup-props');
 
+/**
+ * Executes a function with provided props temporarily set in the current context.
+ *
+ * This function sets the given props in the current closure context and executes
+ * the provided function. After execution, it restores the previous props value.
+ * This is useful for providing contextual data to child components in a scoped manner.
+ *
+ * @template P - The type of props being set
+ * @template R - The return type of the executed function
+ * @param props - The props to temporarily set in the context
+ * @param fn - The function to execute with the provided props
+ * @returns The result of executing the provided function
+ */
 export function withProps<P, R>(props: P, fn: () => R) {
   const prevProps = closure.get<BindableProps>(PROPS_SYMBOL);
   closure.set(PROPS_SYMBOL, props);
@@ -15,6 +28,15 @@ export function withProps<P, R>(props: P, fn: () => R) {
   }
 }
 
+/**
+ * Retrieves the props from the current context.
+ *
+ * This function gets the props that were previously set using withProps().
+ * It accesses the props from a shared closure context using a symbol key.
+ *
+ * @template P - The expected type of the props
+ * @returns The props from the current context
+ */
 export function getProps<P>(): P {
   return closure.get(PROPS_SYMBOL) as P;
 }
