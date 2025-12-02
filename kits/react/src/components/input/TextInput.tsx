@@ -10,11 +10,11 @@ export const TextInput = setup((props: TextInputProps) => {
   };
 
   const Template = template(() => {
-    const { type: _type, value = '', onChange: _onChange, disabled, className, ...restProps } = props;
+    const { type = 'text', value = '', onChange: _onChange, disabled, className, ...restProps } = props;
 
     return (
       <input
-        type={'text'}
+        type={type}
         value={value}
         onChange={callback(handleChange)}
         disabled={disabled}

@@ -15,7 +15,6 @@ export {
   mutable,
   ordered,
   setContext,
-  setContextStore,
   shortId,
   streamState,
   subscribe,

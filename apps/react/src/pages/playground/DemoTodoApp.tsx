@@ -127,23 +127,26 @@ const TodoItem = setup(({ todo, todos }: { todo: Todo; todos: Todo[] }) => {
     todos.splice(todos.indexOf(todo), 1);
   };
 
-  const Template = template(() => (
-    <>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => handleToggle(todo)}
-        className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500"
-      />
-      <span
-        className={`ml-3 flex-1 text-gray-700 dark:text-slate-200 ${
-          todo.completed ? 'line-through text-gray-400 opacity-50' : ''
-        }`}
-      >
-        {todo.text}
-      </span>
-    </>
-  ));
+  const Template = template(
+    () => (
+      <>
+        <input
+          type="checkbox"
+          checked={todo.completed}
+          onChange={() => handleToggle(todo)}
+          className="h-5 w-5 rounded text-blue-600 focus:ring-blue-500"
+        />
+        <span
+          className={`ml-3 flex-1 text-gray-700 dark:text-slate-200 ${
+            todo.completed ? 'line-through text-gray-400 opacity-50' : ''
+          }`}
+        >
+          {todo.text}
+        </span>
+      </>
+    ),
+    'TodoItem'
+  );
 
   return (
     <li

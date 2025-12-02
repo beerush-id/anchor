@@ -3,8 +3,8 @@ import type { FunctionComponent, ReactNode } from 'react';
 import { memo } from 'react';
 import { createEffect, createState } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
-import { bindingProps } from './props.js';
-import type { ViewRenderer } from './types.js';
+import { getProps, setupProps, withProps } from './props.js';
+import type { ViewProps, ViewRenderer } from './types.js';
 
 const RENDERER_INIT_VERSION = 1;
 
@@ -50,61 +50,65 @@ export function setup<C>(Component: C, displayName?: string): C {
   const render = Component as (props: unknown) => ReactNode;
   const propsMap = new WeakMap();
 
-  const Setup = memo(
-    (currentProps: Record<string, unknown>) => {
-      const [[scheduleMount, cancelMount]] = createState(() => microtask(5));
-      const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(5));
-      const [scope] = createState(() => createStack());
-      const [lifecycle] = createState(() => createLifecycle());
-      const [reactiveProps] = createState(() => anchor({ ...currentProps }, { recursive: false }));
+  const Factory = (currentProps: Record<string, unknown>) => {
+    const [[scheduleMount, cancelMount]] = createState(() => microtask(5));
+    const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(5));
+    const [scope] = createState(() => createStack());
+    const [lifecycle] = createState(() => createLifecycle());
+    const [baseProps] = createState(() => anchor({ ...currentProps }, { recursive: false }));
 
-      propsMap.set(currentProps, reactiveProps);
+    propsMap.set(currentProps, baseProps);
+    const props = setupProps(baseProps);
 
-      createEffect(() => {
-        cancelMount();
-        cancelCleanup();
+    createEffect(() => {
+      cancelMount();
+      cancelCleanup();
 
-        scheduleMount(() => {
-          lifecycle.mount();
+      scheduleMount(() => {
+        lifecycle.mount();
+      });
+
+      return () => {
+        propsMap.delete(currentProps);
+
+        scheduleCleanup(() => {
+          // @important Actual cleanup should be scheduled to prevent cleaning up the current effects.
+          lifecycle.cleanup();
+          scope.states.clear();
         });
+      };
+    }, []);
 
-        return () => {
-          propsMap.delete(currentProps);
+    scope.index = 0;
 
-          scheduleCleanup(() => {
-            // @important Actual cleanup should be scheduled to prevent cleaning up the current effects.
-            lifecycle.cleanup();
-            scope.states.clear();
-          });
-        };
-      }, []);
+    /**
+     * Cleanup the previous effect handlers to make sure each render is isolated.
+     * This also necessary to cover HMR (Fast Refresh) where re-render is expected.
+     */
+    lifecycle.cleanup();
 
-      scope.index = 0;
-
-      /**
-       * Cleanup the previous effect handlers to make sure each render is isolated.
-       * This also necessary to cover HMR (Fast Refresh) where re-render is expected.
-       */
-      lifecycle.cleanup();
-
-      return withinStack(scope, () => {
+    return withinStack(scope, () => {
+      return withProps(props, () => {
         return lifecycle.render(() => {
-          return render(bindingProps(reactiveProps));
+          return render(props);
         });
       });
-    },
-    (prevProps, nextProps) => {
-      const prevPropsRef = propsMap.get(prevProps);
+    });
+  };
 
-      if (prevPropsRef) {
-        Object.assign(prevPropsRef, nextProps);
-      }
+  Factory.displayName = `Setup(${componentName})`;
 
-      return true;
+  const Setup = memo(Factory, (prevProps, nextProps) => {
+    const prevPropsRef = propsMap.get(prevProps);
+
+    if (prevPropsRef) {
+      Object.assign(prevPropsRef, nextProps);
     }
-  );
 
-  Setup.displayName = `Setup(${componentName})`;
+    return true;
+  });
+
+  Setup.displayName = componentName;
   return Setup as FunctionComponent as C;
 }
 
@@ -127,7 +131,10 @@ export function setup<C>(Component: C, displayName?: string): C {
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {FunctionComponent<P>} A reactive renderer that auto-updates on state changes
  */
-export function template<P>(render: ViewRenderer<P>, displayName?: string): FunctionComponent<P> {
+export function template<P, VP extends ViewProps = ViewProps>(
+  render: ViewRenderer<P, VP>,
+  displayName?: string
+): FunctionComponent<VP> {
   if (typeof render !== 'function' && (typeof render !== 'object' || render === null)) {
     const error = new Error('Renderer must be a function.');
     captureStack.violation.general(
@@ -143,7 +150,10 @@ export function template<P>(render: ViewRenderer<P>, displayName?: string): Func
     return Template;
   }
 
-  const Template = memo((props: P) => {
+  const viewName = displayName || (render as FunctionComponent).name || 'Anonymous';
+  const setupProps = getProps() ?? {};
+
+  const Template = memo((props: VP) => {
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
     const [observer] = createState(() => {
       return createObserver(() => {
@@ -156,11 +166,11 @@ export function template<P>(render: ViewRenderer<P>, displayName?: string): Func
       return () => observer.destroy();
     }, []);
 
-    return observer.run(() => render(props));
+    return observer.run(() => render(setupProps as P, props as VP));
   });
 
-  Template.displayName = `View(${displayName || render.name || 'Anonymous'})`;
-  return Template as FunctionComponent<P>;
+  Template.displayName = `View(${viewName})`;
+  return Template as FunctionComponent<VP>;
 }
 
 export const view = template;

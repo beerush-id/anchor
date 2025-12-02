@@ -1,25 +1,17 @@
 import { captureStack } from '../exception.js';
 import { mutable } from '../ref.js';
 import type { KeyLike } from '../types.js';
-import { isBrowser } from './inspector.js';
-
-export type Context<K extends KeyLike, V> = Map<K, V>;
-
-export type ContextStore = {
-  run<R>(ctx: Context<KeyLike, unknown>, fn: () => R): void;
-  getStore(): Context<KeyLike, unknown>;
-};
-
-let currentStore: ContextStore | undefined;
+import { createClosure } from './closure.js';
 
 /**
- * Sets the current context store to be used for context management.
+ * A context object which is essentially a reactive Map that can store key-value pairs.
  *
- * @param store - The context store implementation to use
+ * @template K - The type of keys in the context, must extend KeyLike
+ * @template V - The type of values in the context
  */
-export function setContextStore(store: ContextStore) {
-  currentStore = store;
-}
+export type Context<K extends KeyLike = KeyLike, V = unknown> = Map<K, V>;
+
+const contextStorage = createClosure(Symbol('context'));
 
 /**
  * Executes a function within the specified context using the current context store.
@@ -39,44 +31,7 @@ export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
     return fn();
   }
 
-  if (!isBrowser() && !currentStore) {
-    const error = new Error('Outside of context.');
-    captureStack.error.external(
-      'Run in context is called outside of context. Make sure you are calling it within a context.',
-      error,
-      withContext
-    );
-
-    return fn();
-  }
-
-  if (!currentStore) {
-    const prevContext = currentContext;
-    currentContext = ctx;
-
-    try {
-      return fn();
-    } finally {
-      currentContext = prevContext;
-    }
-  }
-
-  return currentStore?.run(ctx, fn) ?? fn();
-}
-
-let currentContext: Context<KeyLike, unknown> | undefined;
-
-/**
- * Creates a new context with optional initial key-value pairs.
- * The context is anchored with non-recursive behavior.
- *
- * @template K - The type of keys in the context.
- * @template V - The type of values in the context.
- * @param init - Optional array of key-value pairs to initialize the context with.
- * @returns A new anchored Map instance representing the context.
- */
-export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
-  return mutable(new Map<K, V>(init), { recursive: true });
+  return contextStorage.run(ctx, fn);
 }
 
 /**
@@ -90,19 +45,7 @@ export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
  * @throws {Error} If called outside a context.
  */
 export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): void {
-  ensureContext();
-
-  const context = currentStore?.getStore() ?? currentContext;
-  if (!context) {
-    const error = new Error('Outside of context.');
-    captureStack.error.external(
-      'Set context is called outside of context. Make sure you are calling it within a context.',
-      error
-    );
-    return;
-  }
-
-  context.set(key, value);
+  contextStorage.set(key, value as never);
 }
 
 /**
@@ -142,48 +85,24 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback: V):
  * @throws {Error} If called outside a context.
  */
 export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V): V | undefined {
-  ensureContext();
+  const result = contextStorage.get(key);
 
-  const context = currentStore?.getStore() ?? currentContext;
-  if (!context) {
-    const error = new Error('Outside of context.');
-    captureStack.error.external(
-      'Get context is called outside of context. Make sure you are calling it within a context.',
-      error
-    );
-    return;
-  }
-
-  const result = context.get(key);
-
-  if (result !== undefined) {
+  if (typeof result !== 'undefined') {
     return result as V;
-  } else {
-    return fallback;
   }
+
+  return fallback;
 }
 
 /**
- * Ensures a context is available in browser environments.
+ * Creates a new context with optional initial key-value pairs.
+ * The context is anchored with non-recursive behavior.
  *
- * This function checks if the code is running in a browser environment (where `window` is defined)
- * and if no context is currently active. If both conditions are met, it creates a new context
- * and sets it as the current context with an empty restore function.
- *
- * This is primarily used to ensure that client-side code has a default context available
- * when no explicit context has been set up.
- *
- * @remarks
- * This function is a no-op in server-side environments (where `window` is undefined)
- * or when a context is already active.
+ * @template K - The type of keys in the context.
+ * @template V - The type of values in the context.
+ * @param init - Optional array of key-value pairs to initialize the context with.
+ * @returns A new anchored Map instance representing the context.
  */
-export function ensureContext(context?: Context<KeyLike, unknown>, force?: boolean) {
-  if (force) {
-    currentContext = context;
-    return;
-  }
-
-  if (typeof window !== 'undefined' && typeof currentContext === 'undefined') {
-    currentContext = context ?? createContext();
-  }
+export function createContext<K extends KeyLike, V>(init?: [K, V][]) {
+  return mutable(new Map<K, V>(init), { recursive: true });
 }

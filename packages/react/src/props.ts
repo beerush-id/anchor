@@ -2,26 +2,21 @@ import { captureStack, isBrowser, isMutableRef, untrack } from '@anchorlib/core'
 import { isBinding } from './binding.js';
 import type { BindableProps } from './types.js';
 
-/**
- * Removes event handler props in server-side environments.
- *
- * This function strips out props that start with "on" when not running in a browser
- * environment to prevent issues with server-side rendering.
- *
- * @template P - The props type
- * @param props - The props object to process
- * @returns The processed props object
- */
-export function safeProps<P>(props: P): P {
-  if (!isBrowser()) {
-    for (const key of Object.keys(props as Record<string, unknown>)) {
-      if (key.startsWith('on')) {
-        delete props[key as keyof typeof props];
-      }
-    }
-  }
+let currentProps: BindableProps | undefined;
 
-  return props as P;
+export function withProps<P, R>(props: P, fn: () => R) {
+  const prevProps = currentProps;
+  currentProps = props as BindableProps;
+
+  try {
+    return fn();
+  } finally {
+    currentProps = prevProps;
+  }
+}
+
+export function getProps<P>(): P {
+  return currentProps as P;
 }
 
 /**
@@ -51,7 +46,7 @@ export function callback<T>(fn: T): T {
  * @param props - The props object to wrap
  * @returns A proxy wrapping the props object
  */
-export function bindingProps<P>(props: P) {
+export function setupProps<P>(props: P) {
   return new Proxy(props as BindableProps, {
     get(target, key, receiver) {
       const bindingRef = Reflect.get(target, key, receiver);
@@ -93,4 +88,16 @@ export function bindingProps<P>(props: P) {
       return true;
     },
   });
+}
+
+export function childProps<R, P>(parentProps: R, childProps: P) {
+  return new Proxy(
+    { ...(parentProps as Record<string, unknown>), ...(childProps as Record<string, unknown>) },
+    {
+      get(target, key, receiver) {},
+      set(target, key, value, receiver) {
+        return true;
+      },
+    }
+  );
 }
