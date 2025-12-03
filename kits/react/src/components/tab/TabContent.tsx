@@ -1,7 +1,7 @@
 import { getTab } from '@anchorkit/headless/states';
 import { TabVisibility } from '@anchorkit/headless/states/tab.js';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { propsRef, setup, template } from '@anchorlib/react';
+import { propsRef, render, setup } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type TabContentProps = HTMLAttributes<HTMLDivElement> & {
@@ -19,7 +19,7 @@ export const TabContent = setup((props: TabContentProps) => {
     'aria-labelledby': `${props.name}-tab-${tab?.id}`,
   }));
 
-  const Template = template(() => {
+  return render(() => {
     if (tab?.visibility === TabVisibility.BLANK && tab?.active !== props.name) return;
 
     return (
@@ -28,6 +28,4 @@ export const TabContent = setup((props: TabContentProps) => {
       </div>
     );
   }, 'TabContent');
-
-  return <Template />;
 }, 'TabContent');

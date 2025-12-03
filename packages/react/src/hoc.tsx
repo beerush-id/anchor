@@ -172,4 +172,28 @@ export function template<P, VP extends ViewProps = ViewProps>(
   return Template as FunctionComponent<VP>;
 }
 
+/**
+ * @deprecated Use `template` instead. This alias will be removed in a future version.
+ */
 export const view = template;
+
+/**
+ * Higher-Order Component that creates and immediately renders a reactive component.
+ *
+ * The `render` function combines the functionality of `template` with immediate execution,
+ * creating a reactive renderer and returning its rendered output. This is useful when you
+ * want to create and render a reactive component in a single step rather than defining
+ * it separately and then using it in JSX.
+ *
+ * This function follows the same reactive principles as `template`, responding to state
+ * changes and maintaining the modern component lifecycle approach.
+ *
+ * @template P - The props type for the component
+ * @param {ViewRenderer<P, ViewProps>} Component - A function that receives props and returns React nodes
+ * @param {string} [displayName] - Optional display name for debugging purposes
+ * @returns {ReactNode} The rendered output of the reactive component
+ */
+export function render<P>(Component: ViewRenderer<P, ViewProps>, displayName?: string): ReactNode {
+  const Template = template(Component, displayName);
+  return <Template />;
+}

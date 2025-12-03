@@ -1,6 +1,6 @@
 import { keyNavRef, NavDirection } from '@anchorkit/headless/actions';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { onCleanup, setup, template } from '@anchorlib/react';
+import { onCleanup, render, setup } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type TabListProps = HTMLAttributes<HTMLDivElement> & {
@@ -19,7 +19,7 @@ export const TabList = setup((props: TabListProps) => {
     ref.destroy();
   });
 
-  const Template = template(() => {
+  return render(() => {
     const { buttonSelector: _bs, children, className, ...restProps } = props;
 
     return (
@@ -28,6 +28,4 @@ export const TabList = setup((props: TabListProps) => {
       </div>
     );
   }, 'TabList');
-
-  return <Template />;
 }, 'TabList');

@@ -1,7 +1,7 @@
 import { mutable } from '@anchorlib/core';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setup } from '../src/hoc';
+import { setup } from '../src/hoc.js';
 import { createLifecycle, effect, onCleanup, onMount } from '../src/lifecycle';
 import '../src/client/index';
 

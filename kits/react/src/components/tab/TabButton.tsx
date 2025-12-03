@@ -1,6 +1,6 @@
 import { getTab } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { setup, template } from '@anchorlib/react';
+import { render, setup } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type TabButtonProps = HTMLAttributes<HTMLButtonElement> & {
@@ -14,7 +14,7 @@ export const TabButton = setup((props: TabButtonProps) => {
 
   if (tab && !tab.active) tab.select(props.name);
 
-  const Template = template(() => {
+  return render(() => {
     const { name, children, className, disabled, ...restProps } = props;
 
     const classList = classx('ark-tab-button', className, {
@@ -36,6 +36,4 @@ export const TabButton = setup((props: TabButtonProps) => {
       </button>
     );
   }, 'TabButton');
-
-  return <Template />;
 }, 'TabButton');
