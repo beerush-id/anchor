@@ -18,6 +18,7 @@ export default defineConfig({
       include: [
         'packages/core/src/**/*.ts',
         'packages/storage/src/**/*.ts',
+        'packages/react/src/**/*.{ts,tsx}',
         'packages/react-classic/src/**/*.{ts,tsx}',
         'packages/solid/src/**/*.{ts,tsx}',
         'packages/svelte/src/**/*.{ts}',
