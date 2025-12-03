@@ -106,7 +106,7 @@ export function effect(handler: EffectHandler) {
   });
 
   const runEffect: EffectHandler = (event): undefined => {
-    const result = observer.run(() => handler(event));
+    const result = observer.run<EffectCleanup>(() => handler(event) as EffectCleanup);
 
     if (typeof result === 'function') {
       cleanup = result;

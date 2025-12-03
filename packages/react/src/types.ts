@@ -7,7 +7,7 @@ export type ViewRenderer<P, R> = (props: P, viewProps?: R) => ReactNode;
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
-export type EffectHandler = (event: StateChange) => void | EffectCleanup;
+export type EffectHandler = (event: StateChange) => EffectCleanup | unknown;
 export type EffectCleanup = () => void;
 
 export type Lifecycle = {

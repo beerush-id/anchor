@@ -15,26 +15,19 @@ export type TabProps = HTMLAttributes<HTMLDivElement> & {
 
 const Provider = contextProvider(TabCtx, 'Tab');
 
-export const Tab = setup(function Tab(props: TabProps) {
+export const Tab = setup((props: TabProps) => {
   const tab = createTab();
   const tabProps = propsRef<HTMLDivElement>(() => ({
     className: classx('ark-tab', props.className),
   }));
 
-  effect.any([
-    () => {
-      tab.active = props.value ?? '';
-    },
-    () => {
-      tab.disabled = props.disabled ?? false;
-    },
-    () => {
-      tab.visibility = props.visibility ?? TabVisibility.HIDDEN;
-    },
-    () => {
-      props.value = tab.active;
-    },
-  ]);
+  // Sync tab state from props.
+  effect(() => (tab.active = props.value ?? ''));
+  effect(() => (tab.disabled = props.disabled ?? false));
+  effect(() => (tab.visibility = props.visibility ?? TabVisibility.HIDDEN));
+
+  // Sync props from tab state.
+  effect(() => (props.value = tab.active));
 
   const Template = template(
     () => (
