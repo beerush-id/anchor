@@ -1,5 +1,5 @@
 import { classx } from '@anchorkit/headless/utils';
-import { callback, setup, template } from '@anchorlib/react';
+import { callback, render, setup } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
 import type { TextInputProps } from './types.js';
 
@@ -9,7 +9,7 @@ export const TextInput = setup((props: TextInputProps) => {
     props.onChange?.(e);
   };
 
-  const Template = template(() => {
+  return render(() => {
     const { type = 'text', value = '', onChange: _onChange, disabled, className, ...restProps } = props;
 
     return (
@@ -22,7 +22,5 @@ export const TextInput = setup((props: TextInputProps) => {
         {...restProps}
       />
     );
-  }, 'TextInputElement');
-
-  return <Template />;
+  }, 'TextInput');
 }, 'TextInput');

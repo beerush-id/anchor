@@ -1,5 +1,5 @@
 import { classx } from '@anchorkit/headless/utils';
-import { setup, template } from '@anchorlib/react';
+import { render, setup } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
 import type { NumberInputProps } from './types.js';
 
@@ -10,7 +10,7 @@ export const NumberInput = setup((props: NumberInputProps) => {
     props.onChange?.(e);
   };
 
-  const Template = template(() => {
+  return render(() => {
     const { type: _type, onChange: _onChange, value = '', disabled, className, ...restProps } = props;
 
     return (
@@ -24,6 +24,4 @@ export const NumberInput = setup((props: NumberInputProps) => {
       />
     );
   });
-
-  return <Template />;
 }, 'NumberInput');
