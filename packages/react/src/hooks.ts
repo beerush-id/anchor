@@ -1,5 +1,5 @@
-import { captureStack } from '@anchorlib/core';
-import type { useEffect, useMemo, useRef, useState } from 'react';
+import { captureStack, isBrowser } from '@anchorlib/core';
+import type { FunctionComponent, memo, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * Internal effect hook implementation that safely no-ops on the server.
@@ -7,7 +7,7 @@ import type { useEffect, useMemo, useRef, useState } from 'react';
  * This hook is replaced by the actual React useEffect hook when setEffectHook is called.
  */
 let effectHook = (() => {
-  if (typeof window !== 'undefined') {
+  if (isBrowser()) {
     const error = new Error('createEffect hook binding is not initialized.');
     captureStack.violation.general(
       'Uninitialized createEffect hook detected.',
@@ -29,7 +29,7 @@ let effectHook = (() => {
  * This hook is replaced by the actual React useState hook when setStateHook is called.
  */
 let stateHook = ((init) => {
-  if (typeof window !== 'undefined') {
+  if (isBrowser()) {
     const error = new Error('createState hook binding is not initialized.');
     captureStack.violation.general(
       'Uninitialized createState hook detected.',
@@ -62,7 +62,7 @@ let stateHook = ((init) => {
  * @returns A ref object with a current property
  */
 let refHook = <T>(init: T) => {
-  if (typeof window !== 'undefined') {
+  if (isBrowser()) {
     const error = new Error('createRef hook binding is not initialized.');
     captureStack.violation.general(
       'Uninitialized createRef hook detected.',
@@ -93,7 +93,7 @@ let refHook = <T>(init: T) => {
  * This hook is replaced by the actual React useMemo hook when setMemoHook is called.
  */
 let memoHook = ((fn) => {
-  if (typeof window !== 'undefined') {
+  if (isBrowser()) {
     const error = new Error('createMemo hook binding is not initialized.');
     captureStack.violation.general(
       'Uninitialized createMemo hook detected.',
@@ -110,6 +110,42 @@ let memoHook = ((fn) => {
 
   return fn();
 }) as typeof useMemo;
+
+/**
+ * Internal memo HOC implementation that safely no-ops on the server.
+ * On the client, this throws an error if used before initialization.
+ * This HOC is replaced by the actual React memo HOC when setMemoHOC is called.
+ */
+let memoHOC = ((Component: FunctionComponent) => {
+  if (isBrowser()) {
+    const error = new Error('memoize HOC binding is not initialized.');
+    captureStack.violation.general(
+      'Uninitialized memoize HOC detected.',
+      'Attempted to use memoize before the React hook binding is initialized. This usually happens when @anchorlib/react/client is not imported in your client entry file.',
+      error,
+      [
+        'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
+        'Ensure the import runs before any components that use memoize.',
+        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+      ],
+      memoHook
+    );
+  }
+
+  return ((props) => {
+    return Component(props);
+  }) as FunctionComponent;
+}) as typeof memo;
+
+/**
+ * Sets the memo HOC implementation to use React's memo.
+ * This should be called during initialization by @anchorlib/react/client.
+ *
+ * @param hook - The React memo HOC to use
+ */
+export const setMemoHOC = (hook: typeof memo) => {
+  memoHOC = hook;
+};
 
 /**
  * Sets the effect hook implementation to use React's useEffect.
@@ -209,3 +245,17 @@ export const createRef = <T>(init: T) => {
 export const createMemo = ((fn, deps) => {
   return memoHook(fn, deps);
 }) as typeof useMemo;
+
+/**
+ * Memoizes a functional component to prevent unnecessary re-renders.
+ * This HOC can be used in both server and client components, enabling component reusability.
+ * On the server, this simply returns the component without memoization.
+ * On the client, this uses React's memo functionality to optimize performance.
+ *
+ * @param Component - The functional component to memoize
+ * @param propsAreEqual - Optional function to customize props comparison logic
+ * @returns A memoized version of the component
+ */
+export const memoize = ((Component: FunctionComponent, propsAreEqual: () => boolean) => {
+  return memoHOC(Component, propsAreEqual);
+}) as typeof memo;

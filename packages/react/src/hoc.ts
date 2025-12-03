@@ -1,7 +1,6 @@
 import { anchor, captureStack, createObserver, createStack, microtask, withStack } from '@anchorlib/core';
 import type { FunctionComponent, ReactNode } from 'react';
-import { memo } from 'react';
-import { createEffect, createState } from './hooks.js';
+import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, setupProps, withProps } from './props.js';
 import type { ViewProps, ViewRenderer } from './types.js';
@@ -98,7 +97,7 @@ export function setup<C>(Component: C, displayName?: string): C {
 
   Factory.displayName = `Setup(${componentName})`;
 
-  const Setup = memo(Factory, (prevProps, nextProps) => {
+  const Setup = memoize(Factory, (prevProps, nextProps) => {
     const prevPropsRef = propsMap.get(prevProps);
 
     if (prevPropsRef) {
@@ -153,7 +152,7 @@ export function template<P, VP extends ViewProps = ViewProps>(
   const viewName = displayName || (render as FunctionComponent).name || 'Anonymous';
   const setupProps = getProps() ?? {};
 
-  const Template = memo((props: VP) => {
+  const Template = memoize((props: VP) => {
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
     const [observer] = createState(() => {
       return createObserver(() => {
