@@ -44,6 +44,7 @@ export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HT
   let prevProps: Record<string, unknown> = {};
 
   const observer = createObserver(() => {
+    observer.destroy();
     update();
   });
 
