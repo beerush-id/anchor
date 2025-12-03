@@ -53,7 +53,9 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
       }
 
       if (observers.size) {
-        for (const observer of observers) {
+        const currentObservers = Array.from(observers);
+
+        for (const observer of currentObservers) {
           const keys = observer.states.get(init) as Set<KeyLike>;
 
           if (Array.isArray(init)) {

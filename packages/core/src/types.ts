@@ -1,5 +1,5 @@
 import type { $ZodError, $ZodIssue } from '@zod/core';
-import type { input, output, ZodArray, ZodObject } from 'zod/v4';
+import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod/v4';
 import type { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
 import type { Linkables } from './enum.js';
 
@@ -24,6 +24,7 @@ export type ModelOutput<S> = output<S>;
 export type ModelError = $ZodError;
 export type ModelIssue = $ZodIssue;
 export type ModelIssues = ModelIssue[];
+export type ParseResult<T> = ZodSafeParseResult<T>;
 
 export type StateTracker = (init: Linkable, key: KeyLike) => boolean;
 export type StateKeyTracker = (key: KeyLike) => boolean;

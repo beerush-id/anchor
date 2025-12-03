@@ -15,7 +15,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       enabled: true,
-      include: ['packages/core/src/**/*.ts', 'packages/storage/src/**/*.ts', 'packages/react/src/**/*.{ts,tsx}'],
+      include: [
+        'packages/core/src/**/*.ts',
+        'packages/storage/src/**/*.ts',
+        'packages/react-classic/src/**/*.{ts,tsx}',
+        'packages/solid/src/**/*.{ts,tsx}',
+        'packages/svelte/src/**/*.{ts}',
+        'packages/vue/src/**/*.{ts}',
+      ],
       reportsDirectory: 'apps/next/public/coverage/details',
     },
   },

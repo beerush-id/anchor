@@ -2,7 +2,7 @@ import { anchor } from './anchor.js';
 import { ANCHOR_SETTINGS } from './constant.js';
 import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
-import { createObserver } from './observation.js';
+import { createObserver, untrack } from './observation.js';
 import type { Immutable, Linkable, Primitive, StateObserver, StateOptions } from './types.js';
 import { closure, softClone, softEqual } from './utils/index.js';
 
@@ -354,7 +354,7 @@ function createRef<T>(fn: () => T, init: unknown) {
 
   let current = currentStack.states.get(currentStack.index);
 
-  if (!softEqual(current?.init, init, true)) {
+  if (!untrack(() => softEqual(current?.init, init, true))) {
     current = { init: softClone(init, true), value: fn() };
     currentStack.states.set(currentStack.index, current);
   }

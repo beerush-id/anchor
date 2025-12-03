@@ -36,9 +36,9 @@ export function setup<C>(Component: C, displayName?: string): C {
       setup
     );
 
-    const Observed = () => error.message;
-    Observed.displayName = `Error(${displayName || 'Anonymous'})`;
-    return Observed as FunctionComponent as C;
+    const Factory = () => error.message;
+    Factory.displayName = `Error(${displayName || 'Anonymous'})`;
+    return Factory as FunctionComponent as C;
   }
 
   if (displayName && !(Component as FunctionComponent).displayName) {
@@ -135,7 +135,7 @@ export function template<P, VP extends ViewProps = ViewProps>(
   render: ViewRenderer<P, VP>,
   displayName?: string
 ): FunctionComponent<VP> {
-  if (typeof render !== 'function' && (typeof render !== 'object' || render === null)) {
+  if (typeof render !== 'function') {
     const error = new Error('Renderer must be a function.');
     captureStack.violation.general(
       'View factory violation detected:',

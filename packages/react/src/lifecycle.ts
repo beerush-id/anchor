@@ -1,5 +1,5 @@
 import { captureStack, closure, createObserver, untrack } from '@anchorlib/core';
-import type { CleanupHandler, Effect, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
+import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
 
 const MOUNT_HANDLER_SYMBOL = Symbol('mount-handler');
 const MOUNT_CLEANUP_SYMBOL = Symbol('mount-cleanup');
@@ -83,7 +83,7 @@ export function createLifecycle(): Lifecycle {
  * @param handler - The effect handler function to register
  * @throws {Error} If called outside a Setup component context
  */
-export function effectFn(handler: EffectHandler) {
+export function effect(handler: EffectHandler) {
   const currentEffectCleanups = closure.get<Set<CleanupHandler>>(EFFECT_CLEANUP_SYMBOL);
 
   if (!currentEffectCleanups) {
@@ -93,7 +93,7 @@ export function effectFn(handler: EffectHandler) {
       'Attempted to use effect handler outside of Setup component.',
       error,
       undefined,
-      effectFn
+      effect
     );
   }
 
@@ -101,46 +101,27 @@ export function effectFn(handler: EffectHandler) {
 
   const observer = createObserver((event) => {
     cleanup?.();
+    observer.destroy();
     runEffect(event);
   });
 
   const runEffect: EffectHandler = (event): undefined => {
-    cleanup = observer.run(() => handler(event));
+    const result = observer.run(() => handler(event));
+
+    if (typeof result === 'function') {
+      cleanup = result;
+    } else {
+      cleanup = undefined;
+    }
   };
   const leaveEffect = () => {
-    observer.destroy();
     cleanup?.();
+    observer.destroy();
   };
 
-  if (typeof window !== 'undefined') {
-    runEffect({ type: 'init', keys: [] });
-  }
-
+  runEffect({ type: 'init', keys: [] });
   currentEffectCleanups?.add(leaveEffect);
 }
-
-effectFn.any = (handlers: EffectHandler[]) => {
-  let updating = false;
-
-  for (const handler of handlers) {
-    if (typeof handler !== 'function') {
-      const error = new Error('Binding handler must be a function');
-      captureStack.error.argument('Invalid binding handler.', error);
-      continue;
-    }
-
-    effectFn((event) => {
-      if (updating) return;
-
-      updating = true;
-      const result = handler(event);
-      updating = false;
-      return result;
-    });
-  }
-};
-
-export const effect = effectFn as Effect;
 
 /**
  * Registers a mount handler function that will be executed when the component is mounted.

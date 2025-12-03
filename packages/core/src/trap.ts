@@ -1,17 +1,10 @@
-import type {
-  AnchorInternalFn,
-  Broadcaster,
-  KeyLike,
-  Linkable,
-  LinkableSchema,
-  ModelArray,
-  ModelObject,
-  ObjLike,
-  StateChange,
-  StateMetadata,
-  StateRelation,
-  TrapOverrides,
-} from './types.js';
+import { anchor } from './anchor.js';
+import { createCollectionGetter } from './collection.js';
+import { getDevTool } from './dev.js';
+import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
+import { captureStack } from './exception.js';
+import { linkable } from './internal.js';
+import { getObserver, track } from './observation.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -22,14 +15,22 @@ import {
   STATE_BUSY_LIST,
   STATE_REGISTRY,
 } from './registry.js';
-import { linkable } from './internal.js';
-import { anchor } from './anchor.js';
-import { captureStack } from './exception.js';
+import type {
+  AnchorInternalFn,
+  Broadcaster,
+  KeyLike,
+  Linkable,
+  LinkableSchema,
+  ModelArray,
+  ModelObject,
+  ObjLike,
+  ParseResult,
+  StateChange,
+  StateMetadata,
+  StateRelation,
+  TrapOverrides,
+} from './types.js';
 import { isArray } from './utils/index.js';
-import { createCollectionGetter } from './collection.js';
-import { getObserver, track } from './observation.js';
-import { getDevTool } from './dev.js';
-import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
 
 /**
  * Creates a getter trap function for a reactive state object.
@@ -75,8 +76,8 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     }
 
     if (configs.observable && observer) {
-      const track = observer.assign(init, observers);
-      const tracked = track(Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+      const trackProp = observer.assign(init, observers);
+      const tracked = trackProp(Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
 
       if (!tracked && devTool?.onTrack) {
         devTool.onTrack(meta, observer, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
@@ -178,7 +179,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
     }
 
     if (schema) {
-      let validation;
+      let validation: ParseResult<unknown>;
 
       const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
@@ -191,7 +192,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
       if (validation.success) {
         value = validation.data as Linkable;
       } else {
-        broadcaster.catch(validation.error, {
+        broadcaster.catch(validation.error as never, {
           type: ObjectMutations.SET,
           keys: [prop as string],
           prev: current,
@@ -204,7 +205,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
             type: ObjectMutations.SET,
             keys: [prop as string],
             prev: current,
-            error: validation.error,
+            error: validation.error as never,
             value,
           },
           meta.id

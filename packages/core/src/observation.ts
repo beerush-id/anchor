@@ -91,9 +91,11 @@ export function createObserver(
   }) satisfies StateTracker;
 
   const destroy = () => {
-    for (const clean of cleaners) {
-      if (typeof clean === 'function') {
-        clean();
+    const currentCleaners = Array.from(cleaners);
+
+    for (const clear of currentCleaners) {
+      if (typeof clear === 'function') {
+        clear();
       }
     }
 
@@ -140,9 +142,16 @@ export function createObserver(
 
   const run = <R>(fn: () => R): R => {
     isObserving = true;
-    const result = withinObserver(fn, observer);
-    isObserving = false;
-    return result;
+
+    const prevObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
+    closure.set(OBSERVER_SYMBOL, observer);
+
+    try {
+      return fn();
+    } finally {
+      closure.set(OBSERVER_SYMBOL, prevObserver);
+      isObserving = false;
+    }
   };
 
   const propagate = (event: StateChange) => {
