@@ -31,30 +31,29 @@ which aims to empower developers with intuitive code and provide users with a bl
 ::: tip Declarative Syntax
 
 ```tsx {17}
+import { setup, bind, writable } from '@anchorlib/react';
 import { editorApp, TOOL_ICON_SIZE } from '../lib/editor.js';
-import { useObserved, useWriter } from '@anchorlib/react';
 
-export function DisplayPanel() {
+export const DisplayPanel = setup(() => {
   // SETUP PHASE.
-  const style = useObserved(() => editorApp.currentStyle);  // 1. Observe the currentStyle
-  const styleWriter = useWriter(style, [ 'display' ]);      // 2. Create a writer for the display property
+  const styleWriter = writable(editorApp.currentStyle, ['display']);
 
   // REACTIVE PHASE.
   return (
     <ToggleGroup>
-      <Toggle bind={ styleWriter } name="display" value="block" className="toggle-btn">
+      <Toggle value={bind(styleWriter, 'display')} target="block" className="toggle-btn">
         <Square size={ TOOL_ICON_SIZE } />
         <Tooltip>Block</Tooltip>
       </Toggle>
 
-      <!-- Your IDE will warn you about this line because the `position` is not in contract.  -->
-      <Toggle bind={ styleWriter } name="position" value="grid" className="toggle-btn"> // [!code error]
+      {/* Your IDE will warn you about this line because the `position` is not in contract. */}
+      <Toggle value={bind(styleWriter, 'position')} target="grid" className="toggle-btn"> // [!code error]
         <LayoutGrid size={ TOOL_ICON_SIZE } />
         <Tooltip>Grid</Tooltip>
       </Toggle>
     </ToggleGroup>
   );
-}
+}, 'DisplayPanel');
 ```
 
 <img src="/images/contract-violation.webp" alt="Write Contract Violation" />

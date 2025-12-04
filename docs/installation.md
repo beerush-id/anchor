@@ -154,27 +154,25 @@ After installation, you can start using Anchor in your project:
 ::: code-group
 
 ```js [state.js]
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/core';
 
 // Create a shared, reactive state object.
-export const state = anchor({
+export const state = mutable({
   count: 0,
   name: 'My App',
 });
 ```
 
-```jsx [ReactCounter.jsx]
-import { useObserved } from '@anchorlib/react';
+```tsx [ReactCounter.tsx]
+import { template } from '@anchorlib/react';
 import { state } from '../state.js';
 
-const Counter = observer(() => {
-  return (
-    <div>
-      <p>Count: {state.count}</p>
-      <button onClick={() => state.count++}>Increment</button>
-    </div>
-  );
-});
+export const Counter = template(() => (
+  <div>
+    <p>Count: {state.count}</p>
+    <button onClick={() => state.count++}>Increment</button>
+  </div>
+));
 ```
 
 ```jsx [SolidCounter.jsx]

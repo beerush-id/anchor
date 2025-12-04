@@ -30,24 +30,23 @@ Here’s how you can create a simple counter:
 
 ::: code-group
 
-```jsx [React]
-import { useAnchor, observer } from '@anchorlib/react';
+```tsx [React]
+import { setup, mutable, render } from '@anchorlib/react';
 
-// Use the observer HOC to make your component reactive.
-const Counter = observer(() => {
+const Counter = setup(() => {
   // Create a reactive state object.
-  const [state] = useAnchor({
+  const state = mutable({
     count: 0,
     title: 'My App',
   });
 
-  return (
+  return render(() => (
     <div>
       <h1>{state.title}</h1>
       <p>Count: {state.count}</p>
       <button onClick={() => state.count++}>Increment</button>
     </div>
-  );
+  ));
 });
 ```
 
@@ -130,11 +129,11 @@ One of Anchor's core features is its powerful immutability system. It helps you 
 ::: code-group
 
 ```tsx [React]
-import { useImmutable, observer } from '@anchorlib/react';
+import { setup, immutable, render } from '@anchorlib/react';
 
-const Profile = observer(() => {
+const Profile = setup(() => {
   // Create an immutable state.
-  const [profile] = useImmutable({
+  const profile = immutable({
     name: 'John Doe',
     email: 'john@example.com',
   });
@@ -145,12 +144,12 @@ const Profile = observer(() => {
     profile.name = 'Jane Smith';
   };
 
-  return (
+  return render(() => (
     <div>
       <h1>{profile.name}</h1>
       <p>Email: {profile.email}</p>
     </div>
-  );
+  ));
 });
 ```
 
@@ -257,17 +256,17 @@ Here's how to create a write contract to allow changing just the `name` property
 ::: code-group
 
 ```tsx [React]
-import { useImmutable, useWriter, observer } from '@anchorlib/react';
+import { setup, immutable, writable, render } from '@anchorlib/react';
 
-const Profile = observer(() => {
+const Profile = setup(() => {
   // Create an immutable state.
-  const [profile] = useImmutable({
+  const profile = immutable({
     name: 'John Doe',
     email: 'john@example.com',
   });
 
   // Create a write contract for the 'name' property.
-  const [writer] = useWriter(profile, ['name']);
+  const writer = writable(profile, ['name']);
 
   const changeName = () => {
     // This is allowed because 'name' is in the contract.
@@ -277,13 +276,13 @@ const Profile = observer(() => {
     writer.email = 'new@example.com';
   };
 
-  return (
+  return render(() => (
     <div>
       <h1>{profile.name}</h1>
       <p>Email: {profile.email}</p>
       <button onClick={changeName}>Change Name</button>
     </div>
-  );
+  ));
 });
 ```
 
@@ -412,15 +411,15 @@ Here's how you can create a state object with schema validation:
 
 ```tsx [React]
 import { z } from 'zod';
-import { useModel, observer } from '@anchorlib/react';
+import { setup, model, render } from '@anchorlib/react';
 
 const UserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
 });
 
-const Profile = observer(() => {
-  const [user] = useModel(UserSchema, {
+const Profile = setup(() => {
+  const user = model(UserSchema, {
     name: 'John Doe',
     email: 'john@example.com',
   });
@@ -433,13 +432,13 @@ const Profile = observer(() => {
     user.name = 'J';
   };
 
-  return (
+  return render(() => (
     <div>
       <h1>{user.name}</h1>
       <p>Email: {user.email}</p>
       <button onClick={changeName}>Change Name</button>
     </div>
-  );
+  ));
 });
 ```
 
