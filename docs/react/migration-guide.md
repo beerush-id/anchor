@@ -52,11 +52,6 @@ export const TodoApp = () => {
 
 You can introduce Anchor's `template` into an existing React component to isolate updates. This is great for fixing specific bottlenecks without rewriting the whole component.
 
-> [!WARNING]
-> **State Stability**: When using `mutable` inside a standard React component, remember that if the *parent* component re-renders, your `mutable` state will be recreated and reset.
-> 
-> This is acceptable for a **temporary migration step**, but for the final version, you should move to `setup` (Step 3) to ensure stability without hooks.
-
 ```tsx
 // TodoApp.tsx (Hybrid)
 import { useState } from 'react';
@@ -67,7 +62,7 @@ export const TodoApp = () => {
   const [todos, setTodos] = useState([]);
 
   // 1. Migrate Form State to use Mutable State.
-  const formState = mutable({ text: '' });
+  const formState = mutable({ text: '' }); // [!code ++]
 
   const handleSubmit = () => {
     setTodos([...todos, { text: formState.text }]);
@@ -75,7 +70,7 @@ export const TodoApp = () => {
   };
 
   // 2. Create a Reactive Template for the Form
-  const TodoForm = template(() => (
+  const TodoForm = template(() => ( // [!code ++]
     <div className="form">
       {/* Only this template updates on keystroke */}
       <input 
@@ -84,11 +79,11 @@ export const TodoApp = () => {
       />
       <button onClick={handleSubmit}>Add</button>
     </div>
-  ));
+  )); // [!code ++]
 
   return (
     <div>
-      {/* 3. Use the Template */}
+      {/* 3. Use the Template [!code ++] */}
       <TodoForm />
       <ul>
         {todos.map(todo => <li key={todo.text}>{todo.text}</li>)}
@@ -98,6 +93,11 @@ export const TodoApp = () => {
 };
 ```
 
+> [!WARNING]
+> **State Stability**: When using `mutable` inside a standard React component, remember that if the *parent* component re-renders, your `mutable` state will be recreated and reset.
+> 
+> This is acceptable for a **temporary migration step**, but for the final version, you should move to `setup` (Step 3) to ensure stability without hooks.
+
 ### 3. Full Migration (Anchor Component)
 
 Finally, you can convert the entire component to use `setup`. This gives you stable setup logic and full reactivity.
@@ -106,18 +106,18 @@ Finally, you can convert the entire component to use `setup`. This gives you sta
 // TodoApp.tsx (Anchor)
 import { setup, template, mutable } from '@anchorlib/react';
 
-export const TodoApp = setup(() => {
+export const TodoApp = setup(() => { // [!code ++]
   // 1. Setup runs once. State is stable.
-  const formState = mutable({ text: '' });
-  const todos = mutable([]);
+  const formState = mutable({ text: '' }); // [!code ++]
+  const todos = mutable([]); // [!code ++]
 
   const handleSubmit = () => {
-    todos.push({ text: formState.text });
-    formState.text = '';
+    todos.push({ text: formState.text }); // [!code ++]
+    formState.text = ''; // [!code ++]
   };
 
   // 2. Define granular templates
-  const TodoForm = template(() => (
+  const TodoForm = template(() => ( // [!code ++]
     <div className="form">
       <input 
         value={formState.text} 
@@ -125,35 +125,35 @@ export const TodoApp = setup(() => {
       />
       <button onClick={handleSubmit}>Add</button>
     </div>
-  ));
+  )); // [!code ++]
 
-  const TodoList = template(() => (
+  const TodoList = template(() => ( // [!code ++]
     <ul>
-      {/* 3. Use TodoItem for fine-grained updates */}
+      {/* 3. Use TodoItem for fine-grained updates [!code ++] */}
       {todos.map(todo => <TodoItem key={todo.text} todo={todo} />)}
     </ul>
-  ));
+  )); // [!code ++]
 
-  // 4. Return the layout
+  // 4. Return the layout [!code ++]
   return (
     <div>
       <TodoForm />
       <TodoList />
     </div>
-  );
+  ); // [!code ++]
 });
 
 // 5. Independent Item Component
-const TodoItem = template(({ todo }) => (
+const TodoItem = template(({ todo }) => ( // [!code ++]
   <li style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
     <input 
       type="checkbox" 
       checked={todo.completed}
-      onChange={() => todo.completed = !todo.completed}
+      onChange={() => todo.completed = !todo.completed} // [!code ++]
     />
     {todo.text}
   </li>
-));
+)); // [!code ++]
 ```
 
 > [!TIP] Pro Tip

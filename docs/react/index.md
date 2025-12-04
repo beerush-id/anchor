@@ -9,7 +9,29 @@ keywords:
 
 # Overview
 
+As a React developer, you're constantly building dynamic user interfaces. While React excels at declarative UI, managing
+state effectively and ensuring your application remains fast and responsive as it grows can often become a significant
+challenge.
+
 Anchor is not just another state management library. It is a fundamental architectural shift designed to solve the core problem of modern React development: **The Rendering Model**.
+
+### Comparison with React's Built-in State Management
+
+While React's built-in state management with hooks like useState, useReducer, and useContext provides basic state management capabilities, Anchor enhances these patterns with advanced features for complex applications:
+
+| Feature                     | React Built-in                  | Anchor for React |
+| --------------------------- | ------------------------------- | ---------------- |
+| Fine-grained reactivity     | ❌                              | ✅               |
+| Intuitive Syntax            | ❌ (requires immutable pattern) | ✅               |
+| True immutability           | ❌                              | ✅               |
+| Automatic memory management | ❌ (inefficient deep copy)      | ✅               |
+| Schema validation           | ❌                              | ✅               |
+| Portability                 | ❌ (limited to React)           | ✅               |
+| History Tracking            | ❌                              | ✅               |
+| Nested reactivity           | Deep                            | Deep by default  |
+| Performance optimization    | Manual                          | Automatic        |
+| Debugging experience        | Complex                         | Simplified       |
+| Bundle size                 | -                               | Minimal overhead |
 
 ## The Problems
 
