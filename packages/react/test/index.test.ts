@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 // Test that all expected exports are available
 import {
   anchor,
-  applyProps,
+  applyAttributes,
   bind,
   bindable,
   BindingRef,
@@ -15,7 +15,7 @@ import {
   createState,
   derived,
   effect,
-  escapeProps,
+  escapeAttributes,
   exception,
   fetchState,
   flattenStyles,
@@ -31,10 +31,10 @@ import {
   microtask,
   model,
   mutable,
+  nodeRef,
   onCleanup,
   onMount,
   ordered,
-  propsRef,
   setContext,
   setup,
   setupProps,
@@ -104,9 +104,9 @@ describe('Anchor React - Index', () => {
   });
 
   it('should export node functions', () => {
-    expect(propsRef).toBeDefined();
-    expect(applyProps).toBeDefined();
-    expect(escapeProps).toBeDefined();
+    expect(nodeRef).toBeDefined();
+    expect(applyAttributes).toBeDefined();
+    expect(escapeAttributes).toBeDefined();
     expect(flattenStyles).toBeDefined();
   });
 

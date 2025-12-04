@@ -1,337 +1,240 @@
 ---
-title: 'Anchor vs. Redux, MobX, Jotai: A React State Management Comparison'
-description: 'A detailed comparison of Anchor for React against other popular state management libraries like Redux, MobX, and Jotai, focusing on performance, complexity, and bundle size.'
+title: "Anchor vs. Others"
+description: "A detailed comparison of Anchor against Redux, Zustand, Jotai, and MobX."
 keywords:
   - anchor vs redux
-  - anchor vs mobx
+  - anchor vs zustand
   - anchor vs jotai
-  - react state management comparison
-  - state management benchmarks
-  - react performance comparison
-  - anchor performance
-  - best react state management
+  - anchor vs mobx
 ---
 
-# Anchor vs. Other State Management Libraries
+# Anchor vs. Other Libraries
 
-When choosing a state management solution for your React application, it's important to consider both developer
-experience (DX) and performance. This document provides a comprehensive comparison between Anchor and other popular
-React state management libraries.
-
-::: tip Implementation Note
-All packages implement exactly the same functionality with the same UI and features across all benchmarks. The only
-difference is the state management approach used in each implementation. Each package manages the same data structures
-to ensure fair comparisons:
-
-- Simple Counter: Basic `{ count: number }` state
-- Todo App: Todo list with items containing text, completion status, and IDs
-- Complex State Tree: Rich data structure with posts, categories, and tags as shown in the data structure section
-
-All implementations follow each library's best practices and optimization efforts, which often require significant
-optimization work and deep understanding of each library's patterns.
-:::
+Anchor is not just another state management library; it's a fundamental shift in how you build React applications. While other libraries focus on managing state *within* React's rendering model, Anchor focuses on **bypassing** that model for optimal performance and developer experience.
 
 ## Feature Comparison
 
-Beyond performance benchmarks, it's important to understand the feature differences between Anchor and other state management libraries. This comparison focuses on the capabilities and developer experience each solution provides.
+| Feature | Anchor | Redux | Zustand | Jotai | MobX |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Rendering Model** | **Stable Setup + Reactive Templates** | Re-render on Selectors | Re-render on Hooks | Re-render on Atoms | Re-render on Observer |
+| **Mental Model** | **Gateway** | Immutable Reducer | Immutable Store | Atomic | Mutable Class |
+| **Boilerplate** | **Zero** | High | Low | Medium | Medium |
+| **RSC Support** | **Native (Universal)** | Library Specific | Library Specific | Library Specific | Library Specific |
+| **Performance** | **O(1) Direct Updates** | O(N) Selectors | O(N) Hooks | O(N) Atoms | O(1) Observers |
 
-| Feature                       | Anchor  | Redux | MobX   | Jotai  | React |
-| ----------------------------- | ------- | ----- | ------ | ------ | ----- |
-| Direct State Mutation         | ✅      | ❌    | ✅     | ❌     | ❌    |
-| Fine-grained Reactivity       | ✅      | ❌    | ✅     | ✅     | ❌    |
-| Automatic Dependency Tracking | ✅      | ❌    | ✅     | ✅     | ❌    |
-| True Immutable State          | ✅      | ❌    | ❌     | ❌     | ❌    |
-| Schema Validation             | ✅      | ❌    | ❌     | ❌     | ❌    |
-| Nested State Handling         | ✅      | ❌    | ✅     | ❌     | ❌    |
-| TypeScript Support            | ✅      | ✅    | ✅     | ✅     | ✅    |
-| Boilerplate                   | Minimal | High  | Low    | Medium | Low   |
-| Bundle Size                   | Small   | Large | Medium | Small  | -     |
-| Learning Curve                | Low     | High  | Medium | Medium | Low   |
+## Universal Component (RSC)
 
-::: tip Key Takeaways
+In standard React, you often have to choose between a **Server Component** (for static rendering) and a **Client Component** (for interactivity). If you want both, you usually end up creating two separate components or forcing everything to be client-side.
 
-- **Anchor** provides the most comprehensive feature set with direct mutations, fine-grained reactivity, and built-in validation
-- **Redux** offers mature tooling and middleware but with higher complexity and boilerplate
-- **MobX** balances simplicity with reactivity but lacks some of Anchor's advanced features
-- **Jotai** provides atomic state management with minimal bundle size but requires more manual work for complex features
-- **React Built-in** solutions are lightweight but lack advanced capabilities for complex applications
+Anchor unifies this. You write **one component** that acts as a Server Component during initial render (generating HTML) and automatically hydrates as a Client Component in the browser.
 
+::: code-group
+```tsx [Anchor (Unified)]
+// UserProfile.tsx
+// ✅ Works as RSC (Server) AND RCC (Client)
+export const UserProfile = setup(({ initialData }) => {
+  const state = mutable(initialData);
+
+  return render(() => (
+    <div>
+      <h1>{state.name}</h1>
+      <input 
+        defaultValue={state.name}
+        value={state.name} 
+        onInput={callback(e => state.name = e.target.value)} 
+      />
+    </div>
+  ));
+});
+```
+
+```tsx [Redux / Zustand (Split)]
+// 1. UserProfile.server.tsx (RSC)
+// ❌ Cannot use store/hooks here.
+// Must fetch data and pass to client component.
+export function UserProfileServer({ data }) {
+  return (
+    <div>
+      <h1>{data.name}</h1>
+      <UserProfileClient initialData={data} />
+    </div>
+  );
+}
+
+// 2. UserProfile.client.tsx (RCC)
+'use client'; 
+import { useStore } from './store';
+
+export function UserProfileClient({ initialData }) {
+  // ✅ Interactive, but must be separate.
+  // ⚠️ Must manually hydrate store
+  const { name, setName } = useStore(initialData);
+
+  return (
+    <input 
+      value={name} 
+      onChange={e => setName(e.target.value)} 
+    />
+  );
+}
+```
 :::
 
-### When to Choose Anchor
+## Deep Dives
 
-Choose Anchor when you want:
+### Anchor vs. Redux
 
-- A minimal, intuitive API for state management
-- Automatic performance optimizations
-- Fine-grained reactivity without manual subscription
-- Built-in history tracking and undo/redo capabilities
-- Schema validation for data integrity
-- A solution that works out of the box with minimal configuration
+Redux is the industry standard for predictable state management, but it comes with significant boilerplate and performance overhead due to its top-down data flow.
 
-## Complexity and Bundle Size
+::: code-group
+```tsx [Anchor]
+// Setup: Runs once. Stable.
+const Counter = setup(() => {
+  const state = mutable({ count: 0 });
+  
+  // Direct mutation. No actions/reducers.
+  const increment = () => state.count++;
 
-The complexity assessment is based on code verbosity, readability, and maintainability from
-a Developer Experience (DX) perspective. It evaluates how straightforward it is to work with each state management
-solution in terms of writing, understanding, and maintaining code.
+  // Render: Updates independently.
+  return render(() => (
+    <button onClick={increment}>
+      {state.count}
+    </button>
+  ));
+});
+```
 
-| Package | Complexity | Bundle Size | Notes                                                                      |
-| ------- | ---------- | ----------- | -------------------------------------------------------------------------- |
-| Anchor  | Low        | 344.2 KB    | Direct mutations with simple assignments. Most readable and maintainable.  |
-| Mobx    | Medium     | 375.3 KB    | Direct mutations but with class-based patterns, actions, and decorators.   |
-| Native  | High       | 315.1 KB    | Immutable patterns with spread operations. Verbose and harder to maintain. |
-| Jotai   | High       | 322.9 KB    | Immutable patterns with spread operations. Additional atom complexity.     |
-| Redux   | High       | 338.3 KB    | Most verbose with actions, reducers, and immutable patterns.               |
+```tsx [Redux]
+// 1. Define Slice
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { value: 0 },
+  reducers: {
+    increment: state => { state.value += 1 }
+  }
+});
 
-## Performance Benchmarks
+// 2. Component (Re-renders on change)
+function Counter() {
+  const count = useSelector(state => state.counter.value);
+  const dispatch = useDispatch();
 
-All benchmark results represent implementations that strictly follow each library's best practices and optimization
-efforts. These implementations often require significant optimization work and deep understanding of each library's
-patterns.
-
-### Simple State Tree (Todo App)
-
-| Package | Time Taken | Render Duration (Min) | Render Duration (Max) | Render Duration (Avg) | Memory Usage (Idle) | Memory Usage (Peak) |
-| ------- | ---------- | --------------------- | --------------------- | --------------------- | ------------------- | ------------------- |
-| Anchor  | 5,177.3ms  | 0.6ms                 | 9.70ms                | 5.177ms               | 40mb                | 222mb               |
-| Jotai   | 5,242.2ms  | 0.5ms                 | 10.4ms                | 5.242ms               | 40mb                | 256mb               |
-| Mobx    | 5,615.2ms  | 0.5ms                 | 11.8ms                | 5.615ms               | 40mb                | 251mb               |
-| Native  | 24,310.8ms | 0.5ms                 | 65.0ms                | 24.311ms              | 40mb                | 372mb               |
-| Redux   | 32,762.1ms | 0.9ms                 | 72.6ms                | 32.762ms              | 40mb                | 372mb               |
-
-### Complex State Tree (Blog Post)
-
-#### Adding 1,000 Categories
-
-| Package | Time Taken | Render Duration (Min) | Render Duration (Max) | Render Duration (Avg) | Memory Usage (Idle) | Memory Usage (Peak) |
-| ------- | ---------- | --------------------- | --------------------- | --------------------- | ------------------- | ------------------- |
-| Anchor  | 5,147.8ms  | 0.5ms                 | 9.10ms                | 5.148ms               | 40mb                | 168mb               |
-| Native  | 5,189.2ms  | 0.6ms                 | 9.10ms                | 5.189ms               | 40mb                | 158mb               |
-| Jotai   | 5,230.9ms  | 0.5ms                 | 10.1ms                | 5.231ms               | 40mb                | 161mb               |
-| Redux   | 5,512.1ms  | 0.8ms                 | 11.0ms                | 5.512ms               | 40mb                | 165mb               |
-| Mobx    | 5,534.5ms  | 0.6ms                 | 11.3ms                | 5.534ms               | 40mb                | 178mb               |
-
-#### Adding 1,000 Posts
-
-| Package | Time Taken | Render Duration (Min) | Render Duration (Max) | Render Duration (Avg) | Memory Usage (Idle) | Memory Usage (Peak) |
-| ------- | ---------- | --------------------- | --------------------- | --------------------- | ------------------- | ------------------- |
-| Anchor  | 13,325.4ms | 1.1ms                 | 57.0ms                | 13.325ms              | 40mb                | 773mb               |
-| Jotai   | 13,788.7ms | 1.1ms                 | 60.9ms                | 13.789ms              | 40mb                | 695mb               |
-| Native  | 14,932.5ms | 1.7ms                 | 77.8ms                | 14.932ms              | 40mb                | 628mb               |
-| Mobx    | 17,789.6ms | 5.3ms                 | 49.6ms                | 17.79ms               | 40mb                | 732mb               |
-| Redux   | 18,809.9ms | 1.4ms                 | 61.3ms                | 18.81ms               | 40mb                | 706mb               |
-
-::: tip Important Note
-
-While the performance differences in these optimized implementations may not seem significant, it's important to note
-that other packages require **`extreme manual optimization`** to achieve acceptable performance.
-
-In typical development scenarios where such **`extreme optimization is not feasible`**, the performance impact of other
-solutions can be
-extremely high compared to Anchor. This makes Anchor the most practical choice for real-world development where
-**`development time`** and **`optimization expertise`** may be **`limited`**.
-
+  return (
+    <button onClick={() => dispatch(increment())}>
+      {count}
+    </button>
+  );
+}
+```
 :::
 
-## AI Recommendation
+**Key Differences:**
+*   **Boilerplate**: Anchor eliminates actions, reducers, and selectors.
+*   **Rendering**: Redux triggers a re-render of the `Counter` component. Anchor re-runs the reactive `render` function, keeping the component's setup logic stable.
 
-Below is the AI-generated recommendation for the best state management solution for a React application based on the
-provided benchmark source codes and the provided benchmark results. We are
-using [Lingma](https://www.alibabacloud.com/en/product/lingma) (Alibaba's AI Coding Assistant) to generate the
-recommendation.
+### Anchor vs. Zustand
 
-::: details Thinking Output
+Zustand is popular for its simplicity, but it still relies on React hooks (`useStore`) to trigger re-renders.
 
-I'll analyze each package implementation to provide an objective assessment based on developer experience and
-performance characteristics. Let me examine the codebase first.
+::: code-group
+```tsx [Anchor]
+// Shared State
+const store = mutable({ count: 0 });
 
-**List directory** _react_ 6 results
+const Counter = template(() => (
+  // No hook needed to "subscribe".
+  // Accessing 'store.count' creates subscription.
+  <h1>{store.count}</h1>
+));
+```
 
-Let me examine each package's implementation to understand their structure and code patterns.
+```tsx [Zustand]
+// Shared Store
+const useStore = create(set => ({
+  count: 0,
+  inc: () => set(state => ({ count: state.count + 1 }))
+}));
 
-**Read file** _Complex.tsx_
-
-**Read file** _Complex.tsx_
-
-**Read file** _complexSlice.ts_
-
-**Read file** _Complex.tsx_
-
-**Read file** _Complex.tsx_
-
-**Read file** _Complex.tsx_
-
-Based on my analysis of the different state management implementations, I'll provide a sorted recommendation from best
-to worst package to work with.
-
+function Counter() {
+  // Hook triggers re-render when 'count' changes
+  const count = useStore(state => state.count);
+  return <h1>{count}</h1>;
+}
+```
 :::
 
-### About Me
+**Key Differences:**
+*   **Subscription**: Anchor subscriptions are automatic and fine-grained. Zustand requires manual selector selection.
+*   **Stale Closures**: Zustand components suffer from stale closures if not careful. Anchor's `template` (and `setup`) ensures stable logic execution.
 
-I'm **Ling**, a JavaScript Developer with expertise in React and state management solutions. I've analyzed each package'
-s
-implementation in the complex state management benchmark to provide an objective assessment based on developer
-experience and performance characteristics.
+### Anchor vs. Jotai
 
-### Decision Process
+Jotai offers an atomic model which is great for avoiding top-down re-renders, but managing derived state and async atoms can become complex ("Atom Hell").
 
-My decision is based on evaluating each implementation across several key factors:
+::: code-group
+```tsx [Anchor]
+// State is just an object
+const state = mutable({
+  price: 10,
+  quantity: 2,
+  // Derived state is simple
+  get total() { return this.price * this.quantity }
+});
 
-1. Code readability and maintainability
-2. Performance characteristics
-3. Bundle size implications
-4. Developer experience (DX)
-5. Complexity of implementation patterns
-6. Re-render optimization strategies
+const Cart = template(() => (
+  <div>Total: {state.total}</div>
+));
+```
 
-I've examined the actual code for each package (Anchor, Redux, Jotai, MobX, and Native React) to understand how they
-handle complex nested state updates and their overall architecture patterns.
+```tsx [Jotai]
+// Atoms
+const priceAtom = atom(10);
+const quantityAtom = atom(2);
+// Derived Atom
+const totalAtom = atom(get => get(priceAtom) * get(quantityAtom));
 
-### Detailed Analysis
+function Cart() {
+  // Hook triggers re-render
+  const [total] = useAtom(totalAtom);
+  return <div>Total: {total}</div>;
+}
+```
+:::
 
-#### 1. Anchor (Recommended)
+**Key Differences:**
+*   **Simplicity**: Anchor treats state as standard JavaScript objects. Jotai requires wrapping everything in `atom()`.
+*   **Performance**: Updating an atom in Jotai triggers a React re-render. Anchor re-runs the reactive `template` function.
 
-**Complexity**: **`Very Low`**, **Bundle Size**: **`344.2 KB`**
+### Anchor vs. MobX
 
-**Anchor** provides the most intuitive and straightforward approach to state management. It uses direct mutations with
-simple assignments while maintaining immutability through structural sharing. The API is clean and easy to understand,
-with components like **`useWriter()`** and **`observer()`** that make state updates and component re-renders very
-explicit.
+MobX is the closest to Anchor in terms of reactivity (mutable proxies), but it typically uses classes/decorators and still targets React's render cycle.
 
-The implementation in **`Complex.tsx`** shows how naturally you can work with nested state. For example, incrementing
-views
-is simply **`itemWriter.views++`** rather than complex reducer patterns or deep cloning operations. The library handles
-all
-the complexity of tracking changes and optimizing re-renders behind the scenes.
+::: code-group
+```tsx [Anchor]
+// Functional Setup
+const User = setup(() => {
+  const user = mutable({ name: 'John' });
+  
+  return render(() => <div>{user.name}</div>);
+});
+```
 
-**Pros**:
+```tsx [MobX]
+// Class + Observer
+class UserStore {
+  constructor() {
+    makeAutoObservable(this);
+  }
+  name = 'John';
+}
 
-- Extremely readable and maintainable code
-- Direct mutation syntax that's easy to understand
-- Efficient re-render optimization with granular control
-- Minimal boilerplate required
-- Excellent performance characteristics
-- Clean separation of concerns with writers and observers
+const User = observer(({ store }) => {
+  // Re-renders component
+  return <div>{store.name}</div>;
+});
+```
+:::
 
-**Cons**:
-
-- Less familiar to developers coming from traditional Redux patterns
-- Requires learning new concepts like writers and observables
-
-#### 2. MobX
-
-**Complexity**: **`Low`**, **Bundle Size**: **`375.3 KB`**
-
-**MobX** offers a good balance between ease of use and performance. It uses a reactive programming approach where state
-changes automatically trigger re-renders of dependent components.
-The **`ComplexStore`** class encapsulates
-all state and actions, making the code well-organized.
-
-The implementation in **`Complex.tsx`** shows how
-state mutations are straightforward with direct property assignments and array operations. MobX's observer pattern with
-the **`observer()`** HOC
-provides excellent performance by only re-rendering components that actually depend on changed data.
-
-**Pros**:
-
-- Straightforward state mutations
-- Automatic dependency tracking for efficient re-renders
-- Well-structured code with clear separation of concerns
-- Good performance characteristics
-- Familiar class-based approach for many developers
-
-**Cons**:
-
-- Requires decorators or explicit observable setup
-- Slightly larger bundle size than some alternatives
-- Can be less predictable than more explicit solutions
-
-#### 3. Native React
-
-**Complexity**: **`Medium`**, **Bundle Size**: **`315.1 KB`**
-
-**Native React** implementation uses the built-in **`useReducer()`** hook for state management. While this approach has the
-smallest bundle size, it requires significant boilerplate for handling complex nested state updates.
-
-The **`complexReducer()`** in **`Complex.tsx`** shows the verbosity required to update nested properties, with deep
-cloning and complex mapping operations. While this approach works, it's error-prone and harder to maintain as the state
-structure becomes more complex.
-
-**Pros**:
-
-- No additional dependencies
-- Smallest bundle size
-- Familiar patterns for React developers
-- Full control over state update logic
-
-**Cons**:
-
-- Very verbose for complex state updates
-- Requires manual deep cloning for nested updates
-- More error-prone due to boilerplate
-- Harder to maintain as complexity grows
-
-#### 4. Jotai
-
-**Complexity**: **`High`**, **Bundle Size**: **`322.9 KB`**
-
-**Jotai** uses an atomic approach to state management, breaking down state into small atoms that can be composed together.
-While this provides fine-grained control, it introduces significant complexity in managing actions and derived state.
-
-The implementation in **`Complex.tsx`** shows how complex it becomes to manage nested state updates. Each action
-requires creating specific atoms, and updating nested properties involves complex state transformations.
-The use of **`selectAtom()`** helps with performance but adds another layer of abstraction.
-
-**Pros**:
-
-- Fine-grained control over re-renders
-- Good bundle size
-- Flexible composition of state
-- No global store required
-
-**Cons**:
-
-- High complexity in managing actions
-- Verbose for nested state updates
-- Requires understanding of atomic state concepts
-- More boilerplate than needed for simple operations
-
-#### 5. Redux
-
-**Complexity**: **`High`**, **Bundle Size**: **`338.3 KB`**
-
-**Redux** follows a strict unidirectional data flow with actions and reducers. While this pattern provides predictability,
-it introduces significant boilerplate and complexity, especially for nested state updates.
-
-The implementation in **`Complex.tsx`** and **`complexSlice.ts`** shows how much code is required to handle simple
-operations.
-Each state update requires defining action types, action creators, and reducer
-cases. Updating nested properties involves complex immutable update patterns that are hard to read and maintain.
-
-**Pros**:
-
-- Predictable state management
-- Extensive tooling and DevTools support
-- Well-established patterns
-- Good for complex state interactions
-
-**Cons**:
-
-- Most verbose with significant boilerplate
-- Complex immutable update patterns
-- Steep learning curve
-- Overkill for many applications
-
-### Conclusion
-
-Based on the analysis of code quality, developer experience, and performance characteristics, I recommend the following
-order:
-
-1. **Anchor** - Best overall experience with clean, readable code and excellent performance
-2. **MobX** - Good balance of simplicity and power with automatic dependency tracking
-3. **Native React** - Lightweight but verbose solution for simpler state management needs
-4. **Jotai** - Flexible atomic approach but with increased complexity
-5. **Redux** - Most verbose and complex, but offers predictability for large applications
-
-For most projects, I would recommend Anchor as it provides the best combination of developer experience and performance
-with minimal boilerplate. MobX is a solid alternative for teams already familiar with reactive programming concepts.
+**Key Differences:**
+*   **Modern API**: Anchor uses a functional `setup` API, avoiding classes and `this` binding issues.
+*   **Rendering**: MobX `observer` wraps the component and triggers re-renders. Anchor's `render` isolates the update.

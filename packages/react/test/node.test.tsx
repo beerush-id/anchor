@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type BindableProps, setup } from '../src/index.js';
 import { createLifecycle } from '../src/lifecycle.js';
-import { applyProps, escapeProps, flattenStyles, propsRef } from '../src/node';
+import { applyAttributes, escapeAttributes, flattenStyles, nodeRef } from '../src/node';
 
 describe('Anchor React - Node', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -16,24 +16,24 @@ describe('Anchor React - Node', () => {
     errSpy.mockRestore();
   });
 
-  describe('propsRef', () => {
-    it('should warn when calling propsRef outside of component', () => {
+  describe('nodeRef', () => {
+    it('should warn when calling nodeRef outside of component', () => {
       vi.useFakeTimers();
 
       const factory = vi.fn();
-      propsRef(factory);
+      nodeRef(factory);
       vi.runAllTimers();
 
       expect(factory).toHaveBeenCalled();
       expect(errSpy).toHaveBeenCalled();
     });
 
-    it('should create a props reference', () => {
+    it('should create a node reference', () => {
       const factory = () => ({ className: 'test' });
       let ref: BindableProps | undefined;
 
       const Component = setup(() => {
-        ref = propsRef(factory);
+        ref = nodeRef(factory);
         return <></>;
       });
 
@@ -42,7 +42,7 @@ describe('Anchor React - Node', () => {
       expect(ref).toBeDefined();
       expect(typeof ref).toBe('object');
       expect(typeof ref?.current).toBe('undefined'); // Initially undefined
-      expect(typeof ref?.props).toBe('object');
+      expect(typeof ref?.attributes).toBe('object');
     });
 
     it('should update when current element is set', () => {
@@ -52,30 +52,30 @@ describe('Anchor React - Node', () => {
         className: node ? classRef.value : 'initial',
       });
 
-      const ref = lifecycle.render(() => propsRef(factory));
+      const ref = lifecycle.render(() => nodeRef(factory));
 
       // Create a mock element
       const element = document.createElement('div');
       ref.current = element;
 
       expect(ref.current).toBe(element);
-      expect(ref.props.className).toBe('mounted');
+      expect(ref.attributes.className).toBe('mounted');
 
       classRef.value = 'updated';
-      expect(ref.props.className).toBe('updated');
+      expect(ref.attributes.className).toBe('updated');
 
       lifecycle.cleanup();
     });
 
     it('should destroy cleanly', () => {
       const factory = () => ({ className: 'test' });
-      const ref = propsRef(factory);
+      const ref = nodeRef(factory);
 
       expect(() => ref.destroy()).not.toThrow();
     });
   });
 
-  describe('escapeProps', () => {
+  describe('escapeAttributes', () => {
     beforeEach(() => {
       vi.stubGlobal('window', undefined);
     });
@@ -84,14 +84,14 @@ describe('Anchor React - Node', () => {
       vi.unstubAllGlobals();
     });
 
-    it('should process props for server-side rendering', () => {
+    it('should process attributes for server-side rendering', () => {
       const props = {
         className: 'test',
         onClick: () => {},
         value: 'input-value',
       };
 
-      const escaped = escapeProps(props);
+      const escaped = escapeAttributes(props);
 
       // In server environment, event handlers should be removed
       expect(escaped).toEqual({
@@ -101,13 +101,13 @@ describe('Anchor React - Node', () => {
       });
     });
 
-    it('should handle props without value attribute', () => {
+    it('should handle attributes without value attribute', () => {
       const props = {
         className: 'test',
         onClick: () => {},
       };
 
-      const escaped = escapeProps(props);
+      const escaped = escapeAttributes(props);
 
       expect(escaped).toEqual({
         className: 'test',
@@ -115,22 +115,22 @@ describe('Anchor React - Node', () => {
     });
   });
 
-  describe('applyProps', () => {
-    it('should apply props to an element', () => {
+  describe('applyAttributes', () => {
+    it('should apply attributes to an element', () => {
       const element = document.createElement('div');
       const props = {
         className: 'test',
         id: 'test-id',
       };
 
-      applyProps(element, props);
+      applyAttributes(element, props);
 
       expect(element.className).toBe('test');
       expect(element.id).toBe('test-id');
     });
 
     it('should short circuit with invalid element', () => {
-      expect(() => applyProps(null as never, {})).not.toThrow();
+      expect(() => applyAttributes(null as never, {})).not.toThrow();
     });
 
     it('should handle style objects', () => {
@@ -143,13 +143,13 @@ describe('Anchor React - Node', () => {
         },
       };
 
-      applyProps(element, props);
+      applyAttributes(element, props);
 
       expect(element.style.color).toBe('red');
       expect(element.style.fontSize).toBe('16px');
     });
 
-    it('should handle props removal', () => {
+    it('should handle attributes removal', () => {
       const element = document.createElement('div');
       const prevProps = {
         style: {
@@ -158,12 +158,12 @@ describe('Anchor React - Node', () => {
         'data-id': 'test',
       };
 
-      applyProps(element, prevProps);
+      applyAttributes(element, prevProps);
 
       expect(element.style.color).toBe('red');
       expect(element.getAttribute('data-id')).toBe('test');
 
-      applyProps(element, {} as typeof prevProps, prevProps);
+      applyAttributes(element, {} as typeof prevProps, prevProps);
 
       expect(element.getAttribute('style')).toBeNull();
       expect(element.style.color).toBe('');
@@ -178,10 +178,10 @@ describe('Anchor React - Node', () => {
 
       const props = { 'data-id': 'test' };
 
-      applyProps(element, props, props);
+      applyAttributes(element, props, props);
       expect(element.setAttribute).not.toHaveBeenCalled();
 
-      applyProps(element, { ...props, 'data-test': 'test' } as typeof props, props);
+      applyAttributes(element, { ...props, 'data-test': 'test' } as typeof props, props);
       expect(element.setAttribute).toHaveBeenCalledTimes(1);
     });
 
@@ -192,7 +192,7 @@ describe('Anchor React - Node', () => {
       });
 
       const props = { onClick: vi.fn(), onChange: vi.fn() };
-      applyProps(element, { onChange: vi.fn() } as typeof props, props);
+      applyAttributes(element, { onChange: vi.fn() } as typeof props, props);
 
       expect(element.setAttribute).not.toHaveBeenCalled();
     });
@@ -208,10 +208,10 @@ describe('Anchor React - Node', () => {
           fontSize: '16px',
         },
       };
-      applyProps(element, props);
+      applyAttributes(element, props);
 
       // Apply updated styles removing fontSize
-      applyProps(
+      applyAttributes(
         element,
         {
           style: {

@@ -1,6 +1,6 @@
 import { createTab, TabCtx, TabVisibility } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { contextProvider, effect, propsRef, setup, template } from '@anchorlib/react';
+import { contextProvider, effect, nodeRef, setup, template } from '@anchorlib/react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 export { TabVisibility } from '@anchorkit/headless/states';
@@ -17,7 +17,7 @@ const Provider = contextProvider(TabCtx, 'Tab');
 
 export const Tab = setup((props: TabProps) => {
   const tab = createTab();
-  const tabProps = propsRef<HTMLDivElement>(() => ({
+  const ref = nodeRef<HTMLDivElement>(() => ({
     className: classx('ark-tab', props.className),
   }));
 
@@ -31,7 +31,7 @@ export const Tab = setup((props: TabProps) => {
 
   const Template = template(
     () => (
-      <div ref={tabProps} {...tabProps.props}>
+      <div ref={ref} {...ref.attributes}>
         {props.children}
       </div>
     ),

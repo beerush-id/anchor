@@ -94,7 +94,7 @@ Let's start by creating the data structure.
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/todos.ts
+<<< @/react-classic/tutorials/todo-app/todos.ts
 
 :::
 
@@ -110,7 +110,7 @@ Then let's create the mutators, a set of handlers that will be used to manage th
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/actions.ts
+<<< @/react-classic/tutorials/todo-app/actions.ts
 
 :::
 
@@ -125,7 +125,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/TodoItem.tsx
+<<< @/react-classic/tutorials/todo-app/TodoItem.tsx
 
 :::
 
@@ -147,7 +147,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/TodoList.tsx
+<<< @/react-classic/tutorials/todo-app/TodoList.tsx
 
 :::
 
@@ -162,7 +162,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/TodoStats.tsx
+<<< @/react-classic/tutorials/todo-app/TodoStats.tsx
 
 :::
 
@@ -175,7 +175,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/TodoForm.tsx
+<<< @/react-classic/tutorials/todo-app/TodoForm.tsx
 
 :::
 
@@ -189,7 +189,7 @@ Now let's create the components. Let's start with the `TodoItem` component.
 
 ::: code-group
 
-<<< @/react/tutorials/todo-app/App.tsx
+<<< @/react-classic/tutorials/todo-app/App.tsx
 
 :::
 
@@ -209,19 +209,19 @@ After we have created the components, let's put them together in the app.
 
 ::: anchor-react-sandbox {class="preview-flex"}
 
-<<< @/react/tutorials/todo-app/App.tsx [active]
+<<< @/react-classic/tutorials/todo-app/App.tsx [active]
 
-<<< @/react/tutorials/todo-app/TodoForm.tsx
+<<< @/react-classic/tutorials/todo-app/TodoForm.tsx
 
-<<< @/react/tutorials/todo-app/TodoList.tsx
+<<< @/react-classic/tutorials/todo-app/TodoList.tsx
 
-<<< @/react/tutorials/todo-app/TodoStats.tsx
+<<< @/react-classic/tutorials/todo-app/TodoStats.tsx
 
-<<< @/react/tutorials/todo-app/TodoItem.tsx
+<<< @/react-classic/tutorials/todo-app/TodoItem.tsx
 
-<<< @/react/tutorials/todo-app/todos.ts
+<<< @/react-classic/tutorials/todo-app/todos.ts
 
-<<< @/react/tutorials/todo-app/actions.ts
+<<< @/react-classic/tutorials/todo-app/actions.ts
 
 :::
 

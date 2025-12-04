@@ -37,7 +37,7 @@ Here's a simple example using setTimeout to simulate an API call and optimistic 
 
 ::: code-group
 
-<<< @/react/tutorials/optimistic-ui/OptimisticCounter.tsx
+<<< @/react-classic/tutorials/optimistic-ui/OptimisticCounter.tsx
 
 :::
 
@@ -45,7 +45,7 @@ Here's a simple example using setTimeout to simulate an API call and optimistic 
 
 ::: anchor-react-sandbox
 
-<<< @/react/tutorials/optimistic-ui/OptimisticCounter.tsx [active]
+<<< @/react-classic/tutorials/optimistic-ui/OptimisticCounter.tsx [active]
 
 :::
 

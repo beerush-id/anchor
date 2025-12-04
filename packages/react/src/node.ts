@@ -3,19 +3,19 @@ import type { HTMLAttributes, InputHTMLAttributes } from 'react';
 import { onCleanup } from './lifecycle.js';
 
 /**
- * A reference object that holds an HTML element and its props.
- * Provides reactive updates when props change.
+ * A reference object that holds an HTML element and its attributes.
+ * Provides reactive updates when attributes change.
  *
  * @template E - The HTMLElement type
  * @template P - The HTML attributes type
  */
-export type PropsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>> = {
+export type NodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>> = {
   /** Get the current HTML element */
   get current(): E;
-  /** Set the current HTML element and trigger prop updates */
+  /** Set the current HTML element and trigger attribute updates */
   set current(value: E);
-  /** Get the current props */
-  get props(): P;
+  /** Get the current attributes */
+  get attributes(): P;
   /** Destroy the observer and clean up resources */
   destroy(): void;
 };
@@ -29,17 +29,17 @@ const propsMap = {
 };
 
 /**
- * Creates a reactive reference to an HTML element and its props.
- * Automatically updates the element's attributes when props change.
+ * Creates a reactive reference to an HTML element and its attributes.
+ * Automatically updates the element's attributes when reactive state changes.
  *
  * @template E - The HTMLElement type
  * @template P - The HTML attributes type
- * @param factory - A function that produces props for the element
- * @returns A PropsRef object with reactive prop updates
+ * @param factory - A function that produces attributes for the element
+ * @returns A NodeRef object with reactive attribute updates
  */
-export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>>(
-  factory: (node?: E) => P
-): PropsRef<E, P> {
+export function nodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>>(
+  factory: (node?: E) => P | void
+): NodeRef<E, P> {
   let current: E;
   let prevProps: Record<string, unknown> = {};
 
@@ -49,14 +49,14 @@ export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HT
   });
 
   const update = () => {
-    const nextProps = escapeProps(observer.run(() => factory(current))) as Record<string, unknown>;
-    applyProps(current as HTMLElement, nextProps, prevProps);
+    const nextProps = (escapeAttributes(observer.run(() => factory(current))) ?? {}) as Record<string, unknown>;
+    applyAttributes(current as HTMLElement, nextProps, prevProps);
 
     props = nextProps;
     prevProps = nextProps;
   };
 
-  let props = escapeProps(observer.run(() => factory(current))) as Record<string, unknown>;
+  let props = escapeAttributes(observer.run(() => factory(current))) as Record<string, unknown>;
   prevProps = props;
 
   onCleanup(() => {
@@ -64,7 +64,7 @@ export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HT
   });
 
   return {
-    get props() {
+    get attributes() {
       return props as P;
     },
     get current() {
@@ -81,14 +81,14 @@ export function propsRef<E extends HTMLElement, P extends HTMLAttributes<E> = HT
 }
 
 /**
- * Processes props to make them compatible with server-side rendering.
+ * Processes attributes to make them compatible with server-side rendering.
  * Removes event handlers and converts value props to defaultValue for inputs.
  *
- * @template P - The props type
- * @param props - The props to process
- * @returns Processed props suitable for SSR
+ * @template P - The attributes type
+ * @param props - The attributes to process
+ * @returns Processed attributes suitable for SSR
  */
-export function escapeProps<P>(props: P) {
+export function escapeAttributes<P>(props: P) {
   if (isBrowser()) return props;
 
   for (const key of Object.keys(props as Record<string, unknown>)) {
@@ -106,16 +106,16 @@ export function escapeProps<P>(props: P) {
 }
 
 /**
- * Applies props to an HTML element by setting attributes.
+ * Applies attributes to an HTML element.
  * Handles style objects and attribute mapping.
  *
  * @template E - The HTMLElement type
- * @template P - The props type
- * @param element - The HTML element to apply props to
- * @param props - The props to apply
- * @param prevProps - The previous props for diffing (optional)
+ * @template P - The attributes type
+ * @param element - The HTML element to apply attributes to
+ * @param props - The attributes to apply
+ * @param prevProps - The previous attributes for diffing (optional)
  */
-export function applyProps<E extends HTMLElement, P>(element: E, props: P, prevProps: P = {} as P) {
+export function applyAttributes<E extends HTMLElement, P>(element: E, props: P, prevProps: P = {} as P) {
   if (!(element instanceof HTMLElement)) return;
 
   const next = props as Record<string, unknown>;

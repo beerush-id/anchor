@@ -1,8 +1,8 @@
-import { defineConfig, type HeadConfig } from 'vitepress';
 // @ts-ignore
 import container from 'markdown-it-container';
-import { renderSandbox } from 'vitepress-plugin-sandpack';
+import { defineConfig, type HeadConfig } from 'vitepress';
 import llmstxt from 'vitepress-plugin-llms';
+import { renderSandbox } from 'vitepress-plugin-sandpack';
 
 const BASE_URL = '/docs';
 const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchorlib.dev/docs/';
@@ -86,28 +86,12 @@ export default defineConfig({
         link: '/overview',
       },
       {
-        text: 'Getting Started',
-        link: '/getting-started',
-      },
-      {
         text: 'Installation',
         link: '/installation',
       },
       {
-        text: 'Configuration',
-        link: '/configuration',
-      },
-      {
-        text: 'Reactivity',
-        link: '/reactivity',
-      },
-      {
-        text: 'Immutability',
-        link: '/immutability',
-      },
-      {
-        text: 'Data Integrity',
-        link: '/data-integrity',
+        text: 'Getting Started',
+        link: '/getting-started',
       },
       {
         text: 'Anchor for React',
@@ -115,78 +99,51 @@ export default defineConfig({
         items: [
           {
             text: 'Introduction',
-            link: '/react/introduction',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/react/index.html' },
+              { text: 'Getting Started', link: '/react/getting-started' },
+              { text: 'Comparison', link: '/react/comparison' },
+              { text: 'Migration Guide', link: '/react/migration-guide' },
+            ],
           },
           {
-            text: 'Getting Started',
-            link: '/react/getting-started',
+            text: 'State Management',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/react/state/index.html' },
+              { text: 'Mutable State', link: '/react/state/mutable' },
+              { text: 'Immutable State', link: '/react/state/immutable' },
+              { text: 'Derived State', link: '/react/state/derived' },
+              { text: 'Advanced', link: '/react/state/advanced' },
+            ],
           },
           {
-            text: 'Component',
-            link: '/react/component-architecture',
+            text: 'Component Architecture',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/react/component/index.html' },
+              { text: 'Setup', link: '/react/component/setup' },
+              { text: 'Template', link: '/react/component/template' },
+              { text: 'Side Effects', link: '/react/component/effect-handler' },
+              { text: 'Lifecycle', link: '/react/component/lifecycle' },
+              { text: 'Binding & Refs', link: '/react/component/binding' },
+              { text: 'Advanced', link: '/react/component/advanced' },
+            ],
           },
-          {
-            text: 'Reactivity',
-            link: '/react/reactivity',
-          },
-          {
-            text: 'Immutability',
-            link: '/react/immutability',
-          },
-          {
-            text: 'Ref System',
-            link: '/react/ref-system',
-          },
-          {
-            text: 'Anchor vs Friends',
-            link: '/react/comparison',
-          },
-          // {
-          //   text: 'Guides',
-          //   collapsed: true,
-          //   items: [
-          //     {
-          //       text: 'Initialization',
-          //       link: '/react/initialization',
-          //     },
-          //     {
-          //       text: 'Observation',
-          //       link: '/react/observation',
-          //     },
-          //     {
-          //       text: 'Derivation',
-          //       link: '/react/derivation',
-          //     },
-          //     {
-          //       text: 'Components',
-          //       link: '/react/components',
-          //     },
-          //     {
-          //       text: 'Utilities',
-          //       link: '/react/utilities',
-          //     },
-          //   ],
-          // },
           {
             text: 'Tutorials',
             collapsed: true,
+            items: [{ text: 'Index', link: '/react/tutorials/index' }],
+          },
+          {
+            text: 'Legacy (Classic)',
+            collapsed: true,
             items: [
-              {
-                text: 'Optimistic UI',
-                link: '/react/tutorials/optimistic-ui',
-              },
-              {
-                text: 'Context Sharing',
-                link: '/react/tutorials/context-sharing',
-              },
-              {
-                text: 'Scalable Todo App',
-                link: '/react/tutorials/todo-app',
-              },
-              {
-                text: 'Form Validation',
-                link: '/react/tutorials/form-validation',
-              },
+              { text: 'Introduction', link: '/react-classic/introduction' },
+              { text: 'Getting Started', link: '/react-classic/getting-started' },
+              { text: 'Core Concepts', link: '/react-classic/core-concepts' },
+              { text: 'API Reference', link: '/react-classic/api-reference' },
             ],
           },
         ],
@@ -400,6 +357,22 @@ export default defineConfig({
             link: '/apis/devtool',
           },
         ],
+      },
+      {
+        text: 'Configuration',
+        link: '/configuration',
+      },
+      {
+        text: 'Reactivity',
+        link: '/reactivity',
+      },
+      {
+        text: 'Immutability',
+        link: '/immutability',
+      },
+      {
+        text: 'Data Integrity',
+        link: '/data-integrity',
       },
       {
         text: 'Architecture',

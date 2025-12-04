@@ -55,7 +55,7 @@ which means you don't need to manually update the context value - it automatical
 
 ::: code-group
 
-<<< @/react/tutorials/context-sharing/ReactContext.tsx
+<<< @/react-classic/tutorials/context-sharing/ReactContext.tsx
 
 :::
 
@@ -63,7 +63,7 @@ which means you don't need to manually update the context value - it automatical
 
 ::: anchor-react-sandbox
 
-<<< @/react/tutorials/context-sharing/ReactContext.tsx [active]
+<<< @/react-classic/tutorials/context-sharing/ReactContext.tsx [active]
 
 :::
 
@@ -85,7 +85,7 @@ use it in a React application.
 
 ::: code-group
 
-<<< @/react/tutorials/context-sharing/GlobalContext.tsx
+<<< @/react-classic/tutorials/context-sharing/GlobalContext.tsx
 
 :::
 
@@ -93,7 +93,7 @@ use it in a React application.
 
 ::: anchor-react-sandbox
 
-<<< @/react/tutorials/context-sharing/GlobalContext.tsx [active]
+<<< @/react-classic/tutorials/context-sharing/GlobalContext.tsx [active]
 
 :::
 
@@ -114,7 +114,7 @@ and Anchor's Global Context for services and cross-cutting concerns.
 
 ::: code-group
 
-<<< @/react/tutorials/context-sharing/ComboContext.tsx
+<<< @/react-classic/tutorials/context-sharing/ComboContext.tsx
 
 :::
 
@@ -122,7 +122,7 @@ and Anchor's Global Context for services and cross-cutting concerns.
 
 ::: anchor-react-sandbox {class="preview-flex"}
 
-<<< @/react/tutorials/context-sharing/ComboContext.tsx [active]
+<<< @/react-classic/tutorials/context-sharing/ComboContext.tsx [active]
 
 :::
 

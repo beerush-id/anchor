@@ -3,7 +3,7 @@ import type { FunctionComponent, ReactNode } from 'react';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, setupProps, withProps } from './props.js';
-import type { ViewProps, ViewRenderer } from './types.js';
+import type { SetupProps, ViewRenderer } from './types.js';
 
 const RENDERER_INIT_VERSION = 1;
 
@@ -130,10 +130,10 @@ export function setup<C>(Component: C, displayName?: string): C {
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {FunctionComponent<P>} A reactive renderer that auto-updates on state changes
  */
-export function template<P, VP extends ViewProps = ViewProps>(
-  render: ViewRenderer<P, VP>,
+export function template<P, SP extends SetupProps = SetupProps>(
+  render: ViewRenderer<P, SP>,
   displayName?: string
-): FunctionComponent<VP> {
+): FunctionComponent<P> {
   if (typeof render !== 'function') {
     const error = new Error('Renderer must be a function.');
     captureStack.violation.general(
@@ -150,9 +150,9 @@ export function template<P, VP extends ViewProps = ViewProps>(
   }
 
   const viewName = displayName || (render as FunctionComponent).name || 'Anonymous';
-  const setupProps = getProps() ?? {};
+  const parentProps = getProps() ?? {};
 
-  const Template = memoize((props: VP) => {
+  const Template = memoize((props: P) => {
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
     const [observer] = createState(() => {
       return createObserver(() => {
@@ -165,11 +165,11 @@ export function template<P, VP extends ViewProps = ViewProps>(
       return () => observer.destroy();
     }, []);
 
-    return observer.run(() => render(setupProps as P, props as VP));
+    return observer.run(() => render(props as P, parentProps as SP));
   });
 
   Template.displayName = `View(${viewName})`;
-  return Template as FunctionComponent<VP>;
+  return Template as FunctionComponent<P>;
 }
 
 /**
@@ -188,12 +188,11 @@ export const view = template;
  * This function follows the same reactive principles as `template`, responding to state
  * changes and maintaining the modern component lifecycle approach.
  *
- * @template P - The props type for the component
- * @param {ViewRenderer<P, ViewProps>} Component - A function that receives props and returns React nodes
+ * @param {ViewRenderer<SetupProps>} Component - A function that receives props and returns React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {ReactNode} The rendered output of the reactive component
  */
-export function render<P>(Component: ViewRenderer<P, ViewProps>, displayName?: string): ReactNode {
+export function render(Component: ViewRenderer<SetupProps>, displayName?: string): ReactNode {
   const Template = template(Component, displayName);
   return <Template />;
 }

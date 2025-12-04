@@ -2,8 +2,8 @@ import type { MutableRef, StateChange } from '@anchorlib/core';
 import type { ReactNode } from 'react';
 import type { BindingRef } from './binding.js';
 
-export type ViewProps = { [key: string]: unknown };
-export type ViewRenderer<P, R> = (props: P, viewProps?: R) => ReactNode;
+export type SetupProps = { [key: string]: unknown };
+export type ViewRenderer<P, SP = SetupProps> = (props: P, parentProps: SP) => ReactNode;
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
