@@ -420,8 +420,3 @@ anchorFn.remove = remove;
 anchorFn.clear = clear;
 
 export const anchor = anchorFn as Anchor;
-
-export const model = anchorFn.model as Anchor['model'];
-export const ordered = anchorFn.ordered as Anchor['ordered'];
-export const writable = anchorFn.writable as Anchor['writable'];
-export const exception = anchorFn.catch as Anchor['catch'];

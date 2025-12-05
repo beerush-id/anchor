@@ -164,7 +164,7 @@ function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, opt
     started = true;
   };
 
-  const state = anchor.raw<FetchState<T>, S>(
+  const state = mutable(
     {
       data: init,
       status: options.deferred ? FetchStatus.Idle : FetchStatus.Pending,
@@ -174,7 +174,7 @@ function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, opt
       },
     },
     { ...options, recursive: false }
-  );
+  ) as FetchState<T>;
 
   if (!options.deferred) {
     start();
@@ -328,7 +328,7 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
     started = true;
   };
 
-  const state = anchor.raw<FetchState<T>, S>(
+  const state = mutable(
     {
       data: init,
       status: options.deferred ? FetchStatus.Idle : FetchStatus.Pending,
@@ -338,7 +338,7 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
       },
     },
     { ...options, recursive: false }
-  );
+  ) as FetchState<T>;
 
   if (!options.deferred) {
     start();

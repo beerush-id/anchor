@@ -1,3 +1,12 @@
+import { anchor } from '../anchor.js';
+import { setInspector } from '../broadcast.js';
+import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
+import { type ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
+import { captureStack } from '../exception.js';
+import { assign } from '../helper.js';
+import { mutable } from '../ref.js';
+import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
+import { subscribe } from '../subscription.js';
 import type {
   ArrayMutation,
   ArrayMutator,
@@ -9,15 +18,7 @@ import type {
   StateChange,
   StateGateway,
 } from '../types.js';
-import { anchor } from '../anchor.js';
-import { subscribe } from '../subscription.js';
-import { assign } from '../helper.js';
-import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../registry.js';
-import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../constant.js';
 import { microtask } from '../utils/index.js';
-import { captureStack } from '../exception.js';
-import { type ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../enum.js';
-import { setInspector } from '../broadcast.js';
 
 export type HistoryOptions = {
   debounce?: number;
@@ -185,7 +186,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
     }
   });
 
-  const historyState = anchor.raw<HistoryState>(
+  const historyState = mutable<HistoryState>(
     {
       get backwardList() {
         return backwardList;

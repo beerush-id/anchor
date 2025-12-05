@@ -1,9 +1,10 @@
-import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from './types.js';
-import { CONTROLLER_REGISTRY } from './registry.js';
-import { isFunction } from './utils/index.js';
-import { assign } from './helper.js';
-import { captureStack } from './exception.js';
 import { anchor } from './anchor.js';
+import { captureStack } from './exception.js';
+import { assign } from './helper.js';
+import { onCleanup } from './lifecycle.js';
+import { CONTROLLER_REGISTRY } from './registry.js';
+import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from './types.js';
+import { isFunction } from './utils/index.js';
 
 /**
  * Create a new subscription from an existing anchored state.
@@ -47,7 +48,9 @@ function subscribeFn<T extends Linkable>(
     };
   }
 
-  return ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
+  const unsubscribe = ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
+  onCleanup(() => unsubscribe());
+  return unsubscribe;
 }
 
 subscribeFn.log = ((state) => {
@@ -144,6 +147,11 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
     }
 
     updatingLeft = false;
+  });
+
+  onCleanup(() => {
+    unsubscribeLeft();
+    unsubscribeRight();
   });
 
   return () => {

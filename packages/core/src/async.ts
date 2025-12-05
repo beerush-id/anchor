@@ -1,5 +1,5 @@
 import { anchor } from './anchor.js';
-import { mutable } from './ref.js';
+import { mutable, writable } from './ref.js';
 import { type AsyncHandler, type AsyncOptions, type AsyncState, AsyncStatus, type Linkable } from './types.js';
 
 export function asyncState<T extends Linkable, E extends Error = Error>(
@@ -91,7 +91,7 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
     },
     { immutable: true }
   );
-  const writer = anchor.writable(state);
+  const writer = writable(state);
 
   if (!options?.deferred) {
     state.start();

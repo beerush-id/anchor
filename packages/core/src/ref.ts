@@ -2,23 +2,11 @@ import { anchor } from './anchor.js';
 import { ANCHOR_SETTINGS } from './constant.js';
 import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
+import { onCleanup } from './lifecycle.js';
 import { createObserver, untrack } from './observation.js';
-import type { Immutable, Linkable, Primitive, StateObserver, StateOptions } from './types.js';
+import { STACK_SYMBOL } from './stack.js';
+import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from './types.js';
 import { closure, softClone, softEqual } from './utils/index.js';
-
-type RefScopeValue = {
-  init: unknown;
-  value: unknown;
-};
-
-type RefStack = {
-  index: number;
-  states: Map<number, RefScopeValue>;
-};
-
-export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;
-
-const STACK_SYMBOL = Symbol('call-stack');
 
 /**
  * A mutable reference wrapper for primitive values that provides reactive capabilities.
@@ -149,6 +137,8 @@ export class DerivedRef<T> {
       },
       { recursive: false }
     );
+
+    onCleanup(() => this.destroy());
   }
 
   /**
@@ -189,11 +179,15 @@ export function mutable<T>(init: T): MutableRef<T>;
  */
 export function mutable<T>(init: T, options?: StateOptions | boolean) {
   if (linkable(init)) {
-    return createRef(() => anchor(init, options as StateOptions), { init, options });
+    const ref = createRef(() => anchor(init, options as StateOptions), { init, options });
+    onCleanup(() => destroyRef(ref));
+    return ref;
     // return anchor(init, options as StateOptions);
   }
 
-  return createRef(() => new MutableRef(init), init);
+  const ref = createRef(() => new MutableRef(init), init);
+  onCleanup(() => destroyRef(ref));
+  return ref;
   // return new MutableRef(init);
 }
 
@@ -226,13 +220,46 @@ export function immutable<T extends Linkable>(init: T, options?: StateOptions): 
  */
 export function immutable<T>(init: T, options?: StateOptions) {
   if (linkable(init)) {
-    return createRef(() => anchor.immutable(init, options), { init, options });
+    const ref = createRef(() => anchor.immutable(init, options), { init, options });
+    onCleanup(() => destroyRef(ref));
+    return ref;
     // return anchor.immutable(init, options);
   }
 
-  return createRef(() => new ImmutableRef(init), init);
+  const ref = createRef(() => new ImmutableRef(init), init);
+  onCleanup(() => destroyRef(ref));
+  return ref;
   // return new ImmutableRef(init);
 }
+
+export const model = ((schema, init, options) => {
+  const ref = createRef(() => anchor.model(schema, init, options), { schema, init, options });
+  onCleanup(() => destroyRef(ref));
+  return ref;
+}) as Anchor['model'];
+
+export const ordered = ((init, compare) => {
+  const ref = createRef(() => anchor.ordered(init, compare), { init, compare });
+  onCleanup(() => destroyRef(ref));
+  return ref;
+}) as Anchor['ordered'];
+
+/**
+ * NON STACK-AWARE APIS
+ * THE API BELOWS DOESN'T NEED TO BE STACK AWARE BECAUSE THEY ARE STATE DEPENDENT.
+ */
+
+export const writable = ((state, contracts) => {
+  const ref = anchor.writable(state, contracts);
+  onCleanup(() => destroyRef(ref));
+  return ref;
+}) as Anchor['writable'];
+
+export const exception = ((state, handler) => {
+  const unsubscribe = anchor.catch(state, handler);
+  onCleanup(() => unsubscribe());
+  return unsubscribe;
+}) as Anchor['catch'];
 
 /**
  * Creates a derived reference that computes its value based on other reactive dependencies.
@@ -245,10 +272,18 @@ export function derived<T>(derive: () => T): DerivedRef<T> {
   return new DerivedRef(derive);
 }
 
+/**
+ * Destroys a reference and cleans up associated resources.
+ *
+ * This function handles destruction of both anchor-based references and value references.
+ * For anchor-based references, it delegates to `anchor.destroy()`.
+ * For value references (MutableRef, ImmutableRef, DerivedRef), it calls their respective `destroy()` methods.
+ *
+ * @param ref - The reference to destroy, which can be a MutableRef, ImmutableRef, or Linkable object
+ */
 export function destroyRef(ref: MutableRef<unknown> | ImmutableRef<unknown> | Linkable) {
   if (anchor.has(ref)) {
     anchor.destroy(ref);
-    return;
   } else if (isValueRef(ref)) {
     ref.destroy();
   }
@@ -296,45 +331,6 @@ export function isDerivedRef<T>(value: unknown): value is DerivedRef<T> {
  */
 export function isValueRef<T>(value: unknown): value is MutableRef<T> | ImmutableRef<T> {
   return value instanceof MutableRef || value instanceof ImmutableRef || value instanceof DerivedRef;
-}
-
-/**
- * Creates a new reference stack scope for managing reactive references.
- *
- * @returns A new RefStack object with initialized index and empty states map
- */
-export function createStack(): RefStack {
-  return {
-    index: 0,
-    states: new Map(),
-  };
-}
-
-/**
- * Executes a function within a specific reference stack context.
- *
- * @template T - The return type of the executed function
- * @param scope - The reference scope to use during execution
- * @param fn - The function to execute within the given scope
- * @returns The result of the executed function
- */
-export function withStack<T>(scope: RefStack, fn: () => T) {
-  const prevStack = closure.get<RefStack>(STACK_SYMBOL);
-  closure.set(STACK_SYMBOL, scope);
-
-  try {
-    return fn();
-  } finally {
-    closure.set(STACK_SYMBOL, prevStack);
-  }
-}
-/**
- * Retrieves the current reference stack context.
- *
- * @returns The current RefStack if one exists, undefined otherwise
- */
-export function getCurrentStack() {
-  return closure.get<RefStack>(STACK_SYMBOL);
 }
 
 /**

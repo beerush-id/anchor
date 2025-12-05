@@ -1,4 +1,4 @@
-import { captureStack, closure, createObserver, untrack } from '@anchorlib/core';
+import { captureStack, closure, createObserver, setCleanUpHandler, untrack } from '@anchorlib/core';
 import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
 
 const MOUNT_HANDLER_SYMBOL = Symbol('mount-handler');
@@ -162,17 +162,8 @@ export function onMount(fn: MountHandler) {
  */
 export function onCleanup(fn: CleanupHandler) {
   const currentMountCleanups = closure.get<Set<CleanupHandler>>(MOUNT_CLEANUP_SYMBOL);
-
-  if (!currentMountCleanups) {
-    const error = new Error('Out of Setup component.');
-    captureStack.violation.general(
-      'Cleanup handler declaration violation detected:',
-      'Attempted to use cleanup handler outside of Setup component.',
-      error,
-      undefined,
-      onCleanup
-    );
-  }
-
   currentMountCleanups?.add(fn);
 }
+
+// Hook up cleanup handler to the Anchor's core lifecycle.
+setCleanUpHandler(onCleanup);

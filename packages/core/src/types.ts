@@ -2,6 +2,7 @@ import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod/v4';
 import type { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
 import type { Linkables } from './enum.js';
+import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
 
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
 
@@ -874,3 +875,15 @@ export type AsyncOptions = StateOptions & {
  * @returns A Promise that resolves with the result of the operation
  */
 export type AsyncHandler<R> = (signal: AbortSignal) => Promise<R>;
+
+type RefScopeValue = {
+  init: unknown;
+  value: unknown;
+};
+
+export type RefStack = {
+  index: number;
+  states: Map<number, RefScopeValue>;
+};
+
+export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;

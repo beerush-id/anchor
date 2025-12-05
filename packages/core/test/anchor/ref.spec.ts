@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, getCurrentStack } from '../../src/index.js';
 import {
-  createStack,
   derived,
   DerivedRef,
   destroyRef,
@@ -13,8 +12,8 @@ import {
   isValueRef,
   mutable,
   MutableRef,
-  withStack,
 } from '../../src/ref.js';
+import { createStack, withStack } from '../../src/stack.js';
 
 describe('Anchor Core - Ref', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
