@@ -71,7 +71,7 @@ export function setup<C>(Component: C, displayName?: string): C {
         propsMap.delete(currentProps);
 
         scheduleCleanup(() => {
-          // @important Actual cleanup should be scheduled to prevent cleaning up the current effects.
+          // @important Actual cleanup should be scheduled to prevent cleaning up the current effects in strict-mode.
           lifecycle.cleanup();
           scope.states.clear();
         });
@@ -153,6 +153,7 @@ export function template<P, SP extends SetupProps = SetupProps>(
   const parentProps = getProps() ?? {};
 
   const Template = memoize((props: P) => {
+    const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(5));
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
     const [observer] = createState(() => {
       return createObserver(() => {
@@ -162,7 +163,13 @@ export function template<P, SP extends SetupProps = SetupProps>(
     });
 
     createEffect(() => {
-      return () => observer.destroy();
+      cancelCleanup();
+
+      return () => {
+        scheduleCleanup(() => {
+          observer.destroy();
+        });
+      };
     }, []);
 
     return observer.run(() => render(props as P, parentProps as SP));

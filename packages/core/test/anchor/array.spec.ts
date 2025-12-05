@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor } from '../../src/index.js';
+import { anchor, ordered } from '../../src/index.js';
 
 describe('Anchor Core - Array Methods', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -310,7 +310,7 @@ describe('Anchor Core - Array Methods', () => {
     });
 
     it('should return correct length when pushing to ordered array', () => {
-      const state = anchor.ordered([1, 3], (a, b) => a - b);
+      const state = ordered([1, 3], (a, b) => a - b);
       const length1 = state.push(2);
       expect(length1).toBe(3);
 

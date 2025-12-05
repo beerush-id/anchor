@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor } from '../../src/index.js';
 import { z } from 'zod';
+import { anchor, model } from '../../src/index.js';
 
 describe('Anchor Core - Schema Validation', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -32,7 +32,7 @@ describe('Anchor Core - Schema Validation', () => {
         age: z.number(),
       });
 
-      const state = anchor.model(schema, { name: 'John', age: 30 });
+      const state = model(schema, { name: 'John', age: 30 });
       expect(state.name).toBe('John');
       expect(state.age).toBe(30);
     });
@@ -270,15 +270,19 @@ describe('Anchor Core - Schema Validation', () => {
 
       expect(exception.errors).toEqual({});
 
+      // @ts-ignore
       state.name = 20;
       expect(exception.errors.name).toBeDefined();
 
       state.name = 'Jane';
       expect(exception.errors.name).toBeUndefined();
 
+      // @ts-ignore
       state.foo = 'bar';
+      // @ts-ignore
       expect(exception.errors.foo).toBeDefined();
 
+      // @ts-ignore
       state.account.balance = 'invalid';
       expect(exception.errors['account.balance']).toBeDefined();
 

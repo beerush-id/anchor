@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, type ObjLike } from '../../src/index.js';
 import { z } from 'zod';
+import { anchor, exception, type ObjLike } from '../../src/index.js';
 
 describe('Anchor Core - Read-Only', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -102,11 +102,11 @@ describe('Anchor Core - Read-Only', () => {
       expect(state).toEqual({ name: 'John' });
 
       // Invalid assignment with no handler.
-      (state as { name: number }).name = 30;
+      (state as never as { name: number }).name = 30;
       expect(errorSpy).toHaveBeenCalledTimes(1);
 
       const writer = anchor.writable(state);
-      const unsubscribe = anchor.catch(state, handler);
+      const unsubscribe = exception(state, handler);
 
       writer.name = 'Jane';
       expect(state).toEqual({ name: 'Jane' });

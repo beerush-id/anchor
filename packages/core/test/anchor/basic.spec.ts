@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, subscribe } from '../../src/index.js';
+import { anchor, setCleanUpHandler, subscribe } from '../../src/index.js';
+import { onCleanup } from '../../src/lifecycle.js';
 
 describe('Anchor Core - Basic Operations', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -145,6 +146,32 @@ describe('Anchor Core - Basic Operations', () => {
 
       expect(anchor.has(state)).toBe(true);
       expect(anchor.has({ name: 'Non Existence' })).toBe(false);
+    });
+  });
+
+  describe('Lifecycle', () => {
+    it('should handle registering invalid cleanup handler', () => {
+      setCleanUpHandler(undefined as never);
+
+      expect(() => onCleanup(() => {})).not.toThrow();
+    });
+
+    it('should register cleanup handler', () => {
+      const cleanupList = new Set<() => void>();
+      const handler = vi.fn();
+
+      const cleanupHandler = (fn: () => void) => {
+        cleanupList.add(fn);
+      };
+
+      setCleanUpHandler(cleanupHandler);
+      onCleanup(handler);
+
+      expect(cleanupList.size).toBe(1);
+      expect(cleanupList.has(handler)).toBe(true);
+
+      cleanupList.forEach((fn) => fn());
+      expect(handler).toHaveBeenCalled();
     });
   });
 });

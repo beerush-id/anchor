@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, subscribe } from '../../src/index.js';
+import { anchor, setCleanUpHandler, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Derivation', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -231,6 +231,29 @@ describe('Anchor Core - Derivation', () => {
       expect(errorSpy).toHaveBeenCalled();
 
       unsubscribe();
+    });
+
+    it('should unbind on cleanup', () => {
+      const cleanupList = new Set<() => void>();
+      const left = anchor({ value: 1 });
+      const right = anchor({ value: 2 });
+
+      const cleanupHandler = (fn: () => void) => {
+        cleanupList.add(fn);
+      };
+      setCleanUpHandler(cleanupHandler);
+
+      subscribe.bind(left, right);
+
+      expect(left.value).toBe(1);
+      expect(right.value).toBe(1);
+
+      cleanupList.forEach((fn) => fn()); // Trigger cleanup.
+
+      left.value = 10;
+
+      expect(left.value).toBe(10);
+      expect(right.value).toBe(1);
     });
   });
 

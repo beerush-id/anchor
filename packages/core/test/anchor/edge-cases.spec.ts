@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createArrayMutator } from '../../src/array.js';
+import { createCollectionGetter, createCollectionMutator } from '../../src/collection.js';
+import { createLinkFactory } from '../../src/factory.js';
 import { anchor, type Linkable, subscribe } from '../../src/index.js';
 import { createGetter, createRemover, createSetter } from '../../src/trap.js';
-import { createCollectionGetter, createCollectionMutator } from '../../src/collection.js';
-import { createArrayMutator } from '../../src/array.js';
-import { createLinkFactory } from '../../src/factory.js';
 
 describe('Anchor Core - Edge Cases', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -91,6 +91,11 @@ describe('Anchor Core - Edge Cases', () => {
 
     it('should handle destroying non reactive object', () => {
       anchor.destroy({ name: 'John Doe' });
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle destroying non reactive object with warning', () => {
+      (anchor.destroy as (state: unknown, warn: boolean) => void)({ name: 'John Doe' }, true);
       expect(errorSpy).toHaveBeenCalled();
     });
   });

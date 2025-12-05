@@ -391,18 +391,15 @@ anchorFn.snapshot = ((state, recursive = true) => {
   return softClone(target ?? state, recursive) as typeof state;
 }) as Anchor['snapshot'];
 
-anchorFn.destroy = ((state, silent?: boolean) => {
+anchorFn.destroy = ((state, warn?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);
 
-  if (!controller) {
-    if (!silent) {
-      const error = new Error('Object is not a state.');
-      captureStack.error.external('Attempted to destroy a state that does not exist.', error, anchorFn.destroy);
-    }
-    return;
+  if (controller) {
+    controller.destroy();
+  } else if (warn) {
+    const error = new Error('Object is not a state.');
+    captureStack.error.external('Attempted to destroy a state that does not exist.', error, anchorFn.destroy);
   }
-
-  controller.destroy();
 }) as Anchor['destroy'];
 
 anchorFn.configure = ((config: Partial<AnchorSettings>) => {

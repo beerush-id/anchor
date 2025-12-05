@@ -257,7 +257,7 @@ export const writable = ((state, contracts) => {
 
 export const exception = ((state, handler) => {
   const unsubscribe = anchor.catch(state, handler);
-  onCleanup(() => unsubscribe());
+  onCleanup(unsubscribe);
   return unsubscribe;
 }) as Anchor['catch'];
 

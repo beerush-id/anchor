@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   anchor,
   createObserver,
+  effect,
   getTracker,
+  mutable,
   setObserver,
   setTracker,
   subscribe,
@@ -125,6 +127,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(valueA).toBe(1);
       restore();
       observer.destroy(); // Clean up observer
+      observer.destroy(); // Make sure not throw
 
       const trackedProps = observer.states.get(anchor.get(state));
       expect(trackedProps).toBeUndefined();
@@ -536,6 +539,41 @@ describe('Anchor Core - Observable Observer Management', () => {
       anchor.configure(originalConfig);
       errorSpy.mockRestore();
       vi.useRealTimers();
+    });
+  });
+
+  describe('Effect', () => {
+    it('should handle change in effect', () => {
+      const state = mutable(0);
+      const clear = vi.fn();
+      const react = vi.fn().mockImplementation(() => {
+        expect(state.value).toBeGreaterThan(-1);
+
+        // Make sure both cases are handled.
+        return state.value < 2 ? clear : undefined;
+      });
+
+      const cleanup = effect(react);
+
+      expect(react).toHaveBeenCalledTimes(1);
+      expect(clear).not.toHaveBeenCalled();
+
+      state.value = 1;
+
+      expect(react).toHaveBeenCalledTimes(2);
+      expect(clear).toHaveBeenCalledTimes(1);
+
+      state.value = 2;
+
+      expect(react).toHaveBeenCalledTimes(3); // This call should return undefined.
+      expect(clear).toHaveBeenCalledTimes(2);
+
+      cleanup();
+
+      state.value = 3;
+
+      expect(react).toHaveBeenCalledTimes(3);
+      expect(clear).toHaveBeenCalledTimes(2); // Should not be called again because the cleanup no longer defined.
     });
   });
 });

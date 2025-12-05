@@ -8,6 +8,7 @@ import Home from '@pages/home/Home.js';
 import DemoTodoApp from '@pages/playground/DemoTodoApp.js';
 import Playground from '@pages/playground/Playground.js';
 import TodoApp from '@pages/playground/TodoApp.js';
+import { StrictMode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 anchor.configure({
@@ -18,13 +19,15 @@ setDevMode(process.env.NODE_ENV === 'development');
 setDebugRenderer(true);
 
 createRoot(document.body).render(
-  <BrowserRouter basename={BASE_PATH}>
-    <Routes>
-      <Route index element={<Home />} />
-      <Route path="/playground" element={<Playground />} />
-      <Route path="/playground/todo-app" element={<TodoApp />} />
-      <Route path="/playground/demo-todo-app" element={<DemoTodoApp />} />
-      <Route path="/custom-renderer" element={<CustomRenderer />} />
-    </Routes>
-  </BrowserRouter>
+  <StrictMode>
+    <BrowserRouter basename={BASE_PATH}>
+      <Routes>
+        <Route index element={<Home />} />
+        <Route path="/playground" element={<Playground />} />
+        <Route path="/playground/todo-app" element={<TodoApp />} />
+        <Route path="/playground/demo-todo-app" element={<DemoTodoApp />} />
+        <Route path="/custom-renderer" element={<CustomRenderer />} />
+      </Routes>
+    </BrowserRouter>
+  </StrictMode>
 );

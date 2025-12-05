@@ -49,7 +49,7 @@ function subscribeFn<T extends Linkable>(
   }
 
   const unsubscribe = ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
-  onCleanup(() => unsubscribe());
+  onCleanup(unsubscribe);
   return unsubscribe;
 }
 
@@ -149,15 +149,14 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
     updatingLeft = false;
   });
 
-  onCleanup(() => {
-    unsubscribeLeft();
-    unsubscribeRight();
-  });
-
-  return () => {
+  const unsubscribeAll = () => {
     unsubscribeLeft();
     unsubscribeRight();
   };
+
+  onCleanup(unsubscribeAll);
+
+  return unsubscribeAll;
 }) satisfies SubscribeFn['bind'];
 
 export const subscribe: SubscribeFn = subscribeFn as SubscribeFn;

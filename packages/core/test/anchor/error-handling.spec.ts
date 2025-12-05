@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor } from '../../src/index.js';
 import { z } from 'zod';
+import { anchor } from '../../src/index.js';
 
 describe('Anchor Core - Error Handling', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -23,11 +23,11 @@ describe('Anchor Core - Error Handling', () => {
     it('should handle invalid schema types', () => {
       // Test with a primitive value and schema (should throw)
       expect(() => {
-        anchor({}, { schema: z.string(), strict: true });
+        anchor({}, { schema: z.string() as never, strict: true });
       }).toThrow();
 
       // Test with a primitive value and schema (non-strict mode)
-      const result = anchor({}, { schema: z.string() });
+      const result = anchor({}, { schema: z.string() as never });
       expect(result).toEqual({});
       expect(errorSpy).toHaveBeenCalled();
     });

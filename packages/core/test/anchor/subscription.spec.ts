@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, MapMutations, SetMutations, subscribe } from '../../src/index.js';
+import { anchor, MapMutations, setCleanUpHandler, SetMutations, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Subscription', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -158,6 +158,27 @@ describe('Anchor Core - Subscription', () => {
 
       state.count = 1;
       expect(handler).toHaveBeenCalledTimes(1); // only init, no set
+    });
+
+    it('should properly unsubscribe on cleanup', () => {
+      const cleanupList = new Set<() => void>();
+      const state = anchor({ count: 0 });
+      const handler = vi.fn();
+
+      const cleanupHandler = (fn: () => void) => cleanupList.add(fn);
+      setCleanUpHandler(cleanupHandler);
+
+      subscribe(state, handler);
+      expect(cleanupList.size).toBe(1);
+
+      state.count = 1;
+      expect(handler).toHaveBeenCalledTimes(2); // init and set
+
+      // Trigger cleanup.
+      cleanupList.forEach((fn) => fn());
+
+      state.count = 2;
+      expect(handler).toHaveBeenCalledTimes(2); // only init and first set
     });
   });
 
