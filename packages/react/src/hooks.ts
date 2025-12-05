@@ -29,7 +29,7 @@ let effectHook = (() => {
       [
         'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
         'Ensure the import runs before any components that use createEffect.',
-        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+        'Documentation: https://anchorlib.dev/docs/react/getting-started#client-initialization',
       ],
       effectHook
     );
@@ -51,7 +51,7 @@ let stateHook = ((init) => {
       [
         'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
         'Ensure the import runs before any components that use createState.',
-        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+        'Documentation: https://anchorlib.dev/docs/react/getting-started#client-initialization',
       ],
       stateHook
     );
@@ -84,7 +84,7 @@ let refHook = <T>(init: T) => {
       [
         'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
         'Ensure the import runs before any components that use createRef.',
-        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+        'Documentation: https://anchorlib.dev/docs/react/getting-started#client-initialization',
       ],
       refHook
     );
@@ -115,7 +115,7 @@ let memoHook = ((fn) => {
       [
         'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
         'Ensure the import runs before any components that use createMemo.',
-        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+        'Documentation: https://anchorlib.dev/docs/react/getting-started#client-initialization',
       ],
       memoHook
     );
@@ -139,7 +139,7 @@ let memoHOC = ((Component: FunctionComponent) => {
       [
         'Import "@anchorlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
         'Ensure the import runs before any components that use memoize.',
-        'Documentation: https://anchorlib.dev/docs/react/installation#client',
+        'Documentation: https://anchorlib.dev/docs/react/getting-started#client-initialization',
       ],
       memoHook
     );

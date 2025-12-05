@@ -1,5 +1,5 @@
 import { mutable } from '@anchorlib/core';
-import { setup, template } from '@anchorlib/react';
+import { effect, setup, template } from '@anchorlib/react';
 import type { FormEvent } from 'react';
 
 type Todo = {
@@ -126,6 +126,10 @@ const TodoItem = setup(({ todo, todos }: { todo: Todo; todos: Todo[] }) => {
   const handleRemove = (todo: Todo) => {
     todos.splice(todos.indexOf(todo), 1);
   };
+
+  effect(() => {
+    console.log('Todo completed:', todo.completed);
+  });
 
   const Template = template(
     () => (

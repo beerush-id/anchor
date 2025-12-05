@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createEffect, createMemo, createRef, createState } from '../src/hooks';
+import { createEffect, createMemo, createRef, createState, memoize } from '../src/hooks';
 
 describe('Anchor React - Hooks', () => {
   beforeEach(() => {
@@ -99,6 +99,18 @@ describe('Anchor React - Hooks', () => {
 
       expect(result).toBe('computed:dep1');
       expect(computeFn).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('memoize', () => {
+    it('should create non-memoized component without client initialization', () => {
+      const component = vi.fn().mockReturnValue('mounted');
+      const memoized = memoize(component);
+
+      const result = memoized({});
+
+      expect(typeof memoized).toBe('function');
+      expect(result).toBe('mounted');
     });
   });
 });

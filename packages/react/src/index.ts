@@ -1,6 +1,7 @@
 export {
   anchor,
   derived,
+  effect,
   exception,
   fetchState,
   getContext,
@@ -32,7 +33,7 @@ export {
   createRef,
   createState,
 } from './hooks.js';
-export { effect, onCleanup, onMount } from './lifecycle.js';
+export { onCleanup, onMount } from './lifecycle.js';
 export * from './node.js';
 export * from './props.js';
 export * from './types.js';

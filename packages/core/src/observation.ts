@@ -1,8 +1,10 @@
 import { ANCHOR_SETTINGS } from './constant.js';
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
+import { onCleanup } from './lifecycle.js';
 import { META_REGISTRY } from './registry.js';
 import type {
+  EffectHandler,
   KeyLike,
   Linkable,
   StateChange,
@@ -11,6 +13,7 @@ import type {
   StateObserverList,
   StatePublicTracker,
   StateTracker,
+  StateUnsubscribe,
 } from './types.js';
 import { closure, isFunction, shortId } from './utils/index.js';
 
@@ -18,11 +21,79 @@ const OBSERVER_SYMBOL = Symbol('state-observer');
 const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
 
 /**
+ * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.
+ * The effect function will be executed immediately and then again whenever any tracked state changes.
+ *
+ * @param fn - The effect function to execute. It receives a StateChange event object containing
+ *                 information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+ * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
+ *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
+ */
+export function effect(fn: EffectHandler) {
+  let cleanup: StateUnsubscribe | undefined;
+
+  const observer = createObserver((event) => {
+    runCleanup();
+    runEffect(event);
+  });
+
+  const runEffect = (event: StateChange) => {
+    const unobserve = observer.run(() => fn(event));
+
+    if (typeof unobserve === 'function') {
+      cleanup = unobserve;
+    } else {
+      cleanup = undefined;
+    }
+  };
+  const runCleanup = () => {
+    cleanup?.();
+    observer.destroy();
+  };
+
+  onCleanup(runCleanup);
+
+  runEffect({ type: 'init', keys: [] });
+
+  return runCleanup;
+}
+
+/**
+ * Executes a function outside any observer context.
+ * This function temporarily removes the current observer context,
+ * executes the provided function, and then restores the previous observer context.
+ * It's useful for running code that shouldn't be tracked by the reactive system.
+ *
+ * @param fn - The function to execute outside of observer context
+ */
+export function untrack<R>(fn: () => R): R {
+  const prevObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
+  closure.set(OBSERVER_SYMBOL, undefined as never);
+
+  if (typeof fn === 'function') {
+    try {
+      return fn();
+    } catch (error) {
+      captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
+    } finally {
+      closure.set(OBSERVER_SYMBOL, prevObserver);
+    }
+  } else {
+    const error = new Error('Invalid argument.');
+    captureStack.error.argument('The given argument is not a function', error, untrack);
+  }
+
+  return undefined as R;
+}
+
+/**
+ * @deprecated This function is deprecated.
  * Sets the current observer context for state tracking.
  * This function is used internally to manage the observer stack during state derivation.
  *
  * @param observer - The observer to set as the current context
  * @returns A cleanup function that restores the previous observer context
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setObserver(observer: StateObserver) {
   const currentObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
@@ -51,6 +122,7 @@ export function setObserver(observer: StateObserver) {
  * Gets the current observer context.
  *
  * @returns The current observer or undefined if none is set
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getObserver(): StateObserver | undefined {
   return closure.get(OBSERVER_SYMBOL);
@@ -63,6 +135,7 @@ export function getObserver(): StateObserver | undefined {
  * @param onChange - Callback function that will be called when state changes occur
  * @param onTrack - Callback function that will be called when a new state is tracked
  * @returns A new observer instance with states management, onChange handler, onDestroy hook, and cleanup functionality
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function createObserver(
   onChange: (event: StateChange) => void,
@@ -70,6 +143,7 @@ export function createObserver(
 ): StateObserver {
   let observedSize = 0;
   let isObserving = false;
+  let isDestroyed = false;
 
   const states = new WeakMap();
   const cleaners = new Set<() => void>();
@@ -91,6 +165,8 @@ export function createObserver(
   }) satisfies StateTracker;
 
   const destroy = () => {
+    if (isDestroyed) return;
+
     const currentCleaners = Array.from(cleaners);
 
     for (const clear of currentCleaners) {
@@ -101,6 +177,7 @@ export function createObserver(
 
     observedSize = 0;
     cleaners.clear();
+    isDestroyed = true;
   };
 
   const assign = ((init, observers) => {
@@ -142,6 +219,7 @@ export function createObserver(
 
   const run = <R>(fn: () => R): R => {
     isObserving = true;
+    isDestroyed = false;
 
     const prevObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
     closure.set(OBSERVER_SYMBOL, observer);
@@ -175,6 +253,8 @@ export function createObserver(
     onChange(event);
   };
 
+  onCleanup(destroy);
+
   const observer = {
     id: shortId(),
     get states() {
@@ -206,6 +286,7 @@ export function createObserver(
  * @template R - The type of the return value of the function.
  * @param {() => R} fn - The function to execute within the observer context
  * @param {StateObserver} observer - The observer to set as the current context
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function withinObserver<R>(fn: () => R, observer: StateObserver): R;
 export function withinObserver<R>(observer: StateObserver, fn: () => R): R;
@@ -224,34 +305,6 @@ export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrO
   } else {
     const error = new Error('Invalid argument.');
     captureStack.error.argument('The given argument is not a function', error, withinObserver);
-  }
-
-  restore?.();
-
-  return result as R;
-}
-/**
- * Executes a function outside any observer context.
- * This function temporarily removes the current observer context,
- * executes the provided function, and then restores the previous observer context.
- * It's useful for running code that shouldn't be tracked by the reactive system.
- *
- * @param fn - The function to execute outside of observer context
- */
-export function untrack<R>(fn: () => R): R {
-  const restore = setObserver(undefined as never);
-
-  let result: R | undefined;
-
-  if (typeof fn === 'function') {
-    try {
-      result = fn();
-    } catch (error) {
-      captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
-    }
-  } else {
-    const error = new Error('Invalid argument.');
-    captureStack.error.argument('The given argument is not a function', error, untrack);
   }
 
   restore?.();
@@ -277,6 +330,7 @@ const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
  *
  * @param tracker - The tracker function to set as current
  * @returns A restore function that reverts to the previous tracker when called
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setTracker(tracker: StatePublicTracker) {
   const currentTracker = closure.get<StatePublicTracker>(TRACKER_SYMBOL);
@@ -306,6 +360,7 @@ export function setTracker(tracker: StatePublicTracker) {
  * state changes and dependencies during reactive computations.
  *
  * @returns The current tracker function or undefined if no tracker is set
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getTracker(): StatePublicTracker | undefined {
   return closure.get<StatePublicTracker>(TRACKER_SYMBOL);
@@ -319,6 +374,7 @@ export function getTracker(): StatePublicTracker | undefined {
  * @param init - The initial state value that is being tracked
  * @param observers - A collection of observers that are watching this state
  * @param key - The key or property identifier for the state change
+ * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function track(init: Linkable, observers: StateObserverList, key: KeyLike) {
   const currentTracker = closure.get<StatePublicTracker>(TRACKER_SYMBOL);

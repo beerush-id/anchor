@@ -887,3 +887,5 @@ export type RefStack = {
 };
 
 export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;
+
+export type EffectHandler = (event: StateChange) => StateUnsubscribe | void;

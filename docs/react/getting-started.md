@@ -17,7 +17,7 @@ This guide covers the essentials of building React applications with Anchor, fro
 npm install @anchorlib/react
 ```
 
-## 1. Client Initialization
+## Client Initialization
 
 **Crucial Step**: To enable reactivity in the browser, you must import the client entry point before any component setup runs. This binds Anchor's reactive system to React's hooks.
 
@@ -31,7 +31,7 @@ import App from './App';
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
 ```
 
-## 2. Your First Component (Simple)
+## Your First Component (Simple)
 
 Anchor components don't always need complex architecture. For simple components, you can use `setup` and return `render` directly.
 
@@ -52,7 +52,7 @@ export const Counter = setup(() => {
 });
 ```
 
-## 3. Selective Rendering
+## Selective Rendering
 
 As components grow, you might be tempted to split them into multiple smaller components (e.g., `CardHeader`, `CardBody`). In standard React, this often leads to **props drilling**—passing data down through layers of components just to display it.
 
@@ -93,7 +93,7 @@ export const UserCard = setup(() => {
 *   **Performance**: `Header` and `Body` update independently. If `user.role` changes, `Header` does not re-render.
 *   **No Props Drilling**: Sub-templates share the `setup` scope.
 
-## 4. Building a Universal Component
+## Building a Universal Component
 
 Anchor components are **Universal** by default. This means the same code can run as:
 1.  **RSC (React Server Components)**: Generates static HTML. Zero JavaScript sent to the client.
@@ -230,7 +230,7 @@ export default function App() {
 
 Anchor abstracts these differences so you can write logic once.
 
-## 5. Best Practices
+## Best Practices
 
 ### Separate Logic from View
 Keep your `setup` function focused on state and logic. Use `template`s for your view. This makes your code cleaner and easier to test.

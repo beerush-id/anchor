@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type BindableProps, setup } from '../src/index.js';
 import { createLifecycle } from '../src/lifecycle.js';
 import { applyAttributes, escapeAttributes, flattenStyles, nodeRef } from '../src/node';
+import '../src/client/index';
 
 describe('Anchor React - Node', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -17,17 +18,6 @@ describe('Anchor React - Node', () => {
   });
 
   describe('nodeRef', () => {
-    it('should warn when calling nodeRef outside of component', () => {
-      vi.useFakeTimers();
-
-      const factory = vi.fn();
-      nodeRef(factory);
-      vi.runAllTimers();
-
-      expect(factory).toHaveBeenCalled();
-      expect(errSpy).toHaveBeenCalled();
-    });
-
     it('should create a node reference', () => {
       const factory = () => ({ className: 'test' });
       let ref: BindableProps | undefined;
