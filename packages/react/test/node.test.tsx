@@ -67,9 +67,16 @@ describe('Anchor React - Node', () => {
       lifecycle.cleanup();
     });
 
-    it('should destroy cleanly', () => {
-      const factory = () => ({ className: 'test' });
+    it('should handle void returns and destroy', () => {
+      const state = mutable(0);
+      const factory = (node: unknown) => {
+        expect(node).toBeUndefined();
+        expect(state.value).toBeGreaterThan(-1);
+        // Void return.
+      };
       const ref = nodeRef(factory);
+
+      state.value++;
 
       expect(() => ref.destroy()).not.toThrow();
     });

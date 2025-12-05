@@ -1,7 +1,7 @@
 import { mutable } from '@anchorlib/core';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setup, template, view } from '../src/hoc.js';
+import { render as renderView, setup, template, view } from '../src/hoc.js';
 import '../src/client/index';
 
 describe('Anchor React - HOC', () => {
@@ -65,8 +65,7 @@ describe('Anchor React - HOC', () => {
       const TestComponent = (props: { value?: string }) => {
         renderCount++;
 
-        const Template = template(() => <span>Test Component: {props.value || 'default'}</span>);
-        return <Template />;
+        return renderView(() => <span>Test Component: {props.value || 'default'}</span>);
       };
 
       const SetupComponent = setup(TestComponent);
