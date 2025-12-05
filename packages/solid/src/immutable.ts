@@ -14,6 +14,7 @@ import {
 } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates an immutable state from a linkable object.
  *
  * @param init - The initial linkable value
@@ -26,6 +27,7 @@ export function immutableRef<T extends Linkable, S extends LinkableSchema = Link
 ): Immutable<T>;
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates an immutable state from a model input with explicit schema.
  *
  * @param init - The initial model input value
@@ -40,6 +42,7 @@ export function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ImmutableOutput<T>;
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates an immutable state from a model input with schema options.
  *
  * @param init - The initial model input value
@@ -56,6 +59,7 @@ export function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
 }
 
 /**
+ * @deprecated Use 'writable()' instead.
  * Creates a mutable reference to a reactive state.
  *
  * @param state - The reactive state to make mutable
@@ -64,6 +68,7 @@ export function immutableRef<S extends LinkableSchema, T extends ModelInput<S>>(
 export function writableRef<T extends State>(state: T): Mutable<T>;
 
 /**
+ * @deprecated Use 'writable()' instead.
  * Creates a mutable reference to a reactive state with specific mutation contracts.
  *
  * @param state - The reactive state to make mutable
@@ -73,6 +78,7 @@ export function writableRef<T extends State>(state: T): Mutable<T>;
 export function writableRef<T extends State, K extends MutationKey<T>[]>(state: T, contracts: K): MutablePart<T, K>;
 
 /**
+ * @deprecated Use 'writable()' instead.
  * Creates a mutable reference to a reactive state, optionally with specific mutation contracts.
  *
  * @param state - The reactive state to make mutable

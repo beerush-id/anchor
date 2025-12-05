@@ -54,15 +54,13 @@ features:
 
 ```tsx /App.tsx [active]
 import '@tailwindcss/browser';
-import { useRef } from 'react';
-import { useAnchor } from '@anchorlib/react';
-import { view } from '@anchorlib/react/view';
+import { setup, template, mutable } from '@anchorlib/react';
 
-const Counter = () => {
-  const [counter] = useAnchor({ count: 0 });
+const Counter = setup(() => {
+  const counter = mutable({ count: 0 });
 
-  // 😏 Only this tiny part of the UI that need to updated!
-  const CounterView = view(() => <h1>Counter: {counter.count}</h1>);
+  // 😏 Only this tiny part of the UI that need to be updated!
+  const CounterView = template(() => <h1>Counter: {counter.count}</h1>);
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
@@ -87,7 +85,7 @@ const Counter = () => {
       </div>
     </div>
   );
-};
+});
 
 export default Counter;
 ```

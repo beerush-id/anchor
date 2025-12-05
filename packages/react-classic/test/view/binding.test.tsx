@@ -160,7 +160,7 @@ describe('Anchor React - View Binding', () => {
         await vi.runAllTimersAsync();
 
         expect(mockOnChange).toHaveBeenCalledWith(mockEvent);
-        // expect(ctx.get('checked')?.value).toBe(true);
+        expect(ctx.get('checked')?.value).toBe(true);
 
         const emptyEvent = {
           target: {},
@@ -202,7 +202,7 @@ describe('Anchor React - View Binding', () => {
 
         await vi.runAllTimersAsync();
 
-        // expect(ctx.get('count')?.value).toBe(10);
+        expect(ctx.get('count')?.value).toBe(10);
         expect(mockOnChange).toHaveBeenCalledWith(mockEvent);
 
         const emptyEvent = {
@@ -214,8 +214,7 @@ describe('Anchor React - View Binding', () => {
 
         await vi.runAllTimersAsync();
 
-        // expect(ctx.get('count')?.value).toBeUndefined();
-        expect(ctx.get('count')?.value).toBe(0);
+        expect(ctx.get('count')?.value).toBeUndefined();
       });
 
       it('should handle usage on date input', async () => {
@@ -245,7 +244,7 @@ describe('Anchor React - View Binding', () => {
 
         await vi.runAllTimersAsync();
 
-        // expect(ctx.get('date')?.value?.toDateString()).toBe('Thu Sep 18 2025');
+        expect(ctx.get('date')?.value?.toDateString()).toBe('Thu Sep 18 2025');
         expect(mockOnChange).toHaveBeenCalledWith(mockEvent);
       });
     });

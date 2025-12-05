@@ -1,6 +1,6 @@
 import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchorlib/core';
 
-/**
+/** @deprecated Use 'fetchState()' or 'asyncState()' instead.
  * Creates a fetch state with GET or DELETE method.
  *
  * @template R - The type of the initial data
@@ -11,6 +11,7 @@ import { type FetchOptions, fetchState, type FetchState, type StreamOptions, str
 export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 /**
+ * @deprecated Use 'fetchState()' or 'asyncState()' instead.
  * Creates a fetch state with POST, PUT or PATCH method.
  *
  * @template R - The type of the initial data
@@ -25,6 +26,7 @@ export function fetchRef<R, P>(
 ): FetchState<R>;
 
 /**
+ * @deprecated Use 'fetchState()' or 'asyncState()' instead.
  * Creates a fetch state with any HTTP method.
  *
  * @template R - The type of the initial data
@@ -40,6 +42,7 @@ export function fetchRef<R>(
 }
 
 /**
+ * @deprecated Use 'streamState()' instead.
  * Creates a stream state with GET or DELETE method.
  *
  * @template R - The type of the initial data
@@ -50,6 +53,7 @@ export function fetchRef<R>(
 export function streamRef<R>(init: R, options: StreamOptions<R> & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 /**
+ * @deprecated Use 'streamState()' instead.
  * Creates a stream state with POST, PUT or PATCH method.
  *
  * @template R - The type of the initial data
@@ -64,6 +68,7 @@ export function streamRef<R, P>(
 ): FetchState<R>;
 
 /**
+ * @deprecated Use 'streamState()' instead.
  * Creates a stream state with any HTTP method.
  *
  * @template R - The type of the initial data

@@ -1,5 +1,5 @@
 import { type ChangeEvent, type FunctionComponent, useCallback } from 'react';
-import { type Bindable, getRefState, isValueRef, resolveProps, useObserverRef, useValue } from '../index.js';
+import { type Bindable, getRefState, isRef, resolveProps, useObserverRef, useValue } from '../index.js';
 import type { BindingType, InitProps, InputBinding, InputBindingProps } from './Types.js';
 
 const CONVERTIBLE = new Set<BindingType | undefined>(['number', 'range', 'date']);
@@ -33,7 +33,7 @@ export function bindable<Props extends InitProps>(Component: FunctionComponent<P
     const { type, bind, bindKey, name, onChange, value, checked, ...allProps } = props as Props;
     const restProps = observer.run(() => resolveProps(allProps as Props));
 
-    const key = isValueRef(bind) ? 'value' : (bindKey ?? name);
+    const key = isRef(bind) ? 'value' : (bindKey ?? name);
     const val = type === 'checkbox' || type === 'radio' ? (checked ?? false) : (value ?? '');
 
     const current = useValue(getRefState(bind), key) ?? val;

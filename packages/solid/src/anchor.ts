@@ -11,6 +11,7 @@ import {
 } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive reference to a linkable object with automatic tracking setup.
  *
  * @typeParam T - The type of the linkable object
@@ -25,6 +26,7 @@ export function anchorRef<T extends Linkable, S extends LinkableSchema = Linkabl
 ): T;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive reference to a model input with a defined schema.
  *
  * @typeParam S - The schema type
@@ -41,6 +43,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ModelOutput<T>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates an immutable reactive reference to a model input with a defined schema.
  *
  * @typeParam S - The schema type
@@ -57,6 +60,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ImmutableOutput<T>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive reference with schema and options.
  *
  * @typeParam S - The schema type
@@ -75,6 +79,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 }
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive anchor state that can be used in Vue components.
  * This is an alias for anchorRef.
  * @type {{<T>(init: T, options?: StateOptions): VariableRef<T>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: StateBaseOptions): VariableRef<ModelOutput<S>>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema: S, options?: (StateBaseOptions & {immutable: true})): VariableRef<ImmutableOutput<T>>}}
@@ -95,6 +100,7 @@ export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
 }
 
 /**
+ * @deprecated Use 'ordered()' instead.
  * Creates a reactive array that maintains a sorted order based on a comparison function.
  *
  * @typeParam T - The type of the array elements

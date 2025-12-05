@@ -1,9 +1,10 @@
 import { anchor } from '@anchorlib/core';
 import { onCleanup } from 'solid-js';
-import type { ConstantRef, VariableRef } from './types.js';
 import { REF_REGISTRY } from './reactive.js';
+import type { ConstantRef, VariableRef } from './types.js';
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive variable reference that can be used in Solid components.
  * This function creates a reactive state container that integrates with Solid's reactivity system
  * and Anchor's state management. The returned reference object provides getter and setter access
@@ -16,6 +17,7 @@ import { REF_REGISTRY } from './reactive.js';
 export function variableRef<T>(init: T): VariableRef<T>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a constant reactive reference that can be used in Solid components.
  * This overload creates a read-only reactive reference that integrates with Solid's reactivity system.
  * The returned reference object only provides a getter for the underlying reactive value.
@@ -28,6 +30,7 @@ export function variableRef<T>(init: T): VariableRef<T>;
 export function variableRef<T>(init: T, constant: true): ConstantRef<T>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive reference that can be used in Solid components.
  * This function creates a reactive state container that integrates with Solid's reactivity system
  * and Anchor's state management. Depending on the constant parameter, it returns either a
@@ -67,6 +70,7 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
 }
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates a constant reactive reference that can be used in Solid components.
  * This is a convenience function that creates a read-only reactive reference by calling
  * variableRef with the constant flag set to true.
@@ -80,6 +84,7 @@ export function constantRef<T>(init: T): ConstantRef<T> {
 }
 
 /**
+ * @deprecated Use 'isValueRef()' instead.
  * Checks if a given value is a reactive reference created by variableRef or constantRef.
  * This function can be used to determine if an object is a reactive reference that
  * integrates with the Solid and Anchor reactivity systems.

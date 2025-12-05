@@ -367,11 +367,11 @@ anchorFn.read = ((state) => {
 
       return value;
     },
-    set: (target, prop) => {
+    set: (_target, prop) => {
       captureStack.violation.setter(prop, handler.set);
       return true;
     },
-    deleteProperty: (target, prop) => {
+    deleteProperty: (_target, prop) => {
       captureStack.violation.remover(prop, handler.deleteProperty);
       return true;
     },

@@ -1,5 +1,30 @@
 import './reactive.js';
 
+export {
+  anchor,
+  derived,
+  exception,
+  fetchState,
+  getContext,
+  history,
+  immutable,
+  isImmutableRef,
+  isMutableRef,
+  isValueRef,
+  microbatch,
+  microloop,
+  micropush,
+  microtask,
+  model,
+  mutable,
+  ordered,
+  setContext,
+  shortId,
+  streamState,
+  subscribe,
+  undoable,
+  writable,
+} from '@anchorlib/core';
 export * from './anchor.js';
 export * from './derive.js';
 export * from './fetch.js';

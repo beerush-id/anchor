@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render } from '@testing-library/react';
-import { effect, named, observer, onCleanup, onMount, setup, useAnchor, useVariable, view } from '../../src/index.js';
 import { anchor } from '@anchorlib/core';
+import { act, render } from '@testing-library/react';
 import { type FunctionComponent, useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { named, observer, setup, useAnchor, useVariable, view } from '../../src/index.js';
+import { effect, onCleanup, onMount } from '../../src/lifecycle.js';
 
 // Mock the debugRender function since it's not available in tests
 vi.mock('../../src', async () => {

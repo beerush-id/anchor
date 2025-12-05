@@ -30,15 +30,13 @@ which aims to empower developers with intuitive code and provide users with a bl
 
 ::: tip Declarative Syntax
 
-```tsx {17}
+```tsx {14}
 import { setup, bind, writable } from '@anchorlib/react';
 import { editorApp, TOOL_ICON_SIZE } from '../lib/editor.js';
 
 export const DisplayPanel = setup(() => {
-  // SETUP PHASE.
   const styleWriter = writable(editorApp.currentStyle, ['display']);
 
-  // REACTIVE PHASE.
   return (
     <ToggleGroup>
       <Toggle value={bind(styleWriter, 'display')} target="block" className="toggle-btn">
@@ -46,8 +44,8 @@ export const DisplayPanel = setup(() => {
         <Tooltip>Block</Tooltip>
       </Toggle>
 
-      {/* Your IDE will warn you about this line because the `position` is not in contract. */}
-      <Toggle value={bind(styleWriter, 'position')} target="grid" className="toggle-btn"> // [!code error]
+      {/* Your IDE will warn you about this line because the `position` is not in contract. [!code error] */}
+      <Toggle value={bind(styleWriter, 'position')} target="grid" className="toggle-btn">
         <LayoutGrid size={ TOOL_ICON_SIZE } />
         <Tooltip>Grid</Tooltip>
       </Toggle>

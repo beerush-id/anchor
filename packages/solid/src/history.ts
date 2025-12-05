@@ -1,6 +1,7 @@
 import { history, type HistoryOptions, type HistoryState, type State } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'history()' instead.
  * Creates a reactive history state that can be used to provide undo/redo functionality.
  *
  * This function wraps the core history functionality and provides a SolidJS-compatible

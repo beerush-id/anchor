@@ -1,9 +1,10 @@
 import { anchor, type Immutable, subscribe } from '@anchorlib/core';
-import type { ConstantRef, StateRef } from './types.js';
 import { onCleanup } from 'solid-js';
 import { REF_REGISTRY } from './reactive.js';
+import type { ConstantRef, StateRef } from './types.js';
 
 /**
+ * @deprecated Use `derived()` instead.
  * Creates a derived reference that transforms the value of a source state.
  *
  * This function takes a source state and a transformation function, and returns

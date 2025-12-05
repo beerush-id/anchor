@@ -10,6 +10,7 @@ import {
 } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'model()' instead.
  * Creates a reactive model reference based on a schema and initial data.
  *
  * @param schema - The schema defining the structure and validation rules for the model
@@ -24,6 +25,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ModelOutput<S>;
 
 /**
+ * @deprecated Use 'model()' instead.
  * Creates an immutable reactive model reference based on a schema and initial data.
  *
  * @param schema - The schema defining the structure and validation rules for the model
@@ -38,6 +40,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ImmutableOutput<S>;
 
 /**
+ * @deprecated Use 'model()' instead.
  * Creates a reactive model reference based on a schema and initial data.
  *
  * @param schema - The schema defining the structure and validation rules for the model
@@ -54,6 +57,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 }
 
 /**
+ * @deprecated Use 'exception()' instead.
  * Creates an exception map for handling errors associated with a state object.
  *
  * @param state - The state object to create exception handlers for
