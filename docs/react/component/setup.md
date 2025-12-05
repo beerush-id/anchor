@@ -1,5 +1,5 @@
 ---
-title: "The Setup Function"
+title: "Component Setup"
 description: "Understanding the setup function: The stable initialization phase of an Anchor component."
 keywords:
   - setup function
@@ -7,13 +7,15 @@ keywords:
   - stable logic
 ---
 
-# The Setup Function
+# Component Setup
 
 The `setup` function is the entry point for Anchor components. It serves as the **constructor** for your component, running exactly once when the component mounts.
 
-## How It Works
+## Creating Component
 
-Unlike standard React functional components which re-run the entire function body on every render, `setup` creates a **closure** that persists for the lifetime of the component.
+You create an Anchor component by passing a function to `setup()`.
+
+This closure-based approach means your state and logic persist for the component's lifetime, avoiding the re-execution pitfalls of standard React functional components.
 
 ```tsx
 import { setup, render, mutable } from '@anchorlib/react';
@@ -35,24 +37,53 @@ export const Counter = setup((props) => {
 }, 'Counter');
 ```
 
-## Arguments
+## Reactive Props
 
-### `props`
-The `props` object passed to `setup` is a **Reactive Proxy**.
+The `props` object passed to `setup` is a **Reactive Proxy**. It works differently than React props:
 
-- **In Setup**: Accessing `props` gives you the *initial* value.
-- **In Render/Effects**: Accessing `props` tracks dependencies. If the parent updates the prop, your effect/render will re-run.
+### 1. Reacting to Changes
+Since `setup` runs once, `props` are not refreshed on every render. Instead, you listen to changes by accessing properties within a **reactive boundary** (like `effect`, `template`, or `render`).
 
-> [!WARNING]
-> **Do NOT destructure props in the setup body** if you want them to be reactive. Destructuring breaks the proxy connection.
+- **In Setup (Top-level)**: Accessing `props.name` gives you the *initial* value.
+- **In Effect/Render**: Accessing `props.name` subscribes to updates.
+
+```tsx
+export const Greeter = setup((props) => {
+  // ⛔️ WRONG: This only runs once. Updates to 'name' are ignored.
+  const nameUpper = props.name.toUpperCase();
+
+  // ✅ CORRECT: 'derived' creates a reactive boundary.
+  // Updates to 'name' will re-calculate 'message'.
+  const message = derived(() => `Hello, ${props.name}!`);
+
+  return () => <h1>{message.value}</h1>;
+});
+```
+
+> [!WARNING] Preserving Reactivity
+> Destructuring `props` in the setup body will capture the **initial value**, breaking reactivity for those variables. To ensure updates are tracked, access properties directly from `props` (e.g., `props.name`).
 >
 > ```ts
-> // ❌ Bad: 'name' will be stuck at the initial value
+> // ❌ Initial value only (not reactive)
 > const { name } = props;
 >
-> // ✅ Good: Access 'props.name' where needed
+> // ✅ Reactive (updates tracked)
 > effect(() => console.log(props.name));
 > ```
+
+### 2. Two-Way Binding
+In Anchor, props can be writable. If you assign a new value to a prop, Anchor attempts to **propagate the change up** to the parent.
+
+```tsx
+// Inside a customized Input component
+const handleInput = (e) => {
+  // If the parent passed a mutable state or bound value, 
+  // this assignment updates the PARENT'S state!
+  props.value = e.target.value; 
+};
+```
+
+This automatic propagation is powered by the **Binding** system. For more details on how to control this behavior, see the [Binding & Refs](./binding.md) documentation.
 
 ## Return Value
 

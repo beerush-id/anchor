@@ -417,3 +417,4 @@ anchorFn.remove = remove;
 anchorFn.clear = clear;
 
 export const anchor = anchorFn as Anchor;
+export const snapshot = anchorFn.snapshot as Anchor['snapshot'];
