@@ -1,45 +1,50 @@
 ---
-title: "Template & Render"
-description: "Defining the Reactive View layer of your component."
+title: "View & Template"
+description: "The Presentation Layer: Creating reactive UIs that respond to state changes."
 keywords:
-  - template function
-  - render function
-  - reactive view
-  - view layer
+  - view
+  - template
+  - presentation layer
+  - reactive ui
 ---
 
-# Template & Render
+# View & Template
 
-In Anchor, the **View** is responsible for describing your UI and updating it whenever the state changes. You define the View using `template()` or `render()`.
+The **View** is the Presentation Layer of your Anchor component. It's responsible for displaying your UI and automatically updating when state changes.
 
-In Anchor, a component consists of two distinct layers:
+Views are **reactive**—they track which state properties they read and re-render only when those specific properties change. This creates efficient, fine-grained updates without manual optimization.
 
-1.  **Setup (Logic Layer)**: Runs **once**. It initializes state, handles logic, and prepares data.
-2.  **View (Presentation Layer)**: Runs **frequently**. It describes the UI based on the current state.
+## Understanding Views
+
+A View is any reactive UI that responds to state changes. In Anchor, you create Views in two ways:
+
+1. **Template** - A reusable View that accepts props
+2. **Component View** - A View that belongs to a specific Component
 
 ```tsx
+import { setup, template, render, mutable } from '@anchorlib/react';
+
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const Counter = setup(() => {
-  // 1. Setup (Logic Layer)
   const state = mutable({ count: 0 });
   const increment = () => state.count++;
 
-  // 2. View (Presentation Layer)
+  // ━━━ VIEW (Presentation Layer) ━━━
   return render(() => (
     <button onClick={increment}>
       {state.count}
     </button>
   ));
-});
+}, 'Counter');
 ```
 
-## Reactive View
+## Template: Reusable Views
 
-A **template** is a reusable reactive view that accepts props and automatically updates when reactive state changes. You create templates using the `template()` function.
+A **Template** is a View that can be reused across your application. Templates accept props and update independently when their dependencies change.
 
-You can define templates in two places:
+### Standalone Templates
 
-### 1. Standalone Template
-Defined **outside** of any component setup. These are shared templates that rely entirely on the props passed to them.
+Standalone Templates are defined **outside** any Component. They rely entirely on props passed to them:
 
 ```tsx
 // components/UserCard.tsx
@@ -53,14 +58,20 @@ const UserCard = template<{ user: User }>(({ user }) => (
 ), 'UserCard');
 ```
 
-### 2. Internal Template
-Defined **inside** a `setup` function. These templates can access the component's state through closure, allowing you to update specific parts of the UI without re-rendering the component.
+**Use standalone Templates when:**
+- The Template doesn't need access to Component state
+- You want to share the Template across multiple Components
+- The Template is purely presentational
+
+### Internal Templates
+
+Internal Templates are defined **inside** a Component. They can access the Component's state through closure:
 
 ```tsx
 export const Profile = setup(() => {
   const state = mutable({ name: 'Alice', bio: 'Frontend Dev' });
 
-  // Internal template - updates when used state changes
+  // Internal Template - accesses state.name from closure
   const Avatar = template<{ size: number }>(({ size }) => (
     <img src={`/avatars/${state.name}.png`} width={size} />
   ), 'Avatar');
@@ -75,10 +86,38 @@ export const Profile = setup(() => {
       <UserCard user={state} />
     </div>
   );
-});
+}, 'Profile');
 ```
 
-### Props Handling
+**Use internal Templates when:**
+- The Template needs to access Component state directly
+- The Template is specific to this Component
+- You want to avoid passing many props
+
+## Component Views
+
+A **Component View** is a reactive View that belongs to a specific Component, created using `render()`. Unlike Templates, Component Views don't accept props—they access state through closure.
+
+```tsx
+export const Banner = setup(() => {
+  const state = mutable({ title: 'Hello', description: 'World' });
+
+  // Component View
+  return render(() => (
+    <div>
+      <h1>{state.title}</h1>
+      <p>{state.description}</p>
+    </div>
+  ));
+}, 'Banner');
+```
+
+**Use Component Views when:**
+- The entire Component UI needs to be reactive
+- You don't need to reuse the View elsewhere
+- The View is simple and self-contained
+
+## Template Props
 
 Templates receive two arguments:
 
@@ -86,10 +125,10 @@ Templates receive two arguments:
 const MyTemplate = template<Props>((props, parentProps) => { /* ... */ }, 'MyTemplate');
 ```
 
--   **Props** (first argument): Contains the props passed to the template.
--   **Parent Props** (second argument): Reference to the parent component's setup props (only available for internal templates).
+- **`props`** (first argument): The props passed to the Template
+- **`parentProps`** (second argument): Reference to the parent Component's props (only available for internal Templates)
 
-**Example with parent props:**
+### Example with Parent Props
 
 ```tsx
 interface AppProps {
@@ -99,7 +138,7 @@ interface AppProps {
 export const App = setup<AppProps>((props) => {
   const state = mutable({ items: ['A', 'B', 'C'] });
 
-  // Internal template can access both its own props and parent props
+  // Internal Template accesses both its own props and parent props
   const Item = template<{ text: string }>(
     ({ text }, { theme }) => (
       <div className={`item theme-${theme}`}>
@@ -114,78 +153,53 @@ export const App = setup<AppProps>((props) => {
       {state.items.map(item => <Item key={item} text={item} />)}
     </div>
   ));
-});
+}, 'App');
 ```
 
 > [!WARNING] Rest Props
-> Using `const { prop1, ...rest } = props` reads **all properties** from props, causing the template to re-render whenever *any* prop changes, even unused ones.
+> Using `const { prop1, ...rest } = props` reads **all properties** from props, causing the Template to re-render whenever *any* prop changes, even unused ones.
 >
 > **When it's acceptable:**
-> - Simple templates that forward props to native elements (e.g., `<input {...rest} />`)
+> - Simple Templates that forward props to native elements (e.g., `<input {...rest} />`)
 > - Templates that genuinely need to react to all prop changes
 >
 > **When to avoid:**
-> - Large templates or list items where performance matters
+> - Large Templates or list items where performance matters
 > - When you only need specific props
 >
 > **Better approach:** Destructure only what you need: `const { prop1, prop2 } = props`
 
-## Inline View
+## Static Layout
 
-An **inline view** is the reactive view returned directly from `setup()`. You create inline views using the `render()` function.
-
-Unlike templates (which accept props), inline views access state through closure and are typically used as the main return value of your component.
-
-```tsx
-export const Banner = setup(() => {
-  const state = mutable({ title: 'Hello', description: 'World' });
-
-  // Returns an Inline View
-  return render(() => (
-    <div>
-      <h1>{state.title}</h1>
-      <p>{state.description}</p>
-    </div>
-  ));
-});
-```
-
-## When to use what?
-
-| Function | Purpose | Use Case |
-| :--- | :--- | :--- |
-| **`template()`** | Reusable View | List items, cards, modals, reusable UI parts. |
-| **`render()`** | Inline View | Main component view. |
-
-## Best Practices
-
-### 1. Separate Static Layout from Dynamic Templates
-You can mix static JSX and reactive templates to optimize your component. The static parts (returned directly from setup) never re-render, while the `template`s or `render` blocks inside them update independently.
+You can return JSX directly from the Component to create a **static layout** that never re-renders. Embed Templates inside to make specific parts reactive:
 
 ```tsx
 export const Dashboard = setup(() => {
-  const state = mutable({ ... });
+  const state = mutable({ title: 'Dashboard', data: [] });
 
-  // Dynamic parts
+  // Templates
   const Header = template(() => <header>{state.title}</header>, 'Header');
   const Content = template(() => <main>{state.data}</main>, 'Content');
 
-  // Static Layout (Runs once)
+  // Static Layout (runs once)
   return (
     <div className="layout">
-      <Header />
+      <Header /> {/* Updates when state.title changes */}
       <div className="sidebar">Static Sidebar</div>
-      <Content />
+      <Content /> {/* Updates when state.data changes */}
     </div>
   );
-});
+}, 'Dashboard');
 ```
 
-### 2. Always Name Your Templates
-Pass a string as the second argument to `template` (e.g., `'Header'`). This sets the display name in React DevTools, making inspection and debugging much easier.
+**Benefits:**
+- The layout `div`s never re-render
+- Only `Header` and `Content` update when their dependencies change
+- Event handlers and static content remain stable
 
-### 3. Use Templates for List Items
-For optimal list performance, extract list items into templates. They update independently when their props change:
+## List Rendering
+
+For optimal list performance, extract list items into Templates. Each item updates independently:
 
 ```tsx
 interface Todo {
@@ -194,7 +208,7 @@ interface Todo {
   done: boolean;
 }
 
-// External template - can directly mutate the mutable todo object
+// Standalone Template - can directly mutate the mutable todo object
 const TodoItem = template<{ todo: Todo }>(({ todo }) => (
   <li>
     <input
@@ -221,18 +235,18 @@ export const TodoList = setup(() => {
       ))}
     </ul>
   ));
-});
+}, 'TodoList');
 ```
 
 When a todo is toggled, only that specific `TodoItem` re-renders, not the entire list.
 
 > [!NOTE] When to Use Internal Templates
-> Define templates **inside** `setup()` only when they need to access parent state through closure:
+> Define Templates **inside** the Component only when they need to access Component state through closure:
 > ```tsx
 > export const Dashboard = setup(() => {
 >   const state = mutable({ theme: 'dark', users: [...] });
 >   
->   // Internal template accesses state.theme from parent scope
+>   // Internal Template accesses state.theme from Component scope
 >   const UserCard = template<{ user: User }>(({ user }) => (
 >     <div className={`card ${state.theme}`}>
 >       {user.name}
@@ -247,29 +261,29 @@ When a todo is toggled, only that specific `TodoItem` re-renders, not the entire
 > });
 > ```
 > 
-> If the template only relies on props, define it **outside** to share it across all instances.
+> If the Template only relies on props, define it **outside** to share it across all instances.
 
-## Common Pitfalls
+## Common Patterns
 
 ### Accessing Reactive State in Static JSX
 
-JSX returned directly from `setup()` (not wrapped in `render()`) is **static** - created once and never re-evaluated. This means:
+JSX returned directly from the Component (not wrapped in `render()`) is **static**—created once and never re-evaluated.
 
-**✅ Works:** Static JSX can contain reactive **templates** (they update independently)
+**✅ Works:** Static JSX can contain reactive Templates (they update independently)
 ```tsx
 export const Layout = setup(() => {
   const state = mutable({ title: 'Dashboard' });
   
   const Header = template(() => <h1>{state.title}</h1>, 'Header');
   
-  // Static wrapper JSX returned directly
+  // Static wrapper
   return (
     <div className="layout">
-      <Header /> {/* This template updates when state.title changes */}
+      <Header /> {/* This Template updates when state.title changes */}
       <div className="sidebar">Navigation</div> {/* This is static */}
     </div>
   );
-});
+}, 'Layout');
 ```
 
 **❌ Doesn't Work:** Static JSX displays the **initial value** but won't react to state changes
@@ -277,14 +291,14 @@ export const Layout = setup(() => {
 export const Counter = setup(() => {
   const state = mutable({ count: 0 });
   
-  // Static JSX - created once, never re-evaluates
+  // Static wrapper
   return (
     <div>
       <button onClick={() => state.count++}>+</button>
       <span>{state.count}</span> {/* Shows initial value (0), never updates */}
     </div>
   );
-});
+}, 'Counter');
 ```
 
 **✅ Fix:** Wrap in `render()` to make JSX reactive
@@ -298,7 +312,35 @@ export const Counter = setup(() => {
       <span>{state.count}</span> {/* Updates correctly! */}
     </div>
   ));
-});
+}, 'Counter');
 ```
 
-**The rule:** If your JSX needs to **read** reactive state, wrap it in `render()` or `template()`. If it only **contains** reactive templates, returning static JSX is fine.
+**The rule:** If your JSX needs to **read** reactive state, wrap it in `render()` or `template()`. If it only **contains** reactive Templates, returning static JSX is fine.
+
+## When to Use What?
+
+| Approach | Purpose | Use Case |
+| :--- | :--- | :--- |
+| **`template()`** | Reusable View | List items, cards, modals, shared UI components |
+| **`render()`** | Component View | Main Component View, simple reactive UIs |
+| **Static JSX** | Static Layout | Wrapper layouts, containers with embedded Templates |
+
+## Best Practices
+
+### 1. Name Your Templates
+Always provide a display name as the second argument to `template()`. This makes debugging in React DevTools much easier:
+
+```tsx
+const Header = template(() => <header>...</header>, 'Header');
+```
+
+### 2. Choose the Right Scope
+- **Standalone Template**: When the View is purely presentational and doesn't need Component state
+- **Internal Template**: When the View needs to access Component state directly
+- **Component View**: When the entire Component UI is reactive and not reused elsewhere
+
+### 3. Optimize List Rendering
+Extract list items into Templates for independent updates. This prevents re-rendering the entire list when a single item changes.
+
+### 4. Separate Static from Reactive
+Use static JSX for layouts and containers that never change. Embed Templates for the parts that need to update.

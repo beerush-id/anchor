@@ -69,10 +69,10 @@ export const TodoApp = () => {
     formState.text = '';
   };
 
-  // 2. Create a Reactive Template for the Form
+  // 2. Create a Template for the Form
   const TodoForm = template(() => ( // [!code ++]
     <div className="form">
-      {/* Only this template updates on keystroke */}
+      {/* Only this view updates on keystroke */}
       <input 
         value={formState.text} 
         onInput={e => formState.text = e.target.value} 
@@ -100,14 +100,15 @@ export const TodoApp = () => {
 
 ### 3. Full Migration (Anchor Component)
 
-Finally, you can convert the entire component to use `setup`. This gives you stable setup logic and full reactivity.
+Finally, you can convert the entire component to use Anchor's pattern. This gives you stable setup logic and fine-grained reactivity.
 
 ```tsx
 // TodoApp.tsx (Anchor)
 import { setup, template, mutable } from '@anchorlib/react';
 
+// Component runs once.
 export const TodoApp = setup(() => { // [!code ++]
-  // 1. Setup runs once. State is stable.
+  // 1. State is stable.
   const formState = mutable({ text: '' }); // [!code ++]
   const todos = mutable([]); // [!code ++]
 
@@ -134,7 +135,7 @@ export const TodoApp = setup(() => { // [!code ++]
     </ul>
   )); // [!code ++]
 
-  // 4. Return the layout [!code ++]
+  // 4. Return the static layout [!code ++]
   return (
     <div>
       <TodoForm />
@@ -143,8 +144,8 @@ export const TodoApp = setup(() => { // [!code ++]
   ); // [!code ++]
 });
 
-// 5. Independent Item Component
-const TodoItem = template(({ todo }) => ( // [!code ++]
+// 5. Standalone Item Template [!code ++]
+const TodoItem = template(({ todo }) =>
   <li style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
     <input 
       type="checkbox" 
@@ -157,9 +158,9 @@ const TodoItem = template(({ todo }) => ( // [!code ++]
 ```
 
 > [!TIP] Pro Tip
-> Define sub-components like `TodoItem` **outside** the `setup` function.
+> Define standalone templates like `TodoItem` **outside** the `setup` function.
 > 
-> Since `TodoItem` relies purely on props and doesn't need access to `TodoApp`'s internal scope (like `formState`), defining it inside would just re-create the component function unnecessarily on every `TodoApp` instance. Defining it outside is more efficient.
+> Since `TodoItem` relies purely on props and doesn't need access to `TodoApp`'s internal scope (like `formState`), defining it inside would just re-create the template unnecessarily on every `TodoApp` instance. Defining it outside is more efficient.
 
 ### Why is this better?
 

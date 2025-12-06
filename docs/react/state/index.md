@@ -33,9 +33,9 @@ Because Anchor state is just a gateway, it enables both **true mutability** and 
 - **Zero Overhead**: Since the underlying data isn't cloned, there is no performance penalty for managing large or complex state objects.
 
 ### 3. Separation of State and View
-By decoupling state logic from component rendering, Anchor encourages a clean architecture:
-- **State Logic**: Defined in "Headless" factories (e.g., `createTab`). Handles data, validation, and methods.
-- **View Components**: Defined in `setup` functions. Handles rendering and event binding.
+By decoupling state logic from View rendering, Anchor encourages a clean architecture:
+- **State Logic**: Defined in the Component (Logic Layer) or in "Headless" factories. Handles data, validation, and methods.
+- **View**: Defined in the Presentation Layer using Templates and Component Views. Handles rendering and event binding.
 
 ## How It Works
 

@@ -127,7 +127,7 @@ For this, Anchor provides the `subscribe` function.
 
 `subscribe(state, handler, recursive? = true)`
 
-- **state**: The mutable state object.
+- **state**: The reactive object.
 - **handler**: A function called with the new state and the event details.
 - **recursive**: Whether to listen to nested changes (default: `true`).
 

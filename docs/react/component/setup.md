@@ -1,34 +1,32 @@
 ---
-title: "Component Setup"
-description: "Understanding the setup function: The stable initialization phase of an Anchor component."
+title: "Component"
+description: "The Logic Layer: Creating stable, single-run constructors for your React components."
 keywords:
-  - setup function
-  - component initialization
+  - component
+  - logic layer
+  - constructor
   - stable logic
 ---
 
-# Component Setup
+# Component
 
-The `setup` function is the entry point for Anchor components. It serves as the **constructor** for your component, running exactly once when the component mounts.
+The **Component** is the Logic Layer of your Anchor application. It acts as a constructor that runs exactly once when the component is created, defining the state, logic, and effects that power your UI.
 
-## Creating Component
+## Creating a Component
 
-You create an Anchor component by passing a function to `setup()`.
-
-This closure-based approach means your state and logic persist for the component's lifetime, avoiding the re-execution pitfalls of standard React functional components.
+You create a Component using `setup()`, which accepts a function that defines your component's logic:
 
 ```tsx
 import { setup, render, mutable } from '@anchorlib/react';
 
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const Counter = setup((props) => {
-  // 1. SETUP PHASE (Runs Once)
-  // Define state, effects, and handlers here.
+  // State and logic
   const state = mutable({ count: 0 });
   
   const increment = () => state.count++;
 
-  // 2. REACTIVE PHASE (Runs on Updates)
-  // Return the render function.
+  // ━━━ VIEW (Presentation Layer) ━━━
   return render(() => (
     <button onClick={increment}>
       {state.count}
@@ -37,45 +35,56 @@ export const Counter = setup((props) => {
 }, 'Counter');
 ```
 
+The Component function runs **once** when the component is created and never re-executes. This creates a stable environment where:
+
+- **State** persists for the component's lifetime
+- **Functions** maintain consistent references
+- **Effects** are defined once and track dependencies automatically
+
+This single-run nature eliminates stale closures—your functions always reference the current state without needing dependency arrays or `useCallback`.
+
 ## Reactive Props
 
-The `props` object passed to `setup` is a **Reactive Proxy**. It works differently than React props:
+Props are implemented as reactive proxies that update in place. This means the Component doesn't re-execute when props change—instead, reactive boundaries (like [Views](/react/component/template) and [Effects](/react/component/side-effect)) automatically track and respond to prop updates.
 
-### 1. Reacting to Changes
-Since `setup` runs once, `props` are not refreshed on every render. Instead, you listen to changes by accessing properties within a **reactive boundary** (like `effect`, `template`, or `render`).
+### Reading Props
 
-- **In Setup (Top-level)**: Accessing `props.name` gives you the *initial* value.
-- **In Effect/Render**: Accessing `props.name` subscribes to updates.
+Where you access props determines the behavior:
+
+- **In Component body** (top-level): Reads the current value at the time of execution
+- **In reactive boundaries** (View, `effect`, `derived`): Tracks the property and re-runs when it changes
 
 ```tsx
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const Greeter = setup((props) => {
-  // ⛔️ WRONG: This only runs once. Updates to 'name' are ignored.
-  const nameUpper = props.name.toUpperCase();
+  // This reads props.name once during Component creation
+  console.log('Greeting: ', props.name); // Won't update
 
-  // ✅ CORRECT: 'derived' creates a reactive boundary.
-  // Updates to 'name' will re-calculate 'message'.
+  // This creates a reactive computation that updates with props.name
   const message = derived(() => `Hello, ${props.name}!`);
 
-  return () => <h1>{message.value}</h1>;
+  // ━━━ VIEW (Presentation Layer) ━━━
+  return render(() => <h1>{message.value}</h1>);
 });
 ```
 
-> [!WARNING] Preserving Reactivity
-> Destructuring `props` in the setup body will capture the **initial value**, breaking reactivity for those variables. To ensure updates are tracked, access properties directly from `props` (e.g., `props.name`).
+> [!WARNING] Destructuring Props
+> Destructuring props in the Component body extracts the current value, disconnecting it from future updates:
 >
 > ```ts
-> // ❌ Initial value only (not reactive)
+> // This captures the initial value only
 > const { name } = props;
 >
-> // ✅ Reactive (updates tracked)
+> // Access props directly to maintain reactivity
 > effect(() => console.log(props.name));
 > ```
 
-### 2. Two-Way Binding
-In Anchor, props can be writable. If you assign a new value to a prop, Anchor attempts to **propagate the change up** to the parent.
+### Writing to Props
+
+Props can be writable. Assigning to a prop propagates the change to the parent:
 
 ```tsx
-// Inside a customized Input component
+// Inside a custom Input component
 const handleInput = (e) => {
   // If the parent passed a mutable state or bound value, 
   // this assignment updates the PARENT'S state!
@@ -83,55 +92,79 @@ const handleInput = (e) => {
 };
 ```
 
-This automatic propagation is powered by the **Binding** system. For more details on how to control this behavior, see the [Binding & Refs](./binding.md) documentation.
+This automatic propagation is powered by the **Binding** system. See [Binding & Refs](./binding.md) for details.
 
-## Return Value
+## Rendering
 
-The `setup` function must return a **ReactNode** (JSX), just like a standard React component.
+Every Component must return JSX to render the interface. You have three approaches to render the interface, each serving different purposes:
 
-### Using `render()`
-The most common pattern is to return `render(() => JSX)`. This creates an anonymous reactive boundary around your JSX.
+### Using Component View
+
+A Component View is the reactive UI that belongs to a specific Component and is not reused elsewhere. It updates automatically when the state it reads changes.
+
+Create a Component View by wrapping your JSX with `render()`:
 
 ```tsx
 return render(() => <div>{state.value}</div>);
 ```
 
-### Using `template()`
-For more complex views, you can define one or more templates separately and return them.
+The View tracks which state properties it reads and re-renders only when those properties change.
+
+### Using Template
+
+A Template is a reusable View that can be used multiple times or broken down into smaller, independently updating parts. Each Template tracks its own dependencies and updates only when needed.
+
+Define Templates using `template()`:
 
 ```tsx
-const View = template(() => <div>{state.value}</div>);
-return <View />;
-```
+const Header = template(() => <h1>{state.title}</h1>, 'Header');
+const Content = template(() => <main>{state.data}</main>, 'Content');
 
-### Returning JSX Directly (Static Layout)
-You can return JSX directly from `setup`. This is useful for defining the **static layout** of your component, while embedding reactive parts (templates) inside it.
-
-```tsx
 return (
-  <div className="layout">
+  <div>
     <Header />
-    <Sidebar />
-    <Content /> {/* Reactive part */}
+    <Content />
   </div>
 );
 ```
 
-## Best Practices
+When `state.title` changes, only `Header` re-renders. When `state.data` changes, only `Content` re-renders.
 
-### Complex Components: Static Layout + Multiple Templates
-For complex components, avoid putting everything into a single huge `render()` function. Instead, break your UI into smaller `template`s and use the `setup` return value to define the static structure.
+### Using Static Layout
+
+A Static Layout is JSX that's created once and never re-renders. Use this for structural elements that don't change, embedding Templates for the parts that need to update.
+
+Return JSX directly without wrapping it in `render()`:
+
+```tsx
+const Header = template(() => <h1>{state.title}</h1>, 'Header');
+const Content = template(() => <main>{state.data}</main>, 'Content');
+
+return (
+  <div className="layout">
+    <Header /> {/* Updates when state.title changes */}
+    <div className="sidebar">Static Sidebar</div>
+    <Content /> {/* Updates when state.data changes */}
+  </div>
+);
+```
+
+The `div` elements are created once. Only `Header` and `Content` update when their respective state changes.
+
+## Component Composition
+
+For complex components, break your UI into multiple Templates and return a static JSX to define the static structure.
 
 ```tsx
 export const Dashboard = setup(() => {
   const state = mutable({ ... });
 
-  // 1. Define reactive parts as templates
-  const Header = template(() => <h1>{state.title}</h1>);
-  const Sidebar = template(() => <nav>{/* ... */}</nav>);
-  const Content = template(() => <main>{state.data}</main>);
+  // Define reactive parts as Templates
+  const Header = template(() => <h1>{state.title}</h1>, 'Header');
+  const Sidebar = template(() => <nav>{/* ... */}</nav>, 'Sidebar');
+  const Content = template(() => <main>{state.data}</main>, 'Content');
 
-  // 2. Return the static layout structure
+  // Return the static layout structure
   return (
     <div className="dashboard-layout">
       <Header />
@@ -144,13 +177,7 @@ export const Dashboard = setup(() => {
 }, 'Dashboard');
 ```
 
-This pattern has several benefits:
-- **Performance**: Only the specific parts that change (Header, Content) re-render. The layout `div`s never re-render.
-- **Organization**: Keeps the render logic modular and easy to read.
+**Benefits:**
+- **Performance**: Only specific parts (Header, Content) re-render when state changes. The layout `div`s never re-render.
+- **Organization**: Keeps rendering logic modular and easy to read.
 - **Separation**: Clearly separates static structure from reactive content.
-
-## Benefits
-
-1.  **No Stale Closures**: Since `setup` runs once, all functions defined inside it share the same scope. You don't need `useCallback` to keep function references stable.
-2.  **Performance**: Expensive initialization logic (like creating large data structures or setting up subscriptions) happens once, not on every render.
-3.  **Clean Separation**: It enforces a clear distinction between "what the component does" (Setup) and "what the component looks like" (Reactive Phase).

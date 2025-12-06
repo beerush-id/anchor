@@ -19,7 +19,7 @@ npm install @anchorlib/react
 
 ## Client Initialization
 
-**Crucial Step**: To enable reactivity in the browser, you must import the client entry point before any component setup runs. This binds Anchor's reactive system to React's hooks.
+**Crucial Step**: To enable reactivity in the browser, you must import the client entry point before any component runs. This binds Anchor's reactive system to React's hooks.
 
 ```tsx
 // main.tsx or app/layout.tsx
@@ -31,19 +31,18 @@ import App from './App';
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
 ```
 
-## Your First Component (Simple)
+## Your First Component
 
-Anchor components don't always need complex architecture. For simple components, you can use `setup` and return `render` directly.
+Anchor components don't always need complex architecture. For simple components, you can link the View to the component directly using the `render` function.
 
 ```tsx
 import { setup, mutable, render } from '@anchorlib/react';
 
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const Counter = setup(() => {
-  // 1. Setup: Runs ONCE. Stable logic.
   const state = mutable({ count: 0 });
 
-  // 2. Render: Reactive.
-  // The function passed to render() re-runs when state changes.
+  // ━━━ VIEW (Presentation Layer) ━━━
   return render(() => (
     <button onClick={() => state.count++}>
       Count: {state.count}
@@ -56,29 +55,30 @@ export const Counter = setup(() => {
 
 As components grow, you might be tempted to split them into multiple smaller components (e.g., `CardHeader`, `CardBody`). In standard React, this often leads to **props drilling**—passing data down through layers of components just to display it.
 
-With Anchor, you can use **Templates** to split your UI logic *without* losing the scope.
+With Anchor, you can use **Internal Templates** to split your **Views** *without* losing the scope.
 
 ```tsx
 import { setup, mutable, template } from '@anchorlib/react';
 
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const UserCard = setup(() => {
   const user = mutable({ name: 'John Doe', role: 'Admin' });
 
-  // Sub-template: Has direct access to 'user' scope.
-  // No props passing required!
+  // ━━━ INTERNAL TEMPLATE (Context-aware View) ━━━
   const Header = template(() => (
     <div className="header">
       <h1>{user.name}</h1>
     </div>
   ));
 
-  // Sub-template: Updates independently.
+  // ━━━ INTERNAL TEMPLATE (Context-aware View) ━━━
   const Body = template(() => (
     <div className="body">
       <p>Role: {user.role}</p>
     </div>
   ));
 
+  // ━━━ STATIC JSX (Static Presentation Layer) ━━━
   return (
     <div className="card">
       <Header />
@@ -91,11 +91,11 @@ export const UserCard = setup(() => {
 **Why this is better:**
 *   **Cohesion**: Related UI parts stay together in one file.
 *   **Performance**: `Header` and `Body` update independently. If `user.role` changes, `Header` does not re-render.
-*   **No Props Drilling**: Sub-templates share the `setup` scope.
+*   **No Props Drilling**: Internal templates share the `component` scope.
 
-## Building a Universal Component
+## Universal Components
 
-Anchor components are **Universal** by default. This means the same code can run as:
+Anchor components are **Universal** by default. This means the same component can be rendered as:
 1.  **RSC (React Server Components)**: Generates static HTML. Zero JavaScript sent to the client.
 2.  **SSR (Server-Side Rendering)**: Generates HTML on the server, then hydrates on the client.
 3.  **CSR (Client-Side Rendering)**: Runs entirely in the browser.
@@ -127,7 +127,7 @@ export const UserProfile = setup(({ id, user }: Props) => {
     error: null,
   });
 
-  // 2. Logic (Stable)
+  // 2. Logic
   const getUser = () => {
     if (!id) return; // Can't fetch without ID
     
@@ -165,8 +165,8 @@ export const UserProfile = setup(({ id, user }: Props) => {
     </div>
   ));
 
-  // 5. Render
-  // Main render loop only re-runs when loading/error state changes.
+  // 5. Component View
+  // Main view only re-renders when loading/error state changes.
   return render(() => {
     if (state.loading) return <div>Loading...</div>;
     if (state.error) return <div className="error">{state.error}</div>;
@@ -198,9 +198,16 @@ export default async function Page({ params }) {
 Pass both data and ID. The HTML is generated on the server, but the component hydrates on the client, enabling the "Refresh" button.
 
 ```tsx
+// clients/index.ts
+'use client';
+
+export { UserProfile } from '../components/UserProfile';
+```
+
+```tsx
 // page.tsx (SSR Route)
 import { db } from './db';
-import { UserProfile } from './UserProfile';
+import { UserProfile } from './clients';
 
 export default async function Page({ params }) {
   const user = await db.user.find(params.id);
@@ -224,7 +231,7 @@ export default function App() {
 ```
 
 ### RSC vs SSR vs CSR
-*   **RSC**: The component runs **once** on the server. `state` is created, logic runs, and HTML is generated. The `onClick` handler is stripped (unless it's a Client Component).
+*   **RSC**: The component runs **once** on the server. `state` is created, logic runs, and HTML is generated. Event handlers are stripped.
 *   **SSR**: HTML is generated on the server, but the component code *also* runs on the client to "hydrate" (attach event listeners).
 *   **CSR**: Everything happens in the browser.
 
@@ -233,10 +240,10 @@ Anchor abstracts these differences so you can write logic once.
 ## Best Practices
 
 ### Separate Logic from View
-Keep your `setup` function focused on state and logic. Use `template`s for your view. This makes your code cleaner and easier to test.
+Keep your `component` focused on state and logic. Use `template`s for your view. This makes your code cleaner and easier to test.
 
 ### Use Contracts for Shared State
-When sharing state between components, use `writable()` to define strict contracts. This prevents accidental mutations from unrelated components.
+When sharing state between components, use **write contract** to define strict contracts. This prevents accidental mutations from unrelated components.
 
 ```ts
 // shared-state.ts
@@ -246,11 +253,11 @@ export const globalConfig = immutable({ theme: 'dark' });
 export const configWriter = writable(globalConfig, ['theme']);
 ```
 
-### Fine-Grained Templates
-Don't be afraid to create small templates.
+### Fine-Grained Views
+Don't be afraid to create small views using templates.
 
-**Bad: Giant Render Function**
-Re-renders the entire component for any small change.
+**Bad: Giant View**
+Re-renders the entire View for any small change.
 ```tsx
 return render(() => (
   <div className="layout">
@@ -260,7 +267,7 @@ return render(() => (
 ));
 ```
 
-**Good: Split Templates**
+**Good: Split Views**
 Updates are isolated. Changing `state.menu` only re-renders `<Sidebar />`.
 ```tsx
 const Sidebar = template(() => <div className="sidebar">{state.menu}</div>);
@@ -275,7 +282,7 @@ return (
 ```
 
 ### Direct DOM Binding
-For high-performance needs (animations, drag-and-drop), use `nodeRef` to bind state directly to DOM attributes, bypassing React's render cycle entirely.
+For high-performance needs (animations, drag-and-drop), use `node binding` to bind state directly to DOM attributes, bypassing React's render cycle entirely.
 
 ```tsx
 const divRef = nodeRef(() => ({

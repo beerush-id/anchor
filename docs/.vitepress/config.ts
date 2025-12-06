@@ -123,8 +123,8 @@ export default defineConfig({
             collapsed: false,
             items: [
               { text: 'Overview', link: '/react/component/index.html' },
-              { text: 'Setup', link: '/react/component/setup' },
-              { text: 'Template', link: '/react/component/template' },
+              { text: 'Component', link: '/react/component/setup' },
+              { text: 'View & Template', link: '/react/component/template' },
               { text: 'Side Effects', link: '/react/component/side-effect' },
               { text: 'Lifecycle', link: '/react/component/lifecycle' },
               { text: 'Binding & Refs', link: '/react/component/binding' },

@@ -15,24 +15,6 @@ challenge.
 
 Anchor is not just another state management library. It is a fundamental architectural shift designed to solve the core problem of modern React development: **The Rendering Model**.
 
-### Comparison with React's Built-in State Management
-
-While React's built-in state management with hooks like useState, useReducer, and useContext provides basic state management capabilities, Anchor enhances these patterns with advanced features for complex applications:
-
-| Feature                     | React Built-in                  | Anchor for React |
-| --------------------------- | ------------------------------- | ---------------- |
-| Fine-grained reactivity     | ❌                              | ✅               |
-| Intuitive Syntax            | ❌ (requires immutable pattern) | ✅               |
-| True immutability           | ❌                              | ✅               |
-| Automatic memory management | ❌ (inefficient deep copy)      | ✅               |
-| Schema validation           | ❌                              | ✅               |
-| Portability                 | ❌ (limited to React)           | ✅               |
-| History Tracking            | ❌                              | ✅               |
-| Nested reactivity           | Deep                            | Deep by default  |
-| Performance optimization    | Manual                          | Automatic        |
-| Debugging experience        | Complex                         | Simplified       |
-| Bundle size                 | -                               | Minimal overhead |
-
 ## The Problems
 
 React's "re-render everything" model was revolutionary, but as applications scale, it creates a cascade of issues that affect everyone from users to business owners.
@@ -57,37 +39,35 @@ React's "re-render everything" model was revolutionary, but as applications scal
 
 ## The Solution
 
-Anchor solves these problems by separating your component into two distinct phases, moving away from "UI = f(state)" to a more stable and efficient model.
+Anchor solves these problems through **Separation of Concerns**, dividing your component into two distinct layers:
 
-### 1. Setup (Stable)
-Runs **once** when the component is created. Your logic, state initialization, and side effects live here. Because it never re-runs, your closures are never stale, and your logic is stable by default.
+### Component: The Logic Layer
+Runs **once** when the component is created. Your state, logic, and effects live here. Because it never re-executes, your closures are never stale, and your logic is stable by default.
 
-### 2. Template (Reactive)
-A fine-grained reactive renderer that binds your stable state to the DOM. It isolates view updates so that when state changes, **only the specific parts of the DOM that need to update are touched**.
+### View: The Presentation Layer
+A fine-grained reactive renderer that binds your stable state to the UI. When state changes, **only the specific parts that depend on that state update**—nothing else.
 
 ```tsx
-import { setup, mutable, template } from '@anchorlib/react';
+import { setup, mutable, template, render } from '@anchorlib/react';
 
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const Counter = setup(() => {
-  // Setup: Runs Once
-  // Logic is stable, no dependency arrays needed.
+  // Runs once. Logic is stable, no dependency arrays needed.
   const state = mutable({ count: 0 });
-
   const increment = () => state.count++;
 
-  // Template: Reactive
-  // Only this part re-runs when state.count changes.
-  const Count = template(() => <h1>{state.count}</h1>);
+  // ━━━ VIEW (Presentation Layer) ━━━
+  // Reactive Template - only re-runs when state.count changes
+  const Count = template(() => <h1>{state.count}</h1>, 'Count');
 
-  // Main Render: Static
-  // This part runs once. The button and handler are never re-created.
+  // Static Layout - runs once, never re-renders
   return (
     <>
       <Count />
       <button onClick={increment}>Increment</button>
     </>
   );
-});
+}, 'Counter');
 ```
 
 ::: tip Scalability Note
@@ -98,23 +78,25 @@ At first glance, this might look like more boilerplate for a simple counter. How
 
 Anchor combines the best of modern reactivity with React's ecosystem.
 
-### Universal Components
-Write your component once. It works seamlessly as **Static HTML** in React Server Components (RSC) and as a **Reactive Component** on the Client. No code duplication, no mental context switching.
-
 ### Fine-Grained Reactivity
-Dependencies are tracked automatically at the property level. If you update `state.user.name`, only the text node displaying the name updates. The rest of your component (and its parents/children) remains untouched.
+Dependencies are tracked automatically at the property level. If you update `state.user.name`, only the View displaying the name updates. The rest of your component (and its parents/children) remains untouched.
 
-### True Immutability (Optional)
-While `mutable` is sufficient for most local component state, Anchor offers **True Immutability** for shared application state (like User or Settings). It ensures safety when sharing state across components without worrying about accidental mutations.
-*   **Controlled Writes**: Use contracts to define exactly where and how state can be modified.
-*   **Proxy Safety**: Runtime protection against unauthorized changes.
-
-### Data Integrity (Optional)
-Often used with immutable state, built-in integration with **Zod** schema validation and TypeScript ensures your shared state is always valid.
-*   **Schema Validation**: Runtime checks prevent invalid data from entering your state.
-*   **Type Safety**: Compile-time checks catch errors before you run your code.
+### Universal Components
+Write your Component once. It works seamlessly as **Static HTML** in **React Server Components** (RSC) and as a **Reactive Component** on the Client. No code duplication, no mental context switching.
 
 ### Efficient Rendering
 You have full control over the rendering strategy:
-*   **`template`**: Control *when* and *what* to render within the React tree.
-*   **`nodeRef`**: Bypass React's renderer entirely for high-frequency updates (like animations or drag-and-drop) by binding directly to DOM attributes.
+*   **Template**: Create reusable Views that update independently
+*   **Component View**: Define reactive UIs directly in your Component
+*   **Static Layout**: Return non-reactive JSX for parts that never change
+*   **Direct DOM Binding**: Bypass React entirely for high-frequency updates (animations, drag-and-drop) by binding directly to DOM attributes
+
+### True Immutability (Optional)
+While `mutable` is sufficient for most local component state, Anchor offers **True Immutability** for shared application state (like User or Settings). It ensures safety when sharing state across components without worrying about accidental mutations.
+*   **Controlled Writes**: Define exactly where and how state can be modified
+*   **Runtime Safety**: Runtime protection against unauthorized changes
+
+### Data Integrity (Optional)
+Built-in integration with **Zod** schema validation and TypeScript ensures your shared state is always valid.
+*   **Schema Validation**: Runtime checks prevent invalid data from entering your state
+*   **Type Safety**: Compile-time checks catch errors before you run your code

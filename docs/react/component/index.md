@@ -1,26 +1,26 @@
 # Component Architecture
 
-Anchor introduces a **Setup/Template** pattern for building React components. This architecture separates your component's **logic** (state, effects, handlers) from its **view** (JSX).
+Anchor components follow the **Separation of Concerns** principle, clearly dividing your application into two distinct layers:
 
-## The Pattern
+1. **Component (Logic Layer)** - Runs **once**, defines state and behavior
+2. **View (Presentation Layer)** - Runs **reactively**, displays UI based on state
 
-An Anchor component consists of two distinct parts:
-
-1.  **Setup Phase**: Runs **once** when the component mounts. This is where you define state, create effects, and declare event handlers.
-2.  **Reactive Phase**: Runs **reactively** whenever state changes. This is where you return your JSX.
+This separation creates stable, predictable components where logic never re-executes and only the UI updates when state changes.
 
 ```tsx
 import { setup, render, mutable } from '@anchorlib/react';
 
+// ━━━ COMPONENT (Logic Layer) ━━━
 export const Counter = setup((props) => {
-  // --- SETUP PHASE (Runs Once) ---
+  // State and logic - runs once
   const state = mutable({ count: 0 });
 
   const increment = () => {
     state.count++;
   };
 
-  // --- REACTIVE PHASE (Runs Reactively) ---
+  // ━━━ VIEW (Presentation Layer) ━━━
+  // Runs reactively when state.count changes
   return render(() => (
     <button onClick={increment}>
       Count: {state.count}
@@ -29,24 +29,55 @@ export const Counter = setup((props) => {
 }, 'Counter');
 ```
 
-## Why this pattern?
+## Component: The Logic Layer
 
-### 1. No Stale Closures
-In standard React, every render recreates your functions, leading to "stale closure" issues if you're not careful with dependency arrays. In Anchor, your setup code runs once, so your functions (like `increment` above) are stable and always have access to the latest state references.
+The [**Component**](/react/component/setup) is your constructor—a container for state, logic, and effects. It runs exactly once when the component is created, providing a stable foundation for your UI.
 
-### 2. Fine-Grained Reactivity
-The `render` function is wrapped in a reactive observer. It tracks exactly which state properties are accessed during render. When `state.count` changes, only the `render` part re-runs. The `setup` part does not re-run.
+A Component defines:
+- **State** - Reactive data that persists for the component's lifetime
+- **Logic** - Functions and computations that operate on state
+- **Effects** - Side effects that respond to state changes
 
-### 3. Cleaner Code
-You don't need `useCallback`, `useMemo`, or dependency arrays for most things.
-- **State**: Created once, stays stable.
-- **Functions**: Defined once, stay stable.
-- **Effects**: Defined once, track dependencies automatically.
+Because the Component runs only once, your functions are stable and always reference the current state—no stale closures, no dependency arrays.
+
+## View: The Presentation Layer
+
+The [**View**](/react/component/template) displays your data to users. It's reactive—automatically tracking which state properties it reads and re-rendering only when those specific properties change.
+
+A Component can have:
+- **Component View** - A single reactive UI that linked to the Component's body directly.
+- **Templates** - A composition of reusable Views, each reacting independently to different parts of state.
+
+## Why Separation of Concerns?
+
+In standard React, logic and view are tightly coupled—the component function re-executes on every render, recreating functions, recalculating values, and requiring complex patterns like `useCallback`, `useMemo`, and dependency arrays to maintain stability. This coupling creates several problems:
+
+- **Stale closures** - Functions capture outdated state, causing subtle bugs
+- **Performance overhead** - Expensive logic re-runs unnecessarily on every render
+- **Hard to read** - Logic and view mixed together makes code difficult to understand and maintain
+- **Complexity** - Dependency arrays and memoization add cognitive load and maintenance burden
+
+These problems force developers to spend more time debugging, optimizing, and maintaining code instead of building features—directly impacting productivity.
+
+Anchor's Separation of Concerns solves these problems:
+
+### Stability
+Component logic runs once and stays stable. Functions, event handlers, and effects are never recreated—your functions always reference the current state without stale closures or dependency arrays.
+
+### Performance
+Only the View re-runs when state changes. The Component (containing your expensive initialization, computations, and business logic) never re-executes.
+
+### Readability
+Logic and view are clearly separated. You can read the Component to understand what the component does, and read the View to understand what it looks like—no more mental parsing of mixed concerns.
+
+### Simplicity
+No `useCallback`, no `useMemo`, no dependency arrays. Write straightforward code and let the architecture handle optimization automatically.
+
+**The result**: developers spend less time debugging, optimizing, and maintaining—and more time building features.
 
 ## Core Concepts
 
-- [Setup Function](/react/component/setup) - The entry point for your component logic.
-- [Template Function](/react/component/template) - Creating reusable reactive views.
-- [Reactive Props](/react/component/props) - How props work as reactive proxies.
-- [Lifecycle Handlers](/react/component/mount-handler) - `onMount`, `onCleanup`, and `effect`.
-- [Binding & Refs](/react/component/binding) - interacting with DOM elements.
+- [Component](/react/component/setup) - Creating the Logic Layer
+- [View & Template](/react/component/template) - Creating the Presentation Layer
+- [Lifecycle](/react/component/lifecycle) - Component lifecycle and effects
+- [Binding & Refs](/react/component/binding) - Interacting with DOM elements

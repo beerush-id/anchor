@@ -75,9 +75,9 @@ export const Counter = setup((props: { value: number }) => {
 });
 ```
 
-## DOM Binding (`nodeRef`)
+## DOM Binding
 
-`nodeRef` is used to bind state to DOM elements. It handles both accessing the element and efficiently updating its attributes.
+DOM Binding is used to bind state to DOM elements. It handles both accessing the element and efficiently updating its attributes.
 
 ### Accessing DOM Elements
 Use `nodeRef` to get a handle on a DOM node. You can access the node directly inside the factory function when it becomes available.
@@ -109,21 +109,22 @@ return render(() => (
 ));
 ```
 
-### Two-Way DOM Binding
-For inputs, use standard `value` and `onChange` (or `onInput`).
+### Event Handlers in `nodeRef`
+You can include event handlers in the `nodeRef` factory, but they are **only used for initial hydration** by React. They are **ignored** during reactive updates.
 
 ```tsx
-const state = mutable({ text: '' });
+const btnRef = nodeRef(() => ({
+  className: state.active ? 'active' : '',
+  onClick: () => console.log('Clicked') // Passed to React via {...btnRef.attributes}
+}));
 
-return render(() => (
-  <input
-    value={state.text}
-    onInput={(e) => state.text = e.currentTarget.value}
-  />
-));
+// The onClick is static. Changing it later in the factory won't update the listener.
 ```
 
-### The `bind()` Helper
+> [!TIP]
+> Event handlers in `nodeRef` are safe for **React Server Components (RSC)** because they are automatically stripped out during server rendering.
+
+## Binding Reference
 
 The `bind()` function creates a **Binding Reference** that can be passed to components for two-way binding.
 
@@ -142,24 +143,9 @@ const count = mutable(0);
 <Counter value={bind(count)} />
 ```
 
-### Event Handlers in `nodeRef`
-You can include event handlers in the `nodeRef` factory, but they are **only used for initial hydration** by React. They are **ignored** during reactive updates.
+## Bindable State
 
-```tsx
-const btnRef = nodeRef(() => ({
-  className: state.active ? 'active' : '',
-  onClick: () => console.log('Clicked') // Passed to React via {...btnRef.attributes}
-}));
-
-// The onClick is static. Changing it later in the factory won't update the listener.
-```
-
-> [!TIP]
-> Event handlers in `nodeRef` are safe for **React Server Components (RSC)** because they are automatically stripped out during server rendering.
-
-## Advanced: `bindable()`
-
-The `bindable()` helper creates a local `MutableRef` that stays synchronized with a source object (like `props`). This is useful for creating components that can be both controlled and uncontrolled, or simply to normalize props into a mutable interface.
+The `bindable()` helper creates a bindable state that stays synchronized with a source object (like `props`). This is useful for creating components that can be both controlled and uncontrolled, or simply to normalize props into a mutable interface.
 
 ```tsx
 import { setup, bindable, render } from '@anchorlib/react';
@@ -188,7 +174,7 @@ In this example:
 ## Best Practices
 
 ### Avoid Binding to Immutable State
-Never use `bind()` with an `immutable` state object. While Anchor will detect this and warn you, it defeats the purpose of immutability.
+Never use `bind()` with an `immutable` state object. While Anchor will detect this and warn you, it's a bad practice.
 
 ```tsx
 const state = immutable({ count: 0 });
@@ -197,7 +183,7 @@ const state = immutable({ count: 0 });
 <Counter value={bind(state, 'count')} />
 ```
 
-If you need to share state that can be updated by children, use `mutable` or provide a specific `writable` proxy.
+If you need to share state that can be updated by children, use `mutable` or provide a specific `writable` contract.
 
 ### Prefer One-Way for Complex Logic
 Two-way binding (`bind`) is excellent for form inputs and simple settings. However, for complex business logic, explicit event handlers (One-Way Data Flow) are often easier to debug and reason about.

@@ -8,11 +8,30 @@ keywords:
   - anchor vs mobx
 ---
 
-# Anchor vs. Other Libraries
+# Comparison
 
 Anchor is not just another state management library; it's a fundamental shift in how you build React applications. While other libraries focus on managing state *within* React's rendering model, Anchor focuses on **bypassing** that model for optimal performance and developer experience.
 
-## Feature Comparison
+## Anchor vs. React
+
+While React's built-in state management with hooks like useState, useReducer, and useContext provides basic state management capabilities, Anchor enhances these patterns with advanced features for complex applications:
+
+| Feature                     | React Built-in                  | Anchor for React |
+| --------------------------- | ------------------------------- | ---------------- |
+| Fine-grained reactivity     | ❌                              | ✅               |
+| Intuitive Syntax            | ❌ (requires immutable pattern) | ✅               |
+| True immutability           | ❌                              | ✅               |
+| Automatic memory management | ❌ (inefficient deep copy)      | ✅               |
+| Schema validation           | ❌                              | ✅               |
+| Portability                 | ❌ (limited to React)           | ✅               |
+| History Tracking            | ❌                              | ✅               |
+| Nested reactivity           | Deep                            | Deep by default  |
+| Performance optimization    | Manual                          | Automatic        |
+| Debugging experience        | Complex                         | Simplified       |
+| Bundle size                 | -                               | Minimal overhead |
+
+## Anchor vs. Other Libraries
+
 
 | Feature | Anchor | Redux | Zustand | Jotai | MobX |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -26,7 +45,11 @@ Anchor is not just another state management library; it's a fundamental shift in
 
 In standard React, you often have to choose between a **Server Component** (for static rendering) and a **Client Component** (for interactivity). If you want both, you usually end up creating two separate components or forcing everything to be client-side.
 
-Anchor unifies this. You write **one component** that acts as a Server Component during initial render (generating HTML) and automatically hydrates as a Client Component in the browser.
+Anchor unifies this. You write **one component** that can be rendered as:
+
+-   **RSC (React Server Components)**: Generates static HTML. Zero JavaScript sent to the client.
+-   **SSR (Server-Side Rendering)**: Generates HTML on the server, then hydrates on the client.
+-   **CSR (Client-Side Rendering)**: Runs entirely in the browser.
 
 ::: code-group
 ```tsx [Anchor (Unified)]
@@ -88,14 +111,14 @@ Redux is the industry standard for predictable state management, but it comes wi
 
 ::: code-group
 ```tsx [Anchor]
-// Setup: Runs once. Stable.
+// Component: Runs once. Stable.
 const Counter = setup(() => {
   const state = mutable({ count: 0 });
   
   // Direct mutation. No actions/reducers.
   const increment = () => state.count++;
 
-  // Render: Updates independently.
+  // View: Updates independently.
   return render(() => (
     <button onClick={increment}>
       {state.count}
@@ -130,7 +153,7 @@ function Counter() {
 
 **Key Differences:**
 *   **Boilerplate**: Anchor eliminates actions, reducers, and selectors.
-*   **Rendering**: Redux triggers a re-render of the `Counter` component. Anchor re-runs the reactive `render` function, keeping the component's setup logic stable.
+*   **Rendering**: Redux triggers a re-render of the `Counter` component. Anchor re-runs the View, keeping the component's logic stable.
 
 ### Anchor vs. Zustand
 
@@ -165,7 +188,7 @@ function Counter() {
 
 **Key Differences:**
 *   **Subscription**: Anchor subscriptions are automatic and fine-grained. Zustand requires manual selector selection.
-*   **Stale Closures**: Zustand components suffer from stale closures if not careful. Anchor's `template` (and `setup`) ensures stable logic execution.
+*   **Stale Closures**: Zustand components suffer from stale closures if not careful. Anchor's component ensures stable closures for the View.
 
 ### Anchor vs. Jotai
 
@@ -203,7 +226,7 @@ function Cart() {
 
 **Key Differences:**
 *   **Simplicity**: Anchor treats state as standard JavaScript objects. Jotai requires wrapping everything in `atom()`.
-*   **Performance**: Updating an atom in Jotai triggers a React re-render. Anchor re-runs the reactive `template` function.
+*   **Performance**: Updating an atom in Jotai triggers a component re-render. Anchor re-runs only the View.
 
 ### Anchor vs. MobX
 
@@ -211,10 +234,11 @@ MobX is the closest to Anchor in terms of reactivity (mutable proxies), but it t
 
 ::: code-group
 ```tsx [Anchor]
-// Functional Setup
+// Component
 const User = setup(() => {
   const user = mutable({ name: 'John' });
   
+  // View
   return render(() => <div>{user.name}</div>);
 });
 ```
@@ -236,5 +260,5 @@ const User = observer(({ store }) => {
 :::
 
 **Key Differences:**
-*   **Modern API**: Anchor uses a functional `setup` API, avoiding classes and `this` binding issues.
-*   **Rendering**: MobX `observer` wraps the component and triggers re-renders. Anchor's `render` isolates the update.
+*   **Modern API**: Anchor uses a functional `component` API, avoiding classes and `this` binding issues.
+*   **Rendering**: MobX `observer` wraps the component and triggers re-renders. Anchor's `View` isolates the update.
