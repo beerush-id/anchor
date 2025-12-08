@@ -39,7 +39,8 @@
     "vite-tsconfig-paths": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:",
-    "@types/bun": "catalog:"
+    "@types/bun": "catalog:",
+    "@shikijs/types": "catalog:app"
   },
   "dependencies": {
     "@anchorlib/react": "workspace:*"

@@ -54,7 +54,8 @@
     "tailwindcss": "catalog:lib",
     "tsup": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@shikijs/types": "catalog:lib"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",

@@ -38,6 +38,7 @@
     "react-chartjs-2": "^5.3.0",
     "tailwindcss": "catalog:app",
     "typescript": "catalog:app",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@shikijs/types": "catalog:app"
   }
 }
