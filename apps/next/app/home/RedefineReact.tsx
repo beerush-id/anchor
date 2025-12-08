@@ -12,299 +12,158 @@ import {
 import { LayoutTemplate, Scaling, SquareFunction } from 'lucide-react';
 
 const anchorCode = `
-import { setup, view, useAnchor } from '@anchorlib/react-classic';
-import { createContext, useContext } from 'react';
+import { setup, render } from '@anchorlib/react';
 
-const TabContext = createContext(null);
-
-export const TabButton = setup(({ name, children, ...props }) => { // [!code ++]
-  const tab = useContext(TabContext);
-
-  if (tab && !tab.value) tab.select(name); // [!code ++]
-
-  const Template = view(() => ( // [!code ++]
-    <button
-      onClick={() => tab?.select(name)}
-      disabled={tab?.disabled}
-      className={tab?.value === name ? 'active' : ''}
-      {...props}>
-      {children}
-    </button>
-   ));
-
-  return <Template />;
-});
-
-const createTab = (options) => useAnchor({
-  active: options?.value ?? null,
-  disabled: options?.disabled ?? false,
-  select(name) {
-    if (this.disabled) return;
-    this.active = name;
+// Controlled input, two-way data binding.
+export const TextInput = setup((props) => { // [!code ++]
+  const handleChange = (e) => {
+    props.value = e.target.value; // [!code ++]
   }
+
+  return render(() => (
+    <input 
+      type="text" 
+      value={props.value ?? ''}  // [!code ++]
+      onChange={handleChange} />
+  ));
 });
 `.trim();
 
 const reactCode = `
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState } from 'react';
 
-const TabContext = createContext(null);
+export const TextInput = ({ value, onChange, ...props }) => {
+  const [internalValue, setInternalValue] = useState(value ?? '');
 
-export const TabButton = ({ name, children, ...props }) => {
-  const tab = useContext(TabContext);
-
-  // The tricky and scary part. Wrong dependency can cause infinite loops
-  // leading to DDOS-ing ourselves - a true story.
-  useEffect(() => { // [!code --]
-    if (tab && !tab.value) { // [!code --]
-      tab.select(name); // [!code --]
-    } // [!code --]
-  }, [tab, name]); // [!code --]
-
-  const handleClick = () => {
-    tab?.select(name);
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    onChange?.(newValue);
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={tab?.disabled}
-      className={tab?.value === name ? 'active' : ''}
-      {...props}>
-      {children}
-    </button>
+    <input 
+      type="text" 
+      value={value ?? internalValue} 
+      onChange={handleChange} />
   );
-};
-
-const createTab = (options) => {
-  const [active, setActive] = useState(options?.value ?? null);
-  const [disabled, setDisabled] = useState(options?.disabled ?? false);
-
-  return {
-    active,
-    disabled,
-    setActive,
-    setDisabled,
-    select(name) {
-      if (this.disabled) return;
-      setActive(name);
-    }
-  };
 };
 `.trim();
 
 const reduxCode = `
-import { createContext, useContext, useReducer } from 'react';
+import { createStore } from 'redux';
+import { useDispatch, useSelector } from 'react-redux';
 
-const TabContext = createContext(null);
-
-export const TabButton = ({ name, children, ...props }) => {
-  const tab = useContext(TabContext);
-
-  useEffect(() => {
-    if (tab && tab.value === null) {
-      tab.select(name);
-    }
-  }, [tab, name]);
-
-  const handleClick = () => {
-    tab?.select(name);
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={tab?.disabled}
-      className={tab?.value === name ? 'active' : ''}
-      {...props}>
-      {children}
-    </button>
-  );
-};
-
-const initialState = { active: null, disabled: false };
-const tabReducer = (state, action) => {
+const textInputReducer = (state = { value: '' }, action) => {
   switch (action.type) {
-    case 'SELECT_TAB':
-      return { ...state, active: action.payload };
-    case 'SET_DISABLED':
-      return { ...state, disabled: action.payload };
+    case 'UPDATE_VALUE':
+      return { ...state, value: action.payload };
     default:
       return state;
   }
 };
 
-const createTab = (options) => {
-  const [state, dispatch] = useReducer(tabReducer, {
-    active: options?.value ?? null,
-    disabled: options?.disabled ?? false
-  });
-  return {
-    active: state.active,
-    disabled: state.disabled,
-    select: (name) => {
-      if (state.disabled) return;
-      dispatch({ type: 'SELECT_TAB', payload: name });
-    },
-    setDisabled: (disabled) => dispatch({ type: 'SET_DISABLED', payload: disabled })
+export const TextInput = ({ value, onChange, ...props }) => {
+  const internalValue = useSelector(state => state.value);
+  const dispatch = useDispatch();
+
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    dispatch({ type: 'UPDATE_VALUE', payload: newValue });
+    onChange?.(newValue);
   };
+
+  return (
+    <input 
+      type="text" 
+      value={value ?? internalValue} 
+      onChange={handleChange} />
+  );
 };
 `.trim();
 
 const mobxCode = `
 import { makeAutoObservable } from 'mobx';
 import { observer } from 'mobx-react-lite';
-import { useEffect, useContext } from 'react';
 
-const TabContext = createContext(null);
+class TextInputStore {
+  value = '';
 
-export const TabButton = observer(({ name, children, ...props }) => {
-  const tab = useContext(TabContext);
-
-  useEffect(() => {
-    if (tab && tab.value === null) {
-      tab.select(name);
-    }
-  }, [tab, name]);
-
-  const handleClick = () => {
-    tab?.select(name);
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      disabled={tab?.disabled}
-      className={tab?.value === name ? 'active' : ''}
-      {...props}>
-      {children}
-    </button>
-  );
-});
-
-class TabStore {
-  active = null;
-  disabled = false;
-
-  constructor(options) {
-    this.active = options?.value ?? null;
-    this.disabled = options?.disabled ?? false;
+  constructor(initialValue) {
+    this.value = initialValue ?? '';
     makeAutoObservable(this);
   }
 
-  select(name) {
-    if (this.disabled) return;
-    this.active = name;
+  setValue(newValue) {
+    this.value = newValue;
   }
 }
 
-const createTab = (options) => new TabStore(options);
-`.trim();
+const textInputStore = new TextInputStore();
 
-const jotaiCode = `
-import { useEffect, useContext } from 'react';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
-
-const TabContext = createContext(null);
-
-export const TabButton = ({ name, children, ...props }) => {
-  const tabAtom = useContext(TabContext);
-  const tab = useAtomValue(tabAtom);
-  const setTab = useSetAtom(tabAtom);
-
-  useEffect(() => {
-    if (tab.value === null) {
-      setTab(prev => {
-        const newTab = { ...prev };
-        newTab.select(name);
-        return newTab;
-      });
-    }
-  }, [tab, name, setTab]);
-
-  const handleClick = () => {
-    setTab(prev => {
-      const newTab = { ...prev };
-      newTab.select(name);
-      return newTab;
-    });
+export const TextInput = observer(({ value, onChange, ...props }) => {
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    textInputStore.setValue(newValue);
+    onChange?.(newValue);
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={tab?.disabled}
-      className={tab?.value === name ? 'active' : ''}
-      {...props}>
-      {children}
-    </button>
+    <input 
+      type="text" 
+      value={value ?? textInputStore.value} 
+      onChange={handleChange}/>
   );
-};
+});
+`.trim();
 
-const createTab = (options) => {
-  const tabAtoms = {
-    active: atom(options?.value ?? null),
-    disabled: atom(options?.disabled ?? false),
+const jotaiCode = `
+import { atom, useAtom } from 'jotai';
+
+const textAtom = atom('');
+
+export const TextInput = ({ value, onChange, ...props }) => {
+  const [internalValue, setInternalValue] = useAtom(textAtom);
+
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setInternalValue(newValue);
+    onChange?.(newValue);
   };
 
-  tabAtoms.isActive = atom((get) => get(tabAtoms.active) === name);
-
-  tabAtoms.select = atom(
-    null,
-    (get, set, name) => {
-      if (get(tabAtoms.disabled)) return;
-      set(tabAtoms.active, name);
-    }
+  return (
+    <input 
+      type="text" 
+      value={value ?? internalValue} 
+      onChange={handleChange} />
   );
-
-  return tabAtoms;
 };
 `.trim();
 
 const zustandCode = `
-import { useEffect, useContext } from 'react';
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 
-const TabContext = createContext(null);
+const useTextInputStore = create((set) => ({
+  value: '',
+  setValue: (newValue) => set({ value: newValue }),
+}));
 
-export const TabButton = ({ name, children, ...props }) => {
-  const tabStore = useContext(TabContext);
-  const tab = useStore(tabStore, state => state);
+export const TextInput = ({ value, onChange, ...props }) => {
+  const { value: internalValue, setValue } = useTextInputStore();
 
-  useEffect(() => {
-    if (tab && tab.value === null) {
-      tab.select(name);
-    }
-  }, [tab, name]);
-
-  const handleClick = () => {
-    tab?.select(name);
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setValue(newValue);
+    onChange?.(newValue);
   };
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={tab?.disabled}
-      className={tab?.value === name ? 'active' : ''}
-      {...props}>
-      {children}
-    </button>
+    <input 
+      type="text" 
+      value={value ?? internalValue} 
+      onChange={handleChange} />
   );
 };
-
-const createTab = (options) => {
-  return createTabStore(options);
-};
-
-const createTabStore = (options) => create((set, get) => ({
-  active: options?.value ?? null,
-  disabled: options?.disabled ?? false,
-  select: (name) => {
-    if (get().disabled) return;
-    set({ active: name });
-  },
-  setDisabled: (disabled) => set({ disabled })
-}));
 `.trim();
 
 const anchorBlock = {
@@ -355,13 +214,13 @@ const otherBlocks = [
 
 export function RedefineReact() {
   return (
-    <Section id="redefine-react" className="page-section">
+    <Section id="hero" className="page-section">
       <SectionTitle className={'text-center'}>Redefine React Component</SectionTitle>
       <SectionDescription className={'md:mb-6 text-center'}>
-        Tired of useEffect dependency arrays, useCallback, and useMemo? Anchor redefines the React component. By
-        separating the one-time setup from the reactive view, it eliminates an entire class of boilerplate, prevents
-        unnecessary re-renders, and provides stable references. It's a fresh, more reasonable approach to React
-        architecture that delivers truly fine-grained performance by default.{' '}
+        Tired of useEffect dependency arrays, useCallback, and useMemo? You're not alone. Anchor redefines the React
+        component by separating <strong>Logic</strong> and <strong>View</strong>. This eliminates useEffect,
+        useCallback, useMemo, and the entire dependency array issues. No stale closures, no unnecessary re-renders—just
+        stable references and truly fine-grained performance by default.
       </SectionDescription>
 
       <div className={'grid grid-cols-1 md:grid-cols-2 items-stretch gap-4 md:gap-8 w-full mb-4 mb-4 md:mb-10'}>

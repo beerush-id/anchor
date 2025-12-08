@@ -183,7 +183,7 @@ export default DualCounter;
 
 :::
 
-To learn more, read the full guide on our [Component Architecture](/react/component-architecture).
+To learn more, read the full guide on our [Component Architecture](/react-classic/component-architecture).
 
 ## Global State
 
@@ -457,7 +457,7 @@ export default Unit;
 
 While **Anchor** provides a suite of **React** hooks, most of them serve as initializers. Their primary purpose is to
 create reactive states and cache them, ensuring consistency and efficiency across renders. To dive deeper into the
-Anchor's **Reactivity Model**, we recommend reading the [**Reactivity**](/react/reactivity) section.
+Anchor's **Reactivity Model**, we recommend reading the [**Reactivity**](/react-classic/reactivity) section.
 
 ::: tip Why they don't trigger re-render?
 
@@ -470,8 +470,8 @@ against our core principle of optimized performance.
 
 ## Observation and Derivation
 
-The primary mechanisms to trigger a re-render when a state changes are the **[Observation](/react/observation)** **HOC**
-and **hooks**, or the **[Derivation](/react/derivation)** **hooks**. These tools are specifically designed to observe a
+The primary mechanisms to trigger a re-render when a state changes are the **[Observation](/react-classic/observation)** **HOC**
+and **hooks**, or the **[Derivation](/react-classic/derivation)** **hooks**. These tools are specifically designed to observe a
 state and derive a value from it, subsequently triggering a re-render only when the observed or derived value changes.
 
 This approach allows us to meticulously control the re-rendering process, thereby avoiding unnecessary updates. We can
@@ -480,7 +480,7 @@ to break down the UI into numerous smaller components.
 
 ## Ref System
 
-**Anchor** introduces the **[Ref System](/react/ref-system)** to the **React ecosystem**. A **Ref** is a reactive state
+**Anchor** introduces the **[Ref System](/react-classic/ref-system)** to the **React ecosystem**. A **Ref** is a reactive state
 that holds a reference to a
 value, enabling primitives to be observed. It also allows you to pass the ref to a child component, granting them access
 and control over the value without the need to pass a setter function.

@@ -69,8 +69,8 @@ export type BindingLink<T, B> = [B, BindingKeys<T, B>];
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
-export type EffectHandler = (event: StateChange) => void | EffectCleanup;
-export type EffectCleanup = () => void;
+export type SideEffectHandler = (event: StateChange) => void | SideEffectCleanup;
+export type SideEffectCleanup = () => void;
 export type Lifecycle = {
   /**
    * Mounts the component by executing all registered mount handlers and effects.

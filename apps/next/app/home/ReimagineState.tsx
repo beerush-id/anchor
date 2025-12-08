@@ -1,13 +1,21 @@
 'use client';
 
-import { Card, CodeViewer, Section, SectionDescription, SectionTitle } from '@anchorlib/react-kit/components';
+import {
+  Card,
+  CardContent,
+  CodeViewer,
+  Section,
+  SectionDescription,
+  SectionSubtitle,
+  SectionTitle,
+} from '@anchorlib/react-kit/components';
 import { MainCTA } from '@components/MainCTA';
 
 const anchorCode = `
-import { useAnchor, observer } from '@anchorlib/react-classic';
+import { mutable, setup, render } from '@anchorlib/react';
 
-const Form = observer(() => {
-  const [form] = useAnchor({ // [!code ++]
+const Form = setup(() => {
+  const form = mutable({ // [!code ++]
     email: '', // [!code ++]
     password: '', // [!code ++]
     get isValid() { // [!code ++]
@@ -15,7 +23,7 @@ const Form = observer(() => {
     } // [!code ++]
   }); // [!code ++]
 
-  return (
+  return render(() => (
     <form>
       <input
         type="email"
@@ -32,7 +40,7 @@ const Form = observer(() => {
       </button>
     </form>
   );
-});
+));
 `.trim();
 
 const reactCode = `
@@ -268,14 +276,14 @@ const otherBlocks = [
   },
 ];
 
-export function Hero() {
+export function ReimagineState() {
   return (
-    <Section id="hero" className="page-section fill-screen-section">
-      <SectionTitle className={'text-center'}>Reimagine React State</SectionTitle>
+    <Section id="reimagine-state" className="page-section fill-screen-section">
+      <SectionTitle className={'text-center'}>Reimagine State Management</SectionTitle>
       <SectionDescription className={'md:mb-6 text-center'}>
-        Stop thinking in setters, reducers, and selectors. Anchor lets you write simple, intuitive code that feels like
-        plain JavaScript, while delivering the performance and reliability you expect, without sacrificing immutability
-        and predictability.
+        Stop thinking in setters, reducers, and selectors. Stop spreading objects just to change one field. Write state
+        that feels like plain JavaScript—because it is. Write getters, get computed properties. Write assignments, get
+        reactivity. Simple, predictable, and powerful.
       </SectionDescription>
 
       <MainCTA className="md:mb-6" href={'/docs/react/getting-started'} />
@@ -286,6 +294,45 @@ export function Hero() {
         </Card>
         <Card className={'flex-1 md:shadow-2xl bg-code-block-background'}>
           <CodeViewer className={'flex-1 flex flex-col'} minHeight={320} maxHeight={320} items={otherBlocks} />
+        </Card>
+      </div>
+
+      <div className={'grid grid-cols-1 md:grid-cols-3 items-stretch gap-4 md:gap-8 w-full mb-4 md:mb-10'}>
+        <Card className={'flex-1'}>
+          <CardContent className={'p-4'}>
+            <div className="flex flex-col gap-3">
+              <SectionSubtitle className={'text-xl font-medium'}>Natural Syntax</SectionSubtitle>
+              <p className={'text-sm text-foreground/70'}>
+                <strong>Write state like JavaScript objects, not state machines</strong>. Direct property access and
+                assignment. No setters, no reducers, no actions—just plain assignments that trigger reactivity
+                automatically.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={'flex-1'}>
+          <CardContent className={'p-4'}>
+            <div className="flex flex-col gap-3">
+              <SectionSubtitle className={'text-xl font-medium'}>Computed Properties</SectionSubtitle>
+              <p className={'text-sm text-foreground/70'}>
+                <strong>Getters become reactive computed values automatically</strong>. No useMemo, no dependency
+                arrays, no manual optimization. Just write a getter, and it computes on read—always fresh, always
+                correct.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={'flex-1'}>
+          <CardContent className={'p-4'}>
+            <div className="flex flex-col gap-3">
+              <SectionSubtitle className={'text-xl font-medium'}>Flexible State Models</SectionSubtitle>
+              <p className={'text-sm text-foreground/70'}>
+                <strong>Mutable or immutable—your choice</strong>. Use mutable state for local component state. Use
+                immutable state for shared stores with controlled access. Both are reactive, both give you stable
+                references.
+              </p>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </Section>

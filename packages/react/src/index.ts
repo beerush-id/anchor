@@ -1,15 +1,27 @@
+export type {
+  EffectHandler,
+  FetchOptions,
+  FetchState,
+  HistoryOptions,
+  HistoryState,
+} from '@anchorlib/core';
+
 export {
   anchor,
+  DerivedRef,
   derived,
   effect,
   exception,
+  FetchStatus,
   fetchState,
   getContext,
   history,
+  ImmutableRef,
   immutable,
   isImmutableRef,
   isMutableRef,
   isValueRef,
+  MutableRef,
   microbatch,
   microloop,
   micropush,
@@ -24,6 +36,7 @@ export {
   undoable,
   writable,
 } from '@anchorlib/core';
+
 export * from './binding.js';
 export * from './context.js';
 export * from './hoc.js';

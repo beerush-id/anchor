@@ -6,13 +6,15 @@ import type { HTMLAttributes } from 'react';
 import { classx } from '@anchorlib/react-kit/utils';
 
 const sharedCode = `
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/react';
 
 // Declare your shared state.
-export const settings = anchor({ theme: 'light' });
-export const toggleTheme = () => {
-  settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
-};
+export const settings = mutable({
+  theme: 'light',
+  toggleTheme() {
+    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+  }
+});
 
 `;
 
@@ -23,15 +25,15 @@ const codeBlocks = [
     iconAlt: 'React Logo',
     lang: 'tsx',
     code: `
-import { observer } from '@anchorlib/react-classic';
-import { settings, toggleTheme } from '../lib/state.ts';
+import { template } from '@anchorlib/react';
+import { settings } from '../lib/state.ts';
 
-const App = observer(() => (
+export const App = template(() => (
   <>
     <div>{settings.theme}</div>
-    <button onClick={toggleTheme}>Toggle</button>
+    <button onClick={settings.toggleTheme}>Toggle</button>
   </>
-));
+), 'App');
 `,
   },
   {

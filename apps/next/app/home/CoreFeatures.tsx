@@ -15,11 +15,11 @@ const fineGrainedCodes = [
     iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { useAnchor, view, setup } from '@anchorlib/react-classic';
+import { mutable, template, setup } from '@anchorlib/react';
 
 const App = setup(() => {
   // State can be co-located with the component, similar to useState.
-  const [profile] = useAnchor({
+  const profile = mutable({
     name: 'John Doe',
     email: 'johndoe@example.com',
   });
@@ -30,21 +30,21 @@ const App = setup(() => {
   }
 
   // Only this part re-renders when the state changes.
-  const Profile = view(() => (
+  const Profile = template(() => (
     <div>
       <h1>{profile.name}</h1>
       <p>{profile.email}</p>
     </div>
-  ));
+  ), 'Profile');
 
   // This part only rendered once.
-  return () => (
+  return (
     <>
       <Profile />
       <button onClick={changeName}>Change Name</button>
     </>
   );
-});
+}, 'App');
 `,
   },
   {
@@ -278,14 +278,14 @@ const trueImmutabilityCodes = [
     iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { useImmutable, useWriter, setup } from '@anchorlib/react-classic';
+import { immutable, writable, setup } from '@anchorlib/react';
 
 const App = setup(() => {
-  const [profile] = useImmutable({
+  const profile = immutable({
     name: 'John Doe',
     email: 'johndoe@example.com',
   });
-  const writer = useWriter(profile, ['name'])
+  const writer = writable(profile, ['name']);
 
   const changeName = () => {
     // Expected and allowed mutation.
@@ -297,8 +297,8 @@ const App = setup(() => {
     writer.email = 'johndoe@example.com';
   }
 
-  return () => <button onClick={changeName}>Change Name</button>;
-});
+  return <button onClick={changeName}>Change Name</button>;
+}, 'App');
 `,
   },
   {
@@ -485,7 +485,7 @@ const integrityCodes = [
     lang: 'tsx',
     code: `
 import { z } from 'zod';
-import { useModel, setup } from '@anchorlib/react-classic';
+import { mutable, setup } from '@anchorlib/react';
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -493,10 +493,10 @@ const schema = z.object({
 });
 
 const App = setup(() => {
-  const [profile] = useModel(schema, {
+  const profile = mutable({
     name: 'John Doe',
     email: 'johndoe@example.com',
-  });
+  }, { schema });
 
   const changeName = () => {
     // Valid mutation.
@@ -506,8 +506,8 @@ const App = setup(() => {
     profile.email = 10;
   }
 
-  return () => <button onClick={changeName}>Change Name</button>;
-});
+  return <button onClick={changeName}>Change Name</button>;
+}, 'App');
 `,
   },
   {

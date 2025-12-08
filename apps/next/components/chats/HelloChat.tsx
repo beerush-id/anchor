@@ -1,13 +1,12 @@
 import type { FormEvent } from 'react';
 import { LoaderCircle } from 'lucide-react';
-import { CardContent, CardFooter, CardHeader, Input } from '@anchorlib/react-kit/components';
+import { CardContent, CardFooter, CardHeader } from '@anchorlib/react-kit/components';
 
-import { FetchStatus } from '@anchorlib/core';
-import { useStream, useVariable, view } from '@anchorlib/react-classic';
+import { mutable, setup, streamState, template, FetchStatus } from '@anchorlib/react';
 
-export const HelloChat = () => {
-  const [name] = useVariable('');
-  const [state] = useStream('', {
+export const HelloChat = setup(() => {
+  const name = mutable('');
+  const state = streamState('', {
     url: '/apis/stream',
     method: 'post',
     deferred: true,
@@ -27,7 +26,7 @@ export const HelloChat = () => {
     name.value = '';
   };
 
-  const ChatStream = view(() => {
+  const ChatStream = template(() => {
     if (state.status === FetchStatus.Idle) {
       return <div className={'flex-1 flex flex-col items-center justify-center gap-2'}>It's lonely here 😔</div>;
     }
@@ -38,9 +37,24 @@ export const HelloChat = () => {
         <span>{state.data}</span>
       </div>
     );
-  });
+  }, 'ChatStream');
 
-  const LoaderBar = view(() => state.status === FetchStatus.Pending && <LoaderCircle className="animate-spin" />);
+  const LoaderBar = template(
+    () => state.status === FetchStatus.Pending && <LoaderCircle className="animate-spin" />,
+    'LoaderBar'
+  );
+
+  const NameInput = template(
+    () => (
+      <input
+        value={name.value}
+        onChange={(e) => (name.value = e.target.value)}
+        className="ark-input w-full"
+        placeholder="Enter your name and press Enter"
+      />
+    ),
+    'NameInput'
+  );
 
   return (
     <>
@@ -53,9 +67,9 @@ export const HelloChat = () => {
       </CardContent>
       <CardFooter className={'p-4'}>
         <form onSubmit={handleSubmit}>
-          <Input bind={name} className={'w-full'} placeholder="Enter your name and press Enter" />
+          <NameInput />
         </form>
       </CardFooter>
     </>
   );
-};
+}, 'HelloChat');

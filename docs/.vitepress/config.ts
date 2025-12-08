@@ -115,7 +115,7 @@ export default defineConfig({
               { text: 'Mutable State', link: '/react/state/mutable' },
               { text: 'Immutable State', link: '/react/state/immutable' },
               { text: 'Derived State', link: '/react/state/derived' },
-              { text: 'Advanced', link: '/react/state/advanced' },
+              // { text: 'Advanced', link: '/react/state/advanced' },
             ],
           },
           {
@@ -128,24 +128,24 @@ export default defineConfig({
               { text: 'Side Effects', link: '/react/component/side-effect' },
               { text: 'Lifecycle', link: '/react/component/lifecycle' },
               { text: 'Binding & Refs', link: '/react/component/binding' },
-              { text: 'Advanced', link: '/react/component/advanced' },
+              // { text: 'Advanced', link: '/react/component/advanced' },
             ],
           },
-          {
-            text: 'Tutorials',
-            collapsed: true,
-            items: [{ text: 'Index', link: '/react/tutorials/index' }],
-          },
-          {
-            text: 'Legacy (Classic)',
-            collapsed: true,
-            items: [
-              { text: 'Introduction', link: '/react-classic/introduction' },
-              { text: 'Getting Started', link: '/react-classic/getting-started' },
-              { text: 'Core Concepts', link: '/react-classic/core-concepts' },
-              { text: 'API Reference', link: '/react-classic/api-reference' },
-            ],
-          },
+          // {
+          //   text: 'Tutorials',
+          //   collapsed: true,
+          //   items: [{ text: 'Index', link: '/react/tutorials/index' }],
+          // },
+          // {
+          //   text: 'Legacy (Classic)',
+          //   collapsed: true,
+          //   items: [
+          //     { text: 'Introduction', link: '/react-classic/introduction' },
+          //     { text: 'Getting Started', link: '/react-classic/getting-started' },
+          //     { text: 'Core Concepts', link: '/react-classic/core-concepts' },
+          //     { text: 'API Reference', link: '/react-classic/api-reference' },
+          //   ],
+          // },
         ],
       },
       {
@@ -304,7 +304,7 @@ export default defineConfig({
             ],
           },
           {
-            text: 'React',
+            text: 'React (Legacy)',
             collapsed: true,
             items: [
               { text: 'Initialization', link: '/apis/react/initialization' },

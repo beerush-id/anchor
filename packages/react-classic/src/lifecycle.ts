@@ -1,9 +1,9 @@
 import { captureStack, createObserver, microtask, untrack } from '@anchorlib/core';
-import type { CleanupHandler, EffectCleanup, EffectHandler, Lifecycle, MountHandler } from './types.js';
+import type { CleanupHandler, Lifecycle, MountHandler, SideEffectCleanup, SideEffectHandler } from './types.js';
 
 let currentMountHandlers: Set<MountHandler> | null = null;
 let currentMountCleanups: Set<CleanupHandler> | null = null;
-let currentEffectCleanups: Set<EffectCleanup> | null = null;
+let currentEffectCleanups: Set<SideEffectCleanup> | null = null;
 
 /**
  * Creates a new lifecycle manager for handling component mount, cleanup, and rendering operations.
@@ -28,8 +28,8 @@ export function createLifecycle(): Lifecycle {
 
   const mountHandlers = new Set<MountHandler>();
   const mountCleanups = new Set<CleanupHandler>();
-  const effectHandlers = new Set<EffectHandler>();
-  const effectCleanups = new Set<EffectCleanup>();
+  const effectHandlers = new Set<SideEffectHandler>();
+  const effectCleanups = new Set<SideEffectCleanup>();
 
   return {
     mount() {
@@ -94,7 +94,7 @@ export function createLifecycle(): Lifecycle {
  *
  * @throws {Error} If called outside a Setup component context
  */
-export function effect(fn: EffectHandler) {
+export function effect(fn: SideEffectHandler) {
   if (!currentEffectCleanups) {
     const error = new Error('Out of Setup component.');
     captureStack.violation.general(
@@ -106,14 +106,14 @@ export function effect(fn: EffectHandler) {
     );
   }
 
-  let cleanup: EffectCleanup | void;
+  let cleanup: SideEffectCleanup | void;
 
   const observer = createObserver((event) => {
     cleanup?.();
     runEffect(event);
   });
 
-  const runEffect: EffectHandler = (event) => {
+  const runEffect: SideEffectHandler = (event) => {
     cleanup = observer.run(() => fn(event));
   };
   const leaveEffect = () => {

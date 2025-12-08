@@ -642,5 +642,5 @@ and requires special writers for mutations.
 
 To learn more about immutability in Anchor for React:
 
-- Review the [Getting Started](/react/getting-started) guide for basic usage
-- Explore [Reactivity](/react/reactivity) to understand how immutable state works with observation
+- Review the [Getting Started](/react-classic/getting-started) guide for basic usage
+- Explore [Reactivity](/react-classic/reactivity) to understand how immutable state works with observation
