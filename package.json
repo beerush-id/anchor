@@ -62,8 +62,8 @@
   },
   "catalogs": {
     "app": {
-      "@shikijs/transformers": "3.13.0",
-      "@shikijs/types": "3.13.0",
+      "@shikijs/transformers": "3.19.0",
+      "@shikijs/types": "3.19.0",
       "@tailwindcss/vite": "4.1.16",
       "@types/react": "19.2.2",
       "@types/react-dom": "19.2.2",
@@ -72,7 +72,7 @@
       "postcss": "8.5.6",
       "react": "19.2.0",
       "react-dom": "19.2.0",
-      "shiki": "3.13.0",
+      "shiki": "3.19.0",
       "solid-js": "1.9.9",
       "svelte": "5.41.3",
       "tailwindcss": "4.1.16",
@@ -81,13 +81,13 @@
       "zod": "4.1.12"
     },
     "lib": {
-      "@shikijs/transformers": "^3.13.0",
-      "@shikijs/types": "3.13.0",
+      "@shikijs/transformers": "^3.19.0",
+      "@shikijs/types": "3.19.0",
       "@types/react": "^19.1.0",
       "lucide-react": "^0.546.0",
       "react": "^19.1.0",
       "react-dom": "^19.1.0",
-      "shiki": "^3.13.0",
+      "shiki": "^3.19.0",
       "solid-js": "^1.9.9",
       "svelte": "^5.0.0",
       "tailwindcss": "^4.0.0",
