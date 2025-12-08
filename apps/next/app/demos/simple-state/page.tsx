@@ -44,7 +44,7 @@ export default function Page() {
         <h2>Anchor in React, Solid, Svelte, and Vue</h2>
       </SectionTitle>
       <Card className={'w-full'}>
-        <CodeViewer items={snippets} />
+        <CodeViewer items={snippets as never} />
       </Card>
     </Section>
   );

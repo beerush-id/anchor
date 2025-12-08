@@ -36,21 +36,21 @@ You can view the full online documentation at [Anchor Documentations](https://an
 ### React
 
 ```jsx
-import { useAnchor, observer } from '@anchorlib/react';
+import { setup, render, mutable } from '@anchorlib/react';
 
-const Counter = observer(() => {
-  const [state] = useAnchor({
+const Counter = setup(() => {
+  const state = mutable({
     count: 0,
     title: 'My App',
   });
 
-  return (
+  return render(() => (
     <div>
       <h1>{state.title}</h1>
       <p>Count: {state.count}</p>
       <button onClick={() => state.count++}>Increment</button>
     </div>
-  );
+  ));
 });
 ```
 
@@ -112,10 +112,10 @@ const state = anchorRef({ count: 0, title: 'My App' });
 Unlike traditional React state management which requires explicit setState calls and complex state update logic, Anchor allows you to work with state naturally:
 
 ```jsx
-import { useAnchor, observer } from '@anchor/react';
+import { setup, template, mutable } from '@anchorlib/react';
 
 const TodoApp = observer(() => {
-  const [todos] = useAnchor([
+  const todos = mutable([
     { id: 1, text: 'Learn Anchor', completed: true },
     { id: 2, text: 'Build an app', completed: false },
   ]);
@@ -137,19 +137,30 @@ const TodoApp = observer(() => {
       todos.splice(index, 1);
     }
   };
+  
+  // Create a template for each todo item
+  const TodoItem = template(({ todo }) => (
+    <li key={todo.id}>
+      <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }} onClick={() => toggleTodo(todo)}>
+        {todo.text}
+      </span>
+      <button onClick={() => removeTodo(todo)}>Remove</button>
+    </li>
+  ));
 
+  // Create a template for the todo list
+  const TodoList = template(() => (
+    <ul>
+      {todos.map((todo) => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    </ul>
+  ));
+
+  // Render the static JSX and reactive templates
   return (
     <div>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }} onClick={() => toggleTodo(todo)}>
-              {todo.text}
-            </span>
-            <button onClick={() => removeTodo(todo)}>Remove</button>
-          </li>
-        ))}
-      </ul>
+      <TodoList />
       <button onClick={() => addTodo('New task')}>Add Todo</button>
     </div>
   );
