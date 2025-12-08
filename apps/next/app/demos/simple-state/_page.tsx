@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CodeViewer, Section, SectionTitle } from '@anchorlib/react-kit/components';
+import { Card, type CodeItem, CodeViewer, Section, SectionTitle } from '@anchorlib/react-kit/components';
 import ReactSnippet from './React?raw';
 import SolidSnippet from './Solid.txt?raw';
 import SvelteSnippet from './Svelte.svelte?raw';
@@ -35,7 +35,7 @@ const snippets = [
     iconAlt: 'Vue logo',
     code: VueSnippet,
   },
-];
+] as CodeItem[];
 
 export default function Page() {
   return (
@@ -44,7 +44,7 @@ export default function Page() {
         <h2>Anchor in React, Solid, Svelte, and Vue</h2>
       </SectionTitle>
       <Card className={'w-full'}>
-        <CodeViewer items={snippets as never} />
+        <CodeViewer items={snippets} />
       </Card>
     </Section>
   );
