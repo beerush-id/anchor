@@ -1,6 +1,6 @@
 {
   "name": "@anchorlib/vue",
-  "version": "1.0.0-beta.13",
+  "version": "1.0.0-beta.14",
   "description": "Vue bindings for Anchor reactive state management",
   "keywords": ["state", "management", "reactive", "observable", "vue"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
