@@ -54,6 +54,7 @@ features:
 
 ```tsx /App.tsx [active]
 import '@tailwindcss/browser';
+import '@anchorlib/react/client';
 import { setup, template, mutable } from '@anchorlib/react';
 
 const Counter = setup(() => {
