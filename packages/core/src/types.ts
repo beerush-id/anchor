@@ -4,6 +4,7 @@ import type { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS,
 import type { Linkables } from './enum.js';
 import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
 
+export type Enum<T> = T[keyof T];
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
 
 export type Recursive = boolean | 'flat';
@@ -36,6 +37,7 @@ export type StateObserver = {
   readonly assign: (init: Linkable, observers: StateObserverList) => StateKeyTracker;
   readonly onChange: (event: StateChange) => void;
   readonly destroy: () => void;
+  readonly reset: () => void;
   readonly run: <R>(fn: () => R) => R;
   name?: string;
 };
@@ -183,6 +185,9 @@ export type StateChange = {
   value?: unknown;
   error?: ModelError;
   emitter?: string;
+};
+export type BatchChange = StateChange & {
+  changes: KeyLike[];
 };
 
 export type StateException = StateChange & {
@@ -849,12 +854,14 @@ export type StateBindingRef<T> = {
 export type BindingProp<T, O> = [O, BindingKeys<T, O>];
 export type BindingKeys<T, O> = WritableKeys<{ [K in keyof O]: O[K] extends T ? K : never }>;
 
-export enum AsyncStatus {
-  Idle = 'idle',
-  Error = 'error',
-  Success = 'success',
-  Pending = 'pending',
-}
+export const AsyncStatus = {
+  Idle: 'idle',
+  Error: 'error',
+  Success: 'success',
+  Pending: 'pending',
+} as const;
+
+export type AsyncStatus = Enum<typeof AsyncStatus>;
 
 export type AsyncState<T, E extends Error = Error> = {
   readonly data: T;
@@ -888,4 +895,4 @@ export type RefStack = {
 
 export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;
 
-export type EffectHandler = (event: StateChange) => StateUnsubscribe | void;
+export type EffectHandler<T> = (event: StateChange) => StateUnsubscribe | T;

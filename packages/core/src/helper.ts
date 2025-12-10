@@ -1,9 +1,9 @@
-import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from './types.js';
-import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
-import { isArray, isDefined, isMap, isSet } from './utils/index.js';
-import { softEntries, softKeys } from './utils/clone.js';
 import { getDevTool } from './dev.js';
 import { BatchMutations } from './enum.js';
+import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
+import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from './types.js';
+import { softEntries, softKeys } from './utils/clone.js';
+import { isArray, isDefined, isMap, isSet } from './utils/index.js';
 
 /**
  * Assigns a partial state to the given state.
@@ -40,24 +40,37 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   const entries = softEntries(source);
   if (!entries.length) return;
 
+  const changes: unknown[] = [];
+
   for (const [key, val] of softEntries(source)) {
     if (isMap(target)) {
       prev[key as never] = target.get(key) as never;
+
+      if (prev[key as never] !== val) {
+        changes.push(key);
+      }
+
       target.set(key, val);
     } else if (isSet(target)) {
       target.add(val);
     } else if (isSafeObject(target) || isArray(target)) {
       prev[key as keyof T] = target[key as keyof T];
+
+      if (prev[key as keyof T] !== val) {
+        changes.push(key);
+      }
+
       target[key as never] = val;
     }
   }
 
-  const event: StateChange = {
+  const event = {
     type: BatchMutations.ASSIGN,
     prev,
     keys: [],
+    changes,
     value: source,
-  };
+  } as StateChange;
 
   broadcaster?.emit(event);
   broadcaster?.broadcast(init, event, meta?.id);
@@ -99,12 +112,23 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   }
 
   const prev = {} as AssignablePart<T>;
+  const changes: unknown[] = [];
 
   for (const key of keys) {
     if (isMap(target)) {
+      if (target.has(key)) {
+        changes.push(key);
+      }
+
       prev[key as never] = target.get(key) as never;
       target.delete(key);
+    } else if (isSet(target)) {
+      target.delete(key);
     } else if (isSafeObject(target) || isArray(target)) {
+      if (typeof target[key] !== 'undefined') {
+        changes.push(key);
+      }
+
       prev[key] = target[key];
 
       if (!isArray(target)) {
@@ -128,12 +152,13 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     }
   }
 
-  const event: StateChange = {
+  const event = {
     type: BatchMutations.REMOVE,
     prev,
     keys: [],
+    changes,
     value: keys,
-  };
+  } as StateChange;
 
   broadcaster?.emit(event);
   broadcaster?.broadcast(init, event, meta?.id);
@@ -171,22 +196,29 @@ export const clear = <T extends Assignable>(target: T) => {
   if (isDefined(init)) {
     STATE_BUSY_LIST.add(init);
   }
+  let changes: unknown[] = [];
 
   if (isMap(target)) {
+    changes = [...target.keys()];
+    target.clear();
+  } else if (isSet(target)) {
     target.clear();
   } else if (isArray(target)) {
+    changes = Array.from(target.keys());
     target.length = 0;
   } else if (isSafeObject(target)) {
     for (const key of softKeys(target)) {
+      changes.push(key);
       delete target[key];
     }
   }
 
-  const event: StateChange = {
+  const event = {
     type: BatchMutations.CLEAR,
     prev: {},
     keys: [],
-  };
+    changes,
+  } as StateChange;
 
   broadcaster?.emit(event);
   broadcaster?.broadcast(init, event, meta?.id);

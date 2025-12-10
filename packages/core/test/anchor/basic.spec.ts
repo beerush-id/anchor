@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, setCleanUpHandler, subscribe } from '../../src/index.js';
-import { onCleanup } from '../../src/lifecycle.js';
+import { anchor, createLifecycle, setCleanUpHandler, subscribe } from '../../src/index.js';
+import { onCleanup, onGlobalCleanup } from '../../src/lifecycle.js';
 
 describe('Anchor Core - Basic Operations', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -172,6 +172,58 @@ describe('Anchor Core - Basic Operations', () => {
 
       cleanupList.forEach((fn) => fn());
       expect(handler).toHaveBeenCalled();
+    });
+
+    it('should handle isolated lifecycle', () => {
+      const scope = createLifecycle();
+      const handler = vi.fn();
+      const handler2 = vi.fn();
+      const globalHandler = vi.fn();
+      const globalHandler2 = vi.fn();
+
+      const value = scope.run(() => {
+        onCleanup(handler);
+        onCleanup(undefined as never); // Should be ignored.
+        onGlobalCleanup(globalHandler);
+        return 'test';
+      });
+      onCleanup(handler2);
+      onGlobalCleanup(globalHandler2);
+
+      expect(value).toBe('test');
+      expect(handler).not.toHaveBeenCalled();
+      expect(handler2).not.toHaveBeenCalled();
+      expect(globalHandler).not.toHaveBeenCalled();
+      expect(globalHandler2).not.toHaveBeenCalled();
+
+      scope.destroy();
+      expect(handler).toHaveBeenCalled();
+      expect(globalHandler).toHaveBeenCalled();
+      expect(handler2).not.toHaveBeenCalled();
+      expect(globalHandler2).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle isolated async lifecycle', async () => {
+      const scope = createLifecycle();
+      const handler = vi.fn();
+      const handler2 = vi.fn();
+
+      const value = await scope.runAsync(async () => {
+        onCleanup(handler);
+        onCleanup(undefined as never); // Should be ignored.
+        return 'test';
+      });
+      onCleanup(handler2);
+
+      expect(value).toBe('test');
+      expect(handler).not.toHaveBeenCalled();
+      expect(handler2).not.toHaveBeenCalled();
+
+      scope.destroy();
+      expect(handler).toHaveBeenCalled();
+      expect(handler2).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 });

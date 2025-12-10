@@ -550,7 +550,7 @@ describe('Anchor Core - Observable Observer Management', () => {
         expect(state.value).toBeGreaterThan(-1);
 
         // Make sure both cases are handled.
-        return state.value < 2 ? clear : undefined;
+        return state.value === 2 ? undefined : clear;
       });
 
       const cleanup = effect(react);
@@ -568,12 +568,16 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(react).toHaveBeenCalledTimes(3); // This call should return undefined.
       expect(clear).toHaveBeenCalledTimes(2);
 
-      cleanup();
-
       state.value = 3;
 
-      expect(react).toHaveBeenCalledTimes(3);
+      expect(react).toHaveBeenCalledTimes(4);
       expect(clear).toHaveBeenCalledTimes(2); // Should not be called again because the cleanup no longer defined.
+
+      cleanup();
+      state.value = 4;
+
+      expect(react).toHaveBeenCalledTimes(4);
+      expect(clear).toHaveBeenCalledTimes(3); // Should be called again because last react return function again.
     });
   });
 });

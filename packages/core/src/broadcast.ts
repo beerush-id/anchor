@@ -1,7 +1,15 @@
 import { BATCH_MUTATION_KEYS } from './constant.js';
 import { type BatchMutations, OBSERVER_KEYS } from './enum.js';
 import { captureStack } from './exception.js';
-import type { Broadcaster, KeyLike, Linkable, StateChange, StateMetadata, StateSubscriber } from './types.js';
+import type {
+  BatchChange,
+  Broadcaster,
+  KeyLike,
+  Linkable,
+  StateChange,
+  StateMetadata,
+  StateSubscriber,
+} from './types.js';
 import { closure } from './utils/index.js';
 
 const INSPECTOR_SYMBOL = Symbol('state-inspector');
@@ -58,7 +66,18 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
         for (const observer of currentObservers) {
           const keys = observer.states.get(init) as Set<KeyLike>;
 
-          if (Array.isArray(init)) {
+          if (BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) {
+            if (init instanceof Set) {
+              observer.onChange(event);
+            } else {
+              const { changes = [] } = event as BatchChange;
+              const needUpdate = changes.some((change) => keys.has(change));
+
+              if (needUpdate) {
+                observer.onChange(event);
+              }
+            }
+          } else if (Array.isArray(init)) {
             if (keys.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
               observer.onChange(event);
             }
@@ -66,9 +85,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
             if (keys.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
               observer.onChange(event);
             }
-          } else if (keys.has(prop ?? event.keys.join('.'))) {
-            observer.onChange(event);
-          } else if (BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) {
+          } else if (keys.has(prop as KeyLike)) {
             observer.onChange(event);
           }
         }

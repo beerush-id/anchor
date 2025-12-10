@@ -458,6 +458,12 @@ describe('Anchor Utilities - Cloner', () => {
       expect(keys).toHaveLength(2);
       expect(keys).toEqual(expect.arrayContaining([sym1, sym2]));
     });
+
+    it('should return keys of Set', () => {
+      const set = new Set([1, 2, 3]);
+      const keys = softKeys(set);
+      expect(keys).toEqual(expect.arrayContaining([1, 2, 3]));
+    });
   });
 
   describe('Soft Equal (softEqual)', () => {

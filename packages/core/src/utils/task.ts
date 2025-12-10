@@ -23,6 +23,8 @@ export type TaskScheduler<T> = (fn: TaskHandler<T>, context?: T) => void;
  */
 export type TaskDestroyer = () => void;
 
+export type MicroTask<T> = [TaskScheduler<T>, TaskDestroyer];
+
 /**
  * Creates a microtask scheduler that batches multiple calls into a single execution.
  *
@@ -35,7 +37,7 @@ export type TaskDestroyer = () => void;
  * @param timeout - The timeout in milliseconds before executing the task (default: 10ms)
  * @returns A tuple containing the scheduler and destroyer functions
  */
-export function microtask<T = undefined>(timeout = 10): [TaskScheduler<T>, TaskDestroyer] {
+export function microtask<T = undefined>(timeout = 10): MicroTask<T> {
   let initContext: T | undefined = undefined;
   let lastContext: T | undefined = undefined;
   let executor: TaskHandler<T> | undefined = undefined;

@@ -19,13 +19,15 @@ export type BatchScheduler = (fn: BatchHandler) => void;
  */
 export type BatchResetter = () => void;
 
+export type MicroBatch = [BatchScheduler, BatchResetter];
+
 /**
  * Creates a micro-batch scheduler that executes functions in batches after a specified delay.
  *
  * @param {number} delay - The delay in milliseconds before executing the batch. Defaults to 10ms.
- * @returns {[BatchScheduler, BatchResetter]} A tuple containing the scheduler and resetter functions.
+ * @returns {MicroBatch} A tuple containing the scheduler and resetter functions.
  */
-export function microbatch(delay: number = 10): [BatchScheduler, BatchResetter] {
+export function microbatch(delay: number = 10): MicroBatch {
   const BATCHES = new Set<() => void>();
   let activeId: number | undefined = undefined;
 

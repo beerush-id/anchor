@@ -544,6 +544,7 @@ describe('Reactive Request', () => {
       expect(subscriber).toHaveBeenNthCalledWith(5, state, {
         type: 'assign',
         keys: [],
+        changes: ['response', 'status'],
         prev: {
           status: FetchStatus.Pending,
         },

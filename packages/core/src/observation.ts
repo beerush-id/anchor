@@ -26,22 +26,26 @@ const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
  *
  * @param fn - The effect function to execute. It receives a StateChange event object containing
  *                 information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+ * @param displayName - Optional effect name for debugging.
  * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
  *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
  */
-export function effect(fn: EffectHandler) {
+export function effect<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe {
   let cleanup: StateUnsubscribe | undefined;
 
   const observer = createObserver((event) => {
-    runCleanup();
+    cleanup?.();
+    observer.reset();
+
     runEffect(event);
   });
+  observer.name = `Effect(${displayName ?? 'Anonymous'})`;
 
   const runEffect = (event: StateChange) => {
     const unobserve = observer.run(() => fn(event));
 
     if (typeof unobserve === 'function') {
-      cleanup = unobserve;
+      cleanup = unobserve as StateUnsubscribe;
     } else {
       cleanup = undefined;
     }
@@ -147,6 +151,7 @@ export function createObserver(
 
   const states = new WeakMap();
   const cleaners = new Set<() => void>();
+  const resetters = new Set<() => void>();
 
   const track = ((state, key) => {
     const keys = states.get(state) as Set<KeyLike>;
@@ -177,7 +182,17 @@ export function createObserver(
 
     observedSize = 0;
     cleaners.clear();
+    resetters.clear();
+
     isDestroyed = true;
+  };
+
+  const reset = () => {
+    resetters.forEach((reset) => {
+      if (typeof reset === 'function') {
+        reset();
+      }
+    });
   };
 
   const assign = ((init, observers) => {
@@ -192,7 +207,12 @@ export function createObserver(
     }
 
     if (!states.has(init)) {
-      states.set(init, new Set());
+      const keys = new Set();
+      states.set(init, keys);
+
+      resetters.add(() => {
+        keys.clear();
+      });
 
       if (ANCHOR_SETTINGS.safeObservation) {
         observedSize += 1;
@@ -265,6 +285,9 @@ export function createObserver(
     },
     get destroy() {
       return destroy;
+    },
+    get reset() {
+      return reset;
     },
     get assign() {
       return assign;

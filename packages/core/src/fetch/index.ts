@@ -3,7 +3,7 @@ import { captureStack } from '../exception.js';
 import { linkable } from '../internal.js';
 import { mutable } from '../ref.js';
 import { subscribe } from '../subscription.js';
-import type { Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
+import type { Enum, Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '../utils/index.js';
 
 export type GetMethod = 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS';
@@ -21,12 +21,14 @@ export type StreamOptions<T, S extends LinkableSchema = LinkableSchema> = FetchO
   transform?: (current: T, chunk: T) => T;
 };
 
-export enum FetchStatus {
-  Idle = 'idle',
-  Pending = 'pending',
-  Success = 'success',
-  Error = 'error',
-}
+export const FetchStatus = {
+  Idle: 'idle',
+  Pending: 'pending',
+  Success: 'success',
+  Error: 'error',
+} as const;
+
+export type FetchStatus = Enum<typeof FetchStatus>;
 
 export type ReadableState<T> = {
   data: T;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, type ObjLike, subscribe } from '../../src/index.js';
+import { anchor, effect, type ObjLike, subscribe } from '../../src/index.js';
 
 describe('Anchor Helpers', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -80,6 +80,7 @@ describe('Anchor Helpers', () => {
       expect(handler).toHaveBeenCalledWith(state, {
         type: 'assign',
         keys: [],
+        changes: ['a', 'c'],
         prev: { a: 1, c: 3 },
         value: { a: 4, c: 5 },
       });
@@ -139,6 +140,21 @@ describe('Anchor Helpers', () => {
       expect(state).toEqual(['b']);
     });
 
+    it('should remove elements from Set state', () => {
+      const state = anchor(new Set(['a', 'b', 'c']));
+      const handler = vi.fn().mockImplementation(() => {
+        expect(state.has('a'));
+      });
+      const cleanup = effect(handler);
+
+      anchor.remove(state, 'a' as never);
+
+      expect(Array.from(state)).toEqual(['b', 'c']);
+      expect(handler).toHaveBeenCalledTimes(2);
+
+      cleanup();
+    });
+
     it('should handle single element removal from Array state', () => {
       const state = anchor(['a', 'b', 'c']);
       anchor.remove(state, '1');
@@ -164,6 +180,7 @@ describe('Anchor Helpers', () => {
       expect(handler).toHaveBeenCalledWith(state, {
         type: 'remove',
         keys: [],
+        changes: ['a', 'c'],
         prev: { a: 1, c: 3 },
         value: ['a', 'c'],
       });
@@ -182,6 +199,7 @@ describe('Anchor Helpers', () => {
       expect(handler).toHaveBeenCalledWith(state, {
         type: 'remove',
         keys: [],
+        changes: ['a'],
         prev: { nonexistent: undefined, a: 1 },
         value: ['nonexistent', 'a'],
       });
@@ -261,6 +279,7 @@ describe('Anchor Helpers', () => {
       expect(handler).toHaveBeenCalledWith(state, {
         type: 'clear',
         keys: [],
+        changes: ['a', 'b', 'c'],
         prev: {},
         value: undefined,
       });

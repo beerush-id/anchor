@@ -40,7 +40,7 @@ export class MutableRef<T> {
    * @param init - The initial value for the reference
    */
   constructor(init: T) {
-    this.source = anchor({ value: init });
+    this.source = anchor({ value: init }, { recursive: false });
   }
 
   /**
@@ -93,7 +93,7 @@ export class ImmutableRef<T> {
    * @param init - The initial value for the reference
    */
   constructor(init: T) {
-    this.source = anchor({ value: init });
+    this.source = anchor({ value: init }, { immutable: true, recursive: false });
   }
 
   /**
@@ -131,6 +131,7 @@ export class DerivedRef<T> {
     this.observer = createObserver(() => {
       this.state.value = this.observer.run(derive);
     });
+    this.observer.name = 'DerivedRef';
     this.state = anchor(
       {
         value: this.observer.run(derive),

@@ -18,7 +18,7 @@ export * from './exception.js';
 export * from './fetch/index.js';
 export * from './history/index.js';
 export * from './internal.js';
-export { setCleanUpHandler } from './lifecycle.js';
+export { createLifecycle, onCleanup, setCleanUpHandler } from './lifecycle.js';
 export * from './observation.js';
 export * from './ref.js';
 export * from './stack.js';
