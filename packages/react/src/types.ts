@@ -1,5 +1,5 @@
 import type { MutableRef } from '@anchorlib/core';
-import type { FunctionComponent, MemoExoticComponent, ReactNode } from 'react';
+import type { FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode } from 'react';
 import type { BindingRef } from './binding.js';
 
 export type SetupProps = { [key: string]: unknown };
@@ -93,3 +93,21 @@ export type SetupComponent<P> = (props: ComponentProps<P>) => ReactNode;
  * @template P - The props type
  */
 export type StableComponent<P> = MemoExoticComponent<FunctionComponent<P>> | FunctionComponent<P>;
+
+/**
+ * A reference object that holds an HTML element and its attributes.
+ * Provides reactive updates when attributes change.
+ *
+ * @template E - The HTMLElement type
+ * @template P - The HTML attributes type
+ */
+export type NodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>> = {
+  /** Get the current HTML element */
+  get current(): E;
+  /** Set the current HTML element and trigger attribute updates */
+  set current(value: E);
+  /** Get the current attributes */
+  get attributes(): P;
+  /** Destroy the observer and clean up resources */
+  destroy(): void;
+};

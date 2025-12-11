@@ -1,24 +1,7 @@
 import { createObserver, isBrowser } from '@anchorlib/core';
 import type { HTMLAttributes, InputHTMLAttributes } from 'react';
 import { onCleanup } from './lifecycle.js';
-
-/**
- * A reference object that holds an HTML element and its attributes.
- * Provides reactive updates when attributes change.
- *
- * @template E - The HTMLElement type
- * @template P - The HTML attributes type
- */
-export type NodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>> = {
-  /** Get the current HTML element */
-  get current(): E;
-  /** Set the current HTML element and trigger attribute updates */
-  set current(value: E);
-  /** Get the current attributes */
-  get attributes(): P;
-  /** Destroy the observer and clean up resources */
-  destroy(): void;
-};
+import type { NodeRef } from './types.js';
 
 /**
  * Mapping of React prop names to HTML attribute names.
