@@ -96,12 +96,13 @@ describe('Anchor React - Props', () => {
       const cleanup = effect(() => {
         expect({ ...proxiedProps }).toEqual({});
       });
+      expect({ ...proxiedProps }).toEqual(testProps);
 
       vi.runAllTimers();
 
       expect(proxiedProps).toBeDefined();
       expect(typeof proxiedProps).toBe('object');
-      expect(errSpy).toHaveBeenCalled();
+      expect(errSpy).toHaveBeenCalledTimes(1);
 
       cleanup();
 

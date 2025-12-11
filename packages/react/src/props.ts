@@ -70,10 +70,10 @@ export function callback<T>(fn: T): T {
  */
 export function setupProps<P>(props: P): ComponentProps<P> {
   const omit = (keys: Array<keyof P>) => {
-    return omitProps(newProps, keys ?? []);
+    return omitProps(props, newProps, keys ?? []);
   };
   const pick = (keys: Array<keyof P>) => {
-    return pickProps(newProps, keys ?? []);
+    return pickProps(props, newProps, keys ?? []);
   };
 
   const newProps = new Proxy(props as ComponentProps<P>, {
@@ -154,17 +154,18 @@ export function setupProps<P>(props: P): ComponentProps<P> {
  *
  * @template T - The type of the original object
  * @template K - The type of keys to exclude
- * @param props - The original object to omit properties from
+ * @param source - The original object to create a proxy for
+ * @param props - The proxied object to omit properties from
  * @param excludes - An array of keys to exclude from the object (default: empty array)
  * @returns A new object with specified properties omitted
  */
-export function omitProps<T, K extends keyof T>(props: T, excludes: Array<K> = []): Omit<T, K> {
-  return new Proxy(props as Record<string, unknown>, {
-    get(target, key, receiver) {
-      return Reflect.get(target as Record<string, unknown>, key, receiver);
+export function omitProps<T, K extends keyof T>(source: T, props: T, excludes: Array<K> = []): Omit<T, K> {
+  return new Proxy(source as Record<string, unknown>, {
+    get(_target, key, receiver) {
+      return Reflect.get(props as Record<string, unknown>, key, receiver);
     },
-    set(target, key, value, receiver) {
-      return Reflect.set(target as Record<string, unknown>, key, value, receiver);
+    set(_target, key, value, receiver) {
+      return Reflect.set(props as Record<string, unknown>, key, value, receiver);
     },
     ownKeys(target: Record<string, unknown>): ArrayLike<string | symbol> {
       return untrack(() => {
@@ -183,17 +184,18 @@ export function omitProps<T, K extends keyof T>(props: T, excludes: Array<K> = [
  *
  * @template T - The type of the original object
  * @template K - The type of keys to include
+ * @param source - The original object to create a proxy for
  * @param props - The original object to pick properties from
  * @param includes - An array of keys to include in the object (default: empty array)
  * @returns A new object with only specified properties included
  */
-export function pickProps<T, K extends keyof T>(props: T, includes: Array<K> = []): Pick<T, K> {
-  return new Proxy(props as Record<string, unknown>, {
-    get(target, key, receiver) {
-      return Reflect.get(target as Record<string, unknown>, key, receiver);
+export function pickProps<T, K extends keyof T>(source: T, props: T, includes: Array<K> = []): Pick<T, K> {
+  return new Proxy(source as Record<string, unknown>, {
+    get(_target, key, receiver) {
+      return Reflect.get(props as Record<string, unknown>, key, receiver);
     },
-    set(target, key, value, receiver) {
-      return Reflect.set(target as Record<string, unknown>, key, value, receiver);
+    set(_target, key, value, receiver) {
+      return Reflect.set(props as Record<string, unknown>, key, value, receiver);
     },
     ownKeys(target: Record<string, unknown>): ArrayLike<string | symbol> {
       return untrack(() => {
