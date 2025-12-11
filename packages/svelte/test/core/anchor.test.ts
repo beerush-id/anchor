@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { mutable } from '@anchorlib/core';
 import { render, screen } from '@testing-library/svelte';
+import { describe, expect, it } from 'vitest';
+import { anchor } from '../../src/core/index.js';
 import AnchorBasic from './anchor/anchor-basic.svelte';
-import ReactiveBasic from './anchor/reactive-basic.svelte';
 import FlatBasic from './anchor/flat-basic.svelte';
 import OrderedBasic from './anchor/ordered-basic.svelte';
 import RawBasic from './anchor/raw-basic.svelte';
+import ReactiveBasic from './anchor/reactive-basic.svelte';
 
 describe('Anchor Svelte - Anchor System', () => {
   describe('anchorRef', () => {
@@ -12,7 +14,12 @@ describe('Anchor Svelte - Anchor System', () => {
       it('should create a reactive reference with initial value', () => {
         render(AnchorBasic);
 
+        expect(() => mutable(0)).not.toThrow();
         expect(screen.getByTestId('state-value').textContent).toBe('42-test');
+      });
+
+      it('should import from the core path', () => {
+        expect(typeof anchor).toBe('function');
       });
     });
   });

@@ -28,6 +28,11 @@
       "svelte": "./dist/reactive.js",
       "import": "./dist/reactive.js"
     },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "svelte": "./dist/core/index.js",
+      "import": "./dist/core/index.js"
+    },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
       "svelte": "./dist/storage/index.js",
