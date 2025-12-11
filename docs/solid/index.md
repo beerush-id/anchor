@@ -48,9 +48,9 @@ Anchor addresses these challenges while maintaining full compatibility with Soli
 Unlike traditional immutable patterns, Anchor allows you to mutate state directly while maintaining reactivity:
 
 ```tsx
-import { anchorRef } from '@anchorlib/solid';
+import { mutable } from '@anchorlib/solid';
 
-const state = anchorRef({ count: 0, name: 'Solid' });
+const state = mutable({ count: 0, name: 'Solid' });
 
 // Direct mutation instead of immutable patterns
 state.count++;
@@ -65,7 +65,7 @@ state.name = 'Anchor Solid';
 Anchor provides true immutability through controlled mutations. State objects are genuinely immutable except through
 defined contracts, preventing accidental mutations while maintaining performance.
 
-- [Immutability](/solid/immutability) - Learn more about immutability.
+- [Immutability](/solid/state/immutable) - Learn more about immutability.
 - [Immutability API Reference](/apis/solid/initialization#immutable-apis) - API reference for immutability.
 
 ### 3. Data Integrity
