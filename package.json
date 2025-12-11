@@ -1,7 +1,7 @@
 {
   "name": "anchorlib",
   "type": "module",
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "description": "Reactive State Management for Javascript",
   "scripts": {
     "dev": "bpkg run dev",
@@ -49,7 +49,11 @@
   },
   "packageManager": "bun@1.3.2",
   "private": true,
-  "workspaces": ["apps/*", "packages/*", "kits/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "kits/*"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",

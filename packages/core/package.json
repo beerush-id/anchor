@@ -1,9 +1,14 @@
 {
   "type": "module",
   "name": "@anchorlib/core",
-  "version": "1.0.0-beta.14",
+  "version": "1.0.0-beta.15",
   "description": "Core reactive state management library for Anchor",
-  "keywords": ["state", "management", "reactive", "observable"],
+  "keywords": [
+    "state",
+    "management",
+    "reactive",
+    "observable"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -22,7 +27,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "directories": {
     "dist": "./dist"
   },
