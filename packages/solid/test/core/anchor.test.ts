@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
 import { renderHook } from '@solidjs/testing-library';
+import { describe, expect, it } from 'vitest';
 import { anchorRef, flatRef, orderedRef, reactive } from '../../src/anchor.js';
+import { anchor } from '../../src/core/index.js';
 
 describe('Anchor Solid - Anchor System', () => {
   describe('anchorRef', () => {
@@ -10,6 +11,10 @@ describe('Anchor Solid - Anchor System', () => {
         const { result } = renderHook(() => anchorRef(initialValue));
 
         expect(result).toEqual(initialValue);
+      });
+
+      it('should import from the core path', () => {
+        expect(typeof anchor).toBe('function');
       });
     });
   });
