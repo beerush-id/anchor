@@ -138,12 +138,14 @@ export function getObserver(): StateObserver | undefined {
  *
  * @param onChange - Callback function that will be called when state changes occur
  * @param onTrack - Callback function that will be called when a new state is tracked
+ * @param controlled - A flag indicating whether the observer is controlled by the user
  * @returns A new observer instance with states management, onChange handler, onDestroy hook, and cleanup functionality
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function createObserver(
   onChange: (event: StateChange) => void,
-  onTrack?: (state: Linkable, key: KeyLike) => void
+  onTrack?: (state: Linkable, key: KeyLike) => void,
+  controlled?: boolean
 ): StateObserver {
   let observedSize = 0;
   let isObserving = false;
@@ -273,7 +275,9 @@ export function createObserver(
     onChange(event);
   };
 
-  onCleanup(destroy);
+  if (!controlled) {
+    onCleanup(destroy);
+  }
 
   const observer = {
     id: shortId(),
