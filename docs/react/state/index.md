@@ -1,6 +1,6 @@
 # State Management
 
-Anchor provides a universal, fine-grained reactivity system that works both inside and outside of React. It allows you to manage state using **standard JavaScript objects** while gaining powerful reactivity features.
+This system provides a universal, fine-grained reactivity system that works both inside and outside of React. It allows you to manage state using **standard JavaScript objects** while gaining powerful reactivity features.
 
 ## The Problem
 
@@ -12,38 +12,38 @@ To build reactive UIs, libraries often force you into restrictive patterns:
 - **Immutability**: "Don't change the object, create a new one." (React `useState`, Redux). This introduces "Copy-on-Write" overhead and disconnects state from logic.
 - **Special Setters**: `this.setState({ ... })` or `store.update(...)`. This adds boilerplate and makes code harder to read.
 
-## The Anchor Solution
+## The Solution
 
-Anchor solves this by acting as a **Gateway** to your data. It wraps your native JavaScript objects in a transparent Proxy.
+We solve this by **Transparently Upgrading** your data to be reactive. The system wraps your native JavaScript objects in a transparent Proxy.
 
 - **Just JavaScript**: You read and write properties normally (`state.count++`).
 - **Stable References**: The underlying object remains the same. No cloning, no garbage collection churn.
-- **Automatic Reactivity**: The gateway intercepts operations to track dependencies and trigger updates automatically.
+- **Automatic Reactivity**: The proxy intercepts operations to track dependencies and trigger updates automatically.
 
 ## Philosophy
 
 ### 1. Universal Reactivity
-State in Anchor is not tied to the React component tree. You define your business logic and state containers (stores) using plain TypeScript functions. These "Headless States" can be tested in isolation and consumed by any UI layer (React, Vue, or Vanilla JS).
+State in this architecture is not tied to the React component tree. You define your business logic and state containers (stores) using plain TypeScript functions. These "Headless States" can be tested in isolation and consumed by any UI layer (React, Vue, or Vanilla JS).
 
-### 2. The Gateway Pattern
-Because Anchor state is just a gateway, it enables both **true mutability** and **true immutability** on the same data.
+### 2. Unified Access Model
+Because the system manages data access via proxies, it enables both **true mutability** and **true immutability** on the same data source.
 
-- **Mutable Gateway**: Allows direct modification (`mutable()`).
-- **Immutable Gateway**: Provides a read-only view of the same data (`immutable()`).
+- **Mutable Access**: Allows direct modification.
+- **Immutable Access**: Provides a read-only view of the same data.
 - **Zero Overhead**: Since the underlying data isn't cloned, there is no performance penalty for managing large or complex state objects.
 
 ### 3. Separation of State and View
-By decoupling state logic from View rendering, Anchor encourages a clean architecture:
+By decoupling state logic from View rendering, we encourage a clean architecture:
 - **State Logic**: Defined in the Component (Logic Layer) or in "Headless" factories. Handles data, validation, and methods.
 - **View**: Defined in the Presentation Layer using Templates and Component Views. Handles rendering and event binding.
 
 ## How It Works
 
-### The `mutable` Primitive
-The core of Anchor's state is the `mutable` function. It creates the reactive gateway.
+### Creating Reactive Data
+You can make any standard JavaScript object, array, or primitive reactive. This "upgrades" the data to automatically notify the UI when it changes.
 
 #### Primitives
-For simple values (string, number, boolean), `mutable` returns a `MutableRef` object with a `.value` property.
+For simple values (string, number, boolean), the system uses a **Reference** object with a `.value` property.
 
 ```ts
 const count = mutable(0);
@@ -52,7 +52,7 @@ count.value++; // Triggers updates
 ```
 
 #### Objects
-For objects and arrays, `mutable` returns a reactive **Proxy**. You can access and modify properties directly.
+For objects and arrays, the system uses a reactive **Proxy**. You can access and modify properties directly.
 
 ```ts
 const user = mutable({ name: 'John', age: 30 });

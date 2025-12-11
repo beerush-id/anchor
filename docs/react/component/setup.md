@@ -100,7 +100,7 @@ Every Component must return JSX to render the interface. You have three approach
 
 ### Using Component View
 
-A Component View is the reactive UI that belongs to a specific Component and is not reused elsewhere. It updates automatically when the state it reads changes.
+A Component View is the primary reactive View returned immediately via `render()`. It's tied directly to the Component's output.
 
 Create a Component View by wrapping your JSX with `render()`:
 
@@ -110,15 +110,15 @@ return render(() => <div>{state.value}</div>);
 
 The View tracks which state properties it reads and re-renders only when those properties change.
 
-### Using Template
+### Using Snippet
 
-A Template is a reusable View that can be used multiple times or broken down into smaller, independently updating parts. Each Template tracks its own dependencies and updates only when needed.
+A Snippet is a scoped View defined inside the Component that can access local state through closure. Snippets can be reused within the Component and update independently.
 
-Define Templates using `template()`:
+Define Snippets using `snippet()`:
 
 ```tsx
-const Header = template(() => <h1>{state.title}</h1>, 'Header');
-const Content = template(() => <main>{state.data}</main>, 'Content');
+const Header = snippet(() => <h1>{state.title}</h1>, 'Header');
+const Content = snippet(() => <main>{state.data}</main>, 'Content');
 
 return (
   <div>
@@ -137,8 +137,8 @@ A Static Layout is JSX that's created once and never re-renders. Use this for st
 Return JSX directly without wrapping it in `render()`:
 
 ```tsx
-const Header = template(() => <h1>{state.title}</h1>, 'Header');
-const Content = template(() => <main>{state.data}</main>, 'Content');
+const Header = snippet(() => <h1>{state.title}</h1>, 'Header');
+const Content = snippet(() => <main>{state.data}</main>, 'Content');
 
 return (
   <div className="layout">
@@ -159,10 +159,10 @@ For complex components, break your UI into multiple Templates and return a stati
 export const Dashboard = setup(() => {
   const state = mutable({ ... });
 
-  // Define reactive parts as Templates
-  const Header = template(() => <h1>{state.title}</h1>, 'Header');
-  const Sidebar = template(() => <nav>{/* ... */}</nav>, 'Sidebar');
-  const Content = template(() => <main>{state.data}</main>, 'Content');
+  // Define reactive parts as Snippets
+  const Header = snippet(() => <h1>{state.title}</h1>, 'Header');
+  const Sidebar = snippet(() => <nav>{/* ... */}</nav>, 'Sidebar');
+  const Content = snippet(() => <main>{state.data}</main>, 'Content');
 
   // Return the static layout structure
   return (

@@ -8,19 +8,19 @@ keywords:
   - setup
 ---
 
-# Lifecycle Handlers
+# Component Lifecycle
 
-Anchor provides two primary lifecycle hooks: `onMount` and `onCleanup`. These allow you to run code at specific points in a component's life.
+You can execute logic at specific points in a component's life, such as when it enters or leaves the DOM.
 
-## `onMount()`
+## Mounting
 
-The `onMount` handler runs **once** when the component is successfully mounted to the DOM.
+You can schedule code to run **once** when the component is successfully mounted to the DOM. This is monitored by `onMount`.
 
 ### Usage
 Since `setup` also runs once during initialization, you might wonder when to use `onMount`.
 
 -   **`setup` body**: Runs *during* component creation (before DOM attachment). Use this for state initialization, defining effects, and event handlers.
--   **`onMount`**: Runs *after* the component is in the DOM. Use this for:
+-   **Mounting**: Runs *after* the component is in the DOM. Use this for:
     -   Direct DOM manipulation (focusing inputs, measuring elements).
     -   Integrating with 3rd-party libraries that need DOM nodes.
     -   Starting animations.
@@ -42,7 +42,7 @@ export const AutoFocusInput = setup(() => {
 ```
 
 ### Returning Cleanup
-For convenience, `onMount` can return a cleanup function, similar to `useEffect` in React. This is often cleaner than using a separate `onCleanup` call.
+For convenience, the mounting handler can return a cleanup function. This is often cleaner than defining a separate cleanup handler.
 
 ```tsx
 onMount(() => {
@@ -53,12 +53,12 @@ onMount(() => {
 });
 ```
 
-## `onCleanup()`
+## Unmounting
 
-The `onCleanup` handler runs when the component is **unmounted** (removed from the DOM).
+You can schedule code to run when the component is **removed** from the DOM. This is monitored by `onCleanup`.
 
 ### Usage
-Use `onCleanup` to clean up any side effects created in `setup` or `onMount` that aren't automatically handled by `effect`.
+Use the unmount handler to clean up any side effects created in `setup` that aren't automatically handled by the reactivity system.
 
 -   Removing global event listeners (e.g., `window.addEventListener`).
 -   Clearing timers (if not using `effect`).

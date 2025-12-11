@@ -48,7 +48,7 @@ Runs **once** when the component is created. Your state, logic, and effects live
 A fine-grained reactive renderer that binds your stable state to the UI. When state changes, **only the specific parts that depend on that state update**—nothing else.
 
 ```tsx
-import { setup, mutable, template, render } from '@anchorlib/react';
+import { setup, mutable, snippet, render } from '@anchorlib/react';
 
 // ━━━ COMPONENT (Logic Layer) ━━━
 export const Counter = setup(() => {
@@ -57,8 +57,8 @@ export const Counter = setup(() => {
   const increment = () => state.count++;
 
   // ━━━ VIEW (Presentation Layer) ━━━
-  // Reactive Template - only re-runs when state.count changes
-  const Count = template(() => <h1>{state.count}</h1>, 'Count');
+  // Reactive Snippet - only re-runs when state.count changes
+  const Count = snippet(() => <h1>{state.count}</h1>, 'Count');
 
   // Static Layout - runs once, never re-renders
   return (
@@ -86,8 +86,9 @@ Write your Component once. It works seamlessly as **Static HTML** in **React Ser
 
 ### Efficient Rendering
 You have full control over the rendering strategy:
-*   **Template**: Create reusable Views that update independently
-*   **Component View**: Define reactive UIs directly in your Component
+*   **Template**: Create standalone, reusable Views that update independently
+*   **Snippet**: Create scoped Views inside Components that access local state
+*   **Component View**: The primary reactive View returned immediately via `render()`
 *   **Static Layout**: Return non-reactive JSX for parts that never change
 *   **Direct DOM Binding**: Bypass React entirely for high-frequency updates (animations, drag-and-drop) by binding directly to DOM attributes
 
@@ -100,3 +101,9 @@ While `mutable` is sufficient for most local component state, Anchor offers **Tr
 Built-in integration with **Zod** schema validation and TypeScript ensures your shared state is always valid.
 *   **Schema Validation**: Runtime checks prevent invalid data from entering your state
 *   **Type Safety**: Compile-time checks catch errors before you run your code
+
+## Next Step
+
+Ready to start building? Head to the [**Getting Started**](/react/getting-started) guide.
+
+Curious how Anchor compares to Redux, Zustand, Jotai, or MobX? See the [**Comparison**](/react/comparison).

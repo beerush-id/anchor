@@ -105,6 +105,7 @@ export default defineConfig({
               { text: 'Getting Started', link: '/react/getting-started' },
               { text: 'Comparison', link: '/react/comparison' },
               { text: 'Migration Guide', link: '/react/migration-guide' },
+              { text: 'FAQ', link: '/react/faq' },
             ],
           },
           {
@@ -124,7 +125,7 @@ export default defineConfig({
             items: [
               { text: 'Overview', link: '/react/component/index.html' },
               { text: 'Component', link: '/react/component/setup' },
-              { text: 'View & Template', link: '/react/component/template' },
+              { text: 'View', link: '/react/component/view' },
               { text: 'Side Effects', link: '/react/component/side-effect' },
               { text: 'Lifecycle', link: '/react/component/lifecycle' },
               { text: 'Binding & Refs', link: '/react/component/binding' },
@@ -153,8 +154,8 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
-            text: 'Introduction',
-            link: '/solid/introduction',
+            text: 'Overview',
+            link: '/solid/index.html',
           },
           {
             text: 'Getting Started',
@@ -179,8 +180,8 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
-            text: 'Introduction',
-            link: '/svelte/introduction',
+            text: 'Overview',
+            link: '/svelte/index.html',
           },
           {
             text: 'Getting Started',
@@ -205,8 +206,8 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
-            text: 'Introduction',
-            link: '/vue/introduction',
+            text: 'Overview',
+            link: '/vue/index.html',
           },
           {
             text: 'Getting Started',
@@ -374,18 +375,18 @@ export default defineConfig({
         text: 'Data Integrity',
         link: '/data-integrity',
       },
-      {
-        text: 'Architecture',
-        link: '/architecture',
-      },
-      {
-        text: 'Performance',
-        link: '/performance',
-      },
-      {
-        text: 'Philosophy',
-        link: '/philosophy',
-      },
+      // {
+      //   text: 'Architecture',
+      //   link: '/architecture',
+      // },
+      // {
+      //   text: 'Performance',
+      //   link: '/performance',
+      // },
+      // {
+      //   text: 'Philosophy',
+      //   link: '/philosophy',
+      // },
       {
         text: 'FAQ',
         link: '/faq',

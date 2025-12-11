@@ -8,13 +8,13 @@ keywords:
   - untrack
 ---
 
-# Side Effect
+# Side Effects
 
-Side effects are operations that reach outside the reactive system, such as modifying the DOM, making API calls, or setting timers. Anchor provides tools to manage these effects and control exactly when they run.
+Side effects are operations that reach outside the reactive system, such as modifying the DOM, making API calls, or setting timers. You can define these operations to run automatically whenever their dependencies change.
 
-## Tracking Dependencies
+## Effect
 
-`effect` is an **Observer**. It runs the provided function immediately, tracking any reactive state accessed during execution. When any of those dependencies change, the effect re-runs.
+You can execute code immediately and automatically re-run it whenever the state it accesses changes. This creates a reactive link between your state and the outside world.
 
 ```tsx
 import { setup, mutable, effect } from '@anchorlib/react';
@@ -23,7 +23,7 @@ export const Logger = setup(() => {
   const state = mutable({ count: 0 });
 
   // 1. Runs immediately
-  // 2. Tracks 'state.count'
+  // 2. Automatically tracks 'state.count'
   // 3. Re-runs whenever 'state.count' changes
   effect(() => {
     console.log('Count changed to:', state.count);
@@ -36,7 +36,7 @@ export const Logger = setup(() => {
 > [!WARNING] ⚠️ Automatic Tracking
 > Anchor tracks **every** reactive property accessed synchronously within the effect. This includes properties accessed inside helper functions, loops, or serialization methods like `JSON.stringify()`. **If you read it, you subscribe to it.**
 
-### Cleanup
+### Managing Resources
 
 Effects can return a cleanup function. This function runs:
 1.  Before the effect re-runs (due to a dependency change).
@@ -63,9 +63,11 @@ effect(() => {
 });
 ```
 
-## Untracking Dependencies
+## Reading Without Subscribing
 
-Sometimes you need to read a reactive value inside an effect *without* subscribing to it. For this, Anchor provides the `untrack()` function.
+Sometimes you need to read a reactive value inside an effect *without* subscribing to it. This allows you to use the current value of a state without triggering a re-run when that state updates.
+
+You can use `untrack()` to ignore specific dependencies.
 
 `untrack` runs the provided function and returns its result, but ignores any reactive property accesses that happen inside it.
 
@@ -119,7 +121,7 @@ effect(() => {
 >
 > **Both are safe for serialization** because the returned object is a plain JavaScript object, detached from the reactivity system.
 
-## Global Subscription
+## Global Observability
 
 When you need to listen to *any* change in a state object (for example, to trigger a log or a unified save), using `effect` can be tedious because you have to manually access every property to track it.
 
@@ -155,7 +157,7 @@ user.settings.theme = 'light'; // Triggers the subscriber
 
 
 
-## Key Differences from `useEffect`
+## Comparison with React Hooks
 
 If you are coming from React, `effect` is similar to `useEffect`, but with major improvements:
 

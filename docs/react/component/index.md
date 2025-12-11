@@ -45,8 +45,9 @@ Because the Component runs only once, your functions are stable and always refer
 The [**View**](/react/component/template) displays your data to users. It's reactive—automatically tracking which state properties it reads and re-rendering only when those specific properties change.
 
 A Component can have:
-- **Component View** - A single reactive UI that linked to the Component's body directly.
-- **Templates** - A composition of reusable Views, each reacting independently to different parts of state.
+- **Component View** - The primary reactive View returned immediately, tied to the Component's output.
+- **Templates** - Standalone, reusable Views that rely on props.
+- **Snippets** - Scoped Views defined inside the Component with access to its state.
 
 ## Why Separation of Concerns?
 

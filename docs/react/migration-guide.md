@@ -1,24 +1,16 @@
 ---
 title: "Migration Guide"
-description: "Guide for migrating from standard React to Anchor using a gradual adoption strategy."
+description: "A comprehensive guide to identifying performance bottlenecks and migrating React components to Anchor."
 ---
 
 # Migration Guide
 
-Migrating to Anchor doesn't have to be an all-or-nothing process. Anchor is designed to work alongside standard React components, allowing you to adopt it incrementally.
+Migrating to Anchor is an architectural shift from **Top-Down Rendering** (React) to **Signal-Based Fine-Grained Reactivity** (Anchor). This guide demonstrates the strategic steps to adopt this model.
 
-The recommended strategy is **"Leaf-First"** or **"Hot-Path First"**. Identify components that suffer from performance issues (like forms or complex lists) and migrate them first.
-
-## Gradual Migration Strategy
-
-We'll use a simple Todo App as an example.
-
-### 1. The Starting Point (Standard React)
-
-Here is a typical React component. It uses `useState` and re-renders the entire component on every keystroke.
+Here is a standard React implementation of a Todo list.
 
 ```tsx
-// TodoApp.tsx (Standard React)
+// TodoApp.tsx
 import { useState } from 'react';
 
 export const TodoApp = () => {
@@ -33,11 +25,7 @@ export const TodoApp = () => {
   return (
     <div>
       <div className="form">
-        {/* Re-renders TodoApp on every keystroke */}
-        <input 
-          value={text} 
-          onChange={e => setText(e.target.value)} 
-        />
+        <input value={text} onChange={e => setText(e.target.value)} />
         <button onClick={handleSubmit}>Add</button>
       </div>
       <ul>
@@ -48,42 +36,60 @@ export const TodoApp = () => {
 };
 ```
 
-### 2. The Hybrid Approach (Partial Migration)
+## 1. Problem Identification
 
-You can introduce Anchor's `template` into an existing React component to isolate updates. This is great for fixing specific bottlenecks without rewriting the whole component.
+Before migrating, we must analyze **why** this component needs migration.
+
+*   The `text` state is linked to the `TodoApp` component scope.
+*   Typing in the `<input>` triggers `setText`, which forces the **entire function** to re-run.
+*   The `<ul>` list (which hasn't changed) is forced to re-render and Diff against the DOM on every single keystroke.
+
+## 2. Setting Priority (Strategy)
+
+Now we decide **how** to attack the problem. We use the **"Hot-Path" Strategy**.
+
+1.  **High Priority (Hot Path):** The Form. It updates frequently (on input) and causes the lag. **Actions:** Isolate this first.
+2.  **Low Priority (Cold Path):** The List. It updates rarely (on submit). **Actions:** Inherit existing behavior or migrate later.
+
+**Decided Approach:** We will first isolate the form using a **Hybrid Integration** to stop the bleeding, then perform a **Full Migration** for long-term stability.
+
+## 3. Gradual Migration
+
+**Goal:** Isolate the "Hot Path" (Form) immediately.
+
+We create an **Update Boundary** to isolate the high-frequency state changes. This keeps high-frequency state changes contained, preventing them from leaking out and triggering the parent React component.
 
 ```tsx
-// TodoApp.tsx (Hybrid)
 import { useState } from 'react';
-import { mutable, template } from '@anchorlib/react';
+import { mutable, snippet } from '@anchorlib/react';
 
 export const TodoApp = () => {
-  // Keep todos in React state for now
   const [todos, setTodos] = useState([]);
 
-  // 1. Migrate Form State to use Mutable State.
-  const formState = mutable({ text: '' }); // [!code ++]
+  // STEP 1: Bypass React Render Cycle
+  // We move the high-frequency state to a mutable signal.
+  const formState = mutable({ text: '' });
 
   const handleSubmit = () => {
     setTodos([...todos, { text: formState.text }]);
     formState.text = '';
   };
 
-  // 2. Create a Template for the Form
-  const TodoForm = template(() => ( // [!code ++]
+  // STEP 2: Create Update Boundary
+  // We wrap the input UI so it listens strictly to the signal, ignoring React updates.
+  const TodoForm = snippet(() => (
     <div className="form">
-      {/* Only this view updates on keystroke */}
       <input 
         value={formState.text} 
         onInput={e => formState.text = e.target.value} 
       />
       <button onClick={handleSubmit}>Add</button>
     </div>
-  )); // [!code ++]
+  ));
 
   return (
     <div>
-      {/* 3. Use the Template [!code ++] */}
+      {/* Updates here NO LONGER trigger TodoApp re-render */}
       <TodoForm />
       <ul>
         {todos.map(todo => <li key={todo.text}>{todo.text}</li>)}
@@ -93,32 +99,29 @@ export const TodoApp = () => {
 };
 ```
 
-> [!WARNING]
-> **State Stability**: When using `mutable` inside a standard React component, remember that if the *parent* component re-renders, your `mutable` state will be recreated and reset.
-> 
-> This is acceptable for a **temporary migration step**, but for the final version, you should move to `setup` (Step 3) to ensure stability without hooks.
+## 4. Full Migration
 
-### 3. Full Migration (Anchor Component)
+**Goal:** Complete stability and granular reactivity for the entire component.
 
-Finally, you can convert the entire component to use Anchor's pattern. This gives you stable setup logic and fine-grained reactivity.
+Now that the immediate bottleneck is solved, we adopt the **Constructor Pattern**. This ensures our logic initializes exactly once, and every part of the UI updates independently.
 
 ```tsx
-// TodoApp.tsx (Anchor)
-import { setup, template, mutable } from '@anchorlib/react';
+import { setup, template, snippet, mutable } from '@anchorlib/react';
 
-// Component runs once.
-export const TodoApp = setup(() => { // [!code ++]
-  // 1. State is stable.
-  const formState = mutable({ text: '' }); // [!code ++]
-  const todos = mutable([]); // [!code ++]
+// STEP 1: Initialize Once
+// Logic moves to 'setup', guaranteeing it never re-runs.
+export const TodoApp = setup(() => {
+  const formState = mutable({ text: '' });
+  const todos = mutable([]);
 
   const handleSubmit = () => {
-    todos.push({ text: formState.text }); // [!code ++]
-    formState.text = ''; // [!code ++]
+    todos.push({ text: formState.text });
+    formState.text = '';
   };
 
-  // 2. Define granular templates
-  const TodoForm = template(() => ( // [!code ++]
+  // STEP 2: Granular View Definitions
+  // We define views that have access to the closure scope.
+  const TodoForm = snippet(() => (
     <div className="form">
       <input 
         value={formState.text} 
@@ -126,47 +129,43 @@ export const TodoApp = setup(() => { // [!code ++]
       />
       <button onClick={handleSubmit}>Add</button>
     </div>
-  )); // [!code ++]
+  ));
 
-  const TodoList = template(() => ( // [!code ++]
+  const TodoList = snippet(() => (
     <ul>
-      {/* 3. Use TodoItem for fine-grained updates [!code ++] */}
       {todos.map(todo => <TodoItem key={todo.text} todo={todo} />)}
     </ul>
-  )); // [!code ++]
+  ));
 
-  // 4. Return the static layout [!code ++]
   return (
     <div>
       <TodoForm />
       <TodoList />
     </div>
-  ); // [!code ++]
+  );
 });
 
-// 5. Standalone Item Template [!code ++]
-const TodoItem = template(({ todo }) =>
+// STEP 3: External Component Definition
+// Pure views are defined outside to maximize reusability.
+const TodoItem = template(({ todo }) => (
   <li style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
     <input 
       type="checkbox" 
       checked={todo.completed}
-      onChange={() => todo.completed = !todo.completed} // [!code ++]
+      onChange={() => todo.completed = !todo.completed}
     />
     {todo.text}
   </li>
-)); // [!code ++]
+));
 ```
 
-> [!TIP] Pro Tip
-> Define standalone templates like `TodoItem` **outside** the `setup` function.
-> 
-> Since `TodoItem` relies purely on props and doesn't need access to `TodoApp`'s internal scope (like `formState`), defining it inside would just re-create the template unnecessarily on every `TodoApp` instance. Defining it outside is more efficient.
+## Recap
 
-### Why is this better?
+By following this process, we have transformed the component architecture:
 
-By breaking the UI into **templates**, we achieve fine-grained reactivity:
-
-*   **Zero Parent Re-renders**: The main `TodoApp` component renders its layout **once**. It never runs again.
-*   **Isolated Updates**: When you type in the input, **only** `TodoForm` updates.
-*   **Item Granularity**: When a single todo changes, **only** that specific `TodoItem` updates. The list itself doesn't re-render.
-*   **Stable Logic**: Your event handlers and state are created once in `setup` and never recreated.
+*   **Identified** that the "Hot Path" (Input) was dragging down the entire app.
+*   **Prioritized** fixing the input first using a Hybrid Strategy.
+*   **Executed** a Full Migration to achieve:
+    *   **Stable Logic:** The component function only runs once (`setup`).
+    *   **Zero Re-renders:** The parent container never updates after mount.
+    *   **Fine-Grained Updates:** Typing only updates the Input DOM node; Adding a todo only appends a DOM node.

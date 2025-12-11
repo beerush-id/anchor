@@ -124,9 +124,9 @@ const btnRef = nodeRef(() => ({
 > [!TIP]
 > Event handlers in `nodeRef` are safe for **React Server Components (RSC)** because they are automatically stripped out during server rendering.
 
-## Binding Reference
+## Creating Binding References
 
-The `bind()` function creates a **Binding Reference** that can be passed to components for two-way binding.
+You can create a **Binding Reference** that can be passed to components for two-way binding.
 
 It supports two types of state:
 1.  **Mutable Object**: `bind(object, key)`
@@ -143,9 +143,9 @@ const count = mutable(0);
 <Counter value={bind(count)} />
 ```
 
-## Bindable State
+## Bindable Interfaces
 
-The `bindable()` helper creates a bindable state that stays synchronized with a source object (like `props`). This is useful for creating components that can be both controlled and uncontrolled, or simply to normalize props into a mutable interface.
+You can create a bindable state that stays synchronized with a source object (like `props`). This is useful for creating components that can be both controlled and uncontrolled, or simply to normalize props into a mutable interface.
 
 ```tsx
 import { setup, bindable, render } from '@anchorlib/react';

@@ -1,78 +1,66 @@
 ---
 title: "Derived State"
-description: "Learn how to use derived() to create computed state that automatically updates."
+description: "Understanding the concept of computed state and single source of truth."
 keywords:
   - derived state
   - computed
-  - derived()
+  - single source of truth
 ---
 
 # Derived State
 
-Derived state is state that is computed from other reactive state. It automatically updates whenever its dependencies change.
+A core principle of robust state management is the **Single Source of Truth**. You should not store data that can be computed from other data. Storing redundant blocks of state leads to synchronization bugs.
 
-## `derived()`
+Derived state ensures that your data is always consistent by automatically recalculating values whenever the underlying dependencies change.
 
-Use the `derived()` function to create a read-only reactive value based on a computation function. This is useful for creating new state based on existing state without modifying the original objects.
+## Intrinsic Computation
 
-```tsx
-import { mutable, derived } from '@anchorlib/react';
+When a computed value belongs logically to a specific object, use standard **JavaScript Getters**. This keeps the data and its computation encapsulated together.
 
-const state = mutable({
-  firstName: 'Jane',
-  lastName: 'Doe'
-});
-
-// Automatically updates when firstName or lastName changes
-const fullName = derived(() => `${state.firstName} ${state.lastName}`);
-
-// Usage
-console.log(fullName.value); // "Jane Doe"
-```
-
-## External vs. In-Place Derivation
-
-Anchor supports two ways to create derived state: **External** (using `derived()`) and **In-Place** (using Getters).
-
-### 1. In-Place Derivation (Getters)
-Use standard JavaScript getters when the derived value **conceptually belongs to the object**. This keeps the data and its computed properties together (Encapsulation).
+This is the most common form of derivation in Anchor.
 
 ```ts
 const cart = mutable({
   price: 10,
   quantity: 2,
-  // ✅ "Total" is an intrinsic property of the cart
+  
+  // The 'total' is a property of the cart, derived from its other properties.
   get total() {
     return this.price * this.quantity;
   }
 });
+
+console.log(cart.total); // 20
 ```
 
-**Best for:**
-- Domain logic (e.g., `User.fullName`, `Cart.total`).
-- Properties that should always travel with the object.
+## Composite Computation
 
-### 2. External Derivation (`derived()`)
-Use `derived()` when you need to **combine multiple independent states** or create **view-specific transformations**.
+Sometimes, a value depends on multiple *separate* state sources that do not share a common parent object. Or, you may need to transform data for a specific UI view (like a View Model) without modifying the original domain object.
+
+In these cases, you define a **Reactive Computation** that combines these sources.
 
 ```ts
-const todos = mutable([...]);
-const filter = mutable('active');
+import { mutable, derived } from '@anchorlib/react';
 
-// ✅ "Filtered Todos" is a view concern, not a property of the todo list itself
+const todos = mutable([{ text: 'Buy milk', done: false }]);
+const filter = mutable('SHOW_ALL');
+
+// This value is computed from two independent sources: 'todos' and 'filter'
 const visibleTodos = derived(() => {
-  if (filter.value === 'active') return todos.filter(t => !t.completed);
+  if (filter.value === 'SHOW_COMPLETED') return todos.filter(t => t.done);
   return todos;
 });
 ```
 
-**Best for:**
-- Combining state from different sources (e.g., `User` + `Settings`).
-- UI-specific logic (e.g., `isSubmitEnabled`, `filteredList`).
-- When you can't or don't want to modify the original state object.
+### Characteristics
 
-## Characteristics
+- **Automatic Dependency Tracking**: The system automatically detects which state properties are accessed during computation. You do not need dependency arrays.
+- **Read-Only**: Derived values flow one way (Data -> View). You cannot manually assign a value to a derived property.
+- **Lazy Evaluation**: Computations are optimized to only re-run when necessary.
 
-- **Automatic Dependency Tracking**: You don't need to declare dependencies. Anchor detects which signals are accessed inside the function.
-- **Lazy Evaluation**: Derived values are typically evaluated lazily (when accessed) or when their dependencies change, ensuring efficiency.
-- **Read-Only**: The returned object is a `DerivedRef` which exposes a `.value` property. You cannot set it directly.
+## Choosing an Approach
+
+| Pattern | Implementation | Best For |
+| :--- | :--- | :--- |
+| **Intrinsic** | JavaScript Getter | Domain logic (`User.fullName`) and encapsulation. |
+| **Composite** | `derived()` function | Combining separate states (`Search` + `List`) or View Models. |

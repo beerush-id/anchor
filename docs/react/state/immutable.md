@@ -1,60 +1,62 @@
 ---
 title: "Immutable State"
-description: "Understanding Anchor's read-only proxies and write contracts."
+description: "Safe state sharing with Read-Only Contracts."
 keywords:
   - immutable
   - read-only
-  - write contract
+  - contracts
   - shared state
 ---
 
 # Immutable State
 
-`immutable()` creates a **Read-Only Gateway** to your state. It allows you to expose state to consumers while preventing them from modifying it directly.
+When sharing state across multiple components or modules (like a global Store), it is critical to control **who** can modify that state. Unrestricted access leads to unpredictable bugs where data is changed from unknown locations.
 
-## Creating Immutable State
+The architecture pattern to solve this is **Read/Write Segregation**:
+- **Public Interface**: Read-Only. Safe to share anywhere.
+- **Private Interface**: Writable. Kept internal to the store logic.
 
-You can create immutable state just like mutable state, but using the `immutable` function.
+## Defining Read-Only Access
+
+To share state safely, you define a read-only view. This ensures that any consumer can read the data to render the UI, but attempting to modify it will fail. This enforces the **One-Way Data Flow**.
 
 ```ts
 import { immutable } from '@anchorlib/react';
 
-const state = immutable({
-  count: 0,
-  user: { name: 'John' }
+export const userState = immutable({
+  name: 'John',
+  role: 'Admin'
 });
 
-// Reading is fine
-console.log(state.count);
+// Reading is allowed
+console.log(userState.name);
 
-// Mutation is FORBIDDEN
-state.count++; // Logs error and ignores the update
+// Mutation is blocked
+userState.name = 'Jane'; // Error!
 ```
 
-> [!NOTE]
-> Like `mutable`, `immutable` creates a **Stable Reference**. The object identity doesn't change, but the properties are read-only.
+## Defining Write Permissions
 
-## Write Contracts (`writable`)
+Since the public state is read-only, you need a way to grant write permissions to specific parts of your application. This is done using the **Write Contract** (`writable`).
 
-To modify an immutable state, you must create a **Write Contract** using `writable()`. This API allows you to create a mutable handle to the same underlying state.
-
-### Unrestricted Write Access
-If you don't provide a list of keys, `writable` returns a full mutable proxy.
+A Write Contract is a proxy that points to the same data but allows mutation.
 
 ```ts
 import { immutable, writable } from '@anchorlib/react';
 
-const state = immutable({ count: 0 });
-const writer = writable(state);
+// 1. Public Read-Only View
+export const state = immutable({ count: 0 });
 
-// Now you can mutate via the writer
-writer.count++;
+// 2. Write Contract
+export const stateControl = writable(state);
 
-console.log(state.count); // 1
+// 3. Direct Usage
+stateControl.count++; // Works!
 ```
 
-### Restricted Write Access
-You can restrict which properties can be mutated by passing an array of allowed keys.
+### Shared Write Contracts
+
+You can export a Write Contract to allow specific modules or components to update the state directly. This is often simpler than defining dedicated action functions for every possible change.
 
 ```ts
 const settings = immutable({
@@ -62,68 +64,11 @@ const settings = immutable({
   notifications: true
 });
 
-// Create a writer that ONLY allows changing 'theme'
-const themeWriter = writable(settings, ['theme']);
+// Create a contract that guarantees ONLY 'theme' can be changed
+export const themeControl = writable(settings, ['theme']);
 
-themeWriter.theme = 'light'; // ✅ Allowed
-themeWriter.notifications = false; // ❌ Logs error, ignored
-```
-
-## Use Case: Shared State
-
-The combination of `immutable` and `writable` is perfect for creating **Shared Stores**. You can expose the read-only state to the rest of your app while keeping the write logic private.
-
-```ts
-// stores/theme.ts
-import { immutable, writable } from '@anchorlib/react';
-
-// 1. Create the immutable state (Public)
-export const themeState = immutable({
-  mode: 'light',
-  accent: 'blue'
-});
-
-// 2. Create a private writer
-const writer = writable(themeState);
-
-// 3. Expose methods to modify state
-export const toggleTheme = () => {
-  writer.mode = writer.mode === 'light' ? 'dark' : 'light';
-};
-
-export const setAccent = (color: string) => {
-  writer.accent = color;
-};
-```
-
-**In your components:**
-
-```tsx
-import { themeState, toggleTheme } from './stores/theme';
-
-export const ThemeToggler = setup(() => {
-  return render(() => (
-    <button onClick={toggleTheme}>
-      Current mode: {themeState.mode}
-    </button>
-  ));
-}, 'ThemeToggler');
-```
-
-This pattern ensures **Unidirectional Data Flow**:
-1.  Components read from `themeState`.
-2.  Components call actions (`toggleTheme`).
-3.  Actions mutate the state via `writer`.
-4.  State updates propagate to components.
-
-## Advanced Options
-
-`immutable` supports the same advanced options as `mutable`.
-
-```ts
-const list = immutable([1, 2, 3], {
-  recursive: 'flat' // Only track array structure changes
-});
+// Consumers can simply assign values
+themeControl.theme = 'light';
 ```
 
 ## Best Practices
@@ -132,17 +77,19 @@ const list = immutable([1, 2, 3], {
 For shared state, **always prefer `immutable` over `mutable`**. Exposing mutable state globally invites "spaghetti code" where any component can change the state in unpredictable ways.
 
 - **Public**: `immutable` (Read-Only)
-- **Private**: `writable` (Restricted Write)
+- **Private/Protected**: `writable` (Restricted Write)
 
-This enforces a clear contract: "You can look, but you can't touch—unless you use the provided actions."
+This enforces a clear contract: "You can look, but you can't touch—unless you use the provided contract."
 
 ### Use Restricted Writers
-When creating a writer, **always provide the list of allowed keys** if possible. This creates a "Least Privilege" writer that can be safely passed to sub-components or helpers without giving them full write access to the entire state tree.
+When sharing a writer, **always provide the list of allowed keys** if possible. This creates a **Least Privilege** contract.
+
+You can safely pass a restricted writer to a sub-component, knowing it cannot accidentally modify unrelated state.
 
 ```ts
 // ✅ Prefer: Only allows changing 'theme'
 const themeWriter = writable(settings, ['theme']);
 
-// ❌ Avoid: Gives full write access to everything
+// ❌ Avoid: Gives full write access to everything (unless intended)
 const fullWriter = writable(settings);
 ```

@@ -24,6 +24,7 @@ npm install @anchorlib/react
 ```tsx
 // main.tsx or app/layout.tsx
 import '@anchorlib/react/client'; // 👈 Binds React hooks
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -33,7 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
 
 ## Your First Component
 
-Anchor components don't always need complex architecture. For simple components, you can link the View to the component directly using the `render` function.
+In Anchor, you create components with `setup()`. It runs once to define your state and logic. For a simple reactive View, use `render()`.
 
 ```tsx
 import { setup, mutable, render } from '@anchorlib/react';
@@ -55,24 +56,24 @@ export const Counter = setup(() => {
 
 As components grow, you might be tempted to split them into multiple smaller components (e.g., `CardHeader`, `CardBody`). In standard React, this often leads to **props drilling**—passing data down through layers of components just to display it.
 
-With Anchor, you can use **Internal Templates** to split your **Views** *without* losing the scope.
+With Anchor, you can use **Snippets** to split your **Views** *without* losing the scope.
 
 ```tsx
-import { setup, mutable, template } from '@anchorlib/react';
+import { setup, mutable, snippet } from '@anchorlib/react';
 
 // ━━━ COMPONENT (Logic Layer) ━━━
 export const UserCard = setup(() => {
   const user = mutable({ name: 'John Doe', role: 'Admin' });
 
-  // ━━━ INTERNAL TEMPLATE (Context-aware View) ━━━
-  const Header = template(() => (
+  // ━━━ SNIPPET (Context-aware View) ━━━
+  const Header = snippet(() => (
     <div className="header">
       <h1>{user.name}</h1>
     </div>
   ));
 
-  // ━━━ INTERNAL TEMPLATE (Context-aware View) ━━━
-  const Body = template(() => (
+  // ━━━ SNIPPET (Context-aware View) ━━━
+  const Body = snippet(() => (
     <div className="body">
       <p>Role: {user.role}</p>
     </div>
@@ -89,9 +90,9 @@ export const UserCard = setup(() => {
 ```
 
 **Why this is better:**
-*   **Cohesion**: Related UI parts stay together in one file.
+*   **Cohesion**: Related UI parts stay together in the same Component.
+*   **No Props Drilling**: Snippets access state directly—no need to pass data through layers.
 *   **Performance**: `Header` and `Body` update independently. If `user.role` changes, `Header` does not re-render.
-*   **No Props Drilling**: Internal templates share the `component` scope.
 
 ## Universal Components
 
@@ -154,10 +155,10 @@ export const UserProfile = setup(({ id, user }: Props) => {
     }
   });
 
-  // 4. Templates
-  // Extract content to a template so updates to 'user.name' 
+  // 4. Snippets
+  // Extract content to a snippet so updates to 'user.name' 
   // don't re-run the main render loop (checking loading/error).
-  const Content = template(() => (
+  const Content = snippet(() => (
     <div className="profile">
       <h1>{state.user?.name}</h1>
       {/* Only show refresh if we have an ID to refetch with */}
@@ -237,57 +238,13 @@ export default function App() {
 
 Anchor abstracts these differences so you can write logic once.
 
-## Best Practices
+## Next Steps
 
-### Separate Logic from View
-Keep your `component` focused on state and logic. Use `template`s for your view. This makes your code cleaner and easier to test.
+Now that you understand the basics, explore these topics:
 
-### Use Contracts for Shared State
-When sharing state between components, use **write contract** to define strict contracts. This prevents accidental mutations from unrelated components.
+- [**State**](/react/state) — `mutable`, `immutable`, `derived`, and write contracts
+- [**View & Template**](/react/component/template) — Templates, Snippets, and Component Views in depth
+- [**Lifecycle**](/react/component/lifecycle) — `onMount`, `onCleanup`, and effect handlers
+- [**Binding & Refs**](/react/component/binding) — Direct DOM binding for high-performance updates
 
-```ts
-// shared-state.ts
-import { immutable, writable } from '@anchorlib/core';
-
-export const globalConfig = immutable({ theme: 'dark' });
-export const configWriter = writable(globalConfig, ['theme']);
-```
-
-### Fine-Grained Views
-Don't be afraid to create small views using templates.
-
-**Bad: Giant View**
-Re-renders the entire View for any small change.
-```tsx
-return render(() => (
-  <div className="layout">
-    <div className="sidebar">{state.menu}</div> {/* Updates here... */}
-    <div className="content">{state.data}</div> {/* ...cause re-renders here */}
-  </div>
-));
-```
-
-**Good: Split Views**
-Updates are isolated. Changing `state.menu` only re-renders `<Sidebar />`.
-```tsx
-const Sidebar = template(() => <div className="sidebar">{state.menu}</div>);
-const Content = template(() => <div className="content">{state.data}</div>);
-
-return (
-  <div className="layout">
-    <Sidebar />
-    <Content />
-  </div>
-);
-```
-
-### Direct DOM Binding
-For high-performance needs (animations, drag-and-drop), use `node binding` to bind state directly to DOM attributes, bypassing React's render cycle entirely.
-
-```tsx
-const divRef = nodeRef(() => ({
-  style: { transform: `translateX(${state.x}px)` }
-}));
-
-return <div ref={divRef} {...divRef.attributes} />;
-```
+Have an existing project? See the [**Migration Guide**](/react/migration-guide) for gradual adoption strategies.
