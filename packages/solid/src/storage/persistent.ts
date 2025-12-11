@@ -3,6 +3,7 @@ import { persistent } from '@anchorlib/storage';
 import { onCleanup } from 'solid-js';
 
 /**
+ * @deprecated Use `persistent()` instead.
  * Creates a persistent state reference that automatically cleans up when the component unmounts.
  *
  * This function wraps the core `persistent` storage mechanism with Solid.js lifecycle management,

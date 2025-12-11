@@ -29,6 +29,10 @@
       "types": "./dist/reactive.d.ts",
       "import": "./dist/reactive.js"
     },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
       "import": "./dist/storage/index.js"

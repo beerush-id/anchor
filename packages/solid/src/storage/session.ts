@@ -3,6 +3,7 @@ import { session } from '@anchorlib/storage';
 import { onCleanup } from 'solid-js';
 
 /**
+ * @deprecated Use `session()` instead.
  * Creates a session state reference that automatically cleans up when the component unmounts.
  *
  * This function wraps the core `session` storage mechanism with Solid.js lifecycle management,

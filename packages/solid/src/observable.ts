@@ -1,9 +1,10 @@
 import { anchor, createObserver, type Immutable } from '@anchorlib/core';
-import type { ConstantRef, StateRef } from './types.js';
-import { REF_REGISTRY } from './reactive.js';
 import { onCleanup } from 'solid-js';
+import { REF_REGISTRY } from './reactive.js';
+import type { ConstantRef, StateRef } from './types.js';
 
 /**
+ * @deprecated use `effect()` instead.
  * Creates a reactive reference that automatically updates when its dependencies change.
  *
  * This function creates an observable reference that tracks dependencies and automatically

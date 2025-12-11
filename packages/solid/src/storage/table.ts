@@ -74,6 +74,7 @@ export type InferRef<T> = T extends TableRef<Rec, infer R> ? R : never;
 export type InferListRef<T> = T extends TableRef<Rec, infer R> ? R[] : never;
 
 /**
+ * @deprecated Use `createTable()` instead.
  * Creates a TableRef from an existing ReactiveTable instance.
  * @param table - The existing ReactiveTable instance to wrap.
  * @returns A TableRef wrapping the provided table.
@@ -81,6 +82,7 @@ export type InferListRef<T> = T extends TableRef<Rec, infer R> ? R[] : never;
 export function createTableRef<T extends ReactiveTable<Rec>>(table: T): TableRef<InferRec<T>>;
 
 /**
+ * @deprecated Use `createTable()` instead.
  * Creates a TableRef by creating a new ReactiveTable with the specified parameters.
  * @param name - The name of the table to create.
  * @param version - The version of the table schema (default: 1).
@@ -98,6 +100,7 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
 ): TableRef<T, R>;
 
 /**
+ * @deprecated Use `createTable()` instead.
  * Implementation of createTableRef that handles both overloads.
  * @param tableName - Either the name of the table to create or an existing ReactiveTable instance.
  * @param version - The version of the table schema (default: 1).

@@ -1,16 +1,55 @@
 import './reactive.js';
 
+export type {
+  AnchorSettings,
+  BatchHandler,
+  Context,
+  ContextProvider,
+  EffectHandler,
+  FetchOptions,
+  FetchState,
+  HistoryOptions,
+  HistoryState,
+  Immutable,
+  ImmutableOutput,
+  MicroBatch,
+  MicroLooper,
+  MicroPusher,
+  MicroTask,
+  ModelError,
+  ModelInput,
+  ModelObject,
+  Mutable,
+  MutablePart,
+  PushHandler,
+  State,
+  StateChange,
+  StateException,
+  StateExceptionHandler,
+  StateObserver,
+  StateOptions,
+  StateSubscriber,
+  StateUnsubscribe,
+  TaskHandler,
+  Writable,
+} from '@anchorlib/core';
+
 export {
   anchor,
+  DerivedRef,
   derived,
+  effect,
   exception,
+  FetchStatus,
   fetchState,
   getContext,
   history,
+  ImmutableRef,
   immutable,
   isImmutableRef,
   isMutableRef,
   isValueRef,
+  MutableRef,
   microbatch,
   microloop,
   micropush,
@@ -25,6 +64,7 @@ export {
   undoable,
   writable,
 } from '@anchorlib/core';
+
 export * from './anchor.js';
 export * from './derive.js';
 export * from './fetch.js';

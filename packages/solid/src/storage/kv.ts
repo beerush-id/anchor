@@ -2,6 +2,7 @@ import { kv, type KVState, type Storable } from '@anchorlib/storage/db';
 import { onCleanup } from 'solid-js';
 
 /**
+ * @deprecated Use `kv()` instead.
  * Creates a reactive key-value store reference with automatic cleanup.
  *
  * This function initializes a key-value store and sets up automatic cleanup

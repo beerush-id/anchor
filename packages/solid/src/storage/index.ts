@@ -1,5 +1,7 @@
 import '../reactive.js';
 
+export * from '@anchorlib/storage';
+
 export * from './kv.js';
 export * from './persistent.js';
 export * from './session.js';

@@ -1,6 +1,7 @@
-import type { ConstantRef, VariableRef } from './types.js';
+import type { StateObserver } from '@anchorlib/core';
+import { createObserver, microbatch, onGlobalCleanup, setCleanUpHandler, setTracker } from '@anchorlib/core';
 import { createSignal, getOwner, onCleanup, type Owner } from 'solid-js';
-import { createObserver, microbatch, setTracker, type StateObserver } from '@anchorlib/core';
+import type { ConstantRef, VariableRef } from './types.js';
 
 export const REF_REGISTRY = new WeakSet<VariableRef<unknown> | ConstantRef<unknown>>();
 export const OWNER_REGISTRY = new WeakMap<Owner, StateObserver>();
@@ -30,6 +31,7 @@ if (!bindingInitialized) {
     if (!OWNER_REGISTRY.has(owner)) {
       const [version, setVersion] = createSignal(0);
       const observer = createObserver(() => {
+        observer.reset();
         setVersion(version() + 1);
       });
 
@@ -46,5 +48,13 @@ if (!bindingInitialized) {
     batch(() => {
       OWNER_REGISTRY.get(owner)?.assign(init, observers)(key);
     });
+  });
+
+  setCleanUpHandler((handler) => {
+    if (getOwner()) {
+      return onCleanup(handler);
+    }
+
+    return onGlobalCleanup(handler);
   });
 }
