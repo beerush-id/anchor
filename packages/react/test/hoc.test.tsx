@@ -1,18 +1,21 @@
 import { mutable } from '@anchorlib/core';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render as renderView, setup, template, view } from '../src/hoc.js';
+import { render as renderView, setup, snippet, template } from '../src/hoc.js';
 import '../src/client/index';
 
 describe('Anchor React - HOC', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     errSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   describe('setup', () => {
@@ -87,7 +90,7 @@ describe('Anchor React - HOC', () => {
     });
   });
 
-  describe('template/view', () => {
+  describe('template/snippet', () => {
     it('should create a template component', () => {
       const TestTemplate = template(() => 'Test Template', 'TestTemplate');
 
@@ -129,12 +132,45 @@ describe('Anchor React - HOC', () => {
       expect(container.textContent).toBe('Test Template');
     });
 
+    it('should log error when declaring snippet outside of component', () => {
+      vi.useFakeTimers();
+
+      const TestTemplate = snippet(() => 'Test Template');
+
+      const { container } = render(<TestTemplate />);
+      expect(container.textContent).toBe('Test Template');
+
+      vi.runAllTimers();
+
+      expect(errSpy).toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it('should log warning when declaring template inside a component', () => {
+      vi.useFakeTimers();
+
+      const TestComponent = setup(() => {
+        const Template = template(() => 'Test Template');
+        return <Template />;
+      });
+
+      const { container } = render(<TestComponent />);
+      expect(container.textContent).toBe('Test Template');
+
+      vi.runAllTimers();
+
+      expect(warnSpy).toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
     it('should re-render when observed state changes', () => {
       let renderCount = 0;
       const count = mutable(0);
 
       const TestComponent = setup(() => {
-        const Template = template(() => {
+        const Template = snippet(() => {
           renderCount++;
           return `Count: ${count.value}`;
         });
@@ -162,7 +198,7 @@ describe('Anchor React - HOC', () => {
       const count = mutable(0);
 
       const TestComponent = setup(() => {
-        const Template = template(() => (
+        const Template = snippet(() => (
           <div>
             <span>Count: {count.value}</span>
             <button onClick={() => count.value++}>Increment</button>
@@ -180,7 +216,7 @@ describe('Anchor React - HOC', () => {
       const count = mutable(0);
 
       const TestComponent = setup(() => {
-        const Template = view(() => (
+        const Template = snippet(() => (
           <div>
             <span data-testid="count">Count: {count.value}</span>
             <button data-testid="increment" onClick={() => count.value++}>

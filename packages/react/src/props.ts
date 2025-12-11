@@ -1,6 +1,6 @@
 import { captureStack, closure, getObserver, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
 import { isBinding } from './binding.js';
-import type { BindableProps } from './types.js';
+import type { BindableProps, ComponentProps } from './types.js';
 
 const PROPS_SYMBOL = Symbol('setup-props');
 
@@ -68,15 +68,15 @@ export function callback<T>(fn: T): T {
  * @param props - The props object to wrap
  * @returns A proxy wrapping the props object
  */
-export function setupProps<P>(props: P) {
+export function setupProps<P>(props: P): ComponentProps<P> {
   const omit = (keys: Array<keyof P>) => {
-    return omitProps(props, keys ?? []);
+    return omitProps(newProps, keys ?? []);
   };
   const pick = (keys: Array<keyof P>) => {
-    return pickProps(props, keys ?? []);
+    return pickProps(newProps, keys ?? []);
   };
 
-  return new Proxy(props as BindableProps, {
+  const newProps = new Proxy(props as ComponentProps<P>, {
     get(target, key, receiver) {
       if (key === '$omit') return omit;
       if (key === '$pick') return pick;
@@ -141,6 +141,8 @@ export function setupProps<P>(props: P) {
       return Object.keys(target);
     },
   });
+
+  return newProps as ComponentProps<P>;
 }
 
 /**

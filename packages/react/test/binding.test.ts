@@ -1,4 +1,4 @@
-import { mutable, type MutableRef } from '@anchorlib/core';
+import { mutable, MutableRef } from '@anchorlib/core';
 import { describe, expect, it } from 'vitest';
 import { bind, bindable, BindingRef, isBindable, isBinding } from '../src/binding';
 
@@ -35,7 +35,7 @@ describe('Anchor React - Binding', () => {
       const source = mutable('test');
       const result = bind(source);
 
-      expect(result).toBeInstanceOf(BindingRef);
+      expect(result).toBeInstanceOf(MutableRef);
     });
 
     it('should create a binding reference to object property', () => {

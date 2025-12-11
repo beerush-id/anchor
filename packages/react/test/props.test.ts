@@ -1,4 +1,4 @@
-import { mutable } from '@anchorlib/core';
+import { effect, mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bind } from '../src/binding';
 import { callback, getProps, setupProps, withProps } from '../src/props';
@@ -87,7 +87,37 @@ describe('Anchor React - Props', () => {
       expect(typeof proxiedProps).toBe('object');
     });
 
+    it('should log error when spreading props in a reactive boundary', () => {
+      vi.useFakeTimers();
+
+      const testProps = { test: 'value' };
+      const proxiedProps = setupProps(testProps);
+
+      const cleanup = effect(() => {
+        expect({ ...proxiedProps }).toEqual({});
+      });
+
+      vi.runAllTimers();
+
+      expect(proxiedProps).toBeDefined();
+      expect(typeof proxiedProps).toBe('object');
+      expect(errSpy).toHaveBeenCalled();
+
+      cleanup();
+
+      vi.useRealTimers();
+    });
+
     it('should handle binding references in props', () => {
+      const source = mutable({ test: 'test' });
+      const binding = bind(source, 'test');
+      const testProps = { value: binding };
+      const proxiedProps = setupProps(testProps);
+
+      expect(proxiedProps.value).toBe('test');
+    });
+
+    it('should handle mutable ref binding references in props', () => {
       const source = mutable('test');
       const binding = bind(source);
       const testProps = { value: binding };
@@ -105,6 +135,17 @@ describe('Anchor React - Props', () => {
     });
 
     it('should propagate mutation to binding ref', () => {
+      const source = mutable({ test: 'test' });
+      const binding = bind(source, 'test');
+      const props = setupProps({ value: binding });
+
+      expect(props.value).toBe('test');
+      props.value = 'newValue';
+      expect(props.value).toBe('newValue');
+      expect(source.test).toBe('newValue');
+    });
+
+    it('should propagate mutation to mutable ref', () => {
       const source = mutable('test');
       const binding = bind(source);
       const props = setupProps({ value: binding });
@@ -120,7 +161,7 @@ describe('Anchor React - Props', () => {
       const props = setupProps({ value: source });
 
       expect(props.value).toBe('test');
-      props.value = 'newValue';
+      props.value = 'newValue' as never;
       expect(props.value).toBe('newValue');
       expect(source.value).toBe('newValue');
     });
@@ -142,13 +183,105 @@ describe('Anchor React - Props', () => {
       const testProps = { onClick };
       const proxiedProps = setupProps(testProps);
 
-      proxiedProps.onClick = () => {};
+      proxiedProps.onClick = (() => {}) as never;
       vi.runAllTimers();
 
       expect(proxiedProps.onClick).toBe(onClick);
       expect(errSpy).toHaveBeenCalled();
 
       vi.useRealTimers();
+    });
+
+    it('should provide $omit method to exclude specific props', () => {
+      const testProps = { a: 1, b: 2, c: 3 };
+      const proxiedProps = setupProps(testProps);
+
+      const omittedProps = proxiedProps.$omit(['b']);
+
+      // Only non-omitted properties should exist
+      expect(omittedProps.a).toBe(1);
+      expect((omittedProps as typeof testProps).b).toBe(2);
+      expect(omittedProps.c).toBe(3);
+
+      // Check the actual object keys
+      const keys = Object.keys(omittedProps);
+      expect(keys).toContain('a');
+      expect(keys).not.toContain('b');
+      expect(keys).toContain('c');
+    });
+
+    it('should provide $pick method to include specific props', () => {
+      const testProps = { a: 1, b: 2, c: 3 };
+      const proxiedProps = setupProps(testProps);
+
+      const pickedProps = proxiedProps.$pick(['a', 'c']);
+
+      // Only picked properties should exist
+      expect(pickedProps.a).toBe(1);
+      expect((pickedProps as typeof testProps).b).toBe(2);
+      expect(pickedProps.c).toBe(3);
+
+      // Check the actual object keys
+      const keys = Object.keys(pickedProps);
+      expect(keys).toContain('a');
+      expect(keys).not.toContain('b');
+      expect(keys).toContain('c');
+    });
+
+    it('should handle $omit and $pick with binding references', () => {
+      const source = mutable('test');
+      const binding = bind(source);
+      const testProps = { value: binding, other: 'static' };
+      const proxiedProps = setupProps(testProps);
+
+      // Test $omit
+      const omittedProps = proxiedProps.$omit(['other']);
+      // Binding should be resolved, other should be omitted
+      expect(omittedProps.value).toBe('test');
+      expect((omittedProps as typeof testProps).other).toBe('static');
+
+      // Check the actual object keys
+      const omittedKeys = Object.keys(omittedProps);
+      expect(omittedKeys).toContain('value');
+      expect(omittedKeys).not.toContain('other');
+
+      // Test $pick
+      const pickedProps = proxiedProps.$pick(['value']);
+      // Binding should be resolved, other should not be included
+      expect(pickedProps.value).toBe('test');
+      expect((pickedProps as typeof testProps).other).toBe('static');
+
+      // Check the actual object keys
+      const pickedKeys = Object.keys(pickedProps);
+      expect(pickedKeys).toContain('value');
+      expect(pickedKeys).not.toContain('other');
+
+      expect(() => {
+        proxiedProps.$omit();
+      }).not.toThrow();
+
+      expect(() => {
+        proxiedProps.$pick();
+      }).not.toThrow();
+    });
+
+    it('should handle mutations through $omit and $pick objects', () => {
+      const source = mutable('test');
+      const binding = bind(source);
+      const testProps = { value: binding };
+      const proxiedProps = setupProps(testProps);
+
+      const omittedProps = proxiedProps.$omit([]);
+
+      expect(omittedProps.value).toBe('test');
+      omittedProps.value = 'newValue';
+      expect(omittedProps.value).toBe('newValue');
+      expect(source.value).toBe('newValue');
+
+      const pickedProps = proxiedProps.$pick(['value']);
+      expect(pickedProps.value).toBe('newValue');
+      pickedProps.value = 'newerValue';
+      expect(pickedProps.value).toBe('newerValue');
     });
   });
 });
