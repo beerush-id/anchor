@@ -14,76 +14,57 @@ keywords:
 # Introduction to Anchor for Svelte
 
 Anchor enhances Svelte's already excellent reactivity system by providing intuitive direct mutation, true immutability,
-and data integrity. While Svelte's fine-grained reactivity is powerful, Anchor adds additional capabilities that make
+and data integrity. While Svelte's reactivity is powerful, Anchor adds additional capabilities that make
 state management even more intuitive and robust.
 
-| Feature                 | Svelte                 | Anchor for Svelte |
-| ----------------------- | ---------------------- | ----------------- |
-| Fine-grained reactivity | ✅                     | ✅                |
-| Direct mutation         | ✅                     | ✅                |
-| Nested reactivity       | ✅                     | ✅                |
-| True immutability       | ❌                     | ✅                |
-| Schema validation       | ❌                     | ✅                |
-| Data integrity          | ❌                     | ✅                |
-| Portability             | ❌ (limited to Svelte) | ✅                |
-| History Tracking        | ❌                     | ✅                |
+| Feature                 | Svelte                | Anchor for Svelte |
+| ----------------------- | --------------------- | ---------------- |
+| Fine-grained reactivity | ✅                    | ✅               |
+| Direct mutation         | ✅                    | ✅               |
+| Nested reactivity       | ✅                    | ✅               |
+| True immutability       | ❌                    | ✅               |
+| Schema validation       | ❌                    | ✅               |
+| Data integrity          | ❌                    | ✅               |
+| Portability             | ❌ (limited to Svelte)| ✅               |
+| History Tracking        | ❌                    | ✅               |
 
 ## Why Anchor for Svelte?
 
-Svelte's new rune-based reactivity system provides excellent performance through fine-grained updates. However, as applications grow in complexity, developers often face challenges:
+Svelte's reactivity system is built for performance and simplicity. However, as applications grow in complexity, developers often face challenges:
 
-- Managing complex state sharing across components
+- Managing complex nested state structures
 - Ensuring true immutability without performance penalties
 - Maintaining data integrity across state mutations
+- Creating derived state that stays consistent with source data
 - Working with structured data that requires validation
 
 Anchor addresses these challenges while maintaining full compatibility with Svelte's reactivity model.
 
 ## Key Benefits
 
-### 1. State Sharing
+### 1. Intuitive Direct Mutation
 
-With Anchor, you can declare your state anywhere and share it across any framework since it's framework agnostic. This makes it especially powerful for micro-frontend architectures or when migrating between frameworks.
-
-Svelte's runes, for instance, must be declared in `.svelte.ts` or `.svelte.js` files, and `$state` declarations must be assigned directly to a `let` or `const` variable. Anchor does not have these limitations, offering more flexibility.
-
-Consider this example with Svelte's context API:
+Anchor allows you to mutate state directly while maintaining reactivity, similar to Svelte 5's runes but universally portable:
 
 ```ts
-export function usePopup(init?: PopupState): PopupState {
-  let current = getContext(POPUP_CONTEXT) as PopupState;
+import { mutable } from '@anchorlib/svelte';
 
-  if (!current) {
-    const state = $state<PopupState>(init ?? { open: false }); // [!code --]
-    current = state; // [!code --]
-    setContext(POPUP_CONTEXT, state);
-  }
+const state = mutable({ count: 0, name: 'Svelte' });
 
-  return current;
-}
+// Direct mutation
+state.count++;
+state.name = 'Anchor Svelte';
 ```
 
-With Anchor, the same can be achieved more concisely:
-
-```ts
-export function usePopup(init?: PopupState): PopupState {
-  let current = getContext(POPUP_CONTEXT) as PopupState;
-
-  if (!current) {
-    current = anchorRef(init ?? { open: false }); // [!code ++]
-    setContext(POPUP_CONTEXT, current);
-  }
-
-  return current;
-}
-```
+- [Getting Started](/svelte/getting-started) - Get started with Anchor for Svelte.
+- [Core API Reference](/apis/svelte/initialization) - API reference for the core APIs.
 
 ### 2. True Immutability
 
 Anchor provides true immutability through controlled mutations. State objects are genuinely immutable except through
 defined contracts, preventing accidental mutations while maintaining performance.
 
-- [Immutability](/svelte/immutability) - Learn more about immutability.
+- [Immutability](/svelte/state/immutable) - Learn more about immutability.
 - [Immutability API Reference](/apis/svelte/initialization#immutable-apis) - API reference for immutability.
 
 ### 3. Data Integrity
@@ -100,11 +81,7 @@ Anchor's Svelte integration is designed to be lightweight and seamless:
 
 - Automatic tracking binding with Svelte's reactivity system
 - Proper cleanup when components are destroyed
-- No additional providers or setup required
-- Full compatibility with Svelte's component lifecycle
-
-The integration works by setting up a global tracker that binds Anchor's observer system with Svelte's component
-instances, ensuring that components re-render only when the specific state they access changes.
+- No additional providers or setup required for basic usage
 
 ## Learning Investment
 
