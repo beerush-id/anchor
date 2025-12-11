@@ -1,4 +1,4 @@
-import { captureStack, closure, setCleanUpHandler, untrack } from '@anchorlib/core';
+import { captureStack, closure, onGlobalCleanup, setCleanUpHandler, untrack } from '@anchorlib/core';
 import type { CleanupHandler, Lifecycle, MountHandler } from './types.js';
 
 const MOUNT_HANDLER_SYMBOL = Symbol('mount-handler');
@@ -99,7 +99,12 @@ export function onMount(fn: MountHandler) {
  */
 export function onCleanup(fn: CleanupHandler) {
   const currentCleanupHandlers = closure.get<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL);
-  currentCleanupHandlers?.add(fn);
+
+  if (currentCleanupHandlers) {
+    currentCleanupHandlers?.add(fn);
+  } else {
+    return onGlobalCleanup(fn);
+  }
 }
 
 // Hook up cleanup handler to the Anchor's core lifecycle.
