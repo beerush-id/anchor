@@ -10,6 +10,7 @@ import {
 } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'model()' instead.
  * Creates a model with mutable state.
  *
  * @template S - The linkable schema type
@@ -26,6 +27,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ModelOutput<S>;
 
 /**
+ * @deprecated Use 'model()' instead.
  * Creates a model with immutable state.
  *
  * @template S - The linkable schema type
@@ -50,6 +52,7 @@ export function modelRef<S extends LinkableSchema, T extends ModelInput<S>>(
 }
 
 /**
+ * @deprecated Use 'exception()' instead.
  * Creates a state that maps exceptions for a given state object or array.
  *
  * @template T - The type of the input state, must be an object-like or array type

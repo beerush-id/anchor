@@ -4,6 +4,7 @@ import { onDestroy } from 'svelte';
 import { REF_REGISTRY } from './ref.js';
 
 /**
+ * @deprecated use `effect()` instead.
  * Creates a read-only reference that observes a reactive function and updates its value
  * when the observed value changes. The function automatically handles observer lifecycle
  * and cleanup using Svelte's onDestroy hook.

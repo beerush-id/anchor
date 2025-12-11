@@ -1,6 +1,7 @@
 import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'fetchState()' or 'asyncState()' instead.
  * Creates a reactive state that manages the state of a fetch request.
  * This overload is for GET or DELETE requests, which typically do not have a request body.
  *
@@ -12,6 +13,7 @@ import { type FetchOptions, fetchState, type FetchState, type StreamOptions, str
 export function fetchRef<R>(init: R, options: FetchOptions & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 /**
+ * @deprecated Use 'fetchState()' or 'asyncState()' instead.
  * Creates a readable Svelte store that manages the state of a fetch request.
  * This overload is for POST, PUT, or PATCH requests, which typically include a request body.
  *
@@ -31,6 +33,7 @@ export function fetchRef<R>(init: R, options: FetchOptions): FetchState<R> {
 }
 
 /**
+ * @deprecated Use 'streamState()' instead.
  * Creates a reactive state that manages the state of a streaming request.
  * This overload is for GET or DELETE requests, which typically do not have a request body.
  *
@@ -42,6 +45,7 @@ export function fetchRef<R>(init: R, options: FetchOptions): FetchState<R> {
 export function streamRef<R>(init: R, options: StreamOptions<R> & { method: 'GET' | 'DELETE' }): FetchState<R>;
 
 /**
+ * @deprecated Use 'streamState()' instead.
  * Creates a reactive state that manages the state of a streaming request.
  * This overload is for POST, PUT, or PATCH requests, which typically include a request body.
  *

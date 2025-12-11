@@ -2,6 +2,7 @@ import type { HistoryOptions, HistoryState, State } from '@anchorlib/core';
 import { history } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'history()' instead.
  * Creates a reactive state that reflects the history state of a given Anchor state.
  * @param state The initial Anchor state.
  * @param options Optional history options.

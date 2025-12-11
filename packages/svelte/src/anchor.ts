@@ -10,6 +10,7 @@ import {
 } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive state that can be used to manage state with Anchor.
  * This overload is used when no schema is provided, or when using a LinkableSchema with StateOptions.
  *
@@ -25,6 +26,7 @@ export function anchorRef<T extends Linkable, S extends LinkableSchema = Linkabl
 ): T;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive state with a defined schema for validation and type inference.
  *
  * @template S - The schema type, extending LinkableSchema
@@ -41,6 +43,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): ModelOutput<S>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates an immutable reactive state with a defined schema.
  *
  * @template S - The schema type, extending LinkableSchema
@@ -57,6 +60,7 @@ export function anchorRef<S extends LinkableSchema, T extends ModelInput<S>>(
 ): Immutable<ModelOutput<S>>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a reactive state for state management with optional schema validation.
  *
  * @template T - The type of the initial value
@@ -75,12 +79,14 @@ export function anchorRef<T extends Linkable, S extends LinkableSchema = Linkabl
 }
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Reactive state alias for anchorRef.
  * @type {{<T, S=LinkableSchema extends LinkableSchema>(init: T, options?: StateOptions<S>): T, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema?: S, options?: StateOptions): ModelOutput<S>, <S extends LinkableSchema, T extends ModelInput<S>>(init: T, schema?: S, options?: (StateOptions & {immutable: true})): Immutable<ModelOutput<S>>}}
  */
 export const reactiveRef = anchorRef;
 
 /**
+ * @deprecated Use 'ordered()' instead.
  * Creates a reactive state that maintains a sorted array state based on a comparison function.
  *
  * @template T - The type of elements in the array
@@ -99,6 +105,7 @@ export function orderedRef<T extends unknown[], S extends ModelArray = ModelArra
 }
 
 /**
+ * @deprecated Use 'flat()' instead.
  * Creates a reactive state that maintains a flat array state.
  *
  * @template T - The type of elements in the array
@@ -112,6 +119,7 @@ export function flatRef<T extends unknown[], S extends ModelArray = ModelArray>(
 }
 
 /**
+ * @deprecated Use 'raw()' instead.
  * Creates a reactive state that mutates the underlying object.
  *
  * Unless you set the global options to `cloned: true`, you don't want to use this.

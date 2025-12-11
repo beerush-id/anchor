@@ -5,6 +5,7 @@ import { onDestroy } from 'svelte';
 export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>();
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a readable reference that can be subscribed to for reactive updates.
  * This function initializes a reactive reference with a given initial value and provides
  * mechanisms for subscribing to changes and publishing updates to subscribers.
@@ -16,6 +17,7 @@ export const REF_REGISTRY = new WeakMap<ConstantRef<unknown>, StateRef<unknown>>
 export function variableRef<T>(init: T): VariableRef<T>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a constant (read-only) reference that can be subscribed to for reactive updates.
  * This function initializes a reactive reference with a given initial value that cannot be modified
  * after creation.
@@ -28,6 +30,7 @@ export function variableRef<T>(init: T): VariableRef<T>;
 export function variableRef<T>(init: T, constant: true): ConstantRef<T>;
 
 /**
+ * @deprecated Use 'mutable()' instead.
  * Creates a readable reference that can be subscribed to for reactive updates.
  * This function initializes a reactive reference with a given initial value and provides
  * mechanisms for subscribing to changes and publishing updates to subscribers.
@@ -70,6 +73,7 @@ export function variableRef<T>(init: T, constant?: boolean) {
 }
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates a constant (read-only) reference that can be subscribed to for reactive updates.
  * This function initializes a reactive reference with a given initial value that cannot be modified
  * after creation. It's useful for values that should remain constant throughout the component lifecycle
@@ -84,6 +88,7 @@ export function constantRef<T>(init: T): ConstantRef<T> {
 }
 
 /**
+ * @deprecated Use 'isValueRef()' instead.
  * Checks if a given value is a writable reference.
  * This function uses the REF_REGISTRY to determine if the provided value
  * is a registered writable reference.

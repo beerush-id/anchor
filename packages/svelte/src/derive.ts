@@ -4,6 +4,7 @@ import { onDestroy } from 'svelte';
 import { REF_REGISTRY } from './ref.js';
 
 /**
+ * @deprecated Use `derived()` instead.
  * Creates a derived state from a source state with an optional transformation.
  *
  * @template T - The type of the input state

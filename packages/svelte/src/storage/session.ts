@@ -3,6 +3,7 @@ import { session } from '@anchorlib/storage';
 import { onDestroy } from 'svelte';
 
 /**
+ * @deprecated Use `session()` instead.
  * Creates a session-scoped reactive state using the provided name, initial value, and options.
  * The sessionRef is tied to the browser's session storage, meaning its value will persist
  * across page reloads but not after the session ends (e.g., tab/window closed).

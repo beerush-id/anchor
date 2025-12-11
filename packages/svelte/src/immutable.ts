@@ -13,6 +13,7 @@ import {
 } from '@anchorlib/core';
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates an immutable state from a state object.
  *
  * @template T The type of the state object.
@@ -27,6 +28,7 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
 ): Immutable<T>;
 
 /**
+ * @deprecated Use 'immutable()' instead.
  * Creates an immutable state from a model input and a schema.
  *
  * @template S The type of the linkable schema.
@@ -52,6 +54,7 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
 }
 
 /**
+ * @deprecated Use 'writable()' instead.
  * Creates a writable state from a state object.
  *
  * @template T The type of the state object.
@@ -61,6 +64,7 @@ export function immutableRef<T extends State, S extends LinkableSchema = Linkabl
 export function writableRef<T extends State>(state: T): Mutable<T>;
 
 /**
+ * @deprecated Use 'writable()' instead.
  * Creates a writable state from a state object and a list of contracts.
  *
  * @template T The type of the state object.

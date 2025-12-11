@@ -9,7 +9,13 @@ import {
 import { onDestroy } from 'svelte';
 import type { TableRef } from './types.js';
 
+/**
+ * @deprecated Use `createTable()` instead.
+ */
 export function createTableRef<T extends ReactiveTable<Rec>>(table: T): TableRef<InferRec<T>>;
+/**
+ * @deprecated Use `createTable()` instead.
+ */
 export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
   name: string,
   version?: number,
@@ -17,6 +23,9 @@ export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
   remIndexes?: (keyof R)[],
   dbName?: string
 ): TableRef<T, R>;
+/**
+ * @deprecated Use `createTable()` instead.
+ */
 export function createTableRef<T extends Rec, R extends Row<T> = Row<T>>(
   tableName: string | ReactiveTable<T>,
   version = 1,

@@ -2,6 +2,7 @@ import { kv, type KVState, type Storable } from '@anchorlib/storage/db';
 import { onDestroy } from 'svelte';
 
 /**
+ * @deprecated Use `kv()` instead.
  * Creates a reactive key-value store state.
  *
  * This function initializes a key-value store with the given name and initial value,

@@ -1,4 +1,12 @@
-import { createObserver, type KeyLike, type Linkable, setTracker } from '@anchorlib/core';
+import {
+  createObserver,
+  type KeyLike,
+  type Linkable,
+  onGlobalCleanup,
+  setCleanUpHandler,
+  setTracker,
+} from '@anchorlib/core';
+import { onDestroy } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
 
 export const TRACKER_REGISTRY = new WeakMap<Linkable, (prop: KeyLike) => void>();
@@ -20,14 +28,19 @@ if (!bindingInitialized && typeof window !== 'undefined') {
   setTracker((init, observers, key) => {
     // Only initialize the tracking setup once per object
     if (!TRACKER_REGISTRY.has(init)) {
-      let track: ((prop: KeyLike) => void) | undefined = undefined;
+      let track: ((prop: KeyLike) => void) | undefined;
 
       // Create a Svelte subscriber that manages the lifecycle of our observer
       const subscribe = createSubscriber((update) => {
         // Create an Anchor observer that will trigger the Svelte update when changes occur
-        const observer = createObserver(() => {
-          update();
-        });
+        const observer = createObserver(
+          () => {
+            observer.reset();
+            update();
+          },
+          undefined,
+          true
+        );
 
         // Assign the observer to track changes on the init object and its observers
         track = observer.assign(init, observers);
@@ -53,5 +66,13 @@ if (!bindingInitialized && typeof window !== 'undefined') {
 
     // Execute the tracking function for the specific key
     TRACKER_REGISTRY.get(init)?.(key);
+  });
+
+  setCleanUpHandler((handler) => {
+    try {
+      return onDestroy(handler);
+    } catch (_error) {
+      return onGlobalCleanup(handler);
+    }
   });
 }
