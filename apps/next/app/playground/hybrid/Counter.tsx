@@ -1,11 +1,11 @@
-import { callback, mutable, setup, template } from '@anchorlib/react';
+import { callback, mutable, setup, snippet } from '@anchorlib/react';
 
 export const Counter = setup(() => {
   const state = mutable({ count: 0 });
 
   const increment = () => state.count++;
 
-  const CountView = template(() => <p>Count: {state.count}</p>);
+  const CountView = snippet(() => <p>Count: {state.count}</p>);
 
   return (
     <div>

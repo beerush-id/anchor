@@ -1,4 +1,4 @@
-import { callback, mutable, setup, template } from '@anchorlib/react';
+import { callback, mutable, setup, snippet } from '@anchorlib/react';
 import type { FormEvent } from 'react';
 
 type Todo = {
@@ -45,7 +45,7 @@ const TodoApp = setup(() => {
     }
   };
 
-  const TodoForm = template(
+  const TodoForm = snippet(
     () => (
       <div className="todo-form mb-6">
         <div className="flex gap-2">
@@ -74,7 +74,7 @@ const TodoApp = setup(() => {
     'TodoForm'
   );
 
-  const TodoList = template(
+  const TodoList = snippet(
     () => (
       <ul className="todo-list divide-y divide-gray-200 rounded-lg bg-gray-50 dark:divide-slate-600 dark:bg-slate-700">
         {todos.length > 0 ? (
@@ -89,7 +89,7 @@ const TodoApp = setup(() => {
     'TodoList'
   );
 
-  const TodoStats = template(
+  const TodoStats = snippet(
     () => (
       <div className="todo-stats mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
         <div className="todo-stats-item flex flex-col items-center">
@@ -135,7 +135,7 @@ const TodoItem = setup(({ todo, todos }: { todo: Todo; todos: Todo[] }) => {
     todos.splice(todos.indexOf(todo), 1);
   };
 
-  const Template = template(
+  const Template = snippet(
     () => (
       <>
         <input

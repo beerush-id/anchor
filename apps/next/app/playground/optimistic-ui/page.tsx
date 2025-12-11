@@ -1,6 +1,6 @@
 'use client';
 
-import { callback, mutable, setup, template, undoable } from '@anchorlib/react';
+import { callback, mutable, setup, snippet, undoable } from '@anchorlib/react';
 import { LoaderCircle } from 'lucide-react';
 
 const Counter = setup(() => {
@@ -33,7 +33,7 @@ const Counter = setup(() => {
     }, 1000);
   };
 
-  const Template = template(() => (
+  const Template = snippet(() => (
     <h2 className="flex items-center gap-4">
       Counter: {state.count} {state.loading ? <LoaderCircle size={16} className="animate-spin" /> : null}
     </h2>

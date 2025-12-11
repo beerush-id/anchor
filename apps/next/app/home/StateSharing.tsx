@@ -1,9 +1,9 @@
 'use client';
 
-import { Card, CardContent, CodeViewer } from '@anchorlib/react-kit/components';
 import type { EFC } from '@anchorlib/react-kit';
-import type { HTMLAttributes } from 'react';
+import { Card, CardContent, CodeViewer } from '@anchorlib/react-kit/components';
 import { classx } from '@anchorlib/react-kit/utils';
+import type { HTMLAttributes } from 'react';
 
 const sharedCode = `
 import { mutable } from '@anchorlib/react';
@@ -31,7 +31,7 @@ import { settings } from '../lib/state.ts';
 export const App = template(() => (
   <>
     <div>{settings.theme}</div>
-    <button onClick={settings.toggleTheme}>Toggle</button>
+    <button onClick={() => settings.toggleTheme()}>Toggle</button>
   </>
 ), 'App');
 `,
@@ -43,12 +43,12 @@ export const App = template(() => (
     lang: 'tsx',
     code: `
 import '@anchorlib/solid/reactive';
-import { settings, toggleTheme } from '../lib/state.ts';
+import { settings } from '../lib/state.ts';
 
 const App = () => (
   <>
     <div>{settings.theme}</div>
-    <button onClick={toggleTheme}>Toggle</button>
+    <button onClick={() => settings.toggleTheme()}>Toggle</button>
   </>
 );
 `,
@@ -61,11 +61,11 @@ const App = () => (
     code: `
 <script lang="ts">
   import '@anchorlib/svelte/reactive';
-  import { settings, toggleTheme } from '../lib/state.ts';
+  import { settings } from '../lib/state.ts';
 </script>
 
 <div>{settings.theme}</div>
-<button onclick={toggleTheme}>Toggle</button>
+<button onclick={() => settings.toggleTheme()}>Toggle</button>
 `,
   },
   {
@@ -76,14 +76,14 @@ const App = () => (
     code: `
 <script lang="ts">
   import { observedRef } from '@anchorlib/vue';
-  import { settings, toggleTheme } from '../lib/state.ts';
+  import { settings } from '../lib/state.ts';
 
   const theme = observedRef(() => settings.theme);
 </script>
 
 <template>
   <div>{{ theme }}</div>
-  <button @click="toggleTheme">Toggle</button>
+  <button @click="settings.toggleTheme">Toggle</button>
 </template>
 `,
   },
@@ -95,7 +95,7 @@ const App = () => (
     code: `
 <script type="module">
   import { subscribe } from '@anchorlib/core';
-  import { settings, toggleTheme } from '../lib/state.ts';
+  import { settings } from '../lib/state.ts';
 
   subscribe(settings, () => {
     document.body.className = settings.theme;
@@ -103,7 +103,7 @@ const App = () => (
 
   document
   .querySelector('button')
-  .addEventListener('click', toggleTheme);
+  .addEventListener('click', () => settings.toggleTheme());
 </script>
 `,
   },

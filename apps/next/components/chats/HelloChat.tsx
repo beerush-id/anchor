@@ -1,8 +1,7 @@
-import type { FormEvent } from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { FetchStatus, mutable, setup, snippet, streamState } from '@anchorlib/react';
 import { CardContent, CardFooter, CardHeader } from '@anchorlib/react-kit/components';
-
-import { mutable, setup, streamState, template, FetchStatus } from '@anchorlib/react';
+import { LoaderCircle } from 'lucide-react';
+import type { FormEvent } from 'react';
 
 export const HelloChat = setup(() => {
   const name = mutable('');
@@ -26,7 +25,7 @@ export const HelloChat = setup(() => {
     name.value = '';
   };
 
-  const ChatStream = template(() => {
+  const ChatStream = snippet(() => {
     if (state.status === FetchStatus.Idle) {
       return <div className={'flex-1 flex flex-col items-center justify-center gap-2'}>It's lonely here 😔</div>;
     }
@@ -39,12 +38,12 @@ export const HelloChat = setup(() => {
     );
   }, 'ChatStream');
 
-  const LoaderBar = template(
+  const LoaderBar = snippet(
     () => state.status === FetchStatus.Pending && <LoaderCircle className="animate-spin" />,
     'LoaderBar'
   );
 
-  const NameInput = template(
+  const NameInput = snippet(
     () => (
       <input
         value={name.value}

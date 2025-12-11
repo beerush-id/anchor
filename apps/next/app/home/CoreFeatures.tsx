@@ -15,7 +15,7 @@ const fineGrainedCodes = [
     iconAlt: 'Anchor Logo',
     lang: 'tsx',
     code: `
-import { mutable, template, setup } from '@anchorlib/react';
+import { mutable, snippet, setup } from '@anchorlib/react';
 
 const App = setup(() => {
   // State can be co-located with the component, similar to useState.
@@ -30,7 +30,7 @@ const App = setup(() => {
   }
 
   // Only this part re-renders when the state changes.
-  const Profile = template(() => (
+  const Profile = snippet(() => (
     <div>
       <h1>{profile.name}</h1>
       <p>{profile.email}</p>
