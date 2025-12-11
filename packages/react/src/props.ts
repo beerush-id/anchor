@@ -1,4 +1,4 @@
-import { captureStack, closure, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
+import { captureStack, closure, getObserver, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
 import { isBinding } from './binding.js';
 import type { BindableProps } from './types.js';
 
@@ -69,8 +69,18 @@ export function callback<T>(fn: T): T {
  * @returns A proxy wrapping the props object
  */
 export function setupProps<P>(props: P) {
+  const omit = (keys: Array<keyof P>) => {
+    return omitProps(props, keys ?? []);
+  };
+  const pick = (keys: Array<keyof P>) => {
+    return pickProps(props, keys ?? []);
+  };
+
   return new Proxy(props as BindableProps, {
     get(target, key, receiver) {
+      if (key === '$omit') return omit;
+      if (key === '$pick') return pick;
+
       const bindingRef = Reflect.get(target, key, receiver);
 
       if (isBinding(bindingRef)) {
@@ -92,8 +102,8 @@ export function setupProps<P>(props: P) {
           error,
           [
             'Event handler properties (starting with "on") are read-only.',
-            'Define event handlers in the parent component.',
-            'Only mutate properties meant for two-way data binding.',
+            '- Define event handlers in the parent component.',
+            '- Only mutate properties meant for two-way data binding.',
           ]
         );
         return true;
@@ -109,5 +119,84 @@ export function setupProps<P>(props: P) {
 
       return true;
     },
+    ownKeys(target: BindableProps): ArrayLike<string | symbol> {
+      const observer = getObserver();
+
+      if (observer) {
+        const error = new Error('Rest props are not allowed.');
+        captureStack.violation.general(
+          'Rest props usage detected.',
+          'Using rest props in a reactive boundary is not allowed.',
+          error,
+          [
+            'Rest props ({ ...rest }) are not allowed in a reactive boundary.',
+            '- Use the props.$omit() method to exclude specific props.',
+            '- Use the props.$pick() method to include specific props.',
+          ],
+          this.ownKeys
+        );
+        return [];
+      }
+
+      return Object.keys(target);
+    },
   });
+}
+
+/**
+ * Creates a new object excluding specified properties from the original object.
+ *
+ * This function returns a proxy that filters out specified keys when enumerating
+ * the object's properties. The returned object behaves like the original but
+ * omits the excluded properties from enumeration and spreading operations.
+ *
+ * @template T - The type of the original object
+ * @template K - The type of keys to exclude
+ * @param props - The original object to omit properties from
+ * @param excludes - An array of keys to exclude from the object (default: empty array)
+ * @returns A new object with specified properties omitted
+ */
+export function omitProps<T, K extends keyof T>(props: T, excludes: Array<K> = []): Omit<T, K> {
+  return new Proxy(props as Record<string, unknown>, {
+    get(target, key, receiver) {
+      return Reflect.get(target as Record<string, unknown>, key, receiver);
+    },
+    set(target, key, value, receiver) {
+      return Reflect.set(target as Record<string, unknown>, key, value, receiver);
+    },
+    ownKeys(target: Record<string, unknown>): ArrayLike<string | symbol> {
+      return untrack(() => {
+        return Object.keys(target as Record<string, unknown>).filter((k) => !excludes.includes(k as never));
+      });
+    },
+  }) as never;
+}
+
+/**
+ * Creates a new object including only specified properties from the original object.
+ *
+ * This function returns a proxy that includes only specified keys when enumerating
+ * the object's properties. The returned object behaves like the original but
+ * only contains the included properties during enumeration and spreading operations.
+ *
+ * @template T - The type of the original object
+ * @template K - The type of keys to include
+ * @param props - The original object to pick properties from
+ * @param includes - An array of keys to include in the object (default: empty array)
+ * @returns A new object with only specified properties included
+ */
+export function pickProps<T, K extends keyof T>(props: T, includes: Array<K> = []): Pick<T, K> {
+  return new Proxy(props as Record<string, unknown>, {
+    get(target, key, receiver) {
+      return Reflect.get(target as Record<string, unknown>, key, receiver);
+    },
+    set(target, key, value, receiver) {
+      return Reflect.set(target as Record<string, unknown>, key, value, receiver);
+    },
+    ownKeys(target: Record<string, unknown>): ArrayLike<string | symbol> {
+      return untrack(() => {
+        return Object.keys(target as Record<string, unknown>).filter((k) => includes.includes(k as never));
+      });
+    },
+  }) as never;
 }

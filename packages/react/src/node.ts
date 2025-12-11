@@ -35,18 +35,21 @@ const propsMap = {
  * @template E - The HTMLElement type
  * @template P - The HTML attributes type
  * @param factory - A function that produces attributes for the element
+ * @param displayName - The display name for the reference (optional for debugging)
  * @returns A NodeRef object with reactive attribute updates
  */
 export function nodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAttributes<E>>(
-  factory: (node?: E) => P | void
+  factory: (node?: E) => P | void,
+  displayName?: string
 ): NodeRef<E, P> {
   let current: E;
   let prevProps: Record<string, unknown> = {};
 
   const observer = createObserver(() => {
-    observer.destroy();
+    observer.reset();
     update();
   });
+  observer.name = `Attribute(${displayName ?? 'Anonymous'})`;
 
   const update = () => {
     const nextProps = (escapeAttributes(observer.run(() => factory(current))) ?? {}) as Record<string, unknown>;

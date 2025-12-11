@@ -1,4 +1,4 @@
-import { createObserver, mutable, type MutableRef, type StateOptions } from '@anchorlib/core';
+import { createObserver, isMutableRef, mutable, type MutableRef, type StateOptions } from '@anchorlib/core';
 
 /**
  * A reference that binds a value to a property of an object or another reference.
@@ -75,6 +75,7 @@ export function bind<T extends Record<string, unknown>, K extends keyof T>(sourc
  * @returns A BindingRef instance
  */
 export function bind<T>(source: T, key?: keyof T) {
+  if (isMutableRef(source)) return source;
   return new BindingRef(source, key);
 }
 
@@ -102,6 +103,7 @@ export function bindable<T, S, K extends keyof S>(
   const observer = createObserver(() => {
     state.value = key ? (source[key] as T) : (source as MutableRef<T>).value;
   });
+  observer.name = `Binding(${(key as string) ?? 'value'})`;
   observer.run(() => {
     const value = key ? (source[key] as T) : (source as MutableRef<T>).value;
 
