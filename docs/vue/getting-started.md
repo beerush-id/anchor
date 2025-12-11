@@ -1,3 +1,15 @@
+---
+title: 'Getting Started with Anchor for Vue'
+description: 'A step-by-step guide to getting started with Anchor for Vue. Learn to install, create reactive state, and build dynamic components.'
+keywords:
+  - anchor for vue tutorial
+  - vue state management getting started
+  - anchor vue guide
+  - anchorRef
+  - vue reactive state
+  - getting started vue state
+---
+
 # Getting Started with Anchor for Vue
 
 This guide will quickly get you up and running with Anchor in your Vue project. You'll learn how to install Anchor, create your first reactive state, and connect it to your Vue components to build dynamic and performant UIs.
@@ -28,13 +40,16 @@ bun add @anchorlib/vue
 
 ## Basic Usage
 
-Let's build a simple counter to see how Anchor works with Vue:
+The primary way to create state in Anchor for Vue is using `anchorRef`. This creates a standard Vue Ref that wraps a reactive Anchor object.
+
+### Your First Reactive Component
 
 ```vue
 <script setup>
 import { anchorRef } from '@anchorlib/vue';
 
-// Create your reactive state with a simple primitive value
+// Create your reactive state
+// anchorRef returns a Ref, so you access it via .value in script
 const count = anchorRef(0);
 
 const increment = () => count.value++;
@@ -44,6 +59,7 @@ const reset = () => (count.value = 0);
 
 <template>
   <div>
+    <!-- Automatic unwrapping in template makes it clean -->
     <h1>Counter: {{ count }}</h1>
     <button @click="increment">Increment</button>
     <button @click="decrement">Decrement</button>
@@ -54,250 +70,92 @@ const reset = () => (count.value = 0);
 
 ## Working with Objects
 
-You can also work with objects and nested structures just as easily:
-
-```vue
-<script setup>
-import { anchorRef } from '@anchorlib/vue';
-
-const user = anchorRef({ name: 'John Doe', age: 30 });
-
-const incrementAge = () => user.value.age++;
-</script>
-
-<template>
-  <div>
-    <h2>User Profile</h2>
-    <input v-model="user.name" placeholder="Name" />
-
-    <p>Age: {{ user.age }}</p>
-    <button @click="incrementAge">Increment Age</button>
-  </div>
-</template>
-```
-
-## Nested Objects
-
-One of Anchor's key advantages over Vue's built-in reactivity is its recursive reactivity. Let's see how it handles nested objects:
+`anchorRef` is recursive by default, making deep state management easy.
 
 ```vue
 <script setup>
 import { anchorRef } from '@anchorlib/vue';
 
 const user = anchorRef({
+  name: 'John Doe',
   profile: {
-    name: 'John Doe',
     age: 30,
-    address: {
-      street: '123 Main St',
-      city: 'Anytown',
-    },
-  },
-  preferences: {
-    theme: 'dark',
-    notifications: true,
-  },
+    theme: 'dark'
+  }
 });
 
 const toggleTheme = () => {
-  user.value.preferences.theme = user.value.preferences.theme === 'dark' ? 'light' : 'dark';
+  user.value.profile.theme = user.value.profile.theme === 'dark' ? 'light' : 'dark';
 };
 </script>
 
 <template>
   <div>
     <h2>User Profile</h2>
-    <input v-model="user.profile.name" placeholder="Name" />
-    <input v-model="user.profile.address.city" placeholder="City" />
-
+    <input v-model="user.name" placeholder="Name" />
     <p>Age: {{ user.profile.age }}</p>
-
-    <p>Theme: {{ user.preferences.theme }}</p>
-    <button @click="toggleTheme">Switch to {{ user.preferences.theme === 'dark' ? 'Light' : 'Dark' }} Theme</button>
+    <p>Theme: {{ user.profile.theme }}</p>
+    <button @click="toggleTheme">Toggle Theme</button>
   </div>
 </template>
 ```
 
-## Observing Specific State
+### Derived State
 
-One of Anchor's most powerful features is the ability to observe only specific parts of your state, leading to more efficient updates:
+You can use `derivedRef` to create computed values that automatically update.
 
 ```vue
 <script setup>
-import { anchorRef, observedRef } from '@anchorlib/vue';
+import { anchorRef, derivedRef } from '@anchorlib/vue';
 
-const appState = anchorRef({
-  ui: {
-    loading: false,
-    modalOpen: false,
-  },
-  data: {
-    users: [],
-    posts: [],
-  },
-});
+const count = anchorRef(1);
+const count2 = anchorRef(5);
 
-// These observers only re-run when their specific dependencies change
-const loading = observedRef(() => appState.value.ui.loading);
-const userCount = observedRef(() => appState.value.data.users.length);
-const postCount = observedRef(() => appState.value.data.posts.length);
-
-const fetchData = async () => {
-  appState.value.ui.loading = true;
-
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  appState.value.data.users = [{ id: 1, name: 'John' }];
-  appState.value.data.posts = [{ id: 1, title: 'Hello World' }];
-  appState.value.ui.loading = false;
-};
+// derivedRef creates a Read-Only Ref
+const total = derivedRef(() => count.value + count2.value);
 </script>
 
 <template>
   <div>
-    <div v-if="loading">
-      <p>Loading...</p>
-    </div>
-    <div v-else>
-      <p>Users: {{ userCount }}</p>
-      <p>Posts: {{ postCount }}</p>
-    </div>
-
-    <button @click="fetchData">Fetch Data</button>
+    <p>Count 1: {{ count }}</p>
+    <p>Count 2: {{ count2 }}</p>
+    <p>Total: {{ total }}</p>
+    <button @click="count.value++">Inc 1</button>
+    <button @click="count2.value++">Inc 2</button>
   </div>
 </template>
 ```
 
-## Working with Forms
+## Schema Support
 
-Here's a more complex example showing how to work with forms using Anchor:
+Anchor supports defining schemas for your state using `anchorRef`, providing runtime validation.
 
 ```vue
 <script setup>
 import { anchorRef } from '@anchorlib/vue';
+import { z } from 'zod';
 
-const formState = anchorRef({
-  user: {
-    firstName: '',
-    lastName: '',
-    email: '',
-    age: 0,
-  },
-  errors: {},
-  submitted: false,
+const UserSchema = z.object({
+  name: z.string(),
+  age: z.number(),
 });
 
-const validate = () => {
-  const errors = {};
+// Pass the schema as the second argument
+const user = anchorRef({ name: 'John', age: 30 }, { schema: UserSchema });
 
-  if (!formState.value.user.firstName) {
-    errors.firstName = 'First name is required';
-  }
+// This will work
+user.value.name = 'Jane';
 
-  if (!formState.value.user.email) {
-    errors.email = 'Email is required';
-  } else if (!/\S+@\S+\.\S+/.test(formState.value.user.email)) {
-    errors.email = 'Email is invalid';
-  }
-
-  formState.value.errors = errors;
-  return Object.keys(errors).length === 0;
-};
-
-const submitForm = () => {
-  if (validate()) {
-    // Process form submission
-    console.log('Submitting:', formState.value.user);
-    formState.value.submitted = true;
-  }
-};
-
-const resetForm = () => {
-  formState.value.user = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    age: 0,
-  };
-  formState.value.errors = {};
-  formState.value.submitted = false;
-};
+// This will throw a validation error at runtime if you try this:
+// user.value.age = 'not a number';
 </script>
-
-<template>
-  <div v-if="formState.submitted">
-    <div>
-      <h2>Form Submitted Successfully!</h2>
-      <p>Welcome, {{ formState.user.firstName }}!</p>
-      <button @click="resetForm">Submit Another</button>
-    </div>
-  </div>
-  <div v-else>
-    <form @submit.prevent="submitForm">
-      <div>
-        <label>
-          First Name:
-          <input type="text" v-model="formState.user.firstName" />
-        </label>
-        <span v-if="formState.errors.firstName" class="error">
-          {{ formState.errors.firstName }}
-        </span>
-      </div>
-
-      <div>
-        <label>
-          Email:
-          <input type="email" v-model="formState.user.email" />
-        </label>
-        <span v-if="formState.errors.email" class="error">
-          {{ formState.errors.email }}
-        </span>
-      </div>
-
-      <div>
-        <label>
-          Age:
-          <input type="number" v-model.number="formState.user.age" />
-        </label>
-      </div>
-
-      <button type="submit">Submit</button>
-      <button type="button" @click="resetForm">Reset</button>
-    </form>
-  </div>
-</template>
-
-<style>
-.error {
-  color: red;
-  font-size: 0.8rem;
-}
-
-form div {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-input {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-</style>
 ```
 
 ## Next Steps
 
-Now that you've seen the basics of Anchor with Vue, you might want to explore:
+Now that you've seen the basics of Anchor with Vue, you can explore:
 
-- [Reactivity](/vue/reactivity) - Learn how Anchor's fine-grained reactivity works
-- [Immutability](/vue/immutability) - Discover how Anchor handles immutable state
-- [State Management](/vue/state-management) - Understand how to structure your application state
-- [API References](/apis/vue/initialization) - Dive into the complete API documentation
-
-With Anchor, you can build Vue applications that are not only more performant but also easier to maintain and reason about. The combination of Vue's reactivity system and Anchor's fine-grained reactivity creates a powerful foundation for modern web applications.
+- [Mutable State](/vue/state/mutable) - Deep dive into `anchorRef` and mutable state logic.
+- [Immutable State](/vue/state/immutable) - Discover safe state sharing with `immutableRef`.
+- [Derived State](/vue/state/derived) - Learn more about `derivedRef` and computed values.
+- [API References](/apis/vue/initialization) - Dive into the complete API documentation.
