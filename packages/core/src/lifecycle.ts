@@ -4,7 +4,9 @@ import { closure } from './utils/index.js';
 const DEFAULT_CLEANUP_HANDLER = (_handler: () => void) => {};
 
 const CLEANUP_SYMBOL = Symbol('cleanup-store');
-closure.set(CLEANUP_SYMBOL, DEFAULT_CLEANUP_HANDLER);
+// closure.set(CLEANUP_SYMBOL, DEFAULT_CLEANUP_HANDLER);
+
+let currentCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;
 
 /**
  * Registers a cleanup handler that will be called when the application shuts down.
@@ -17,6 +19,8 @@ export function onCleanup(handler: () => void) {
 
   if (typeof cleanupHandler === 'function') {
     return cleanupHandler(handler);
+  } else if (typeof currentCleanupHandler === 'function') {
+    return currentCleanupHandler(handler);
   } else {
     return DEFAULT_CLEANUP_HANDLER(handler);
   }
@@ -43,7 +47,8 @@ export function onGlobalCleanup(handler: () => void) {
  * This allows for customization of how cleanup handlers are managed.
  */
 export function setCleanUpHandler(handler: (handler: () => void) => void) {
-  closure.set(CLEANUP_SYMBOL, handler);
+  // closure.set(CLEANUP_SYMBOL, handler);
+  currentCleanupHandler = handler;
 }
 
 /**
