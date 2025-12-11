@@ -43,7 +43,6 @@ export class TabState {
   public select(name: string): void {
     if (this.disabled) return;
     this.active = name;
-    console.log(this);
   }
 
   public prev(): void {
