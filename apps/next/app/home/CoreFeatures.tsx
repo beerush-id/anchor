@@ -744,7 +744,7 @@ export const CoreFeatures = () => (
             and blazing-fast rendering that keeps your application responsive under any workload.
           </p>
 
-          <MainCTA className={'md:justify-start w-full'} tiys={false} />
+          <MainCTA href={'/docs/react/getting-started'} className={'md:justify-start w-full'} tiys={false} />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-8 md:gap-12">
@@ -759,7 +759,7 @@ export const CoreFeatures = () => (
             about, test, and refactor as your application grows in complexity.
           </p>
 
-          <MainCTA className={'md:justify-start w-full'} tiys={false} />
+          <MainCTA href={'/docs/react/getting-started'} className={'md:justify-start w-full'} tiys={false} />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-8 md:gap-12">
@@ -774,7 +774,7 @@ export const CoreFeatures = () => (
             across all components.
           </p>
 
-          <MainCTA className={'md:justify-start w-full'} tiys={false} />
+          <MainCTA href={'/docs/react/getting-started'} className={'md:justify-start w-full'} tiys={false} />
         </div>
       </div>
     </div>

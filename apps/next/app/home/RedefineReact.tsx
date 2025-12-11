@@ -9,6 +9,7 @@ import {
   SectionSubtitle,
   SectionTitle,
 } from '@anchorlib/react-kit/components';
+import { MainCTA } from '@components/MainCTA';
 import { LayoutTemplate, Scaling, SquareFunction } from 'lucide-react';
 
 const anchorCode = `
@@ -222,6 +223,8 @@ export function RedefineReact() {
         useCallback, useMemo, and the entire dependency array issues. No stale closures, no unnecessary re-renders—just
         stable references and truly fine-grained performance by default.
       </SectionDescription>
+
+      <MainCTA className="md:mb-6" href={'/docs/react/getting-started'} />
 
       <div className={'grid grid-cols-1 md:grid-cols-2 items-stretch gap-4 md:gap-8 w-full mb-4 mb-4 md:mb-10'}>
         <Card className={'flex-1 md:shadow-2xl bg-code-block-background'}>
