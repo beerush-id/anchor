@@ -51,11 +51,11 @@ const Counter = setup(() => {
 ```
 
 ```jsx [SolidJS]
-import { anchorRef } from '@anchorlib/solid';
+import { mutable } from '@anchorlib/solid';
 
 const Counter = () => {
   // Create a reactive state object.
-  const state = anchorRef({
+  const state = mutable({
     count: 0,
     title: 'My App',
   });
@@ -72,10 +72,10 @@ const Counter = () => {
 
 ```sveltehtml [Svelte]
 <script>
-  import { anchorRef } from '@anchorlib/svelte';
+  import { mutable } from '@anchorlib/svelte';
 
   // Create a reactive state object.
-  const state = anchorRef({ count: 0, title: 'My App' });
+  const state = mutable({ count: 0, title: 'My App' });
 </script>
 
 <div>
@@ -103,10 +103,10 @@ const state = anchorRef({ count: 0, title: 'My App' });
 ```
 
 ```typescript [VanillaJS]
-import { anchor, subscribe } from '@anchorlib/core';
+import { mutable, subscribe } from '@anchorlib/core';
 
 // Create a reactive state object.
-const state = anchor({
+const state = mutable({
   count: 0,
   title: 'Hello, World!',
 });
@@ -154,11 +154,11 @@ const Profile = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { immutableRef } from '@anchorlib/solid';
+import { immutable } from '@anchorlib/solid';
 
 const Profile = () => {
   // Create an immutable state.
-  const profile = immutableRef({
+  const profile = immutable({
     name: 'John Doe',
     email: 'john@example.com',
   });
@@ -180,10 +180,10 @@ const Profile = () => {
 
 ```sveltehtml [Svelte]
 <script>
-  import { immutableRef } from '@anchorlib/svelte';
+  import { immutable } from '@anchorlib/svelte';
 
   // Create an immutable state.
-  const profile = immutableRef({
+  const profile = immutable({
     name: 'John Doe',
     email: 'john@example.com',
   });
@@ -227,10 +227,10 @@ const changeName = () => {
 ```
 
 ```typescript [VanillaJS]
-import { anchor } from '@anchorlib/core';
+import { immutable } from '@anchorlib/core';
 
 // Create an immutable state.
-const profile = anchor.immutable({
+const profile = immutable({
   name: 'Jane Smith',
   email: 'jane@example.com',
 });
@@ -287,17 +287,17 @@ const Profile = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { immutableRef, writableRef } from '@anchorlib/solid';
+import { immutable, writable } from '@anchorlib/solid';
 
 const Profile = () => {
   // Create an immutable state.
-  const profile = immutableRef({
+  const profile = immutable({
     name: 'John Doe',
     email: 'john@example.com',
   });
 
   // Create a write contract for the 'name' property.
-  const writer = writableRef(profile, ['name']);
+  const writer = writable(profile, ['name']);
 
   const changeName = () => {
     // This is allowed because 'name' is in the contract.
@@ -319,16 +319,16 @@ const Profile = () => {
 
 ```sveltehtml [Svelte]
 <script>
-  import { immutableRef, writableRef } from '@anchorlib/svelte';
+  import { immutable, writable } from '@anchorlib/svelte';
 
   // Create an immutable state.
-  const profile = immutableRef({
+  const profile = immutable({
     name: 'John Doe',
     email: 'john@example.com',
   });
 
   // Create a write contract for the 'name' property.
-  const writer = writableRef(profile, ['name']);
+  const writer = writable(profile, ['name']);
 
   const changeName = () => {
     // This is allowed because 'name' is in the contract.
@@ -378,16 +378,16 @@ const changeName = () => {
 ```
 
 ```typescript [VanillaJS]
-import { anchor } from '@anchorlib/core';
+import { immutable, writable } from '@anchorlib/core';
 
 // Create an immutable state.
-const profile = anchor.immutable({
+const profile = immutable({
   name: 'Jane Smith',
   email: 'jane@example.com',
 });
 
 // Create a write contract for the 'name' property.
-const writer = anchor.writable(profile, ['name']);
+const writer = writable(profile, ['name']);
 
 // Reading is always fine.
 console.log(profile.name); // 'Jane Smith'
@@ -444,7 +444,7 @@ const Profile = setup(() => {
 
 ```tsx [SolidJS]
 import { z } from 'zod';
-import { modelRef } from '@anchorlib/solid';
+import { model } from '@anchorlib/solid';
 
 const UserSchema = z.object({
   name: z.string().min(2),
@@ -452,7 +452,7 @@ const UserSchema = z.object({
 });
 
 const Profile = () => {
-  const user = modelRef(UserSchema, {
+  const user = model(UserSchema, {
     name: 'John Doe',
     email: 'john@example.com',
   });
@@ -478,14 +478,14 @@ const Profile = () => {
 ```sveltehtml [Svelte]
 <script>
   import { z } from 'zod';
-  import { modelRef } from '@anchorlib/svelte';
+  import { model } from '@anchorlib/svelte';
 
   const UserSchema = z.object({
     name: z.string().min(2),
     email: z.string().email(),
   });
 
-  const user = modelRef(UserSchema, {
+  const user = model(UserSchema, {
     name: 'John Doe',
     email: 'john@example.com',
   });
@@ -541,14 +541,14 @@ const changeName = () => {
 
 ```typescript [VanillaJS]
 import { z } from 'zod';
-import { anchor } from '@anchorlib/core';
+import { model } from '@anchorlib/core';
 
 const UserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
 });
 
-const user = anchor.model(UserSchema, {
+const user = model(UserSchema, {
   name: 'John Doe',
   email: 'john@example.com',
 });

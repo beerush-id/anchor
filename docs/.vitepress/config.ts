@@ -97,17 +97,11 @@ export default defineConfig({
         text: 'Anchor for React',
         collapsed: false,
         items: [
-          {
-            text: 'Introduction',
-            collapsed: false,
-            items: [
-              { text: 'Overview', link: '/react/index.html' },
-              { text: 'Getting Started', link: '/react/getting-started' },
-              { text: 'Comparison', link: '/react/comparison' },
-              { text: 'Migration Guide', link: '/react/migration-guide' },
-              { text: 'FAQ', link: '/react/faq' },
-            ],
-          },
+          { text: 'Overview', link: '/react/index.html' },
+          { text: 'Getting Started', link: '/react/getting-started' },
+          { text: 'Comparison', link: '/react/comparison' },
+          { text: 'Migration Guide', link: '/react/migration-guide' },
+          { text: 'FAQ', link: '/react/faq' },
           {
             text: 'State Management',
             collapsed: false,
@@ -162,16 +156,14 @@ export default defineConfig({
             link: '/solid/getting-started',
           },
           {
-            text: 'Reactivity',
-            link: '/solid/reactivity',
-          },
-          {
-            text: 'Immutability',
-            link: '/solid/immutability',
-          },
-          {
             text: 'State Management',
-            link: '/solid/state-management',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/solid/state/index.html' },
+              { text: 'Mutable State', link: '/solid/state/mutable' },
+              { text: 'Immutable State', link: '/solid/state/immutable' },
+              { text: 'Derived State', link: '/solid/state/derived' },
+            ],
           },
         ],
       },
@@ -188,16 +180,14 @@ export default defineConfig({
             link: '/svelte/getting-started',
           },
           {
-            text: 'Reactivity',
-            link: '/svelte/reactivity',
-          },
-          {
-            text: 'Immutability',
-            link: '/svelte/immutability',
-          },
-          {
             text: 'State Management',
-            link: '/svelte/state-management',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/svelte/state/index.html' },
+              { text: 'Mutable State', link: '/svelte/state/mutable' },
+              { text: 'Immutable State', link: '/svelte/state/immutable' },
+              { text: 'Derived State', link: '/svelte/state/derived' },
+            ],
           },
         ],
       },
@@ -214,16 +204,14 @@ export default defineConfig({
             link: '/vue/getting-started',
           },
           {
-            text: 'Reactivity',
-            link: '/vue/reactivity',
-          },
-          {
-            text: 'Immutability',
-            link: '/vue/immutability',
-          },
-          {
             text: 'State Management',
-            link: '/vue/state-management',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/vue/state/index.html' },
+              { text: 'Mutable State', link: '/vue/state/mutable' },
+              { text: 'Immutable State', link: '/vue/state/immutable' },
+              { text: 'Derived State', link: '/vue/state/derived' },
+            ],
           },
         ],
       },
