@@ -1,49 +1,38 @@
-import { type HTMLAttributes } from 'react';
-import { type BindingParam, setup, useBinding, view } from '@anchorlib/react-classic';
 import { createToggle } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
+import { effect, render, setup } from '@anchorlib/react';
+import type { HTMLAttributes } from 'react';
 
-export type SwitchProps<C, D> = HTMLAttributes<HTMLButtonElement> & {
+export type SwitchProps = HTMLAttributes<HTMLButtonElement> & {
   checked?: boolean;
-  bindChecked?: BindingParam<boolean, C>;
   disabled?: boolean;
-  bindDisabled?: BindingParam<boolean, D>;
   onChange?: (checked: boolean) => void;
   className?: ClassName | ClassList;
 };
 
-export const Switch = setup(function Switch<C, D>({
-  checked,
-  bindChecked,
-  disabled,
-  bindDisabled,
-  onChange,
-  className,
-  ...props
-}: SwitchProps<C, D>) {
-  const state = createToggle({ checked, disabled });
+export const Switch = setup<SwitchProps>((props) => {
+  const state = createToggle();
 
-  useBinding(state, 'checked', bindChecked);
-  useBinding(state, 'disabled', bindDisabled);
+  effect(() => (state.checked = props.checked ?? false));
+  effect(() => (state.disabled = props.disabled ?? false));
 
   const toggle = () => {
     state.toggle();
-    onChange?.(state.checked);
+    props.checked = state.checked;
+    props.onChange?.(state.checked);
   };
 
-  const SwitchView = view(() => {
+  return render(() => {
     return (
       <button
         role="switch"
         aria-checked={state.checked}
         aria-disabled={state.disabled}
-        className={classx('ark-switch', className)}
+        className={classx('ark-switch', props.className)}
         disabled={state.disabled}
         onClick={toggle}
-        {...props}
+        {...props.$omit(['checked', 'disabled', 'onChange', 'className'])}
       ></button>
     );
   }, 'Switch');
-
-  return <SwitchView />;
 }, 'Switch');

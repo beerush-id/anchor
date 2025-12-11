@@ -20,7 +20,7 @@
 @import '@anchorkit/headless/styles/themes/violet.css';
 @import '@anchorkit/headless/styles/themes/yellow.css';
 
-@source '../../../packages/react/dist';
+@source '../../../kits/react/dist';
 
 body {
   font-family: 'Geist', sans-serif;

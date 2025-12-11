@@ -9,14 +9,17 @@ export type TabButtonProps = HTMLAttributes<HTMLButtonElement> & {
   className?: ClassName | ClassList;
 };
 
-export const TabButton = setup((props: TabButtonProps) => {
+export const TabButton = setup<TabButtonProps>((props) => {
   const tab = getTab();
 
-  if (tab && !tab.active) tab.select(props.name);
+  if (tab) {
+    tab.insert(props.name);
+
+    if (!tab.active) tab.select(tab.active);
+  }
 
   return render(() => {
-    const { name, children, className, disabled, ...restProps } = props;
-
+    const { name, children, className, disabled } = props;
     const classList = classx('ark-tab-button', className, {
       'ark-active': tab?.active === name,
     });
@@ -30,7 +33,7 @@ export const TabButton = setup((props: TabButtonProps) => {
         className={classList}
         disabled={disabled ?? tab?.disabled}
         onClick={() => tab?.select(name)}
-        {...restProps}
+        {...props.$omit(['name', 'children', 'className', 'disabled'])}
       >
         {children}
       </button>

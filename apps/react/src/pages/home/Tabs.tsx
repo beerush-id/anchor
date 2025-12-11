@@ -1,74 +1,62 @@
-import { Switch, SwitchLabel, Tab, TabButton, TabContent, TabList, TabVisibility } from '@anchorkit/react/components';
-import { bind, effect, mutable, setup, view } from '@anchorlib/react';
-import type { FC } from 'react';
+import {
+  Switch,
+  SwitchLabel,
+  Tab,
+  TabButton,
+  TabContent,
+  TabList,
+  TabVisibility,
+  TextInput,
+} from '@anchorkit/react/components';
+import { bind, mutable, render, setup, snippet } from '@anchorlib/react';
 
-const ActiveTab: FC<{
-  name: string;
-  tab: Record<string, string | boolean>;
-  active?: string;
-}> = setup((props) => {
-  const { name, tab } = props;
-  const renderCount = mutable(0);
-  renderCount.value++;
+const AdminForm = setup<{ isAdmin: boolean }>((props) => {
+  const username = mutable('');
 
-  effect(() => {
-    console.log('Active tab:', tab.active, renderCount.value);
+  const Form = snippet(() => <TextInput value={bind(username)} placeholder="Username" />, 'Form');
+
+  return render(() => {
+    if (!props.isAdmin) return <span>Access denied.</span>;
+    return <Form />;
   });
-
-  const Template = view(
-    () => (
-      <span className={props.active === 'account' ? 'bg-red-200' : 'bg-blue-200'}>
-        {name}: {tab.active}
-      </span>
-    ),
-    'ActiveTab'
-  );
-
-  return <Template />;
-}, 'ActiveTab');
+});
 
 export const Tabs = setup(() => {
   const tabs = mutable({
     tab1: {
-      active: 'account',
+      active: 'profile',
       disabled: false,
+      extraContent: false,
     },
     tab2: {
       active: 'disabled-account',
       disabled: true,
+      extraContent: false,
     },
   });
-
-  console.log('Tab list rendered.');
-
-  const ActiveTabs = view(() => {
-    console.log('Active tabs rendered.');
-
-    return (
-      <div className={'flex items-center gap-2'}>
-        <ActiveTab name={'Tab 1'} tab={tabs.tab1} active={tabs.tab1.active} />
-        <ActiveTab name={'Tab 2'} tab={tabs.tab2} active={tabs.tab2.active} />
-      </div>
-    );
-  });
+  const admin = mutable(false);
 
   return (
     <div className="mb-8 flex flex-col gap-2">
       <div className="flex items-center mb-2 gap-4">
         <h2 className="text-xl font-semibold flex-1">Tabs</h2>
-        <ActiveTabs />
       </div>
       <Tab value={bind(tabs.tab1, 'active')} disabled={bind(tabs.tab1, 'disabled')}>
         <div className="flex items-center w-full">
           <TabList>
+            <TabButton name={'profile'}>Profile</TabButton>
             <TabButton name={'account'}>Account</TabButton>
             <TabButton name={'password'}>Password</TabButton>
-            <TabButton name={'profile'}>Profile</TabButton>
+            <TabButton name={'setting'}>Settings</TabButton>
           </TabList>
           <div className="flex-1"></div>
           <SwitchLabel>
             <span>Disable</span>
-            <Switch bindChecked={[tabs.tab1, 'disabled']} />
+            <Switch checked={bind(tabs.tab1, 'disabled')} />
+          </SwitchLabel>
+          <SwitchLabel className={'ml-4'}>
+            <span>Make Admin</span>
+            <Switch checked={bind(admin)} />
           </SwitchLabel>
         </div>
         <TabContent name={'account'} className={'p-6'}>
@@ -80,6 +68,9 @@ export const Tabs = setup(() => {
         <TabContent name={'profile'} className={'p-6'}>
           <p>Content for Profile</p>
         </TabContent>
+        <TabContent name={'setting'} className={'p-6'}>
+          <AdminForm isAdmin={bind(admin)} />
+        </TabContent>
       </Tab>
       <Tab value={bind(tabs.tab2, 'active')} disabled={bind(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
         <div className="flex items-center w-full">
@@ -89,11 +80,16 @@ export const Tabs = setup(() => {
             <TabButton name={'disabled-profile'} disabled>
               Profile
             </TabButton>
+            <TabButton name={'disabled-setting'}>Settings</TabButton>
           </TabList>
           <div className="flex-1"></div>
           <SwitchLabel>
             <span>Disable</span>
-            <Switch bindChecked={[tabs.tab2, 'disabled']} />
+            <Switch checked={bind(tabs.tab2, 'disabled')} />
+          </SwitchLabel>
+          <SwitchLabel className={'ml-4'}>
+            <span>Make Admin</span>
+            <Switch checked={bind(admin)} />
           </SwitchLabel>
         </div>
         <TabContent name={'disabled-account'} className={'p-6'}>
@@ -104,6 +100,9 @@ export const Tabs = setup(() => {
         </TabContent>
         <TabContent name={'disabled-profile'} className={'p-6'}>
           <p>Content for Profile</p>
+        </TabContent>
+        <TabContent name={'disabled-setting'} className={'p-6'}>
+          <AdminForm isAdmin={bind(admin)} />
         </TabContent>
       </Tab>
     </div>

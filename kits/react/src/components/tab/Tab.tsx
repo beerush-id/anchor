@@ -1,6 +1,6 @@
 import { createTab, TabCtx, TabVisibility } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { contextProvider, effect, nodeRef, setup, template } from '@anchorlib/react';
+import { contextProvider, effect, nodeRef, setup, snippet } from '@anchorlib/react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 export { TabVisibility } from '@anchorkit/headless/states';
@@ -29,7 +29,7 @@ export const Tab = setup((props: TabProps) => {
   // Sync props from tab state.
   effect(() => (props.value = tab.active));
 
-  const Template = template(
+  const Template = snippet(
     () => (
       <div ref={ref} {...ref.attributes}>
         {props.children}

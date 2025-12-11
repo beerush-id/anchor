@@ -9,7 +9,7 @@ export type TabListProps = HTMLAttributes<HTMLDivElement> & {
   buttonSelector?: string;
 };
 
-export const TabList = setup((props: TabListProps) => {
+export const TabList = setup<TabListProps>((props) => {
   const ref = keyNavRef<HTMLDivElement>({
     direction: NavDirection.HORIZONTAL,
     buttonSelector: props.buttonSelector,
@@ -19,13 +19,17 @@ export const TabList = setup((props: TabListProps) => {
     ref.destroy();
   });
 
-  return render(() => {
-    const { buttonSelector: _bs, children, className, ...restProps } = props;
-
-    return (
-      <div ref={ref} role="tablist" className={classx('ark-tab-list', className)} {...restProps}>
-        {children}
+  return render(
+    () => (
+      <div
+        ref={ref}
+        role="tablist"
+        className={classx('ark-tab-list', props.className)}
+        {...props.$omit(['buttonSelector', 'children', 'className'])}
+      >
+        {props.children}
       </div>
-    );
-  }, 'TabList');
+    ),
+    'TabList'
+  );
 }, 'TabList');
