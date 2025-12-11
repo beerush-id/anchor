@@ -42,7 +42,7 @@ Because the Component runs only once, your functions are stable and always refer
 
 ## View: The Presentation Layer
 
-The [**View**](/react/component/template) displays your data to users. It's reactive—automatically tracking which state properties it reads and re-rendering only when those specific properties change.
+The [**View**](/react/component/view) displays your data to users. It's reactive—automatically tracking which state properties it reads and re-rendering only when those specific properties change.
 
 A Component can have:
 - **Component View** - The primary reactive View returned immediately, tied to the Component's output.
@@ -79,6 +79,6 @@ No `useCallback`, no `useMemo`, no dependency arrays. Write straightforward code
 ## Core Concepts
 
 - [Component](/react/component/setup) - Creating the Logic Layer
-- [View & Template](/react/component/template) - Creating the Presentation Layer
+- [View & Template](/react/component/view) - Creating the Presentation Layer
 - [Lifecycle](/react/component/lifecycle) - Component lifecycle and effects
 - [Binding & Refs](/react/component/binding) - Interacting with DOM elements

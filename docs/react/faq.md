@@ -8,7 +8,7 @@ description: "Frequently Asked Questions about Anchor for React."
 ## General
 
 ::: details Does Anchor replace React? { open }
-No. It acts as an **Enhancement Layer**. It gives React a stable **[Logic Layer](/react/component/setup)** (which runs once) while preserving React's powerful rendering engine for the **[Presentation Layer](/react/component/template)**.
+No. It acts as an **Enhancement Layer**. It gives React a stable **[Logic Layer](/react/component/setup)** (which runs once) while preserving React's powerful rendering engine for the **[Presentation Layer](/react/component/view)**.
 :::
 
 ::: details Why do I need Anchor if React already has hooks? { open }
@@ -16,7 +16,7 @@ Hooks suffer from the **Re-render Cascade** because they mix logic and view in t
 :::
 
 ::: details Doesn't mutating state directly break React? { open }
-It would if you did it directly. But Anchor uses the **Gateway Pattern**. Your state is a **[Gateway](/react/state/mutable)** that intercepts changes and triggers updates only for the affected **[View](/react/component/template)** (Presentation Layer), ensuring React stays happy.
+It would if you did it directly. But Anchor uses the **Gateway Pattern**. Your state is a **[Gateway](/react/state/mutable)** that intercepts changes and triggers updates only for the affected **[View](/react/component/view)** (Presentation Layer), ensuring React stays happy.
 :::
 
 ## Performance
@@ -54,7 +54,7 @@ Yes. The separation of **Stable Logic** and **Reactive View** reduces technical 
 ## Comparison
 
 ::: details How is this different from Redux/Zustand? { open }
-Redux and Zustand store state *outside* components but still trigger **Component Re-renders** on change. Anchor triggers updates only for the specific **[View](/react/component/template)** (Presentation Layer), keeping the Logic Layer stable.
+Redux and Zustand store state *outside* components but still trigger **Component Re-renders** on change. Anchor triggers updates only for the specific **[View](/react/component/view)** (Presentation Layer), keeping the Logic Layer stable.
 :::
 
 ::: details Is this like MobX? { open }
@@ -72,8 +72,8 @@ Because it runs exactly once during initialization. Unlike React's "Re-render" m
 :::
 
 ::: details Why do I need both Templates and Snippets? { open }
-- **[Template](/react/component/template#template)**: Use for reusable, props-driven UI.
-- **[Snippet](/react/component/template#snippet)**: Use for scoped UI inside a Component.
+- **[Template](/react/component/view#template)**: Use for reusable, props-driven UI.
+- **[Snippet](/react/component/view#snippet)**: Use for scoped UI inside a Component.
 :::
 
 ::: details Can I use React Hooks inside setup? { open }

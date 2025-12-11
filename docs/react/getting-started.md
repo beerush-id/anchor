@@ -242,8 +242,8 @@ Anchor abstracts these differences so you can write logic once.
 
 Now that you understand the basics, explore these topics:
 
-- [**State**](/react/state) — `mutable`, `immutable`, `derived`, and write contracts
-- [**View & Template**](/react/component/template) — Templates, Snippets, and Component Views in depth
+- [**State**](/react/state/index.html) — `mutable`, `immutable`, `derived`, and write contracts
+- [**View & Template**](/react/component/view) — Templates, Snippets, and Component Views in depth
 - [**Lifecycle**](/react/component/lifecycle) — `onMount`, `onCleanup`, and effect handlers
 - [**Binding & Refs**](/react/component/binding) — Direct DOM binding for high-performance updates
 

@@ -45,7 +45,7 @@ This single-run nature eliminates stale closures—your functions always referen
 
 ## Reactive Props
 
-Props are implemented as reactive proxies that update in place. This means the Component doesn't re-execute when props change—instead, reactive boundaries (like [Views](/react/component/template) and [Effects](/react/component/side-effect)) automatically track and respond to prop updates.
+Props are implemented as reactive proxies that update in place. This means the Component doesn't re-execute when props change—instead, reactive boundaries (like [Views](/react/component/view) and [Effects](/react/component/side-effect)) automatically track and respond to prop updates.
 
 ### Reading Props
 
