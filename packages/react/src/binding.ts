@@ -64,7 +64,7 @@ export function bind<T extends MutableRef<unknown>>(source: T): T['value'];
  * @param key - The property key to bind to
  * @returns The value type at the specified key
  */
-export function bind<T extends Record<string, unknown>, K extends keyof T>(source: T, key: K): T[K];
+export function bind<T, K extends keyof T>(source: T, key: K): T[K];
 
 /**
  * Creates a binding reference for two-way data binding.
