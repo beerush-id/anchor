@@ -99,9 +99,6 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/react/index.html' },
           { text: 'Getting Started', link: '/react/getting-started' },
-          { text: 'Comparison', link: '/react/comparison' },
-          { text: 'Migration Guide', link: '/react/migration-guide' },
-          { text: 'FAQ', link: '/react/faq' },
           {
             text: 'State Management',
             collapsed: false,
@@ -126,6 +123,10 @@ export default defineConfig({
               // { text: 'Advanced', link: '/react/component/advanced' },
             ],
           },
+          { text: 'Comparison', link: '/react/comparison' },
+          { text: 'Best Practices', link: '/react/best-practices' },
+          { text: 'Migration Guide', link: '/react/migration-guide' },
+          { text: 'FAQ', link: '/react/faq' },
           // {
           //   text: 'Tutorials',
           //   collapsed: true,

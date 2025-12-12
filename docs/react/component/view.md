@@ -304,18 +304,23 @@ export const TodoList = setup(() => {
     todos: [
       { id: 1, text: 'Learn Anchor', done: false },
       { id: 2, text: 'Build app', done: false }
-    ]
+    ],
+    
+    // Method on the object
+    remove(todo) {
+      const index = this.todos.indexOf(todo);
+      if (index !== -1) {
+        this.todos.splice(index, 1);
+      }
+    }
   });
 
-  const removeTodo = (id: number) => {
-    state.todos = state.todos.filter(t => t.id !== id);
-  };
-
-  // Snippet - can access removeTodo() from closure
+  // Snippet - can access state from closure
   const TodoItem = snippet<{ todo: Todo }>(({ todo }) => (
     <li>
       <span>{todo.text}</span>
-      <button onClick={() => removeTodo(todo.id)}>Remove</button>
+      {/* Pass the object, not the ID */}
+      <button onClick={() => state.remove(todo)}>Remove</button>
     </li>
   ), 'TodoItem');
 
