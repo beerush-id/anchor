@@ -327,6 +327,48 @@ export const TodoList = setup(() => {
 });
 ```
 
+### 5. Bi-Directional Component
+
+* **Use for**: Generic components (inputs, selects, etc.) that support both two-way and one-way bindings.
+* **Behavior**: Component read and write to props, props propagates to parent component if it's a binding reference.
+
+```tsx
+export const TextInput = setup<TextInputProps>((props) => {
+  const handleChange = (e) => {
+    props.value = e.target.value;
+    props.onChange?.(e.target.value);
+  };
+
+  return render(() => (
+    <input
+      type="text"
+      value={props.value ?? ''}
+      onChange={handleChange}
+    />
+  ));
+});
+```
+
+### 6. Optimistic UI
+
+* **Use for**: UI updates that are optimistic and can be undone.
+
+```tsx
+export const LikeButton = setup<{ liked: boolean }>((props) => {
+  const handleClick = () => {
+    const [rollback, settled] = undoable(() => {
+      props.liked = !props.liked;
+    });
+    
+    updateLike(props.liked).then(settled).catch(rollback);
+  };
+  
+  return render(() => (
+    <button onClick={handleClick}>{props.liked ? 'Unlike' : 'Like'}</button>
+  ));
+});
+```
+
 ## Reactivity System
 
 ### 1. Effects
@@ -419,28 +461,42 @@ onCleanup(() => {
 
 ## Binding & Refs
 
-### 1. State Binding (Two-Way)
+### 1. Binding Reference (`bind(source, key?)`)
+
+* **Use for**: Mark a prop as state binding reference.
+* **Behavior**: Pass-by-reference, read and write happens in the child component.
+* **Pattern**: Only for component created with `setup()`.
 
 **Parent**:
 ```tsx
+const count = mutable(0);
 const state = mutable({ count: 0 });
+
+// Binding to MutableRef.
+<Counter value={bind(count)} />
+
+// Binding to specific key.
 <Counter value={bind(state, 'count')} />
 ```
 
 **Child**:
 ```tsx
-export const Counter = setup((props: { value: number }) => {
+export const Counter = setup<{ value: number }>((props) => {
   const increment = () => props.value++; // Updates parent!
   return render(() => <button onClick={increment}>{props.value}</button>);
 });
 ```
 
-### 2. Bindable Interface
-**Use for**: Controlled/uncontrolled components
+### 2. Bindable Interface (`bindable(init, source, key)`)
+
+* **Use for**: External state binding
+* **Behavior**:
+  * Using the init value if the source is not defined.
+  * Internal value changes, source changes, and vice versa.
 
 ```tsx
-export const TextInput = setup((props: { value?: string }) => {
-  const text = bindable('', props, 'value'); // Syncs with props.value
+export const NameInpuut = setup<{ user: User }>((props) => {
+  const text = bindable('', props.user, 'name'); // Syncs with user.name
   
   return render(() => (
     <input
@@ -494,7 +550,9 @@ const addTodo = () => {
   setTodos([...todos, { text: newText }]);
   setNewText('');
 };
+```
 
+```tsx
 // ✅ Logic-Driven
 const todoApp = mutable({
   newText: '',
@@ -513,7 +571,9 @@ const todoApp = mutable({
 // ❌ State-Driven
 const increment = () => setCount(count + 1); // Recreated every render
 const stableIncrement = useCallback(() => setCount(c => c + 1), []); // Needs useCallback
+```
 
+```tsx
 // ✅ Logic-Driven
 const increment = () => state.count++; // Created once, always current
 ```
@@ -524,7 +584,9 @@ const increment = () => state.count++; // Created once, always current
 ```tsx
 // ❌ State-Driven
 setUser({ ...user, age: user.age + 1 });
+```
 
+```tsx
 // ✅ Logic-Driven
 user.age++;
 ```
@@ -537,7 +599,9 @@ user.age++;
 useEffect(() => {
   fetchUser(userId).then(setData);
 }, [userId]); // Manual deps
+```
 
+```tsx
 // ✅ Logic-Driven
 effect(() => {
   fetchUser(state.userId).then(d => state.data = d);
@@ -557,7 +621,9 @@ function UserCard({ user }) {
     </div>
   );
 }
+```
 
+```tsx
 // ✅ Logic-Driven (snippets)
 export const UserCard = setup(() => {
   const user = mutable({ name: 'John', role: 'Admin' });
@@ -574,7 +640,82 @@ export const UserCard = setup(() => {
 });
 ```
 
-### 6. Event-Driven Logic
+### 6. Component for Bi-Directional Data Flow
+
+```tsx
+// ❌ Parent needs to re-render to get the updated value
+const TextInput = template<{ value, onChange }>((props) => (
+  <input value={props.value} onChange={props.onChange} />
+));
+```
+
+```tsx
+// ✅ Component updates itself when the value changes
+const TextInput = setup<{ value, onChange? }>((props) => {
+  const handleChange = (e) => {
+    props.value = e.currentTarget.value;
+    props.onChange?.(e);
+  }
+  
+  return render(() => (
+    <TextInput value={props.value} onChange={handleChange} />
+  ));
+});
+```
+
+### 7. Reusable Component for Generic Views
+
+```tsx
+// ❌ Too verbose for similar functionalities
+const SignUp = setup(() => { 
+  const state = mutable({
+    email: '',
+    password: '',
+  });
+  
+  const EmailInput = snippet(() => (
+    <input value={state.email} onChange={(e) => state.email = e.currentTarget.value} />
+  ));
+
+  const PasswordInput = snippet(() => (
+    <input type="password" value={state.password} onChange={(e) => state.password = e.currentTarget.value} />
+  ));
+  
+  return (
+    <form>
+      <EmailInput />
+      <PasswordInput />
+      <button type="submit">Sign Up</button>
+    </form>
+  );
+});
+```
+```tsx
+// ✅ Component with static layout.
+const SignUp = setup(() => {
+  const state = mutable({
+    email: '',
+    password: '',
+  });
+  
+  return (
+    <form>
+      <TextInput value={bind(state, 'email')} />
+      <TextInput type="password" value={bind(state, 'password')} />
+      <button type="submit">Sign Up</button>
+    </form>
+  );
+});
+
+// ✅ TextInput updates itself when the value changes
+const TextInput = setup<{ value, type? }>((props) => {
+  return render(() => (
+    <input type={props.type ?? 'text'} value={props.value} onChange={(e) => props.value = e.currentTarget.value} />
+  ));
+});
+```
+
+### 7. Event-Driven Logic
 **Pattern**: Direct function calls, not effects
 
 ```tsx
@@ -587,18 +728,22 @@ useEffect(() => {
     setShouldSave(false);
   }
 }, [shouldSave]);
+```
 
+```tsx
 // ✅ Logic-Driven
 const handleSubmit = () => saveData(state.data);
 ```
 
-### 7. Computed Properties
+### 8. Computed Properties
 **Pattern**: JavaScript getters
 
 ```tsx
 // ❌ State-Driven
 const total = useMemo(() => price * quantity, [price, quantity]);
+```
 
+```tsx
 // ✅ Logic-Driven
 const cart = mutable({
   price: 10,
@@ -612,7 +757,7 @@ const cart = mutable({
 Anchor components work seamlessly across all rendering modes:
 
 ```tsx
-export const UserProfile = setup(({ id, user }: Props) => {
+export const UserProfile = setup<ProfileProps>(({ id, user }) => {
   const state = mutable<UserState>({
     user: user || null, // If provided (RSC), start loaded
     loading: !user,
