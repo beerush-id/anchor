@@ -1,0 +1,52 @@
+{
+  "type": "module",
+  "name": "@irpclib/irpc",
+  "version": "0.0.2",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "dist": "./dist"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "esbuild-raw-plugin": "catalog:",
+    "prettier": "catalog:",
+    "publint": "catalog:",
+    "rimraf": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:lib",
+    "@types/bun": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:lib"
+  },
+  "optionalDependencies": {
+    "zod": "catalog:lib"
+  },
+  "scripts": {
+    "dev": "tsdown --watch",
+    "clean": "rimraf dist",
+    "build": "tsdown && publint",
+    "format": "biome format --write",
+    "test": "rimraf coverage && vitest --run",
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
+    "prepublish": "bun run format && bun run clean && tsdown && publint"
+  },
+  "license": "MIT"
+}
