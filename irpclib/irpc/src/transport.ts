@@ -22,28 +22,30 @@ export class IRPCTransport {
    * Initiates an RPC call with the given specification and arguments.
    * @param spec - The RPC specification defining the method to call.
    * @param args - An array of arguments to pass to the RPC method.
+   * @param timeout - Optional timeout value for the RPC call.
    * @returns A promise that resolves with the RPC response data or rejects with an error.
    */
-  public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[]) {
+  public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[], timeout = this.config?.timeout) {
     const payload: IRPCPayload = { name: spec.name, args };
 
     return new Promise<IRPCData>((resolve, reject) => {
-      const timeout = this.config?.timeout
+      const timer = timeout
         ? setTimeout(() => {
             call.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]));
-          }, this.config?.timeout)
+          }, timeout)
         : undefined;
 
       const call = new IRPCCall(
         payload,
         (value) => {
           resolve(value as IRPCData);
-          clearTimeout(timeout);
+          clearTimeout(timer);
         },
         (reason) => {
           reject(reason);
-          clearTimeout(timeout);
-        }
+          clearTimeout(timer);
+        },
+        timeout
       );
 
       this.schedule(call);

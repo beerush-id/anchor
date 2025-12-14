@@ -147,6 +147,8 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
   description?: string;
   /** Optional maximum age of a call in milliseconds */
   maxAge?: number;
+  /** Optional timeout for RPC calls */
+  timeout?: number;
 };
 
 /**

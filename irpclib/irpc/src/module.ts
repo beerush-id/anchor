@@ -88,6 +88,7 @@ export class IRPCPackage {
 
     const spec = { ...init } as IRPCSpec<IRPCInputs, IRPCOutput>;
     const caches: IRPCCaches = new Map();
+    const timeout = spec.timeout ?? this.config.timeout;
 
     const stub = (async (...args: IRPCData[]) => {
       if (typeof spec.handler === 'function') {
@@ -106,7 +107,7 @@ export class IRPCPackage {
           return cache.data;
         }
 
-        const data = await this.transport.call(spec, args);
+        const data = await this.transport.call(spec, args, timeout);
         const timestamp = Date.now();
         const expiresAt = timestamp + spec.maxAge;
 
@@ -115,7 +116,7 @@ export class IRPCPackage {
         return data;
       }
 
-      return await this.transport.call(spec, args);
+      return await this.transport.call(spec, args, timeout);
     }) as IRPCHandler;
 
     this.specs.set(init.name, spec);

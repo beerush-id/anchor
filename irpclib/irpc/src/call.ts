@@ -26,7 +26,8 @@ export class IRPCCall {
   constructor(
     public payload: IRPCPayload,
     public resolver: (value: unknown) => void,
-    public rejector: (reason?: Error) => void
+    public rejector: (reason?: Error) => void,
+    public timeout?: number
   ) {}
 
   /**
