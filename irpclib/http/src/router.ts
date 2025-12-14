@@ -1,4 +1,12 @@
-import { createContext, type IRPCPackage, type IRPCRequest, IRPCResolver, withContext } from '@irpclib/irpc';
+import {
+  createContext,
+  ERROR_CODE,
+  ERROR_MESSAGE,
+  type IRPCPackage,
+  type IRPCRequest,
+  IRPCResolver,
+  withContext,
+} from '@irpclib/irpc';
 import type { HTTPTransport } from './transport.js';
 
 /**
@@ -24,7 +32,7 @@ export type HTTPResolveConfig = {
 /**
  * Middleware function that can process HTTP requests
  */
-export type HTTPMiddleware = (req: Request) => void | Promise<void>;
+export type HTTPMiddleware = () => void | Promise<void>;
 
 /**
  * HTTP router that handles IRPC requests over HTTP transport
@@ -77,18 +85,22 @@ export class HTTPRouter {
       return new Response(JSON.stringify([]), { status: 400 });
     }
 
-    await Promise.all(this.middlewares.map((middleware) => middleware(httpReq)));
-
     const readable = new ReadableStream({
       start: (controller) => {
         const promises = requests.map((req) => {
           const ctx = createContext<string, unknown>([
-            ['module', this.module],
             ['request', httpReq],
             ['headers', httpReq.headers],
           ]);
 
           return withContext(ctx, async () => {
+            const error = await this.resolveMiddleware(req.req);
+
+            if (error) {
+              controller.enqueue(JSON.stringify(error));
+              return;
+            }
+
             const response = await req.resolve();
             controller.enqueue(JSON.stringify(response));
           });
@@ -101,5 +113,29 @@ export class HTTPRouter {
     });
 
     return new Response(readable, { status: 200 });
+  }
+
+  /**
+   * Resolves middleware functions for a given request
+   * @param req - The IRPC request to process middleware for
+   * @returns An error response if middleware fails, undefined otherwise
+   */
+  protected async resolveMiddleware(req: IRPCRequest) {
+    for (const middleware of this.middlewares) {
+      try {
+        await middleware();
+      } catch (error) {
+        console.error(error);
+
+        return {
+          id: req.id,
+          name: req.name,
+          error: {
+            code: ERROR_CODE.UNKNOWN,
+            message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
+          },
+        };
+      }
+    }
   }
 }

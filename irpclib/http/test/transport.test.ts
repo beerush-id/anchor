@@ -3,6 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport } from '../src/index.js';
 
 describe('HTTPTransport', () => {
+  let errSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    errSpy.mockRestore();
+  });
+
   describe('constructor', () => {
     it('should create transport with config', () => {
       const config = {
@@ -53,16 +63,6 @@ describe('HTTPTransport', () => {
   });
 
   describe('dispatch', () => {
-    let errSpy: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-      errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-      errSpy.mockRestore();
-    });
-
     it('should handle dispatch without throwing', async () => {
       const transport = new HTTPTransport({
         baseURL: 'https://api.example.com',
