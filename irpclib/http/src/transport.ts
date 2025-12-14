@@ -1,4 +1,12 @@
-import { type IRPCCall, type IRPCRequest, type IRPCResponse, IRPCTransport, type TransportConfig } from '@irpclib/irpc';
+import {
+  ERROR_CODE,
+  ERROR_MESSAGE,
+  type IRPCCall,
+  type IRPCRequest,
+  type IRPCResponse,
+  IRPCTransport,
+  type TransportConfig,
+} from '@irpclib/irpc';
 
 export const DEFAULT_ENDPOINT = '/irpc';
 
@@ -63,6 +71,17 @@ export class HTTPTransport extends IRPCTransport {
   protected async dispatch(calls: IRPCCall[]) {
     try {
       const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({ id, name, args }));
+      const maxTimeout = calls.reduce((acc, req) => Math.max(acc, req.timeout ?? 0), 0) || this.config?.timeout;
+      const controller = new AbortController();
+
+      let breaker: number | undefined;
+
+      if (maxTimeout) {
+        breaker = setTimeout(() => {
+          controller.abort(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]));
+        }, maxTimeout) as never;
+      }
+
       const response = await fetch(this.url, {
         method: 'POST',
         headers: {
@@ -70,11 +89,14 @@ export class HTTPTransport extends IRPCTransport {
           ...this.config.headers,
         },
         body: JSON.stringify(requests),
+        signal: controller.signal,
       });
 
-      if (!response.ok) {
+      clearTimeout(breaker);
+
+      if (!response?.ok) {
         calls.forEach((call) => {
-          call.reject(new Error(response.statusText ?? 'Request failed.'));
+          call.reject(new Error(response?.statusText ?? 'Request failed.'));
         });
         return;
       }

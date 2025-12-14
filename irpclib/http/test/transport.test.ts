@@ -135,6 +135,141 @@ describe('HTTPTransport', () => {
       mockFetch.mockRestore();
     });
 
+    it('should reject calls with timeout error when call timeout is exceeded', async () => {
+      // Use fake timers for timeout testing
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        timeout: 1000, // This should be overridden by call timeout
+      });
+
+      // Mock fetch to never resolve, simulating a hanging request
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementationOnce((_, { signal }: any) => {
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', reject);
+        });
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        reject: vi.fn(),
+        timeout: 50, // This should override the config timeout
+      } as any;
+
+      // Execute dispatch
+      const dispatchPromise = transport['dispatch']([call]);
+
+      // Fast-forward time to trigger timeout
+      vi.advanceTimersByTime(100);
+
+      // Wait for dispatch to complete
+      await dispatchPromise;
+
+      // Check that the call was rejected with a timeout error
+      expect(call.reject).toHaveBeenCalled();
+
+      // Clean up
+      vi.useRealTimers();
+      mockFetch.mockRestore();
+    });
+
+    it('should reject calls with timeout error when transport config timeout is used', async () => {
+      // Use fake timers for timeout testing
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        timeout: 50,
+      });
+
+      // Mock fetch to never resolve, simulating a hanging request
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementationOnce((_, { signal }: any) => {
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', reject);
+        });
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        reject: vi.fn(),
+        // No timeout specified on the call, should use transport config timeout
+      } as any;
+
+      // Execute dispatch
+      const dispatchPromise = transport['dispatch']([call]);
+
+      // Fast-forward time to trigger timeout
+      vi.advanceTimersByTime(50);
+
+      // Wait for dispatch to complete
+      await dispatchPromise;
+
+      // Check that the call was rejected with a timeout error
+      expect(call.reject).toHaveBeenCalled();
+
+      // Clean up
+      vi.useRealTimers();
+      mockFetch.mockRestore();
+    });
+
+    it('should use maximum timeout from multiple calls', async () => {
+      // Use fake timers for timeout testing
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        timeout: 50, // Should be overridden by max call timeout
+      });
+
+      // Mock fetch to never resolve, simulating a hanging request
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementationOnce((_, { signal }: any) => {
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', reject);
+        });
+      });
+
+      const call1 = {
+        id: '1',
+        payload: { name: 'test1', args: [] },
+        reject: vi.fn(),
+        timeout: 100,
+      } as any;
+
+      const call2 = {
+        id: '2',
+        payload: { name: 'test2', args: [] },
+        reject: vi.fn(),
+        timeout: 200, // This is the maximum timeout
+      } as any;
+
+      // Execute dispatch
+      const dispatchPromise = transport['dispatch']([call1, call2]);
+
+      // Fast-forward time to 100ms - call1 timeout
+      vi.advanceTimersByTime(100);
+
+      // At 100ms, neither call should be rejected yet since max timeout is 200ms
+      expect(call1.reject).not.toHaveBeenCalled();
+      expect(call2.reject).not.toHaveBeenCalled();
+
+      // Fast-forward time to 200ms - call2 timeout (max timeout)
+      vi.advanceTimersByTime(100);
+
+      // Wait for dispatch to complete
+      await dispatchPromise;
+
+      // Both calls should be rejected with a timeout error
+      expect(call1.reject).toHaveBeenCalled();
+      expect(call2.reject).toHaveBeenCalled();
+
+      // Clean up
+      vi.useRealTimers();
+      mockFetch.mockRestore();
+    });
+
     it('should reject calls when fetch throws an error', async () => {
       const transport = new HTTPTransport({
         baseURL: 'https://api.example.com',
