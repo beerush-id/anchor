@@ -4,6 +4,7 @@ export * from './binding.js';
 export * from './broadcast.js';
 export {
   ARRAY_MUTATIONS,
+  AsyncStatus,
   BATCH_MUTATION_KEYS,
   BATCH_MUTATIONS,
   COLLECTION_MUTATION_KEYS,

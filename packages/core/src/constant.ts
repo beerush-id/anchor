@@ -59,3 +59,10 @@ export const DEV_TOOL_KEYS = new Set([
   'onTrack',
   'onUntrack',
 ]);
+
+export const AsyncStatus = {
+  Idle: 'idle',
+  Error: 'error',
+  Success: 'success',
+  Pending: 'pending',
+} as const;

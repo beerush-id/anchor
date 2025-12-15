@@ -1,5 +1,8 @@
 export type {
   AnchorSettings,
+  AsyncHandler,
+  AsyncOptions,
+  AsyncState,
   BatchHandler,
   Context,
   ContextProvider,
@@ -20,6 +23,7 @@ export type {
   Mutable,
   MutablePart,
   PushHandler,
+  query,
   State,
   StateChange,
   StateException,
@@ -33,6 +37,7 @@ export type {
 } from '@anchorlib/core';
 
 export {
+  AsyncStatus,
   anchor,
   DerivedRef,
   derived,

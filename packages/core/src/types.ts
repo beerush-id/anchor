@@ -1,6 +1,13 @@
 import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod/v4';
-import type { ARRAY_MUTATIONS, BATCH_MUTATIONS, MAP_MUTATIONS, OBJECT_MUTATIONS, SET_MUTATIONS } from './constant.js';
+import type {
+  ARRAY_MUTATIONS,
+  AsyncStatus as AsyncStatusType,
+  BATCH_MUTATIONS,
+  MAP_MUTATIONS,
+  OBJECT_MUTATIONS,
+  SET_MUTATIONS,
+} from './constant.js';
 import type { Linkables } from './enum.js';
 import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
 
@@ -854,14 +861,7 @@ export type StateBindingRef<T> = {
 export type BindingProp<T, O> = [O, BindingKeys<T, O>];
 export type BindingKeys<T, O> = WritableKeys<{ [K in keyof O]: O[K] extends T ? K : never }>;
 
-export const AsyncStatus = {
-  Idle: 'idle',
-  Error: 'error',
-  Success: 'success',
-  Pending: 'pending',
-} as const;
-
-export type AsyncStatus = Enum<typeof AsyncStatus>;
+export type AsyncStatus = Enum<typeof AsyncStatusType>;
 
 export type AsyncState<T, E extends Error = Error> = {
   data: T;

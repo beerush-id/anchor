@@ -1,6 +1,7 @@
 import { anchor } from './anchor.js';
+import { AsyncStatus } from './constant.js';
 import { mutable, writable } from './ref.js';
-import { type AsyncHandler, type AsyncOptions, type AsyncState, AsyncStatus, type Linkable } from './types.js';
+import type { AsyncHandler, AsyncOptions, AsyncState, Linkable } from './types.js';
 
 export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>
