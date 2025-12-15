@@ -223,8 +223,11 @@ describe('IRPCPackage', () => {
 
       const hello = irpc.declare<(name: string) => Promise<string>>({
         name: 'hello',
-        maxAge: 2,
+        maxAge: 1000,
       });
+
+      // Make sure invalidate unknown stub doesn't throw.
+      irpc.invalidate(() => {});
 
       const promise = hello('Hello World 1');
 
@@ -250,6 +253,27 @@ describe('IRPCPackage', () => {
       expect(dispatcher).toHaveBeenCalledTimes(2);
 
       Date.now = now;
+
+      // With invalidate
+      const promise4 = hello('Hello World 2');
+
+      vi.advanceTimersByTime(2);
+
+      expect(await promise4).toBe('Hello World 2');
+      expect(dispatcher).toHaveBeenCalledTimes(3);
+
+      irpc.invalidate(hello, 'Hello World 2');
+
+      vi.runAllTimers();
+
+      const promise5 = hello('Hello World 2');
+
+      vi.advanceTimersByTime(2);
+
+      expect(await promise5).toBe('Hello World 2');
+      expect(dispatcher).toHaveBeenCalledTimes(4);
+
+      irpc.invalidate(hello);
     });
 
     it('should handle call error without transport', async () => {

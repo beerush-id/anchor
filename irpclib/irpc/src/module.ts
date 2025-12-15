@@ -1,7 +1,7 @@
+import { IRPCCacher } from './cache.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCTransport } from './transport.js';
 import type {
-  IRPCCaches,
   IRPCData,
   IRPCHandler,
   IRPCInit,
@@ -34,6 +34,11 @@ export class IRPCPackage {
    * A weak map linking stub functions to their corresponding specifications
    */
   public stubs: IRPCStubStore = new WeakMap();
+
+  /**
+   * A map storing caches for each IRPC Entry
+   */
+  public cache = new WeakMap<IRPCHandler, IRPCCacher>();
 
   /**
    * Configuration object for the IRPC package
@@ -87,7 +92,7 @@ export class IRPCPackage {
     }
 
     const spec = { ...init } as IRPCSpec<IRPCInputs, IRPCOutput>;
-    const caches: IRPCCaches = new Map();
+    const caches = new IRPCCacher();
     const timeout = spec.timeout ?? this.config.timeout;
 
     const stub = (async (...args: IRPCData[]) => {
@@ -103,15 +108,12 @@ export class IRPCPackage {
         const key = JSON.stringify(args);
         const cache = caches.get(key);
 
-        if (cache && Date.now() < cache.expiresAt) {
-          return cache.data;
+        if (cache) {
+          return cache.value;
         }
 
         const data = await this.transport.call(spec, args, timeout);
-        const timestamp = Date.now();
-        const expiresAt = timestamp + spec.maxAge;
-
-        caches.set(key, { data, timestamp, expiresAt });
+        caches.set(key, data, spec.maxAge);
 
         return data;
       }
@@ -121,6 +123,7 @@ export class IRPCPackage {
 
     this.specs.set(init.name, spec);
     this.stubs.set(stub, spec);
+    this.cache.set(stub, caches);
 
     return stub as F;
   }
@@ -217,6 +220,23 @@ export class IRPCPackage {
 
     Object.assign(this.config, config);
     return this;
+  }
+
+  /**
+   * Invalidates the cache for a specific stub and arguments combination
+   * @param stub - The IRPC stub function whose cache needs to be invalidated
+   * @param args - The arguments array used as cache key
+   */
+  public invalidate(stub: IRPCHandler, ...args: IRPCData[]) {
+    const caches = this.cache.get(stub);
+
+    if (!caches) return;
+
+    if (args.length) {
+      caches.delete(JSON.stringify(args));
+    } else {
+      caches.clear();
+    }
   }
 }
 
