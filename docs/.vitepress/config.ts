@@ -107,6 +107,7 @@ export default defineConfig({
               { text: 'Mutable State', link: '/react/state/mutable' },
               { text: 'Immutable State', link: '/react/state/immutable' },
               { text: 'Derived State', link: '/react/state/derived' },
+              { text: 'Data Fetching', link: '/react/state/data-fetching' },
               { text: 'Advanced', link: '/react/state/advanced' },
             ],
           },
