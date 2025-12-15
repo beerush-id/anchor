@@ -1,4 +1,4 @@
-import type { IRPCCall } from '@irpclib/irpc';
+import { ERROR_CODE, ERROR_MESSAGE, type IRPCCall } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport } from '../src/index.js';
 
@@ -539,6 +539,169 @@ describe('HTTPTransport', () => {
 
       expect(call.reject).toHaveBeenCalledWith(new Error(undefined));
       expect(call.resolve).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('fetch', () => {
+    it('should not retry when maxRetries is 0 (default)', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+      });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(transport['fetch']('https://api.example.com/test')).rejects.toThrow('Network error');
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      mockFetch.mockRestore();
+    });
+
+    it('should retry and eventually succeed with linear backoff', async () => {
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        maxRetries: 3,
+        retryDelay: 100,
+        retryMode: 'linear',
+      });
+
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          statusText: 'OK',
+        } as any);
+
+      const fetchPromise = transport['fetch']('https://api.example.com/test');
+
+      // Advance timers to allow retries
+      await vi.advanceTimersToNextTimerAsync(); // First retry delay
+      await vi.advanceTimersToNextTimerAsync(); // Second retry delay
+
+      const result = await fetchPromise;
+
+      expect(result.ok).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+      mockFetch.mockRestore();
+    });
+
+    it('should retry and fail after max retries with linear backoff', async () => {
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        maxRetries: 2,
+        retryDelay: 100,
+        retryMode: 'linear',
+      });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
+
+      const fetchPromise = transport['fetch']('https://api.example.com/test');
+
+      // Advance timers to allow retries
+      await vi.advanceTimersToNextTimerAsync(); // First call
+      await vi.advanceTimersToNextTimerAsync(); // First retry delay
+      await vi.advanceTimersToNextTimerAsync(); // Second retry delay
+
+      const result = await fetchPromise;
+
+      expect(result.ok).toBe(false);
+      expect(result.statusText).toBe(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]);
+      expect(mockFetch).toHaveBeenCalledTimes(3); // Initial + 2 retries
+
+      vi.useRealTimers();
+      mockFetch.mockRestore();
+    });
+
+    it('should retry with exponential backoff', async () => {
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        maxRetries: 3,
+        retryDelay: 100,
+        retryMode: 'exponential',
+      });
+
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          statusText: 'OK',
+        } as any);
+
+      const fetchPromise = transport['fetch']('https://api.example.com/test');
+
+      // Advance timers for exponential delays (100ms, 200ms, 400ms)
+      await vi.advanceTimersToNextTimerAsync(); // First retry delay (100ms)
+      await vi.advanceTimersToNextTimerAsync(); // Second retry delay (200ms)
+
+      const result = await fetchPromise;
+
+      expect(result.ok).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+      mockFetch.mockRestore();
+    });
+
+    it('should not retry on successful response', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        maxRetries: 3,
+        retryDelay: 100,
+      });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        statusText: 'OK',
+      } as any);
+
+      const result = await transport['fetch']('https://api.example.com/test');
+
+      expect(result.ok).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      mockFetch.mockRestore();
+    });
+
+    it('should retry on non-ok response', async () => {
+      vi.useFakeTimers();
+
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        maxRetries: 2,
+        retryDelay: 50,
+      });
+
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce({ ok: false, statusText: 'Service Unavailable' } as any)
+        .mockResolvedValueOnce({ ok: false, statusText: 'Service Unavailable' } as any)
+        .mockResolvedValueOnce({ ok: true, statusText: 'OK' } as any);
+
+      const fetchPromise = transport['fetch']('https://api.example.com/test');
+
+      // Advance timers to allow retries
+      await vi.advanceTimersToNextTimerAsync(); // First retry delay
+      await vi.advanceTimersToNextTimerAsync(); // Second retry delay
+
+      const result = await fetchPromise;
+
+      expect(result.ok).toBe(true);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+      mockFetch.mockRestore();
     });
   });
 });
