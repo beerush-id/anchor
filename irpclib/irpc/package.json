@@ -10,9 +10,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -21,17 +19,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@types/bun": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "esbuild-raw-plugin": "catalog:",
-    "prettier": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "zod": "catalog:lib",
-    "@types/bun": "catalog:"
+    "zod": "catalog:lib"
   },
   "peerDependencies": {
     "typescript": "catalog:lib"
