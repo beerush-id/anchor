@@ -1,0 +1,18 @@
+{
+  "name": "irpc-bench",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "serve": "bun run src/servers",
+    "bench": "bun run src/benchmark.ts"
+  },
+  "dependencies": {
+    "@irpclib/irpc": "workspace:*",
+    "@irpclib/http": "workspace:*",
+    "hono": "^4.0.0",
+    "elysia": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
