@@ -7,7 +7,7 @@ import { renderSandbox } from 'vitepress-plugin-sandpack';
 const BASE_URL = '/docs';
 const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchorlib.dev/docs/';
 const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://anchorlib.dev';
-const PAGE_TITLE = 'Anchor Docs';
+const PAGE_TITLE = 'AIR Stack Docs';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
   'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
