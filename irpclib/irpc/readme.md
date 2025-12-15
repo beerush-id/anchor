@@ -45,6 +45,21 @@ const message = await hello('John');
 
 ## Quick Start
 
+### Create New Project
+
+```bash
+npx degit beerush/anchor/templates/irpc-bun-app my-api
+cd my-api
+bun install
+bun run serve
+```
+
+Server runs on `http://localhost:3000`
+
+---
+
+## Manual Setup
+
 ### Installation
 
 ```bash
