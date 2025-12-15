@@ -15,7 +15,7 @@
     "build:next": "bpkg run build -f apps/next --sequential",
     "build:react": "bpkg run build -f apps/react --sequential",
     "build": "bpkg run build -f packages/* --sequential",
-    "prepublish": "bpkg run prepublish -f packages/* --sequential",
+    "prepublish": "bpkg run prepublish -f packages/* irpclib/* --sequential",
     "format": "bpkg run format -f apps/* packages/* kits/* --sequential && git add --renormalize .",
     "lint": "bpkg run lint",
     "test": "rimraf apps/next/public/coverage && vitest --run",
@@ -49,12 +49,7 @@
   },
   "packageManager": "bun@1.3.2",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "kits/*",
-    "irpclib/*"
-  ],
+  "workspaces": ["apps/*", "packages/*", "kits/*", "irpclib/*"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
