@@ -101,7 +101,7 @@ export default defineConfig({
           { text: 'Getting Started', link: '/react/getting-started' },
           {
             text: 'State Management',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Overview', link: '/react/state/index.html' },
               { text: 'Mutable State', link: '/react/state/mutable' },
@@ -113,7 +113,7 @@ export default defineConfig({
           },
           {
             text: 'Component Architecture',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Overview', link: '/react/component/index.html' },
               { text: 'Component', link: '/react/component/setup' },
@@ -143,6 +143,24 @@ export default defineConfig({
           //     { text: 'API Reference', link: '/react-classic/api-reference' },
           //   ],
           // },
+        ],
+      },
+      {
+        text: 'IRPC',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/irpc/index.html' },
+          { text: 'Getting Started', link: '/irpc/getting-started' },
+          { text: 'Comparison', link: '/irpc/comparison' },
+          { text: 'Specification', link: '/irpc/specification' },
+          {
+            text: 'Transports',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/irpc/transports/index.html' },
+              { text: 'HTTP Transport', link: '/irpc/transports/http-transport' },
+            ],
+          },
         ],
       },
       {

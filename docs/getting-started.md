@@ -1,19 +1,24 @@
 ---
-title: "Getting Started with Anchor: A Beginner's Guide to State Management"
-description: 'Learn the basics of Anchor state management. This getting started guide walks you through creating your first state, observing changes, and working with immutability.'
+title: "Getting Started with Anchor: AIR Stack State Management"
+description: 'Learn the basics of Anchor, the state management component of the AIR Stack. This guide walks you through creating reactive state, immutability, and fine-grained reactivity.'
 keywords:
-  - anchor getting started
-  - anchor tutorial
-  - javascript state management tutorial
-  - react state management tutorial
-  - vue state management tutorial
-  - svelte state management tutorial
-  - anchor basics
+  - AIR Stack getting started
+  - Anchor getting started
+  - Anchor tutorial
+  - state management tutorial
+  - React state management
+  - Vue state management
+  - Svelte state management
+  - fine-grained reactivity
 ---
 
 # Getting Started with Anchor
 
-Welcome to Anchor! If you're looking to manage state in your web application with simplicity and power, you're in the right place. Anchor offers fine-grained reactivity and true immutability, making your state predictable and easy to work with. This guide will walk you through the essentials to get you up and running.
+Welcome to **Anchor**, the state management component of the **AIR Stack** (Anchor + IRPC + Reactive UI)!
+
+Anchor offers fine-grained reactivity and true immutability, making your state predictable and easy to work with. This guide will walk you through the essentials to get you up and running.
+
+> **Note:** This guide covers Anchor (state management). For IRPC (API framework), see [IRPC Getting Started](/irpc/getting-started).
 
 ## **Prerequisites**
 

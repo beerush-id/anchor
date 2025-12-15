@@ -1,27 +1,29 @@
 ---
-title: 'Anchor Installation Guide: How to Install for React, Vue, Svelte & JS'
-description: 'Learn how to install the Anchor state management library for your JavaScript, React, Vue, or Svelte project. Get started quickly with simple installation commands.'
+title: 'AIR Stack Installation Guide: Anchor State Management'
+description: 'Learn how to install Anchor, the state management component of the AIR Stack. Get started quickly with React, Vue, Svelte, Solid, or vanilla JavaScript.'
 keywords:
-  - anchor installation
+  - AIR Stack installation
+  - Anchor installation
   - install anchor
-  - anchor setup
-  - javascript state management installation
-  - react state management installation
-  - vue state management installation
-  - svelte state management installation
+  - state management installation
+  - React state management
+  - Vue state management
+  - Svelte state management
   - '@anchorlib/core'
 ---
 
-# How to Install Anchor
+# Installing Anchor
 
-Learn how to install and set up Anchor, the revolutionary state management library for modern web applications.
+Learn how to install **Anchor**, the state management component of the **AIR Stack** (Anchor + IRPC + Reactive UI).
+
+> **Note:** This guide covers Anchor installation. For IRPC (API framework), see [IRPC Getting Started](/irpc/getting-started).
 
 ## **Prerequisites**
 
 Before installing Anchor, ensure you have:
 
 - A modern web browser for development
-- A package manager like npm, yarn, or pnpm
+- A package manager like bun, npm, yarn, or pnpm
 
 ## **Installation Options**
 
@@ -32,6 +34,10 @@ Anchor provides multiple packages depending on your framework:
 Install the core package for framework-agnostic state management:
 
 ::: code-group
+
+```bash [Bun]
+bun add @anchorlib/core
+```
 
 ```bash [NPM]
 npm install @anchorlib/core
@@ -45,10 +51,6 @@ yarn add @anchorlib/core
 pnpm add @anchorlib/core
 ```
 
-```bash [Bun]
-bun add @anchorlib/core
-```
-
 :::
 
 ### **React Integration**
@@ -56,6 +58,10 @@ bun add @anchorlib/core
 For React applications, install the React-specific package:
 
 ::: code-group
+
+```bash [Bun]
+bun add @anchorlib/react
+```
 
 ```bash [NPM]
 npm install @anchorlib/react
@@ -69,10 +75,6 @@ yarn add @anchorlib/react
 pnpm add @anchorlib/react
 ```
 
-```bash [Bun]
-bun add @anchorlib/react
-```
-
 :::
 
 ### **SolidJS Integration**
@@ -80,6 +82,10 @@ bun add @anchorlib/react
 For SolidJS applications, install the SolidJS-specific package:
 
 ::: code-group
+
+```bash [Bun]
+bun add @anchorlib/solid
+```
 
 ```bash [NPM]
 npm install @anchorlib/solid
@@ -93,10 +99,6 @@ yarn add @anchorlib/solid
 pnpm add @anchorlib/solid
 ```
 
-```bash [Bun]
-bun add @anchorlib/solid
-```
-
 :::
 
 ### **Svelte Integration**
@@ -104,6 +106,10 @@ bun add @anchorlib/solid
 For Svelte applications, install the Svelte-specific package:
 
 ::: code-group
+
+```bash [Bun]
+bun add @anchorlib/svelte
+```
 
 ```bash [NPM]
 npm install @anchorlib/svelte
@@ -117,10 +123,6 @@ yarn add @anchorlib/svelte
 pnpm add @anchorlib/svelte
 ```
 
-```bash [Bun]
-bun add @anchorlib/svelte
-```
-
 :::
 
 ### **Vue Integration**
@@ -128,6 +130,10 @@ bun add @anchorlib/svelte
 For Vue applications, install the Vue-specific package:
 
 ::: code-group
+
+```bash [Bun]
+bun add @anchorlib/vue
+```
 
 ```bash [NPM]
 npm install @anchorlib/vue
@@ -139,10 +145,6 @@ yarn add @anchorlib/vue
 
 ```bash [PNPM]
 pnpm add @anchorlib/vue
-```
-
-```bash [Bun]
-bun add @anchorlib/vue
 ```
 
 :::

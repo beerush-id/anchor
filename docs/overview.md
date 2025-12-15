@@ -1,93 +1,197 @@
 ---
-title: 'Anchor State Management: A Technical Overview'
-description: 'Get a high-level overview of the Anchor state management library. Understand its core concepts like the DSV model, fine-grained reactivity, and true immutability.'
+title: 'AIR Stack: A Technical Overview'
+description: 'Get a high-level overview of the AIR Stack - Anchor (state management), IRPC (6.96x faster APIs), and Reactive UI (React, Solid, Svelte, Vue). The complete stack for modern web development.'
 keywords:
-  - anchor overview
-  - anchor state management
-  - javascript state management
-  - technical overview
-  - dsv model
+  - AIR Stack
+  - Anchor
+  - IRPC
+  - Reactive UI
+  - state management
+  - RPC framework
+  - API batching
   - fine-grained reactivity
-  - true immutability
-  - enterprise javascript
+  - type-safe APIs
+  - enterprise web development
 ---
 
-# A Technical Overview of Anchor State Management
+# AIR Stack: A Technical Overview
 
-State Management for Humans, Built for Enterprise Apps. Anchor values the AX (All eXperience) philosophy. Anchor not just makes apps work, but also efficient. Intuitive
-code makes developers happy, high performance makes users happy.
+**The Complete Stack for Modern Web Development**
+
+AIR Stack is a revolutionary approach to building web applications that eliminates complexity while delivering exceptional performance. It consists of three integrated components:
+
+- **A** = **Anchor** (Fine-grained state management)
+- **I** = **IRPC** (6.96x faster APIs with automatic batching)
+- **R** = **Reactive UI** (React, Solid, Svelte, Vue, vanilla JS)
 
 <div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
   <img src="/schemas/dsv-model.webp" alt="DSV (Data-State-View) Model Schema" />
 </div>
 
-## **Introduction**
+## **The Problem**
 
-Welcome to Anchor, a revolutionary state management framework for modern web applications. Anchor introduces the **DSV (
-Data-State-View) model**, a new architectural philosophy that redefines how you build reactive user interfaces. Our
-mission is to solve the complex challenges of state management by focusing on the **AX (All eXperience) philosophy**,
-which aims to empower developers with intuitive code and provide users with a blazing-fast, fluid experience.
+Modern web development forces you to juggle multiple concerns:
 
-::: tip Declarative Syntax
+### **State Management**
+- **Prop Drilling & Context Hell:** Sharing state becomes a tangled mess of props and providers
+- **Wasted Renders:** Traditional approaches trigger unnecessary re-renders across large parts of the app
+- **High Mental Overhead:** Managing immutability, data fetching, and storage distracts from business logic
 
-```tsx {14}
-import { setup, bind, writable } from '@anchorlib/react';
-import { editorApp, TOOL_ICON_SIZE } from '../lib/editor.js';
+### **API Development**
+- **Boilerplate Overload:** REST requires routes, serialization, client code, and type definitions for every endpoint
+- **Performance Bottlenecks:** Multiple API calls mean multiple HTTP connections, slowing down your app
+- **Type Safety Gaps:** Keeping client and server types in sync is manual and error-prone
 
-export const DisplayPanel = setup(() => {
-  const styleWriter = writable(editorApp.currentStyle, ['display']);
+### **Framework Lock-in**
+- **Vendor Lock-in:** State management solutions are often tied to a specific framework
+- **Migration Pain:** Switching frameworks means rewriting your entire state layer
 
-  return (
-    <ToggleGroup>
-      <Toggle value={bind(styleWriter, 'display')} target="block" className="toggle-btn">
-        <Square size={ TOOL_ICON_SIZE } />
-        <Tooltip>Block</Tooltip>
-      </Toggle>
+These issues create a divide between **Developer Experience (DX)** and **User Experience (UX)**. Apps might be easy to build initially, but they become slow and unmanageable at scale.
 
-      {/* Your IDE will warn you about this line because the `position` is not in contract. [!code error] */}
-      <Toggle value={bind(styleWriter, 'position')} target="grid" className="toggle-btn">
-        <LayoutGrid size={ TOOL_ICON_SIZE } />
-        <Tooltip>Grid</Tooltip>
-      </Toggle>
-    </ToggleGroup>
-  );
-}, 'DisplayPanel');
+## **The Solution: AIR Stack**
+
+AIR Stack solves these problems with three integrated components:
+
+### **1. Anchor: Fine-Grained State Management**
+
+Anchor introduces the **DSV (Data-State-View) model**, replacing scattered data flows with a single, stable, immutable State that acts as the source of truth.
+
+**Key Features:**
+- **Fine-Grained Reactivity:** Only components that depend on changed state re-render
+- **True Immutability:** Direct mutation syntax with proxy-based write contracts
+- **Framework Agnostic:** Works with React, Solid, Svelte, Vue, and vanilla JS
+- **Built-in Toolkit:** Optimistic UI, history tracking, reactive storage, and data fetching
+
+**Example:**
+```typescript
+import { mutable, effect } from '@anchorlib/core';
+
+const user = mutable({ name: 'John', age: 30 });
+
+// Only this effect re-runs when age changes
+effect(() => {
+  console.log('Age changed:', user.age);
+});
+
+user.age++; // Triggers effect
+user.name = 'Jane'; // Does NOT trigger effect
 ```
 
-<img src="/images/contract-violation.webp" alt="Write Contract Violation" />
+### **2. IRPC: 6.96x Faster APIs**
 
-:::
+IRPC (Isomorphic Remote Procedure Call) eliminates API boilerplate by making remote functions look and feel like local functions.
 
-## **Background Problem**
+**Key Features:**
+- **6.96x Faster:** Automatic batching reduces HTTP requests by 10x
+- **Type-Safe:** End-to-end TypeScript with zero manual type definitions
+- **Zero Boilerplate:** No routes, no endpoints, no client code
+- **Auto-Versioning:** Synced with package.json for semantic versioning
 
-In many traditional frameworks and libraries, state management often leads to a series of escalating problems:
+**Example:**
+```typescript
+// Declare once
+const hello = irpc.declare<(name: string) => Promise<string>>({
+  name: 'hello'
+});
 
-- **Prop Drilling & Context Hell:** As applications grow, sharing state across components becomes a messy tangle of
-  props and providers, making code hard to reason about and maintain.
-- **Wasted Renders:** The classic "copy-on-mutation" approach often triggers unnecessary re-renders across large parts
-  of the application, leading to performance degradation and a choppy user experience.
-- **High Mental Overhead:** Developers are forced to manage boilerplate code for immutability, data fetching, and
-  storage, which distracts from building core business logic.
+// Implement on server
+irpc.construct(hello, async (name) => `Hello ${name}`);
 
-These issues create a significant divide between **Developer Experience (DX)** and **User Experience (UX)**. An
-application might be easy to build initially, but it often becomes slow and unmanageable at scale.
+// Call from client
+const message = await hello('John'); // "Hello John"
+```
 
-## **Solutions**
+**Performance:**
+- **100,000 users, 10 calls each (1M total calls)**
+- IRPC: 3,617ms (100,000 HTTP requests)
+- REST: 25,180ms (1,000,000 HTTP requests)
+- **Result: 6.96x faster**
 
-Anchor solves these problems by providing a new, integrated approach to application architecture: the DSV model.
+### **3. Reactive UI: Universal Framework Support**
 
-1. **DSV (Data-State-View):** We replace the scattered "Data-UI" flow with a single, stable, immutable **State** that
-   acts as the source of truth for your entire application. Components simply read from this state, and Anchor handles
-   the rest. This creates a clean, predictable, and scalable architecture.
-2. **Fine-Grained Reactivity:** At its core, Anchor tracks dependencies at a granular level. When a piece of state
-   changes, only the exact components that depend on that specific piece of state are re-rendered. This eliminates
-   wasted renders and is the secret to Anchor's superior performance.
-3. **True Immutability:** Anchor allows you to use a powerful "direct mutation" syntax within controlled "write
-   contracts". This gives you the safety of immutability without the performance overhead of deep cloning objects and
-   arrays.
-4. **Integrated Built-ins:** Anchor is not just a state manager. It's a complete toolkit that includes powerful
-   built-ins for:
-   - **Optimistic UI:** Instant UI updates that feel blazing-fast to the user.
-   - **History:** Out-of-the-box undo/redo functionality.
-   - **Reactive Storage:** Seamless two-way binding with `localStorage` and `IndexedDB`.
-   - **Reactive Requests:** Simple, reactive handling of `fetch` and real-time streams.
+AIR Stack works seamlessly with any reactive UI framework, providing a consistent state management and API layer regardless of your view technology.
+
+**Supported Frameworks:**
+- React
+- Solid
+- Svelte
+- Vue
+- Vanilla JavaScript/TypeScript
+
+**Example (React):**
+```tsx
+import { setup, snippet, mutable } from '@anchorlib/react';
+import { getUser } from './api'; // IRPC function
+
+const UserProfile = setup<{ id: string }>((props) => {
+  const user = mutable({ name: '', email: '' });
+
+  // Fetch user data
+  getUser(props.id).then(data => Object.assign(user, data));
+
+  // Only this part re-renders when user changes
+  const UserInfo = snippet(() => (
+    <>
+      <h1>{user.name}</h1>
+      <p>{user.email}</p>
+    </>
+  ));
+
+  return (
+    <div className="profile">
+      <header>User Profile</header>
+      <UserInfo />
+      <footer>Last updated: {new Date().toLocaleDateString()}</footer>
+    </div>
+  );
+});
+```
+
+## **The Benefits**
+
+### **For Developers**
+- **Less Code:** Eliminate boilerplate for routes, types, and state management
+- **Better DX:** Type-safe, auto-complete, refactor-safe
+- **Faster Development:** Build features in minutes, not hours
+
+### **For Users**
+- **Faster Apps:** 6.96x faster APIs, fine-grained reactivity
+- **Better UX:** Instant updates, optimistic UI, smooth interactions
+
+### **For Companies**
+- **Lower Costs:** 10x fewer HTTP connections = 10x cheaper infrastructure
+- **Higher Margins:** Same performance with 1/10th the servers
+- **Faster Time-to-Market:** Ship features faster with less code
+
+## **Architecture Overview**
+
+### **DSV (Data-State-View) Model**
+
+Anchor's DSV model creates a clean separation of concerns:
+
+1. **Data:** External sources (APIs via IRPC, databases, user input)
+2. **State:** Central immutable state managed by Anchor
+3. **View:** Components that observe and render state
+
+This architecture eliminates prop drilling, context hell, and state synchronization issues while providing predictable, scalable state management.
+
+### **IRPC Protocol**
+
+IRPC's automatic batching protocol:
+
+1. **Client:** Multiple function calls made simultaneously
+2. **Transport:** Calls batched into a single HTTP request
+3. **Server:** Requests processed in parallel
+4. **Response:** Results streamed back as they complete
+5. **Client:** Promises resolve individually
+
+This reduces network overhead by 10x and delivers 6.96x faster performance.
+
+## **Next Steps**
+
+- [Anchor Getting Started](/getting-started) - Set up state management
+- [IRPC Overview](/irpc/index.html) - Build type-safe APIs
+- [React Guide](/react/getting-started) - Framework-specific integration
+- [IRPC Specification](/irpc/specification) - Protocol details
+
+**AIR Stack: Build faster, ship cheaper, scale effortlessly.** 🚀
