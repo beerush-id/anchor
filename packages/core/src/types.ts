@@ -864,12 +864,12 @@ export const AsyncStatus = {
 export type AsyncStatus = Enum<typeof AsyncStatus>;
 
 export type AsyncState<T, E extends Error = Error> = {
-  readonly data: T;
-  readonly status: AsyncStatus;
-  readonly promise: Promise<T | undefined>;
-  readonly start: (init?: T) => Promise<T | undefined>;
-  readonly abort: (error?: E) => void;
-  readonly error?: E;
+  data: T;
+  status: AsyncStatus;
+  promise: Promise<T | undefined>;
+  start: (init?: T) => Promise<T | undefined>;
+  abort: (error?: E) => void;
+  error?: E;
 };
 export type AsyncOptions = StateOptions & {
   deferred?: boolean;

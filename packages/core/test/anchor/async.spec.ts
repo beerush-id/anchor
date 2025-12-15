@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { asyncState, AsyncStatus, cancelable } from '../../src/index.js';
+import { AsyncStatus, cancelable, query } from '../../src/index.js';
 
 describe('Anchor Core - Async', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -14,7 +14,7 @@ describe('Anchor Core - Async', () => {
 
   describe('asyncState', () => {
     it('should create async state without initial value', async () => {
-      const state = asyncState(async () => ({ value: 1 }));
+      const state = query(async () => ({ value: 1 }));
 
       expect(state.data).toBeUndefined();
       expect(state.status).toBe(AsyncStatus.Pending);
@@ -27,7 +27,7 @@ describe('Anchor Core - Async', () => {
     });
 
     it('should create async state with initial value', async () => {
-      const state = asyncState(async () => ({ value: 1 }), { value: 0 });
+      const state = query(async () => ({ value: 1 }), { value: 0 });
       expect(state.data).toEqual({ value: 0 });
 
       await state.promise;
@@ -38,7 +38,7 @@ describe('Anchor Core - Async', () => {
 
     it('should start async operation automatically', async () => {
       const handler = vi.fn().mockResolvedValue({ value: 42 });
-      const state = asyncState(handler);
+      const state = query(handler);
 
       // Wait for the initial async operation to complete
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -50,7 +50,7 @@ describe('Anchor Core - Async', () => {
 
     it('should handle deferred async operation', async () => {
       const handler = vi.fn().mockResolvedValue({ value: 42 });
-      const state = asyncState(handler, { value: 0 }, { deferred: true });
+      const state = query(handler, { value: 0 }, { deferred: true });
 
       await state.promise; // A no-op since the state is idle.
 
@@ -68,7 +68,7 @@ describe('Anchor Core - Async', () => {
     it('should handle async operation error', async () => {
       const error = new Error('Test error');
       const handler = vi.fn().mockRejectedValue(error);
-      const state = asyncState(handler, { value: 0 }, { deferred: true });
+      const state = query(handler, { value: 0 }, { deferred: true });
 
       await state.start();
 
@@ -90,7 +90,7 @@ describe('Anchor Core - Async', () => {
         });
       });
 
-      const state = asyncState(handler, { value: 0 }, { deferred: true });
+      const state = query(handler, { value: 0 }, { deferred: true });
       const promise = state.start();
 
       state.abort(new Error('Aborted'));
@@ -109,7 +109,7 @@ describe('Anchor Core - Async', () => {
         return new Promise((resolve) => setTimeout(() => resolve({ value: 42 })));
       });
 
-      const state = asyncState(handler, { value: 0 }, { deferred: true });
+      const state = query(handler, { value: 0 }, { deferred: true });
       const promise1 = state.start();
       const promise2 = state.start();
 
@@ -122,7 +122,7 @@ describe('Anchor Core - Async', () => {
 
     it('should update data with new initial value', async () => {
       const handler = vi.fn().mockImplementation((signal, init) => Promise.resolve(init));
-      const state = asyncState(handler, { value: 0 }, { deferred: true });
+      const state = query(handler, { value: 0 }, { deferred: true });
 
       const promise = state.start({ value: 10 });
       expect(state.data).toEqual({ value: 10 });

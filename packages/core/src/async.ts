@@ -2,10 +2,10 @@ import { anchor } from './anchor.js';
 import { mutable, writable } from './ref.js';
 import { type AsyncHandler, type AsyncOptions, type AsyncState, AsyncStatus, type Linkable } from './types.js';
 
-export function asyncState<T extends Linkable, E extends Error = Error>(
+export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>
 ): AsyncState<T, E> & { data?: T };
-export function asyncState<T extends Linkable, E extends Error = Error>(
+export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>,
   init: T,
   options?: AsyncOptions
@@ -33,11 +33,11 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
  *   - abort: Function to cancel the ongoing async operation
  *   - error: The error object if the operation failed
  */
-export function asyncState<T extends Linkable, E extends Error = Error>(
+export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>,
   init?: T,
   options?: AsyncOptions
-): AsyncState<T, E> {
+): Readonly<AsyncState<T, E>> {
   let controller: AbortController | undefined;
   let abortError: E | undefined;
   let activePromise: Promise<T | undefined> | undefined;
@@ -89,7 +89,7 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
         return activePromise ?? Promise.resolve(undefined);
       },
     },
-    { immutable: true }
+    { immutable: true, recursive: false }
   );
   const writer = writable(state);
 
@@ -99,6 +99,11 @@ export function asyncState<T extends Linkable, E extends Error = Error>(
 
   return state as AsyncState<T, E>;
 }
+
+/**
+ * @deprecated Use "query()" instead.
+ */
+export const asyncState = query;
 
 /**
  * Creates a cancelable promise from a synchronous function.
