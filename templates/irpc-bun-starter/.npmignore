@@ -1,0 +1,19 @@
+# Source code (keep only dist/)
+src
+
+# Development files
+tsconfig.json
+tsdown.config.ts
+.env
+.env.example
+
+# Build tools
+node_modules
+
+# Editor
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db

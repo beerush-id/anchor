@@ -1,0 +1,42 @@
+{
+  "type": "module",
+  "name": "hello-irpc",
+  "version": "1.0.0",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./*": "./dist/rpc/*",
+    "./lib/*": "./dist/lib/*"
+  },
+  "files": ["dist"],
+  "directories": {
+    "dist": "./dist"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@irpclib/irpc": "workspace:*",
+    "@irpclib/http": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:",
+    "publint": "catalog:",
+    "rimraf": "catalog:",
+    "tsdown": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:lib"
+  },
+  "scripts": {
+    "dev": "tsdown --watch",
+    "build": "tsdown",
+    "serve": "bun ./src",
+    "prepublish": "tsdown && publint"
+  },
+  "license": "MIT"
+}

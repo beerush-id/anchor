@@ -1,0 +1,23 @@
+# Docker
+.dockerignore
+
+# Development
+node_modules
+.env
+.env.local
+
+# Build output
+dist
+coverage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea
+.vscode
+
+# Git
+.git
+.gitignore
