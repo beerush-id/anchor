@@ -1,172 +1,179 @@
-# IRPC - Isomorphic Remote Procedure Call
+# @irpclib/irpc
 
-IRPC (Isomorphic Remote Procedure Call) is a revolutionary approach to distributed computing that eliminates the cognitive overhead of network communication. It enables developers to invoke remote functions with the same ergonomics as local function calls, abstracting away the transport layer entirely.
+**Isomorphic Remote Procedure Call** - Call remote functions like local functions.
 
-Unlike traditional approaches like REST APIs, GraphQL, or gRPC, IRPC removes the need to think about endpoints, serialization, or transport protocols. You focus on business logic while IRPC handles the communication complexity transparently.
+```typescript
+// Instead of this:
+const response = await fetch('/api/hello');
+const data = await response.json();
 
-## Learn More
+// Just do this:
+const message = await hello('John');
+```
 
-For detailed documentation, visit [https://irpc.anchorlib.dev](https://irpc.anchorlib.dev)
+---
+
+## Why IRPC?
+
+**Beside the simplicity**, this is what you get:
+
+### Benchmark Results
+**Scenario:** 100,000 users, 10 calls each (1,000,000 total calls)
+
+| Framework | Total Time | HTTP Requests | Speedup |
+|-----------|------------|---------------|---------|
+| **IRPC** | **3,617ms** | **100,000** | **6.96x** 🚀 |
+| Bun Native | 25,180ms | 1,000,000 | 1.00x |
+| Hono | 18,004ms | 1,000,000 | 1.40x |
+| Elysia | 36,993ms | 1,000,000 | 0.68x |
+
+**IRPC handled 1 million API calls in 3.6 seconds with 10x fewer HTTP connections.**
+
+---
+
+## Features
+
+- ✅ **6.96x faster** than traditional REST
+- ✅ **10x fewer HTTP connections** (automatic batching)
+- ✅ **Type-safe** (end-to-end TypeScript)
+- ✅ **Zero boilerplate** (no routes, no endpoints)
+- ✅ **Transport agnostic** (HTTP, WebSocket, etc.)
+- ✅ **Built-in caching** (configurable per-call)
+- ✅ **Retry & timeout** (automatic error handling)
+
+---
 
 ## Quick Start
 
-### Create a Package and Transport
+### Installation
 
-```ts
+```bash
+npm install @irpclib/irpc @irpclib/http
+```
+
+### 1. Create Package
+
+```typescript
+// lib/module.ts
 import { createPackage } from '@irpclib/irpc';
-
-export const irpc = createPackage({ name: 'my-irpc', version: '1.0.0' });
-export const transport = new HTTPTransport({
-  baseURL: 'http://localhost:3000',
-  endpoint: irpc.href
-});
-
-irpc.use(transport);
-```
-
-### Define Functions
-
-```ts
-import { irpc } from './my-irpc';
-
-export const greet = irpc.declare<(name: string) => Promise<string>>({
-  name: 'greet'
-});
-```
-
-### Implement Handlers (Server-side)
-
-```ts
-import { irpc } from './my-irpc';
-
-irpc.construct(greet, async (name) => {
-  return `Hello, ${name}!`;
-});
-```
-
-### Server Setup
-
-```ts
-import { setContextProvider } from '@irpclib/irpc';
-import { AsyncLocalStorage } from 'async_hooks';
-import { HTTPRouter } from '@irpclib/http';
-import { irpc, transport } from './my-irpc';
-
-setContextProvider(new AsyncLocalStorage());
-
-const router = new HTTPRouter(irpc, transport);
-
-Bun.serve({
-  routes: {
-    [transport.endpoint]: {
-      GET: () => new Response('OK'),
-      POST: (req) => router.resolve(req),
-    }
-  },
-});
-```
-
-### Client Usage
-
-```ts
-import { greet } from './my-irpc';
-
-const message = await greet('World');
-console.log(message); // "Hello, World!"
-```
-
-## Key Features
-
-- **Isomorphic Design**: Call functions identically on client and server
-- **Zero Boilerplate**: No REST endpoints, no GraphQL schemas, no complex serialization
-- **Transport Agnostic**: Switch between HTTP, WebSockets, and other transports without changing your business logic
-- **End-to-End Type Safety**: Compile-time validation from client to server
-- **Performance Optimized**: Intelligent batching and connection reuse
-
-## Core Components
-
-### Package
-
-A package is a container for your IRPC functions. It manages the registry of functions and their implementations.
-
-```ts
-const irpc = createPackage({ name: 'fs', version: '1.0.0' });
-```
-
-### Function Declaration
-
-Functions are the core building blocks of IRPC. They define the interface for remote calls and can be implemented on the server side.
-
-```ts
-export const readFile = irpc.declare<(path: string) => Promise<string>>({
-  name: 'readFile',
-});
-```
-
-### Transport
-
-Transports handle the actual communication between client and server. IRPC is transport-agnostic, allowing you to switch between different communication protocols.
-
-```ts
 import { HTTPTransport } from '@irpclib/http';
 
+export const irpc = createPackage({ 
+  name: 'my-api', 
+  version: '1.0.0' 
+});
+
 export const transport = new HTTPTransport({
-  baseURL: 'http://localhost:3000',
-  endpoint: '/irpc',
-  timeout: 1000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  endpoint: `/irpc/${irpc.href}`,
 });
 
 irpc.use(transport);
 ```
 
-The transport is registered with the IRPC package using the **use** method.
+### 2. Declare Functions
 
-## Usage
+```typescript
+// rpc/hello/index.ts
+import { irpc } from '../lib/module.js';
 
-### Client
+export type HelloFn = (name: string) => Promise<string>;
 
-On the client side, you simply import and call your functions as if they were local:
-
-```ts
-import { readFile } from './fs';
-
-console.log(await readFile('/path/to/file'));
-```
-
-#### Remote Handler
-
-Handlers are the actual implementations of your remote functions:
-
-```ts
-irpc.construct(readFile, async (path) => {
-  // Implementation goes here
+export const hello = irpc.declare<HelloFn>({
+  name: 'hello'
 });
 ```
 
-### Server
+### 3. Implement Handlers (Server)
 
-On the server side, you implement communication logic using the router:
+```typescript
+// rpc/hello/constructor.ts
+import { irpc } from '../lib/module.js';
+import { hello } from './index.js';
 
-```ts
+irpc.construct(hello, async (name) => {
+  return `Hello ${name}`;
+});
+```
+
+### 4. Setup Server
+
+```typescript
+// server.ts
 import { setContextProvider } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HTTPRouter } from '@irpclib/http';
+import { irpc, transport } from './lib/module.js';
+import './rpc/hello/constructor.js'; // Import handlers
 
 setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
 
 Bun.serve({
+  port: 3000,
   routes: {
     [transport.endpoint]: {
-      GET: () => {
-        return new Response('Ok!');
-      },
       POST: (req) => router.resolve(req),
     }
   },
 });
 ```
+
+### 5. Use on Client
+
+```typescript
+import { hello } from './rpc/hello/index.js';
+
+const message = await hello('John');
+console.log(message); // "Hello John"
+```
+
+---
+
+## Advanced Features
+
+### Caching
+
+```typescript
+export const getUser = irpc.declare<GetUserFn>({
+  name: 'getUser',
+  maxAge: 60000, // Cache for 60 seconds
+});
+```
+
+### Timeout
+
+```typescript
+export const slowQuery = irpc.declare<SlowQueryFn>({
+  name: 'slowQuery',
+  timeout: 30000, // 30 second timeout
+});
+```
+
+### Validation (Optional Zod)
+
+```typescript
+import { z } from 'zod';
+
+export const createUser = irpc.declare({
+  name: 'createUser',
+  input: [z.object({
+    name: z.string(),
+    email: z.string().email(),
+  })],
+  output: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+});
+```
+
+---
+
+## Documentation
+
+For detailed documentation, visit [https://anchorlib.dev/docs/irpc](https://anchorlib.dev/docs/irpc)
+
+## License
+
+MIT
