@@ -16,7 +16,7 @@ import type {
 } from './types.js';
 
 const DEFAULT_TIMEOUT = 20000;
-const NAME_CONSTRAINT = /^[a-zA-Z0-9_]+$/;
+const NAME_CONSTRAINT = /^[a-zA-Z0-9\-_]+$/;
 const VERSION_CONSTRAINT = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
 /**

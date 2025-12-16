@@ -20,17 +20,17 @@
     "access": "public"
   },
   "dependencies": {
-    "@irpclib/irpc": "workspace:*",
-    "@irpclib/http": "workspace:*"
+    "@irpclib/irpc": "^1.0.0-beta.17",
+    "@irpclib/http": "^1.0.0-beta.17"
   },
   "devDependencies": {
-    "@types/bun": "catalog:",
-    "publint": "catalog:",
-    "rimraf": "catalog:",
-    "tsdown": "catalog:"
+    "@types/bun": "^1.3.1",
+    "publint": "^0.3.15",
+    "rimraf": "^6.0.1",
+    "tsdown": "^0.15.9"
   },
   "peerDependencies": {
-    "typescript": "catalog:lib"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "dev": "tsdown --watch",
