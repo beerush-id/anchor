@@ -549,10 +549,12 @@ app.get('/api/users', async (req, res) => {
 
 // ... 7 more route handlers
 
-// ❌ Client needs to know all endpoints
-const sales = await fetch('/api/sales?range=today').then(r => r.json());
-const revenue = await fetch('/api/revenue?range=today').then(r => r.json());
-// ... 8 more fetches
+// ❌ Client needs to know all endpoints (even with concurrent fetches)
+const [sales, revenue /* ... 8 more */] = await Promise.all([
+  fetch('/api/sales?range=today').then(r => r.json()),
+  fetch('/api/revenue?range=today').then(r => r.json()),
+  // ... 8 more fetches = 10 HTTP requests total
+]);
 ```
 
 **Problems:**
@@ -574,10 +576,14 @@ irpc.construct(getWidgetData, async (widgetId, filters) => {
   return data;
 });
 
-// ✅ Client just calls the function
-const sales = await getWidgetData('sales', { dateRange: 'today' });
-const revenue = await getWidgetData('revenue', { dateRange: 'today' });
-// ... 8 more calls (all batched into 1 HTTP request!)
+// ✅ Client just calls the function (concurrent calls get batched)
+const [sales, revenue, users /* ... 7 more */] = await Promise.all([
+  getWidgetData('sales', { dateRange: 'today' }),
+  getWidgetData('revenue', { dateRange: 'today' }),
+  getWidgetData('users', { dateRange: 'today' }),
+  // ... 7 more calls
+]);
+// All 10 calls batched into 1 HTTP request!
 ```
 
 **Benefits:**
@@ -703,9 +709,11 @@ function DashboardProvider({ children }) {
       setSalesLoading(true);
       // ... set loading for all widgets
       
-      const sales = await fetch(`/api/sales?range=${dateRange}`).then(r => r.json());
-      const revenue = await fetch(`/api/revenue?range=${dateRange}`).then(r => r.json());
-      // ... 8 more fetches
+      const [sales, revenue /* ... 8 more */] = await Promise.all([
+        fetch(`/api/sales?range=${dateRange}`).then(r => r.json()),
+        fetch(`/api/revenue?range=${dateRange}`).then(r => r.json()),
+        // ... 8 more fetches = 10 HTTP requests
+      ]);
       
       setSalesData(sales);
       setSalesLoading(false);
@@ -947,10 +955,6 @@ export const DashboardWithErrors = {
 | **Storybook** | Complex | **Trivial** |
 | **Dev Mode** | Proxy/mock server | **Just construct** |
 | **Test Scenarios** | Multiple handlers | **One function** |
-
-
-
-
 
 ## **Next Steps**
 
