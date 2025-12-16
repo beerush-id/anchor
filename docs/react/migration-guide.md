@@ -186,7 +186,7 @@ If your Anchor state is independent, wrap it in `useState` to preserve it:
 import { useState } from 'react';
 import { mutable, snippet } from '@anchorlib/react';
 
-const Counter = setup(() => {
+const Counter = () => {
   // React state
   const [count, setCount] = useState(0);
   
