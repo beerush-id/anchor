@@ -164,6 +164,11 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Examples',
+        collapsed: true,
+        items: [{ text: 'Analytics Dashboard', link: '/examples/dashboard' }],
+      },
+      {
         text: 'Anchor for Solid',
         collapsed: true,
         items: [
