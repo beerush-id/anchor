@@ -807,6 +807,149 @@ export const Dashboard = setup(() => {
 | **Polling** | Built-in | Built-in | Manual | **Built-in** |
 | **Client-Server Coupling** | High (URLs) | High (URLs) | High (URLs) | **None** |
 
+## **Testing & Mocking**
+
+One of IRPC's most underrated features: **trivial mocking**.
+
+### **Traditional REST API Mocking**
+
+```typescript
+// ❌ Complex setup with MSW
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer(
+  rest.get('/api/sales', (req, res, ctx) => {
+    return res(ctx.json({ value: 1000, change: 5, timestamp: Date.now() }));
+  }),
+  rest.get('/api/revenue', (req, res, ctx) => {
+    return res(ctx.json({ value: 5000, change: 10, timestamp: Date.now() }));
+  }),
+  // ... 8 more mock handlers
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+test('dashboard loads widgets', async () => {
+  render(<Dashboard />);
+  // Test with mocked API
+});
+```
+
+**Problems:**
+- ❌ Need MSW or similar library
+- ❌ 10 separate mock handlers
+- ❌ Server setup/teardown boilerplate
+- ❌ URL matching logic
+- ❌ Complex for different test scenarios
+
+### **IRPC Mocking**
+
+```typescript
+// ✅ Just construct the function!
+import { irpc } from './module';
+import { getWidgetData } from './api/widgets';
+
+// Mock in test file
+irpc.construct(getWidgetData, async (widgetId, filters) => {
+  const mockData = {
+    sales: { value: 1000, change: 5, timestamp: Date.now() },
+    revenue: { value: 5000, change: 10, timestamp: Date.now() },
+    users: { value: 250, change: -2, timestamp: Date.now() },
+    // ... more mock data
+  };
+  return mockData[widgetId];
+});
+
+test('dashboard loads widgets', async () => {
+  render(<Dashboard />);
+  // Test runs with mocked IRPC function
+});
+```
+
+**Benefits:**
+- ✅ **No mocking library** needed
+- ✅ **One mock** handles all widgets
+- ✅ **Type-safe** (TypeScript validates mock data)
+- ✅ **Same code** in dev and test
+- ✅ **Easy scenario testing** (just change the mock)
+
+### **Development Mode**
+
+```typescript
+// ✅ Mock in dev, real in prod
+if (import.meta.env.DEV) {
+  irpc.construct(getWidgetData, async (widgetId, filters) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      value: Math.floor(Math.random() * 10000),
+      change: Math.floor(Math.random() * 100) - 50,
+      timestamp: Date.now(),
+    };
+  });
+}
+```
+
+**Use cases:**
+- ✅ Develop frontend without backend running
+- ✅ Storybook stories with mock data
+- ✅ Unit tests
+- ✅ Integration tests
+- ✅ E2E tests with controlled data
+- ✅ Demo mode for presentations
+
+### **Storybook Example**
+
+```typescript
+// ✅ Perfect for component stories
+export const DashboardStory = {
+  decorators: [
+    (Story) => {
+      // Mock IRPC for this story
+      irpc.construct(getWidgetData, async (widgetId) => ({
+        value: 1000,
+        change: 5,
+        timestamp: Date.now(),
+      }));
+      
+      return <Story />;
+    },
+  ],
+  render: () => <Dashboard />,
+};
+
+export const DashboardWithErrors = {
+  decorators: [
+    (Story) => {
+      // Mock error scenario
+      irpc.construct(getWidgetData, async () => {
+        throw new Error('API Error');
+      });
+      
+      return <Story />;
+    },
+  ],
+  render: () => <Dashboard />,
+};
+```
+
+**Comparison:**
+
+| Aspect | REST + MSW | **IRPC** |
+|--------|------------|----------|
+| **Setup** | Server + handlers | **Just construct** |
+| **Mock Count** | 10 handlers | **1 function** |
+| **Type Safety** | Manual | **Automatic** |
+| **Storybook** | Complex | **Trivial** |
+| **Dev Mode** | Proxy/mock server | **Just construct** |
+| **Test Scenarios** | Multiple handlers | **One function** |
+
+
+
 
 
 ## **Next Steps**
