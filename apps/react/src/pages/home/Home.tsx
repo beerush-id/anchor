@@ -11,6 +11,7 @@ import { persistent } from '@anchorlib/storage';
 import { Bell, CircleUser } from '@icons/index.js';
 import type { ChangeEventHandler } from 'react';
 import { Badges } from './Badges.js';
+import { Buttons } from './Buttons.js';
 import { Checkboxes } from './Checkboxes.js';
 import { TextInputs } from './Inputs.js';
 import { Radios } from './Radios.js';
@@ -72,7 +73,7 @@ export default function Home() {
         <h2 className="text-xl font-semibold mb-2">Accordions</h2>
         <div className="flex flex-wrap gap-2 items-center">
           <AccordionGroup>
-            <Accordion>
+            <Accordion name="1" expanded>
               <AccordionTrigger>
                 <span>Product Information</span>
               </AccordionTrigger>
@@ -87,7 +88,7 @@ export default function Home() {
                 </p>
               </AccordionContent>
             </Accordion>
-            <Accordion>
+            <Accordion name="2">
               <AccordionTrigger>
                 <span>Shipping Details</span>
               </AccordionTrigger>
@@ -102,7 +103,7 @@ export default function Home() {
                 </p>
               </AccordionContent>
             </Accordion>
-            <Accordion>
+            <Accordion name="3">
               <AccordionTrigger>
                 <span>Return Policy</span>
               </AccordionTrigger>
@@ -124,94 +125,7 @@ export default function Home() {
       {/* Buttons */}
       <div className="mb-8 flex flex-col gap-2">
         <h2 className="text-xl font-semibold mb-2">Buttons</h2>
-        <div className="flex flex-wrap gap-2 items-center">
-          <button type={'button'} className="ark-button">
-            Normal
-          </button>
-          <button type={'button'} className="ark-button ark-primary-button">
-            Primary
-          </button>
-          <button type={'button'} className="ark-button ark-destructive-button">
-            Destructive
-          </button>
-          <button type={'button'} className="ark-button ark-outline-button">
-            Outline
-          </button>
-          <button type={'button'} className="ark-button ark-ghost-button">
-            Ghost
-          </button>
-          <button type={'button'} className="ark-button ark-link-button">
-            Link
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <button type={'button'} className="ark-button" disabled>
-            Normal
-          </button>
-          <button type={'button'} className="ark-button ark-primary-button" disabled>
-            Primary
-          </button>
-          <button type={'button'} className="ark-button ark-destructive-button" disabled>
-            Destructive
-          </button>
-          <button type={'button'} className="ark-button ark-outline-button" disabled>
-            Outline
-          </button>
-          <button type={'button'} className="ark-button ark-ghost-button" disabled>
-            Ghost
-          </button>
-          <button type={'button'} className="ark-button ark-link-button" disabled>
-            Link
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center mt-4">
-          <button type={'button'} className="ark-button ark-primary-button ark-sm-button">
-            <CircleUser />
-            <span>Small</span>
-          </button>
-          <button type={'button'} className="ark-button ark-primary-button">
-            <CircleUser />
-            <span>Default</span>
-          </button>
-          <button type={'button'} className="ark-button ark-primary-button ark-md-button">
-            <CircleUser />
-            <span>Medium</span>
-          </button>
-          <button type={'button'} className="ark-button ark-primary-button ark-lg-button">
-            <CircleUser />
-            <span>Large</span>
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center mt-4">
-          <button type={'button'} className="ark-icon-button ark-sm-button">
-            <CircleUser />
-          </button>
-          <button type={'button'} className="ark-icon-button">
-            <CircleUser />
-          </button>
-          <button type={'button'} className="ark-icon-button ark-md-button">
-            <CircleUser />
-          </button>
-          <button type={'button'} className="ark-icon-button ark-lg-button">
-            <CircleUser />
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center mt-4">
-          <div className="ark-button-group">
-            <button type={'button'} className="ark-tool-button">
-              <CircleUser />
-            </button>
-            <button type={'button'} className="ark-tool-button ark-active">
-              <CircleUser />
-            </button>
-            <button type={'button'} className="ark-tool-button">
-              <CircleUser />
-            </button>
-            <button type={'button'} className="ark-tool-button">
-              <CircleUser />
-            </button>
-          </div>
-        </div>
+        <Buttons />
       </div>
 
       {/* Cards */}

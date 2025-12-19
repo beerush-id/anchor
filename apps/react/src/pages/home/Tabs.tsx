@@ -8,12 +8,12 @@ import {
   TabVisibility,
   TextInput,
 } from '@anchorkit/react/components';
-import { bind, mutable, render, setup, snippet } from '@anchorlib/react';
+import { $bind, $use, mutable, render, setup, snippet } from '@anchorlib/react';
 
 const AdminForm = setup<{ isAdmin: boolean }>((props) => {
   const username = mutable('');
 
-  const Form = snippet(() => <TextInput value={bind(username)} placeholder="Username" />, 'Form');
+  const Form = snippet(() => <TextInput value={$bind(username)} placeholder="Username" />, 'Form');
 
   return render(() => {
     if (!props.isAdmin) return <span>Access denied.</span>;
@@ -26,12 +26,10 @@ export const Tabs = setup(() => {
     tab1: {
       active: 'profile',
       disabled: false,
-      extraContent: false,
     },
     tab2: {
       active: 'disabled-account',
       disabled: true,
-      extraContent: false,
     },
   });
   const admin = mutable(false);
@@ -41,7 +39,7 @@ export const Tabs = setup(() => {
       <div className="flex items-center mb-2 gap-4">
         <h2 className="text-xl font-semibold flex-1">Tabs</h2>
       </div>
-      <Tab value={bind(tabs.tab1, 'active')} disabled={bind(tabs.tab1, 'disabled')}>
+      <Tab value={$bind(tabs.tab1, 'active')} disabled={$use(tabs.tab1, 'disabled')}>
         <div className="flex items-center w-full">
           <TabList>
             <TabButton name={'profile'}>Profile</TabButton>
@@ -50,13 +48,13 @@ export const Tabs = setup(() => {
             <TabButton name={'setting'}>Settings</TabButton>
           </TabList>
           <div className="flex-1"></div>
-          <SwitchLabel>
+          <SwitchLabel className={$use(() => (tabs.tab1.disabled ? 'text-primary' : ''))}>
             <span>Disable</span>
-            <Switch checked={bind(tabs.tab1, 'disabled')} />
+            <Switch checked={$bind(tabs.tab1, 'disabled')} />
           </SwitchLabel>
           <SwitchLabel className={'ml-4'}>
             <span>Make Admin</span>
-            <Switch checked={bind(admin)} />
+            <Switch checked={$bind(admin)} />
           </SwitchLabel>
         </div>
         <TabContent name={'account'} className={'p-6'}>
@@ -69,10 +67,10 @@ export const Tabs = setup(() => {
           <p>Content for Profile</p>
         </TabContent>
         <TabContent name={'setting'} className={'p-6'}>
-          <AdminForm isAdmin={bind(admin)} />
+          <AdminForm isAdmin={$bind(admin)} />
         </TabContent>
       </Tab>
-      <Tab value={bind(tabs.tab2, 'active')} disabled={bind(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
+      <Tab value={$bind(tabs.tab2, 'active')} disabled={$bind(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
         <div className="flex items-center w-full">
           <TabList>
             <TabButton name={'disabled-account'}>Account</TabButton>
@@ -85,11 +83,11 @@ export const Tabs = setup(() => {
           <div className="flex-1"></div>
           <SwitchLabel>
             <span>Disable</span>
-            <Switch checked={bind(tabs.tab2, 'disabled')} />
+            <Switch checked={$bind(tabs.tab2, 'disabled')} />
           </SwitchLabel>
           <SwitchLabel className={'ml-4'}>
             <span>Make Admin</span>
-            <Switch checked={bind(admin)} />
+            <Switch checked={$bind(admin)} />
           </SwitchLabel>
         </div>
         <TabContent name={'disabled-account'} className={'p-6'}>
@@ -102,7 +100,7 @@ export const Tabs = setup(() => {
           <p>Content for Profile</p>
         </TabContent>
         <TabContent name={'disabled-setting'} className={'p-6'}>
-          <AdminForm isAdmin={bind(admin)} />
+          <AdminForm isAdmin={$bind(admin)} />
         </TabContent>
       </Tab>
     </div>
