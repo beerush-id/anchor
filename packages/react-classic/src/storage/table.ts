@@ -7,9 +7,9 @@ import {
   type RowListState,
   type RowState,
 } from '@anchorlib/storage/db';
+import { useEffect } from 'react';
 import type { ConstantState } from '../index.js';
 import { CLEANUP_DEBOUNCE_TIME, useConstant, useMicrotask } from '../index.js';
-import { useEffect } from 'react';
 import type { TableRef } from './types.js';
 
 /**
@@ -134,7 +134,7 @@ export function createTableRef<P extends Rec, R extends Row<P> = Row<P>>(
       limit?: number,
       direction?: IDBCursorDirection
     ): ConstantState<RowListState<R>> {
-      return useTableListByIndex(table, index, filter, limit, direction);
+      return useTableListByIndex(table as never, index, filter, limit, direction);
     },
 
     /**
@@ -144,7 +144,7 @@ export function createTableRef<P extends Rec, R extends Row<P> = Row<P>>(
      * @returns The TableRef instance for method chaining
      */
     seed(seeds: R[]): TableRef<P, R> {
-      tableRef.seed(seeds);
+      tableRef.seed(seeds as never);
       return this;
     },
 
