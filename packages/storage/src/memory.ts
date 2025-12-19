@@ -1,5 +1,4 @@
-import { anchor } from '@anchorlib/core';
-import { isObject } from '@beerush/utils';
+import { anchor, isObject } from '@anchorlib/core';
 import type { StorageEvent, StorageSubscriber } from './types.js';
 
 /**

@@ -1,6 +1,7 @@
 import {
   anchor,
   captureStack,
+  isBrowser,
   type LinkableSchema,
   microtask,
   mutable,
@@ -10,7 +11,6 @@ import {
   type StateUnsubscribe,
   subscribe,
 } from '@anchorlib/core';
-import { isBrowser } from '@beerush/utils';
 import { MemoryStorage } from './memory.js';
 import type { SessionFn } from './types.js';
 

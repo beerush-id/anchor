@@ -1,6 +1,6 @@
-import { isFunction, merge } from '@beerush/utils';
-import { uuid } from './uuid.js';
+import { isFunction } from '@anchorlib/core';
 import type { FilterFn, Rec, Row } from './types.js';
+import { uuid } from './uuid.js';
 
 export const DEFAULT_FIND_LIMIT = 25;
 
@@ -196,7 +196,7 @@ export const update = async <T extends Rec, R extends Row<T> = Row<T>>(
   }
 
   return await new Promise((resolve, reject) => {
-    merge(current, { ...payload, updated_at: new Date() });
+    Object.assign(current, { ...payload, updated_at: new Date() });
     const request = table.put(current);
 
     request.onsuccess = () => resolve(current as R);

@@ -1,5 +1,14 @@
-import { anchor, captureStack, microtask, mutable, type StateUnsubscribe, subscribe } from '@anchorlib/core';
-import { isArray, isDefined, isFunction } from '@beerush/utils';
+import {
+  anchor,
+  captureStack,
+  isArray,
+  isDefined,
+  isFunction,
+  microtask,
+  mutable,
+  type StateUnsubscribe,
+  subscribe,
+} from '@anchorlib/core';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import {
   count as countRecord,
