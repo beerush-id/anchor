@@ -2,13 +2,7 @@
   "name": "@anchorlib/svelte",
   "version": "1.0.0-beta.18",
   "description": "Svelte bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "svelte"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "svelte"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -48,9 +42,7 @@
   "directories": {
     "dist": "./dist"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -69,7 +61,7 @@
     "jsdom": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
@@ -78,10 +70,10 @@
     "typescript": "catalog:lib"
   },
   "scripts": {
-    "dev": "rimraf dist && tsup --watch",
+    "dev": "rimraf dist && tsdown --watch",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsup && publint",
-    "prepublish": "rimraf dist && tsup && publint",
+    "build": "rimraf dist && tsdown && publint",
+    "prepublish": "rimraf dist && tsdown && publint",
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
