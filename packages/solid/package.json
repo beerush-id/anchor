@@ -3,13 +3,7 @@
   "name": "@anchorlib/solid",
   "version": "1.0.0-beta.18",
   "description": "Solid bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "solid"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "solid"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -44,9 +38,7 @@
       "import": "./dist/storage/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -65,7 +57,7 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "solid-js": "catalog:lib",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "vite": "catalog:",
     "vite-plugin-solid": "catalog:",
     "vitest": "catalog:"
@@ -75,10 +67,10 @@
     "typescript": "catalog:lib"
   },
   "scripts": {
-    "dev": "rimraf dist && tsup --watch",
+    "dev": "rimraf dist && tsdown --watch",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsup && publint",
-    "prepublish": "rimraf dist && tsup && publint",
+    "build": "rimraf dist && tsdown && publint",
+    "prepublish": "rimraf dist && tsdown && publint",
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
