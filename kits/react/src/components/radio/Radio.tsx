@@ -1,10 +1,9 @@
-import { type HTMLAttributes, useContext, useMemo } from 'react';
-import { setup, view } from '@anchorlib/react-classic';
-import { createRadio, type RadioValue } from '@anchorkit/headless/states';
+import { getRadioGroup, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { RadioGroupContext } from './context.js';
+import { derived, render, setup } from '@anchorlib/react';
+import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 
-export type RadioProps = HTMLAttributes<HTMLButtonElement> & {
+export type RadioProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   value?: RadioValue;
   checked?: boolean;
   disabled?: boolean;
@@ -12,36 +11,34 @@ export type RadioProps = HTMLAttributes<HTMLButtonElement> & {
   className?: ClassName | ClassList;
 };
 
-export const Radio = setup(({ className, value, checked, disabled, onChange, ...props }: RadioProps) => {
-  const group = useContext(RadioGroupContext);
+export const Radio = setup<RadioProps>((props) => {
+  const group = getRadioGroup();
+  if (group && props.checked && props.value) group.value = props.value;
 
-  const radio = useMemo(() => {
-    return createRadio({ group, value, checked, disabled });
-  }, [value, checked, disabled, group]);
+  const checked = derived(() => (group ? group.value === props.value : props.checked));
+  const disabled = derived(() => props.disabled || group?.disabled);
 
-  const select = () => {
-    if (group) {
-      group.select(value ?? '');
-    } else {
-      radio.select();
-    }
+  const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
+    props.checked = true;
 
-    onChange?.(radio.checked);
+    if (group && props.value) group.value = props.value;
+
+    props.onChange?.(props.checked);
+    props.onClick?.(e);
   };
 
-  const RadioView = view(() => {
-    return (
+  return render(
+    () => (
       <button
         role="radio"
-        aria-checked={radio.checked}
-        aria-disabled={radio.disabled}
-        className={classx('ark-radio', className)}
-        disabled={radio.disabled}
-        onClick={select}
-        {...props}
+        aria-checked={checked.value}
+        aria-disabled={disabled.value}
+        className={classx('ark-radio', props.className)}
+        disabled={disabled.value}
+        onClick={handleClick}
+        {...props.$omit(['value', 'checked', 'disabled', 'onChange', 'className'])}
       ></button>
-    );
-  }, 'Radio');
-
-  return <RadioView />;
+    ),
+    'Radio'
+  );
 }, 'Radio');

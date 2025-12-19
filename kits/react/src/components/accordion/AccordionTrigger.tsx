@@ -1,22 +1,21 @@
-import { getCollapsible } from '@anchorkit/headless/states';
+import { getAccordion } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { setup, view } from '@anchorlib/react-classic';
-import type { HTMLAttributes, MouseEventHandler } from 'react';
+import { render, setup } from '@anchorlib/react';
+import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 import { ChevronDown } from '../../icons/index.js';
-import type { ReactProps } from '../../types.js';
 
-export type AccordionTriggerProps = ReactProps<HTMLAttributes<HTMLButtonElement>>;
+export type AccordionTriggerProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
-export const AccordionTrigger = setup(({ children, className, onClick, ...props }: AccordionTriggerProps) => {
-  const state = getCollapsible();
+export const AccordionTrigger = setup<AccordionTriggerProps>((props) => {
+  const state = getAccordion();
 
   const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
     state?.toggle();
-    onClick?.(e);
+    props?.onClick?.(e);
   };
 
-  const AccordionTriggerView = view(() => {
-    const classList = classx('ark-accordion-trigger', className, {
+  return render(() => {
+    const classList = classx('ark-accordion-trigger', props.className, {
       'ark-open': state?.expanded,
     });
 
@@ -27,13 +26,10 @@ export const AccordionTrigger = setup(({ children, className, onClick, ...props 
         aria-disabled={state?.disabled}
         onClick={handleClick}
         className={classList}
-        {...props}
       >
-        {children}
+        {props.children}
         <ChevronDown />
       </button>
     );
   }, 'AccordionTrigger');
-
-  return <AccordionTriggerView />;
 }, 'AccordionTrigger');

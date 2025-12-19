@@ -34,9 +34,7 @@
     },
     "./lib/*": "./dist/lib/*"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -50,17 +48,17 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tailwindcss": "catalog:lib",
-    "tsup": "catalog:"
+    "tsdown": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",
     "typescript": "catalog:lib"
   },
   "scripts": {
-    "dev": "rimraf dist && tsup --watch",
+    "dev": "rimraf dist && tsdown --watch",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsup && publint",
-    "prepublish": "rimraf dist && tsup && publint",
+    "build": "rimraf dist && tsdown && publint",
+    "prepublish": "rimraf dist && tsdown && publint",
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
@@ -73,7 +71,6 @@
   "dependencies": {
     "@anchorkit/headless": "workspace:*",
     "@anchorlib/core": "workspace:*",
-    "@anchorlib/react-classic": "workspace:*",
     "@anchorlib/react": "workspace:*"
   }
 }

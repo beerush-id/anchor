@@ -1,4 +1,5 @@
 export * from './accordion/index.js';
+export * from './button/index.js';
 export * from './checkbox/index.js';
 export * from './input/index.js';
 export * from './radio/index.js';

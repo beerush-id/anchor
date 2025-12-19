@@ -1,8 +1,7 @@
-import { type HTMLAttributes } from 'react';
-import { createRadioGroup, type RadioValue } from '@anchorkit/headless/states';
+import { createRadioGroup, RadioGroupCtx, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { RadioGroupContext } from './context.js';
-import { setup } from '@anchorlib/react-classic';
+import { contextProvider, effect, onMount, setup, snippet } from '@anchorlib/react';
+import type { HTMLAttributes } from 'react';
 
 export type RadioGroupProps = HTMLAttributes<HTMLDivElement> & {
   value?: RadioValue;
@@ -11,14 +10,45 @@ export type RadioGroupProps = HTMLAttributes<HTMLDivElement> & {
   className?: ClassName | ClassList;
 };
 
-export const RadioGroup = setup(({ className, value, disabled, onChange, children, ...props }: RadioGroupProps) => {
-  const group = createRadioGroup({ value, disabled, onChange });
+export const RadioGroup = setup<RadioGroupProps>((props) => {
+  const group = createRadioGroup();
+  const Context = contextProvider(RadioGroupCtx, 'RadioGroup');
+
+  let mounted = false;
+
+  effect(() => {
+    group.value = props.value ?? '';
+    group.disabled = props.disabled ?? false;
+  });
+
+  effect(() => {
+    props.value = group.value;
+
+    if (mounted) {
+      props.onChange?.(group.value);
+    }
+  });
+
+  onMount(() => {
+    mounted = true;
+  });
+
+  const Content = snippet(
+    () => (
+      <div
+        role="radiogroup"
+        className={classx('ark-radio-group', props.className)}
+        {...props.$omit(['className', 'value', 'disabled', 'onChange'])}
+      >
+        {props.children}
+      </div>
+    ),
+    'RadioGroup'
+  );
 
   return (
-    <RadioGroupContext.Provider value={group}>
-      <div role="radiogroup" className={classx('ark-radio-group', className)} {...props}>
-        {children}
-      </div>
-    </RadioGroupContext.Provider>
+    <Context value={group}>
+      <Content />
+    </Context>
   );
 }, 'RadioGroup');

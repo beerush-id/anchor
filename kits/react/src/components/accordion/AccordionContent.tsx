@@ -1,27 +1,32 @@
-import { heightAction } from '@anchorkit/headless/actions';
-import { getCollapsible } from '@anchorkit/headless/states';
+import { getAccordion } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { setup, view } from '@anchorlib/react-classic';
+import { nodeRef, render, setup } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
-import type { ReactProps } from '../../types.js';
 
-export type AccordionContentProps = ReactProps<HTMLAttributes<HTMLDivElement>>;
+export type AccordionContentProps = HTMLAttributes<HTMLDivElement> & {
+  height?: number;
+};
 
-export const AccordionContent = setup(({ children, className, ...props }: AccordionContentProps) => {
-  const state = getCollapsible();
-  const heightRef = heightAction<HTMLDivElement>();
+export const AccordionContent = setup<AccordionContentProps>((props) => {
+  const state = getAccordion();
 
-  const AccordionContentView = view(() => {
-    const classList = classx('ark-accordion-content', className, {
-      'ark-open': state?.expanded,
-    });
+  const contentRef = nodeRef<HTMLDivElement>((element) => {
+    if (element instanceof HTMLElement) {
+      element.style.setProperty('--ark-content-height', `${props.height ?? element.scrollHeight}px`);
+    }
 
+    return {
+      className: classx('ark-accordion-content', props.className, {
+        'ark-open': state?.expanded,
+      }),
+    };
+  });
+
+  return render(() => {
     return (
-      <div ref={heightRef} role="presentation" className={classList} {...props}>
-        {children}
+      <div role="presentation" ref={contentRef} {...contentRef.attributes}>
+        {props.children}
       </div>
     );
   }, 'AccordionContent');
-
-  return <AccordionContentView />;
 }, 'AccordionContent');

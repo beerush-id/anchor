@@ -1,13 +1,14 @@
-import type { HTMLAttributes } from 'react';
 import { classx } from '@anchorkit/headless/utils';
-import { named } from '@anchorlib/react-classic';
+import { template } from '@anchorlib/react';
+import type { HTMLAttributes } from 'react';
 
 export type SwitchLabelProps = HTMLAttributes<HTMLLabelElement>;
 
-export const SwitchLabel = named<SwitchLabelProps>(({ children, className, ...props }) => {
-  return (
+export const SwitchLabel = template<SwitchLabelProps>(
+  ({ children, className, ...props }) => (
     <label className={classx('ark-switch-label', className)} {...props}>
       {children}
     </label>
-  );
-}, 'SwitchLabel');
+  ),
+  'SwitchLabel'
+);

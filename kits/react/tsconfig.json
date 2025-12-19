@@ -21,6 +21,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts"],
   "exclude": ["eslint.config.js", "tsup.config.ts"]
 }

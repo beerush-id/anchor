@@ -1,49 +1,46 @@
-import { type HTMLAttributes } from 'react';
-import { type BindingParam, setup, useBinding, type VariableRef, view } from '@anchorlib/react-classic';
-import { createCheckbox } from '@anchorkit/headless/states';
+import { createCheckbox, getCheckboxGroup } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import type { ObjLike } from '@anchorlib/core';
+import { effect, render, setup } from '@anchorlib/react';
+import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 
-export type CheckboxProps<B> = HTMLAttributes<HTMLButtonElement> & {
-  bind?: BindingParam<boolean, B>;
+export type CheckboxProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   checked?: boolean;
   disabled?: boolean;
-  onChange?: (checked: boolean) => void;
-  className?: ClassName | ClassList;
   indeterminate?: boolean;
+  className?: ClassName | ClassList;
+  onChange?: (checked: boolean) => void;
 };
 
-function CheckboxSetup<B extends VariableRef<boolean> | ObjLike>({
-  bind,
-  checked,
-  disabled,
-  onChange,
-  className,
-  indeterminate,
-  ...props
-}: CheckboxProps<B>) {
-  const state = useBinding(createCheckbox({ checked, disabled, indeterminate }), 'checked', bind);
+export const Checkbox = setup<CheckboxProps>((props) => {
+  const group = getCheckboxGroup();
+  const state = createCheckbox({}, group);
 
-  const toggle = () => {
+  // Sync props to state.
+  effect(() => (state.checked = props.checked ?? false));
+  effect(() => (state.disabled = props.disabled ?? false));
+  effect(() => (state.indeterminate = props.indeterminate ?? false));
+
+  // Sync state to props.
+  effect(() => (props.checked = state.checked));
+
+  const handleClick: MouseEventHandler<HTMLButtonElement> = (e) => {
     state.toggle();
-    onChange?.(state.checked);
+
+    props.onClick?.(e);
+    props.onChange?.(state.checked);
   };
 
-  const CheckboxView = view(() => {
-    return (
+  return render(
+    () => (
       <button
         role="checkbox"
         aria-checked={state.ariaChecked}
-        aria-disabled={state.disabled}
-        className={classx('ark-checkbox', className)}
-        disabled={state.disabled}
-        onClick={toggle}
-        {...props}
+        aria-disabled={state.disabled ?? group?.disabled}
+        disabled={state.disabled ?? group?.disabled}
+        className={classx('ark-checkbox', props.className)}
+        onClick={handleClick}
       ></button>
-    );
-  }, 'Checkbox');
-
-  return <CheckboxView />;
-}
-
-export const Checkbox = setup(CheckboxSetup, 'Checkbox');
+    ),
+    'Checkbox'
+  );
+}, 'Checkbox');
