@@ -3,7 +3,7 @@ import { ANCHOR_SETTINGS } from './constant.js';
 import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
 import { onCleanup } from './lifecycle.js';
-import { createObserver, untrack } from './observation.js';
+import { createObserver, getObserver, untrack } from './observation.js';
 import { STACK_SYMBOL } from './stack.js';
 import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from './types.js';
 import { closure, softClone, softEqual } from './utils/index.js';
@@ -179,6 +179,8 @@ export function mutable<T>(init: T): MutableRef<T>;
  * @returns Either a mutable reference or reactive state depending on the input type
  */
 export function mutable<T>(init: T, options?: StateOptions | boolean) {
+  detectStability(mutable);
+
   if (linkable(init)) {
     const ref = createRef(() => anchor(init, options as StateOptions), { init, options });
     onCleanup(() => destroyRef(ref));
@@ -220,6 +222,8 @@ export function immutable<T extends Linkable>(init: T, options?: StateOptions): 
  * @returns Either an immutable reference or immutable reactive state depending on the input type
  */
 export function immutable<T>(init: T, options?: StateOptions) {
+  detectStability(immutable);
+
   if (linkable(init)) {
     const ref = createRef(() => anchor.immutable(init, options), { init, options });
     onCleanup(() => destroyRef(ref));
@@ -234,12 +238,16 @@ export function immutable<T>(init: T, options?: StateOptions) {
 }
 
 export const model = ((schema, init, options) => {
+  detectStability(model);
+
   const ref = createRef(() => anchor.model(schema, init, options), { schema, init, options });
   onCleanup(() => destroyRef(ref));
   return ref;
 }) as Anchor['model'];
 
 export const ordered = ((init, compare) => {
+  detectStability(ordered);
+
   const ref = createRef(() => anchor.ordered(init, compare), { init, compare });
   onCleanup(() => destroyRef(ref));
   return ref;
@@ -251,12 +259,16 @@ export const ordered = ((init, compare) => {
  */
 
 export const writable = ((state, contracts) => {
+  detectStability(writable);
+
   const ref = anchor.writable(state, contracts);
   onCleanup(() => destroyRef(ref));
   return ref;
 }) as Anchor['writable'];
 
 export const exception = ((state, handler) => {
+  detectStability(exception);
+
   const unsubscribe = anchor.catch(state, handler);
   onCleanup(unsubscribe);
   return unsubscribe;
@@ -270,6 +282,8 @@ export const exception = ((state, handler) => {
  * @returns A derived reference that automatically updates when its dependencies change
  */
 export function derived<T>(derive: () => T): DerivedRef<T> {
+  detectStability(derived);
+
   return new DerivedRef(derive);
 }
 
@@ -349,14 +363,43 @@ function createRef<T>(fn: () => T, init: unknown) {
   const currentStack = closure.get<RefStack>(STACK_SYMBOL);
   if (!currentStack || ANCHOR_SETTINGS.production) return fn();
 
-  let current = currentStack.states.get(currentStack.index);
+  return untrack(() => {
+    let current = currentStack.states.get(currentStack.index);
 
-  if (!untrack(() => softEqual(current?.init, init, true))) {
-    current = { init: softClone(init, true), value: fn() };
-    currentStack.states.set(currentStack.index, current);
+    if (!softEqual(current?.init, init, true)) {
+      current = { init: softClone(init, true), value: fn() };
+      currentStack.states.set(currentStack.index, current);
+    }
+
+    currentStack.index++;
+
+    return current?.value as T;
+  });
+}
+
+let stabilityDetector = (stacks: Array<Function>) => {
+  if (getObserver()) {
+    const error = new Error('State created in an unstable boundary.');
+    captureStack.violation.general(
+      'Unstable state declaration detected.',
+      'Attempted to declare a state inside a reactive boundary.',
+      error,
+      [
+        'Always declare state outside of reactive boundary.',
+        '- State declared in a reactive boundary will always be re-created on changes.',
+        '- Use regular JavaScript variable inside a reactive boundary.',
+      ],
+      stabilityDetector,
+      detectStability,
+      ...(stacks ?? [])
+    );
   }
+};
 
-  currentStack.index++;
+function detectStability(...stacks: Array<Function>) {
+  stabilityDetector?.(stacks);
+}
 
-  return current?.value as T;
+export function setStabilityDetector(fn: (...stacks: Array<Function>) => void) {
+  stabilityDetector = fn as never;
 }
