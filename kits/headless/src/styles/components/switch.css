@@ -106,4 +106,5 @@
   line-height: var(--leading-tight);
   color: var(--color-foreground);
   cursor: pointer;
+  user-select: none;
 }

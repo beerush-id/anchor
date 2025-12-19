@@ -108,6 +108,7 @@
 @layer theme {
   .dark {
     color-scheme: only dark;
+
     /* Base colors */
     --color-background: var(--color-zinc-950);
     --color-foreground: var(--color-zinc-50);

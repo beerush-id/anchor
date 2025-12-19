@@ -1,3 +1,5 @@
+export * from './accordion.js';
+export * from './button.js';
 export * from './checkbox.js';
 export * from './collapsible.js';
 export * from './combobox.js';

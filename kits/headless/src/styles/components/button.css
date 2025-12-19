@@ -1,63 +1,80 @@
 @theme {
-  --ark-button-background: var(--color-white);
-  --ark-button-background-hover: var(--color-zinc-100);
-  --ark-button-background-active: var(--color-zinc-50);
-  --ark-button-background-disabled: var(--color-zinc-200);
+  --color-btn-bg: var(--color-white);
+  --color-btn-bg-hover: var(--color-zinc-100);
+  --color-btn-fg: var(--color-zinc-900);
+  --color-btn-fg-hover: var(--color-zinc-700);
 
-  --ark-button-foreground: var(--color-accent-foreground);
-  --ark-button-foreground-hover: var(--color-accent-foreground);
-  --ark-button-foreground-active: var(--color-accent-foreground);
-  --ark-button-foreground-disabled: var(--color-zinc-400);
+  --ark-btn-bg: var(--color-white);
+  --ark-btn-bg-hover: var(--color-zinc-100);
+  --ark-btn-bg-focus: var(--color-white);
+  --ark-btn-bg-active: var(--color-zinc-50);
+  --ark-btn-bg-disabled: var(--color-zinc-200);
 
-  --ark-button-padding-block: 0;
-  --ark-button-padding-inline: calc(var(--spacing) * 4);
-  --ark-button-gap: calc(var(--spacing) * 2);
-  --ark-button-height: 36px;
+  --ark-btn-fg: var(--color-zinc-900);
+  --ark-btn-fg-hover: var(--color-zinc-900);
+  --ark-btn-fg-focus: var(--color-zinc-900);
+  --ark-btn-fg-active: var(--color-zinc-900);
+  --ark-btn-fg-disabled: var(--color-zinc-400);
 
-  --ark-button-font-size: var(--text-sm);
-  --ark-button-font-weight: var(--font-weight-medium);
+  --ark-btn-py: 0;
+  --ark-btn-px: calc(var(--spacing) * 4);
+  --ark-btn-gap: calc(var(--spacing) * 2);
+  --ark-btn-size: 36px;
 
-  --ark-button-border-size: 1px;
-  --ark-button-border-color: var(--color-border);
-  --ark-button-border-color-disabled: transparent;
-  --ark-button-border-radius: var(--radius-lg);
-  --ark-button-shadow: var(--shadow-xs);
+  --ark-btn-font-size: var(--text-sm);
+  --ark-btn-font-weight: var(--font-weight-medium);
 
-  --ark-button-ring-size: 3px;
-  --ark-button-ring-opacity: 60%;
-  --ark-button-ring-color: var(--color-accent-ring);
-  --ark-button-ring-offset: 0;
+  --ark-btn-border-size: 1px;
+  --ark-btn-border-color: var(--color-border);
+  --ark-btn-border-color-disabled: transparent;
+  --ark-btn-border-radius: var(--radius-lg);
+  --ark-btn-shadow: var(--shadow-xs);
+  --ark-btn-shadow-color: rgba(0, 0, 0, 0.05);
 
-  --ark-button-icon-size: 60%;
+  --ark-btn-ring-size: 3px;
+  --ark-btn-ring-opacity: 60%;
+  --ark-btn-ring-color: var(--color-accent-ring);
+  --ark-btn-ring-offset: 0;
 
-  --ark-button-group-background: var(--color-zinc-900);
-  --ark-button-group-foreground: var(--color-zinc-50);
+  --ark-btn-icon-size: 60%;
+
+  --color-btn-group-bg: var(--color-zinc-900);
+  --color-btn-group-fg: var(--color-zinc-50);
 }
 
 @layer theme {
   .dark {
-    --ark-button-background: var(--color-zinc-900);
-    --ark-button-background-hover: var(--color-zinc-800);
-    --ark-button-background-active: var(--color-zinc-950);
-    --ark-button-background-disabled: var(--color-zinc-700);
-    --ark-button-foreground-disabled: var(--color-zinc-500);
+    --color-btn-bg: var(--color-zinc-900);
+    --color-btn-bg-hover: var(--color-zinc-800);
+    --color-btn-fg: var(--color-zinc-50);
+    --color-btn-fg-hover: var(--color-zinc-200);
 
-    --ark-button-group-background: var(--color-zinc-100);
-    --ark-button-group-foreground: var(--color-zinc-900);
-    --ark-button-ring-opacity: 95%;
+    --ark-btn-bg: var(--color-zinc-900);
+    --ark-btn-bg-hover: var(--color-zinc-800);
+    --ark-btn-bg-active: var(--color-zinc-950);
+    --ark-btn-bg-disabled: var(--color-zinc-700);
+
+    --ark-btn-fg: var(--color-zinc-50);
+    --ark-btn-fg-hover: var(--color-zinc-50);
+    --ark-btn-fg-focus: var(--color-zinc-50);
+    --ark-btn-fg-disabled: var(--color-zinc-500);
+
+    --color-btn-group-bg: var(--color-zinc-100);
+    --color-btn-group-fg: var(--color-zinc-900);
+    --ark-btn-ring-opacity: 95%;
   }
 }
 
 @utility ark-button-layout {
-  height: var(--ark-button-height);
+  height: var(--ark-btn-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--ark-button-gap);
-  padding: var(--ark-button-padding-block) var(--ark-button-padding-inline);
+  gap: var(--ark-btn-gap);
+  padding: var(--ark-btn-py) var(--ark-btn-px);
 
-  font-size: var(--ark-button-font-size);
-  font-weight: var(--ark-button-font-weight);
+  font-size: var(--ark-btn-font-size);
+  font-weight: var(--ark-btn-font-weight);
   line-height: 1;
   white-space: nowrap;
   user-select: none;
@@ -74,196 +91,217 @@
   & > svg,
   & > img,
   & > .ark-icon {
-    height: var(--ark-button-icon-size);
-    width: var(--ark-button-icon-size);
+    height: var(--ark-btn-icon-size);
+    width: var(--ark-btn-icon-size);
   }
 
   &:has(> svg:first-child:not(:only-child)),
   &:has(> img:first-child:not(:only-child)),
   &:has(> .ark-icon:first-child:not(:only-child)) {
-    padding-left: var(--ark-button-gap);
+    padding-left: var(--ark-btn-gap);
   }
 
   &:has(> svg:last-child:not(:only-child)),
   &:has(> img:last-child:not(:only-child)),
   &:has(> .ark-icon:last-child:not(:only-child)) {
-    padding-right: var(--ark-button-gap);
+    padding-right: var(--ark-btn-gap);
   }
 }
 
 @utility ark-button-style {
-  color: var(--ark-button-foreground);
-  background-color: var(--ark-button-background);
-  box-shadow: var(--ark-button-shadow);
+  color: var(--ark-btn-fg);
+  background-color: var(--ark-btn-bg);
+  box-shadow: var(--ark-btn-shadow);
 
-  border: var(--ark-button-border-size) solid var(--ark-button-border-color);
-  outline: var(--ark-button-ring-size) solid transparent;
-  outline-offset: var(--ark-button-ring-offset);
+  border: var(--ark-btn-border-size) solid var(--ark-btn-border-color);
+  outline: var(--ark-btn-ring-size) solid transparent;
+  outline-offset: var(--ark-btn-ring-offset);
 
   &:focus,
   &.ark-focus {
-    outline-color: color-mix(in oklab, var(--ark-button-ring-color) var(--ark-button-ring-opacity), transparent);
+    outline-color: color-mix(in oklab, var(--ark-btn-ring-color) var(--ark-btn-ring-opacity), transparent);
   }
 
   &:hover,
   &.ark-hover {
-    color: var(--ark-button-foreground-hover);
-    background-color: var(--ark-button-background-hover);
+    color: var(--ark-btn-fg-hover);
+    background-color: var(--ark-btn-bg-hover);
   }
 
   &:active,
   &.ark-active {
-    background-color: var(--ark-button-background-active);
-    color: var(--ark-button-foreground-active);
+    background-color: var(--ark-btn-bg-active);
+    color: var(--ark-btn-fg-active);
   }
 
   &:disabled,
   &.ark-disabled {
-    color: var(--ark-button-foreground-disabled);
-    background-color: var(--ark-button-background-disabled);
-    border-color: var(--ark-button-border-color-disabled);
+    color: var(--ark-btn-fg-disabled);
+    background-color: var(--ark-btn-bg-disabled);
+    border-color: var(--ark-btn-border-color-disabled);
   }
 }
 
 @utility ark-button {
   @apply ark-button-layout ark-button-style;
-  border-radius: var(--ark-button-border-radius);
+  border-radius: var(--ark-btn-border-radius);
 }
 
 @utility ark-primary-button {
-  --ark-button-background: var(--color-primary);
-  --ark-button-background-hover: var(--color-primary-hover);
-  --ark-button-background-active: var(--color-primary-active);
-  --ark-button-background-disabled: var(--color-primary-disabled);
-  --ark-button-border-color: transparent;
-  --ark-button-border-color-disabled: transparent;
+  --ark-btn-bg: var(--color-primary);
+  --ark-btn-bg-hover: var(--color-primary-hover);
+  --ark-btn-bg-active: var(--color-primary-active);
+  --ark-btn-bg-checked: var(--color-primary);
+  --ark-btn-bg-disabled: var(--color-primary-disabled);
 
-  --ark-button-foreground: var(--color-primary-foreground);
-  --ark-button-foreground-hover: var(--color-primary-foreground);
-  --ark-button-foreground-active: var(--color-primary-foreground);
-  --ark-button-foreground-disabled: var(--color-primary-disabled-foreground);
-  --ark-button-ring-color: var(--color-primary-ring);
+  --ark-btn-fg: var(--color-primary-foreground);
+  --ark-btn-fg-hover: var(--color-primary-foreground);
+  --ark-btn-fg-active: var(--color-primary-foreground);
+  --ark-btn-fg-disabled: var(--color-primary-disabled-foreground);
+  --ark-btn-ring-color: var(--color-primary-ring);
 }
 
 @utility ark-destructive-button {
-  --ark-button-background: var(--color-destructive);
-  --ark-button-background-hover: var(--color-destructive-hover);
-  --ark-button-background-active: var(--color-destructive-active);
-  --ark-button-background-disabled: var(--color-destructive-disabled);
-  --ark-button-border-color: transparent;
-  --ark-button-border-color-disabled: transparent;
+  --ark-btn-bg: var(--color-destructive);
+  --ark-btn-bg-hover: var(--color-destructive-hover);
+  --ark-btn-bg-active: var(--color-destructive-active);
+  --ark-btn-bg-checked: var(--color-destructive);
+  --ark-btn-bg-disabled: var(--color-destructive-disabled);
 
-  --ark-button-foreground: var(--color-destructive-foreground);
-  --ark-button-foreground-hover: var(--color-destructive-foreground);
-  --ark-button-foreground-active: var(--color-destructive-foreground);
-  --ark-button-foreground-disabled: var(--color-destructive-disabled-foreground);
-  --ark-button-ring-color: var(--color-destructive-ring);
-}
-
-@utility ark-outline-button {
-  --ark-button-background: transparent;
-  --ark-button-background-hover: var(--color-primary-hover);
-  --ark-button-background-active: var(--color-primary-active);
-  --ark-button-background-disabled: transparent;
-  --ark-button-border-color: var(--ark-button-foreground);
-  --ark-button-border-color-disabled: var(--color-primary-disabled);
-
-  --ark-button-foreground: var(--color-primary);
-  --ark-button-foreground-hover: var(--color-primary-foreground);
-  --ark-button-foreground-active: var(--color-primary-foreground);
-  --ark-button-foreground-disabled: var(--color-primary-disabled-foreground);
-  --ark-button-ring-color: var(--color-primary-ring);
+  --ark-btn-fg: var(--color-destructive-foreground);
+  --ark-btn-fg-hover: var(--color-destructive-foreground);
+  --ark-btn-fg-active: var(--color-destructive-foreground);
+  --ark-btn-fg-disabled: var(--color-destructive-disabled-foreground);
+  --ark-btn-ring-color: var(--color-destructive-ring);
 }
 
 @utility ark-ghost-button {
-  --ark-button-background: transparent;
-  --ark-button-border-color: transparent;
-  --ark-button-shadow: none;
-  --ark-button-background-hover: var(--color-primary-hover);
-  --ark-button-background-active: var(--color-primary-active);
-  --ark-button-background-disabled: transparent;
+  --ark-btn-bg: var(--color-btn-fg);
+  --ark-btn-fg: var(--color-btn-fg);
 
-  --ark-button-foreground: var(--color-primary);
-  --ark-button-foreground-hover: var(--color-primary-foreground);
-  --ark-button-foreground-active: var(--color-primary-foreground);
-  --ark-button-foreground-disabled: var(--color-primary-disabled-foreground);
-  --ark-button-ring-color: var(--color-primary-ring);
+  color: var(--ark-btn-bg);
+  border-color: transparent;
+  box-shadow: none;
+  background-color: transparent;
+
+  &:focus,
+  &.ark-focus,
+  &:disabled,
+  &.ark-disabled,
+  &[aria-disabled='true'] {
+    background-color: transparent;
+  }
+
+  &:focus,
+  &.ark-focus {
+    color: var(--ark-btn-bg);
+  }
+
+  &:hover,
+  &.ark-hover,
+  &:active,
+  &.ark-active {
+    color: var(--ark-btn-fg);
+  }
+
+  &:hover,
+  &.ark-hover {
+    background-color: var(--ark-btn-bg-hover);
+  }
+  &:active,
+  &.ark-active {
+    background-color: var(--ark-btn-bg-active);
+  }
+}
+
+@utility ark-outline-button {
+  @apply ark-ghost-button;
+
+  --ark-btn-border-color: var(--ark-btn-bg);
+  --ark-btn-border-color-disabled: var(--ark-btn-bg-disabled);
+
+  border-color: var(--ark-btn-border-color);
 }
 
 @utility ark-link-button {
-  --ark-button-background: transparent;
-  --ark-button-border-color: transparent;
-  --ark-button-shadow: none;
-  --ark-button-background-hover: transparent;
-  --ark-button-background-active: transparent;
-  --ark-button-background-disabled: transparent;
+  @apply ark-ghost-button;
 
-  --ark-button-foreground: var(--color-primary);
-  --ark-button-foreground-hover: var(--color-primary);
-  --ark-button-foreground-active: var(--color-primary);
-  --ark-button-foreground-disabled: var(--color-muted-foreground);
-  --ark-button-ring-color: var(--color-primary-ring);
+  --ark-btn-bg-hover: var(--color-btn-fg-hover);
 
   cursor: pointer;
+  outline: none;
   text-decoration: underline;
+
+  &:focus,
+  &:hover,
+  &:active {
+    color: var(--ark-btn-bg-hover);
+    box-shadow: none;
+    background-color: transparent;
+  }
+
+  &:active,
+  &.ark-active {
+    text-decoration: none;
+  }
 }
 
 @utility ark-sm-button {
   &:not(.ark-icon-button) {
-    --ark-button-gap: calc(var(--spacing) * 2 * 0.75);
+    --ark-btn-gap: calc(var(--spacing) * 2 * 0.75);
   }
 
-  height: calc(var(--ark-button-height) * 0.75);
-  font-size: calc(var(--ark-button-font-size) * 0.75);
-  outline-width: calc(var(--ark-button-ring-size) * 0.75);
-  border-radius: calc(var(--ark-button-border-radius) * 0.75);
-  padding-inline: calc(var(--ark-button-padding-inline) * 0.75);
+  height: calc(var(--ark-btn-size) * 0.75);
+  font-size: calc(var(--ark-btn-font-size) * 0.75);
+  outline-width: calc(var(--ark-btn-ring-size) * 0.75);
+  border-radius: calc(var(--ark-btn-border-radius) * 0.75);
+  padding-inline: calc(var(--ark-btn-px) * 0.75);
 }
 
 @utility ark-md-button {
   &:not(.ark-icon-button) {
-    --ark-button-gap: calc(var(--spacing) * 2 * 1.25);
+    --ark-btn-gap: calc(var(--spacing) * 2 * 1.25);
   }
 
-  height: calc(var(--ark-button-height) * 1.25);
-  font-size: calc(var(--ark-button-font-size) * 1.25);
-  outline-width: calc(var(--ark-button-ring-size) * 1.25);
-  border-radius: calc(var(--ark-button-border-radius) * 1.25);
-  padding-inline: calc(var(--ark-button-padding-inline) * 1.25);
+  height: calc(var(--ark-btn-size) * 1.25);
+  font-size: calc(var(--ark-btn-font-size) * 1.25);
+  outline-width: calc(var(--ark-btn-ring-size) * 1.25);
+  border-radius: calc(var(--ark-btn-border-radius) * 1.25);
+  padding-inline: calc(var(--ark-btn-px) * 1.25);
 }
 
 @utility ark-lg-button {
   &:not(.ark-icon-button) {
-    --ark-button-gap: calc(var(--spacing) * 2 * 1.5);
+    --ark-btn-gap: calc(var(--spacing) * 2 * 1.5);
   }
 
-  height: calc(var(--ark-button-height) * 1.5);
-  font-size: calc(var(--ark-button-font-size) * 1.5);
-  outline-width: calc(var(--ark-button-ring-size) * 1.5);
-  border-radius: calc(var(--ark-button-border-radius) * 1.5);
-  padding-inline: calc(var(--ark-button-padding-inline) * 1.5);
+  height: calc(var(--ark-btn-size) * 1.5);
+  font-size: calc(var(--ark-btn-font-size) * 1.5);
+  outline-width: calc(var(--ark-btn-ring-size) * 1.5);
+  border-radius: calc(var(--ark-btn-border-radius) * 1.5);
+  padding-inline: calc(var(--ark-btn-px) * 1.5);
 }
 
 @utility ark-base-icon-button {
-  --ark-button-padding-inline: 0;
-  --ark-button-gap: 0;
+  --ark-btn-px: 0;
+  --ark-btn-gap: 0;
 
-  height: var(--ark-button-height);
-  width: var(--ark-button-height);
+  height: var(--ark-btn-size);
+  width: var(--ark-btn-size);
 
   &.ark-sm-button {
-    height: calc(var(--ark-button-height) * 0.75);
-    width: calc(var(--ark-button-height) * 0.75);
+    height: calc(var(--ark-btn-size) * 0.75);
+    width: calc(var(--ark-btn-size) * 0.75);
   }
 
   &.ark-md-button {
-    height: calc(var(--ark-button-height) * 1.25);
-    width: calc(var(--ark-button-height) * 1.25);
+    height: calc(var(--ark-btn-size) * 1.25);
+    width: calc(var(--ark-btn-size) * 1.25);
   }
 
   &.ark-lg-button {
-    height: calc(var(--ark-button-height) * 1.5);
-    width: calc(var(--ark-button-height) * 1.5);
+    height: calc(var(--ark-btn-size) * 1.5);
+    width: calc(var(--ark-btn-size) * 1.5);
   }
 }
 
@@ -271,55 +309,74 @@
   @apply ark-button ark-base-icon-button;
 }
 
+@utility ark-tool-button-style {
+  --ark-btn-bg-hover: var(--color-primary-hover);
+  --ark-btn-bg-active: var(--color-primary-active);
+  --ark-btn-bg-checked: var(--color-primary);
+  --ark-btn-bg-disabled: var(--color-primary-disabled);
+  --ark-btn-fg-hover: var(--color-primary-foreground);
+  --ark-btn-fg-active: var(--color-primary-foreground);
+  --ark-btn-fg-disabled: var(--color-primary-disabled-foreground);
+  --ark-btn-ring-color: var(--color-primary-ring);
+
+  z-index: 0;
+  position: relative;
+  background-color: transparent;
+  color: var(--color-foreground);
+  border-style: solid;
+  border-color: var(--color-border);
+  border-left-width: 0;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+
+  &:focus {
+    z-index: 1;
+  }
+
+  &:hover,
+  &:active,
+  &[aria-checked='true'] {
+    border-color: var(--ark-btn-bg-checked);
+  }
+
+  &[aria-checked='true'] {
+    background-color: var(--ark-btn-bg-checked);
+  }
+
+  &:first-child {
+    border-left-width: 1px;
+  }
+}
+
+@utility ark-toggle-button {
+  @apply ark-button-layout ark-button-style;
+  @apply ark-tool-button-style;
+}
+
 @utility ark-button-group {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: calc(var(--ark-button-border-radius) * 0.75);
-  box-shadow: var(--shadow-sm);
+  filter: drop-shadow(0 2px 3px var(--ark-btn-shadow-color));
 
-  & > .ark-tool-button:first-child {
-    border-top-left-radius: calc(var(--ark-button-border-radius) * 0.75);
-    border-bottom-left-radius: calc(var(--ark-button-border-radius) * 0.75);
+  & > .ark-toggle-button,
+  & > .ark-tool-button {
+    box-shadow: none;
   }
 
-  & > .ark-tool-button:last-child {
-    border-top-right-radius: calc(var(--ark-button-border-radius) * 0.75);
-    border-bottom-right-radius: calc(var(--ark-button-border-radius) * 0.75);
-  }
-
+  & > .ark-toggle-button:not(:last-child),
   & > .ark-tool-button:not(:last-child) {
-    border-right-color: var(--color-border);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  & > .ark-toggle-button:not(:first-child),
+  & > .ark-tool-button:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
   }
 }
 
 @utility ark-tool-button {
-  @apply ark-button-layout;
-
-  --ark-button-padding-inline: 0;
-  --ark-button-gap: 0;
-  --ark-button-border-radius: calc(var(--radius-md) * 0.75);
-
-  height: calc(var(--ark-button-height) * 0.75);
-  width: calc(var(--ark-button-height) * 0.75);
-  font-size: calc(var(--ark-button-font-size) * 0.75);
-  outline: transparent solid calc(var(--ark-button-ring-size) * 0.75);
-  border-left: 1px solid transparent;
-  border-right: 1px solid transparent;
-  position: relative;
-  z-index: 1;
-
-  &:focus,
-  &:hover,
-  &.ark-focus,
-  &.ark-hover {
-    background: var(--ark-button-background-active);
-    color: var(--ark-button-foreground-active);
-  }
-
-  &:active,
-  &.ark-active {
-    background: var(--ark-button-background-hover);
-    color: var(--ark-button-foreground-hover);
-  }
+  @apply ark-button ark-base-icon-button ark-tool-button-style;
 }

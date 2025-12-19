@@ -118,6 +118,5 @@
   &.ark-active {
     opacity: 1;
     visibility: visible;
-    animation: ark-tab-enter var(--transition-duration-fast) var(--transition-timing);
   }
 }
