@@ -35,9 +35,9 @@ import {
   onCleanup,
   onMount,
   ordered,
+  proxyProps,
   setContext,
   setup,
-  setupProps,
   shortId,
   streamState,
   subscribe,
@@ -112,7 +112,7 @@ describe('Anchor React - Index', () => {
 
   it('should export props functions', () => {
     expect(getProps).toBeDefined();
-    expect(setupProps).toBeDefined();
+    expect(proxyProps).toBeDefined();
     expect(withProps).toBeDefined();
     expect(callback).toBeDefined();
   });

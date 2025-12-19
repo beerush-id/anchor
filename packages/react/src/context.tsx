@@ -18,9 +18,8 @@ export function contextProvider<T>(key: symbol = Symbol(shortId()), displayName?
     const prev = getContext(key);
     setContext(key, value);
 
-    const Restore = () => {
-      return <>{setContext(key, prev)}</>;
-    };
+    const Restore = () => <>{setContext(key, prev)}</>;
+    Restore.displayName = `Exit Context(${displayName || 'Anonymous'})`;
 
     return (
       <>
@@ -30,7 +29,7 @@ export function contextProvider<T>(key: symbol = Symbol(shortId()), displayName?
     );
   }
 
-  Provider.displayName = `ContextProvider(${displayName || 'Anonymous'})`;
+  Provider.displayName = `Enter Context(${displayName || 'Anonymous'})`;
 
   return Provider as FC<{ value: T; children: ReactNode }>;
 }

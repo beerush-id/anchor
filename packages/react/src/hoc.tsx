@@ -2,7 +2,7 @@ import { anchor, captureStack, createObserver, createStack, microtask, withStack
 import type { FunctionComponent, ReactNode } from 'react';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
-import { getProps, setupProps, withProps } from './props.js';
+import { getProps, proxyProps, withProps } from './props.js';
 import type { SetupComponent, SetupProps, Snippet, StableComponent, Template } from './types.js';
 
 const RENDERER_INIT_VERSION = 1;
@@ -58,7 +58,7 @@ export function setup<P>(Component: SetupComponent<P>, displayName?: string): St
     const [baseProps] = createState(() => anchor({ ...currentProps }, { recursive: false }));
 
     propsMap.set(currentProps, baseProps);
-    const props = setupProps(baseProps);
+    const props = proxyProps(baseProps);
 
     createEffect(() => {
       cancelMount();
@@ -95,7 +95,7 @@ export function setup<P>(Component: SetupComponent<P>, displayName?: string): St
     });
   };
 
-  Factory.displayName = `Setup(${componentName})`;
+  Factory.displayName = `Component(${componentName})`;
 
   const Setup = memoize(Factory, (prevProps, nextProps) => {
     const prevPropsRef = propsMap.get(prevProps);
@@ -128,19 +128,21 @@ export function setup<P>(Component: SetupComponent<P>, displayName?: string): St
  * @template SP - The setup props type extending SetupProps
  * @param {Snippet<P, SP>} factory - A function that receives props and parent props, returning React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
- * @param strictScope - Whether to force a strict scope for the snippet (internal use).
+ * @param needSetup - Whether to force a strict scope for the snippet (internal use).
+ * @param scopeName - The scope name for the snippet (internal use).
  * @returns {FunctionComponent<P>} A memoized functional component that re-executes when dependencies change
  */
 export function snippet<P, SP extends SetupProps = SetupProps>(
   factory: Snippet<P, SP>,
   displayName?: string,
-  strictScope = true
+  scopeName = 'Snippet',
+  needSetup = true
 ): FunctionComponent<P> {
   if (typeof factory !== 'function') {
     const error = new Error('Renderer must be a function.');
     captureStack.violation.general(
-      'View factory violation detected:',
-      'Attempted to use view() HOC on a non-functional component.',
+      `${scopeName} factory violation detected:`,
+      `Attempted to use ${scopeName} on a non-functional component.`,
       error,
       undefined,
       snippet
@@ -154,14 +156,14 @@ export function snippet<P, SP extends SetupProps = SetupProps>(
   const viewName = displayName || (factory as FunctionComponent).name || 'Anonymous';
   const parentProps = getProps<SP>();
 
-  if (!parentProps && strictScope) {
+  if (!parentProps && needSetup) {
     const error = new Error('Out of component scope.');
     captureStack.violation.general(
-      'Snippet violation detected:',
-      'Attempted to use snippet() HOC outside of a component.',
+      `${scopeName} violation detected:`,
+      `Attempted to use ${scopeName} outside of a component.`,
       error,
       [
-        'Snippet must be declared inside a component (setup)',
+        `${scopeName} must be declared inside a component (setup)`,
         '- Use template if the view is meant to be reusable across application',
       ],
       snippet
@@ -177,7 +179,7 @@ export function snippet<P, SP extends SetupProps = SetupProps>(
         setVersion((c) => c + 1);
       });
     });
-    observer.name = `View(${viewName})`;
+    observer.name = `${scopeName}(${viewName})`;
 
     createEffect(() => {
       cancelCleanup();
@@ -189,10 +191,10 @@ export function snippet<P, SP extends SetupProps = SetupProps>(
       };
     }, []);
 
-    return observer.run(() => factory(props as P, parentProps as SP));
+    return observer.run(() => factory(proxyProps({ ...props }, false) as P, parentProps as SP));
   });
 
-  Template.displayName = `View(${viewName})`;
+  Template.displayName = `${scopeName}(${viewName})`;
   return Template as FunctionComponent<P>;
 }
 
@@ -226,7 +228,7 @@ export function template<P>(factory: Template<P>, displayName?: string): Functio
     );
   }
 
-  return snippet(factory, displayName, false) as FunctionComponent<P>;
+  return snippet(factory, displayName, 'Template', false) as FunctionComponent<P>;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { effect, mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bind } from '../src/binding';
-import { callback, getProps, setupProps, withProps } from '../src/props';
+import { callback, getProps, proxyProps, withProps } from '../src/props';
 
 describe('Anchor React - Props', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -81,7 +81,7 @@ describe('Anchor React - Props', () => {
   describe('setupProps', () => {
     it('should create a proxy for props', () => {
       const testProps = { test: 'value' };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       expect(proxiedProps).toBeDefined();
       expect(typeof proxiedProps).toBe('object');
@@ -91,7 +91,7 @@ describe('Anchor React - Props', () => {
       vi.useFakeTimers();
 
       const testProps = { test: 'value' };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       const cleanup = effect(() => {
         expect({ ...proxiedProps }).toEqual({});
@@ -113,7 +113,7 @@ describe('Anchor React - Props', () => {
       const source = mutable({ test: 'test' });
       const binding = bind(source, 'test');
       const testProps = { value: binding };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       expect(proxiedProps.value).toBe('test');
     });
@@ -122,7 +122,7 @@ describe('Anchor React - Props', () => {
       const source = mutable('test');
       const binding = bind(source);
       const testProps = { value: binding };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       expect(proxiedProps.value).toBe('test');
     });
@@ -130,7 +130,7 @@ describe('Anchor React - Props', () => {
     it('should handle mutable references in props', () => {
       const source = mutable('test');
       const testProps = { value: source };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       expect(proxiedProps.value).toBe('test');
     });
@@ -138,7 +138,7 @@ describe('Anchor React - Props', () => {
     it('should propagate mutation to binding ref', () => {
       const source = mutable({ test: 'test' });
       const binding = bind(source, 'test');
-      const props = setupProps({ value: binding });
+      const props = proxyProps({ value: binding });
 
       expect(props.value).toBe('test');
       props.value = 'newValue';
@@ -149,7 +149,7 @@ describe('Anchor React - Props', () => {
     it('should propagate mutation to mutable ref', () => {
       const source = mutable('test');
       const binding = bind(source);
-      const props = setupProps({ value: binding });
+      const props = proxyProps({ value: binding });
 
       expect(props.value).toBe('test');
       props.value = 'newValue';
@@ -159,7 +159,7 @@ describe('Anchor React - Props', () => {
 
     it('should propagate mutation to mutable ref', () => {
       const source = mutable('test');
-      const props = setupProps({ value: source });
+      const props = proxyProps({ value: source });
 
       expect(props.value).toBe('test');
       props.value = 'newValue' as never;
@@ -169,7 +169,7 @@ describe('Anchor React - Props', () => {
 
     it('should only mutate the props itself', () => {
       const source = mutable('test');
-      const props = setupProps({ value: source.value });
+      const props = proxyProps({ value: source.value });
 
       expect(props.value).toBe('test');
       props.value = 'newValue';
@@ -182,7 +182,7 @@ describe('Anchor React - Props', () => {
 
       const onClick = vi.fn();
       const testProps = { onClick };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       proxiedProps.onClick = (() => {}) as never;
       vi.runAllTimers();
@@ -195,7 +195,7 @@ describe('Anchor React - Props', () => {
 
     it('should provide $omit method to exclude specific props', () => {
       const testProps = { a: 1, b: 2, c: 3 };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       const omittedProps = proxiedProps.$omit(['b']);
 
@@ -213,7 +213,7 @@ describe('Anchor React - Props', () => {
 
     it('should provide $pick method to include specific props', () => {
       const testProps = { a: 1, b: 2, c: 3 };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       const pickedProps = proxiedProps.$pick(['a', 'c']);
 
@@ -233,7 +233,7 @@ describe('Anchor React - Props', () => {
       const source = mutable('test');
       const binding = bind(source);
       const testProps = { value: binding, other: 'static' };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       // Test $omit
       const omittedProps = proxiedProps.$omit(['other']);
@@ -270,7 +270,7 @@ describe('Anchor React - Props', () => {
       const source = mutable('test');
       const binding = bind(source);
       const testProps = { value: binding };
-      const proxiedProps = setupProps(testProps);
+      const proxiedProps = proxyProps(testProps);
 
       const omittedProps = proxiedProps.$omit([]);
 

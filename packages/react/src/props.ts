@@ -1,5 +1,5 @@
 import { captureStack, closure, getObserver, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
-import { isBinding } from './binding.js';
+import { isBinding, isLinkingRef } from './binding.js';
 import type { BindableProps, ComponentProps } from './types.js';
 
 const PROPS_SYMBOL = Symbol('setup-props');
@@ -66,9 +66,10 @@ export function callback<T>(fn: T): T {
  *
  * @template P - The props type
  * @param props - The props object to wrap
+ * @param strict - Whether to enforce strict mode for destructuring props
  * @returns A proxy wrapping the props object
  */
-export function setupProps<P>(props: P): ComponentProps<P> {
+export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
   const omit = (keys: Array<keyof P>) => {
     return omitProps(props, newProps, keys ?? []);
   };
@@ -84,8 +85,10 @@ export function setupProps<P>(props: P): ComponentProps<P> {
       const bindingRef = Reflect.get(target, key, receiver);
 
       if (isBinding(bindingRef)) {
-        return (bindingRef.source as Record<string, unknown>)[bindingRef.key];
+        return bindingRef.value;
       } else if (isMutableRef(bindingRef)) {
+        return bindingRef.value;
+      } else if (isLinkingRef(bindingRef)) {
         return bindingRef.value;
       }
 
@@ -110,7 +113,7 @@ export function setupProps<P>(props: P): ComponentProps<P> {
       }
 
       if (isBinding(bindingRef)) {
-        (bindingRef.source as Record<string, unknown>)[bindingRef.key] = value;
+        bindingRef.value = value;
       } else if (isMutableRef(bindingRef)) {
         bindingRef.value = value;
       } else {
@@ -122,7 +125,7 @@ export function setupProps<P>(props: P): ComponentProps<P> {
     ownKeys(target: BindableProps): ArrayLike<string | symbol> {
       const observer = getObserver();
 
-      if (observer) {
+      if (observer && strict) {
         const error = new Error('Rest props are not allowed.');
         captureStack.violation.general(
           'Rest props usage detected.',
