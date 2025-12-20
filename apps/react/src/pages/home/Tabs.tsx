@@ -67,7 +67,7 @@ export const Tabs = setup(() => {
           <p>Content for Profile</p>
         </TabContent>
         <TabContent name={'setting'} className={'p-6'}>
-          <AdminForm isAdmin={$bind(admin)} />
+          <AdminForm isAdmin={$use(admin)} />
         </TabContent>
       </Tab>
       <Tab value={$bind(tabs.tab2, 'active')} disabled={$bind(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
@@ -100,7 +100,7 @@ export const Tabs = setup(() => {
           <p>Content for Profile</p>
         </TabContent>
         <TabContent name={'disabled-setting'} className={'p-6'}>
-          <AdminForm isAdmin={$bind(admin)} />
+          <AdminForm isAdmin={$use(admin)} />
         </TabContent>
       </Tab>
     </div>
