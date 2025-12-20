@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, getCurrentStack } from '../../src/index.js';
+import { anchor, createObserver, getCurrentStack, setStabilityDetector } from '../../src/index.js';
 import {
   derived,
   DerivedRef,
@@ -443,6 +443,32 @@ describe('Anchor Core - Ref', () => {
 
       // Index should reset after withinStack
       expect(stack.index).toBe(2);
+    });
+
+    it('should detect declaring state inside an observer', () => {
+      vi.useFakeTimers();
+
+      const observer = createObserver(() => {});
+      observer.run(() => {
+        const state = mutable('test');
+        expect(state.value).toBe('test');
+      });
+      const otherState = mutable('other');
+
+      vi.runAllTimers();
+
+      expect(otherState.value).toBe('other');
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should set the stability detector', () => {
+      const detector = vi.fn();
+      setStabilityDetector(detector);
+
+      const state = mutable('test');
+
+      expect(state.value).toBe('test');
+      expect(detector).toHaveBeenCalled();
     });
   });
 });

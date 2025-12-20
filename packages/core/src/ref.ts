@@ -377,7 +377,7 @@ function createRef<T>(fn: () => T, init: unknown) {
   });
 }
 
-let stabilityDetector = (stacks: Array<Function>) => {
+let stabilityDetector = (stacks: Array<Function> = []) => {
   if (getObserver()) {
     const error = new Error('State created in an unstable boundary.');
     captureStack.violation.general(
@@ -391,7 +391,7 @@ let stabilityDetector = (stacks: Array<Function>) => {
       ],
       stabilityDetector,
       detectStability,
-      ...(stacks ?? [])
+      ...stacks
     );
   }
 };
