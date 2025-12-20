@@ -27,7 +27,7 @@ export class LinkingRef<T> {
    */
   constructor(
     private read: () => T | Record<string, unknown>,
-    private key?: keyof T
+    private key: keyof T = 'value' as keyof T
   ) {}
 }
 /**

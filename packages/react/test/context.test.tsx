@@ -10,13 +10,13 @@ describe('Anchor React - Context', () => {
 
       expect(Provider).toBeDefined();
       expect(typeof Provider).toBe('function');
-      expect(Provider.displayName).toBe('ContextProvider(TestContext)');
+      expect(Provider.displayName).toBe('Enter Context(TestContext)');
     });
 
     it('should create a context provider with anonymous name', () => {
       const Provider = contextProvider(Symbol('test'));
 
-      expect(Provider.displayName).toBe('ContextProvider(Anonymous)');
+      expect(Provider.displayName).toBe('Enter Context(Anonymous)');
     });
 
     it('should provide context values to children', () => {
