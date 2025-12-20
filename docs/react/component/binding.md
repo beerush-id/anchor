@@ -17,54 +17,80 @@ In Anchor, "Binding" refers to two things:
 
 ## State Binding
 
-State binding allows you to synchronize your component's internal state with **any external reactive source** (props, global state, or other signals).
+There are two fundamental ways to pass data to components:
 
-### 1. One-Way Synchronization
-To sync internal state with **External State** (props, global state, or other signals), use an `effect`. This ensures your component reacts to changes from the outside world while maintaining its own local logic.
+### Pass-by-Value
+When you pass a value directly, the child component receives a **copy** of the value. If the state changes, the parent must re-render to pass the new value.
 
 ```tsx
-export const Tab = setup((props: { value?: string }) => {
-  const state = mutable({ active: '' });
-
-  // Sync: When props.value changes, update internal state
-  effect(() => {
-    if (props.value !== undefined) {
-      state.active = props.value;
-    }
-  });
-
-  return render(() => <div>{state.active}</div>);
-});
+<Input value={state.value} />
 ```
 
-### 2. Two-Way Binding
-Anchor supports true two-way binding between components. If a parent passes a **Binding Reference**, the child can update the parent's state by simply assigning to the prop.
+This requires the parent view to re-render every time `state.value` changes to provide the new value to the `Input` component.
 
-#### Parent Component
-Use the `bind()` helper to pass a reference to a mutable property.
+### Pass-by-Reference
+When you use Anchor's binding, the child component receives a **reference** to the state. The component can read changes directly without requiring the parent to re-render.
 
 ```tsx
-import { setup, mutable, bind, render } from '@anchorlib/react';
-import { Counter } from './Counter';
+<Input value={$use(state, 'value')} />
+```
+
+This is pass-by-reference. The `Input` component reads a reference, so it can self-update when the value changes. The parent can stay static and doesn't need to re-render.
+
+> [!TIP] Tips
+> If the key is `'value'`, it can be omitted: `$use(state)` is equivalent to `$use(state, 'value')`.
+
+> [!WARNING] Important!
+> Binding only works with **Components** (created with `setup()`), **Templates** (created with `template()`), and **Snippets** (created with `snippet()`).
+
+## One-Way Binding
+
+Use `$use()` to create a **one-way data binding**. Updates in the state will be propagated to the prop, but changes to the prop won't affect the original state.
+
+```tsx
+import { setup, mutable, $use } from '@anchorlib/react';
+import { Display } from './Display';
 
 export const App = setup(() => {
   const state = mutable({ count: 0 });
 
-  return render(() => (
-    // Pass a binding to 'state.count'
-    <Counter value={bind(state, 'count')} />
-  ));
+  return (
+    <div>
+      <button onClick={() => state.count++}>Increment</button>
+      <Display value={$use(state, 'count')} />
+    </div>
+  );
 });
 ```
 
-#### Child Component
-The child component doesn't need to know it received a binding. It just assigns to the prop.
+The child component receives the value and can update itself when it changes:
 
 ```tsx
-export const Counter = setup((props: { value: number }) => {
+import { template } from '@anchorlib/react';
+
+export const Display = template<{ value: number }>(({ value }) => (
+  <div>Current count: {value}</div>
+));
+```
+
+## Two-Way Binding
+
+In Anchor, components should enhance native element behavior. Native HTML elements like `<input>` are smart—they behave autonomously, showing and updating values as users interact with them, regardless of whether you handle their events.
+
+When you design a component that displays and updates a value, it should work independently. The component manages its own behavior, and parent binding is just a side-effect that allows the parent to react to the component's behavior.
+
+To create two-way data binding, use `$bind()`. It keeps state and prop in sync—updates on either side are propagated to each other.
+
+```tsx
+type CounterProps = {
+  value: number;
+  onChange?: (value: number) => void;
+};
+
+export const Counter = setup<CounterProps>((props) => {
   const increment = () => {
-    // If 'value' is a binding, this updates the PARENT's state!
-    props.value++; 
+    props.value++;
+    props.onChange?.(props.value);
   };
 
   return render(() => (
@@ -74,6 +100,52 @@ export const Counter = setup((props: { value: number }) => {
   ));
 });
 ```
+
+This component works autonomously with all binding patterns:
+
+```tsx
+// ✅ One-way pass-by-value
+render(() => <Counter value={state.count} />)
+
+// ✅ One-way pass-by-reference
+<Counter value={$use(state, 'count')} />
+
+// ✅ Two-way binding
+<Counter value={$bind(state, 'count')} />
+
+// ✅ Two-way binding + imperative handling
+<Counter value={$bind(state, 'count')} onChange={handleChange} />
+```
+
+
+## Why Binding Matters?
+
+**Native HTML Input** requires imperative handling with boilerplate code that's error-prone:
+
+```js
+const input = document.querySelector('input');
+input.value = user.name;
+input.addEventListener('input', (e) => user.name = e.target.value);
+```
+
+**React's Controlled Input** doesn't fix the native's problem—it makes it worse with more boilerplate and is even more error-prone:
+
+```tsx
+<input value={state.correctProp} onChange={(e) => setWrongProp(e.target.value)} />
+```
+
+This won't tell you there's an error. User can't type in the input because the value never changes. You have to debug it carefully. If the `onChange` is wrapped in a separate function, you need to scroll to check what it does inside.
+
+**Anchor's `$bind()`** provides clear intent:
+
+```tsx
+<Input value={$bind(user, 'name')} onChange={validateName} />
+```
+
+- `$bind(user, 'name')` immediately tells you it reads and writes to `user.name`
+- If you pass the wrong prop, you'll see it immediately because it shows the wrong value before you even make a change
+- Binding + imperative handling gives clear intent, separating two-way binding from side-effects
+
 
 ## DOM Binding
 
@@ -126,21 +198,34 @@ const btnRef = nodeRef(() => ({
 
 ## Creating Binding References
 
-You can create a **Binding Reference** that can be passed to components for two-way binding.
+Anchor provides two functions for creating binding references:
 
-It supports two types of state:
-1.  **Mutable Object**: `bind(object, key)`
-2.  **Mutable Ref**: `bind(ref)`
+### `$use()` - One-Way Binding
+Creates a **one-way binding** where updates in the state are propagated to the prop.
 
 ```tsx
 const state = mutable({ text: '' });
 const count = mutable(0);
 
-// 1. Bind to object property
-<TextInput value={bind(state, 'text')} />
+// 1. One-way bind to object property
+<Display value={$use(state, 'text')} />
 
-// 2. Bind to mutable ref directly
-<Counter value={bind(count)} />
+// 2. One-way bind to mutable ref directly
+<Display value={$use(count)} />
+```
+
+### `$bind()` - Two-Way Binding
+Creates a **two-way binding** where state and prop are kept in sync.
+
+```tsx
+const state = mutable({ text: '' });
+const count = mutable(0);
+
+// 1. Two-way bind to object property
+<TextInput value={$bind(state, 'text')} />
+
+// 2. Two-way bind to mutable ref directly
+<Counter value={$bind(count)} />
 ```
 
 ## Bindable Interfaces
@@ -168,33 +253,33 @@ export const TextInput = setup((props: { value?: string }) => {
 In this example:
 -   If `props.value` changes (parent updates), `text.value` updates automatically.
 -   If user types, `text.value` updates, which propagates to `props.value`.
-    -   If `props.value` was passed via `bind()`, the parent state updates!
+    -   If `props.value` was passed via `$bind()`, the parent state updates!
     -   If `props.value` was a plain string, it just updates the local prop proxy (no-op for parent).
 
 ## Best Practices
 
 ### Avoid Binding to Immutable State
-Never use `bind()` with an `immutable` state object. While Anchor will detect this and warn you, it's a bad practice.
+Never use `$bind()` with an `immutable` state object. While Anchor will detect this and warn you, it's a bad practice.
 
 ```tsx
 const state = immutable({ count: 0 });
 
 // ❌ WRONG: Cannot bind to immutable state
-<Counter value={bind(state, 'count')} />
+<Counter value={$bind(state, 'count')} />
 ```
 
 If you need to share state that can be updated by children, use `mutable` or provide a specific `writable` contract.
 
 ### Prefer One-Way for Complex Logic
-Two-way binding (`bind`) is excellent for form inputs and simple settings. However, for complex business logic, explicit event handlers (One-Way Data Flow) are often easier to debug and reason about.
+Two-way binding (`$bind()`) is excellent for form inputs and simple settings. However, for complex business logic, explicit event handlers (One-Way Data Flow) are often easier to debug and reason about.
 
 ```tsx
 // ✅ Good for simple inputs
-<TextInput value={bind(state, 'name')} />
+<TextInput value={$bind(state, 'name')} />
 
 // ✅ Better for complex logic
 <ComplexWidget 
-  value={state.data} 
+  value={$use(state, 'data')}
   onChange={(newData) => {
     validate(newData);
     state.data = newData;
