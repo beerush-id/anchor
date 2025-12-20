@@ -1,6 +1,6 @@
 import { effect, mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bind } from '../src/binding';
+import { $use, bind } from '../src/binding';
 import { callback, getProps, proxyProps, withProps } from '../src/props';
 
 describe('Anchor React - Props', () => {
@@ -133,6 +133,29 @@ describe('Anchor React - Props', () => {
       const proxiedProps = proxyProps(testProps);
 
       expect(proxiedProps.value).toBe('test');
+    });
+
+    it('should handle $use() references in props', () => {
+      const source = mutable('test');
+      const testProps = { value: $use(source) };
+      const proxiedProps = proxyProps(testProps);
+
+      expect(proxiedProps.value).toBe('test');
+    });
+
+    it('should handle $use() references with function in props', () => {
+      const source = mutable('test');
+      const testProps = { value: $use(() => source.value) };
+      const proxiedProps = proxyProps(testProps);
+
+      expect(proxiedProps.value).toBe('test');
+    });
+
+    it('should handle $use() references with null in props', () => {
+      const testProps = { value: $use(null as never) };
+      const proxiedProps = proxyProps(testProps);
+
+      expect(proxiedProps.value).toBeUndefined();
     });
 
     it('should propagate mutation to binding ref', () => {

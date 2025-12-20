@@ -8,9 +8,12 @@ describe('Anchor React - Context', () => {
     it('should create a context provider component', () => {
       const Provider = contextProvider(Symbol('test'), 'TestContext');
 
+      const instance = Provider({} as never);
+
       expect(Provider).toBeDefined();
       expect(typeof Provider).toBe('function');
       expect(Provider.displayName).toBe('Enter Context(TestContext)');
+      expect(instance).toBeDefined();
     });
 
     it('should create a context provider with anonymous name', () => {
@@ -21,7 +24,7 @@ describe('Anchor React - Context', () => {
 
     it('should provide context values to children', () => {
       const contextKey = Symbol('test');
-      const Provider = contextProvider(contextKey, 'TestContext');
+      const Provider = contextProvider(contextKey);
       const testValue = { data: 'test' };
 
       let capturedValue: any;
