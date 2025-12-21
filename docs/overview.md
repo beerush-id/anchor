@@ -1,6 +1,6 @@
 ---
 title: 'AIR Stack: A Technical Overview'
-description: 'Get a high-level overview of the AIR Stack - Anchor (state management), IRPC (6.96x faster APIs), and Reactive UI (React, Solid, Svelte, Vue). The complete stack for modern web development.'
+description: 'Get a high-level overview of the AIR Stack - Anchor (state management), IRPC (type-safe APIs with automatic batching), and Reactive UI (React, Solid, Svelte, Vue). The complete stack for modern web development.'
 keywords:
   - AIR Stack
   - Anchor
@@ -21,7 +21,7 @@ keywords:
 AIR Stack is a revolutionary approach to building web applications that eliminates complexity while delivering exceptional performance. It consists of three integrated components:
 
 - **A** = **Anchor** (Fine-grained state management)
-- **I** = **IRPC** (6.96x faster APIs with automatic batching)
+- **I** = **IRPC** (Type-safe APIs with automatic batching)
 - **R** = **Reactive UI** (React, Solid, Svelte, Vue, vanilla JS)
 
 <div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
@@ -38,7 +38,7 @@ Modern web development forces you to juggle multiple concerns:
 - **High Mental Overhead:** Managing immutability, data fetching, and storage distracts from business logic
 
 ### **API Development**
-- **Boilerplate Overload:** REST requires routes, serialization, client code, and type definitions for every endpoint
+- **Boilerplate Overload:** REST requires routes, serialization, client code, and manual type definitions
 - **Performance Bottlenecks:** Multiple API calls mean multiple HTTP connections, slowing down your app
 - **Type Safety Gaps:** Keeping client and server types in sync is manual and error-prone
 
@@ -54,13 +54,13 @@ AIR Stack solves these problems with three integrated components:
 
 ### **1. Anchor: Fine-Grained State Management**
 
-Anchor introduces the **DSV (Data-State-View) model**, replacing scattered data flows with a single, stable, immutable State that acts as the source of truth.
+Anchor introduces the **DSV (Data-State-View) model**, replacing scattered data flows with a single, stable state that acts as the source of truth.
 
 **Key Features:**
 - **Fine-Grained Reactivity:** Only components that depend on changed state re-render
-- **True Immutability:** Direct mutation syntax with proxy-based write contracts
+- **Flexible State Primitives:** Direct mutation syntax with proxy-based write contracts for safety
 - **Framework Agnostic:** Works with React, Solid, Svelte, Vue, and vanilla JS
-- **Built-in Toolkit:** Optimistic UI, history tracking, reactive storage, and data fetching
+- **Built-in Toolkit:** Optimistic UI, history tracking, reactive storage, and async state
 
 **Example:**
 ```typescript
@@ -77,21 +77,25 @@ user.age++; // Triggers effect
 user.name = 'Jane'; // Does NOT trigger effect
 ```
 
-### **2. IRPC: 6.96x Faster APIs**
+### **2. IRPC: Type-Safe APIs**
 
 IRPC (Isomorphic Remote Procedure Call) eliminates API boilerplate by making remote functions look and feel like local functions.
 
 **Key Features:**
-- **6.96x Faster:** Automatic batching reduces HTTP requests by 10x
-- **Type-Safe:** End-to-end TypeScript with zero manual type definitions
 - **Zero Boilerplate:** No routes, no endpoints, no client code
-- **Auto-Versioning:** Synced with package.json for semantic versioning
+- **Automatic Batching:** Intelligent request batching with configurable debounce reduces network overhead
+- **Intelligent Caching:** Built-in caching with configurable TTL and manual invalidation
+- **Timeout Management:** Configurable timeouts per function or globally
+- **Schema Validation:** Optional Zod integration for runtime input/output validation
+- **Context Management:** Built-in async context support for request-scoped data
+- **Type-Safe:** End-to-end TypeScript with zero manual type definitions
 
 **Example:**
 ```typescript
 // Declare once
 const hello = irpc.declare<(name: string) => Promise<string>>({
-  name: 'hello'
+  name: 'hello',
+  maxAge: 60000 // Cache for 1 minute
 });
 
 // Implement on server
@@ -100,12 +104,6 @@ irpc.construct(hello, async (name) => `Hello ${name}`);
 // Call from client
 const message = await hello('John'); // "Hello John"
 ```
-
-**Performance:**
-- **100,000 users, 10 calls each (1M total calls)**
-- IRPC: 3,617ms (100,000 HTTP requests)
-- REST: 25,180ms (1,000,000 HTTP requests)
-- **Result: 6.96x faster**
 
 ### **3. Reactive UI: Universal Framework Support**
 
@@ -147,22 +145,6 @@ const UserProfile = setup<{ id: string }>((props) => {
 });
 ```
 
-## **The Benefits**
-
-### **For Developers**
-- **Less Code:** Eliminate boilerplate for routes, types, and state management
-- **Better DX:** Type-safe, auto-complete, refactor-safe
-- **Faster Development:** Build features in minutes, not hours
-
-### **For Users**
-- **Faster Apps:** 6.96x faster APIs, fine-grained reactivity
-- **Better UX:** Instant updates, optimistic UI, smooth interactions
-
-### **For Companies**
-- **Lower Costs:** 10x fewer HTTP connections = 10x cheaper infrastructure
-- **Higher Margins:** Same performance with 1/10th the servers
-- **Faster Time-to-Market:** Ship features faster with less code
-
 ## **Architecture Overview**
 
 ### **DSV (Data-State-View) Model**
@@ -170,7 +152,7 @@ const UserProfile = setup<{ id: string }>((props) => {
 Anchor's DSV model creates a clean separation of concerns:
 
 1. **Data:** External sources (APIs via IRPC, databases, user input)
-2. **State:** Central immutable state managed by Anchor
+2. **State:** Central state managed by Anchor
 3. **View:** Components that observe and render state
 
 This architecture eliminates prop drilling, context hell, and state synchronization issues while providing predictable, scalable state management.
@@ -185,7 +167,7 @@ IRPC's automatic batching protocol:
 4. **Response:** Results streamed back as they complete
 5. **Client:** Promises resolve individually
 
-This reduces network overhead by 10x and delivers 6.96x faster performance.
+This reduces network overhead specifically for modern, component-based applications where multiple components might request data simultaneously.
 
 ## **Next Steps**
 

@@ -2,8 +2,8 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
-title: 'AIR Stack: Anchor + IRPC + Reactive UI | The Future of Web Development'
-description: 'The complete stack for modern web applications: Anchor (fine-grained state management), IRPC (6.96x faster APIs with automatic batching), and Reactive UI (React, Solid, Svelte, Vue). Build faster, ship cheaper, scale effortlessly.'
+title: 'AIR Stack: Cost Efficient, AI-Native Web Development Libraries'
+description: 'The complete stack for modern web applications: Anchor (fine-grained state management), IRPC (type-safe APIs with automatic batching), and Reactive UI (React, Solid, Svelte, Vue). Build faster, ship cheaper, scale effortlessly.'
 keywords:
   - AIR Stack
   - Anchor
@@ -23,7 +23,7 @@ keywords:
 
 hero:
   name: 'AIR Stack'
-  text: 'Anchor + IRPC + Reactive UI'
+  text: 'Cost Efficient, AI-Native'
   tagline: 'The Complete Stack for Modern Web Development'
   image: /icon.svg
 
@@ -38,22 +38,22 @@ hero:
 features:
   - icon: ⚡
     title: Fine-Grained Reactivity
-    details: Anchor's fine-grained reactivity ensures only affected components re-render, eliminating wasted renders.
+    details: Anchor's fine-grained reactivity ensures only affected components re-render, eliminating wasted renders for optimal performance.
   - icon: 🚀
-    title: 6.96x Faster APIs
-    details: IRPC's automatic batching reduces HTTP requests by 10x, delivering 6.96x faster performance than traditional REST.
+    title: Faster API Transport
+    details: IRPC's automatic batching dramatically reduces network overhead by combining multiple requests into a single HTTP connection.
   - icon: 🎨
     title: Universal Reactive UI
     details: Works seamlessly with React, Solid, Svelte, Vue, and vanilla JavaScript. One state management solution for all frameworks.
   - icon: 📦
-    title: Framework Agnostic
-    details: First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.
+    title: Intelligent Caching
+    details: Built-in intelligent caching with configurable TTL and manual invalidation ensures data freshness without redundant calls.
   - icon: 🔧
     title: Zero Boilerplate
-    details: Auto-import constructors, type-safe APIs, and automatic versioning. Just write functions and ship.
+    details: Auto-import constructors, type-safe APIs, and automatic versioning. No routes, no endpoints, just write functions and ship.
   - icon: 💰
-    title: 10x Cost Savings
-    details: Reduce infrastructure costs by 10x with IRPC's efficient batching and connection reuse.
+    title: Cost Efficiency
+    details: Reduced HTTP connections translate directly to lower infrastructure costs and reduced token usage in generative AI applications.
 ---
 
 ::: anchor-react-sandbox {class="sp-grid"}
@@ -61,13 +61,13 @@ features:
 ```tsx /App.tsx [active]
 import '@tailwindcss/browser';
 import '@anchorlib/react/client';
-import { setup, template, mutable } from '@anchorlib/react';
+import { setup, snippet, mutable } from '@anchorlib/react';
 
 const Counter = setup(() => {
   const counter = mutable({ count: 0 });
 
   // 😏 Only this tiny part of the UI that need to be updated!
-  const CounterView = template(() => <h1>Counter: {counter.count}</h1>);
+  const CounterView = snippet(() => <h1>Counter: {counter.count}</h1>);
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
