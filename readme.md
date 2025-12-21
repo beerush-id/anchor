@@ -1,180 +1,147 @@
-<h1 align="center">Anchor - State Management for Humans, Built for Enterprise</h1>
+<h1 align="center">AIR Stack</h1>
 
-<p align="center">A comprehensive state management solution that embraces JavaScript's natural mutability for effortlessly managing state — from simple todos to complex enterprise applications. Anchor handles state complexity with elegance, making any app's state a breeze.</p>
+<p align="center">Cost Efficient, AI-Native Web Development Libraries</p>
 
-## 🏗️ The Anchor Ecosystem
+<p align="center">
+  <img src="./cover.jpg" alt="AIR Stack Cover" width="100%" />
+</p>
 
-Anchor is more than just a state management library - it's a comprehensive ecosystem for building modern applications based on the **DSV (Data-State-View) model**.
+<p align="center">The complete stack for modern web development: Anchor (fine-grained state management), IRPC (type-safe APIs with automatic batching), and Reactive UI (React, Solid, Svelte, Vue).</p>
 
-### Core Packages
+## Why AIR Stack?
 
-- **[@anchor/core](./packages/core)** - The heart of the ecosystem with reactive state management
-- **[@anchor/react](./packages/react)** - React integration with hooks and components
-- **[@anchor/solid](./packages/solid)** - Solid integration with reactive state
-- **[@anchor/svelte](./packages/svelte)** - Svelte integration
-- **[@anchor/vue](./packages/vue)** - Vue integration with composables
+Modern web development forces you to choose between developer experience and performance, between type safety and productivity, between framework flexibility and infrastructure costs. AIR Stack eliminates these trade-offs.
 
-### Storage Solutions
+**The Problem:**
 
-- **[@anchor/storage](./packages/storage)** - Persistent storage with multiple backends (memory, localStorage, sessionStorage, IndexedDB)
+- **State Management Complexity**: Prop drilling, context hell, and wasted renders plague traditional approaches
+- **API Boilerplate Overload**: REST requires endless routes, serialization, client code, and manual type definitions
+- **Performance vs Cost**: More HTTP connections mean slower apps and higher infrastructure costs
+- **Framework Lock-in**: State management solutions tie you to specific frameworks, making migrations painful
 
-## ✨ Key Features
+**The Solution:**
 
-- **Fine-Grained Reactivity**: Only components that depend on changed state re-render, eliminating wasted renders
-- **True Immutability**: Direct mutation syntax with proxy-based write contracts for safety without performance penalties
-- **Zero Configuration**: Works out of the box with optional advanced configuration
-- **Framework Agnostic**: First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript
-- **Built-in Toolkit**: Includes optimistic UI, history tracking, reactive storage, and reactive requests out of the box
-- **Data Integrity**: Schema validation with Zod and TypeScript ensures your state always conforms to expectations
+AIR Stack addresses these challenges with an integrated ecosystem that delivers exceptional performance, minimal boilerplate, and true framework agnosticism. Build faster, ship cheaper, scale effortlessly.
 
-## 📚 Documentation
+## What is AIR Stack?
 
-You can view the full online documentation at [Anchor Documentations](https://anchorlib.dev/docs). You can also find the local documentation in the [docs](./docs) directory.
+AIR Stack is a revolutionary approach to building web applications that consists of three integrated components:
 
-## 🚀 Getting Started
+- **A = Anchor** (Fine-grained state management)
+- **I = IRPC** (Type-safe APIs with automatic batching)
+- **R = Reactive UI** (React, Solid, Svelte, Vue, vanilla JS)
 
-### React
+Together, these components implement the **DSV (Data-State-View) model**, creating a clean separation of concerns where external data flows through a central immutable state to your view layer.
 
-```jsx
-import { setup, render, mutable } from '@anchorlib/react';
+### Architecture
 
-const Counter = setup(() => {
-  const state = mutable({
-    count: 0,
-    title: 'My App',
-  });
+The DSV model eliminates state synchronization issues and provides predictable, scalable state management:
 
-  return render(() => (
-    <div>
-      <h1>{state.title}</h1>
-      <p>Count: {state.count}</p>
-      <button onClick={() => state.count++}>Increment</button>
-    </div>
-  ));
-});
-```
+1. **Data**: External sources (APIs via IRPC, databases, user input)
+2. **State**: Central state managed by Anchor
+3. **View**: Components that observe and render state
 
-### SolidJS
+This architecture removes prop drilling, context complexity, and framework coupling while maintaining type safety and developer productivity.
 
-```jsx
-import { anchorRef } from '@anchorlib/solid';
+## Features
 
-const Counter = () => {
-  const state = anchorRef({
-    count: 0,
-    title: 'My App',
-  });
+### Fine-Grained Reactivity
 
-  return (
-    <div>
-      <h1>{state.title}</h1>
-      <p>Count: {state.count}</p>
-      <button onClick={() => state.count++}>Increment</button>
-    </div>
-  );
-};
-```
+Anchor's fine-grained reactivity ensures only components that depend on changed state re-render, eliminating wasted renders and improving application performance.
 
-### Svelte
+### Type-Safe APIs with Zero Boilerplate
 
-```svelte
-<script>
-  import { anchorRef } from '@anchorlib/svelte';
+IRPC eliminates API boilerplate by making remote functions look and feel like local functions. End-to-end TypeScript support with automatic type inference means no manual type definitions, no routes, no endpoints.
 
-  const state = anchorRef({ count: 0, title: 'My App' });
-</script>
+### Automatic Request Batching
 
-<div>
-  <h1>{state.title}</h1>
-  <p>Count: {state.count}</p>
-  <button onclick={() => state.count++}>Increment</button>
-</div>
-```
+IRPC's automatic batching protocol reduces HTTP connections dramatically, delivering faster performance and significantly lower infrastructure costs. Multiple function calls batch into a single HTTP request, reducing network overhead and server load.
 
-### Vue
+### True Immutability
 
-```vue
-<script setup>
-import { anchorRef } from '@anchorlib/vue';
+Proxy-based write contracts guarantee that illegal mutations cannot enter the state, ensuring data integrity and predictable behavior without performance penalties.
 
-const state = anchorRef({ count: 0, title: 'My App' });
-</script>
+### Framework Agnostic
 
-<template>
-  <div>
-    <h1>{{ state.title }}</h1>
-    <p>Count: {{ state.count }}</p>
-    <button @click="state.count++">Increment</button>
-  </div>
-</template>
-```
+First-class support for React, Solid, Svelte, Vue, and vanilla JavaScript/TypeScript. Use the same state management and API layer across any framework, making migrations seamless.
 
-Unlike traditional React state management which requires explicit setState calls and complex state update logic, Anchor allows you to work with state naturally:
+### Built-in Toolkit
 
-```jsx
-import { setup, template, mutable } from '@anchorlib/react';
+Includes optimistic UI, history tracking, reactive storage, and async state out of the box. Additional libraries include AIR Object (Headless Kit), AIR View (UI Kit), and AIR Link (IRPC libraries). Everything you need to build production-ready applications without additional dependencies.
 
-const TodoApp = observer(() => {
-  const todos = mutable([
-    { id: 1, text: 'Learn Anchor', completed: true },
-    { id: 2, text: 'Build an app', completed: false },
-  ]);
+### Cost Efficiency
 
-  // Add a new todo - just mutate the state directly!
-  const addTodo = (text) => {
-    todos.push({ id: Date.now(), text, completed: false });
-  };
+Reduced HTTP connections translate directly to lower infrastructure costs and reduced token usage in generative AI applications. Serve more users with fewer servers while optimizing API costs.
 
-  // Toggle completion status - direct mutation
-  const toggleTodo = (todo) => {
-    todo.completed = !todo.completed;
-  };
+## Components
 
-  // Remove a todo - simple array manipulation
-  const removeTodo = (todo) => {
-    const index = todos.indexOf(todo);
-    if (index !== -1) {
-      todos.splice(index, 1);
-    }
-  };
-  
-  // Create a template for each todo item
-  const TodoItem = template(({ todo }) => (
-    <li key={todo.id}>
-      <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }} onClick={() => toggleTodo(todo)}>
-        {todo.text}
-      </span>
-      <button onClick={() => removeTodo(todo)}>Remove</button>
-    </li>
-  ));
+### Anchor: State Management
 
-  // Create a template for the todo list
-  const TodoList = template(() => (
-    <ul>
-      {todos.map((todo) => (
-        <TodoItem key={todo.id} todo={todo} />
-      ))}
-    </ul>
-  ));
+The heart of the ecosystem with reactive state management based on the DSV model. Anchor provides fine-grained reactivity, flexible state primitives, and a comprehensive toolkit for managing application state.
 
-  // Render the static JSX and reactive templates
-  return (
-    <div>
-      <TodoList />
-      <button onClick={() => addTodo('New task')}>Add Todo</button>
-    </div>
-  );
-});
-```
+**Core Package:**
+- [@anchorlib/core](./packages/core) - Framework-agnostic reactive state management
 
-## 🤝 Support and Contributions
+**Framework Integrations:**
+- [@anchorlib/react](./packages/react) - React integration with hooks and components
+- [@anchorlib/solid](./packages/solid) - Solid integration with reactive state
+- [@anchorlib/svelte](./packages/svelte) - Svelte integration
+- [@anchorlib/vue](./packages/vue) - Vue integration with composables
 
-If you need help, have found a bug, or want to contribute, please see
-our [contributing guidelines](./CONTRIBUTING.md). We appreciate and value
-your input!
+**Storage Solutions:**
+- [@anchorlib/storage](./packages/storage) - Persistent storage with multiple backends (memory, localStorage, sessionStorage, IndexedDB)
 
-Don't forget to star ⭐ the project if you find it interesting and stay tuned for upcoming updates.
+### IRPC: Type-Safe API Layer
 
-## 📄 License
+Isomorphic Remote Procedure Call framework that bridges the gap between frontend state and backend data. IRPC's automatic batching and type-safe protocol eliminate API complexity while delivering exceptional performance.
 
-Anchor is [MIT licensed](./LICENSE.md).
+**Core Packages:**
+- [@irpclib/irpc](./irpclib/irpc) - Core IRPC framework with automatic batching
+- [@irpclib/http](./irpclib/http) - HTTP transport implementation
+
+**Key Features:**
+- **Zero Boilerplate**: No routes, no endpoints, no client code - just declare functions and call them
+- **Automatic Batching**: Intelligent request batching with configurable debounce reduces network overhead
+- **Intelligent Caching**: Built-in caching with configurable TTL and manual invalidation support
+- **Timeout Management**: Configurable timeouts per function or globally with automatic error handling
+- **Schema Validation**: Optional Zod integration for runtime input/output validation
+- **Context Management**: Built-in async context support for request-scoped data (headers, auth, etc.)
+- **Error Handling**: Standardized error codes and messages with graceful degradation
+- **Semantic Versioning**: Auto-versioning synced with package.json for API version management
+- **Transport Abstraction**: Protocol-agnostic design supports HTTP, WebSocket, and custom transports
+
+### Reactive UI: Universal Framework Support
+
+Works seamlessly with any reactive UI framework, providing a consistent state management and API layer regardless of your view technology. Build once, run everywhere.
+
+**Supported Frameworks:**
+- React
+- Solid
+- Svelte
+- Vue
+- Vanilla JavaScript/TypeScript
+
+## Get Started
+
+**Documentation**: [https://anchorlib.dev/docs](https://anchorlib.dev/docs)
+
+**Quick Start Guides:**
+- [AIR Stack Overview](https://anchorlib.dev/docs/overview)
+- [Anchor Getting Started](https://anchorlib.dev/docs/getting-started)
+- [IRPC Documentation](https://anchorlib.dev/docs/irpc)
+- [Framework-Specific Guides](https://anchorlib.dev/docs/react/getting-started)
+
+**Resources:**
+- [GitHub Repository](https://github.com/beerush-id/anchor)
+- [Contributing Guidelines](./CONTRIBUTING.md)
+- [IRPC Specification](https://anchorlib.dev/docs/irpc/specification)
+
+## Support and Contributions
+
+If you need help, have found a bug, or want to contribute, please see our [contributing guidelines](./CONTRIBUTING.md). We appreciate and value your input.
+
+Star the project if you find it valuable and stay tuned for upcoming updates.
+
+## License
+
+AIR Stack is [MIT licensed](./LICENSE.md).
