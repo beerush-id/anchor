@@ -7,10 +7,10 @@
     "bench": "bun run src/benchmark.ts"
   },
   "dependencies": {
-    "@irpclib/irpc": "workspace:*",
     "@irpclib/http": "workspace:*",
-    "hono": "^4.0.0",
-    "elysia": "^1.0.0"
+    "@irpclib/irpc": "workspace:*",
+    "elysia": "^1.0.0",
+    "hono": "^4.0.0"
   },
   "devDependencies": {
     "@types/bun": "latest"

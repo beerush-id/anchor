@@ -19,7 +19,9 @@
     "@anchorlib/react-kit": "workspace:*",
     "@anchorlib/storage": "workspace:*",
     "@biomejs/biome": "catalog:",
+    "@shikijs/types": "catalog:app",
     "@tailwindcss/vite": "catalog:app",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:app",
     "@types/react-dom": "catalog:app",
     "@vitejs/plugin-react": "catalog:",
@@ -38,9 +40,7 @@
     "vite": "catalog:",
     "vite-tsconfig-paths": "catalog:",
     "vitest": "catalog:",
-    "zod": "catalog:",
-    "@types/bun": "catalog:",
-    "@shikijs/types": "catalog:app"
+    "zod": "catalog:"
   },
   "dependencies": {
     "@anchorlib/react": "workspace:*"

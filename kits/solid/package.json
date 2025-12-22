@@ -45,22 +45,23 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tailwindcss": "catalog:lib",
-    "tsup": "catalog:"
+    "tsdown": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",
     "typescript": "catalog:lib"
   },
   "scripts": {
-    "dev": "rimraf dist && tsup --watch",
+    "dev": "rimraf dist && tsdown --watch",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsup && publint",
-    "prepublish": "rimraf dist && tsup && publint",
+    "build": "rimraf dist && tsdown && publint",
+    "prepublish": "rimraf dist && tsdown && publint",
     "format": "biome format --write"
   },
   "license": "MIT",
   "dependencies": {
     "@anchorkit/headless": "workspace:*",
-    "@anchorlib/solid": "workspace:*"
+    "@anchorlib/solid": "workspace:*",
+    "solid-js": "catalog:lib"
   }
 }

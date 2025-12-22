@@ -44,6 +44,9 @@
         "noSvgWithoutTitle": "off",
         "useButtonType": "off",
         "noLabelWithoutControl": "off"
+      },
+      "security": {
+        "noBlankTarget": "off"
       }
     }
   },

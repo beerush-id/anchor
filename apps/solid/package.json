@@ -15,13 +15,13 @@
   },
   "devDependencies": {
     "@anchorlib/core": "workspace:*",
+    "@biomejs/biome": "catalog:",
     "@tailwindcss/vite": "catalog:app",
     "jsdom": "catalog:",
     "tailwindcss": "catalog:app",
     "typescript": "catalog:app",
     "vite": "catalog:",
-    "vite-plugin-solid": "catalog:",
-    "@biomejs/biome": "catalog:"
+    "vite-plugin-solid": "catalog:"
   },
   "optionalDependencies": {
     "zod": "catalog:"

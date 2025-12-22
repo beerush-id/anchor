@@ -43,6 +43,7 @@
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@shikijs/transformers": "catalog:lib",
+    "@shikijs/types": "catalog:lib",
     "@types/bun": "catalog:",
     "@types/react": "catalog:lib",
     "@vitest/coverage-v8": "catalog:",
@@ -56,8 +57,7 @@
     "tailwindcss": "catalog:lib",
     "tsup": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@shikijs/types": "catalog:lib"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "catalog:lib",

@@ -30,6 +30,7 @@
     "@types/markdown-it-container": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
+    "@tailwindcss/language-server": "catalog:",
     "husky": "catalog:",
     "lint-staged": "catalog:",
     "markdown-it-container": "catalog:",
@@ -49,12 +50,7 @@
   },
   "packageManager": "bun@1.3.2",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "kits/*",
-    "irpclib/*"
-  ],
+  "workspaces": ["apps/*", "packages/*", "kits/*", "irpclib/*", "demos/*"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -95,7 +91,7 @@
       "shiki": "^3.19.0",
       "solid-js": "^1.9.9",
       "svelte": "^5.0.0",
-      "tailwindcss": "^4.0.0",
+      "tailwindcss": "^4.1.0",
       "typescript": "^5.9.3",
       "vue": "^3.5.0",
       "zod": "^4.1.5"
@@ -108,6 +104,7 @@
     "@sveltejs/adapter-auto": "7.0.0",
     "@sveltejs/kit": "2.47.3",
     "@sveltejs/vite-plugin-svelte": "6.2.1",
+    "@tailwindcss/language-server": "0.14.29",
     "@tailwindcss/postcss": "4.1.16",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
