@@ -1,4 +1,5 @@
 import { createObserver, isMutableRef, mutable, type MutableRef, type StateOptions } from '@anchorlib/core';
+import type { Bindable, Linked } from './types.js';
 
 /**
  * A reference that links to a computed value through a getter function.
@@ -30,6 +31,7 @@ export class LinkingRef<T> {
     private key: keyof T = 'value' as keyof T
   ) {}
 }
+
 /**
  * Creates a linking reference from a function.
  *
@@ -37,7 +39,7 @@ export class LinkingRef<T> {
  * @param source - The function to link to
  * @returns The return type of the function
  */
-export function link<T extends (...args: unknown[]) => unknown>(source: T): ReturnType<T>;
+export function link<T extends (...args: unknown[]) => unknown>(source: T): Linked<ReturnType<T>>;
 
 /**
  * Creates a linking reference from a MutableRef.
@@ -46,7 +48,7 @@ export function link<T extends (...args: unknown[]) => unknown>(source: T): Retu
  * @param source - The MutableRef to link to
  * @returns The value type of the MutableRef
  */
-export function link<T extends MutableRef<unknown>>(source: T): T['value'];
+export function link<T extends MutableRef<unknown>>(source: T): Linked<T['value']>;
 
 /**
  * Creates a linking reference from an object property.
@@ -57,7 +59,7 @@ export function link<T extends MutableRef<unknown>>(source: T): T['value'];
  * @param key - The property key to link to
  * @returns The value type at the specified key
  */
-export function link<T, K extends keyof T>(source: T, key: K): T[K];
+export function link<T, K extends keyof T>(source: T, key: K): Linked<T[K]>;
 
 /**
  * Creates a linking reference that computes values reactively.
@@ -156,7 +158,7 @@ export function isBindable<T>(value: unknown): value is MutableRef<T> {
  * @param source - The MutableRef source to bind to
  * @returns The value type of the MutableRef
  */
-export function bind<T extends MutableRef<unknown>>(source: T): T['value'];
+export function bind<T extends MutableRef<unknown>>(source: T): Bindable<T['value']>;
 
 /**
  * Creates two-way data binding to object property.
@@ -167,7 +169,7 @@ export function bind<T extends MutableRef<unknown>>(source: T): T['value'];
  * @param key - The property key to bind to
  * @returns The value type at the specified key
  */
-export function bind<T, K extends keyof T>(source: T, key: K): T[K];
+export function bind<T, K extends keyof T>(source: T, key: K): Bindable<T[K]>;
 
 /**
  * Creates a binding reference for two-way data binding.

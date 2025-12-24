@@ -1,6 +1,6 @@
 import { captureStack, closure, getObserver, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
 import { isBinding, isLinkingRef } from './binding.js';
-import type { BindableProps, ComponentProps } from './types.js';
+import type { ComponentProps, ReactiveProps } from './types.js';
 
 const PROPS_SYMBOL = Symbol('setup-props');
 
@@ -18,7 +18,7 @@ const PROPS_SYMBOL = Symbol('setup-props');
  * @returns The result of executing the provided function
  */
 export function withProps<P, R>(props: P, fn: () => R) {
-  const prevProps = closure.get<BindableProps>(PROPS_SYMBOL);
+  const prevProps = closure.get<ReactiveProps<Record<string, unknown>>>(PROPS_SYMBOL);
   closure.set(PROPS_SYMBOL, props);
 
   try {
@@ -37,8 +37,8 @@ export function withProps<P, R>(props: P, fn: () => R) {
  * @template P - The expected type of the props
  * @returns The props from the current context
  */
-export function getProps<P>(): P {
-  return closure.get(PROPS_SYMBOL) as P;
+export function getProps<P>(): ComponentProps<P> {
+  return closure.get(PROPS_SYMBOL) as ComponentProps<P>;
 }
 
 /**
@@ -71,10 +71,10 @@ export function callback<T>(fn: T): T {
  */
 export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
   const omit = (keys: Array<keyof P>) => {
-    return omitProps(props, newProps, keys ?? []);
+    return omitProps(props, newProps as never, keys ?? []);
   };
   const pick = (keys: Array<keyof P>) => {
-    return pickProps(props, newProps, keys ?? []);
+    return pickProps(props, newProps as never, keys ?? []);
   };
 
   const newProps = new Proxy(props as ComponentProps<P>, {
@@ -122,7 +122,7 @@ export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
 
       return true;
     },
-    ownKeys(target: BindableProps): ArrayLike<string | symbol> {
+    ownKeys(target: Record<string, unknown>): ArrayLike<string | symbol> {
       const observer = getObserver();
 
       if (observer && strict) {

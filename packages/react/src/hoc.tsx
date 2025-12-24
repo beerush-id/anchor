@@ -3,7 +3,16 @@ import type { FunctionComponent, ReactNode } from 'react';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, proxyProps, withProps } from './props.js';
-import type { SetupComponent, SetupProps, Snippet, StableComponent, Template } from './types.js';
+import type {
+  Component,
+  SetupProps,
+  Snippet,
+  SnippetView,
+  StableComponent,
+  Template,
+  TemplateView,
+  View,
+} from './types.js';
 
 const RENDERER_INIT_VERSION = 1;
 const CLEANUP_DEBOUNCE_TIME = 0;
@@ -25,7 +34,7 @@ const CLEANUP_DEBOUNCE_TIME = 0;
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {C} A memoized component that only re-renders when props change
  */
-export function setup<P>(Component: SetupComponent<P>, displayName?: string): StableComponent<P> {
+export function setup<P>(Component: Component<P>, displayName?: string): StableComponent<P> {
   if (typeof Component !== 'function') {
     const error = new Error('Component must be a function.');
     captureStack.violation.general(
@@ -130,14 +139,16 @@ export function setup<P>(Component: SetupComponent<P>, displayName?: string): St
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @param needSetup - Whether to force a strict scope for the snippet (internal use).
  * @param scopeName - The scope name for the snippet (internal use).
- * @returns {FunctionComponent<P>} A memoized functional component that re-executes when dependencies change
+ * @param inherited - Whether the snippet is inheriting parent props.
+ * @returns {SnippetView<P>} A memoized functional component that re-executes when dependencies change
  */
 export function snippet<P, SP extends SetupProps = SetupProps>(
   factory: Snippet<P, SP>,
   displayName?: string,
   scopeName = 'Snippet',
-  needSetup = true
-): FunctionComponent<P> {
+  needSetup = true,
+  inherited = false
+): SnippetView<P> {
   if (typeof factory !== 'function') {
     const error = new Error('Renderer must be a function.');
     captureStack.violation.general(
@@ -191,11 +202,14 @@ export function snippet<P, SP extends SetupProps = SetupProps>(
       };
     }, []);
 
-    return observer.run(() => factory(proxyProps({ ...props }, false) as P, parentProps as SP));
+    return observer.run(() => {
+      if (inherited) return factory(parentProps as never, parentProps);
+      return factory(proxyProps({ ...props }, false) as P, parentProps);
+    });
   });
 
   Template.displayName = `${scopeName}(${viewName})`;
-  return Template as FunctionComponent<P>;
+  return Template as SnippetView<P>;
 }
 
 /**
@@ -214,9 +228,9 @@ export function snippet<P, SP extends SetupProps = SetupProps>(
  * @template P - The props type for the template
  * @param {Template<P>} factory - A function that receives props and returns React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
- * @returns {FunctionComponent<P>} A memoized functional component that re-executes when its props change
+ * @returns {TemplateView<P>} A memoized functional component that re-executes when its props change
  */
-export function template<P>(factory: Template<P>, displayName?: string): FunctionComponent<P> {
+export function template<P>(factory: Template<P>, displayName?: string): TemplateView<P> {
   const parentProps = getProps();
 
   if (parentProps) {
@@ -228,7 +242,7 @@ export function template<P>(factory: Template<P>, displayName?: string): Functio
     );
   }
 
-  return snippet(factory, displayName, 'Template', false) as FunctionComponent<P>;
+  return snippet(factory, displayName, 'Template', false) as TemplateView<P>;
 }
 
 /**
@@ -237,21 +251,21 @@ export function template<P>(factory: Template<P>, displayName?: string): Functio
 export const view = template;
 
 /**
- * Higher-Order Component that creates and immediately renders a reactive component.
+ * Higher-Order Component that creates and immediately renders a reactive JSX.
  *
- * The `render` function combines the functionality of `template` with immediate execution,
+ * The `render` function combines the functionality of `snippet` with immediate execution,
  * creating a reactive renderer and returning its rendered output. This is useful when you
  * want to create and render a reactive component in a single step rather than defining
  * it separately and then using it in JSX.
  *
- * This function follows the same reactive principles as `template`, responding to state
+ * This function follows the same reactive principles as `snippet`, responding to state
  * changes and maintaining the modern component lifecycle approach.
  *
- * @param {Snippet<SetupProps>} Component - A function that receives props and returns React nodes
+ * @param {Snippet<SetupProps>} View - A function that receives props and returns React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {ReactNode} The rendered output of the reactive component
  */
-export function render(Component: Snippet<never>, displayName?: string): ReactNode {
-  const Snippet = snippet<Record<string, unknown>>(Component as Snippet<unknown>, displayName);
+export function render<P>(View: View<P>, displayName?: string): ReactNode {
+  const Snippet = snippet<Record<string, unknown>>(View as Snippet<unknown>, displayName, 'View', true, true);
   return <Snippet />;
 }

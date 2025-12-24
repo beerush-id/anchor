@@ -1,7 +1,7 @@
 import { mutable } from '@anchorlib/core';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type BindableProps, setup } from '../src/index.js';
+import { type NodeRef, setup } from '../src/index.js';
 import { createLifecycle } from '../src/lifecycle.js';
 import { applyAttributes, escapeAttributes, flattenStyles, nodeRef } from '../src/node';
 import '../src/client/index';
@@ -20,7 +20,7 @@ describe('Anchor React - Node', () => {
   describe('nodeRef', () => {
     it('should create a node reference', () => {
       const factory = () => ({ className: 'test' });
-      let ref: BindableProps | undefined;
+      let ref: NodeRef<HTMLDivElement> | undefined;
 
       const Component = setup(() => {
         ref = nodeRef(factory);
