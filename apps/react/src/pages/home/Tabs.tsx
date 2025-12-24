@@ -70,7 +70,7 @@ export const Tabs = setup(() => {
           <AdminForm isAdmin={$use(admin)} />
         </TabContent>
       </Tab>
-      <Tab value={$bind(tabs.tab2, 'active')} disabled={$bind(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
+      <Tab value={$bind(tabs.tab2, 'active')} disabled={$use(tabs.tab2, 'disabled')} visibility={TabVisibility.BLANK}>
         <div className="flex items-center w-full">
           <TabList>
             <TabButton name={'disabled-account'}>Account</TabButton>

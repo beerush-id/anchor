@@ -1,10 +1,10 @@
 import { createCheckbox, getCheckboxGroup } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { effect, render, setup } from '@anchorlib/react';
+import { type Bindable, effect, render, setup } from '@anchorlib/react';
 import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 
 export type CheckboxProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  checked?: boolean;
+  checked?: Bindable<boolean>;
   disabled?: boolean;
   indeterminate?: boolean;
   className?: ClassName | ClassList;

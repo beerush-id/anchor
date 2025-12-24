@@ -53,7 +53,7 @@ export type Linked<T> = {
  * Allows any string key with unknown values.
  */
 export type ReactiveProps<P> = {
-  [K in keyof P]: P[K] extends Bindable<infer T> ? T | Linked<T> | Bindable<T> : P[K] | Linked<P[K]>;
+  [K in keyof P]: P[K] extends Bindable<infer T> | undefined ? T | Linked<T> | Bindable<T> : P[K] | Linked<P[K]>;
 };
 
 /**

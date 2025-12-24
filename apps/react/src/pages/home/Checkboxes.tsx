@@ -1,5 +1,5 @@
 import { Checkbox, CheckboxLabel } from '@anchorkit/react/components';
-import { bind, mutable, setup } from '@anchorlib/react';
+import { $bind, mutable, setup } from '@anchorlib/react';
 import { useWriter } from '@anchorlib/react-classic';
 
 export const Checkboxes = setup(() => {
@@ -27,19 +27,19 @@ export const Checkboxes = setup(() => {
       <h2 className="text-xl font-semibold flex-1">Checkbox</h2>
       <div className="flex gap-2">
         <CheckboxLabel>
-          <Checkbox checked={bind(settings, 'notification')} />
+          <Checkbox checked={$bind(settings, 'notification')} />
           <span>Notification</span>
         </CheckboxLabel>
         <CheckboxLabel>
-          <Checkbox checked={bind(settings, 'sound')} />
+          <Checkbox checked={$bind(settings, 'sound')} />
           <span>Sound</span>
         </CheckboxLabel>
         <CheckboxLabel>
-          <Checkbox checked={bind(notification)} indeterminate />
+          <Checkbox checked={$bind(notification)} indeterminate />
           <span>Indeterminate</span>
         </CheckboxLabel>
         <CheckboxLabel>
-          <Checkbox checked={bind(notification)} disabled />
+          <Checkbox checked={$bind(notification)} disabled />
           <span>Checked Disabled</span>
         </CheckboxLabel>
         <CheckboxLabel>

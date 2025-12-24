@@ -15,7 +15,7 @@ import {
   ToggleButton,
   ToolButton,
 } from '@anchorkit/react/components';
-import { bind, mutable, setup, snippet } from '@anchorlib/react';
+import { $use, bind, mutable, setup, snippet } from '@anchorlib/react';
 import { CircleUser } from '@icons/CircleUser.js';
 
 export const Buttons = setup(() => {
@@ -26,24 +26,24 @@ export const Buttons = setup(() => {
 
   const Content = snippet<{ text: string; disabled?: boolean }>(({ text, disabled }) => (
     <div className={'flex flex-wrap gap-2 items-center justify-center p-lg h-32'}>
-      <IconButton disabled={disabled} color={bind(color)} size={bind(size)} variant={bind(variant)}>
+      <IconButton disabled={disabled} color={$use(color)} size={$use(size)} variant={$use(variant)}>
         <CircleUser />
       </IconButton>
-      <Button disabled={disabled} color={bind(color)} size={bind(size)} variant={bind(variant)}>
+      <Button disabled={disabled} color={$use(color)} size={$use(size)} variant={$use(variant)}>
         {text}
       </Button>
-      <Button disabled={disabled} color={bind(color)} size={bind(size)} variant={bind(variant)}>
+      <Button disabled={disabled} color={$use(color)} size={$use(size)} variant={$use(variant)}>
         <CircleUser />
         <span>{text}</span>
       </Button>
       <ButtonGroup disabled={disabled}>
-        <ToolButton name={'a'} size={bind(size)}>
+        <ToolButton name={'a'} size={$use(size)}>
           <CircleUser />
         </ToolButton>
-        <ToolButton name={'b'} size={bind(size)}>
+        <ToolButton name={'b'} size={$use(size)}>
           <CircleUser />
         </ToolButton>
-        <ToolButton name={'c'} size={bind(size)}>
+        <ToolButton name={'c'} size={$use(size)}>
           <CircleUser />
         </ToolButton>
       </ButtonGroup>
