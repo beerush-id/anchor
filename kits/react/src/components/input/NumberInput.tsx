@@ -1,8 +1,13 @@
 import { classx } from '@anchorkit/headless/utils';
-import { render, setup } from '@anchorlib/react';
+import { type Bindable, render, setup } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
-import type { NumberInputProps } from './types.js';
+import type { InputBaseProps } from './types.js';
 
+export type NumberInputType = 'number' | 'range';
+export type NumberInputProps = InputBaseProps & {
+  type?: NumberInputType;
+  value?: Bindable<number>;
+};
 export const NumberInput = setup<NumberInputProps>((props) => {
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     const value = parseFloat(e.currentTarget.value);
@@ -10,10 +15,10 @@ export const NumberInput = setup<NumberInputProps>((props) => {
     props.onChange?.(e);
   };
 
-  return render(
-    (_, { value = 0, disabled, className }: NumberInputProps) => (
+  return render<NumberInputProps>(
+    ({ type = 'number', value = 0, disabled, className }) => (
       <input
-        type={'number'}
+        type={type}
         value={value}
         disabled={disabled}
         onChange={handleChange}

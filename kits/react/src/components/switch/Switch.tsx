@@ -1,9 +1,9 @@
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { render, setup } from '@anchorlib/react';
+import { type Bindable, render, setup } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type SwitchProps = HTMLAttributes<HTMLButtonElement> & {
-  checked?: boolean;
+  checked?: Bindable<boolean>;
   disabled?: boolean;
   onChange?: (checked: boolean) => void;
   className?: ClassName | ClassList;

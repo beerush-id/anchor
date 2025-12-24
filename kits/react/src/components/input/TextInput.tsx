@@ -1,7 +1,13 @@
 import { classx } from '@anchorkit/headless/utils';
-import { callback, render, setup } from '@anchorlib/react';
+import { type Bindable, callback, render, setup } from '@anchorlib/react';
 import type { ChangeEventHandler } from 'react';
-import type { TextInputProps } from './types.js';
+import type { InputBaseProps } from './types.js';
+
+export type TextInputType = 'text' | 'password' | 'email' | 'tel' | 'url' | 'search';
+export type TextInputProps = InputBaseProps & {
+  type?: TextInputType;
+  value?: Bindable<string>;
+};
 
 export const TextInput = setup<TextInputProps>((props) => {
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -9,8 +15,8 @@ export const TextInput = setup<TextInputProps>((props) => {
     props.onChange?.(e);
   };
 
-  return render(
-    (_, { type = 'text', value = '', disabled, className }: TextInputProps) => (
+  return render<TextInputProps>(
+    ({ type = 'text', value = '', disabled, className }) => (
       <input
         type={type}
         value={value}

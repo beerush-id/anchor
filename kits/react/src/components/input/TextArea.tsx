@@ -1,7 +1,11 @@
 import { classx } from '@anchorkit/headless/utils';
-import { callback, render, setup } from '@anchorlib/react';
-import type { ChangeEventHandler } from 'react';
-import type { TextAreaProps } from './types.js';
+import { type Bindable, callback, render, setup } from '@anchorlib/react';
+import type { ChangeEventHandler, TextareaHTMLAttributes } from 'react';
+
+export type TextAreaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'disabled'> & {
+  value?: Bindable<string>;
+  disabled?: boolean;
+};
 
 export const TextArea = setup<TextAreaProps>((props) => {
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (e) => {
@@ -9,8 +13,8 @@ export const TextArea = setup<TextAreaProps>((props) => {
     props.onChange?.(e);
   };
 
-  return render(
-    (_, { value = '', disabled, className }: TextAreaProps) => (
+  return render<TextAreaProps>(
+    ({ value = '', disabled, className }) => (
       <textarea
         value={value}
         disabled={disabled}

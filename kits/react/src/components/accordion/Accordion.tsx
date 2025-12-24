@@ -1,11 +1,11 @@
 import { AccordionCtx, createAccordion, getAccordionGroup } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { contextProvider, effect, nodeRef, onMount, setup, snippet } from '@anchorlib/react';
+import { type Bindable, contextProvider, effect, nodeRef, onMount, setup, snippet } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type AccordionProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
-  expanded?: boolean;
+  expanded?: Bindable<boolean>;
   disabled?: boolean;
   onChange?: (expanded: boolean) => void;
 };

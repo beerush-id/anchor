@@ -1,12 +1,12 @@
 import { createTab, TabCtx, TabVisibility } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { contextProvider, effect, nodeRef, setup, snippet } from '@anchorlib/react';
+import { type Bindable, contextProvider, effect, nodeRef, setup, snippet } from '@anchorlib/react';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 export { TabVisibility } from '@anchorkit/headless/states';
 
 export type TabProps = HTMLAttributes<HTMLDivElement> & {
-  value?: string;
+  value?: Bindable<string>;
   disabled?: boolean;
   children?: ReactNode;
   className?: ClassName | ClassList;
@@ -15,7 +15,7 @@ export type TabProps = HTMLAttributes<HTMLDivElement> & {
 
 const Provider = contextProvider(TabCtx, 'Tab');
 
-export const Tab = setup((props: TabProps) => {
+export const Tab = setup<TabProps>((props) => {
   const tab = createTab();
   const ref = nodeRef<HTMLDivElement>(() => ({
     className: classx('ark-tab', props.className),

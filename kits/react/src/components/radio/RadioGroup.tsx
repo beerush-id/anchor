@@ -1,10 +1,10 @@
 import { createRadioGroup, RadioGroupCtx, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { contextProvider, effect, onMount, setup, snippet } from '@anchorlib/react';
+import { type Bindable, contextProvider, effect, onMount, setup, snippet } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type RadioGroupProps = HTMLAttributes<HTMLDivElement> & {
-  value?: RadioValue;
+  value?: Bindable<RadioValue>;
   disabled?: boolean;
   onChange?: (value: RadioValue) => void;
   className?: ClassName | ClassList;

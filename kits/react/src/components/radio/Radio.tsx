@@ -1,11 +1,11 @@
 import { getRadioGroup, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { derived, render, setup } from '@anchorlib/react';
+import { type Bindable, derived, render, setup } from '@anchorlib/react';
 import type { ButtonHTMLAttributes, MouseEventHandler } from 'react';
 
 export type RadioProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   value?: RadioValue;
-  checked?: boolean;
+  checked?: Bindable<boolean>;
   disabled?: boolean;
   onChange?: (checked: boolean) => void;
   className?: ClassName | ClassList;

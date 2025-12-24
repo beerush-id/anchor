@@ -1,6 +1,16 @@
 import { ButtonGroupCtx, createButtonGroup, createButtonSwitch, getButtonGroup } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { contextProvider, derived, effect, nodeRef, onMount, render, setup } from '@anchorlib/react';
+import {
+  type Bindable,
+  type ComponentProps,
+  contextProvider,
+  derived,
+  effect,
+  nodeRef,
+  onMount,
+  render,
+  setup,
+} from '@anchorlib/react';
 import type { ButtonHTMLAttributes, HTMLAttributes, MouseEventHandler } from 'react';
 
 export const BtnSize = {
@@ -31,12 +41,12 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   color?: ButtonColor | string;
   variant?: ButtonVariant | string;
   className?: ClassName | ClassList;
-  active?: boolean;
+  active?: Bindable<boolean>;
 };
 
 const CONTROLLED_PROPS = ['color', 'variant', 'size', 'children', 'className', 'active'] as (keyof ButtonProps)[];
 
-export function createButtonClass(props: ButtonProps) {
+export function createButtonClass(props: ComponentProps<ButtonProps>) {
   return derived(() => {
     const { size, color, active, variant } = props;
 
@@ -74,7 +84,7 @@ export const createButton = (name = 'Button', defaultClass = 'ark-button') => {
 };
 
 export type ToggleButtonProps = ButtonProps & {
-  checked?: boolean;
+  checked?: Bindable<boolean>;
   onChange?: (checked: boolean) => void;
 };
 
@@ -135,8 +145,8 @@ export const ToolButton = createToggleButton('ToolButton', 'ark-tool-button');
 export const ToggleButton = createToggleButton();
 
 export type ButtonGroupProps = HTMLAttributes<HTMLDivElement> & {
-  value?: string;
-  values?: string[];
+  value?: Bindable<string>;
+  values?: Bindable<string[]>;
   multiple?: boolean;
   disabled?: boolean;
   onChange?: (value: string) => void;
