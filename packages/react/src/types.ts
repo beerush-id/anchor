@@ -49,11 +49,21 @@ export type Linked<T> = {
 };
 
 /**
+ * Represents a function that returns a value.
+ *
+ * @template T - The type of value returned by the function
+ */
+export type ValueReader<T> = () => T;
+
+export type ReadableProp<T> = T | ValueReader<T> | Linked<T>;
+export type WritableProp<T> = T | ValueReader<T> | Linked<T> | Bindable<T>;
+
+/**
  * Represents a reactive props that can be bound to a component.
  * Allows any string key with unknown values.
  */
 export type ReactiveProps<P> = {
-  [K in keyof P]: P[K] extends Bindable<infer T> | undefined ? T | Linked<T> | Bindable<T> : P[K] | Linked<P[K]>;
+  [K in keyof P]: P[K] extends Bindable<infer T> | undefined ? WritableProp<T> : ReadableProp<P[K]>;
 };
 
 /**
