@@ -127,6 +127,7 @@ export default function Home() {
         <h2 className="text-xl font-semibold mb-2">Buttons</h2>
         <Buttons />
       </div>
+      <Badges />
 
       {/* Cards */}
       <div className="mb-8">
@@ -229,7 +230,6 @@ export default function Home() {
       <Checkboxes />
       <Radios />
       <Switches />
-      <Badges />
       <Tabs />
     </main>
   );
