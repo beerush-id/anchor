@@ -3,7 +3,7 @@ import { template } from '@anchorlib/react';
 import { ARK_CONFIG } from '../lib/index.js';
 import { type IconProps, iconSize } from './utils.js';
 
-export const ChevronDown = template<IconProps>(
+export const Setting = template<IconProps>(
   ({ className, size, fill, stroke, strokeWidth, strokeLinecap, strokeLinejoin, ...props }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -18,8 +18,11 @@ export const ChevronDown = template<IconProps>(
       className={classx('ark-icon', className)}
       {...props}
     >
-      <path d="m6 9 6 6 6-6" />
+      <path d="M14 17H5" />
+      <path d="M19 7h-9" />
+      <circle cx="17" cy="17" r="3" />
+      <circle cx="7" cy="7" r="3" />
     </svg>
   ),
-  'ChevronDown'
+  'SettingIcon'
 );

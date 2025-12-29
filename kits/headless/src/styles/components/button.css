@@ -110,6 +110,7 @@
 
 @utility ark-button-style {
   color: var(--ark-btn-fg);
+  cursor: pointer;
   background-color: var(--ark-btn-bg);
   box-shadow: var(--ark-btn-shadow);
 
@@ -228,7 +229,6 @@
 
   --ark-btn-bg-hover: var(--color-btn-fg-hover);
 
-  cursor: pointer;
   outline: none;
   text-decoration: underline;
 
@@ -325,10 +325,11 @@
   color: var(--color-foreground);
   border-style: solid;
   border-color: var(--color-border);
-  border-left-width: 0;
+  border-left-width: 1px;
   border-top-width: 1px;
   border-bottom-width: 1px;
   border-right-width: 1px;
+  border-radius: var(--ark-btn-border-radius);
 
   &:focus {
     z-index: 1;
@@ -372,6 +373,7 @@
 
   & > .ark-toggle-button:not(:first-child),
   & > .ark-tool-button:not(:first-child) {
+    border-left-width: 0;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
   }

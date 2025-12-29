@@ -123,7 +123,6 @@ export function createToggleButton(name = 'ToggleButton', defaultClass = 'ark-to
       () => (
         <button
           role={'switch'}
-          disabled={state.disabled || group?.disabled}
           aria-checked={state.ariaChecked}
           aria-disabled={state.disabled || group?.disabled}
           className={classx(defaultClass, className.value, props.className)}

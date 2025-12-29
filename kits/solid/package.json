@@ -30,9 +30,7 @@
       "import": "./dist/lib/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -44,10 +42,10 @@
     "esbuild-raw-plugin": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
-    "tailwindcss": "catalog:lib",
     "tsdown": "catalog:"
   },
   "peerDependencies": {
+    "solid-js": "catalog:lib",
     "tailwindcss": "catalog:lib",
     "typescript": "catalog:lib"
   },
@@ -61,7 +59,6 @@
   "license": "MIT",
   "dependencies": {
     "@anchorkit/headless": "workspace:*",
-    "@anchorlib/solid": "workspace:*",
-    "solid-js": "catalog:lib"
+    "@anchorlib/solid": "workspace:*"
   }
 }
