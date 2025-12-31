@@ -1,5 +1,12 @@
 import type { Enum } from './types.js';
 
+export const StringMutations = {
+  APPEND: 'append',
+  PREPEND: 'prepend',
+} as const;
+
+export type StringMutations = Enum<typeof StringMutations>;
+
 export const ArrayMutations = {
   POP: 'pop',
   SORT: 'sort',

@@ -1,9 +1,9 @@
 import { getDevTool } from './dev.js';
-import { BatchMutations } from './enum.js';
+import { BatchMutations, StringMutations } from './enum.js';
 import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from './types.js';
 import { softEntries, softKeys } from './utils/clone.js';
-import { isArray, isDefined, isMap, isSet } from './utils/index.js';
+import { isArray, isDefined, isMap, isSet, isString } from './utils/index.js';
 
 /**
  * Assigns a partial state to the given state.
@@ -231,6 +231,107 @@ export const clear = <T extends Assignable>(target: T) => {
     devTool?.onClear(meta);
   }
 };
+
+/**
+ * Merges text to an existing string property in the target object.
+ *
+ * This function prepends or appends the given value to the existing string property.
+ * It handles state management by notifying subscribers of the change.
+ *
+ * @template T - The type of the target object
+ * @template K - The type of the property key
+ * @param {T} target - The target object containing the string property
+ * @param {K} prop - The property key of the string to modify
+ * @param {T[K]} value - The string value to prepend or append
+ * @param {boolean} isPrepend - Whether to prepend (true) or append (false) the value
+ * @throws {Error} If the target is not a safe object, or if the property is not a string, or if the value is not a string
+ */
+const mergeText = <T, K extends keyof T>(target: T, prop: K, value: T[K], isPrepend: boolean = false) => {
+  if (!isSafeObject(target) && !isArray(target)) {
+    throw new Error(`Cannot ${isPrepend ? 'prepend' : 'append'} to non-object target.`);
+  }
+
+  const prev = target[prop];
+
+  if (!isString(prev)) {
+    throw new Error(`Cannot ${isPrepend ? 'prepend' : 'append'} to non-string property.`);
+  }
+
+  if (!isString(value)) {
+    throw new Error(`Cannot ${isPrepend ? 'prepend' : 'append'} non-string value.`);
+  }
+
+  const { init, meta, devTool, broadcaster } = targetInfo(target as Linkable);
+
+  if (isDefined(init)) {
+    STATE_BUSY_LIST.add(init);
+  }
+
+  target[prop as never] = (isPrepend ? value + prev : prev + value) as never;
+
+  const event = {
+    type: isPrepend ? StringMutations.PREPEND : StringMutations.APPEND,
+    prev,
+    keys: [prop],
+    value,
+  } as StateChange;
+
+  broadcaster?.emit(event);
+  broadcaster?.broadcast(init, event, meta?.id);
+
+  if (isDefined(init)) {
+    STATE_BUSY_LIST.delete(init);
+  }
+
+  if (meta && isPrepend && devTool?.onPrepend) {
+    devTool?.onPrepend(meta, prop, value);
+  }
+
+  if (meta && !isPrepend && devTool?.onAppend) {
+    devTool?.onAppend(meta, prop, value);
+  }
+};
+
+/**
+ * Appends a string value to an existing string property in the target object.
+ *
+ * This function appends the given value to the end of the existing string property.
+ * It handles state management by notifying subscribers of the change.
+ *
+ * @template T - The type of the target object
+ * @template K - The type of the property key
+ * @param {T} target - The target object containing the string property
+ * @param {K} prop - The property key of the string to modify
+ * @param {T[K]} value - The string value to append
+ */
+export function append<T, K extends keyof T>(target: T, prop: K, value: T[K]) {
+  mergeText(target, prop, value);
+}
+
+/**
+ * Prepends a string value to an existing string property in the target object.
+ *
+ * This function prepends the given value to the beginning of the existing string property.
+ * It handles state management by notifying subscribers of the change.
+ *
+ * @template T - The type of the target object
+ * @template K - The type of the property key
+ * @param {T} target - The target object containing the string property
+ * @param {K} prop - The property key of the string to modify
+ * @param {T[K]} value - The string value to prepend
+ */
+export function prepend<T, K extends keyof T>(target: T, prop: K, value: T[K]) {
+  mergeText(target, prop, value, true);
+}
+
+function targetInfo(target: Linkable) {
+  const init = STATE_REGISTRY.get(target) as Linkable;
+  const meta = META_REGISTRY.get(init as Linkable);
+  const devTool = getDevTool();
+  const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
+
+  return { init, meta, devTool, broadcaster };
+}
 
 function isSafeObject(value: unknown): value is object {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

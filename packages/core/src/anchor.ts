@@ -6,7 +6,7 @@ import { getDevTool } from './dev.js';
 import { type ArrayMutations, Linkables } from './enum.js';
 import { captureStack } from './exception.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
-import { assign, clear, remove } from './helper.js';
+import { append, assign, clear, prepend, remove } from './helper.js';
 import { linkable } from './internal.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import {
@@ -415,6 +415,8 @@ anchorFn.writable = writeContract;
 anchorFn.assign = assign;
 anchorFn.remove = remove;
 anchorFn.clear = clear;
+anchorFn.append = append;
+anchorFn.prepend = prepend;
 
 export const anchor = anchorFn as Anchor;
 export const snapshot = anchorFn.snapshot as Anchor['snapshot'];

@@ -1,5 +1,5 @@
-import type { DevTool } from '../src/index.js';
 import { vi } from 'vitest';
+import type { DevTool } from '../src/index.js';
 
 export function createDevTool() {
   const devTool = {} as DevTool;
@@ -12,6 +12,8 @@ export function createDevTool() {
     'onInit',
     'onAssign',
     'onRemove',
+    'onAppend',
+    'onPrepend',
     'onClear',
     'onDestroy',
     'onSubscribe',

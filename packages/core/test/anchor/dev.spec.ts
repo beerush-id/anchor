@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, getDevTool, setDevTool, subscribe } from '../../src/index.js';
 import { createDevTool } from '../../mocks/devtool.js';
+import { anchor, createObserver, getDevTool, setDevTool, subscribe } from '../../src/index.js';
 
 describe('Anchor Dev Tool', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -311,6 +311,44 @@ describe('Anchor Dev Tool', () => {
           id: expect.any(String),
         }),
         ['name', 'active']
+      );
+    });
+
+    it('should get notified when append is called', () => {
+      const devTool = getDevTool();
+      const state = anchor({ name: 'test' });
+
+      // Call remove
+      anchor.append(state, 'name', ' append');
+
+      expect(state.name).toBe('test append');
+
+      expect(devTool?.onAppend).toHaveBeenCalledTimes(1);
+      expect(devTool?.onAppend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+        }),
+        'name',
+        ' append'
+      );
+    });
+
+    it('should get notified when prepend is called', () => {
+      const devTool = getDevTool();
+      const state = anchor({ name: 'test' });
+
+      // Call remove
+      anchor.prepend(state, 'name', 'prepend ');
+
+      expect(state.name).toBe('prepend test');
+
+      expect(devTool?.onPrepend).toHaveBeenCalledTimes(1);
+      expect(devTool?.onPrepend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+        }),
+        'name',
+        'prepend '
       );
     });
 

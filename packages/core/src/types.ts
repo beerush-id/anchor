@@ -1,12 +1,13 @@
 import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod/v4';
-import type {
-  ARRAY_MUTATIONS,
-  AsyncStatus as AsyncStatusType,
-  BATCH_MUTATIONS,
-  MAP_MUTATIONS,
-  OBJECT_MUTATIONS,
-  SET_MUTATIONS,
+import {
+  type ARRAY_MUTATIONS,
+  type AsyncStatus as AsyncStatusType,
+  type BATCH_MUTATIONS,
+  type MAP_MUTATIONS,
+  type OBJECT_MUTATIONS,
+  type SET_MUTATIONS,
+  STRING_MUTATIONS,
 } from './constant.js';
 import type { Linkables } from './enum.js';
 import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
@@ -54,7 +55,8 @@ export type SetMutation = (typeof SET_MUTATIONS)[number] | `${(typeof SET_MUTATI
 export type MapMutation = (typeof MAP_MUTATIONS)[number] | `${(typeof MAP_MUTATIONS)[number]}`;
 export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number] | `${(typeof ARRAY_MUTATIONS)[number]}`;
 export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number] | `${(typeof OBJECT_MUTATIONS)[number]}`;
-export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation;
+export type StringMutation = (typeof STRING_MUTATIONS)[number] | `${(typeof STRING_MUTATIONS)[number]}`;
+export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation | StringMutation;
 
 export type StateBaseOptions = {
   cloned?: boolean;
@@ -575,6 +577,34 @@ export interface Anchor {
   remove<T extends object>(target: T, ...keys: Array<keyof T>): void;
 
   /**
+   * Appends a string value to an existing string property in the target object.
+   *
+   * This function appends the given value to the end of the existing string property.
+   * It handles state management by notifying subscribers of the change.
+   *
+   * @template T - The type of the target object
+   * @template K - The type of the property key
+   * @param {T} target - The target object containing the string property
+   * @param {K} prop - The property key of the string to modify
+   * @param {T[K]} value - The string value to append
+   */
+  append<T, K extends keyof T>(target: T, prop: K, value: T[K]): void;
+
+  /**
+   * Prepends a string value to an existing string property in the target object.
+   *
+   * This function prepends the given value to the beginning of the existing string property.
+   * It handles state management by notifying subscribers of the change.
+   *
+   * @template T - The type of the target object
+   * @template K - The type of the property key
+   * @param {T} target - The target object containing the string property
+   * @param {K} prop - The property key of the string to modify
+   * @param {T[K]} value - The string value to prepend
+   */
+  prepend<T, K extends keyof T>(target: T, prop: K, value: T[K]): void;
+
+  /**
    * Clears all entries from a collection.
    *
    * @param target - Target collection to clear
@@ -739,6 +769,7 @@ export type DevTool = {
    * @param {KeyLike} prop
    */
   onGet?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+
   /**
    * A callback that will be called when a property is set.
    * @param {StateMetadata} meta - State metadata associated with the event.
@@ -750,12 +781,14 @@ export type DevTool = {
     prop: KeyLike,
     value: unknown
   ) => void;
+
   /**
    * A callback that will be called when a property is deleted.
    * @param {StateMetadata} meta
    * @param {KeyLike} prop
    */
   onDelete?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, prop: KeyLike) => void;
+
   /**
    * A callback that will be called when a method is called.
    * @param {StateMetadata} meta - State metadata associated with the event.
@@ -767,33 +800,77 @@ export type DevTool = {
     method: string,
     args: unknown[]
   ) => void;
+
   /**
    * A callback that will be called when a state is initialized.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
   onInit?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
+
   /**
    * A callback that will be called when a bulk assignment is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {ObjLike} source
    */
   onAssign?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, source: ObjLike) => void;
+
   /**
    * A callback that will be called when a bulk removal is performed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    * @param {KeyLike[]} props
    */
   onRemove?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, props: KeyLike[]) => void;
+
+  /**
+   * A callback that will be called when a string is appended to a property.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {KeyLike} key
+   * @param {string} value
+   */
+  onAppend?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    key: KeyLike,
+    value: string
+  ) => void;
+
+  /**
+   * A callback that will be called when a string is prepended to a property.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {KeyLike} key
+   * @param {string} value
+   */
+  onPrepend?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    key: KeyLike,
+    value: string
+  ) => void;
+
+  /**
+   * A callback that will be called when a string is replaced in a property.
+   * @param {StateMetadata} meta - State metadata associated with the event.
+   * @param {KeyLike} key
+   * @param {string} search
+   * @param {string} replace
+   */
+  onReplace?: <T extends Linkable, S extends LinkableSchema>(
+    meta: StateMetadata<T, S>,
+    key: KeyLike,
+    search: string,
+    replace: string
+  ) => void;
+
   /**
    * A callback that will be called when a state is cleared.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
   onClear?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>) => void;
+
   /**
    * A callback that will be called when a state is destroyed.
    * @param {StateMetadata} meta - State metadata associated with the event.
    */
   onDestroy?: <T extends Linkable, S extends LinkableSchema>(init: T, meta: StateMetadata<T, S>) => void;
+
   /**
    * A callback that will be called when a subscriber is added.
    * @param {StateMetadata} meta - State metadata associated with the event.
@@ -804,6 +881,7 @@ export type DevTool = {
     handler: StateSubscriber<T>,
     receiver?: Linkable
   ) => void;
+
   /**
    * A callback that will be called when a subscriber is removed.
    * @param {StateMetadata} meta - State metadata associated with the event.
@@ -814,18 +892,21 @@ export type DevTool = {
     handler: StateSubscriber<T>,
     receiver?: Linkable
   ) => void;
+
   /**
    * A callback that will be called when a child reference is linked.
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
   onLink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+
   /**
    * A callback that will be called when a child reference is unlinked.
    * @param {StateMetadata} meta
    * @param {StateMetadata} child
    */
   onUnlink?: <T extends Linkable, S extends LinkableSchema>(meta: StateMetadata<T, S>, child: StateMetadata) => void;
+
   /**
    * A callback that will be called when a state is being tracked by an observer.
    * @param {StateMetadata} meta
@@ -836,6 +917,7 @@ export type DevTool = {
     observer: StateObserver,
     key: KeyLike
   ) => void;
+
   /**
    * A callback that will be called when a state is no longer being tracked by an observer.
    * @param {StateMetadata} meta

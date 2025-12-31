@@ -287,4 +287,138 @@ describe('Anchor Helpers', () => {
       unsubscribe();
     });
   });
+
+  describe('String Operations', () => {
+    it('should append string value to existing string property', () => {
+      const state = anchor({ text: 'Hello' });
+
+      anchor.append(state, 'text', ' World');
+
+      expect(state.text).toBe('Hello World');
+    });
+
+    it('should prepend string value to existing string property', () => {
+      const state = anchor({ text: 'World' });
+
+      anchor.prepend(state, 'text', 'Hello ');
+
+      expect(state.text).toBe('Hello World');
+    });
+
+    it('should handle empty string append', () => {
+      const state = anchor({ text: 'Hello' });
+
+      anchor.append(state, 'text', '');
+
+      expect(state.text).toBe('Hello');
+    });
+
+    it('should handle empty string prepend', () => {
+      const state = anchor({ text: 'World' });
+
+      anchor.prepend(state, 'text', '');
+
+      expect(state.text).toBe('World');
+    });
+
+    it('should handle append with anchor.get', () => {
+      const state = anchor({ text: 'Hello' });
+
+      anchor.append(state, 'text', ' World');
+
+      expect(anchor.get(state)).toEqual({ text: 'Hello World' });
+    });
+
+    it('should handle prepend with anchor.get', () => {
+      const state = anchor({ text: 'World' });
+
+      anchor.prepend(state, 'text', 'Hello ');
+
+      expect(anchor.get(state)).toEqual({ text: 'Hello World' });
+    });
+
+    it('should throw error when appending to non-string property', () => {
+      const state = anchor({ num: 42 });
+
+      expect(() => {
+        anchor.append(state, 'num', 'text' as never);
+      }).toThrow('Cannot append to non-string property.');
+    });
+
+    it('should throw error when prepending to non-string property', () => {
+      const state = anchor({ num: 42 });
+
+      expect(() => {
+        anchor.prepend(state, 'num', 'text' as never);
+      }).toThrow('Cannot prepend to non-string property.');
+    });
+
+    it('should throw error when appending non-string value', () => {
+      const state = anchor({ text: 'Hello' });
+
+      expect(() => {
+        anchor.append(state, 'text', 123 as never);
+      }).toThrow('Cannot append non-string value.');
+    });
+
+    it('should throw error when prepending non-string value', () => {
+      const state = anchor({ text: 'Hello' });
+
+      expect(() => {
+        anchor.prepend(state, 'text', 123 as never);
+      }).toThrow('Cannot prepend non-string value.');
+    });
+
+    it('should throw error when appending to non-object target', () => {
+      expect(() => {
+        anchor.append('string' as never, 'prop' as never, 'value' as never);
+      }).toThrow('Cannot append to non-object target.');
+    });
+
+    it('should throw error when prepending to non-object target', () => {
+      expect(() => {
+        anchor.prepend('string' as never, 'prop' as never, 'value' as never);
+      }).toThrow('Cannot prepend to non-object target.');
+    });
+
+    it('should notify for append changes', () => {
+      const state = anchor({ text: 'Hello' });
+      const handler = vi.fn();
+      const unsubscribe = subscribe(state, handler);
+
+      anchor.append(state, 'text', ' World');
+
+      expect(state.text).toBe('Hello World');
+      expect(handler).toHaveBeenCalledTimes(2); // init + append
+      expect(handler).toHaveBeenCalledWith(state, { type: 'init', keys: [] });
+      expect(handler).toHaveBeenCalledWith(state, {
+        type: 'append',
+        keys: ['text'],
+        prev: 'Hello',
+        value: ' World',
+      });
+
+      unsubscribe();
+    });
+
+    it('should notify for prepend changes', () => {
+      const state = anchor({ text: 'World' });
+      const handler = vi.fn();
+      const unsubscribe = subscribe(state, handler);
+
+      anchor.prepend(state, 'text', 'Hello ');
+
+      expect(state.text).toBe('Hello World');
+      expect(handler).toHaveBeenCalledTimes(2); // init + prepend
+      expect(handler).toHaveBeenCalledWith(state, { type: 'init', keys: [] });
+      expect(handler).toHaveBeenCalledWith(state, {
+        type: 'prepend',
+        keys: ['text'],
+        prev: 'World',
+        value: 'Hello ',
+      });
+
+      unsubscribe();
+    });
+  });
 });
