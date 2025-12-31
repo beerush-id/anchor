@@ -1,6 +1,7 @@
 import { effect, mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $use, bind } from '../src/binding';
+import type { Bindable, ComponentProps, ReactiveProps } from '../src/index.js';
 import { callback, getProps, proxyProps, withProps } from '../src/props';
 
 describe('Anchor React - Props', () => {
@@ -27,7 +28,7 @@ describe('Anchor React - Props', () => {
 
     it('should set and restore props context', () => {
       const testProps = { test: 'value' };
-      let capturedProps: typeof testProps | undefined;
+      let capturedProps: ComponentProps<typeof testProps> | undefined;
 
       withProps(testProps, () => {
         capturedProps = getProps();
@@ -45,7 +46,7 @@ describe('Anchor React - Props', () => {
 
     it('should return props when set in context', () => {
       const testProps = { test: 'value' };
-      let capturedProps: typeof testProps | undefined;
+      let capturedProps: ComponentProps<typeof testProps> | undefined;
 
       withProps(testProps, () => {
         capturedProps = getProps();
@@ -151,6 +152,22 @@ describe('Anchor React - Props', () => {
       expect(proxiedProps.value).toBe('test');
     });
 
+    it('should handle function in props', () => {
+      const source = mutable('test');
+      const testProps = { value: () => source.value };
+      const proxiedProps = proxyProps(testProps);
+
+      expect(proxiedProps.value).toBe('test');
+    });
+
+    it('should handle event handler in props as is', () => {
+      const source = mutable('test');
+      const testProps = { onClick: () => source.value };
+      const proxiedProps = proxyProps(testProps);
+
+      expect(proxiedProps.onClick()).toBe('test');
+    });
+
     it('should handle $use() references with null in props', () => {
       const testProps = { value: $use(null as never) };
       const proxiedProps = proxyProps(testProps);
@@ -192,7 +209,7 @@ describe('Anchor React - Props', () => {
 
     it('should only mutate the props itself', () => {
       const source = mutable('test');
-      const props = proxyProps({ value: source.value });
+      const props = proxyProps({ value: source.value }) as ReactiveProps<{ value: string }>;
 
       expect(props.value).toBe('test');
       props.value = 'newValue';
@@ -205,7 +222,7 @@ describe('Anchor React - Props', () => {
 
       const onClick = vi.fn();
       const testProps = { onClick };
-      const proxiedProps = proxyProps(testProps);
+      const proxiedProps = proxyProps(testProps) as ReactiveProps<typeof testProps>;
 
       proxiedProps.onClick = (() => {}) as never;
       vi.runAllTimers();
@@ -292,7 +309,7 @@ describe('Anchor React - Props', () => {
     it('should handle mutations through $omit and $pick objects', () => {
       const source = mutable('test');
       const binding = bind(source);
-      const testProps = { value: binding };
+      const testProps = { value: binding } as ReactiveProps<{ value: Bindable<string> }>;
       const proxiedProps = proxyProps(testProps);
 
       const omittedProps = proxiedProps.$omit([]);
