@@ -8,6 +8,7 @@ import type {
   ZodString,
   ZodUndefined,
 } from 'zod/v4';
+import type { IRPC_DATA_TYPE, IRPC_EVENT_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
 import type { IRPCTransport } from './transport.js';
 
@@ -22,6 +23,44 @@ export type IRPCStubStore = WeakMap<IRPCHandler, IRPCSpec<IRPCInputs, IRPCOutput
  * Used to keep track of available RPC hosts by their names.
  */
 export type IRPCSpecStore = Map<string, IRPCSpec<IRPCInputs, IRPCOutput>>;
+
+export type IRPCStatus = (typeof IRPC_STATUS)[keyof typeof IRPC_STATUS];
+export type IRPCDataType = (typeof IRPC_DATA_TYPE)[keyof typeof IRPC_DATA_TYPE];
+export type IRPCPacketType = (typeof IRPC_PACKET_TYPE)[keyof typeof IRPC_PACKET_TYPE];
+export type IRPCEventType = (typeof IRPC_EVENT_TYPE)[keyof typeof IRPC_EVENT_TYPE];
+
+export type IRPCPacket = {
+  id: string;
+  name: string;
+  type: IRPCPacketType;
+  dispatchAt?: number;
+  receivedAt?: number;
+};
+
+export type IRPCPacketData = {
+  type: IRPCDataType;
+  value: IRPCData;
+};
+
+export type IRPCPacketCall = IRPCPacket & {
+  args: IRPCData[];
+};
+
+export type IRPCPacketAnswer = IRPCPacket & {
+  data?: IRPCPacketData;
+  error?: IRPCError;
+};
+
+export type IRPCPacketEvent = IRPCPacket & {
+  data: IRPCPacketData;
+  event: IRPCEventType;
+};
+
+export interface IRPCReadable<T> {
+  data: T;
+  error: Error | undefined;
+  status: IRPCStatus;
+}
 
 /**
  * Represents primitive data types that can be used in IRPC communications.
@@ -94,16 +133,6 @@ export type IRPCPackageConfig = IRPCPackageInfo & {
 };
 
 /**
- * Defines an RPC module which extends a namespace with execution capabilities.
- */
-export type IRPCModule = IRPCPackageInfo & {
-  /** Optional timeout for RPC calls */
-  timeout?: number;
-  /** Optional transport mechanism for RPC communications */
-  transport?: IRPCTransport;
-};
-
-/**
  * Represents the payload of an RPC call with its name and arguments.
  */
 export type IRPCPayload = {
@@ -141,14 +170,23 @@ export type IRPCHandler = Function;
 export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
   /** The name of the RPC function */
   name: string;
-  /** Optional schema for input/output validation */
-  schema?: IRPCSchema<I, O>;
   /** Optional description of the RPC function */
   description?: string;
+
+  /** Optional schema for input/output validation */
+  schema?: IRPCSchema<I, O>;
   /** Optional maximum age of a call in milliseconds */
   maxAge?: number;
   /** Optional timeout for RPC calls */
   timeout?: number;
+
+  /**
+   * Whether to coalesce multiple calls to the same RPC function within a short time period.
+   * If true, multiple calls with the same parameters will be combined into a single call,
+   * with subsequent calls waiting for the result of the first call.
+   * This can help reduce the number of actual function executions.
+   */
+  coalesce?: boolean;
 };
 
 /**
@@ -201,11 +239,6 @@ export type IRPCCache = {
 };
 
 /**
- * Represents a cache for RPC responses.
- */
-export type IRPCCaches = Map<string, IRPCCache>;
-
-/**
  * Context storage mechanism for RPC operations.
  */
 export type IRPCContext<K, V> = Map<K, V>;
@@ -227,5 +260,5 @@ export type IRPCContextProvider = {
 
 export type TransportConfig = {
   timeout?: number;
-  debounce?: number;
+  debounce?: number | boolean;
 };

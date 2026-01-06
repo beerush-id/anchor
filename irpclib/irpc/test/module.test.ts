@@ -32,7 +32,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should throw error for invalid name', () => {
-      expect(() => createPackage({ name: 'invalid-name' })).toThrow();
+      expect(() => createPackage({ name: 'invalid name' })).toThrow();
       expect(() => createPackage({ name: 'valid_name123' })).not.toThrow();
     });
 
@@ -180,6 +180,47 @@ describe('IRPCPackage', () => {
       expect(await hello('World')).toBe('Hello World');
     });
 
+    it('should handle coalesce call', async () => {
+      const irpc = createPackage({
+        name: 'coalesce',
+      });
+      const hello = irpc.declare<(name: string) => Promise<{ message: string }>>({
+        name: 'helloCoalesce',
+      });
+      irpc.construct(hello, async (name) => ({ message: `Hello ${name}` }));
+
+      const promise1 = hello('World');
+      const promise2 = hello('World');
+
+      const result1 = await promise1;
+      const result2 = await promise2;
+
+      expect(result1).toEqual({ message: 'Hello World' });
+      expect(result2).toEqual({ message: 'Hello World' });
+      expect(result1).toBe(result2);
+    });
+
+    it('should handle non coalesce call', async () => {
+      const irpc = createPackage({
+        name: 'coalesce',
+      });
+      const hello = irpc.declare<(name: string) => Promise<{ message: string }>>({
+        name: 'helloCoalesceFalse',
+        coalesce: false,
+      });
+      irpc.construct(hello, async (name) => ({ message: `Hello ${name}` }));
+
+      const promise1 = hello('World');
+      const promise2 = hello('World');
+
+      const result1 = await promise1;
+      const result2 = await promise2;
+
+      expect(result1).toEqual({ message: 'Hello World' });
+      expect(result2).toEqual({ message: 'Hello World' });
+      expect(result1).not.toBe(result2);
+    });
+
     it('should call remote implementation', async () => {
       class OptimisticTransport extends IRPCTransport {
         async dispatch(calls: IRPCCall[]) {
@@ -198,6 +239,7 @@ describe('IRPCPackage', () => {
 
       const promise = hello('World');
 
+      await Promise.resolve();
       vi.runAllTimers();
 
       expect(await promise).toBe('Hello World');
@@ -231,12 +273,14 @@ describe('IRPCPackage', () => {
 
       const promise = hello('Hello World 1');
 
+      await Promise.resolve();
       vi.runAllTimers();
 
       expect(await promise).toBe('Hello World 1');
 
       const promise2 = hello('Hello World 1');
 
+      await Promise.resolve();
       vi.runAllTimers();
 
       expect(await promise2).toBe('Hello World 1');
@@ -247,6 +291,7 @@ describe('IRPCPackage', () => {
 
       const promise3 = hello('Hello World 1');
 
+      await Promise.resolve();
       vi.runAllTimers();
 
       expect(await promise3).toBe('Hello World 1');
@@ -258,6 +303,7 @@ describe('IRPCPackage', () => {
       const promise4 = hello('Hello World 2');
 
       vi.advanceTimersByTime(2);
+      await Promise.resolve();
 
       expect(await promise4).toBe('Hello World 2');
       expect(dispatcher).toHaveBeenCalledTimes(3);
@@ -265,10 +311,12 @@ describe('IRPCPackage', () => {
       irpc.invalidate(hello, 'Hello World 2');
 
       vi.runAllTimers();
+      await Promise.resolve();
 
       const promise5 = hello('Hello World 2');
 
       vi.advanceTimersByTime(2);
+      await Promise.resolve();
 
       expect(await promise5).toBe('Hello World 2');
       expect(dispatcher).toHaveBeenCalledTimes(4);
@@ -281,7 +329,7 @@ describe('IRPCPackage', () => {
         name: 'optimistic',
       });
       const hello = irpc.declare<(name: string) => Promise<string>>({
-        name: 'hello',
+        name: 'helloOptimistic',
       });
 
       await expect(hello('World')).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]);

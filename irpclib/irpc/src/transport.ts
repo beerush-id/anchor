@@ -58,11 +58,26 @@ export class IRPCTransport {
    * @param call - The RPC call to schedule.
    */
   protected schedule(call: IRPCCall) {
+    const { debounce } = (this.config ?? {}) as TransportConfig;
+
+    if (debounce === false) {
+      this.dispatch([call]).finally(() => {});
+      return;
+    }
+
+    const timeout = typeof debounce === 'number' && !Number.isNaN(debounce) ? debounce : 0;
+
+    const dispatch = () => {
+      this.dispatch(Array.from(this.queue)).finally(() => {});
+      this.queue.clear();
+    };
+
     if (!this.queue.size) {
-      setTimeout(() => {
-        this.dispatch(Array.from(this.queue));
-        this.queue.clear();
-      }, this.config?.debounce ?? 0);
+      if (timeout === 0) {
+        queueMicrotask(dispatch);
+      } else {
+        setTimeout(dispatch, timeout);
+      }
     }
 
     this.queue.add(call);

@@ -1,6 +1,7 @@
 export * from './cache.js';
 export * from './call.js';
 export * from './context.js';
+export * from './enum.js';
 export * from './error.js';
 export * from './module.js';
 export * from './resolver.js';

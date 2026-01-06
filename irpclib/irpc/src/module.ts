@@ -92,33 +92,44 @@ export class IRPCPackage {
     }
 
     const spec = { ...init } as IRPCSpec<IRPCInputs, IRPCOutput>;
+    const calls = new Map<string, Promise<unknown>>();
     const caches = new IRPCCacher();
     const timeout = spec.timeout ?? this.config.timeout;
 
     const stub = (async (...args: IRPCData[]) => {
-      if (typeof spec.handler === 'function') {
-        return spec.handler(...args);
-      }
-
-      if (!this.transport) {
+      if (!this.transport && typeof spec.handler !== 'function') {
         throw new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]);
       }
 
-      if (spec.maxAge) {
-        const key = JSON.stringify(args);
-        const cache = caches.get(key);
+      const callKey = JSON.stringify(args);
+      const cached = caches.get(callKey);
 
-        if (cache) {
-          return cache.value;
-        }
-
-        const data = await this.transport.call(spec, args, timeout);
-        caches.set(key, data, spec.maxAge);
-
-        return data;
+      if (cached) {
+        return cached.value;
       }
 
-      return await this.transport.call(spec, args, timeout);
+      if (spec.coalesce !== false && calls.has(callKey)) {
+        return calls.get(callKey);
+      }
+
+      const call: Promise<unknown> =
+        typeof spec.handler === 'function'
+          ? (spec.handler as (...args: unknown[]) => Promise<unknown>)(...args)
+          : this.transport!.call(spec, args, timeout);
+
+      calls.set(callKey, call);
+
+      try {
+        const data = await call;
+
+        if (spec.maxAge) {
+          caches.set(callKey, data, spec.maxAge);
+        }
+
+        return data;
+      } finally {
+        calls.delete(callKey);
+      }
     }) as IRPCHandler;
 
     this.specs.set(init.name, spec);
