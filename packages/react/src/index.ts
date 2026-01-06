@@ -62,9 +62,11 @@ export {
   query,
   setContext,
   shortId,
+  snapshot,
   streamState,
   subscribe,
   undoable,
+  untrack,
   writable,
 } from '@anchorlib/core';
 
