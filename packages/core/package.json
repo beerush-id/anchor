@@ -53,7 +53,7 @@
     "typescript": "catalog:lib"
   },
   "scripts": {
-    "dev": "rimraf dist && tsdown --watch",
+    "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
     "build": "rimraf dist && tsdown && publint",
     "prepublish": "rimraf dist && tsdown && publint",
