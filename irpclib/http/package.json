@@ -10,9 +10,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -35,9 +33,9 @@
     "typescript": "catalog:lib"
   },
   "scripts": {
-    "dev": "tsdown --watch",
+    "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
-    "build": "tsdown && publint",
+    "build": "rimraf dist && tsdown && publint",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
     "prepublish": "tsdown && publint",
