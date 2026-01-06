@@ -8,16 +8,14 @@ import {
   TabVisibility,
   TextInput,
 } from '@anchorkit/react/components';
-import { $bind, $use, mutable, render, setup, snippet } from '@anchorlib/react';
+import { $bind, $use, mutable, render, setup } from '@anchorlib/react';
 
 const AdminForm = setup<{ isAdmin: boolean }>((props) => {
   const username = mutable('');
 
-  const Form = snippet(() => <TextInput value={$bind(username)} placeholder="Username" />, 'Form');
-
   return render(() => {
     if (!props.isAdmin) return <span>Access denied.</span>;
-    return <Form />;
+    return <TextInput value={$bind(username)} placeholder="Username" />;
   });
 });
 
