@@ -5,7 +5,7 @@ import { createLifecycle } from './lifecycle.js';
 import { getProps, proxyProps, withProps } from './props.js';
 import type {
   Component,
-  SetupProps,
+  GenericProps,
   Snippet,
   SnippetView,
   StableComponent,
@@ -134,7 +134,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
  * - Automatically manages its own lifecycle and cleanup
  *
  * @template P - The props type for the snippet
- * @template SP - The setup props type extending SetupProps
+ * @template SP - The setup props type extending GenericProps
  * @param {Snippet<P, SP>} factory - A function that receives props and parent props, returning React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @param needSetup - Whether to force a strict scope for the snippet (internal use).
@@ -142,7 +142,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
  * @param inherited - Whether the snippet is inheriting parent props.
  * @returns {SnippetView<P>} A memoized functional component that re-executes when dependencies change
  */
-export function snippet<P, SP extends SetupProps = SetupProps>(
+export function snippet<P, SP extends GenericProps = GenericProps>(
   factory: Snippet<P, SP>,
   displayName?: string,
   scopeName = 'Snippet',
@@ -261,7 +261,7 @@ export const view = template;
  * This function follows the same reactive principles as `snippet`, responding to state
  * changes and maintaining the modern component lifecycle approach.
  *
- * @param {Snippet<SetupProps>} View - A function that receives props and returns React nodes
+ * @param {Snippet<GenericProps>} View - A function that receives props and returns React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {ReactNode} The rendered output of the reactive component
  */

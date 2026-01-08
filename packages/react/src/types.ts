@@ -55,15 +55,15 @@ export type Linked<T> = {
  */
 export type ValueReader<T> = () => T;
 
-export type ReadableProp<T> = T | ValueReader<T> | Linked<T>;
-export type WritableProp<T> = T | ValueReader<T> | Linked<T> | Bindable<T>;
+export type ReactiveProp<T> = T | ValueReader<T> | Linked<T>;
+export type BindableProp<T> = T | ValueReader<T> | Linked<T> | Bindable<T>;
 
 /**
  * Represents a reactive props that can be bound to a component.
  * Allows any string key with unknown values.
  */
 export type ReactiveProps<P> = {
-  [K in keyof P]: P[K] extends Bindable<infer T> | undefined ? WritableProp<T> : ReadableProp<P[K]>;
+  [K in keyof P]: P[K] extends Bindable<infer T> | undefined ? BindableProp<T> : ReactiveProp<P[K]>;
 };
 
 /**
@@ -146,7 +146,7 @@ export type ViewProps<P> = ComponentProps<P>;
  * Generic setup props type that allows any string key with unknown values.
  * Used as a base type for components that need flexible prop handling.
  */
-export type SetupProps = { [key: string]: unknown };
+export type GenericProps = { [key: string]: unknown };
 
 /**
  * A setup component function that takes ComponentProps and returns a ReactNode.
@@ -185,12 +185,12 @@ export type TemplateView<P> = FunctionComponent<ReactiveProps<P>>;
  * Used for creating snippets that can access both local and parent context.
  *
  * @template P - The component props type
- * @template SP - The parent props type (defaults to SetupProps)
+ * @template SP - The parent props type (defaults to GenericProps)
  * @param props - The component's props
  * @param parentProps - The parent component's props
  * @returns A ReactNode representing the snippet
  */
-export type Snippet<P, SP = SetupProps> = (props: P, parentProps: ViewProps<SP>) => ReactNode;
+export type Snippet<P, SP = GenericProps> = (props: P, parentProps: ViewProps<SP>) => ReactNode;
 
 /**
  * A function that takes view props and returns a React node.
