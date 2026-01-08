@@ -1,9 +1,5 @@
 import { isMutableRef, type MutableRef } from '@anchorlib/core';
-
-export type Binding<T> = {
-  get value(): T;
-  set value(value: T);
-};
+import type { Bindable } from './types.js';
 
 /**
  * A reference that binds a value to a property of an object or another reference.
@@ -54,7 +50,7 @@ export function isBinding<S, V>(value: unknown): value is BindingRef<S, V> {
  * @param source - The MutableRef source to bind to
  * @returns The value type of the MutableRef
  */
-export function bind<T extends MutableRef<unknown>>(source: T): Binding<T['value']>;
+export function bind<T extends MutableRef<unknown>>(source: T): Bindable<T['value']>;
 
 /**
  * Creates two-way data binding to object property.
@@ -65,7 +61,7 @@ export function bind<T extends MutableRef<unknown>>(source: T): Binding<T['value
  * @param key - The property key to bind to
  * @returns The value type at the specified key
  */
-export function bind<T, K extends keyof T>(source: T, key: K): Binding<T[K]>;
+export function bind<T, K extends keyof T>(source: T, key: K): Bindable<T[K]>;
 
 /**
  * Creates a binding reference for two-way data binding.
