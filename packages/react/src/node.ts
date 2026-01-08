@@ -1,5 +1,5 @@
 import { createObserver, isBrowser } from '@anchorlib/core';
-import type { HTMLAttributes, InputHTMLAttributes } from 'react';
+import type { HTMLAttributes, InputHTMLAttributes, RefObject } from 'react';
 import { onCleanup } from './lifecycle.js';
 import type { NodeRef } from './types.js';
 
@@ -62,6 +62,31 @@ export function nodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTM
     },
     destroy() {
       observer.destroy();
+    },
+  };
+}
+
+/**
+ * Creates a combined ref that can manage multiple refs at once.
+ * This function accepts multiple refs and returns a single ref object that,
+ * when set, will update all the provided refs with the same value.
+ * When reading the current value, it returns the first non-null value among the refs.
+ *
+ * @template E - The HTMLElement type that the refs refer to
+ * @param refs - A list of React RefObjects or NodeRefs to be combined
+ * @returns A RefObject that represents the combined refs
+ */
+export function multiRef<E extends HTMLElement>(...refs: Array<RefObject<E> | NodeRef<E>>): RefObject<E> {
+  return {
+    get current() {
+      return refs.map((ref) => ref.current).filter(Boolean)[0];
+    },
+    set current(value) {
+      for (const ref of refs) {
+        if (typeof ref === 'object' && ref !== null) {
+          ref.current = value;
+        }
+      }
     },
   };
 }

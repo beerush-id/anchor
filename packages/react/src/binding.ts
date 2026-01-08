@@ -29,7 +29,7 @@ export class LinkingRef<T> {
   constructor(
     private read: () => T | Record<string, unknown>,
     private key: keyof T = 'value' as keyof T
-  ) {}
+  ) { }
 }
 
 /**
@@ -124,7 +124,7 @@ export class BindingRef<S, V> {
     public source: S,
     public key: keyof S | string = 'value',
     public type?: V
-  ) {}
+  ) { }
 }
 
 /**
@@ -194,6 +194,7 @@ export const $bind = bind;
 const BINDABLE_REGISTRY = new WeakSet<MutableRef<unknown>>();
 
 /**
+ * @deprecated Will be removed in the next major release.
  * Creates a bindable reference that synchronizes values between sources.
  *
  * @template T - The value type
