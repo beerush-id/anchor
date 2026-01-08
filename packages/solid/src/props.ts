@@ -1,39 +1,5 @@
 import { captureStack, isMutableRef, type MutableRef, untrack } from '@anchorlib/core';
-import { type Binding, type BindingRef, isBinding } from './binding.js';
-
-/**
- * Extended component props that include an $omit method for omitting specific keys.
- *
- * @template P - The base props type
- * @property $omit - A method that returns a new object with specified keys omitted
- */
-export type BindableInternalProps<P> = {
-  [K in keyof P]: P[K] extends Binding<infer T> | undefined ? T : P[K];
-} & {
-  /**
-   * Creates a new object with specified keys omitted from the original props.
-   * If no keys are provided, returns a copy of all props.
-   *
-   * @template K - The keys to omit from props
-   * @param keys - Optional array of keys to omit
-   * @returns A new object with specified keys removed
-   */
-  $omit<K extends keyof P>(keys?: Array<K>): Omit<P, K>;
-
-  /**
-   * Creates a new object containing only the specified keys from the original props.
-   * If no keys are provided, returns an empty object.
-   *
-   * @template K - The keys to pick from props
-   * @param keys - Optional array of keys to include
-   * @returns A new object with only the specified keys
-   */
-  $pick<K extends keyof P>(keys?: Array<K>): Pick<P, K>;
-};
-
-export type BindableProps<T> = {
-  [P in keyof T]: T[P] extends Binding<infer V> | undefined ? V | Binding<V> : T[P];
-};
+import { type BindingRef, isBinding } from './binding.js';
 
 /**
  * Creates a proxy for props that handles binding references and read-only properties.

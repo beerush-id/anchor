@@ -2,6 +2,9 @@ import './reactive.js';
 
 export type {
   AnchorSettings,
+  AsyncHandler,
+  AsyncOptions,
+  AsyncState,
   BatchHandler,
   Context,
   ContextProvider,
@@ -35,6 +38,7 @@ export type {
 } from '@anchorlib/core';
 
 export {
+  AsyncStatus,
   anchor,
   DerivedRef,
   derived,
@@ -57,11 +61,14 @@ export {
   model,
   mutable,
   ordered,
+  query,
   setContext,
   shortId,
+  snapshot,
   streamState,
   subscribe,
   undoable,
+  untrack,
   writable,
 } from '@anchorlib/core';
 

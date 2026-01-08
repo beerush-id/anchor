@@ -1,8 +1,8 @@
-import { $bind, bindable, type Binding, type InputHTMLAttributes, mutable } from '@anchorlib/solid';
+import { $bind, type Bindable, bindable, type InputHTMLAttributes, mutable } from '@anchorlib/solid';
 import type { JSX } from 'solid-js';
 
 export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> & {
-  value?: Binding<string>;
+  value?: Bindable<string>;
 };
 
 export const Input = bindable<InputProps>((props) => {
@@ -23,9 +23,9 @@ export const Form = () => {
       <h1>Form</h1>
       <h2>Name: {name.value}</h2>
       <form class="flex flex-col gap-2">
-        <Input placeholder="Name" value={$bind(name)} oninput={console.log} />
+        <Input placeholder="Name" value={$bind(name)} />
         <Input placeholder="Name" value={name.value} oninput={(e) => (name.value = e.currentTarget.value)} />
-        <Input placeholder="Name" />
+        <Input placeholder="Name" value={'test'} />
       </form>
     </div>
   );
