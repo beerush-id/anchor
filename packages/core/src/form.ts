@@ -28,7 +28,7 @@ export function form<S extends LinkableSchema, T extends ModelInput<S>>(
   const state = model(schema, init, { safeParse: true });
   const { errors, destroy } = exception(state);
 
-  if (!options?.safeInit) {
+  if (options?.safeInit === false) {
     const initParse = schema.safeParse(init);
 
     if (!initParse.success) {
