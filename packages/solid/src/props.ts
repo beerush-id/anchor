@@ -1,5 +1,6 @@
 import { captureStack, isMutableRef, type MutableRef, untrack } from '@anchorlib/core';
 import { type BindingRef, isBinding } from './binding.js';
+import type { BindableComponentProps } from './types.js';
 
 /**
  * Creates a proxy for props that handles binding references and read-only properties.
@@ -14,7 +15,7 @@ import { type BindingRef, isBinding } from './binding.js';
  * @returns A proxy wrapping the props object
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
-export function proxyProps<P extends Record<string, any>>(props: P): P {
+export function proxyProps<P extends Record<string, any>>(props: P): BindableComponentProps<P> {
   const omit = (keys: Array<keyof P>) => {
     return omitProps(props, newProps, keys ?? []);
   };
@@ -67,7 +68,7 @@ export function proxyProps<P extends Record<string, any>>(props: P): P {
     },
   });
 
-  return newProps as P;
+  return newProps as never as BindableComponentProps<P>;
 }
 
 /**

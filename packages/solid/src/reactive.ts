@@ -45,11 +45,7 @@ if (!bindingInitialized) {
       const elements = new Map();
       COMPONENT_REGISTRY.set(component, elements);
 
-      if (!Array.isArray(component.cleanups)) {
-        component.cleanups = [];
-      }
-
-      component.cleanups.push(() => {
+      attachCleanup(component, () => {
         // Batch the cleanup to unblock the component destruction.
         batch(() => {
           for (const [, { observer }] of elements) {
@@ -62,8 +58,7 @@ if (!bindingInitialized) {
       });
     }
 
-    const registry = COMPONENT_REGISTRY.get(component);
-    if (!registry) return;
+    const registry = COMPONENT_REGISTRY.get(component)!;
 
     if (!registry.has(element)) {
       const [version, setVersion] = createSignal(0);
@@ -80,8 +75,7 @@ if (!bindingInitialized) {
     }
 
     if (!ELEMENT_OBSERVER_REGISTRY.has(element)) {
-      const { version, observer } = registry.get(element) ?? ({} as ElementRef);
-      if (!version) return;
+      const { version, observer } = registry.get(element)!;
 
       // Trigger signal read to observe.
       version();
@@ -101,19 +95,6 @@ if (!bindingInitialized) {
     });
   });
 
-  /**
-   * Recursively finds the nearest owner in the component tree that has owned components.
-   * This function traverses up the owner chain to find the closest parent owner that
-   * actually owns child components, filtering out intermediate owners that don't own anything.
-   *
-   * @param node - Optional Owner node to start the search from. If not provided, uses the current owner.
-   * @returns The first Owner that has owned components, or undefined if no such owner exists
-   */
-  function getPureOwner(node?: InternalOwner | null): InternalOwner | undefined {
-    if (!node) return;
-    return node.owned && !node.comparator ? node : getPureOwner(node?.owner as InternalOwner);
-  }
-
   setCleanUpHandler((handler) => {
     if (getOwner()) {
       return onCleanup(handler);
@@ -121,4 +102,33 @@ if (!bindingInitialized) {
 
     return onGlobalCleanup(handler);
   });
+}
+
+/**
+ * Recursively finds the nearest owner in the component tree that has owned components.
+ * This function traverses up the owner chain to find the closest parent owner that
+ * actually owns child components, filtering out intermediate owners that don't own anything.
+ *
+ * @param node - Optional Owner node to start the search from. If not provided, uses the current owner.
+ * @returns The first Owner that has owned components, or undefined if no such owner exists
+ */
+function getPureOwner(node?: InternalOwner | null): InternalOwner | undefined {
+  if (!node) return;
+  return node.owned && !node.comparator ? node : getPureOwner(node?.owner as InternalOwner);
+}
+
+/**
+ * Attaches a cleanup function to the given owner node.
+ * This function ensures that the cleanup array exists on the node
+ * and adds the provided cleanup function to that array.
+ *
+ * @param node - The Owner node to attach the cleanup function to
+ * @param cleanup - A function to be called when the node is cleaned up
+ */
+export function attachCleanup(node: Owner, cleanup: () => void) {
+  if (!Array.isArray(node.cleanups)) {
+    node.cleanups = [];
+  }
+
+  node.cleanups.push(cleanup);
 }

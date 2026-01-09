@@ -6,14 +6,12 @@ export type BindableComponent<P> = (props: P) => JSX.Element;
 
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function bindable<P extends Record<string, any>>(
-  Component: Component<BindableComponentProps<P>>,
-  displayName?: string
+  Component: Component<BindableComponentProps<P>>
 ): BindableComponent<BindableProps<P>> {
   const Bindable = (props: BindableComponentProps<P>) => {
     const bindableProps = proxyProps(props);
     return Component(bindableProps as never);
   };
-  Bindable.displayName = `Bindable(${displayName || Component.name || 'Anonymous'})`;
 
   return Bindable as never;
 }
