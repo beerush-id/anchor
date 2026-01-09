@@ -27,30 +27,36 @@
     "docs:preview": "vitepress preview docs --port 5611"
   },
   "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@tailwindcss/language-server": "catalog:",
     "@types/markdown-it-container": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "@tailwindcss/language-server": "catalog:",
     "husky": "catalog:",
     "lint-staged": "catalog:",
     "markdown-it-container": "catalog:",
     "monopkg": "catalog:",
     "prettier": "catalog:",
+    "rimraf": "catalog:",
     "vite-plugin-solid": "catalog:",
     "vitepress": "catalog:",
     "vitepress-plugin-llms": "catalog:",
     "vitepress-plugin-sandpack": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "catalog:",
-    "rimraf": "catalog:",
-    "@biomejs/biome": "catalog:"
+    "wrangler": "catalog:"
   },
   "engines": {
     "bun": ">=1.3.2"
   },
   "packageManager": "bun@1.3.2",
   "private": true,
-  "workspaces": ["apps/*", "packages/*", "kits/*", "irpclib/*", "demos/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "kits/*",
+    "irpclib/*",
+    "demos/*"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -129,7 +135,7 @@
     "jsdom": "27.0.1",
     "lint-staged": "16.2.6",
     "markdown-it-container": "4.0.0",
-    "monopkg": "0.4.4",
+    "monopkg": "0.5.0",
     "prettier": "3.6.2",
     "prettier-plugin-svelte": "3.4.0",
     "prettier-plugin-tailwindcss": "0.7.1",
