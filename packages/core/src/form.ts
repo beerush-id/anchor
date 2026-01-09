@@ -1,7 +1,7 @@
 import { onCleanup } from './lifecycle.js';
 import { exception, model } from './ref.js';
 import { subscribe } from './subscription.js';
-import type { ExceptionMap, LinkableSchema, ModelInput, ModelOutput, StateChange } from './types.js';
+import type { ExceptionMap, ExceptionType, LinkableSchema, ModelInput, ModelOutput, StateChange } from './types.js';
 
 export type FormOptions = {
   onChange?: (event: StateChange) => void;
@@ -35,10 +35,10 @@ export function form<S extends LinkableSchema, T extends ModelInput<S>>(
       for (const issue of initParse.error.issues) {
         const key = issue.path.join('.');
 
-        errors[key as never] = {
-          error: [issue],
+        (errors as ExceptionMap<Record<string, unknown>>)[key as never] = {
+          issues: [issue],
           message: issue.message,
-        } as never;
+        } as ExceptionType;
       }
     }
   }

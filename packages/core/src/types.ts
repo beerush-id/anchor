@@ -229,7 +229,7 @@ export type NestedPath<T> = T extends Array<infer U>
     : never;
 
 export type ExceptionType = {
-  error: ModelError | Error;
+  error?: ModelError | Error;
   issues: $ZodIssue[];
   message: string;
 };
