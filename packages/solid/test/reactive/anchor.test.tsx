@@ -1,3 +1,5 @@
+/** @jsxImportSource solid-js */
+
 import { render } from '@solidjs/testing-library';
 import userEvent from '@testing-library/user-event';
 import { onCleanup } from 'solid-js';
@@ -27,8 +29,6 @@ describe('Anchor Solid - Reactive', () => {
           );
         };
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
         const { getByRole, unmount } = render(() => <Counter />);
         const text = getByRole('paragraph');
         const button = getByRole('button');
