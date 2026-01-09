@@ -8,6 +8,10 @@ type ElementRef = {
   observer: StateObserver;
 };
 
+type InternalOwner = Owner & {
+  comparator?: (a: unknown, b: unknown) => boolean;
+};
+
 export const REF_REGISTRY = new WeakSet<VariableRef<unknown> | ConstantRef<unknown>>();
 export const COMPONENT_REGISTRY = new WeakMap<Owner, Map<Owner, ElementRef>>();
 export const ELEMENT_OBSERVER_REGISTRY = new WeakMap<Owner, StateObserver>();
@@ -34,7 +38,7 @@ if (!bindingInitialized) {
     const element = getOwner();
     if (!element) return;
 
-    const component = getPureOwner(element);
+    const component = getPureOwner(element as InternalOwner);
     if (!component) return;
 
     if (!COMPONENT_REGISTRY.has(component)) {
@@ -105,9 +109,9 @@ if (!bindingInitialized) {
    * @param node - Optional Owner node to start the search from. If not provided, uses the current owner.
    * @returns The first Owner that has owned components, or undefined if no such owner exists
    */
-  function getPureOwner(node?: Owner | null): Owner | undefined {
-    const owner = node ?? getOwner();
-    return (owner as Owner & { props: Record<string, unknown> })?.props ? (owner as Owner) : getPureOwner(owner?.owner);
+  function getPureOwner(node?: InternalOwner | null): InternalOwner | undefined {
+    if (!node) return;
+    return node.owned && !node.comparator ? node : getPureOwner(node?.owner as InternalOwner);
   }
 
   setCleanUpHandler((handler) => {
