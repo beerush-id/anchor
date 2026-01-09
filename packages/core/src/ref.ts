@@ -269,9 +269,13 @@ export const writable = ((state, contracts) => {
 export const exception = ((state, handler) => {
   detectStability(exception);
 
-  const unsubscribe = anchor.catch(state, handler);
-  onCleanup(unsubscribe);
-  return unsubscribe;
+  const result = anchor.catch(state, handler);
+
+  if (typeof result === 'function') {
+    onCleanup(result);
+  }
+
+  return result;
 }) as Anchor['catch'];
 
 /**

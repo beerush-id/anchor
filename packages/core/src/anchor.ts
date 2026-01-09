@@ -115,6 +115,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
     observable: options?.observable ?? ANCHOR_SETTINGS.observable,
     silentInit: options?.silentInit ?? ANCHOR_SETTINGS.silentInit,
+    safeParse: options?.safeParse ?? ANCHOR_SETTINGS.safeParse,
   };
   const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
@@ -130,30 +131,32 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
       captureStack.violation.schema('(object | array)', schema.type, configs.strict as false, anchorFn);
     }
 
-    try {
-      const result = schema.safeParse(init);
+    if (!configs.safeParse) {
+      try {
+        const result = schema.safeParse(init);
 
-      if (result.success) {
-        if (Array.isArray(init)) {
-          init.splice(0, init.length, ...(result.data as unknown[]));
-        } else if (isObject(init)) {
-          Object.assign(init, result.data);
+        if (result.success) {
+          if (Array.isArray(init)) {
+            init.splice(0, init.length, ...(result.data as unknown[]));
+          } else if (isObject(init)) {
+            Object.assign(init, result.data);
+          }
+        } else if (!configs.silentInit) {
+          captureStack.error.validation(
+            'Attempted to initialize state with schema:',
+            result.error,
+            configs.strict,
+            anchorFn
+          );
         }
-      } else if (!configs.silentInit) {
+      } catch (error) {
         captureStack.error.validation(
-          'Attempted to initialize state with schema:',
-          result.error,
+          'Something went wrong when validating schema.',
+          error as Error,
           configs.strict,
           anchorFn
         );
       }
-    } catch (error) {
-      captureStack.error.validation(
-        'Something went wrong when validating schema.',
-        error as Error,
-        configs.strict,
-        anchorFn
-      );
     }
   }
 
@@ -279,23 +282,24 @@ anchorFn.catch = ((state, handler) => {
   }
 
   if (typeof handler !== 'function') {
-    const errors: ExceptionMap<ObjLike> = {};
+    const errors: ExceptionMap<ObjLike> = anchorFn({});
     const unsubscribe = controller.subscribe.all((_, event) => {
       if (event.type !== 'init') {
         const key = event.keys.join('.');
 
         if (event.error) {
-          exceptionMap.errors[key] = {
+          errors[key] = {
             error: event.error,
+            issues: event.error.issues,
             message: (event.error as ModelError).issues.map((error) => error.message).join('\n'),
           };
         } else {
-          delete exceptionMap.errors[key];
+          delete errors[key];
         }
       }
     });
     const destroy = () => {
-      anchorFn.destroy(exceptionMap.errors);
+      anchorFn.destroy(errors);
       anchorFn.destroy(exceptionMap);
       unsubscribe();
     };
@@ -391,6 +395,17 @@ anchorFn.snapshot = ((state, recursive = true) => {
   return softClone(target ?? state, recursive) as typeof state;
 }) as Anchor['snapshot'];
 
+anchorFn.stringify = ((state, replacer, space) => {
+  const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
+
+  if (!target) {
+    const error = new Error('State does not exist.');
+    captureStack.error.external('Cannot stringify non-existence state.', error, anchorFn.snapshot);
+  }
+
+  return JSON.stringify(target ?? state, replacer, space);
+}) as Anchor['stringify'];
+
 anchorFn.destroy = ((state, warn?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);
 
@@ -420,3 +435,4 @@ anchorFn.prepend = prepend;
 
 export const anchor = anchorFn as Anchor;
 export const snapshot = anchorFn.snapshot as Anchor['snapshot'];
+export const stringify = anchorFn.stringify as Anchor['stringify'];

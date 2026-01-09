@@ -1,3 +1,8 @@
+import { anchor } from './anchor.js';
+import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from './constant.js';
+import { getDevTool } from './dev.js';
+import { captureStack } from './exception.js';
+import { BROADCASTER_REGISTRY, INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
 import type {
   ArrayMutation,
   ArrayMutator,
@@ -12,12 +17,7 @@ import type {
   StateRelation,
   TrapOverrides,
 } from './types.js';
-import { BROADCASTER_REGISTRY, INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
-import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from './constant.js';
-import { captureStack } from './exception.js';
-import { getDevTool } from './dev.js';
 import { isFunction } from './utils/index.js';
-import { anchor } from './anchor.js';
 
 const mockReturn = {
   shift(items: unknown[]) {
@@ -170,6 +170,8 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
       const deletedItemsLength = deletedItems.length;
 
       // Validate the added items.
+      let error: ModelError | undefined;
+
       if (schema && addedItemsLength) {
         const validation = (schema as ModelArray).safeParse(addedItems);
 
@@ -190,24 +192,28 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
             value: args,
           });
 
-          broadcaster.broadcast(
-            init,
-            {
-              type: method,
-              keys: [],
-              error: validation.error as never as ModelError,
-              value: args,
-            },
-            meta.id
-          );
+          if (!configs.safeParse) {
+            broadcaster.broadcast(
+              init,
+              {
+                type: method,
+                keys: [],
+                error: validation.error as never as ModelError,
+                value: args,
+              },
+              meta.id
+            );
 
-          if (method === 'push' || method === 'unshift') {
-            return currentItems.length;
-          } else if (method === 'splice') {
-            return [];
+            if (method === 'push' || method === 'unshift') {
+              return currentItems.length;
+            } else if (method === 'splice') {
+              return [];
+            }
+
+            return INIT_REGISTRY.get(init);
+          } else {
+            error = validation.error as never as ModelError;
           }
-
-          return INIT_REGISTRY.get(init);
         }
       }
 
@@ -249,6 +255,7 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
         type: method as ArrayMutation,
         prev: current,
         keys: [],
+        error,
         value: args,
       };
 

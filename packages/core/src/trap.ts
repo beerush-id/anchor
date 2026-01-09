@@ -22,6 +22,7 @@ import type {
   Linkable,
   LinkableSchema,
   ModelArray,
+  ModelError,
   ModelObject,
   ObjLike,
   ParseResult,
@@ -178,6 +179,8 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
       return true;
     }
 
+    let error: ModelError | undefined;
+
     if (schema) {
       let validation: ParseResult<unknown>;
 
@@ -199,19 +202,23 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
           value,
         });
 
-        broadcaster.broadcast(
-          target,
-          {
-            type: ObjectMutations.SET,
-            keys: [prop as string],
-            prev: current,
-            error: validation.error as never,
-            value,
-          },
-          meta.id
-        );
+        if (!configs.safeParse) {
+          broadcaster.broadcast(
+            target,
+            {
+              type: ObjectMutations.SET,
+              keys: [prop as string],
+              prev: current,
+              error: validation.error as never,
+              value,
+            },
+            meta.id
+          );
 
-        return !configs.strict;
+          return !configs.strict;
+        } else {
+          error = validation.error as never;
+        }
       }
     }
 
@@ -230,6 +237,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
         type: ObjectMutations.SET,
         keys: [prop as string],
         prev: current,
+        error,
         value: target[prop],
       };
 
@@ -283,6 +291,8 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
     const current = Reflect.get(target, prop, receiver) as Linkable;
     const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
+    let error: ModelError | undefined;
+
     if (childSchema) {
       const result = childSchema.safeParse(undefined);
 
@@ -293,18 +303,22 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
           keys: [prop as string],
         });
 
-        broadcaster.broadcast(
-          init,
-          {
-            type: ObjectMutations.DELETE,
-            prev: current,
-            keys: [prop as string],
-            error: result.error,
-          },
-          meta.id
-        );
+        if (!configs.safeParse) {
+          broadcaster.broadcast(
+            init,
+            {
+              type: ObjectMutations.DELETE,
+              prev: current,
+              keys: [prop as string],
+              error: result.error,
+            },
+            meta.id
+          );
 
-        return !configs.strict;
+          return !configs.strict;
+        } else {
+          error = result.error;
+        }
       }
     }
 
@@ -323,6 +337,7 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
         type: ObjectMutations.DELETE,
         prev: current,
         keys: [prop],
+        error,
       };
 
       // Make sure to broadcast to subscribers first because observers might depend on a derived state.

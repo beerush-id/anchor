@@ -13,7 +13,7 @@ export const SET_MUTATIONS = [SetMutations.ADD, SetMutations.DELETE, SetMutation
 export const MAP_MUTATIONS = [MapMutations.SET, MapMutations.DELETE, MapMutations.CLEAR] as const;
 export const BATCH_MUTATIONS = [BatchMutations.ASSIGN, BatchMutations.REMOVE, BatchMutations.CLEAR] as const;
 export const OBJECT_MUTATIONS = [ObjectMutations.SET, ObjectMutations.DELETE] as const;
-export const STRING_MUTATIONS = [StringMutations.APPEND, StringMutations.PREPEND, StringMutations.REPLACE] as const;
+export const STRING_MUTATIONS = [StringMutations.APPEND, StringMutations.PREPEND] as const;
 
 export const ARRAY_MUTATIONS = [
   ArrayMutations.PUSH,
@@ -40,6 +40,7 @@ export const ANCHOR_SETTINGS = {
   safeObservation: true,
   safeObservationThreshold: 100,
   closureWarning: false,
+  safeParse: false,
 } satisfies AnchorSettings;
 
 export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);

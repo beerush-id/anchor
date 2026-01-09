@@ -1,12 +1,12 @@
 import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod/v4';
-import {
-  type ARRAY_MUTATIONS,
-  type AsyncStatus as AsyncStatusType,
-  type BATCH_MUTATIONS,
-  type MAP_MUTATIONS,
-  type OBJECT_MUTATIONS,
-  type SET_MUTATIONS,
+import type {
+  ARRAY_MUTATIONS,
+  AsyncStatus as AsyncStatusType,
+  BATCH_MUTATIONS,
+  MAP_MUTATIONS,
+  OBJECT_MUTATIONS,
+  SET_MUTATIONS,
   STRING_MUTATIONS,
 } from './constant.js';
 import type { Linkables } from './enum.js';
@@ -68,8 +68,11 @@ export type StateBaseOptions = {
   observable?: boolean;
   silentInit?: boolean;
   compare?: (a: unknown, b: unknown) => number;
+  safeParse?: boolean;
 };
-export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & { schema?: S };
+export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & {
+  schema?: S;
+};
 
 export type AnchorSettings = StateBaseOptions & {
   production: boolean;
@@ -114,6 +117,7 @@ export type StateMetadata<
   root?: StateMetadata<RootType, RootSchema>;
   parent?: StateMetadata<ParentType, ParentSchema>;
   schema?: S;
+  safeParse?: boolean;
 };
 
 export type MapMutator<K, V> = {
@@ -226,6 +230,7 @@ export type NestedPath<T> = T extends Array<infer U>
 
 export type ExceptionType = {
   error: ModelError | Error;
+  issues: $ZodIssue[];
   message: string;
 };
 export type ExceptionMap<T extends ObjLike | Array<unknown>> = {
@@ -536,6 +541,20 @@ export interface Anchor {
    * @returns State snapshot
    */
   snapshot<T extends Linkable>(state: State<T>): T;
+
+  /**
+   * Stringifies the current state.
+   *
+   * @param state - The reactive state
+   * @param replacer - Replacer function
+   * @param space - Space for formatting
+   * @returns Stringified state
+   */
+  stringify<T extends State>(
+    state: T,
+    replacer?: (this: unknown, key: string, value: unknown) => unknown,
+    space?: string | number
+  ): string;
 
   /**
    * Makes a readonly state writable.
