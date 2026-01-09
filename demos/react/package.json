@@ -1,0 +1,30 @@
+{
+  "name": "@anchor-demo/react",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5272",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@anchorlib/react": "workspace:*",
+    "react": "catalog:app",
+    "react-dom": "catalog:app"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "catalog:app",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:app",
+    "@types/react-dom": "catalog:app",
+    "@vitejs/plugin-react": "catalog:",
+    "globals": "catalog:",
+    "tailwindcss": "catalog:app",
+    "typescript": "catalog:app",
+    "vite": "catalog:"
+  }
+}
