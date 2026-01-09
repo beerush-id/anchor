@@ -1,9 +1,9 @@
-import { todoTableRef } from '../utils/todos.js';
+import { todoTable } from '../utils/todos.js';
 import TodoForm from './TodoForm.js';
 import TodoList from './TodoList.js';
 
 export default function TodoApp() {
-  const todos = todoTableRef.list();
+  const todos = todoTable.list();
 
   return (
     <div class="mt-10 w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white p-10 dark:border-slate-700 dark:bg-slate-800">

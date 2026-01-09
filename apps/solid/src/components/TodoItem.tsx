@@ -5,8 +5,12 @@ interface TodoItemProps {
 }
 
 export default function TodoItem({ todo }: TodoItemProps) {
-  const handleRemove = (id: string) => {
-    todoTable.remove(id);
+  const handleChange = () => {
+    todo.completed = !todo.completed;
+  };
+
+  const handleRemove = () => {
+    todoTable.remove(todo.id);
   };
 
   return (
@@ -14,7 +18,7 @@ export default function TodoItem({ todo }: TodoItemProps) {
       <input
         type="checkbox"
         checked={todo.completed}
-        onChange={(e) => (todo.completed = e.target.checked)}
+        onChange={handleChange}
         class="h-5 w-5 rounded text-blue-600 focus:ring-blue-500"
       />
       <span
@@ -23,7 +27,7 @@ export default function TodoItem({ todo }: TodoItemProps) {
         {todo.text}
       </span>
       <button
-        onClick={() => handleRemove(todo.id)}
+        onClick={handleRemove}
         class="ml-2 rounded px-2 py-1 text-red-600 opacity-80 transition duration-200 hover:opacity-100 dark:text-slate-300"
       >
         <TrashIcon class="w-6" />

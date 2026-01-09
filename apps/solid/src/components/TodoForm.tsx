@@ -1,13 +1,13 @@
+import { mutable } from '@anchorlib/solid';
+import type { JSX } from 'solid-js';
 import { type TodoRecList, todoTable } from '../utils/todos.js';
-import { variableRef } from '@anchorlib/solid';
-import { type JSX } from 'solid-js';
 
 interface TodoFormProps {
   todos: TodoRecList;
 }
 
 export default function TodoForm({ todos }: TodoFormProps) {
-  const newText = variableRef('');
+  const newText = mutable('');
 
   const handleAdd = () => {
     if (newText.value.trim() !== '') {

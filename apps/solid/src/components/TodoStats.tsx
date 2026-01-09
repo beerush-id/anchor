@@ -1,4 +1,4 @@
-import { observedRef } from '@anchorlib/solid';
+import { derived } from '@anchorlib/solid';
 import type { TodoRec } from '../utils/todos.js';
 
 interface TodoStatsProps {
@@ -6,7 +6,7 @@ interface TodoStatsProps {
 }
 
 export default function TodoStats({ todos }: TodoStatsProps) {
-  const stats = observedRef(() => {
+  const stats = derived(() => {
     const available = todos.filter((todo) => !todo.deleted_at);
 
     return {

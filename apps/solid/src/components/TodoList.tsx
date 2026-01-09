@@ -1,14 +1,14 @@
-import TodoStats from './TodoStats.js';
-import { observedRef } from '@anchorlib/solid';
-import TodoItem from './TodoItem.js';
+import { derived } from '@anchorlib/solid';
 import type { TodoRecList } from '../utils/todos.js';
+import TodoItem from './TodoItem.js';
+import TodoStats from './TodoStats.js';
 
 interface TodoListProps {
   todos: TodoRecList;
 }
 
 export default function TodoList({ todos }: TodoListProps) {
-  const items = observedRef(() => todos.filter((todo) => !todo.deleted_at));
+  const items = derived(() => todos.filter((todo) => !todo.deleted_at));
 
   return (
     <>
