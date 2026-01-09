@@ -1,4 +1,4 @@
-import { createRecord, createTable } from '@anchorlib/solid/storage';
+import { createRecord, createTable, type InferList, type InferRow } from '@anchorlib/solid/storage';
 
 export type Todo = {
   text: string;
@@ -14,6 +14,3 @@ todoTable.seed([
 
 export type TodoRec = InferRow<typeof todoTable>;
 export type TodoRecList = InferList<typeof todoTable>;
-
-type InferRow<T> = T extends { get(id: string): { data: infer R } } ? R : never;
-type InferList<T> = T extends { list(): { data: infer R } } ? R : never;
