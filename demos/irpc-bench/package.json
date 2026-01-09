@@ -1,5 +1,5 @@
 {
-  "name": "irpc-bench",
+  "name": "@anchor-demo/irpc-bench",
   "version": "1.0.0-beta.19",
   "type": "module",
   "scripts": {

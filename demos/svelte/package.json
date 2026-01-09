@@ -1,5 +1,5 @@
 {
-  "name": "@anchor-app/svelte",
+  "name": "@anchor-demo/svelte",
   "version": "1.0.0-beta.19",
   "dependencies": {
     "@anchorlib/storage": "workspace:*",

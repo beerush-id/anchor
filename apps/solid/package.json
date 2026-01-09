@@ -1,29 +1,32 @@
 {
   "name": "@anchor-app/solid",
   "private": true,
-  "version": "1.0.0-beta.19",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5274",
+    "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "format": "biome format --write"
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@anchorkit/solid": "workspace:*",
     "@anchorlib/solid": "workspace:*",
-    "solid-js": "catalog:app"
+    "solid-js": "catalog:lib"
   },
   "devDependencies": {
-    "@anchorlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
+    "@solidjs/testing-library": "catalog:",
     "@tailwindcss/vite": "catalog:app",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/bun": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
     "jsdom": "catalog:",
     "tailwindcss": "catalog:app",
     "typescript": "catalog:app",
     "vite": "catalog:",
-    "vite-plugin-solid": "catalog:"
-  },
-  "optionalDependencies": {
-    "zod": "catalog:"
+    "vite-plugin-solid": "catalog:",
+    "vitest": "catalog:"
   }
 }
