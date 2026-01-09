@@ -98,6 +98,21 @@ describe('Anchor Core - Edge Cases', () => {
       (anchor.destroy as (state: unknown, warn: boolean) => void)({ name: 'John Doe' }, true);
       expect(errorSpy).toHaveBeenCalled();
     });
+
+    it('should handle stringify state', () => {
+      const state = anchor({ name: 'John Doe' });
+      const stringified = anchor.stringify(state);
+
+      expect(stringified).toBe('{"name":"John Doe"}');
+    });
+
+    it('should handle stringify non-existence state', () => {
+      const state = { name: 'John Doe' };
+      const stringified = anchor.stringify(state);
+
+      expect(stringified).toBe('{"name":"John Doe"}');
+      expect(errorSpy).toHaveBeenCalled();
+    });
   });
 
   describe('Edge Cases - Trap Factory Integrity', () => {
