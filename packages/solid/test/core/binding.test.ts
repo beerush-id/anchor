@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OWNER_REGISTRY, REF_REGISTRY } from '../../src/reactive.js';
+import { ELEMENT_OBSERVER_REGISTRY, REF_REGISTRY } from '../../src/reactive.js';
 
 describe('Anchor Solid - Binding System', () => {
   describe('REF_REGISTRY', () => {
@@ -10,7 +10,7 @@ describe('Anchor Solid - Binding System', () => {
 
   describe('OWNER_REGISTRY', () => {
     it('should be a WeakMap for tracking owners', () => {
-      expect(OWNER_REGISTRY).toBeInstanceOf(WeakMap);
+      expect(ELEMENT_OBSERVER_REGISTRY).toBeInstanceOf(WeakMap);
     });
   });
 });

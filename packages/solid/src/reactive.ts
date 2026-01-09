@@ -3,8 +3,14 @@ import { createObserver, microbatch, onGlobalCleanup, setCleanUpHandler, setTrac
 import { createSignal, getOwner, onCleanup, type Owner } from 'solid-js';
 import type { ConstantRef, VariableRef } from './types.js';
 
+type ElementRef = {
+  version: () => number;
+  observer: StateObserver;
+};
+
 export const REF_REGISTRY = new WeakSet<VariableRef<unknown> | ConstantRef<unknown>>();
-export const OWNER_REGISTRY = new WeakMap<Owner, StateObserver>();
+export const COMPONENT_REGISTRY = new WeakMap<Owner, Map<Owner, ElementRef>>();
+export const ELEMENT_OBSERVER_REGISTRY = new WeakMap<Owner, StateObserver>();
 
 const [batch] = microbatch(0);
 
@@ -25,30 +31,84 @@ if (!bindingInitialized) {
    * @param key - The property key being accessed
    */
   setTracker((init, observers, key) => {
-    const owner = getOwner();
-    if (!owner) return;
+    const element = getOwner();
+    if (!element) return;
 
-    if (!OWNER_REGISTRY.has(owner)) {
+    const component = getPureOwner(element);
+    if (!component) return;
+
+    if (!COMPONENT_REGISTRY.has(component)) {
+      const elements = new Map();
+      COMPONENT_REGISTRY.set(component, elements);
+
+      if (!Array.isArray(component.cleanups)) {
+        component.cleanups = [];
+      }
+
+      component.cleanups.push(() => {
+        // Batch the cleanup to unblock the component destruction.
+        batch(() => {
+          for (const [, { observer }] of elements) {
+            observer.destroy();
+          }
+
+          elements.clear();
+          COMPONENT_REGISTRY.delete(component);
+        });
+      });
+    }
+
+    const registry = COMPONENT_REGISTRY.get(component);
+    if (!registry) return;
+
+    if (!registry.has(element)) {
       const [version, setVersion] = createSignal(0);
-      const observer = createObserver(() => {
-        observer.reset();
-        setVersion(version() + 1);
-      });
+      const observer = createObserver(
+        () => {
+          observer.reset();
+          setVersion(version() + 1);
+        },
+        undefined,
+        true
+      );
 
+      registry.set(element, { version, observer });
+    }
+
+    if (!ELEMENT_OBSERVER_REGISTRY.has(element)) {
+      const { version, observer } = registry.get(element) ?? ({} as ElementRef);
+      if (!version) return;
+
+      // Trigger signal read to observe.
       version();
+
+      // Register cleanup to properly handle element re-creation on state change.
       onCleanup(() => {
-        observer.destroy();
-        OWNER_REGISTRY.delete(owner);
+        ELEMENT_OBSERVER_REGISTRY.delete(element);
       });
 
-      OWNER_REGISTRY.set(owner, observer);
+      ELEMENT_OBSERVER_REGISTRY.set(element, observer);
     }
 
     // Batch the tracking to unblock the property reads.
+    const observer = ELEMENT_OBSERVER_REGISTRY.get(element);
     batch(() => {
-      OWNER_REGISTRY.get(owner)?.assign(init, observers)(key);
+      observer?.assign(init, observers)(key);
     });
   });
+
+  /**
+   * Recursively finds the nearest owner in the component tree that has owned components.
+   * This function traverses up the owner chain to find the closest parent owner that
+   * actually owns child components, filtering out intermediate owners that don't own anything.
+   *
+   * @param node - Optional Owner node to start the search from. If not provided, uses the current owner.
+   * @returns The first Owner that has owned components, or undefined if no such owner exists
+   */
+  function getPureOwner(node?: Owner | null): Owner | undefined {
+    const owner = node ?? getOwner();
+    return (owner as Owner & { props: Record<string, unknown> })?.props ? (owner as Owner) : getPureOwner(owner?.owner);
+  }
 
   setCleanUpHandler((handler) => {
     if (getOwner()) {
