@@ -243,7 +243,7 @@ export interface ReactiveTable<T extends Rec, R extends Row<T> = Row<T>> {
    * @param seeds - An array of records to seed the table with
    * @returns The current ReactiveTable instance for method chaining
    */
-  seed<T extends R[]>(seeds: T): this;
+  seed(seeds: R[]): this;
 
   /**
    * Get the underlying store instance.

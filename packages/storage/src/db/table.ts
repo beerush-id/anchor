@@ -6,6 +6,7 @@ import {
   isFunction,
   microtask,
   mutable,
+  onCleanup,
   type StateUnsubscribe,
   subscribe,
 } from '@anchorlib/core';
@@ -582,6 +583,10 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     };
 
     rowSubscriptions.set(state, unsubscribe);
+
+    onCleanup(() => {
+      unsubscribe();
+    });
 
     return state;
   };

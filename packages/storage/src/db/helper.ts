@@ -164,6 +164,14 @@ export const create = <T extends Rec, R extends Row<T> = Row<T>>(table: IDBObjec
   });
 };
 
+/**
+ * Creates a new record with default metadata fields (id, created_at, updated_at).
+ *
+ * @template T - The type of the payload being extended.
+ * @template R - The type of the resulting record with row metadata (id, created_at, updated_at).
+ * @param {T} payload - The data to be included in the new record.
+ * @returns {R} A new record object with the added metadata fields.
+ */
 export const createRecord = <T extends Rec, R extends Row<T> = Row<T>>(payload: T): R => {
   return {
     id: uuid(),

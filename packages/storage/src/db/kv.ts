@@ -1,4 +1,4 @@
-import { anchor, captureStack, microtask, mutable, type StateUnsubscribe, subscribe } from '@anchorlib/core';
+import { anchor, captureStack, microtask, mutable, onCleanup, type StateUnsubscribe, subscribe } from '@anchorlib/core';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
 import {
@@ -440,6 +440,10 @@ export function createKVStore<T extends Storable>(
       stateUsage.set(state, 1);
     }
 
+    onCleanup(() => {
+      kvFn.leave(state);
+    });
+
     return state;
   }
 
@@ -448,8 +452,10 @@ export function createKVStore<T extends Storable>(
   };
 
   kvFn.leave = <T extends Storable>(state: KVState<T>) => {
-    if (stateSubscriptions.has(state)) {
-      stateSubscriptions.get(state)?.();
+    const unsubscribe = stateSubscriptions.get(state);
+
+    if (typeof unsubscribe === 'function') {
+      unsubscribe();
     }
   };
 

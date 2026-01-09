@@ -6,6 +6,7 @@ import {
   microtask,
   mutable,
   type ObjLike,
+  onCleanup,
   type State,
   type StateOptions,
   type StateUnsubscribe,
@@ -230,6 +231,10 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
       listenStorageChange();
     }
   }
+
+  onCleanup(() => {
+    session.leave(state);
+  });
 
   return state;
 }) as SessionFn;
