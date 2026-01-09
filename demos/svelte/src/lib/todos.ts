@@ -1,6 +1,6 @@
-import type { InferList, InferRow } from '@anchorlib/storage/db';
-import { createRecord, createTable } from '@anchorlib/storage/db';
-import { anchor } from '@anchorlib/core';
+import { mutable } from '@anchorlib/svelte';
+import type { InferList, InferRow } from '@anchorlib/svelte/storage';
+import { createRecord, createTable } from '@anchorlib/svelte/storage';
 
 export type Todo = {
   text: string;
@@ -17,4 +17,4 @@ todoTable.seed([
 export type TodoRec = InferRow<typeof todoTable>;
 export type TodoRecList = InferList<typeof todoTable>;
 
-export const counter = anchor({ count: 0 });
+export const counter = mutable({ count: 0 });

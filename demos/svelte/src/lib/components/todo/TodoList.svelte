@@ -1,6 +1,6 @@
 <script lang="ts">
   import TodoStats from './TodoStats.svelte';
-  import TodoItem from '$lib/components/todo/TodoItem.svelte';
+  import TodoItem from './TodoItem.svelte';
   import type { TodoRecList } from '../../todos.js';
 
   const { todos }: { todos: TodoRecList } = $props();

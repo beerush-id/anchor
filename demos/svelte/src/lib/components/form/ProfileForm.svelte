@@ -1,14 +1,13 @@
 <script lang="ts">
   import { z } from 'zod/v4';
-  import { exceptionRef, modelRef } from '@anchorlib/svelte';
+  import { form } from '@anchorlib/svelte';
   import type { FormEventHandler } from 'svelte/elements';
 
   const schema = z.object({
     name: z.string().min(3, 'Name must be 3 characters min.'),
     email: z.email('Email is required and must be a valid format.'),
   });
-  const profile = modelRef(schema, { name: '', email: '' }, { silentInit: true });
-  const profileError = exceptionRef(profile);
+  const [profile, errors] = form(schema, { name: '', email: '' });
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -31,8 +30,8 @@
 				placeholder="Enter your name"
 				class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
 			/>
-			{#if profileError.errors.name}
-				<span class="text-xs text-red-500">{profileError.errors.name.message}</span>
+			{#if errors.name}
+				<span class="text-xs text-red-500">{errors.name.message}</span>
 			{/if}
 		</label>
 		<label class="flex flex-col gap-1">
@@ -42,8 +41,8 @@
 				placeholder="Enter your email"
 				class="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
 			/>
-			{#if profileError.errors.email}
-				<span class="text-xs text-red-500">{profileError.errors.email.message}</span>
+			{#if errors.email}
+				<span class="text-xs text-red-500">{errors.email.message}</span>
 			{/if}
 		</label>
 	</div>
