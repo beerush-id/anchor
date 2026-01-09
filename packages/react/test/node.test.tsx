@@ -3,8 +3,9 @@ import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type NodeRef, setup } from '../src/index.js';
 import { createLifecycle } from '../src/lifecycle.js';
-import { applyAttributes, escapeAttributes, flattenStyles, nodeRef } from '../src/node';
+import { applyAttributes, escapeAttributes, flattenStyles, multiRef, nodeRef } from '../src/node';
 import '../src/client/index';
+import type { RefObject } from 'react';
 
 describe('Anchor React - Node', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -248,6 +249,98 @@ describe('Anchor React - Node', () => {
 
       expect(cssString).toContain('z-index: 10;');
       expect(cssString).toContain('opacity: 0.5;');
+    });
+  });
+
+  describe('multiRef', () => {
+    it('should return a ref that combines multiple refs', () => {
+      const ref1 = { current: null };
+      const ref2 = { current: null };
+
+      const combinedRef = multiRef(ref1, ref2);
+
+      expect(combinedRef).toBeDefined();
+      expect(typeof combinedRef).toBe('object');
+      expect('current' in combinedRef).toBe(true);
+    });
+
+    it('should set all provided refs when the combined ref is set', () => {
+      const element = document.createElement('div');
+
+      const ref1 = { current: null };
+      const ref2 = { current: null };
+
+      const combinedRef = multiRef(ref1, ref2);
+      combinedRef.current = element;
+
+      expect(ref1.current).toBe(element);
+      expect(ref2.current).toBe(element);
+    });
+
+    it('should return the first non-null value when reading current', () => {
+      const element1 = document.createElement('div');
+      const element2 = document.createElement('div');
+
+      const ref1 = { current: null } as RefObject<HTMLElement | null>;
+      const ref2 = { current: element2 } as RefObject<HTMLElement | null>;
+      const ref3 = { current: element1 } as RefObject<HTMLElement | null>;
+
+      const combinedRef = multiRef(ref1, ref2, ref3);
+
+      expect(combinedRef.current).toBe(element2); // First non-null value
+
+      ref2.current = null;
+      expect(combinedRef.current).toBe(element1); // Falls back to next non-null value
+
+      ref1.current = element2;
+      expect(combinedRef.current).toBe(element2); // Now ref1 is first non-null
+    });
+
+    it('should handle NodeRef objects correctly', () => {
+      const element = document.createElement('div');
+
+      // Create a simple NodeRef-like object
+      const nodeRefObj = {
+        current: null,
+        get attributes() {
+          return {};
+        },
+        destroy() {},
+      };
+
+      const reactRef = { current: null };
+
+      const combinedRef = multiRef(nodeRefObj, reactRef);
+      combinedRef.current = element;
+
+      expect(nodeRefObj.current).toBe(element);
+      expect(reactRef.current).toBe(element);
+    });
+
+    it('should handle null and undefined refs gracefully', () => {
+      const element = document.createElement('div');
+
+      const ref1 = { current: null } as RefObject<HTMLElement | null>;
+      const ref2 = null as never as RefObject<HTMLElement | null>;
+      const ref3 = { current: null };
+
+      const combinedRef = multiRef(ref1, ref2, ref3);
+      combinedRef.current = element;
+
+      expect(ref1.current).toBe(element);
+      expect(ref3.current).toBe(element);
+
+      // ref2 should be skipped since it's null
+      expect(ref2).toBeNull();
+    });
+
+    it('should return undefined when all refs are null', () => {
+      const ref1 = { current: null };
+      const ref2 = { current: null };
+
+      const combinedRef = multiRef(ref1, ref2);
+
+      expect(combinedRef.current).toBeUndefined();
     });
   });
 });

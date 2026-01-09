@@ -76,12 +76,12 @@ export function nodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTM
  * @param refs - A list of React RefObjects or NodeRefs to be combined
  * @returns A RefObject that represents the combined refs
  */
-export function multiRef<E extends HTMLElement>(...refs: Array<RefObject<E> | NodeRef<E>>): RefObject<E> {
+export function multiRef<E extends HTMLElement>(...refs: Array<RefObject<E | null> | NodeRef<E>>): RefObject<E> {
   return {
-    get current() {
-      return refs.map((ref) => ref.current).filter(Boolean)[0];
+    get current(): E {
+      return refs.map((ref) => ref.current).filter(Boolean)[0] as E;
     },
-    set current(value) {
+    set current(value: E) {
       for (const ref of refs) {
         if (typeof ref === 'object' && ref !== null) {
           ref.current = value;
