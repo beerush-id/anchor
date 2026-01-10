@@ -10,7 +10,6 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@anchorkit/solid": "workspace:*",
     "@anchorlib/solid": "workspace:*",
     "solid-js": "catalog:app"
   },
