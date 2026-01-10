@@ -47,6 +47,9 @@
       },
       "security": {
         "noBlankTarget": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off"
       }
     }
   },

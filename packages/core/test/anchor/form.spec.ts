@@ -67,7 +67,7 @@ describe('Anchor Core - Form API', () => {
         age: z.number().min(18),
       });
 
-      const [input, errors] = form(schema, { name: 'Jo', age: 15 });
+      const [input, errors] = form(schema, { name: 'Jo', age: 15 }, { safeInit: false });
 
       // Input should accept any values
       expect(input.name).toBe('Jo');
@@ -187,7 +187,7 @@ describe('Anchor Core - Form API', () => {
         age: z.number().min(18),
       });
 
-      const [input, errors] = form(schema, { name: 'Jo', age: 10 });
+      const [input, errors] = form(schema, { name: 'Jo', age: 10 }, { safeInit: false });
 
       // Initial errors should exist
       expect(errors.name).toBeDefined();
