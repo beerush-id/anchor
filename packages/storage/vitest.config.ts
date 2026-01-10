@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     include: ['test/**/*.{test,spec}.{ts,js}'],
     reporters: ['default', 'html'],
+    setupFiles: ['./test/setup.ts'],
     outputFile: 'coverage/index.html',
     coverage: {
       enabled: true,
