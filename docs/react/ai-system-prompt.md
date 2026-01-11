@@ -623,7 +623,7 @@ export const LikeButton = setup<{ liked: boolean }>((props) => {
 
 ### High-Performance DOM Updates (`nodeRef()`)
 
-For high-frequency updates or large component trees, use `nodeRef()` to bypass React's render cycle.
+For high-frequency updates or large component trees, use `nodeRef()` to bypass React's render cycle. The function passed to `nodeRef` runs in a **reactive context**. If it returns an object, those properties are applied as DOM attributes and update automatically when state changes.
 
 ```tsx
 import { nodeRef } from '@anchorlib/react';
