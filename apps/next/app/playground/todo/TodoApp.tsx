@@ -126,7 +126,7 @@ const TodoApp = setup(() => {
   );
 }, 'TodoApp');
 
-const TodoItem = setup(({ todo, todos }: { todo: Todo; todos: Todo[] }) => {
+const TodoItem = setup<{ todo: Todo; todos: Todo[] }>(({ todo, todos }) => {
   const handleToggle = (todo: Todo) => {
     todo.completed = !todo.completed;
   };
