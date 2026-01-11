@@ -1,6 +1,6 @@
 # Anchor for React - AI Knowledge Base
 
-Reference for AI assistants to build robust Anchor applications in React.
+Reference for AI assistants to build robust React applications using Anchor.
 
 ## Terminology
 
