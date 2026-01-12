@@ -71,71 +71,77 @@ describe('IRPC Transport', () => {
   describe('IRPC Scheduling', () => {
     it('should dispatch immediately when debounce is false', async () => {
       const transportWithDebounceFalse = new IRPCTransport({ debounce: false });
-      
-      const dispatchSpy = vi.spyOn(transportWithDebounceFalse as any, 'dispatch').mockImplementation(() => Promise.resolve());
-      
+
+      const dispatchSpy = vi
+        .spyOn(transportWithDebounceFalse as any, 'dispatch')
+        .mockImplementation(() => Promise.resolve());
+
       const call: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
-      
+
       (transportWithDebounceFalse as never as TransportType).schedule(call);
-      
+
       // When debounce is false, dispatch should be called immediately
       expect(dispatchSpy).toHaveBeenCalledWith([call]);
       expect(transportWithDebounceFalse.queue.size).toBe(0);
-      
+
       dispatchSpy.mockRestore();
     });
 
     it('should use queueMicrotask when debounce is 0', async () => {
       vi.useFakeTimers();
-      
+
       const transportWithDebounceZero = new IRPCTransport({ debounce: 0 });
-      const dispatchSpy = vi.spyOn(transportWithDebounceZero as any, 'dispatch').mockImplementation(() => Promise.resolve());
-      
+      const dispatchSpy = vi
+        .spyOn(transportWithDebounceZero as any, 'dispatch')
+        .mockImplementation(() => Promise.resolve());
+
       const call1: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
       const call2: IRPCCall = { id: '2', reject: vi.fn(), resolve: vi.fn() } as never;
-      
+
       (transportWithDebounceZero as never as TransportType).schedule(call1);
       (transportWithDebounceZero as never as TransportType).schedule(call2);
-      
+
       // Queue should have calls until microtask runs
       expect(transportWithDebounceZero.queue.size).toBe(2);
       expect(dispatchSpy).not.toHaveBeenCalled();
-      
+
       // Process microtasks
       await Promise.resolve();
-      
+
       // Dispatch should have been called with all queued calls
       expect(dispatchSpy).toHaveBeenCalledWith([call1, call2]);
       expect(transportWithDebounceZero.queue.size).toBe(0);
-      
+
       dispatchSpy.mockRestore();
       vi.useRealTimers();
     });
 
     it('should use setTimeout when debounce is greater than 0', async () => {
       vi.useFakeTimers();
-      
+
       const transportWithDebounce = new IRPCTransport({ debounce: 100 });
-      const dispatchSpy = vi.spyOn(transportWithDebounce as any, 'dispatch').mockImplementation(() => Promise.resolve());
-      
+      const dispatchSpy = vi
+        .spyOn(transportWithDebounce as any, 'dispatch')
+        .mockImplementation(() => Promise.resolve());
+
       const call1: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
       const call2: IRPCCall = { id: '2', reject: vi.fn(), resolve: vi.fn() } as never;
-      
+
       (transportWithDebounce as never as TransportType).schedule(call1);
       (transportWithDebounce as never as TransportType).schedule(call2);
-      
+
       // Queue should have calls until timeout runs
       expect(transportWithDebounce.queue.size).toBe(2);
       expect(dispatchSpy).not.toHaveBeenCalled();
-      
+
       // Advance timers to trigger the timeout
       vi.advanceTimersByTime(100);
-      
+
       // Dispatch should have been called with all queued calls
       await Promise.resolve(); // Wait for the promise to resolve
       expect(dispatchSpy).toHaveBeenCalledWith([call1, call2]);
       expect(transportWithDebounce.queue.size).toBe(0);
-      
+
       dispatchSpy.mockRestore();
       vi.useRealTimers();
     });
