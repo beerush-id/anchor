@@ -121,6 +121,33 @@ effect(() => {
 >
 > **Both are safe for serialization** because the returned object is a plain JavaScript object, detached from the reactivity system.
 
+### Stringify
+
+For serialization without dependency tracking, Anchor provides `stringify()`. Unlike `JSON.stringify(state)`, which would track every property accessed during serialization, `stringify()` works directly with the underlying object without creating a deep clone.
+
+```tsx
+import { stringify, effect } from '@anchorlib/react';
+
+effect(() => {
+  // ❌ Tracks every property in 'user' -> Re-runs on ANY change
+  const json = JSON.stringify(user);
+  
+  // ✅ No tracking -> Safe serialization (works with underlying object)
+  const json = stringify(user);
+  
+  // You can also pass replacer and space arguments
+  const formatted = stringify(user, null, 2);
+});
+```
+
+`stringify(state, replacer?, space?)` accepts the same parameters as `JSON.stringify()`:
+- **state**: The reactive state to stringify
+- **replacer**: Optional replacer function to filter or transform values
+- **space**: Optional spacing for formatting (number or string)
+
+> [!TIP]
+> `stringify()` is more efficient than `snapshot()` + `JSON.stringify()` because it doesn't perform a deep clone. It accesses the underlying object directly, bypassing the reactive proxy to avoid dependency tracking.
+
 ## Global Observability
 
 When you need to listen to *any* change in a state object (for example, to trigger a log or a unified save), using `effect` can be tedious because you have to manually access every property to track it.

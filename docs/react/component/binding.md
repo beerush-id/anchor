@@ -81,9 +81,15 @@ When you design a component that displays and updates a value, it should work in
 
 To create two-way data binding, use `$bind()`. It keeps state and prop in sync—updates on either side are propagated to each other.
 
+### Typing Components for Two-Way Binding
+
+For TypeScript to recognize that a component accepts two-way binding with `$bind()`, you must explicitly type the property with `Bindable<type>`:
+
 ```tsx
+import type { Bindable } from '@anchorlib/react';
+
 type CounterProps = {
-  value: number;
+  value: Bindable<number>; // ✅ Explicitly typed as Bindable
   onChange?: (value: number) => void;
 };
 
@@ -94,8 +100,8 @@ export const Counter = setup<CounterProps>((props) => {
   };
 
   return render(() => (
-    <button onClick={increment}>
-      Count: {props.value}
+    <button onClick={ increment }>
+      Count: { props.value }
     </button>
   ));
 });
@@ -228,33 +234,7 @@ const count = mutable(0);
 <Counter value={$bind(count)} />
 ```
 
-## Bindable Interfaces
 
-You can create a bindable state that stays synchronized with a source object (like `props`). This is useful for creating components that can be both controlled and uncontrolled, or simply to normalize props into a mutable interface.
-
-```tsx
-import { setup, bindable, render } from '@anchorlib/react';
-
-export const TextInput = setup((props: { value?: string }) => {
-  // 1. Create a local ref 'text'
-  // 2. Initialize it with '' (fallback if props.value is undefined)
-  // 3. Sync it with props.value
-  const text = bindable('', props, 'value');
-
-  return render(() => (
-    <input
-      value={text.value}
-      onInput={(e) => text.value = e.currentTarget.value}
-    />
-  ));
-});
-```
-
-In this example:
--   If `props.value` changes (parent updates), `text.value` updates automatically.
--   If user types, `text.value` updates, which propagates to `props.value`.
-    -   If `props.value` was passed via `$bind()`, the parent state updates!
-    -   If `props.value` was a plain string, it just updates the local prop proxy (no-op for parent).
 
 ## Best Practices
 

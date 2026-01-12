@@ -107,7 +107,7 @@ export default defineConfig({
               { text: 'Mutable State', link: '/react/state/mutable' },
               { text: 'Immutable State', link: '/react/state/immutable' },
               { text: 'Derived State', link: '/react/state/derived' },
-              { text: 'Data Fetching', link: '/react/state/data-fetching' },
+              { text: 'Async Handling', link: '/react/state/data-fetching' },
               { text: 'Advanced', link: '/react/state/advanced' },
             ],
           },
@@ -127,6 +127,8 @@ export default defineConfig({
           { text: 'Comparison', link: '/react/comparison' },
           { text: 'Best Practices', link: '/react/best-practices' },
           { text: 'Migration Guide', link: '/react/migration-guide' },
+          { text: 'AI Knowledge Base', link: '/react/ai-knowledge-base' },
+          { text: 'AI System Prompt', link: '/react/ai-system-prompt' },
           { text: 'FAQ', link: '/react/faq' },
           // {
           //   text: 'Tutorials',

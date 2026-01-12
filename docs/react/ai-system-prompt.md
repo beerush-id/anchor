@@ -700,8 +700,6 @@ effect(() => {
 
 ## Anti-Patterns: Don't Use React Patterns
 
-**CRITICAL: Standard React patterns are "accepted bad patterns" in Anchor.** They exist because React's rendering model requires them. Anchor eliminates these problems.
-
 ### ❌ Don't Use Hooks
 
 ```tsx

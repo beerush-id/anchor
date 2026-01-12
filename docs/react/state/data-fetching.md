@@ -1,21 +1,20 @@
 ---
-title: "Data Fetching"
-description: "Managing asynchronous data fetching with reactive state."
+title: "Async Handling"
+description: "Managing asynchronous operations with reactive state."
 keywords:
-  - data fetching
   - async
   - query
   - fetch
   - streaming
 ---
 
-# Data Fetching
+# Async Handling
 
-Modern applications rely heavily on asynchronous data. Anchor provides powerful primitives for managing async operations with built-in reactivity, cancellation support, and automatic status tracking.
+Modern applications rely heavily on asynchronous operations. Anchor provides powerful primitives for managing async operations with built-in reactivity, cancellation support, and automatic status tracking.
 
 ## The Problem
 
-Traditional async data handling in JavaScript requires manual orchestration:
+Traditional async operation handling in JavaScript requires manual orchestration:
 - **Status Tracking**: You must manually track loading, success, and error states.
 - **Cancellation**: Implementing request cancellation requires boilerplate with AbortController.
 - **Race Conditions**: Multiple concurrent requests can overwrite each other's results.
@@ -23,7 +22,7 @@ Traditional async data handling in JavaScript requires manual orchestration:
 
 ## The Solution
 
-Anchor provides two complementary approaches for async data:
+Anchor provides complementary approaches for async operations:
 
 1. **`query()`** - For general async operations with full control and cancellation support
 2. **`fetchState()`** - For HTTP requests with automatic response handling
@@ -55,6 +54,7 @@ The query automatically starts when created. The state object contains:
 - **`data`**: The result of the async operation (initially `undefined`)
 - **`status`**: Current status (`'idle'`, `'pending'`, `'success'`, or `'error'`)
 - **`error`**: Error object if the operation failed
+- **`promise`**: A Promise that resolves when the current operation completes (or a resolved promise if idle)
 - **`start()`**: Method to manually trigger the operation
 - **`abort()`**: Method to cancel the ongoing operation
 
@@ -302,28 +302,35 @@ export const UserProfile = setup(() => {
 
 ## Converting to Promises
 
-Both `query` and `fetchState` expose a `.promise()` getter that returns a Promise for use with async/await:
+All async state functions expose a `.promise` property that returns a Promise for use with async/await:
 
 ```ts
-import { query, fetchState } from '@anchorlib/react';
+import { query, fetchState, streamState } from '@anchorlib/react';
 
+// query() with .promise property
 const userQuery = query(async (signal) => {
   const res = await fetch('/api/user', { signal });
   return res.json();
 });
 
-// Wait for completion using the .promise() getter
-try {
-  await userQuery.promise();
-  console.log('User loaded:', userQuery.data);
-} catch (error) {
-  console.error('Failed to load user:', error);
-}
+await userQuery.promise;
+console.log('User loaded:', userQuery.data);
 
-// Same for fetchState
+// fetchState() with .promise property
 const dataState = fetchState({}, { url: '/api/data' });
-await dataState.promise();
+await dataState.promise;
+console.log('Data loaded:', dataState.data);
+
+// streamState() with .promise property
+const streamData = streamState('', { url: '/api/stream' });
+await streamData.promise;
+console.log('Stream complete:', streamData.data);
 ```
+
+The `promise` property is a getter that:
+- Returns the **active promise** if an operation is currently running
+- Returns `Promise.resolve(undefined)` if no operation is active (idle state)
+- Allows seamless integration with async/await patterns
 
 This is useful for:
 - Server-side rendering where you need to wait for data
@@ -481,7 +488,7 @@ const store = mutable({
   
   async loadUserAndPosts() {
     // Sequential: wait for user first
-    await this.userQuery.promise();
+    await this.userQuery.promise;
     
     // Then load posts with user ID
     if (this.userQuery.status === 'success') {
