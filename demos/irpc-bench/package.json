@@ -1,6 +1,6 @@
 {
   "name": "@anchor-demo/irpc-bench",
-  "version": "1.0.0-beta.19",
+  "version": "1.0.0-beta.20",
   "type": "module",
   "scripts": {
     "serve": "bun run src/servers",
