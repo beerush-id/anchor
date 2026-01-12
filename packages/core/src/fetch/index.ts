@@ -174,6 +174,9 @@ function fetchStateFn<T, S extends LinkableSchema = LinkableSchema>(init: T, opt
       abort() {
         controller.abort();
       },
+      get promise() {
+        return toPromise(state);
+      },
     },
     { ...options, recursive: false }
   ) as FetchState<T>;
@@ -337,6 +340,9 @@ function streamStateFn<T, S extends LinkableSchema = LinkableSchema>(
       fetch: start as FetchState<T>['fetch'],
       abort() {
         controller.abort();
+      },
+      get promise() {
+        return toPromise(state);
       },
     },
     { ...options, recursive: false }
