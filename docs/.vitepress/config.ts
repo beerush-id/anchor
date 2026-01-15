@@ -190,6 +190,7 @@ export default defineConfig({
               { text: 'Mutable State', link: '/solid/state/mutable' },
               { text: 'Immutable State', link: '/solid/state/immutable' },
               { text: 'Derived State', link: '/solid/state/derived' },
+              { text: 'Data Binding', link: '/solid/state/binding' },
             ],
           },
         ],

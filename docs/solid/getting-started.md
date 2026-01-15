@@ -298,6 +298,116 @@ export default Counter;
 
 :::
 
+## Data Binding
+
+Anchor provides a powerful data binding system that allows components to share and synchronize state seamlessly. This is especially useful for creating reusable form inputs and interactive controls.
+
+### Creating Bindable Components
+
+Use the `bindable()` HOC to create components that accept bindable props:
+
+```tsx /App.tsx [active]
+import { mutable, $bind, bindable } from '@anchorlib/solid';
+import type { Bindable } from '@anchorlib/solid';
+
+// Create a bindable input component
+interface InputProps {
+  value: Bindable<string>;
+  label?: string;
+}
+
+const Input = bindable<InputProps>((props) => {
+  return (
+    <div>
+      {props.label && <label>{props.label}</label>}
+      <input
+        type="text"
+        value={props.value}
+        onInput={(e) => (props.value = e.currentTarget.value)}
+      />
+    </div>
+  );
+});
+
+// Use it with $bind()
+const App = () => {
+  const user = mutable({
+    firstName: 'John',
+    lastName: 'Doe',
+  });
+
+  return (
+    <div>
+      <Input label="First Name" value={$bind(user, 'firstName')} />
+      <Input label="Last Name" value={$bind(user, 'lastName')} />
+      
+      <p>Full Name: {user.firstName} {user.lastName}</p>
+    </div>
+  );
+};
+
+export default App;
+```
+
+::: details Try it Yourself
+
+::: anchor-solid-sandbox
+
+```tsx /App.tsx [active]
+import { mutable, $bind, bindable } from '@anchorlib/solid';
+import type { Bindable } from '@anchorlib/solid';
+
+interface InputProps {
+  value: Bindable<string>;
+  label?: string;
+}
+
+const Input = bindable<InputProps>((props) => {
+  return (
+    <div style={{ "margin-bottom": "10px" }}>
+      {props.label && <label style={{ display: "block", "margin-bottom": "5px" }}>{props.label}</label>}
+      <input
+        type="text"
+        value={props.value}
+        onInput={(e) => (props.value = e.currentTarget.value)}
+        style={{ padding: "5px", width: "200px" }}
+      />
+    </div>
+  );
+});
+
+const App = () => {
+  const user = mutable({
+    firstName: 'John',
+    lastName: 'Doe',
+  });
+
+  return (
+    <div>
+      <Input label="First Name" value={$bind(user, 'firstName')} />
+      <Input label="Last Name" value={$bind(user, 'lastName')} />
+      
+      <div style={{ "margin-top": "20px", padding: "10px", background: "#f0f0f0" }}>
+        <p>Full Name: {user.firstName} {user.lastName}</p>
+      </div>
+    </div>
+  );
+};
+
+export default App;
+```
+
+:::
+
+::: tip Key Points:
+
+- **`$bind()`**: Creates a binding reference to synchronize state between components
+- **`bindable()`**: HOC that makes components accept bindable props
+- **Type-safe**: Props must be typed with `Bindable<T>` to use `$bind()`
+- **Automatic sync**: Changes in the child component automatically update parent state
+
+:::
+
 ## Schema Support
 
 Anchor supports defining schemas for your state, providing runtime validation and better type safety:
@@ -331,3 +441,4 @@ Now that you've learned the basics of Anchor for Solid, you can explore:
 - [Mutable State](/solid/state/mutable) - Deep dive into creating and modifying reactive state
 - [Immutable State](/solid/state/immutable) - How Anchor provides true immutability
 - [Derived State](/solid/state/derived) - Creating computed values that update automatically
+- [Data Binding](/solid/state/binding) - Two-way data binding between components
