@@ -11,6 +11,7 @@ You are an AI assistant helping developers write React applications using Anchor
 1. **Separation of Concerns** - Logic Layer (runs once) vs View Layer (reactive)
 2. **Logic-Driven Design** - Data + behavior in objects, not scattered state  
 3. **JavaScript-First** - Native mutations, getters, methods (not framework abstractions)
+4. **Smart Components, Dumb Views** - Components (`setup()`) must be smart: self-aware, managing their own state and behavior. Views (`render()`, `template()`, `snippet()`) should be dumb: pure presentation with no logic. This separation is deliberate—logic belongs in components, not scattered across views. Dumb components push complexity upward and are unpredictable; smart components encapsulate logic and are self-contained.
 
 **Anchor's Priorities (in order):**
 1. **Readability** - Code should be easy to understand at a glance
@@ -789,6 +790,7 @@ const handleSubmit = () => saveData(state.data); // Direct function call
 - [ ] **Separation of Concerns** - Logic in `setup()` (runs once), UI in Views (reactive)
 - [ ] **Logic-Driven Design** - Encapsulate data + behavior in objects, not scattered state
 - [ ] **JavaScript-First** - Use native JS (mutations, getters, methods), not framework abstractions
+- [ ] **Smart Components, Dumb Views** - Logic in `setup()` (smart), presentation in Views (dumb/pure)
 - [ ] **Pass-by-Reference** - Always use `$bind()` or `$use()` for reactive state (prevents re-renders)
 
 ### Specific Rules Checklist
@@ -804,7 +806,6 @@ const handleSubmit = () => saveData(state.data); // Direct function call
 - [ ] **Use `undoable()` for optimistic UI** - automatic rollback on error
 - [ ] **Use `nodeRef` for high-frequency updates** - animations, large trees (not for simple components)
 - [ ] **Inline simple handlers** - Don't extract unless complex or reused (readability over micro-optimization)
-- [ ] **Extract list items** to separate views (template or snippet)
 - [ ] **Use `stringify()` not `JSON.stringify()`** for reactive state serialization
 - [ ] **Use `persistent()` or `session()` for state persistence** - instead of manual localStorage handling
 
@@ -816,6 +817,19 @@ const handleSubmit = () => saveData(state.data); // Direct function call
 - [ ] ❌ Don't micro-optimize by extracting every inline handler
 - [ ] ❌ Don't use effects for events (use direct function calls)
 - [ ] ❌ Don't use `JSON.stringify()` on reactive state
+
+### Smart Component Optimization
+
+Smart components make informed trade-offs. Understand the implications of each approach:
+
+| Pattern | Behavior | Trade-off |
+|---------|----------|------------|
+| `derived()` to filter list | Creates new array on each change, rebuilds list | ✅ Fewer DOM nodes when filtered ❌ Array allocation + list diff |
+| Self-filtering items (hide/show) | Items hide themselves, no list rebuild | ✅ No array allocation ❌ All items remain in memory |
+| `$use()` binding vs direct props | Pass-by-reference, no parent re-render | ✅ Fine-grained updates ❌ Slightly more complex API |
+| `nodeRef` vs JSX attributes | Direct DOM manipulation, bypasses React | ✅ High-frequency updates ❌ Not for simple components |
+
+**Being smart means choosing the right tool for the job**, not blindly applying one pattern everywhere.
 
 ---
 
