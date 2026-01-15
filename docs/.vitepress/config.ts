@@ -1,4 +1,3 @@
-// @ts-ignore
 import container from 'markdown-it-container';
 import { defineConfig, type HeadConfig } from 'vitepress';
 import llmstxt from 'vitepress-plugin-llms';
@@ -108,6 +107,7 @@ export default defineConfig({
               { text: 'Immutable State', link: '/react/state/immutable' },
               { text: 'Derived State', link: '/react/state/derived' },
               { text: 'Async Handling', link: '/react/state/async-handling' },
+              { text: 'Form Handling', link: '/react/state/form-handling' },
               { text: 'Advanced', link: '/react/state/advanced' },
             ],
           },
@@ -167,12 +167,12 @@ export default defineConfig({
       },
       {
         text: 'Examples',
-        collapsed: true,
+        collapsed: false,
         items: [{ text: 'Analytics Dashboard', link: '/examples/dashboard' }],
       },
       {
         text: 'Anchor for Solid',
-        collapsed: true,
+        collapsed: false,
         items: [
           {
             text: 'Overview',
@@ -184,20 +184,26 @@ export default defineConfig({
           },
           {
             text: 'State Management',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Overview', link: '/solid/state/index.html' },
               { text: 'Mutable State', link: '/solid/state/mutable' },
               { text: 'Immutable State', link: '/solid/state/immutable' },
               { text: 'Derived State', link: '/solid/state/derived' },
               { text: 'Data Binding', link: '/solid/state/binding' },
+              { text: 'Async Handling', link: '/solid/state/async-handling' },
+              { text: 'Form Handling', link: '/solid/state/form-handling' },
+              { text: 'Advanced', link: '/solid/state/advanced' },
             ],
           },
+          { text: 'AI Knowledge Base', link: '/solid/ai-knowledge-base' },
+          { text: 'AI System Prompt', link: '/solid/ai-system-prompt' },
+          { text: 'FAQ', link: '/solid/faq' },
         ],
       },
       {
         text: 'Anchor for Svelte',
-        collapsed: true,
+        collapsed: false,
         items: [
           {
             text: 'Overview',
@@ -209,19 +215,25 @@ export default defineConfig({
           },
           {
             text: 'State Management',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Overview', link: '/svelte/state/index.html' },
               { text: 'Mutable State', link: '/svelte/state/mutable' },
               { text: 'Immutable State', link: '/svelte/state/immutable' },
               { text: 'Derived State', link: '/svelte/state/derived' },
+              { text: 'Async Handling', link: '/svelte/state/async-handling' },
+              { text: 'Form Handling', link: '/svelte/state/form-handling' },
+              { text: 'Advanced', link: '/svelte/state/advanced' },
             ],
           },
+          { text: 'AI Knowledge Base', link: '/svelte/ai-knowledge-base' },
+          { text: 'AI System Prompt', link: '/svelte/ai-system-prompt' },
+          { text: 'FAQ', link: '/svelte/faq' },
         ],
       },
       {
         text: 'Anchor for Vue',
-        collapsed: true,
+        collapsed: false,
         items: [
           {
             text: 'Overview',
@@ -233,7 +245,7 @@ export default defineConfig({
           },
           {
             text: 'State Management',
-            collapsed: false,
+            collapsed: true,
             items: [
               { text: 'Overview', link: '/vue/state/index.html' },
               { text: 'Mutable State', link: '/vue/state/mutable' },
@@ -244,26 +256,30 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Request',
-        collapsed: true,
+        text: 'Async',
+        collapsed: false,
         items: [
           {
             text: 'Getting Started',
-            link: '/request/getting-started',
+            link: '/async/getting-started',
+          },
+          {
+            text: 'Query',
+            link: '/async/query',
           },
           {
             text: 'Fetch',
-            link: '/request/fetch',
+            link: '/async/fetch',
           },
           {
             text: 'Stream',
-            link: '/request/stream',
+            link: '/async/stream',
           },
         ],
       },
       {
         text: 'Storage',
-        collapsed: true,
+        collapsed: false,
         items: [
           {
             text: 'Getting Started',
@@ -293,7 +309,7 @@ export default defineConfig({
       },
       {
         text: 'API Reference',
-        collapsed: true,
+        collapsed: false,
         items: [
           {
             text: 'Core',
