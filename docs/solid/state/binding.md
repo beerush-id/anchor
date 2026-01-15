@@ -515,5 +515,4 @@ const inputProps = props.$pick(['value', 'placeholder', 'disabled']);
 ## Related
 
 - [Mutable State](/solid/state/mutable) - Creating reactive state
-- [Props Proxy](/apis/solid/props) - API reference for `proxyProps()`
 - [API Reference](/apis/solid/) - Complete API documentation

@@ -220,7 +220,7 @@ source.count = 5; // This will update target.value to 10
 
 Anchor provides a set of APIs for deriving state changes. Please refer to the API Reference section for more details:
 
-- [Anchor Core Subscription APIs](/apis/core/derivation)
+- [Anchor Core Subscription APIs](/apis/core/subscription)
 - [Anchor for React Derivation APIs](/apis/react/derivation)
 - [Anchor for Svelte Derivation APIs](/apis/svelte/derivation)
 - [Anchor for Vue Derivation APIs](/apis/vue/derivation)

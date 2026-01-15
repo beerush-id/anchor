@@ -79,7 +79,7 @@ reactivity. This can be useful when you have a large array and you only need to 
 
 Anchor provides a set of APIs to manage state. For a complete reference of the core APIs, please refer to:
 
-- [Anchor Core API Reference](/apis/core/initialization) - Core APIs for initializing and managing state.
+- [Anchor Core API Reference](/apis/core/reactivity) - Core APIs for initializing and managing state.
 - [Anchor for React API Reference](/apis/react/initialization) - React APIs for integrating with React.
 - [Anchor for Svelte API Reference](/apis/svelte/initialization) - Svelte APIs for integrating with Svelte.
 - [Anchor for Vue API Reference](/apis/vue/initialization) - Vue APIs for integrating with Vue.

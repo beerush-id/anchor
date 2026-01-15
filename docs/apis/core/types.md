@@ -10,7 +10,7 @@ The foundational type for values that can be made reactive by Anchor. This inclu
 
 ### `State<T>`
 
-Represents a reactive state object of type `T`. This is the main type returned by the [anchor()](initialization.md#anchor) function.
+Represents a reactive state object of type `T`. This is the main type returned by the [anchor()](anchor.md#anchor) function.
 
 ```typescript
 type State<T extends Linkable> = T;

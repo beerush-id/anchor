@@ -33,7 +33,6 @@ export const appState = mutable({
 ### Best Practice
 - **Use for**: App-wide constants, configuration that never changes at runtime, or strictly CSR-only applications.
 - **Avoid for**: User sessions, request-specific data, or anything that changes based on the user.
-- **Alternative**: For SSR-safe global state, use [Solid Context](/solid/component/binding#context-binding) or a Dependency Injection system to scope the state to the request tree.
 
 ## Headless State
 

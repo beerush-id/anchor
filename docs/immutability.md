@@ -308,7 +308,7 @@ predictable, and maintainable code.
 
 Anchor provides a set of APIs to manage immutable state in your application. To learn more about these APIs, please refer to:
 
-- [Anchor Immutable API Reference](/apis/core/initialization#anchor-immutable) - Immutability APIs for the Core Package.
+- [Anchor Immutable API Reference](/apis/core/reactivity#immutable) - Immutability APIs for the Core Package.
 - [Anchor for React Immutable API Reference](/apis/react/initialization#useimmutable) - Immutability APIs for the React Package.
 - [Anchor for Svelte Immutable API Reference](/apis/svelte/initialization#immutableref) - Immutability APIs for the Svelte Package.
 - [Anchor for Vue Immutable API Reference](/apis/vue/initialization#immutableref) - Immutability APIs for the Vue Package.
