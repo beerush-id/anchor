@@ -70,6 +70,37 @@ export const Counter = setup(() => {
 }, 'Counter');
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, snippet, render } from '@anchorlib/react';
+
+// ━━━ COMPONENT (Logic Layer) ━━━
+export const Counter = setup(() => {
+  // Runs once. Logic is stable, no dependency arrays needed.
+  const state = mutable({ count: 0 });
+  const increment = () => state.count++;
+
+  // ━━━ VIEW (Presentation Layer) ━━━
+  // Reactive Snippet - only re-runs when state.count changes
+  const Count = snippet(() => <h1>{state.count}</h1>, 'Count');
+
+  // Static Layout - runs once, never re-renders
+  return (
+    <>
+      <Count />
+      <button onClick={increment}>Increment</button>
+    </>
+  );
+}, 'Counter');
+
+export default Counter;
+```
+:::
+
 ::: tip Scalability Note
 At first glance, this might look like more boilerplate for a simple counter. However, in real-world applications, this architecture saves you from the "re-render cascade". Your layout, event handlers, and static content remain stable, while only the dynamic parts (like `<Count />`) update.
 :::

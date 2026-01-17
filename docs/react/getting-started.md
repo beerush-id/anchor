@@ -13,9 +13,24 @@ This guide covers the essentials of building React applications with Anchor, fro
 
 ## Installation
 
-```bash
+::: code-group
+
+```bash [Bun]
+bun add @anchorlib/react
+```
+
+```bash [npm]
 npm install @anchorlib/react
 ```
+
+```bash [Yarn]
+yarn add @anchorlib/react
+```
+
+```bash [pnpm]
+pnpm add @anchorlib/react
+```
+:::
 
 ## Client Initialization
 
@@ -51,6 +66,31 @@ export const Counter = setup(() => {
   ));
 });
 ```
+
+::: details Try it Yourself
+
+::: anchor-react-sandbox
+
+```tsx /App.tsx [active]
+import '@anchorlib/react/client';
+import { setup, mutable, render } from '@anchorlib/react';
+
+// ━━━ COMPONENT (Logic Layer) ━━━
+export const Counter = setup(() => {
+  const state = mutable({ count: 0 });
+
+  // ━━━ VIEW (Presentation Layer) ━━━
+  return render(() => (
+    <button onClick={() => state.count++}>
+      Count: {state.count}
+    </button>
+  ));
+});
+
+export default Counter;
+```
+
+:::
 
 ## Selective Rendering
 
@@ -88,6 +128,47 @@ export const UserCard = setup(() => {
   );
 });
 ```
+
+::: details Try it Yourself
+
+::: anchor-react-sandbox
+
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, snippet } from '@anchorlib/react';
+
+// ━━━ COMPONENT (Logic Layer) ━━━
+export const UserCard = setup(() => {
+  const user = mutable({ name: 'John Doe', role: 'Admin' });
+
+  // ━━━ SNIPPET (Context-aware View) ━━━
+  const Header = snippet(() => (
+    <div className="header">
+      <h1>{user.name}</h1>
+    </div>
+  ));
+
+  // ━━━ SNIPPET (Context-aware View) ━━━
+  const Body = snippet(() => (
+    <div className="body">
+      <p>Role: {user.role}</p>
+    </div>
+  ));
+
+  // ━━━ STATIC JSX (Static Presentation Layer) ━━━
+  return (
+    <div className="card">
+      <Header />
+      <Body />
+      <button onClick={() => user.role = 'User'}>Change Role</button>
+    </div>
+  );
+});
+
+export default UserCard;
+```
+:::
 
 **Why this is better:**
 *   **Cohesion**: Related UI parts stay together in the same Component.
