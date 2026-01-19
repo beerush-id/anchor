@@ -208,8 +208,134 @@ effect(() => {
 -   **Performance**: Your effect only re-runs when *relevant* data changes. If a branch is not taken, its dependencies don't cause updates.
 -   **Correctness**: You don't need to worry about "stale" dependencies or manually managing dependency arrays. The system always knows exactly what the effect needs *right now*.
 
+::: details Try it Yourself
 
+::: anchor-react-sandbox {class="preview-flex"}
 
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, effect, untrack, snippet } from '@anchorlib/react';
+
+export const DynamicTrackingDemo = setup(() => {
+  const state = mutable({ 
+    showDetails: false,
+    name: 'Alice',
+    details: 'Software Engineer',
+    effectRunCount: 0,
+    lastTracked: [] as string[]
+  });
+
+  // Effect with dynamic dependency tracking
+  effect(() => {
+    const tracked: string[] = [];
+    
+    // Always tracks showDetails
+    tracked.push('showDetails');
+    
+    if (state.showDetails) {
+      // Only tracks 'details' when showDetails is true
+      console.log('Details:', state.details);
+      tracked.push('details');
+    }
+    
+    // Update tracking info WITHOUT triggering the effect again
+    untrack(() => {
+      state.effectRunCount++;
+      state.lastTracked = tracked;
+    });
+  });
+
+  // Snippet for effect stats (updates when effect runs)
+  const EffectStats = snippet(() => (
+    <div style={{ marginBottom: '16px', padding: '12px', background: '#e3f2fd', borderRadius: '4px' }}>
+      <strong>Effect Run Count:</strong> {state.effectRunCount}<br />
+      <strong>Currently Tracking:</strong> {state.lastTracked.join(', ')}
+    </div>
+  ), 'EffectStats');
+
+  // Snippet for checkbox (updates when showDetails changes)
+  const DetailsToggle = snippet(() => (
+    <div style={{ marginBottom: '16px' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <input 
+          type="checkbox"
+          checked={state.showDetails}
+          onChange={() => state.showDetails = !state.showDetails}
+        />
+        <strong>Show Details</strong>
+      </label>
+      <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 24px' }}>
+        Toggle this to change what the effect tracks
+      </p>
+    </div>
+  ), 'DetailsToggle');
+
+  // Snippet for input fields
+  const InputFields = snippet(() => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+          Name:
+        </label>
+        <input 
+          value={state.name}
+          onInput={(e) => state.name = e.currentTarget.value}
+          style={{ width: '100%', padding: '8px' }}
+        />
+        <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>
+          ⚠️ Changing this will NOT trigger the effect
+        </p>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+          Details:
+        </label>
+        <input 
+          value={state.details}
+          onInput={(e) => state.details = e.currentTarget.value}
+          style={{ width: '100%', padding: '8px' }}
+        />
+        <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>
+          {state.showDetails 
+            ? '✅ Tracked! Changing this will trigger the effect' 
+            : '⚠️ Not tracked. Enable "Show Details" first'}
+        </p>
+      </div>
+    </div>
+  ), 'InputFields');
+
+  // Static layout
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px' }}>
+      <h3>Dynamic Dependency Tracking</h3>
+      <EffectStats />
+      <DetailsToggle />
+      <InputFields />
+      <div style={{ 
+        marginTop: '16px', 
+        padding: '12px', 
+        background: '#fff3cd', 
+        borderRadius: '4px',
+        fontSize: '14px'
+      }}>
+        <strong>How it works:</strong>
+        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+          <li>The effect always tracks <code>showDetails</code></li>
+          <li>When <code>showDetails</code> is true, it also tracks <code>details</code></li>
+          <li>When <code>showDetails</code> is false, <code>details</code> is not tracked</li>
+          <li><code>name</code> is never tracked by the effect</li>
+          <li><code>untrack()</code> prevents the effect from tracking its own mutations</li>
+        </ul>
+      </div>
+    </div>
+  );
+}, 'DynamicTrackingDemo');
+
+export default DynamicTrackingDemo;
+```
+
+:::
 
 ## Best Practices
 

@@ -35,6 +35,34 @@ export const Counter = setup((props) => {
 }, 'Counter');
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, render, mutable } from '@anchorlib/react';
+
+// ━━━ COMPONENT (Logic Layer) ━━━
+export const Counter = setup(() => {
+  // State
+  const state = mutable({ count: 0 });
+  
+  const increment = () => state.count++;
+
+  // ━━━ VIEW (Presentation Layer) ━━━
+  return render(() => (
+    <button onClick={increment} style={{ padding: '12px 24px', fontSize: '16px', cursor: 'pointer' }}>
+      Count: {state.count}
+    </button>
+  ), 'CounterView');
+}, 'Counter');
+
+export default Counter;
+```
+
+:::
+
 The Component function runs **once** when the component is created and never re-executes. This creates a stable environment where:
 
 - **State** persists for the component's lifetime
@@ -176,6 +204,75 @@ export const Dashboard = setup(() => {
   );
 }, 'Dashboard');
 ```
+
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, snippet } from '@anchorlib/react';
+
+export const Dashboard = setup(() => {
+  const state = mutable({ 
+    title: 'My Dashboard',
+    activeTab: 'home',
+    data: ['Item 1', 'Item 2', 'Item 3'],
+    
+    // Methods
+    setTab(tab: string) {
+      this.activeTab = tab;
+    },
+    addItem() {
+      this.data.push(`Item ${this.data.length + 1}`);
+    }
+  });
+
+  // Snippets for granular updates
+  const Header = snippet(() => (
+    <h1 style={{ margin: 0 }}>{state.title}</h1>
+  ), 'Header');
+  
+  const Sidebar = snippet(() => (
+    <nav style={{ padding: '10px', background: '#f0f0f0', borderRadius: '4px' }}>
+      <button onClick={() => state.setTab('home')} style={{ display: 'block', marginBottom: '8px' }}>Home</button>
+      <button onClick={() => state.setTab('settings')} style={{ display: 'block' }}>Settings</button>
+      <p style={{ marginTop: '12px', fontSize: '12px' }}>Active: {state.activeTab}</p>
+    </nav>
+  ), 'Sidebar');
+  
+  const Content = snippet(() => (
+    <ul>
+      {state.data.map((item, i) => <li key={i}>{item}</li>)}
+    </ul>
+  ), 'Content');
+
+  // Static layout - never re-renders
+  return (
+    <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ padding: '16px', background: '#4CAF50', color: '#fff' }}>
+        <Header />
+      </div>
+      <div style={{ display: 'flex', minHeight: '200px' }}>
+        <div style={{ width: '150px', borderRight: '1px solid #ddd' }}>
+          <Sidebar />
+        </div>
+        <div style={{ flex: 1 }}>
+        <main style={{ padding: '10px' }}>
+          <h2>Content Area</h2>
+          <Content />
+          <button onClick={() => state.addItem()}>Add Item</button>
+        </main>
+        </div>
+      </div>
+    </div>
+  );
+}, 'Dashboard');
+
+export default Dashboard;
+```
+
+:::
 
 **Benefits:**
 - **Performance**: Only specific parts (Header, Content) re-render when state changes. The layout `div`s never re-render.

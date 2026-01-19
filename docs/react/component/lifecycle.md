@@ -53,6 +53,147 @@ onMount(() => {
 });
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, onMount, snippet } from '@anchorlib/react';
+
+export const TimerDemo = setup(() => {
+  const state = mutable({ 
+    count: 0,
+    isRunning: false,
+    logs: [] as string[]
+  });
+
+  let intervalId: number | null = null;
+
+  const addLog = (message: string) => {
+    state.logs = [...state.logs, `[${new Date().toLocaleTimeString()}] ${message}`].slice(-5);
+  };
+
+  onMount(() => {
+    addLog('Component mounted');
+    
+    // Cleanup on unmount
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      addLog('Component unmounted (cleanup)');
+    };
+  });
+
+  const startTimer = () => {
+    if (!state.isRunning) {
+      state.isRunning = true;
+      addLog('Timer started');
+      intervalId = setInterval(() => {
+        state.count++;
+      }, 1000) as unknown as number;
+    }
+  };
+
+  const stopTimer = () => {
+    if (state.isRunning && intervalId) {
+      state.isRunning = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      addLog('Timer stopped');
+    }
+  };
+
+  const reset = () => {
+    stopTimer();
+    state.count = 0;
+    addLog('Timer reset');
+  };
+
+  // Snippet for timer display (updates when count or isRunning changes)
+  const TimerDisplay = snippet(() => (
+    <div style={{ 
+      fontSize: '48px', 
+      fontWeight: 'bold', 
+      textAlign: 'center',
+      margin: '20px 0',
+      color: state.isRunning ? '#4CAF50' : '#666'
+    }}>
+      {state.count}s
+    </div>
+  ), 'TimerDisplay');
+
+  // Snippet for controls (updates when isRunning changes)
+  const TimerControls = snippet(() => (
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+      <button 
+        onClick={startTimer}
+        disabled={state.isRunning}
+        style={{ 
+          flex: 1,
+          padding: '12px', 
+          cursor: state.isRunning ? 'not-allowed' : 'pointer',
+          opacity: state.isRunning ? 0.5 : 1
+        }}
+      >
+        Start
+      </button>
+      <button 
+        onClick={stopTimer}
+        disabled={!state.isRunning}
+        style={{ 
+          flex: 1,
+          padding: '12px', 
+          cursor: !state.isRunning ? 'not-allowed' : 'pointer',
+          opacity: !state.isRunning ? 0.5 : 1
+        }}
+      >
+        Stop
+      </button>
+      <button 
+        onClick={reset}
+        style={{ flex: 1, padding: '12px', cursor: 'pointer' }}
+      >
+        Reset
+      </button>
+    </div>
+  ), 'TimerControls');
+
+  // Snippet for event log (updates when logs change)
+  const EventLog = snippet(() => (
+    <div style={{ 
+      padding: '12px', 
+      background: '#f5f5f5', 
+      borderRadius: '4px',
+      fontSize: '12px',
+      fontFamily: 'monospace'
+    }}>
+      <strong>Event Log:</strong>
+      {state.logs.length === 0 ? (
+        <div style={{ color: '#999', marginTop: '8px' }}>No events yet</div>
+      ) : (
+        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+          {state.logs.map((log, i) => <li key={i}>{log}</li>)}
+        </ul>
+      )}
+    </div>
+  ), 'EventLog');
+
+  // Static layout
+  return (
+    <div style={{ padding: '20px', maxWidth: '400px' }}>
+      <h3>Timer with Cleanup</h3>
+      <TimerDisplay />
+      <TimerControls />
+      <EventLog />
+    </div>
+  );
+}, 'TimerDemo');
+
+export default TimerDemo;
+```
+
+:::
+
 ## Unmounting
 
 You can schedule code to run when the component is **removed** from the DOM. This is monitored by `onCleanup`.

@@ -71,6 +71,201 @@ export const themeControl = writable(settings, ['theme']);
 themeControl.theme = 'light';
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, immutable, writable, snippet } from '@anchorlib/react';
+
+export const SettingsDemo = setup(() => {
+  // 1. Public Read-Only View
+  const settings = immutable({
+    theme: 'dark' as 'dark' | 'light',
+    notifications: true,
+    language: 'en',
+    volume: 50
+  });
+
+  // 2. Create restricted write contracts
+  const themeControl = writable(settings, ['theme']);
+  const notificationsControl = writable(settings, ['notifications']);
+  const fullControl = writable(settings); // Full access
+
+  const logs = immutable<string[]>([]);
+  const logsControl = writable(logs);
+
+  const addLog = (message: string, success: boolean) => {
+    logsControl.push(`${success ? '✅' : '❌'} ${message}`);
+    if (logsControl.length > 5) logsControl.shift();
+  };
+
+  const tryDirectMutation = () => {
+    // Attempt direct mutation (will be ignored with console warning)
+    const currentTheme = settings.theme;
+    const targetTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    (settings as any).theme = targetTheme;
+    
+    if (settings.theme === targetTheme) {
+      addLog('Direct mutation succeeded (unexpected!)', false);
+    } else {
+      addLog('Direct mutation blocked (expected)', true);
+    }
+  };
+
+  const tryRestrictedWrite = () => {
+    // Attempt restricted write (will be ignored with console warning)
+    const currentNotif = settings.notifications;
+    const targetNotif = !currentNotif;
+    
+    (themeControl as any).notifications = targetNotif;
+    
+    if (settings.notifications === targetNotif) {
+      addLog('Restricted write succeeded (unexpected!)', false);
+    } else {
+      addLog('Restricted write blocked (expected)', true);
+    }
+  };
+
+  // Snippet for settings display (updates when settings change)
+  const SettingsDisplay = snippet(() => (
+    <div style={{ 
+      marginBottom: '16px',
+      padding: '16px',
+      background: '#f5f5f5',
+      borderRadius: '8px'
+    }}>
+      <h4 style={{ margin: '0 0 12px 0' }}>Current Settings</h4>
+      <div style={{ fontSize: '14px', lineHeight: '1.8' }}>
+        <div><strong>Theme:</strong> {settings.theme}</div>
+        <div><strong>Notifications:</strong> {settings.notifications ? 'On' : 'Off'}</div>
+        <div><strong>Language:</strong> {settings.language}</div>
+        <div><strong>Volume:</strong> {settings.volume}%</div>
+      </div>
+    </div>
+  ), 'SettingsDisplay');
+
+  // Snippet for allowed operations
+  const AllowedOperations = snippet(() => (
+    <div style={{ marginBottom: '16px' }}>
+      <h4 style={{ margin: '0 0 12px 0' }}>Allowed Operations</h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <button 
+          onClick={() => {
+            themeControl.theme = themeControl.theme === 'dark' ? 'light' : 'dark';
+            addLog(`Theme changed to ${themeControl.theme}`, true);
+          }}
+          style={{ padding: '12px', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Toggle Theme (via themeControl)
+        </button>
+        
+        <button 
+          onClick={() => {
+            notificationsControl.notifications = !notificationsControl.notifications;
+            addLog(`Notifications ${notificationsControl.notifications ? 'enabled' : 'disabled'}`, true);
+          }}
+          style={{ padding: '12px', cursor: 'pointer', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Toggle Notifications (via notificationsControl)
+        </button>
+
+        <button 
+          onClick={() => {
+            fullControl.volume = Math.min(100, fullControl.volume + 10);
+            addLog(`Volume increased to ${fullControl.volume}%`, true);
+          }}
+          style={{ padding: '12px', cursor: 'pointer', background: '#FF9800', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Increase Volume (via fullControl)
+        </button>
+      </div>
+    </div>
+  ), 'AllowedOperations');
+
+  // Snippet for blocked operations
+  const BlockedOperations = snippet(() => (
+    <div style={{ marginBottom: '16px' }}>
+      <h4 style={{ margin: '0 0 12px 0' }}>Blocked Operations</h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <button 
+          onClick={tryDirectMutation}
+          style={{ padding: '12px', cursor: 'pointer', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Try Direct Mutation (will fail)
+        </button>
+        
+        <button 
+          onClick={tryRestrictedWrite}
+          style={{ padding: '12px', cursor: 'pointer', background: '#9C27B0', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Try Restricted Write (will fail)
+        </button>
+      </div>
+    </div>
+  ), 'BlockedOperations');
+
+  // Snippet for operation log
+  const OperationLog = snippet(() => {
+    if (logs.length === 0) return null;
+    return (
+      <div style={{ 
+        padding: '12px',
+        background: '#e3f2fd',
+        borderRadius: '4px',
+        fontSize: '12px',
+        fontFamily: 'monospace'
+      }}>
+        <strong>Operation Log:</strong>
+        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+          {logs.map((log, i) => (
+            <li key={i}>{log}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }, 'OperationLog');
+
+  // Snippet for explanation text
+  const Explanation = snippet(() => (
+    <div style={{ 
+      marginTop: '16px',
+      padding: '12px',
+      background: '#fff3cd',
+      borderRadius: '4px',
+      fontSize: '14px'
+    }}>
+      <strong>How it works:</strong>
+      <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+        <li><code>settings</code> is immutable (read-only)</li>
+        <li><code>themeControl</code> can only modify <code>theme</code></li>
+        <li><code>notificationsControl</code> can only modify <code>notifications</code></li>
+        <li><code>fullControl</code> can modify any property</li>
+      </ul>
+    </div>
+  ), 'Explanation');
+
+  // Static layout
+  return (
+    <div style={{ padding: '20px', maxWidth: '600px' }}>
+      <h3>Immutable State with Write Contracts</h3>
+      <SettingsDisplay />
+      <AllowedOperations />
+      <BlockedOperations />
+      <OperationLog />
+      <Explanation />
+    </div>
+  );
+}, 'SettingsDemo');
+
+export default SettingsDemo;
+```
+
+:::
+
+
 ## Best Practices
 
 ### Prefer Restricted Access

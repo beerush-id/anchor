@@ -74,6 +74,128 @@ export const LoginForm = setup(() => {
 });
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, render, form, snippet, derived } from '@anchorlib/react';
+import { z } from 'zod';
+
+const schema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const LoginForm = setup(() => {
+  const [state, errors] = form(schema, { email: '', password: '' });
+
+  // Efficiently track validity using the existing errors map
+  // This avoids re-running schema validation on every render
+  const isValid = derived(() => Object.keys(errors).length === 0 && state.email !== '' && state.password !== '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isValid.value) {
+      alert(`Login successful!\nEmail: ${state.email}\nPassword: ${'*'.repeat(state.password.length)}`);
+    }
+  };
+
+  // Snippet for email field (updates only when email or email error changes)
+  const EmailField = snippet(() => (
+    <div style={{ marginBottom: '16px' }}>
+      <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Email</label>
+      <input
+        value={state.email}
+        onInput={(e) => state.email = e.currentTarget.value}
+        placeholder="Enter your email"
+        style={{ 
+          width: '100%', 
+          padding: '8px',
+          border: errors.email ? '2px solid #f44336' : '1px solid #ddd',
+          borderRadius: '4px'
+        }}
+      />
+      {errors.email && (
+        <span style={{ display: 'block', marginTop: '4px', color: '#f44336', fontSize: '14px' }}>
+          {errors.email.message}
+        </span>
+      )}
+    </div>
+  ), 'EmailField');
+
+  // Snippet for password field (updates only when password or password error changes)
+  const PasswordField = snippet(() => (
+    <div style={{ marginBottom: '16px' }}>
+      <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Password</label>
+      <input
+        type="password"
+        value={state.password}
+        onInput={(e) => state.password = e.currentTarget.value}
+        placeholder="Enter your password"
+        style={{ 
+          width: '100%', 
+          padding: '8px',
+          border: errors.password ? '2px solid #f44336' : '1px solid #ddd',
+          borderRadius: '4px'
+        }}
+      />
+      {errors.password && (
+        <span style={{ display: 'block', marginTop: '4px', color: '#f44336', fontSize: '14px' }}>
+          {errors.password.message}
+        </span>
+      )}
+    </div>
+  ), 'PasswordField');
+
+  // Snippet for submit button (updates when validity changes)
+  const SubmitButton = snippet(() => (
+    <button 
+      type="submit"
+      disabled={!isValid.value}
+      style={{ 
+        width: '100%',
+        padding: '12px',
+        background: isValid.value ? '#4CAF50' : '#cccccc',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        fontSize: '16px',
+        cursor: isValid.value ? 'pointer' : 'not-allowed',
+        fontWeight: 'bold',
+        transition: 'background 0.3s'
+      }}
+    >
+      Login
+    </button>
+  ), 'SubmitButton');
+
+  // Static form structure
+  return (
+    <form onSubmit={handleSubmit} style={{ padding: '20px', maxWidth: '400px' }}>
+      <h3>Login Form</h3>
+      <EmailField />
+      <PasswordField />
+      <SubmitButton />
+      <div style={{ marginTop: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '4px', fontSize: '12px' }}>
+        <strong>Try it:</strong>
+        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+          <li>Type an invalid email to see validation</li>
+          <li>Password must be at least 8 characters</li>
+          <li>Button disables automatically when invalid</li>
+        </ul>
+      </div>
+    </form>
+  );
+}, 'LoginForm');
+
+export default LoginForm;
+```
+
+:::
+
+
 ## Validation Logic
 
 Validation is **Safe by Default**. This means:

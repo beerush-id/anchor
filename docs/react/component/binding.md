@@ -123,6 +123,96 @@ render(() => <Counter value={state.count} />)
 <Counter value={$bind(state, 'count')} onChange={handleChange} />
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, render, mutable, snippet, $bind, type Bindable } from '@anchorlib/react';
+
+type CounterProps = {
+  value: Bindable<number>;
+  onChange?: (value: number) => void;
+};
+
+const Counter = setup<CounterProps>((props) => {
+  const increment = () => {
+    props.value++;
+    props.onChange?.(props.value);
+  };
+
+  return render(() => (
+    <button onClick={increment} style={{ padding: '12px 24px', fontSize: '16px', cursor: 'pointer' }}>
+      Count: {props.value}
+    </button>
+  ), 'CounterView');
+}, 'Counter');
+
+// Demo component
+export const BindingDemo = setup(() => {
+  const count = mutable(0);
+  const state = mutable({ counter: 0 });
+  const logs = mutable<string[]>([]);
+
+  const handleChange = (value: number) => {
+    logs.push(`Changed to: ${value}`);
+    if (logs.length > 3) logs.shift();
+  };
+
+  // Snippet for current values display
+  const ValueDisplay = snippet(() => (
+    <div style={{ marginBottom: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
+      <div><strong>Primitive:</strong> {count.value}</div>
+      <div><strong>Object Property:</strong> {state.counter}</div>
+    </div>
+  ), 'ValueDisplay');
+
+  // Snippet for change log
+  const ChangeLog = snippet(() => {
+    if (logs.length === 0) return null;
+    
+    return (
+      <div style={{ padding: '12px', background: '#e3f2fd', borderRadius: '4px' }}>
+        <strong>Change Log:</strong>
+        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+          {logs.map((msg, i) => <li key={i}>{msg}</li>)}
+        </ul>
+      </div>
+    );
+  }, 'ChangeLog');
+
+  // Static layout
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px' }}>
+      <h3>Two-Way Binding Demo</h3>
+      <ValueDisplay />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+        <div>
+          <strong>Binding primitive (no key):</strong>
+          <Counter value={$bind(count)} />
+        </div>
+        
+        <div>
+          <strong>Binding object property (with key):</strong>
+          <Counter value={$bind(state, 'counter')} />
+        </div>
+        
+        <div>
+          <strong>With onChange callback:</strong>
+          <Counter value={$bind(count)} onChange={handleChange} />
+        </div>
+      </div>
+      <ChangeLog />
+    </div>
+  );
+}, 'BindingDemo');
+
+export default BindingDemo;
+```
+
+:::
+
 
 ## Why Binding Matters?
 
@@ -170,10 +260,12 @@ return render(() => <input ref={inputRef} />);
 ```
 
 ### Reactive Attributes
-Pass a factory function to `nodeRef` to create **Reactive Attributes**. These update the DOM directly when state changes, bypassing the React render cycle for high performance.
+Pass a factory function to `nodeRef` to create **Reactive Attributes**. This is where `nodeRef` shines: you write **declarative, reactive code** that automatically updates the DOM when state changes, but it **bypasses React's render cycle** for direct DOM manipulation. You get the best of both worlds—declarative syntax with imperative performance.
 
 ```tsx
-// Ideally used for containers to avoid re-rendering children
+// Declarative: You describe WHAT you want
+// Reactive: Automatically updates when state changes
+// Performant: Direct DOM updates, no React re-render
 const panelRef = nodeRef(() => ({
   className: state.activeTab === 'home' ? 'active' : 'hidden',
   'aria-hidden': state.activeTab !== 'home'
@@ -201,6 +293,142 @@ const btnRef = nodeRef(() => ({
 
 > [!TIP]
 > Event handlers in `nodeRef` are safe for **React Server Components (RSC)** because they are automatically stripped out during server rendering.
+
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, nodeRef, snippet } from '@anchorlib/react';
+
+export const AnimatedBox = setup(() => {
+  const state = mutable({ 
+    x: 0,
+    y: 0,
+    rotation: 0,
+    animating: false,
+    paused: false
+  });
+
+  // Updates style directly without re-rendering the component
+  const boxRef = nodeRef(() => ({
+    style: { 
+      transform: `translate(${state.x}px, ${state.y}px) rotate(${state.rotation}deg)`,
+      transition: state.animating ? 'none' : 'transform 0.3s ease'
+    },
+    onMouseEnter: () => {
+      if (state.animating) state.paused = true;
+    },
+    onMouseLeave: () => {
+      state.paused = false;
+    }
+  }));
+
+  const animate = () => {
+    state.x = Math.random() * 200;
+    state.y = Math.random() * 100;
+    state.rotation = Math.random() * 360;
+  };
+
+  const startContinuous = () => {
+    let frame = 0;
+    const animateFrame = () => {
+      if (state.animating) {
+        if (!state.paused) {
+          frame++;
+          state.x = Math.sin(frame * 0.05) * 100 + 100;
+          state.y = Math.cos(frame * 0.03) * 50 + 50;
+          state.rotation = (frame * 2) % 360;
+        }
+        requestAnimationFrame(animateFrame);
+      }
+    };
+    animateFrame();
+  };
+
+  // Snippet for controls (updates when animating state changes)
+  const Controls = snippet(() => (
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <button onClick={animate} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+        Animate Once
+      </button>
+      <button 
+        onClick={() => {
+          state.animating = !state.animating;
+          if (state.animating) startContinuous();
+        }}
+        style={{ padding: '8px 16px', cursor: 'pointer' }}
+      >
+        {state.animating ? 'Stop' : 'Start'} Continuous
+      </button>
+      <button 
+        onClick={() => {
+          state.animating = false;
+          state.x = 0;
+          state.y = 0;
+          state.rotation = 0;
+        }}
+        style={{ padding: '8px 16px', cursor: 'pointer' }}
+      >
+        Reset
+      </button>
+    </div>
+  ), 'Controls');
+
+  // Snippet for stats (updates when position/rotation changes)
+  const Stats = snippet(() => (
+    <div style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>
+      Position: ({Math.round(state.x)}, {Math.round(state.y)}) | Rotation: {Math.round(state.rotation)}°
+      {state.paused && <span style={{ marginLeft: '8px', color: '#ff9800' }}>⏸️ Paused (hover)</span>}
+    </div>
+  ), 'Stats');
+
+  // Static layout
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3>DOM Binding with nodeRef</h3>
+      <p style={{ color: '#666', fontSize: '14px' }}>
+        <strong>Declarative + Reactive + Performant:</strong> The box updates automatically when state changes, 
+        but bypasses React's render cycle for direct DOM manipulation. You get declarative syntax with imperative performance.
+      </p>
+      <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic', marginTop: '-8px', marginBottom: '16px' }}>
+         💡 Tip: Hover over the box to pause the continuous animation.
+      </p>
+      
+      <div style={{ 
+        position: 'relative', 
+        width: '400px', 
+        height: '200px', 
+        border: '2px solid #ddd', 
+        borderRadius: '8px',
+        marginBottom: '16px',
+        overflow: 'hidden'
+      }}>
+        <div 
+          ref={boxRef} 
+          {...boxRef.attributes}
+          style={{
+            position: 'absolute',
+            width: '50px',
+            height: '50px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '8px',
+            ...boxRef.attributes?.style
+          }}
+        />
+      </div>
+
+      <Controls />
+      <Stats />
+    </div>
+  );
+}, 'AnimatedBox');
+
+export default AnimatedBox;
+```
+
+:::
 
 ## Creating Binding References
 
@@ -274,7 +502,7 @@ Because `nodeRef` attributes update the DOM directly (bypassing React's render c
 // Updates style directly without re-rendering the component
 const boxRef = nodeRef(() => ({
   style: { transform: `translateX(${state.x}px)` }
-}));
+}))
 ```
 
 ### When to Use `nodeRef`

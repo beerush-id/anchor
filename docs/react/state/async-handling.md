@@ -300,6 +300,153 @@ export const UserProfile = setup(() => {
 });
 ```
 
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, query, mutable, snippet } from '@anchorlib/react';
+
+const fetchUser = async (signal: AbortSignal, userId: number) => {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  if (signal.aborted) throw new Error('Request aborted');
+  if (Math.random() < 0.5) throw new Error('Failed to fetch user');
+  
+  return {
+    id: userId,
+    name: `User ${userId}`,
+    email: `user${userId}@example.com`,
+    role: ['Admin', 'Developer', 'Designer'][userId % 3]
+  };
+};
+
+export const UserProfile = setup(() => {
+  const state = mutable({ userId: 1 });
+  
+  const user = query(
+    async (signal) => fetchUser(signal, state.userId),
+    null,
+    { deferred: true }
+  );
+
+  // Snippet for controls (updates when userId or user.status changes)
+  const Controls = snippet(() => (
+    <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <label style={{ fontWeight: 'bold' }}>User ID:</label>
+      <input 
+        type="number"
+        value={state.userId}
+        onInput={(e) => state.userId = Number(e.currentTarget.value)}
+        min="1"
+        max="10"
+        style={{ padding: '8px', width: '80px' }}
+      />
+      <button 
+        onClick={() => user.start()}
+        disabled={user.status === 'pending'}
+        style={{ 
+          padding: '8px 16px',
+          cursor: user.status === 'pending' ? 'not-allowed' : 'pointer',
+          opacity: user.status === 'pending' ? 0.5 : 1
+        }}
+      >
+        {user.status === 'pending' ? 'Loading...' : 'Fetch User'}
+      </button>
+      {user.status === 'pending' && (
+        <button 
+          onClick={() => user.abort()}
+          style={{ padding: '8px 16px', cursor: 'pointer', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px' }}
+        >
+          Cancel
+        </button>
+      )}
+    </div>
+  ), 'Controls');
+
+  // Snippet for user data display (only updates when user.data changes)
+  const UserData = snippet(() => {
+    const isAborted = user.status === 'error' && user.error?.name === 'AbortError';
+
+    if (user.status === 'idle' || isAborted) {
+      return <div style={{ color: '#999', textAlign: 'center', padding: '20px' }}>Click "Fetch User" to load data</div>;
+    }
+    
+    if (user.status === 'pending') {
+      return (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div style={{ width: '40px', height: '40px', border: '4px solid #ddd', borderTop: '4px solid #4CAF50', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ color: '#666' }}>Loading user data...</p>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      );
+    }
+    
+    if (user.status === 'error') {
+      return (
+        <div style={{ 
+          padding: '16px', 
+          background: '#ffebee', 
+          borderRadius: '4px', 
+          color: '#c62828' 
+        }}>
+          <strong>Error:</strong> {user.error?.message}
+          
+          <button 
+            onClick={() => user.start()} 
+            style={{ marginTop: '12px', padding: '8px 16px', cursor: 'pointer', display: 'block' }}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    
+    if (user.status === 'success' && user.data) {
+      return (
+        <div>
+          <h4 style={{ margin: '0 0 12px 0' }}>{user.data.name}</h4>
+          <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+            <p style={{ margin: '4px 0' }}><strong>ID:</strong> {user.data.id}</p>
+            <p style={{ margin: '4px 0' }}><strong>Email:</strong> {user.data.email}</p>
+            <p style={{ margin: '4px 0' }}><strong>Role:</strong> {user.data.role}</p>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  }, 'UserData');
+
+  // Snippet for status display
+  const StatusDisplay = snippet(() => (
+    <div style={{ marginTop: '16px', padding: '12px', background: '#e3f2fd', borderRadius: '4px', fontSize: '14px' }}>
+      <strong>Status:</strong> <code>{user.status}</code>
+      <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+        The query automatically tracks status and provides built-in cancellation support.
+      </p>
+    </div>
+  ), 'StatusDisplay');
+
+  // Static layout
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px' }}>
+      <h3>User Query Demo</h3>
+      <Controls />
+      <div style={{ padding: '16px', background: '#f5f5f5', borderRadius: '8px', minHeight: '120px' }}>
+        <UserData />
+      </div>
+      <StatusDisplay />
+    </div>
+  );
+}, 'UserProfile');
+
+export default UserProfile;
+```
+
+:::
+
+
 ## Converting to Promises
 
 All async state functions expose a `.promise` property that returns a Promise for use with async/await:

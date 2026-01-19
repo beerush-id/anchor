@@ -101,7 +101,94 @@ export const Profile = setup(() => {
 }, 'Profile');
 ```
 
+::: details Try it Yourself
 
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, snippet, template } from '@anchorlib/react';
+
+interface User { name: string; bio: string }
+
+// Template - standalone, reusable, props only
+const UserCard = template<{ user: User }>(({ user }) => (
+  <div style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '12px' }}>
+    <strong>User:</strong> {user.name} <br />
+    <em>Bio:</em> {user.bio}
+  </div>
+), 'UserCard');
+
+export const Profile = setup(() => {
+  const state = mutable({ 
+    name: 'Alice', 
+    bio: 'Frontend Dev',
+    avatarSize: 64
+  });
+
+  // Snippet - accesses state from closure
+  const Avatar = snippet(() => (
+    <div style={{ 
+      width: state.avatarSize, 
+      height: state.avatarSize, 
+      borderRadius: '50%', 
+      background: '#4CAF50', 
+      color: 'white',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: state.avatarSize / 3,
+      fontWeight: 'bold',
+      marginBottom: '12px'
+    }}>
+      {state.name[0]}
+    </div>
+  ), 'Avatar');
+
+  // Snippet for inputs
+  const ProfileForm = snippet(() => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <input 
+        value={state.name}
+        onInput={(e) => state.name = e.currentTarget.value}
+        placeholder="Name"
+        style={{ padding: '8px' }}
+      />
+      <input 
+        value={state.bio}
+        onInput={(e) => state.bio = e.currentTarget.value}
+        placeholder="Bio"
+        style={{ padding: '8px' }}
+      />
+      <label>
+        Avatar Size: {state.avatarSize}px
+        <input 
+          type="range"
+          min="32"
+          max="128"
+          value={state.avatarSize}
+          onInput={(e) => state.avatarSize = Number(e.currentTarget.value)}
+          style={{ width: '100%' }}
+        />
+      </label>
+    </div>
+  ), 'ProfileForm');
+
+  // Static Layout: Never re-renders
+  return (
+    <div style={{ padding: '20px', maxWidth: '400px' }}>
+      <h2>Profile Demo</h2>
+      <Avatar />
+      <UserCard user={state} />
+      <ProfileForm />
+    </div>
+  );
+}, 'Profile');
+
+export default Profile;
+```
+
+:::
 
 ### Props
 Snippets receive `props` as their first argument and `parentProps` as their second argument:
@@ -333,6 +420,97 @@ export const TodoList = setup(() => {
   ));
 }, 'TodoList');
 ```
+
+::: details Try it Yourself
+
+::: anchor-react-sandbox {class="preview-flex"}
+
+```tsx
+import '@anchorlib/react/client';
+import { setup, mutable, snippet } from '@anchorlib/react';
+
+interface Todo {
+  id: number;
+  text: string;
+  done: boolean;
+}
+
+export const TodoList = setup(() => {
+  const state = mutable({
+    todos: [
+      { id: 1, text: 'Learn Anchor', done: false },
+      { id: 2, text: 'Build app', done: false }
+    ] as Todo[],
+    newTodo: '',
+    
+    // Methods
+    remove(todo: Todo) {
+      const index = this.todos.indexOf(todo);
+      if (index !== -1) {
+        this.todos.splice(index, 1);
+      }
+    },
+    add() {
+      if (this.newTodo.trim()) {
+        this.todos.push({ id: Date.now(), text: this.newTodo, done: false });
+        this.newTodo = '';
+      }
+    }
+  });
+
+  // Snippet for individual todo item (granular updates)
+  const TodoItem = snippet<{ todo: Todo }>(({ todo }) => (
+    <li style={{ padding: '8px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <input 
+        type="checkbox" 
+        checked={todo.done}
+        onChange={() => todo.done = !todo.done}
+      />
+      <span style={{ flex: 1, textDecoration: todo.done ? 'line-through' : 'none' }}>
+        {todo.text}
+      </span>
+      <button onClick={() => state.remove(todo)} style={{ padding: '4px 8px', cursor: 'pointer' }}>
+        Remove
+      </button>
+    </li>
+  ), 'TodoItem');
+
+  // Snippet for todo list (updates when todos array changes)
+  const TodosList = snippet(() => (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      {state.todos.map(todo => <TodoItem key={todo.id} todo={todo} />)}
+    </ul>
+  ), 'TodosList');
+
+  // Snippet for input form
+  const TodoForm = snippet(() => (
+    <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
+      <input 
+        value={state.newTodo}
+        onInput={(e) => state.newTodo = e.currentTarget.value}
+        placeholder="Add new todo..."
+        style={{ flex: 1, padding: '8px' }}
+      />
+      <button onClick={() => state.add()} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+        Add
+      </button>
+    </div>
+  ), 'TodoForm');
+
+  // Static layout
+  return (
+    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
+      <h2>Todo List</h2>
+      <TodoForm />
+      <TodosList />
+    </div>
+  );
+}, 'TodoList');
+
+export default TodoList;
+```
+
+:::
 
 ## Common Patterns
 
