@@ -28,6 +28,16 @@ describe('Anchor Utilities', () => {
       expect(fn2).toHaveBeenCalledTimes(1);
     });
 
+    it('should execute functions in queueMicrotask', async () => {
+      const [schedule] = microbatch(0);
+      const fn = vi.fn();
+
+      schedule(fn);
+      await Promise.resolve();
+
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
     it('should not execute functions before the delay', () => {
       const [schedule] = microbatch(100);
       const fn = vi.fn();
