@@ -200,7 +200,7 @@ describe('Reactive Table Module', () => {
 
       const stored = await table.store().read('remove-id');
       expect(stored).toBeDefined();
-      expect(stored.id).toBe('remove-id');
+      expect(stored!.id).toBe('remove-id');
 
       const removedState = table.remove('remove-id');
 

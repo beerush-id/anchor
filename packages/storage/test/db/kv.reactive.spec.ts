@@ -1,8 +1,8 @@
+import { anchor } from '@anchorlib/core';
+import { sleep } from '@beerush/utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { createKVStore, type KVState } from '../../src/db/index.js';
-import { anchor } from '@anchorlib/core';
-import { sleep } from '@beerush/utils';
 
 describe('Reactive KV Module', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -374,7 +374,7 @@ describe('Reactive KV Module', () => {
       state1.data = 1;
       state2.data = 'non-empty';
       state3.data = true;
-      state4.data = 'not-null';
+      state4.data = 'not-null' as never;
 
       await kv.ready();
 

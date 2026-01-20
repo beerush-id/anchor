@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IDBStatus, IndexedTable, type Rec } from '../../src/db/index.js';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { createRecord } from '../../src/db/helper.js';
+import { IDBStatus, IndexedTable, type Rec } from '../../src/db/index.js';
 
 interface TestRecord extends Rec {
   name: string;
@@ -49,7 +49,9 @@ describe('Mocked Indexed Table', () => {
 
       expect(await table.count()).toBe(2);
       expect(await table.countByIndex('created_at')).toBe(2);
+      // @ts-ignore
       expect((await table.read('1')).name).toBe('John');
+      // @ts-ignore
       expect((await table.read('2')).name).toBe('Jane');
     });
 
@@ -67,7 +69,9 @@ describe('Mocked Indexed Table', () => {
 
       expect(await table.count()).toBe(2);
       expect(await table.countByIndex('created_at')).toBe(2);
+      // @ts-ignore
       expect((await table.read('1')).name).toBe('John');
+      // @ts-ignore
       expect((await table.read('2')).name).toBe('Jane');
     });
 
