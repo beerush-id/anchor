@@ -4,6 +4,7 @@ import { captureStack } from './exception.js';
 import { onCleanup } from './lifecycle.js';
 import { META_REGISTRY } from './registry.js';
 import type {
+  Effect,
   EffectHandler,
   KeyLike,
   Linkable,
@@ -15,7 +16,7 @@ import type {
   StateTracker,
   StateUnsubscribe,
 } from './types.js';
-import { closure, isFunction, shortId } from './utils/index.js';
+import { closure, isBrowser, isFunction, shortId } from './utils/index.js';
 
 const OBSERVER_SYMBOL = Symbol('state-observer');
 const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
@@ -30,7 +31,7 @@ const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
  * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
  *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
  */
-export function effect<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe {
+function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe {
   let cleanup: StateUnsubscribe | undefined;
 
   const observer = createObserver((event) => {
@@ -61,6 +62,24 @@ export function effect<T>(fn: EffectHandler<T>, displayName?: string): StateUnsu
 
   return runCleanup;
 }
+
+/**
+ * A client-side only version of the effect function.
+ * This effect will only run in browser environments and will be skipped in server-side environments.
+ * Useful for effects that rely on browser-specific APIs or DOM manipulation.
+ *
+ * @param fn - The effect function to execute. It receives a StateChange event object containing
+ *                 information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+ * @param displayName - Optional effect name for debugging.
+ * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
+ *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
+ */
+effectFn.client = <T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe => {
+  if (!isBrowser()) return () => {};
+  return effectFn(fn, displayName);
+};
+
+export const effect = effectFn as Effect;
 
 /**
  * Executes a function outside any observer context.

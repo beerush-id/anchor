@@ -579,5 +579,21 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(react).toHaveBeenCalledTimes(4);
       expect(clear).toHaveBeenCalledTimes(3); // Should be called again because last react return function again.
     });
+
+    it('should run effect on browser only', () => {
+      const handler = vi.fn();
+      const cleanup1 = effect.client(handler);
+
+      expect(typeof cleanup1).toBe('function');
+      expect(handler).not.toHaveBeenCalled();
+
+      vi.stubGlobal('window', {});
+      const cleanup2 = effect.client(handler);
+
+      expect(typeof cleanup2).toBe('function');
+      expect(handler).toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
   });
 });

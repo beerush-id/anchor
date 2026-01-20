@@ -997,3 +997,8 @@ export type RefStack = {
 export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;
 
 export type EffectHandler<T> = (event: StateChange) => StateUnsubscribe | T;
+export interface Effect {
+  <T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe;
+
+  client<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe;
+}

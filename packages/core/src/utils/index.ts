@@ -2,6 +2,7 @@ export * from './batch.js';
 export * from './clone.js';
 export * from './closure.js';
 export * from './context.js';
+export * from './debounce.js';
 export * from './debug.js';
 export * from './inspector.js';
 export * from './loop.js';

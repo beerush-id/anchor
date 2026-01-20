@@ -34,10 +34,10 @@ export type MicroTask<T> = [TaskScheduler<T>, TaskDestroyer];
  * the initial and last context values.
  *
  * @template T - The type of context data that can be passed to the handler
- * @param timeout - The timeout in milliseconds before executing the task (default: 10ms)
+ * @param delay - The timeout in milliseconds before executing the task (default: 10ms)
  * @returns A tuple containing the scheduler and destroyer functions
  */
-export function microtask<T = undefined>(timeout = 10): MicroTask<T> {
+export function microtask<T = undefined>(delay = 10): MicroTask<T> {
   let initContext: T | undefined;
   let lastContext: T | undefined;
   let executor: TaskHandler<T> | undefined;
@@ -69,8 +69,8 @@ export function microtask<T = undefined>(timeout = 10): MicroTask<T> {
     }
 
     if (typeof executor !== 'function') {
-      if (timeout > 0) {
-        activeId = setTimeout(execute, timeout) as never;
+      if (delay > 0) {
+        activeId = setTimeout(execute, delay) as never;
       } else {
         queueMicrotask(execute);
       }
