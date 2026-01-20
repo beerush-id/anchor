@@ -17,9 +17,9 @@ export type BatchScheduler = (fn: BatchHandler) => void;
  * Type definition for a batch resetter function.
  * @returns {void}
  */
-export type BatchResetter = () => void;
+export type BatchCleaner = () => void;
 
-export type MicroBatch = [BatchScheduler, BatchResetter];
+export type MicroBatch = [BatchScheduler, BatchCleaner];
 
 /**
  * Creates a micro-batch scheduler that executes functions in batches after a specified delay.
@@ -29,23 +29,29 @@ export type MicroBatch = [BatchScheduler, BatchResetter];
  */
 export function microbatch(delay: number = 10): MicroBatch {
   const BATCHES = new Set<() => void>();
-  let activeId: number | undefined = undefined;
+  let activeId: number | undefined;
+
+  const execute = () => {
+    for (const handler of BATCHES) {
+      try {
+        handler();
+      } catch (error) {
+        captureStack.error.external('Batch execution failed.', error as Error);
+      }
+    }
+
+    BATCHES.clear();
+  };
 
   const schedule = (fn: () => void) => {
     if (BATCHES.has(fn)) return;
 
     if (!BATCHES.size) {
-      activeId = setTimeout(() => {
-        for (const handler of BATCHES) {
-          try {
-            handler();
-          } catch (error) {
-            captureStack.error.external('Batch execution failed.', error as Error);
-          }
-        }
-
-        BATCHES.clear();
-      }, delay) as never;
+      if (delay > 0) {
+        activeId = setTimeout(execute, delay) as never;
+      } else {
+        queueMicrotask(execute);
+      }
     }
 
     BATCHES.add(fn);

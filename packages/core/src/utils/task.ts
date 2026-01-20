@@ -7,7 +7,7 @@ import { captureStack } from '../exception.js';
  * @param current - The most recent context when the task was last scheduled
  * @returns A promise for async operations or void for sync operations
  */
-export type TaskHandler<T> = (init: T, current: T) => Promise<void> | void;
+export type TaskHandler<T> = (init: T, current: T) => void;
 
 /**
  * Type definition for a task scheduler function.
@@ -38,10 +38,26 @@ export type MicroTask<T> = [TaskScheduler<T>, TaskDestroyer];
  * @returns A tuple containing the scheduler and destroyer functions
  */
 export function microtask<T = undefined>(timeout = 10): MicroTask<T> {
-  let initContext: T | undefined = undefined;
-  let lastContext: T | undefined = undefined;
-  let executor: TaskHandler<T> | undefined = undefined;
-  let activeId: number | undefined = undefined;
+  let initContext: T | undefined;
+  let lastContext: T | undefined;
+  let executor: TaskHandler<T> | undefined;
+  let activeId: number | undefined;
+
+  const execute = () => {
+    const execFn = executor;
+    const initValue = initContext;
+    const lastValue = lastContext;
+
+    executor = initContext = lastContext = activeId = undefined;
+
+    if (typeof execFn === 'function') {
+      try {
+        execFn(initValue as T, lastValue as T);
+      } catch (error) {
+        captureStack.error.external('Scheduler execution failed.', error as Error);
+      }
+    }
+  };
 
   const schedule = (fn: TaskHandler<T>, context?: T) => {
     if (typeof context !== 'undefined') {
@@ -54,37 +70,9 @@ export function microtask<T = undefined>(timeout = 10): MicroTask<T> {
 
     if (typeof executor !== 'function') {
       if (timeout > 0) {
-        activeId = setTimeout(async () => {
-          const execFn = executor;
-          const initValue = initContext;
-          const lastValue = lastContext;
-
-          executor = initContext = lastContext = activeId = undefined;
-
-          if (typeof execFn === 'function') {
-            try {
-              await execFn(initValue as T, lastValue as T);
-            } catch (error) {
-              captureStack.error.external('Scheduler execution failed.', error as Error);
-            }
-          }
-        }, timeout) as never;
+        activeId = setTimeout(execute, timeout) as never;
       } else {
-        queueMicrotask(async () => {
-          const execFn = executor;
-          const initValue = initContext;
-          const lastValue = lastContext;
-
-          executor = initContext = lastContext = activeId = undefined;
-
-          if (typeof execFn === 'function') {
-            try {
-              await execFn(initValue as T, lastValue as T);
-            } catch (error) {
-              captureStack.error.external('Scheduler execution failed.', error as Error);
-            }
-          }
-        });
+        queueMicrotask(execute);
       }
     }
 

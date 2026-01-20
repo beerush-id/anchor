@@ -3,8 +3,8 @@ import { captureStack } from '../exception.js';
 export type PushHandler = () => void;
 export type PushFn = () => void;
 export type Pusher = (fn: PushHandler) => PushFn;
-export type PushResetter = () => void;
-export type MicroPusher = [Pusher, PushResetter];
+export type PushCleaner = () => void;
+export type MicroPusher = [Pusher, PushCleaner];
 
 /**
  * Creates a micro push system that allows registering and executing a single handler function.

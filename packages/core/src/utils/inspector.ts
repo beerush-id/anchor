@@ -13,8 +13,6 @@ export type GenericType =
   | 'set'
   | 'undefined';
 
-export const DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)((-(\d{2}):(\d{2})|Z)?)$/;
-
 /**
  * Get the generic type of the given value. Unlike `typeof`, the returned type will be a generic type. For example,
  * calling `typeOf([])` will return `array` instead of `object`.
