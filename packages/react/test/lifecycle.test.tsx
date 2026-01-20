@@ -92,9 +92,7 @@ describe('Anchor React - Lifecycle', () => {
       expect(mountHandler).not.toHaveBeenCalled();
     });
 
-    it('should handle unmount handler', () => {
-      vi.useFakeTimers();
-
+    it('should handle unmount handler', async () => {
       const unmountHandler = vi.fn();
       const Component = setup(() => {
         onMount(() => unmountHandler);
@@ -104,15 +102,15 @@ describe('Anchor React - Lifecycle', () => {
 
       expect(unmountHandler).not.toHaveBeenCalled();
       unmount();
-      vi.runAllTimers();
+
+      await Promise.resolve();
 
       expect(unmountHandler).toHaveBeenCalled();
     });
   });
 
   describe('onCleanup', () => {
-    it('should register a cleanup handler', () => {
-      vi.useFakeTimers();
+    it('should register a cleanup handler', async () => {
       const cleanupHandler = vi.fn();
 
       const Component = setup(() => {
@@ -124,10 +122,9 @@ describe('Anchor React - Lifecycle', () => {
       expect(cleanupHandler).not.toHaveBeenCalled();
 
       unmount();
-      vi.runAllTimers();
+      await Promise.resolve();
 
       expect(cleanupHandler).toHaveBeenCalled();
-      vi.useRealTimers();
     });
   });
 });
