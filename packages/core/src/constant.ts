@@ -74,6 +74,7 @@ export const DEV_TOOL_KEYS = new Set([
 export const AsyncStatus = {
   Idle: 'idle',
   Error: 'error',
+  Aborted: 'aborted',
   Success: 'success',
   Pending: 'pending',
 } as const;

@@ -77,6 +77,28 @@ describe('Anchor Core - Async', () => {
       expect(state.error).toBe(error);
     });
 
+    it('should remove error when restarting operation', async () => {
+      const error = new Error('Test error');
+      const handler = vi.fn().mockRejectedValue(error);
+      const state = query(handler, { value: 0 }, { deferred: true });
+
+      await state.start();
+
+      expect(state.data).toEqual({ value: 0 });
+      expect(state.status).toBe(AsyncStatus.Error);
+      expect(state.error).toBe(error);
+
+      const promise = state.start();
+
+      expect(state.error).toBeUndefined();
+      expect(state.status).toBe(AsyncStatus.Pending);
+
+      await promise;
+
+      expect(state.status).toBe(AsyncStatus.Error);
+      expect(state.error).toBe(error);
+    });
+
     it('should handle aborting async operation', async () => {
       let signal: AbortSignal | undefined;
       const handler = vi.fn().mockImplementation((s: AbortSignal) => {
@@ -99,7 +121,7 @@ describe('Anchor Core - Async', () => {
       await promise;
 
       expect(state.data).toEqual({ value: 0 });
-      expect(state.status).toBe(AsyncStatus.Error);
+      expect(state.status).toBe(AsyncStatus.Aborted);
       expect(state.error?.message).toBe('Aborted');
       expect(signal?.aborted).toBe(true);
     });

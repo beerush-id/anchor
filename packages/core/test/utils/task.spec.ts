@@ -35,6 +35,16 @@ describe('Anchor Utilities', () => {
       expect(handler).not.toHaveBeenCalled();
     });
 
+    it('should not execute task in queueMicrotask', () => {
+      const [schedule] = microtask<number>(0);
+      const handler = vi.fn();
+
+      schedule(handler, 42);
+
+      vi.advanceTimersByTime(50);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
     it('should pass initial and last context to the handler', () => {
       const [schedule] = microtask<number>(100);
       const handler = vi.fn();
@@ -98,6 +108,25 @@ describe('Anchor Utilities', () => {
       schedule(errorHandler, 42);
 
       vi.advanceTimersByTime(100);
+
+      expect(errorHandler).toHaveBeenCalledWith(42, 42);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle queue task execution errors gracefully', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const [schedule] = microtask<number>(0);
+      const errorHandler = vi.fn(() => {
+        throw new Error('Test error');
+      });
+
+      schedule(errorHandler, 42);
+
+      const promise = new Promise((resolve) => setTimeout(resolve, 1));
+      vi.advanceTimersByTime(1);
+      await promise;
 
       expect(errorHandler).toHaveBeenCalledWith(42, 42);
       expect(consoleErrorSpy).toHaveBeenCalled();

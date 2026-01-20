@@ -53,21 +53,39 @@ export function microtask<T = undefined>(timeout = 10): MicroTask<T> {
     }
 
     if (typeof executor !== 'function') {
-      activeId = setTimeout(async () => {
-        const execFn = executor;
-        const initValue = initContext;
-        const lastValue = lastContext;
+      if (timeout > 0) {
+        activeId = setTimeout(async () => {
+          const execFn = executor;
+          const initValue = initContext;
+          const lastValue = lastContext;
 
-        executor = initContext = lastContext = activeId = undefined;
+          executor = initContext = lastContext = activeId = undefined;
 
-        if (typeof execFn === 'function') {
-          try {
-            await execFn(initValue as T, lastValue as T);
-          } catch (error) {
-            captureStack.error.external('Scheduler execution failed.', error as Error);
+          if (typeof execFn === 'function') {
+            try {
+              await execFn(initValue as T, lastValue as T);
+            } catch (error) {
+              captureStack.error.external('Scheduler execution failed.', error as Error);
+            }
           }
-        }
-      }, timeout) as never;
+        }, timeout) as never;
+      } else {
+        queueMicrotask(async () => {
+          const execFn = executor;
+          const initValue = initContext;
+          const lastValue = lastContext;
+
+          executor = initContext = lastContext = activeId = undefined;
+
+          if (typeof execFn === 'function') {
+            try {
+              await execFn(initValue as T, lastValue as T);
+            } catch (error) {
+              captureStack.error.external('Scheduler execution failed.', error as Error);
+            }
+          }
+        });
+      }
     }
 
     executor = fn;

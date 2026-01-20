@@ -1,4 +1,3 @@
-import { anchor } from './anchor.js';
 import { AsyncStatus } from './constant.js';
 import { mutable, writable } from './ref.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable } from './types.js';
@@ -54,18 +53,20 @@ export function query<T extends Linkable, E extends Error = Error>(
     }
 
     controller = new AbortController();
-    writer.status = AsyncStatus.Pending;
+    Object.assign(writer, { status: AsyncStatus.Pending, error: undefined });
 
     try {
       activePromise = cancelable(fn, controller.signal);
+
       const data = await activePromise;
-      anchor.assign(writer, { status: AsyncStatus.Success, data: data ? mutable(data, options) : data });
+      Object.assign(writer, { status: AsyncStatus.Success, data: data ? mutable(data, options) : data });
+
       return data;
     } catch (error) {
       if (controller.signal.aborted && abortError) {
-        anchor.assign(writer, { status: AsyncStatus.Error, error: abortError });
+        Object.assign(writer, { status: AsyncStatus.Aborted, error: abortError });
       } else {
-        anchor.assign(writer, { status: AsyncStatus.Error, error: error as E });
+        Object.assign(writer, { status: AsyncStatus.Error, error: error as E });
       }
     } finally {
       controller = undefined;
@@ -75,6 +76,8 @@ export function query<T extends Linkable, E extends Error = Error>(
 
   const abort = ((error) => {
     if (controller?.signal.aborted) return;
+
+    Object.assign(writer, { status: AsyncStatus.Aborted, error: undefined });
 
     abortError = error;
     controller?.abort(error);
