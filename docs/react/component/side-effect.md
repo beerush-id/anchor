@@ -182,6 +182,36 @@ user.settings.theme = 'light'; // Triggers the subscriber
 | **Execution** | Runs **immediately**, then on updates. | Runs **only on updates**. |
 | **Best For** | UI updates, precise side effects. | Logging, debugging, etc. |
 
+## Client-Side Effects
+
+For effects that should only run in browser environments and should be skipped on the server, Anchor provides `effect.client`. This is particularly useful for effects that depend on browser-specific APIs or DOM manipulation.
+
+`effect.client(fn, displayName?)`
+
+- **fn**: The effect function to execute. It receives a StateChange event object containing information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+- **displayName**: Optional effect name for debugging purposes.
+
+```tsx
+import { effect } from '@anchorlib/react';
+
+// This effect will only run in browsers, not on the server
+effect.client(() => {
+  // Browser-specific code like:
+  document.title = 'My App';
+  window.addEventListener('scroll', handler);
+  
+  // Return cleanup function
+  return () => {
+    window.removeEventListener('scroll', handler);
+  };
+});
+```
+
+The function returns a cleanup function that can be called to manually dispose of the effect and unsubscribe from all tracked dependencies. This is automatically called when the current scope is cleaned up.
+
+> [!NOTE]
+> `effect.client` is identical to `effect` in behavior, except that it checks if the code is running in a browser environment (`isBrowser()`) before executing. If not in a browser, it returns an empty function that does nothing.
+
 
 
 ## Comparison with React Hooks
