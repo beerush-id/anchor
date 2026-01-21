@@ -1002,3 +1002,33 @@ export interface Effect {
 
   client<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe;
 }
+
+/**
+ * Options for configuring the retriable function behavior.
+ */
+export type RetriableOptions = {
+  /**
+   * Timeout in milliseconds after which the call will be aborted.
+   * Set to 0 to disable timeout. Default is 0.
+   */
+  timeout?: number;
+  /**
+   * The mode for calculating retry delays. Can be 'linear' or 'exponential'.
+   * Default is 'exponential'.
+   */
+  retryMode?: 'linear' | 'exponential';
+  /**
+   * Maximum number of retry attempts. Default is 0 (no retries).
+   */
+  maxRetries?: number;
+  /**
+   * Base delay in milliseconds between retries when using linear or exponential mode.
+   * Default is 1000ms.
+   */
+  retryDelay?: number;
+  /**
+   * An optional AbortController instance to control cancellation of the call.
+   * If not provided, a new AbortController will be created internally.
+   */
+  controller?: AbortController;
+};

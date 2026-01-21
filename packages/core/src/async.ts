@@ -1,6 +1,6 @@
 import { AsyncStatus } from './constant.js';
 import { mutable, writable } from './ref.js';
-import type { AsyncHandler, AsyncOptions, AsyncState, Linkable } from './types.js';
+import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from './types.js';
 
 export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>
@@ -172,4 +172,67 @@ export function cancelable<R>(fn: (signal: AbortSignal) => Promise<R> | R, signa
       resolved = true;
     }
   });
+}
+
+/**
+ * Executes an asynchronous function with retry logic and optional timeout.
+ *
+ * This function wraps an async call and automatically retries it on failure up to a specified
+ * number of times with configurable delays between attempts. It also supports timeout and
+ * cancellation via AbortController.
+ *
+ * @template T - The type of the value that the promise resolves to
+ *
+ * @param call - An asynchronous function that accepts an AbortSignal and returns a Promise
+ * @param options - Configuration options for retry behavior and timeout
+ *
+ * @returns A Promise that resolves with the result of the call, or rejects with an error
+ *          if all retry attempts fail or if the timeout is reached
+ */
+export function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T, options?: RetriableOptions) {
+  const {
+    timeout = 0,
+    retryMode = 'exponential',
+    maxRetries = 0,
+    retryDelay = 1000,
+    controller = new AbortController(),
+  } = { ...options };
+
+  const execute = async (retries = 0) => {
+    if (controller.signal.aborted) {
+      throw new Error('Call was aborted');
+    }
+
+    try {
+      return await call(controller.signal);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error('Call was aborted');
+      }
+
+      if (retries >= maxRetries) {
+        throw error;
+      }
+
+      const delay = retryMode === 'linear' ? retryDelay : retryDelay * 2 ** retries;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      return execute(retries + 1);
+    }
+  };
+
+  if (timeout) {
+    const timer = new Promise((_, reject) => {
+      const timeId = setTimeout(() => {
+        controller.abort();
+        reject(new Error('Call timed out'));
+      }, timeout);
+
+      controller.signal.addEventListener('abort', () => clearTimeout(timeId));
+    });
+
+    return Promise.race([timer, execute()]);
+  }
+
+  return execute();
 }
