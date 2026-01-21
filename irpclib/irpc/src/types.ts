@@ -232,12 +232,6 @@ export type IRPCResponse = {
   result?: unknown;
 };
 
-export type IRPCCache = {
-  data: IRPCData;
-  expiresAt: number;
-  timestamp: number;
-};
-
 /**
  * Context storage mechanism for RPC operations.
  */
