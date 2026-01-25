@@ -1,0 +1,321 @@
+---
+title: "WebSocket Transport"
+description: "Using the WebSocket transport for IRPC with persistent connections, lower latency, and automatic reconnection."
+keywords:
+  - irpc
+  - websocket
+  - transport
+  - persistent connection
+  - real-time
+---
+
+# WebSocket Transport
+
+The WebSocket transport provides persistent connections for IRPC, offering lower latency and real-time capabilities compared to HTTP.
+
+## Overview
+
+WebSocket transport maintains a single persistent connection that handles multiple IRPC calls without reconnection overhead. This eliminates HTTP handshake latency and enables real-time communication patterns.
+
+## Installation
+
+```bash
+npm install @irpclib/ws
+```
+
+## Basic Usage
+
+### Client Setup
+
+```typescript
+import { WebSocketTransport } from '@irpclib/ws';
+import { createPackage } from '@irpclib/irpc';
+
+const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+});
+
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  autoReconnect: true,
+  maxReconnectAttempts: 5,
+});
+
+irpc.use(transport);
+
+// Declare and use functions
+const hello = irpc.declare<(name: string) => Promise<string>>({
+  name: 'hello'
+});
+
+const message = await hello('John');
+```
+
+### Server Setup
+
+```typescript
+import { WebSocketRouter, WebSocketTransport } from '@irpclib/ws';
+import { createPackage } from '@irpclib/irpc';
+
+const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+});
+
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+});
+
+irpc.use(transport);
+
+// Implement handlers
+irpc.construct(hello, async (name) => `Hello ${name}`);
+
+// Create router
+const router = new WebSocketRouter(irpc, transport);
+
+// Handle WebSocket connections
+Bun.serve({
+  port: 8080,
+  fetch(req, server) {
+    const success = server.upgrade(req);
+    if (success) return undefined;
+    return new Response('WebSocket server running');
+  },
+  websocket: {
+    async message(ws, message) {
+      await router.resolve(message.toString(), ws);
+    },
+  },
+});
+```
+
+## Configuration
+
+### WebSocketTransportConfig
+
+```typescript
+type WebSocketTransportConfig = {
+  // WebSocket connection
+  url: string;                    // WebSocket URL to connect to
+  protocols?: string[];          // Sub-protocols for the connection
+
+  // Reconnection
+  autoReconnect?: boolean;        // Enable automatic reconnection (default: true)
+  maxReconnectAttempts?: number;  // Maximum reconnection attempts (default: 5)
+  reconnectDelay?: number;        // Delay between reconnection attempts (default: 1000ms)
+
+  // Timeouts
+  connectionTimeout?: number;     // Connection establishment timeout (default: 10000ms)
+  timeout?: number;               // Request timeout (inherited from base)
+
+  // Batching
+  debounce?: number | boolean;    // Batching delay (inherited from base)
+
+  // Retry
+  maxRetries?: number;            // Maximum retry attempts (inherited from base)
+  retryMode?: 'linear' | 'exponential'; // Retry strategy (inherited from base)
+  retryDelay?: number;            // Base retry delay (inherited from base)
+
+  // Headers (for WebSocket upgrade request)
+  headers?: Record<string, string>;
+};
+```
+
+## Connection Management
+
+### Connection States
+
+The transport provides real-time connection state monitoring:
+
+```typescript
+// Check current state
+console.log(transport.state); // 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
+
+// Check if connected
+if (transport.isOpen) {
+  await someFunction();
+}
+```
+
+### Auto-Reconnection
+
+WebSocket transport automatically handles connection failures:
+
+```typescript
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  autoReconnect: true,
+  maxReconnectAttempts: 5,
+  reconnectDelay: 1000, // 1 second between attempts
+});
+
+// Manual reconnection
+await transport.reconnect();
+```
+
+### Connection Events
+
+Monitor connection lifecycle:
+
+```typescript
+// The transport handles reconnection internally
+// Connection state can be checked via transport.state
+// Calls are automatically queued during reconnection
+```
+
+## Performance Benefits
+
+### Lower Latency
+
+- **No HTTP handshake** - Persistent connection eliminates TCP handshake overhead per request
+- **Immediate messaging** - Messages sent without HTTP request/response cycle
+- **Connection reuse** - Same WebSocket connection for multiple calls
+
+### Automatic Batching
+
+Multiple simultaneous calls are batched into single WebSocket messages:
+
+```typescript
+// These calls are batched into 1 WebSocket message
+const [user, posts, stats] = await Promise.all([
+  getUser('123'),
+  getPosts('123'),
+  getStats('123'),
+]);
+```
+
+### Streaming Responses
+
+Responses stream back as they complete, enabling parallel processing.
+
+## Error Handling
+
+### Network Errors
+
+WebSocket transport includes retry logic for network failures:
+
+```typescript
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  maxRetries: 3,
+  retryMode: 'exponential', // 1s, 2s, 4s delays
+  retryDelay: 1000,
+});
+```
+
+Network errors trigger automatic retries. Handler errors fail immediately without retry.
+
+### Connection Failures
+
+Connection failures trigger reconnection attempts. Pending calls are queued and sent once reconnected.
+
+## Advanced Usage
+
+### Custom Headers
+
+Include headers in the WebSocket upgrade request:
+
+```typescript
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  headers: {
+    'Authorization': 'Bearer token',
+    'X-API-Key': 'key',
+  },
+});
+```
+
+### Middleware
+
+Add middleware to the WebSocket router:
+
+```typescript
+router.use(async () => {
+  // Access request context
+  const req = getContext<Request>('request');
+
+  // Validate authentication
+  const token = req.headers.get('authorization');
+  if (!token) {
+    throw new Error('Unauthorized');
+  }
+
+  // Set context for handlers
+  setContext('userId', decodeToken(token).userId);
+});
+```
+
+### Custom Protocols
+
+Specify WebSocket sub-protocols:
+
+```typescript
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  protocols: ['irpc', 'json'],
+});
+```
+
+## Comparison with HTTP Transport
+
+| Feature | WebSocket | HTTP |
+|---------|-----------|------|
+| Connection Type | Persistent | Request/Response |
+| Latency | Lower | Higher |
+| Overhead | Minimal | HTTP headers |
+| Real-time | Yes | No |
+| Batching | Automatic | Automatic |
+| Browser Support | Excellent | Universal |
+| Setup Complexity | Medium | Simple |
+
+Choose WebSocket transport when:
+- You need persistent connections
+- Lower latency is critical
+- You're building real-time applications
+- You want bidirectional communication
+
+Choose HTTP transport when:
+- You need maximum compatibility
+- You're building REST-like APIs
+- Simplicity is preferred
+- You have existing HTTP infrastructure
+
+## Troubleshooting
+
+### Connection Issues
+
+**Problem:** Connection fails to establish
+
+**Solutions:**
+- Check WebSocket URL format (`ws://` or `wss://`)
+- Verify server is running and accepting WebSocket connections
+- Check firewall/proxy settings
+- Use browser dev tools to inspect WebSocket handshake
+
+### Reconnection Problems
+
+**Problem:** Auto-reconnection not working
+
+**Solutions:**
+- Ensure `autoReconnect: true` is set
+- Check `maxReconnectAttempts` value
+- Verify server accepts reconnections
+- Monitor `transport.state` for connection status
+
+### Performance Issues
+
+**Problem:** High latency or slow responses
+
+**Solutions:**
+- Verify WebSocket connection is persistent
+- Check for unnecessary reconnections
+- Monitor batching efficiency
+- Use appropriate timeout values
+
+## Next Steps
+
+- [Getting Started](/irpc/getting-started) - Set up IRPC with WebSocket transport
+- [HTTP Transport](/irpc/transports/http-transport) - Alternative transport option
+- [Specification](/irpc/specification) - Full protocol details
