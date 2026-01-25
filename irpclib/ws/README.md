@@ -142,27 +142,61 @@ await transport.reconnect();
 
 ## Configuration
 
+### Call Configuration (Available at All Levels)
+
+Retry, timeout, and other call settings can be configured at **function**, **package**, or **transport** level:
+
+```typescript
+// Function-level (highest priority)
+const criticalFn = irpc.declare({
+  name: 'processPayment',
+  timeout: 30000,     // 30s timeout
+  maxRetries: 5,      // 5 retry attempts
+  retryMode: 'exponential',
+});
+
+// Package-level (medium priority)
+const irpc = createPackage({
+  name: 'my-api',
+  timeout: 10000,     // 10s default
+  maxRetries: 3,      // 3 retry attempts
+  retryMode: 'linear',
+});
+
+// Transport-level (lowest priority)
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  timeout: 5000,      // 5s fallback
+  maxRetries: 1,      // 1 retry attempt
+  retryDelay: 1000,   // 1s delay
+});
+```
+
+**Priority Order:** Function → Package → Transport
+
 ### WebSocketTransportConfig
 
 ```typescript
 interface WebSocketTransportConfig {
-  // Base transport config
-  timeout?: number;
-  debounce?: number | boolean;
-
-  // WebSocket specific
+  // WebSocket connection
   url: string;
   protocols?: string[];
+  headers?: Record<string, string>;
+
+  // Connection management
   maxReconnectAttempts?: number; // Default: 5
   reconnectDelay?: number; // Default: 1000ms
   autoReconnect?: boolean; // Default: true
   connectionTimeout?: number; // Default: 10000ms
-  headers?: Record<string, string>;
 
-  // Retry logic
-  maxRetries?: number; // Default: 0
-  retryMode?: "linear" | "exponential"; // Default: 'linear'
-  retryDelay?: number; // Default: 1000ms
+  // Call configuration (can be overridden by package/function)
+  timeout?: number;            // Request timeout in ms
+  maxRetries?: number;         // Max retry attempts
+  retryMode?: 'linear' | 'exponential';  // Retry strategy
+  retryDelay?: number;         // Delay between retries in ms
+
+  // Transport-specific
+  debounce?: number | boolean; // Batching delay
 }
 ```
 

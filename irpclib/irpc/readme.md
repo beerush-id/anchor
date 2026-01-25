@@ -147,6 +147,37 @@ console.log(message); // "Hello John"
 
 ## Advanced Features
 
+### Call Configuration (Available at All Levels)
+
+Configure retry, timeout, and other call behaviors at **function**, **package**, or **transport** level:
+
+```typescript
+// Function-level (highest priority)
+const criticalFn = irpc.declare({
+  name: 'processPayment',
+  timeout: 30000,     // 30s timeout
+  maxRetries: 5,      // 5 retry attempts
+  retryMode: 'exponential',
+});
+
+// Package-level (medium priority)
+const irpc = createPackage({
+  name: 'my-api',
+  timeout: 10000,     // 10s default
+  maxRetries: 3,      // 3 retry attempts
+  retryMode: 'linear',
+});
+
+// Transport-level (lowest priority)
+const transport = new HTTPTransport({
+  endpoint: '/api',
+  timeout: 5000,      // 5s fallback
+  maxRetries: 1,      // 1 retry attempt
+});
+```
+
+**Priority Order:** Function → Package → Transport
+
 ### Caching
 
 ```typescript
@@ -156,13 +187,25 @@ export const getUser = irpc.declare<GetUserFn>({
 });
 ```
 
-### Timeout
+### Coalesce
+
+Combine multiple calls with identical arguments:
 
 ```typescript
-export const slowQuery = irpc.declare<SlowQueryFn>({
-  name: 'slowQuery',
-  timeout: 30000, // 30 second timeout
+export const expensiveQuery = irpc.declare<ExpensiveQueryFn>({
+  name: 'expensiveQuery',
+  coalesce: true, // Enable coalescing
 });
+```
+
+### Cache Invalidation
+
+```typescript
+// Invalidate specific cache entry
+irpc.invalidate(getUser, 'user-123');
+
+// Invalidate all cache for a function
+irpc.invalidate(getUser);
 ```
 
 ### Validation (Optional Zod)

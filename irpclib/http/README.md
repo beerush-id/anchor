@@ -82,17 +82,54 @@ Bun.serve({
 
 ## Configuration
 
+### Call Configuration (Available at All Levels)
+
+Retry, timeout, and other call settings can be configured at **function**, **package**, or **transport** level:
+
+```typescript
+// Function-level (highest priority)
+const criticalFn = irpc.declare({
+  name: 'processPayment',
+  timeout: 30000,     // 30s timeout
+  maxRetries: 5,      // 5 retry attempts
+  retryMode: 'exponential',
+});
+
+// Package-level (medium priority)
+const irpc = createPackage({
+  name: 'my-api',
+  timeout: 10000,     // 10s default
+  maxRetries: 3,      // 3 retry attempts
+  retryMode: 'linear',
+});
+
+// Transport-level (lowest priority)
+const transport = new HTTPTransport({
+  endpoint: '/api',
+  timeout: 5000,      // 5s fallback
+  maxRetries: 1,      // 1 retry attempt
+  retryDelay: 1000,   // 1s delay
+});
+```
+
+**Priority Order:** Function → Package → Transport
+
 ### HTTPTransport Options
 
 ```typescript
-{
-  endpoint: string;           // IRPC endpoint path (default: '/irpc')
+interface HTTPTransportConfig {
+  // IRPC endpoint
+  endpoint?: string;           // Default: '/irpc'
   headers?: Record<string, string>;  // Custom headers
-  timeout?: number;           // Request timeout in ms
-  debounce?: number;          // Batching delay in ms (default: 0)
-  maxRetries?: number;        // Max retry attempts (default: 0)
+
+  // Call configuration (can be overridden by package/function)
+  timeout?: number;            // Request timeout in ms
+  maxRetries?: number;         // Max retry attempts
   retryMode?: 'linear' | 'exponential';  // Retry strategy
-  retryDelay?: number;        // Delay between retries in ms
+  retryDelay?: number;         // Delay between retries in ms
+
+  // Transport-specific
+  debounce?: number;           // Batching delay in ms (default: 0)
 }
 ```
 
