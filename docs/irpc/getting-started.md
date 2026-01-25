@@ -39,8 +39,12 @@ The template includes:
 ### Installation
 
 ```bash
-npm install @irpclib/irpc @irpclib/http
+npm install @irpclib/irpc @irpclib/http @irpclib/ws
 ```
+
+IRPC supports multiple transports:
+- **@irpclib/http**: HTTP transport with automatic batching and streaming
+- **@irpclib/ws**: WebSocket transport for persistent connections and lower latency
 
 ### Project Structure
 
@@ -78,6 +82,32 @@ irpc.use(transport);
 ```
 
 The package name and version create a unique namespace (`my-api/1.0.0`). The transport handles network communication.
+
+### Choosing a Transport
+
+IRPC supports multiple transport protocols:
+
+**HTTP Transport** (recommended for most use cases):
+```typescript
+import { HTTPTransport } from '@irpclib/http';
+
+const transport = new HTTPTransport({
+  endpoint: `/irpc/${irpc.href}`,
+  timeout: 10000,
+  maxRetries: 3,
+});
+```
+
+**WebSocket Transport** (for persistent connections):
+```typescript
+import { WebSocketTransport } from '@irpclib/ws';
+
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  autoReconnect: true,
+  maxReconnectAttempts: 5,
+});
+```
 
 ### Step 2: Declare Functions
 
@@ -184,6 +214,64 @@ export const slowQuery = irpc.declare<SlowQueryFn>({
 ```
 
 Calls exceeding the timeout will reject with an error.
+
+### Retry Configuration
+
+Configure retry behavior per function, package, or transport level.
+
+```typescript
+// Function-level (highest priority)
+export const criticalFunction = irpc.declare<CriticalFn>({
+  name: 'processPayment',
+  maxRetries: 5,        // 5 retry attempts
+  retryMode: 'exponential', // 1s, 2s, 4s, 8s, 16s delays
+  retryDelay: 1000,     // 1 second base delay
+});
+
+// Package-level (medium priority)
+const irpc = createPackage({
+  name: 'my-api',
+  maxRetries: 3,        // Default for all functions
+  retryMode: 'linear',  // Fixed delays
+});
+
+// Transport-level (lowest priority)
+const transport = new HTTPTransport({
+  endpoint: '/api',
+  maxRetries: 1,        // Fallback for functions without config
+});
+```
+
+**Priority Order:** Function → Package → Transport
+
+Network errors trigger automatic retries. Handler errors fail immediately without retry.
+
+### Coalesce
+
+Combine multiple calls with the same arguments to avoid duplicate executions.
+
+```typescript
+export const expensiveQuery = irpc.declare<ExpensiveQueryFn>({
+  name: 'expensiveQuery',
+  coalesce: true, // Enable coalescing
+});
+```
+
+When multiple calls with identical arguments are made simultaneously, only one execution occurs. All callers receive the same result.
+
+### Cache Invalidation
+
+Manually clear cached responses when data becomes stale.
+
+```typescript
+// Invalidate specific cache entry
+irpc.invalidate(getUser, 'user-123');
+
+// Invalidate all cache entries for a function
+irpc.invalidate(getUser);
+```
+
+Use this when you know cached data is no longer valid, such as after mutations.
 
 ### Validation (Optional)
 

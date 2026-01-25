@@ -1,6 +1,6 @@
 ---
 title: "IRPC Overview"
-description: "Isomorphic Remote Procedure Call - Call remote functions like local functions with automatic batching, type safety, and 6.96x performance improvement."
+description: "Isomorphic Remote Procedure Call - Call remote functions like local functions with automatic batching, type safety, and high performance."
 keywords:
   - irpc
   - rpc
@@ -75,21 +75,23 @@ IRPC eliminates the network abstraction:
 3. **Call** it from the client like any async function
 
 The transport handles everything else:
-- Automatic batching (10x fewer HTTP requests)
+- Automatic batching of simultaneous calls
 - Type safety (end-to-end TypeScript)
-- Error handling (automatic retry & timeout)
+- Error handling (automatic retry & timeout, configurable per function)
+- Call coalescing (prevents duplicate executions)
 - Serialization (transparent)
 - Distribution (publish stubs to NPM, keep handlers private)
+- Transport flexibility (HTTP, WebSocket, custom transports)
 
 ## Performance
 
-IRPC achieves **6.96x faster** performance than traditional REST through automatic batching.
+IRPC achieves **high performance** compared to traditional REST through automatic batching.
 
 **Benchmark:** 100,000 users, 10 calls each (1,000,000 total calls)
 
 | Framework | Total Time | HTTP Requests | Speedup |
 |-----------|------------|---------------|---------|
-| **IRPC** | **3,617ms** | **100,000** | **6.96x** 🚀 |
+| **IRPC** | **3,617ms** | **100,000** | **6.96x** |
 | Bun Native | 25,180ms | 1,000,000 | 1.00x |
 | Hono | 18,004ms | 1,000,000 | 1.40x |
 
@@ -100,4 +102,5 @@ When you call multiple functions simultaneously, IRPC automatically batches them
 - [Getting Started](/irpc/getting-started) - Set up your first IRPC project
 - [Comparison](/irpc/comparison) - IRPC vs REST, gRPC, tRPC, GraphQL
 - [Specification](/irpc/specification) - Full protocol specification
-- [HTTP Transport](/irpc/transports/http-transport) - Transport configuration
+- [HTTP Transport](/irpc/transports/http-transport) - HTTP transport configuration
+- [WebSocket Transport](/irpc/transports/ws-transport) - WebSocket transport for persistent connections

@@ -25,7 +25,7 @@ This page compares IRPC with other popular API patterns to help you choose the r
 | **HTTP Requests** | 10x fewer (automatic batching) | One per call |
 | **Learning Curve** | Minimal - just functions | Moderate - HTTP verbs, status codes |
 | **Caching** | Built-in per-function | Manual implementation |
-| **Error Handling** | Automatic retry & timeout | Manual implementation |
+| **Error Handling** | Automatic retry & timeout (configurable per function) | Manual implementation |
 
 ### REST Example
 
@@ -227,7 +227,7 @@ const user = await createUser({ name: 'John', email: 'john@example.com' });
 
 | Framework | Total Time | HTTP Requests | Speedup |
 |-----------|------------|---------------|---------|
-| **IRPC** | **3,617ms** | **100,000** | **6.96x** 🚀 |
+| **IRPC** | **3,617ms** | **100,000** | **6.96x** |
 | Bun Native | 25,180ms | 1,000,000 | 1.00x |
 | Hono | 18,004ms | 1,000,000 | 1.40x |
 | Elysia | 36,993ms | 1,000,000 | 0.68x |
@@ -243,7 +243,7 @@ IRPC's automatic batching reduces HTTP overhead by 10x, resulting in 6.96x faste
 - ✅ You prefer simple function calls over complex query languages
 - ✅ You want transport flexibility (HTTP, WebSocket, custom)
 - ✅ You're building a TypeScript/JavaScript application
-- ✅ You want built-in caching, retry, and timeout
+- ✅ You want built-in caching, retry, and timeout (configurable per function)
 
 ### Choose REST when:
 

@@ -75,9 +75,30 @@ const transport = new HTTPTransport({
 
 [Learn more about HTTP Transport →](/irpc/transports/http-transport)
 
-### WebSocket Transport (Coming Soon)
+### WebSocket Transport
 
-WebSocket transport will provide bidirectional streaming for real-time applications.
+The WebSocket transport provides persistent connections with lower latency and automatic reconnection.
+
+```typescript
+import { WebSocketTransport } from '@irpclib/ws';
+
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  autoReconnect: true,
+  maxReconnectAttempts: 5,
+  connectionTimeout: 10000,
+});
+```
+
+**Features:**
+- Persistent WebSocket connections
+- Lower latency (no HTTP handshake overhead)
+- Automatic batching over WebSocket messages
+- Real-time connection state monitoring
+- Auto-reconnection on connection failures
+- Bidirectional communication support
+
+[Learn more about WebSocket Transport →](/irpc/transports/ws-transport)
 
 ### Custom Transports
 
@@ -250,5 +271,6 @@ const stream = new ReadableStream({
 ## Next Steps
 
 - [HTTP Transport](/irpc/transports/http-transport) - Detailed HTTP transport documentation
+- [WebSocket Transport](/irpc/transports/ws-transport) - WebSocket transport for persistent connections
 - [Getting Started](/irpc/getting-started) - Set up your first IRPC project
 - [Specification](/irpc/specification) - Full protocol specification

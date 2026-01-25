@@ -161,6 +161,7 @@ export default defineConfig({
             items: [
               { text: 'Overview', link: '/irpc/transports/index.html' },
               { text: 'HTTP Transport', link: '/irpc/transports/http-transport' },
+              { text: 'WebSocket Transport', link: '/irpc/transports/ws-transport' },
             ],
           },
         ],

@@ -371,9 +371,9 @@ irpc.construct(logRequest, async () => {
 
 ## Performance
 
-The HTTP transport achieves **6.96x faster** performance than traditional REST through:
+The HTTP transport achieves **high performance** compared to traditional REST through:
 
-1. **Automatic batching** - 10x fewer HTTP connections
+1. **Automatic batching** - Reduces HTTP connection overhead
 2. **Streaming responses** - Progressive resolution, no waiting
 3. **Connection reuse** - Single connection for multiple calls
 4. **Minimal overhead** - Direct function calls, no routing logic
