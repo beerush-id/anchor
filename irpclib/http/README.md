@@ -6,12 +6,12 @@ HTTP Transport for IRPC - Automatic batching, streaming, retry, and timeout supp
 
 ## Features
 
-- ✅ **Automatic batching** - Multiple calls in one HTTP request
-- ✅ **Streaming responses** - Progressive resolution
-- ✅ **Retry logic** - Linear or exponential backoff
-- ✅ **Timeout handling** - Per-call and request-level
-- ✅ **Middleware support** - Authentication, logging, rate limiting
-- ✅ **AbortController** - Cancel requests in-flight
+- Automatic batching of multiple calls into single HTTP requests
+- Streaming responses for progressive result resolution
+- Configurable retry logic with linear or exponential backoff
+- Comprehensive timeout handling at both call and request levels
+- Middleware support for authentication, logging, and rate limiting
+- Request cancellation using AbortController
 
 ---
 
@@ -51,7 +51,7 @@ irpc.use(transport);
 ### Server Setup
 
 ```typescript
-import { setContextProvider } from '@irpclib/irpc';
+import { setContextProvider, getContext } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
@@ -99,14 +99,16 @@ Bun.serve({
 ### Middleware
 
 ```typescript
+import { getContext, setContext } from '@irpclib/irpc';
+
 router.use(async () => {
   // Access context
   const req = getContext<Request>('request');
   const userId = req.headers.get('x-user-id');
-  
+
   // Set context for handlers
   setContext('userId', userId);
-  
+
   // Throw to reject request
   if (!userId) {
     throw new Error('Unauthorized');

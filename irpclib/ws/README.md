@@ -4,13 +4,13 @@ WebSocket transport implementation for IRPC library.
 
 ## Features
 
-- ⚡ **Lower latency** - Persistent WebSocket connection eliminates HTTP handshake overhead per request
-- 🔄 **Persistent connection** - Single connection handles multiple calls without reconnection overhead
-- 📦 **Automatic batching** - Multiple calls batched into single WebSocket message automatically
-- 🔁 **Retry logic** - Configurable retry attempts with linear/exponential backoff for network failures
-- 🛡️ **Type safety** - Full TypeScript support with proper interfaces
-- 📊 **Connection state tracking** - Real-time connection health monitoring (CONNECTING/OPEN/CLOSING/CLOSED)
-- 🎯 **Error handling** - Comprehensive timeout and connection failure recovery with auto-reconnection
+- Lower latency through persistent WebSocket connections that eliminate HTTP handshake overhead
+- Single persistent connection handling multiple function calls without reconnection overhead
+- Automatic batching of multiple calls into single WebSocket messages
+- Configurable retry logic with linear or exponential backoff for network failures
+- Full TypeScript support with proper type interfaces
+- Real-time connection state tracking (CONNECTING, OPEN, CLOSING, CLOSED)
+- Comprehensive error handling with timeout and connection failure recovery through auto-reconnection
 
 ## Installation
 
@@ -52,7 +52,7 @@ const result = await myMethod("arg1", "arg2");
 ### Server-side
 
 ```typescript
-import { WebSocketRouter } from "@irpclib/ws";
+import { WebSocketRouter, WebSocketTransport } from "@irpclib/ws";
 import { createPackage } from "@irpclib/irpc";
 
 // Create IRPC package
@@ -76,13 +76,6 @@ export const myMethod = irpc.declare<MyMethodFn>({ name: "myMethod" });
 irpc.construct(myMethod, async (arg1: string, arg2: string) => {
   return `Hello ${arg1} and ${arg2}!`;
 });
-
-// Create WebSocket transport
-const transport = new WebSocketTransport({
-  url: "ws://localhost:8080",
-});
-
-irpc.use(transport);
 
 // Create router
 const router = new WebSocketRouter(irpc, transport);

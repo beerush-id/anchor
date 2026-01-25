@@ -22,7 +22,7 @@ const message = await hello('John');
 
 | Framework | Total Time | HTTP Requests | Speedup |
 |-----------|------------|---------------|---------|
-| **IRPC** | **3,617ms** | **100,000** | **6.96x** 🚀 |
+| **IRPC** | **3,617ms** | **100,000** | **6.96x** |
 | Bun Native | 25,180ms | 1,000,000 | 1.00x |
 | Hono | 18,004ms | 1,000,000 | 1.40x |
 | Elysia | 36,993ms | 1,000,000 | 0.68x |
@@ -33,13 +33,13 @@ const message = await hello('John');
 
 ## Features
 
-- ✅ **6.96x faster** than traditional REST
-- ✅ **10x fewer HTTP connections** (automatic batching)
-- ✅ **Type-safe** (end-to-end TypeScript)
-- ✅ **Zero boilerplate** (no routes, no endpoints)
-- ✅ **Transport agnostic** (HTTP, WebSocket, etc.)
-- ✅ **Built-in caching** (configurable per-call)
-- ✅ **Retry & timeout** (automatic error handling)
+- 6.96x faster than traditional REST APIs
+- 10x fewer HTTP connections through automatic batching
+- End-to-end type safety with TypeScript
+- Zero boilerplate - no routes or endpoints needed
+- Transport agnostic (HTTP, WebSocket, and more)
+- Built-in caching configurable per function call
+- Automatic retry and timeout handling
 
 ---
 
