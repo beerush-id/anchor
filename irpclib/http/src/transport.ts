@@ -2,6 +2,7 @@ import {
   ERROR_CODE,
   ERROR_MESSAGE,
   type IRPCCall,
+  type IRPCData,
   type IRPCRequest,
   type IRPCResponse,
   IRPCTransport,
@@ -9,7 +10,6 @@ import {
 } from '@irpclib/irpc';
 
 export const DEFAULT_ENDPOINT = '/irpc';
-export const DEFAULT_RETRY_DELAY = 1000;
 
 /**
  * Configuration interface for HTTP transport.
@@ -33,24 +33,6 @@ export type HTTPTransportConfig = TransportConfig & {
    * Allows setting authentication tokens, content types, etc.
    */
   headers?: Record<string, string>;
-
-  /**
-   * Maximum number of retries for failed requests.
-   * Defaults to 0 if not provided.
-   */
-  maxRetries?: number;
-
-  /**
-   * The retry mode for failed requests.
-   * Defaults to 'linear' if not provided.
-   */
-  retryMode?: 'linear' | 'exponential';
-
-  /**
-   * The delay between retry attempts.
-   * Defaults to 1000ms if not provided.
-   */
-  retryDelay?: number;
 };
 
 /**
@@ -90,7 +72,8 @@ export class HTTPTransport extends IRPCTransport {
   protected async dispatch(calls: IRPCCall[]) {
     try {
       const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({ id, name, args }));
-      const maxTimeout = calls.reduce((acc, req) => Math.max(acc, req.timeout ?? 0), 0) || this.config?.timeout;
+      const maxTimeout =
+        calls.reduce((acc, req) => Math.max(acc, req.options?.timeout ?? 0), 0) || this.config?.timeout;
       const controller = new AbortController();
 
       let breaker: number | undefined;
@@ -101,7 +84,7 @@ export class HTTPTransport extends IRPCTransport {
         }, maxTimeout) as never;
       }
 
-      const response = await this.fetch(this.url, {
+      const response = await fetch(this.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,48 +109,6 @@ export class HTTPTransport extends IRPCTransport {
         call.reject(error as Error);
       });
     }
-  }
-
-  /**
-   * Performs an HTTP fetch request with retry logic.
-   *
-   * This method wraps the native fetch API and adds configurable retry behavior
-   * for failed requests. It supports both linear and exponential backoff strategies.
-   *
-   * @param url - The URL to fetch, either as a string or URL object
-   * @param init - Optional fetch initialization options
-   * @returns A Promise that resolves to the Response object
-   * @throws Error when all retry attempts are exhausted or on timeout
-   */
-  protected async fetch(url: string | URL, init?: RequestInit) {
-    const { maxRetries = 0, retryDelay = DEFAULT_RETRY_DELAY, retryMode = 'linear' } = this.config;
-
-    const debounce = (i: number) => {
-      const delay = retryMode === 'linear' ? retryDelay : retryDelay * 2 ** i;
-      return new Promise((resolve) => setTimeout(resolve, delay));
-    };
-
-    if (maxRetries > 0) {
-      for (let i = 0; i <= maxRetries; i++) {
-        try {
-          const response = await fetch(url, init);
-
-          if (response.ok) {
-            return response;
-          } else {
-            console.error('Request failed:', response.statusText);
-            await debounce(i + 1);
-          }
-        } catch (error) {
-          console.error('Request failed:', error);
-          await debounce(i + 1);
-        }
-      }
-
-      return new Response(null, { status: 408, statusText: ERROR_MESSAGE[ERROR_CODE.TIMEOUT] });
-    }
-
-    return fetch(url, init);
   }
 
   /**
@@ -237,7 +178,7 @@ export class HTTPTransport extends IRPCTransport {
       call.reject(new Error(data.error.message));
     } else {
       // Resolve the call with the result data
-      call.resolve(data.result);
+      call.resolve(data.result as IRPCData);
     }
   }
 }
