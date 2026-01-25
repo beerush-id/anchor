@@ -110,8 +110,6 @@ export class IRPCCall {
       const delay = retryMode === 'linear' ? retryDelay : retryDelay * 2 ** this.retries;
 
       setTimeout(() => {
-        if (this.resolved) return;
-
         this.retries++;
         this.transport.schedule(this);
       }, delay);
