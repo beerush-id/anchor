@@ -48,6 +48,12 @@ features:
   - icon: 📦
     title: Intelligent Caching
     details: Built-in intelligent caching with configurable TTL and manual invalidation ensures data freshness without redundant calls.
+  - icon: 🛡️
+    title: Call Coalescing
+    details: Prevents duplicate executions when multiple calls with identical arguments are made simultaneously.
+  - icon: 🎯
+    title: Per-Function Retry
+    details: Individual retry, timeout, and caching settings per function for optimal reliability and performance.
   - icon: 🔧
     title: Zero Boilerplate
     details: Auto-import constructors, type-safe APIs, and automatic versioning. No routes, no endpoints, just write functions and ship.

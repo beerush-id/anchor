@@ -84,8 +84,9 @@ IRPC (Isomorphic Remote Procedure Call) eliminates API boilerplate by making rem
 **Key Features:**
 - **Zero Boilerplate:** No routes, no endpoints, no client code
 - **Automatic Batching:** Intelligent request batching with configurable debounce reduces network overhead
+- **Call Coalescing:** Prevents duplicate executions when multiple calls with identical arguments are made simultaneously
+- **Per-Function Configuration:** Individual retry, timeout, and caching settings per function
 - **Intelligent Caching:** Built-in caching with configurable TTL and manual invalidation
-- **Timeout Management:** Configurable timeouts per function or globally
 - **Schema Validation:** Optional Zod integration for runtime input/output validation
 - **Context Management:** Built-in async context support for request-scoped data
 - **Type-Safe:** End-to-end TypeScript with zero manual type definitions
