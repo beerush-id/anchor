@@ -252,7 +252,34 @@ export type IRPCContextProvider = {
   getStore<K, V>(): IRPCContext<K, V>;
 };
 
-export type TransportConfig = {
+/**
+ * Configuration options for an RPC call.
+ */
+export type IRPCCallConfig = {
+  /** Timeout for the RPC call in milliseconds */
   timeout?: number;
+  /** Maximum number of retries for the call */
+  maxRetries?: number;
+  /** Retry strategy mode - either linear or exponential backoff */
+  retryMode?: 'linear' | 'exponential';
+  /** Base delay between retries in milliseconds */
+  retryDelay?: number;
+};
+
+/**
+ * Options for executing an RPC call, extending configuration with promise callbacks.
+ */
+export type IRPCCallOptions = IRPCCallConfig & {
+  /** Reject callback for the call's promise */
+  reject: (reason?: Error) => void;
+  /** Resolve callback for the call's promise */
+  resolve: (value: IRPCData) => void;
+};
+
+/**
+ * Configuration for transport layer, extending call configuration with debounce settings.
+ */
+export type TransportConfig = IRPCCallConfig & {
+  /** Debounce setting for transport - can be a boolean to enable/disable or a number for specific delay */
   debounce?: number | boolean;
 };

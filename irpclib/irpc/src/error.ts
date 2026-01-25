@@ -24,6 +24,8 @@ export const ERROR_CODE = {
   RESOLVER_NOT_IMPLEMENTED: 'resolver_not_implemented',
   RESOLVER_NOT_FOUND: 'resolver_not_found',
   RESOLVER_NOT_SUPPORTED: 'resolver_not_supported',
+
+  CALL_MAX_RETRIES_REACHED: 'call_max_retries_reached',
 };
 
 export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
@@ -52,4 +54,6 @@ export const ERROR_MESSAGE = {
   [ERROR_CODE.RESOLVER_MISSING]: 'IRPC: Resolver missing error',
   [ERROR_CODE.RESOLVER_NOT_IMPLEMENTED]: 'IRPC: Resolver not implemented error',
   [ERROR_CODE.RESOLVER_NOT_FOUND]: 'IRPC: Resolver not found error',
+  [ERROR_CODE.RESOLVER_NOT_SUPPORTED]: 'IRPC: Resolver not supported error',
+  [ERROR_CODE.CALL_MAX_RETRIES_REACHED]: 'IRPC: Call max retries reached error',
 };

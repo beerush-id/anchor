@@ -29,26 +29,22 @@ export class IRPCTransport {
     const payload: IRPCPayload = { name: spec.name, args };
 
     return new Promise<IRPCData>((resolve, reject) => {
-      const timer = timeout
-        ? setTimeout(() => {
-            call.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]));
-          }, timeout)
-        : undefined;
+      const { maxRetries, retryMode, retryDelay } = { ...this.config };
 
-      const call = new IRPCCall(
-        payload,
-        (value) => {
-          resolve(value as IRPCData);
-          clearTimeout(timer);
-        },
-        (reason) => {
-          reject(reason);
-          clearTimeout(timer);
-        },
-        timeout
+      this.schedule(
+        new IRPCCall(this, payload, {
+          timeout,
+          maxRetries,
+          retryMode,
+          retryDelay,
+          resolve: (value) => {
+            resolve(value);
+          },
+          reject: (reason) => {
+            reject(reason);
+          },
+        })
       );
-
-      this.schedule(call);
     });
   }
 
@@ -57,7 +53,7 @@ export class IRPCTransport {
    * Queued calls will be dispatched after the configured debounce delay.
    * @param call - The RPC call to schedule.
    */
-  protected schedule(call: IRPCCall) {
+  public schedule(call: IRPCCall) {
     const { debounce } = (this.config ?? {}) as TransportConfig;
 
     if (debounce === false) {

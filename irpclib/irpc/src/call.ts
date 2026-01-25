@@ -1,6 +1,11 @@
 import { IRPC_STATUS } from './enum.js';
-import type { IRPCPayload, IRPCStatus } from './types.js';
+import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import type { IRPCTransport } from './transport.js';
+import type { IRPCCallOptions, IRPCData, IRPCPayload, IRPCStatus } from './types.js';
 import { uuid } from './uuid.js';
+
+export const DEFAULT_RETRY_MODE = 'exponential';
+export const DEFAULT_RETRY_DELAY = 1000;
 
 /**
  * Represents an RPC call with promise-like behavior for handling asynchronous operations.
@@ -39,26 +44,35 @@ export class IRPCCall {
   public value?: unknown;
   public error?: Error;
 
+  private readonly timerId?: number;
+  private retries = 0;
+  private retryReasons = new Set<Error>();
+
   /**
    * Creates a new IRPCCall instance.
+   * @param transport
    * @param payload - The RPC payload containing method and parameters
-   * @param resolver - Function to resolve the associated promise with a value
-   * @param rejector - Function to reject the associated promise with an error
-   * @param timeout - Optional timeout value in milliseconds
+   * @param options - Options for the call, such as timeout, maxRetries, etc.
    */
   constructor(
+    public transport: IRPCTransport,
     public payload: IRPCPayload,
-    private resolver: (value: unknown) => void,
-    private rejector: (reason?: Error) => void,
-    public timeout?: number
-  ) {}
+    public options: IRPCCallOptions
+  ) {
+    if (options.timeout) {
+      this.timerId = setTimeout(() => {
+        // Timed out call does not get retried.
+        this.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]), false);
+      }, options.timeout) as never as number;
+    }
+  }
 
   /**
    * Resolves the RPC call with the provided value.
    * If the call is already resolved, this method does nothing.
    * @param value - The value to resolve the promise with
    */
-  resolve(value: unknown) {
+  resolve(value: IRPCData) {
     if (this.resolved) return;
 
     this.value = value;
@@ -66,22 +80,50 @@ export class IRPCCall {
     this.resolved = true;
     this.finishedAt = Date.now();
 
-    this.resolver(value);
+    clearTimeout(this.timerId);
+
+    this.options.resolve(value);
   }
 
   /**
    * Rejects the RPC call with the provided reason.
    * If the call is already resolved, this method does nothing.
    * @param reason - Optional error reason for rejecting the promise
+   * @param retriable - Flag indicating whether to retry the call
    */
-  reject(reason?: Error) {
+  reject(reason?: Error, retriable = true) {
     if (this.resolved) return;
 
-    this.error = reason;
-    this.status = IRPC_STATUS.ERROR;
-    this.resolved = true;
-    this.finishedAt = Date.now();
+    const { maxRetries, retryMode = DEFAULT_RETRY_MODE, retryDelay = DEFAULT_RETRY_DELAY } = this.options;
 
-    this.rejector(reason);
+    if (maxRetries && retriable) {
+      if (reason) {
+        this.retryReasons.add(reason);
+      }
+
+      if (this.retries >= maxRetries) {
+        console.error(ERROR_MESSAGE[ERROR_CODE.CALL_MAX_RETRIES_REACHED], this.retryReasons);
+        this.reject(reason, false);
+        return;
+      }
+
+      const delay = retryMode === 'linear' ? retryDelay : retryDelay * 2 ** this.retries;
+
+      setTimeout(() => {
+        if (this.resolved) return;
+
+        this.retries++;
+        this.transport.schedule(this);
+      }, delay);
+    } else {
+      this.error = reason;
+      this.status = IRPC_STATUS.ERROR;
+      this.resolved = true;
+      this.finishedAt = Date.now();
+
+      clearTimeout(this.timerId);
+
+      this.options.reject(reason);
+    }
   }
 }
