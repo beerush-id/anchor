@@ -1,6 +1,14 @@
 import { IRPCCall } from './call.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
-import type { IRPCData, IRPCInputs, IRPCOutput, IRPCPayload, IRPCSpec, TransportConfig } from './types.js';
+import type {
+  IRPCCallConfig,
+  IRPCData,
+  IRPCInputs,
+  IRPCOutput,
+  IRPCPayload,
+  IRPCSpec,
+  TransportConfig,
+} from './types.js';
 
 /**
  * IRPCTransport is responsible for managing and dispatching RPC calls.
@@ -22,14 +30,14 @@ export class IRPCTransport {
    * Initiates an RPC call with the given specification and arguments.
    * @param spec - The RPC specification defining the method to call.
    * @param args - An array of arguments to pass to the RPC method.
-   * @param timeout - Optional timeout value for the RPC call.
+   * @param config - Optional call configuration, including timeout, retry settings, and more.
    * @returns A promise that resolves with the RPC response data or rejects with an error.
    */
-  public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[], timeout = this.config?.timeout) {
+  public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[], config?: IRPCCallConfig) {
     const payload: IRPCPayload = { name: spec.name, args };
 
     return new Promise<IRPCData>((resolve, reject) => {
-      const { maxRetries, retryMode, retryDelay } = { ...this.config };
+      const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
 
       this.schedule(
         new IRPCCall(this, payload, {

@@ -127,10 +127,10 @@ export type IRPCPackageInfo = {
   description?: string;
 };
 
-export type IRPCPackageConfig = IRPCPackageInfo & {
-  timeout?: number;
-  transport?: IRPCTransport;
-};
+export type IRPCPackageConfig = IRPCPackageInfo &
+  IRPCCallConfig & {
+    transport?: IRPCTransport;
+  };
 
 /**
  * Represents the payload of an RPC call with its name and arguments.
@@ -177,8 +177,6 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
   schema?: IRPCSchema<I, O>;
   /** Optional maximum age of a call in milliseconds */
   maxAge?: number;
-  /** Optional timeout for RPC calls */
-  timeout?: number;
 
   /**
    * Whether to coalesce multiple calls to the same RPC function within a short time period.
@@ -187,7 +185,7 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
    * This can help reduce the number of actual function executions.
    */
   coalesce?: boolean;
-};
+} & IRPCCallConfig;
 
 /**
  * Complete specification for an RPC function including its implementation.

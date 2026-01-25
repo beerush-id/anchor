@@ -2,6 +2,7 @@ import { IRPCCacher } from './cache.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCTransport } from './transport.js';
 import type {
+  IRPCCallConfig,
   IRPCData,
   IRPCHandler,
   IRPCInit,
@@ -94,7 +95,6 @@ export class IRPCPackage {
     const spec = { ...init } as IRPCSpec<IRPCInputs, IRPCOutput>;
     const calls = new Map<string, Promise<unknown>>();
     const caches = new IRPCCacher();
-    const timeout = spec.timeout ?? this.config.timeout;
 
     const stub = (async (...args: IRPCData[]) => {
       if (!this.transport && typeof spec.handler !== 'function') {
@@ -112,10 +112,13 @@ export class IRPCPackage {
         return calls.get(callKey);
       }
 
+      const { timeout, maxRetries, retryDelay, retryMode } = { ...this.config, ...spec };
+      const config = { timeout, maxRetries, retryDelay, retryMode } as IRPCCallConfig;
+
       const call: Promise<unknown> =
         typeof spec.handler === 'function'
           ? (spec.handler as (...args: unknown[]) => Promise<unknown>)(...args)
-          : this.transport!.call(spec, args, timeout);
+          : this.transport!.call(spec, args, config);
 
       calls.set(callKey, call);
 
