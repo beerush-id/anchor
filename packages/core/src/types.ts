@@ -1032,3 +1032,22 @@ export type RetriableOptions = {
    */
   controller?: AbortController;
 };
+
+/**
+ * Interface for state inspection functionality.
+ * Provides methods to subscribe to state changes and optionally trace them.
+ */
+export interface StateInspector {
+  /**
+   * Subscribe to state changes and log them to console.
+   * @param state The state object to inspect
+   * @returns Unsubscribe function to stop listening to state changes
+   */ <T extends State>(state: T): StateUnsubscribe;
+
+  /**
+   * Subscribe to state changes and trace them to console with stack trace.
+   * @param state The state object to inspect with trace
+   * @returns Unsubscribe function to stop listening to state changes
+   */
+  trace<T extends State>(state: T): StateUnsubscribe;
+}

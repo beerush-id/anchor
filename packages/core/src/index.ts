@@ -21,6 +21,7 @@ export * from './fetch/index.js';
 export * from './form.js';
 export * from './history/index.js';
 export * from './internal.js';
+export * from './inspector.js';
 export { createLifecycle, onCleanup, onGlobalCleanup, setCleanUpHandler } from './lifecycle.js';
 export * from './observation.js';
 export * from './ref.js';
