@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
-import { createPackage, IRPCCall, type IRPCHandler, type IRPCPackage, IRPCTransport } from '../src/index.js';
+import { createPackage, type IRPCCall, type IRPCHandler, type IRPCPackage, IRPCTransport } from '../src/index.js';
 
 describe('IRPCPackage', () => {
   let rpc: IRPCPackage;
