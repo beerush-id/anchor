@@ -25,18 +25,21 @@ npm install @irpclib/ws
 
 ## Basic Usage
 
-### Client Setup
+### Shared Module
+
+Create a shared module that both client and server will use:
 
 ```typescript
+// lib/module.ts
 import { WebSocketTransport } from '@irpclib/ws';
 import { createPackage } from '@irpclib/irpc';
 
-const irpc = createPackage({
+export const irpc = createPackage({
   name: 'my-api',
   version: '1.0.0',
 });
 
-const transport = new WebSocketTransport({
+export const transport = new WebSocketTransport({
   url: 'ws://localhost:8080',
   autoReconnect: true,
   maxReconnectAttempts: 5,
@@ -44,30 +47,26 @@ const transport = new WebSocketTransport({
 
 irpc.use(transport);
 
-// Declare and use functions
-const hello = irpc.declare<(name: string) => Promise<string>>({
+// Declare functions
+export const hello = irpc.declare<(name: string) => Promise<string>>({
   name: 'hello'
 });
+```
+
+### Client Setup
+
+```typescript
+import { hello } from './lib/module.js';
 
 const message = await hello('John');
+console.log(message); // 'Hello John'
 ```
 
 ### Server Setup
 
 ```typescript
-import { WebSocketRouter, WebSocketTransport } from '@irpclib/ws';
-import { createPackage } from '@irpclib/irpc';
-
-const irpc = createPackage({
-  name: 'my-api',
-  version: '1.0.0',
-});
-
-const transport = new WebSocketTransport({
-  url: 'ws://localhost:8080',
-});
-
-irpc.use(transport);
+import { WebSocketRouter } from '@irpclib/ws';
+import { irpc, transport, hello } from './lib/module.js';
 
 // Implement handlers
 irpc.construct(hello, async (name) => `Hello ${name}`);

@@ -160,8 +160,9 @@ export default defineConfig({
             collapsed: true,
             items: [
               { text: 'Overview', link: '/irpc/transports/index.html' },
-              { text: 'HTTP Transport', link: '/irpc/transports/http-transport' },
-              { text: 'WebSocket Transport', link: '/irpc/transports/ws-transport' },
+              { text: 'HTTP', link: '/irpc/transports/http-transport' },
+              { text: 'WebSocket', link: '/irpc/transports/ws-transport' },
+              { text: 'BroadcastChannel', link: '/irpc/transports/broadcast-transport' },
             ],
           },
         ],

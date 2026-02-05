@@ -1,0 +1,495 @@
+---
+title: "BroadcastChannel Transport"
+description: "Using the BroadcastChannel transport for IRPC to enable cross-context communication in browsers (tabs, windows, iframes, workers)."
+keywords:
+  - irpc
+  - broadcastchannel
+  - transport
+  - cross-tab
+  - web workers
+  - browser
+---
+
+# BroadcastChannel Transport
+
+The BroadcastChannel transport enables cross-context communication within the browser using the native BroadcastChannel API. Perfect for coordinating between tabs, windows, iframes, and Web Workers.
+
+## Overview
+
+BroadcastChannel transport leverages the browser's built-in BroadcastChannel API to enable seamless communication between different browsing contexts that share the same origin. This is ideal for building multi-tab applications, Web Worker coordination, and iframe communication without server infrastructure.
+
+## Installation
+
+```bash
+npm install @irpclib/broadcast
+```
+
+## Basic Usage
+
+### Shared Module
+
+Create a shared module that all contexts will use:
+
+```typescript
+// lib/module.ts
+import { BroadcastTransport } from '@irpclib/broadcast';
+import { createPackage } from '@irpclib/irpc';
+
+export const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+});
+
+export const transport = new BroadcastTransport({
+  channel: irpc.href, // 'my-api/1.0.0'
+});
+
+irpc.use(transport);
+
+// Declare functions
+export const processData = irpc.declare<(data: string) => Promise<string>>({
+  name: 'processData'
+});
+```
+
+### Client (Main Thread or Tab)
+
+```typescript
+import { processData } from './lib/module.js';
+
+// Call function (handled by worker or another tab)
+const result = await processData('Hello from main thread');
+console.log(result); // 'Processed: Hello from main thread'
+```
+
+### Server (Web Worker or Another Tab)
+
+```typescript
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport, processData } from './lib/module.js';
+
+// Implement handler
+irpc.construct(processData, async (data) => {
+  // Heavy processing in worker
+  return `Processed: ${data}`;
+});
+
+// Create router to handle incoming requests
+const router = new BroadcastRouter(irpc, transport);
+```
+
+## Configuration
+
+### BroadcastTransportConfig
+
+```typescript
+type BroadcastTransportConfig = {
+  // Channel configuration
+  channel: string;
+
+  // Timeouts
+  timeout?: number;               // Request timeout (default: 30000ms)
+
+  // Batching
+  debounce?: number | boolean;    // Batching delay (inherited from base)
+
+  // Retry
+  maxRetries?: number;            // Maximum retry attempts (inherited from base)
+  retryMode?: 'linear' | 'exponential'; // Retry strategy (inherited from base)
+  retryDelay?: number;            // Base retry delay (inherited from base)
+};
+```
+
+### Best Practice: Use Package Href
+
+**Recommended:** Use `irpc.href` as the channel name to ensure consistency across all contexts:
+
+```typescript
+const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+});
+
+const transport = new BroadcastTransport({
+  channel: irpc.href, // 'my-api/1.0.0'
+});
+```
+
+**Benefits:**
+- Automatic uniqueness per package
+- Version-aware communication
+- No manual channel name management
+- Prevents accidental channel conflicts
+- Consistent across main thread, workers, and tabs
+
+## Use Cases
+
+### 1. Web Worker Communication
+
+Offload heavy processing to Web Workers without blocking the UI.
+
+**lib/module.ts:**
+```typescript
+export const generateVideo = irpc.declare<(timeline: Timeline) => Promise<Blob>>({
+  name: 'generateVideo'
+});
+```
+
+**main.ts:**
+```typescript
+import { generateVideo } from './lib/module.js';
+
+const video = await generateVideo(timeline);
+```
+
+**worker.ts:**
+```typescript
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport, generateVideo } from './lib/module.js';
+
+irpc.construct(generateVideo, async (timeline) => {
+  // Heavy video processing using FFmpeg.wasm
+  const ffmpeg = new FFmpeg();
+  await ffmpeg.load();
+  // ... processing
+  return videoBlob;
+});
+
+const router = new BroadcastRouter(irpc, transport);
+```
+
+### 2. Multi-Tab Synchronization
+
+Keep data synchronized across multiple tabs.
+
+**lib/module.ts:**
+```typescript
+export const updateCart = irpc.declare<(items: CartItem[]) => Promise<void>>({
+  name: 'updateCart'
+});
+```
+
+**Tab 1 - Send updates:**
+```typescript
+import { updateCart } from './lib/module.js';
+
+await updateCart(cartItems);
+```
+
+**Tab 2 - Receive updates:**
+```typescript
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport, updateCart } from './lib/module.js';
+
+irpc.construct(updateCart, async (items) => {
+  // Update local cart state
+  cartStore.set(items);
+});
+
+const router = new BroadcastRouter(irpc, transport);
+```
+
+### 3. Iframe Communication
+
+Communicate between parent and child iframes.
+
+**lib/module.ts (shared by parent and iframe):**
+```typescript
+export const sendMessage = irpc.declare<(msg: string) => Promise<string>>({
+  name: 'sendMessage'
+});
+```
+
+**Parent window:**
+```typescript
+import { sendMessage } from './lib/module.js';
+
+const response = await sendMessage('Hello iframe');
+```
+
+**Iframe:**
+```typescript
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport, sendMessage } from './lib/module.js';
+
+irpc.construct(sendMessage, async (msg) => {
+  return `Iframe received: ${msg}`;
+});
+
+const router = new BroadcastRouter(irpc, transport);
+```
+
+### 4. Background Task Coordination
+
+Coordinate background tasks across contexts.
+
+**lib/module.ts:**
+```typescript
+export const startSync = irpc.declare<() => Promise<void>>({
+  name: 'startSync'
+});
+```
+
+**Tab 1 - Start background sync:**
+```typescript
+import { startSync } from './lib/module.js';
+
+await startSync();
+```
+
+**Tab 2 - Handle sync (only one tab processes):**
+```typescript
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport, startSync } from './lib/module.js';
+
+let isSyncing = false;
+
+irpc.construct(startSync, async () => {
+  if (isSyncing) return;
+  isSyncing = true;
+  
+  try {
+    await syncWithServer();
+  } finally {
+    isSyncing = false;
+  }
+});
+
+const router = new BroadcastRouter(irpc, transport);
+```
+
+## Performance Benefits
+
+### Zero Network Overhead
+
+- **No HTTP requests** - Communication happens entirely in the browser
+- **No server required** - Eliminates infrastructure costs
+- **Instant messaging** - Direct browser-to-browser communication
+
+### Automatic Batching
+
+Multiple simultaneous calls are batched into single BroadcastChannel messages:
+
+```typescript
+// These calls are batched into 1 message
+const [result1, result2, result3] = await Promise.all([
+  processTask1(),
+  processTask2(),
+  processTask3(),
+]);
+```
+
+### Offline-First
+
+Works completely offline since no server is required:
+
+```typescript
+// Works without internet connection
+const result = await heavyComputation(data);
+```
+
+## Error Handling
+
+### Network Errors
+
+BroadcastChannel transport includes retry logic:
+
+```typescript
+const transport = new BroadcastTransport({
+  channel: 'my-app',
+  maxRetries: 3,
+  retryMode: 'exponential', // 1s, 2s, 4s delays
+  retryDelay: 1000,
+});
+```
+
+### Channel Closed
+
+Calls fail immediately if the channel is closed:
+
+```typescript
+try {
+  await someFunction();
+} catch (error) {
+  if (error.message.includes('Invalid state')) {
+    // Channel was closed
+    console.error('BroadcastChannel is closed');
+  }
+}
+```
+
+## Advanced Usage
+
+### Middleware
+
+Add middleware to the BroadcastChannel router:
+
+```typescript
+router.use(async () => {
+  // Validate requests
+  const channel = getContext<BroadcastChannel>('channel');
+  
+  // Add logging
+  console.log('Processing request on channel:', channel);
+  
+  // Set context for handlers
+  setContext('timestamp', Date.now());
+});
+```
+
+### Custom Resolver
+
+Provide a custom resolver for advanced request handling:
+
+```typescript
+const router = new BroadcastRouter(irpc, transport, {
+  resolver: (req, module) => {
+    // Custom resolution logic
+    return new CustomResolver(req, module);
+  },
+});
+```
+
+### Multiple Channels
+
+Use different channels for different purposes:
+
+```typescript
+// Data sync channel
+const dataTransport = new BroadcastTransport({
+  channel: 'data-sync'
+});
+
+// UI events channel
+const uiTransport = new BroadcastTransport({
+  channel: 'ui-events'
+});
+
+// Use different transports for different packages
+dataPackage.use(dataTransport);
+uiPackage.use(uiTransport);
+```
+
+## Comparison with Other Transports
+
+| Feature | BroadcastChannel | WebSocket | HTTP |
+|---------|------------------|-----------|------|
+| Environment | Browser + Node.js Workers | Universal | Universal |
+| Server Required | No | Yes | Yes |
+| Cross-Tab | Yes | No | No |
+| Web Workers | Yes | Yes | No |
+| Latency | Lowest | Low | Medium |
+| Offline | Yes | No | No |
+| Setup Complexity | Simple | Medium | Simple |
+
+Choose BroadcastChannel transport when:
+- You're building browser applications with cross-tab communication
+- You need to communicate with Web Workers (browser or Node.js)
+- You want to coordinate between Node.js Worker Threads
+- You want zero infrastructure costs
+- You're building offline-first applications
+
+Choose WebSocket transport when:
+- You need server-side processing
+- You're building real-time server communication
+- You need cross-device synchronization
+
+Choose HTTP transport when:
+- You need maximum compatibility
+- You're building REST-like APIs
+- You have existing HTTP infrastructure
+
+## Browser Support
+
+BroadcastChannel is supported in all modern browsers:
+
+- Chrome 54+
+- Firefox 38+
+- Safari 15.4+
+- Edge 79+
+
+Not supported in:
+- Internet Explorer
+- Safari < 15.4
+
+Check compatibility:
+
+```typescript
+if ('BroadcastChannel' in window) {
+  // BroadcastChannel is supported
+  const transport = new BroadcastTransport({ channel: 'my-app' });
+} else {
+  // Fallback to HTTP or WebSocket
+  const transport = new HttpTransport({ baseURL: '/api' });
+}
+```
+
+## Troubleshooting
+
+### Messages Not Received
+
+**Problem:** Messages sent but not received in other contexts
+
+**Solutions:**
+- Ensure all contexts use the same channel name
+- Verify all contexts are on the same origin
+- Check that router is created in receiving context
+- Confirm BroadcastChannel is supported in the browser
+
+### Worker Communication Issues
+
+**Problem:** Worker not receiving messages
+
+**Solutions:**
+- Verify worker script is loaded correctly
+- Ensure BroadcastRouter is created in worker
+- Check worker console for errors
+- Confirm channel names match exactly
+
+### Performance Issues
+
+**Problem:** Slow message delivery
+
+**Solutions:**
+- Reduce message size (BroadcastChannel has size limits)
+- Use batching for multiple calls
+- Avoid sending large binary data
+- Consider using SharedArrayBuffer for large data
+
+## Security Considerations
+
+### Same-Origin Policy
+
+BroadcastChannel only works within the same origin:
+
+```typescript
+// These can communicate
+// https://example.com/page1
+// https://example.com/page2
+
+// These cannot communicate
+// https://example.com
+// https://other.com
+```
+
+### Data Privacy
+
+All messages are visible to any context on the same origin:
+
+```typescript
+// Don't send sensitive data without encryption
+const transport = new BroadcastTransport({
+  channel: 'public-channel' // Visible to all tabs
+});
+
+// Encrypt sensitive data before sending
+const encryptedData = await encrypt(sensitiveData);
+await sendData(encryptedData);
+```
+
+## Next Steps
+
+- [Getting Started](/irpc/getting-started) - Set up IRPC with BroadcastChannel transport
+- [WebSocket Transport](/irpc/transports/ws-transport) - Server-based alternative
+- [HTTP Transport](/irpc/transports/http-transport) - REST-like alternative
+- [Specification](/irpc/specification) - Full protocol details

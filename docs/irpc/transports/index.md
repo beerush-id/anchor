@@ -100,6 +100,35 @@ const transport = new WebSocketTransport({
 
 [Learn more about WebSocket Transport →](/irpc/transports/ws-transport)
 
+### BroadcastChannel Transport
+
+The BroadcastChannel transport enables cross-context communication within the browser using the native BroadcastChannel API.
+
+```typescript
+import { BroadcastTransport } from '@irpclib/broadcast';
+
+const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+});
+
+const transport = new BroadcastTransport({
+  channel: irpc.href, // 'my-api/1.0.0'
+  timeout: 30000,
+});
+```
+
+**Features:**
+- Cross-tab communication (same origin)
+- Web Worker coordination
+- Iframe communication
+- Zero server infrastructure
+- Offline-first by default
+- Automatic channel namespacing (`irpc://`)
+- Lowest latency (browser-native)
+
+[Learn more about BroadcastChannel Transport →](/irpc/transports/broadcast-transport)
+
 ### Custom Transports
 
 You can create custom transports for any protocol by extending `IRPCTransport`.
@@ -272,5 +301,7 @@ const stream = new ReadableStream({
 
 - [HTTP Transport](/irpc/transports/http-transport) - Detailed HTTP transport documentation
 - [WebSocket Transport](/irpc/transports/ws-transport) - WebSocket transport for persistent connections
+- [BroadcastChannel Transport](/irpc/transports/broadcast-transport) - Browser cross-context communication
 - [Getting Started](/irpc/getting-started) - Set up your first IRPC project
 - [Specification](/irpc/specification) - Full protocol specification
+
