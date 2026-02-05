@@ -1,3 +1,5 @@
+import type { MATCH_MODE, PRELOAD_MODE, ROUTE_TYPE, TRAILING_SLASH_MODE } from './enum.js';
+
 export type TRec = Record<string, unknown>;
 export type None = Record<string, never>;
 export type Merged<Left, Right> = Left extends None
@@ -102,6 +104,7 @@ export type ResolverContext<TParams, TQueryParams> = {
   params: TParams;
   query: TQueryParams;
   signal: AbortSignal;
+  controller: AbortController;
 };
 export type GuardContext<TParams, TQueryParams> = ResolverContext<TParams, TQueryParams>;
 
@@ -133,23 +136,28 @@ export type RouteMeta = {
   custom?: Record<string, unknown>;
 };
 
-export type ResolveOptions<TParams, TQueryParams> = {
-  key?: string | ((params: TParams, query: TQueryParams) => string);
-  stale?: boolean;
+export type ResolveOptions = {
   maxAge?: number;
-  dedupe?: boolean;
+  coalesce?: boolean;
+  timeout?: number;
+  retryMode?: 'linear' | 'exponential';
+  retryDelay?: number;
+  maxRetries?: number;
 };
 
-export type TrailingSlashMode = 'strip' | 'require' | 'ignore';
+export type TrailingSlashMode = (typeof TRAILING_SLASH_MODE)[keyof typeof TRAILING_SLASH_MODE];
 
-export interface RouteOptions<TParams, TQueryParams> {
-  exact?: boolean;
-  baseUrl?: string;
-  redirect?: Redirect | ((params: TParams, query: TQueryParams) => Redirect);
+export type MatchMode = (typeof MATCH_MODE)[keyof typeof MATCH_MODE];
+export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
+
+export interface RouteOptions {
+  match?: MatchMode;
+  method?: string;
+  preload?: PreloadMode;
   trailingSlash?: TrailingSlashMode;
 }
 
-export type RouteType = 'static' | 'param' | 'wildcard';
+export type RouteType = (typeof ROUTE_TYPE)[keyof typeof ROUTE_TYPE];
 export type RouteSegment = {
   path: string;
   type: RouteType;
@@ -170,7 +178,7 @@ export type RouteDefinition<TPath extends string, TOptions> = {
   readonly path: ExtractPath<TPath>;
   readonly options: TOptions;
   readonly segments: RouteSegment[];
-  readonly children: Map<string, Route<string, TRec, TRec, RouteOptions<TRec, TRec>, TRec>>;
+  readonly children: Map<string, Route<string, TRec, TRec, RouteOptions, TRec>>;
 };
 
 export type Route<TPath extends string, TParams, TQueryParams, TOptions, TData> = UrlBuilder<TParams, TQueryParams> &
@@ -185,8 +193,12 @@ export type Route<TPath extends string, TParams, TQueryParams, TOptions, TData> 
     ): Route<TPath, TParams, TQueryParams, TOptions, TData>;
     resolve<R>(
       resolver: (ctx: ResolverContext<TParams, TQueryParams>) => R | Promise<R>,
-      options?: ResolveOptions<TParams, TQueryParams>
+      options?: ResolveOptions
     ): Route<TPath, TParams, TQueryParams, TOptions, R>;
+
+    use(
+      middleware: (ctx: ResolverContext<TParams, TQueryParams>) => void
+    ): Route<TPath, TParams, TQueryParams, TOptions, TData>;
   };
 
 export interface RouteBuilder {
@@ -202,11 +214,13 @@ export interface RouteBuilder {
     TPath extends string,
     TParams extends ExtractParams<TPath> = ExtractParams<TPath>,
     TQueryParams extends ExtractQueryParams<TPath> = ExtractQueryParams<TPath>,
-    TOptions extends RouteOptions<TParams, TQueryParams> = RouteOptions<TParams, TQueryParams>,
+    TOptions extends RouteOptions = RouteOptions,
   >(
     path: TPath,
     options: TOptions
   ): Route<ExtractRoutePath<TPath, TOptions>, TParams, TQueryParams, TOptions, never>;
+
+  get routes(): Route<string, None, None, None, unknown>[];
 }
 
 export interface ChildRouteBuilder<ParentPath extends string, ParentParams, ParentQueryParams, ParentOptions> {
@@ -228,8 +242,7 @@ export interface ChildRouteBuilder<ParentPath extends string, ParentParams, Pare
     TPath extends string,
     TParams extends ExtractParams<TPath> = ExtractParams<TPath>,
     TQueryParams extends ExtractQueryParams<TPath> = ExtractQueryParams<TPath>,
-    TOptions extends RouteOptions<ParentOptions & TParams, Merged<ParentQueryParams, TQueryParams>> = ParentOptions &
-      RouteOptions<ParentOptions & TParams, Merged<ParentQueryParams, TQueryParams>>,
+    TOptions extends RouteOptions = ParentOptions & RouteOptions,
   >(
     path: TPath,
     options: TOptions

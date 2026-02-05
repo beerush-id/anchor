@@ -19,7 +19,9 @@
       "import": "./dist/client/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "directories": {
     "dist": "dist"
   },
@@ -50,5 +52,8 @@
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
     "prepublish": "bun run format && bun run clean && tsdown && publint"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@anchorlib/core": "workspace:*"
+  }
 }

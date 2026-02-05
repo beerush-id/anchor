@@ -86,9 +86,7 @@ describe('ExtractQueryParams', () => {
     expectTypeOf<Result>().toHaveProperty('filter');
     expectTypeOf<Result>().toHaveProperty('type');
     expectTypeOf<Result>().toHaveProperty('limit');
-    expectTypeOf<
-      Result extends { filter: string; type: string; limit: string } ? true : false
-    >().toEqualTypeOf<true>();
+    expectTypeOf<Result extends { filter: string; type: string; limit: string } ? true : false>().toEqualTypeOf<true>();
   });
 
   it('handles complex query params with multiple typed params', () => {
