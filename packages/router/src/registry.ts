@@ -1,26 +1,9 @@
-import { DYNAMIC_ROUTE_KEY, FALLBACK_ROUTE_KEY, INDEX_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
-import type { UnknownRoute } from './router.js';
-import type { TRec } from './types.js';
+import { DYNAMIC_ROUTE_KEY, FALLBACK_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import type { MatchedRoute, TRec, UnknownRoute } from './types.js';
 
-export type RouteMatch = {
-  route: UnknownRoute;
-  params: TRec;
-  segments: UnknownRoute[];
-};
-
-const ROUTE_MAP_LINK = new WeakMap();
-
-export class RouteMap extends Map {
+export class RouteRegistry extends Map {
   public get name() {
     return this.route.name;
-  }
-
-  public get index() {
-    return this.get(INDEX_ROUTE_KEY) ?? this.route;
-  }
-
-  public get fallback(): UnknownRoute | undefined {
-    return this.get(FALLBACK_ROUTE_KEY);
   }
 
   constructor(public route: UnknownRoute) {
@@ -33,7 +16,7 @@ export class RouteMap extends Map {
     segments: UnknownRoute[] = [],
     params: TRec = {},
     index = 0
-  ): RouteMatch | void {
+  ): MatchedRoute | void {
     if (!urlSegments || !urlSegments.length) return;
 
     if (typeof urlSegments === 'string') {
@@ -44,31 +27,31 @@ export class RouteMap extends Map {
     const recursive = urlSegments.length > index + 1;
 
     if (!segment) {
-      segments.push(this.index);
+      segments.push(this.route);
 
       return {
-        route: this.index,
+        route: this.route,
         segments,
         params,
       };
     }
 
-    const staticRoute = this.get(segment) as RouteMap;
-    const dynamicRoute = this.get(DYNAMIC_ROUTE_KEY) as RouteMap;
-    const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteMap;
-    const fallbackRoute = this.get(FALLBACK_ROUTE_KEY) as RouteMap;
+    const staticRoute = this.get(segment) as RouteRegistry;
+    const dynamicRoute = this.get(DYNAMIC_ROUTE_KEY) as RouteRegistry;
+    const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteRegistry;
+    const fallbackRoute = this.get(FALLBACK_ROUTE_KEY) as RouteRegistry;
 
     if (staticRoute) {
-      segments.push(staticRoute.index);
+      segments.push(staticRoute.route);
 
       if (recursive) {
         const childRoute = staticRoute.match(urlSegments, segments, params, index + 1);
 
         if (!childRoute && wildcardRoute) {
-          segments.push(wildcardRoute.index);
+          segments.push(wildcardRoute.route);
 
           return {
-            route: wildcardRoute.index,
+            route: wildcardRoute.route,
             segments,
             params,
           };
@@ -77,23 +60,23 @@ export class RouteMap extends Map {
         return childRoute;
       } else {
         return {
-          route: staticRoute.index,
+          route: staticRoute.route,
           segments,
           params,
         };
       }
     } else if (dynamicRoute) {
       params[dynamicRoute.name] = segment;
-      segments.push(dynamicRoute.index);
+      segments.push(dynamicRoute.route);
 
       if (recursive) {
         const childRoute = dynamicRoute.match(urlSegments, segments, params, index + 1);
 
         if (!childRoute && fallbackRoute) {
-          segments.push(fallbackRoute.index);
+          segments.push(fallbackRoute.route);
 
           return {
-            route: fallbackRoute.index,
+            route: fallbackRoute.route,
             segments,
             params,
           };
@@ -102,17 +85,17 @@ export class RouteMap extends Map {
         return childRoute;
       } else {
         return {
-          route: dynamicRoute.index,
+          route: dynamicRoute.route,
           segments,
           params,
         };
       }
     } else if (wildcardRoute) {
       params['*'] = urlSegments.slice(index);
-      segments.push(wildcardRoute.index);
+      segments.push(wildcardRoute.route);
 
       return {
-        route: wildcardRoute.index,
+        route: wildcardRoute.route,
         segments,
         params,
       };

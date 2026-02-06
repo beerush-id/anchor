@@ -2,8 +2,6 @@ import { ROUTE_TYPE } from './enum.js';
 
 export const DEFAULT_CONFIG = {
   baseUrl: 'http://localhost',
-  trailingSlash: false,
-  keepAlive: false,
 };
 
 export function configure(config: Partial<typeof DEFAULT_CONFIG>) {
@@ -18,3 +16,5 @@ export const FALLBACK_ROUTE_KEY = Symbol(ROUTE_TYPE.FALLBACK);
 export const METHOD_MAP: {
   [key: string]: symbol;
 } = {};
+
+export const ROUTE_MAP_LINK = new WeakMap();
