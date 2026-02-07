@@ -1,14 +1,19 @@
-import { mutable } from '@anchorlib/core';
+import { enforceCacheLimit, isCacheExpired } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_TYPE } from './enum.js';
+import { parseQuery } from './query.js';
+import { Redirect, redirectUrl } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { Route } from './route.js';
 import type {
   ActiveContext,
+  CachedMatch,
   ExtractParams,
   ExtractQueryParams,
   GuardContext,
-  MatchedRoute,
+  MatchedState,
+  None,
+  ProviderContext,
   RouteOptions,
   RoutePath,
   RouterOptions,
@@ -19,6 +24,8 @@ import type {
 export class Router {
   private readonly rootRoute: UnknownRoute;
   private readonly rootRegistry: RouteRegistry;
+  private readonly cache = new Map<string, CachedMatch>();
+  private abortController?: AbortController;
 
   public readonly options: RouterOptions;
 
@@ -27,9 +34,16 @@ export class Router {
   public activeSegments: UnknownRoute[] | undefined;
 
   constructor(options?: RouterOptions) {
-    this.options = { baseUrl: DEFAULT_CONFIG.baseUrl, ...options };
+    this.options = {
+      baseUrl: DEFAULT_CONFIG.baseUrl,
+      maxRetries: DEFAULT_CONFIG.maxRetries,
+      retryDelay: DEFAULT_CONFIG.retryDelay,
+      retryMode: DEFAULT_CONFIG.retryMode,
+      keepAlive: DEFAULT_CONFIG.keepAlive,
+      ...options,
+    };
 
-    this.rootRoute = new Route('/');
+    this.rootRoute = new Route('/', this.options);
     this.rootRegistry = new RouteRegistry(this.rootRoute);
   }
 
@@ -43,11 +57,11 @@ export class Router {
     const route = new Route(path, options);
 
     if (path === ('/' as TPath)) {
-      this.rootRoute.index = route;
+      this.rootRoute.index = route as UnknownRoute;
       return this.rootRoute as never;
     }
 
-    const routeMap = new RouteRegistry(route);
+    const routeMap = new RouteRegistry(route as UnknownRoute);
 
     if (route.type === ROUTE_TYPE.STATIC) {
       this.rootRegistry.set(route.name, routeMap);
@@ -60,78 +74,195 @@ export class Router {
     return route as Route<TPath, TParams, TQueryParams, TOptions, TData>;
   }
 
-  public find(url: string) {
+  public find(url: string): MatchedState | void {
     const parsedUrl = new URL(url, this.options.baseUrl);
-    const pathname = parsedUrl.pathname.replace(/\/$/, '');
+    const pathname = parsedUrl.pathname.replace(/\/+$/, ''); // Strip trailing slash
+    const query = parseQuery(parsedUrl.search);
 
-    return this.rootRegistry.match(pathname);
-  }
+    const match = this.rootRegistry.match(pathname) as MatchedState;
 
-  private async buildContext(match: MatchedRoute): Promise<ActiveContext<TRec, TRec, TRec>> {
-    const { segments, params } = match;
-
-    const controller = new AbortController();
-    const ctx: GuardContext<TRec, TRec> = {
-      params,
-      query: {},
-      signal: controller.signal,
-      controller,
-    };
-
-    // Execute guards (parent to leaf)
-    for (const route of segments) {
-      for (const guard of route.guards) {
-        const result = await guard(ctx);
-        if (!result) throw new Error('Guard failed');
-      }
+    if (match) {
+      match.query = query;
     }
 
-    // Execute providers (parent to leaf)
-    const data: TRec = {};
-    for (const route of segments) {
-      for (const [name, provider] of route.providers) {
-        data[name] = await provider(ctx as never);
-      }
-    }
-
-    return { params, query: ctx.query, data };
+    return match;
   }
 
-  public async activate(url: string): Promise<void> {
+  public async activate(url: string, redirectDepth = 0): Promise<void> {
+    // Prevent redirect loops
+    if (redirectDepth > 10) {
+      throw new Error('Redirect loop detected');
+    }
+
+    // Cancel any ongoing activation
+    this.cancel();
+
     const match = this.find(url);
     if (!match) return;
 
-    // Build context (plain object)
-    const context = await this.buildContext(match);
+    const currentSegments = this.activeSegments || [];
+    const targetSegments = match.segments;
 
-    // Create reactive context
-    const reactiveContext = mutable(context);
+    // Create abort controller for this activation
+    const controller = new AbortController();
+    this.abortController = controller;
 
-    // Assign to the LEAF route only
-    match.route.context = reactiveContext as never;
-    match.route.active = true;
+    try {
+      // Build guard context (params + query only)
+      const guardContext: GuardContext<TRec, TRec> = {
+        params: match.params,
+        query: match.query,
+        signal: controller.signal,
+      };
 
-    // Update router state
-    this.activeRoute = match.route;
-    this.activeContext = reactiveContext;
-    this.activeSegments = match.segments;
+      // Phase 1: Check all guards for target segments
+      for (const route of targetSegments) {
+        const result = await route.check(guardContext as GuardContext<None, None>);
+
+        if (result === false) {
+          // Guard blocked - set error state on leaf route
+          const leafRoute = targetSegments[targetSegments.length - 1];
+          leafRoute.error = {
+            type: 'guard',
+            message: 'Navigation blocked by guard',
+            route: leafRoute,
+          };
+          return;
+        }
+
+        if (result instanceof Redirect) {
+          return this.activate(redirectUrl(result), redirectDepth + 1);
+        }
+      }
+
+      // Phase 2: Deactivate segments not in target (leaf to root)
+      const toDeactivate = currentSegments.filter((r) => !targetSegments.includes(r));
+      for (const route of toDeactivate.reverse()) {
+        route.deactivate();
+      }
+
+      // Phase 3: Check cache and build provider context
+      const cached = this.cache.get(url);
+      const providerContext: ProviderContext<TRec, TRec, TRec> = {
+        ...guardContext,
+        data: {},
+      };
+
+      // Phase 4: Preload and activate new segments
+      const toActivate = targetSegments.filter((r) => !currentSegments.includes(r));
+
+      for (const route of toActivate) {
+        if (cached && !isCacheExpired(cached, this.options.maxAge)) {
+          // Reuse cached context data
+          Object.assign(providerContext.data, cached.context.data);
+          route.activate(providerContext as ProviderContext<None, None, TRec>);
+        } else {
+          // Fresh preload
+          try {
+            await route.preload(providerContext as ProviderContext<None, None, TRec>);
+            route.activate(providerContext as ProviderContext<None, None, TRec>);
+          } catch (error) {
+            // Set error state on the route that failed
+            route.error = {
+              type: 'provider',
+              message: error instanceof Error ? error.message : 'Provider failed',
+              route,
+              cause: error instanceof Error ? error : undefined,
+            };
+            // Still activate the route so UI can show error state
+            route.activate(providerContext as ProviderContext<None, None, TRec>);
+          }
+        }
+      }
+
+      // Phase 5: Update context for existing segments (params/query may have changed)
+      const toUpdate = targetSegments.filter((r) => currentSegments.includes(r));
+      for (const route of toUpdate) {
+        // Update context in place (reactive)
+        if (route.context) {
+          Object.assign(route.context, providerContext);
+        }
+      }
+
+      // Update router state
+      this.activeRoute = match.route;
+      this.activeSegments = targetSegments;
+
+      // Cache the result
+      this.cache.set(url, {
+        segments: targetSegments,
+        context: providerContext,
+        timestamp: Date.now(),
+      });
+
+      // Enforce cache limit if set
+      if (this.options.cacheLimit) {
+        enforceCacheLimit(this.cache, this.options.cacheLimit);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Navigation cancelled') {
+        return;
+      }
+      throw error;
+    } finally {
+      this.abortController = undefined;
+    }
   }
 
-  public async refresh(): Promise<void> {
-    if (!this.activeRoute || !this.activeSegments) return;
+  public deactivate(): void {
+    // Deactivate from leaf to root (reverse order)
+    for (const route of [...(this.activeSegments || [])].reverse()) {
+      route.deactivate();
+    }
 
-    const match = {
-      route: this.activeRoute,
-      segments: this.activeSegments,
-      params: this.activeContext?.params || {},
+    this.activeRoute = undefined;
+    this.activeSegments = undefined;
+  }
+
+  public cancel(): void {
+    this.abortController?.abort();
+  }
+
+  public clearCache(): void {
+    this.cache.clear();
+  }
+
+  public async preload(url: string): Promise<void> {
+    const match = this.find(url);
+    if (!match) return;
+
+    const controller = new AbortController();
+    const guardContext: GuardContext<TRec, TRec> = {
+      params: match.params,
+      query: match.query,
+      signal: controller.signal,
     };
 
-    // Build new context
-    const newContext = await this.buildContext(match as never);
+    // Check guards
+    for (const route of match.segments) {
+      const result = await route.check(guardContext as GuardContext<None, None>);
+      if (result === false || result instanceof Redirect) return;
+    }
 
-    // Update existing reactive context in-place
-    if (this.activeRoute.context) {
-      Object.assign(this.activeRoute.context, newContext);
+    // Preload providers
+    const providerContext: ProviderContext<TRec, TRec, TRec> = {
+      ...guardContext,
+      data: {},
+    };
+
+    for (const route of match.segments) {
+      await route.preload(providerContext as ProviderContext<None, None, TRec>);
+    }
+
+    // Cache the result
+    this.cache.set(url, {
+      segments: match.segments,
+      context: providerContext,
+      timestamp: Date.now(),
+    });
+
+    if (this.options.cacheLimit) {
+      enforceCacheLimit(this.cache, this.options.cacheLimit);
     }
   }
 }

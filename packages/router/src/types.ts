@@ -1,4 +1,5 @@
-import type { PRELOAD_MODE, ROUTE_TYPE } from './enum.js';
+import type { ROUTE_TYPE } from './enum.js';
+import type { Redirect } from './redirect.js';
 import type { Route } from './route.js';
 
 export type TRec = Record<string, unknown>;
@@ -40,7 +41,9 @@ export type ExtractQueryPart<T extends string> = T extends `${infer First}&${inf
 
 export type ExtractSingleQueryParam<T extends string> = T extends `${infer Param}=${infer S}`
   ? S extends `(${infer P})`
-    ? { [K in Param]: P extends keyof ParamTypeMap ? ParamTypeMap[P] : string }
+    ? {
+        [K in Param]: P extends keyof ParamTypeMap ? ParamTypeMap[P] : string;
+      }
     : { [K in Param]: S }
   : {
       [K in T]?: string;
@@ -55,22 +58,27 @@ export type ExtractPathParams<TPath extends string> = TPath extends `${infer P}?
   ? PathParams<ExtractParams<P>, ExtractQueryParams<TPath>>
   : PathParams<ExtractParams<TPath>, None>;
 
-export type ProviderContext<TParams, TQueryParams> = {
+export type GuardContext<TParams, TQueryParams> = {
   params: TParams;
   query: TQueryParams;
   signal: AbortSignal;
-  controller: AbortController;
 };
 
-export type GuardContext<TParams, TQueryParams> = ProviderContext<TParams, TQueryParams>;
-
-export type Redirect<TRoute = unknown> = {
-  to: TRoute | string;
-  params?: Record<string, string>;
-  query?: Record<string, string>;
+export type ProviderContext<TParams, TQueryParams, TData> = {
+  data: TData;
+  query: TQueryParams;
+  params: TParams;
+  signal: AbortSignal;
 };
 
-export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
+export type RouteErrorType = 'guard' | 'provider' | 'timeout' | 'cancel';
+
+export type RouteError = {
+  type: RouteErrorType;
+  message: string;
+  route: UnknownRoute;
+  cause?: Error;
+};
 
 export interface ExecutionOptions {
   // Retry options
@@ -93,8 +101,11 @@ export interface RouteOptions extends ExecutionOptions {
 export type UnknownParams = ExtractParams<''>;
 export type UnknownQueryParams = ExtractQueryParams<''>;
 export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, TRec, unknown>;
-export type UnknownGuard = (ctx: GuardContext<TRec, TRec>) => Promise<boolean> | boolean;
-export type UnknownProvider = (ctx: ProviderContext<TRec, TRec>) => Promise<unknown> | unknown;
+export type UnknownGuard = (
+  ctx: GuardContext<TRec, TRec>
+) => Promise<boolean | UnknownRedirect> | boolean | UnknownRedirect;
+export type UnknownProvider = (ctx: ProviderContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
+export type UnknownRedirect = Redirect<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, TRec>;
 
 export type ActiveContext<TParams, TQueryParams, TData> = {
   data: TData;
@@ -104,6 +115,7 @@ export type ActiveContext<TParams, TQueryParams, TData> = {
 
 export type RouterOptions = RouteOptions & {
   baseUrl?: string;
+  cacheLimit?: number;
 };
 
 export type FlatRec<TParams> = {
@@ -113,6 +125,7 @@ export type FlatRec<TParams> = {
 export type RouteState<TParams, TQueryParams, TData> = {
   active: boolean;
   context?: ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>>;
+  error?: RouteError;
 };
 
 export type RoutePath = `${'/'}${string | never}`;
@@ -141,4 +154,14 @@ export type MatchedRoute = {
   route: UnknownRoute;
   params: TRec;
   segments: UnknownRoute[];
+};
+
+export type MatchedState = MatchedRoute & {
+  query: TRec;
+};
+
+export type CachedMatch = {
+  context: ProviderContext<TRec, TRec, TRec>;
+  segments: UnknownRoute[];
+  timestamp: number;
 };

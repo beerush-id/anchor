@@ -1,4 +1,4 @@
-import { DYNAMIC_ROUTE_KEY, FALLBACK_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import type { MatchedRoute, TRec, UnknownRoute } from './types.js';
 
 export class RouteRegistry extends Map {
@@ -39,7 +39,6 @@ export class RouteRegistry extends Map {
     const staticRoute = this.get(segment) as RouteRegistry;
     const dynamicRoute = this.get(DYNAMIC_ROUTE_KEY) as RouteRegistry;
     const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteRegistry;
-    const fallbackRoute = this.get(FALLBACK_ROUTE_KEY) as RouteRegistry;
 
     if (staticRoute) {
       segments.push(staticRoute.route);
@@ -70,19 +69,7 @@ export class RouteRegistry extends Map {
       segments.push(dynamicRoute.route);
 
       if (recursive) {
-        const childRoute = dynamicRoute.match(urlSegments, segments, params, index + 1);
-
-        if (!childRoute && fallbackRoute) {
-          segments.push(fallbackRoute.route);
-
-          return {
-            route: fallbackRoute.route,
-            segments,
-            params,
-          };
-        }
-
-        return childRoute;
+        return dynamicRoute.match(urlSegments, segments, params, index + 1);
       } else {
         return {
           route: dynamicRoute.route,

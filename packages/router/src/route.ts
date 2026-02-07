@@ -1,6 +1,8 @@
 import { mutable } from '@anchorlib/core';
 import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_TYPE } from './enum.js';
+import { executeWithOptions } from './execution.js';
+import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type {
   ActiveContext,
@@ -9,6 +11,7 @@ import type {
   FlatRec,
   GuardContext,
   ProviderContext,
+  RouteError,
   RouteName,
   RouteOptions,
   RoutePath,
@@ -18,6 +21,7 @@ import type {
   TRec,
   UnknownGuard,
   UnknownProvider,
+  UnknownRedirect,
   UnknownRoute,
 } from './types.js';
 
@@ -29,7 +33,9 @@ export class Route<
   TData,
   TParent = never,
 > {
-  private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({ active: false });
+  private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({
+    active: false,
+  });
 
   public readonly name: RouteName<TPath>;
   public readonly type: RouteType;
@@ -42,7 +48,7 @@ export class Route<
     return this.state.active;
   }
 
-  public set context(value: ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>>) {
+  public set context(value: ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>> | undefined,) {
     this.state.context = value;
   }
 
@@ -60,6 +66,14 @@ export class Route<
 
   public get params(): FlatRec<TParams> | undefined {
     return this.state.context?.params;
+  }
+
+  public get error(): RouteError | undefined {
+    return this.state.error;
+  }
+
+  public set error(value: RouteError | undefined) {
+    this.state.error = value;
   }
 
   public get path(): RoutePathOutput<TParent, TPath> {
@@ -159,18 +173,65 @@ export class Route<
     return child as never;
   }
 
-  public guard<TGuard extends (context: GuardContext<TParams, TQueryParams>) => boolean>(
-    guard: TGuard
-  ): Route<TPath, TParams, TQueryParams, TOptions, TData, TParent> {
+  public guard<
+    TGuard extends (
+      context: GuardContext<TParams, TQueryParams>
+    ) => boolean | UnknownRedirect | Promise<boolean | UnknownRedirect>,
+  >(guard: TGuard): Route<TPath, TParams, TQueryParams, TOptions, TData, TParent> {
     this.guards.add(guard as UnknownGuard);
     return this as never;
   }
 
   public provide<TName extends string, TProviderData>(
     name: TName,
-    provider: (context: ProviderContext<TParams, TQueryParams>) => Promise<TProviderData> | TProviderData
+    provider: (context: ProviderContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData
   ): Route<TPath, TParams, TQueryParams, TOptions, TData & { [PK in TName]: TProviderData }, TParent> {
     this.providers.set(name, provider as UnknownProvider);
     return this as never;
+  }
+
+  // Route lifecycle methods
+
+  public async check(context: GuardContext<TParams, TQueryParams>): Promise<boolean | UnknownRedirect> {
+    // Run guards in parallel - any false blocks, first redirect wins
+    const results = await Promise.all(
+      Array.from(this.guards).map((guard) => guard(context as GuardContext<TRec, TRec>))
+    );
+
+    for (const result of results) {
+      if (result === false) return false;
+      if (result instanceof Redirect) return result;
+    }
+    return true;
+  }
+
+  public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<void> {
+    // Providers run in serial - each may depend on previous results
+    for (const [name, provider] of this.providers) {
+      // Check cancellation before each provider
+      if (context.signal.aborted) {
+        throw new Error('Navigation cancelled');
+      }
+
+      (context.data as TRec)[name] = await executeWithOptions(
+        provider,
+        context as ProviderContext<TRec, TRec, TRec>,
+        this.options || {}
+      );
+    }
+  }
+
+  public activate(context: ProviderContext<TParams, TQueryParams, TData>): void {
+    this.context = context as ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>>;
+    this.active = true;
+    this.error = undefined; // Clear any previous error
+  }
+
+  public deactivate(): void {
+    this.active = false;
+
+    if (!this.options?.keepAlive) {
+      this.context = undefined;
+    }
   }
 }
