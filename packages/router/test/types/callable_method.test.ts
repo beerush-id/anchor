@@ -1,11 +1,13 @@
 import { describe, expectTypeOf, it } from 'vitest';
-import { route } from '../../src/index.js';
+import { createRouter } from '../../src/index.js';
 
 describe('callable method', () => {
-  it('callable accepts params and optional query', () => {
-    const userProfile = route('/:id');
+  const router = createRouter();
 
-    expectTypeOf(userProfile).toBeCallableWith({ id: '123' });
-    expectTypeOf(userProfile).toBeCallableWith({ id: '123' });
+  it('callable accepts params and optional query', () => {
+    const userProfile = router.route('/:id');
+
+    expectTypeOf(userProfile.url).toBeCallableWith({ id: '123' });
+    expectTypeOf(userProfile.url).toBeCallableWith({ id: '123' });
   });
 });

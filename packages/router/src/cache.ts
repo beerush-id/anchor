@@ -1,18 +1,61 @@
-import type { CachedMatch } from './types.js';
+import { anchor } from '@anchorlib/core';
+import { DEFAULT_CONFIG } from './constant.js';
+import type { ProviderCache, ProviderContext, ProviderOptions, TRec, UnknownProvider, UnknownRoute } from './types.js';
 
-export function isCacheExpired(cached: CachedMatch, maxAge: number | undefined): boolean {
-  if (!maxAge) return false;
-  return Date.now() - cached.timestamp > maxAge;
-}
+export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
+  constructor(private route: UnknownRoute) {
+    super();
+  }
 
-export function enforceCacheLimit(cache: Map<string, CachedMatch>, limit: number): void {
-  if (cache.size <= limit) return;
+  public async resolve<T>(
+    provider: UnknownProvider,
+    context: ProviderContext<TRec, TRec, TRec>,
+    options?: ProviderOptions
+  ): Promise<T> {
+    const maxAge = options?.maxAge ?? this.route.options?.maxAge ?? DEFAULT_CONFIG.maxAge;
+    if (!maxAge) return (await provider(context)) as T;
 
-  const entries = Array.from(cache.entries());
-  entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    if (!this.has(provider)) {
+      this.set(provider, new Map());
+    }
 
-  const toRemove = entries.slice(0, cache.size - limit);
-  for (const [key] of toRemove) {
-    cache.delete(key);
+    const { params, query } = (anchor.get as (ctx: typeof context, strict: boolean) => typeof context)(context, false);
+
+    const key = JSON.stringify({ params, query });
+    const cache = this.get(provider)!;
+    const cached = cache.get(key);
+
+    if (cached && Date.now() - cached.timestamp <= maxAge) {
+      return cached.data as T;
+    }
+
+    const data = await provider(context);
+    if (data) {
+      const scheduler = setTimeout(() => cache.delete(key), maxAge) as never as number;
+      cache.set(key, { data, timestamp: Date.now(), scheduler });
+    }
+
+    return data as T;
+  }
+
+  public invalidate(provider: UnknownProvider, context: ProviderContext<TRec, TRec, TRec>): void {
+    const { params, query } = (anchor.get as (ctx: typeof context, strict: boolean) => typeof context)(context, false);
+    const key = JSON.stringify({ params, query });
+    const cache = this.get(provider);
+    const cached = cache?.get(key);
+
+    if (cache && cached) {
+      cache.delete(key);
+      clearTimeout(cached.scheduler);
+    }
+  }
+
+  public delete(provider: UnknownProvider): boolean {
+    this.clear(provider);
+    return super.delete(provider);
+  }
+
+  public clear(provider: UnknownProvider): void {
+    this.get(provider)?.clear();
   }
 }

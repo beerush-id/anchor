@@ -1,6 +1,7 @@
 import { describe, expectTypeOf, it } from 'vitest';
-import type { None, RouteSegment } from '../../src/index.js';
-import { route } from '../../src/index.js';
+import { createRouter } from '../../src/index.js';
+
+const route = createRouter().route;
 
 describe('route() function', () => {
   it('creates a route with correct path type', () => {

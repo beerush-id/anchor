@@ -1,14 +1,18 @@
 import { ROUTE_TYPE } from './enum.js';
+import type { RouterOptions } from './types.js';
 
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG: RouterOptions = {
   baseUrl: 'http://localhost',
-  maxRetries: 0,
-  retryDelay: 0,
-  retryMode: 'linear' as const,
+
+  maxAge: 0,
   keepAlive: false,
+
+  retryMode: 'linear' as const,
+  retryDelay: 0,
+  maxRetries: 0,
 };
 
-export function configure(config: Partial<typeof DEFAULT_CONFIG>) {
+export function configure(config: Partial<RouterOptions>) {
   Object.assign(DEFAULT_CONFIG, config);
 }
 

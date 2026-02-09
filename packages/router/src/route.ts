@@ -1,16 +1,20 @@
-import { mutable } from '@anchorlib/core';
-import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import { createObserver, mutable, retriable, untrack } from '@anchorlib/core';
+import { RouteCache } from './cache.js';
+import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_TYPE } from './enum.js';
-import { executeWithOptions } from './execution.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type {
   ActiveContext,
   ExtractParams,
   ExtractQueryParams,
-  FlatRec,
+  GuardBlocker,
   GuardContext,
+  GuardHandler,
   ProviderContext,
+  ProviderMap,
+  ProviderObserver,
+  ProviderOptions,
   RouteError,
   RouteName,
   RouteOptions,
@@ -21,7 +25,6 @@ import type {
   TRec,
   UnknownGuard,
   UnknownProvider,
-  UnknownRedirect,
   UnknownRoute,
 } from './types.js';
 
@@ -33,9 +36,15 @@ export class Route<
   TData,
   TParent = never,
 > {
-  private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({
-    active: false,
+  private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({ active: false, authenticated: false });
+  private readonly cache = new RouteCache(this);
+
+  // Reactive observers.
+  private readonly guardObserver = createObserver(() => {
+    this.guardObserver.reset();
+    this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>);
   });
+  private readonly providerObservers = new WeakMap<UnknownProvider, ProviderObserver>();
 
   public readonly name: RouteName<TPath>;
   public readonly type: RouteType;
@@ -48,24 +57,12 @@ export class Route<
     return this.state.active;
   }
 
-  public set context(value: ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>> | undefined,) {
-    this.state.context = value;
+  public get data(): TData | undefined {
+    return this.state.data;
   }
 
-  public get context(): ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>> | undefined {
-    return this.state.context;
-  }
-
-  public get data(): FlatRec<TData> | undefined {
-    return this.state.context?.data;
-  }
-
-  public get query(): FlatRec<TQueryParams> | undefined {
-    return this.state.context?.query;
-  }
-
-  public get params(): FlatRec<TParams> | undefined {
-    return this.state.context?.params;
+  public set data(value: TData | undefined) {
+    this.state.data = value;
   }
 
   public get error(): RouteError | undefined {
@@ -74,6 +71,22 @@ export class Route<
 
   public set error(value: RouteError | undefined) {
     this.state.error = value;
+  }
+
+  public set context(value: ActiveContext<TParams, TQueryParams, TData> | undefined,) {
+    this.state.context = value;
+  }
+
+  public get context(): ActiveContext<TParams, TQueryParams, TData> | undefined {
+    return this.state.context;
+  }
+
+  public get query(): TQueryParams | undefined {
+    return this.state.context?.query;
+  }
+
+  public get params(): TParams | undefined {
+    return this.state.context?.params;
   }
 
   public get path(): RoutePathOutput<TParent, TPath> {
@@ -88,7 +101,7 @@ export class Route<
 
   public index?: UnknownRoute;
   public guards = new Set<UnknownGuard>();
-  public providers = new Map<string, UnknownProvider>();
+  public providers = new Map<string, ProviderMap>();
 
   public constructor(
     name: TPath,
@@ -148,7 +161,7 @@ export class Route<
         TData & TChildData,
         this
       > {
-    const child = new Route(path, options, this);
+    const child = new Route(path, { ...this.options, ...options }, this);
 
     if (path === ('/' as TChildPath)) {
       this.index = child as UnknownRoute;
@@ -173,64 +186,151 @@ export class Route<
     return child as never;
   }
 
-  public guard<
-    TGuard extends (
-      context: GuardContext<TParams, TQueryParams>
-    ) => boolean | UnknownRedirect | Promise<boolean | UnknownRedirect>,
-  >(guard: TGuard): Route<TPath, TParams, TQueryParams, TOptions, TData, TParent> {
+  public guard<TGuard extends GuardHandler<TParams, TQueryParams>>(
+    guard: TGuard
+  ): Route<TPath, TParams, TQueryParams, TOptions, TData, TParent> {
     this.guards.add(guard as UnknownGuard);
     return this as never;
   }
 
   public provide<TName extends string, TProviderData>(
     name: TName,
-    provider: (context: ProviderContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData
+    provider: (context: ProviderContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData,
+    options?: ProviderOptions
   ): Route<TPath, TParams, TQueryParams, TOptions, TData & { [PK in TName]: TProviderData }, TParent> {
-    this.providers.set(name, provider as UnknownProvider);
+    this.providers.set(name, { name, provider, options } as ProviderMap);
     return this as never;
   }
 
-  // Route lifecycle methods
+  public async authenticate(context: GuardContext<TParams, TQueryParams>): Promise<boolean | GuardBlocker> {
+    if (this.state.authenticated) return Promise.resolve(true);
 
-  public async check(context: GuardContext<TParams, TQueryParams>): Promise<boolean | UnknownRedirect> {
-    // Run guards in parallel - any false blocks, first redirect wins
-    const results = await Promise.all(
-      Array.from(this.guards).map((guard) => guard(context as GuardContext<TRec, TRec>))
-    );
+    // Run the guard inside an observer, so whenever the state it reads change,
+    // the observer will be re-run.
+    return await this.guardObserver.run(async () => {
+      try {
+        const guards = Array.from(this.guards);
+        await Promise.all(Array.from(guards).map((guard) => guard(context)));
 
-    for (const result of results) {
-      if (result === false) return false;
-      if (result instanceof Redirect) return result;
-    }
-    return true;
-  }
+        this.state.authenticated = true;
+      } catch (error) {
+        this.state.authenticated = false;
 
-  public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<void> {
-    // Providers run in serial - each may depend on previous results
-    for (const [name, provider] of this.providers) {
-      // Check cancellation before each provider
-      if (context.signal.aborted) {
-        throw new Error('Navigation cancelled');
+        if (error instanceof Redirect) {
+          return error;
+        } else if (error instanceof Error) {
+          this.error = {
+            type: 'guard',
+            cause: error,
+            message: error.message,
+          };
+
+          return error;
+        } else {
+          const cause = new Error('Unknown guard error.');
+
+          this.error = {
+            type: 'guard',
+            cause,
+            message: cause.message,
+          };
+
+          return cause;
+        }
       }
 
-      (context.data as TRec)[name] = await executeWithOptions(
-        provider,
-        context as ProviderContext<TRec, TRec, TRec>,
-        this.options || {}
-      );
-    }
+      return true;
+    });
   }
 
-  public activate(context: ProviderContext<TParams, TQueryParams, TData>): void {
-    this.context = context as ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>>;
+  public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<TData | undefined> {
+    const authenticated = await this.authenticate(context);
+    if (authenticated !== true) return;
+
+    const currentData = await this.resolve(context as ProviderContext<TRec, TRec, TRec>);
+    this.data = currentData as TData;
+
+    return currentData as TData;
+  }
+
+  public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
+    const data = mutable({} as TRec);
+
+    for (const [name, { provider, options }] of this.providers) {
+      if (!this.providerObservers.has(provider)) {
+        const observer = createObserver(() => {
+          observer.reset();
+          resolver();
+        });
+
+        // Run the provider inside an observer, so whenever the state it reads change,
+        // the observer will be re-run.
+        const resolver = () => {
+          return observer.run(async () => {
+            try {
+              const providerData = await retriable(
+                async (signal) => {
+                  if (signal.aborted) {
+                    throw signal.reason;
+                  }
+
+                  return await this.cache.resolve(provider, context, options);
+                },
+                { ...DEFAULT_CONFIG, ...this.options, ...options }
+              );
+
+              untrack(() => {
+                context.data[name] = data[name] = providerData;
+              });
+
+              return providerData;
+            } catch (error) {
+              if (error instanceof Error) {
+                this.error = {
+                  type: 'provider',
+                  cause: error,
+                  message: error.message,
+                };
+                return;
+              } else {
+                const cause = new Error('Unknown provider error.');
+                this.error = {
+                  type: 'provider',
+                  cause,
+                  message: cause.message,
+                };
+                return;
+              }
+            }
+          });
+        };
+
+        this.providerObservers.set(provider, { observer, resolver });
+      }
+
+      const { resolver } = this.providerObservers.get(provider)!;
+      const result = await resolver();
+
+      if (!result) return;
+    }
+
+    return data as TData;
+  }
+
+  public async activate(context: ProviderContext<TParams, TQueryParams, TData>): Promise<void> {
+    this.error = undefined;
+
+    await this.preload(context);
+
+    this.context = context as ActiveContext<TParams, TQueryParams, TData>;
     this.active = true;
-    this.error = undefined; // Clear any previous error
   }
 
   public deactivate(): void {
     this.active = false;
 
     if (!this.options?.keepAlive) {
+      this.error = undefined;
       this.context = undefined;
     }
   }
