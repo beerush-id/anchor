@@ -1,14 +1,15 @@
 import { anchor, mutable } from '@anchorlib/core';
+import { URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_TYPE } from './enum.js';
-import { parseQuery } from './query.js';
+import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
-import { URLCache } from './cache.js';
 import { Route } from './route.js';
 import type {
   ActiveContext,
   ExtractParams,
   ExtractQueryParams,
+  GuardBlocker,
   MatchResult,
   None,
   ProviderContext,
@@ -73,16 +74,16 @@ export class Router {
     return this.cache.get(url);
   }
 
-  public async activate(url: string | URL): Promise<void> {
+  public async activate(url: string | URL): Promise<void | GuardBlocker> {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
     }
 
-    const match = this.find(url);
-    if (!match) return;
-
     // Set active URL synchronously - prevents race condition
     this.activeUrl = url.href;
+
+    const match = this.find(url);
+    if (!match) return;
 
     const { segments, context } = match;
 
@@ -94,7 +95,8 @@ export class Router {
 
     // Preload all segments first
     for (const route of segments) {
-      await route.preload(context as ProviderContext<None, None, TRec>);
+      const blocker = await route.preload(context as ProviderContext<None, None, TRec>);
+      if (blocker instanceof Error || blocker instanceof Redirect) return blocker;
     }
 
     // Check if still active after preload
@@ -121,11 +123,11 @@ export class Router {
   }
 
   public deactivate(): void {
-    // Deactivate from leaf to root (reverse order)
     for (const route of [...(this.activeSegments || [])].reverse()) {
       route.deactivate();
     }
 
+    this.activeUrl = undefined;
     this.activeRoute = undefined;
     this.activeSegments = undefined;
   }

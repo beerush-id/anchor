@@ -204,7 +204,7 @@ export class Route<
     return this as never;
   }
 
-  public async authenticate(context: GuardContext<TParams, TQueryParams>): Promise<boolean | GuardBlocker> {
+  public async authenticate(context: GuardContext<TParams, TQueryParams>): Promise<true | GuardBlocker> {
     if (this.state.authenticated) return Promise.resolve(true);
 
     // Run the guard inside an observer, so whenever the state it reads change,
@@ -245,15 +245,14 @@ export class Route<
     });
   }
 
-  public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<TData | undefined> {
+  public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<TData | GuardBlocker> {
     const authenticated = await this.authenticate(context);
-    if (authenticated !== true) return;
+    if (authenticated !== true) return authenticated;
 
-    return await this.resolve(context as ProviderContext<TRec, TRec, TRec>);
+    return (await this.resolve(context as ProviderContext<TRec, TRec, TRec>)) as TData;
   }
 
   public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
-    // Create abort controller for this resolution
     const abortController = new AbortController();
     this.activeResolvers.set(context, abortController);
 
@@ -318,12 +317,10 @@ export class Route<
         if (!result) return;
       }
 
-      // Cache route data for this context
       this.dataCache.set(context, data as TData);
 
       return data as TData;
     } finally {
-      // Clean up after resolution completes or is cancelled
       this.activeResolvers.delete(context);
     }
   }
@@ -335,8 +332,8 @@ export class Route<
       await this.preload(context);
     }
 
-    this.context = context as ActiveContext<TParams, TQueryParams, TData>;
     this.data = this.dataCache.get(context as ProviderContext<TRec, TRec, TRec>);
+    this.context = context as ActiveContext<TParams, TQueryParams, TData>;
     this.active = true;
   }
 
@@ -344,6 +341,7 @@ export class Route<
     this.active = false;
 
     if (!this.options?.keepAlive) {
+      this.data = undefined;
       this.error = undefined;
       this.context = undefined;
     }

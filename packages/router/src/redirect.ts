@@ -1,5 +1,14 @@
+import { microtask } from '@anchorlib/core';
 import type { Route } from './route.js';
 import type { ExtractParams, ExtractQueryParams, RouteOptions, RoutePath, UnknownRedirect } from './types.js';
+
+let redirectHandler: (redirect: UnknownRedirect) => void;
+
+export function setRedirectHandler(handler: (redirect: UnknownRedirect) => void) {
+  redirectHandler = handler;
+}
+
+const [schedule] = microtask(0);
 
 export class Redirect<
   TPath extends RoutePath,
@@ -26,7 +35,9 @@ export function redirect<
   params?: TParams,
   query?: TQueryParams
 ): Redirect<TPath, TParams, TQueryParams, TOptions, TData> {
-  return new Redirect(route, params, query);
+  const redirect = new Redirect(route, params, query);
+  schedule(() => redirectHandler?.(redirect as UnknownRedirect));
+  return redirect;
 }
 
 export function redirectUrl(redirect: UnknownRedirect): string {
