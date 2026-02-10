@@ -39,6 +39,7 @@ export class Route<
   private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({ active: false, authenticated: false });
   private readonly cache = new RouteCache(this);
   private readonly dataCache = new WeakMap<ProviderContext<TRec, TRec, TRec>, TData>();
+  private readonly activeResolvers = new Map<ProviderContext<TRec, TRec, TRec>, AbortController>();
 
   // Reactive observers.
   private readonly guardObserver = createObserver(() => {
@@ -252,70 +253,79 @@ export class Route<
   }
 
   public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
-    const data = mutable({} as TRec);
+    // Create abort controller for this resolution
+    const abortController = new AbortController();
+    this.activeResolvers.set(context, abortController);
 
-    for (const [name, { provider, options }] of this.providers) {
-      if (!this.providerObservers.has(provider)) {
-        const observer = createObserver(() => {
-          observer.reset();
-          resolver();
-        });
+    try {
+      const data = mutable({} as TRec);
 
-        // Run the provider inside an observer, so whenever the state it reads change,
-        // the observer will be re-run.
-        const resolver = () => {
-          return observer.run(async () => {
-            try {
-              const providerData = await retriable(
-                async (signal) => {
-                  if (signal.aborted) {
-                    throw signal.reason;
-                  }
-
-                  return await this.cache.resolve(provider, context, options);
-                },
-                { ...DEFAULT_CONFIG, ...this.options, ...options }
-              );
-
-              untrack(() => {
-                context.data[name] = data[name] = providerData;
-              });
-
-              return providerData;
-            } catch (error) {
-              if (error instanceof Error) {
-                this.error = {
-                  type: 'provider',
-                  cause: error,
-                  message: error.message,
-                };
-                return;
-              } else {
-                const cause = new Error('Unknown provider error.');
-                this.error = {
-                  type: 'provider',
-                  cause,
-                  message: cause.message,
-                };
-                return;
-              }
-            }
+      for (const [name, { provider, options }] of this.providers) {
+        if (!this.providerObservers.has(provider)) {
+          const observer = createObserver(() => {
+            observer.reset();
+            resolver();
           });
-        };
 
-        this.providerObservers.set(provider, { observer, resolver });
+          // Run the provider inside an observer, so whenever the state it reads change,
+          // the observer will be re-run.
+          const resolver = () => {
+            return observer.run(async () => {
+              try {
+                const providerData = await retriable(
+                  async (signal) => {
+                    if (signal.aborted) return;
+
+                    return await this.cache.resolve(provider, context, options);
+                  },
+                  { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
+                );
+
+                if (!providerData) return;
+
+                untrack(() => {
+                  context.data[name] = data[name] = providerData;
+                });
+
+                return providerData;
+              } catch (error) {
+                if (error instanceof Error) {
+                  this.error = {
+                    type: 'provider',
+                    cause: error,
+                    message: error.message,
+                  };
+                  return;
+                } else {
+                  const cause = new Error('Unknown provider error.');
+                  this.error = {
+                    type: 'provider',
+                    cause,
+                    message: cause.message,
+                  };
+                  return;
+                }
+              }
+            });
+          };
+
+          this.providerObservers.set(provider, { observer, resolver });
+        }
+
+        const { resolver } = this.providerObservers.get(provider)!;
+        const result = await resolver();
+
+        if (!result) return;
       }
 
-      const { resolver } = this.providerObservers.get(provider)!;
-      const result = await resolver();
+      // Cache route data for this context
+      this.dataCache.set(context, data as TData);
 
-      if (!result) return;
+      return data as TData;
+    } finally {
+      // Clean up after resolution completes or is cancelled
+      this.activeResolvers.delete(context);
     }
-
-    // Cache route data for this context
-    this.dataCache.set(context, data as TData);
-
-    return data as TData;
   }
 
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
@@ -336,6 +346,23 @@ export class Route<
     if (!this.options?.keepAlive) {
       this.error = undefined;
       this.context = undefined;
+    }
+  }
+
+  public cancel(context?: ProviderContext<TRec, TRec, TRec>): void {
+    if (context) {
+      const controller = this.activeResolvers.get(context);
+
+      if (controller) {
+        controller.abort('Resolution cancelled');
+        this.activeResolvers.delete(context);
+      }
+    } else {
+      for (const controller of this.activeResolvers.values()) {
+        controller.abort('Resolution cancelled');
+      }
+
+      this.activeResolvers.clear();
     }
   }
 }
