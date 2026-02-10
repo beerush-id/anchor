@@ -28,6 +28,35 @@ import type {
   UnknownRoute,
 } from './types.js';
 
+/**
+ * Represents a route in the router with support for guards, providers, and nested routes.
+ *
+ * Routes can be static, dynamic (with parameters), or wildcards.
+ * They support authentication guards, data providers, and reactive state management.
+ *
+ * @template TPath - The route path type
+ * @template TParams - The route parameters type
+ * @template TQueryParams - The query parameters type
+ * @template TOptions - The route options type
+ * @template TData - The route data type
+ * @template TParent - The parent route type
+ *
+ * @example
+ * ```ts
+ * const usersRoute = router.route('/users');
+ * const userRoute = usersRoute.route('/:id');
+ *
+ * userRoute
+ *   .guard(async ({ params }) => {
+ *     if (!await isAuthenticated()) {
+ *       throw redirect(loginRoute);
+ *     }
+ *   })
+ *   .provide('user', async ({ params }) => {
+ *     return await fetchUser(params.id);
+ *   });
+ * ```
+ */
 export class Route<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
@@ -48,49 +77,106 @@ export class Route<
   });
   private readonly providerObservers = new WeakMap<UnknownProvider, ProviderObserver>();
 
+  /** The name of this route */
   public readonly name: RouteName<TPath>;
+  /** The type of this route (static, dynamic, or wildcard) */
   public readonly type: RouteType;
 
+  /**
+   * Sets whether this route is currently active.
+   *
+   * @param value - true if the route is active, false otherwise
+   */
   public set active(value: boolean) {
     this.state.active = value;
   }
 
+  /**
+   * Gets whether this route is currently active.
+   *
+   * @returns true if the route is active, false otherwise
+   */
   public get active(): boolean {
     return this.state.active;
   }
 
+  /**
+   * Gets the data loaded for this route.
+   *
+   * @returns The route data, or undefined if not loaded
+   */
   public get data(): TData | undefined {
     return this.state.data;
   }
 
+  /**
+   * Sets the data for this route.
+   *
+   * @param value - The route data, or undefined to clear
+   */
   public set data(value: TData | undefined) {
     this.state.data = value;
   }
 
+  /**
+   * Gets any error that occurred during route loading.
+   *
+   * @returns The route error, or undefined if no error
+   */
   public get error(): RouteError | undefined {
     return this.state.error;
   }
 
+  /**
+   * Sets the error for this route.
+   *
+   * @param value - The route error, or undefined to clear
+   */
   public set error(value: RouteError | undefined) {
     this.state.error = value;
   }
 
+  /**
+   * Sets the active context for this route.
+   *
+   * @param value - The active context, or undefined to clear
+   */
   public set context(value: ActiveContext<TParams, TQueryParams, TData> | undefined,) {
     this.state.context = value;
   }
 
+  /**
+   * Gets the active context for this route.
+   *
+   * @returns The active context, or undefined if not active
+   */
   public get context(): ActiveContext<TParams, TQueryParams, TData> | undefined {
     return this.state.context;
   }
 
+  /**
+   * Gets the query parameters for this route.
+   *
+   * @returns The query parameters, or undefined if not active
+   */
   public get query(): TQueryParams | undefined {
     return this.state.context?.query;
   }
 
+  /**
+   * Gets the route parameters for this route.
+   *
+   * @returns The route parameters, or undefined if not active
+   */
   public get params(): TParams | undefined {
     return this.state.context?.params;
   }
 
+  /**
+   * Gets the full path for this route, including parent paths.
+   *
+   * @returns The full route path
+   */
   public get path(): RoutePathOutput<TParent, TPath> {
     const parent = this.parent as UnknownRoute;
 
@@ -101,10 +187,20 @@ export class Route<
     return this.name as never;
   }
 
+  /** Optional index route for this route */
   public index?: UnknownRoute;
+  /** Set of guards for this route */
   public guards = new Set<UnknownGuard>();
+  /** Map of data providers for this route */
   public providers = new Map<string, ProviderMap>();
 
+  /**
+   * Creates a new Route instance.
+   *
+   * @param name - The route path
+   * @param options - Optional route options
+   * @param parent - Optional parent route
+   */
   public constructor(
     name: TPath,
     public options?: RouteOptions,
@@ -118,6 +214,19 @@ export class Route<
         : ROUTE_TYPE.STATIC;
   }
 
+  /**
+   * Generates a URL for this route with the given parameters and query.
+   *
+   * @param params - Optional route parameters
+   * @param query - Optional query parameters
+   * @returns The generated URL string
+   *
+   * @example
+   * ```ts
+   * const url = userRoute.url({ id: '123' }, { tab: 'profile' });
+   * // Returns: '/users/123?tab=profile'
+   * ```
+   */
   public url(params?: TParams, query?: TQueryParams) {
     let url = this.path as string;
 
@@ -144,6 +253,28 @@ export class Route<
     return url;
   }
 
+  /**
+   * Creates a child route.
+   *
+   * If the path is '/', creates an index route and returns this route.
+   * Otherwise, creates a new child route and returns it.
+   *
+   * @template TChildPath - The child route path type
+   * @template TChildParams - The child route parameters type
+   * @template TChildQueryParams - The child query parameters type
+   * @template TChildOptions - The child route options type
+   * @template TChildData - The child route data type
+   * @param path - The child route path
+   * @param options - Optional child route options
+   * @returns This route if path is '/', otherwise the new child route
+   *
+   * @example
+   * ```ts
+   * const usersRoute = router.route('/users');
+   * const userRoute = usersRoute.route('/:id');
+   * const postsRoute = userRoute.route('/posts');
+   * ```
+   */
   public route<
     TChildPath extends RoutePath,
     TChildParams extends ExtractParams<TChildPath>,
@@ -154,15 +285,15 @@ export class Route<
     path: TChildPath,
     options?: TChildOptions
   ): TChildPath extends '/'
-    ? this
-    : Route<
-        TChildPath,
-        TParams & TChildParams,
-        TQueryParams & TChildQueryParams,
-        TOptions & TChildOptions,
-        TData & TChildData,
-        this
-      > {
+  ? this
+  : Route<
+      TChildPath,
+      TParams & TChildParams,
+      TQueryParams & TChildQueryParams,
+      TOptions & TChildOptions,
+      TData & TChildData,
+      this
+    > {
     const child = new Route(path, { ...this.options, ...options }, this);
 
     if (path === ('/' as TChildPath)) {
@@ -188,6 +319,25 @@ export class Route<
     return child as never;
   }
 
+  /**
+   * Adds a guard to this route.
+   *
+   * Guards are run before the route is activated and can block navigation
+   * by throwing an error or a Redirect.
+   *
+   * @template TGuard - The guard handler type
+   * @param guard - The guard function to add
+   * @returns This route for chaining
+   *
+   * @example
+   * ```ts
+   * route.guard(async ({ params }) => {
+   *   if (!await isAuthenticated()) {
+   *     throw redirect(loginRoute);
+   *   }
+   * });
+   * ```
+   */
   public guard<TGuard extends GuardHandler<TParams, TQueryParams>>(
     guard: TGuard
   ): Route<TPath, TParams, TQueryParams, TOptions, TData, TParent> {
@@ -195,6 +345,26 @@ export class Route<
     return this as never;
   }
 
+  /**
+   * Adds a data provider to this route.
+   *
+   * Providers are run when the route is activated and their data is
+   * available in the route's context.
+   *
+   * @template TName - The provider name type
+   * @template TProviderData - The provider data type
+   * @param name - The name of the provider
+   * @param provider - The provider function
+   * @param options - Optional provider options
+   * @returns This route for chaining
+   *
+   * @example
+   * ```ts
+   * route.provide('user', async ({ params }) => {
+   *   return await fetchUser(params.id);
+   * });
+   * ```
+   */
   public provide<TName extends string, TProviderData>(
     name: TName,
     provider: (context: ProviderContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData,
@@ -204,6 +374,23 @@ export class Route<
     return this as never;
   }
 
+  /**
+   * Runs all guards for this route.
+   *
+   * Guards are run inside an observer, so they will re-run when
+   * reactive state they depend on changes.
+   *
+   * @param context - The guard context
+   * @returns true if all guards pass, otherwise a GuardBlocker
+   *
+   * @example
+   * ```ts
+   * const result = await route.authenticate({ params: { id: '123' }, query: {} });
+   * if (result !== true) {
+   *   // Navigation was blocked
+   * }
+   * ```
+   */
   public async authenticate(context: GuardContext<TParams, TQueryParams>): Promise<true | GuardBlocker> {
     if (this.state.authenticated) return Promise.resolve(true);
 
@@ -245,6 +432,19 @@ export class Route<
     });
   }
 
+  /**
+   * Preloads data for this route without activating it.
+   *
+   * Runs authentication and resolves all providers.
+   *
+   * @param context - The provider context
+   * @returns The loaded data, or a GuardBlocker if authentication failed
+   *
+   * @example
+   * ```ts
+   * await route.preload({ params: { id: '123' }, query: {}, data: {} });
+   * ```
+   */
   public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<TData | GuardBlocker> {
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
@@ -252,6 +452,20 @@ export class Route<
     return (await this.resolve(context as ProviderContext<TRec, TRec, TRec>)) as TData;
   }
 
+  /**
+   * Resolves all providers for this route.
+   *
+   * Providers are run inside observers, so they will re-run when
+   * reactive state they depend on changes.
+   *
+   * @param context - The provider context
+   * @returns The resolved data, or undefined if a provider failed
+   *
+   * @example
+   * ```ts
+   * const data = await route.resolve({ params: { id: '123' }, query: {}, data: {} });
+   * ```
+   */
   public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
     const abortController = new AbortController();
     this.activeResolvers.set(context, abortController);
@@ -325,6 +539,19 @@ export class Route<
     }
   }
 
+  /**
+   * Activates this route.
+   *
+   * Optionally preloads data, then sets the route as active.
+   *
+   * @param context - The provider context
+   * @param preload - Whether to preload data (default: true)
+   *
+   * @example
+   * ```ts
+   * await route.activate({ params: { id: '123' }, query: {}, data: {} });
+   * ```
+   */
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
     this.error = undefined;
 
@@ -337,6 +564,16 @@ export class Route<
     this.active = true;
   }
 
+  /**
+   * Deactivates this route.
+   *
+   * Clears data and context unless keepAlive is enabled.
+   *
+   * @example
+   * ```ts
+   * route.deactivate();
+   * ```
+   */
   public deactivate(): void {
     this.active = false;
 
@@ -347,6 +584,20 @@ export class Route<
     }
   }
 
+  /**
+   * Cancels any pending provider resolutions.
+   *
+   * If a context is provided, only cancels that specific resolution.
+   * Otherwise, cancels all pending resolutions.
+   *
+   * @param context - Optional context to cancel
+   *
+   * @example
+   * ```ts
+   * route.cancel(); // Cancel all
+   * route.cancel(context); // Cancel specific
+   * ```
+   */
   public cancel(context?: ProviderContext<TRec, TRec, TRec>): void {
     if (context) {
       const controller = this.activeResolvers.get(context);

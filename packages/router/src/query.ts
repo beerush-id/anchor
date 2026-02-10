@@ -1,5 +1,26 @@
 import type { TRec } from './types.js';
 
+/**
+ * Parses a URL search string into a query object.
+ *
+ * Handles duplicate keys by converting them to arrays.
+ * Empty or missing search strings return an empty object.
+ *
+ * @param search - The URL search string (e.g., `?foo=bar&baz=qux`)
+ * @returns A record of query parameters, with arrays for duplicate keys
+ *
+ * @example
+ * ```ts
+ * parseQuery('?name=John&age=30');
+ * // Returns: { name: 'John', age: '30' }
+ *
+ * parseQuery('?tags=js&tags=ts');
+ * // Returns: { tags: ['js', 'ts'] }
+ *
+ * parseQuery('');
+ * // Returns: {}
+ * ```
+ */
 export function parseQuery(search: string): TRec {
   const query: TRec = {};
   if (!search || search === '?') return query;

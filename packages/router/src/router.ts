@@ -20,6 +20,22 @@ import type {
   UnknownRoute,
 } from './types.js';
 
+/**
+ * A type-safe router for managing routes and navigation.
+ *
+ * Supports nested routes, guards, data providers, and caching.
+ * Routes can be activated, deactivated, and preloaded.
+ *
+ * @example
+ * ```ts
+ * const router = new Router({ baseUrl: 'https://example.com' });
+ *
+ * const usersRoute = router.route('/users');
+ * const userRoute = usersRoute.route('/:id');
+ *
+ * await router.activate('/users/123');
+ * ```
+ */
 export class Router {
   private readonly options: RouterOptions;
   private readonly rootRoute: UnknownRoute;
@@ -28,10 +44,27 @@ export class Router {
 
   private activeUrl?: string;
 
+  /** The currently active route */
   public activeRoute: UnknownRoute | undefined;
+  /** The active context shared across all routes */
   public activeContext: ActiveContext<TRec, TRec, TRec> = mutable({ data: {}, query: {}, params: {} });
+  /** The currently active route segments */
   public activeSegments: UnknownRoute[] | undefined;
 
+  /**
+   * Creates a new Router instance.
+   *
+   * @param options - Optional router configuration
+   *
+   * @example
+   * ```ts
+   * const router = new Router({
+   *   baseUrl: 'https://example.com',
+   *   cacheSize: 100,
+   *   maxAge: 60000
+   * });
+   * ```
+   */
   constructor(options?: RouterOptions) {
     this.options = { ...DEFAULT_CONFIG, ...options };
     this.rootRoute = new Route('/', this.options);
@@ -39,6 +72,28 @@ export class Router {
     this.cache = new URLCache(this.rootRegistry, options?.cacheSize);
   }
 
+  /**
+   * Creates a new route.
+   *
+   * If path is '/', creates an index route and returns the root route.
+   * Otherwise, creates a new child route and returns it.
+   *
+   * @template TPath - The route path type
+   * @template TParams - The route parameters type
+   * @template TQueryParams - The query parameters type
+   * @template TOptions - The route options type
+   * @template TData - The route data type
+   * @param path - The route path
+   * @param options - Optional route options
+   * @returns The created route
+   *
+   * @example
+   * ```ts
+   * const usersRoute = router.route('/users');
+   * const userRoute = usersRoute.route('/:id');
+   * const indexRoute = router.route('/');
+   * ```
+   */
   public route<
     TPath extends RoutePath,
     TParams extends ExtractParams<TPath>,
@@ -66,6 +121,22 @@ export class Router {
     return route as Route<TPath, TParams, TQueryParams, TOptions, TData>;
   }
 
+  /**
+   * Finds a route matching the given URL.
+   *
+   * Uses the URL cache for performance.
+   *
+   * @param url - The URL to match (string or URL object)
+   * @returns The match result, or undefined if no match
+   *
+   * @example
+   * ```ts
+   * const match = router.find('/users/123');
+   * if (match) {
+   *   console.log(match.route, match.params);
+   * }
+   * ```
+   */
   public find(url: string | URL): MatchResult | void {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
@@ -74,6 +145,24 @@ export class Router {
     return this.cache.get(url);
   }
 
+  /**
+   * Activates a route by URL.
+   *
+   * Preloads all route segments, deactivates old segments,
+   * and activates new segments. Handles race conditions by
+   * checking if the URL is still active after preloading.
+   *
+   * @param url - The URL to activate (string or URL object)
+   * @returns A GuardBlocker if navigation was blocked, otherwise void
+   *
+   * @example
+   * ```ts
+   * const blocker = await router.activate('/users/123');
+   * if (blocker) {
+   *   console.log('Navigation blocked:', blocker);
+   * }
+   * ```
+   */
   public async activate(url: string | URL): Promise<void | GuardBlocker> {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
@@ -122,6 +211,16 @@ export class Router {
     this.activeSegments = targetSegments;
   }
 
+  /**
+   * Deactivates all currently active routes.
+   *
+   * Clears all active segments and resets router state.
+   *
+   * @example
+   * ```ts
+   * router.deactivate();
+   * ```
+   */
   public deactivate(): void {
     for (const route of [...(this.activeSegments || [])].reverse()) {
       route.deactivate();
@@ -132,6 +231,19 @@ export class Router {
     this.activeSegments = undefined;
   }
 
+  /**
+   * Preloads a route without activating it.
+   *
+   * Useful for prefetching routes before navigation.
+   *
+   * @param url - The URL to preload (string or URL object)
+   *
+   * @example
+   * ```ts
+   * await router.preload('/users/123');
+   * // Route data is now cached
+   * ```
+   */
   public async preload(url: string | URL): Promise<void> {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
@@ -149,6 +261,19 @@ export class Router {
   }
 }
 
+/**
+ * Creates a new Router instance.
+ *
+ * Convenience function for creating a router with optional options.
+ *
+ * @param options - Optional router configuration
+ * @returns A new Router instance
+ *
+ * @example
+ * ```ts
+ * const router = createRouter({ baseUrl: 'https://example.com' });
+ * ```
+ */
 export function createRouter(options?: RouterOptions): Router {
   return new Router(options);
 }

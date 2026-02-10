@@ -1,16 +1,60 @@
 import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import type { MatchedRoute, TRec, UnknownRoute } from './types.js';
 
+/**
+ * A registry for organizing and matching routes.
+ *
+ * Extends Map to store child routes keyed by their segment names.
+ * Supports static, dynamic (`:param`), and wildcard (`*`) route matching.
+ *
+ * @example
+ * ```ts
+ * const registry = new RouteRegistry(route);
+ * const match = registry.match('/users/123');
+ * ```
+ */
 export class RouteRegistry extends Map {
+  /**
+   * Gets the name of the route this registry is associated with.
+   *
+   * @returns The route name
+   */
   public get name() {
     return this.route.name;
   }
 
+  /**
+   * Creates a new RouteRegistry instance.
+   *
+   * @param route - The route this registry is associated with
+   */
   constructor(public route: UnknownRoute) {
     super();
     ROUTE_MAP_LINK.set(this.route, this);
   }
 
+  /**
+   * Matches a URL path against the registered routes.
+   *
+   * Recursively traverses the route tree to find the best match.
+   * Supports static segments, dynamic parameters, and wildcards.
+   *
+   * @param urlSegments - The URL path to match, as a string or array of segments
+   * @param segments - Accumulator for matched route segments (internal use)
+   * @param params - Accumulator for extracted parameters (internal use)
+   * @param index - Current segment index (internal use)
+   * @returns A matched route with segments and params, or undefined if no match
+   *
+   * @example
+   * ```ts
+   * const match = registry.match('/users/123');
+   * if (match) {
+   *   console.log(match.route); // The matched route
+   *   console.log(match.params); // { id: '123' }
+   *   console.log(match.segments); // Array of matched routes
+   * }
+   * ```
+   */
   public match(
     urlSegments: string | string[],
     segments: UnknownRoute[] = [],
@@ -90,6 +134,16 @@ export class RouteRegistry extends Map {
   }
 }
 
+/**
+ * Cleans a path string by normalizing slashes.
+ *
+ * Removes leading, trailing, and duplicate slashes.
+ *
+ * @param path - The path string to clean
+ * @returns The cleaned path string
+ *
+ * @internal
+ */
 function cleanPath(path: string) {
   return path
     .replace(/^[\/]+/, '')
