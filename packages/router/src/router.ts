@@ -3,6 +3,7 @@ import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constan
 import { ROUTE_TYPE } from './enum.js';
 import { parseQuery } from './query.js';
 import { RouteRegistry } from './registry.js';
+import { URLCache } from './cache.js';
 import { Route } from './route.js';
 import type {
   ActiveContext,
@@ -22,8 +23,9 @@ export class Router {
   private readonly options: RouterOptions;
   private readonly rootRoute: UnknownRoute;
   private readonly rootRegistry: RouteRegistry;
+  private readonly cache: URLCache;
 
-  private abortController?: AbortController;
+  private activeUrl?: string;
 
   public activeRoute: UnknownRoute | undefined;
   public activeContext: ActiveContext<TRec, TRec, TRec> = mutable({ data: {}, query: {}, params: {} });
@@ -33,6 +35,7 @@ export class Router {
     this.options = { ...DEFAULT_CONFIG, ...options };
     this.rootRoute = new Route('/', this.options);
     this.rootRegistry = new RouteRegistry(this.rootRoute);
+    this.cache = new URLCache(this.rootRegistry, options?.cacheSize);
   }
 
   public route<
@@ -67,17 +70,7 @@ export class Router {
       url = new URL(url, this.options.baseUrl);
     }
 
-    const query = parseQuery(url.search);
-    const pathname = url.pathname;
-
-    const match = this.rootRegistry.match(pathname) as MatchResult;
-
-    if (match) {
-      match.url = url;
-      match.query = query;
-    }
-
-    return match;
+    return this.cache.get(url);
   }
 
   public async activate(url: string | URL): Promise<void> {
@@ -85,20 +78,29 @@ export class Router {
       url = new URL(url, this.options.baseUrl);
     }
 
-    // Cancel any ongoing activation
-    this.cancel();
-
     const match = this.find(url);
     if (!match) return;
 
-    const { query, params, segments } = match;
-    anchor.assign(this.activeContext, { query, params });
+    // Set active URL synchronously - prevents race condition
+    this.activeUrl = url.href;
+
+    const { segments, context } = match;
+
+    // Update the active context reference to point to this URL's context
+    anchor.assign(this.activeContext, context);
 
     const currentSegments = this.activeSegments || [];
-    const targetSegments = match.segments;
+    const targetSegments = segments;
 
-    // Create abort controller for this activation
-    this.abortController = new AbortController();
+    // Preload all segments first
+    for (const route of segments) {
+      await route.preload(context as ProviderContext<None, None, TRec>);
+    }
+
+    // Check if still active after preload
+    if (this.activeUrl !== url.href) {
+      return; // Newer navigation started, abort
+    }
 
     // Deactivate segments not in target (leaf to root)
     const toDeactivate = currentSegments.filter((r) => !targetSegments.includes(r));
@@ -106,32 +108,16 @@ export class Router {
       route.deactivate();
     }
 
-    // Phase 4: Preload and activate new segments
+    // Activate new segments (root to leaf) without preloading
     const toActivate = segments.filter((r) => !currentSegments.includes(r));
-
     for (const route of toActivate) {
-      await route.activate(this.activeContext as ProviderContext<None, None, TRec>);
+      // Activate without preloading (data already loaded)
+      await route.activate(this.activeContext as ProviderContext<None, None, TRec>, false);
     }
 
-    try {
-      // Phase 4: Preload and activate new segments
-      const toActivate = segments.filter((r) => !currentSegments.includes(r));
-
-      for (const route of toActivate) {
-      }
-
-      // Update router state
-      this.activeRoute = match.route;
-      this.activeContext = { params: match.params, query: match.query, data: {} };
-      this.activeSegments = targetSegments;
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Navigation cancelled') {
-        return;
-      }
-      throw error;
-    } finally {
-      this.abortController = undefined;
-    }
+    // Update router state
+    this.activeRoute = match.route;
+    this.activeSegments = targetSegments;
   }
 
   public deactivate(): void {
@@ -144,10 +130,6 @@ export class Router {
     this.activeSegments = undefined;
   }
 
-  public cancel(): void {
-    this.abortController?.abort();
-  }
-
   public async preload(url: string | URL): Promise<void> {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
@@ -156,7 +138,12 @@ export class Router {
     const match = this.find(url);
     if (!match) return;
 
-    const { query, params, segments } = match;
+    const { segments, context } = match;
+
+    // Preload all segments without activating them
+    for (const route of segments) {
+      await route.preload(context as ProviderContext<None, None, TRec>);
+    }
   }
 }
 

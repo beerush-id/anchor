@@ -116,6 +116,7 @@ export type ActiveContext<TParams, TQueryParams, TData> = {
 
 export type RouterOptions = RouteOptions & {
   baseUrl?: string;
+  cacheSize?: number;
 };
 
 export type FlatRec<TParams> = {
@@ -162,6 +163,7 @@ export type MatchedRoute = {
 export type MatchResult = MatchedRoute & {
   url: URL;
   query: TRec;
+  context: ProviderContext<TRec, TRec, TRec>;
 };
 
 export type CachedRouteData = {

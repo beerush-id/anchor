@@ -38,6 +38,7 @@ export class Route<
 > {
   private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({ active: false, authenticated: false });
   private readonly cache = new RouteCache(this);
+  private readonly dataCache = new WeakMap<ProviderContext<TRec, TRec, TRec>, TData>();
 
   // Reactive observers.
   private readonly guardObserver = createObserver(() => {
@@ -247,10 +248,7 @@ export class Route<
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return;
 
-    const currentData = await this.resolve(context as ProviderContext<TRec, TRec, TRec>);
-    this.data = currentData as TData;
-
-    return currentData as TData;
+    return await this.resolve(context as ProviderContext<TRec, TRec, TRec>);
   }
 
   public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
@@ -314,15 +312,21 @@ export class Route<
       if (!result) return;
     }
 
+    // Cache route data for this context
+    this.dataCache.set(context, data as TData);
+
     return data as TData;
   }
 
-  public async activate(context: ProviderContext<TParams, TQueryParams, TData>): Promise<void> {
+  public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
     this.error = undefined;
 
-    await this.preload(context);
+    if (preload) {
+      await this.preload(context);
+    }
 
     this.context = context as ActiveContext<TParams, TQueryParams, TData>;
+    this.data = this.dataCache.get(context as ProviderContext<TRec, TRec, TRec>);
     this.active = true;
   }
 

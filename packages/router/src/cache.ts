@@ -1,6 +1,16 @@
-import { anchor } from '@anchorlib/core';
+import { anchor, mutable } from '@anchorlib/core';
 import { DEFAULT_CONFIG } from './constant.js';
-import type { ProviderCache, ProviderContext, ProviderOptions, TRec, UnknownProvider, UnknownRoute } from './types.js';
+import { parseQuery } from './query.js';
+import { RouteRegistry } from './registry.js';
+import type {
+  MatchResult,
+  ProviderCache,
+  ProviderContext,
+  ProviderOptions,
+  TRec,
+  UnknownProvider,
+  UnknownRoute,
+} from './types.js';
 
 export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
   constructor(private route: UnknownRoute) {
@@ -57,5 +67,52 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
 
   public clear(provider: UnknownProvider): void {
     this.get(provider)?.clear();
+  }
+}
+
+export class URLCache {
+  private cache = new Map<string, MatchResult>();
+
+  constructor(
+    private registry: RouteRegistry,
+    private maxSize = 100
+  ) {}
+
+  public get(url: URL): MatchResult | undefined {
+    const cacheKey = url.href;
+
+    // Check cache first - return cached match if exists
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      // LRU: Move to end by deleting and re-inserting
+      this.cache.delete(cacheKey);
+      this.cache.set(cacheKey, cached);
+      return cached;
+    }
+
+    // Not cached - parse, match, and create context
+    const query = parseQuery(url.search);
+    const pathname = url.pathname;
+
+    const match = this.registry.match(pathname) as MatchResult;
+
+    if (match) {
+      match.url = url;
+      match.query = query;
+      match.context = mutable({ params: match.params, query, data: {} });
+
+      // Evict oldest entry if at capacity
+      if (this.cache.size >= this.maxSize) {
+        const firstKey = this.cache.keys().next().value;
+        if (firstKey !== undefined) {
+          this.cache.delete(firstKey);
+        }
+      }
+
+      // Cache the complete match result
+      this.cache.set(cacheKey, match);
+    }
+
+    return match;
   }
 }
