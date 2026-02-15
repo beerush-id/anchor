@@ -51,6 +51,22 @@ export class Router {
   /** The currently active route segments */
   public activeSegments: UnknownRoute[] | undefined;
 
+  public get path() {
+    return this.activeRoute?.path;
+  }
+
+  public get data() {
+    return this.activeContext.data;
+  }
+
+  public get query() {
+    return this.activeContext.query;
+  }
+
+  public get params() {
+    return this.activeContext.params;
+  }
+
   /**
    * Creates a new Router instance.
    *

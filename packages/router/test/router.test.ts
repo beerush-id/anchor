@@ -42,6 +42,11 @@ describe('router.ts', () => {
 
       it('should initialize activeContext with empty objects', () => {
         expect(router.activeContext).toEqual({ data: {}, query: {}, params: {} });
+
+        expect(router.path).toBeUndefined();
+        expect(router.data).toEqual({});
+        expect(router.query).toEqual({});
+        expect(router.params).toEqual({});
       });
 
       it('should initialize activeSegments as undefined', () => {
@@ -256,6 +261,7 @@ describe('router.ts', () => {
 
         await router.activate('/posts');
         expect(router.activeRoute).not.toBe(firstActiveRoute);
+        expect(router.path).toBeDefined();
       });
 
       it('should handle race conditions', async () => {
