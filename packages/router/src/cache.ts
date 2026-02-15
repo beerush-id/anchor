@@ -1,7 +1,6 @@
 import { anchor, mutable } from '@anchorlib/core';
-import { DEFAULT_CONFIG } from './constant.js';
 import { parseQuery } from './query.js';
-import { RouteRegistry } from './registry.js';
+import type { RouteRegistry } from './registry.js';
 import type {
   MatchResult,
   ProviderCache,
@@ -63,14 +62,14 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
     context: ProviderContext<TRec, TRec, TRec>,
     options?: ProviderOptions
   ): Promise<T> {
-    const maxAge = options?.maxAge ?? this.route.options?.maxAge ?? DEFAULT_CONFIG.maxAge;
+    const maxAge = options?.maxAge ?? this.route.options?.maxAge;
     if (!maxAge) return (await provider(context)) as T;
 
     if (!this.has(provider)) {
       this.set(provider, new Map());
     }
 
-    const { params, query } = (anchor.get as (ctx: typeof context, strict: boolean) => typeof context)(context, false);
+    const { params, query } = (anchor.get as (ctx: typeof context, silent: boolean) => typeof context)(context, true);
 
     const key = JSON.stringify({ params, query });
     const cache = this.get(provider)!;
@@ -81,7 +80,7 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
     }
 
     const data = await provider(context);
-    if (data) {
+    if (data !== null && typeof data !== 'undefined') {
       const scheduler = setTimeout(() => cache.delete(key), maxAge) as never as number;
       cache.set(key, { data, timestamp: Date.now(), scheduler });
     }
@@ -103,7 +102,7 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    * ```
    */
   public invalidate(provider: UnknownProvider, context: ProviderContext<TRec, TRec, TRec>): void {
-    const { params, query } = (anchor.get as (ctx: typeof context, strict: boolean) => typeof context)(context, false);
+    const { params, query } = (anchor.get as (ctx: typeof context, silent: boolean) => typeof context)(context, true);
     const key = JSON.stringify({ params, query });
     const cache = this.get(provider);
     const cached = cache?.get(key);

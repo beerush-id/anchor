@@ -73,7 +73,7 @@ export class Route<
   // Reactive observers.
   private readonly guardObserver = createObserver(() => {
     this.guardObserver.reset();
-    this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>);
+    this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>, true);
   });
   private readonly providerObservers = new WeakMap<UnknownProvider, ProviderObserver>();
 
@@ -81,6 +81,7 @@ export class Route<
   public readonly name: RouteName<TPath>;
   /** The type of this route (static, dynamic, or wildcard) */
   public readonly type: RouteType;
+  public readonly options: TOptions;
 
   /**
    * Sets whether this route is currently active.
@@ -203,15 +204,16 @@ export class Route<
    */
   public constructor(
     name: TPath,
-    public options?: RouteOptions,
+    options?: RouteOptions,
     public parent?: TParent
   ) {
-    this.name = (name.replace(/^\//, '').split(/\//g)[0] ?? '') as RouteName<TPath>;
+    this.name = (name ?? '').replace(/^\//, '').split(/\//g)[0] as RouteName<TPath>;
     this.type = this.name.startsWith(':')
       ? ROUTE_TYPE.DYNAMIC
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
+    this.options = { ...DEFAULT_CONFIG, ...options } as TOptions;
   }
 
   /**
@@ -285,15 +287,15 @@ export class Route<
     path: TChildPath,
     options?: TChildOptions
   ): TChildPath extends '/'
-  ? this
-  : Route<
-      TChildPath,
-      TParams & TChildParams,
-      TQueryParams & TChildQueryParams,
-      TOptions & TChildOptions,
-      TData & TChildData,
-      this
-    > {
+    ? this
+    : Route<
+        TChildPath,
+        TParams & TChildParams,
+        TQueryParams & TChildQueryParams,
+        RouteOptions & TOptions & TChildOptions,
+        TData & TChildData,
+        this
+      > {
     const child = new Route(path, { ...this.options, ...options }, this);
 
     if (path === ('/' as TChildPath)) {
@@ -381,6 +383,7 @@ export class Route<
    * reactive state they depend on changes.
    *
    * @param context - The guard context
+   * @param force - Whether to force re-running the guards
    * @returns true if all guards pass, otherwise a GuardBlocker
    *
    * @example
@@ -391,8 +394,8 @@ export class Route<
    * }
    * ```
    */
-  public async authenticate(context: GuardContext<TParams, TQueryParams>): Promise<true | GuardBlocker> {
-    if (this.state.authenticated) return Promise.resolve(true);
+  public async authenticate(context: GuardContext<TParams, TQueryParams>, force = false): Promise<true | GuardBlocker> {
+    if (this.state.authenticated && !force) return Promise.resolve(true);
 
     // Run the guard inside an observer, so whenever the state it reads change,
     // the observer will be re-run.
@@ -487,14 +490,12 @@ export class Route<
               try {
                 const providerData = await retriable(
                   async (signal) => {
-                    if (signal.aborted) return;
-
                     return await this.cache.resolve(provider, context, options);
                   },
                   { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
                 );
 
-                if (!providerData) return;
+                if (abortController.signal.aborted) return;
 
                 untrack(() => {
                   context.data[name] = data[name] = providerData;

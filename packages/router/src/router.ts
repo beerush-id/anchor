@@ -100,7 +100,7 @@ export class Router {
     TQueryParams extends ExtractQueryParams<TPath>,
     TOptions extends RouteOptions,
     TData,
-  >(path: TPath, options?: TOptions): Route<TPath, TParams, TQueryParams, TOptions, TData> {
+  >(path: TPath, options?: TOptions): Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData> {
     const route = new Route(path, { ...this.options, ...options });
 
     if (path === ('/' as TPath)) {

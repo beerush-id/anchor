@@ -88,19 +88,7 @@ export class RouteRegistry extends Map {
       segments.push(staticRoute.route);
 
       if (recursive) {
-        const childRoute = staticRoute.match(urlSegments, segments, params, index + 1);
-
-        if (!childRoute && wildcardRoute) {
-          segments.push(wildcardRoute.route);
-
-          return {
-            route: wildcardRoute.route,
-            segments,
-            params,
-          };
-        }
-
-        return childRoute;
+        return staticRoute.match(urlSegments, segments, params, index + 1);
       } else {
         return {
           route: staticRoute.route,

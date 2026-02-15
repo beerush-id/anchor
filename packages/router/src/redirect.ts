@@ -145,9 +145,19 @@ export function redirectUrl(redirect: UnknownRedirect): string {
   }
 
   if (redirect.query && Object.keys(redirect.query).length > 0) {
-    const queryString = new URLSearchParams(Object.entries(redirect.query).map(([k, v]) => [k, String(v)])).toString();
+    const searchParams = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(redirect.query)) {
+      if (Array.isArray(value)) {
+        (value as string[]).forEach((item) => searchParams.append(key, String(item)));
+      } else {
+        searchParams.set(key, String(value));
+      }
+    }
+
+    const queryString = searchParams.toString();
     url += (url.includes('?') ? '&' : '?') + queryString;
   }
 
-  return url;
+  return `/${url}`;
 }
