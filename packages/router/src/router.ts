@@ -5,6 +5,7 @@ import { ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { Route } from './route.js';
+import { getStore } from './store.js';
 import type {
   ActiveContext,
   ExtractParams,
@@ -19,6 +20,14 @@ import type {
   TRec,
   UnknownRoute,
 } from './types.js';
+
+export type RouterStorage = {
+  cache: URLCache;
+  activeUrl: string | undefined;
+  activeRoute: UnknownRoute | undefined;
+  activeContext: ActiveContext<TRec, TRec, TRec>;
+  activeSegments: UnknownRoute[] | undefined;
+};
 
 /**
  * A type-safe router for managing routes and navigation.
@@ -37,20 +46,6 @@ import type {
  * ```
  */
 export class Router {
-  private readonly options: RouterOptions;
-  private readonly rootRoute: UnknownRoute;
-  private readonly rootRegistry: RouteRegistry;
-  private readonly cache: URLCache;
-
-  private activeUrl?: string;
-
-  /** The currently active route */
-  public activeRoute: UnknownRoute | undefined;
-  /** The active context shared across all routes */
-  public activeContext: ActiveContext<TRec, TRec, TRec> = mutable({ data: {}, query: {}, params: {} });
-  /** The currently active route segments */
-  public activeSegments: UnknownRoute[] | undefined;
-
   public get path() {
     return this.activeRoute?.path;
   }
@@ -65,6 +60,58 @@ export class Router {
 
   public get params() {
     return this.activeContext.params;
+  }
+
+  private get storage(): RouterStorage {
+    const store = getStore();
+
+    if (!store.has(this)) {
+      store.set(this, {
+        cache: new URLCache(this.rootRegistry, this.options.cacheSize),
+        activeUrl: undefined,
+        activeRoute: undefined,
+        activeContext: mutable({ data: {}, query: {}, params: {} }),
+        activeSegments: undefined,
+      });
+    }
+
+    return store.get(this) as RouterStorage;
+  }
+
+  private readonly options: RouterOptions;
+  private readonly rootRoute: UnknownRoute;
+  private readonly rootRegistry: RouteRegistry;
+
+  private get cache() {
+    return this.storage.cache;
+  }
+
+  private get activeUrl() {
+    return this.storage.activeUrl;
+  }
+  private set activeUrl(activeUrl) {
+    this.storage.activeUrl = activeUrl;
+  }
+
+  /** The currently active route */
+  private get activeRoute() {
+    return this.storage.activeRoute;
+  }
+  private set activeRoute(activeRoute) {
+    this.storage.activeRoute = activeRoute;
+  }
+
+  /** The active context shared across all routes */
+  private get activeContext() {
+    return this.storage.activeContext;
+  }
+
+  /** The currently active route segments */
+  private get activeSegments() {
+    return this.storage.activeSegments;
+  }
+  private set activeSegments(activeSegments) {
+    this.storage.activeSegments = activeSegments;
   }
 
   /**
@@ -85,7 +132,6 @@ export class Router {
     this.options = { ...DEFAULT_CONFIG, ...options };
     this.rootRoute = new Route('/', this.options);
     this.rootRegistry = new RouteRegistry(this.rootRoute);
-    this.cache = new URLCache(this.rootRegistry, options?.cacheSize);
   }
 
   /**

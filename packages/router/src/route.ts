@@ -1,9 +1,10 @@
-import { createObserver, mutable, retriable, untrack } from '@anchorlib/core';
+import { createObserver, mutable, retriable, type StateObserver, untrack } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
+import { getStore } from './store.js';
 import type {
   ActiveContext,
   ExtractParams,
@@ -27,6 +28,15 @@ import type {
   UnknownProvider,
   UnknownRoute,
 } from './types.js';
+
+export type RouteStorage = {
+  state: RouteState<unknown, unknown, unknown>;
+  cache: RouteCache;
+  dataCache: WeakMap<ProviderContext<TRec, TRec, TRec>, TRec>;
+  activeResolvers: Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
+  guardObserver: StateObserver;
+  providerObservers: WeakMap<UnknownProvider, ProviderObserver>;
+};
 
 /**
  * Represents a route in the router with support for guards, providers, and nested routes.
@@ -65,18 +75,6 @@ export class Route<
   TData,
   TParent = never,
 > {
-  private readonly state: RouteState<TParams, TQueryParams, TData> = mutable({ active: false, authenticated: false });
-  private readonly cache = new RouteCache(this);
-  private readonly dataCache = new WeakMap<ProviderContext<TRec, TRec, TRec>, TData>();
-  private readonly activeResolvers = new Map<ProviderContext<TRec, TRec, TRec>, AbortController>();
-
-  // Reactive observers.
-  private readonly guardObserver = createObserver(() => {
-    this.guardObserver.reset();
-    this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>, true);
-  });
-  private readonly providerObservers = new WeakMap<UnknownProvider, ProviderObserver>();
-
   /** The name of this route */
   public readonly name: RouteName<TPath>;
   /** The type of this route (static, dynamic, or wildcard) */
@@ -194,6 +192,51 @@ export class Route<
   public guards = new Set<UnknownGuard>();
   /** Map of data providers for this route */
   public providers = new Map<string, ProviderMap>();
+
+  private get storage(): RouteStorage {
+    const store = getStore();
+
+    if (!store.has(this)) {
+      store.set(this, {
+        state: mutable({ active: false, authenticated: false }),
+        cache: new RouteCache(this as UnknownRoute),
+        dataCache: new WeakMap(),
+        activeResolvers: new Map(),
+        guardObserver: createObserver(() => {
+          this.guardObserver.reset();
+          this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>, true);
+        }),
+        providerObservers: new WeakMap(),
+      });
+    }
+
+    return store.get(this) as RouteStorage;
+  }
+
+  private get state(): RouteState<TParams, TQueryParams, TData> {
+    return this.storage.state as RouteState<TParams, TQueryParams, TData>;
+  }
+
+  private get cache(): RouteCache {
+    return this.storage.cache;
+  }
+
+  private get dataCache(): WeakMap<ProviderContext<TRec, TRec, TRec>, TData> {
+    return this.storage.dataCache as WeakMap<ProviderContext<TRec, TRec, TRec>, TData>;
+  }
+
+  private get activeResolvers(): Map<ProviderContext<TRec, TRec, TRec>, AbortController> {
+    return this.storage.activeResolvers as Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
+  }
+
+  // Reactive observers.
+  private get guardObserver(): StateObserver {
+    return this.storage.guardObserver;
+  }
+
+  private get providerObservers(): WeakMap<UnknownProvider, ProviderObserver> {
+    return this.storage.providerObservers as WeakMap<UnknownProvider, ProviderObserver>;
+  }
 
   /**
    * Creates a new Route instance.
