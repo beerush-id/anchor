@@ -489,7 +489,7 @@ export class Route<
             return observer.run(async () => {
               try {
                 const providerData = await retriable(
-                  async (signal) => {
+                  async () => {
                     return await this.cache.resolve(provider, context, options);
                   },
                   { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
