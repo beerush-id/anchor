@@ -452,5 +452,42 @@ describe('Anchor Utilities - Context', () => {
       expect(getContext('before')).toBeUndefined();
       expect(getContext('during')).toBeUndefined();
     });
+
+    it('should handle context prioritization between global context and render context', () => {
+      const globalCtx = createContext();
+      const renderCtx = new RenderContext('Render');
+
+      globalCtx.set('shared', 'Always available.');
+
+      withContext(globalCtx, () => {
+        // Set context that should be assigned to the global context.
+        setContext('key', 'global');
+
+        expect(getContext('key')).toBe('global');
+        expect(renderCtx.get('key')).toBeUndefined();
+        expect(getContext('shared')).toBe('Always available.');
+
+        // Set context that should be assigned to the render context.
+        setRenderCtx(renderCtx);
+        setContext('key', 'render');
+
+        expect(getContext('key')).toBe('render');
+        expect(renderCtx.get('key')).toBe('render');
+        expect(globalCtx.get('key')).toBe('global');
+        expect(getContext('shared')).toBe('Always available.');
+
+        // Unset render context to revert to global context.
+        setRenderCtx(undefined);
+
+        expect(getContext('key')).toBe('global');
+        expect(renderCtx.get('key')).toBe('render');
+        expect(globalCtx.get('key')).toBe('global');
+        expect(getContext('shared')).toBe('Always available.');
+      });
+
+      // Out of context.
+      expect(getContext('key')).toBeUndefined();
+      expect(getContext('shared')).toBeUndefined();
+    });
   });
 });

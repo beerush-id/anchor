@@ -142,8 +142,7 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback: V):
  * @throws {Error} If called outside a context.
  */
 export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V): V | undefined {
-  const ctx = getRenderCtx() ?? ctxClosure;
-  const result = ctx.get(key);
+  const result = getRenderCtx()?.get(key) ?? ctxClosure.get(key);
 
   if (typeof result !== 'undefined') {
     return result as V;
