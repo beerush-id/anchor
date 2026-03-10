@@ -2,6 +2,7 @@ import { getContext, setContext, shortId } from '@anchorlib/core';
 import type { FC, ReactNode } from 'react';
 
 /**
+ * @deprecated use setContext() at the setup component instead.
  * Creates a context provider component for managing scoped context values.
  *
  * This function generates a React provider component that manages context values

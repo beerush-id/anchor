@@ -43,7 +43,7 @@ describe('Anchor React - Node', () => {
         className: node ? classRef.value : 'initial',
       });
 
-      const ref = lifecycle.render(() => nodeRef(factory));
+      const ref = lifecycle.render(() => nodeRef(factory), {} as never);
 
       // Create a mock element
       const element = document.createElement('div');

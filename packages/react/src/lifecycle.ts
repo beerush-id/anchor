@@ -1,4 +1,16 @@
-import { captureStack, closure, onGlobalCleanup, setCleanUpHandler, untrack } from '@anchorlib/core';
+import {
+  anchor,
+  captureStack,
+  closure,
+  createRenderCtx,
+  createStack,
+  onGlobalCleanup,
+  type RefStack,
+  setCleanUpHandler,
+  STACK_SYMBOL,
+  untrack,
+} from '@anchorlib/core';
+import { PROPS_SYMBOL, proxyProps } from './props.js';
 import type { CleanupHandler, Lifecycle, MountHandler } from './types.js';
 
 const MOUNT_HANDLER_SYMBOL = Symbol('mount-handler');
@@ -21,11 +33,21 @@ const CLEANUP_HANDLER_SYMBOL = Symbol('mount-cleanup');
  *
  * @returns A Lifecycle object with mount, cleanup, and render methods
  */
-export function createLifecycle(): Lifecycle {
+export function createLifecycle(setupProps: Record<string, unknown>, name?: string): Lifecycle {
   const mountHandlers = new Set<MountHandler>();
   const cleanupHandlers = new Set<CleanupHandler>();
 
+  const context = createRenderCtx(name);
+  const propsRef = anchor({ ...setupProps }, { recursive: false });
+
+  const stack = createStack();
+  const props = proxyProps(propsRef);
+
   return {
+    stack,
+    props,
+    propsRef: propsRef,
+    context,
     mount() {
       mountHandlers.forEach((mount) => {
         const cleanup = mount();
@@ -45,14 +67,20 @@ export function createLifecycle(): Lifecycle {
     },
     render<R>(fn: () => R) {
       const prevMountHandlers = closure.get<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL),
-        prevCleanupHandlers = closure.get<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL);
+        prevCleanupHandlers = closure.get<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL),
+        prevStack = closure.get<RefStack>(STACK_SYMBOL),
+        prevProps = closure.get<Record<string, unknown>>(PROPS_SYMBOL);
 
+      closure.set(STACK_SYMBOL, stack);
+      closure.set(PROPS_SYMBOL, props);
       closure.set(MOUNT_HANDLER_SYMBOL, mountHandlers);
       closure.set(CLEANUP_HANDLER_SYMBOL, cleanupHandlers);
 
       try {
         return untrack(fn) as R;
       } finally {
+        closure.set(STACK_SYMBOL, prevStack);
+        closure.set(PROPS_SYMBOL, prevProps);
         closure.set(MOUNT_HANDLER_SYMBOL, prevMountHandlers);
         closure.set(CLEANUP_HANDLER_SYMBOL, prevCleanupHandlers);
       }

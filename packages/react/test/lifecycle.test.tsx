@@ -17,7 +17,7 @@ describe('Anchor React - Lifecycle', () => {
 
   describe('createLifecycle', () => {
     it('should create a lifecycle manager', () => {
-      const lifecycle = createLifecycle();
+      const lifecycle = createLifecycle({});
 
       expect(lifecycle).toBeDefined();
       expect(typeof lifecycle.mount).toBe('function');
@@ -26,7 +26,7 @@ describe('Anchor React - Lifecycle', () => {
     });
 
     it('should execute mount handlers when mounted', () => {
-      const lifecycle = createLifecycle();
+      const lifecycle = createLifecycle({});
       const unmountHandler = vi.fn();
       const mountHandler = vi.fn().mockReturnValue(unmountHandler);
 
@@ -43,7 +43,7 @@ describe('Anchor React - Lifecycle', () => {
     });
 
     it('should execute cleanup handlers when cleaned up', () => {
-      const lifecycle = createLifecycle();
+      const lifecycle = createLifecycle({});
       const cleanupHandler = vi.fn();
 
       // Manually add a cleanup handler to test
@@ -56,7 +56,7 @@ describe('Anchor React - Lifecycle', () => {
     });
 
     it('should execute render function', () => {
-      const lifecycle = createLifecycle();
+      const lifecycle = createLifecycle({});
       const renderFn = vi.fn().mockReturnValue('result');
 
       const result = lifecycle.render(renderFn);

@@ -1,9 +1,14 @@
+import type { RefStack, RenderContext } from '@anchorlib/core';
 import type { FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode } from 'react';
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
 
 export type Lifecycle = {
+  stack: RefStack;
+  props: Record<string, unknown>;
+  propsRef: Record<string, unknown>;
+  context: RenderContext;
   /**
    * Mounts the component by executing all registered mount handlers and effects.
    * Cancels any pending cleanup operations and schedules mount operations.

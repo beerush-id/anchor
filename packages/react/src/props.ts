@@ -2,7 +2,7 @@ import { captureStack, closure, getObserver, isBrowser, isMutableRef, untrack } 
 import { isBinding, isLinkingRef } from './binding.js';
 import type { ComponentProps, ReactiveProps } from './types.js';
 
-const PROPS_SYMBOL = Symbol('setup-props');
+export const PROPS_SYMBOL = Symbol('setup-props');
 
 /**
  * Executes a function with provided props temporarily set in the current context.

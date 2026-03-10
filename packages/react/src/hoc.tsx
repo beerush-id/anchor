@@ -1,8 +1,8 @@
-import { anchor, captureStack, createObserver, createStack, microtask, withStack } from '@anchorlib/core';
-import type { FunctionComponent, ReactNode } from 'react';
+import { anchor, captureStack, createObserver, microtask, RenderContext, setRenderCtx } from '@anchorlib/core';
+import type { FC, FunctionComponent, ReactNode } from 'react';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
-import { getProps, proxyProps, withProps } from './props.js';
+import { getProps, proxyProps } from './props.js';
 import type {
   Component,
   GenericProps,
@@ -60,14 +60,13 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   const propsMap = new WeakMap();
 
   const Factory = (currentProps: Record<string, unknown>) => {
-    const [[scheduleMount, cancelMount]] = createState(() => microtask(CLEANUP_DEBOUNCE_TIME));
-    const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(CLEANUP_DEBOUNCE_TIME));
-    const [scope] = createState(() => createStack());
-    const [lifecycle] = createState(() => createLifecycle());
-    const [baseProps] = createState(() => anchor({ ...currentProps }, { recursive: false }));
+    const [scheduleMount, cancelMount] = microtask(CLEANUP_DEBOUNCE_TIME);
+    const [scheduleCleanup, cancelCleanup] = microtask(CLEANUP_DEBOUNCE_TIME);
 
-    propsMap.set(currentProps, baseProps);
-    const props = proxyProps(baseProps);
+    const lifecycle = createLifecycle(currentProps, componentName);
+    const { props, stack, propsRef } = lifecycle;
+
+    propsMap.set(currentProps, propsRef);
 
     createEffect(() => {
       cancelMount();
@@ -82,12 +81,12 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
           // @important Actual cleanup should be scheduled to prevent cleaning up the current effects in strict-mode.
           propsMap.delete(currentProps);
           lifecycle.cleanup();
-          scope.states.clear();
+          stack.states.clear();
         });
       };
     }, []);
 
-    scope.index = 0;
+    stack.index = 0;
 
     /**
      * Cleanup the previous effect handlers to make sure each render is isolated.
@@ -95,13 +94,28 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
      */
     lifecycle.cleanup();
 
-    return withStack(scope, () => {
-      return withProps(props, () => {
-        return lifecycle.render(() => {
-          return render(props);
-        });
-      });
-    });
+    const Start: FC<{ context: RenderContext }> = ({ context }) => {
+      setRenderCtx(context);
+      return null;
+    };
+    Start.displayName = `Start(${componentName})`;
+
+    const Finish: FC<{ context?: RenderContext }> = ({ context }) => {
+      setRenderCtx(context);
+      return null;
+    };
+    Finish.displayName = `Finish(${componentName})`;
+
+    const Render = () => lifecycle.render(() => render(props));
+    Render.displayName = `Render(${componentName})`;
+
+    return (
+      <>
+        <Start context={lifecycle.context} />
+        <Render />
+        <Finish context={lifecycle.context.parent} />
+      </>
+    );
   };
 
   Factory.displayName = `Component(${componentName})`;
