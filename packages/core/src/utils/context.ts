@@ -1,6 +1,63 @@
 import { captureStack } from '../exception.js';
 import type { KeyLike } from '../types.js';
-import { createClosure } from './closure.js';
+import { closure, createClosure } from './closure.js';
+
+export const RENDER_CONTEXT_KEY = Symbol('render-context');
+
+/**
+ * A context class that extends Map to provide hierarchical context storage.
+ * It supports parent-child relationships, allowing values to be inherited from parent contexts.
+ */
+export class RenderContext extends Map {
+  /**
+   * Creates a new RenderContext instance.
+   * @param name - The name of the context, defaults to 'Anonymous'.
+   * @param parent - An optional parent context to inherit values from.
+   */
+  constructor(
+    public name = 'Anonymous',
+    public parent?: RenderContext
+  ) {
+    super();
+  }
+
+  /**
+   * Retrieves a value by key, searching the current context first and then the parent context chain.
+   * @template T - The expected type of the value.
+   * @param key - The key to look up.
+   * @returns The value associated with the key, or undefined if not found in this or any parent context.
+   */
+  get<T>(key: KeyLike): T | undefined {
+    return (super.get(key) ?? this.parent?.get(key)) as T | undefined;
+  }
+}
+
+/**
+ * Creates a new RenderContext instance.
+ * If no parent is provided, it attempts to use the currently active render context.
+ * @param name - The name for the new context, defaults to 'Anonymous'.
+ * @param parent - An optional explicit parent context.
+ * @returns A new RenderContext instance.
+ */
+export function createRenderCtx(name = 'Anonymous', parent?: RenderContext) {
+  return new RenderContext(name, parent ?? getRenderCtx());
+}
+
+/**
+ * Sets the current active render context in the closure storage.
+ * @param ctx - The context to set, or undefined to clear the current context.
+ */
+export function setRenderCtx(ctx?: RenderContext) {
+  closure.set(RENDER_CONTEXT_KEY, ctx);
+}
+
+/**
+ * Retrieves the current active render context from the closure storage.
+ * @returns The current RenderContext instance, or undefined if no context is active.
+ */
+export function getRenderCtx(): RenderContext | undefined {
+  return closure.get(RENDER_CONTEXT_KEY);
+}
 
 /**
  * A context object which is essentially a reactive Map that can store key-value pairs.
@@ -44,7 +101,8 @@ export function withContext<R>(ctx: Context<KeyLike, unknown>, fn: () => R) {
  * @throws {Error} If called outside a context.
  */
 export function setContext<V, K extends KeyLike = KeyLike>(key: K, value: V): void {
-  ctxClosure.set(key, value as never);
+  const ctx = getRenderCtx() ?? ctxClosure;
+  ctx.set(key, value as never);
 }
 
 /**
@@ -84,7 +142,8 @@ export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback: V):
  * @throws {Error} If called outside a context.
  */
 export function getContext<V, K extends KeyLike = KeyLike>(key: K, fallback?: V): V | undefined {
-  const result = ctxClosure.get(key);
+  const ctx = getRenderCtx() ?? ctxClosure;
+  const result = ctx.get(key);
 
   if (typeof result !== 'undefined') {
     return result as V;
@@ -133,13 +192,13 @@ export type ContextProvider = <R>(fn: () => R) => R;
  */
 export function contextProvider<K extends KeyLike, V>(key: K, value: V): ContextProvider {
   return <R>(fn: () => R) => {
-    const currentValue = ctxClosure.get(key);
-    ctxClosure.set(key, value);
+    const currentValue = getContext(key);
+    setContext(key, value);
 
     try {
       return fn();
     } finally {
-      ctxClosure.set(key, currentValue);
+      setContext(key, currentValue);
     }
   };
 }
