@@ -112,7 +112,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
     return (
       <>
         <Start context={lifecycle.context} />
-        <Render />
+        {lifecycle.render(() => render(props))}
         <Finish context={lifecycle.context.parent} />
       </>
     );
