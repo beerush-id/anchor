@@ -1,6 +1,6 @@
-import { AccordionGroupCtx, createAccordionGroup } from '@anchorkit/headless/states';
+import { createAccordionGroup } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { contextProvider, effect, nodeRef, setup, snippet } from '@anchorlib/react';
+import { effect, nodeRef, setup, snippet } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type AccordionGroupProps = HTMLAttributes<HTMLDivElement> & {
@@ -10,7 +10,6 @@ export type AccordionGroupProps = HTMLAttributes<HTMLDivElement> & {
 
 export const AccordionGroup = setup<AccordionGroupProps>((props) => {
   const group = createAccordionGroup();
-  const Context = contextProvider(AccordionGroupCtx, 'AccordionGroup');
 
   effect(() => {
     group.disabled = props.disabled ?? false;
@@ -21,18 +20,11 @@ export const AccordionGroup = setup<AccordionGroupProps>((props) => {
     className: classx('ark-accordion-group', props.className),
   }));
 
-  const Content = snippet(
-    () => (
-      <div ref={groupRef} {...groupRef.attributes}>
-        {props.children}
-      </div>
-    ),
-    'AccordionGroup'
-  );
+  const Content = snippet(() => props.children, 'AccordionGroup');
 
   return (
-    <Context value={group}>
+    <div ref={groupRef} {...groupRef.attributes}>
       <Content />
-    </Context>
+    </div>
   );
 }, 'AccordionGroup');

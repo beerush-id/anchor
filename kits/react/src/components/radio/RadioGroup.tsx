@@ -1,6 +1,6 @@
-import { createRadioGroup, RadioGroupCtx, type RadioValue } from '@anchorkit/headless/states';
+import { createRadioGroup, type RadioValue } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
-import { type Bindable, contextProvider, effect, onMount, setup, snippet } from '@anchorlib/react';
+import { type Bindable, effect, onMount, render, setup } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type RadioGroupProps = HTMLAttributes<HTMLDivElement> & {
@@ -12,7 +12,6 @@ export type RadioGroupProps = HTMLAttributes<HTMLDivElement> & {
 
 export const RadioGroup = setup<RadioGroupProps>((props) => {
   const group = createRadioGroup();
-  const Context = contextProvider(RadioGroupCtx, 'RadioGroup');
 
   let mounted = false;
 
@@ -33,7 +32,7 @@ export const RadioGroup = setup<RadioGroupProps>((props) => {
     mounted = true;
   });
 
-  const Content = snippet(
+  return render(
     () => (
       <div
         role="radiogroup"
@@ -44,11 +43,5 @@ export const RadioGroup = setup<RadioGroupProps>((props) => {
       </div>
     ),
     'RadioGroup'
-  );
-
-  return (
-    <Context value={group}>
-      <Content />
-    </Context>
   );
 }, 'RadioGroup');

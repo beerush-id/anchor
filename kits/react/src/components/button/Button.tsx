@@ -1,15 +1,15 @@
-import { ButtonGroupCtx, createButtonGroup, createButtonSwitch, getButtonGroup } from '@anchorkit/headless/states';
+import { createButtonGroup, createButtonSwitch, getButtonGroup } from '@anchorkit/headless/states';
 import { type ClassList, type ClassName, classx } from '@anchorkit/headless/utils';
 import {
   type Bindable,
   type ComponentProps,
-  contextProvider,
   derived,
   effect,
   nodeRef,
   onMount,
   render,
   setup,
+  snippet,
 } from '@anchorlib/react';
 import type { ButtonHTMLAttributes, HTMLAttributes, MouseEventHandler } from 'react';
 
@@ -154,7 +154,6 @@ export type ButtonGroupProps = HTMLAttributes<HTMLDivElement> & {
 
 export const ButtonGroup = setup<ButtonGroupProps>((props) => {
   const group = createButtonGroup();
-  const Context = contextProvider(ButtonGroupCtx, 'ButtonGroupContext');
 
   let mounted = false;
 
@@ -189,15 +188,11 @@ export const ButtonGroup = setup<ButtonGroupProps>((props) => {
   const groupRef = nodeRef<HTMLDivElement>(() => ({
     className: classx('ark-button-group', props.className),
   }));
+  const Content = snippet(() => props.children, 'ButtonGroup');
 
-  return render(
-    () => (
-      <Context value={group}>
-        <div ref={groupRef} {...groupRef.attributes}>
-          {props.children}
-        </div>
-      </Context>
-    ),
-    'ButtonGroup'
+  return (
+    <div ref={groupRef} {...groupRef.attributes}>
+      <Content />
+    </div>
   );
 }, 'ButtonGroup');

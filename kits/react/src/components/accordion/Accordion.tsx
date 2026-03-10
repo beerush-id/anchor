@@ -1,6 +1,6 @@
-import { AccordionCtx, createAccordion, getAccordionGroup } from '@anchorkit/headless/states';
+import { createAccordion, getAccordionGroup } from '@anchorkit/headless/states';
 import { classx } from '@anchorkit/headless/utils';
-import { type Bindable, contextProvider, effect, nodeRef, onMount, setup, snippet } from '@anchorlib/react';
+import { type Bindable, effect, nodeRef, onMount, setup, snippet } from '@anchorlib/react';
 import type { HTMLAttributes } from 'react';
 
 export type AccordionProps = HTMLAttributes<HTMLDivElement> & {
@@ -13,7 +13,6 @@ export type AccordionProps = HTMLAttributes<HTMLDivElement> & {
 export const Accordion = setup<AccordionProps>((props) => {
   const group = getAccordionGroup();
   const state = createAccordion({ name: props.name });
-  const Context = contextProvider(AccordionCtx, 'Accordion');
 
   let mounted = false;
 
@@ -53,18 +52,11 @@ export const Accordion = setup<AccordionProps>((props) => {
     }),
   }));
 
-  const Content = snippet(
-    () => (
-      <div ref={divRef} {...divRef.attributes}>
-        {props.children}
-      </div>
-    ),
-    'Accordion'
-  );
+  const Children = snippet(() => props.children, 'Accordion');
 
   return (
-    <Context value={state}>
-      <Content />
-    </Context>
+    <div ref={divRef} {...divRef.attributes}>
+      <Children />
+    </div>
   );
 }, 'Accordion');

@@ -1,4 +1,4 @@
-import { type Enum, getContext, mutable, shortId } from '@anchorlib/core';
+import { type Enum, getContext, mutable, setContext, shortId } from '@anchorlib/core';
 
 export const TabVisibility = {
   HIDDEN: 'hidden',
@@ -66,8 +66,14 @@ export class TabState {
   }
 }
 
-export function createTab(options?: TabInit): TabState {
-  return mutable(new TabState(options));
+export function createTab(options?: TabInit, setAsContext = true): TabState {
+  const state = mutable(new TabState(options));
+
+  if (setAsContext) {
+    setContext(TabCtx, state);
+  }
+
+  return state;
 }
 
 export function isTabState(value: unknown): value is TabState {

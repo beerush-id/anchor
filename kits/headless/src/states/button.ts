@@ -19,8 +19,14 @@ export function createButtonSwitch(options?: ButtonSwitchInit, group?: ButtonGro
   return state;
 }
 
-export function createButtonGroup(options?: ButtonGroupInit) {
-  return mutable(new ButtonGroup(options), { recursive: false });
+export function createButtonGroup(options?: ButtonGroupInit, setAsContext = true) {
+  const state = mutable(new ButtonGroup(options), { recursive: false });
+
+  if (setAsContext) {
+    setContext(ButtonGroupCtx, state);
+  }
+
+  return state;
 }
 
 export function setButtonGroup(group: ButtonGroup) {

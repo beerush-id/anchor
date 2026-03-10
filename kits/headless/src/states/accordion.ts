@@ -17,8 +17,12 @@ export class AccordionState extends Switch {
   }
 }
 
-export function createAccordion(options?: AccordionInit, group?: AccordionGroup) {
+export function createAccordion(options?: AccordionInit, group?: AccordionGroup, setAsContext = true) {
   const item = mutable(new AccordionState(options));
+
+  if (setAsContext) {
+    setContext(AccordionCtx, item);
+  }
 
   if (group) {
     group.insert(item);
@@ -41,8 +45,14 @@ export interface AccordionGroupInit extends SwitchGroupInit {}
 
 export class AccordionGroup extends SwitchGroup {}
 
-export function createAccordionGroup(options?: AccordionGroupInit) {
-  return mutable(new AccordionGroup(options), { recursive: false });
+export function createAccordionGroup(options?: AccordionGroupInit, setAsContext = true) {
+  const state = mutable(new AccordionGroup(options), { recursive: false });
+
+  if (setAsContext) {
+    setContext(AccordionGroupCtx, state);
+  }
+
+  return state;
 }
 
 export function getAccordionGroup() {
