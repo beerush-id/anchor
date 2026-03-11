@@ -7,5 +7,6 @@ export * from './debug.js';
 export * from './inspector.js';
 export * from './loop.js';
 export * from './push.js';
+export * from './sleep.js';
 export * from './task.js';
 export * from './uuid.js';
