@@ -90,10 +90,6 @@ export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
         return bindingRef.value;
       } else if (isLinkingRef(bindingRef)) {
         return bindingRef.value;
-      } else if (typeof bindingRef === 'function') {
-        if (typeof key === 'string' && !key.startsWith('on')) {
-          return (bindingRef as () => unknown)();
-        }
       }
 
       return bindingRef;

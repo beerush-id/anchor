@@ -152,14 +152,6 @@ describe('Anchor React - Props', () => {
       expect(proxiedProps.value).toBe('test');
     });
 
-    it('should handle function in props', () => {
-      const source = mutable('test');
-      const testProps = { value: () => source.value };
-      const proxiedProps = proxyProps(testProps);
-
-      expect(proxiedProps.value).toBe('test');
-    });
-
     it('should handle event handler in props as is', () => {
       const source = mutable('test');
       const testProps = { onClick: () => source.value };
