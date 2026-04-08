@@ -25,6 +25,8 @@ export const ERROR_CODE = {
   RESOLVER_NOT_FOUND: 'resolver_not_found',
   RESOLVER_NOT_SUPPORTED: 'resolver_not_supported',
 
+  STREAM_ERROR: 'stream_error',
+
   CALL_MAX_RETRIES_REACHED: 'call_max_retries_reached',
 };
 
@@ -49,6 +51,7 @@ export const ERROR_MESSAGE = {
   [ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED]: 'IRPC: Transport not implemented error',
 
   [ERROR_CODE.STUB_INVALID]: 'IRPC: Stub invalid error',
+  [ERROR_CODE.STREAM_ERROR]: 'IRPC: Stream error',
   [ERROR_CODE.STUB_NOT_IMPLEMENTED]: 'IRPC: Stub not implemented error',
 
   [ERROR_CODE.RESOLVER_MISSING]: 'IRPC: Resolver missing error',

@@ -1,6 +1,7 @@
 export const IRPC_PACKET_TYPE = {
   CALL: 'call',
   EVENT: 'event',
+  CLOSE: 'close',
   ANSWER: 'answer',
   REQUEST: 'request',
   RESPONSE: 'response',

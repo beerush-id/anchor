@@ -2,43 +2,105 @@ import { anchor, mutable, type StateSubscriber, subscribe } from '@anchorlib/cor
 import { IRPC_STATUS } from './enum.js';
 import type { IRPCReadable, IRPCStatus } from './types.js';
 
-export class RemoteState<T> {
-  readonly #state: IRPCReadable<T>;
+/**
+ * A reactive state wrapper that implements the standard Promise interface.
+ * 
+ * RemoteState acts as a dual-layer abstraction:
+ * 1. For asynchronous execution, it operates as a `Promise<T>` that resolves upon completion or rejects upon failure.
+ * 2. For reactive environments, it exposes an `.subscribe()` method to react to intermediate data mutations.
+ * 
+ * @template T - The type of data held by the state.
+ */
+export class RemoteState<T> extends Promise<T> {
+  protected readonly state: IRPCReadable<T>;
+  protected readonly accept: (value: T) => void;
+  protected readonly reject: (error: Error) => void;
 
+  /**
+   * The current data payload of the state.
+   */
   public get data(): T {
-    return this.#state.data;
+    return this.state.data;
   }
   public set data(data: T) {
-    this.#state.data = data;
+    this.state.data = data;
   }
 
+  /**
+   * The current error encountered by the state, if any.
+   */
   public get error(): Error | undefined {
-    return this.#state.error;
+    return this.state.error;
   }
   public set error(error: Error | undefined) {
-    this.#state.error = error;
+    this.state.error = error;
   }
 
+  /**
+   * The execution status of the state (PENDING, SUCCESS, ERROR).
+   * Transitioning to a terminal status (SUCCESS or ERROR) will automatically resolve or reject the underlying Promise.
+   */
   public get status(): IRPCStatus {
-    return this.#state.status;
+    return this.state.status;
   }
   public set status(status: IRPCStatus) {
-    this.#state.status = status;
+    this.state.status = status;
+
+    if (this.status === IRPC_STATUS.ERROR) {
+      this.reject(new Error(this.error!.message));
+      this.destroy();
+    } else if (this.status === IRPC_STATUS.SUCCESS) {
+      this.accept(this.data as T);
+      this.destroy();
+    }
   }
 
-  constructor(init: T) {
-    this.#state = mutable({
-      data: mutable(init) as T,
+  /**
+   * Initializes a new RemoteState with an optional initial payload.
+   * 
+   * @param init - An optional starting value for the data payload.
+   */
+  constructor(init?: T) {
+    let acceptFn: (value: T) => void;
+    let rejectFn: (error: Error) => void;
+
+    super((resolve, reject) => {
+      acceptFn = resolve;
+      rejectFn = reject;
+    });
+
+    this.accept = acceptFn!;
+    this.reject = rejectFn!;
+
+    this.state = mutable({
+      data: init as T,
       error: undefined,
-      status: IRPC_STATUS.IDLE,
+      status: IRPC_STATUS.PENDING,
     });
   }
 
+  /**
+   * Subscribes to changes emitted by the internal state.
+   * 
+   * @param handler - A callback function invoked whenever the state mutates.
+   * @returns An unsubscribe function to terminate the listener.
+   */
   public subscribe(handler: StateSubscriber<IRPCReadable<T>>) {
-    return subscribe(this.#state, handler);
+    return subscribe(this.state, handler);
   }
 
-  public destroy() {
-    anchor.destroy(this.#state);
+  /**
+   * Destroys the reactive state bindings.
+   */
+  protected destroy() {
+    anchor.destroy(this.state);
+  }
+
+  /**
+   * Ensures that chained Promise operations return standard Promises
+   * rather than instantiating new RemoteState subclasses.
+   */
+  static get [Symbol.species]() {
+    return Promise;
   }
 }

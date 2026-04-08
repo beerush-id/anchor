@@ -1,3 +1,4 @@
+import type { StateChange } from '@anchorlib/core';
 import type {
   ZodArray,
   ZodBoolean,
@@ -29,12 +30,13 @@ export type IRPCDataType = (typeof IRPC_DATA_TYPE)[keyof typeof IRPC_DATA_TYPE];
 export type IRPCPacketType = (typeof IRPC_PACKET_TYPE)[keyof typeof IRPC_PACKET_TYPE];
 export type IRPCEventType = (typeof IRPC_EVENT_TYPE)[keyof typeof IRPC_EVENT_TYPE];
 
-export type IRPCPacket = {
+export type IRPCPacketBase = {
   id: string;
   name: string;
   type: IRPCPacketType;
-  dispatchAt?: number;
-  receivedAt?: number;
+  status: IRPCStatus;
+  createdAt?: number;
+  arrivedAt?: number;
 };
 
 export type IRPCPacketData = {
@@ -42,19 +44,24 @@ export type IRPCPacketData = {
   value: IRPCData;
 };
 
-export type IRPCPacketCall = IRPCPacket & {
+export type IRPCPacketCall = IRPCPacketBase & {
   args: IRPCData[];
 };
 
-export type IRPCPacketAnswer = IRPCPacket & {
-  data?: IRPCPacketData;
+export type IRPCPacketAnswer<T extends IRPCData> = IRPCPacketBase & {
+  data?: T;
   error?: IRPCError;
 };
 
-export type IRPCPacketEvent = IRPCPacket & {
-  data: IRPCPacketData;
-  event: IRPCEventType;
+export type IRPCPacketEvent = IRPCPacketBase & {
+  data: StateChange;
 };
+
+export type IRPCPacketClose = IRPCPacketBase & {
+  error?: IRPCError;
+};
+
+export type IRPCPacketStream<T extends IRPCData> = IRPCPacketAnswer<T> | IRPCPacketEvent | IRPCPacketClose;
 
 export interface IRPCReadable<T> {
   data: T;
