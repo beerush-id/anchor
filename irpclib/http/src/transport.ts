@@ -1,10 +1,12 @@
 import {
   ERROR_CODE,
   ERROR_MESSAGE,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   type IRPCCall,
   type IRPCData,
+  type IRPCPacketStream,
   type IRPCRequest,
-  type IRPCResponse,
   IRPCTransport,
   type TransportConfig,
 } from '@irpclib/irpc';
@@ -98,7 +100,14 @@ export class HTTPTransport extends IRPCTransport {
 
       if (!response?.ok) {
         calls.forEach((call) => {
-          call.reject(new Error(response?.statusText ?? 'Request failed.'));
+          call.enqueue({
+            id: call.id,
+            name: call.payload.name,
+            type: IRPC_PACKET_TYPE.CLOSE,
+            status: IRPC_STATUS.ERROR,
+            error: { code: ERROR_CODE.UNKNOWN, message: response?.statusText ?? 'Request failed.' },
+            createdAt: Date.now(),
+          } as IRPCPacketStream<IRPCData>);
         });
         return;
       }
@@ -106,7 +115,14 @@ export class HTTPTransport extends IRPCTransport {
       await this.resolveAll(calls, response);
     } catch (error) {
       calls.forEach((call) => {
-        call.reject(error as Error);
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
       });
     }
   }
@@ -122,63 +138,64 @@ export class HTTPTransport extends IRPCTransport {
 
     if (!reader) {
       calls.forEach((call) => {
-        call.reject(new Error('Invalid response body.'));
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Invalid response body.' },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
       });
       return;
     }
 
     const decoder = new TextDecoder();
+    let buffer = '';
 
     try {
       while (true) {
         const { done, value } = await reader.read();
 
-        // Exit loop when stream is finished
-        if (done) break;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split('\n');
 
-        // Decode the chunk into text
-        const chunk = decoder.decode(value);
+          buffer = parts.pop() || '';
 
-        try {
-          // Parse the JSON response
-          const data: IRPCResponse = JSON.parse(chunk);
+          for (const part of parts) {
+            if (!part.trim()) continue;
 
-          // Find the corresponding call by ID
-          const call = calls.find((call) => call.id === data.id);
+            try {
+              const packet: IRPCPacketStream<IRPCData> = JSON.parse(part);
+              const call = calls.find((call) => call.id === packet.id);
 
-          // Skip if no matching call found
-          if (!call) {
-            continue;
+              if (call) {
+                call.enqueue(packet);
+              }
+            } catch (error) {
+              console.error('Unable to parse response chunk:', part, error);
+            }
           }
+        }
 
-          // Resolve the individual call
-          this.resolve(call, data);
-        } catch (error) {
-          // Log parsing errors but continue processing
-          console.error('Unable to parse response chunk:', chunk, error);
+        if (done) {
+          if (buffer.trim()) {
+            try {
+              const packet: IRPCPacketStream<IRPCData> = JSON.parse(buffer);
+              const call = calls.find((call) => call.id === packet.id);
+              if (call) call.enqueue(packet);
+            } catch (error) {
+              console.error('Unable to parse final response chunk:', buffer, error);
+            }
+          }
+          break;
         }
       }
     } catch (error) {
-      // Log stream reading errors
       console.error('Unable to read response stream:', error);
     } finally {
-      // Always release the reader lock
       reader.releaseLock();
-    }
-  }
-
-  /**
-   * Resolves or rejects an individual RPC call based on the response.
-   * @param call - The RPC call to resolve.
-   * @param data - The response data for this call.
-   */
-  protected resolve(call: IRPCCall, data: IRPCResponse) {
-    // Reject the call if there was an error
-    if (data.error) {
-      call.reject(new Error(data.error.message));
-    } else {
-      // Resolve the call with the result data
-      call.resolve(data.result as IRPCData);
     }
   }
 }

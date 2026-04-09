@@ -2,9 +2,12 @@ import {
   createContext,
   ERROR_CODE,
   ERROR_MESSAGE,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
+  IRPCStream,
   withContext,
 } from '@irpclib/irpc';
 import type { HTTPTransport } from './transport.js';
@@ -97,12 +100,19 @@ export class HTTPRouter {
             const error = await this.resolveMiddleware(req.req);
 
             if (error) {
-              controller.enqueue(JSON.stringify(error));
+              controller.enqueue(`${JSON.stringify(error)}\n`);
               return;
             }
 
-            const response = await req.resolve();
-            controller.enqueue(JSON.stringify(response));
+            const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
+
+            stream.pipe((packet) => {
+              controller.enqueue(`${JSON.stringify(packet)}\n`);
+            });
+
+            await new Promise<void>((resolve) => {
+              stream.close(resolve);
+            });
           });
         });
 
@@ -130,10 +140,13 @@ export class HTTPRouter {
         return {
           id: req.id,
           name: req.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
           error: {
             code: ERROR_CODE.UNKNOWN,
             message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
           },
+          createdAt: Date.now(),
         };
       }
     }

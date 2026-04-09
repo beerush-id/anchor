@@ -1,4 +1,4 @@
-import { type IRPCCall } from '@irpclib/irpc';
+import { ERROR_CODE, IRPC_PACKET_TYPE, IRPC_STATUS, type IRPCCall } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport } from '../src/index.js';
 
@@ -102,12 +102,18 @@ describe('HTTPTransport', () => {
         id: '1',
         payload: { name: 'test', args: [] },
         options: {},
-        reject: vi.fn(),
+        enqueue: vi.fn(),
       } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error('Not Found'));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Not Found' },
+        })
+      );
 
       mockFetch.mockRestore();
     });
@@ -126,12 +132,18 @@ describe('HTTPTransport', () => {
       const call = {
         id: '1',
         payload: { name: 'test', args: [] },
-        reject: vi.fn(),
+        enqueue: vi.fn(),
       } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error('Request failed.'));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Request failed.' },
+        })
+      );
 
       mockFetch.mockRestore();
     });
@@ -157,6 +169,7 @@ describe('HTTPTransport', () => {
         payload: { name: 'test', args: [] },
         options: { timeout: 50 },
         reject: vi.fn(),
+        enqueue: vi.fn().mockImplementation((...args: unknown[]) => call.reject(...args)),
       } as any;
 
       // Execute dispatch
@@ -196,7 +209,7 @@ describe('HTTPTransport', () => {
         id: '1',
         payload: { name: 'test', args: [] },
         reject: vi.fn(),
-        // No timeout specified on the call, should use transport config timeout
+        enqueue: vi.fn().mockImplementation((...args: unknown[]) => call.reject(...args)),
       } as any;
 
       // Execute dispatch
@@ -237,6 +250,7 @@ describe('HTTPTransport', () => {
         payload: { name: 'test1', args: [] },
         reject: vi.fn(),
         timeout: 100,
+        enqueue: vi.fn().mockImplementation((...args: unknown[]) => call1.reject(...args)),
       } as any;
 
       const call2 = {
@@ -244,6 +258,7 @@ describe('HTTPTransport', () => {
         payload: { name: 'test2', args: [] },
         reject: vi.fn(),
         timeout: 200, // This is the maximum timeout
+        enqueue: vi.fn().mockImplementation((...args: unknown[]) => call2.reject(...args)),
       } as any;
 
       // Execute dispatch
@@ -282,12 +297,18 @@ describe('HTTPTransport', () => {
       const call = {
         id: '1',
         payload: { name: 'test', args: [] },
-        reject: vi.fn(),
+        enqueue: vi.fn(),
       } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error('Network error'));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Network error' },
+        })
+      );
 
       mockFetch.mockRestore();
     });
@@ -298,8 +319,8 @@ describe('HTTPTransport', () => {
       });
 
       // Mock calls
-      const call1 = { id: '1', reject: vi.fn() } as any;
-      const call2 = { id: '2', reject: vi.fn() } as any;
+      const call1 = { id: '1', payload: { name: 'test1' }, enqueue: vi.fn() } as any;
+      const call2 = { id: '2', payload: { name: 'test2' }, enqueue: vi.fn() } as any;
 
       // Create a mock response with invalid body
       const response = {
@@ -309,8 +330,20 @@ describe('HTTPTransport', () => {
 
       await transport['resolveAll']([call1, call2], response as any);
 
-      expect(call1.reject).toHaveBeenCalledWith(new Error('Invalid response body.'));
-      expect(call2.reject).toHaveBeenCalledWith(new Error('Invalid response body.'));
+      expect(call1.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Invalid response body.' },
+        })
+      );
+      expect(call2.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Invalid response body.' },
+        })
+      );
     });
 
     it('should handle stream reading errors', async () => {
@@ -346,8 +379,8 @@ describe('HTTPTransport', () => {
       });
 
       // Mock calls
-      const call1 = { id: '1', resolve: vi.fn() } as any;
-      const call2 = { id: '2', resolve: vi.fn() } as any;
+      const call1 = { id: '1', enqueue: vi.fn() } as any;
+      const call2 = { id: '2', enqueue: vi.fn() } as any;
       const calls = [call1, call2];
 
       // Text encoder for simulating stream data
@@ -365,13 +398,17 @@ describe('HTTPTransport', () => {
                 // First call returns data for call1
                 return Promise.resolve({
                   done: false,
-                  value: textEncoder.encode(JSON.stringify({ id: '1', result: 'result1' })),
+                  value: textEncoder.encode(
+                    JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.EVENT, data: 'result1' }) + '\n'
+                  ),
                 });
               } else if (callCount === 2) {
                 // Second call returns data for call2
                 return Promise.resolve({
                   done: false,
-                  value: textEncoder.encode(JSON.stringify({ id: '2', result: 'result2' })),
+                  value: textEncoder.encode(
+                    JSON.stringify({ id: '2', type: IRPC_PACKET_TYPE.EVENT, data: 'result2' }) + '\n'
+                  ),
                 });
               } else {
                 // Third call indicates stream is done
@@ -388,8 +425,8 @@ describe('HTTPTransport', () => {
 
       await transport['resolveAll'](calls, response as any);
 
-      expect(call1.resolve).toHaveBeenCalledWith('result1');
-      expect(call2.resolve).toHaveBeenCalledWith('result2');
+      expect(call1.enqueue).toHaveBeenCalledWith(expect.objectContaining({ data: 'result1' }));
+      expect(call2.enqueue).toHaveBeenCalledWith(expect.objectContaining({ data: 'result2' }));
     });
 
     it('should skip response data for unknown call IDs', async () => {
@@ -398,7 +435,7 @@ describe('HTTPTransport', () => {
       });
 
       // Mock calls
-      const call1 = { id: '1', resolve: vi.fn() } as any;
+      const call1 = { id: '1', enqueue: vi.fn() } as any;
       const calls = [call1];
 
       // Text encoder for simulating stream data
@@ -416,7 +453,7 @@ describe('HTTPTransport', () => {
                 // First call returns data with unknown ID
                 return Promise.resolve({
                   done: false,
-                  value: textEncoder.encode(JSON.stringify({ id: 'unknown', result: 'result' })),
+                  value: textEncoder.encode(JSON.stringify({ id: 'unknown', result: 'result' }) + '\n'),
                 });
               } else {
                 // Second call indicates stream is done
@@ -434,7 +471,7 @@ describe('HTTPTransport', () => {
       await transport['resolveAll'](calls, response as any);
 
       // call1 should not be resolved since the response ID doesn't match
-      expect(call1.resolve).not.toHaveBeenCalled();
+      expect(call1.enqueue).not.toHaveBeenCalled();
     });
 
     it('should handle JSON parsing errors in response stream', async () => {
@@ -461,7 +498,7 @@ describe('HTTPTransport', () => {
                 // First call returns invalid JSON
                 return Promise.resolve({
                   done: false,
-                  value: textEncoder.encode('invalid json'),
+                  value: textEncoder.encode('invalid json\n'),
                 });
               } else {
                 // Second call indicates stream is done
@@ -483,63 +520,78 @@ describe('HTTPTransport', () => {
       expect(true).toBe(true);
       expect(errSpy).toHaveBeenCalled();
     });
-  });
 
-  describe('resolve', () => {
-    it('should resolve call with result data', () => {
-      const transport = new HTTPTransport({});
-
-      const call = {
-        resolve: vi.fn(),
-        reject: vi.fn(),
-      } as unknown as IRPCCall;
-
+    it('should handle EOF invalid framing securely', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const call1 = { id: '1', enqueue: vi.fn() } as any;
+      const textEncoder = new TextEncoder();
+      
+      let callCount = 0;
       const response = {
-        result: 'test result',
-      };
-
-      transport['resolve'](call, response as never);
-
-      expect(call.resolve).toHaveBeenCalledWith('test result');
-      expect(call.reject).not.toHaveBeenCalled();
-    });
-
-    it('should reject call with error', () => {
-      const transport = new HTTPTransport({});
-
-      const call = {
-        resolve: vi.fn(),
-        reject: vi.fn(),
-      } as unknown as IRPCCall;
-
-      const response = {
-        error: {
-          message: 'Test error',
+        ok: true,
+        body: {
+          getReader: () => ({
+            read: vi.fn().mockImplementation(() => {
+              callCount++;
+              if (callCount === 1) return Promise.resolve({ done: false, value: textEncoder.encode('invalid terminator') });
+              return Promise.resolve({ done: true, value: undefined });
+            }),
+            releaseLock: vi.fn(),
+          }),
         },
       };
 
-      transport['resolve'](call, response as never);
-
-      expect(call.reject).toHaveBeenCalledWith(new Error('Test error'));
-      expect(call.resolve).not.toHaveBeenCalled();
+      await transport['resolveAll']([call1], response as any);
+      expect(errSpy).toHaveBeenCalled();
     });
 
-    it('should handle error without message', () => {
-      const transport = new HTTPTransport({});
-
-      const call = {
-        resolve: vi.fn(),
-        reject: vi.fn(),
-      } as unknown as IRPCCall;
-
+    it('should evaluate EOF perfectly structured final packet block securely', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const call1 = { id: '1', enqueue: vi.fn() } as any;
+      const textEncoder = new TextEncoder();
+      
+      let callCount = 0;
       const response = {
-        error: {},
+        ok: true,
+        body: {
+          getReader: () => ({
+            read: vi.fn().mockImplementation(() => {
+              callCount++;
+              if (callCount === 1) return Promise.resolve({ done: false, value: textEncoder.encode(JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.EVENT, data: 'eof_terminator' })) });
+              return Promise.resolve({ done: true, value: undefined });
+            }),
+            releaseLock: vi.fn(),
+          }),
+        },
       };
 
-      transport['resolve'](call, response as never);
+      await transport['resolveAll']([call1], response as any);
+      expect(call1.enqueue).toHaveBeenCalledWith(expect.objectContaining({ data: 'eof_terminator' }));
+    });
 
-      expect(call.reject).toHaveBeenCalledWith(new Error(undefined));
-      expect(call.resolve).not.toHaveBeenCalled();
+    it('should cleanly skip empty or whitespace-only streaming blocks natively', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const call1 = { id: '1', enqueue: vi.fn() } as any;
+      const textEncoder = new TextEncoder();
+      
+      let callCount = 0;
+      const response = {
+        ok: true,
+        body: {
+          getReader: () => ({
+            read: vi.fn().mockImplementation(() => {
+              callCount++;
+              if (callCount === 1) return Promise.resolve({ done: false, value: textEncoder.encode('\n \n\t\n') });
+              return Promise.resolve({ done: true, value: undefined });
+            }),
+            releaseLock: vi.fn(),
+          }),
+        },
+      };
+
+      await transport['resolveAll']([call1], response as any);
+      expect(call1.enqueue).not.toHaveBeenCalled();
+      expect(errSpy).not.toHaveBeenCalled();
     });
   });
 });
