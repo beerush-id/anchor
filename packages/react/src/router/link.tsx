@@ -66,7 +66,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
         onMouseEnter={handleHover}
         aria-current={isActive.value ? 'page' : undefined}
         className={[props.className, isActive.value ? props.activeClass : ''].filter(Boolean).join(' ') || undefined}
-        {...$props.$omit(['to', 'params' as never, 'query' as never, 'onClick', 'onMouseEnter', 'preload', 'replace', 'activeClass', 'children'])}
+        {...$props.$omit(['to', 'params' as never, 'query' as never, 'onClick', 'onMouseEnter', 'preload', 'replace', 'activeClass', 'className', 'children'])}
       >
         {props.children}
       </a>

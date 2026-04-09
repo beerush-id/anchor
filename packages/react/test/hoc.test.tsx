@@ -71,7 +71,7 @@ describe('Anchor React - HOC', () => {
         return renderView(() => <span>Test Component: {props.value || 'default'}</span>);
       };
 
-      const SetupComponent = setup(TestComponent);
+      const SetupComponent = setup<{ value?: string }>(TestComponent);
 
       const { rerender } = render(<SetupComponent value="first" />);
       expect(renderCount).toBe(1);
