@@ -5,6 +5,9 @@ import {
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
+  IRPCStream,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   withContext,
 } from '@irpclib/irpc';
 import type { WebSocketTransport } from './transport.js';
@@ -99,29 +102,38 @@ export class WebSocketRouter {
       return;
     }
 
-    requests.forEach((req) => {
-      const ctx = createContext<string, unknown>([
-        ['request', request],
-        ['websocket', ws],
-        ['headers', request?.headers],
-      ]);
+    await Promise.all(
+      requests.map((req) => {
+        const ctx = createContext<string, unknown>([
+          ['request', request],
+          ['websocket', ws],
+          ['headers', request?.headers],
+        ]);
 
-      withContext(ctx, async () => {
-        const error = await this.resolveMiddleware(req.req);
+        return withContext(ctx, async () => {
+          const error = await this.resolveMiddleware(req.req);
 
-        if (error) {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(error));
+          if (error) {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify(error));
+            }
+            return;
           }
-          return;
-        }
 
-        const response = await req.resolve();
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(response));
-        }
-      });
-    });
+          const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
+
+          stream.pipe((packet) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify(packet));
+            }
+          });
+
+          await new Promise<void>((resolve) => {
+            stream.close(resolve);
+          });
+        });
+      })
+    );
   }
 
   /**
@@ -140,10 +152,13 @@ export class WebSocketRouter {
           return {
             id: req.id,
             name: req.name,
+            type: IRPC_PACKET_TYPE.CLOSE,
+            status: IRPC_STATUS.ERROR,
             error: {
               code: ERROR_CODE.UNKNOWN,
               message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
             },
+            createdAt: Date.now(),
           };
         }
       }

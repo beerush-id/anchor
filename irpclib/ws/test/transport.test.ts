@@ -1,4 +1,4 @@
-import { ERROR_CODE, ERROR_MESSAGE } from '@irpclib/irpc';
+import { ERROR_CODE, ERROR_MESSAGE, IRPC_PACKET_TYPE, IRPC_STATUS } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketState, WebSocketTransport } from '../src/index.js';
 
@@ -161,11 +161,11 @@ describe('WebSocketTransport', () => {
       transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
 
       vi.spyOn(transport as any, 'connect').mockRejectedValue(new Error('Connection failed'));
-      const call = { id: '1', payload: { name: 'test', args: [] }, reject: vi.fn() } as any;
+      const call = { id: '1', payload: { name: 'test', args: [] }, enqueue: vi.fn() } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error('Connection failed'));
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: 'Connection failed' }) }));
     });
 
     it('should reject calls if state is CLOSING', async () => {
@@ -173,11 +173,11 @@ describe('WebSocketTransport', () => {
 
       // Mock state to be CLOSING
       Object.defineProperty(transport, 'state', { get: () => WebSocketState.CLOSING });
-      const call = { id: '1', payload: { name: 'test', args: [] }, reject: vi.fn() } as any;
+      const call = { id: '1', payload: { name: 'test', args: [] }, enqueue: vi.fn() } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_STATE]), false);
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }) }));
     });
 
     it('should reject calls if state is CLOSED and autoReconnect is false', async () => {
@@ -186,11 +186,11 @@ describe('WebSocketTransport', () => {
       transport.config.autoReconnect = false;
       // Mock state to be CLOSED
       Object.defineProperty(transport, 'state', { get: () => WebSocketState.CLOSED });
-      const call = { id: '1', payload: { name: 'test', args: [] }, reject: vi.fn() } as any;
+      const call = { id: '1', payload: { name: 'test', args: [] }, enqueue: vi.fn() } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_STATE]), false);
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }) }));
     });
 
     it('should reject calls if pending connection fails', async () => {
@@ -204,11 +204,11 @@ describe('WebSocketTransport', () => {
       // Mock state to be CONNECTING
       Object.defineProperty(transport, 'state', { get: () => WebSocketState.CONNECTING });
 
-      const call = { id: '1', payload: { name: 'test', args: [] }, reject: vi.fn() } as any;
+      const call = { id: '1', payload: { name: 'test', args: [] }, enqueue: vi.fn() } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(error);
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: error.message }) }));
     });
 
     it('should wait for pending connection', async () => {
@@ -257,35 +257,46 @@ describe('WebSocketTransport', () => {
       });
       transport['ws'] = { send: mockSend } as any;
 
-      const call = { id: '1', payload: { name: 'test', args: [] }, reject: vi.fn() } as any;
+      const call = { id: '1', payload: { name: 'test', args: [] }, enqueue: vi.fn() } as any;
 
       await transport['dispatch']([call]);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error('Send failed'));
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: 'Send failed' }) }));
     });
   });
 
   describe('resolve', () => {
     it('should resolve pending call on success response', () => {
-      const call = { id: '1', resolve: vi.fn(), reject: vi.fn() } as any;
+      const call = { id: '1', enqueue: vi.fn() } as any;
       transport['pendingCalls'].set('1', call);
 
-      const event = { data: JSON.stringify({ id: '1', result: 'success' }) } as MessageEvent;
+      const event = { data: JSON.stringify({ id: '1', status: IRPC_STATUS.SUCCESS }) } as MessageEvent;
       transport['resolve'](event);
 
-      expect(call.resolve).toHaveBeenCalledWith('success');
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.SUCCESS }));
       expect(transport['pendingCalls'].has('1')).toBe(false);
     });
 
     it('should reject pending call on error response', () => {
-      const call = { id: '1', resolve: vi.fn(), reject: vi.fn() } as any;
+      const call = { id: '1', enqueue: vi.fn() } as any;
       transport['pendingCalls'].set('1', call);
 
-      const event = { data: JSON.stringify({ id: '1', error: { message: 'failed' } }) } as MessageEvent;
+      const event = { data: JSON.stringify({ id: '1', status: IRPC_STATUS.ERROR, error: { message: 'failed' } }) } as MessageEvent;
       transport['resolve'](event);
 
-      expect(call.reject).toHaveBeenCalledWith(new Error('failed'));
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.ERROR }));
       expect(transport['pendingCalls'].has('1')).toBe(false);
+    });
+
+    it('should keep pending call when status is PENDING', () => {
+      const call = { id: '1', enqueue: vi.fn() } as any;
+      transport['pendingCalls'].set('1', call);
+
+      const event = { data: JSON.stringify({ id: '1', status: IRPC_STATUS.PENDING }) } as MessageEvent;
+      transport['resolve'](event);
+
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.PENDING }));
+      expect(transport['pendingCalls'].has('1')).toBe(true);
     });
 
     it('should ignore unknown calls', () => {
@@ -412,19 +423,52 @@ describe('WebSocketTransport', () => {
 
       consoleSpy.mockRestore();
     });
+
+    it('should organically default to DEFAULT_RECONNECT_DELAY successfully globally bypassing overridden variables safely', async () => {
+      transport.config.autoReconnect = true;
+      // Do completely NOT define reconnectDelay to explicitly trigger ?? DEFAULT_RECONNECT_DELAY fallback natively!
+
+      const connectSpy = vi.spyOn(transport as any, 'connect').mockRejectedValueOnce(new Error('Fail')).mockResolvedValue(undefined);
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      (transport as any).scheduleReconnect();
+
+      // Delay explicitly by EXACTLY 1000 natively isolating the unconfigured hook gracefully.
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should evaluate successful scheduleReconnect execution path accurately natively', async () => {
+      transport.config.autoReconnect = true;
+      transport.config.reconnectDelay = 10;
+      
+      const connectSpy = vi.spyOn(transport as any, 'connect').mockResolvedValue(undefined);
+
+      (transport as any).scheduleReconnect();
+
+      vi.advanceTimersByTime(10);
+      await Promise.resolve(); 
+      // The awaited `this.connect()` naturally succeeds resolving the `try` block explicitly fully!
+      
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('handleClose', () => {
     it('should reject all pending calls', () => {
-      const call1 = { reject: vi.fn() } as any;
-      const call2 = { reject: vi.fn() } as any;
+      const call1 = { payload: { name: 'foo' }, enqueue: vi.fn() } as any;
+      const call2 = { payload: { name: 'bar' }, enqueue: vi.fn() } as any;
       transport['pendingCalls'].set('1', call1);
       transport['pendingCalls'].set('2', call2);
 
       transport['handleClose']({ wasClean: true } as CloseEvent);
 
-      expect(call1.reject).toHaveBeenCalledWith(new Error('WebSocket connection closed'));
-      expect(call2.reject).toHaveBeenCalledWith(new Error('WebSocket connection closed'));
+      expect(call1.enqueue).toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.ERROR }));
+      expect(call2.enqueue).toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.ERROR }));
       expect(transport['pendingCalls'].size).toBe(0);
     });
 

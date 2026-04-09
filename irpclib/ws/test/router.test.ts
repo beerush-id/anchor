@@ -66,6 +66,19 @@ describe('WebSocketRouter', () => {
       expect(router.middlewares).toContain(middleware);
       expect(result).toBe(router);
     });
+
+    it('should safely ignore non-function middleware entities gracefully', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      router.use('invalid_middleware' as any);
+      
+      const ws = { readyState: 1, send: vi.fn() } as any;
+      await router.resolve(JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]), ws); 
+
+      expect(errSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('resolve', () => {
@@ -97,7 +110,7 @@ describe('WebSocketRouter', () => {
       const ws = {
         readyState: 1, // OPEN
         send: vi.fn().mockImplementation((message) => {
-          expect(message.includes('"result":"Hello World"')).toBe(true);
+          expect(message.includes('"data":"Hello World"')).toBe(true);
         }),
       } as any;
 
@@ -125,6 +138,27 @@ describe('WebSocketRouter', () => {
       await router.resolve(message, ws);
 
       expect(errSpy).toHaveBeenCalled();
+    });
+
+    it('should execute valid middleware and cleanly proceed to route resolution', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      const validMiddleware = vi.fn().mockResolvedValue(undefined);
+      router.use(validMiddleware);
+
+      type TestFunc = (input: { name: string }) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      module.construct(testFunc, async () => `Hello!`);
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+      const message = JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]);
+
+      await router.resolve(message, ws);
+
+      expect(validMiddleware).toHaveBeenCalled();
+      expect(ws.send).toHaveBeenCalled();
     });
 
     it('should handle invalid JSON', async () => {

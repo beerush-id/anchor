@@ -7,6 +7,9 @@ import {
   type IRPCResponse,
   IRPCTransport,
   type TransportConfig,
+  type IRPCPacketStream,
+  IRPC_STATUS,
+  IRPC_PACKET_TYPE,
 } from '@irpclib/irpc';
 
 export const DEFAULT_RECONNECT_DELAY = 1000;
@@ -187,7 +190,14 @@ export class WebSocketTransport extends IRPCTransport {
   private handleClose(event: CloseEvent): void {
     // Reject all pending calls
     this.pendingCalls.forEach((call) => {
-      call.reject(new Error('WebSocket connection closed'));
+      call.enqueue({
+        id: call.id,
+        name: call.payload.name,
+        type: IRPC_PACKET_TYPE.CLOSE,
+        status: IRPC_STATUS.ERROR,
+        error: { code: ERROR_CODE.UNKNOWN, message: 'WebSocket connection closed' },
+        createdAt: Date.now(),
+      } as IRPCPacketStream<IRPCData>);
     });
     this.pendingCalls.clear();
 
@@ -235,7 +245,7 @@ export class WebSocketTransport extends IRPCTransport {
    */
   protected resolve(event: MessageEvent): void {
     try {
-      const response: IRPCResponse = JSON.parse(event.data);
+      const response: IRPCPacketStream<IRPCData> = JSON.parse(event.data);
       const call = this.pendingCalls.get(response.id);
 
       if (!call) {
@@ -243,14 +253,11 @@ export class WebSocketTransport extends IRPCTransport {
         return;
       }
 
-      // Let base class handle the resolution
-      if (response.error) {
-        call.reject(new Error(response.error.message));
-      } else {
-        call.resolve(response.result as IRPCData);
-      }
+      call.enqueue(response);
 
-      this.pendingCalls.delete(response.id);
+      if (response.status === IRPC_STATUS.SUCCESS || response.status === IRPC_STATUS.ERROR) {
+        this.pendingCalls.delete(response.id);
+      }
     } catch (error) {
       console.error('Failed to parse WebSocket message:', error);
     }
@@ -267,7 +274,14 @@ export class WebSocketTransport extends IRPCTransport {
       (this.state === WebSocketState.CLOSED && this.config.autoReconnect === false)
     ) {
       calls.forEach((call) => {
-        call.reject(new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_STATE]), false);
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.INVALID_STATE, message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
       });
 
       return;
@@ -279,7 +293,14 @@ export class WebSocketTransport extends IRPCTransport {
         await this.pendingConnection;
       } catch (error) {
         calls.forEach((call) => {
-          call.reject(error as Error);
+          call.enqueue({
+            id: call.id,
+            name: call.payload.name,
+            type: IRPC_PACKET_TYPE.CLOSE,
+            status: IRPC_STATUS.ERROR,
+            error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+            createdAt: Date.now(),
+          } as IRPCPacketStream<IRPCData>);
         });
 
         return;
@@ -292,7 +313,14 @@ export class WebSocketTransport extends IRPCTransport {
         await this.connect();
       } catch (error) {
         calls.forEach((call) => {
-          call.reject(error as Error);
+          call.enqueue({
+            id: call.id,
+            name: call.payload.name,
+            type: IRPC_PACKET_TYPE.CLOSE,
+            status: IRPC_STATUS.ERROR,
+            error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+            createdAt: Date.now(),
+          } as IRPCPacketStream<IRPCData>);
         });
         return;
       }
@@ -310,7 +338,14 @@ export class WebSocketTransport extends IRPCTransport {
       });
     } catch (error) {
       calls.forEach((call) => {
-        call.reject(error as Error);
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
       });
     }
   }
