@@ -1,4 +1,5 @@
 import { IRPCCall } from './call.js';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import type {
   IRPCCallConfig,
@@ -35,25 +36,13 @@ export class IRPCTransport {
    */
   public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[], config?: IRPCCallConfig) {
     const payload: IRPCPayload = { name: spec.name, args };
+    const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
 
-    return new Promise<IRPCData>((resolve, reject) => {
-      const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
+    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay });
 
-      this.schedule(
-        new IRPCCall(this, payload, {
-          timeout,
-          maxRetries,
-          retryMode,
-          retryDelay,
-          resolve: (value) => {
-            resolve(value);
-          },
-          reject: (reason) => {
-            reject(reason);
-          },
-        })
-      );
-    });
+    this.schedule(call);
+
+    return call.reader;
   }
 
   /**
@@ -96,7 +85,17 @@ export class IRPCTransport {
    */
   protected async dispatch(calls: IRPCCall[]): Promise<void> {
     calls.forEach((call) => {
-      call.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED]));
+      call.enqueue({
+        id: call.id,
+        name: call.payload.name,
+        type: IRPC_PACKET_TYPE.CLOSE,
+        status: IRPC_STATUS.ERROR,
+        error: {
+          code: ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED,
+          message: ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED],
+        },
+        createdAt: Date.now(),
+      });
     });
   }
 }

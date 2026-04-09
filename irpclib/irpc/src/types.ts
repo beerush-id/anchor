@@ -272,16 +272,6 @@ export type IRPCCallConfig = {
 };
 
 /**
- * Options for executing an RPC call, extending configuration with promise callbacks.
- */
-export type IRPCCallOptions = IRPCCallConfig & {
-  /** Reject callback for the call's promise */
-  reject: (reason?: Error) => void;
-  /** Resolve callback for the call's promise */
-  resolve: (value: IRPCData) => void;
-};
-
-/**
  * Configuration for transport layer, extending call configuration with debounce settings.
  */
 export type TransportConfig = IRPCCallConfig & {

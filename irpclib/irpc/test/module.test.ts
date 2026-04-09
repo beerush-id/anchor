@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { createPackage, type IRPCCall, type IRPCHandler, type IRPCPackage, IRPCTransport } from '../src/index.js';
+import { RemoteState } from '../src/state.js';
 
 describe('IRPCPackage', () => {
   let rpc: IRPCPackage;
@@ -180,6 +182,27 @@ describe('IRPCPackage', () => {
       expect(await hello('World')).toBe('Hello World');
     });
 
+    it('should call local synchronous implementation', async () => {
+      const hello = rpc.declare<(name: string) => string>({
+        name: 'hello',
+      });
+      rpc.construct(hello, (name) => `Hello ${name}`);
+
+      expect(hello('World')).toBe('Hello World');
+    });
+
+    it('should call local RemoteState implementation', async () => {
+      const hello = rpc.declare<(name: string) => RemoteState<string>>({
+        name: 'hello',
+      });
+      rpc.construct(hello, (name) => new RemoteState<string>(`Hello ${name}`));
+
+      const result = hello('World');
+
+      expect(result.data).toBe('Hello World');
+      expect(result.status).toBe(IRPC_STATUS.PENDING);
+    });
+
     it('should handle coalesce call', async () => {
       const irpc = createPackage({
         name: 'coalesce',
@@ -225,7 +248,14 @@ describe('IRPCPackage', () => {
       class OptimisticTransport extends IRPCTransport {
         async dispatch(calls: IRPCCall[]) {
           calls.forEach((call) => {
-            call.resolve('Hello World');
+            call.enqueue({
+              id: call.id,
+              name: call.payload.name,
+              type: IRPC_PACKET_TYPE.ANSWER,
+              status: IRPC_STATUS.SUCCESS,
+              data: 'Hello World',
+              createdAt: Date.now(),
+            });
           });
         }
       }
@@ -248,7 +278,14 @@ describe('IRPCPackage', () => {
     it('should call cached remote implementation', async () => {
       const dispatcher = vi.fn().mockImplementation((calls: IRPCCall[]) => {
         calls.forEach((call) => {
-          call.resolve(call.payload.args[0]);
+          call.enqueue({
+            id: call.id,
+            name: call.payload.name,
+            type: IRPC_PACKET_TYPE.ANSWER,
+            status: IRPC_STATUS.SUCCESS,
+            data: call.payload.args[0],
+            createdAt: Date.now(),
+          });
         });
       });
 
@@ -272,19 +309,13 @@ describe('IRPCPackage', () => {
       irpc.invalidate(() => {});
 
       const promise = hello('Hello World 1');
-
-      await Promise.resolve();
-      vi.runAllTimers();
-
       expect(await promise).toBe('Hello World 1');
 
       const promise2 = hello('Hello World 1');
-
-      await Promise.resolve();
-      vi.runAllTimers();
-
       expect(await promise2).toBe('Hello World 1');
       expect(dispatcher).toHaveBeenCalledTimes(1);
+
+      vi.runAllTimers();
 
       const now = Date.now;
       Date.now = () => now() + 1000;

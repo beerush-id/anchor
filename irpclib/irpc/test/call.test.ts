@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPCCall } from '../src/call.js';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import type { IRPCTransport } from '../src/index.js';
 
@@ -11,9 +12,7 @@ describe('IRPCCall', () => {
   describe('constructor', () => {
     it('should create call with payload and options', () => {
       const payload = { name: 'testFunc', args: ['arg1'] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject };
+      const options = { timeout: 1000 };
 
       const call = new IRPCCall(mockTransport, payload, options);
 
@@ -22,22 +21,27 @@ describe('IRPCCall', () => {
       expect(call.resolved).toBe(false);
       expect(typeof call.id).toBe('string');
       expect(call.id).toHaveLength(36); // UUID length
+      expect(call.reader).toBeDefined();
     });
 
-    it('should set timeout timer if timeout option is provided', () => {
+    it('should set timeout timer if timeout option is provided and dispatch CLOSE to reader', () => {
       vi.useFakeTimers();
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject, timeout: 1000 };
+      const options = { timeout: 1000 };
 
-      new IRPCCall(mockTransport, payload, options);
+      const call = new IRPCCall(mockTransport, payload, options);
+      call.reader.catch(() => {}); // Hide error message.
+      const pushSpy = vi.spyOn(call.reader, 'push');
 
       vi.advanceTimersByTime(1000);
 
-      expect(reject).toHaveBeenCalledWith(
+      expect(pushSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: ERROR_MESSAGE[ERROR_CODE.TIMEOUT],
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({
+            message: ERROR_MESSAGE[ERROR_CODE.TIMEOUT],
+          }),
         })
       );
 
@@ -46,106 +50,107 @@ describe('IRPCCall', () => {
   });
 
   describe('resolve', () => {
-    it('should call resolver callback with value', () => {
+    it('should statically set resolved to true', () => {
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject };
-
-      const call = new IRPCCall(mockTransport, payload, options);
+      const call = new IRPCCall(mockTransport, payload, {});
       const result = { data: 'test' };
 
       call.resolve(result);
 
-      expect(resolve).toHaveBeenCalledWith(result);
-      expect(reject).not.toHaveBeenCalled();
       expect(call.resolved).toBe(true);
+      expect(call.value).toBe(result);
+      expect(call.status).toBe(IRPC_STATUS.SUCCESS);
     });
 
-    it('should not call resolver multiple times', () => {
+    it('should ignore multiple redundant resolves', () => {
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject };
-
-      const call = new IRPCCall(mockTransport, payload, options);
+      const call = new IRPCCall(mockTransport, payload, {});
       const result1 = { data: 'test1' };
       const result2 = { data: 'test2' };
 
       call.resolve(result1);
       call.resolve(result2);
 
-      expect(resolve).toHaveBeenCalledTimes(1);
-      expect(resolve).toHaveBeenCalledWith(result1);
       expect(call.resolved).toBe(true);
+      expect(call.value).toBe(result1);
     });
   });
 
   describe('reject', () => {
-    it('should call rejector callback with error', () => {
+    it('should definitively set state error without retries map', () => {
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject };
-
-      const call = new IRPCCall(mockTransport, payload, options);
+      const call = new IRPCCall(mockTransport, payload, { maxRetries: 0 });
       const error = new Error('Test error');
 
       call.reject(error);
 
-      expect(reject).toHaveBeenCalledWith(error);
-      expect(resolve).not.toHaveBeenCalled();
       expect(call.resolved).toBe(true);
+      expect(call.error).toBe(error);
+      expect(call.status).toBe(IRPC_STATUS.ERROR);
     });
 
-    it('should not call rejector multiple times', () => {
+    it('should not mutate error iteratively', () => {
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject };
-
-      const call = new IRPCCall(mockTransport, payload, options);
+      const call = new IRPCCall(mockTransport, payload, { maxRetries: 0 });
       const error1 = new Error('Test error 1');
       const error2 = new Error('Test error 2');
 
       call.reject(error1);
       call.reject(error2);
 
-      expect(reject).toHaveBeenCalledTimes(1);
-      expect(reject).toHaveBeenCalledWith(error1);
       expect(call.resolved).toBe(true);
+      expect(call.error).toBe(error1);
+    });
+  });
+
+  describe('enqueue', () => {
+    it('should map ANSWER tracking to explicit successful resolve dynamically', () => {
+      const payload = { name: 'testFunc', args: [] };
+      const call = new IRPCCall(mockTransport, payload, {});
+
+      call.enqueue({
+        id: call.id,
+        name: 'testFunc',
+        type: IRPC_PACKET_TYPE.ANSWER,
+        status: IRPC_STATUS.SUCCESS,
+        data: 'Network Payload',
+        createdAt: Date.now(),
+      });
+
+      expect(call.resolved).toBe(true);
+      expect(call.value).toBe('Network Payload');
     });
 
-    it('should handle reject without error', () => {
+    it('should securely trigger fallback reject if stream receives structural CLOSE ERROR securely', async () => {
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = { resolve, reject };
+      const call = new IRPCCall(mockTransport, payload, { maxRetries: 0 });
 
-      const call = new IRPCCall(mockTransport, payload, options);
+      call.reader.catch(() => {}); // Hide error message.
 
-      call.reject();
+      call.enqueue({
+        id: call.id,
+        name: 'testFunc',
+        type: IRPC_PACKET_TYPE.CLOSE,
+        status: IRPC_STATUS.ERROR,
+        error: { code: ERROR_CODE.UNKNOWN, message: 'Bad network pipe' },
+        createdAt: Date.now(),
+      });
 
-      expect(reject).toHaveBeenCalledWith(undefined);
-      expect(resolve).not.toHaveBeenCalled();
       expect(call.resolved).toBe(true);
+      expect(call.error?.message).toBe('Bad network pipe');
     });
   });
 
   describe('Retry Logic', () => {
-    it('should retry call when maxRetries is set', () => {
+    it('should retry call when maxRetries is set successfully triggering scheduler', () => {
       const transport = {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
       const options = {
         maxRetries: 3,
         retryDelay: 10,
         retryMode: 'linear' as const,
-        resolve,
-        reject,
       };
 
       const call = new IRPCCall(transport, payload, options);
@@ -155,110 +160,75 @@ describe('IRPCCall', () => {
 
       call.reject(error);
 
-      expect(reject).not.toHaveBeenCalled();
+      expect(call.resolved).toBe(false);
       expect(transport.schedule).not.toHaveBeenCalled();
 
       vi.advanceTimersByTime(10);
 
       expect(transport.schedule).toHaveBeenCalledWith(call);
-      // Access private property for testing
       expect((call as any).retries).toBe(1);
 
       vi.useRealTimers();
     });
 
-    it('should not retry when maxRetries is not set', () => {
+    it('should not retry when maxRetries is safely disabled structurally', () => {
       const transport = {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
       const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = {
-        resolve,
-        reject,
-      };
-
-      const call = new IRPCCall(transport, payload, options);
+      const call = new IRPCCall(transport, payload, { maxRetries: 0 });
       const error = new Error('Test error');
 
       call.reject(error);
 
-      expect(reject).toHaveBeenCalledWith(error);
+      expect(call.resolved).toBe(true);
       expect(transport.schedule).not.toHaveBeenCalled();
     });
 
-    it('should stop retrying when maxRetries is reached', () => {
+    it('should stop securely recovering loops when maxRetries boundary triggers conclusively', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const transport = {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
-      const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = {
-        maxRetries: 1,
-        retryDelay: 10,
-        resolve,
-        reject,
-      };
 
-      const call = new IRPCCall(transport, payload, options);
+      const call = new IRPCCall(
+        transport,
+        { name: 'testFunc', args: [] },
+        {
+          maxRetries: 1,
+          retryDelay: 10,
+        }
+      );
       const error = new Error('Test error');
 
       vi.useFakeTimers();
 
-      // First failure
+      // First failure triggers schedule implicitly
       call.reject(error);
       vi.advanceTimersByTime(10);
       expect(transport.schedule).toHaveBeenCalledTimes(1);
 
-      // Second failure (should fail permanently)
+      // Second failure hits limit statically resolving error cleanly
       call.reject(error);
 
-      expect(reject).toHaveBeenCalledWith(error);
+      expect(call.resolved).toBe(true);
       expect(transport.schedule).toHaveBeenCalledTimes(1);
 
       vi.useRealTimers();
+      errorSpy.mockRestore();
     });
 
-    it('should not retry if retriable is false', () => {
-      const transport = {
-        schedule: vi.fn(),
-      } as unknown as IRPCTransport;
-      const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = {
-        maxRetries: 3,
-        resolve,
-        reject,
-      };
-
-      const call = new IRPCCall(transport, payload, options);
-      const error = new Error('Test error');
-
-      call.reject(error, false);
-
-      expect(reject).toHaveBeenCalledWith(error);
-      expect(transport.schedule).not.toHaveBeenCalled();
-    });
-
-    it('should use exponential backoff', () => {
-      const transport = {
-        schedule: vi.fn(),
-      } as unknown as IRPCTransport;
-      const payload = { name: 'testFunc', args: [] };
-      const resolve = vi.fn();
-      const reject = vi.fn();
-      const options = {
-        maxRetries: 3,
-        retryDelay: 10,
-        retryMode: 'exponential' as const,
-        resolve,
-        reject,
-      };
-
-      const call = new IRPCCall(transport, payload, options);
+    it('should use accurate exponential backoff timers dynamically mapped', () => {
+      const transport = { schedule: vi.fn() } as unknown as IRPCTransport;
+      const call = new IRPCCall(
+        transport,
+        { name: 'test', args: [] },
+        {
+          maxRetries: 3,
+          retryDelay: 10,
+          retryMode: 'exponential',
+        }
+      );
       const error = new Error('Test error');
 
       vi.useFakeTimers();

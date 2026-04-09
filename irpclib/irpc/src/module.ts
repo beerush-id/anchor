@@ -1,5 +1,6 @@
 import { IRPCCacher } from './cache.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { RemoteState } from './state.js';
 import { IRPCTransport } from './transport.js';
 import type {
   IRPCCallConfig,
@@ -93,12 +94,12 @@ export class IRPCPackage {
     }
 
     const spec = { ...init } as IRPCSpec<IRPCInputs, IRPCOutput>;
-    const calls = new Map<string, Promise<unknown>>();
+    const calls = new Map<string, unknown>();
     const caches = new IRPCCacher();
 
-    const stub = (async (...args: IRPCData[]) => {
+    const stub = ((...args: IRPCData[]) => {
       if (!this.transport && typeof spec.handler !== 'function') {
-        throw new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]);
+        return Promise.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]));
       }
 
       const callKey = JSON.stringify(args);
@@ -115,24 +116,24 @@ export class IRPCPackage {
       const { timeout, maxRetries, retryDelay, retryMode } = { ...this.config, ...spec };
       const config = { timeout, maxRetries, retryDelay, retryMode } as IRPCCallConfig;
 
-      const call: Promise<unknown> =
+      const call =
         typeof spec.handler === 'function'
-          ? (spec.handler as (...args: unknown[]) => Promise<unknown>)(...args)
+          ? (spec.handler as (...args: unknown[]) => unknown)(...args)
           : this.transport!.call(spec, args, config);
 
       calls.set(callKey, call);
 
-      try {
-        const data = await call;
+      if (spec.maxAge) {
+        caches.set(callKey, call, spec.maxAge);
+      }
 
-        if (spec.maxAge) {
-          caches.set(callKey, data, spec.maxAge);
-        }
-
-        return data;
-      } finally {
+      if (call instanceof Promise) {
+        call.finally(() => calls.delete(callKey));
+      } else {
         calls.delete(callKey);
       }
+
+      return call;
     }) as IRPCHandler;
 
     this.specs.set(init.name, spec);
@@ -148,18 +149,18 @@ export class IRPCPackage {
    * @returns The result of the IRPC execution
    * @throws Error if the IRPC doesn't exist or doesn't have an implementation
    */
-  public async resolve(req: IRPCRequest): Promise<IRPCData> {
+  public resolve(req: IRPCRequest): IRPCData | Promise<IRPCData> | RemoteState<IRPCData> {
     const spec = this.specs.get(req.name);
 
     if (!spec) {
-      return Promise.reject(new Error(`IRPC ${req.name} does not exist.`));
+      return Promise.reject(new Error(`IRPC ${req.name} does not exist.`)) as never;
     }
 
     if (typeof spec.handler !== 'function') {
-      return Promise.reject(new Error(`IRPC ${req.name} does not have an implementation.`));
+      return Promise.reject(new Error(`IRPC ${req.name} does not have an implementation.`)) as never;
     }
 
-    return await spec.handler(...(req.args as IRPCData[]));
+    return spec.handler(...(req.args as IRPCData[]));
   }
 
   /**

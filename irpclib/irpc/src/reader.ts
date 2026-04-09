@@ -3,8 +3,6 @@ import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { RemoteState } from './state.js';
 import type { IRPCData, IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent, IRPCPacketStream } from './types.js';
 
-const READER_REGISTRY = new Map<string, IRPCReader<IRPCData>>();
-
 /**
  * A client-side consumer that hydrates `RemoteState` instances from network stream packets.
  *
@@ -27,6 +25,8 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
    * @param packet - The incoming unified Stream Packet structure (`ANSWER`, `EVENT`, or `CLOSE`).
    */
   public push(packet: IRPCPacketStream<T>) {
+    packet.arrivedAt = Date.now();
+
     this.packets.add(packet);
 
     if (packet.type === IRPC_PACKET_TYPE.ANSWER) {
@@ -45,29 +45,4 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
 
     this.status = packet.status;
   }
-
-  /**
-   * Graceful internal termination of the reader loop bindings.
-   *
-   * Triggers natively once the stream fulfills (SUCCESS or ERROR), decoupling the tracking keys
-   * from the global execution registry.
-   */
-  protected destroy(): void {
-    super.destroy();
-    READER_REGISTRY.delete(this.id);
-  }
-}
-
-/**
- * Recovers or constructs an `IRPCReader` linked to a given network lifecycle ID.
- *
- * @param id - The unique network request ID bridging this stream to its remote origin.
- * @returns The active IRPCReader matching the stream.
- */
-export function readStream(id: string) {
-  if (!READER_REGISTRY.has(id)) {
-    READER_REGISTRY.set(id, new IRPCReader(id));
-  }
-
-  return READER_REGISTRY.get(id)!;
 }

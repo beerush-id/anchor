@@ -14,10 +14,10 @@ import type {
 
 /**
  * A server-side producer that normalizes and serializes RPC outputs into standard transport packets.
- * 
- * Supports both standard asynchronous responses and reactive streams. When handling a continuous stream, 
+ *
+ * Supports both standard asynchronous responses and reactive streams. When handling a continuous stream,
  * it intercepts state mutations and emits sequential network packets (`ANSWER`, `EVENT`, `CLOSE`).
- * 
+ *
  * @template T - The type of data yielded by the stream.
  */
 export class IRPCStream<T extends IRPCData> {
@@ -31,7 +31,7 @@ export class IRPCStream<T extends IRPCData> {
 
   /**
    * Initializes a stream wrapping an asynchronous RPC execution.
-   * 
+   *
    * @param id - The unique identifier of the RPC request.
    * @param name - The name of the specification processing the execution.
    * @param initializer - An execution callback that yields an IRPCResponse.
@@ -43,7 +43,7 @@ export class IRPCStream<T extends IRPCData> {
   ) {}
 
   /**
-   * Evaluates the underlying initializer and propagates standard transport packets 
+   * Evaluates the underlying initializer and propagates standard transport packets
    * to all bound pipe handlers based on the output lifecycle.
    */
   private async start() {
@@ -74,6 +74,7 @@ export class IRPCStream<T extends IRPCData> {
             data: this.value as T,
             error: this.error,
             status: this.status,
+            createdAt: Date.now(),
           } satisfies IRPCPacketAnswer<T>;
 
           this.pipeHandlers.forEach((handler) => handler(packet));
@@ -90,6 +91,7 @@ export class IRPCStream<T extends IRPCData> {
             type: IRPC_PACKET_TYPE.ANSWER,
             data: result.data,
             status: result.status,
+            createdAt: Date.now(),
           } satisfies IRPCPacketAnswer<T>);
         });
 
@@ -106,6 +108,7 @@ export class IRPCStream<T extends IRPCData> {
                 type: IRPC_PACKET_TYPE.EVENT,
                 status: state.status,
                 data: event,
+                createdAt: Date.now(),
               } satisfies IRPCPacketEvent);
             });
           } else if (rootKey === 'status') {
@@ -125,6 +128,7 @@ export class IRPCStream<T extends IRPCData> {
                 type: IRPC_PACKET_TYPE.CLOSE,
                 error: this.error,
                 status: this.status,
+                createdAt: Date.now(),
               } satisfies IRPCPacketClose);
             });
 
@@ -142,6 +146,7 @@ export class IRPCStream<T extends IRPCData> {
           type: IRPC_PACKET_TYPE.ANSWER,
           status: IRPC_STATUS.SUCCESS,
           data: this.value as T,
+          createdAt: Date.now(),
         } satisfies IRPCPacketAnswer<T>;
 
         this.pipeHandlers.forEach((handler) => handler(packet));
@@ -158,6 +163,7 @@ export class IRPCStream<T extends IRPCData> {
           type: IRPC_PACKET_TYPE.ANSWER,
           status: IRPC_STATUS.ERROR,
           error: error as IRPCError,
+          createdAt: Date.now(),
         });
       });
 
@@ -169,9 +175,9 @@ export class IRPCStream<T extends IRPCData> {
   }
 
   /**
-   * Binds a handler to receive the outbound stream packets. 
+   * Binds a handler to receive the outbound stream packets.
    * If invoked after the stream has fulfilled or rejected natively, it automatically plays back the conclusive packet.
-   * 
+   *
    * @param handler - A callback function to receive packets.
    */
   public pipe(handler: (event: IRPCPacketStream<T>) => void) {
@@ -183,6 +189,7 @@ export class IRPCStream<T extends IRPCData> {
         data: this.value as T,
         error: this.error,
         status: this.status,
+        createdAt: Date.now(),
       } satisfies IRPCPacketAnswer<T>);
 
       return;
@@ -194,7 +201,7 @@ export class IRPCStream<T extends IRPCData> {
 
   /**
    * Binds a handler to trap any internal runtime failures independently.
-   * 
+   *
    * @param handler - A callback function to receive stream errors.
    */
   public catch(handler: (error: IRPCError) => void) {
@@ -209,7 +216,7 @@ export class IRPCStream<T extends IRPCData> {
 
   /**
    * Binds a handler triggered upon terminal completion of the stream process (success or error).
-   * 
+   *
    * @param handler - A callback function invoked at stream completion.
    */
   public close(handler: () => void) {

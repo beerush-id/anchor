@@ -1,7 +1,8 @@
-import { IRPC_STATUS } from './enum.js';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { IRPCReader } from './reader.js';
 import type { IRPCTransport } from './transport.js';
-import type { IRPCCallOptions, IRPCData, IRPCPayload, IRPCStatus } from './types.js';
+import type { IRPCCallConfig, IRPCData, IRPCPacketStream, IRPCPayload, IRPCStatus } from './types.js';
 import { uuid } from './uuid.js';
 
 export const DEFAULT_RETRY_MODE = 'exponential';
@@ -48,6 +49,8 @@ export class IRPCCall {
   private retries = 0;
   private retryReasons = new Set<Error>();
 
+  public reader: IRPCReader<IRPCData>;
+
   /**
    * Creates a new IRPCCall instance.
    * @param transport
@@ -57,13 +60,37 @@ export class IRPCCall {
   constructor(
     public transport: IRPCTransport,
     public payload: IRPCPayload,
-    public options: IRPCCallOptions
+    public options: IRPCCallConfig
   ) {
     if (options.timeout) {
       this.timerId = setTimeout(() => {
         // Timed out call does not get retried.
+        this.reader.push({
+          id: this.id,
+          name: this.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: {
+            code: ERROR_CODE.TIMEOUT,
+            message: ERROR_MESSAGE[ERROR_CODE.TIMEOUT],
+          },
+          createdAt: Date.now(),
+        } satisfies IRPCPacketStream<IRPCData>);
+
         this.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]), false);
       }, options.timeout) as never as number;
+    }
+
+    this.reader = new IRPCReader(this.id);
+  }
+
+  public enqueue(packet: IRPCPacketStream<IRPCData>) {
+    this.reader.push(packet);
+
+    if (this.reader.status === IRPC_STATUS.SUCCESS) {
+      this.resolve(this.reader.data);
+    } else if (this.reader.status === IRPC_STATUS.ERROR) {
+      this.reject(this.reader.error);
     }
   }
 
@@ -81,8 +108,6 @@ export class IRPCCall {
     this.finishedAt = Date.now();
 
     clearTimeout(this.timerId);
-
-    this.options.resolve(value);
   }
 
   /**
@@ -120,8 +145,6 @@ export class IRPCCall {
       this.finishedAt = Date.now();
 
       clearTimeout(this.timerId);
-
-      this.options.reject(reason);
     }
   }
 }

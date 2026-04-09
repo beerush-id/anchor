@@ -1,5 +1,6 @@
 import { ERROR_CODE } from './error.js';
 import type { IRPCPackage } from './module.js';
+import { RemoteState } from './state.js';
 import type {
   IRPCData,
   IRPCError,
@@ -82,10 +83,27 @@ export class IRPCResolver {
    * @param schema - Optional output schema for result validation
    * @returns A promise that resolves to an IRPC response with the result or an error
    */
-  public async forward({ id, name, args }: IRPCRequest, schema?: IRPCOutput) {
+  public async forward({ id, name, args }: IRPCRequest, schema?: IRPCOutput): Promise<IRPCResponse> {
     try {
-      const result = await this.module.resolve({ id, name, args });
-      const output = parseOutput(result, schema);
+      const result = this.module.resolve({ id, name, args });
+
+      if (result instanceof RemoteState) {
+        const output = parseOutput(result.data, schema);
+
+        if (!output.success) {
+          const error: IRPCError = {
+            code: ERROR_CODE.INVALID_OUTPUT,
+            message: output.error?.message,
+          };
+
+          return { id, name, error };
+        }
+
+        return { id, name, result };
+      }
+
+      const data = await result;
+      const output = parseOutput(data, schema);
 
       // Validate output against schema if provided
       if (output.success) {

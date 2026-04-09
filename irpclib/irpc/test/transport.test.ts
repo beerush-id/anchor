@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { type IRPCCall, type IRPCData, IRPCTransport } from '../src/index.js';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 
 abstract class TransportType {
   abstract schedule(call: unknown): unknown;
@@ -76,7 +77,7 @@ describe('IRPC Transport', () => {
         .spyOn(transportWithDebounceFalse as any, 'dispatch')
         .mockImplementation(() => Promise.resolve());
 
-      const call: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
+      const call: IRPCCall = { id: '1', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
 
       (transportWithDebounceFalse as never as TransportType).schedule(call);
 
@@ -95,8 +96,8 @@ describe('IRPC Transport', () => {
         .spyOn(transportWithDebounceZero as any, 'dispatch')
         .mockImplementation(() => Promise.resolve());
 
-      const call1: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
-      const call2: IRPCCall = { id: '2', reject: vi.fn(), resolve: vi.fn() } as never;
+      const call1: IRPCCall = { id: '1', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
+      const call2: IRPCCall = { id: '2', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
 
       (transportWithDebounceZero as never as TransportType).schedule(call1);
       (transportWithDebounceZero as never as TransportType).schedule(call2);
@@ -124,8 +125,8 @@ describe('IRPC Transport', () => {
         .spyOn(transportWithDebounce as any, 'dispatch')
         .mockImplementation(() => Promise.resolve());
 
-      const call1: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
-      const call2: IRPCCall = { id: '2', reject: vi.fn(), resolve: vi.fn() } as never;
+      const call1: IRPCCall = { id: '1', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
+      const call2: IRPCCall = { id: '2', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
 
       (transportWithDebounce as never as TransportType).schedule(call1);
       (transportWithDebounce as never as TransportType).schedule(call2);
@@ -148,8 +149,8 @@ describe('IRPC Transport', () => {
 
     it('should maintain queue of multiple calls with default debounce', async () => {
       // Default debounce behavior uses queueMicrotask (0ms)
-      const call1: IRPCCall = { id: '1', reject: vi.fn(), resolve: vi.fn() } as never;
-      const call2: IRPCCall = { id: '2', reject: vi.fn(), resolve: vi.fn() } as never;
+      const call1: IRPCCall = { id: '1', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
+      const call2: IRPCCall = { id: '2', payload: { name: 'test' }, enqueue: vi.fn(), reject: vi.fn(), resolve: vi.fn() } as never;
 
       (transport as never as TransportType).schedule(call1);
       (transport as never as TransportType).schedule(call2);
@@ -161,8 +162,8 @@ describe('IRPC Transport', () => {
       await Promise.resolve();
 
       // Both calls should be processed
-      expect(call1.reject).toHaveBeenCalled();
-      expect(call2.reject).toHaveBeenCalled();
+      expect(call1.enqueue).toHaveBeenCalled();
+      expect(call2.enqueue).toHaveBeenCalled();
     });
   });
 
@@ -170,24 +171,26 @@ describe('IRPC Transport', () => {
     it('should reject all calls with not implemented error', async () => {
       const call1: IRPCCall = {
         id: '1',
-        reject: vi.fn(),
+        payload: { name: 'test' },
+        enqueue: vi.fn(),
       } as never;
 
       const call2: IRPCCall = {
         id: '2',
-        reject: vi.fn(),
+        payload: { name: 'test' },
+        enqueue: vi.fn(),
       } as never;
 
       await (transport as never as TransportType).dispatch([call1, call2]);
 
-      expect(call1.reject).toHaveBeenCalledWith(new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED]));
-      expect(call2.reject).toHaveBeenCalledWith(new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED]));
+      expect(call1.enqueue).toHaveBeenCalledWith(expect.objectContaining({ error: { code: ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED, message: ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED] } }));
+      expect(call2.enqueue).toHaveBeenCalledWith(expect.objectContaining({ error: { code: ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED, message: ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED] } }));
     });
 
     it('should resolve all calls when dispatching', async () => {
       class DispatchAll extends IRPCTransport {
         protected async dispatch(calls: IRPCCall[]): Promise<void> {
-          calls.forEach((call) => call.resolve('resolved'));
+          calls.forEach((call) => call.enqueue({ id: call.id, name: call.payload.name, type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'resolved', createdAt: Date.now() }));
         }
       }
 

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { ERROR_CODE } from '../src/error.js';
-import type { IRPCHandler } from '../src/index.js';
+import { IRPC_STATUS, type IRPCHandler } from '../src/index.js';
 import { createPackage } from '../src/module.js';
 import { IRPCResolver } from '../src/resolver.js';
+import { RemoteState } from '../src/state.js';
 
 describe('IRPC Resolver', () => {
   describe('Resolve Request', () => {
@@ -30,6 +31,71 @@ describe('IRPC Resolver', () => {
         name: 'testFunc',
         result: 'Hello World',
       });
+    });
+
+    it('should resolve valid RemoteState request', async () => {
+      const rpc = createPackage();
+      type TestFunc = (input: { name: string }) => Promise<string>;
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+
+      const handler: TestFunc = (input) => {
+        const state = new RemoteState<string>(`Hello ${input.name}`);
+        state.status = IRPC_STATUS.SUCCESS;
+        return state;
+      };
+      rpc.construct(testFunc, handler);
+
+      const resolver = new IRPCResolver(
+        {
+          id: '1',
+          name: 'testFunc',
+          args: [{ name: 'World' }],
+        },
+        rpc
+      );
+
+      const result = await resolver.resolve();
+
+      expect(result.id).toEqual('1');
+      expect(result.name).toEqual('testFunc');
+      expect((result.result as RemoteState<string>).status).toEqual(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should resolve invalid RemoteState request', async () => {
+      const rpc = createPackage();
+      type TestFunc = (input: { name: string }) => Promise<string>;
+      const testFunc = rpc.declare<TestFunc>({
+        name: 'testFunc',
+        schema: {
+          output: z.number(),
+        },
+      });
+
+      const handler: TestFunc = (input) => {
+        const state = new RemoteState<string>(`${input.name}`);
+        state.status = IRPC_STATUS.SUCCESS;
+        return state;
+      };
+      rpc.construct(testFunc, handler);
+
+      const resolver = new IRPCResolver(
+        {
+          id: '1',
+          name: 'testFunc',
+          args: [{ name: 'World' }],
+        },
+        rpc
+      );
+
+      const result = await resolver.resolve();
+
+      expect(result.id).toEqual('1');
+      expect(result.name).toEqual('testFunc');
+      expect(result.error).toEqual({
+        code: ERROR_CODE.INVALID_OUTPUT,
+        message: expect.any(String),
+      });
+      expect(result.result).toBeUndefined();
     });
 
     it('should return error for non-existent function', async () => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_STATUS } from '../src/enum.js';
-import { RemoteState } from '../src/state.js';
+import { RemoteState, stream } from '../src/state.js';
 
 describe('RemoteState', () => {
   beforeEach(() => {
@@ -75,5 +75,60 @@ describe('RemoteState', () => {
 
     const result = await chained;
     expect(result).toBe('finished');
+  });
+
+  describe('stream utility factory', () => {
+    it('should natively configure RemoteState pipeline', () => {
+      const activeStream = stream((data) => {
+        expect(data).toBe('seeded');
+      }, 'seeded');
+
+      expect(activeStream).toBeInstanceOf(RemoteState);
+      expect(activeStream.data).toBe('seeded');
+      expect(activeStream.status).toBe(IRPC_STATUS.PENDING);
+    });
+
+    it('should properly execute manual resolution via inner closure strictly', async () => {
+      const activeStream = stream<string[]>((data, resolve) => {
+        data.push('loaded');
+        resolve();
+      }, []);
+
+      const result = await activeStream;
+
+      expect(result).toEqual(['loaded']);
+      expect(activeStream.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should capture exact sync crashes dynamically binding to reject pipe', async () => {
+      const activeStream = stream(() => {
+        throw new Error('Sync pipeline crash');
+      });
+
+      await expect(activeStream).rejects.toThrow('Sync pipeline crash');
+      expect(activeStream.status).toBe(IRPC_STATUS.ERROR);
+    });
+
+    it('should securely accept optional payload mutations dynamically during terminal resolution', async () => {
+      const activeStream = stream<string>((data, resolve) => {
+        resolve('Terminal override');
+      }, 'Initial data');
+
+      const result = await activeStream;
+
+      expect(result).toBe('Terminal override');
+      expect(activeStream.data).toBe('Terminal override');
+      expect(activeStream.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should hook strictly unto promise chains securing unhandled errors natively', async () => {
+      const activeStream = stream(async () => {
+        await Promise.resolve();
+        throw new Error('Async pipeline failure');
+      });
+
+      await expect(activeStream).rejects.toThrow('Async pipeline failure');
+      expect(activeStream.status).toBe(IRPC_STATUS.ERROR);
+    });
   });
 });
