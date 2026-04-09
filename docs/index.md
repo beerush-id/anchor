@@ -2,29 +2,25 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
-title: 'AIR Stack: Cost Efficient, AI-Native Web Development Libraries'
-description: 'The complete stack for modern web applications: Anchor (fine-grained state management), IRPC (type-safe APIs with automatic batching), and Reactive UI (React, Solid, Svelte, Vue). Build faster, ship cheaper, scale effortlessly.'
+title: 'AIR Stack: The Zero-Boilerplate, AI-Native Stack'
+description: 'Eliminate the network layer. Eliminate React Query. Eliminate re-render cascades. Build type-safe, real-time web applications instantly with Anchor and IRPC.'
 keywords:
   - AIR Stack
   - Anchor
   - IRPC
-  - Reactive UI
-  - state management
+  - Zero Boilerplate
+  - Full-stack React
   - RPC framework
   - API batching
-  - React
-  - Solid
-  - Vue
-  - Svelte
+  - React Query alternative
+  - tRPC alternative
+  - AI Native
   - TypeScript
-  - Bun
-  - performance
-  - enterprise
 
 hero:
   name: 'AIR Stack'
-  text: 'Cost Efficient, AI-Native'
-  tagline: 'The Complete Stack for Modern Web Development'
+  text: 'Zero-Boilerplate, AI-Native'
+  tagline: 'Eliminate the network layer. Eliminate complex caching. Eliminate re-render cascades. Build type-safe, real-time apps instantly.'
   image: /icon.svg
 
   actions:
@@ -36,30 +32,24 @@ hero:
       link: https://github.com/beerush-id/anchor
 
 features:
+  - icon: 🤖
+    title: AI-Native Architecture
+    details: Eliminates opaque boilerplate and implicit rendering lifecycles. Less "glue code" means AI assistants generate correct, deterministic components without hallucinating dependencies.
+  - icon: 🔌
+    title: Zero Network Plumbing
+    details: No tRPC routers. No manual fetchers. IRPC seamlessly syncs your backend to a RemoteState over HTTP or WebSockets.
   - icon: ⚡
-    title: Fine-Grained Reactivity
-    details: Anchor's fine-grained reactivity ensures only affected components re-render, eliminating wasted renders for optimal performance.
-  - icon: 🚀
-    title: Faster API Transport
-    details: IRPC's automatic batching dramatically reduces network overhead by combining multiple requests into a single HTTP connection.
-  - icon: 🎨
+    title: Kill Subscriptions
+    details: Get real-time streaming natively over standard HTTP. Use the exact same function signature for a simple query as you do for a live dashboard.
+  - icon: ⚛️
+    title: Kill React Query
+    details: You don't need heavy query libraries. IRPC handles intelligent caching, loading states, retry logic, and call coalescing automatically.
+  - icon: 🛑
+    title: Kill Re-Render Cascades
+    details: Anchor separates logic from presentation. Fetch data once without useEffect loops, and bind it directly to fine-grained DOM snippets.
+  - icon: 🌐
     title: Universal Reactive UI
-    details: Works seamlessly with React, Solid, Svelte, Vue, and vanilla JavaScript. One state management solution for all frameworks.
-  - icon: 📦
-    title: Intelligent Caching
-    details: Built-in intelligent caching with configurable TTL and manual invalidation ensures data freshness without redundant calls.
-  - icon: 🛡️
-    title: Call Coalescing
-    details: Prevents duplicate executions when multiple calls with identical arguments are made simultaneously.
-  - icon: 🎯
-    title: Per-Function Retry
-    details: Individual retry, timeout, and caching settings per function for optimal reliability and performance.
-  - icon: 🔧
-    title: Zero Boilerplate
-    details: Auto-import constructors, type-safe APIs, and automatic versioning. No routes, no endpoints, just write functions and ship.
-  - icon: 💰
-    title: Cost Efficiency
-    details: Reduced HTTP connections translate directly to lower infrastructure costs and reduced token usage in generative AI applications.
+    details: Works perfectly with React, Solid, Svelte, Vue, and vanilla JavaScript. One cohesive reactive architecture for any framework.
 ---
 
 ::: anchor-react-sandbox {class="sp-grid"}

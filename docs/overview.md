@@ -1,180 +1,135 @@
 ---
 title: 'AIR Stack: A Technical Overview'
-description: 'Get a high-level overview of the AIR Stack - Anchor (state management), IRPC (type-safe APIs with automatic batching), and Reactive UI (React, Solid, Svelte, Vue). The complete stack for modern web development.'
+description: 'The Zero-Boilerplate, AI-Native Stack. Eliminate the network layer, React Query, and re-render cascades with Anchor and IRPC.'
 keywords:
   - AIR Stack
   - Anchor
   - IRPC
-  - Reactive UI
-  - state management
-  - RPC framework
+  - Zero Boilerplate
+  - React Query alternative
+  - tRPC alternative
   - API batching
   - fine-grained reactivity
-  - type-safe APIs
   - enterprise web development
 ---
 
 # AIR Stack: A Technical Overview
 
-**The Complete Stack for Modern Web Development**
+**The Zero-Boilerplate, AI-Native Stack**
 
-AIR Stack is a revolutionary approach to building web applications that eliminates complexity while delivering exceptional performance. It consists of three integrated components:
+The modern web development ecosystem is fragmented. You use React for UI, Zustand for state, tRPC for API contracts, React Query for caching, and Socket.io for live streaming.
 
-- **A** = **Anchor** (Fine-grained state management)
-- **I** = **IRPC** (Type-safe APIs with automatic batching)
+You spend 70% of your time writing "glue code" to wire these disparate systems together. 
+
+The **AIR Stack** is a fundamental architectural shift. It fuses state management, network transport, and reactive rendering into a single, cohesive pipeline:
+
+- **A** = **Anchor** (Fine-grained reactive view binding)
+- **I** = **IRPC** (Universal Remote Procedure Calls & Streaming)
 - **R** = **Reactive UI** (React, Solid, Svelte, Vue, vanilla JS)
 
 <div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
   <img src="/schemas/dsv-model.webp" alt="DSV (Data-State-View) Model Schema" />
 </div>
 
-## **The Problem**
+## **The Problem: Boilerplate Fatigue**
 
-Modern web development forces you to juggle multiple concerns:
+Traditional stacks force you to juggle immense cognitive load just to get data onto the screen:
 
-### **State Management**
-- **Prop Drilling & Context Hell:** Sharing state becomes a tangled mess of props and providers
-- **Wasted Renders:** Traditional approaches trigger unnecessary re-renders across large parts of the app
-- **High Mental Overhead:** Managing immutability, data fetching, and storage distracts from business logic
+### **1. The API & Network Burden (The tRPC / REST problem)**
+- **Boilerplate Routing:** You must define explicit routes, endpoints, or tRPC router trees just to expose a single function.
+- **The Subscription Nightmare:** Want real-time data? Standard API calls won't work. You have to set up entirely separate WebSocket infrastructure and write different "subscription" procedures.
 
-### **API Development**
-- **Boilerplate Overload:** REST requires routes, serialization, client code, and manual type definitions
-- **Performance Bottlenecks:** Multiple API calls mean multiple HTTP connections, slowing down your app
-- **Type Safety Gaps:** Keeping client and server types in sync is manual and error-prone
+### **2. The Caching Burden (The React Query problem)**
+- **Heavy Dependencies:** You wrap your app in massive provider libraries just to avoid fetching the same resource twice.
+- **Manual Invalidation:** You have to manually track query keys and trigger invalidations when data changes.
 
-### **Framework Lock-in**
-- **Vendor Lock-in:** State management solutions are often tied to a specific framework
-- **Migration Pain:** Switching frameworks means rewriting your entire state layer
+### **3. The Rendering Burden (The React problem)**
+- **Re-render Cascades:** When your API data updates, React re-renders the entire component tree.
+- **useEffect Hell:** Fetching data safely requires managing `useEffect` dependency arrays, leading to infinite loops and stale closures.
+- **AI Hallucinations:** Because the rendering lifecycle is implicit and highly dependent on glue code, AI coding assistants struggle to generate correct, bug-free components.
 
-These issues create a divide between **Developer Experience (DX)** and **User Experience (UX)**. Apps might be easy to build initially, but they become slow and unmanageable at scale.
+## **The Solution: End-to-End Reactivity**
 
-## **The Solution: AIR Stack**
+The AIR Stack completely eliminates the glue code. 
 
-AIR Stack solves these problems with three integrated components:
+**Server Mutation → IRPC Transport → Anchor DOM Binding.**
 
-### **1. Anchor: Fine-Grained State Management**
+The pipeline handles caching, loading states, chunk streaming, and UI updates invisibly.
 
-Anchor introduces the **DSV (Data-State-View) model**, replacing scattered data flows with a single, stable state that acts as the source of truth.
+### **1. IRPC: Zero-Plumbing Network Transport**
 
-**Key Features:**
-- **Fine-Grained Reactivity:** Only components that depend on changed state re-render
-- **Flexible State Primitives:** Direct mutation syntax with proxy-based write contracts for safety
-- **Framework Agnostic:** Works with React, Solid, Svelte, Vue, and vanilla JS
-- **Built-in Toolkit:** Optimistic UI, history tracking, reactive storage, and async state
-
-**Example:**
-```typescript
-import { mutable, effect } from '@anchorlib/core';
-
-const user = mutable({ name: 'John', age: 30 });
-
-// Only this effect re-runs when age changes
-effect(() => {
-  console.log('Age changed:', user.age);
-});
-
-user.age++; // Triggers effect
-user.name = 'Jane'; // Does NOT trigger effect
-```
-
-### **2. IRPC: Type-Safe APIs**
-
-IRPC (Isomorphic Remote Procedure Call) eliminates API boilerplate by making remote functions look and feel like local functions.
+IRPC makes remote functions feel local. It handles the transport layer entirely. 
 
 **Key Features:**
-- **Zero Boilerplate:** No routes, no endpoints, no client code
-- **Automatic Batching:** Intelligent request batching with configurable debounce reduces network overhead
-- **Call Coalescing:** Prevents duplicate executions when multiple calls with identical arguments are made simultaneously
-- **Per-Function Configuration:** Individual retry, timeout, and caching settings per function
-- **Intelligent Caching:** Built-in caching with configurable TTL and manual invalidation
-- **Schema Validation:** Optional Zod integration for runtime input/output validation
-- **Context Management:** Built-in async context support for request-scoped data
-- **Type-Safe:** End-to-end TypeScript with zero manual type definitions
+- **Zero Boilerplate:** Declare the function, construct the handler. No routes, no controllers.
+- **Native Streaming:** Return `RemoteState` instead of a Promise to seamlessly yield chunks over standard HTTP (SSE). **No WebSockets required for real-time dashboards.**
+- **Automatic Batching:** Simultaneous calls are batched into a single request with 6.96x faster throughput.
+- **Intelligent Caching:** Built right into the protocol. Bypasses the need for React Query.
 
-**Example:**
 ```typescript
-// Declare once
-const hello = irpc.declare<(name: string) => Promise<string>>({
-  name: 'hello',
-  maxAge: 60000 // Cache for 1 minute
-});
+// Define it (Shared)
+const getPrice = irpc.declare<PriceFn>({ name: 'getPrice' });
 
-// Implement on server
-irpc.construct(hello, async (name) => `Hello ${name}`);
-
-// Call from client
-const message = await hello('John'); // "Hello John"
+// Implement it (Server)
+irpc.construct(getPrice, async (ticker) => db.prices.find(ticker));
 ```
 
-### **3. Reactive UI: Universal Framework Support**
+### **2. Anchor: Fine-Grained View Binding**
 
-AIR Stack works seamlessly with any reactive UI framework, providing a consistent state management and API layer regardless of your view technology.
+Anchor introduces the **DSV (Data-State-View)** model. Logic runs exactly once, and data is bound directly to fine-grained DOM snippets.
 
-**Supported Frameworks:**
-- React
-- Solid
-- Svelte
-- Vue
-- Vanilla JavaScript/TypeScript
+**Key Features:**
+- **Logic Runs Once:** Your component wrapper runs once. No `useState`, no `useEffect` loops, no stale variables.
+- **Surgical DOM Updates:** Only the exact `snippet` that depends on changed data will re-render. The rest of your app remains perfectly still.
+- **AI-Native:** Deterministic logic flows are trivial for AI assistants to generate without bugs.
 
-**Example (React):**
 ```tsx
-import { setup, snippet, mutable } from '@anchorlib/react';
-import { getUser } from './api'; // IRPC function
+import { setup, snippet } from '@anchorlib/react';
 
-const UserProfile = setup<{ id: string }>((props) => {
-  const user = mutable({ name: '', email: '' });
+const Profile = setup(() => {
+  // Logic runs once.
+  const user = getPrice('AAPL'); // Call the IRPC remote function
 
-  // Fetch user data
-  getUser(props.id).then(data => Object.assign(user, data));
-
-  // Only this part re-renders when user changes
-  const UserInfo = snippet(() => (
-    <>
-      <h1>{user.name}</h1>
-      <p>{user.email}</p>
-    </>
-  ));
+  // Only this exact snippet re-renders when data streams in.
+  const PriceView = snippet(() => <span>${user.data.current}</span>);
 
   return (
-    <div className="profile">
-      <header>User Profile</header>
-      <UserInfo />
-      <footer>Last updated: {new Date().toLocaleDateString()}</footer>
+    <div>
+      <Header />
+      <PriceView />
     </div>
   );
 });
 ```
 
-## **Architecture Overview**
+### **3. Universal Reactive UI Support**
 
-### **DSV (Data-State-View) Model**
+Because the AIR Stack handles the state and network layers natively, your business logic is completely portable. The View layer acts simply as a rendering surface.
 
-Anchor's DSV model creates a clean separation of concerns:
+**Supported Interfaces:**
+- React (replaces React Query & Redux/Zustand)
+- Svelte (enhances standard stores with Zod integrity and immutability)
+- SolidJS
+- Vue 
+- Vanilla TypeScript
 
-1. **Data:** External sources (APIs via IRPC, databases, user input)
-2. **State:** Central state managed by Anchor
-3. **View:** Components that observe and render state
+## **The "Aha!" Moment**
 
-This architecture eliminates prop drilling, context hell, and state synchronization issues while providing predictable, scalable state management.
+In a traditional stack, building a live-streaming dashboard requires:
+`WebSocket Server` + `tRPC Subscription Procedure` + `React Query Provider` + `useEffect Data Loading` + `useMemo Layout Optimization`.
 
-### **IRPC Protocol**
+In the AIR Stack, it requires:
+**Calling a function.**
 
-IRPC's automatic batching protocol:
-
-1. **Client:** Multiple function calls made simultaneously
-2. **Transport:** Calls batched into a single HTTP request
-3. **Server:** Requests processed in parallel
-4. **Response:** Results streamed back as they complete
-5. **Client:** Promises resolve individually
-
-This reduces network overhead specifically for modern, component-based applications where multiple components might request data simultaneously.
+```typescript
+// Client
+const prices = streamPrices(); 
+call.subscribe(state => console.log(state.data)); // Streams natively.
+```
 
 ## **Next Steps**
 
 - [Anchor Getting Started](/getting-started) - Set up state management
 - [IRPC Overview](/irpc/index.html) - Build type-safe APIs
 - [React Guide](/react/getting-started) - Framework-specific integration
-- [IRPC Specification](/irpc/specification) - Protocol details
-
-**AIR Stack: Build faster, ship cheaper, scale effortlessly.** 🚀
+- [Svelte Guide](/svelte/getting-started) - True Immutability for Svelte
