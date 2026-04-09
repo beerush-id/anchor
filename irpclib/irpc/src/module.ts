@@ -5,8 +5,8 @@ import { IRPCTransport } from './transport.js';
 import type {
   IRPCCallConfig,
   IRPCData,
+  IRPCDeclareInit,
   IRPCHandler,
-  IRPCInit,
   IRPCInputs,
   IRPCOutput,
   IRPCPackageConfig,
@@ -84,16 +84,18 @@ export class IRPCPackage {
 
   /**
    * Declares a new IRPC specification and creates a corresponding stub function
-   * @param init - The initialization object containing the IRPC specification
+   * @param options - The initialization object containing the IRPC specification
    * @returns A stub function that can be used to call the IRPC
    * @throws Error if an IRPC with the same name already exists
    */
-  public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(init: IRPCInit<I, O>): F {
-    if (this.specs.has(init.name)) {
-      throw new Error(`IRPC ${init.name} already exists.`);
+  public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
+    options: IRPCDeclareInit<F, I, O>
+  ): F {
+    if (this.specs.has(options.name)) {
+      throw new Error(`IRPC ${options.name} already exists.`);
     }
 
-    const spec = { ...init } as IRPCSpec<IRPCInputs, IRPCOutput>;
+    const spec = { ...options } as never as IRPCSpec<IRPCInputs, IRPCOutput>;
     const calls = new Map<string, unknown>();
     const caches = new IRPCCacher();
 
@@ -127,6 +129,10 @@ export class IRPCPackage {
         caches.set(callKey, call, spec.maxAge);
       }
 
+      if (typeof spec.init === 'function' && call instanceof RemoteState && typeof call.data === 'undefined') {
+        call.data = spec.init();
+      }
+
       if (call instanceof Promise) {
         call.finally(() => calls.delete(callKey)).catch(() => {});
       } else {
@@ -136,7 +142,7 @@ export class IRPCPackage {
       return call;
     }) as IRPCHandler;
 
-    this.specs.set(init.name, spec);
+    this.specs.set(options.name, spec);
     this.stubs.set(stub, spec);
     this.cache.set(stub, caches);
 

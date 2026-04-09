@@ -62,10 +62,12 @@ const router = new HTTPRouter(irpc, transport);
 
 // Add middleware
 router.use(async () => {
-  const userId = getContext('userId');
+  const req = getContext<Request>('request');
+  const userId = req.headers.get('x-user-id');
   if (!userId) {
     throw new Error('Unauthorized');
   }
+  setContext('userId', userId);
 });
 
 Bun.serve({
@@ -184,7 +186,27 @@ POST /irpc/my-api/1.0.0
 // ...
 ```
 
-**Result:** 10x fewer HTTP connections, 6.96x faster performance.
+### Server-Sent Events (Streaming)
+
+The HTTP Transport layer automatically uses a `TextDecoderStream` to parse HTTP Server-Sent Events. This allows you to yield continuous chunks natively over standard HTTP without requiring WebSockets.
+
+```typescript
+// Client
+const call = loadDashboard('user-123');
+call.subscribe(state => console.log('Hydrating chunks natively over HTTP:', state.data));
+```
+
+```http
+// HTTP Stream Response (over the wire)
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+{"id":"1","name":"loadDashboard","status":1,"data":{"user": "John"}}
+{"id":"1","name":"loadDashboard","status":1,"data":{"user": "John", "sales": 40}}
+{"id":"1","name":"loadDashboard","status":2,"data":{"user": "John", "sales": 40}}
+```
+
+**Result:** 10x fewer HTTP connections, 6.96x faster performance, fully responsive UI rendering without waterfalls.
 
 ---
 

@@ -25,61 +25,40 @@ npm install @irpclib/ws
 
 ## Basic Usage
 
-### Shared Module
-
-Create a shared module that both client and server will use:
+### 1. Declare Functions (Shared)
 
 ```typescript
-// lib/module.ts
-import { WebSocketTransport } from '@irpclib/ws';
-import { createPackage } from '@irpclib/irpc';
+// rpc/hello/index.ts
+import { irpc } from '../lib/module.js';
 
-export const irpc = createPackage({
-  name: 'my-api',
-  version: '1.0.0',
-});
-
-export const transport = new WebSocketTransport({
-  url: 'ws://localhost:8080',
-  autoReconnect: true,
-  maxReconnectAttempts: 5,
-});
-
-irpc.use(transport);
-
-// Declare functions
-export const hello = irpc.declare<(name: string) => Promise<string>>({
-  name: 'hello'
-});
+export type HelloFn = (name: string) => Promise<string>;
+export const hello = irpc.declare<HelloFn>({ name: 'hello' });
 ```
 
-### Client Setup
+### 2. Implement Handlers (Server)
 
 ```typescript
-import { hello } from './lib/module.js';
+// rpc/hello/constructor.ts
+import { irpc } from '../lib/module.js';
+import { hello } from './index.js';
 
-const message = await hello('John');
-console.log(message); // 'Hello John'
-```
-
-### Server Setup
-
-```typescript
-import { WebSocketRouter } from '@irpclib/ws';
-import { irpc, transport, hello } from './lib/module.js';
-
-// Implement handlers
 irpc.construct(hello, async (name) => `Hello ${name}`);
+```
 
-// Create router
+### 3. Server Setup
+
+```typescript
+// server.ts
+import { WebSocketRouter } from '@irpclib/ws';
+import { irpc, transport } from './lib/module.js';
+import './rpc/hello/constructor.js';
+
 const router = new WebSocketRouter(irpc, transport);
 
-// Handle WebSocket connections
 Bun.serve({
   port: 8080,
   fetch(req, server) {
-    const success = server.upgrade(req);
-    if (success) return undefined;
+    if (server.upgrade(req)) return;
     return new Response('WebSocket server running');
   },
   websocket: {
@@ -88,6 +67,16 @@ Bun.serve({
     },
   },
 });
+```
+
+### 4. Client Usage
+
+```typescript
+// client.ts
+import { hello } from './rpc/hello/index.js';
+
+const message = await hello('John');
+console.log(message); // 'Hello John'
 ```
 
 ## Configuration
@@ -187,7 +176,7 @@ const [user, posts, stats] = await Promise.all([
 
 ### Streaming Responses
 
-Responses stream back as they complete, enabling parallel processing.
+Because the WebSocket channel persists, responses are yielded dynamically as continuous `IRPCPacketStream` chunks over the socket. This enables you to attach `.subscribe()` across any standard pipeline to track real-time events.
 
 ## Error Handling
 

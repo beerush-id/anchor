@@ -11,6 +11,7 @@ import type {
 } from 'zod/v4';
 import type { IRPC_DATA_TYPE, IRPC_EVENT_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
+import type { RemoteState } from './state.js';
 import type { IRPCTransport } from './transport.js';
 
 /**
@@ -195,6 +196,21 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
 } & IRPCCallConfig;
 
 /**
+ * Type definition for an RPC declaration.
+ * Represents an RPC function with its name, description, and configuration.
+ *
+ * @template F - The function signature of the RPC
+ * @template I - Tuple of input validation schemas
+ * @template O - Output validation schema
+ */
+export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F extends (
+  // biome-ignore lint/suspicious/noExplicitAny: Expected
+  ...args: any[]
+) => RemoteState<infer R>
+  ? IRPCInit<I, IRPCOutput> & { init: () => R }
+  : IRPCInit<I, O>;
+
+/**
  * Complete specification for an RPC function including its implementation.
  * Extends IRPCInit with the actual handler function.
  *
@@ -204,6 +220,7 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
 export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<I, O> & {
   /** The actual handler function that implements the RPC */
   handler: IRPCHandler;
+  init?: () => unknown;
 };
 
 /**

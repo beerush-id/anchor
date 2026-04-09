@@ -26,56 +26,47 @@ npm install @irpclib/broadcast
 
 ## Basic Usage
 
-### Shared Module
-
-Create a shared module that all contexts will use:
+### 1. Declare Functions (Shared)
 
 ```typescript
-// lib/module.ts
-import { BroadcastTransport } from '@irpclib/broadcast';
-import { createPackage } from '@irpclib/irpc';
+// rpc/data/index.ts
+import { irpc } from '../lib/module.js';
 
-export const irpc = createPackage({
-  name: 'my-api',
-  version: '1.0.0',
-});
-
-export const transport = new BroadcastTransport({
-  channel: irpc.href, // 'my-api/1.0.0'
-});
-
-irpc.use(transport);
-
-// Declare functions
-export const processData = irpc.declare<(data: string) => Promise<string>>({
-  name: 'processData'
-});
+export type ProcessDataFn = (data: string) => Promise<string>;
+export const processData = irpc.declare<ProcessDataFn>({ name: 'processData' });
 ```
 
-### Client (Main Thread or Tab)
+### 2. Implement Handlers (Worker)
 
 ```typescript
-import { processData } from './lib/module.js';
+// rpc/data/constructor.ts
+import { irpc } from '../lib/module.js';
+import { processData } from './index.js';
 
-// Call function (handled by worker or another tab)
-const result = await processData('Hello from main thread');
-console.log(result); // 'Processed: Hello from main thread'
-```
-
-### Server (Web Worker or Another Tab)
-
-```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
-import { irpc, transport, processData } from './lib/module.js';
-
-// Implement handler
 irpc.construct(processData, async (data) => {
-  // Heavy processing in worker
   return `Processed: ${data}`;
 });
+```
 
-// Create router to handle incoming requests
+### 3. Setup Router (Worker)
+
+```typescript
+// worker.ts
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport } from './lib/module.js';
+import './rpc/data/constructor.js';
+
 const router = new BroadcastRouter(irpc, transport);
+```
+
+### 4. Client Usage (Main Thread)
+
+```typescript
+// main.ts
+import { processData } from './rpc/data/index.js';
+
+const result = await processData('Hello from main thread');
+console.log(result); // 'Processed: Hello from main thread'
 ```
 
 ## Configuration
@@ -128,63 +119,72 @@ const transport = new BroadcastTransport({
 
 Offload heavy processing to Web Workers without blocking the UI.
 
-**lib/module.ts:**
 ```typescript
-export const generateVideo = irpc.declare<(timeline: Timeline) => Promise<Blob>>({
-  name: 'generateVideo'
-});
+// rpc/video/index.ts
+export type GenerateVideoFn = (timeline: Timeline) => Promise<Blob>;
+export const generateVideo = irpc.declare<GenerateVideoFn>({ name: 'generateVideo' });
 ```
 
-**main.ts:**
 ```typescript
-import { generateVideo } from './lib/module.js';
-
-const video = await generateVideo(timeline);
-```
-
-**worker.ts:**
-```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
-import { irpc, transport, generateVideo } from './lib/module.js';
+// rpc/video/constructor.ts
+import { irpc } from '../lib/module.js';
+import { generateVideo } from './index.js';
 
 irpc.construct(generateVideo, async (timeline) => {
-  // Heavy video processing using FFmpeg.wasm
   const ffmpeg = new FFmpeg();
   await ffmpeg.load();
   // ... processing
   return videoBlob;
 });
+```
+
+```typescript
+// worker.ts
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport } from './lib/module.js';
+import './rpc/video/constructor.js';
 
 const router = new BroadcastRouter(irpc, transport);
+```
+
+```typescript
+// main.ts
+import { generateVideo } from './rpc/video/index.js';
+
+const video = await generateVideo(timeline);
 ```
 
 ### 2. Multi-Tab Synchronization
 
 Keep data synchronized across multiple tabs.
 
-**lib/module.ts:**
 ```typescript
-export const updateCart = irpc.declare<(items: CartItem[]) => Promise<void>>({
-  name: 'updateCart'
+// rpc/cart/index.ts
+export type UpdateCartFn = (items: CartItem[]) => Promise<void>;
+export const updateCart = irpc.declare<UpdateCartFn>({ name: 'updateCart' });
+```
+
+```typescript
+// rpc/cart/constructor.ts
+import { irpc } from '../lib/module.js';
+import { updateCart } from './index.js';
+
+irpc.construct(updateCart, async (items) => {
+  cartStore.set(items);
 });
 ```
 
-**Tab 1 - Send updates:**
+**Tab 1 — Send updates:**
 ```typescript
-import { updateCart } from './lib/module.js';
-
+import { updateCart } from './rpc/cart/index.js';
 await updateCart(cartItems);
 ```
 
-**Tab 2 - Receive updates:**
+**Tab 2 — Receive updates:**
 ```typescript
 import { BroadcastRouter } from '@irpclib/broadcast';
-import { irpc, transport, updateCart } from './lib/module.js';
-
-irpc.construct(updateCart, async (items) => {
-  // Update local cart state
-  cartStore.set(items);
-});
+import { irpc, transport } from './lib/module.js';
+import './rpc/cart/constructor.js';
 
 const router = new BroadcastRouter(irpc, transport);
 ```
@@ -193,28 +193,33 @@ const router = new BroadcastRouter(irpc, transport);
 
 Communicate between parent and child iframes.
 
-**lib/module.ts (shared by parent and iframe):**
 ```typescript
-export const sendMessage = irpc.declare<(msg: string) => Promise<string>>({
-  name: 'sendMessage'
+// rpc/messaging/index.ts
+export type SendMessageFn = (msg: string) => Promise<string>;
+export const sendMessage = irpc.declare<SendMessageFn>({ name: 'sendMessage' });
+```
+
+```typescript
+// rpc/messaging/constructor.ts
+import { irpc } from '../lib/module.js';
+import { sendMessage } from './index.js';
+
+irpc.construct(sendMessage, async (msg) => {
+  return `Iframe received: ${msg}`;
 });
 ```
 
 **Parent window:**
 ```typescript
-import { sendMessage } from './lib/module.js';
-
+import { sendMessage } from './rpc/messaging/index.js';
 const response = await sendMessage('Hello iframe');
 ```
 
 **Iframe:**
 ```typescript
 import { BroadcastRouter } from '@irpclib/broadcast';
-import { irpc, transport, sendMessage } from './lib/module.js';
-
-irpc.construct(sendMessage, async (msg) => {
-  return `Iframe received: ${msg}`;
-});
+import { irpc, transport } from './lib/module.js';
+import './rpc/messaging/constructor.js';
 
 const router = new BroadcastRouter(irpc, transport);
 ```
@@ -223,24 +228,16 @@ const router = new BroadcastRouter(irpc, transport);
 
 Coordinate background tasks across contexts.
 
-**lib/module.ts:**
 ```typescript
-export const startSync = irpc.declare<() => Promise<void>>({
-  name: 'startSync'
-});
+// rpc/sync/index.ts
+export type StartSyncFn = () => Promise<void>;
+export const startSync = irpc.declare<StartSyncFn>({ name: 'startSync' });
 ```
 
-**Tab 1 - Start background sync:**
 ```typescript
-import { startSync } from './lib/module.js';
-
-await startSync();
-```
-
-**Tab 2 - Handle sync (only one tab processes):**
-```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
-import { irpc, transport, startSync } from './lib/module.js';
+// rpc/sync/constructor.ts
+import { irpc } from '../lib/module.js';
+import { startSync } from './index.js';
 
 let isSyncing = false;
 
@@ -254,6 +251,19 @@ irpc.construct(startSync, async () => {
     isSyncing = false;
   }
 });
+```
+
+**Tab 1 — Trigger sync:**
+```typescript
+import { startSync } from './rpc/sync/index.js';
+await startSync();
+```
+
+**Tab 2 — Handle sync:**
+```typescript
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport } from './lib/module.js';
+import './rpc/sync/constructor.js';
 
 const router = new BroadcastRouter(irpc, transport);
 ```

@@ -17,6 +17,7 @@ Transports are the mechanism that carries IRPC requests and responses between cl
 A transport is responsible for:
 
 - **Carrying requests and responses** - Serializing and transmitting data
+- **Streaming** - Yielding continuous `IRPCPacketStream` chunks as data becomes available
 - **Routing** - Mapping requests to handlers by function name
 - **Batching** - Combining multiple requests into single transmissions
 - **Error handling** - Managing network failures and timeouts
@@ -68,7 +69,7 @@ const transport = new HTTPTransport({
 
 **Features:**
 - Automatic request batching
-- Streaming responses (progressive resolution)
+- Continuous streaming responses via `IRPCPacketStream` (progressive resolution)
 - Retry logic (linear or exponential backoff)
 - Timeout handling
 - Middleware support
@@ -96,7 +97,7 @@ const transport = new WebSocketTransport({
 - Automatic batching over WebSocket messages
 - Real-time connection state monitoring
 - Auto-reconnection on connection failures
-- Bidirectional communication support
+- Native streaming via persistent socket for `RemoteState` subscriptions
 
 [Learn more about WebSocket Transport →](/irpc/transports/ws-transport)
 
@@ -135,94 +136,141 @@ You can create custom transports for any protocol by extending `IRPCTransport`.
 
 ## Creating Custom Transports
 
-To create a custom transport, extend the `IRPCTransport` class and implement the required methods:
+To create a custom transport, extend `IRPCTransport` and override `dispatch()`. The base class handles batching and scheduling automatically — your job is to serialize the calls, send them over the wire, and feed `IRPCPacketStream` packets back via `call.enqueue()`.
+
+### Client-Side Transport
 
 ```typescript
-import { IRPCTransport, type IRPCCall, type IRPCSpec, type IRPCData } from '@irpclib/irpc';
+import {
+  IRPCTransport,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
+  ERROR_CODE,
+  type IRPCCall,
+  type IRPCData,
+  type IRPCPacketStream,
+  type IRPCRequest,
+  type TransportConfig,
+} from '@irpclib/irpc';
+
+type CustomTransportConfig = TransportConfig & {
+  url: string;
+};
 
 class CustomTransport extends IRPCTransport {
-  constructor(config: CustomTransportConfig) {
+  constructor(public config: CustomTransportConfig) {
     super(config);
   }
 
-  // Implement the dispatch method
   protected async dispatch(calls: IRPCCall[]) {
-    // 1. Serialize calls to your protocol format
-    const requests = calls.map(({ id, payload }) => ({
-      id,
-      name: payload.name,
-      args: payload.args,
-    }));
+    try {
+      // 1. Serialize calls into wire format
+      const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({
+        id, name, args,
+      }));
 
-    // 2. Send via your transport mechanism
-    const responses = await this.sendViaCustomProtocol(requests);
+      // 2. Send via your protocol
+      const response = await this.send(requests);
 
-    // 3. Resolve each call with its response
-    responses.forEach((response) => {
-      const call = calls.find(c => c.id === response.id);
-      if (call) {
-        if (response.error) {
-          call.reject(new Error(response.error.message));
-        } else {
-          call.resolve(response.result);
+      // 3. Parse response packets and feed them back to each call
+      for (const packet of response.packets) {
+        const call = calls.find(c => c.id === packet.id);
+        if (call) {
+          call.enqueue(packet); // Drives IRPCReader → resolves/rejects the RemoteState
         }
       }
-    });
+    } catch (error) {
+      // On network failure, enqueue error packets so calls reject (and retry if configured)
+      calls.forEach((call) => {
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
+      });
+    }
   }
 
-  private async sendViaCustomProtocol(requests: any[]) {
+  private async send(requests: IRPCRequest[]) {
     // Your custom protocol implementation
-    // ...
+    // Must return IRPCPacketStream packets correlated by id
   }
 }
 ```
+
+**Key points:**
+- `call.enqueue(packet)` is the only way to feed data back. It drives the internal `IRPCReader`, which resolves standard Promises or populates `RemoteState` subscriptions.
+- For streaming responses, enqueue multiple packets with `status: IRPC_STATUS.PENDING` followed by a terminal packet with `status: IRPC_STATUS.SUCCESS` or `IRPC_STATUS.ERROR`.
+- Error packets trigger the retry mechanism automatically if `maxRetries` is configured.
+
+### Server-Side Router
+
+Use `IRPCResolver` to validate and execute requests, and `IRPCStream` to normalize outputs (both standard and streaming) into `IRPCPacketStream` packets.
+
+```typescript
+import {
+  type IRPCPackage,
+  type IRPCRequest,
+  IRPCResolver,
+  IRPCStream,
+  createContext,
+  withContext,
+} from '@irpclib/irpc';
+
+class CustomRouter {
+  constructor(
+    private module: IRPCPackage,
+    private transport: CustomTransport,
+  ) {}
+
+  async resolve(rawMessage: string) {
+    const requests: IRPCRequest[] = JSON.parse(rawMessage);
+    const packets: string[] = [];
+
+    const promises = requests.map((irpcReq) => {
+      const resolver = new IRPCResolver(irpcReq, this.module);
+      const ctx = createContext<string, unknown>([]);
+
+      return withContext(ctx, async () => {
+        // IRPCStream wraps resolver.resolve() and normalizes both
+        // standard responses and RemoteState into IRPCPacketStream packets
+        const stream = new IRPCStream(irpcReq.id, irpcReq.name, () => resolver.resolve());
+
+        stream.pipe((packet) => {
+          // Send each packet over the wire as it arrives
+          this.sendPacket(JSON.stringify(packet));
+        });
+
+        // Wait for the stream to fully close before moving on
+        await new Promise<void>((done) => stream.close(done));
+      });
+    });
+
+    await Promise.allSettled(promises);
+  }
+
+  private sendPacket(data: string) {
+    // Your custom protocol send implementation
+  }
+}
+```
+
+**Key points:**
+- `IRPCResolver` handles input validation, spec lookup, and handler execution.
+- `IRPCStream` subscribes to `RemoteState` mutations and emits sequential `ANSWER` → `EVENT` → `CLOSE` packets automatically. For standard Promise responses, it emits a single `ANSWER` packet.
+- The router does not need to know whether a handler returns a Promise or a RemoteState — `IRPCStream` handles both transparently.
 
 ### Transport Requirements
 
 Custom transports MUST:
 
-1. **Handle batching** - Accept arrays of calls and send them efficiently
-2. **Preserve correlation** - Match responses to requests using IDs
-3. **Handle errors** - Properly reject calls on network or handler errors
-4. **Support timeouts** - Respect timeout configuration
-5. **Implement routing** - Map request names to handlers (server-side)
-
-### Server-Side Routing
-
-Implement a router for your custom transport:
-
-```typescript
-class CustomRouter {
-  constructor(
-    private module: IRPCPackage,
-    private transport: CustomTransport
-  ) {}
-
-  async resolve(request: CustomRequest) {
-    const requests = await this.parseRequests(request);
-    
-    const responses = await Promise.allSettled(
-      requests.map(async (req) => {
-        try {
-          const result = await this.module.resolve(req);
-          return { id: req.id, name: req.name, result };
-        } catch (error) {
-          return { 
-            id: req.id, 
-            name: req.name, 
-            error: { 
-              code: 'HANDLER_ERROR', 
-              message: error.message 
-            } 
-          };
-        }
-      })
-    );
-
-    return this.formatResponse(responses);
-  }
-}
-```
+1. **Override `dispatch()`** — Accept `IRPCCall[]` and serialize them for transmission
+2. **Feed packets via `call.enqueue()`** — Match response packets to calls by `id`
+3. **Handle errors** — Enqueue error packets on network failure so retry logic activates
+4. **Implement a Router** — Use `IRPCResolver` + `IRPCStream` to execute and stream responses
 
 ## Transport Configuration
 

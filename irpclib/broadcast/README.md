@@ -20,99 +20,117 @@ npm install @irpclib/broadcast
 
 ## Basic Usage
 
-### Shared Module
-
-Create a shared module that all contexts will use:
+### 1. Declare Functions (Shared)
 
 ```typescript
-// lib/module.ts
+// rpc/data.ts
 import { BroadcastTransport } from '@irpclib/broadcast';
 import { createPackage } from '@irpclib/irpc';
 
-export const irpc = createPackage({
-  name: 'my-api',
-  version: '1.0.0',
-});
-
-export const transport = new BroadcastTransport({
-  channel: irpc.href, // 'my-api/1.0.0'
-});
-
+export const irpc = createPackage({ name: 'my-api', version: '1.0.0' });
+export const transport = new BroadcastTransport({ channel: irpc.href });
 irpc.use(transport);
 
-// Declare functions
-export const processData = irpc.declare<(data: string) => Promise<string>>({
-  name: 'processData'
-});
+export type ProcessDataFn = (data: string) => Promise<string>;
+export const processData = irpc.declare<ProcessDataFn>({ name: 'processData' });
 ```
 
-### Client (Main Thread or Tab)
+### 2. Implement Handlers (Worker/Server Realm)
 
 ```typescript
-import { processData } from './lib/module.js';
+// rpc/data.constructor.ts
+import { irpc, processData } from './data.js';
 
-// Call function (handled by worker or another tab)
-const result = await processData('Hello from main thread');
-console.log(result); // 'Processed: Hello from main thread'
-```
-
-### Server (Web Worker or Another Tab)
-
-```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
-import { irpc, transport, processData } from './lib/module.js';
-
-// Implement handler
 irpc.construct(processData, async (data) => {
   return `Processed: ${data}`;
 });
+```
 
-// Create router to handle incoming requests
+### 3. Setup Router (Worker/Server Realm)
+
+The worker acts as the "Server" listening to the broadcast channel.
+
+```typescript
+// worker.ts
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport } from './rpc/data.js';
+import './rpc/data.constructor.js';
+
 const router = new BroadcastRouter(irpc, transport);
+console.log("Worker listening...");
+```
+
+### 4. Client Usage (Main Thread)
+
+```typescript
+// main.ts
+import { processData } from './rpc/data.js';
+
+const result = await processData('Hello from main thread');
+console.log(result); // 'Processed: Hello from main thread'
 ```
 
 ## Use Cases
 
 ### Cross-Tab Communication
 
-Perfect for applications that need to sync state across multiple tabs:
+Sync state across multiple tabs:
 
 ```typescript
-// Tab 1: Server
-const router = new BroadcastRouter(irpc, transport);
+// rpc/sync/index.ts
+export type SyncStateFn = (state: AppState) => Promise<{ success: boolean }>;
+export const syncState = irpc.declare<SyncStateFn>({ name: 'syncState' });
+```
+
+```typescript
+// rpc/sync/constructor.ts
+import { irpc } from '../lib/module.js';
+import { syncState } from './index.js';
+
 irpc.construct(syncState, async (state) => {
   // Update local state
   return { success: true };
 });
+```
 
-// Tab 2: Client
+```typescript
+// Tab 1 — sends update
+import { syncState } from './rpc/sync/index.js';
 await syncState({ user: "John", theme: "dark" });
 ```
 
 ### Worker Communication
 
-Communicate with Web Workers seamlessly:
+Offload heavy computation to Web Workers:
 
 ```typescript
-// Main thread: Server
-const router = new BroadcastRouter(irpc, transport);
-irpc.construct(processData, async (data) => {
-  return heavyComputation(data);
-});
+// rpc/data/index.ts
+export type ProcessDataFn = (data: DataSet) => Promise<Result>;
+export const processData = irpc.declare<ProcessDataFn>({ name: 'processData' });
+```
 
-// Worker thread: Client
+```typescript
+// worker.ts — implements and listens
+import { BroadcastRouter } from '@irpclib/broadcast';
+import { irpc, transport } from './lib/module.js';
+import './rpc/data/constructor.js';
+
+const router = new BroadcastRouter(irpc, transport);
+```
+
+```typescript
+// main.ts — calls
+import { processData } from './rpc/data/index.js';
 const result = await processData(largeDataset);
 ```
 
-### iframe Communication
+### Iframe Communication
 
 Same-origin iframe communication without postMessage complexity:
 
 ```typescript
-// Parent window: Server
-const router = new BroadcastRouter(irpc, transport);
-
-// iframe: Client
+// Parent calls, iframe handles
+import { fetchData } from './rpc/data/index.js';
 const data = await fetchData();
 ```
 

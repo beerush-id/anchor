@@ -1,96 +1,96 @@
 # @irpclib/ws
 
-WebSocket transport implementation for IRPC library.
+WebSocket transport for IRPC — persistent connections with lower latency, automatic batching, and auto-reconnection.
 
 ## Features
 
-- Lower latency through persistent WebSocket connections that eliminate HTTP handshake overhead
-- Single persistent connection handling multiple function calls without reconnection overhead
+- Persistent WebSocket connection — eliminates HTTP handshake overhead per request
 - Automatic batching of multiple calls into single WebSocket messages
-- Configurable retry logic with linear or exponential backoff for network failures
-- Full TypeScript support with proper type interfaces
+- Auto-reconnection with configurable retry logic
 - Real-time connection state tracking (CONNECTING, OPEN, CLOSING, CLOSED)
-- Comprehensive error handling with timeout and connection failure recovery through auto-reconnection
+- Configurable retry logic with linear or exponential backoff
+- Native streaming via persistent socket for `RemoteState` subscriptions
 
 ## Installation
 
 ```bash
-npm install @irpclib/ws
+npm install @irpclib/ws @irpclib/irpc
 ```
 
 ## Usage
 
-### Client-side
+### 1. Create Package
 
 ```typescript
-import { WebSocketTransport } from "@irpclib/ws";
+// lib/module.ts
 import { createPackage } from "@irpclib/irpc";
+import { WebSocketTransport } from "@irpclib/ws";
 
-// Create WebSocket transport
-const transport = new WebSocketTransport({
+export const irpc = createPackage({ name: "my-api", version: "1.0.0" });
+
+export const transport = new WebSocketTransport({
   url: "ws://localhost:8080",
   autoReconnect: true,
   maxReconnectAttempts: 5,
-  reconnectDelay: 1000,
-  connectionTimeout: 10000,
-});
-
-// Create IRPC client package
-const irpc = createPackage({
-  name: "my-api",
-  version: "1.0.0",
-}).use(transport);
-
-// Declare function types and functions
-type MyMethodFn = (arg1: string, arg2: string) => Promise<string>;
-export const myMethod = irpc.declare<MyMethodFn>({ name: "myMethod" });
-
-// Use the client
-const result = await myMethod("arg1", "arg2");
-```
-
-### Server-side
-
-```typescript
-import { WebSocketRouter, WebSocketTransport } from "@irpclib/ws";
-import { createPackage } from "@irpclib/irpc";
-
-// Create IRPC package
-const irpc = createPackage({
-  name: "my-api",
-  version: "1.0.0",
-});
-
-// Create WebSocket transport
-const transport = new WebSocketTransport({
-  url: "ws://localhost:8080",
 });
 
 irpc.use(transport);
+```
 
-// Declare function types and functions
-type MyMethodFn = (arg1: string, arg2: string) => Promise<string>;
+### 2. Declare Functions (Shared)
+
+```typescript
+// rpc/hello/index.ts
+import { irpc } from "../lib/module.js";
+import type { RemoteState } from "@irpclib/irpc";
+
+export type MyMethodFn = (arg1: string, arg2: string) => Promise<string>;
 export const myMethod = irpc.declare<MyMethodFn>({ name: "myMethod" });
 
-// Implement handlers
-irpc.construct(myMethod, async (arg1: string, arg2: string) => {
+export type StreamDataFn = () => RemoteState<string>;
+export const streamData = irpc.declare<StreamDataFn>({
+  name: "streamData",
+  init: () => "", // Initial client-side state before server data arrives
+});
+```
+
+### 3. Implement Handlers (Server)
+
+```typescript
+// rpc/hello/constructor.ts
+import { irpc } from "../lib/module.js";
+import { myMethod, streamData } from "./index.js";
+import { stream } from "@irpclib/irpc";
+
+irpc.construct(myMethod, async (arg1, arg2) => {
   return `Hello ${arg1} and ${arg2}!`;
 });
 
-// Create router
+irpc.construct(streamData, () => {
+  return stream((data, resolve) => {
+    data = "Part 1...";
+    setTimeout(() => {
+      data += " Part 2";
+      resolve(data);
+    }, 1000);
+  }, "");
+});
+```
+
+### 4. Server Setup
+
+```typescript
+// server.ts
+import { WebSocketRouter } from "@irpclib/ws";
+import { irpc, transport } from "./lib/module.js";
+import "./rpc/hello/constructor.js";
+
 const router = new WebSocketRouter(irpc, transport);
 
-// Add middleware
-router.use(() => {
-  console.log("Request received");
-});
-
-// Handle WebSocket messages
-const server = Bun.serve({
-  port: 3000,
+Bun.serve({
+  port: 8080,
   fetch(req, server) {
-    const success = server.upgrade(req);
-    if (success) return undefined;
+    if (server.upgrade(req)) return;
     return new Response("WebSocket server running");
   },
   websocket: {
@@ -99,6 +99,18 @@ const server = Bun.serve({
     },
   },
 });
+```
+
+### 5. Client Usage
+
+```typescript
+// client.ts
+import { myMethod, streamData } from "./rpc/hello/index.js";
+
+const result = await myMethod("arg1", "arg2");
+
+const call = streamData();
+call.subscribe(state => console.log(state.data)); // "Part 1..." -> "Part 1... Part 2"
 ```
 
 ## Performance
@@ -112,28 +124,23 @@ The WebSocket transport provides **lower latency** than HTTP through:
 
 ### Connection Management
 
-WebSocket provides built-in connection state tracking:
-
 ```typescript
 // Check connection state
 if (transport.isOpen) {
   await someMethod();
 }
 
-// Monitor connection
 console.log("Connection state:", transport.state); // 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
 ```
 
 ### Auto-Reconnection
 
-WebSocket automatically handles connection failures:
-
 ```typescript
 const transport = new WebSocketTransport({
   url: "ws://localhost:3000",
-  maxReconnectAttempts: 5, // Try 5 times before giving up
-  reconnectDelay: 1000, // Wait 1 second between attempts
-  autoReconnect: true, // Enable auto-reconnection
+  maxReconnectAttempts: 5,
+  reconnectDelay: 1000,
+  autoReconnect: true,
 });
 
 // Force manual reconnection
@@ -150,25 +157,25 @@ Retry, timeout, and other call settings can be configured at **function**, **pac
 // Function-level (highest priority)
 const criticalFn = irpc.declare({
   name: 'processPayment',
-  timeout: 30000,     // 30s timeout
-  maxRetries: 5,      // 5 retry attempts
+  timeout: 30000,
+  maxRetries: 5,
   retryMode: 'exponential',
 });
 
 // Package-level (medium priority)
 const irpc = createPackage({
   name: 'my-api',
-  timeout: 10000,     // 10s default
-  maxRetries: 3,      // 3 retry attempts
+  timeout: 10000,
+  maxRetries: 3,
   retryMode: 'linear',
 });
 
 // Transport-level (lowest priority)
 const transport = new WebSocketTransport({
   url: 'ws://localhost:8080',
-  timeout: 5000,      // 5s fallback
-  maxRetries: 1,      // 1 retry attempt
-  retryDelay: 1000,   // 1s delay
+  timeout: 5000,
+  maxRetries: 1,
+  retryDelay: 1000,
 });
 ```
 
@@ -190,13 +197,13 @@ interface WebSocketTransportConfig {
   connectionTimeout?: number; // Default: 10000ms
 
   // Call configuration (can be overridden by package/function)
-  timeout?: number;            // Request timeout in ms
-  maxRetries?: number;         // Max retry attempts
-  retryMode?: 'linear' | 'exponential';  // Retry strategy
-  retryDelay?: number;         // Delay between retries in ms
+  timeout?: number;
+  maxRetries?: number;
+  retryMode?: 'linear' | 'exponential';
+  retryDelay?: number;
 
   // Transport-specific
-  debounce?: number | boolean; // Batching delay
+  debounce?: number | boolean;
 }
 ```
 
@@ -224,14 +231,12 @@ interface WebSocketTransportConfig {
 
 ### Retry Logic
 
-WebSocket transport includes retry capabilities for network failures:
-
 ```typescript
 const transport = new WebSocketTransport({
   url: "ws://localhost:3000",
-  maxRetries: 3, // Retry up to 3 times
+  maxRetries: 3,
   retryMode: "exponential", // 1s, 2s, 4s delays
-  retryDelay: 1000, // 1 second base delay
+  retryDelay: 1000,
 });
 ```
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
-import { createPackage, type IRPCCall, type IRPCHandler, type IRPCPackage, IRPCTransport } from '../src/index.js';
+import { createPackage, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
 import { RemoteState } from '../src/state.js';
 
 describe('IRPCPackage', () => {
@@ -108,7 +108,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should throw error for invalid handler', () => {
-      const testFunc = rpc.declare<IRPCHandler>({ name: 'testFunc' });
+      const testFunc = rpc.declare<() => void>({ name: 'testFunc' });
       expect(() => rpc.construct(testFunc, 'not-a-function' as never)).toThrow(
         ERROR_MESSAGE[ERROR_CODE.INVALID_HANDLER]
       );
@@ -194,12 +194,26 @@ describe('IRPCPackage', () => {
     it('should call local RemoteState implementation', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
+        init: () => '',
       });
       rpc.construct(hello, (name) => new RemoteState<string>(`Hello ${name}`));
 
       const result = hello('World');
 
       expect(result.data).toBe('Hello World');
+      expect(result.status).toBe(IRPC_STATUS.PENDING);
+    });
+
+    it('should call local RemoteState init implementation', async () => {
+      const hello = rpc.declare<(name: string) => RemoteState<string>>({
+        name: 'hello',
+        init: () => 'Init',
+      });
+      rpc.construct(hello, (_name) => new RemoteState<string>());
+
+      const result = hello('World');
+
+      expect(result.data).toBe('Init');
       expect(result.status).toBe(IRPC_STATUS.PENDING);
     });
 

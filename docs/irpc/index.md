@@ -1,91 +1,110 @@
 ---
 title: "IRPC Overview"
-description: "Isomorphic Remote Procedure Call - Call remote functions like local functions with automatic batching, type safety, and high performance."
+description: "Universal Reactive Pipeline - Call remote functions and connect to reactive data streams natively with automatic batching, type safety, and high performance."
 keywords:
   - irpc
   - rpc
   - remote procedure call
   - isomorphic
+  - reactive streams
   - type-safe
   - batching
 ---
 
-# IRPC Overview
+# IRPC
 
-**Isomorphic Remote Procedure Call** - Call remote functions like local functions.
+**Stop thinking about the network. Just call functions.**
+
+Every existing API pattern — REST, gRPC, GraphQL, tRPC — forces you to think about the network: routes, endpoints, serialization, polling, separate subscription infrastructure. You spend more time on transport plumbing than on your actual business logic.
+
+IRPC eliminates that entirely. You declare a function, implement it on the server, and call it from the client. Standard calls and continuous reactive streams use the exact same signature. The transport handles everything else.
 
 ```typescript
-// Instead of this:
-const response = await fetch('/api/hello');
-const data = await response.json();
-
-// Just do this:
+// This is a remote function call. No fetch, no routes, no serialization.
 const message = await hello('John');
+
+// This is a live reactive stream. No WebSocket setup, no polling, no subscriptions.
+const call = loadDashboard('user-123');
+call.subscribe(state => console.log(state.data));
 ```
 
-## What is IRPC?
+::: tip Language Agnostic
+IRPC is a language-agnostic RPC pattern with a standard wire protocol. Any language can implement or consume it via HTTP or WebSocket. This is the TypeScript-first reference implementation.
+:::
 
-IRPC is a pattern that makes remote function calls look and feel exactly like local function calls. You declare a function once, implement it on the server, and call it from the client—no routes, no endpoints, no manual serialization.
+## How It Works
 
-The same function signature works everywhere:
+Three steps. One pattern for both standard calls and streaming.
+
+**1. Declare** a function signature (shared between client and server):
 
 ```typescript
-// Declare once
 type HelloFn = (name: string) => Promise<string>;
 const hello = irpc.declare<HelloFn>({ name: 'hello' });
+```
 
-// Implement on server
+**2. Implement** the handler on the server:
+
+```typescript
 irpc.construct(hello, async (name) => `Hello ${name}`);
+```
 
-// Call from client
+**3. Call** it from the client:
+
+```typescript
 const message = await hello('John'); // "Hello John"
 ```
 
-## The Problem
+That's it. No routes. No controllers. No manual serialization. The function signature is the contract.
 
-Traditional API patterns force you to think about the network:
+## Reactive Streaming
 
-**REST** requires you to:
-- Define routes and HTTP verbs
-- Manually serialize/deserialize data
-- Handle status codes and errors
-- Write separate client code for each endpoint
-- Manage type safety manually
+The same pattern scales to continuous data streams. Instead of returning `Promise<T>`, return `RemoteState<T>` — and the client can `.subscribe()` to live mutations as the server progressively resolves data.
 
-**gRPC** requires you to:
-- Write proto files
-- Generate code
-- Set up complex tooling
-- Deal with browser compatibility issues
+```typescript
+// Declare (Shared)
+type LoadDashboardFn = (userId: string) => RemoteState<DashboardData>;
+const loadDashboard = irpc.declare<LoadDashboardFn>({
+  name: 'loadDashboard',
+  init: () => ({} as DashboardData), // Initial client-side state before server data arrives
+});
+```
 
-**GraphQL** requires you to:
-- Learn a query language
-- Define schemas and resolvers
-- Manage normalized caches
-- Handle N+1 problems
+```typescript
+// Implement (Server)
+irpc.construct(loadDashboard, (userId) => {
+  return stream((data, resolve) => {
+    // Execute queries concurrently — each mutation pushes to the client in real time
+    const q1 = db.users.get(userId).then(res => data.user = res);
+    const q2 = db.sales.aggregate(userId).then(res => data.sales = res);
+    const q3 = externalApi.fetchMetrics().then(res => data.telemetry = res);
 
-All of these add cognitive overhead—you're constantly thinking about the network layer instead of your business logic.
+    Promise.all([q1, q2, q3]).then(() => resolve());
+  }, {});
+});
+```
 
-## The Solution
+```typescript
+// Call (Client) — UI hydrates progressively as each query resolves
+const call = loadDashboard('user-123');
+call.subscribe(state => renderDashboard(state.data));
+```
 
-IRPC eliminates the network abstraction:
+No WebSocket configuration. No polling. No separate subscription endpoints. The same `declare` / `construct` / `call` pattern.
 
-1. **Declare** a function signature (TypeScript type)
-2. **Implement** the handler on the server
-3. **Call** it from the client like any async function
+## Why Not X?
 
-The transport handles everything else:
-- Automatic batching of simultaneous calls
-- Type safety (end-to-end TypeScript)
-- Error handling (automatic retry & timeout, configurable per function)
-- Call coalescing (prevents duplicate executions)
-- Serialization (transparent)
-- Distribution (publish stubs to NPM, keep handlers private)
-- Transport flexibility (HTTP, WebSocket, custom transports)
+| Pain Point | REST | gRPC | GraphQL | tRPC | **IRPC** |
+|------------|------|------|---------|------|----------|
+| Routes / endpoints | Routes + verbs | Proto definitions | Schema + resolvers | Router procedures | **None** |
+| Streaming / subscriptions | Manual | Manual | Manual | Manual | **Automatic** |
+| Batching | Manual | Manual | N/A | Opt-in | **Automatic** |
+| Type safety | Manual | Generated | Generated | Native | **Native** |
+| Browser support | Universal | Requires proxy | Universal | Universal | **Universal** |
 
 ## Performance
 
-IRPC achieves **high performance** compared to traditional REST through automatic batching.
+IRPC achieves **6.96x faster** throughput compared to traditional REST through automatic batching and native chunk streaming.
 
 **Benchmark:** 100,000 users, 10 calls each (1,000,000 total calls)
 
@@ -95,12 +114,21 @@ IRPC achieves **high performance** compared to traditional REST through automati
 | Bun Native | 25,180ms | 1,000,000 | 1.00x |
 | Hono | 18,004ms | 1,000,000 | 1.40x |
 
-When you call multiple functions simultaneously, IRPC automatically batches them into a single HTTP request. Responses stream back as they complete—no waiting for all to finish.
+When you call multiple functions simultaneously, IRPC automatically batches them into a single HTTP request and streams the response chunks back as handlers complete.
+
+## What You Get
+
+- **Universal Streaming** — Yield continuous chunks over HTTP, WebSockets, or BroadcastChannels using the same function.
+- **Automatic Batching** — Simultaneous calls are batched into a single request.
+- **End-to-End Type Safety** — TypeScript types are the API contract.
+- **Retry & Timeout** — Configurable per function, per package, or per transport.
+- **Call Coalescing** — Duplicate simultaneous calls execute once, all callers receive the result.
+- **NPM Distribution** — Publish stubs to NPM, keep handlers private on the server.
 
 ## Next Steps
 
-- [Getting Started](/irpc/getting-started) - Set up your first IRPC project
-- [Comparison](/irpc/comparison) - IRPC vs REST, gRPC, tRPC, GraphQL
-- [Specification](/irpc/specification) - Full protocol specification
-- [HTTP Transport](/irpc/transports/http-transport) - HTTP transport configuration
-- [WebSocket Transport](/irpc/transports/ws-transport) - WebSocket transport for persistent connections
+- [Getting Started](/irpc/getting-started) — Set up your first IRPC project
+- [Comparison](/irpc/comparison) — IRPC vs REST, gRPC, tRPC, GraphQL
+- [Specification](/irpc/specification) — Full protocol specification
+- [HTTP Transport](/irpc/transports/http-transport) — HTTP transport configuration
+- [WebSocket Transport](/irpc/transports/ws-transport) — WebSocket transport for persistent connections

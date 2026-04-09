@@ -1,24 +1,19 @@
 # @irpclib/irpc
 
-**Isomorphic Remote Procedure Call** - Call remote functions like local functions.
+**Stop thinking about the network. Just call functions.**
+
+IRPC makes remote function calls and reactive streaming look and feel like local functions. Declare once, implement on the server, call from the client — no routes, no endpoints, no WebSocket configuration.
 
 ```typescript
-// Instead of this:
-const response = await fetch('/api/hello');
-const data = await response.json();
-
-// Just do this:
 const message = await hello('John');
+
+const call = loadDashboard('user-123');
+call.subscribe(state => console.log(state.data));
 ```
 
 ---
 
-## Why IRPC?
-
-**Beside the simplicity**, this is what you get:
-
-### Benchmark Results
-**Scenario:** 100,000 users, 10 calls each (1,000,000 total calls)
+## Performance
 
 | Framework | Total Time | HTTP Requests | Speedup |
 |-----------|------------|---------------|---------|
@@ -27,7 +22,7 @@ const message = await hello('John');
 | Hono | 18,004ms | 1,000,000 | 1.40x |
 | Elysia | 36,993ms | 1,000,000 | 0.68x |
 
-**IRPC handled 1 million API calls in 3.6 seconds with 10x fewer HTTP connections.**
+**1 million API calls in 3.6 seconds with 10x fewer HTTP connections.**
 
 ---
 
@@ -35,17 +30,16 @@ const message = await hello('John');
 
 - 6.96x faster than traditional REST APIs
 - 10x fewer HTTP connections through automatic batching
+- Native continuous reactive streaming via `RemoteState`
 - End-to-end type safety with TypeScript
-- Zero boilerplate - no routes or endpoints needed
-- Transport agnostic (HTTP, WebSocket, and more)
-- Built-in caching configurable per function call
+- Zero boilerplate — no routes or endpoints
+- Transport agnostic (HTTP, WebSocket, BroadcastChannel)
+- Built-in caching configurable per function
 - Automatic retry and timeout handling
 
 ---
 
 ## Quick Start
-
-### Create New Project
 
 ```bash
 npx degit beerush/anchor/templates/irpc-bun-app my-api
@@ -92,9 +86,18 @@ irpc.use(transport);
 import { irpc } from '../lib/module.js';
 
 export type HelloFn = (name: string) => Promise<string>;
+export const hello = irpc.declare<HelloFn>({ name: 'hello' });
+```
 
-export const hello = irpc.declare<HelloFn>({
-  name: 'hello'
+```typescript
+// rpc/dashboard/index.ts
+import { irpc } from '../lib/module.js';
+import type { RemoteState } from '@irpclib/irpc';
+
+export type LoadDashboardFn = (userId: string) => RemoteState<DashboardData>;
+export const loadDashboard = irpc.declare<LoadDashboardFn>({
+  name: 'loadDashboard',
+  init: () => ({} as DashboardData), // Initial client-side state before server data arrives
 });
 ```
 
@@ -110,6 +113,22 @@ irpc.construct(hello, async (name) => {
 });
 ```
 
+```typescript
+// rpc/dashboard/constructor.ts
+import { irpc } from '../lib/module.js';
+import { loadDashboard } from './index.js';
+import { stream } from '@irpclib/irpc';
+
+irpc.construct(loadDashboard, (userId) => {
+  return stream((data, resolve) => {
+    const q1 = db.users.get(userId).then(res => data.user = res);
+    const q2 = db.sales.aggregate(userId).then(res => data.sales = res);
+    
+    Promise.all([q1, q2]).then(() => resolve());
+  }, {});
+});
+```
+
 ### 4. Setup Server
 
 ```typescript
@@ -118,7 +137,7 @@ import { setContextProvider } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
-import './rpc/hello/constructor.js'; // Import handlers
+import './rpc/hello/constructor.js';
 
 setContextProvider(new AsyncLocalStorage());
 
@@ -137,10 +156,17 @@ Bun.serve({
 ### 5. Use on Client
 
 ```typescript
+// client.ts
 import { hello } from './rpc/hello/index.js';
+import { loadDashboard } from './rpc/dashboard/index.js';
 
+// Standard execution
 const message = await hello('John');
 console.log(message); // "Hello John"
+
+// Stream subscription
+const call = loadDashboard('user-123');
+call.subscribe(state => console.log('Hydration state:', state.data));
 ```
 
 ---
@@ -194,7 +220,7 @@ Combine multiple calls with identical arguments:
 ```typescript
 export const expensiveQuery = irpc.declare<ExpensiveQueryFn>({
   name: 'expensiveQuery',
-  coalesce: true, // Enable coalescing
+  coalesce: true,
 });
 ```
 

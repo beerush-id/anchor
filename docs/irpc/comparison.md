@@ -72,7 +72,7 @@ const user = await createUser({ name: 'John', email: 'john@example.com' });
 | **Browser Support** | Native fetch API | Requires gRPC-web proxy |
 | **Type Safety** | TypeScript native | Generated types |
 | **Performance** | 6.96x faster than REST | Similar to IRPC |
-| **Streaming** | HTTP streaming | Bidirectional streaming |
+| **Streaming** | Integrated Streams (HTTP/SSE, WebSocket, Broadcast) | Bidirectional streaming |
 | **Batching** | Automatic | Manual |
 
 ### gRPC Example
@@ -117,11 +117,12 @@ const user = await createUser({ name: 'John', email: 'john@example.com' });
 
 | Aspect | IRPC | tRPC |
 |--------|------|------|
-| **Transport Flexibility** | Any transport (HTTP, WebSocket, custom) | HTTP, WebSocket (via subscriptions) |
-| **Batching** | Automatic, configurable | Automatic (via links) |
+| **Transport Flexibility** | Any transport (HTTP, WebSocket, Broadcast) | HTTP, WebSocket (via separate subscriptions) |
+| **Batching** | Automatic | Opt-in |
 | **Setup** | Package + transport | Router + client |
 | **Type Safety** | TypeScript native | TypeScript native |
 | **Performance** | 6.96x faster than REST | Similar to IRPC |
+| **Streaming / Subscriptions**| Same function, same transport | Separate procedure + separate transport |
 | **Middleware** | Transport-level | Procedure-level |
 | **Caching** | Built-in per-function | Client-side (manual or via React Query) |
 
@@ -154,7 +155,34 @@ const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
 const user = await createUser({ name: 'John', email: 'john@example.com' });
 ```
 
-**Result:** Both are type-safe and framework-agnostic. Both have built-in validation (IRPC opt-in, tRPC integrated). IRPC has simpler function-based API, tRPC has router-based API.
+**Result:** Both are type-safe. IRPC unifies standard calls and reactive streams under a single function signature. tRPC requires separate `subscription` procedure types and external WebSocket adapters for real-time data.
+
+### Streaming Comparison
+
+**tRPC** separates subscriptions from standard procedures:
+```typescript
+// tRPC: Different mental model for subscriptions
+const appRouter = router({
+  onDashboard: subscription(({ input }) => {
+    return observable((emit) => {
+      // Completely different API from queries/mutations
+    });
+  }),
+});
+```
+
+**IRPC** uses the same function signature for both:
+```typescript
+// IRPC: Same declare/construct pattern
+const getDashboard = irpc.declare<GetDashboardFn>({
+  name: 'getDashboard',
+  init: () => ({} as DashboardData),
+});
+
+// Client: .subscribe() is available on any RemoteState return
+const call = getDashboard('user-123');
+call.subscribe(state => renderUI(state.data));
+```
 
 ## IRPC vs GraphQL
 
@@ -165,6 +193,7 @@ const user = await createUser({ name: 'John', email: 'john@example.com' });
 | **Caching** | Per-function, simple | Normalized cache, complex |
 | **Over-fetching** | No - exact function returns | No - query what you need |
 | **Under-fetching** | Batching handles multiple calls | Single query for nested data |
+| **Subscriptions** | Built-in via identical signature (HTTP/SSE or WS) | Requires separate WebSocket infrastructure |
 | **Learning Curve** | Minimal - just functions | Steep - schema, resolvers, queries |
 | **Performance** | 6.96x faster than REST | Similar to REST |
 | **N+1 Problem** | No - batching | Requires DataLoader |
@@ -219,7 +248,7 @@ const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
 const user = await createUser({ name: 'John', email: 'john@example.com' });
 ```
 
-**Result:** IRPC is simpler and doesn't require learning GraphQL query language.
+**Result:** IRPC provides the same data aggregation capabilities as GraphQL without learning a query language. For real-time data, IRPC streams natively over any transport — GraphQL requires separate WebSocket infrastructure and a completely different `subscription` schema definition.
 
 ## Performance Benchmark
 
@@ -307,5 +336,6 @@ IRPC combines the best of all worlds:
 - **Performance** of gRPC
 - **Type safety** of tRPC
 - **Flexibility** without GraphQL complexity
+- **Unified streaming** without separate subscription infrastructure
 
 Choose IRPC when you want high-performance, type-safe remote calls without the complexity of other solutions.

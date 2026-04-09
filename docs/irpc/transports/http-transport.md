@@ -280,18 +280,20 @@ Content-Type: application/json
 
 ## Streaming Responses
 
-The server streams responses as they become available, not waiting for all to complete.
+The server pushes sequential `IRPCPacketStream` chunks over HTTP Server-Sent Events. You do not have to wait for large arrays to complete, nor do you need to configure WebSockets for simple server-push configurations.
 
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/json
+Transfer-Encoding: chunked
 
-{"id":"3","name":"getStats","result":{...}}
-{"id":"1","name":"getUsers","result":[...]}
-{"id":"2","name":"getPosts","result":[...]}
+{"id":"3","name":"llamaModel","status":2,"data":"Deep"}
+{"id":"1","name":"getPosts","status":1,"data":[...]}
+{"id":"3","name":"llamaModel","status":2,"data":"Deep in the void"}
+{"id":"3","name":"llamaModel","status":1,"data":"Deep in the void!"}
 ```
 
-Each response resolves its corresponding Promise immediately, enabling parallel processing.
+The HTTP Transport layer automatically uses a `TextDecoderStream` to parse these JSON lines, resolving standard Promises or populating `.subscribe()` pipelines in real-time.
 
 ## Error Handling
 

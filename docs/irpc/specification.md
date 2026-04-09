@@ -137,54 +137,62 @@ All IRPC data MUST be serializable to a format that can be transmitted across th
 - `name`: Name of the IRPC function to invoke (string)
 - `args`: Array of arguments to pass to the function
 
-### 4.2 Response Format
+### 4.2 Response Format (IRPCPacketStream)
+
+IRPC supports continuous data streams. Transports yield sequence packets modeling individual events throughout the pipeline's lifecycle.
 
 ```json
 {
-  "id": "string",
-  "name": "string",
-  "result": ...,
-  "error": "string"
+  "id": "abc123",
+  "name": "getDashboard",
+  "type": "answer",
+  "status": "pending",
+  "data": { "user": { "name": "John" } },
+  "createdAt": 1712638845210
 }
 ```
 
 **Fields:**
 
-- `id`: Identifier matching the request (string)
-- `name`: Name of the function that was called (string)
-- `result`: Return value if successful (optional)
-- `error`: Error message if failed (optional)
+- `id`: Correlates back to the originating request (string, REQUIRED).
+- `name`: The IRPC function name (string, optional).
+- `type`: Packet type — `"answer"` (initial/final data), `"event"` (mutation delta), `"close"` (terminal).
+- `status`: Execution state — `"pending"`, `"success"`, `"error"`, `"idle"`.
+- `data`: The payload — full state for `answer` packets, mutation descriptor for `event` packets (optional).
+- `error`: Error details with `code` and `message` (optional, present when `status` is `"error"`).
+- `createdAt`: Server-side Unix timestamp in milliseconds when the packet was created (optional).
+- `arrivedAt`: Client-side Unix timestamp in milliseconds when the packet was received (optional, stamped by the client).
 
 **Constraints:**
 
-- Exactly one of `result` or `error` MUST be present
-- `id` MUST match the corresponding request
+- `id` MUST be identical across all packets belonging to the same request.
+- Transports MUST keep the call open until a terminal packet arrives (`status: "success"` or `status: "error"`).
 
 ### 4.3 Batch Protocol
 
-Transports MUST support batch requests containing multiple IRPC requests in a single transmission.
+Transports MUST support batch aggregation, structurally packaging multiple IRPC request executions physically inside unified arrays concurrently before pipeline processing begins.
 
 **Batch Request:**
 
 ```json
 [
-  {"id": "1", "name": "func1", "args": [...]},
-  {"id": "2", "name": "func2", "args": [...]}
+  {"id": "1", "name": "generatePoem", "args": [...]},
+  {"id": "2", "name": "getUser", "args": [...]}
 ]
 ```
 
-**Batch Response:**
+**Batch Response (Stream Yielding):**
 
-While the response format is an array, implementations MUST stream individual responses as they become available, not waiting for all requests to complete:
+Batch responses DO NOT resolve as static monolithic arrays. Implementations MUST push individual `IRPCPacketStream` sequence packets over the wire as data buffers accumulate individually per-endpoint.
 
 ```json
-[
-  {"id": "1", "name": "func1", "result": ...},
-  {"id": "2", "name": "func2", "error": "..."}
-]
+{"id": "1", "name": "generatePoem", "status": 2, "data": "Deep"}
+{"id": "2", "name": "getUser", "status": 1, "data": { ... }}
+{"id": "1", "name": "generatePoem", "status": 2, "data": "Deep in..."}
+{"id": "1", "name": "generatePoem", "status": 1, "data": "Deep in Space!"}
 ```
 
-Each individual response in the array should resolve immediately when ready, enabling parallel processing and faster response times for individual requests within the batch.
+Reactively streaming individual sequential chunks empowers front-end clients to independently invoke `stream.subscribe()` to monitor long-lived processes without blocking concurrent micro-services.
 
 ## 5. Function Specification
 
@@ -248,7 +256,7 @@ Transports MUST:
 
 ### 6.4 Streaming Responses
 
-Transports MAY support streaming responses for improved performance, where individual responses are transmitted as they become available.
+Transports MUST expose bidirectional/continuous response pipelines. Because requests output sequences of `IRPCPacketStream` yields terminating upon `IRPC_STATUS` SUCCESS/ERROR configurations, transports inherently map single execution variables across complex temporal streams, bypassing external WebSockets requirements for basic server-push configurations.
 
 ## 7. Factory Interface
 

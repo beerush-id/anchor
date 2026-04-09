@@ -111,24 +111,47 @@ const transport = new WebSocketTransport({
 
 ### Step 2: Declare Functions
 
-Declare the function signature that both client and server will use.
+Declare the function signatures that both client and server will use. 
 
 ```typescript
 // rpc/hello/index.ts
 import { irpc } from '../lib/module.js';
 
 export type HelloFn = (name: string) => Promise<string>;
+export const hello = irpc.declare<HelloFn>({ name: 'hello' });
+```
 
-export const hello = irpc.declare<HelloFn>({
-  name: 'hello'
+You can seamlessly declare reactive streams using the exact same signature syntax:
+
+```typescript
+// rpc/poem/index.ts
+import { irpc } from '../lib/module.js';
+import type { RemoteState } from '@irpclib/irpc';
+
+export type GeneratePoemFn = (prompt: string) => RemoteState<string>;
+export const generatePoem = irpc.declare<GeneratePoemFn>({
+  name: 'generatePoem',
+  init: () => '', // Initial client-side state before server data arrives
 });
 ```
 
-The function signature is isomorphic—it works the same on client and server.
+::: warning Important!
+When declaring a function that returns `RemoteState<T>`, `irpc.declare()` requires an `init` factory in its options. On the client, when the stub is called, a `RemoteState` is instantiated immediately — before any data arrives from the server. The `init` factory seeds the initial value of `state.data` so UI frameworks can bind to the reactive proxy right away and progressively render as server mutations arrive.
+:::
 
-### Step 3: Implement Handler (Server)
+### What is RemoteState?
+`RemoteState<T>` is IRPC's core reactive primitive. It extends a standard native `Promise<T>`, meaning it can be standardly `await`-ed. But it is augmented with a `.subscribe()` method that allows clients to actively listen to temporal updates (via a mutable proxy) from the server over the wire without blocking the execution thread.
 
-Implement the actual logic on the server.
+Because it exposes `state.data`, `state.status`, and `state.error`, you can use `RemoteState` to:
+- Hydrate UI frameworks (React, Vue, Svelte) automatically as data arrives without writing WebSocket hooks.
+- Monitor the exact execution status (`PENDING`, `SUCCESS`, or `ERROR`).
+- Handle mid-stream pipeline errors directly via `state.error`.
+
+The function signature is isomorphic—it works perfectly across the client and server.
+
+### Step 3: Implement Handlers (Server)
+
+Implement the actual logic on the server. Handlers can return standard promises or continuous streams.
 
 ```typescript
 // rpc/hello/constructor.ts
@@ -137,6 +160,28 @@ import { hello } from './index.js';
 
 irpc.construct(hello, async (name) => {
   return `Hello ${name}`;
+});
+```
+
+To implement a reactive pipeline, use the `stream` factory to yield continuous data back to the client:
+
+```typescript
+// rpc/poem/constructor.ts
+import { irpc } from '../lib/module.js';
+import { generatePoem } from './index.js';
+import { stream } from '@irpclib/irpc';
+
+irpc.construct(generatePoem, (prompt) => {
+  return stream<string>(async (data, resolve, reject) => {
+    // Stream external generators
+    const response = await ai.generate({ prompt, stream: true });
+    
+    for await (const chunk of response) {
+      data = (data || '') + chunk.text;
+    }
+    
+    resolve(data);
+  });
 });
 ```
 
@@ -173,21 +218,73 @@ console.log('Server running on http://localhost:3000');
 
 The router automatically handles batching, routing, and streaming responses.
 
-### Step 5: Use on Client
+### Step 5: Execute & Stream on Client
 
-Call the function like any local async function.
+Call the function like any local async function, or use `.subscribe()` to react to continuous state changes.
 
 ```typescript
 // client.ts
 import { hello } from './rpc/hello/index.js';
+import { generatePoem } from './rpc/poem/index.js';
 
+// Standard execution
 const message = await hello('John');
 console.log(message); // "Hello John"
+
+// Real-time streaming
+const call = generatePoem('Space');
+call.subscribe(state => {
+    console.log('Stream chunk:', state.data);
+});
 ```
 
-No fetch calls, no manual serialization—just call the function.
+No fetch calls, manual serialization, or separate WebSocket connections required.
 
 ## Advanced Features
+
+### Progressive Data Hydration (Dashboard Streams)
+
+Solve the N+1 problem and avoid UI waterfalls by progressively yielding multiple parallel data aggregations through a single stream request.
+
+```typescript
+// 1. Declare the stub (Shared)
+// rpc/dashboard/index.ts
+import type { RemoteState } from '@irpclib/irpc';
+
+export type GetDashboardFn = (userId: string) => RemoteState<DashboardData>;
+export const getDashboard = irpc.declare<GetDashboardFn>({
+  name: 'getDashboard',
+  init: () => ({} as DashboardData), // Initial client-side state before server data arrives
+});
+```
+
+```typescript
+// 2. Implement the stream (Server-Only)
+// rpc/dashboard/constructor.ts
+import { getDashboard } from './index.js';
+import { stream } from '@irpclib/irpc';
+
+irpc.construct(getDashboard, (userId) => {
+  return stream((data, resolve) => {
+    // Execute queries concurrently and mutate the reactive state directly
+    const q1 = db.users.get(userId).then(res => data.user = res);
+    const q2 = db.sales.aggregate(userId).then(res => data.sales = res);
+    const q3 = externalApi.fetchMetrics().then(res => data.telemetry = res);
+
+    // Conclude the stream when all continuous queries complete
+    Promise.all([q1, q2, q3]).then(() => resolve());
+  }, {}); // Server-side initial value passed to the stream constructor
+});
+```
+
+On the client, the UI skeleton can begin rendering as the stream fields populate over time.
+
+```typescript
+const call = getDashboard('user-123');
+call.subscribe(state => {
+  console.log('Hydrating partial UI fields...', state.data);
+});
+```
 
 ### Caching
 
