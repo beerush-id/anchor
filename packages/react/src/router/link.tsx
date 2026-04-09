@@ -1,0 +1,76 @@
+import { derived } from '@anchorlib/core';
+import { createUrl } from '@anchorlib/router';
+import { navigate } from './navigate.js';
+import type { MouseEventHandler, ReactNode } from 'react';
+import { render, setup } from '../hoc.js';
+import type { ComponentProps } from '../types.js';
+import type { AnyRoute, LinkProps } from './types.js';
+
+type LinkComponent = <T extends AnyRoute>(props: LinkProps<T>) => ReactNode;
+
+export const Link = setup<LinkProps<AnyRoute>>((props) => {
+  const $props = props as ComponentProps<LinkProps<AnyRoute>> & {
+    query: Record<string, unknown>;
+    params: Record<string, unknown>;
+  };
+
+  const query = derived(() => $props.query);
+  const params = derived(() => $props.params);
+  const href = derived(() => createUrl(props.href ?? $props.to?.index.path ?? '/', params.value, query.value));
+  const isActive = derived(() => {
+    const route = $props.to?.index;
+    if (!route) return false;
+
+    if (route.active) return true;
+
+    // If this route is an Index child route, its native .active state drops when navigating 
+    // into deep sibling dynamic routes (like /users/1). 
+    // Visually, the NavLink should still be active if its true parent is active.
+    if (route.parent && route.parent.index === route) {
+      return !!route.parent.active;
+    }
+
+    return false;
+  });
+
+  const handleClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
+    // Let the browser handle standard "open in new tab/window" modifiers and custom targets.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || $props.target) {
+      return;
+    }
+
+    e.preventDefault();
+
+    if (!location.href.endsWith(href.value)) {
+      navigate(href.value, { query: query.value, params: params.value, replace: props.replace });
+    }
+
+    $props.onClick?.(e);
+  };
+
+  const handleHover: MouseEventHandler<HTMLAnchorElement> = (e) => {
+    const { to } = $props;
+
+    if (to && (props.preload === 'hover' || to.index.options.preloadMode === 'hover')) {
+      to.index.router.preload(href.value);
+    }
+
+    $props.onMouseEnter?.(e);
+  };
+
+  return render(
+    () => (
+      <a
+        href={href.value}
+        onClick={handleClick}
+        onMouseEnter={handleHover}
+        aria-current={isActive.value ? 'page' : undefined}
+        className={[props.className, isActive.value ? props.activeClass : ''].filter(Boolean).join(' ') || undefined}
+        {...$props.$omit(['to', 'params' as never, 'query' as never, 'onClick', 'onMouseEnter', 'preload', 'replace', 'activeClass', 'children'])}
+      >
+        {props.children}
+      </a>
+    ),
+    'Link'
+  );
+}, 'Link') as LinkComponent;
