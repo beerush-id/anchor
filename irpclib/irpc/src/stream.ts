@@ -95,10 +95,10 @@ export class IRPCStream<T extends IRPCData> {
           } satisfies IRPCPacketAnswer<T>);
         });
 
-        const unsubscribe = result.subscribe((state, event) => {
-          if (event.type === 'init') return;
+        const unsubscribe = result.subscribe((state, { type, keys, value }) => {
+          if (type === 'init') return;
 
-          const [rootKey] = event.keys;
+          const [rootKey] = keys;
 
           if (rootKey === 'data') {
             this.pipeHandlers.forEach((handler) => {
@@ -107,7 +107,7 @@ export class IRPCStream<T extends IRPCData> {
                 name,
                 type: IRPC_PACKET_TYPE.EVENT,
                 status: state.status,
-                data: event,
+                data: { type, keys, value },
                 createdAt: Date.now(),
               } satisfies IRPCPacketEvent);
             });
