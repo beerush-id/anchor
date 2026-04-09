@@ -207,6 +207,11 @@ describe('router.ts', () => {
         expect(router.activeContext.query).toEqual({ tab: 'profile' });
       });
 
+      it('should handle URL string with http protocol', async () => {
+        await router.activate('http://localhost/users');
+        expect(router.activeRoute).toBeDefined();
+      });
+
       it('should return undefined for non-matching URL', async () => {
         const result = await router.activate('/nonexistent');
         expect(result).toBeUndefined();
@@ -351,6 +356,31 @@ describe('router.ts', () => {
         expect(guard).toHaveBeenCalled();
       });
 
+      it('should abort preload if guard returns Redirect', async () => {
+        const usersRoute = router.route('/users');
+        const loginRoute = router.route('/login');
+        const redirect = new Redirect(loginRoute);
+        const guard = vi.fn(() => {
+          throw redirect;
+        });
+        usersRoute.guard(guard);
+
+        await router.preload('/users');
+        expect(guard).toHaveBeenCalled();
+      });
+
+      it('should abort preload if guard returns Error', async () => {
+        const usersRoute = router.route('/users');
+        const error = new Error('guard error');
+        const guard = vi.fn(() => {
+          throw error;
+        });
+        usersRoute.guard(guard);
+
+        await router.preload('/users');
+        expect(guard).toHaveBeenCalled();
+      });
+
       it('should call providers during preload', async () => {
         const usersRoute = router.route('/users');
         const provider = vi.fn(() => ({ users: [] }));
@@ -395,7 +425,7 @@ describe('router.ts', () => {
 
         await router.activate('/users/123/posts');
         expect(router.activeRoute).toBeDefined();
-        expect(router.activeSegments?.length).toBe(3);
+        expect(router.activeSegments?.length).toBe(4);
       });
 
       it('should handle guards with redirects', async () => {
@@ -447,7 +477,7 @@ describe('router.ts', () => {
 
         await router.activate('/users/123');
         expect(router.activeRoute).toBeDefined();
-        expect(router.activeContext.params).toEqual({ ':id': '123' });
+        expect(router.activeContext.params).toEqual({ id: '123' });
       });
 
       it('should handle wildcard routes', async () => {

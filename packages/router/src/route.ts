@@ -1,9 +1,10 @@
 import { createObserver, mutable, retriable, type StateObserver, untrack } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
-import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
-import { ROUTE_TYPE } from './enum.js';
+import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, inheritConfig, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
+import type { Router } from './router.js';
 import { getStore } from './store.js';
 import type {
   ActiveContext,
@@ -12,31 +13,28 @@ import type {
   GuardBlocker,
   GuardContext,
   GuardHandler,
+  NestedParams,
+  NestedQueryParams,
   ProviderContext,
   ProviderMap,
   ProviderObserver,
   ProviderOptions,
   RouteError,
+  RouteInternalRenderer,
   RouteName,
   RouteOptions,
   RoutePath,
   RoutePathOutput,
+  RouteRendererFn,
   RouteState,
+  RouteStatus,
+  RouteStorage,
   RouteType,
   TRec,
   UnknownGuard,
   UnknownProvider,
   UnknownRoute,
 } from './types.js';
-
-export type RouteStorage = {
-  state: RouteState<unknown, unknown, unknown>;
-  cache: RouteCache;
-  dataCache: WeakMap<ProviderContext<TRec, TRec, TRec>, TRec>;
-  activeResolvers: Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
-  guardObserver: StateObserver;
-  providerObservers: WeakMap<UnknownProvider, ProviderObserver>;
-};
 
 /**
  * Represents a route in the router with support for guards, providers, and nested routes.
@@ -74,6 +72,7 @@ export class Route<
   TOptions extends RouteOptions,
   TData,
   TParent = never,
+  TOutput = any,
 > {
   /** The name of this route */
   public readonly name: RouteName<TPath>;
@@ -81,12 +80,20 @@ export class Route<
   public readonly type: RouteType;
   public readonly options: TOptions;
 
+  public renderer?: RouteInternalRenderer<TOutput>;
+
   /**
    * Sets whether this route is currently active.
    *
    * @param value - true if the route is active, false otherwise
    */
   public set active(value: boolean) {
+    untrack(() => {
+      if (value && !this.state.resolved) {
+        this.state.resolving = true;
+      }
+    });
+
     this.state.active = value;
   }
 
@@ -97,6 +104,46 @@ export class Route<
    */
   public get active(): boolean {
     return this.state.active;
+  }
+
+  public get status(): RouteStatus {
+    return this.state.status;
+  }
+
+  public set status(value: RouteStatus) {
+    this.state.status = value;
+  }
+
+  public get authenticated() {
+    return this.state.authenticated;
+  }
+
+  public set authenticated(value: boolean) {
+    this.state.authenticated = value;
+  }
+
+  public get authenticating() {
+    return this.state.authenticating;
+  }
+
+  public set authenticating(value: boolean) {
+    this.state.authenticating = value;
+  }
+
+  public get resolved() {
+    return this.state.resolved;
+  }
+
+  public set resolved(value: boolean) {
+    this.state.resolved = value;
+  }
+
+  public get resolving() {
+    return this.state.resolving;
+  }
+
+  public set resolving(value: boolean) {
+    this.state.resolving = value;
   }
 
   /**
@@ -193,28 +240,37 @@ export class Route<
   /** Map of data providers for this route */
   public providers = new Map<string, ProviderMap>();
 
+  public get state(): RouteState<TParams, TQueryParams, TData> {
+    return this.storage.state as RouteState<TParams, TQueryParams, TData>;
+  }
+
   private get storage(): RouteStorage {
     const store = getStore();
 
     if (!store.has(this)) {
-      store.set(this, {
-        state: mutable({ active: false, authenticated: false }),
-        cache: new RouteCache(this as UnknownRoute),
-        dataCache: new WeakMap(),
-        activeResolvers: new Map(),
-        guardObserver: createObserver(() => {
-          this.guardObserver.reset();
-          this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>, true);
-        }),
-        providerObservers: new WeakMap(),
+      untrack(() => {
+        store.set(this, {
+          state: mutable<RouteState<TParams, TQueryParams, TData>>({
+            status: 'idle',
+            active: false,
+            resolved: false,
+            resolving: false,
+            authenticated: false,
+            authenticating: false,
+          }),
+          cache: new RouteCache(this as UnknownRoute),
+          dataCache: new WeakMap(),
+          activeResolvers: new Map(),
+          guardObserver: createObserver(() => {
+            this.guardObserver.reset();
+            this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>, true);
+          }),
+          providerObservers: new WeakMap(),
+        });
       });
     }
 
     return store.get(this) as RouteStorage;
-  }
-
-  private get state(): RouteState<TParams, TQueryParams, TData> {
-    return this.storage.state as RouteState<TParams, TQueryParams, TData>;
   }
 
   private get cache(): RouteCache {
@@ -241,11 +297,13 @@ export class Route<
   /**
    * Creates a new Route instance.
    *
+   * @param router - The router instance
    * @param name - The route path
    * @param options - Optional route options
    * @param parent - Optional parent route
    */
   public constructor(
+    public router: Router<TOutput>,
     name: TPath,
     options?: RouteOptions,
     public parent?: TParent
@@ -256,7 +314,7 @@ export class Route<
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
-    this.options = { ...DEFAULT_CONFIG, ...options } as TOptions;
+    this.options = inheritConfig(router.options, options) as TOptions;
   }
 
   /**
@@ -330,23 +388,35 @@ export class Route<
     path: TChildPath,
     options?: TChildOptions
   ): TChildPath extends '/'
-    ? this
+    ? Omit<
+        Route<
+          TChildPath,
+          NestedParams<TParams, TChildParams>,
+          NestedQueryParams<TQueryParams, TChildQueryParams>,
+          RouteOptions & TOptions & TChildOptions,
+          TData & TChildData,
+          this,
+          TOutput
+        >,
+        'route'
+      >
     : Route<
         TChildPath,
-        TParams & TChildParams,
-        TQueryParams & TChildQueryParams,
+        NestedParams<TParams, TChildParams>,
+        NestedQueryParams<TQueryParams, TChildQueryParams>,
         RouteOptions & TOptions & TChildOptions,
         TData & TChildData,
-        this
+        this,
+        TOutput
       > {
-    const child = new Route(path, { ...this.options, ...options }, this);
+    const child = new Route(this.router, path, inheritConfig(this.options, options), this);
 
     if (path === ('/' as TChildPath)) {
-      this.index = child as UnknownRoute;
-      return this as never;
+      this.index = child as never as UnknownRoute;
+      return child as never;
     }
 
-    const childMap = new RouteRegistry(child as UnknownRoute);
+    const childMap = new RouteRegistry(child as never as UnknownRoute);
     const parentMap = ROUTE_MAP_LINK.get(this) as RouteRegistry;
 
     if (!parentMap) {
@@ -443,6 +513,8 @@ export class Route<
     // Run the guard inside an observer, so whenever the state it reads change,
     // the observer will be re-run.
     return await this.guardObserver.run(async () => {
+      this.authenticating = true;
+
       try {
         const guards = Array.from(this.guards);
         await Promise.all(Array.from(guards).map((guard) => guard(context)));
@@ -472,6 +544,8 @@ export class Route<
 
           return cause;
         }
+      } finally {
+        this.authenticating = false;
       }
 
       return true;
@@ -517,7 +591,7 @@ export class Route<
     this.activeResolvers.set(context, abortController);
 
     try {
-      const data = mutable({} as TRec);
+      const data = (this.dataCache.get(context) ?? mutable({} as TRec)) as TRec;
 
       for (const [name, { provider, options }] of this.providers) {
         if (!this.providerObservers.has(provider)) {
@@ -530,6 +604,8 @@ export class Route<
           // the observer will be re-run.
           const resolver = () => {
             return observer.run(async () => {
+              this.resolving = true;
+
               try {
                 const providerData = await retriable(
                   async () => {
@@ -546,13 +622,15 @@ export class Route<
 
                 return providerData;
               } catch (error) {
+                this.status = ROUTE_STATUS.ERROR;
+
                 if (error instanceof Error) {
                   this.error = {
                     type: 'provider',
                     cause: error,
                     message: error.message,
                   };
-                  return;
+                  return error;
                 } else {
                   const cause = new Error('Unknown provider error.');
                   this.error = {
@@ -560,8 +638,11 @@ export class Route<
                     cause,
                     message: cause.message,
                   };
-                  return;
+                  return cause;
                 }
+                /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
+              } finally {
+                this.resolving = false;
               }
             });
           };
@@ -570,12 +651,13 @@ export class Route<
         }
 
         const { resolver } = this.providerObservers.get(provider)!;
-        const result = await resolver();
 
-        if (!result) return;
+        const result = await resolver();
+        if (result instanceof Error) return;
       }
 
       this.dataCache.set(context, data as TData);
+      this.resolved = true;
 
       return data as TData;
     } finally {
@@ -597,14 +679,24 @@ export class Route<
    * ```
    */
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
+    this.status = ROUTE_STATUS.PENDING;
     this.error = undefined;
+
+    // Set the route as active immediately if renderMode is immediate
+    if (this.options.renderMode === RENDER_MODE.IMMEDIATE) {
+      this.active = true;
+    }
 
     if (preload) {
       await this.preload(context);
     }
 
+    // If the route is deactivated during preload, do nothing.
+    if (this.status !== ROUTE_STATUS.PENDING) return;
+
     this.data = this.dataCache.get(context as ProviderContext<TRec, TRec, TRec>);
     this.context = context as ActiveContext<TParams, TQueryParams, TData>;
+    this.status = ROUTE_STATUS.SUCCESS;
     this.active = true;
   }
 
@@ -620,11 +712,20 @@ export class Route<
    */
   public deactivate(): void {
     this.active = false;
+    this.status = ROUTE_STATUS.IDLE;
 
     if (!this.options?.keepAlive) {
       this.data = undefined;
       this.error = undefined;
       this.context = undefined;
+      this.resolved = false;
+      this.authenticated = false;
+      this.guardObserver.destroy();
+
+      for (const { provider } of this.providers.values()) {
+        this.providerObservers.get(provider)?.observer.destroy();
+        this.providerObservers.delete(provider);
+      }
     }
   }
 
@@ -658,4 +759,30 @@ export class Route<
       this.activeResolvers.clear();
     }
   }
+
+  public render(renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>): this {
+    this.renderer = createRenderer(this as UnknownRoute, renderer, true);
+    return this;
+  }
+}
+
+let createRenderer = <TParams, TQueryParams, TData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>,
+  layout?: boolean
+): RouteInternalRenderer<TOutput> => {
+  return ({ children }) => {
+    if (layout) return renderer(route.state as never, route.context as never, children);
+    return renderer(route.state as never);
+  };
+};
+
+export type RendererFactory = typeof createRenderer;
+
+export function getRendererFactory(): RendererFactory {
+  return createRenderer;
+}
+
+export function setRendererFactory(factory: RendererFactory) {
+  createRenderer = factory;
 }

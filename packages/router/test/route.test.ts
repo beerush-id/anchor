@@ -2,146 +2,153 @@ import { mutable } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { ROUTE_TYPE } from '../src/enum.js';
+import { Router } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
 
+let sharedRouter: Router;
+
 describe('Route class', () => {
+  beforeEach(() => {
+    sharedRouter = new Router();
+  });
+
   describe('constructor', () => {
     it('should create a new Route instance', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route).toBeInstanceOf(Route);
     });
 
     it('should create a new Route instance with failed name', () => {
-      const route = new Route(undefined as never);
+      const route = new Route(sharedRouter, undefined as never);
       expect(route).toBeInstanceOf(Route);
       expect(route.name).toBe('');
     });
 
     it('should extract route name from path', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.name).toBe('users');
     });
 
     it('should extract route name from path with leading slash', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.name).toBe('users');
     });
 
     it('should extract dynamic parameter name', () => {
-      const route = new Route('/:id');
+      const route = new Route(sharedRouter, '/:id');
       // Dynamic route names include the ':' prefix
       expect(route.name).toBe(':id');
     });
 
     it('should extract wildcard name', () => {
-      const route = new Route('/*');
+      const route = new Route(sharedRouter, '/*');
       expect(route.name).toBe('*');
     });
 
     it('should set type to STATIC for static routes', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.type).toBe(ROUTE_TYPE.STATIC);
     });
 
     it('should set type to DYNAMIC for dynamic routes', () => {
-      const route = new Route('/:id');
+      const route = new Route(sharedRouter, '/:id');
       expect(route.type).toBe(ROUTE_TYPE.DYNAMIC);
     });
 
     it('should set type to WILDCARD for wildcard routes', () => {
-      const route = new Route('/*');
+      const route = new Route(sharedRouter, '/*');
       expect(route.type).toBe(ROUTE_TYPE.WILDCARD);
     });
 
     it('should store options when provided', () => {
       const options = { maxAge: 1000, keepAlive: true };
-      const route = new Route('/test', options);
+      const route = new Route(sharedRouter, '/test', options);
       // Options are merged with DEFAULT_CONFIG
       expect(route.options?.maxAge).toBe(1000);
       expect(route.options?.keepAlive).toBe(true);
     });
 
     it('should have default options when not provided', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       // Options are merged with DEFAULT_CONFIG, so they're never undefined
       expect(route.options).toBeDefined();
     });
 
     it('should store parent when provided', () => {
-      const parent = new Route('/parent');
-      const child = new Route('/child', undefined, parent);
+      const parent = new Route(sharedRouter, '/parent');
+      const child = new Route(sharedRouter, '/child', undefined, parent);
       expect(child.parent).toBe(parent);
     });
 
     it('should have undefined parent when not provided', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.parent).toBeUndefined();
     });
 
     it('should initialize guards as empty Set', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.guards).toBeInstanceOf(Set);
       expect(route.guards.size).toBe(0);
     });
 
     it('should initialize providers as empty Map', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.providers).toBeInstanceOf(Map);
       expect(route.providers.size).toBe(0);
     });
 
     it('should initialize active as false', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.active).toBe(false);
     });
 
     it('should initialize data as undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.data).toBeUndefined();
     });
 
     it('should initialize error as undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.error).toBeUndefined();
     });
 
     it('should initialize context as undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.context).toBeUndefined();
     });
 
     it('should initialize params as undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.params).toBeUndefined();
     });
 
     it('should initialize query as undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.query).toBeUndefined();
     });
 
     it('should initialize index as undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.index).toBeUndefined();
     });
   });
 
   describe('active getter/setter', () => {
     it('should return false initially', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.active).toBe(false);
     });
 
     it('should allow setting active to true', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.active = true;
       expect(route.active).toBe(true);
     });
 
     it('should allow setting active to false', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.active = true;
       route.active = false;
       expect(route.active).toBe(false);
@@ -150,12 +157,12 @@ describe('Route class', () => {
 
   describe('data getter/setter', () => {
     it('should return undefined initially', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.data).toBeUndefined();
     });
 
     it('should allow setting data', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const testData = { user: 'John' };
       route.data = testData;
       // Data is wrapped in mutable(), so use toEqual instead of toBe
@@ -163,7 +170,7 @@ describe('Route class', () => {
     });
 
     it('should allow clearing data with undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.data = { user: 'John' };
       route.data = undefined;
       expect(route.data).toBeUndefined();
@@ -172,12 +179,12 @@ describe('Route class', () => {
 
   describe('error getter/setter', () => {
     it('should return undefined initially', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.error).toBeUndefined();
     });
 
     it('should allow setting error', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const testError = { type: 'guard' as const, message: 'Test error' };
       route.error = testError;
       // Error is wrapped in mutable(), so use toEqual instead of toBe
@@ -185,7 +192,7 @@ describe('Route class', () => {
     });
 
     it('should allow clearing error with undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.error = { type: 'guard' as const, message: 'Test error' };
       route.error = undefined;
       expect(route.error).toBeUndefined();
@@ -194,12 +201,12 @@ describe('Route class', () => {
 
   describe('context getter/setter', () => {
     it('should return undefined initially', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.context).toBeUndefined();
     });
 
     it('should allow setting context', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const testContext = { params: { id: '123' }, query: {}, data: {} };
       route.context = testContext as never;
       // Context is wrapped in mutable(), so use toEqual instead of toBe
@@ -207,21 +214,92 @@ describe('Route class', () => {
     });
 
     it('should allow clearing context with undefined', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.context = { params: { id: '123' }, query: {}, data: {} } as never;
       route.context = undefined;
       expect(route.context).toBeUndefined();
     });
   });
 
+  describe('state properties (authenticated, authenticating, resolved, resolving)', () => {
+    it('should get and set authenticated state', () => {
+      const route = new Route(sharedRouter, '/test');
+      expect(route.authenticated).toBe(false);
+      route.authenticated = true;
+      expect(route.authenticated).toBe(true);
+    });
+
+    it('should get and set authenticating state', () => {
+      const route = new Route(sharedRouter, '/test');
+      expect(route.authenticating).toBe(false);
+      route.authenticating = true;
+      expect(route.authenticating).toBe(true);
+    });
+
+    it('should get and set resolved state', () => {
+      const route = new Route(sharedRouter, '/test');
+      expect(route.resolved).toBe(false);
+      route.resolved = true;
+      expect(route.resolved).toBe(true);
+    });
+
+    it('should get and set resolving state', () => {
+      const route = new Route(sharedRouter, '/test');
+      expect(route.resolving).toBe(false);
+      route.resolving = true;
+      expect(route.resolving).toBe(true);
+    });
+  });
+
+  describe('render and setRendererFactory', () => {
+    it('should allow setting a renderer and rendering', () => {
+      const route = new Route(sharedRouter, '/test');
+      const renderer = vi.fn();
+      route.render(renderer);
+      
+      expect(route.renderer).toBeDefined();
+      if (route.renderer) {
+        route.renderer({ children: [] } as never);
+        expect(renderer).toHaveBeenCalledWith(route.state as never, route.context as never, []);
+        
+        // Let's also test without layout by bypassing `createRenderer` behavior if we could
+        // But `createRenderer` itself uses `layout = true`.
+      }
+    });
+
+    it('should support changing renderer factory', async () => {
+      const { setRendererFactory, getRendererFactory } = await import('../src/route.js');
+      const originalFactory = getRendererFactory();
+
+      const factory = vi.fn(() => vi.fn());
+      setRendererFactory(factory as never);
+
+      const route = new Route(sharedRouter, '/test');
+      const renderer = vi.fn();
+      route.render(renderer);
+      
+      expect(factory).toHaveBeenCalled();
+      
+      // restore factory
+      setRendererFactory(originalFactory);
+
+      // Test without layout 
+      const route2 = new Route(sharedRouter, '/test2');
+      const renderer2 = vi.fn();
+      const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
+      internalRenderer({ children: [] } as never);
+      expect(renderer2).toHaveBeenCalledWith(route2.state as never);
+    });
+  });
+
   describe('params getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.params).toBeUndefined();
     });
 
     it('should return params from context', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.context = { params: { id: '123' }, query: {}, data: {} } as never;
       expect(route.params).toEqual({ id: '123' });
     });
@@ -229,12 +307,12 @@ describe('Route class', () => {
 
   describe('query getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.query).toBeUndefined();
     });
 
     it('should return query from context', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.context = { params: {}, query: { tab: 'profile' }, data: {} } as never;
       expect(route.query).toEqual({ tab: 'profile' });
     });
@@ -242,27 +320,27 @@ describe('Route class', () => {
 
   describe('path getter', () => {
     it('should return route name for root route', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.path).toBe('test');
     });
 
     it('should return full path including parent', () => {
-      const parent = new Route('/users');
-      const child = new Route('/profile', undefined, parent);
+      const parent = new Route(sharedRouter, '/users');
+      const child = new Route(sharedRouter, '/profile', undefined, parent);
       expect(child.path).toBe('users/profile');
     });
 
     it('should handle deeply nested routes', () => {
-      const root = new Route('/api');
-      const v1 = new Route('/v1', undefined, root);
-      const users = new Route('/users', undefined, v1);
-      const profile = new Route('/profile', undefined, users);
+      const root = new Route(sharedRouter, '/api');
+      const v1 = new Route(sharedRouter, '/v1', undefined, root);
+      const users = new Route(sharedRouter, '/users', undefined, v1);
+      const profile = new Route(sharedRouter, '/profile', undefined, users);
       expect(profile.path).toBe('api/v1/users/profile');
     });
 
     it('should handle parent with path /', () => {
-      const parent = new Route('/');
-      const child = new Route('/test', undefined, parent);
+      const parent = new Route(sharedRouter, '/');
+      const child = new Route(sharedRouter, '/test', undefined, parent);
       // Parent with '/' has empty name, so child path starts with '/'
       expect(child.path).toBe('/test');
     });
@@ -270,90 +348,90 @@ describe('Route class', () => {
 
   describe('url method', () => {
     it('should return route path without params or query', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url()).toBe('users');
     });
 
     it('should replace route parameters', () => {
       // Routes should be created via router.route() for proper path handling
-      // When using new Route() directly, only the first segment is extracted
-      const parent = new Route('/users');
-      const route = new Route('/:id', undefined, parent);
+      // When using new Route(sharedRouter, ) directly, only the first segment is extracted
+      const parent = new Route(sharedRouter, '/users');
+      const route = new Route(sharedRouter, '/:id', undefined, parent);
       // The url method replaces :key with value, so use 'id' not ':id'
       expect(route.url({ id: '123' } as never)).toBe('users/123');
     });
 
     it('should replace multiple route parameters', () => {
       // Routes should be created via router.route() for proper path handling
-      const users = new Route('/users');
-      const user = new Route('/:userId', undefined, users);
-      const posts = new Route('/posts', undefined, user);
-      const post = new Route('/:postId', undefined, posts);
+      const users = new Route(sharedRouter, '/users');
+      const user = new Route(sharedRouter, '/:userId', undefined, users);
+      const posts = new Route(sharedRouter, '/posts', undefined, user);
+      const post = new Route(sharedRouter, '/:postId', undefined, posts);
       // The url method replaces :key with value
       expect(post.url({ userId: '123', postId: '456' } as never)).toBe('users/123/posts/456');
     });
 
     it('should append query parameters', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url(undefined, { tab: 'profile' } as never)).toBe('users?tab=profile');
     });
 
     it('should append multiple query parameters', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url(undefined, { tab: 'profile', sort: 'asc' } as never)).toBe('users?tab=profile&sort=asc');
     });
 
     it('should replace params and append query', () => {
       // Routes should be created via router.route() for proper path handling
-      const parent = new Route('/users');
-      const route = new Route('/:id', undefined, parent);
+      const parent = new Route(sharedRouter, '/users');
+      const route = new Route(sharedRouter, '/:id', undefined, parent);
       // The url method replaces :key with value
       expect(route.url({ id: '123' } as never, { tab: 'profile' } as never)).toBe('users/123?tab=profile');
     });
 
     it('should handle array query values', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url(undefined, { tags: ['js', 'ts'] } as never)).toBe('users?tags=js&tags=ts');
     });
 
     it('should handle numeric params', () => {
       // Routes should be created via router.route() for proper path handling
-      const parent = new Route('/users');
-      const route = new Route('/:id', undefined, parent);
+      const parent = new Route(sharedRouter, '/users');
+      const route = new Route(sharedRouter, '/:id', undefined, parent);
       // The url method replaces :key with value
       expect(route.url({ id: 123 } as never)).toBe('users/123');
     });
 
     it('should handle numeric query values', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url(undefined, { page: 1 } as never)).toBe('users?page=1');
     });
 
     it('should handle boolean query values', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url(undefined, { debug: true } as never)).toBe('users?debug=true');
     });
 
     it('should handle empty params object', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url({})).toBe('users');
     });
 
     it('should handle empty query object', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       expect(route.url(undefined, {})).toBe('users');
     });
 
     it('should handle special characters in params', () => {
       // Routes should be created via router.route() for proper path handling
-      const parent = new Route('/users');
-      const route = new Route('/:slug', undefined, parent);
+      const parent = new Route(sharedRouter, '/users');
+      const route = new Route(sharedRouter, '/:slug', undefined, parent);
       // The url method replaces :key with value
       expect(route.url({ slug: 'my-awesome-post' } as never)).toBe('users/my-awesome-post');
     });
 
     it('should handle special characters in query values', () => {
-      const route = new Route('/users');
+      const route = new Route(sharedRouter, '/users');
       // The url method doesn't encode spaces, it uses them directly
       expect(route.url(undefined, { search: 'hello world' } as never)).toBe('users?search=hello world');
     });
@@ -363,7 +441,7 @@ describe('Route class', () => {
     let parentRoute: Route<'/users', {}, {}, {}, {}>;
 
     beforeEach(() => {
-      parentRoute = new Route('/users') as never;
+      parentRoute = new Route(sharedRouter, '/users') as never;
       // Create registry for parent
       new RouteRegistry(parentRoute as never);
     });
@@ -373,11 +451,6 @@ describe('Route class', () => {
       expect(childRoute).toBeInstanceOf(Route);
       expect(childRoute.name).toBe('profile');
       expect(childRoute.parent).toBe(parentRoute);
-    });
-
-    it('should return parent when path is /', () => {
-      const result = parentRoute.route('/');
-      expect(result).toBe(parentRoute);
     });
 
     it('should set index route when path is /', () => {
@@ -401,7 +474,7 @@ describe('Route class', () => {
     });
 
     it('should merge parent options with child options', () => {
-      const parent = new Route('/users', { maxAge: 1000 });
+      const parent = new Route(sharedRouter, '/users', { maxAge: 1000 });
       new RouteRegistry(parent as never);
 
       const child = parent.route('/profile', { keepAlive: true });
@@ -410,7 +483,7 @@ describe('Route class', () => {
     });
 
     it('should allow child options to override parent options', () => {
-      const parent = new Route('/users', { maxAge: 1000 });
+      const parent = new Route(sharedRouter, '/users', { maxAge: 1000 });
       new RouteRegistry(parent as never);
 
       const child = parent.route('/profile', { maxAge: 2000 });
@@ -418,12 +491,12 @@ describe('Route class', () => {
     });
 
     it('should throw error when parent has no registry', () => {
-      const parent = new Route('/users');
+      const parent = new Route(sharedRouter, '/users');
       expect(() => parent.route('/profile')).toThrow('RouteMap not found');
     });
 
     it('should register static child in parent registry', () => {
-      const parent = new Route('/users');
+      const parent = new Route(sharedRouter, '/users');
       const parentRegistry = new RouteRegistry(parent as never);
       const child = parent.route('/profile');
 
@@ -431,7 +504,7 @@ describe('Route class', () => {
     });
 
     it('should register dynamic child with DYNAMIC_ROUTE_KEY', () => {
-      const parent = new Route('/users');
+      const parent = new Route(sharedRouter, '/users');
       const parentRegistry = new RouteRegistry(parent as never);
       const child = parent.route('/:id');
 
@@ -439,7 +512,7 @@ describe('Route class', () => {
     });
 
     it('should register wildcard child with WILDCARD_ROUTE_KEY', () => {
-      const parent = new Route('/users');
+      const parent = new Route(sharedRouter, '/users');
       const parentRegistry = new RouteRegistry(parent as never);
       const child = parent.route('/*');
 
@@ -447,7 +520,7 @@ describe('Route class', () => {
     });
 
     it('should create nested child routes', () => {
-      const parent = new Route('/users');
+      const parent = new Route(sharedRouter, '/users');
       new RouteRegistry(parent as never);
       const child = parent.route('/profile');
       const grandchild = child.route('/settings');
@@ -458,7 +531,7 @@ describe('Route class', () => {
 
   describe('guard method', () => {
     it('should add guard to guards set', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard = vi.fn();
       route.guard(guard);
 
@@ -466,7 +539,7 @@ describe('Route class', () => {
     });
 
     it('should return route for chaining', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard = vi.fn();
       const result = route.guard(guard);
 
@@ -474,7 +547,7 @@ describe('Route class', () => {
     });
 
     it('should allow adding multiple guards', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard1 = vi.fn();
       const guard2 = vi.fn();
 
@@ -486,7 +559,7 @@ describe('Route class', () => {
     });
 
     it('should handle async guards', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const asyncGuard = vi.fn(async () => {});
       route.guard(asyncGuard);
 
@@ -496,7 +569,7 @@ describe('Route class', () => {
 
   describe('provide method', () => {
     it('should add provider to providers map', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'data');
       route.provide('test', provider);
 
@@ -504,7 +577,7 @@ describe('Route class', () => {
     });
 
     it('should return route for chaining', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'data');
       const result = route.provide('test', provider);
 
@@ -512,7 +585,7 @@ describe('Route class', () => {
     });
 
     it('should store provider with name', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'data');
       route.provide('test', provider);
 
@@ -521,7 +594,7 @@ describe('Route class', () => {
     });
 
     it('should store provider function', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'data');
       route.provide('test', provider);
 
@@ -530,7 +603,7 @@ describe('Route class', () => {
     });
 
     it('should store provider options when provided', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'data');
       const options = { maxAge: 1000 };
       route.provide('test', provider, options);
@@ -540,7 +613,7 @@ describe('Route class', () => {
     });
 
     it('should handle undefined options', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'data');
       route.provide('test', provider);
 
@@ -549,7 +622,7 @@ describe('Route class', () => {
     });
 
     it('should allow adding multiple providers', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider1 = vi.fn(() => 'data1');
       const provider2 = vi.fn(() => 'data2');
 
@@ -559,7 +632,7 @@ describe('Route class', () => {
     });
 
     it('should handle async providers', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const asyncProvider = vi.fn(async () => 'data');
       route.provide('test', asyncProvider);
 
@@ -569,7 +642,7 @@ describe('Route class', () => {
 
   describe('authenticate method', () => {
     it('should return true when no guards', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const context = { params: {}, query: {} };
 
       const result = await route.authenticate(context);
@@ -577,7 +650,7 @@ describe('Route class', () => {
     });
 
     it('should return true when all guards pass', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard = vi.fn();
       route.guard(guard);
 
@@ -589,7 +662,7 @@ describe('Route class', () => {
     });
 
     it('should run all guards', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard1 = vi.fn();
       const guard2 = vi.fn();
       route.guard(guard1).guard(guard2);
@@ -602,8 +675,8 @@ describe('Route class', () => {
     });
 
     it('should return Redirect when guard throws Redirect', async () => {
-      const route = new Route('/test');
-      const targetRoute = new Route('/login');
+      const route = new Route(sharedRouter, '/test');
+      const targetRoute = new Route(sharedRouter, '/login');
       const redirect = new Redirect(targetRoute);
       const guard = vi.fn(() => {
         throw redirect;
@@ -617,7 +690,7 @@ describe('Route class', () => {
     });
 
     it('should return Error when guard throws Error', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const error = new Error('Guard failed');
       const guard = vi.fn(() => {
         throw error;
@@ -631,7 +704,7 @@ describe('Route class', () => {
     });
 
     it('should set error when guard throws Error', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const error = new Error('Guard failed');
       const guard = vi.fn(() => {
         throw error;
@@ -649,7 +722,7 @@ describe('Route class', () => {
     });
 
     it('should set error when guard throws non-Error', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard = vi.fn(() => {
         throw 'string error';
       });
@@ -666,7 +739,7 @@ describe('Route class', () => {
     });
 
     it('should handle async guards', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const asyncGuard = vi.fn(async () => {});
       route.guard(asyncGuard);
 
@@ -677,7 +750,7 @@ describe('Route class', () => {
     });
 
     it('should return true on subsequent calls after successful authentication', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard = vi.fn();
       route.guard(guard);
 
@@ -690,7 +763,7 @@ describe('Route class', () => {
     });
 
     it('should re-run guards when state changes', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const context = { params: {}, query: {} };
 
       const state = mutable(0);
@@ -712,7 +785,7 @@ describe('Route class', () => {
 
   describe('preload method', () => {
     it('should call authenticate', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const context = { params: {}, query: {}, data: {} };
 
       const result = await route.preload(context);
@@ -721,7 +794,7 @@ describe('Route class', () => {
     });
 
     it('should return GuardBlocker when authentication fails', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const error = new Error('Guard failed');
       const guard = vi.fn(() => {
         throw error;
@@ -736,8 +809,8 @@ describe('Route class', () => {
     });
 
     it('should return Redirect when authentication redirects', async () => {
-      const route = new Route('/test');
-      const targetRoute = new Route('/login');
+      const route = new Route(sharedRouter, '/test');
+      const targetRoute = new Route(sharedRouter, '/login');
       const redirect = new Redirect(targetRoute as never);
       const guard = vi.fn(() => {
         throw redirect;
@@ -753,7 +826,7 @@ describe('Route class', () => {
 
   describe('activate method', () => {
     it('should set active to true', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const context = { params: {}, query: {}, data: {} };
 
       await route.activate(context);
@@ -761,7 +834,7 @@ describe('Route class', () => {
     });
 
     it('should set context', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const context = { params: { id: '123' }, query: {}, data: {} };
 
       await route.activate(context as never);
@@ -770,7 +843,7 @@ describe('Route class', () => {
     });
 
     it('should call authenticate', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const guard = vi.fn();
       route.guard(guard);
 
@@ -781,7 +854,7 @@ describe('Route class', () => {
     });
 
     it('should return GuardBlocker when authentication fails', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const error = new Error('Guard failed');
       const guard = vi.fn(() => {
         throw error;
@@ -799,7 +872,7 @@ describe('Route class', () => {
 
   describe('deactivate method', () => {
     it('should set active to false', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.active = true;
 
       route.deactivate();
@@ -807,7 +880,7 @@ describe('Route class', () => {
     });
 
     it('should clear context when keepAlive is false', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.context = { params: {}, query: {}, data: {} };
 
       route.deactivate();
@@ -815,7 +888,7 @@ describe('Route class', () => {
     });
 
     it('should preserve context when keepAlive is true', () => {
-      const route = new Route('/test', { keepAlive: true });
+      const route = new Route(sharedRouter, '/test', { keepAlive: true });
       const context = { params: {}, query: {}, data: {} };
       route.context = context;
 
@@ -825,7 +898,7 @@ describe('Route class', () => {
     });
 
     it('should clear data when keepAlive is false', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.data = { user: 'John' };
 
       route.deactivate();
@@ -833,7 +906,7 @@ describe('Route class', () => {
     });
 
     it('should preserve data when keepAlive is true', () => {
-      const route = new Route('/test', { keepAlive: true });
+      const route = new Route(sharedRouter, '/test', { keepAlive: true });
       const data = { user: 'John' };
       route.data = data;
 
@@ -843,7 +916,7 @@ describe('Route class', () => {
     });
 
     it('should clear error', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.error = { type: 'guard', message: 'Error' };
 
       route.deactivate();
@@ -851,7 +924,7 @@ describe('Route class', () => {
     });
 
     it('should set authenticated to false', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       route.active = true;
       // This would be set to true by authenticate
       // We can't directly test this without calling authenticate
@@ -863,7 +936,7 @@ describe('Route class', () => {
 
   describe('resolve method', () => {
     it('should return empty object when no providers', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const context = { params: {}, query: {}, data: {} };
 
       const result = await route.resolve(context);
@@ -871,7 +944,7 @@ describe('Route class', () => {
     });
 
     it('should call provider and return data', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'test-data');
       route.provide('test', provider);
 
@@ -883,7 +956,7 @@ describe('Route class', () => {
     });
 
     it('should call multiple providers', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider1 = vi.fn(() => 'data1');
       const provider2 = vi.fn(() => 'data2');
       route.provide('test1', provider1).provide('test2', provider2);
@@ -895,7 +968,7 @@ describe('Route class', () => {
     });
 
     it('should handle async providers', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const asyncProvider = vi.fn(async () => 'async-data');
       route.provide('test', asyncProvider);
 
@@ -906,7 +979,7 @@ describe('Route class', () => {
     });
 
     it('should update context data', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'test-data');
       route.provide('test', provider);
 
@@ -917,7 +990,7 @@ describe('Route class', () => {
     });
 
     it('should set route data', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'test-data');
       route.provide('test', provider);
 
@@ -929,7 +1002,7 @@ describe('Route class', () => {
     });
 
     it('should reuse existing provider observer on second call', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => 'test-data');
       route.provide('test', provider);
 
@@ -946,7 +1019,7 @@ describe('Route class', () => {
     });
 
     it('should re-run the providers', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const canRead = mutable(true);
       const provider = vi.fn(() => {
         if (canRead.value) return 'data';
@@ -969,7 +1042,7 @@ describe('Route class', () => {
 
   describe('cancel method', () => {
     it('should cancel specific context resolution', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(async () => {
         await new Promise((resolve) => setTimeout(resolve, 1));
         return 'data';
@@ -983,12 +1056,12 @@ describe('Route class', () => {
       route.cancel(context);
 
       // The promise should complete (provider resolves before cancel in sync)
-      const result = await promise;
-      expect(result).toBeUndefined();
+      const result = (await promise) as { test?: string };
+      expect(result.test).toBeUndefined();
     });
 
     it('should cancel all resolutions when no context provided', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(async () => {
         await new Promise((resolve) => setTimeout(resolve, 1));
         return 'data';
@@ -1001,13 +1074,13 @@ describe('Route class', () => {
       // Cancel all resolutions
       route.cancel();
 
-      const result = await promise;
+      const result = (await promise) as { test?: string };
       // Provider resolves before cancel takes effect in sync execution
-      expect(result).toBeUndefined();
+      expect(result.test).toBeUndefined();
     });
 
     it('should handle cancel with no active resolutions', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
 
       // Should not throw
       expect(() => route.cancel()).not.toThrow();
@@ -1018,8 +1091,8 @@ describe('Route class', () => {
   describe('integration tests', () => {
     it('should work with full route lifecycle', async () => {
       // Routes should be created via router.route() for proper path handling
-      const parent = new Route('/users');
-      const route = new Route('/:id', undefined, parent);
+      const parent = new Route(sharedRouter, '/users');
+      const route = new Route(sharedRouter, '/:id', undefined, parent);
       const guard = vi.fn();
       const provider = vi.fn(() => ({ name: 'John' }));
 
@@ -1043,8 +1116,8 @@ describe('Route class', () => {
     });
 
     it('should handle guard blocking with redirect', async () => {
-      const loginRoute = new Route('/login');
-      const protectedRoute = new Route('/dashboard');
+      const loginRoute = new Route(sharedRouter, '/login');
+      const protectedRoute = new Route(sharedRouter, '/dashboard');
       const redirect = new Redirect(loginRoute as never);
 
       const guard = vi.fn(() => {
@@ -1059,7 +1132,7 @@ describe('Route class', () => {
     });
 
     it('should handle provider errors', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const error = new Error('Provider failed');
       const provider = vi.fn(() => {
         throw error;
@@ -1074,7 +1147,7 @@ describe('Route class', () => {
     });
 
     it('should handle non-Error provider errors', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => {
         throw 'string error';
       });
@@ -1092,15 +1165,15 @@ describe('Route class', () => {
     });
 
     it('should handle provider returning undefined', async () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => undefined);
       route.provide('test', provider);
 
       const context = { params: {}, query: {}, data: {} };
-      const result = await route.resolve(context);
+      const result = (await route.resolve(context)) as { test: unknown };
 
       // Provider returned undefined, so the result is undefined
-      expect(result).toBeUndefined();
+      expect(result.test).toBeUndefined();
     });
   });
 });

@@ -35,3 +35,4 @@ export * from './registry.js';
 export * from './route.js';
 export * from './router.js';
 export * from './types.js';
+export * from './url.js';

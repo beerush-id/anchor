@@ -70,17 +70,7 @@ export class RouteRegistry extends Map {
     const segment = urlSegments[index];
     const recursive = urlSegments.length > index + 1;
 
-    if (!segment) {
-      segments.push(this.route);
-
-      return {
-        route: this.route,
-        segments,
-        params,
-      };
-    }
-
-    const staticRoute = this.get(segment) as RouteRegistry;
+    const staticRoute = segment === '' ? this : (this.get(segment) as RouteRegistry);
     const dynamicRoute = this.get(DYNAMIC_ROUTE_KEY) as RouteRegistry;
     const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteRegistry;
 
@@ -90,6 +80,10 @@ export class RouteRegistry extends Map {
       if (recursive) {
         return staticRoute.match(urlSegments, segments, params, index + 1);
       } else {
+        if (staticRoute.route.index) {
+          segments.push(staticRoute.route.index);
+        }
+
         return {
           route: staticRoute.route,
           segments,
@@ -97,12 +91,16 @@ export class RouteRegistry extends Map {
         };
       }
     } else if (dynamicRoute) {
-      params[dynamicRoute.name] = segment;
+      params[dynamicRoute.name.replace(/^:/, '')] = segment;
       segments.push(dynamicRoute.route);
 
       if (recursive) {
         return dynamicRoute.match(urlSegments, segments, params, index + 1);
       } else {
+        if (dynamicRoute.route.index) {
+          segments.push(dynamicRoute.route.index);
+        }
+
         return {
           route: dynamicRoute.route,
           segments,
@@ -112,6 +110,10 @@ export class RouteRegistry extends Map {
     } else if (wildcardRoute) {
       params['*'] = urlSegments.slice(index);
       segments.push(wildcardRoute.route);
+
+      if (wildcardRoute.route.index) {
+        segments.push(wildcardRoute.route.index);
+      }
 
       return {
         route: wildcardRoute.route,
@@ -134,7 +136,7 @@ export class RouteRegistry extends Map {
  */
 function cleanPath(path: string) {
   return path
-    .replace(/^[\/]+/, '')
+    .replace(/^[\/]+/, '/')
     .replace(/[\/]+/g, '/')
     .replace(/[\/]+$/, '');
 }

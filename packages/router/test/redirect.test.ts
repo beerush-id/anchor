@@ -1,60 +1,66 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRouter, type UnknownRoute } from '../src/index.js';
+import { createRouter, type Router, type UnknownRoute } from '../src/index.js';
 import { Redirect, redirect, redirectUrl, setRedirectHandler } from '../src/redirect.js';
 import { Route } from '../src/route.js';
 
+let sharedRouter: Router;
+
 describe('redirect.ts', () => {
+  beforeEach(() => {
+    sharedRouter = createRouter();
+  });
+
   describe('Redirect class', () => {
     it('should create a new Redirect instance', () => {
-      const redirect = new Redirect(new Route('/test'));
+      const redirect = new Redirect(new Route(sharedRouter, '/test'));
       expect(redirect).toBeInstanceOf(Redirect);
     });
 
     it('should store the route', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const redirect = new Redirect(testRoute);
       expect(redirect.route).toBe(testRoute);
     });
 
     it('should store params when provided', () => {
       const params = { id: '123' };
-      const redirect = new Redirect(new Route('/test/:id'), params);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:id'), params);
       expect(redirect.params).toEqual(params);
     });
 
     it('should store query when provided', () => {
       const query = { tab: 'profile' };
-      const redirect = new Redirect(new Route('/test?tab'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?tab'), undefined, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should store both params and query when provided', () => {
       const params = { id: '123' };
       const query = { tab: 'profile' };
-      const redirect = new Redirect(new Route('/test/:id?tab'), params as never, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:id?tab'), params as never, query as never);
       expect(redirect.params).toEqual(params);
       expect(redirect.query).toEqual(query);
     });
 
     it('should have undefined params when not provided', () => {
-      const redirect = new Redirect(new Route('/test'));
+      const redirect = new Redirect(new Route(sharedRouter, '/test'));
       expect(redirect.params).toBeUndefined();
     });
 
     it('should have undefined query when not provided', () => {
-      const redirect = new Redirect(new Route('/test'));
+      const redirect = new Redirect(new Route(sharedRouter, '/test'));
       expect(redirect.query).toBeUndefined();
     });
 
     it('should be throwable', () => {
-      const redirect = new Redirect(new Route('/test'));
+      const redirect = new Redirect(new Route(sharedRouter, '/test'));
       expect(() => {
         throw redirect;
       }).toThrow(Redirect);
     });
 
     it('should be catchable as Redirect', () => {
-      const redirect = new Redirect(new Route('/test'));
+      const redirect = new Redirect(new Route(sharedRouter, '/test'));
       try {
         throw redirect;
       } catch (error) {
@@ -65,85 +71,85 @@ describe('redirect.ts', () => {
 
     it('should handle empty params object', () => {
       const params = {} as { id: string };
-      const redirect = new Redirect(new Route('/test/:id'), params);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:id'), params);
       expect(redirect.params).toEqual({});
     });
 
     it('should handle empty query object', () => {
       const query = {} as { tab: string };
-      const redirect = new Redirect(new Route('/test?tab'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?tab'), undefined, query as never);
       expect(redirect.query).toEqual({});
     });
 
     it('should handle params with multiple properties', () => {
       const params = { id: '123', slug: 'test-post' } as { id: string; slug: string };
-      const redirect = new Redirect(new Route('/test/:id?slug'), params);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:id?slug'), params);
       expect(redirect.params).toEqual(params);
     });
 
     it('should handle query with multiple properties', () => {
       const query = { tab: 'profile', sort: 'asc' } as { tab: string; sort: string };
-      const redirect = new Redirect(new Route('/test?tab&sort'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?tab&sort'), undefined, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should handle params with numeric values', () => {
       const params = { id: 123 } as { id: number };
-      const redirect = new Redirect(new Route('/test/:id(number)'), params);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:id(number)'), params);
       expect(redirect.params).toEqual(params);
     });
 
     it('should handle query with numeric values', () => {
       const query = { page: 1 } as { page: number };
-      const redirect = new Redirect(new Route('/test?page(number)'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?page(number)'), undefined, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should handle params with boolean values', () => {
       const params = { active: true } as { active: boolean };
-      const redirect = new Redirect(new Route('/test/:active(boolean)'), params);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:active(boolean)'), params);
       expect(redirect.params).toEqual(params);
     });
 
     it('should handle query with boolean values', () => {
       const query = { debug: false } as { debug: boolean };
-      const redirect = new Redirect(new Route('/test?debug(boolean)'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?debug(boolean)'), undefined, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should handle params with null values', () => {
       const params = { id: null } as { id: null };
-      const redirect = new Redirect(new Route('/test/:id(null)'), params);
+      const redirect = new Redirect(new Route(sharedRouter, '/test/:id(null)'), params);
       expect(redirect.params).toEqual(params);
     });
 
     it('should handle query with null values', () => {
       const query = { filter: null } as { filter: null };
-      const redirect = new Redirect(new Route('/test?filter(null)'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?filter(null)'), undefined, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should handle query with array values', () => {
       const query = { tags: ['js', 'ts'] } as { tags: string[] };
-      const redirect = new Redirect(new Route('/test?tags=(array)'), {}, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?tags=(array)'), {}, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should handle query with object values', () => {
       const query = { options: { sort: 'asc' } } as { options: { sort: string } };
-      const redirect = new Redirect(new Route('/test?options=(object)'), undefined, query as never);
+      const redirect = new Redirect(new Route(sharedRouter, '/test?options=(object)'), undefined, query as never);
       expect(redirect.query).toEqual(query);
     });
 
     it('should preserve route reference', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const redirect1 = new Redirect(route);
       const redirect2 = new Redirect(route);
       expect(redirect1.route).toBe(redirect2.route);
     });
 
     it('should create independent redirect instances', () => {
-      const route = new Route('/test/:id');
+      const route = new Route(sharedRouter, '/test/:id');
       const redirect1 = new Redirect(route, { id: '1' });
       const redirect2 = new Redirect(route, { id: '2' });
       expect(redirect1).not.toBe(redirect2);
@@ -156,7 +162,7 @@ describe('redirect.ts', () => {
     let mockHandler: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-      testRoute = new Route('/test') as UnknownRoute;
+      testRoute = new Route(sharedRouter, '/test') as UnknownRoute;
       mockHandler = vi.fn();
       setRedirectHandler(mockHandler);
     });
@@ -523,7 +529,7 @@ describe('redirect.ts', () => {
 
     it('should handle URL that already contains query separator', () => {
       // Route with existing query in path
-      const routeWithQuery = new Route('/search?q=default');
+      const routeWithQuery = new Route(sharedRouter, '/search?q=default');
       const query = { sort: 'asc' };
       const redirect = new Redirect(routeWithQuery as never, undefined, query as never);
       const url = redirectUrl(redirect as never);
@@ -532,7 +538,7 @@ describe('redirect.ts', () => {
     });
 
     it('should handle URL without leading slash', () => {
-      const noLeadingSlashRoute = new Route('users/:id' as never);
+      const noLeadingSlashRoute = new Route(sharedRouter, 'users/:id' as never);
       const params = { id: '123' };
       const redirect = new Redirect(noLeadingSlashRoute as never, params as never);
       const url = redirectUrl(redirect as never);
@@ -543,7 +549,7 @@ describe('redirect.ts', () => {
 
     it('should handle URL with existing query separator and additional query', () => {
       // Test the branch where URL already contains '?'
-      const routeWithQuery = new Route('/search?existing=value');
+      const routeWithQuery = new Route(sharedRouter, '/search?existing=value');
       const query = { new: 'param' };
       const redirect = new Redirect(routeWithQuery as never, undefined, query as never);
       const url = redirectUrl(redirect as never);
@@ -556,7 +562,7 @@ describe('redirect.ts', () => {
     let testRoute: Route<'/test', {}, {}, {}, {}>;
 
     beforeEach(() => {
-      testRoute = new Route('/test');
+      testRoute = new Route(sharedRouter, '/test');
     });
 
     it('should set the redirect handler', async () => {

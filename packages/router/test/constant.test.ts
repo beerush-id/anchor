@@ -1,10 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { configure, DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from '../src/constant.js';
-import type { UnknownRoute } from '../src/index.js';
+import { Router, type UnknownRoute } from '../src/index.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
 
+let sharedRouter: Router;
+
 describe('constant.ts', () => {
+  beforeEach(() => {
+    sharedRouter = new Router();
+  });
+
   describe('DEFAULT_CONFIG', () => {
     it('should have default baseUrl', () => {
       expect(DEFAULT_CONFIG.baseUrl).toBe('http://localhost');
@@ -222,14 +228,14 @@ describe('constant.ts', () => {
     });
 
     it('should link routes to their registries', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const registry = new RouteRegistry(route as UnknownRoute);
 
       expect(ROUTE_MAP_LINK.get(route)).toBe(registry);
     });
 
     it('should allow getting registry for a route', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       const registry = new RouteRegistry(route as UnknownRoute);
 
       const retrievedRegistry = ROUTE_MAP_LINK.get(route);
@@ -237,12 +243,12 @@ describe('constant.ts', () => {
     });
 
     it('should return undefined for route without registry', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(ROUTE_MAP_LINK.get(route)).toBeUndefined();
     });
 
     it('should allow deleting route-registry link', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       new RouteRegistry(route as UnknownRoute);
 
       ROUTE_MAP_LINK.delete(route);
@@ -250,8 +256,8 @@ describe('constant.ts', () => {
     });
 
     it('should handle multiple routes', () => {
-      const route1 = new Route('/test1');
-      const route2 = new Route('/test2');
+      const route1 = new Route(sharedRouter, '/test1');
+      const route2 = new Route(sharedRouter, '/test2');
       const registry1 = new RouteRegistry(route1 as UnknownRoute);
       const registry2 = new RouteRegistry(route2 as UnknownRoute);
 
@@ -261,7 +267,7 @@ describe('constant.ts', () => {
 
     it('should not prevent garbage collection of routes', () => {
       // WeakMap allows garbage collection of keys
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       new RouteRegistry(route as UnknownRoute);
 
       // The route can be garbage collected when no longer referenced
@@ -271,7 +277,7 @@ describe('constant.ts', () => {
     });
 
     it('should allow checking if route has registry', () => {
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(ROUTE_MAP_LINK.has(route)).toBe(false);
 
       new RouteRegistry(route as UnknownRoute);
@@ -293,7 +299,7 @@ describe('constant.ts', () => {
     it('should work with Route using configured options', () => {
       configure({ maxAge: 5000, keepAlive: true });
 
-      const route = new Route('/test', { maxAge: 1000 });
+      const route = new Route(sharedRouter, '/test', { maxAge: 1000 });
       expect(route.options?.maxAge).toBe(1000);
       expect(route.options?.keepAlive).toBe(true);
     });
@@ -301,14 +307,14 @@ describe('constant.ts', () => {
     it('should use DEFAULT_CONFIG when route options not provided', () => {
       configure({ maxAge: 5000 });
 
-      const route = new Route('/test');
+      const route = new Route(sharedRouter, '/test');
       expect(route.options?.maxAge).toBe(5000);
     });
 
     it('should allow route options to override DEFAULT_CONFIG', () => {
       configure({ maxAge: 5000, retryDelay: 1000 });
 
-      const route = new Route('/test', { maxAge: 1000 });
+      const route = new Route(sharedRouter, '/test', { maxAge: 1000 });
       expect(route.options?.maxAge).toBe(1000);
       expect(route.options?.retryDelay).toBe(1000);
     });

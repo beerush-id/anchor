@@ -1,13 +1,12 @@
 import { anchor, mutable } from '@anchorlib/core';
 import { URLCache } from './cache.js';
-import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
-import { ROUTE_TYPE } from './enum.js';
+import { DYNAMIC_ROUTE_KEY, inheritConfig, WILDCARD_ROUTE_KEY } from './constant.js';
+import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { Route } from './route.js';
 import { getStore } from './store.js';
 import type {
-  ActiveContext,
   ExtractParams,
   ExtractQueryParams,
   GuardBlocker,
@@ -17,17 +16,10 @@ import type {
   RouteOptions,
   RoutePath,
   RouterOptions,
+  RouterStorage,
   TRec,
   UnknownRoute,
 } from './types.js';
-
-export type RouterStorage = {
-  cache: URLCache;
-  activeUrl: string | undefined;
-  activeRoute: UnknownRoute | undefined;
-  activeContext: ActiveContext<TRec, TRec, TRec>;
-  activeSegments: UnknownRoute[] | undefined;
-};
 
 /**
  * A type-safe router for managing routes and navigation.
@@ -45,7 +37,9 @@ export type RouterStorage = {
  * await router.activate('/users/123');
  * ```
  */
-export class Router {
+
+// biome-ignore lint/suspicious/noExplicitAny: Expect any.
+export class Router<Output = any> {
   public get path() {
     return this.activeRoute?.path;
   }
@@ -78,9 +72,9 @@ export class Router {
     return store.get(this) as RouterStorage;
   }
 
-  private readonly options: RouterOptions;
-  private readonly rootRoute: UnknownRoute;
-  private readonly rootRegistry: RouteRegistry;
+  public readonly options: RouterOptions;
+  public readonly rootRoute: UnknownRoute;
+  public readonly rootRegistry: RouteRegistry;
 
   private get cache() {
     return this.storage.cache;
@@ -94,7 +88,7 @@ export class Router {
   }
 
   /** The currently active route */
-  private get activeRoute() {
+  public get activeRoute() {
     return this.storage.activeRoute;
   }
   private set activeRoute(activeRoute) {
@@ -102,12 +96,12 @@ export class Router {
   }
 
   /** The active context shared across all routes */
-  private get activeContext() {
+  public get activeContext() {
     return this.storage.activeContext;
   }
 
   /** The currently active route segments */
-  private get activeSegments() {
+  public get activeSegments() {
     return this.storage.activeSegments;
   }
   private set activeSegments(activeSegments) {
@@ -129,8 +123,8 @@ export class Router {
    * ```
    */
   constructor(options?: RouterOptions) {
-    this.options = { ...DEFAULT_CONFIG, ...options };
-    this.rootRoute = new Route('/', this.options);
+    this.options = inheritConfig(options);
+    this.rootRoute = new Route(this, '/', this.options);
     this.rootRegistry = new RouteRegistry(this.rootRoute);
   }
 
@@ -162,15 +156,17 @@ export class Router {
     TQueryParams extends ExtractQueryParams<TPath>,
     TOptions extends RouteOptions,
     TData,
-  >(path: TPath, options?: TOptions): Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData> {
-    const route = new Route(path, { ...this.options, ...options });
+  >(
+    path: TPath,
+    options?: TOptions
+  ): Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
+    const route = new Route(this, path, options);
 
     if (path === ('/' as TPath)) {
-      this.rootRoute.index = route as UnknownRoute;
       return this.rootRoute as never;
     }
 
-    const routeMap = new RouteRegistry(route as UnknownRoute);
+    const routeMap = new RouteRegistry(route as never as UnknownRoute);
 
     if (route.type === ROUTE_TYPE.STATIC) {
       this.rootRegistry.set(route.name, routeMap);
@@ -227,8 +223,10 @@ export class Router {
    */
   public async activate(url: string | URL): Promise<void | GuardBlocker> {
     if (typeof url === 'string') {
-      url = new URL(url, this.options.baseUrl);
+      url = new URL(url, url.startsWith('http') ? undefined : this.options.baseUrl);
     }
+
+    if (this.activeUrl === url.href) return;
 
     // Set active URL synchronously - prevents race condition
     this.activeUrl = url.href;
@@ -238,22 +236,15 @@ export class Router {
 
     const { segments, context } = match;
 
-    // Update the active context reference to point to this URL's context
-    anchor.assign(this.activeContext, context);
-
     const currentSegments = this.activeSegments || [];
     const targetSegments = segments;
 
-    // Preload all segments first
-    for (const route of segments) {
-      const blocker = await route.preload(context as ProviderContext<None, None, TRec>);
-      if (blocker instanceof Error || blocker instanceof Redirect) return blocker;
-    }
+    // Update the active context reference to point to this URL's context
+    anchor.assign(this.activeContext, context);
 
-    // Check if still active after preload
-    if (this.activeUrl !== url.href) {
-      return; // Newer navigation started, abort
-    }
+    // Update router state
+    this.activeRoute = match.route;
+    this.activeSegments = targetSegments;
 
     // Deactivate segments not in target (leaf to root)
     const toDeactivate = currentSegments.filter((r) => !targetSegments.includes(r));
@@ -262,15 +253,31 @@ export class Router {
     }
 
     // Activate new segments (root to leaf) without preloading
-    const toActivate = segments.filter((r) => !currentSegments.includes(r));
-    for (const route of toActivate) {
-      // Activate without preloading (data already loaded)
-      await route.activate(this.activeContext as ProviderContext<None, None, TRec>, false);
+    const toActivate = targetSegments.filter((r) => !currentSegments.includes(r));
+
+    // Authenticate target segments.
+    const blockers = await Promise.all(
+      toActivate.map((r) => r.authenticate(context as ProviderContext<None, None, TRec>))
+    );
+    const blocker = blockers.find((b) => b instanceof Error || b instanceof Redirect);
+    if (blocker) return blocker;
+
+    // Check if still active after authentication (guards).
+    if (this.activeUrl !== url.href) {
+      return; // Newer navigation started, abort
     }
 
-    // Update router state
-    this.activeRoute = match.route;
-    this.activeSegments = targetSegments;
+    // Activate immediate segments.
+    for (const route of toActivate) {
+      if (route.options.renderMode === RENDER_MODE.IMMEDIATE) {
+        route.active = true;
+      }
+    }
+
+    // Activate target segments.
+    for (const route of toActivate) {
+      await route.activate(this.activeContext as ProviderContext<None, None, TRec>);
+    }
   }
 
   /**
@@ -316,6 +323,12 @@ export class Router {
 
     const { segments, context } = match;
 
+    const blockers = await Promise.all(
+      segments.map((r) => r.authenticate(context as ProviderContext<None, None, TRec>))
+    );
+    const blocker = blockers.find((b) => b instanceof Error || b instanceof Redirect);
+    if (blocker) return;
+
     // Preload all segments without activating them
     for (const route of segments) {
       await route.preload(context as ProviderContext<None, None, TRec>);
@@ -336,6 +349,6 @@ export class Router {
  * const router = createRouter({ baseUrl: 'https://example.com' });
  * ```
  */
-export function createRouter(options?: RouterOptions): Router {
+export function createRouter<Output>(options?: RouterOptions): Router<Output> {
   return new Router(options);
 }

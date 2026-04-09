@@ -1,6 +1,7 @@
 import { microtask } from '@anchorlib/core';
 import type { Route } from './route.js';
 import type { ExtractParams, ExtractQueryParams, RouteOptions, RoutePath, UnknownRedirect } from './types.js';
+import { createUrl } from './url.js';
 
 /**
  * Internal handler for processing redirects.
@@ -136,28 +137,5 @@ export function redirect<
  * ```
  */
 export function redirectUrl(redirect: UnknownRedirect): string {
-  let url = redirect.route.path as string;
-
-  if (redirect.params) {
-    for (const [key, value] of Object.entries(redirect.params)) {
-      url = url.replace(`:${key}`, String(value));
-    }
-  }
-
-  if (redirect.query && Object.keys(redirect.query).length > 0) {
-    const searchParams = new URLSearchParams();
-
-    for (const [key, value] of Object.entries(redirect.query)) {
-      if (Array.isArray(value)) {
-        (value as string[]).forEach((item) => searchParams.append(key, String(item)));
-      } else {
-        searchParams.set(key, String(value));
-      }
-    }
-
-    const queryString = searchParams.toString();
-    url += (url.includes('?') ? '&' : '?') + queryString;
-  }
-
-  return `/${url}`;
+  return createUrl(redirect.route.path, redirect.params, redirect.query);
 }

@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouteCache, URLCache } from '../src/cache.js';
+import { Router } from '../src/index.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
 import type { ProviderContext, TRec } from '../src/types.js';
+
+let sharedRouter: Router;
 
 describe('RouteCache', () => {
   let route: Route<'/test', {}, {}, {}, {}>;
@@ -11,7 +14,8 @@ describe('RouteCache', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    route = new Route('/test');
+    sharedRouter = new Router();
+    route = new Route(sharedRouter, '/test');
     cache = new RouteCache(route);
     mockProvider = vi.fn(async () => 'test-data');
   });
@@ -29,7 +33,7 @@ describe('RouteCache', () => {
     });
 
     it('should store the route reference', () => {
-      const testRoute = new Route('/test-route');
+      const testRoute = new Route(sharedRouter, '/test-route');
       const testCache = new RouteCache(testRoute as never);
       expect(testCache).toBeDefined();
     });
@@ -80,7 +84,7 @@ describe('RouteCache', () => {
     });
 
     it('should use route options maxAge when options not provided', async () => {
-      const routeWithMaxAge = new Route('/test', { maxAge: 1000 });
+      const routeWithMaxAge = new Route(sharedRouter, '/test', { maxAge: 1000 });
       const cacheWithRoute = new RouteCache(routeWithMaxAge as never);
       const context: ProviderContext<TRec, TRec, TRec> = {
         params: { id: '123' },
@@ -480,7 +484,7 @@ describe('URLCache', () => {
   let rootRoute: Route<'/', {}, {}, {}, {}>;
 
   beforeEach(() => {
-    rootRoute = new Route('/');
+    rootRoute = new Route(sharedRouter, '/');
     registry = new RouteRegistry(rootRoute);
     cache = new URLCache(registry, 3);
   });
@@ -510,7 +514,7 @@ describe('URLCache', () => {
 
     it('should cache and return match result', () => {
       // Create a simple route structure
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -524,7 +528,7 @@ describe('URLCache', () => {
     });
 
     it('should update LRU position on cache hit', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -541,10 +545,10 @@ describe('URLCache', () => {
     });
 
     it('should evict oldest entry when cache is full', () => {
-      const route1 = new Route('/route1');
-      const route2 = new Route('/route2');
-      const route3 = new Route('/route3');
-      const route4 = new Route('/route4');
+      const route1 = new Route(sharedRouter, '/route1');
+      const route2 = new Route(sharedRouter, '/route2');
+      const route3 = new Route(sharedRouter, '/route3');
+      const route4 = new Route(sharedRouter, '/route4');
 
       registry.set('route1', new RouteRegistry(route1 as never));
       registry.set('route2', new RouteRegistry(route2 as never));
@@ -568,7 +572,7 @@ describe('URLCache', () => {
     });
 
     it('should parse query parameters from URL', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -580,7 +584,7 @@ describe('URLCache', () => {
     });
 
     it('should handle duplicate query parameters as arrays', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -592,7 +596,7 @@ describe('URLCache', () => {
     });
 
     it('should create context with params, query, and data', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -607,7 +611,7 @@ describe('URLCache', () => {
     });
 
     it('should include URL in match result', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -619,7 +623,7 @@ describe('URLCache', () => {
     });
 
     it('should handle URLs with trailing slashes', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -634,7 +638,7 @@ describe('URLCache', () => {
     });
 
     it('should handle URLs with multiple slashes', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -645,7 +649,7 @@ describe('URLCache', () => {
     });
 
     it('should handle empty query string', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -657,7 +661,7 @@ describe('URLCache', () => {
     });
 
     it('should handle URLs with hash fragments', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -668,7 +672,7 @@ describe('URLCache', () => {
     });
 
     it('should handle different base URLs', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -683,7 +687,7 @@ describe('URLCache', () => {
     });
 
     it('should handle URLs with encoded characters', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 
@@ -695,7 +699,7 @@ describe('URLCache', () => {
     });
 
     it('should handle URLs with special characters in query', () => {
-      const testRoute = new Route('/test');
+      const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);
       registry.set('test', testRegistry as never);
 

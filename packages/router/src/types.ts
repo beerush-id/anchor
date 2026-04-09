@@ -1,5 +1,6 @@
 import type { RetriableOptions, StateObserver } from '@anchorlib/core';
-import type { ROUTE_TYPE } from './enum.js';
+import type { RouteCache, URLCache } from './cache.js';
+import type { PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import type { Redirect } from './redirect.js';
 import type { Route } from './route.js';
 
@@ -71,6 +72,9 @@ export type ExtractPathParams<TPath extends string> = TPath extends `${infer P}?
   ? PathParams<ExtractParams<P>, ExtractQueryParams<TPath>>
   : PathParams<ExtractParams<TPath>, None>;
 
+export type NestedParams<PParams, CParams> = PParams extends None ? CParams : PParams & CParams;
+export type NestedQueryParams<PQuery, CQuery> = PQuery extends None ? CQuery : PQuery & CQuery;
+
 /** A blocker that can prevent route activation (Error or Redirect) */
 export type GuardBlocker = Error | UnknownRedirect;
 
@@ -125,6 +129,10 @@ export type RouteType = (typeof ROUTE_TYPE)[keyof typeof ROUTE_TYPE];
 
 /** Options for configuring a route */
 export interface RouteOptions extends ProviderOptions {
+  /** Blocking mode for route rendering */
+  renderMode?: RenderMode;
+  preloadMode?: PreloadMode;
+
   /** Keep the route's context when de-activating */
   keepAlive?: boolean;
 }
@@ -158,10 +166,16 @@ export type FlatRec<TParams> = {
   [K in keyof TParams]: TParams[K];
 };
 
+export type RouteStatus = (typeof ROUTE_STATUS)[keyof typeof ROUTE_STATUS];
+
 /** Internal state for a route */
 export type RouteState<TParams, TQueryParams, TData> = {
+  status: RouteStatus;
   active: boolean;
+  resolved: boolean;
+  resolving: boolean;
   authenticated: boolean;
+  authenticating: boolean;
 
   data?: TData;
   error?: RouteError;
@@ -223,3 +237,31 @@ export type ProviderObserver = {
   observer: StateObserver;
   resolver: () => Promise<unknown>;
 };
+
+export type RouteStorage = {
+  state: RouteState<unknown, unknown, unknown>;
+  cache: RouteCache;
+  dataCache: WeakMap<ProviderContext<TRec, TRec, TRec>, TRec>;
+  activeResolvers: Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
+  guardObserver: StateObserver;
+  providerObservers: WeakMap<UnknownProvider, ProviderObserver>;
+};
+
+export type RouterStorage = {
+  cache: URLCache;
+  activeUrl: string | undefined;
+  activeRoute: UnknownRoute | undefined;
+  activeContext: ActiveContext<TRec, TRec, TRec>;
+  activeSegments: UnknownRoute[] | undefined;
+};
+
+export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
+export type RenderMode = (typeof RENDER_MODE)[keyof typeof RENDER_MODE];
+
+export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => TOutput;
+
+export type RouteRendererFn<Params, QueryParams, Data, Output> = (
+  state: RouteState<Params, QueryParams, Data>,
+  context?: ActiveContext<Params, QueryParams, Data>,
+  children?: Output
+) => Output;
