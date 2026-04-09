@@ -5,6 +5,9 @@ import {
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
+  IRPCStream,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   withContext,
 } from '@irpclib/irpc';
 import type { BroadcastTransport } from './transport.js';
@@ -120,28 +123,37 @@ export class BroadcastRouter {
       return this.config.resolver(irpcReq, this.module);
     });
 
-    resolvers.forEach((resolver) => {
-      const ctx = createContext<string, unknown>([
-        ['channel', this.channel],
-        ['endpoint', this.config.endpoint],
-      ]);
+    await Promise.all(
+      resolvers.map((resolver) => {
+        const ctx = createContext<string, unknown>([
+          ['channel', this.channel],
+          ['endpoint', this.config.endpoint],
+        ]);
 
-      withContext(ctx, async () => {
-        const error = await this.resolveMiddleware(resolver.req);
+        return withContext(ctx, async () => {
+          const error = await this.resolveMiddleware(resolver.req);
 
-        if (error) {
-          if (this.channel) {
-            this.channel.postMessage(error);
+          if (error) {
+            if (this.channel) {
+              this.channel.postMessage(error);
+            }
+            return;
           }
-          return;
-        }
 
-        const response = await resolver.resolve();
-        if (this.channel) {
-          this.channel.postMessage(response);
-        }
-      });
-    });
+          const stream = new IRPCStream(resolver.req.id, resolver.req.name, () => resolver.resolve());
+
+          stream.pipe((packet) => {
+            if (this.channel) {
+              this.channel.postMessage(packet);
+            }
+          });
+
+          await new Promise<void>((resolve) => {
+            stream.close(resolve);
+          });
+        });
+      })
+    );
   }
 
   /**
@@ -160,10 +172,13 @@ export class BroadcastRouter {
           return {
             id: req.id,
             name: req.name,
+            type: IRPC_PACKET_TYPE.CLOSE,
+            status: IRPC_STATUS.ERROR,
             error: {
               code: ERROR_CODE.UNKNOWN,
               message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
             },
+            createdAt: Date.now(),
           };
         }
       }

@@ -7,6 +7,9 @@ import {
   type IRPCResponse,
   IRPCTransport,
   type TransportConfig,
+  type IRPCPacketStream,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
 } from '@irpclib/irpc';
 
 /**
@@ -89,17 +92,17 @@ export class BroadcastTransport extends IRPCTransport {
   }
 
   /**
-   * Checks if the data is an IRPC response.
+   * Checks if the data is an IRPC packet stream response.
    */
-  private isResponse(data: any): data is IRPCResponse {
-    return data && typeof data === 'object' && ('result' in data || 'error' in data);
+  private isResponse(data: any): data is IRPCPacketStream<IRPCData> {
+    return data && typeof data === 'object' && 'type' in data && 'status' in data;
   }
 
   /**
    * Resolves a response message.
-   * Routes responses back to pending calls.
+   * Routes responses back to pending calls via enqueuing the packet boundary cleanly natively.
    */
-  private resolveResponse(response: IRPCResponse): void {
+  private resolveResponse(response: IRPCPacketStream<IRPCData>): void {
     const call = this.pendingCalls.get(response.id);
 
     if (!call) {
@@ -107,14 +110,11 @@ export class BroadcastTransport extends IRPCTransport {
       return;
     }
 
-    // Resolve or reject the call
-    if (response.error) {
-      call.reject(new Error(response.error.message));
-    } else {
-      call.resolve(response.result as IRPCData);
-    }
+    call.enqueue(response);
 
-    this.pendingCalls.delete(response.id);
+    if (response.status === IRPC_STATUS.SUCCESS || response.status === IRPC_STATUS.ERROR) {
+      this.pendingCalls.delete(response.id);
+    }
   }
 
   /**
@@ -124,7 +124,14 @@ export class BroadcastTransport extends IRPCTransport {
   protected async dispatch(calls: IRPCCall[]): Promise<void> {
     if (!this.channel) {
       calls.forEach((call) => {
-        call.reject(new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_STATE]), false);
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.INVALID_STATE, message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
       });
       return;
     }
@@ -141,7 +148,14 @@ export class BroadcastTransport extends IRPCTransport {
       });
     } catch (error) {
       calls.forEach((call) => {
-        call.reject(error as Error);
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
       });
     }
   }
@@ -155,9 +169,16 @@ export class BroadcastTransport extends IRPCTransport {
       this.channel = undefined;
     }
 
-    // Reject all pending calls
+    // Reject all pending calls structurally seamlessly
     this.pendingCalls.forEach((call) => {
-      call.reject(new Error('BroadcastChannel connection closed'));
+      call.enqueue({
+        id: call.id,
+        name: call.payload.name,
+        type: IRPC_PACKET_TYPE.CLOSE,
+        status: IRPC_STATUS.ERROR,
+        error: { code: ERROR_CODE.UNKNOWN, message: 'BroadcastChannel connection closed' },
+        createdAt: Date.now(),
+      } as IRPCPacketStream<IRPCData>);
     });
     this.pendingCalls.clear();
   }

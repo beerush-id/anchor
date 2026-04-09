@@ -2,6 +2,7 @@ import { createPackage } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../src/transport.js';
 import { BroadcastRouter } from '../src/router.js';
+import { IRPC_STATUS } from '@irpclib/irpc';
 
 describe('BroadcastRouter', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -76,6 +77,18 @@ describe('BroadcastRouter', () => {
       expect(router.middlewares).toContain(middleware);
       expect(result).toBe(router);
     });
+
+    it('should safely ignore non-function middleware entities gracefully', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const router = new BroadcastRouter(module, transport);
+
+      router.use('invalid_middleware' as any);
+      
+      await router.resolve([{ id: '1', name: 'testFunc', args: [] }]); 
+
+      expect(errSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('resolve', () => {
@@ -97,7 +110,8 @@ describe('BroadcastRouter', () => {
 
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const response = mockChannel.postMessage.mock.calls[0][0];
-      expect(response.result).toBe('Hello World');
+      expect(response.data).toBe('Hello World');
+      expect(response.status).toBe(IRPC_STATUS.SUCCESS);
     });
 
     it('should handle middleware errors', async () => {
@@ -118,6 +132,26 @@ describe('BroadcastRouter', () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(errSpy).toHaveBeenCalled();
+      expect(mockChannel.postMessage).toHaveBeenCalled();
+    });
+
+    it('should execute valid middleware and cleanly proceed to route resolution', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const router = new BroadcastRouter(module, transport);
+
+      const validMiddleware = vi.fn().mockResolvedValue(undefined);
+      router.use(validMiddleware);
+
+      type TestFunc = (input: { name: string }) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      module.construct(testFunc, async () => `Hello!`);
+
+      const requests = [{ id: '1', name: 'testFunc', args: [] }];
+
+      await router.resolve(requests);
+
+      expect(validMiddleware).toHaveBeenCalled();
       expect(mockChannel.postMessage).toHaveBeenCalled();
     });
 

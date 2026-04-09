@@ -128,7 +128,7 @@ export class IRPCPackage {
       }
 
       if (call instanceof Promise) {
-        call.finally(() => calls.delete(callKey));
+        call.finally(() => calls.delete(callKey)).catch(() => {});
       } else {
         calls.delete(callKey);
       }

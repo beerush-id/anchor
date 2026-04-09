@@ -54,14 +54,14 @@ export class IRPCTransport {
     const { debounce } = (this.config ?? {}) as TransportConfig;
 
     if (debounce === false) {
-      this.dispatch([call]).finally(() => {});
+      this.dispatch([call]).finally(() => {}).catch(() => {});
       return;
     }
 
     const timeout = typeof debounce === 'number' && !Number.isNaN(debounce) ? debounce : 0;
 
     const dispatch = () => {
-      this.dispatch(Array.from(this.queue)).finally(() => {});
+      this.dispatch(Array.from(this.queue)).finally(() => {}).catch(() => {});
       this.queue.clear();
     };
 

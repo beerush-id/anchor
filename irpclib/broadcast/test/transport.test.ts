@@ -1,6 +1,7 @@
 import { createPackage } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../src/index.js';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from '@irpclib/irpc';
 
 describe('BroadcastTransport', () => {
   let mockChannel: any;
@@ -120,7 +121,9 @@ describe('BroadcastTransport', () => {
       mockChannel.onmessage({
         data: {
           id: requestId,
-          result: 'Hello World',
+          type: IRPC_PACKET_TYPE.ANSWER,
+          status: IRPC_STATUS.SUCCESS,
+          data: 'Hello World',
         },
       });
 
@@ -138,6 +141,7 @@ describe('BroadcastTransport', () => {
 
       // Call the function
       const promise = testFunc();
+      promise.catch(() => {});
 
       // Wait for dispatch
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -149,6 +153,8 @@ describe('BroadcastTransport', () => {
       mockChannel.onmessage({
         data: {
           id: requestId,
+          type: IRPC_PACKET_TYPE.ANSWER,
+          status: IRPC_STATUS.ERROR,
           error: {
             code: 500,
             message: 'Test error',
@@ -179,6 +185,7 @@ describe('BroadcastTransport', () => {
 
       // Call the function
       const promise = testFunc();
+      promise.catch(() => {});
 
       // Wait for dispatch
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -221,7 +228,9 @@ describe('BroadcastTransport', () => {
       mockChannel.onmessage({
         data: {
           id: 'unknown-call-id',
-          result: 'test',
+          type: IRPC_PACKET_TYPE.ANSWER,
+          status: IRPC_STATUS.SUCCESS,
+          data: 'test',
         },
       });
 
@@ -243,6 +252,7 @@ describe('BroadcastTransport', () => {
 
       // Try to call function without channel
       const promise = testFunc();
+      promise.catch(() => {}); // Silence console trace
 
       await expect(promise).rejects.toThrow('Invalid state');
     });
@@ -262,6 +272,7 @@ describe('BroadcastTransport', () => {
 
       // Call function
       const promise = testFunc();
+      promise.catch(() => {});
 
       await expect(promise).rejects.toThrow('postMessage failed');
     });
