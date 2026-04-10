@@ -1,14 +1,17 @@
 import '@anchorlib/react/client';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { UIRouter } from '@anchorlib/react/router';
 import { anchor, setDebugRenderer, setDevMode } from '@anchorlib/react-classic';
 import { BASE_PATH } from '@lib/nav.js';
+import { router } from '@lib/router.js';
 import { CustomRenderer } from '@pages/custom-renderer/CustomRenderer.js';
 import Home from '@pages/home/Home.js';
 import DemoTodoApp from '@pages/playground/DemoTodoApp.js';
 import Playground from '@pages/playground/Playground.js';
-import { StrictMode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
+
+import AppRoot from './routes/Index.js';
 
 anchor.configure({
   production: process.env.NODE_ENV !== 'development',
@@ -18,7 +21,7 @@ setDevMode(process.env.NODE_ENV === 'development');
 setDebugRenderer(true);
 
 createRoot(document.body).render(
-  <StrictMode>
+  <>
     <BrowserRouter basename={BASE_PATH}>
       <Routes>
         <Route index element={<Home />} />
@@ -27,5 +30,6 @@ createRoot(document.body).render(
         <Route path="/custom-renderer" element={<CustomRenderer />} />
       </Routes>
     </BrowserRouter>
-  </StrictMode>
+    <UIRouter router={router} root={AppRoot} />
+  </>
 );
