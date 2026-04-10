@@ -60,15 +60,14 @@ import '@anchorlib/react/client';
 import { setup, anchor, subscribe, snippet, mutable, effect } from '@anchorlib/react';
 
 import { getMarket } from './module';
-import './constructor';
 
 const Counter = setup(() => {
   const counter = mutable({ count: 0 });
-  const market = getMarket('Apple');
+  const market = getMarket('ACH');
 
   // 😏 Only this tiny part of the UI that need to be updated!
   const CounterView = snippet(() => <h1>Counter: {counter.count}</h1>);
-  const MarketView = snippet(() => <h3 className={'text-green-50 bg-green-500 rounded-md px-3 py-1'}>{market.data.name}: ${market.data.price}</h3>);
+  const MarketView = snippet(() => <h3 className={'text-yellow-50 bg-yellow-600 rounded-md px-3 py-1'}>{market.data.name}: ${market.data.price}</h3>);
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
@@ -96,6 +95,7 @@ const Counter = setup(() => {
   );
 });
 
+import './constructor';
 export default Counter;
 ```
 
@@ -124,7 +124,7 @@ irpc.construct(getMarket, (name) => {
     let ticks = 0;
     
     while (ticks < 100) {
-      data.price = (Math.random() * 10).toFixed(2);
+      data.price = (Math.random() * 1000).toFixed(2);
 
       await sleep(500);
       ticks++;
