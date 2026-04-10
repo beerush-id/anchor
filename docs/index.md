@@ -57,18 +57,24 @@ features:
 ```tsx /App.tsx [active]
 import '@tailwindcss/browser';
 import '@anchorlib/react/client';
-import { setup, snippet, mutable } from '@anchorlib/react';
+import { setup, anchor, subscribe, snippet, mutable, effect } from '@anchorlib/react';
+
+import { getMarket } from './module';
+import './constructor';
 
 const Counter = setup(() => {
   const counter = mutable({ count: 0 });
+  const market = getMarket('Apple');
 
   // 😏 Only this tiny part of the UI that need to be updated!
   const CounterView = snippet(() => <h1>Counter: {counter.count}</h1>);
+  const MarketView = snippet(() => <h3 className={'text-green-50 bg-green-500 rounded-md px-3 py-1'}>{market.data.name}: ${market.data.price}</h3>);
 
   return (
     <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
       <img src="https://anchorlib.dev/docs/icon.svg" alt="Anchor Logo" className="w-24" />
       <CounterView />
+      <MarketView />
       <div className="flex items-center gap-2">
         <button
           className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
@@ -92,3 +98,41 @@ const Counter = setup(() => {
 
 export default Counter;
 ```
+
+```ts /module.ts
+import { createPackage, type RemoteState } from '@irpclib/irpc';
+
+export const irpc = createPackage({
+  name: 'market',
+  version: '1.0.0',
+});
+
+export type GetMarket = (name: string) => RemoteState<{ name: string; price: number }>;
+export const getMarket = irpc.declare<GetMarket>({ 
+  name: 'getMarket',
+  init: () => ({ name: '', price: 0 })
+});
+```
+
+```ts /constructor.ts
+import { sleep } from '@anchorlib/react/core';
+import { stream } from '@irpclib/irpc';
+import { irpc, getMarket } from './module';
+
+irpc.construct(getMarket, (name) => {
+  return stream(async (data, done) => {
+    let ticks = 0;
+    
+    while (ticks < 100) {
+      data.price = (Math.random() * 10).toFixed(2);
+
+      await sleep(500);
+      ticks++;
+    }
+    
+    done();
+  }, { name, price: 0 });
+});
+```
+
+:::

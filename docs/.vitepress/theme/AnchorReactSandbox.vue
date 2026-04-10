@@ -16,6 +16,7 @@
         react: '^19.1.1',
         'react-dom': '^19.1.1',
         '@anchorlib/react': 'latest',
+        '@irpclib/irpc': 'latest',
         '@tailwindcss/browser': '^4.0.0',
       },
     }"
@@ -25,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { Sandbox, sandboxProps } from 'vitepress-plugin-sandpack';
+  import { Sandbox, sandboxProps } from 'vitepress-plugin-sandpack';
 
-const props = defineProps(sandboxProps);
+  const props = defineProps(sandboxProps);
 </script>
