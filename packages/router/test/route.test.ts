@@ -256,12 +256,12 @@ describe('Route class', () => {
       const route = new Route(sharedRouter, '/test');
       const renderer = vi.fn();
       route.render(renderer);
-      
+
       expect(route.renderer).toBeDefined();
       if (route.renderer) {
         route.renderer({ children: [] } as never);
         expect(renderer).toHaveBeenCalledWith(route.state as never, route.context as never, []);
-        
+
         // Let's also test without layout by bypassing `createRenderer` behavior if we could
         // But `createRenderer` itself uses `layout = true`.
       }
@@ -277,13 +277,13 @@ describe('Route class', () => {
       const route = new Route(sharedRouter, '/test');
       const renderer = vi.fn();
       route.render(renderer);
-      
+
       expect(factory).toHaveBeenCalled();
-      
+
       // restore factory
       setRendererFactory(originalFactory);
 
-      // Test without layout 
+      // Test without layout
       const route2 = new Route(sharedRouter, '/test2');
       const renderer2 = vi.fn();
       const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
