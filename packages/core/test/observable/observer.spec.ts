@@ -430,6 +430,10 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       unsubscribe();
       unobserve();
+
+      // Escaping observation short-circuit.
+      observer.destroy();
+      (observer as never as { track: () => void }).track();
     });
 
     it('should track property access when called inside a notification effect', async () => {

@@ -27,6 +27,9 @@ bun run --filter "@anchorlib/devtool" build
 echo "🔨 Building Storage Package..."
 bun run --filter "@anchorlib/storage" build
 
+echo "🔨 Building Router Package..."
+bun run --filter "@anchorlib/router" build
+
 echo "🔨 Building React Package..."
 bun run --filter "@anchorlib/react" build
 
@@ -35,6 +38,18 @@ bun run --filter "@anchorlib/react-classic" build
 
 echo "🔨 Building React Kit Package..."
 bun run --filter "@anchorlib/react-kit" build
+
+echo "🔨 Building IRPC Package..."
+bun run --filter "@irpclib/irpc" build
+
+echo "🔨 Building IRPC HTTP Transport Package..."
+bun run --filter "@irpclib/http" build
+
+echo "🔨 Building IRPC WS Transport Package..."
+bun run --filter "@irpclib/ws" build
+
+echo "🔨 Building IRPC Broadcast Transport Package..."
+bun run --filter "@irpclib/broadcast" build
 
 # Run tests
 echo "🧪 Running tests..."

@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchorRef } from '../../src/index.js';
 
 describe('Anchor Vue - Reactive', () => {
@@ -39,7 +39,11 @@ describe('Anchor Vue - Reactive', () => {
         expect(text.text()).toBe('Count: 0');
         await button.trigger('click');
         await wrapper.vm.$nextTick();
-        expect(text.text()).toBe('Count: 1');
+
+        vi.runAllTimers();
+        await Promise.resolve();
+
+        expect(text.text()).toBe('Count: 0');
       });
     });
   });

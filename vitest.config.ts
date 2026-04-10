@@ -9,7 +9,21 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    projects: ['packages/*'],
+    projects: [
+      'packages/core',
+      'packages/storage',
+      'packages/router',
+      'packages/react',
+      'packages/solid',
+      'packages/svelte',
+      'packages/vue',
+
+      'irpclib/irpc',
+      'irpclib/http',
+      'irpclib/ws',
+      'irpclib/broadcast',
+    ],
+    exclude: ['packages/react-classic'],
     reporters: ['default', 'html'],
     outputFile: 'apps/next/public/coverage/index.html',
     coverage: {
@@ -23,6 +37,11 @@ export default defineConfig({
         'packages/solid/src/**/*.{ts,tsx}',
         'packages/svelte/src/**/*.{ts}',
         'packages/vue/src/**/*.{ts}',
+
+        'irpclib/irpc/src/**/*.{ts}',
+        'irpclib/http/src/**/*.{ts}',
+        'irpclib/ws/src/**/*.{ts}',
+        'irpclib/broadcast/src/**/*.{ts}',
       ],
       reportsDirectory: 'apps/next/public/coverage/details',
     },

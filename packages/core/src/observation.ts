@@ -176,6 +176,7 @@ export function createObserver(
 
   const track = ((state, key) => {
     const keys = states.get(state) as Set<KeyLike>;
+    if (typeof keys === 'undefined') return false;
 
     if (keys.has(key)) {
       return true;
@@ -317,6 +318,9 @@ export function createObserver(
     },
     get run() {
       return run;
+    },
+    get track() {
+      return track;
     },
   };
 
