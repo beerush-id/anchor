@@ -1,3 +1,4 @@
+#!/bin/bash
 bpkg publish -f packages/core
 bpkg publish -f packages/storage
 bpkg publish -f packages/router

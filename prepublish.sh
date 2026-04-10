@@ -1,6 +1,7 @@
+#!/bin/bash
 bun run prepublish
 
-set /p VERSION="Enter version: "
+read -p "Enter version: " VERSION
 
 bpkg info set dependencies.@anchorlib/core="^%VERSION%" -f packages/storage packages/react packages/router packages/react-classic packages/solid packages/svelte packages/vue
 bpkg info set dependencies.@anchorlib/router="^%VERSION%" -f packages/react
