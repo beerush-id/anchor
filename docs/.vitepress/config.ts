@@ -124,6 +124,17 @@ export default defineConfig({
               // { text: 'Advanced', link: '/react/component/advanced' },
             ],
           },
+          {
+            text: 'Router',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/react/router/index.html' },
+              { text: 'Routes & Layouts', link: '/react/router/routes-layouts' },
+              { text: 'Navigation', link: '/react/router/navigation' },
+              { text: 'Data Loaders & Providers', link: '/react/router/data-loaders' },
+              { text: 'Guards & Authentication', link: '/react/router/guards' }
+            ],
+          },
           { text: 'Comparison', link: '/react/comparison' },
           { text: 'Best Practices', link: '/react/best-practices' },
           { text: 'Migration Guide', link: '/react/migration-guide' },
