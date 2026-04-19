@@ -317,4 +317,4 @@ export type StreamConstructor<T> = (
   state: IRPCReadable<T>,
   resolve: (value?: T) => void,
   reject: (error: Error) => void
-) => StreamCleanup | undefined | Promise<StreamCleanup | undefined>;
+) => StreamCleanup | void | Promise<StreamCleanup | void>;
