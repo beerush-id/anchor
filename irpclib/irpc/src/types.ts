@@ -9,7 +9,7 @@ import type {
   ZodString,
   ZodUndefined,
 } from 'zod/v4';
-import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_EVENT_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
+import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
 import type { RemoteState } from './state.js';
 import type { IRPCTransport } from './transport.js';
@@ -29,7 +29,6 @@ export type IRPCSpecStore = Map<string, IRPCSpec<IRPCInputs, IRPCOutput>>;
 export type IRPCStatus = (typeof IRPC_STATUS)[keyof typeof IRPC_STATUS];
 export type IRPCDataType = (typeof IRPC_DATA_TYPE)[keyof typeof IRPC_DATA_TYPE];
 export type IRPCPacketType = (typeof IRPC_PACKET_TYPE)[keyof typeof IRPC_PACKET_TYPE];
-export type IRPCEventType = (typeof IRPC_EVENT_TYPE)[keyof typeof IRPC_EVENT_TYPE];
 export type IRPCBaseContext = (typeof IRPC_BASE_CONTEXT)[keyof typeof IRPC_BASE_CONTEXT];
 
 export type IRPCPacketBase = {
