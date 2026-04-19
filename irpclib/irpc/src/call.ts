@@ -82,9 +82,12 @@ export class IRPCCall {
     }
 
     this.reader = new IRPCReader(this.id);
+    this.reader.onClose = () => this.close();
   }
 
   public enqueue(packet: IRPCPacketStream<IRPCData>) {
+    if (this.resolved) return;
+
     this.reader.push(packet);
 
     if (this.reader.status === IRPC_STATUS.SUCCESS) {
@@ -146,5 +149,12 @@ export class IRPCCall {
 
       clearTimeout(this.timerId);
     }
+  }
+
+  public close() {
+    if (this.resolved) return;
+
+    this.transport.close(this);
+    this.resolve(this.reader.data);
   }
 }

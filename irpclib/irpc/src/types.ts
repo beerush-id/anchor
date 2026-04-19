@@ -9,7 +9,7 @@ import type {
   ZodString,
   ZodUndefined,
 } from 'zod/v4';
-import type { IRPC_DATA_TYPE, IRPC_EVENT_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
+import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_EVENT_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
 import type { RemoteState } from './state.js';
 import type { IRPCTransport } from './transport.js';
@@ -30,6 +30,7 @@ export type IRPCStatus = (typeof IRPC_STATUS)[keyof typeof IRPC_STATUS];
 export type IRPCDataType = (typeof IRPC_DATA_TYPE)[keyof typeof IRPC_DATA_TYPE];
 export type IRPCPacketType = (typeof IRPC_PACKET_TYPE)[keyof typeof IRPC_PACKET_TYPE];
 export type IRPCEventType = (typeof IRPC_EVENT_TYPE)[keyof typeof IRPC_EVENT_TYPE];
+export type IRPCBaseContext = (typeof IRPC_BASE_CONTEXT)[keyof typeof IRPC_BASE_CONTEXT];
 
 export type IRPCPacketBase = {
   id: string;
@@ -207,7 +208,7 @@ export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F e
   // biome-ignore lint/suspicious/noExplicitAny: Expected
   ...args: any[]
 ) => RemoteState<infer R>
-  ? IRPCInit<I, IRPCOutput> & { init: () => R }
+  ? IRPCInit<I, IRPCOutput> & { init: () => R; ttl?: number }
   : IRPCInit<I, O>;
 
 /**
@@ -218,6 +219,10 @@ export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F e
  * @template O - Output validation schema
  */
 export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<I, O> & {
+  /** Optional time-to-live for a call in milliseconds */
+  ttl?: number;
+  /** Whether to stream the result of the RPC call */
+  stream?: boolean;
   /** The actual handler function that implements the RPC */
   handler: IRPCHandler;
   init?: () => unknown;
@@ -295,3 +300,21 @@ export type TransportConfig = IRPCCallConfig & {
   /** Debounce setting for transport - can be a boolean to enable/disable or a number for specific delay */
   debounce?: number | boolean;
 };
+
+export type StreamCleanup = () => void;
+
+/**
+ * A callback function type used to natively construct and drive a reactive stream.
+ * It provides the initial reactive data reference and terminal resolution hooks
+ * without forcing strict async/await boundaries, securely yielding stream operations.
+ *
+ * @template T - The type of data yielded globally by the stream.
+ * @param state - The reactive state reference for the stream.
+ * @param resolve - Callback to statically mark the stream as successfully completed, optionally with a resolved value.
+ * @param reject - Callback to forcefully throw a runtime error into the stream structure.
+ */
+export type StreamConstructor<T> = (
+  state: IRPCReadable<T>,
+  resolve: (value?: T) => void,
+  reject: (error: Error) => void
+) => StreamCleanup | undefined | Promise<StreamCleanup | undefined>;

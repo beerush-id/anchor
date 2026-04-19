@@ -33,3 +33,7 @@ export const IRPC_STATUS = {
   PENDING: 'pending',
   SUCCESS: 'success',
 } as const;
+
+export const IRPC_BASE_CONTEXT = {
+  ABORT_CONTROLLER: Symbol('abort-controller'),
+} as const;

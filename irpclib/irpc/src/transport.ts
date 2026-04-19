@@ -40,7 +40,14 @@ export class IRPCTransport {
 
     const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay });
 
-    this.schedule(call);
+    if (spec.stream) {
+      this.dispatch([call])
+        .finally(() => {})
+        .catch(() => {});
+      return call.reader;
+    } else {
+      this.schedule(call);
+    }
 
     return call.reader;
   }
@@ -79,6 +86,13 @@ export class IRPCTransport {
 
     this.queue.add(call);
   }
+
+  /**
+   * Closes an RPC call. This base implementation does nothing.
+   * Subclasses should override this method to provide closing logic.
+   * @param call - The RPC call to cancel.
+   */
+  public close(call: IRPCCall) {}
 
   /**
    * Dispatches a batch of RPC calls. This base implementation rejects all calls

@@ -1,6 +1,7 @@
 import { anchor, mutable, type StateSubscriber, subscribe } from '@anchorlib/core';
+import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
-import type { IRPCReadable, IRPCStatus } from './types.js';
+import type { IRPCReadable, IRPCStatus, StreamConstructor } from './types.js';
 
 /**
  * A reactive state wrapper that implements the standard Promise interface.
@@ -89,6 +90,10 @@ export class RemoteState<T> extends Promise<T> {
     return subscribe(this.state, handler);
   }
 
+  public close() {
+    this.destroy();
+  }
+
   /**
    * Destroys the reactive state bindings.
    */
@@ -106,22 +111,6 @@ export class RemoteState<T> extends Promise<T> {
 }
 
 /**
- * A callback function type used to natively construct and drive a reactive stream.
- * It provides the initial reactive data reference and terminal resolution hooks
- * without forcing strict async/await boundaries, securely yielding stream operations.
- *
- * @template T - The type of data yielded globally by the stream.
- * @param data - The mutable data payload natively tracked by RemoteState.
- * @param resolve - Callback to statically mark the stream as successfully completed, optionally with a resolved value.
- * @param reject - Callback to forcefully throw a runtime error into the stream structure.
- */
-export type StreamConstructor<T> = (
-  data: T,
-  resolve: (value?: T) => void,
-  reject: (error: Error) => void
-) => void | Promise<void>;
-
-/**
  * A utility factory to structurally instantiate an active `RemoteState` pipeline natively
  * decoupled from standard Promise chains. This elegantly captures constructor functions
  * pushing events into the state before terminating mechanically via secure internal hooks.
@@ -133,6 +122,7 @@ export type StreamConstructor<T> = (
  */
 export function stream<T>(construct: StreamConstructor<T>, init?: T) {
   const state = new RemoteState<T>(init);
+  const abortSignal = getAbortSignal();
 
   const accept = ((...values: [T]) => {
     if (values.length > 0) {
@@ -148,10 +138,28 @@ export function stream<T>(construct: StreamConstructor<T>, init?: T) {
   };
 
   try {
-    const result = construct(state.data, accept, reject);
+    const cleanup = construct(state, accept, reject);
 
-    if (result instanceof Promise) {
-      result.catch(reject);
+    if (cleanup instanceof Promise) {
+      cleanup
+        .then((futureCleanup) => {
+          if (typeof futureCleanup === 'function') {
+            if (abortSignal?.aborted || state.status !== IRPC_STATUS.PENDING) {
+              futureCleanup();
+            } else {
+              abortSignal?.addEventListener('abort', futureCleanup, { once: true });
+            }
+          }
+        })
+        .catch(reject);
+    } else {
+      if (typeof cleanup === 'function') {
+        if (abortSignal?.aborted || state.status !== IRPC_STATUS.PENDING) {
+          cleanup();
+        } else {
+          abortSignal?.addEventListener('abort', cleanup, { once: true });
+        }
+      }
     }
   } catch (error) {
     reject(error as Error);

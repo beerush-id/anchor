@@ -1,3 +1,4 @@
+import { IRPC_BASE_CONTEXT } from './enum.js';
 import type { IRPCContext, IRPCContextProvider } from './types.js';
 
 let currentStore: IRPCContextProvider | undefined;
@@ -19,7 +20,7 @@ export function setContextProvider(store: IRPCContextProvider) {
  * @param fn - The function to execute
  * @returns The result of the executed function
  */
-export function withContext<R>(ctx: IRPCContext<string, unknown>, fn: () => R) {
+export function withContext<R>(ctx: IRPCContext<string | symbol, unknown>, fn: () => R) {
   return currentStore?.run(ctx, fn) ?? fn();
 }
 
@@ -28,7 +29,7 @@ export function withContext<R>(ctx: IRPCContext<string, unknown>, fn: () => R) {
  * @param init - Optional initial key-value pairs for the context
  * @returns A new Map instance representing the context
  */
-export function createContext<K extends string, V>(init?: [K, V][]) {
+export function createContext<K extends string | symbol, V>(init?: [K, V][]) {
   return new Map<K, V>(init);
 }
 
@@ -37,7 +38,7 @@ export function createContext<K extends string, V>(init?: [K, V][]) {
  * @param key - The key to set in the context
  * @param value - The value to associate with the key
  */
-export function setContext<V, K extends string = string>(key: K, value: V): void {
+export function setContext<V, K extends string | symbol = string>(key: K, value: V): void {
   const context = currentStore?.getStore();
   context?.set(key, value);
 }
@@ -48,11 +49,15 @@ export function setContext<V, K extends string = string>(key: K, value: V): void
  * @param fallback - Optional fallback value if the key is not found
  * @returns The value associated with the key, or the fallback value if not found
  */
-export function getContext<V, K extends string = string>(key: K, fallback?: V): V | undefined {
+export function getContext<V, K extends string | symbol = string>(key: K, fallback?: V): V | undefined {
   const context = currentStore?.getStore();
   const result = context?.get(key);
 
   if (typeof result === 'undefined' && typeof fallback !== 'undefined') return fallback;
 
   return result as V;
+}
+
+export function getAbortSignal(): AbortSignal | undefined {
+  return getContext(IRPC_BASE_CONTEXT.ABORT_CONTROLLER);
 }

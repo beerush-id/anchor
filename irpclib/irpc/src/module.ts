@@ -95,7 +95,10 @@ export class IRPCPackage {
       throw new Error(`IRPC ${options.name} already exists.`);
     }
 
-    const spec = { ...options } as never as IRPCSpec<IRPCInputs, IRPCOutput>;
+    const spec = {
+      ...options,
+      stream: typeof (options as { init?: () => void }).init === 'function',
+    } as never as IRPCSpec<IRPCInputs, IRPCOutput>;
     const calls = new Map<string, unknown>();
     const caches = new IRPCCacher();
 

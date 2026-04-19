@@ -1,3 +1,4 @@
+import { getAbortSignal } from './context.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE } from './error.js';
 import { RemoteState } from './state.js';
@@ -28,6 +29,7 @@ export class IRPCStream<T extends IRPCData> {
   public value?: T;
   public error?: IRPCError;
   public status: IRPCStatus = IRPC_STATUS.IDLE;
+  public closed = false;
 
   /**
    * Initializes a stream wrapping an asynchronous RPC execution.
@@ -47,13 +49,26 @@ export class IRPCStream<T extends IRPCData> {
    * to all bound pipe handlers based on the output lifecycle.
    */
   private async start() {
-    if (this.status !== IRPC_STATUS.IDLE) return;
+    if (this.status !== IRPC_STATUS.IDLE || this.closed) return;
+
+    const abortSignal = getAbortSignal();
+
+    if (abortSignal?.aborted) {
+      this.finish();
+      return;
+    }
 
     this.status = IRPC_STATUS.PENDING;
     const { id, name } = this;
 
     try {
       const response = await this.initializer();
+
+      if (abortSignal?.aborted) {
+        this.finish();
+        return;
+      }
+
       const { result } = response;
 
       if (result instanceof RemoteState) {
@@ -78,9 +93,12 @@ export class IRPCStream<T extends IRPCData> {
           } satisfies IRPCPacketAnswer<T>;
 
           this.pipeHandlers.forEach((handler) => handler(packet));
-          this.errorHandlers.forEach((handler) => handler(this.error!));
-          this.closeHandlers.forEach((handler) => handler());
 
+          if (this.error) {
+            this.errorHandlers.forEach((handler) => handler(this.error!));
+          }
+
+          this.finish();
           return;
         }
 
@@ -132,10 +150,19 @@ export class IRPCStream<T extends IRPCData> {
               } satisfies IRPCPacketClose);
             });
 
-            this.closeHandlers.forEach((handler) => handler());
+            this.finish();
             unsubscribe();
           }
         });
+
+        abortSignal?.addEventListener(
+          'abort',
+          () => {
+            unsubscribe();
+            this.finish();
+          },
+          { once: true }
+        );
       } else {
         this.value = result as T;
         this.status = IRPC_STATUS.SUCCESS;
@@ -150,7 +177,7 @@ export class IRPCStream<T extends IRPCData> {
         } satisfies IRPCPacketAnswer<T>;
 
         this.pipeHandlers.forEach((handler) => handler(packet));
-        this.closeHandlers.forEach((handler) => handler());
+        this.finish();
       }
     } catch (error) {
       this.error = { code: ERROR_CODE.STREAM_ERROR, message: (error as Error).message };
@@ -168,7 +195,7 @@ export class IRPCStream<T extends IRPCData> {
       });
 
       this.errorHandlers.forEach((handler) => handler(this.error!));
-      this.closeHandlers.forEach((handler) => handler());
+      this.finish();
 
       return;
     }
@@ -195,6 +222,7 @@ export class IRPCStream<T extends IRPCData> {
       return;
     }
 
+    if (this.closed) return;
     this.pipeHandlers.add(handler);
     this.start().catch(() => {});
   }
@@ -210,6 +238,7 @@ export class IRPCStream<T extends IRPCData> {
       return;
     }
 
+    if (this.closed) return;
     this.errorHandlers.add(handler);
     this.start().catch(() => {});
   }
@@ -225,7 +254,17 @@ export class IRPCStream<T extends IRPCData> {
       return;
     }
 
+    if (this.closed) return;
     this.closeHandlers.add(handler);
     this.start().catch(() => {});
+  }
+
+  private finish() {
+    this.closed = true;
+    this.closeHandlers.forEach((handler) => handler());
+
+    this.pipeHandlers.clear();
+    this.errorHandlers.clear();
+    this.closeHandlers.clear();
   }
 }

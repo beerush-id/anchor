@@ -10,6 +10,7 @@ import type { IRPCData, IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent, IRPC
  */
 export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
   public packets: Set<IRPCPacketStream<T>> = new Set();
+  public onClose?: () => void;
 
   constructor(
     public id: string,
@@ -44,5 +45,10 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
     }
 
     this.status = packet.status;
+  }
+
+  public close() {
+    this.status = IRPC_STATUS.SUCCESS;
+    this.onClose?.();
   }
 }
