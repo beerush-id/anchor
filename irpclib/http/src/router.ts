@@ -2,6 +2,7 @@ import {
   createContext,
   ERROR_CODE,
   ERROR_MESSAGE,
+  IRPC_BASE_CONTEXT,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   type IRPCPackage,
@@ -88,10 +89,12 @@ export class HTTPRouter {
       return new Response(JSON.stringify([]), { status: 400 });
     }
 
+    const abortController = new AbortController();
     const readable = new ReadableStream({
       start: (controller) => {
         const promises = requests.map((req) => {
-          const ctx = createContext<string, unknown>([
+          const ctx = createContext<string | symbol, unknown>([
+            [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
             ['request', httpReq],
             ['headers', httpReq.headers],
           ]);
@@ -100,6 +103,7 @@ export class HTTPRouter {
             const error = await this.resolveMiddleware(req.req);
 
             if (error) {
+              if (abortController.signal.aborted) return;
               controller.enqueue(`${JSON.stringify(error)}\n`);
               return;
             }
@@ -107,18 +111,35 @@ export class HTTPRouter {
             const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
 
             stream.pipe((packet) => {
+              if (abortController.signal.aborted) return;
               controller.enqueue(`${JSON.stringify(packet)}\n`);
             });
 
             await new Promise<void>((resolve) => {
-              stream.close(resolve);
+              let abortTimer: ReturnType<typeof setTimeout>;
+
+              if (req.spec?.ttl) {
+                abortTimer = setTimeout(() => {
+                  abortController.abort();
+                  resolve();
+                }, req.spec.ttl);
+              }
+
+              stream.close(() => {
+                clearTimeout(abortTimer);
+                resolve();
+              });
             });
           });
         });
 
         Promise.allSettled(promises).finally(() => {
+          if (abortController.signal.aborted) return;
           controller.close();
         });
+      },
+      cancel: (reason) => {
+        abortController.abort(reason);
       },
     });
 

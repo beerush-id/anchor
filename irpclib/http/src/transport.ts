@@ -42,6 +42,8 @@ export type HTTPTransportConfig = TransportConfig & {
  * Handles sending RPC calls over HTTP and processing streaming responses.
  */
 export class HTTPTransport extends IRPCTransport {
+  private abortControllers = new Map<IRPCCall, AbortController>();
+
   /**
    * Gets the endpoint path for RPC calls.
    * Returns the configured endpoint or defaults to '/irpc'.
@@ -76,7 +78,11 @@ export class HTTPTransport extends IRPCTransport {
       const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({ id, name, args }));
       const maxTimeout =
         calls.reduce((acc, req) => Math.max(acc, req.options?.timeout ?? 0), 0) || this.config?.timeout;
+
       const controller = new AbortController();
+      calls.forEach((call) => {
+        this.abortControllers.set(call, controller);
+      });
 
       let breaker: number | undefined;
 
@@ -100,6 +106,8 @@ export class HTTPTransport extends IRPCTransport {
 
       if (!response?.ok) {
         calls.forEach((call) => {
+          this.abortControllers.delete(call);
+
           call.enqueue({
             id: call.id,
             name: call.payload.name,
@@ -115,6 +123,8 @@ export class HTTPTransport extends IRPCTransport {
       await this.resolveAll(calls, response);
     } catch (error) {
       calls.forEach((call) => {
+        this.abortControllers.delete(call);
+
         call.enqueue({
           id: call.id,
           name: call.payload.name,
@@ -125,6 +135,11 @@ export class HTTPTransport extends IRPCTransport {
         } as IRPCPacketStream<IRPCData>);
       });
     }
+  }
+
+  public close(call: IRPCCall) {
+    this.abortControllers.get(call)?.abort();
+    this.abortControllers.delete(call);
   }
 
   /**
@@ -138,6 +153,8 @@ export class HTTPTransport extends IRPCTransport {
 
     if (!reader) {
       calls.forEach((call) => {
+        this.abortControllers.delete(call);
+
         call.enqueue({
           id: call.id,
           name: call.payload.name,
@@ -172,6 +189,10 @@ export class HTTPTransport extends IRPCTransport {
 
               if (call) {
                 call.enqueue(packet);
+
+                if (packet.status !== IRPC_STATUS.PENDING) {
+                  this.abortControllers.delete(call);
+                }
               }
             } catch (error) {
               console.error('Unable to parse response chunk:', part, error);
