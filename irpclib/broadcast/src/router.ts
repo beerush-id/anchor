@@ -126,9 +126,10 @@ export class BroadcastRouter {
   /**
    * Resolves incoming BroadcastChannel messages
    * @param requests - The incoming IRPC requests
+   * @param initContext - Optional initial context entries to inject
    * @returns void (responses are sent via BroadcastChannel)
    */
-  public async resolve(requests: IRPCRequest[]): Promise<void> {
+  public async resolve(requests: IRPCRequest[], initContext: [string | symbol, unknown][] = []): Promise<void> {
     if (!requests.length) {
       return;
     }
@@ -142,8 +143,7 @@ export class BroadcastRouter {
         const abortController = new AbortController();
         const ctx = createContext<string | symbol, unknown>([
           [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
-          ['channel', this.channel],
-          ['endpoint', this.config.endpoint],
+          ...initContext,
         ]);
 
         this.abortControllers.set(resolver.req.id, abortController);

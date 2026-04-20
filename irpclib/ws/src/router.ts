@@ -90,10 +90,10 @@ export class WebSocketRouter {
    * Resolves incoming WebSocket messages
    * @param message - The incoming WebSocket message
    * @param ws - The WebSocket connection instance
-   * @param request - The original WebSocket upgrade request (if available)
+   * @param initContext - Optional initial context entries to inject
    * @returns void (responses are sent via WebSocket)
    */
-  public async resolve(message: string, ws: WebSocket, request?: Request): Promise<void> {
+  public async resolve(message: string, ws: WebSocket, initContext: [string | symbol, unknown][] = []): Promise<void> {
     const irpcRequests = this.parseRequests(message).filter((req: IRPCRequest & { type?: string }) => {
       if (req.type === WS_MESSAGE_TYPE.CANCEL) {
         const controller = this.abortControllers.get(req.id);
@@ -117,9 +117,7 @@ export class WebSocketRouter {
         const abortController = new AbortController();
         const ctx = createContext<string | symbol, unknown>([
           [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
-          ['request', request],
-          ['websocket', ws],
-          ['headers', request?.headers],
+          ...initContext,
         ]);
 
         this.abortControllers.set(req.req.id, abortController);

@@ -78,9 +78,10 @@ export class HTTPRouter {
   /**
    * Resolves incoming HTTP requests
    * @param httpReq - The incoming HTTP request
+   * @param initContext - Optional context to initialize the resolver with
    * @returns A Response object with the resolved data
    */
-  public async resolve(httpReq: Request) {
+  public async resolve(httpReq: Request, initContext: [string | symbol, unknown][] = []) {
     const requests = ((await httpReq.json()) as IRPCRequest[]).map((irpcReq) => {
       return this.config.resolver(irpcReq, this.module);
     });
@@ -95,8 +96,7 @@ export class HTTPRouter {
         const promises = requests.map((req) => {
           const ctx = createContext<string | symbol, unknown>([
             [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
-            ['request', httpReq],
-            ['headers', httpReq.headers],
+            ...initContext,
           ]);
 
           return withContext(ctx, async () => {

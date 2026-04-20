@@ -100,7 +100,7 @@ describe('WebSocketRouter', () => {
       } as any;
 
       const message = JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]);
-      await router.resolve(message, ws, {} as never);
+      await router.resolve(message, ws);
     });
 
     it('should handle middleware errors', async () => {
