@@ -50,6 +50,8 @@ irpc.use(transport);
 
 ### Server Setup
 
+The integration point extracts application-level values from the `Request` and injects them as standardized context. Middleware and handlers consume these standardized keys — they never touch the raw `Request` object.
+
 ```typescript
 import { setContextProvider, getContext } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -60,21 +62,19 @@ setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
 
-// Add middleware
 router.use(async () => {
-  const req = getContext<Request>('request');
-  const userId = req.headers.get('x-user-id');
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
-  setContext('userId', userId);
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
 });
 
 Bun.serve({
   port: 3000,
   routes: {
     [transport.endpoint]: {
-      POST: (req) => router.resolve(req),
+      POST: (req) => router.resolve(req, [
+        ['token', req.headers.get('authorization')],
+        ['locale', req.headers.get('accept-language')],
+      ]),
     }
   },
 });
@@ -137,21 +137,17 @@ interface HTTPTransportConfig {
 
 ### Middleware
 
+Middleware operates on standardized context keys injected at the integration point. It never touches transport-specific objects, making it reusable across HTTP, WebSocket, and BroadcastChannel.
+
 ```typescript
 import { getContext, setContext } from '@irpclib/irpc';
 
 router.use(async () => {
-  // Access context
-  const req = getContext<Request>('request');
-  const userId = req.headers.get('x-user-id');
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
 
-  // Set context for handlers
-  setContext('userId', userId);
-
-  // Throw to reject request
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
+  const user = await verifyToken(token);
+  setContext('user', user);
 });
 ```
 

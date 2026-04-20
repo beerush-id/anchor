@@ -48,7 +48,7 @@ irpc.construct(processData, async (data) => {
 
 ### 3. Setup Router (Worker/Server Realm)
 
-The worker acts as the "Server" listening to the broadcast channel.
+The worker acts as the "server" listening to the broadcast channel. BroadcastChannel runs in the browser, so context works via the built-in synchronous provider — no `AsyncLocalStorage` or `setContextProvider` needed.
 
 ```typescript
 // worker.ts
@@ -57,7 +57,6 @@ import { irpc, transport } from './rpc/data.js';
 import './rpc/data.constructor.js';
 
 const router = new BroadcastRouter(irpc, transport);
-console.log("Worker listening...");
 ```
 
 ### 4. Client Usage (Main Thread)
@@ -200,6 +199,7 @@ const transport = new BroadcastTransport({
 #### Methods
 
 - `use(middleware: BroadcastMiddleware): this` - Add middleware
+- `resolve(requests: IRPCRequest[], initContext?: [string | symbol, unknown][]): Promise<void>` - Handle incoming requests with optional context injection
 - `close(): void` - Close the router and cleanup
 
 ## When to Use BroadcastChannel vs WebSocket vs HTTP

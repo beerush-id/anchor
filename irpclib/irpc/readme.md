@@ -120,7 +120,7 @@ import { loadDashboard } from './index.js';
 import { stream } from '@irpclib/irpc';
 
 irpc.construct(loadDashboard, (userId) => {
-  return stream((data, resolve) => {
+  return stream(({ data }, resolve) => {
     const q1 = db.users.get(userId).then(res => data.user = res);
     const q2 = db.sales.aggregate(userId).then(res => data.sales = res);
     
@@ -130,6 +130,8 @@ irpc.construct(loadDashboard, (userId) => {
 ```
 
 ### 4. Setup Server
+
+The integration point extracts application-level values from transport-specific objects and injects them as standardized context via `initContext`. This keeps middleware and handlers transport-agnostic.
 
 ```typescript
 // server.ts
@@ -147,7 +149,10 @@ Bun.serve({
   port: 3000,
   routes: {
     [transport.endpoint]: {
-      POST: (req) => router.resolve(req),
+      POST: (req) => router.resolve(req, [
+        ['token', req.headers.get('authorization')],
+        ['locale', req.headers.get('accept-language')],
+      ]),
     }
   },
 });
