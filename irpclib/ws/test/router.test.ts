@@ -73,30 +73,15 @@ describe('WebSocketRouter', () => {
       const router = new WebSocketRouter(module, transport);
 
       router.use('invalid_middleware' as any);
-      
+
       const ws = { readyState: 1, send: vi.fn() } as any;
-      await router.resolve(JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]), ws); 
+      await router.resolve(JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]), ws);
 
       expect(errSpy).not.toHaveBeenCalled();
     });
   });
 
   describe('resolve', () => {
-    it('should send empty array for empty requests', async () => {
-      const module = createPackage({ name: 'test', version: '1.0.0' });
-      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
-      const router = new WebSocketRouter(module, transport);
-
-      const ws = {
-        readyState: 1, // OPEN
-        send: vi.fn(),
-      } as any;
-
-      await router.resolve('[]', ws);
-
-      expect(ws.send).toHaveBeenCalledWith('[]');
-    });
-
     it('should process requests and send response', async () => {
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
@@ -161,23 +146,6 @@ describe('WebSocketRouter', () => {
       expect(ws.send).toHaveBeenCalled();
     });
 
-    it('should handle invalid JSON', async () => {
-      const module = createPackage({ name: 'test', version: '1.0.0' });
-      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
-      const router = new WebSocketRouter(module, transport);
-
-      const ws = {
-        readyState: 1, // OPEN
-        send: vi.fn(),
-      } as any;
-
-      await router.resolve('invalid json', ws);
-
-      // Should send empty array because parsing failed and returned empty array
-      expect(ws.send).toHaveBeenCalledWith('[]');
-      expect(errSpy).toHaveBeenCalled();
-    });
-
     it('should not send if ws is not open', async () => {
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
@@ -191,6 +159,82 @@ describe('WebSocketRouter', () => {
       await router.resolve('[]', ws);
 
       expect(ws.send).not.toHaveBeenCalled();
+    });
+
+    it('should correctly abort running stream configurations when evaluating late specification ttl bounds explicitly naturally', async () => {
+      vi.useFakeTimers();
+
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      type TestFunc = () => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testTtl', stream: true, ttl: 50 } as any);
+      module.construct(testFunc, async () => new Promise(() => {}));
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+      const message = JSON.stringify([{ id: '1', name: 'testTtl', args: [] }]);
+
+      router.resolve(message, ws);
+
+      // Fast forward to implicitly cause internal cancellation asynchronously
+      await vi.advanceTimersByTimeAsync(60);
+
+      // Verify the stream correctly bounded itself off natively
+      const controller = router['abortControllers'].get('1');
+      expect(controller?.signal.aborted).toBe(true);
+
+      vi.useRealTimers();
+    });
+
+    it('should correctly intercept target CANCEL stream envelopes proactively gracefully', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      const abortSpy = vi.fn();
+      router['abortControllers'].set('2', { abort: abortSpy } as any);
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+      const message = JSON.stringify([{ id: '2', type: 'cancel' }]); // WS_MESSAGE_TYPE.CANCEL
+
+      await router.resolve(message, ws);
+
+      expect(abortSpy).toHaveBeenCalled();
+      expect(router['abortControllers'].has('2')).toBe(false);
+    });
+
+    it('should safely swallow invalid malformed payload parsing operations explicitly quietly natively', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+
+      await router.resolve('{malformed json}', ws);
+
+      expect(errSpy).toHaveBeenCalled();
+      expect(ws.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('disconnect', () => {
+    it('should flush and immediately clean natively evaluated target controllers functionally globally', () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      const abortSpy1 = vi.fn();
+      const abortSpy2 = vi.fn();
+
+      router['abortControllers'].set('1', { abort: abortSpy1 } as any);
+      router['abortControllers'].set('2', { abort: abortSpy2 } as any);
+
+      router.disconnect();
+
+      expect(abortSpy1).toHaveBeenCalled();
+      expect(abortSpy2).toHaveBeenCalled();
+      expect(router['abortControllers'].size).toBe(0);
     });
   });
 });

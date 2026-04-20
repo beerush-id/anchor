@@ -338,6 +338,36 @@ describe('WebSocketTransport', () => {
       transport.close();
       // Should not throw
     });
+
+    it('should send CANCEL message natively identifying target streams if openly connected explicitly', () => {
+      transport['ws'] = { send: vi.fn(), close: vi.fn(), readyState: 1 } as any;
+      Object.defineProperty(transport, 'isOpen', { get: () => true });
+
+      const call = { id: 'call-1', payload: { name: 'test-func' } } as any;
+      transport['pendingCalls'].set('call-1', call);
+
+      transport.close(call);
+
+      const packet = (transport['ws']?.send as any).mock.calls[0][0];
+      expect(packet).toContain('"id":"call-1"');
+      expect(packet).toContain('"name":"test-func"');
+      expect(packet).toContain('"type":"cancel"'); // WS_MESSAGE_TYPE.CANCEL
+      
+      expect(transport['pendingCalls'].has('call-1')).toBe(false);
+    });
+
+    it('should quietly delete tracking mappings exclusively offline safely if close is requested implicitly safely', () => {
+      transport['ws'] = { send: vi.fn(), close: vi.fn(), readyState: 3 } as any;
+      Object.defineProperty(transport, 'isOpen', { get: () => false });
+
+      const call = { id: 'call-2', payload: { name: 'test-func-2' } } as any;
+      transport['pendingCalls'].set('call-2', call);
+
+      transport.close(call);
+
+      expect(transport['ws']?.send).not.toHaveBeenCalled();
+      expect(transport['pendingCalls'].has('call-2')).toBe(false);
+    });
   });
 
   describe('reconnect', () => {
