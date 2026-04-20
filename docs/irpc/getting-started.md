@@ -38,13 +38,16 @@ The template includes:
 
 ### Installation
 
+Install the core library alongside your preferred transport:
+
 ```bash
-npm install @irpclib/irpc @irpclib/http @irpclib/ws
+npm install @irpclib/irpc @irpclib/http
 ```
 
-IRPC supports multiple transports:
-- **@irpclib/http**: HTTP transport with automatic batching and streaming
-- **@irpclib/ws**: WebSocket transport for persistent connections and lower latency
+IRPC supports multiple transports, and allows you to create your own:
+- **@irpclib/http**: HTTP transport with zero-latency batching and SSE streaming.
+- **@irpclib/ws**: WebSocket transport for persistent low-latency real-time states.
+- **@irpclib/broadcast**: BroadcastChannel transport for zero-server, cross-tab & Web Worker execution.
 
 ### Project Structure
 
@@ -62,7 +65,7 @@ my-api/
 
 ### Step 1: Create Package
 
-Create a package to namespace your IRPC functions.
+Start by defining an IRPC package. Packages group and version your remote functions, allowing you to run multiple APIs on a single server without route collisions, and making it extremely easy to publish your client-side type stubs directly to NPM.
 
 ```typescript
 // lib/module.ts
@@ -81,11 +84,27 @@ export const transport = new HTTPTransport({
 irpc.use(transport);
 ```
 
-The package name and version create a unique namespace (`my-api/1.0.0`). The transport handles network communication.
+The package structurally bounds your function signature types to a unique identifier (`my-api/1.0.0`), ensuring that execution payloads never cross breaking versions. The attached transport then resolves the network transmission for all functions bound to the package.
+
+### Microservice Distribution
+
+Because each package accepts its own transport instance, you can distribute your architecture across microservices without needing an API Gateway or meddling with URL route configurations on the client. You simply wire the packages to different transport destinations:
+
+```typescript
+// Define isolated packages
+export const userService = createPackage({ name: 'users', version: '1.0.0' });
+export const projectService = createPackage({ name: 'projects', version: '1.0.0' });
+
+// Wire packages to completely different physical servers
+userService.use(new HTTPTransport({ endpoint: 'https://server-a.internal/users/1.0.0' }));
+projectService.use(new HTTPTransport({ endpoint: 'https://server-b.internal/projects/1.0.0' }));
+```
+
+From the client's perspective, they just call `await getUser()` and `await getProject()` normally. The packages securely direct the execution payloads to their respective server microservices behind the scenes.
 
 ### Choosing a Transport
 
-IRPC supports multiple transport protocols:
+IRPC supports multiple robust transport protocols out of the box, and you can easily write your own Custom Transports for edge protocols.
 
 **HTTP Transport** (recommended for most use cases):
 ```typescript
@@ -98,7 +117,7 @@ const transport = new HTTPTransport({
 });
 ```
 
-**WebSocket Transport** (for persistent connections):
+**WebSocket Transport** (for sustained persistent connections):
 ```typescript
 import { WebSocketTransport } from '@irpclib/ws';
 
@@ -106,6 +125,15 @@ const transport = new WebSocketTransport({
   url: 'ws://localhost:8080',
   autoReconnect: true,
   maxReconnectAttempts: 5,
+});
+```
+
+**BroadcastChannel Transport** (for Web Workers & multi-tab coordination without a server):
+```typescript
+import { BroadcastTransport } from '@irpclib/broadcast';
+
+const transport = new BroadcastTransport({
+  channel: irpc.href, // 'my-api/1.0.0'
 });
 ```
 
@@ -121,7 +149,7 @@ export type HelloFn = (name: string) => Promise<string>;
 export const hello = irpc.declare<HelloFn>({ name: 'hello' });
 ```
 
-You can seamlessly declare reactive streams using the exact same signature syntax:
+You can declare reactive streams using the exact same signature syntax:
 
 ```typescript
 // rpc/poem/index.ts
@@ -136,14 +164,13 @@ export const generatePoem = irpc.declare<GeneratePoemFn>({
 ```
 
 ::: warning Important!
-When declaring a function that returns `RemoteState<T>`, `irpc.declare()` requires an `init` factory in its options. On the client, when the stub is called, a `RemoteState` is instantiated immediately — before any data arrives from the server. The `init` factory seeds the initial value of `state.data` so UI frameworks can bind to the reactive proxy right away and progressively render as server mutations arrive.
+When declaring a function that returns `RemoteState<T>`, `irpc.declare()` requires an `init` factory in its options. On the client, when the stub is called, a `RemoteState` is instantiated immediately — before any data arrives from the server. The `init` factory seeds the initial value of `state.data` so UI frameworks can bind to the reactive proxy right away and render as server mutations arrive.
 :::
 
-### What is RemoteState?
-`RemoteState<T>` is IRPC's core reactive primitive. It extends a standard native `Promise<T>`, meaning it can be standardly `await`-ed. But it is augmented with a `.subscribe()` method that allows clients to actively listen to temporal updates (via a mutable proxy) from the server over the wire without blocking the execution thread.
+`RemoteState<T>` is IRPC's core reactive primitive. It extends a standard native `Promise<T>`, meaning it can be standardly `await`-ed. But its massive architectural advantage is that it operates as an autonomous reactive proxy; UI frameworks can actively bind to its temporal data mutations from the server over the wire without writing a single event listener or blocking the execution thread.
 
 Because it exposes `state.data`, `state.status`, and `state.error`, you can use `RemoteState` to:
-- Hydrate UI frameworks (React, Vue, Svelte) automatically as data arrives without writing WebSocket hooks.
+- Hydrate UI frameworks (React, Vue, Svelte) as data arrives without writing WebSocket hooks.
 - Monitor the exact execution status (`PENDING`, `SUCCESS`, or `ERROR`).
 - Handle mid-stream pipeline errors directly via `state.error`.
 
@@ -158,8 +185,8 @@ Implement the actual logic on the server. Handlers can return standard promises 
 import { irpc } from '../lib/module.js';
 import { hello } from './index.js';
 
-irpc.construct(hello, async (name) => {
-  return `Hello ${name}`;
+irpc.construct(hello, async (name: string) => {
+  return `Hello, ${name}! Welcome to Anchor!`;
 });
 ```
 
@@ -172,20 +199,20 @@ import { generatePoem } from './index.js';
 import { stream } from '@irpclib/irpc';
 
 irpc.construct(generatePoem, (prompt) => {
-  return stream<string>(async (data, resolve, reject) => {
-    // Stream external generators
+  return stream<string>(async (state, resolve, reject) => {
     const response = await ai.generate({ prompt, stream: true });
     
     for await (const chunk of response) {
-      data = (data || '') + chunk.text;
+      if (state.status !== 'pending') break;
+      state.data = (state.data || '') + chunk.text;
     }
     
-    resolve(data);
+    resolve();
   });
 });
 ```
 
-The handler receives the same arguments as the declared function.
+The handler receives the exact same typed arguments as the declared function.
 
 ### Step 4: Setup Server
 
@@ -199,9 +226,17 @@ import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
 import './rpc/hello/constructor.js'; // Import handlers
 
+// Mandatory: Initializes the asynchronous context tracker.
+// This is required to isolate request data (e.g., Auth Headers) across concurrent users.
 setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
+
+// Use middleware to safely track contextual data per-request
+router.use(async () => {
+  const req = getContext<Request>('request');
+  setContext('token', req.headers.get('authorization'));
+});
 
 Bun.serve({
   port: 3000,
@@ -216,25 +251,30 @@ Bun.serve({
 console.log('Server running on http://localhost:3000');
 ```
 
-The router automatically handles batching, routing, and streaming responses.
+The router handles batching, routing, and streaming responses.
 
 ### Step 5: Execute & Stream on Client
 
-Call the function like any local async function, or use `.subscribe()` to react to continuous state changes.
+Call the function like any local async function, or bind it directly to UI components to react to continuous network state changes.
 
 ```typescript
 // client.ts
 import { hello } from './rpc/hello/index.js';
 import { generatePoem } from './rpc/poem/index.js';
 
-// Standard execution
+// Standard isolated execution
 const message = await hello('John');
-console.log(message); // "Hello John"
 
-// Real-time streaming
-const call = generatePoem('Space');
-call.subscribe(state => {
-    console.log('Stream chunk:', state.data);
+// Reactive UI binding over the network
+const PoemWidget = setup(() => {
+  // Generates the call stream.
+  const poem = generatePoem('Space');
+  
+  // Explicitly close the stream to release server resources when unmounting
+  onCleanup(() => poem.close());
+  
+  // Renders based on `state.data` mutations from the remote server.
+  return render(() => <div>{poem.data}</div>);
 });
 ```
 
@@ -242,47 +282,127 @@ No fetch calls, manual serialization, or separate WebSocket connections required
 
 ## Advanced Features
 
-### Progressive Data Hydration (Dashboard Streams)
+### Stream Subscriptions & Cleanup
 
-Solve the N+1 problem and avoid UI waterfalls by progressively yielding multiple parallel data aggregations through a single stream request.
+For streams that manage persistent open connections or event listeners, return a cleanup function. The underlying architecture supports `async` initialization workflows:
 
+**1. Shared Interface (`src/shared/rpc.ts`)**
 ```typescript
-// 1. Declare the stub (Shared)
-// rpc/dashboard/index.ts
+import { irpc } from '@irpclib/irpc';
 import type { RemoteState } from '@irpclib/irpc';
 
-export type GetDashboardFn = (userId: string) => RemoteState<DashboardData>;
-export const getDashboard = irpc.declare<GetDashboardFn>({
-  name: 'getDashboard',
-  init: () => ({} as DashboardData), // Initial client-side state before server data arrives
+export type WatchPricesFn = (ticker: string) => RemoteState<number>;
+
+export const watchPrices = irpc.declare<WatchPricesFn>({ 
+  name: 'watchPrices',
+  init: () => 0
 });
 ```
 
+**2. Backend Implementation (`src/server/rpc.ts`)**
 ```typescript
-// 2. Implement the stream (Server-Only)
-// rpc/dashboard/constructor.ts
-import { getDashboard } from './index.js';
+import { irpc } from '../lib/module.js';
+import { watchPrices } from '../shared/rpc.js';
+import { stream } from '@irpclib/irpc';
+
+irpc.construct(watchPrices, (ticker) => {
+  return stream(async (state) => {
+    // 1. Asynchronous initialization
+    const connection = await redis.connect();
+    
+    // 2. Real-time mutations
+    connection.on('price_update', (price) => {
+      state.data = price;
+    });
+
+    // 3. Guaranteed cleanup execution
+    return () => {
+      connection.close();
+    };
+  });
+});
+```
+
+Because the `stream` wrapper hooks into the transport's `AbortController` (which identically drops across all terminal boundaries), it guarantees the cleanup runs universally under **all** standard lifecycle conditions:
+1. **Successful Completion**: When `resolve()` is explicitly called by your code, the transport closes the reader and safely fires the abort sequence tearing down the hook.
+2. **Error Rejection**: When `reject()` is called, identical cleanup occurs.
+3. **Client Disconnection**: When the remote client explicitly drops the websocket or calls `call.close()`.
+4. **Timeouts**: When a router forcibly aborts the pipeline because its execution exceeded the specified `ttl` bounds limit.
+5. **Asynchronous Hand-offs**: If an abort drops *during* an `await redis.connect()` initialization, the framework guarantees the returned cleanup hook will still fire synchronously exactly when the initialization wrapper Promise resolves.
+
+> [!WARNING]
+> The single exception to the universal teardown rule is **unhandled asynchronous exceptions**. If your code throws a fatal exception *before* returning the cleanup hook block to the framework (e.g., throwing inside an `async` stream before the `return` statement), the hook is never physically registered, meaning your setup components (like open DB connections) won't be caught by the teardown. Always wrap dangerous initializations in `try...catch` blocks to ensure execution physically registers the cleanup accurately!
+
+### Manual RemoteState Operations
+
+If you bypass the `stream()` utility and manually construct and return a `new RemoteState()`, you are responsible for wiring teardown listeners securely yourself by invoking `getAbortSignal()`:
+
+```typescript
+import { RemoteState, getAbortSignal } from '@irpclib/irpc';
+
+irpc.construct(watchPrices, (ticker) => {
+  const state = new RemoteState<number>();
+  const signal = getAbortSignal();
+
+  const handle = externalDataSource.subscribe(ticker, (price) => {
+    state.data = price;
+  });
+
+  // Listen explicitly for lifecycle teardown events without the stream wrapper
+  signal?.addEventListener('abort', () => {
+    externalDataSource.unsubscribe(handle);
+  });
+
+  return state;
+});
+```
+
+### Progressive Data Hydration (Dashboard Streams)
+
+Solve the N+1 problem and avoid UI waterfalls by yielding multiple parallel data aggregations through a single stream request.
+
+**1. Shared Interface (`src/shared/rpc.ts`)**
+```typescript
+import { irpc } from '@irpclib/irpc';
+
+export const getDashboard = irpc.declare<GetDashboardFn>({
+  name: 'getDashboard',
+  init: () => ({ user: null, sales: null, telemetry: null })
+});
+```
+
+**2. Backend Implementation (`src/server/rpc.ts`)**
+```typescript
+import { irpc } from '../lib/module.js';
+import { getDashboard } from '../shared/rpc.js';
 import { stream } from '@irpclib/irpc';
 
 irpc.construct(getDashboard, (userId) => {
-  return stream((data, resolve) => {
-    // Execute queries concurrently and mutate the reactive state directly
-    const q1 = db.users.get(userId).then(res => data.user = res);
-    const q2 = db.sales.aggregate(userId).then(res => data.sales = res);
-    const q3 = externalApi.fetchMetrics().then(res => data.telemetry = res);
+  return stream((state, resolve) => {
+    // Execute queries concurrently and mutate the reactive state.data directly
+    const q1 = db.users.get(userId).then(res => state.data.user = res);
+    const q2 = db.sales.aggregate(userId).then(res => state.data.sales = res);
+    const q3 = externalApi.fetchMetrics().then(res => state.data.telemetry = res);
 
     // Conclude the stream when all continuous queries complete
     Promise.all([q1, q2, q3]).then(() => resolve());
-  }, {}); // Server-side initial value passed to the stream constructor
+  }, {} as DashboardData);
 });
 ```
 
 On the client, the UI skeleton can begin rendering as the stream fields populate over time.
 
 ```typescript
-const call = getDashboard('user-123');
-call.subscribe(state => {
-  console.log('Hydrating partial UI fields...', state.data);
+const DashboardWidget = setup(({ user }) => {
+  const dashboard = getDashboard(user.id);
+  
+  return render(() => (
+    <div>
+      <Metrics block={dashboard.data.telemetry} />
+      <Sales volume={dashboard.data.sales} />
+      <User target={dashboard.data.user} />
+    </div>
+  ));
 });
 ```
 
@@ -415,7 +535,7 @@ irpc.construct(getProfile, async () => {
 });
 ```
 
-Context is automatically scoped to each request.
+Context is scoped to each request.
 
 ## Multiple Functions
 
@@ -437,7 +557,7 @@ All functions share the same transport and batching.
 
 ## Automatic Batching
 
-When you call multiple functions simultaneously, they're automatically batched.
+When you call multiple functions simultaneously, they're batched.
 
 ```typescript
 const [user, posts, stats] = await Promise.all([
@@ -515,7 +635,7 @@ import { getUser, createUser } from 'my-api/user';
 const user = await getUser('123');
 ```
 
-The stubs automatically connect to your server endpoint. Handlers remain private on your server.
+The stubs connect to your server endpoint. Handlers remain private on your server.
 
 ## Next Steps
 

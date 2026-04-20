@@ -49,15 +49,26 @@ const user = await response.json();
 ### IRPC Example
 
 ```typescript
-// Declare function
-const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+// 1. Shared (Client & Server)
+// src/shared/rpc.ts
+export const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+```
 
-// Implement handler
+```typescript
+// 2. Server Implementation
+// src/server/rpc.ts
+import { createUser } from '../shared/rpc.js';
+
 irpc.construct(createUser, async (data) => {
   return await db.users.create(data);
 });
+```
 
-// Client call
+```typescript
+// 3. Client Usage
+// src/client/app.ts
+import { createUser } from '../shared/rpc.js';
+
 const user = await createUser({ name: 'John', email: 'john@example.com' });
 ```
 
@@ -106,8 +117,11 @@ const user = await client.createUser({ name: 'John', email: 'john@example.com' }
 ### IRPC Example
 
 ```typescript
+// 1. Shared (Client & Server)
+export const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+
+// 2. Client Usage
 // No proto files, no code generation
-const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
 const user = await createUser({ name: 'John', email: 'john@example.com' });
 ```
 
@@ -117,29 +131,32 @@ const user = await createUser({ name: 'John', email: 'john@example.com' });
 
 | Aspect | IRPC | tRPC |
 |--------|------|------|
+| **Execution Model** | Unified function calls | Fragmented (Queries, Mutations, Subscriptions) |
 | **Transport Flexibility** | Any transport (HTTP, WebSocket, Broadcast) | HTTP, WebSocket (via separate subscriptions) |
 | **Batching** | Automatic | Opt-in |
 | **Setup** | Package + transport | Router + client |
-| **Type Safety** | TypeScript native | TypeScript native |
-| **Performance** | 6.96x faster than REST | Similar to IRPC |
-| **Streaming / Subscriptions**| Same function, same transport | Separate procedure + separate transport |
+| **Streaming / Subscriptions**| Identical signature, identical transport | Separate procedure, dedicated WS transport |
 | **Middleware** | Transport-level | Procedure-level |
 | **Caching** | Built-in per-function | Client-side (manual or via React Query) |
+
+tRPC maps closely to REST and HTTP verbs, forcing you to classify every endpoint as a `.query()`, `.mutation()`, or `.subscription()`. IRPC treats the network purely as a remote execution layer — you don't classify HTTP intents, you just call standard isomorphic functions.
 
 ### tRPC Example
 
 ```typescript
-// Define router
+// Define router (Forces classification)
 const appRouter = router({
+  getUser: procedure
+    .input(z.string())
+    .query(async ({ input }) => { ... }),
   createUser: procedure
     .input(z.object({ name: z.string(), email: z.string().email() }))
-    .mutation(async ({ input }) => {
-      return await db.users.create(input);
-    }),
+    .mutation(async ({ input }) => { ... }),
 });
 
-// Client call (vanilla)
-const user = await trpc.createUser.mutate({ 
+// Client call (Requires matching route execution type)
+const user = await trpc.getUser.query('123');
+const newUser = await trpc.createUser.mutate({ 
   name: 'John', 
   email: 'john@example.com' 
 });
@@ -148,20 +165,20 @@ const user = await trpc.createUser.mutate({
 ### IRPC Example
 
 ```typescript
-// Declare function
+// Declare unified functions
+const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
 const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
 
-// Client call
-const user = await createUser({ name: 'John', email: 'john@example.com' });
+// Client call (Identical invocation regardless of read/write classification)
+const user = await getUser('123');
+const newUser = await createUser({ name: 'John', email: 'john@example.com' });
 ```
-
-**Result:** Both are type-safe. IRPC unifies standard calls and reactive streams under a single function signature. tRPC requires separate `subscription` procedure types and external WebSocket adapters for real-time data.
 
 ### Streaming Comparison
 
 **tRPC** separates subscriptions from standard procedures:
 ```typescript
-// tRPC: Different mental model for subscriptions
+// tRPC Backend: Different mental model for subscriptions
 const appRouter = router({
   onDashboard: subscription(({ input }) => {
     return observable((emit) => {
@@ -169,19 +186,40 @@ const appRouter = router({
     });
   }),
 });
+
+// tRPC Frontend: Requires explicit event listener hooks and manual state management.
+// Cleanup is hidden but tightly coupled strictly to React's hook lifecycle.
+function DashboardWidget({ userId }) {
+  const [data, setData] = useState(null);
+  
+  trpc.onDashboard.useSubscription(userId, {
+    onData(event) {
+      setData(event.data);
+    },
+    onError(err) {
+      console.error(err);
+    }
+  });
+
+  return <DashboardUI data={data} />;
+}
 ```
 
 **IRPC** uses the same function signature for both:
 ```typescript
-// IRPC: Same declare/construct pattern
-const getDashboard = irpc.declare<GetDashboardFn>({
-  name: 'getDashboard',
-  init: () => ({} as DashboardData),
-});
+// IRPC: Identical declare/construct syntax
+const getDashboard = irpc.declare<GetDashboardFn>({ name: 'getDashboard' });
 
-// Client: .subscribe() is available on any RemoteState return
-const call = getDashboard('user-123');
-call.subscribe(state => renderUI(state.data));
+// Client: Binds to standard UI component proxies without WebSocket logic.
+// Because the proxy is framework-agnostic, you explicitly drop the network stream on unmount.
+// This identical logic works in React, Vue, Svelte, or Solid.
+const DashboardWidget = setup(({ userId }) => {
+  const dashboard = getDashboard(userId);
+  
+  onCleanup(() => dashboard.close());
+
+  return render(() => <DashboardUI data={dashboard.data} />);
+});
 ```
 
 ## IRPC vs GraphQL
@@ -248,7 +286,48 @@ const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
 const user = await createUser({ name: 'John', email: 'john@example.com' });
 ```
 
-**Result:** IRPC provides the same data aggregation capabilities as GraphQL without learning a query language. For real-time data, IRPC streams natively over any transport — GraphQL requires separate WebSocket infrastructure and a completely different `subscription` schema definition.
+**Result:** IRPC provides the same data aggregation capabilities as GraphQL without learning a query language. For real-time data, IRPC streams over any transport — GraphQL requires separate WebSocket infrastructure and a completely different `subscription` schema definition.
+
+### Streaming Comparison
+
+**GraphQL** forces you to define a separate subscription schema, configure a distinct WebSocket link on the client, and use separate hooks:
+```graphql
+# GraphQL Schema: Separate subscription root
+type Subscription {
+  dashboardUpdated(userId: ID!): DashboardData!
+}
+```
+```typescript
+// GraphQL Client: Requires separate WS Link and dedicated hook.
+// Cleanup is hidden but permanently couples the architecture to React Apollo.
+import { useSubscription } from '@apollo/client';
+
+function DashboardWidget({ userId }) {
+  const { data, loading } = useSubscription(DASHBOARD_SUBSCRIPTION, {
+    variables: { userId }
+  });
+
+  if (loading) return <Loading />;
+  return <DashboardUI data={data.dashboardUpdated} />;
+}
+```
+
+**IRPC** treats streams exactly identically to standard asynchronous functions:
+```typescript
+// IRPC: Identical declare/construct syntax
+const getDashboard = irpc.declare<GetDashboardFn>({ name: 'getDashboard' });
+
+// Client: Binds to standard UI component proxies without WebSocket logic.
+// Because the proxy is framework-agnostic, you explicitly drop the network stream on unmount.
+// This identical logic works in React, Vue, Svelte, or Solid.
+const DashboardWidget = setup(({ userId }) => {
+  const dashboard = getDashboard(userId);
+  
+  onCleanup(() => dashboard.close());
+
+  return render(() => <DashboardUI data={dashboard.data} />);
+});
+```
 
 ## Performance Benchmark
 

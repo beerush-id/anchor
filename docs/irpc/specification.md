@@ -42,11 +42,11 @@ This specification explicitly excludes:
 
 IRPC aims to:
 
-1. **Eliminate cognitive overhead** of network communication
-2. **Provide isomorphic function signatures** regardless of execution location
-3. **Enable transport-agnostic** implementations
-4. **Support type preservation** across boundaries
-5. **Optimize performance** through intelligent batching
+1. **Eliminate boilerplate explicitly routing network communication**
+2. **Bind isomorphic function signatures explicitly** regardless of execution location
+3. **Execute transport-agnostic implementations**
+4. **Enforce TypeScript constraints** across boundaries
+5. **Optimize performance** through network payload batching
 
 ## 2. Core Concepts
 
@@ -192,7 +192,7 @@ Batch responses DO NOT resolve as static monolithic arrays. Implementations MUST
 {"id": "1", "name": "generatePoem", "status": 1, "data": "Deep in Space!"}
 ```
 
-Reactively streaming individual sequential chunks empowers front-end clients to independently invoke `stream.subscribe()` to monitor long-lived processes without blocking concurrent micro-services.
+Reactively streaming individual sequential chunks empowers front-end client components to proxy and track long-lived server processes without blocking concurrent thread operations or requiring manual network orchestration.
 
 ## 5. Function Specification
 
@@ -257,6 +257,14 @@ Transports MUST:
 ### 6.4 Streaming Responses
 
 Transports MUST expose bidirectional/continuous response pipelines. Because requests output sequences of `IRPCPacketStream` yields terminating upon `IRPC_STATUS` SUCCESS/ERROR configurations, transports inherently map single execution variables across complex temporal streams, bypassing external WebSockets requirements for basic server-push configurations.
+
+### 6.5 Stream Lifecycle
+
+Transports and routers MUST govern streaming teardowns through three boundaries:
+
+1. **Time-To-Live (TTL)**: Routers MUST abort the active `AbortController` if the specification's `ttl` bound is exceeded.
+2. **Context Signals**: Routers MUST mount an `AbortSignal` mapped to the request under `IRPC_BASE_CONTEXT.ABORT_CONTROLLER`.
+3. **Client Cancellation**: Transports MUST dispatch `CANCEL` payloads when requested by the client. Routers receiving these payloads MUST trigger the `AbortController` and release the request mapped.
 
 ## 7. Factory Interface
 
@@ -329,7 +337,7 @@ Factories MUST support configurable timeouts for remote calls. Timeouts SHOULD r
 
 ### 9.1 Automatic Batching
 
-Implementations SHOULD automatically batch multiple IRPC calls made within a short time window to reduce network overhead.
+Implementations SHOULD batch multiple IRPC calls made within a short time window to reduce network overhead.
 
 ### 9.2 Connection Reuse
 
@@ -446,7 +454,9 @@ Implementations MAY provide feature detection mechanisms to negotiate capabiliti
 ```typescript
 // Example TypeScript syntax - implementations should use language-appropriate syntax
 // Define IRPC function
-const readFile = irpc<(path: string, encoding?: string) => Promise<string>>({
+export type ReadFileFn = (path: string, encoding?: string) => Promise<string>;
+
+export const readFile = irpc.declare<ReadFileFn>({
   name: 'readFile',
   schema: {
     input: [z.string(), z.string().optional()],

@@ -129,7 +129,7 @@ if (transport.isOpen) {
 
 ### Auto-Reconnection
 
-WebSocket transport automatically handles connection failures:
+WebSocket transport handles connection failures:
 
 ```typescript
 const transport = new WebSocketTransport({
@@ -150,7 +150,7 @@ Monitor connection lifecycle:
 ```typescript
 // The transport handles reconnection internally
 // Connection state can be checked via transport.state
-// Calls are automatically queued during reconnection
+// Calls are queued during reconnection
 ```
 
 ## Performance Benefits
@@ -176,7 +176,7 @@ const [user, posts, stats] = await Promise.all([
 
 ### Streaming Responses
 
-Because the WebSocket channel persists, responses are yielded dynamically as continuous `IRPCPacketStream` chunks over the socket. This enables you to attach `.subscribe()` across any standard pipeline to track real-time events.
+Because the WebSocket channel persists, responses are yielded dynamically as continuous `IRPCPacketStream` chunks over the socket. This enables you to bind standard UI components directly to the network proxy without writing manual WebSocket `MessageEvent` listeners.
 
 ## Error Handling
 

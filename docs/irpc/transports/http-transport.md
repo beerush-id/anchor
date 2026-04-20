@@ -50,9 +50,16 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
 
+// Setup mandatory isolate tracking for concurrent requests
 setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
+
+// Extract and isolate contextual request data per-client
+router.use(async () => {
+  const req = getContext<Request>('request');
+  setContext('token', req.headers.get('authorization'));
+});
 
 Bun.serve({
   port: 3000,
@@ -246,7 +253,7 @@ router.use(async () => {
 
 ## Automatic Batching
 
-The HTTP transport automatically batches multiple calls made simultaneously.
+The HTTP transport batches multiple calls made simultaneously.
 
 ```typescript
 // Client makes 10 calls
@@ -293,7 +300,7 @@ Transfer-Encoding: chunked
 {"id":"3","name":"llamaModel","status":1,"data":"Deep in the void!"}
 ```
 
-The HTTP Transport layer automatically uses a `TextDecoderStream` to parse these JSON lines, resolving standard Promises or populating `.subscribe()` pipelines in real-time.
+The HTTP Transport layer automatically uses a `TextDecoderStream` to parse these JSON lines, resolving standard Promises or populating the reactive client Proxies in real-time.
 
 ## Error Handling
 
@@ -359,7 +366,7 @@ irpc.construct(getProfile, async () => {
 
 ### Built-in Context
 
-The router automatically sets:
+The router sets:
 - `'request'` - The HTTP Request object
 - `'headers'` - The request headers
 
@@ -401,7 +408,9 @@ const transport = new HTTPTransport({
   timeout: 10000, // Default 10 seconds
 });
 
-const slowQuery = irpc.declare({
+export type SlowQueryFn = () => Promise<void>;
+
+const slowQuery = irpc.declare<SlowQueryFn>({
   name: 'slowQuery',
   timeout: 30000, // Override for this function
 });
@@ -441,7 +450,7 @@ router.use(loggingMiddleware);
 
 ### Stream Responses
 
-The router automatically streams responses. Ensure your handlers complete as quickly as possible to enable progressive resolution.
+The router streams responses. Ensure your handlers complete as quickly as possible to enable continuous execution.
 
 ## Next Steps
 

@@ -37,7 +37,7 @@ abstract class IRPCTransport {
 }
 ```
 
-The transport automatically handles batching—when multiple calls are made simultaneously, they're queued and sent together.
+The transport handles batching—when multiple calls are made simultaneously, they're queued and sent together.
 
 ## Routing
 
@@ -49,6 +49,14 @@ Transports include routing functionality that:
 - Supports request/response correlation
 
 The routing happens server-side within the transport layer, eliminating the need for separate routing middleware.
+
+## Stream Lifecycle
+
+IRPC transports manage active streams through three cancellation boundaries:
+
+1. **Client Cancellation**: Calling `call.close()` on the client sends a `CANCEL` packet to the router. The router invokes the call's bound `AbortController` and drops the stream.
+2. **Context Signals**: The router injects an `AbortSignal` into `IRPC_BASE_CONTEXT.ABORT_CONTROLLER`. Handlers must listen to this signal and exit when aborted.
+3. **TTL Timeouts**: If a function defines a `ttl` specification, the router aborts the stream when the timeout is reached.
 
 ## Available Transports
 
@@ -136,7 +144,7 @@ You can create custom transports for any protocol by extending `IRPCTransport`.
 
 ## Creating Custom Transports
 
-To create a custom transport, extend `IRPCTransport` and override `dispatch()`. The base class handles batching and scheduling automatically — your job is to serialize the calls, send them over the wire, and feed `IRPCPacketStream` packets back via `call.enqueue()`.
+To create a custom transport, extend `IRPCTransport` and override `dispatch()`. The base class handles batching and scheduling — your job is to serialize the calls, send them over the wire, and feed `IRPCPacketStream` packets back via `call.enqueue()`.
 
 ### Client-Side Transport
 
@@ -204,7 +212,7 @@ class CustomTransport extends IRPCTransport {
 **Key points:**
 - `call.enqueue(packet)` is the only way to feed data back. It drives the internal `IRPCReader`, which resolves standard Promises or populates `RemoteState` subscriptions.
 - For streaming responses, enqueue multiple packets with `status: IRPC_STATUS.PENDING` followed by a terminal packet with `status: IRPC_STATUS.SUCCESS` or `IRPC_STATUS.ERROR`.
-- Error packets trigger the retry mechanism automatically if `maxRetries` is configured.
+- Error packets trigger the retry mechanism if `maxRetries` is configured.
 
 ### Server-Side Router
 
@@ -260,7 +268,7 @@ class CustomRouter {
 
 **Key points:**
 - `IRPCResolver` handles input validation, spec lookup, and handler execution.
-- `IRPCStream` subscribes to `RemoteState` mutations and emits sequential `ANSWER` → `EVENT` → `CLOSE` packets automatically. For standard Promise responses, it emits a single `ANSWER` packet.
+- `IRPCStream` subscribes to `RemoteState` mutations and emits sequential `ANSWER` → `EVENT` → `CLOSE` packets. For standard Promise responses, it emits a single `ANSWER` packet.
 - The router does not need to know whether a handler returns a Promise or a RemoteState — `IRPCStream` handles both transparently.
 
 ### Transport Requirements
@@ -308,7 +316,9 @@ const transport = new HTTPTransport({
 });
 
 // Function-level override
-const slowQuery = irpc.declare({
+export type SlowQueryFn = () => Promise<void>;
+
+const slowQuery = irpc.declare<SlowQueryFn>({
   name: 'slowQuery',
   timeout: 30000, // 30 seconds for this function
 });
@@ -334,7 +344,7 @@ protected async dispatch(calls: IRPCCall[]) {
 For HTTP-based transports, stream responses as they become available instead of waiting for all to complete:
 
 ```typescript
-// Server streams responses progressively
+// Server streams responses
 const stream = new ReadableStream({
   start(controller) {
     promises.forEach(async (promise) => {
