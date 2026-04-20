@@ -234,13 +234,13 @@ class CustomRouter {
     private transport: CustomTransport,
   ) {}
 
-  async resolve(rawMessage: string) {
+  async resolve(rawMessage: string, initContext: [string | symbol, unknown][] = []) {
     const requests: IRPCRequest[] = JSON.parse(rawMessage);
     const packets: string[] = [];
 
     const promises = requests.map((irpcReq) => {
       const resolver = new IRPCResolver(irpcReq, this.module);
-      const ctx = createContext<string, unknown>([]);
+      const ctx = createContext<string | symbol, unknown>([...initContext]);
 
       return withContext(ctx, async () => {
         // IRPCStream wraps resolver.resolve() and normalizes both

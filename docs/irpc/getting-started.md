@@ -218,40 +218,40 @@ The handler receives the exact same typed arguments as the declared function.
 
 Configure the server to handle IRPC requests.
 
+The server requires `AsyncLocalStorage` to isolate context across concurrent requests. Without it, context from one user's request could leak into another's.
+
+The router's `resolve` method accepts the HTTP request and an optional `initContext` — an array of `[key, value]` tuples that seed the request context. Extract application-level values (tokens, locale, tenant ID) at the integration point. Middleware and handlers then consume these values through `getContext()` without knowing which transport delivered the request.
+
 ```typescript
 // server.ts
 import { setContextProvider } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
-import './rpc/hello/constructor.js'; // Import handlers
+import './rpc/hello/constructor.js';
 
-// Mandatory: Initializes the asynchronous context tracker.
-// This is required to isolate request data (e.g., Auth Headers) across concurrent users.
 setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
 
-// Use middleware to safely track contextual data per-request
 router.use(async () => {
-  const req = getContext<Request>('request');
-  setContext('token', req.headers.get('authorization'));
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
 });
 
 Bun.serve({
   port: 3000,
   fetch(req) {
     if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
-      return router.resolve(req);
+      return router.resolve(req, [
+        ['token', req.headers.get('authorization')],
+      ]);
     }
     return new Response('Not Found', { status: 404 });
   },
 });
-
-console.log('Server running on http://localhost:3000');
 ```
-
-The router handles batching, routing, and streaming responses.
 
 ### Step 5: Execute & Stream on Client
 
@@ -516,22 +516,31 @@ Invalid inputs or outputs will throw validation errors.
 
 ### Context
 
-Access request context in handlers.
+Every router's `resolve` method accepts an `initContext` parameter — an array of `[key, value]` tuples that seed the request context. Middleware and handlers access these values via `getContext()` and can add more via `setContext()`.
+
+The router itself only manages the internal `AbortController`. All other context is the caller's responsibility. This is the key architectural constraint: the integration point extracts application-level values from whatever transport object it has, and injects them as standardized keys. Middleware and handlers never reference `Request`, `WebSocket`, or `BroadcastChannel`.
+
+Define your application's context contract once. Each transport maps its specific objects into the same keys. The middleware stays identical:
 
 ```typescript
 import { getContext, setContext } from '@irpclib/irpc';
 
-// In middleware
+// HTTP
+router.resolve(req, [['token', req.headers.get('authorization')]]);
+// WebSocket
+router.resolve(msg, ws, [['token', ws.data.token]]);
+// Broadcast
+router.resolve(requests, [['token', self.workerToken]]);
+
 router.use(async () => {
-  const req = getContext<Request>('request');
-  const userId = req.headers.get('x-user-id');
-  setContext('userId', userId);
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
 });
 
-// In handler
 irpc.construct(getProfile, async () => {
-  const userId = getContext('userId');
-  return await db.users.findById(userId);
+  const user = getContext<User>('user');
+  return await db.users.findById(user.id);
 });
 ```
 

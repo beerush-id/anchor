@@ -44,28 +44,31 @@ irpc.use(transport);
 
 ### Server Configuration
 
+`AsyncLocalStorage` is required to isolate context across concurrent requests. The router's `resolve` method accepts the HTTP request and an `initContext` array that seeds the request context with application-level values. Middleware reads these standardized keys via `getContext()`, never touching the raw `Request` object directly.
+
 ```typescript
 import { setContextProvider } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
 
-// Setup mandatory isolate tracking for concurrent requests
 setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
 
-// Extract and isolate contextual request data per-client
 router.use(async () => {
-  const req = getContext<Request>('request');
-  setContext('token', req.headers.get('authorization'));
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
 });
 
 Bun.serve({
   port: 3000,
   fetch(req) {
     if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
-      return router.resolve(req);
+      return router.resolve(req, [
+        ['token', req.headers.get('authorization')],
+      ]);
     }
     return new Response('Not Found', { status: 404 });
   },
@@ -190,13 +193,17 @@ The router handles incoming HTTP requests and routes them to IRPC handlers.
 
 ### Basic Usage
 
+`router.resolve()` takes the HTTP request as its first argument and an `initContext` array as its second. The context entries become available to all middleware and handlers for that request.
+
 ```typescript
 const router = new HTTPRouter(irpc, transport);
 
 Bun.serve({
   fetch(req) {
     if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
-      return router.resolve(req);
+      return router.resolve(req, [
+        ['token', req.headers.get('authorization')],
+      ]);
     }
     return new Response('Not Found', { status: 404 });
   },
@@ -205,24 +212,25 @@ Bun.serve({
 
 ### Middleware
 
-Add middleware to process requests before handlers execute.
+Middleware runs before handlers execute. It reads from the standardized context keys seeded by `initContext` — it never references transport-specific types like `Request` or `Headers`.
+
+This decoupling means you can extract middleware into a shared library and reuse it across HTTP, WebSocket, and BroadcastChannel routers without modification.
 
 ```typescript
 router.use(async () => {
-  const req = getContext<Request>('request');
-  const userId = req.headers.get('x-user-id');
+  const token = getContext<string>('token');
   
-  if (!userId) {
+  if (!token) {
     throw new Error('Unauthorized');
   }
   
-  setContext('userId', userId);
+  setContext('user', await verifyToken(token));
 });
 ```
 
 Middleware can:
-- Access request context via `getContext('request')`
-- Set context for handlers via `setContext(key, value)`
+- Read standardized context via `getContext(key)`
+- Set additional context for handlers via `setContext(key, value)`
 - Throw errors to reject the request
 
 ### Multiple Middleware
@@ -231,23 +239,20 @@ Middleware executes in order. If any middleware throws, the request is rejected.
 
 ```typescript
 router.use(async () => {
-  // Authentication
-  const token = getContext<Request>('request').headers.get('authorization');
+  const token = getContext<string>('token');
   if (!token) throw new Error('Missing token');
   setContext('user', await verifyToken(token));
 });
 
 router.use(async () => {
-  // Rate limiting
-  const user = getContext('user');
+  const user = getContext<User>('user');
   if (await isRateLimited(user.id)) {
     throw new Error('Rate limit exceeded');
   }
 });
 
 router.use(async () => {
-  // Logging
-  console.log('Request from:', getContext('user').id);
+  console.log('Request from:', getContext<User>('user').id);
 });
 ```
 
@@ -343,38 +348,52 @@ router.use(async () => {
 
 ## Context Management
 
-Access request context in handlers using `getContext` and `setContext`.
+The router's `resolve` method accepts an `initContext` parameter — an array of `[key, value]` tuples that seed the request context. The router only manages the internal `AbortController`.
 
-### Setting Context in Middleware
+The integration point extracts application-level values from transport-specific objects and injects them as standardized keys. Middleware and handlers never reference transport types — they consume the same standardized context contract regardless of which transport delivered the call.
+
+### Standardizing Context Across Transports
+
+Define your application's context contract once. Each transport maps its specific objects into the same keys:
+
+```typescript
+// HTTP
+router.resolve(req, [
+  ['token', req.headers.get('authorization')],
+  ['locale', req.headers.get('accept-language')],
+]);
+
+// WebSocket
+router.resolve(msg, ws, [
+  ['token', ws.data.token],
+  ['locale', ws.data.locale],
+]);
+
+// Broadcast
+router.resolve(requests, [
+  ['token', self.workerToken],
+  ['locale', self.workerLocale],
+]);
+```
+
+Middleware and handlers see the same `'token'` and `'locale'` keys everywhere. No transport awareness required.
+
+### Reading Context in Middleware
 
 ```typescript
 router.use(async () => {
-  const req = getContext<Request>('request');
-  const userId = req.headers.get('x-user-id');
-  setContext('userId', userId);
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
 });
 ```
 
-### Accessing Context in Handlers
+### Reading Context in Handlers
 
 ```typescript
 irpc.construct(getProfile, async () => {
-  const userId = getContext('userId');
-  return await db.users.findById(userId);
-});
-```
-
-### Built-in Context
-
-The router sets:
-- `'request'` - The HTTP Request object
-- `'headers'` - The request headers
-
-```typescript
-irpc.construct(logRequest, async () => {
-  const req = getContext<Request>('request');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
+  const user = getContext<User>('user');
+  return await db.users.findById(user.id);
 });
 ```
 

@@ -332,18 +332,17 @@ try {
 
 ### Middleware
 
-Add middleware to the BroadcastChannel router:
+Unlike HTTP and WebSocket, BroadcastChannel has no incoming request object. The router injects only the internal `AbortController` by default. To supply the same standardized context keys used across other transports, pass `initContext` when calling `resolve()` directly.
 
 ```typescript
+router.resolve(requests, [
+  ['token', self.workerToken],
+]);
+
 router.use(async () => {
-  // Validate requests
-  const channel = getContext<BroadcastChannel>('channel');
-  
-  // Add logging
-  console.log('Processing request on channel:', channel);
-  
-  // Set context for handlers
-  setContext('timestamp', Date.now());
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
 });
 ```
 
