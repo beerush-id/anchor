@@ -120,7 +120,7 @@ import { stream } from '@irpclib/irpc';
 import { irpc, getMarket } from './module';
 
 irpc.construct(getMarket, (name) => {
-  return stream(async (data, done) => {
+  return stream(async ({ data = {} }, done) => {
     let ticks = 0;
     
     while (ticks < 100) {
