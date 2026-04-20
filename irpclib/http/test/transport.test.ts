@@ -62,6 +62,25 @@ describe('HTTPTransport', () => {
     });
   });
 
+  describe('close', () => {
+    it('should cleanly abort active requests dynamically mapped natively', () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const call = { id: 'call-id' } as any;
+      const abortSpy = vi.fn();
+      
+      const mapGetSpy = vi.spyOn(transport['abortControllers'] as any, 'get').mockReturnValue({ abort: abortSpy } as any);
+      const mapDeleteSpy = vi.spyOn(transport['abortControllers'] as any, 'delete');
+
+      transport.close(call);
+      
+      expect(abortSpy).toHaveBeenCalledTimes(1);
+      expect(mapDeleteSpy).toHaveBeenCalledWith(call);
+      
+      mapGetSpy.mockRestore();
+      mapDeleteSpy.mockRestore();
+    });
+  });
+
   describe('dispatch', () => {
     it('should handle dispatch without throwing', async () => {
       const transport = new HTTPTransport({
