@@ -1,8 +1,8 @@
-import { mutable } from '@anchorlib/core';
+import { untrack } from '@anchorlib/core';
 import type { MatchedRoute, RouteOptions, RoutePath, Router, RouteRegistry, UnknownRoute } from '@anchorlib/router';
 import type { FC, ReactNode } from 'react';
 import { render, setup, snippet, template } from '../hoc.js';
-import { createEffect } from '../hooks.js';
+import { createEffect, createRef } from '../hooks.js';
 import type { AnyRoute, RouteComponent } from './types.js';
 
 const STACK_REGISTRY = new WeakSet<UnknownRoute>();
@@ -40,9 +40,7 @@ export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; c
         });
       });
 
-      queueMicrotask(() => {
-        stacks.set(route, Stack);
-      });
+      untrack(() => stacks.set(route, Stack));
 
       return null;
     }
@@ -104,16 +102,21 @@ const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry; stacks:
 CRouteRenderer.displayName = 'Definition(Route)';
 export const RouteRenderer = CRouteRenderer;
 
-const CUIRouter: FC<{ router: Router<ReactNode>; root: RouteComponent<AnyRoute>; resetScroll?: boolean }> = ({
-  router,
-  resetScroll,
-}) => {
-  const stacks = mutable<RouteStacks>(new Map());
-  const activate = async () => {
-    const match = router.find(location.href);
-    await router.activate(location.href);
+export type UIRouterProps = {
+  router: Router<ReactNode>;
+  root: RouteComponent<AnyRoute>;
+  url?: string;
+  headless?: boolean;
+  resetScroll?: boolean;
+};
 
-    if (!resetScroll || STACK_REGISTRY.has((match as MatchedRoute)?.route)) return;
+const CUIRouter: FC<UIRouterProps> = ({ router, resetScroll, url, headless }) => {
+  const stacks = createRef(new Map()).current;
+  const activate = async () => {
+    const match = router.find(url ?? location.href);
+    await router.activate(url ?? location.href);
+
+    if (headless || !resetScroll || STACK_REGISTRY.has((match as MatchedRoute)?.route)) return;
     window.scrollTo(0, 0);
   };
 

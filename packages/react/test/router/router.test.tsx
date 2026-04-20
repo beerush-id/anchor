@@ -436,8 +436,6 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('skips scrolling to top if a modal stack is active', async () => {
-      vi.stubGlobal('location', { href: 'http://localhost/modal' });
-
       const router = createRouter();
       const rootUi = page(router.rootRoute);
       const modalRoute = router.route('/modal');
@@ -449,7 +447,9 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
       scrollToSpy.mockClear();
 
-      render(<UIRouter router={router} root={rootUi} resetScroll={true} />);
+      render(
+        <UIRouter router={router} root={rootUi} url={'https://localhost/modal'} headless={true} resetScroll={true} />
+      );
 
       await act(async () => {
         await activateSpy.mock.results[0]?.value;
@@ -459,8 +459,6 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       expect(activateSpy).toHaveBeenCalled();
       expect(scrollToSpy).not.toHaveBeenCalled();
-
-      vi.unstubAllGlobals();
     });
   });
 });
