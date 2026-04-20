@@ -1,8 +1,7 @@
-import { createPackage } from '@irpclib/irpc';
+import { createPackage, IRPC_STATUS } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BroadcastTransport } from '../src/transport.js';
 import { BroadcastRouter } from '../src/router.js';
-import { IRPC_STATUS } from '@irpclib/irpc';
+import { BroadcastTransport } from '../src/transport.js';
 
 describe('BroadcastRouter', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -84,8 +83,8 @@ describe('BroadcastRouter', () => {
       const router = new BroadcastRouter(module, transport);
 
       router.use('invalid_middleware' as any);
-      
-      await router.resolve([{ id: '1', name: 'testFunc', args: [] }]); 
+
+      await router.resolve([{ id: '1', name: 'testFunc', args: [] }]);
 
       expect(errSpy).not.toHaveBeenCalled();
     });
@@ -188,7 +187,7 @@ describe('BroadcastRouter', () => {
       const router = new BroadcastRouter(module, transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testTtl', stream: true, ttl: 50 });
+      const testFunc = module.declare<TestFunc>({ name: 'testTtl', stream: true, ttl: 50 } as any);
       module.construct(testFunc, async () => new Promise(() => {}));
 
       const requests = [{ id: '1', name: 'testTtl', args: [] }];
