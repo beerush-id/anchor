@@ -1,13 +1,51 @@
-import type { RouteOptions, RoutePath, Router, RouteRegistry, UnknownRoute } from '@anchorlib/router';
+import { mutable } from '@anchorlib/core';
+import type { MatchedRoute, RouteOptions, RoutePath, Router, RouteRegistry, UnknownRoute } from '@anchorlib/router';
 import type { FC, ReactNode } from 'react';
-import { snippet } from '../hoc.js';
+import { render, setup, snippet, template } from '../hoc.js';
 import { createEffect } from '../hooks.js';
 import type { AnyRoute, RouteComponent } from './types.js';
 
-export const RouteViewer = snippet<{ route: UnknownRoute; children?: ReactNode }>(
-  ({ route, children }) => {
+const STACK_REGISTRY = new WeakSet<UnknownRoute>();
+
+type RouteStacks = Map<UnknownRoute, FC>;
+
+export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; children?: ReactNode }>(
+  ({ route, stacks, children }) => {
     const Index = route.index?.renderer;
     const Layout = route.renderer;
+
+    if (STACK_REGISTRY.has(route)) {
+      const Stack = setup(() => {
+        return render(() => {
+          if (!route.active) return children;
+
+          if (Layout) {
+            if (Index && route.index?.active) {
+              return (
+                <Layout>
+                  <Index />
+                  {children}
+                </Layout>
+              );
+            }
+
+            return <Layout>{children}</Layout>;
+          }
+
+          if (Index) {
+            return <Index />;
+          }
+
+          return children;
+        });
+      });
+
+      queueMicrotask(() => {
+        stacks.set(route, Stack);
+      });
+
+      return null;
+    }
 
     if (!route.active) return children;
 
@@ -35,7 +73,11 @@ export const RouteViewer = snippet<{ route: UnknownRoute; children?: ReactNode }
   false
 );
 
-const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry }> = ({ route, registry }) => {
+const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry; stacks: RouteStacks }> = ({
+  route,
+  registry,
+  stacks,
+}) => {
   if (route.renderer) {
     if (route.index?.renderer) {
       (route.renderer as FC).displayName = `Layout(${route.path || '/'})`;
@@ -49,18 +91,29 @@ const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry }> = ({ 
   }
 
   const children = Array.from(registry).map(([, child]) => {
-    return <RouteRenderer key={child.route.path} route={child.route} registry={child} />;
+    return <RouteRenderer key={child.route.path} route={child.route} registry={child} stacks={stacks} />;
   });
 
-  return <RouteViewer route={route}>{children}</RouteViewer>;
+  return (
+    <RouteViewer route={route} stacks={stacks}>
+      {children}
+    </RouteViewer>
+  );
 };
 
 CRouteRenderer.displayName = 'Definition(Route)';
 export const RouteRenderer = CRouteRenderer;
 
-const CUIRouter: FC<{ router: Router<ReactNode>; root: RouteComponent<AnyRoute> }> = ({ router }) => {
+const CUIRouter: FC<{ router: Router<ReactNode>; root: RouteComponent<AnyRoute>; resetScroll?: boolean }> = ({
+  router,
+  resetScroll,
+}) => {
+  const stacks = mutable<RouteStacks>(new Map());
   const activate = async () => {
+    const match = router.find(location.href);
     await router.activate(location.href);
+
+    if (!resetScroll || STACK_REGISTRY.has((match as MatchedRoute)?.route)) return;
     window.scrollTo(0, 0);
   };
 
@@ -74,19 +127,51 @@ const CUIRouter: FC<{ router: Router<ReactNode>; root: RouteComponent<AnyRoute> 
     };
   });
 
-  return <RouteRenderer key={'/'} route={router.rootRoute} registry={router.rootRegistry} />;
+  return (
+    <>
+      <RouteRenderer key={'/'} route={router.rootRoute} registry={router.rootRegistry} stacks={stacks} />
+      <StackRenderer stacks={stacks} />
+    </>
+  );
 };
+
+const StackRenderer = template<{ stacks: RouteStacks }>(({ stacks }) => {
+  return Array.from(stacks.entries()).map(([route, Stack]) => <Stack key={route.path} />);
+});
 
 CUIRouter.displayName = 'UIRouter';
 export const UIRouter = CUIRouter;
 
-export function route<T extends AnyRoute>(route: T): RouteComponent<T> {
+/**
+ * Create a page component.
+ * @param {T} routeNode
+ * @returns {RouteComponent<T>}
+ */
+export function page<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
   const UIRoute: FC<{ children?: ReactNode }> = ({ children }) => children;
-  UIRoute.displayName = `Route Factory(${route.path || '/'})`;
+  UIRoute.displayName = `Route Factory(${routeNode.path || '/'})`;
 
-  (UIRoute as RouteComponent<T>).index = route as T;
+  (UIRoute as RouteComponent<T>).index = routeNode as T;
   (UIRoute as RouteComponent<T>).route = (path: RoutePath, options?: RouteOptions) =>
-    route.route(path as never, options);
+    routeNode.route(path as never, options);
 
   return UIRoute as RouteComponent<T>;
+}
+
+/**
+ * @deprecated Use `page()` instead.
+ * @type {<T extends AnyRoute>(routeNode: T) => RouteComponent<T>}
+ */
+export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
+  return page(routeNode);
+}
+
+/**
+ * Create a modal component.
+ * @param {T} routeNode
+ * @returns {RouteComponent<T>}
+ */
+export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
+  STACK_REGISTRY.add(routeNode);
+  return page(routeNode);
 }
