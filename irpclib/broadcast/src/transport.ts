@@ -1,16 +1,16 @@
 import {
   ERROR_CODE,
   ERROR_MESSAGE,
-  type IRPCCall,
-  type IRPCData,
-  type IRPCRequest,
-  type IRPCResponse,
-  IRPCTransport,
-  type TransportConfig,
-  type IRPCPacketStream,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  type IRPCCall,
+  type IRPCData,
+  type IRPCPacketStream,
+  type IRPCRequest,
+  IRPCTransport,
+  type TransportConfig,
 } from '@irpclib/irpc';
+import { BC_MESSAGE_TYPE } from './enum.js';
 
 /**
  * Configuration interface for BroadcastChannel transport.
@@ -163,13 +163,25 @@ export class BroadcastTransport extends IRPCTransport {
   /**
    * Closes the BroadcastChannel connection.
    */
-  public close(): void {
+  public close(call?: IRPCCall): void {
+    if (call) {
+      if (this.channel) {
+        this.channel.postMessage({
+          id: call.id,
+          name: call.payload.name,
+          type: BC_MESSAGE_TYPE.CANCEL,
+        });
+      }
+      this.pendingCalls.delete(call.id);
+      return;
+    }
+
     if (this.channel) {
       this.channel.close();
       this.channel = undefined;
     }
 
-    // Reject all pending calls structurally seamlessly
+    // Reject all pending calls
     this.pendingCalls.forEach((call) => {
       call.enqueue({
         id: call.id,

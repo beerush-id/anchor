@@ -2,14 +2,16 @@ import {
   createContext,
   ERROR_CODE,
   ERROR_MESSAGE,
+  IRPC_BASE_CONTEXT,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
   IRPCStream,
-  IRPC_PACKET_TYPE,
-  IRPC_STATUS,
   withContext,
 } from '@irpclib/irpc';
+import { BC_MESSAGE_TYPE } from './enum.js';
 import type { BroadcastTransport } from './transport.js';
 
 /**
@@ -47,6 +49,8 @@ export class BroadcastRouter {
   public middlewares: BroadcastMiddleware[] = [];
   /** BroadcastChannel instance for listening to requests */
   private channel?: BroadcastChannel;
+  /** AbortControllers for active stream requests */
+  private abortControllers = new Map<string, AbortController>();
 
   /**
    * Gets the BroadcastChannel endpoint for connections
@@ -93,6 +97,16 @@ export class BroadcastRouter {
   private async handleMessage(event: MessageEvent): Promise<void> {
     const data = event.data;
 
+    // Handle cancel message
+    if (!Array.isArray(data) && data?.type === BC_MESSAGE_TYPE.CANCEL) {
+      const controller = this.abortControllers.get(data.id);
+      if (controller) {
+        controller.abort();
+        this.abortControllers.delete(data.id);
+      }
+      return;
+    }
+
     // Only handle requests (arrays of IRPCRequest)
     if (!Array.isArray(data)) return;
 
@@ -125,15 +139,20 @@ export class BroadcastRouter {
 
     await Promise.all(
       resolvers.map((resolver) => {
-        const ctx = createContext<string, unknown>([
+        const abortController = new AbortController();
+        const ctx = createContext<string | symbol, unknown>([
+          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
           ['channel', this.channel],
           ['endpoint', this.config.endpoint],
         ]);
+
+        this.abortControllers.set(resolver.req.id, abortController);
 
         return withContext(ctx, async () => {
           const error = await this.resolveMiddleware(resolver.req);
 
           if (error) {
+            this.abortControllers.delete(resolver.req.id);
             if (this.channel) {
               this.channel.postMessage(error);
             }
@@ -148,12 +167,33 @@ export class BroadcastRouter {
             }
           });
 
+          let ttlTimer: ReturnType<typeof setTimeout>;
+
+          if (resolver.spec?.ttl) {
+            ttlTimer = setTimeout(() => {
+              abortController.abort();
+            }, resolver.spec.ttl);
+          }
+
           await new Promise<void>((resolve) => {
-            stream.close(resolve);
+            stream.close(() => {
+              clearTimeout(ttlTimer);
+              this.abortControllers.delete(resolver.req.id);
+              resolve();
+            });
           });
         });
       })
     );
+  }
+
+  /**
+   * Aborts all active stream controllers.
+   * Call this on channel disconnect to clean up all active streams.
+   */
+  public disconnect() {
+    this.abortControllers.forEach((controller) => controller.abort());
+    this.abortControllers.clear();
   }
 
   /**
@@ -189,6 +229,8 @@ export class BroadcastRouter {
    * Closes the router and cleans up the BroadcastChannel
    */
   public close(): void {
+    this.disconnect();
+
     if (this.channel) {
       this.channel.close();
       this.channel = undefined;
