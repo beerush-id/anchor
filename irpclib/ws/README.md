@@ -79,23 +79,32 @@ irpc.construct(streamData, () => {
 
 ### 4. Server Setup
 
+The integration point extracts application-level values from the HTTP upgrade request and injects them into every WebSocket message resolution. Since WebSocket messages don't carry headers, context must be captured during the upgrade handshake.
+
 ```typescript
 // server.ts
+import { setContextProvider } from "@irpclib/irpc";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { WebSocketRouter } from "@irpclib/ws";
 import { irpc, transport } from "./lib/module.js";
 import "./rpc/hello/constructor.js";
+
+setContextProvider(new AsyncLocalStorage());
 
 const router = new WebSocketRouter(irpc, transport);
 
 Bun.serve({
   port: 8080,
   fetch(req, server) {
-    if (server.upgrade(req)) return;
+    const token = req.headers.get('authorization');
+    if (server.upgrade(req, { data: { token } })) return;
     return new Response("WebSocket server running");
   },
   websocket: {
     async message(ws, message) {
-      await router.resolve(message.toString(), ws);
+      await router.resolve(message.toString(), ws, [
+        ['token', ws.data.token],
+      ]);
     },
   },
 });
@@ -226,7 +235,7 @@ interface WebSocketTransportConfig {
 #### Methods
 
 - `use(middleware: WebSocketMiddleware): this` - Add middleware
-- `resolve(message: string, ws: WebSocket, request?: Request): Promise<void>` - Handle incoming messages and send responses
+- `resolve(message: string, ws: WebSocket, initContext?: [string | symbol, unknown][]): Promise<void>` - Handle incoming messages with optional context injection
 - `endpoint: string` (getter) - Get the WebSocket endpoint URL
 
 ### Retry Logic
