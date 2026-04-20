@@ -2,14 +2,16 @@ import {
   createContext,
   ERROR_CODE,
   ERROR_MESSAGE,
+  IRPC_BASE_CONTEXT,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
   IRPCStream,
-  IRPC_PACKET_TYPE,
-  IRPC_STATUS,
   withContext,
 } from '@irpclib/irpc';
+import { WS_MESSAGE_TYPE } from './enum.js';
 import type { WebSocketTransport } from './transport.js';
 
 /**
@@ -45,6 +47,8 @@ export class WebSocketRouter {
   public config: WebSocketResolveConfig;
   /** Array of middleware functions to be executed */
   public middlewares: WebSocketMiddleware[] = [];
+  /** AbortControllers for active stream requests */
+  private abortControllers = new Map<string, AbortController>();
 
   /**
    * Gets the WebSocket endpoint for connections
@@ -90,30 +94,41 @@ export class WebSocketRouter {
    * @returns void (responses are sent via WebSocket)
    */
   public async resolve(message: string, ws: WebSocket, request?: Request): Promise<void> {
-    const irpcRequests = this.parseRequests(message);
+    const irpcRequests = this.parseRequests(message).filter((req: IRPCRequest & { type?: string }) => {
+      if (req.type === WS_MESSAGE_TYPE.CANCEL) {
+        const controller = this.abortControllers.get(req.id);
+        if (controller) controller.abort();
+
+        this.abortControllers.delete(req.id);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (!irpcRequests.length) return;
+
     const requests = irpcRequests.map((irpcReq) => {
       return this.config.resolver(irpcReq, this.module);
     });
 
-    if (!requests.length) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify([]));
-      }
-      return;
-    }
-
     await Promise.all(
       requests.map((req) => {
-        const ctx = createContext<string, unknown>([
+        const abortController = new AbortController();
+        const ctx = createContext<string | symbol, unknown>([
+          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
           ['request', request],
           ['websocket', ws],
           ['headers', request?.headers],
         ]);
 
+        this.abortControllers.set(req.req.id, abortController);
+
         return withContext(ctx, async () => {
           const error = await this.resolveMiddleware(req.req);
 
           if (error) {
+            this.abortControllers.delete(req.req.id);
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify(error));
             }
@@ -128,12 +143,33 @@ export class WebSocketRouter {
             }
           });
 
+          let ttlTimer: ReturnType<typeof setTimeout>;
+
+          if (req.spec?.ttl) {
+            ttlTimer = setTimeout(() => {
+              abortController.abort();
+            }, req.spec.ttl);
+          }
+
           await new Promise<void>((resolve) => {
-            stream.close(resolve);
+            stream.close(() => {
+              clearTimeout(ttlTimer);
+              this.abortControllers.delete(req.req.id);
+              resolve();
+            });
           });
         });
       })
     );
+  }
+
+  /**
+   * Aborts all active stream controllers.
+   * Call this on WebSocket disconnect to clean up all active streams.
+   */
+  public disconnect() {
+    this.abortControllers.forEach((controller) => controller.abort());
+    this.abortControllers.clear();
   }
 
   /**

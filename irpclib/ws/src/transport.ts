@@ -1,16 +1,16 @@
 import {
   ERROR_CODE,
   ERROR_MESSAGE,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   type IRPCCall,
   type IRPCData,
+  type IRPCPacketStream,
   type IRPCRequest,
-  type IRPCResponse,
   IRPCTransport,
   type TransportConfig,
-  type IRPCPacketStream,
-  IRPC_STATUS,
-  IRPC_PACKET_TYPE,
 } from '@irpclib/irpc';
+import { WS_MESSAGE_TYPE } from './enum.js';
 
 export const DEFAULT_RECONNECT_DELAY = 1000;
 export const DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
@@ -353,7 +353,22 @@ export class WebSocketTransport extends IRPCTransport {
   /**
    * Closes the WebSocket connection.
    */
-  public close(): void {
+  public close(call?: IRPCCall): void {
+    if (call) {
+      if (this.isOpen) {
+        this.ws!.send(
+          JSON.stringify({
+            id: call.id,
+            name: call.payload.name,
+            type: WS_MESSAGE_TYPE.CANCEL,
+          })
+        );
+      }
+
+      this.pendingCalls.delete(call.id);
+      return;
+    }
+
     if (this.ws) {
       this.config.autoReconnect = false;
       this.ws.close();
