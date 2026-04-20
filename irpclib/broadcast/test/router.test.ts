@@ -164,6 +164,45 @@ describe('BroadcastRouter', () => {
 
       expect(mockChannel.postMessage).not.toHaveBeenCalled();
     });
+
+    it('should correctly intercept target CANCEL stream envelopes proactively gracefully', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const router = new BroadcastRouter(module, transport);
+
+      const abortSpy = vi.fn();
+      router['abortControllers'].set('2', { abort: abortSpy } as any);
+
+      const message = { id: '2', type: 'cancel' }; // BC_MESSAGE_TYPE.CANCEL natively maps to 'cancel'
+      await router['handleMessage']({ data: message } as any);
+
+      expect(abortSpy).toHaveBeenCalled();
+      expect(router['abortControllers'].has('2')).toBe(false);
+    });
+
+    it('should correctly abort running stream configurations when evaluating late specification ttl bounds explicitly naturally', async () => {
+      vi.useFakeTimers();
+
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const router = new BroadcastRouter(module, transport);
+
+      type TestFunc = () => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testTtl', stream: true, ttl: 50 });
+      module.construct(testFunc, async () => new Promise(() => {}));
+
+      const requests = [{ id: '1', name: 'testTtl', args: [] }];
+      router.resolve(requests);
+
+      // Fast forward to implicitly cause internal cancellation asynchronously
+      await vi.advanceTimersByTimeAsync(60);
+
+      // Verify the stream correctly bounded itself off natively
+      const controller = router['abortControllers'].get('1');
+      expect(controller?.signal.aborted).toBe(true);
+
+      vi.useRealTimers();
+    });
   });
 
   describe('close', () => {

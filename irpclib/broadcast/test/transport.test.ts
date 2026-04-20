@@ -195,6 +195,37 @@ describe('BroadcastTransport', () => {
 
       await expect(promise).rejects.toThrow('BroadcastChannel connection closed');
     });
+
+    it('should send CANCEL message natively identifying target streams if openly connected explicitly', () => {
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      
+      const call = { id: 'call-1', payload: { name: 'test-func' } } as any;
+      transport['pendingCalls'].set('call-1', call);
+
+      transport.close(call);
+
+      expect(mockChannel.postMessage).toHaveBeenCalled();
+      const packet = mockChannel.postMessage.mock.calls[0][0];
+      
+      expect(packet.id).toBe('call-1');
+      expect(packet.name).toBe('test-func');
+      expect(packet.type).toBe('cancel'); // BC_MESSAGE_TYPE.CANCEL
+      
+      expect(transport['pendingCalls'].has('call-1')).toBe(false);
+    });
+
+    it('should quietly delete tracking mappings exclusively offline safely if close is requested implicitly safely', () => {
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      transport['channel'] = undefined;
+      
+      const call = { id: 'call-2', payload: { name: 'test-func-2' } } as any;
+      transport['pendingCalls'].set('call-2', call);
+
+      transport.close(call);
+
+      expect(mockChannel.postMessage).not.toHaveBeenCalled();
+      expect(transport['pendingCalls'].has('call-2')).toBe(false);
+    });
   });
 
   describe('error handling', () => {
