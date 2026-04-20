@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import * as Context from '../src/context.js';
 import { IRPC_STATUS } from '../src/enum.js';
 import { RemoteState, stream } from '../src/state.js';
 
@@ -77,10 +78,17 @@ describe('RemoteState', () => {
     expect(result).toBe('finished');
   });
 
+  it('should explicitly clean up state via close()', () => {
+    const state = new RemoteState('start');
+    const destroySpy = vi.spyOn(state as any, 'destroy');
+    state.close();
+    expect(destroySpy).toHaveBeenCalled();
+  });
+
   describe('stream utility factory', () => {
     it('should natively configure RemoteState pipeline', () => {
-      const activeStream = stream((data) => {
-        expect(data).toBe('seeded');
+      const activeStream = stream((state) => {
+        expect(state.data).toBe('seeded');
       }, 'seeded');
 
       expect(activeStream).toBeInstanceOf(RemoteState);
@@ -89,8 +97,8 @@ describe('RemoteState', () => {
     });
 
     it('should properly execute manual resolution via inner closure strictly', async () => {
-      const activeStream = stream<string[]>((data, resolve) => {
-        data.push('loaded');
+      const activeStream = stream<string[]>((state, resolve) => {
+        state.data.push('loaded');
         resolve();
       }, []);
 
@@ -129,6 +137,77 @@ describe('RemoteState', () => {
 
       await expect(activeStream).rejects.toThrow('Async pipeline failure');
       expect(activeStream.status).toBe(IRPC_STATUS.ERROR);
+    });
+    it('should invoke async cleanup cleanly if aborted before promise resolves natively', async () => {
+      const abortController = new AbortController();
+      vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
+      
+      const futureCleanup = vi.fn();
+      const activeStream = stream(async () => {
+        return futureCleanup;
+      });
+
+      abortController.abort(); // Triggers abort during PENDING lifecycle
+
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Flush promises
+
+      expect(futureCleanup).toHaveBeenCalled();
+      
+      vi.restoreAllMocks();
+    });
+
+    it('should register abort listener for async cleanup if not yet aborted natively', async () => {
+      const abortController = new AbortController();
+      vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
+      
+      const futureCleanup = vi.fn();
+      let resolveCleanup: any;
+      stream(async () => {
+        await new Promise((r) => { resolveCleanup = r; });
+        return futureCleanup;
+      });
+
+      resolveCleanup();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      abortController.abort();
+      expect(futureCleanup).toHaveBeenCalledTimes(1);
+
+      vi.restoreAllMocks();
+    });
+
+    it('should safely bind sync cleanup statically to abort hook pipeline', async () => {
+      const abortController = new AbortController();
+      vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
+      
+      const syncCleanup = vi.fn();
+      stream(() => {
+        return syncCleanup;
+      });
+
+      abortController.abort();
+      
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(syncCleanup).toHaveBeenCalledTimes(1);
+
+      vi.restoreAllMocks();
+    });
+
+    it('should fire sync cleanup dynamically if previously aborted', async () => {
+      const abortController = new AbortController();
+      vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
+      
+      abortController.abort(); // Aborted before mapping
+
+      const syncCleanup = vi.fn();
+      stream(() => {
+        return syncCleanup; // Cleanup runs instantly logically
+      });
+
+      expect(syncCleanup).toHaveBeenCalledTimes(1);
+
+      vi.restoreAllMocks();
     });
   });
 });

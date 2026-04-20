@@ -139,6 +139,54 @@ describe('IRPCCall', () => {
       expect(call.resolved).toBe(true);
       expect(call.error?.message).toBe('Bad network pipe');
     });
+
+    it('should ignore incoming enqueue payloads cleanly when already securely resolved', () => {
+      const payload = { name: 'testFunc', args: [] };
+      const call = new IRPCCall(mockTransport, payload, {});
+      call.resolved = true;
+      
+      const pushSpy = vi.spyOn(call.reader, 'push');
+      call.enqueue({ type: IRPC_PACKET_TYPE.ANSWER } as any);
+      
+      expect(pushSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('close', () => {
+    it('should close unresolved call and defer reader data properly', () => {
+      const transportCloseSpy = vi.fn();
+      const mockCloseTransport = {
+        close: transportCloseSpy,
+        schedule: vi.fn(),
+      } as unknown as IRPCTransport;
+      
+      const payload = { name: 'testFunc', args: [] };
+      const call = new IRPCCall(mockCloseTransport, payload, {});
+      
+      // Inject some parsed reader data dynamically for evaluation
+      call.reader.data = 'testData' as any;
+      call.close();
+      
+      expect(transportCloseSpy).toHaveBeenCalledWith(call);
+      expect(call.resolved).toBe(true);
+      expect(call.value).toBe('testData');
+      expect(call.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should cleanly ignore duplicate close invocations', () => {
+      const transportCloseSpy = vi.fn();
+      const mockCloseTransport = {
+        close: transportCloseSpy,
+        schedule: vi.fn(),
+      } as unknown as IRPCTransport;
+      
+      const payload = { name: 'testFunc', args: [] };
+      const call = new IRPCCall(mockCloseTransport, payload, {});
+      call.resolved = true;
+      
+      call.close();
+      expect(transportCloseSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('Retry Logic', () => {

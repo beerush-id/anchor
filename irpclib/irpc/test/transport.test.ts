@@ -67,6 +67,34 @@ describe('IRPC Transport', () => {
 
       await expect(promise).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]);
     });
+
+    it('should dispatch instantly and return reader statically when stream spec flag is true', () => {
+      const dispatchSpy = vi
+        .spyOn(transport as any, 'dispatch')
+        .mockImplementation(() => Promise.resolve());
+      
+      const spec = {
+        name: 'testStreamFunc',
+        handler: vi.fn(),
+        stream: true,
+      };
+
+      const result = transport.call(spec, []);
+      
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(result).toBeDefined(); // Returns call.reader inherently
+      expect(transport.queue.size).toBe(0); // Safely bypassed queue schedule
+
+      dispatchSpy.mockRestore();
+    });
+  });
+
+  describe('Transport Utilities', () => {
+    it('should ignore close natively mapped statically', () => {
+      // The base class close() is an empty function. We just hit it for coverage natively mapped.
+      const call = { id: 'test' } as any;
+      expect(() => transport.close(call)).not.toThrow();
+    });
   });
 
   describe('IRPC Scheduling', () => {

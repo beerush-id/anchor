@@ -121,4 +121,15 @@ describe('IRPCReader', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(caughtError?.message).toBe('Validation fail');
   });
+
+  it('should immediately close the reader natively resolving success', () => {
+    const reader = new IRPCReader('id-close');
+    const closeSpy = vi.fn();
+    reader.onClose = closeSpy;
+
+    reader.close();
+
+    expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+  });
 });
