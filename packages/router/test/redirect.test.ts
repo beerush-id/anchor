@@ -208,20 +208,6 @@ describe('redirect.ts', () => {
       expect(mockHandler).toHaveBeenCalledWith(result);
     });
 
-    it('should schedule handler call in microtask', async () => {
-      const callOrder: string[] = [];
-      mockHandler.mockImplementation(() => {
-        callOrder.push('handler');
-      });
-
-      redirect(testRoute as never);
-      callOrder.push('after-redirect');
-
-      await Promise.resolve();
-
-      expect(callOrder).toEqual(['after-redirect', 'handler']);
-    });
-
     it('should handle multiple redirects', async () => {
       const params1 = { id: '1' };
       const params2 = { id: '2' };
@@ -231,9 +217,9 @@ describe('redirect.ts', () => {
 
       await Promise.resolve();
 
-      expect(mockHandler).toHaveBeenCalledTimes(1);
-      expect(mockHandler).not.toHaveBeenNthCalledWith(1, result1);
-      expect(mockHandler).toHaveBeenNthCalledWith(1, result2);
+      expect(mockHandler).toHaveBeenCalledTimes(2);
+      expect(mockHandler).toHaveBeenNthCalledWith(1, result1);
+      expect(mockHandler).toHaveBeenNthCalledWith(2, result2);
     });
 
     it('should work without handler set', () => {
@@ -603,12 +589,12 @@ describe('redirect.ts', () => {
       });
       setRedirectHandler(handler);
 
-      expect(() => redirect(testRoute as never)).not.toThrow();
+      expect(() => redirect(testRoute as never)).toThrow();
 
       await Promise.resolve();
 
       expect(handler).toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
 
       errorSpy.mockRestore();
     });

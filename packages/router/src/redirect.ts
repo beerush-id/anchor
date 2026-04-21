@@ -1,16 +1,9 @@
-import { microtask } from '@anchorlib/core';
+import { closure } from '@anchorlib/core';
 import type { Route } from './route.js';
 import type { ExtractParams, ExtractQueryParams, RouteOptions, RoutePath, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
 
-/**
- * Internal handler for processing redirects.
- *
- * Set via {@link setRedirectHandler} to customize redirect behavior.
- *
- * @internal
- */
-let redirectHandler: (redirect: UnknownRedirect) => void;
+const REDIRECT_HANDLER = Symbol('redirect-handler');
 
 /**
  * Sets the handler for processing redirects.
@@ -31,10 +24,8 @@ let redirectHandler: (redirect: UnknownRedirect) => void;
  * ```
  */
 export function setRedirectHandler(handler: (redirect: UnknownRedirect) => void) {
-  redirectHandler = handler;
+  closure.set(REDIRECT_HANDLER, handler);
 }
-
-const [schedule] = microtask(0);
 
 /**
  * Represents a redirect to a different route.
@@ -115,7 +106,7 @@ export function redirect<
   query?: TQueryParams
 ): Redirect<TPath, TParams, TQueryParams, TOptions, TData> {
   const redirect = new Redirect(route, params, query);
-  schedule(() => redirectHandler?.(redirect as UnknownRedirect));
+  closure.get<(redirect: UnknownRedirect) => void>(REDIRECT_HANDLER)?.(redirect as UnknownRedirect);
   return redirect;
 }
 
