@@ -1,16 +1,21 @@
 import {
   createContext,
+  decode,
   ERROR_CODE,
   ERROR_MESSAGE,
   IRPC_BASE_CONTEXT,
+  IRPC_FILE_STATUS,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  type IRPCData,
+  type IRPCFilePointer,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
   IRPCStream,
   withContext,
 } from '@irpclib/irpc';
+import { IRPC_JSON_KEY } from './enum.js';
 import type { HTTPTransport } from './transport.js';
 
 /**
@@ -82,8 +87,23 @@ export class HTTPRouter {
    * @returns A Response object with the resolved data
    */
   public async resolve(httpReq: Request, initContext: [string | symbol, unknown][] = []) {
-    const requests = ((await httpReq.json()) as IRPCRequest[]).map((irpcReq) => {
-      return this.config.resolver(irpcReq, this.module);
+    const formData = await httpReq.formData();
+    const irpcRequests = JSON.parse(formData.get(IRPC_JSON_KEY) as string) as (IRPCRequest & { files?: IRPCFilePointer[] })[];
+
+    const requests = irpcRequests.map((req) => {
+      if (req.files?.length) {
+        const stream = decode({ data: req.args as IRPCData, files: req.files });
+
+        for (const [id, file] of stream.files) {
+          file.data = formData.get(id) as File;
+          file.status = IRPC_FILE_STATUS.SUCCESS;
+        }
+
+        req.args = stream.data as unknown[];
+        delete req.files;
+      }
+
+      return this.config.resolver(req, this.module);
     });
 
     if (!requests.length) {
@@ -111,7 +131,6 @@ export class HTTPRouter {
             const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
 
             stream.pipe((packet) => {
-              if (abortController.signal.aborted) return;
               controller.enqueue(`${JSON.stringify(packet)}\n`);
             });
 

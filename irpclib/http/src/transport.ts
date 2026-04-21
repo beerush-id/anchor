@@ -9,7 +9,9 @@ import {
   type IRPCRequest,
   IRPCTransport,
   type TransportConfig,
+  encode,
 } from '@irpclib/irpc';
+import { IRPC_JSON_KEY } from './enum.js';
 
 export const DEFAULT_ENDPOINT = '/irpc';
 
@@ -75,7 +77,20 @@ export class HTTPTransport extends IRPCTransport {
    */
   protected async dispatch(calls: IRPCCall[]) {
     try {
-      const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({ id, name, args }));
+      const form = new FormData();
+
+      const requests = calls.map(({ id, payload: { name, args } }) => {
+        const packet = encode(args as IRPCData);
+
+        for (const queue of packet.queues) {
+          form.append(queue.file.id, queue.data, queue.file.meta.name);
+        }
+
+        return { id, name, args: packet.json.data, files: packet.json.files };
+      });
+
+      form.append(IRPC_JSON_KEY, JSON.stringify(requests));
+
       const maxTimeout =
         calls.reduce((acc, req) => Math.max(acc, req.options?.timeout ?? 0), 0) || this.config?.timeout;
 
@@ -94,11 +109,8 @@ export class HTTPTransport extends IRPCTransport {
 
       const response = await fetch(this.url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.config.headers,
-        },
-        body: JSON.stringify(requests),
+        headers: { ...this.config.headers },
+        body: form,
         signal: controller.signal,
       });
 

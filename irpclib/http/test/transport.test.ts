@@ -1,6 +1,6 @@
-import { ERROR_CODE, IRPC_PACKET_TYPE, IRPC_STATUS, type IRPCCall } from '@irpclib/irpc';
+import { ERROR_CODE, IRPCFile, IRPC_PACKET_TYPE, IRPC_STATUS, type IRPCCall } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_ENDPOINT, HTTPTransport } from '../src/index.js';
+import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 
 describe('HTTPTransport', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -11,6 +11,7 @@ describe('HTTPTransport', () => {
 
   afterEach(() => {
     errSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
   describe('constructor', () => {
@@ -103,6 +104,56 @@ describe('HTTPTransport', () => {
       }).not.toThrow();
 
       mockFetch.mockRestore();
+    });
+
+    it('should map IRPCFiles into FormData blobs natively extracted correctly', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const dummyBlob = new Blob(['hello world'], { type: 'text/plain' });
+      const dummyFile = new IRPCFile({ name: 'test.txt', type: 'text/plain', size: dummyBlob.size }, dummyBlob);
+
+      const calls: IRPCCall[] = [
+        {
+          id: '1',
+          payload: { name: 'testUpload', args: [{ file: dummyFile }] },
+          options: {},
+          enqueue: vi.fn(),
+          reject: vi.fn(),
+        } as never,
+      ];
+
+      let fetchBody: any = null;
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_, options) => {
+        fetchBody = options?.body;
+        return {
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: async () => ({ done: true, value: undefined }),
+              releaseLock: () => {},
+            }),
+          },
+        } as any;
+      });
+
+      await transport['dispatch'](calls);
+
+      expect(calls[0].enqueue).not.toHaveBeenCalledWith(
+        expect.objectContaining({ status: IRPC_STATUS.ERROR })
+      );
+
+      expect(fetchBody).toBeTruthy();
+      expect(fetchBody.constructor.name).toBe('FormData');
+      expect(mockFetch).toHaveBeenCalled();
+
+      if (typeof fetchBody.get === 'function') {
+        const jsonHeader = fetchBody.get(IRPC_JSON_KEY);
+        const parsedNode = JSON.parse(jsonHeader as string);
+        const uploadFileId = parsedNode?.[0]?.args?.[0]?.file?.id;
+        const retrieved = fetchBody.get(uploadFileId) as Blob;
+        expect(retrieved).toBeInstanceOf(Blob);
+        expect(retrieved.size).toBe(dummyBlob.size);
+        expect(retrieved.type).toBe(dummyBlob.type);
+      }
     });
 
     it('should reject calls when response is not ok', async () => {

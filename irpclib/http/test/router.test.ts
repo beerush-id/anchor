@@ -1,7 +1,10 @@
-import { createPackage } from '@irpclib/irpc';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { createPackage, IRPC_FILE_STATUS, type IRPCContextProvider, setContextProvider } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_ENDPOINT, HTTPTransport } from '../src/index.js';
+import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 import { HTTPRouter } from '../src/router.js';
+
+setContextProvider(new AsyncLocalStorage() as IRPCContextProvider);
 
 describe('HTTPRouter', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -58,18 +61,20 @@ describe('HTTPRouter', () => {
   });
 
   describe('resolve', () => {
+    const createMockRequest = (body: string) => {
+      const fd = new FormData();
+      fd.append(IRPC_JSON_KEY, body);
+      const req = new Request('https://api.example.com/rpc', { method: 'POST', body: fd });
+      vi.spyOn(req, 'formData').mockResolvedValueOnce(fd);
+      return req;
+    };
+
     it('should return 400 for empty requests', async () => {
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const router = new HTTPRouter(module, transport);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([]),
-      });
-
-      // Mock json() method to return empty array
-      vi.spyOn(request, 'json').mockResolvedValueOnce([]);
+      const request = createMockRequest('[]');
 
       const response = await router.resolve(request);
 
@@ -90,13 +95,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       module.construct(testFunc, handler);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]),
-      });
-
-      // Mock json() method
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]));
 
       const response = await router.resolve(request);
 
@@ -121,13 +120,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       module.construct(testFunc, handler);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]),
-      });
-
-      // Mock json() method
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]));
 
       // Expect the middleware error to be thrown
       const result = await router.resolve(request);
@@ -141,15 +134,9 @@ describe('HTTPRouter', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const router = new HTTPRouter(module, transport);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: 'invalid json',
-      });
+      const request = createMockRequest('invalid json');
 
-      // Mock json() method to throw parsing error
-      vi.spyOn(request, 'json').mockRejectedValueOnce(new Error('Invalid JSON'));
-
-      await expect(router.resolve(request)).rejects.toThrow('Invalid JSON');
+      await expect(router.resolve(request)).rejects.toThrow(SyntaxError);
     });
 
     it('should use custom resolver when provided', async () => {
@@ -170,13 +157,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       module.construct(testFunc, handler);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]),
-      });
-
-      // Mock json() method
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]));
 
       await router.resolve(request);
 
@@ -196,12 +177,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async () => new Promise(() => {}); // Never fulfills natively
       module.construct(testFunc, handler);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '1', name: 'testTtl', args: [] }]),
-      });
-
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '1', name: 'testTtl', args: [] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testTtl', args: [] }]));
 
       const responsePromise = router.resolve(request);
 
@@ -228,11 +204,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async () => new Promise(() => {}); // never ending
       module.construct(testFunc, handler);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '2', name: 'testCancel', args: [] }]),
-      });
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '2', name: 'testCancel', args: [] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '2', name: 'testCancel', args: [] }]));
 
       const response = await router.resolve(request);
 
@@ -257,11 +229,7 @@ describe('HTTPRouter', () => {
         });
       router.use(middleware);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '3', name: 'testFunc', args: [] }]),
-      });
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '3', name: 'testFunc', args: [] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '3', name: 'testFunc', args: [] }]));
 
       const response = await router.resolve(request);
 
@@ -286,11 +254,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async () => new Promise((resolve) => (defer = resolve));
       module.construct(testFunc, handler);
 
-      const request = new Request('https://api.example.com/rpc', {
-        method: 'POST',
-        body: JSON.stringify([{ id: '4', name: 'testPipeAbort', args: [] }]),
-      });
-      vi.spyOn(request, 'json').mockResolvedValueOnce([{ id: '4', name: 'testPipeAbort', args: [] }]);
+      const request = createMockRequest(JSON.stringify([{ id: '4', name: 'testPipeAbort', args: [] }]));
 
       const response = await router.resolve(request);
 
@@ -305,6 +269,55 @@ describe('HTTPRouter', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(response.status).toBe(200);
+    });
+
+    it('should extract FormData blobs natively resolving to IRPCFile dynamically mapped correctly', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = (input: { file: any }) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFile' });
+
+      let receivedFile: any;
+      const handler: TestFunc = async (input) => {
+        receivedFile = input.file;
+        return `File uploaded`;
+      };
+      module.construct(testFunc, handler);
+
+      const dummyFile = new File(['hello world'], 'test.txt', { type: 'text/plain' });
+
+      const pointer = {
+        id: 'test-file-id',
+        type: 'IRPC_PACKET_FILE',
+        meta: { name: 'test.txt', size: dummyFile.size, type: 'text/plain' },
+      };
+
+      const requestPayload = [
+        {
+          id: 'file-1',
+          name: 'testFile',
+          args: [{ file: pointer }],
+          files: [pointer],
+        },
+      ];
+
+      const fd = new FormData();
+      fd.append(IRPC_JSON_KEY, JSON.stringify(requestPayload));
+      fd.append('test-file-id', dummyFile);
+
+      const request = new Request('https://api.example.com/rpc', { method: 'POST', body: fd });
+      vi.spyOn(request, 'formData').mockResolvedValueOnce(fd);
+
+      const response = await router.resolve(request);
+
+      // Give event loop a tick to let promises flush natively
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(response.status).toBe(200);
+      expect(receivedFile?.data).toBe(dummyFile);
+      expect(receivedFile?.status).toBe(IRPC_FILE_STATUS.SUCCESS);
     });
   });
 });
