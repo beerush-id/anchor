@@ -2,13 +2,13 @@
 
 Providers act as the dependency injection layer for your routes. 
 
-It executes entirely out-of-band during the navigation phase—after guards pass, but *before* the React component mounts. Whether a route needs to fetch an API payload, initialize a WebSocket connection, or simply supply static metadata, the Provider ensures the React component gets exactly what it needs without having to construct or load it itself.
+It executes out-of-band during the navigation phase—after guards pass, but *before* the React component mounts. Whether a route needs to fetch an API payload, initialize a WebSocket connection, or supply static metadata, the Provider ensures the React component gets what it needs without having to construct or load it itself.
 
-Because providers are functionally chained directly to the route builder, TypeScript inherently tracks the return types. The framework knows exactly what shape `state.data` takes without requiring a single generic declaration.
+Because providers are chained to the route builder, TypeScript tracks the return types. The framework knows the shape `state.data` takes without requiring a single generic declaration.
 
 **What it solves:**
-- **Loading spin-cycles:** Components flashing skeleton loaders or spinners simply because they had to wait to mount before they could start fetching their dependencies.
-- **Render Waterfalls:** A parent component rendering, resolving its dependencies, and finally mounting a child—which only then begins resolving its own dependencies. 
+- **Loading spin-cycles:** Components flashing skeleton loaders or spinners because they had to wait to mount before they could start fetching their dependencies.
+- **Render Waterfalls:** A parent component rendering, resolving its dependencies, and mounting a child—which only then begins resolving its own dependencies. 
 - **Blind Type Casting:** Writing `useLoaderData() as UserProfile` because the router lost the exact type of your API response across the routing boundary.
 
 ## Basic Usage
@@ -36,9 +36,9 @@ export const ProfileRoute = route(
 
 ## Reactive Re-evaluation
 
-Providers run inside reactive observers. If a provider reads global reactive state (an Anchor `mutable` or `derived`), it automatically re-runs when that state changes. 
+Providers run inside reactive observers. If a provider reads global reactive state (an Anchor `mutable` or `derived`), it re-runs when that state changes. 
 
-This allows you to resolve complex dependencies based on non-URL state without manually tracking anything or invalidating caches. For example, if a provider reads a dynamic array of active dashboard widgets from a global store, modifying those widgets instantly triggers a background provider re-evaluation:
+This allows you to resolve complex dependencies based on non-URL state without tracking anything or invalidating caches. For example, if a provider reads a dynamic array of active dashboard widgets from a global store, modifying those widgets triggers a background provider re-evaluation:
 
 ```tsx
 import { mutable } from '@anchorlib/react';
@@ -52,7 +52,7 @@ export const dashboardState = mutable({
 export const dashboardRoute = rootRoute
   .route('/dashboard')
   .provide('analytics', async () => {
-    // 2. The provider reads complex state. Anchor tracks the array and boolean automatically!
+    // 2. The provider reads complex state. Anchor tracks the array and boolean!
     const query = new URLSearchParams({
       metrics: String(dashboardState.showMetrics),
       widgets: dashboardState.activeWidgets.join(',')
@@ -68,12 +68,12 @@ export const dashboardRoute = rootRoute
 
 **What it solves:**
 - **Zero wiring:** You don't need to pass global state through the React component tree just to get it inside a fetch function.
-- **No manual dependency tracking:** You never have to explicitly declare and maintain exhaustive `queryKey` arrays.
+- **No manual dependency tracking:** You never have to declare and maintain exhaustive `queryKey` arrays.
 - **Eliminates stale data bugs:** You avoid bugs where the UI state changes but the data fails to refresh because a developer forgot to write a cache invalidation hook.
 
 ## Dependent Providers
 
-You can chain multiple `.provide()` calls on a single route. They run sequentially in the exact order you define them, and downstream providers receive the data resolved by the upstream providers.
+You can chain multiple `.provide()` calls on a single route. They run in sequence in the order you define them, and downstream providers receive the data resolved by the upstream providers.
 
 ```tsx
 profileRoute
@@ -82,7 +82,7 @@ profileRoute
     return res.json();
   })
   .provide('posts', async ({ params, data }) => {
-    // `data.user` is fully resolved and available here
+    // `data.user` is resolved and available here
     const res = await fetch(`/api/users/${params.user_id}/posts`);
     return res.json();
   })
@@ -100,7 +100,7 @@ profileRoute
 
 ## Caching
 
-Set `maxAge` to automatically cache provider results. Subsequent navigations to the exact same route with the exact same `params` or `query` will instantly reuse the cached data instead of hitting the network.
+Set `maxAge` to cache provider results. Subsequent navigations to the same route with the same `params` or `query` will reuse the cached data instead of hitting the network.
 
 ```ts
 const profile = usersRoute.route('/:user_id', {
@@ -119,7 +119,7 @@ const router = createRouter<ReactNode>({
 ```
 
 **What it solves:**
-- **Redundant fetching:** Hitting the API for the exact same data simply because a user clicked a link, navigated away, and hit the "Back" button three seconds later.
+- **Redundant fetching:** Hitting the API for the same data because a user clicked a link, navigated away, and hit the "Back" button three seconds later.
 - **Heavy dependencies:** Installing standalone caching abstractions to do something the router can handle natively.
 
 ## Preloading
@@ -137,7 +137,7 @@ When combined with `<Link preload="hover">`, providers begin fetching data the e
 
 ## Immediate Rendering
 
-By default, the router waits for all providers to successfully resolve before swapping the active UI component. If you prefer to render immediately and handle the loading spinner yourself, use `renderMode: 'immediate'`.
+By default, the router waits for all providers to resolve before swapping the active UI component. If you prefer to render immediate loading layouts and handle the loading spinner yourself, use `renderMode: 'immediate'`.
 
 ```ts
 import { createRouter, RENDER_MODE } from '@anchorlib/react/router';
@@ -161,7 +161,7 @@ const router = createRouter<ReactNode>({
 
 ## Retry
 
-Failed providers can be configured to retry failed network requests automatically before throwing an error to the UI.
+Failed providers can be configured to retry failed network requests before throwing an error to the UI.
 
 ```ts
 const profile = usersRoute.route('/:user_id', {
@@ -180,7 +180,7 @@ Once providers resolve, the returned objects are merged into the route state by 
 
 Provider data appears in two places:
 1. **`state.data`** — Top-level, flattened access to all resolved providers.
-2. **`state.context.data`** — The exact same data, strictly scoped inside the full context object.
+2. **`state.context.data`** — The same data, scoped inside the full context object.
 
 ```tsx
 .render((state) => {

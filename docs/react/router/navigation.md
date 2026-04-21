@@ -28,7 +28,7 @@ For routes with parameters, pass `params`:
 <!-- renders: <a href="/users/42">View Profile</a> -->
 ```
 
-This is the primary way to link. If you rename `/users` to `/people` in your route definition, every `<Link to={UsersRoute}>` updates automatically. Nothing breaks.
+This is the primary way to link. If you rename `/users` to `/people` in your route definition, every `<Link to={UsersRoute}>` updates. Nothing breaks.
 
 ### String href
 
@@ -49,7 +49,7 @@ For static paths or external links, use `href`:
 
 ### Active state
 
-When a route is active, its `<Link>` gets `aria-current="page"` and optionally an active class:
+When a route is active, its `<Link>` gets `aria-current="page"` and an active class:
 
 ```tsx
 <Link to={UsersRoute} className="nav-link" activeClass="active">

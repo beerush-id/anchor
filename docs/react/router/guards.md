@@ -1,6 +1,6 @@
 # Guards & Authentication
 
-Guards guarantee that your React components never mount in an invalid state. By evaluating conditions entirely outside the React lifecycle, they completely decouple domain validation—like authentication, feature flags, user roles, and subscriptions—from your UI layer. This ensures your render functions remain pure, synchronous, and free of complex redirection logic.
+Guards guarantee that your React components never mount in an invalid state. By evaluating conditions outside the React lifecycle, they decouple domain validation—like authentication, feature flags, user roles, and subscriptions—from your UI layer. This ensures your render functions remain pure, synchronous, and free of complex redirection logic.
 
 If a guard throws a redirect or returns false, the navigation halts before the route ever commits. There is no flash of unauthorized content because the UI component never mounts.
 
@@ -31,7 +31,7 @@ export const DashboardRoute = route(
 
 ## Parallel Execution
 
-Multiple `.guard()` calls on a single route execute in parallel via `Promise.all()`. If any guard throws, navigation stops immediately.
+Multiple `.guard()` calls on a single route execute in parallel via `Promise.all()`. If any guard throws, navigation stops.
 
 ```tsx
 dashboardRoute
@@ -45,7 +45,7 @@ dashboardRoute
 
 ## Hierarchical Protection
 
-Guards evaluate explicitly on their attached route. However, a guard attached to a parent route automatically blocks all descendant routes if it fails.
+Guards evaluate on their attached route. However, a guard attached to a parent route blocks all descendant routes if it fails.
 
 ```ts
 betaRoute.guard(async () => {
@@ -58,11 +58,11 @@ betaRoute.guard(async () => {
 The router resolves from the root downward. If a parent guard throws, child routes do not activate.
 
 **What it solves:**
-- Leaking secure sub-routes because a developer forgot to explicitly protect the child component.
+- Leaking secure sub-routes because a developer forgot to protect the child component.
 
 ## Reactive Interception
 
-Guards run inside reactive observers. If a guard reads global reactive state (an Anchor `mutable`), it re-evaluates automatically when that state changes.
+Guards run inside reactive observers. If a guard reads global reactive state (an Anchor `mutable`), it re-evaluates when that state changes.
 
 ```ts
 import { mutable } from '@anchorlib/react';

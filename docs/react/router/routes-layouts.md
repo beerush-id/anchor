@@ -39,7 +39,7 @@ import { usersRoute } from '../route.js';
 export const profileRoute = usersRoute.route('/:user_id');
 ```
 
-This structural chaining produces a strict programmatic tree:
+This structural chaining produces a strict tree:
 
 ```
 /                    → rootRoute
@@ -51,18 +51,18 @@ This structural chaining produces a strict programmatic tree:
 By defining routes as objects rather than React components, Anchor forces a scalable architecture. The route files express *what* your application is, without importing a single kilobyte of React view logic. 
 
 **What it solves:**
-- **String Typos:** Manually typing broken string paths across large applications, instead of utilizing strict programmatic tree navigation.
+- **String Typos:** Manually typing broken string paths across large applications, instead of utilizing programmatic tree navigation.
 
 ## Decoupled Rendering
 
-Once a route exists in the abstract tree, you attach the actual UI using `.render()` and wrap the result back to the framework using `route()`.
+Once a route exists in the abstract tree, you attach the actual UI using `.render()` and wrap the result back to the framework using `page()`.
 
 ```tsx
 // routes/users/Index.tsx
-import { route } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react/router';
 import { usersRoute } from './route.js';
 
-export const UsersRoute = route(
+export const UsersRoute = page(
   usersRoute.render((_state, _ctx, children) => (
     <div>
       <header>Users</header>
@@ -80,14 +80,14 @@ export default UsersRoute;
 
 ## Fine-Grained Routing
 
-Anchor routing is fundamentally decentralized. In traditional React applications, navigating triggers a global context change at the top-level `<Router>`, forcing an expensive VDOM diff across the entire app.
+Anchor routing is decentralized. In traditional React applications, navigating triggers a global context change at the top-level `<Router>`, forcing an expensive VDOM diff across the entire app.
 
 Anchor bypasses this cascade. By driving route states with native observables, Anchor achieves **fine-grained routing**. 
 
 When navigation occurs, the router computes the exact structural node that changed. Instead of re-rendering from the top down, only the specific React component observing that precise state evaluates. 
 
 - **Parameter Mutations:** If a user remains on a route but the URL parameter mutates (`/users/1` to `/users/2`), the React view **does not unmount**. The route mutates the observable `state`, and only the specific DOM elements bound to that state update in place.
-- **Node Swapping:** If a user swaps branches (`/profile` to `/settings`), unchanged parent nodes are completely ignored by the render cycle. Anchor surgically replaces only the exact leaf component at the point of intersection.
+- **Node Swapping:** If a user swaps branches (`/profile` to `/settings`), unchanged parent nodes are ignored by the render cycle. Anchor replaces only the exact leaf component at the point of intersection.
 
 **What it solves:**
 - **Global Re-renders:** Wasting CPU cycles re-evaluating the entire component tree when only a single parameter or leaf node actually changed.
@@ -96,7 +96,7 @@ When navigation occurs, the router computes the exact structural node that chang
 
 In Anchor, every route inherently acts as a layout boundary. The `.render()` callback provides a `children` slot, which serves as the dedicated projection area for any nested descendant routes.
 
-This allows you to construct UI structures natively through the route topology without having to manually pass component props down a monolithic tree.
+This allows you to construct UI structures through the route topology without having to pass component props down a monolithic tree.
 
 ### Layout routes (with children)
 
@@ -113,7 +113,7 @@ When building a parent route, use the `children` parameter to compose a persiste
 
 ### Leaf routes (no children)
 
-Conversely, leaf routes sit at the absolute end of a path. Because they have no further descendants to project, they operate entirely on their own `state` without needing to render the slot:
+Conversely, leaf routes sit at the absolute end of a path. Because they have no further descendants to project, they operate on their own `state` without needing to render the slot:
 
 ```tsx
 .render((state) => (
@@ -129,15 +129,15 @@ Conversely, leaf routes sit at the absolute end of a path. Because they have no 
 
 ## Index Routes
 
-Calling `.route('/')` on a parent creates an index route—the default view injected into the `children` slot when the parent path matches exactly without traversing deeper.
+Calling `.route('/')` on a parent creates an index route—the default view injected into the `children` slot when the parent path matches without traversing deeper.
 
 ```tsx
 // routes/users/UserList.tsx
-import { route, Link } from '@anchorlib/react/router';
+import { page, Link } from '@anchorlib/react/router';
 import { usersRoute } from './route.js';
 import Profile from './profile/Index.js';
 
-export const UserListRoute = route(
+export const UserListRoute = page(
   usersRoute
     .route('/')
     .provide('users', () => [
@@ -158,11 +158,32 @@ export const UserListRoute = route(
 );
 ```
 
-When the URL is `/users`, the layout renders with `UserListRoute` sitting in its `{children}` slot. When the user navigates directly to `/users/42`, the parent layout stays exactly where it is, `UserListRoute` unmounts, and the Profile leaf route replaces it.
+When the URL is `/users`, the layout renders with `UserListRoute` sitting in its `{children}` slot. When the user navigates to `/users/42`, the parent layout stays where it is, `UserListRoute` unmounts, and the Profile leaf route replaces it.
+
+## Modal Routes
+
+Sometimes you want a route to render as an overlay floating on top of the current page, rather than swapping out the page content. Anchor provides a `modal()` factory for this.
+
+```tsx
+import { modal } from '@anchorlib/react/router';
+import { usersRoute } from './route.js';
+
+export const UserInviteRoute = modal(
+  usersRoute
+    .route('/invite')
+    .render(() => (
+      <dialog open>
+        <h1>Invite User</h1>
+      </dialog>
+    ))
+);
+```
+
+When navigating to `/users/invite`, the main page remains mounted as it was. The `UserInviteRoute` renders globally in a separate, top-level reactive stack managed by `<UIRouter>`, placing it above the rest of the application tree. Everything else (guards, providers, reactivity) functions like a standard `page()` route. Shareable links and browser back navigation are handled out of the box.
 
 ## Route State
 
-The `state` object passed to `.render()` is fully reactive. It automatically triggers surgical updates to the bound component if its internal values change.
+The `state` object passed to `.render()` is reactive. It triggers surgical updates to the bound component if its internal values change.
 
 | Property | Type | Description |
 |---|---|---|
@@ -222,4 +243,4 @@ src/
 │       └── Index.tsx        ← SettingsRoute (leaf)
 ```
 
-The route definition file (`route.ts`) acts as the pure schema. The component file (`Index.tsx`) imports that schema, chains the UI via `.render()`, and exports the sealed `route()`.
+The route definition file (`route.ts`) acts as the pure schema. The component file (`Index.tsx`) imports that schema, chains the UI via `.render()`, and exports the sealed `page()`.

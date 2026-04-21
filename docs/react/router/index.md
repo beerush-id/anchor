@@ -1,6 +1,6 @@
 # Router
 
-Anchor Router is a **strongly-typed** React application router that doesn't ask you to install **React Router** for routing, **React Query** for data fetching, **Zustand** for state management, and write custom `<PrivateRoute>` wrappers for access control. Instead of gluing multiple libraries together, it builds all of this directly into a single, fully-typed route object:
+Anchor Router is a **strongly-typed** React application router that doesn't ask you to install **React Router** for routing, **React Query** for data fetching, **Zustand** for state management, and write custom `<PrivateRoute>` wrappers for access control. Instead of gluing multiple libraries together, it builds all of this into a single, fully-typed route object:
 
 ```tsx
 const profileRoute = usersRoute
@@ -38,7 +38,7 @@ const profileRoute = usersRoute
     );
   });
 
-export const Profile = route(profileRoute);
+export const Profile = page(profileRoute);
 ```
 
 ### What's happening here
@@ -54,16 +54,16 @@ In Anchor, routes are trees. The profile route chains from `usersRoute` (which d
 
 #### Route Protection
 
-Anchor handles route protection through guards. A guard is simply a function that determines whether a route is allowed to activate. Crucially, guards run out-of-band during the navigation phase—before React renders anything. If a guard rejects the navigation, the component never mounts and the providers never fetch. Guards can be used for any access check, such as authentication, feature flags, or subscription tiers.
+Anchor handles route protection through guards. A guard is a function that determines whether a route is allowed to activate. Guards run out-of-band during the navigation phase—before React renders anything. If a guard rejects the navigation, the component never mounts and the providers never fetch. Guards can be used for any access check, such as authentication, feature flags, or subscription tiers.
 
 **What it solves:**
-- "Flashes" of unauthorized layout before an auth `useEffect` finally triggers and redirects
+- "Flashes" of unauthorized layout before an auth `useEffect` triggers and redirects
 - Component trees buried under five levels of `<RequireAuth>`, `<RequireFeature>`, and `<RequireRole>` wrappers
-- Mixing access control logic directly inside UI render functions
+- Mixing access control logic inside pure UI render functions
 
 #### Data Loading
 
-Data loading is handled by providers, which also execute entirely during the routing phase. You can chain as many providers as you need. They execute sequentially, and each provider receives the fully resolved data from the previous ones. Because the providers resolve before rendering, the component receives the resulting `state.data.profile` and `state.data.notifications` immediately upon mounting. Additionally, because providers run inside a reactive observer, reading global state inside a provider automatically triggers a re-fetch when that state changes.
+Data loading is handled by providers, which also execute outside the React lifecycle. You can chain as many providers as you need. They execute in sequence, and each provider receives the resolved data from the previous ones. Because the providers resolve before rendering, the component receives the resulting `state.data.profile` and `state.data.notifications` upon mounting. Because providers run inside a reactive observer, reading global state inside a provider triggers a re-fetch when that state changes.
 
 **What it solves:**
 - The `useEffect` → `useState` → `if (loading)` boilerplate in every single route component
@@ -77,15 +77,15 @@ Data loading is handled by providers, which also execute entirely during the rou
 
 #### View
 
-Because Anchor resolves guards and providers entirely outside the React lifecycle, the `.render()` function represents pure UI. Because the route is a single chain, TypeScript instantly infers the exact shape of your data—giving you perfect autocomplete for `state.data.profile` and `state.data.notifications`. 
+Because Anchor resolves guards and providers outside the React lifecycle, the `.render()` function represents pure UI. Because the route is a single chain, TypeScript infers the exact shape of your data—giving you perfect autocomplete for `state.data.profile` and `state.data.notifications`. 
 
-By wrapping your components in the `template()` HOC, you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the exact DOM node reading that data re-renders, not the entire page.
+By wrapping your components in the `template()` HOC, you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the specific DOM node reading that data re-renders, not the entire page.
 
 **What it solves:**
 - Installing **Zustand** or **Redux** just to share data between sibling components (like `ProfileCard` and `Notifications`)
-- Manually writing TypeScript interfaces for APIs and casting data blindly inside the component
+- Writing TypeScript interfaces for APIs and casting data blindly inside the component
 - Top-down virtual DOM diffing where a minor data update forces the whole route to re-render
-- Explicitly setting up `useMemo` and `React.memo` to stop React from re-rendering the whole tree
+- Setting up `useMemo` and `React.memo` to stop React from re-rendering the whole tree
 
 #### Navigation
 
@@ -95,7 +95,7 @@ The resulting `Profile` export is both a renderable React component and a deeply
 <Link to={Profile} params={{ user_id: '42' }}>View Profile</Link>
 ```
 
-Anchor resolves the final URL dynamically at runtime. If you change `/:user_id` to `/:id` in the route definition, the URL automatically updates across every link in the app. TypeScript enforces that new `id` is provided in `params` at compile time.
+Anchor resolves the final URL at runtime. If you change `/:user_id` to `/:id` in the route definition, the URL updates across every link in the app. TypeScript enforces that new `id` is provided in `params` at compile time.
 
 **What it solves:**
 - Hardcoded string-based `<Link to="/users/42">` that breaks silently when paths are restructured
@@ -135,11 +135,12 @@ import { router } from './lib/router.js';
 import AppRoot from './routes/Index.js';
 
 createRoot(document.body).render(
-  <UIRouter router={router} root={AppRoot} />
+  <UIRouter router={router} root={AppRoot} resetScroll={true} />
 );
 ```
 
-`RENDER_MODE.IMMEDIATE` mounts the component before providers finish — use `state.status` to show loading UI. The default (`DEFERRED`) waits for all providers to resolve. `MAX_AGE.DAY` caches provider results for 24 hours so returning to a route skips the fetch.
+`RENDER_MODE.IMMEDIATE` mounts the component before providers finish — use `state.status` to show loading UI. The default (`DEFERRED`) waits for all providers to resolve. `MAX_AGE.DAY` caches provider results for 24 hours so returning to a route skips the fetch. The `resetScroll` prop (default `false`) ensures the window scrolls to top on navigation, unless the destination is a modal route.
+
 
 ## Route tree
 
@@ -163,7 +164,7 @@ Layout routes receive `children` as the third argument to `.render()`:
 
 ```tsx
 // routes/users/Index.tsx
-import { route } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react/router';
 import { usersRoute } from './route.js';
 
 usersRoute
@@ -175,7 +176,7 @@ usersRoute
     </div>
   ));
 
-export default route(usersRoute);
+export default page(usersRoute);
 ```
 
 When the URL is `/users`, `{children}` contains the index route. Navigate to `/users/42`, and only `{children}` swaps to the profile — the layout stays mounted.
