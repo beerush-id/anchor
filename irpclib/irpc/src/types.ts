@@ -11,6 +11,7 @@ import type {
 } from 'zod/v4';
 import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
+import type { IRPCFile } from './file.js';
 import type { RemoteState } from './state.js';
 import type { IRPCTransport } from './transport.js';
 
@@ -86,7 +87,7 @@ export type IRPCObject = { [key: string]: IRPCData };
  * Represents all possible data types in IRPC, including primitives, objects, and arrays.
  * This is a recursive type that allows nested structures.
  */
-export type IRPCData = IRPCPrimitive | IRPCObject | IRPCData[];
+export type IRPCData = IRPCPrimitive | IRPCObject | IRPCFile | IRPCData[];
 
 /**
  * Union type of all primitive Zod schema types used for validation.
