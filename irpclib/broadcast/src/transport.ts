@@ -6,9 +6,9 @@ import {
   type IRPCCall,
   type IRPCData,
   type IRPCPacketStream,
-  type IRPCRequest,
   IRPCTransport,
   type TransportConfig,
+  encode,
 } from '@irpclib/irpc';
 import { BC_MESSAGE_TYPE } from './enum.js';
 
@@ -136,18 +136,32 @@ export class BroadcastTransport extends IRPCTransport {
       return;
     }
 
-    // Batch all calls into single BroadcastChannel message
-    const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({ id, name, args }));
-
     try {
-      this.channel.postMessage(requests);
-
-      // Store pending calls for response handling
       calls.forEach((call) => {
-        this.pendingCalls.set(call.id, call);
+        const { id, payload } = call;
+        const { name, args } = payload;
+
+        this.pendingCalls.set(id, call);
+
+        const packet = encode(args as IRPCData);
+        const req: Record<string, unknown> = { id, name, args: packet.json.data, files: packet.json.files };
+
+        if (packet.queues.length > 0) {
+          const blobs: Record<string, Blob> = {};
+
+          for (const queue of packet.queues) {
+            blobs[queue.file.id] = queue.data;
+          }
+
+          req.blobs = blobs;
+        }
+
+        this.channel!.postMessage([req]);
       });
     } catch (error) {
       calls.forEach((call) => {
+        this.pendingCalls.delete(call.id);
+
         call.enqueue({
           id: call.id,
           name: call.payload.name,

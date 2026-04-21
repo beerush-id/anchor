@@ -1,10 +1,14 @@
 import {
   createContext,
+  decode,
   ERROR_CODE,
   ERROR_MESSAGE,
   IRPC_BASE_CONTEXT,
+  IRPC_FILE_STATUS,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  type IRPCData,
+  type IRPCFilePointer,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
@@ -134,8 +138,25 @@ export class BroadcastRouter {
       return;
     }
 
-    const resolvers = requests.map((irpcReq) => {
-      return this.config.resolver(irpcReq, this.module);
+    const resolvers = (requests as (IRPCRequest & { files?: IRPCFilePointer[]; blobs?: Record<string, Blob> })[]).map((req) => {
+      if (req.files?.length) {
+        const stream = decode({ data: req.args as IRPCData, files: req.files });
+
+        for (const [id, file] of stream.files) {
+          const blob = req.blobs?.[id];
+
+          if (blob) {
+            file.data = blob;
+            file.status = IRPC_FILE_STATUS.SUCCESS;
+          }
+        }
+
+        req.args = stream.data as unknown[];
+        delete req.files;
+        delete req.blobs;
+      }
+
+      return this.config.resolver(req, this.module);
     });
 
     await Promise.all(

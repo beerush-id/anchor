@@ -1,7 +1,10 @@
-import { createPackage, IRPC_STATUS } from '@irpclib/irpc';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { createPackage, IRPC_STATUS, type IRPCContextProvider, setContextProvider } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastRouter } from '../src/router.js';
 import { BroadcastTransport } from '../src/transport.js';
+
+setContextProvider(new AsyncLocalStorage() as IRPCContextProvider);
 
 describe('BroadcastRouter', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -110,6 +113,35 @@ describe('BroadcastRouter', () => {
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const response = mockChannel.postMessage.mock.calls[0][0];
       expect(response.data).toBe('Hello World');
+      expect(response.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should resolve requests containing inline blobs and recreate files automatically safely', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const router = new BroadcastRouter(module, transport);
+
+      type TestFunc = (file: any) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const handler: TestFunc = async (file) => file.meta.name;
+      module.construct(testFunc, handler);
+
+      const filePointer = { id: 'file-123', type: 'IRPC_PACKET_FILE', meta: { name: 'blob.txt', size: 12, type: 'text/plain', lastModified: 0 } };
+      const blob = new Blob(['blob content'], { type: 'text/plain' });
+      const requests = [{ 
+        id: '1', 
+        name: 'testFunc', 
+        args: [filePointer],
+        files: [filePointer],
+        blobs: { 'file-123': blob }
+      }];
+      await router.resolve(requests as any);
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(mockChannel.postMessage).toHaveBeenCalled();
+      const response = mockChannel.postMessage.mock.calls[0][0];
+      expect(response.data).toBe('blob.txt');
       expect(response.status).toBe(IRPC_STATUS.SUCCESS);
     });
 

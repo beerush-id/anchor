@@ -1,7 +1,7 @@
 import { createPackage } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../src/index.js';
-import { IRPC_PACKET_TYPE, IRPC_STATUS } from '@irpclib/irpc';
+import { IRPC_PACKET_TYPE, IRPC_STATUS, IRPCFile } from '@irpclib/irpc';
 
 describe('BroadcastTransport', () => {
   let mockChannel: any;
@@ -96,6 +96,30 @@ describe('BroadcastTransport', () => {
       const sentData = mockChannel.postMessage.mock.calls[0][0];
       expect(Array.isArray(sentData)).toBe(true);
       expect(sentData.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should dispatch call with files attaching blobs natively', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      module.use(transport);
+
+      type TestFunc = (file: any) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'fileUpload' });
+
+      // Call the function with a file
+      const blob = new Blob(['test data'], { type: 'text/plain' });
+      const file = new IRPCFile({ name: 'test.txt', size: 9, type: 'text/plain' }, blob);
+      testFunc(file).catch(() => {});
+
+      // Wait for dispatch
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(mockChannel.postMessage).toHaveBeenCalled();
+      const sentData = mockChannel.postMessage.mock.calls[0][0];
+      expect(Array.isArray(sentData)).toBe(true);
+      expect(sentData[0].name).toBe('fileUpload');
+      expect(sentData[0].blobs).toBeDefined();
+      expect(Object.keys(sentData[0].blobs).length).toBe(1);
     });
   });
 
