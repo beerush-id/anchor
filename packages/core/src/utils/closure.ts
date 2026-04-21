@@ -47,6 +47,8 @@ export type ClosureStorage<K, V> = {
   run<R>(ctx: Closure, fn: () => R): R;
 };
 
+let currentClosure: ClosureMap = new Map();
+
 /**
  * Interface for closure adapter mechanisms, typically used on the server-side
  * for context management with features like AsyncLocalStorage.
@@ -105,7 +107,6 @@ export class ClosureAdapter {
   }
 }
 
-let currentClosure: ClosureMap = new Map();
 let closureAdapter = new ClosureAdapter();
 
 /**
