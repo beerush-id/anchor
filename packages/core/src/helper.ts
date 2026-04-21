@@ -72,15 +72,17 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     value: source,
   } as StateChange;
 
-  broadcaster?.emit(event);
-  broadcaster?.broadcast(init, event, meta?.id);
+  try {
+    broadcaster?.emit(event);
+    broadcaster?.broadcast(init, event, meta?.id);
 
-  if (isDefined(init)) {
-    STATE_BUSY_LIST.delete(init);
-  }
-
-  if (meta && devTool?.onAssign) {
-    devTool?.onAssign(meta, source);
+    if (meta && devTool?.onAssign) {
+      devTool?.onAssign(meta, source);
+    }
+  } finally {
+    if (isDefined(init)) {
+      STATE_BUSY_LIST.delete(init);
+    }
   }
 };
 
@@ -160,15 +162,17 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     value: keys,
   } as StateChange;
 
-  broadcaster?.emit(event);
-  broadcaster?.broadcast(init, event, meta?.id);
+  try {
+    broadcaster?.emit(event);
+    broadcaster?.broadcast(init, event, meta?.id);
 
-  if (isDefined(init)) {
-    STATE_BUSY_LIST.delete(init);
-  }
-
-  if (meta && devTool?.onRemove) {
-    devTool?.onRemove(meta, keys);
+    if (meta && devTool?.onRemove) {
+      devTool?.onRemove(meta, keys);
+    }
+  } finally {
+    if (isDefined(init)) {
+      STATE_BUSY_LIST.delete(init);
+    }
   }
 };
 
@@ -220,15 +224,17 @@ export const clear = <T extends Assignable>(target: T) => {
     changes,
   } as StateChange;
 
-  broadcaster?.emit(event);
-  broadcaster?.broadcast(init, event, meta?.id);
+  try {
+    broadcaster?.emit(event);
+    broadcaster?.broadcast(init, event, meta?.id);
 
-  if (isDefined(init)) {
-    STATE_BUSY_LIST.delete(init);
-  }
-
-  if (meta && devTool?.onClear) {
-    devTool?.onClear(meta);
+    if (meta && devTool?.onClear) {
+      devTool?.onClear(meta);
+    }
+  } finally {
+    if (isDefined(init)) {
+      STATE_BUSY_LIST.delete(init);
+    }
   }
 };
 
@@ -276,19 +282,21 @@ const mergeText = <T, K extends keyof T>(target: T, prop: K, value: T[K], isPrep
     value,
   } as StateChange;
 
-  broadcaster?.emit(event);
-  broadcaster?.broadcast(init, event, meta?.id);
+  try {
+    broadcaster?.emit(event);
+    broadcaster?.broadcast(init, event, meta?.id);
 
-  if (isDefined(init)) {
-    STATE_BUSY_LIST.delete(init);
-  }
+    if (meta && isPrepend && devTool?.onPrepend) {
+      devTool?.onPrepend(meta, prop, value);
+    }
 
-  if (meta && isPrepend && devTool?.onPrepend) {
-    devTool?.onPrepend(meta, prop, value);
-  }
-
-  if (meta && !isPrepend && devTool?.onAppend) {
-    devTool?.onAppend(meta, prop, value);
+    if (meta && !isPrepend && devTool?.onAppend) {
+      devTool?.onAppend(meta, prop, value);
+    }
+  } finally {
+    if (isDefined(init)) {
+      STATE_BUSY_LIST.delete(init);
+    }
   }
 };
 
