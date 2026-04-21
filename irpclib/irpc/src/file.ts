@@ -28,6 +28,10 @@ export class IRPCFile {
     return this.state.status;
   }
 
+  public set status(status: IRPCFileStatus) {
+    this.state.status = status;
+  }
+
   public get error() {
     return this.state.error;
   }

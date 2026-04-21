@@ -28,6 +28,9 @@ describe('IRPCFile', () => {
     expect(file.success).toBe(true);
     expect(file.completed).toBe(true);
     expect(file.data).toBe(data);
+
+    file.status = IRPC_FILE_STATUS.PENDING;
+    expect(file.completed).toBe(false);
   });
 });
 
@@ -127,16 +130,20 @@ describe('IRPCFileStream', () => {
   it('should flawlessly isolate pipe subscription errors without crashing the main stream parser boundary', () => {
     const meta = { name: 'error.bin', size: 10, type: 'app/bin' };
     const stream = new IRPCFileStream(meta);
-    
+
     expect(stream.error).toBeUndefined(); // Verify error getter
 
     stream.write(new Uint8Array([1, 2]));
 
     let loggedError: any = null;
-    const errSpy = vi.spyOn(console, 'error').mockImplementation((e) => { loggedError = e; });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation((e) => {
+      loggedError = e;
+    });
 
     // Backlog array throws safely (covers lines 109-110)
-    stream.pipe(() => { throw new Error('Pipe Failure'); });
+    stream.pipe(() => {
+      throw new Error('Pipe Failure');
+    });
     expect(loggedError).toBeInstanceOf(Error);
 
     // Live boundary iteration throws safely (covers lines 84-85)
@@ -145,7 +152,11 @@ describe('IRPCFileStream', () => {
     expect(loggedError).toBeInstanceOf(Error);
 
     // Provide completely corrupt chunk mimicking underlying network stream destruction (covers lines 95-99)
-    const illegalChunk: any = { get byteLength() { throw new Error('Fatal Stream Corruption'); } };
+    const illegalChunk: any = {
+      get byteLength() {
+        throw new Error('Fatal Stream Corruption');
+      },
+    };
     stream.write(illegalChunk);
 
     expect(stream.status).toBe(IRPC_FILE_STATUS.ERROR);
