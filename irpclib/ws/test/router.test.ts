@@ -1,7 +1,11 @@
-import { createPackage } from '@irpclib/irpc';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { createPackage, type IRPCContextProvider, setContextProvider, IRPCFile, encode, type IRPCData } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketTransport } from '../src/index.js';
 import { WebSocketRouter } from '../src/router.js';
+import { encodeFileFrame } from '../src/frame.js';
+
+setContextProvider(new AsyncLocalStorage() as IRPCContextProvider);
 
 // Mock WebSocketTransport
 vi.mock('../src/transport.js', () => {
@@ -215,6 +219,78 @@ describe('WebSocketRouter', () => {
 
       expect(errSpy).toHaveBeenCalled();
       expect(ws.send).not.toHaveBeenCalled();
+    });
+
+    it('should buffer binary frames and automatically discard orphaned frames via TTL natively', async () => {
+      vi.useFakeTimers();
+
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+      const frame = encodeFileFrame('isolated-file-id', new Uint8Array([1, 2, 3]).buffer);
+
+      await router.resolve(frame, ws);
+
+      // Verify the frame is buffered
+      expect(router['fileBuffer'].has('isolated-file-id')).toBe(true);
+      expect(router['fileBuffer'].get('isolated-file-id')).toBeInstanceOf(Uint8Array);
+
+      // Fast forward past the TTL window seamlessly
+      vi.advanceTimersByTime(30005); 
+
+      // Verify cleanup worked autonomously natively
+      expect(router['fileBuffer'].has('isolated-file-id')).toBe(false);
+
+      vi.useRealTimers();
+    });
+
+    it('should correlate pre-buffered files efficiently processing stream decoding natively correctly', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      type TestFileFunc = (input: { blob: IRPCFile }) => Promise<string>;
+      const testFileFunc = module.declare<TestFileFunc>({ name: 'testFileFunc' });
+      
+      let incomingBlobSize = 0;
+      module.construct(testFileFunc, async (input) => { 
+        incomingBlobSize = input.blob.data.size;
+        return 'success'; 
+      });
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+      
+      const fileId = 'target-file-id';
+      const fileData = new Uint8Array([1, 2, 3, 4, 5]).buffer; // 5 bytes
+      const frame = encodeFileFrame(fileId, fileData);
+
+      // Manually buffer the binary envelope first simulating physical arrival orders
+      await router.resolve(frame, ws);
+
+      const fileReqObj = { blob: new IRPCFile({ type: 'text/plain', name: 'dummy.txt', size: 5 }, new Blob([fileData])) };
+      const encoded = encode([fileReqObj] as IRPCData);
+
+      // Mutate the generated file pointer ID to strictly match the frame we injected.
+      if (encoded.json.files?.length) {
+        encoded.json.files[0].id = fileId;
+      }
+
+      const filePointerReq = [{
+        id: '1',
+        name: 'testFileFunc',
+        args: encoded.json.data,
+        files: encoded.json.files
+      }];
+
+      await router.resolve(JSON.stringify(filePointerReq), ws);
+
+      // Ensure the handler was executed mapping the size logically
+      expect(incomingBlobSize).toBe(5);
+      
+      // Assure the buffer flushed consumed payload accurately gracefully
+      expect(router['fileBuffer'].has(fileId)).toBe(false);
     });
   });
 

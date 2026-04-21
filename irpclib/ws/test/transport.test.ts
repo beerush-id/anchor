@@ -1,4 +1,4 @@
-import { ERROR_CODE, ERROR_MESSAGE, IRPC_PACKET_TYPE, IRPC_STATUS } from '@irpclib/irpc';
+import { ERROR_CODE, ERROR_MESSAGE, IRPC_PACKET_TYPE, IRPC_STATUS, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketState, WebSocketTransport } from '../src/index.js';
 
@@ -262,6 +262,35 @@ describe('WebSocketTransport', () => {
       await transport['dispatch']([call]);
 
       expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: 'Send failed' }) }));
+    });
+
+    it('should correctly stream file binaries natively prioritizing framing ahead of enveloping gracefully', async () => {
+      Object.defineProperty(transport, 'state', { get: () => WebSocketState.OPEN });
+      const mockSend = vi.fn();
+      transport['ws'] = { send: mockSend } as any;
+
+      const file = new IRPCFile({ type: 'text/plain', name: 'test.txt', size: 5 }, new Blob(['hello']));
+
+      const call = { id: 'file-call', payload: { name: 'testFiles', args: [file] }, enqueue: vi.fn() } as any;
+
+      await transport['dispatch']([call]);
+
+      // Expect two sent frames: one binary frame prefixed natively, then one JSON request explicitly specifying file pointers.
+      expect(mockSend).toHaveBeenCalledTimes(2);
+
+      const firstCallArg = mockSend.mock.calls[0][0];
+      const secondCallArg = mockSend.mock.calls[1][0];
+
+      // First call is ArrayBuffer
+      expect(firstCallArg).toBeInstanceOf(ArrayBuffer);
+
+      // Second call is JSON
+      expect(typeof secondCallArg).toBe('string');
+      expect(secondCallArg).toContain('"id":"file-call"');
+      expect(secondCallArg).toContain('"name":"testFiles"');
+      expect(secondCallArg).toContain('"files":[');
+      
+      expect(transport['pendingCalls'].has('file-call')).toBe(true);
     });
   });
 

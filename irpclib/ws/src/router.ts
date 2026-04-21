@@ -1,17 +1,22 @@
 import {
   createContext,
+  decode,
   ERROR_CODE,
   ERROR_MESSAGE,
   IRPC_BASE_CONTEXT,
+  IRPC_FILE_STATUS,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  type IRPCData,
+  type IRPCFilePointer,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
   IRPCStream,
   withContext,
 } from '@irpclib/irpc';
-import { WS_MESSAGE_TYPE } from './enum.js';
+import { FILE_BUFFER_TTL, WS_MESSAGE_TYPE } from './enum.js';
+import { decodeFileFrame } from './frame.js';
 import type { WebSocketTransport } from './transport.js';
 
 /**
@@ -24,14 +29,13 @@ const defaultResolver = (req: IRPCRequest, module: IRPCPackage) => {
   return new IRPCResolver(req, module);
 };
 
-/**
- * Configuration options for WebSocket resolver
- */
 export type WebSocketResolveConfig = {
   /** The WebSocket endpoint for connections */
   endpoint: string;
   /** Custom resolver function to handle requests */
   resolver: typeof defaultResolver;
+  /** TTL in ms for buffered binary data before auto-cleanup. Defaults to 30s. */
+  fileBufferTTL: number;
 };
 
 /**
@@ -49,6 +53,8 @@ export class WebSocketRouter {
   public middlewares: WebSocketMiddleware[] = [];
   /** AbortControllers for active stream requests */
   private abortControllers = new Map<string, AbortController>();
+  /** Buffered binary data waiting for JSON requests, keyed by file pointer ID */
+  private fileBuffer = new Map<string, Uint8Array>();
 
   /**
    * Gets the WebSocket endpoint for connections
@@ -72,6 +78,7 @@ export class WebSocketRouter {
     this.config = {
       endpoint: transport.endpoint,
       resolver: defaultResolver,
+      fileBufferTTL: FILE_BUFFER_TTL,
       ...config,
     };
   }
@@ -93,18 +100,48 @@ export class WebSocketRouter {
    * @param initContext - Optional initial context entries to inject
    * @returns void (responses are sent via WebSocket)
    */
-  public async resolve(message: string, ws: WebSocket, initContext: [string | symbol, unknown][] = []): Promise<void> {
-    const irpcRequests = this.parseRequests(message).filter((req: IRPCRequest & { type?: string }) => {
-      if (req.type === WS_MESSAGE_TYPE.CANCEL) {
-        const controller = this.abortControllers.get(req.id);
-        if (controller) controller.abort();
+  public async resolve(
+    message: string | ArrayBuffer,
+    ws: WebSocket,
+    initContext: [string | symbol, unknown][] = []
+  ): Promise<void> {
+    if (message instanceof ArrayBuffer) {
+      const frame = decodeFileFrame(message);
+      this.fileBuffer.set(frame.id, frame.data);
+      setTimeout(() => this.fileBuffer.delete(frame.id), this.config.fileBufferTTL);
+      return;
+    }
 
-        this.abortControllers.delete(req.id);
-        return false;
+    const irpcRequests = this.parseRequests(message).filter(
+      (req: IRPCRequest & { type?: string; files?: IRPCFilePointer[] }) => {
+        if (req.type === WS_MESSAGE_TYPE.CANCEL) {
+          const controller = this.abortControllers.get(req.id);
+          if (controller) controller.abort();
+
+          this.abortControllers.delete(req.id);
+          return false;
+        }
+
+        if (req.files?.length) {
+          const stream = decode({ data: req.args as IRPCData, files: req.files });
+
+          for (const [id, file] of stream.files) {
+            const buffered = this.fileBuffer.get(id);
+
+            if (buffered) {
+              file.data = new Blob([buffered] as [BlobPart], { type: file.meta.type });
+              file.status = IRPC_FILE_STATUS.SUCCESS;
+              this.fileBuffer.delete(id);
+            }
+          }
+
+          req.args = stream.data as unknown[];
+          delete req.files;
+        }
+
+        return true;
       }
-
-      return true;
-    });
+    );
 
     if (!irpcRequests.length) return;
 
@@ -168,6 +205,7 @@ export class WebSocketRouter {
   public disconnect() {
     this.abortControllers.forEach((controller) => controller.abort());
     this.abortControllers.clear();
+    this.fileBuffer.clear();
   }
 
   /**

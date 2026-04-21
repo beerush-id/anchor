@@ -1,30 +1,25 @@
 import {
+  encode,
   ERROR_CODE,
   ERROR_MESSAGE,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   type IRPCCall,
   type IRPCData,
+  type IRPCFileQueue,
+  type IRPCPacketCall,
   type IRPCPacketStream,
-  type IRPCRequest,
   IRPCTransport,
   type TransportConfig,
 } from '@irpclib/irpc';
-import { WS_MESSAGE_TYPE } from './enum.js';
-
-export const DEFAULT_RECONNECT_DELAY = 1000;
-export const DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
-export const DEFAULT_CONNECTION_TIMEOUT = 10000;
-
-/**
- * WebSocket connection states.
- */
-export enum WebSocketState {
-  CONNECTING = 0,
-  OPEN = 1,
-  CLOSING = 2,
-  CLOSED = 3,
-}
+import {
+  DEFAULT_CONNECTION_TIMEOUT,
+  DEFAULT_MAX_RECONNECT_ATTEMPTS,
+  DEFAULT_RECONNECT_DELAY,
+  WebSocketState,
+  WS_MESSAGE_TYPE,
+} from './enum.js';
+import { encodeFileFrame } from './frame.js';
 
 /**
  * Configuration interface for WebSocket transport.
@@ -326,18 +321,41 @@ export class WebSocketTransport extends IRPCTransport {
       }
     }
 
-    // Batch all calls into single WebSocket message
-    const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({ id, name, args }));
-
     try {
-      this.ws!.send(JSON.stringify(requests));
+      const queues = new Set<{ call: IRPCPacketCall; files: IRPCFileQueue[] }>();
 
-      // Store pending calls for response handling
       calls.forEach((call) => {
-        this.pendingCalls.set(call.id, call);
+        const { id, payload } = call;
+        const { name, args } = payload;
+
+        this.pendingCalls.set(id, call);
+
+        const packet = encode(args as IRPCData);
+
+        if (packet.queues.length > 0) {
+          queues.add({
+            call: { id, name, args: packet.json.data, files: packet.json.files } as never as IRPCPacketCall,
+            files: packet.queues,
+          });
+        } else {
+          this.ws!.send(JSON.stringify([{ id, name, args }]));
+        }
       });
+
+      for (const queue of queues) {
+        for (const file of queue.files) {
+          const buffer = await file.data.arrayBuffer();
+          this.ws!.send(encodeFileFrame(file.file.id, buffer));
+        }
+
+        this.ws!.send(JSON.stringify([queue.call]));
+      }
+
+      queues.clear();
     } catch (error) {
       calls.forEach((call) => {
+        this.pendingCalls.delete(call.id);
+
         call.enqueue({
           id: call.id,
           name: call.payload.name,
