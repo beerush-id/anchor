@@ -183,6 +183,13 @@ const [user, posts, stats] = await Promise.all([
 
 Because the WebSocket channel persists, responses are yielded dynamically as continuous `IRPCPacketStream` chunks over the socket. This enables you to bind standard UI components directly to the network proxy without writing manual WebSocket `MessageEvent` listeners.
 
+### File Upload Constraints
+
+WebSocket transport fully supports `IRPCFile` uploads natively via length-prefixed binary framing.
+
+> [!WARNING]
+> Sending large files over a WebSocket connection will block the persistent socket pipeline until the binary transfer completes. This means other simultaneous small RPC calls won't reach the server until the file finishes uploading. For applications heavily reliant on file uploads alongside real-time interactions, **HTTP Transport** is the strongly recommended approach, as standard HTTP multi-part requests are offloaded to background browser processes, keeping the WebSocket connection responsive.
+
 ## Error Handling
 
 ### Network Errors

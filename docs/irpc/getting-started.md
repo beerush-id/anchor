@@ -214,6 +214,58 @@ irpc.construct(generatePoem, (prompt) => {
 
 The handler receives the exact same typed arguments as the declared function.
 
+### File Uploads
+
+IRPC supports file uploads natively through the `IRPCFile` class. Files can be passed as top-level arguments or nested deeply within object payloads. The transport automatically extracts and reconstructs the binaries alongside the JSON payload.
+
+```typescript
+// Shared Interface
+import { irpc, type IRPCFile } from '@irpclib/irpc';
+
+export type UserProfile = {
+  username: string;
+  avatar: IRPCFile;
+  settings: { theme: string };
+};
+
+export type UpdateProfileFn = (profile: UserProfile) => Promise<string>;
+export const updateProfile = irpc.declare<UpdateProfileFn>({ name: 'updateProfile' });
+
+// Client Usage
+import { IRPCFile } from '@irpclib/irpc';
+
+const fileInput = document.querySelector('input[type="file"]');
+const file = fileInput.files[0];
+
+// Wrap standard browser files/blobs in an IRPCFile
+const avatar = new IRPCFile({ name: file.name, size: file.size, type: file.type }, file);
+
+// IRPC recursively scans and extracts files from anywhere in the payload
+await updateProfile({
+  username: 'john_doe',
+  avatar,
+  settings: { theme: 'dark' }
+});
+
+// Server Implementation
+irpc.construct(updateProfile, async (profile) => {
+  // `profile.avatar` arrives fully reconstructed. 
+  // The base IRPCFile type natively exposes `.data` (Blob) and `.meta`.
+  const buffer = await profile.avatar.data.arrayBuffer();
+  
+  await storage.save(profile.avatar.meta.name, buffer);
+  await db.users.update({ username: profile.username });
+  
+  return 'Success';
+});
+```
+
+::: tip Transport Recommendation
+While WebSocket transport supports binary framing for files, sending large files over a single-threaded WebSocket connection will block other real-time messages from resolving until the entire binary finishes transferring.
+
+For applications handling significant file uploads, **HTTP Transport** is heavily recommended because the browser natively offloads HTTP file uploads to a background thread, preventing UI blocking and keeping the main WebSocket connection free for snappy real-time interactions.
+:::
+
 ### Step 4: Setup Server
 
 Configure the server to handle IRPC requests.
