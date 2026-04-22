@@ -62,4 +62,17 @@ describe('Anchor React - Navigate Utility', () => {
       '/users/456'
     );
   });
+
+  it('should navigate to a plain AnyRoute correctly', () => {
+    const router = createRouter();
+    const coreRoute = router.route('/users').route('/:id');
+
+    navigate(coreRoute, { params: { id: '789' } });
+
+    expect(pushSpy).toHaveBeenCalledWith(
+      { href: '/users/789', query: undefined, params: { id: '789' } },
+      '',
+      '/users/789'
+    );
+  });
 });

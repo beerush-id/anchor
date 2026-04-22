@@ -1,8 +1,17 @@
 import { untrack } from '@anchorlib/core';
-import type { MatchedRoute, RouteOptions, RoutePath, Router, RouteRegistry, UnknownRoute } from '@anchorlib/router';
+import {
+  type MatchedRoute,
+  type RouteOptions,
+  type RoutePath,
+  type Router,
+  type RouteRegistry,
+  setRedirectHandler,
+  type UnknownRoute,
+} from '@anchorlib/router';
 import type { FC, ReactNode } from 'react';
 import { render, setup, snippet, template } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';
+import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent } from './types.js';
 
 const STACK_REGISTRY = new WeakSet<UnknownRoute>();
@@ -116,11 +125,13 @@ const CUIRouter: FC<UIRouterProps> = ({ router, resetScroll, url, headless }) =>
     const match = router.find(url ?? location.href);
     await router.activate(url ?? location.href);
 
-    if (headless || !resetScroll || STACK_REGISTRY.has((match as MatchedRoute)?.route)) return;
+    if (!resetScroll || STACK_REGISTRY.has((match as MatchedRoute)?.route)) return;
     window.scrollTo(0, 0);
   };
 
-  activate();
+  if (!headless) {
+    activate();
+  }
 
   createEffect(() => {
     window.addEventListener('popstate', activate);
@@ -177,4 +188,15 @@ export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
 export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
   STACK_REGISTRY.add(routeNode);
   return page(routeNode);
+}
+
+if (typeof window !== 'undefined') {
+  setRedirectHandler((redirect) => {
+    navigate(redirect.route, {
+      query: redirect.query,
+      params: redirect.params,
+      redirect: location.href,
+      replace: true,
+    });
+  });
 }

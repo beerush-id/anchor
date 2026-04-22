@@ -132,9 +132,9 @@ export default defineConfig({
               { text: 'Routes & Layouts', link: '/react/router/routes-layouts' },
               { text: 'Navigation', link: '/react/router/navigation' },
               { text: 'Data Loaders & Providers', link: '/react/router/data-loaders' },
-              { text: 'Guards & Authentication', link: '/react/router/guards' }
             ],
           },
+          { text: 'Server-Side Rendering', link: '/react/ssr' },
           { text: 'Comparison', link: '/react/comparison' },
           { text: 'Best Practices', link: '/react/best-practices' },
           { text: 'Migration Guide', link: '/react/migration-guide' },

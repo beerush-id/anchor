@@ -5,6 +5,7 @@ export interface NavigateOptions {
   query?: Record<string, unknown>;
   params?: Record<string, unknown>;
   replace?: boolean;
+  redirect?: string;
 }
 
 /**
@@ -16,6 +17,14 @@ export interface NavigateOptions {
 export function navigate(path: string, options?: NavigateOptions): void;
 
 /**
+ * Programmatically navigate to a typed Route.
+ *
+ * @param route The Route defining the destination.
+ * @param options Query, params, and history replacement options.
+ */
+export function navigate<T extends AnyRoute>(route: T, options?: NavigateOptions): void;
+
+/**
  * Programmatically navigate to a typed Route component.
  *
  * @param route The Route component defining the destination.
@@ -23,13 +32,13 @@ export function navigate(path: string, options?: NavigateOptions): void;
  */
 export function navigate<T extends AnyRoute>(route: RouteComponent<T>, options?: NavigateOptions): void;
 
-export function navigate(target: string | RouteComponent<AnyRoute>, options: NavigateOptions = {}) {
+export function navigate(target: string | AnyRoute | RouteComponent<AnyRoute>, options: NavigateOptions = {}) {
   const url =
     typeof target === 'string'
       ? createUrl(target, options.params, options.query)
-      : createUrl(target.index.path, options.params, options.query);
+      : createUrl(target.index ? target.index.path : (target as AnyRoute).path, options.params, options.query);
 
-  const state = { href: url, query: options.query, params: options.params };
+  const state = { href: url, query: options.query, params: options.params, redirect: options.redirect };
 
   if (options.replace) {
     history.replaceState(state, '', url);

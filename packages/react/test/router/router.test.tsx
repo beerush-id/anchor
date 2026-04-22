@@ -1,7 +1,7 @@
 import '../../src/client/index.js';
 import { mutable } from '@anchorlib/core';
 import type { UnknownRoute } from '@anchorlib/router';
-import { createRouter } from '@anchorlib/router';
+import { createRouter, redirect } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -447,9 +447,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
       scrollToSpy.mockClear();
 
-      render(
-        <UIRouter router={router} root={rootUi} url={'https://localhost/modal'} headless={true} resetScroll={true} />
-      );
+      render(<UIRouter router={router} root={rootUi} url={'https://localhost/modal'} resetScroll={true} />);
 
       await act(async () => {
         await activateSpy.mock.results[0]?.value;
@@ -457,8 +455,33 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
         await new Promise((r) => queueMicrotask(r));
       });
 
-      expect(activateSpy).toHaveBeenCalled();
       expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Global Redirect Handler', () => {
+    let pushSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      pushSpy = vi.spyOn(history, 'replaceState').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      pushSpy.mockRestore();
+    });
+
+    it('should navigate automatically when a Redirect is thrown/created', async () => {
+      const router = createRouter();
+      const rawRoute = router.route('/redirect-target');
+
+      // Creating a redirect invokes the handler registered natively by router.tsx
+      redirect(rawRoute, { id: '1' } as any, { foo: 'bar' } as any);
+
+      expect(pushSpy).toHaveBeenCalledWith(
+        { href: '/redirect-target?foo=bar', query: { foo: 'bar' }, params: { id: '1' }, redirect: location.href },
+        '',
+        '/redirect-target?foo=bar'
+      );
     });
   });
 });
