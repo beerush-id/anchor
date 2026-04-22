@@ -1,3 +1,4 @@
+import { onCleanup } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { RemoteState } from './state.js';
@@ -134,6 +135,10 @@ export class IRPCPackage {
 
       if (typeof spec.init === 'function' && call instanceof RemoteState && typeof call.data === 'undefined') {
         call.data = spec.init();
+      }
+
+      if (call instanceof RemoteState) {
+        onCleanup(() => call.close());
       }
 
       if (call instanceof Promise) {

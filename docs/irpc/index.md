@@ -40,9 +40,6 @@ const StockPrice = setup(({ stock }) => {
   // Call the function.
   const price = watchPrice(stock);
   
-  // Close the stream on unmount.
-  onCleanup(() => price.close());
-  
   // Reactive render price change.
   return render(() => <span>${price.data}</span>);
 });

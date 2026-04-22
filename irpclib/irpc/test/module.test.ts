@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { createPackage, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
+import { createLifecycle } from '@anchorlib/core';
 import { RemoteState } from '../src/state.js';
 
 describe('IRPCPackage', () => {
@@ -215,6 +216,29 @@ describe('IRPCPackage', () => {
 
       expect(result.data).toBe('Init');
       expect(result.status).toBe(IRPC_STATUS.PENDING);
+    });
+
+    it('should auto-cleanup RemoteState on component unmount (lifecycle destroy)', () => {
+      const hello = rpc.declare<(name: string) => RemoteState<string>>({
+        name: 'helloAutoCleanup',
+        init: () => 'Init',
+      });
+      rpc.construct(hello, (_name) => new RemoteState<string>());
+
+      const lifecycle = createLifecycle();
+      let result: RemoteState<string> | undefined;
+
+      lifecycle.run(() => {
+        result = hello('World');
+      });
+
+      expect(result?.status).toBe(IRPC_STATUS.PENDING);
+      
+      const closeSpy = vi.spyOn(result!, 'close');
+      
+      lifecycle.destroy();
+      
+      expect(closeSpy).toHaveBeenCalled();
     });
 
     it('should handle coalesce call', async () => {

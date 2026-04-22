@@ -211,12 +211,10 @@ function DashboardWidget({ userId }) {
 const getDashboard = irpc.declare<GetDashboardFn>({ name: 'getDashboard' });
 
 // Client: Binds to standard UI component proxies without WebSocket logic.
-// Because the proxy is framework-agnostic, you explicitly drop the network stream on unmount.
+// The network stream is dropped automatically on unmount.
 // This identical logic works in React, Vue, Svelte, or Solid.
 const DashboardWidget = setup(({ userId }) => {
   const dashboard = getDashboard(userId);
-  
-  onCleanup(() => dashboard.close());
 
   return render(() => <DashboardUI data={dashboard.data} />);
 });
@@ -318,12 +316,10 @@ function DashboardWidget({ userId }) {
 const getDashboard = irpc.declare<GetDashboardFn>({ name: 'getDashboard' });
 
 // Client: Binds to standard UI component proxies without WebSocket logic.
-// Because the proxy is framework-agnostic, you explicitly drop the network stream on unmount.
+// Because the proxy is framework-agnostic, the network stream is dropped automatically on unmount.
 // This identical logic works in React, Vue, Svelte, or Solid.
 const DashboardWidget = setup(({ userId }) => {
   const dashboard = getDashboard(userId);
-  
-  onCleanup(() => dashboard.close());
 
   return render(() => <DashboardUI data={dashboard.data} />);
 });

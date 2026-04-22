@@ -322,9 +322,6 @@ const PoemWidget = setup(() => {
   // Generates the call stream.
   const poem = generatePoem('Space');
   
-  // Explicitly close the stream to release server resources when unmounting
-  onCleanup(() => poem.close());
-  
   // Renders based on `state.data` mutations from the remote server.
   return render(() => <div>{poem.data}</div>);
 });
