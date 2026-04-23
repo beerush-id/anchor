@@ -150,7 +150,7 @@ export type UnknownProvider = (ctx: ProviderContext<TRec, TRec, TRec>) => Promis
 export type UnknownRedirect = Redirect<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, TRec>;
 
 /** Active context for a route */
-export type ActiveContext<TParams, TQueryParams, TData> = {
+export type context<TParams, TQueryParams, TData> = {
   data: TData;
   query: TQueryParams;
   params: TParams;
@@ -255,9 +255,9 @@ export type RouteStorage = {
 
 export type RouterStorage = {
   cache: URLCache;
+  context: RouterContext<TRec, TRec, TRec>;
   activeUrl: string | undefined;
   activeRoute: UnknownRoute | undefined;
-  activeContext: RouterContext<TRec, TRec, TRec>;
   activeSegments: MatchRouteSegment[] | undefined;
   activatingSegments: Set<MatchRouteSegment>;
 };

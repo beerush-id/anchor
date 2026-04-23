@@ -233,7 +233,7 @@ describe('Route class', () => {
       expect(route.renderer).toBeDefined();
       if (route.renderer) {
         route.renderer({ children: [] } as never);
-        expect(renderer).toHaveBeenCalledWith(route.state as never, route.router.activeContext as never, []);
+        expect(renderer).toHaveBeenCalledWith(route.state as never, route.router.context as never, []);
 
         // Let's also test without layout by bypassing `createRenderer` behavior if we could
         // But `createRenderer` itself uses `layout = true`.
@@ -261,7 +261,7 @@ describe('Route class', () => {
       const renderer2 = vi.fn();
       const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
       internalRenderer({ children: [] } as never);
-      expect(renderer2).toHaveBeenCalledWith(route2.state, sharedRouter.activeContext);
+      expect(renderer2).toHaveBeenCalledWith(route2.state, sharedRouter.context);
     });
   });
 

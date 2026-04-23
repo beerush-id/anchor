@@ -757,8 +757,8 @@ let createRenderer = <TParams, TQueryParams, TData, TOutput>(
   layout?: boolean
 ): RouteInternalRenderer<TOutput> => {
   return ({ children }) => {
-    if (layout) return untrack(() => renderer(route.state as never, route.router.activeContext as never, children));
-    return untrack(() => renderer(route.state as never, route.router.activeContext as never));
+    if (layout) return untrack(() => renderer(route.state as never, route.router.context as never, children));
+    return untrack(() => renderer(route.state as never, route.router.context as never));
   };
 };
 

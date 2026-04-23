@@ -42,8 +42,8 @@ describe('router.ts', () => {
         expect(router.activeRoute).toBeUndefined();
       });
 
-      it('should initialize activeContext with empty objects', () => {
-        expect(router.activeContext).toBeInstanceOf(RouterContext);
+      it('should initialize context with empty objects', () => {
+        expect(router.context).toBeInstanceOf(RouterContext);
 
         expect(router.path).toBeUndefined();
         expect(router.data).toEqual({});
@@ -193,9 +193,9 @@ describe('router.ts', () => {
         expect(router.activeSegments?.length).toBeGreaterThan(0);
       });
 
-      it('should update activeContext', async () => {
+      it('should update context', async () => {
         await router.activate('/users');
-        expect(router.activeContext).toBeDefined();
+        expect(router.context).toBeDefined();
       });
 
       it('should handle URL object', async () => {
@@ -207,7 +207,7 @@ describe('router.ts', () => {
       it('should handle URL with query parameters', async () => {
         await router.activate('/users?tab=profile');
         expect(router.activeRoute).toBeDefined();
-        expect(router.activeContext.query.tab).toBe('profile');
+        expect(router.context.query.tab).toBe('profile');
       });
 
       it('should handle URL string with http protocol', async () => {
@@ -397,7 +397,7 @@ describe('router.ts', () => {
 
     describe('cleanup method', () => {
       it('should release router from the store', async () => {
-        expect(router.activeContext).toBeDefined();
+        expect(router.context).toBeDefined();
         expect(getStore().get(router)).toBeDefined();
 
         router.cleanup();
@@ -467,7 +467,7 @@ describe('router.ts', () => {
         await router.activate('/users');
         // Provider should be cached
         expect(callCount).toBe(1);
-        expect(router.activeContext.data.users).toEqual({ users: [] });
+        expect(router.context.data.users).toEqual({ users: [] });
       });
 
       it('should handle multiple providers', async () => {
@@ -488,7 +488,7 @@ describe('router.ts', () => {
 
         await router.activate('/users/123');
         expect(router.activeRoute).toBeDefined();
-        expect(router.activeContext.params.id).toEqual('123');
+        expect(router.context.params.id).toEqual('123');
       });
 
       it('should handle wildcard routes', async () => {
@@ -502,8 +502,8 @@ describe('router.ts', () => {
         router.route('/users');
 
         await router.activate('/users?tab=profile&sort=asc');
-        expect(router.activeContext.query.tab).toBe('profile');
-        expect(router.activeContext.query.sort).toBe('asc');
+        expect(router.context.query.tab).toBe('profile');
+        expect(router.context.query.sort).toBe('asc');
       });
 
       it('should handle keepAlive option', async () => {
@@ -604,7 +604,7 @@ describe('router.ts', () => {
         await router.activate('/users?tab=profile');
         await router.activate('/users?tab=settings');
 
-        expect(router.activeContext.query.tab).toEqual('settings');
+        expect(router.context.query.tab).toEqual('settings');
       });
     });
   });

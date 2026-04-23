@@ -45,15 +45,15 @@ export class Router<Output = any> {
   }
 
   public get data() {
-    return this.activeContext.data;
+    return this.context.data;
   }
 
   public get query() {
-    return this.activeContext.query;
+    return this.context.query;
   }
 
   public get params() {
-    return this.activeContext.params;
+    return this.context.params;
   }
 
   private get storage(): RouterStorage {
@@ -62,9 +62,9 @@ export class Router<Output = any> {
     if (!store.has(this)) {
       store.set(this, {
         cache: new URLCache(this.rootRegistry, this.options.cacheSize),
+        context: new RouterContext(),
         activeUrl: undefined,
         activeRoute: undefined,
-        activeContext: new RouterContext(),
         activeSegments: undefined,
         activatingSegments: new Set(),
       });
@@ -97,8 +97,8 @@ export class Router<Output = any> {
   }
 
   /** The active context shared across all routes */
-  public get activeContext() {
-    return this.storage.activeContext;
+  public get context() {
+    return this.storage.context;
   }
 
   /** The currently active route segments */
@@ -244,7 +244,7 @@ export class Router<Output = any> {
     // Cancel previous activations.
     if (this.activatingSegments.size) {
       this.activatingSegments.forEach((segment) => {
-        this.activeContext.detach(segment.store);
+        this.context.detach(segment.store);
       });
 
       this.activatingSegments.clear();
@@ -265,7 +265,7 @@ export class Router<Output = any> {
     // Deactivate segments not in target (leaf to root)
     const toDeactivate = currentSegments.filter((r) => !targetSegments.includes(r));
     for (const segment of toDeactivate.reverse()) {
-      this.activeContext.detach(segment.store);
+      this.context.detach(segment.store);
       segment.route.deactivate();
     }
 
@@ -275,7 +275,7 @@ export class Router<Output = any> {
     // Attach store and activate immediate segments.
     for (const segment of toActivate) {
       this.activatingSegments.add(segment);
-      this.activeContext.attach(segment.store);
+      this.context.attach(segment.store);
 
       if (segment.route.options.renderMode === RENDER_MODE.IMMEDIATE) {
         segment.route.active = true;
@@ -287,7 +287,7 @@ export class Router<Output = any> {
       const { route, store } = segment;
       if (!this.activatingSegments.has(segment)) return;
 
-      const blocker = await route.authenticate(this.activeContext as RouterContext<None, None, TRec>);
+      const blocker = await route.authenticate(this.context as RouterContext<None, None, TRec>);
       if (blocker instanceof Error || blocker instanceof Redirect) return blocker;
 
       await route.activate(store as ProviderContext<None, None, TRec>);
@@ -342,7 +342,7 @@ export class Router<Output = any> {
     const tempContext = new RouterContext();
 
     for (const segment of segments) {
-      this.activeContext.attach(segment.store);
+      this.context.attach(segment.store);
     }
 
     // Preload all segments without activating them
