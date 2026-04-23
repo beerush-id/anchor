@@ -269,6 +269,6 @@ export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => 
 
 export type RouteRendererFn<Params, QueryParams, Data, Output> = (
   state: RouteState<Params, QueryParams, Data>,
-  context?: RouterContext<Params, QueryParams, Data>,
+  context: RouterContext<Params, QueryParams, Data>,
   children?: Output
 ) => Output;

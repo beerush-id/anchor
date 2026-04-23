@@ -1,6 +1,9 @@
 import { createUrl } from '@anchorlib/router';
 import type { AnyRoute, RouteComponent } from './types.js';
 
+/**
+ * Navigation options for programmatic routing.
+ */
 export interface NavigateOptions {
   query?: Record<string, unknown>;
   params?: Record<string, unknown>;

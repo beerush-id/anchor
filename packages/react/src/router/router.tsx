@@ -18,6 +18,9 @@ const STACK_REGISTRY = new WeakSet<UnknownRoute>();
 
 type RouteStacks = Map<UnknownRoute, FC>;
 
+/**
+ * A reactive snippet that renders the view for a given route and its children.
+ */
 export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; children?: ReactNode }>(
   ({ route, stacks, children }) => {
     const Index = route.index?.renderer;
@@ -109,8 +112,15 @@ const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry; stacks:
 };
 
 CRouteRenderer.displayName = 'Definition(Route)';
+
+/**
+ * Renders a specific route and recursively processes its child routes.
+ */
 export const RouteRenderer = CRouteRenderer;
 
+/**
+ * Props for the root UIRouter component.
+ */
 export type UIRouterProps = {
   router: Router<ReactNode>;
   root: RouteComponent<AnyRoute>;
@@ -154,6 +164,10 @@ const StackRenderer = template<{ stacks: RouteStacks }>(({ stacks }) => {
 });
 
 CUIRouter.displayName = 'UIRouter';
+
+/**
+ * The root router component that mounts the application route tree to React.
+ */
 export const UIRouter = CUIRouter;
 
 /**

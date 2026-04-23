@@ -8,6 +8,13 @@ import type { AnyRoute, LinkProps } from './types.js';
 
 type LinkComponent = <T extends AnyRoute>(props: LinkProps<T>) => ReactNode;
 
+/**
+ * A reactive anchor component for client-side navigation.
+ * Automatically handles `active` state and preloads route definitions on hover if configured.
+ *
+ * @param props Link properties including the target route (`to`), params, and query.
+ * @returns A reactive `<a>` element.
+ */
 export const Link = setup<LinkProps<AnyRoute>>((props) => {
   const $props = props as ComponentProps<LinkProps<AnyRoute>> & {
     query: Record<string, unknown>;

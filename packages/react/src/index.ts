@@ -91,4 +91,9 @@ export {
 export { onCleanup, onMount } from './lifecycle.js';
 export * from './node.js';
 export * from './props.js';
+export * from './router/head.js';
+export * from './router/link.js';
+export * from './router/navigate.js';
+export * from './router/router.js';
+export * from './router/types.js';
 export * from './types.js';
