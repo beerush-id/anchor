@@ -23,7 +23,7 @@ export const dashboardRoute = rootRoute
 
 ```tsx
 // layout.tsx
-import { page } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react';
 import { dashboardRoute } from './route.js';
 
 export const DashboardLayout = page(

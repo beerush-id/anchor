@@ -19,7 +19,7 @@ export const profileRoute = usersRoute
 
 ```tsx
 // page.tsx
-import { page } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react';
 import { template } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
@@ -139,7 +139,7 @@ export const router = createRouter<ReactNode>({
 
 ```tsx
 // main.tsx
-import { UIRouter } from '@anchorlib/react/router';
+import { UIRouter } from '@anchorlib/react';
 import { router } from './lib/router.js';
 import { RootLayout } from './routes/layout.js';
 
@@ -175,7 +175,7 @@ Layout routes receive `children` as the third argument to `.render()`:
 
 ```tsx
 // routes/users/layout.tsx
-import { page } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react';
 import { usersRoute } from './route.js';
 
 export const UsersLayout = page(

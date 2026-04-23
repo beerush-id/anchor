@@ -59,7 +59,7 @@ Once a route exists in the abstract tree, you attach the actual UI using `.rende
 
 ```tsx
 // routes/users/layout.tsx
-import { page } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react';
 import { usersRoute } from './route.js';
 
 export const UsersLayout = page(
@@ -143,7 +143,7 @@ export const usersIndexRoute = usersRoute
 
 ```tsx
 // routes/users/page.tsx
-import { page, Link } from '@anchorlib/react/router';
+import { page, Link } from '@anchorlib/react';
 import { usersIndexRoute } from './route.js';
 import { ProfilePage } from './[user_id]/page.js';
 
@@ -181,7 +181,7 @@ export const userInviteRoute = usersRoute.route('/invite');
 
 ```tsx
 // routes/users/invite/page.tsx
-import { modal } from '@anchorlib/react/router';
+import { modal } from '@anchorlib/react';
 import { userInviteRoute } from './route.js';
 
 export const UserInvitePage = modal(

@@ -67,7 +67,7 @@ The `UIRouter` component automatically handles browser history and scroll restor
 To render the router on the server, you must pass the `headless` prop to disable browser integrations, and explicitly provide the requested `url`.
 
 ```tsx
-import { UIRouter } from '@anchorlib/react/router';
+import { UIRouter } from '@anchorlib/react';
 import { router } from './router.js'; // Your application's router instance
 import AppRoot from './routes/Index.js'; // Your root component
 
@@ -96,13 +96,13 @@ Here is a simplified example of a server entry point using Express and `react-do
 ```tsx
 import express from 'express';
 import { renderToString } from 'react-dom/server';
-import { setAsyncStorageAdapter, isolated, createLifecycle } from '@anchorlib/react';
+import { setAsyncStorageAdapter, isolated, createLifecycle, UIRouter, headings } from '@anchorlib/react';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 // 1. Initialize the Async Storage Adapter
 setAsyncStorageAdapter(new AsyncLocalStorage());
 
-import { UIRouter, Redirect, redirectUrl } from '@anchorlib/react/router';
+import { Redirect, redirectUrl } from '@anchorlib/react/router';
 import { router } from './app/router'; // Your Anchor Router
 import AppRoot from './app/Index'; // Your root component
 
@@ -128,12 +128,14 @@ app.get('*', async (req, res) => {
             headless={true} 
           />
         );
+        const head = renderToString(<>{[...headings()].map(([, { Renderer }], i) => <Renderer key={i} />)}</>);
 
         res.send(`
           <!DOCTYPE html>
           <html>
             <head>
-              <title>Anchor SSR</title>
+              <meta charset="utf-8" />
+              ${head}
             </head>
             <body>
               <div id="root">${html}</div>
@@ -171,13 +173,14 @@ This file exposes a `render` function that Vite will load dynamically. It isolat
 
 ```tsx
 import { renderToString } from 'react-dom/server';
-import { isolated, createLifecycle } from '@anchorlib/react';
-import { UIRouter, Redirect, redirectUrl } from '@anchorlib/react/router';
+import { isolated, createLifecycle, UIRouter, headings } from '@anchorlib/react';
+import { Redirect, redirectUrl } from '@anchorlib/react/router';
 import { router } from './router';
 import AppRoot from './Index';
 
 export async function render(url: string) {
   let html = '';
+  let head = '';
   let redirect: string | undefined;
 
   await isolated.async(async () => {
@@ -189,6 +192,7 @@ export async function render(url: string) {
         html = renderToString(
           <UIRouter router={router} root={AppRoot} url={url} headless={true} />
         );
+        head = renderToString(<>{[...headings()].map(([, { Renderer }], i) => <Renderer key={i} />)}</>);
       } catch (error) {
         if (error instanceof Redirect) {
           redirect = redirectUrl(error);
@@ -201,7 +205,7 @@ export async function render(url: string) {
     scope.destroy();
   });
 
-  return { html, redirect };
+  return { html, head, redirect };
 }
 ```
 
@@ -210,7 +214,8 @@ export async function render(url: string) {
 In your Vite development server, you initialize the storage adapter once, then call your `render` function for incoming requests.
 
 ```javascript
-import fs from 'node:fs/promises';
+import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import { setAsyncStorageAdapter } from '@anchorlib/react';
@@ -236,18 +241,20 @@ async function createServer() {
       const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
       
       // Call the Anchor render function
-      const { html, redirect } = await render(url);
+      const { html, head, redirect } = await render(url);
 
       if (redirect) {
         return res.redirect(302, redirect);
       }
 
       // Load index.html and inject the rendered app
-      let template = await fs.readFile('./index.html', 'utf-8');
+      let template = fs.readFileSync(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
       template = await vite.transformIndexHtml(url, template);
-      const finalHtml = template.replace(`<!--app-html-->`, html);
+      const page = template
+        .replace('<!--head-outlet-->', () => head)
+        .replace('<!--ssr-outlet-->', () => html);
 
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e);
       next(e);
@@ -267,7 +274,7 @@ On the client side, initialization remains mostly the same. You just need to ens
 ```tsx
 import '@anchorlib/react/client'; // MUST be first
 import { hydrateRoot } from 'react-dom/client';
-import { UIRouter } from '@anchorlib/react/router';
+import { UIRouter } from '@anchorlib/react';
 import { router } from './router';
 import AppRoot from './routes/Index';
 

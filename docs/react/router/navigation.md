@@ -5,7 +5,7 @@ Two ways to navigate: `<Link>` in JSX, `navigate()` in code.
 ## Link Component
 
 ```tsx
-import { Link } from '@anchorlib/react/router';
+import { Link } from '@anchorlib/react';
 import { UsersPage } from './routes/users/page.js';
 import { ProfilePage } from './routes/users/[user_id]/page.js';
 ```
@@ -99,7 +99,7 @@ Replace the current history entry instead of pushing a new one:
 Use `navigate()` from event handlers, form submissions, or any non-JSX context:
 
 ```tsx
-import { navigate } from '@anchorlib/react/router';
+import { navigate } from '@anchorlib/react';
 import { ProfilePage } from './routes/users/[user_id]/page.js';
 
 function handleUserSelect(userId: string) {

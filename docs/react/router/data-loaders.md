@@ -29,7 +29,7 @@ export const profileRoute = usersRoute
 
 ```tsx
 // page.tsx
-import { page } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react';
 import { template } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
@@ -80,7 +80,7 @@ export const dashboardRoute = rootRoute
 
 ```tsx
 // page.tsx
-import { page } from '@anchorlib/react/router';
+import { page } from '@anchorlib/react';
 import { dashboardRoute } from './route.js';
 import { Dashboard } from './Dashboard.js';
 
