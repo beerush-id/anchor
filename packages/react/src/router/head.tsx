@@ -1,5 +1,6 @@
 import { closure, onCleanup } from '@anchorlib/core';
 import type { FC, HTMLAttributes } from 'react';
+import { createEffect } from '../hooks.js';
 
 const HEADING_SET_CLOSURE = Symbol('head-map-closure');
 
@@ -56,7 +57,14 @@ export function attachHeading(name: string, props: Record<string, string>, Rende
   }
 
   if (name === 'title') {
-    document.title = props.children ?? '';
+    const currentTitle = document.title;
+    document.title = props.children;
+
+    createEffect(() => () => {
+      document.title = currentTitle;
+    });
+
+    return;
   }
 
   const element = document.createElement(name);
@@ -71,7 +79,7 @@ export function attachHeading(name: string, props: Record<string, string>, Rende
 
   document.head.appendChild(element);
 
-  onCleanup(() => {
+  createEffect(() => () => {
     element.remove();
   });
 }
@@ -79,7 +87,7 @@ export function attachHeading(name: string, props: Record<string, string>, Rende
 /**
  * Sets the document title.
  */
-export const Title: FC<{ children: string }> = ({ children }) => {
+export const Title: FC<HTMLAttributes<HTMLTimeElement> & { children: string }> = ({ children }) => {
   const Renderer = () => <title>{children}</title>;
   attachHeading('title', { children }, Renderer);
   return null;
@@ -88,7 +96,9 @@ export const Title: FC<{ children: string }> = ({ children }) => {
 /**
  * Sets a meta tag in the document head.
  */
-export const Meta: FC<HTMLAttributes<HTMLMetaElement>> = (props) => {
+export const Meta: FC<HTMLAttributes<HTMLMetaElement> & { name?: string; property?: string; content?: string }> = (
+  props
+) => {
   const Renderer = () => <meta {...props} />;
   attachHeading('meta', props as Record<string, string>, Renderer);
   return null;
@@ -97,7 +107,7 @@ export const Meta: FC<HTMLAttributes<HTMLMetaElement>> = (props) => {
 /**
  * Sets a link tag in the document head.
  */
-export const HeadLink: FC<HTMLAttributes<HTMLLinkElement>> = (props) => {
+export const HeadLink: FC<HTMLAttributes<HTMLLinkElement> & { href?: string; rel?: string; as?: string }> = (props) => {
   const Renderer = () => <link {...props} />;
   attachHeading('link', props as Record<string, string>, Renderer);
   return null;
@@ -106,7 +116,7 @@ export const HeadLink: FC<HTMLAttributes<HTMLLinkElement>> = (props) => {
 /**
  * Sets a style tag in the document head.
  */
-export const Style: FC<HTMLAttributes<HTMLStyleElement>> = (props) => {
+export const Style: FC<HTMLAttributes<HTMLStyleElement> & { children?: string }> = (props) => {
   const Renderer = () => <style {...props} />;
   attachHeading('style', props as Record<string, string>, Renderer);
   return null;

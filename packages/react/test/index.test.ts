@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import '../src/client/index';
 
 // Test that all expected exports are available
 import {

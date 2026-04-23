@@ -9,7 +9,7 @@ import {
   type UnknownRoute,
 } from '@anchorlib/router';
 import type { FC, ReactNode } from 'react';
-import { render, setup, snippet, template } from '../hoc.js';
+import { snippet, template } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent } from './types.js';
@@ -25,58 +25,40 @@ export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; c
   ({ route, stacks, children }) => {
     const Index = route.index?.renderer;
     const Layout = route.renderer;
+    const Snippet = snippet(
+      () => {
+        if (!route.active) return children;
+
+        if (Layout) {
+          if (Index && route.index?.active) {
+            return (
+              <Layout>
+                <Index />
+                {children}
+              </Layout>
+            );
+          }
+
+          return <Layout>{children}</Layout>;
+        }
+
+        if (Index) {
+          return <Index />;
+        }
+
+        return children;
+      },
+      route.path,
+      STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
+      false
+    );
 
     if (STACK_REGISTRY.has(route)) {
-      const Stack = setup(() => {
-        return render(() => {
-          if (!route.active) return children;
-
-          if (Layout) {
-            if (Index && route.index?.active) {
-              return (
-                <Layout>
-                  <Index />
-                  {children}
-                </Layout>
-              );
-            }
-
-            return <Layout>{children}</Layout>;
-          }
-
-          if (Index) {
-            return <Index />;
-          }
-
-          return children;
-        });
-      });
-
-      untrack(() => stacks.set(route, Stack));
-
+      untrack(() => stacks.set(route, Snippet));
       return null;
     }
 
-    if (!route.active) return children;
-
-    if (Layout) {
-      if (Index && route.index?.active) {
-        return (
-          <Layout>
-            <Index />
-            {children}
-          </Layout>
-        );
-      }
-
-      return <Layout>{children}</Layout>;
-    }
-
-    if (Index) {
-      return <Index />;
-    }
-
-    return children;
+    return <Snippet />;
   },
   'Route',
   'Renderer',

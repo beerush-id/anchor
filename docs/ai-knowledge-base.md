@@ -170,6 +170,12 @@ Route definitions (`route.ts`) are separated from views (`layout.tsx`, `page.tsx
 # Anchor (React)
 npm install @anchorlib/react
 
+# Portable (framework-agnostic state/logic)
+npm install @anchorlib/core
+
+# Portable (framework-agnostic routing)
+npm install @anchorlib/router
+
 # Optional: Client-side persistence
 npm install @anchorlib/storage
 
@@ -829,7 +835,7 @@ If a 3rd party component manages its own internal state (e.g., a rich text edito
 
 ```tsx
 // lib/router.ts
-import { createRouter, RENDER_MODE, MAX_AGE } from '@anchorlib/react/router';
+import { createRouter, RENDER_MODE, MAX_AGE } from '@anchorlib/router';
 import type { ReactNode } from 'react';
 
 export const router = createRouter<ReactNode>({
@@ -838,7 +844,7 @@ export const router = createRouter<ReactNode>({
 });
 
 // main.tsx
-import { UIRouter } from '@anchorlib/react/router';
+import { UIRouter } from '@anchorlib/react';
 <UIRouter router={router} root={RootLayout} />
 ```
 
@@ -911,11 +917,49 @@ Guards and providers run inside reactive observers — reading Anchor state auto
 
 ### Route Views
 
+`.render()` accepts a render function `(state, context, children?) => ReactNode` — not a Component. The returned JSX is non-reactive. Reactive state reads inside it will not trigger re-renders.
+
+Choose the right tool based on the source data and target view:
+
+| Source | Target | Tool |
+|---|---|---|
+| Reactive object | Anchor Component / Template | Pass directly |
+| Reactive primitive | Anchor Component / Template | `$use()` binding |
+| Any reactive state | Standard React Component | Wrap in `template()` |
+| Inline JSX | — | `template()` |
+
+```tsx
+// Reactive object → Anchor component — pass directly, receiver tracks it
+profileRoute.render((state) => <UserProfile user={state.data?.user} />)
+
+// Reactive primitive → Anchor template — $use() creates a binding pointer
+profileRoute.render((state) => <Counter count={$use(state.data, 'count')} />)
+
+// Standard React component — template() reads state, re-renders the component
+profileRoute.render((state) => {
+  const View = template(() => <DatePicker value={state.data?.date} />);
+  return <View />;
+})
+
+// Inline JSX — template() creates the tracked boundary
+profileRoute.render((state) => {
+  const Profile = template(() => (
+    <div>
+      <h1>{state.data?.user?.name}</h1>
+      <p>{state.data?.user?.email}</p>
+    </div>
+  ));
+  return <Profile />;
+})
+```
+
+Do NOT wrap the entire page in a single `template()` — that recreates the React re-render cascade where everything re-renders on any change. Equally, do NOT wrap every individual state read in its own `template()` — that is over-engineering. Apply the same fine-grained reactivity judgment as inside `setup()`: group related concerns into shared boundaries, split unrelated concerns into separate ones.
+
 `page()` returns a `RouteComponent` — used by `<Link>` and `navigate()` for type-safe navigation:
 
 ```tsx
 // routes/layout.tsx — app shell
-import { page, Link } from '@anchorlib/react/router';
+import { page, Link, Title, Meta } from '@anchorlib/react';
 import { rootRoute } from './route.js';
 import { HomePage } from './index.js';
 import { UsersLayout } from './users/index.js';
@@ -923,6 +967,8 @@ import { UsersLayout } from './users/index.js';
 export const RootLayout = page(
   rootRoute.render((_state, _ctx, children) => (
     <div className="app-layout">
+      <Title>My App</Title>
+      <Meta name="description" content="My App description" />
       <nav>
         <Link to={HomePage}>Home</Link>
         <Link to={UsersLayout}>Users</Link>
@@ -936,18 +982,23 @@ export default RootLayout;
 
 ```tsx
 // routes/page.tsx — home content (exact match at /)
-import { page } from '@anchorlib/react/router';
+import { page, Title } from '@anchorlib/react';
 import { homeRoute } from './route.js';
 
 export const HomePage = page(
-  homeRoute.render(() => <h1>Welcome</h1>)
+  homeRoute.render(() => (
+    <>
+      <Title>Home — My App</Title>
+      <h1>Welcome</h1>
+    </>
+  ))
 );
 export default HomePage;
 ```
 
 ```tsx
 // routes/users/[user_id]/page.tsx
-import { page } from '@anchorlib/react/router';
+import { page, Title } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
 export const ProfilePage = page(
@@ -971,7 +1022,7 @@ URL `/users/42` → `rootRoute` → `usersRoute` → `profileRoute`.
 
 ```tsx
 // routes/photos/detail/page.tsx
-import { modal } from '@anchorlib/react/router';
+import { modal } from '@anchorlib/react';
 import { photoRoute } from './route.js';
 
 export const PhotoDetail = modal(
@@ -1000,7 +1051,7 @@ The `.render(state, context)` function receives two objects:
 `Link` and `navigate()` accept `RouteComponent` or `string`. Importing a `RouteComponent` guarantees the route is registered (routes register at runtime when the module loads):
 
 ```tsx
-import { Link, navigate } from '@anchorlib/react/router';
+import { Link, navigate } from '@anchorlib/react';
 import { ProfilePage } from './users/[user_id]/index.js';
 import { UsersLayout } from './users/index.js';
 
@@ -1021,10 +1072,10 @@ navigate(history.state?.redirect ?? '/');
 SSR requires request isolation and headless routing to function safely in concurrent Node.js environments.
 
 ```tsx
-import { setAsyncStorageAdapter, isolated, createLifecycle } from '@anchorlib/react';
+import { setAsyncStorageAdapter, isolated, createLifecycle, UIRouter } from '@anchorlib/react';
+import { Redirect, redirectUrl } from '@anchorlib/router';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { renderToString } from 'react-dom/server';
-import { UIRouter, Redirect, redirectUrl } from '@anchorlib/react/router';
 import { router } from './lib/router';
 import { RootLayout } from './routes/index';
 
@@ -1063,13 +1114,103 @@ Client hydration:
 ```tsx
 import '@anchorlib/react/client'; // MUST be first
 import { hydrateRoot } from 'react-dom/client';
-import { UIRouter } from '@anchorlib/react/router';
+import { UIRouter } from '@anchorlib/react';
 import { router } from './lib/router';
 import { RootLayout } from './routes/index';
 
 router.activate(window.location.href).then(() => {
   hydrateRoot(document.getElementById('root')!, <UIRouter router={router} root={RootLayout} />);
 });
+```
+
+`router.activate()` must run before hydration. Anchor's reactive graph cannot be serialized into a JSON payload — the graph must be rebuilt natively on the client. This re-validates guards, reconnects reactive links, and eliminates data-injection attack vectors (`window.__INITIAL_STATE__`). The server's cache serves the repeated request instantly.
+
+Use `effect.client()` to skip browser-dependent effects during SSR:
+
+```tsx
+effect.client(() => { document.title = state.pageTitle; });
+```
+
+Vite SSR entry point:
+
+```tsx
+// entry-server.tsx
+import { renderToString } from 'react-dom/server';
+import { isolated, createLifecycle, UIRouter, headings } from '@anchorlib/react';
+import { Redirect, redirectUrl } from '@anchorlib/router';
+import { router } from './router';
+import AppRoot from './Index';
+
+export async function render(url: string) {
+  let html = '';
+  let head = '';
+  let redirect: string | undefined;
+
+  await isolated.async(async () => {
+    const scope = createLifecycle();
+    await scope.runAsync(async () => {
+      try {
+        await router.activate(url);
+        html = renderToString(<UIRouter router={router} root={AppRoot} url={url} headless={true} />);
+        head = renderToString(<>{[...headings()].map(([, { Renderer }], i) => <Renderer key={i} />)}</>);
+      } catch (error) {
+        if (error instanceof Redirect) {
+          redirect = redirectUrl(error);
+        } else {
+          throw error;
+        }
+      }
+    });
+    scope.destroy();
+  });
+
+  return { html, head, redirect };
+}
+```
+
+Vite dev server:
+
+```javascript
+// server.js
+import fs from 'node:fs';
+import path from 'node:path';
+import express from 'express';
+import { createServer as createViteServer } from 'vite';
+import { setAsyncStorageAdapter } from '@anchorlib/react';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+setAsyncStorageAdapter(new AsyncLocalStorage());
+
+async function createServer() {
+  const app = express();
+  const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'custom' });
+  app.use(vite.middlewares);
+
+  app.use('*all', async (req, res, next) => {
+    try {
+      const url = req.originalUrl;
+
+      let template = fs.readFileSync(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
+      template = await vite.transformIndexHtml(url, template);
+
+      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
+      const { html, head, redirect } = await render(url);
+      if (redirect) return res.redirect(302, redirect);
+
+      const page = template
+        .replace('<!--head-outlet-->', () => head)
+        .replace('<!--ssr-outlet-->', () => html);
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+
+  app.listen(5173);
+}
+
+createServer();
 ```
 
 ## Client-Side Storage
@@ -1269,12 +1410,25 @@ import { mutable, immutable } from '@anchorlib/core';
 
 ```tsx
 import {
+  // Component model
   setup, render, template, snippet,
+  // State
   mutable, immutable, writable, model, derived, form,
+  // Effects
   effect, subscribe, untrack, snapshot, stringify,
+  // Binding
   $use, $bind, nodeRef,
+  // Lifecycle
   onMount, onCleanup,
+  // Async
   query, fetchState, streamState,
+  // Router UI (re-exported)
+  page, modal, UIRouter, Link, navigate,
+  // Head
+  Title, Meta, HeadLink, Style, headings,
+  // SSR
+  isolated, createLifecycle, setAsyncStorageAdapter,
+  // Other
   callback, type Bindable,
 } from '@anchorlib/react';
 ```
@@ -1285,10 +1439,11 @@ import {
 import '@anchorlib/react/client'; // MUST be first import at app entry
 ```
 
-### @anchorlib/react/router
+### @anchorlib/router
 
 ```tsx
-import { createRouter, page, modal, UIRouter, Link, navigate, RENDER_MODE, MAX_AGE } from '@anchorlib/react/router';
+// Re-exports @anchorlib/router — use for core router primitives
+import { createRouter, RENDER_MODE, MAX_AGE, Redirect, redirectUrl } from '@anchorlib/router';
 ```
 
 ### @anchorlib/router

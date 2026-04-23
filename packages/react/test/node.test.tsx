@@ -1,11 +1,11 @@
+import '../src/client/index';
 import { mutable } from '@anchorlib/core';
 import { render } from '@testing-library/react';
+import type { RefObject } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type NodeRef, setup } from '../src/index.js';
 import { createLifecycle } from '../src/lifecycle.js';
 import { applyAttributes, escapeAttributes, flattenStyles, multiRef, nodeRef } from '../src/node';
-import '../src/client/index';
-import type { RefObject } from 'react';
 
 describe('Anchor React - Node', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -38,12 +38,12 @@ describe('Anchor React - Node', () => {
 
     it('should update when current element is set', () => {
       const classRef = mutable('mounted');
-      const lifecycle = createLifecycle();
+      const lifecycle = createLifecycle({});
       const factory = (node?: HTMLElement) => ({
         className: node ? classRef.value : 'initial',
       });
 
-      const ref = lifecycle.render(() => nodeRef(factory), {} as never);
+      const ref = lifecycle.render(() => nodeRef(factory));
 
       // Create a mock element
       const element = document.createElement('div');
