@@ -1,5 +1,5 @@
 import { URLCache } from './cache.js';
-import { DYNAMIC_ROUTE_KEY, inheritConfig, WILDCARD_ROUTE_KEY } from './constant.js';
+import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
@@ -128,7 +128,7 @@ export class Router<Output = any> {
    * ```
    */
   constructor(options?: RouterOptions) {
-    this.options = inheritConfig(options);
+    this.options = { ...DEFAULT_CONFIG, ...options };
     this.rootRoute = new Route(this, '/', this.options);
     this.rootRegistry = new RouteRegistry(this.rootRoute);
   }
@@ -258,19 +258,19 @@ export class Router<Output = any> {
     const currentSegments = this.activeSegments || [];
     const targetSegments = segments;
 
-    // Update router state
-    this.activeRoute = match.route;
-    this.activeSegments = targetSegments;
-
     // Deactivate segments not in target (leaf to root)
-    const toDeactivate = currentSegments.filter((r) => !targetSegments.includes(r));
+    const toDeactivate = currentSegments.filter((r) => {
+      return !targetSegments.find((n) => n.route === r.route && n.store === r.store);
+    });
     for (const segment of toDeactivate.reverse()) {
       this.context.detach(segment.store);
       segment.route.deactivate();
     }
 
     // Activate new segments (root to leaf) without preloading
-    const toActivate = targetSegments.filter((r) => !currentSegments.includes(r));
+    const toActivate = targetSegments.filter((r) => {
+      return !currentSegments.find((n) => n.route === r.route && n.store === r.store);
+    });
 
     // Attach store and activate immediate segments.
     for (const segment of toActivate) {
@@ -295,6 +295,10 @@ export class Router<Output = any> {
       // Remove from activating routes.
       this.activatingSegments.delete(segment);
     }
+
+    // Update router state
+    this.activeRoute = match.route;
+    this.activeSegments = targetSegments;
   }
 
   /**
@@ -310,6 +314,7 @@ export class Router<Output = any> {
   public deactivate(): void {
     for (const segment of [...(this.activeSegments || [])].reverse()) {
       segment.route.deactivate();
+      this.context.detach(segment.store);
     }
 
     this.activeUrl = undefined;

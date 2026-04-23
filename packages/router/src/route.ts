@@ -1,6 +1,6 @@
-import { createObserver, mutable, retriable, type StateObserver, untrack } from '@anchorlib/core';
+import { anchor, createObserver, mutable, retriable, type StateObserver, untrack } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
-import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, inheritConfig, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
@@ -300,7 +300,7 @@ export class Route<
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
-    this.options = inheritConfig(router.options, options) as TOptions;
+    this.options = { ...DEFAULT_CONFIG, ...router.options, ...options } as TOptions;
   }
 
   /**
@@ -396,7 +396,7 @@ export class Route<
         TOutput
       > {
     if (this.closed) throw new Error(`Index route can't have a child route.`);
-    const child = new Route(this.router, path, inheritConfig(this.options, options), this);
+    const child = new Route(this.router, path, { ...this.options, ...options }, this);
 
     if (path === ('/' as TChildPath)) {
       child.closed = true;
@@ -701,6 +701,8 @@ export class Route<
     this.status = ROUTE_STATUS.IDLE;
 
     if (!this.options?.keepAlive) {
+      anchor.assign(this.state as TRec, { query: {}, params: {}, data: {} });
+
       this.data = {} as TData;
       this.error = undefined;
       this.resolved = false;

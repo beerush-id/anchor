@@ -46,9 +46,9 @@ describe('router.ts', () => {
         expect(router.context).toBeInstanceOf(RouterContext);
 
         expect(router.path).toBeUndefined();
-        expect(router.data).toEqual({});
-        expect(router.query).toEqual({});
-        expect(router.params).toEqual({});
+        expect(Object.keys(router.data)).toHaveLength(0);
+        expect(Object.keys(router.query)).toHaveLength(0);
+        expect(Object.keys(router.params)).toHaveLength(0);
       });
 
       it('should initialize activeSegments as undefined', () => {
@@ -70,7 +70,6 @@ describe('router.ts', () => {
       it('should return root route when path is /', () => {
         const result = router.route('/');
 
-        expect(result).toBeDefined();
         expect(result.name).toBe('');
         expect(router.rootRoute.index).toBe(result);
         expect(() => (result as any).route('/users')).toThrow();
@@ -79,7 +78,7 @@ describe('router.ts', () => {
       it('should set index route on root when path is /', () => {
         router.route('/');
         // The root route should have an index route
-        expect(router).toBeDefined();
+        expect(router.rootRoute.index).toBeDefined();
       });
 
       it('should create static route', () => {
@@ -99,17 +98,17 @@ describe('router.ts', () => {
 
       it('should register static route in root registry', () => {
         const route = router.route('/users');
-        expect(route).toBeDefined();
+        expect(router.find('/users')?.route).toBe(route);
       });
 
       it('should register dynamic route with DYNAMIC_ROUTE_KEY', () => {
         const route = router.route('/:id');
-        expect(route).toBeDefined();
+        expect(router.find('/123')?.route).toBe(route);
       });
 
       it('should register wildcard route with WILDCARD_ROUTE_KEY', () => {
         const route = router.route('/*');
-        expect(route).toBeDefined();
+        expect(router.find('/anything')?.route).toBe(route);
       });
 
       it('should merge router options with route options', () => {
@@ -124,9 +123,9 @@ describe('router.ts', () => {
         const postsRoute = router.route('/posts');
         const commentsRoute = router.route('/comments');
 
-        expect(usersRoute).toBeDefined();
-        expect(postsRoute).toBeDefined();
-        expect(commentsRoute).toBeDefined();
+        expect(usersRoute.path).toBe('/users');
+        expect(postsRoute.path).toBe('/posts');
+        expect(commentsRoute.path).toBe('/comments');
       });
     });
 
@@ -138,7 +137,7 @@ describe('router.ts', () => {
 
       it('should return match result for matching URL', () => {
         const result = router.find('/users');
-        expect(result).toBeDefined();
+        expect(result?.route.path).toBe('/users');
       });
 
       it('should return undefined for non-matching URL', () => {
@@ -149,18 +148,18 @@ describe('router.ts', () => {
       it('should handle URL object', () => {
         const url = new URL('/users', 'http://localhost');
         const result = router.find(url);
-        expect(result).toBeDefined();
+        expect(result?.route.path).toBe('/users');
       });
 
       it('should handle URL with query parameters', () => {
         const result = router.find('/users?tab=profile');
-        expect(result).toBeDefined();
+        expect(result?.route.path).toBe('/users');
         expect(result?.query).toEqual({ tab: 'profile' });
       });
 
       it('should handle URL with hash', () => {
         const result = router.find('/users#section');
-        expect(result).toBeDefined();
+        expect(result?.route.path).toBe('/users');
       });
 
       it('should use cache for repeated requests', () => {
@@ -184,35 +183,66 @@ describe('router.ts', () => {
 
       it('should activate a route', async () => {
         await router.activate('/users');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users');
       });
 
       it('should set activeSegments', async () => {
         await router.activate('/users');
-        expect(router.activeSegments).toBeDefined();
-        expect(router.activeSegments?.length).toBeGreaterThan(0);
+        expect(router.activeSegments?.length).toBe(2);
       });
 
-      it('should update context', async () => {
-        await router.activate('/users');
-        expect(router.context).toBeDefined();
+      it('should fully update context on navigation', async () => {
+        const usersRoute = router.route('/users').route('/:id');
+        const postsRoute = router.route('/posts').route('/:postId');
+
+        usersRoute.provide(
+          'user',
+          vi.fn(() => ({ name: 'John' }))
+        );
+        postsRoute.provide(
+          'post',
+          vi.fn(() => ({ title: 'Hello' }))
+        );
+
+        // State 1: Activate /users/123
+        await router.activate('/users/123?tab=profile');
+        expect(router.context.params.id).toBe('123');
+        expect(router.context.query.tab).toBe('profile');
+        expect(router.context.data.user).toEqual({ name: 'John' });
+
+        // Assert absence of posts data
+        expect(router.context.params.postId).toBeUndefined();
+        expect(router.context.data.post).toBeUndefined();
+
+        // State 2: Activate /posts/456
+        await router.activate('/posts/456?sort=desc');
+
+        // Verify context updated to new state
+        expect(router.context.params.postId).toBe('456');
+        expect(router.context.query.sort).toBe('desc');
+        expect(router.context.data.post).toEqual({ title: 'Hello' });
+
+        // Verify old state was cleared from context
+        expect(router.context.params.id).toBeUndefined();
+        expect(router.context.query.tab).toBeUndefined();
+        expect(router.context.data.user).toBeUndefined();
       });
 
       it('should handle URL object', async () => {
         const url = new URL('/users', 'http://localhost');
         await router.activate(url);
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users');
       });
 
       it('should handle URL with query parameters', async () => {
         await router.activate('/users?tab=profile');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users');
         expect(router.context.query.tab).toBe('profile');
       });
 
       it('should handle URL string with http protocol', async () => {
         await router.activate('http://localhost/users');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users');
       });
 
       it('should return undefined for non-matching URL', async () => {
@@ -269,7 +299,7 @@ describe('router.ts', () => {
 
         await router.activate('/posts');
         expect(router.activeRoute).not.toBe(firstActiveRoute);
-        expect(router.path).toBeDefined();
+        expect(router.path).toBe('/posts');
       });
 
       it('should handle race conditions', async () => {
@@ -434,8 +464,30 @@ describe('router.ts', () => {
         const postsRoute = userRoute.route('/posts');
 
         await router.activate('/users/123/posts');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute).toBe(postsRoute);
         expect(router.activeSegments?.length).toBe(4);
+      });
+
+      it('should preserve parent state on nested route activation', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+
+        const parentProvider = vi.fn(() => ({ parentData: 'parent' }));
+        const childProvider = vi.fn(() => ({ childData: 'child' }));
+
+        usersRoute.provide('parent', parentProvider);
+        userRoute.provide('child', childProvider);
+
+        await router.activate('/users');
+        const initialParentState = router.context.data.parent;
+        expect(initialParentState).toEqual({ parentData: 'parent' });
+
+        await router.activate('/users/123');
+        expect(parentProvider).toHaveBeenCalledTimes(1);
+        expect(childProvider).toHaveBeenCalledTimes(1);
+
+        expect(router.context.data.parent).toBe(initialParentState);
+        expect(router.context.data.child).toEqual({ childData: 'child' });
       });
 
       it('should handle guards with redirects', async () => {
@@ -484,18 +536,18 @@ describe('router.ts', () => {
       });
 
       it('should handle dynamic routes', async () => {
-        router.route('/users').route('/:id');
+        const userRoute = router.route('/users').route('/:id');
 
         await router.activate('/users/123');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute).toBe(userRoute);
         expect(router.context.params.id).toEqual('123');
       });
 
       it('should handle wildcard routes', async () => {
-        router.route('/api').route('/*');
+        const wildcardRoute = router.route('/api').route('/*');
 
         await router.activate('/api/v1/users');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute).toBe(wildcardRoute);
       });
 
       it('should handle query parameters', async () => {
@@ -522,6 +574,209 @@ describe('router.ts', () => {
       });
     });
 
+    describe('reactive navigation', () => {
+      beforeEach(() => {
+        router.deactivate();
+      });
+
+      it('should tear down and recreate on full tree changes', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+        const postsRoute = router.route('/posts');
+        const postRoute = postsRoute.route('/:postId');
+
+        const usersProvider = vi.fn(() => ({ type: 'users' }));
+        const userProvider = vi.fn(() => ({ type: 'user' }));
+        const postsProvider = vi.fn(() => ({ type: 'posts' }));
+        const postProvider = vi.fn(() => ({ type: 'post' }));
+
+        usersRoute.provide('users', usersProvider);
+        userRoute.provide('user', userProvider);
+        postsRoute.provide('posts', postsProvider);
+        postRoute.provide('post', postProvider);
+
+        await router.activate('/users/123');
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+
+        const initialUsersState = router.context.data.users;
+
+        await router.activate('/posts/456');
+        expect(postsProvider).toHaveBeenCalledTimes(1);
+        expect(postProvider).toHaveBeenCalledTimes(1);
+
+        // Assert users data is gone
+        expect(router.context.data.users).toBeUndefined();
+        expect(router.context.data.user).toBeUndefined();
+        expect(router.context.data.posts).toBeDefined();
+        expect(router.context.data.post).toBeDefined();
+
+        // Reactivate users and ensure it's recreated
+        await router.activate('/users/123');
+        expect(usersProvider).toHaveBeenCalledTimes(2); // Fully recreated
+        expect(userProvider).toHaveBeenCalledTimes(2);
+        expect(router.context.data.users).not.toBe(initialUsersState); // New identity
+      });
+
+      it('should preserve parent and tear down only leaf on leaf changes', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+        const postsRoute = userRoute.route('/posts');
+        const settingsRoute = userRoute.route('/settings');
+
+        const usersProvider = vi.fn(() => ({ type: 'users' }));
+        const userProvider = vi.fn(() => ({ type: 'user' }));
+        const postsProvider = vi.fn(() => ({ type: 'posts' }));
+        const settingsProvider = vi.fn(() => ({ type: 'settings' }));
+
+        usersRoute.provide('users', usersProvider);
+        userRoute.provide('user', userProvider);
+        postsRoute.provide('posts', postsProvider);
+        settingsRoute.provide('settings', settingsProvider);
+
+        await router.activate('/users/123/posts');
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+        expect(postsProvider).toHaveBeenCalledTimes(1);
+
+        const initialUsersState = router.context.data.users;
+        const initialUserState = router.context.data.user;
+
+        await router.activate('/users/123/settings');
+        // Parent providers should NOT be called again
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+        expect(settingsProvider).toHaveBeenCalledTimes(1);
+
+        // State preserved exactly
+        expect(router.context.data.users).toBe(initialUsersState);
+        expect(router.context.data.user).toBe(initialUserState);
+
+        // Leaf state switched
+        expect(router.context.data.posts).toBeUndefined();
+        expect(router.context.data.settings).toBeDefined();
+      });
+
+      it('should preserve entire tree and reactively re-run providers on param changes', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+
+        const usersProvider = vi.fn(() => ({ type: 'users' }));
+        const userProvider = vi.fn((ctx) => {
+          // Read param to establish a reactive dependency
+          return { type: 'user', currentId: ctx.params.id };
+        });
+
+        usersRoute.provide('users', usersProvider);
+        userRoute.provide('user', userProvider);
+
+        await router.activate('/users/123');
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+
+        const initialUsersState = router.context.data.users;
+
+        const activateSpy = vi.spyOn(userRoute, 'activate');
+
+        // Navigate with a new param
+        await router.activate('/users/456');
+
+        // Let the reactive observer flush
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // Ensure route.activate is NEVER called again
+        expect(activateSpy).not.toHaveBeenCalled();
+
+        // Parent provider didn't read param, so it's NOT re-run
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(router.context.data.users).toBe(initialUsersState);
+
+        // Child provider read ctx.params.id, so it should re-run in the background!
+        expect(userProvider).toHaveBeenCalledTimes(2);
+
+        // Verify state is successfully updated
+        expect(router.context.params.id).toBe('456');
+        expect(router.context.data.user).toEqual({ type: 'user', currentId: '456' });
+      });
+
+      it('should preserve entire tree and reactively re-run providers on query changes', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+
+        const usersProvider = vi.fn(() => ({ type: 'users' }));
+        const userProvider = vi.fn((ctx) => {
+          // Read query to establish a reactive dependency
+          return { type: 'user', currentTab: ctx.query.tab };
+        });
+
+        usersRoute.provide('users', usersProvider);
+        userRoute.provide('user', userProvider);
+
+        await router.activate('/users/123?tab=profile');
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+
+        const initialUsersState = router.context.data.users;
+
+        const activateSpy = vi.spyOn(userRoute, 'activate');
+
+        // Navigate with a new query
+        await router.activate('/users/123?tab=settings');
+
+        // Let the reactive observer flush
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // Ensure route.activate is NEVER called again
+        expect(activateSpy).not.toHaveBeenCalled();
+
+        // Parent provider didn't read query, so it's NOT re-run
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(router.context.data.users).toBe(initialUsersState);
+
+        // Child provider read ctx.query.tab, so it should re-run in the background!
+        expect(userProvider).toHaveBeenCalledTimes(2);
+
+        // Verify state is successfully updated
+        expect(router.context.query.tab).toBe('settings');
+        expect(router.context.data.user).toEqual({ type: 'user', currentTab: 'settings' });
+      });
+
+      it('should restore exact state identity from cache after full tree teardown', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+
+        const usersProvider = vi.fn(() => ({ type: 'users' }));
+        const userProvider = vi.fn(() => ({ type: 'user' }));
+
+        // Enable caching with a long maxAge
+        usersRoute.provide('users', usersProvider, { maxAge: 10000 });
+        userRoute.provide('user', userProvider, { maxAge: 10000 });
+
+        // State 1: First activation
+        await router.activate('/users/123');
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+
+        const cachedUsersState = router.context.data.users;
+        const cachedUserState = router.context.data.user;
+
+        // State 2: Full teardown
+        router.deactivate();
+        expect(router.context.data.users).toBeUndefined();
+
+        // State 3: Reactivate original route
+        await router.activate('/users/123');
+
+        // Providers should NOT be called again due to cache hit
+        expect(usersProvider).toHaveBeenCalledTimes(1);
+        expect(userProvider).toHaveBeenCalledTimes(1);
+
+        // State identity should be EXACTLY restored from cache
+        expect(router.context.data.users).toBe(cachedUsersState);
+        expect(router.context.data.user).toBe(cachedUserState);
+      });
+    });
+
     describe('edge cases', () => {
       it('should handle empty path', async () => {
         const result = await router.activate('');
@@ -531,31 +786,32 @@ describe('router.ts', () => {
       it('should handle root path', async () => {
         router.route('/');
         await router.activate('/');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/');
       });
 
       it('should handle paths with trailing slashes', async () => {
         router.route('/users');
         await router.activate('/users/');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users');
       });
 
       it('should handle paths with multiple slashes', async () => {
         router.route('/users');
         await router.activate('//users//');
-        expect(router.activeRoute).toBeDefined();
+        // Invalid URL fallback to root.
+        expect(router.activeRoute?.path).toBe('/');
       });
 
       it('should handle special characters in path', async () => {
         router.route('/users').route('/:slug');
         await router.activate('/users/my-awesome-post');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users/:slug');
       });
 
       it('should handle Unicode characters in path', async () => {
         router.route('/users').route('/:name');
         await router.activate('/users/张三');
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute?.path).toBe('/users/:name');
       });
 
       it('should handle very long paths', async () => {

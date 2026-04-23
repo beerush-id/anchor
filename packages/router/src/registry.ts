@@ -1,5 +1,6 @@
 import { anchor, mutable } from '@anchorlib/core';
 import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import { ROUTE_TYPE } from './enum.js';
 import { parseQuery } from './query.js';
 import { getStore } from './store.js';
 import type { MatchedRoute, MatchRouteSegment, ProviderContext, TRec, UnknownRoute } from './types.js';
@@ -98,15 +99,13 @@ export class RouteRegistry extends Map {
 
     const segment = urlSegments[index];
     const recursive = urlSegments.length > index + 1;
-    const storeKey = recursive ? segment : `${segment}${url.search}`;
 
     const staticRoute = segment === '' ? this : (this.get(segment) as RouteRegistry);
     const dynamicRoute = this.get(DYNAMIC_ROUTE_KEY) as RouteRegistry;
-
     const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteRegistry;
-    const store = this.store.get(storeKey);
 
     if (staticRoute) {
+      const store = this.store.get(segment);
       segments.push({ route: staticRoute.route, store });
 
       if (recursive) {
@@ -115,10 +114,10 @@ export class RouteRegistry extends Map {
         anchor.assign(store.query, query);
 
         if (staticRoute.route.index) {
-          const store = this.store.get(`${storeKey}:index`);
-          anchor.assign(store.query, query);
+          const $store = this.store.get(`${segment}:index`);
+          anchor.assign($store.query, store.query);
 
-          segments.push({ route: staticRoute.route.index, store });
+          segments.push({ route: staticRoute.route.index, store: $store });
         }
 
         return {
@@ -129,6 +128,7 @@ export class RouteRegistry extends Map {
         };
       }
     } else if (dynamicRoute) {
+      const store = this.store.get(ROUTE_TYPE.DYNAMIC);
       const name = dynamicRoute.name.replace(/^:/, '');
 
       store.params[name] = params[name] = segment;
@@ -140,10 +140,12 @@ export class RouteRegistry extends Map {
         anchor.assign(store.query, query);
 
         if (dynamicRoute.route.index) {
-          const store = this.store.get(`${storeKey}:index`);
-          anchor.assign(store.query, query);
+          const $store = this.store.get(`${ROUTE_TYPE.DYNAMIC}:index`);
 
-          segments.push({ route: dynamicRoute.route.index, store });
+          anchor.assign($store.query, store.query);
+          anchor.assign($store.params, store.params);
+
+          segments.push({ route: dynamicRoute.route.index, store: $store });
         }
 
         return {
@@ -154,16 +156,20 @@ export class RouteRegistry extends Map {
         };
       }
     } else if (wildcardRoute) {
-      anchor.assign(store.query, query);
+      const store = this.store.get(ROUTE_TYPE.WILDCARD);
 
       store.params['*'] = params['*'] = urlSegments.slice(index);
+      anchor.assign(store.query, query);
+
       segments.push({ route: wildcardRoute.route, store });
 
       if (wildcardRoute.route.index) {
-        const store = this.store.get(`${storeKey}:index`);
-        anchor.assign(store.query, query);
+        const $store = this.store.get(`${ROUTE_TYPE.WILDCARD}:index`);
 
-        segments.push({ route: wildcardRoute.route.index, store });
+        anchor.assign($store.query, store.query);
+        anchor.assign($store.params, store.params);
+
+        segments.push({ route: wildcardRoute.route.index, store: $store });
       }
 
       return {

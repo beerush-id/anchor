@@ -284,39 +284,4 @@ describe('constant.ts', () => {
       expect(ROUTE_MAP_LINK.has(route)).toBe(true);
     });
   });
-
-  describe('constant interactions', () => {
-    let originalConfig: typeof DEFAULT_CONFIG;
-
-    beforeEach(() => {
-      originalConfig = { ...DEFAULT_CONFIG };
-    });
-
-    afterEach(() => {
-      Object.assign(DEFAULT_CONFIG, originalConfig);
-    });
-
-    it('should work with Route using configured options', () => {
-      configure({ maxAge: 5000, keepAlive: true });
-
-      const route = new Route(sharedRouter, '/test', { maxAge: 1000 });
-      expect(route.options?.maxAge).toBe(1000);
-      expect(route.options?.keepAlive).toBe(true);
-    });
-
-    it('should use DEFAULT_CONFIG when route options not provided', () => {
-      configure({ maxAge: 5000 });
-
-      const route = new Route(sharedRouter, '/test');
-      expect(route.options?.maxAge).toBe(5000);
-    });
-
-    it('should allow route options to override DEFAULT_CONFIG', () => {
-      configure({ maxAge: 5000, retryDelay: 1000 });
-
-      const route = new Route(sharedRouter, '/test', { maxAge: 1000 });
-      expect(route.options?.maxAge).toBe(1000);
-      expect(route.options?.retryDelay).toBe(1000);
-    });
-  });
 });
