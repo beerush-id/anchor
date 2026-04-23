@@ -161,6 +161,105 @@ app.listen(3000, () => {
 });
 ```
 
+## Vite SSR Setup
+
+Vite provides excellent native support for SSR. To use Anchor with Vite SSR, you typically split your server logic into two files: a server entry point and your main Node/Express server.
+
+### 1. Server Entry (`entry-server.tsx`)
+
+This file exposes a `render` function that Vite will load dynamically. It isolates the request and renders the headless router.
+
+```tsx
+import { renderToString } from 'react-dom/server';
+import { isolated, createLifecycle } from '@anchorlib/react';
+import { UIRouter, Redirect, redirectUrl } from '@anchorlib/react/router';
+import { router } from './router';
+import AppRoot from './Index';
+
+export async function render(url: string) {
+  let html = '';
+  let redirect: string | undefined;
+
+  await isolated.async(async () => {
+    const scope = createLifecycle();
+    
+    await scope.runAsync(async () => {
+      try {
+        await router.activate(url);
+        html = renderToString(
+          <UIRouter router={router} root={AppRoot} url={url} headless={true} />
+        );
+      } catch (error) {
+        if (error instanceof Redirect) {
+          redirect = redirectUrl(error);
+        } else {
+          throw error;
+        }
+      }
+    });
+
+    scope.destroy();
+  });
+
+  return { html, redirect };
+}
+```
+
+### 2. Vite Dev Server (`server.js`)
+
+In your Vite development server, you initialize the storage adapter once, then call your `render` function for incoming requests.
+
+```javascript
+import fs from 'node:fs/promises';
+import express from 'express';
+import { createServer as createViteServer } from 'vite';
+import { setAsyncStorageAdapter } from '@anchorlib/react';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+// 1. Initialize Async Storage for the entire server
+setAsyncStorageAdapter(new AsyncLocalStorage());
+
+async function createServer() {
+  const app = express();
+  const vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: 'custom'
+  });
+
+  app.use(vite.middlewares);
+
+  app.use('*', async (req, res, next) => {
+    try {
+      const url = req.originalUrl;
+      
+      // Load the Vite SSR entry point
+      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
+      
+      // Call the Anchor render function
+      const { html, redirect } = await render(url);
+
+      if (redirect) {
+        return res.redirect(302, redirect);
+      }
+
+      // Load index.html and inject the rendered app
+      let template = await fs.readFile('./index.html', 'utf-8');
+      template = await vite.transformIndexHtml(url, template);
+      const finalHtml = template.replace(`<!--app-html-->`, html);
+
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+
+  app.listen(5173, () => console.log('Vite SSR server running on http://localhost:5173'));
+}
+
+createServer();
+```
+
 ## Client Hydration
 
 On the client side, initialization remains mostly the same. You just need to ensure the router matches the current URL before rendering, so hydration works correctly without flashes of content.

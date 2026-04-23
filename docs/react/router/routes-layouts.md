@@ -33,7 +33,7 @@ export const usersRoute = rootRoute.route('/users');
 ```
 
 ```ts
-// routes/users/profile/route.ts
+// routes/users/[user_id]/route.ts
 import { usersRoute } from '../route.js';
 
 export const profileRoute = usersRoute.route('/:user_id');
@@ -58,11 +58,11 @@ By defining routes as objects rather than React components, Anchor forces a scal
 Once a route exists in the abstract tree, you attach the actual UI using `.render()` and wrap the result back to the framework using `page()`.
 
 ```tsx
-// routes/users/Index.tsx
+// routes/users/layout.tsx
 import { page } from '@anchorlib/react/router';
 import { usersRoute } from './route.js';
 
-export const UsersRoute = page(
+export const UsersLayout = page(
   usersRoute.render((_state, _ctx, children) => (
     <div>
       <header>Users</header>
@@ -71,7 +71,7 @@ export const UsersRoute = page(
   ))
 );
 
-export default UsersRoute;
+export default UsersLayout;
 ```
 
 **What it solves:**
@@ -116,10 +116,10 @@ When building a parent route, use the `children` parameter to compose a persiste
 Conversely, leaf routes sit at the absolute end of a path. Because they have no further descendants to project, they operate on their own `state` without needing to render the slot:
 
 ```tsx
-.render((state) => (
+.render((_state, context) => (
   <div>
     <h1>User Profile</h1>
-    <p>{state.context?.params.user_id}</p>
+    <p>{context.params.user_id}</p>
   </div>
 ))
 ```
@@ -132,54 +132,68 @@ Conversely, leaf routes sit at the absolute end of a path. Because they have no 
 Calling `.route('/')` on a parent creates an index route—the default view injected into the `children` slot when the parent path matches without traversing deeper.
 
 ```tsx
-// routes/users/UserList.tsx
-import { page, Link } from '@anchorlib/react/router';
-import { usersRoute } from './route.js';
-import Profile from './profile/Index.js';
+// routes/users/route.ts
+export const usersIndexRoute = usersRoute
+  .route('/')
+  .provide('users', () => [
+    { id: '1', name: 'Alice' },
+    { id: '2', name: 'Bob' },
+  ]);
+```
 
-export const UserListRoute = page(
-  usersRoute
-    .route('/')
-    .provide('users', () => [
-      { id: '1', name: 'Alice' },
-      { id: '2', name: 'Bob' },
-    ])
-    .render((state) => (
+```tsx
+// routes/users/page.tsx
+import { page, Link } from '@anchorlib/react/router';
+import { usersIndexRoute } from './route.js';
+import { ProfilePage } from './[user_id]/page.js';
+
+export const UsersPage = page(
+  usersIndexRoute.render((state) => {
+    const UsersList = template(() => (
       <ul>
         {state.data?.users?.map((user) => (
           <li key={user.id}>
-            <Link to={Profile} params={{ user_id: user.id }}>
+            <Link to={ProfilePage} params={{ user_id: user.id }}>
               {user.name}
             </Link>
           </li>
         ))}
       </ul>
-    ))
+    ));
+
+    return <UsersList />;
+  })
 );
 ```
 
-When the URL is `/users`, the layout renders with `UserListRoute` sitting in its `{children}` slot. When the user navigates to `/users/42`, the parent layout stays where it is, `UserListRoute` unmounts, and the Profile leaf route replaces it.
+When the URL is `/users`, the layout renders with `UsersPage` sitting in its `{children}` slot. When the user navigates to `/users/42`, the parent layout stays where it is, `UsersPage` unmounts, and the Profile leaf route replaces it.
 
 ## Modal Routes
 
 Sometimes you want a route to render as an overlay floating on top of the current page, rather than swapping out the page content. Anchor provides a `modal()` factory for this.
 
 ```tsx
-import { modal } from '@anchorlib/react/router';
-import { usersRoute } from './route.js';
+// routes/users/invite/route.ts
+import { usersRoute } from '../route.js';
 
-export const UserInviteRoute = modal(
-  usersRoute
-    .route('/invite')
-    .render(() => (
-      <dialog open>
-        <h1>Invite User</h1>
-      </dialog>
-    ))
+export const userInviteRoute = usersRoute.route('/invite');
+```
+
+```tsx
+// routes/users/invite/page.tsx
+import { modal } from '@anchorlib/react/router';
+import { userInviteRoute } from './route.js';
+
+export const UserInvitePage = modal(
+  userInviteRoute.render(() => (
+    <dialog open>
+      <h1>Invite User</h1>
+    </dialog>
+  ))
 );
 ```
 
-When navigating to `/users/invite`, the main page remains mounted as it was. The `UserInviteRoute` renders globally in a separate, top-level reactive stack managed by `<UIRouter>`, placing it above the rest of the application tree. Everything else (guards, providers, reactivity) functions like a standard `page()` route. Shareable links and browser back navigation are handled out of the box.
+When navigating to `/users/invite`, the main page remains mounted as it was. The `UserInvitePage` renders globally in a separate, top-level reactive stack managed by `<UIRouter>`, placing it above the rest of the application tree. Everything else (guards, providers, reactivity) functions like a standard `page()` route. Shareable links and browser back navigation are handled out of the box.
 
 ## Route State
 
@@ -191,17 +205,29 @@ The `state` object passed to `.render()` is reactive. It triggers surgical updat
 | `state.status` | `'idle' \| 'pending' \| 'success' \| 'error'` | Current lifecycle status |
 | `state.data` | `object` | Resolved provider data |
 | `state.error` | `RouteError \| undefined` | Error from guard or provider failure |
-| `state.context` | `object` | Active context: `{ params, query, data }` |
 | `state.resolving` | `boolean` | Whether providers are currently running |
 | `state.authenticating` | `boolean` | Whether guards are currently running |
+
+### `state` vs `context`
+
+When calling `.render((state, context) => ...)`, it is crucial to understand the difference between the two reactive objects:
+
+- **`state` (Route-Scoped):** Represents the specific state of *this exact route segment*. `state.data` only contains data resolved by providers attached directly to this specific route.
+- **`context` (Tree-Scoped):** Represents the global `RouterContext` shared across the entire active route tree. `context.data` contains the merged result of all providers across all active parent and child routes, and `context.params` contains all merged URL parameters.
+
+Use `state` when you only care about the lifecycle and data of the current component. Use `context` when you need to read URL parameters or access data provided by a parent layout.
 
 You can leverage `state.status` to render loading layouts while preserving the layout shell when using `renderMode: 'immediate'`:
 
 ```tsx
-.render((state) => {
-  if (state.status === 'pending') return <div>Loading Profile...</div>;
+.render((state, context) => {
+  const ProfileContent = template(() => {
+    if (state.status === 'pending') return <div>Loading Profile...</div>;
 
-  return <h1>{state.context?.data?.profile?.name}</h1>;
+    return <h1>{context?.data?.profile?.name}</h1>;
+  });
+
+  return <ProfileContent />;
 })
 ```
 
@@ -230,17 +256,18 @@ src/
 │   └── router.ts           ← createRouter()
 ├── routes/
 │   ├── route.ts             ← rootRoute = router.route('/')
-│   ├── Index.tsx            ← RootRoute (layout + nav)
+│   ├── layout.tsx           ← RootLayout (layout shell)
+│   ├── page.tsx             ← HomePage (leaf)
 │   ├── users/
 │   │   ├── route.ts         ← usersRoute = rootRoute.route('/users')
-│   │   ├── Index.tsx        ← UsersRoute (layout)
-│   │   ├── UserList.tsx     ← usersRoute.route('/') (index)
-│   │   └── profile/
+│   │   ├── layout.tsx       ← UsersLayout (layout)
+│   │   ├── page.tsx         ← UsersPage (exact match at /users)
+│   │   └── [user_id]/
 │   │       ├── route.ts     ← profileRoute = usersRoute.route('/:user_id')
-│   │       └── Index.tsx    ← ProfileRoute (leaf)
+│   │       └── page.tsx     ← ProfilePage (leaf)
 │   └── settings/
 │       ├── route.ts         ← settingsRoute = rootRoute.route('/settings')
-│       └── Index.tsx        ← SettingsRoute (leaf)
+│       └── page.tsx         ← SettingsPage (leaf)
 ```
 
-The route definition file (`route.ts`) acts as the pure schema. The component file (`Index.tsx`) imports that schema, chains the UI via `.render()`, and exports the sealed `page()`.
+The route definition file (`route.ts`) acts as the pure schema. The component file (`layout.tsx` or `page.tsx`) imports that schema, chains the UI via `.render()`, and exports the sealed `page()`.

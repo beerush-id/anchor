@@ -16,21 +16,34 @@ Because providers are chained to the route builder, TypeScript tracks the return
 Call `.provide()` to attach a named data fetcher to a route. It receives the URL `params` and `query` directly.
 
 ```tsx
-import { route } from '@anchorlib/react/router';
+// route.ts
+import { usersRoute } from '../route.js';
+
+export const profileRoute = usersRoute
+  .route('/:user_id')
+  .provide('profile', async ({ params }) => {
+    const res = await fetch(`/api/users/${params.user_id}`);
+    return res.json();
+  });
+```
+
+```tsx
+// page.tsx
+import { page } from '@anchorlib/react/router';
+import { template } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
-export const ProfileRoute = route(
-  profileRoute
-    .provide('profile', async ({ params }) => {
-      const res = await fetch(`/api/users/${params.user_id}`);
-      return res.json();
-    })
-    .render((state) => (
+export const ProfilePage = page(
+  profileRoute.render((state) => {
+    const Profile = template(() => (
       <div>
         <h1>{state.data?.profile?.name}</h1>
         <p>{state.data?.profile?.email}</p>
       </div>
-    ))
+    ));
+
+    return <Profile />
+  })
 );
 ```
 
@@ -41,7 +54,9 @@ Providers run inside reactive observers. If a provider reads global reactive sta
 This allows you to resolve complex dependencies based on non-URL state without tracking anything or invalidating caches. For example, if a provider reads a dynamic array of active dashboard widgets from a global store, modifying those widgets triggers a background provider re-evaluation:
 
 ```tsx
+// route.ts
 import { mutable } from '@anchorlib/react';
+import { rootRoute } from '../route.js';
 
 // 1. A global dynamic state (e.g., manipulated by a settings panel)
 export const dashboardState = mutable({ 
@@ -60,10 +75,20 @@ export const dashboardRoute = rootRoute
     
     const res = await fetch(`/api/analytics?${query}`);
     return res.json();
-  })
-  .render((state) => (
+  });
+```
+
+```tsx
+// page.tsx
+import { page } from '@anchorlib/react/router';
+import { dashboardRoute } from './route.js';
+import { Dashboard } from './Dashboard.js';
+
+export const DashboardPage = page(
+  dashboardRoute.render((state) => (
     <Dashboard data={state.data?.analytics} />
-  ));
+  ))
+);
 ```
 
 **What it solves:**
@@ -76,7 +101,9 @@ export const dashboardRoute = rootRoute
 You can chain multiple `.provide()` calls on a single route. They run in sequence in the order you define them, and downstream providers receive the data resolved by the upstream providers.
 
 ```tsx
-profileRoute
+// route.ts
+export const profileRoute = usersRoute
+  .route('/:user_id')
   .provide('user', async ({ params }) => {
     const res = await fetch(`/api/users/${params.user_id}`);
     return res.json();
@@ -85,13 +112,19 @@ profileRoute
     // `data.user` is resolved and available here
     const res = await fetch(`/api/users/${params.user_id}/posts`);
     return res.json();
-  })
-  .render((state) => (
+  });
+```
+
+```tsx
+// page.tsx
+export const ProfilePage = page(
+  profileRoute.render((state) => (
     <div>
-      <h1>{state.data?.user?.name}</h1>
+      <h1>Feeds</h1>
       <Feed items={state.data?.posts} />
     </div>
-  ));
+  ))
+);
 ```
 
 **What it solves:**
@@ -127,7 +160,7 @@ const router = createRouter<ReactNode>({
 When combined with `<Link preload="hover">`, providers begin fetching data the exact millisecond the user hovers their mouse over a link.
 
 ```tsx
-<Link to={ProfileRoute} params={{ user_id: '42' }} preload="hover">
+<Link to={ProfilePage} params={{ user_id: '42' }} preload="hover">
   View Profile
 </Link>
 ```
@@ -148,12 +181,18 @@ const router = createRouter<ReactNode>({
 ```
 
 ```tsx
-.render((state) => {
-  if (state.status === 'pending') return <Skeleton />;
-  if (state.status === 'error') return <ErrorDisplay error={state.error} />;
+// page.tsx
+export const ProfilePage = page(
+  profileRoute.render((state) => {
+    const Profile = template(() => {
+      if (state.status === 'pending') return <Skeleton />;
+      if (state.status === 'error') return <ErrorDisplay error={state.error} />;
 
-  return <h1>{state.data?.profile?.name}</h1>;
-})
+      return <h1>{state.data?.profile?.name}</h1>;
+    });
+    return <Profile />;
+  })
+);
 ```
 
 **What it solves:**
@@ -176,18 +215,28 @@ const profile = usersRoute.route('/:user_id', {
 
 ## Accessing Data
 
-Once providers resolve, the returned objects are merged into the route state by their explicitly defined keys (e.g., `.provide('posts', ...)`). 
+Once providers resolve, the returned objects are mapped by their explicitly defined keys (e.g., `.provide('posts', ...)`).
 
-Provider data appears in two places:
-1. **`state.data`** — Top-level, flattened access to all resolved providers.
-2. **`state.context.data`** — The same data, scoped inside the full context object.
+You can access this data in two distinct ways, depending on what you need:
+
+1. **`state.data` (Route-Local Data):** Contains *only* the data resolved by the providers attached directly to this specific route.
+2. **`context.data` (Global Merged Data):** Contains the merged data from all providers across the entire active route tree (including parent layouts). Available via the second parameter of the `.render()` function.
 
 ```tsx
-.render((state) => {
-  // Both work perfectly:
-  const name = state.data?.profile?.name;
-  const also = state.context?.data?.profile?.name;
+// page.tsx
+export const ProfilePage = page(
+  profileRoute.render((state, context) => {
+    const NameView = template(() => (
+      <div>
+        {/* Accessing local provider data */}
+        <h1>{state.data?.profile?.name}</h1>
+        
+        {/* Accessing global data provided by a parent layout */}
+        <p>Current Theme: {context?.data?.theme}</p>
+      </div>
+    ));
 
-  return <h1>{name}</h1>;
-})
+    return <NameView />;
+  })
+);
 ```

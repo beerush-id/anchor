@@ -5,22 +5,31 @@ Guards guarantee that your React components never mount in an invalid state. By 
 If a guard throws a redirect or returns false, the navigation halts before the route ever commits. There is no flash of unauthorized content because the UI component never mounts.
 
 ```tsx
+// route.ts
 import { redirect } from '@anchorlib/router';
-import { route } from '@anchorlib/react/router';
+import { rootRoute } from '../route.js';
 
-export const DashboardRoute = route(
-  dashboardRoute
-    .guard(async () => {
-      const features = await getFeatureFlags();
-      if (!features.showNewDashboard) throw redirect(legacyDashboardRoute);
-    })
-    .guard(async () => {
-      const sub = await checkSubscription();
-      if (sub.tier !== 'enterprise') throw new Error('Requires Enterprise tier.');
-    })
-    .render((_state, _ctx, children) => (
-      <main>{children}</main>
-    ))
+export const dashboardRoute = rootRoute
+  .route('/dashboard')
+  .guard(async () => {
+    const features = await getFeatureFlags();
+    if (!features.showNewDashboard) throw redirect(legacyDashboardRoute);
+  })
+  .guard(async () => {
+    const sub = await checkSubscription();
+    if (sub.tier !== 'enterprise') throw new Error('Requires Enterprise tier.');
+  });
+```
+
+```tsx
+// layout.tsx
+import { page } from '@anchorlib/react/router';
+import { dashboardRoute } from './route.js';
+
+export const DashboardLayout = page(
+  dashboardRoute.render((_state, _ctx, children) => (
+    <main>{children}</main>
+  ))
 );
 ```
 
@@ -100,16 +109,23 @@ throw redirect(profileRoute, { user_id: '42' });
 If a guard throws a standard `Error` instead of a `Redirect`, the error is surfaced to `state.error`.
 
 ```tsx
-.render((state, _ctx, children) => {
-  if (state.error) {
-    return (
-      <div className="error-barrier">
-        <h2>Access Denied</h2>
-        <p>{state.error.message}</p>
-      </div>
-    );
-  }
+// layout.tsx
+export const DashboardLayout = page(
+  dashboardRoute.render((state, _ctx, children) => {
+    const ErrorBarrier = template(() => {
+      if (state.error) {
+        return (
+          <div className="error-barrier">
+            <h2>Access Denied</h2>
+            <p>{state.error.message}</p>
+          </div>
+        );
+      }
 
-  return <main>{children}</main>;
-})
+      return <main>{children}</main>;
+    });
+
+    return <ErrorBarrier />;
+  })
+);
 ```

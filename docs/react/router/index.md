@@ -3,7 +3,8 @@
 Anchor Router is a **strongly-typed** React application router that doesn't ask you to install **React Router** for routing, **React Query** for data fetching, **Zustand** for state management, and write custom `<PrivateRoute>` wrappers for access control. Instead of gluing multiple libraries together, it builds all of this into a single, fully-typed route object:
 
 ```tsx
-const profileRoute = usersRoute
+// route.ts
+export const profileRoute = usersRoute
   .route('/:user_id')
   .guard(() => {
     if (!isAuthenticated()) throw redirect(loginRoute);
@@ -13,18 +14,27 @@ const profileRoute = usersRoute
   })
   .provide('notifications', ({ params }) => {
     return getUserNotifications(params.user_id);
-  })
-  .render((state) => {
+  });
+```
+
+```tsx
+// page.tsx
+import { page } from '@anchorlib/react/router';
+import { template } from '@anchorlib/react';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(
+  profileRoute.render(({ data }) => {
     const ProfileCard = template(() => (
       <div>
-        <h1>{state.data?.profile?.name}</h1>
-        <p>{state.data?.profile?.email}</p>
+        <h1>{data.profile?.name}</h1>
+        <p>{data.profile?.email}</p>
       </div>
     ));
 
     const Notifications = template(() => (
       <ul>
-        {state.data?.notifications?.map((notification) => (
+        {data.notifications?.map((notification) => (
           <li key={notification.id}>{notification.message}</li>
         ))}
       </ul>
@@ -36,9 +46,8 @@ const profileRoute = usersRoute
         <Notifications />
       </>
     );
-  });
-
-export const Profile = page(profileRoute);
+  })
+);
 ```
 
 ### What's happening here
@@ -77,7 +86,7 @@ Data loading is handled by providers, which also execute outside the React lifec
 
 #### View
 
-Because Anchor resolves guards and providers outside the React lifecycle, the `.render()` function represents pure UI. Because the route is a single chain, TypeScript infers the exact shape of your data—giving you perfect autocomplete for `state.data.profile` and `state.data.notifications`. 
+Because Anchor resolves guards and providers outside the React lifecycle, the `.render()` function represents pure UI injection. It is a plain function, not a reactive block. Because the route is a single chain, TypeScript infers the exact shape of your data—giving you perfect autocomplete for `state.data.profile` and `state.data.notifications`. 
 
 By wrapping your components in the `template()` HOC, you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the specific DOM node reading that data re-renders, not the entire page.
 
@@ -132,10 +141,10 @@ export const router = createRouter<ReactNode>({
 // main.tsx
 import { UIRouter } from '@anchorlib/react/router';
 import { router } from './lib/router.js';
-import AppRoot from './routes/Index.js';
+import { RootLayout } from './routes/layout.js';
 
 createRoot(document.body).render(
-  <UIRouter router={router} root={AppRoot} resetScroll={true} />
+  <UIRouter router={router} root={RootLayout} resetScroll={true} />
 );
 ```
 
@@ -153,9 +162,11 @@ export const rootRoute = router.route('/');
 
 // routes/users/route.ts
 import { rootRoute } from '../route.js';
-export const usersRoute = rootRoute.route('/users');
+export const usersRoute = rootRoute
+  .route('/users')
+  .provide('meta', async () => ({ title: 'All Users' }));
 
-// routes/users/profile/route.ts
+// routes/users/[user_id]/route.ts
 import { usersRoute } from '../route.js';
 export const profileRoute = usersRoute.route('/:user_id');
 ```
@@ -163,20 +174,18 @@ export const profileRoute = usersRoute.route('/:user_id');
 Layout routes receive `children` as the third argument to `.render()`:
 
 ```tsx
-// routes/users/Index.tsx
+// routes/users/layout.tsx
 import { page } from '@anchorlib/react/router';
 import { usersRoute } from './route.js';
 
-usersRoute
-  .provide('meta', async () => ({ title: 'All Users' }))
-  .render((_state, _ctx, children) => (
+export const UsersLayout = page(
+  usersRoute.render((_state, _ctx, children) => (
     <div>
       <header>Users</header>
       {children}
     </div>
-  ));
-
-export default page(usersRoute);
+  ))
+);
 ```
 
 When the URL is `/users`, `{children}` contains the index route. Navigate to `/users/42`, and only `{children}` swaps to the profile — the layout stays mounted.

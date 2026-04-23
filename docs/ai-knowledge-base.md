@@ -106,7 +106,9 @@ my-app/
 │   └── auth.ts
 ├── routes/
 │   ├── route.ts
-│   └── Index.tsx
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── index.ts
 ├── components/
 │   └── UserCard.tsx
 ├── lib/
@@ -160,7 +162,7 @@ my-project/
 │   └── worker/                # Web Worker handler
 ```
 
-Route definitions (`route.ts`) are always separated from views (`Index.tsx`). This eliminates circular dependencies and allows the route tree to be evaluated without importing React.
+Route definitions (`route.ts`) are separated from views (`layout.tsx`, `page.tsx`). The route tree evaluates without importing any view framework.
 
 ## Installation
 
@@ -420,24 +422,19 @@ const [user, posts, stats] = await Promise.all([
 
 ### Context & Middleware
 
-The router's `resolve()` accepts `initContext` — `[key, value]` tuples seeding the request context. Middleware and handlers read via `getContext()`, write via `setContext()`. They never reference transport-specific types, making middleware portable across all transports.
-
-Access control (authentication, RBAC, permissions) is the application's responsibility, not the transport's. Build it as standard middleware and utility functions that run before handler execution:
+`getContext()` and `setContext()` provide transport-agnostic request context. Initial values are seeded by `router.resolve()` at the entry point:
 
 ```tsx
 import { getContext, setContext } from '@irpclib/irpc';
 
-// Entry point — extract values from the transport-specific object
-router.resolve(req, [['token', req.headers.get('authorization')]]);
-
-// Middleware — transport-agnostic, reusable across HTTP/WS/Broadcast
+// Middleware runs before constructors — transport-agnostic
 router.use(async () => {
   const token = getContext<string>('token');
   if (!token) throw new Error('Unauthorized');
   setContext('user', await verifyToken(token));
 });
 
-// Server — reads standardized context
+// Constructors read enriched context
 irpc.construct(getProfile, async () => {
   const user = getContext<User>('user');
   return await db.users.findById(user.id);
@@ -465,6 +462,7 @@ Bun.serve({
   fetch(req) {
     if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
       return router.resolve(req, [
+        // Seed request context — available via getContext('token') in middleware/constructors
         ['token', req.headers.get('authorization')],
       ]);
     }
@@ -543,10 +541,10 @@ try {
 }
 ```
 
-Surface errors to the user based on context:
+Error surfaces:
 
-- **Form-related errors** → inline validation messages next to the relevant field.
-- **Background task errors** → toast notifications or status indicators.
+- **Form-related** → inline validation next to the field.
+- **Background tasks** → toast or status indicator.
 
 ## State Management
 
@@ -689,24 +687,50 @@ export const Counter = setup((props) => {
 
 ### View Patterns
 
-**render()** — Primary reactive view:
+The point of AIR Stack is **fine-grained reactivity**. Do NOT put everything in a single `render()` — that recreates React's re-render cascade where the entire component re-renders on any state change.
+
+**snippet()** — THE DEFAULT. Each snippet is an independent reactive boundary that updates only when its tracked state changes:
 
 ```tsx
-return render(() => <div>{state.title}</div>);
+export const Dashboard = setup(() => {
+  const state = mutable({ title: 'Dashboard', items: [], loading: true });
+
+  const Header = snippet(() => <h1>{state.title}</h1>, 'Header');
+  const ItemList = snippet(() => (
+    <ul>{state.items.map(item => <li key={item.id}>{item.name}</li>)}</ul>
+  ), 'ItemList');
+  const Status = snippet(() => (
+    state.loading ? <p>Loading...</p> : <p>{state.items.length} items</p>
+  ), 'Status');
+
+  // Static layout — NEVER re-renders. Snippets update independently.
+  return (
+    <div>
+      <Header />
+      <Status />
+      <ItemList />
+    </div>
+  );
+}, 'Dashboard');
 ```
 
-**snippet()** — Independent reactive section within `setup()`:
+When `state.title` changes, ONLY `<Header />` re-renders. `<ItemList />` and `<Status />` are untouched. This is fine-grained reactivity.
 
 ```tsx
-const Header = snippet(() => <h1>{state.title}</h1>, 'Header');
-const Content = snippet(() => <p>{state.data}</p>, 'Content');
-
-return (
+// ❌ WRONG — React habit. Everything re-renders on any state change.
+return render(() => (
   <div>
-    <Header />   {/* Re-renders only when state.title changes */}
-    <Content />  {/* Re-renders only when state.data changes */}
+    <h1>{state.title}</h1>
+    <p>{state.loading ? 'Loading...' : `${state.items.length} items`}</p>
+    <ul>{state.items.map(item => <li key={item.id}>{item.name}</li>)}</ul>
   </div>
-);
+));
+```
+
+**render()** — Use ONLY for simple components with a single reactive concern:
+
+```tsx
+return render(() => <button onClick={increment}>Count: {state.count}</button>);
 ```
 
 **template()** — Standalone reusable view, props-only:
@@ -815,43 +839,147 @@ export const router = createRouter<ReactNode>({
 
 // main.tsx
 import { UIRouter } from '@anchorlib/react/router';
-<UIRouter router={router} root={AppRoot} />
+<UIRouter router={router} root={RootLayout} />
 ```
 
 ### Route Tree
 
-Routes are pure TypeScript objects, separate from views:
+A route renders its view. If it has child routes, it receives `{children}` — the matched child's view. A child route declared with `/` as its path is the default content — it renders when the parent's URL matches exactly, with no further path segments.
+
+Each route is a directory with a standard structure. Folder names mirror URL segments:
+
+- `route.ts` — route definition, providers, guards (portable — no framework imports)
+- `layout.tsx` — layout view for routes with children (receives `{children}`)
+- `page.tsx` — page view for exact match or leaf content
+- `index.ts` — barrel export
+
+```
+routes/                         # /
+├── route.ts
+├── layout.tsx                  # app shell
+├── page.tsx                    # home content (exact match at /)
+├── index.ts
+├── users/                      # /users
+│   ├── route.ts
+│   ├── layout.tsx              # users layout
+│   ├── page.tsx                # user list (exact match at /users)
+│   ├── index.ts
+│   └── [user_id]/              # /users/:user_id
+│       ├── route.ts
+│       ├── page.tsx
+│       └── index.ts
+└── dashboard/                  # /dashboard
+    ├── route.ts
+    ├── page.tsx
+    └── index.ts
+```
+
+### Route Definitions
 
 ```tsx
+// routes/route.ts
+import { router } from '../lib/router.js';
 export const rootRoute = router.route('/');
+export const homeRoute = rootRoute.route('/');
+```
+
+```tsx
+// routes/users/route.ts
+import { rootRoute } from '../route.js';
 export const usersRoute = rootRoute.route('/users');
-export const profileRoute = usersRoute.route('/:user_id');
+export const usersListRoute = usersRoute.route('/');
 ```
 
-### Attach Views
-
-**Page** — rendered as a page tree (nested layout):
+```tsx
+// routes/users/[user_id]/route.ts
+import { usersRoute } from '../route.js';
+export const profileRoute = usersRoute.route('/:user_id')
+  .provide('user', async ({ params }) => getUser(params.user_id));
+```
 
 ```tsx
+// routes/dashboard/route.ts — guards and providers
+import { redirect } from '@anchorlib/router';
+import { rootRoute } from '../route.js';
+import { loginRoute } from '../login/route.js';
+export const dashboardRoute = rootRoute.route('/dashboard')
+  .guard(async () => { if (!auth.isAuthenticated) throw redirect(loginRoute); })
+  .provide('stats', async () => getStats());
+```
+
+Guards and providers run inside reactive observers — reading Anchor state auto-triggers re-evaluation. Guards execute before providers. Providers execute sequentially, each receiving data from the previous.
+
+### Route Views
+
+`page()` returns a `RouteComponent` — used by `<Link>` and `navigate()` for type-safe navigation:
+
+```tsx
+// routes/layout.tsx — app shell
+import { page, Link } from '@anchorlib/react/router';
+import { rootRoute } from './route.js';
+import { HomePage } from './index.js';
+import { UsersLayout } from './users/index.js';
+
+export const RootLayout = page(
+  rootRoute.render((_state, _ctx, children) => (
+    <div className="app-layout">
+      <nav>
+        <Link to={HomePage}>Home</Link>
+        <Link to={UsersLayout}>Users</Link>
+      </nav>
+      <main>{children}</main>
+    </div>
+  ))
+);
+export default RootLayout;
+```
+
+```tsx
+// routes/page.tsx — home content (exact match at /)
 import { page } from '@anchorlib/react/router';
+import { homeRoute } from './route.js';
 
-rootRoute.render((_state, _ctx, children) => (
-  <div><nav>Navigation</nav><main>{children}</main></div>
-));
-
-export default page(rootRoute);
+export const HomePage = page(
+  homeRoute.render(() => <h1>Welcome</h1>)
+);
+export default HomePage;
 ```
 
-**Modal** — rendered as stacks, layered on top of each other:
+```tsx
+// routes/users/[user_id]/page.tsx
+import { page } from '@anchorlib/react/router';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(
+  profileRoute.render((state) => <UserProfile user={state.data?.user} />)
+);
+export default ProfilePage;
+```
 
 ```tsx
+// routes/index.ts — barrel export
+export { RootLayout } from './layout.js';
+export { HomePage } from './page.js';
+import '../login/page.js'; // No <Link> points here — import to register .render()
+```
+
+URL `/` → `rootRoute` → `homeRoute`.
+URL `/users` → `rootRoute` → `usersRoute` → `usersListRoute`.
+URL `/users/42` → `rootRoute` → `usersRoute` → `profileRoute`.
+
+**Modal** — stacks on top of the current page. Use for URL-addressable overlays:
+
+```tsx
+// routes/photos/detail/page.tsx
 import { modal } from '@anchorlib/react/router';
+import { photoRoute } from './route.js';
 
-confirmRoute.render((state) => (
-  <Dialog title="Confirm">{state.data?.message}</Dialog>
-));
-
-export default modal(confirmRoute);
+export const PhotoDetail = modal(
+  photoRoute.render((state) => (
+    <Lightbox src={state.data?.photo?.url} />
+  ))
+);
+export default PhotoDetail;
 ```
 
 ### Route State
@@ -860,40 +988,32 @@ export default modal(confirmRoute);
 |---|---|---|
 | `state.active` | `boolean` | Route is currently matched |
 | `state.status` | `'idle' \| 'pending' \| 'success' \| 'error'` | Lifecycle status |
-| `state.data` | `object` | Resolved provider data |
+| `state.data` | `object` | Resolved provider data for this exact route |
 | `state.error` | `RouteError \| undefined` | Error from guard/provider |
-| `state.context` | `{ params, query, data }` | Active context |
 
-### Providers
-
-```tsx
-profileRoute
-  .provide('profile', async ({ params }) => getUser(params.user_id))
-  .provide('posts', async ({ params, data }) => fetchPosts(params.user_id))
-  .render((state) => <h1>{state.data?.profile?.name}</h1>)
-```
-
-Providers execute sequentially. Each receives data from previous providers. They run inside reactive observers — reading global Anchor state auto-triggers re-fetch.
-
-### Guards
-
-```tsx
-import { redirect } from '@anchorlib/router';
-
-dashboardRoute.guard(async () => {
-  if (!auth.isAuthenticated) throw redirect(loginRoute);
-})
-```
+The `.render(state, context)` function receives two objects:
+- **`state`**: Route-local state. `state.data` contains only data from providers attached directly to this specific route.
+- **`context`**: Global tree state. `context.data` contains merged data from all providers across the entire active route tree (including parent layouts). `context.params` contains merged URL parameters.
 
 ### Navigation
 
+`Link` and `navigate()` accept `RouteComponent` or `string`. Importing a `RouteComponent` guarantees the route is registered (routes register at runtime when the module loads):
+
 ```tsx
 import { Link, navigate } from '@anchorlib/react/router';
+import { ProfilePage } from './users/[user_id]/index.js';
+import { UsersLayout } from './users/index.js';
 
-<Link to={ProfileRoute} params={{ user_id: '42' }}>View</Link>
-<Link to={UsersRoute} activeClass="active">Users</Link>
+// RouteComponent — type-safe params/query
+<Link to={ProfilePage} params={{ user_id: '42' }}>View</Link>
+<Link to={UsersLayout} activeClass="active">Users</Link>
+navigate(ProfilePage, { params: { user_id: '42' } });
 
-navigate(ProfileRoute, { params: { user_id: '42' } });
+// String — for external or dynamic URLs
+navigate('/external/path');
+
+// After a guard redirect, the origin URL is in history.state?.redirect
+navigate(history.state?.redirect ?? '/');
 ```
 
 ## Server-Side Rendering (SSR)
@@ -905,8 +1025,8 @@ import { setAsyncStorageAdapter, isolated, createLifecycle } from '@anchorlib/re
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { renderToString } from 'react-dom/server';
 import { UIRouter, Redirect, redirectUrl } from '@anchorlib/react/router';
-import { router } from './router';
-import AppRoot from './routes/Index';
+import { router } from './lib/router';
+import { RootLayout } from './routes/index';
 
 // 1. Isolate state per request (Run ONCE at server startup)
 setAsyncStorageAdapter(new AsyncLocalStorage());
@@ -922,7 +1042,7 @@ app.get('*', async (req, res) => {
         await router.activate(req.url);
 
         // 5. Render headless (bypasses browser APIs, sync rendering)
-        const html = renderToString(<UIRouter router={router} root={AppRoot} url={req.url} headless={true} />);
+        const html = renderToString(<UIRouter router={router} root={RootLayout} url={req.url} headless={true} />);
         res.send(`<body><div id="root">${html}</div></body>`);
       } catch (error) {
         if (error instanceof Redirect) {
@@ -944,44 +1064,113 @@ Client hydration:
 import '@anchorlib/react/client'; // MUST be first
 import { hydrateRoot } from 'react-dom/client';
 import { UIRouter } from '@anchorlib/react/router';
-import { router } from './router';
-import AppRoot from './routes/Index';
+import { router } from './lib/router';
+import { RootLayout } from './routes/index';
 
 router.activate(window.location.href).then(() => {
-  hydrateRoot(document.getElementById('root')!, <UIRouter router={router} root={AppRoot} />);
+  hydrateRoot(document.getElementById('root')!, <UIRouter router={router} root={RootLayout} />);
 });
 ```
 
 ## Client-Side Storage
 
+Anchor provides reactive client-side persistence. All storage objects are reactive — mutations auto-persist.
+
+### Session Storage
+
 ```tsx
 import { session } from '@anchorlib/storage';
-const userSession = session('user', { id: null, name: '' });
-userSession.id = 123; // Auto-persisted to sessionStorage
 
+// Reactive object backed by sessionStorage. Survives page reloads within the session.
+const userSession = session('user', { id: null as string | null, name: '' });
+userSession.name = 'Jane'; // Auto-persisted
+
+// Versioning — migrate schema, auto-clean old version:
+const userSession = session('user@2.0.0:1.0.0', { id: null, name: '', role: 'viewer' });
+```
+
+### Persistent Storage
+
+```tsx
 import { persistent } from '@anchorlib/storage';
-const settings = persistent('settings', { theme: 'light' });
-settings.theme = 'dark'; // Auto-persisted to localStorage
 
-import { createKVStore, createTable } from '@anchorlib/storage/db';
-const kvStore = createKVStore<{ name: string }>('store');
-const userTable = createTable<User>('users');
+// Reactive object backed by localStorage. Persists across sessions.
+const settings = persistent('settings', { theme: 'light', language: 'en' });
+settings.theme = 'dark'; // Auto-persisted
+```
+
+### IndexedDB: KV Store
+
+```tsx
+import { kv, createKVStore } from '@anchorlib/storage/db';
+
+// Built-in KV store (shared 'anchor' database) — preferred for simple key-value needs:
+const settings = kv('app-settings', { theme: 'dark', fontSize: 14 });
+settings.data.theme = 'light'; // Auto-synced to IndexedDB
+// settings.status: 'init' | 'ready' | 'error'
+
+// Separate KV store (own IndexedDB database) — when isolation is needed:
+const cache = createKVStore<CacheEntry>('cache', 1, 'cache.kv');
+const entry = cache('user-profile', defaultProfile);
+```
+
+### IndexedDB: Table Store
+
+```tsx
+import { createTable } from '@anchorlib/storage/db';
+
+// Reactive table backed by IndexedDB — full CRUD with optimistic updates:
+const users = createTable<User>('users');
 ```
 
 ## Storage Pattern: Store + Driver
 
-Every persistence concern splits into Store (contract) and Driver (implementation):
+Server-side persistence splits into **Store** (contract) and **Driver** (implementation). Logic imports the Store — never the Driver. Swap drivers without changing application code.
 
 ```tsx
+// storage.ts — the Store contract
 export const db = new DataStore();
-db.use(new SupabaseDriver(config)); // or IndexedDBDriver, PostgresDriver
 
-// Logic calls the Store — never the Driver directly
-await db.read('users', userId);
-await db.create('users', newUser);
+// supabase.ts — one possible Driver
+import { db } from './storage.js';
+db.use(new SupabaseDriver(config));
+
+// indexed-db.ts — another possible Driver
+import { db } from './storage.js';
+db.use(new IndexedDBDriver());
 ```
 
-Swap drivers without changing logic. The same Store interface works across runtimes.
+```tsx
+// Logic — same code regardless of backing store
+await db.create('users', newUser);
+await db.read('users', userId);
+await db.update('users', updatedUser);
+await db.delete('users', userId);
+await db.list('users', { limit: 20 });
+```
+
+### Store Types
+
+| Store | Purpose | Drivers |
+|---|---|---|
+| `DataStore` | Entity CRUD + transactions | Supabase, PostgreSQL, MySQL, MongoDB, IndexedDB |
+| `CacheStore` | Key-value with TTL | Redis, Memcached, in-memory |
+| `FileStore` | Binary persistence | S3, GCS, local filesystem, IndexedDB |
+| `SearchStore` | Full-text/vector search | Meilisearch, Elasticsearch, Pinecone |
+
+Naming: `*Store` for contracts, `*Driver` for implementations. Drivers handle cold boot (queuing operations until connected), field translation (`snake_case` → `camelCase`), and type conversion (native dates → ISO 8601 strings).
+
+### Runtime Driver Selection
+
+```tsx
+// server entry — select driver based on deployment environment
+if (process.env.DB_ENGINE === 'postgres') {
+  import('./drivers/postgres.js');
+} else {
+  import('./drivers/sqlite.js');
+}
+// Application code calling db.read() is identical in both paths.
+```
 
 ## PWA Patterns
 
@@ -1017,16 +1206,15 @@ test('cart total computes correctly', () => {
 });
 ```
 
-**Constructors** — plain async functions. Mock the database driver, call the constructor directly:
+**Constructors** — plain async functions. Mock the database driver, call the function directly:
 
 ```tsx
-import { irpc } from '../lib/module.js';
 import { getUser } from '../stubs/users/index.js';
-import '../constructors/users/index.js';
+import '../constructors/users/index.js'; // Registers the implementation
 
 test('getUser returns user by id', async () => {
   db.use(mockDriver({ users: [{ id: '1', name: 'John' }] }));
-  const user = await irpc.resolve({ id: '1', name: 'getUser', args: ['1'] });
+  const user = await getUser('1'); // Call the actual stub — IRPC resolves locally
   expect(user.name).toBe('John');
 });
 ```
@@ -1122,7 +1310,7 @@ import {
 
 ```tsx
 import { session, persistent } from '@anchorlib/storage';
-import { createKVStore, createTable } from '@anchorlib/storage/db';
+import { kv, createKVStore, createTable } from '@anchorlib/storage/db';
 ```
 
 ### @irpclib/irpc
