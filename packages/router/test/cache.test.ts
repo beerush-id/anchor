@@ -595,21 +595,6 @@ describe('URLCache', () => {
       expect(result?.query).toEqual({ tags: ['js', 'ts'] });
     });
 
-    it('should create context with params, query, and data', () => {
-      const testRoute = new Route(sharedRouter, '/test');
-      const testRegistry = new RouteRegistry(testRoute as never);
-      registry.set('test', testRegistry as never);
-
-      const url = new URL('/test?foo=bar', 'http://localhost');
-      const result = cache.get(url);
-
-      expect(result).toBeDefined();
-      expect(result?.context).toBeDefined();
-      expect(result?.context.params).toBeDefined();
-      expect(result?.context.query).toEqual({ foo: 'bar' });
-      expect(result?.context.data).toEqual({});
-    });
-
     it('should include URL in match result', () => {
       const testRoute = new Route(sharedRouter, '/test');
       const testRegistry = new RouteRegistry(testRoute as never);

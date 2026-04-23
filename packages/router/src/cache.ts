@@ -1,5 +1,4 @@
-import { anchor, mutable } from '@anchorlib/core';
-import { parseQuery } from './query.js';
+import { anchor } from '@anchorlib/core';
 import type { RouteRegistry } from './registry.js';
 import type {
   MatchResult,
@@ -203,16 +202,11 @@ export class URLCache {
       return cached;
     }
 
-    // Not cached - parse, match, and create context
-    const query = parseQuery(url.search);
-    const pathname = url.pathname;
-
-    const match = this.registry.match(pathname) as MatchResult;
+    // Not cached - match and create context
+    const match = this.registry.match(url) as MatchResult;
 
     if (match) {
       match.url = url;
-      match.query = query;
-      match.context = mutable({ params: match.params, query, data: {} });
 
       // Evict oldest entry if at capacity
       if (this.cache.size >= this.maxSize) {

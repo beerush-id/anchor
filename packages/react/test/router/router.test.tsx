@@ -34,7 +34,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       expect(typeof UiRoute.route).toBe('function');
 
       const childUiRoute = UiRoute.route('/child');
-      expect(childUiRoute.path).toBe('testing/child');
+      expect(childUiRoute.path).toBe('/testing/child');
     });
   });
 
@@ -65,7 +65,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const UiModal = modal(rawRoute);
 
       const child = UiModal.route('/child');
-      expect(child.path).toBe('modal-parent/child');
+      expect(child.path).toBe('/modal-parent/child');
     });
   });
 
@@ -404,11 +404,16 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
   describe('UIRouter', () => {
     it('binds memory listeners upon mounting and destroys upon unmounting', () => {
       const router = createRouter();
-      const rootUi = page(router.rootRoute);
+      const RootUi = page(router.rootRoute);
 
       vi.spyOn(router, 'activate').mockImplementation(async () => {});
 
-      const { unmount } = render(<UIRouter router={router} root={rootUi} />);
+      const { unmount } = render(
+        <>
+          <UIRouter router={router} root={RootUi} />
+          <RootUi />
+        </>
+      );
 
       // Assure popstate event listener added immediately via `createEffect`
       expect(addEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));

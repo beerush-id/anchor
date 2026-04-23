@@ -28,6 +28,7 @@
 
 export * from './cache.js';
 export * from './constant.ts';
+export { RouterContext } from './context.js';
 export * from './enum.js';
 export * from './query.js';
 export * from './redirect.js';

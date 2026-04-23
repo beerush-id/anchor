@@ -412,7 +412,7 @@ describe('redirect.ts', () => {
     it('should handle route without leading slash', () => {
       // Routes should be created via router.route() for proper path handling
       // Note: redirectUrl always prepends '/' if not present
-      const noLeadingSlashRoute = router.route('users' as never).route('/:id');
+      const noLeadingSlashRoute = (router.route('users' as never) as UnknownRoute).route('/:id');
       const params = { id: '123' };
       const redirect = new Redirect(noLeadingSlashRoute as never, params as never);
       const url = redirectUrl(redirect as never);

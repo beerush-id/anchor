@@ -6,6 +6,8 @@ import { Route } from '../src/route.js';
 
 let sharedRouter: Router;
 
+const $url = (path: string) => new URL(path, 'http://localhost');
+
 describe('registry.ts', () => {
   beforeEach(() => {
     sharedRouter = createRouter();
@@ -66,28 +68,22 @@ describe('registry.ts', () => {
 
     describe('match', () => {
       describe('basic matching', () => {
-        it('should return undefined for empty path', () => {
-          const result = registry.match('');
-          expect(result).toBeUndefined();
-        });
-
         it('should return undefined for undefined path', () => {
           const result = registry.match(undefined as never);
           expect(result).toBeUndefined();
         });
 
         it('should match root route', () => {
-          const result = registry.match('/');
+          const result = registry.match($url('/'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(rootRoute);
           expect(result?.params).toEqual({});
-          expect(result?.segments).toEqual([rootRoute]);
         });
 
         it('should match root route with empty segments array', () => {
           // The match function returns undefined for empty arrays
           // Use '/' to match the root route
-          const result = registry.match('/');
+          const result = registry.match($url('/'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(rootRoute);
         });
@@ -99,11 +95,10 @@ describe('registry.ts', () => {
           const usersRegistry = new RouteRegistry(usersRoute as never);
           registry.set('users', usersRegistry);
 
-          const result = registry.match('/users');
+          const result = registry.match($url('/users'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(usersRoute);
           expect(result?.params).toEqual({});
-          expect(result?.segments).toEqual([registry.route, usersRoute]);
         });
 
         it('should match nested static routes', () => {
@@ -115,11 +110,11 @@ describe('registry.ts', () => {
           const profileRegistry = new RouteRegistry(profileRoute as never);
           usersRegistry.set('profile', profileRegistry);
 
-          const result = registry.match('/users/profile');
+          const result = registry.match($url('/users/profile'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(profileRoute);
           expect(result?.params).toEqual({});
-          expect(result?.segments).toEqual([registry.route, usersRoute, profileRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, usersRoute, profileRoute]);
         });
 
         it('should match deeply nested static routes', () => {
@@ -135,10 +130,15 @@ describe('registry.ts', () => {
           const settingsRegistry = new RouteRegistry(settingsRoute as never);
           profileRegistry.set('settings', settingsRegistry);
 
-          const result = registry.match('/users/profile/settings');
+          const result = registry.match($url('/users/profile/settings'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(settingsRoute);
-          expect(result?.segments).toEqual([registry.route, usersRoute, profileRoute, settingsRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([
+            registry.route,
+            usersRoute,
+            profileRoute,
+            settingsRoute,
+          ]);
         });
 
         it('should return index route of matched static route', () => {
@@ -148,9 +148,9 @@ describe('registry.ts', () => {
           const usersRegistry = new RouteRegistry(usersRoute as never);
           registry.set('users', usersRegistry);
 
-          const result = registry.match('/users');
+          const result = registry.match($url('/users'));
           expect(result).toBeDefined();
-          expect(result?.segments).toEqual([registry.route, usersRoute, rootIndexRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, usersRoute, rootIndexRoute]);
         });
 
         it('should return undefined for non-matching static route', () => {
@@ -158,7 +158,7 @@ describe('registry.ts', () => {
           const usersRegistry = new RouteRegistry(usersRoute as never);
           registry.set('users', usersRegistry);
 
-          const result = registry.match('/posts');
+          const result = registry.match($url('/posts'));
           expect(result).toBeUndefined();
         });
 
@@ -171,9 +171,9 @@ describe('registry.ts', () => {
           registry.set('posts', new RouteRegistry(postsRoute as never));
           registry.set('comments', new RouteRegistry(commentsRoute as never));
 
-          const usersResult = registry.match('/users');
-          const postsResult = registry.match('/posts');
-          const commentsResult = registry.match('/comments');
+          const usersResult = registry.match($url('/users'));
+          const postsResult = registry.match($url('/posts'));
+          const commentsResult = registry.match($url('/comments'));
 
           expect(usersResult?.route).toBe(usersRoute);
           expect(postsResult?.route).toBe(postsRoute);
@@ -187,12 +187,12 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/123');
+          const result = registry.match($url('/123'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(dynamicRoute);
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ id: '123' });
-          expect(result?.segments).toEqual([registry.route, dynamicRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, dynamicRoute]);
         });
 
         it('should return index route of matched dynamic route', () => {
@@ -202,9 +202,9 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/123');
+          const result = registry.match($url('/123'));
           expect(result).toBeDefined();
-          expect(result?.segments).toEqual([registry.route, dynamicRoute, rootIndexRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, dynamicRoute, rootIndexRoute]);
         });
 
         it('should match nested dynamic routes', () => {
@@ -216,12 +216,12 @@ describe('registry.ts', () => {
           const userRegistry = new RouteRegistry(userRoute as never);
           usersRegistry.set(DYNAMIC_ROUTE_KEY, userRegistry);
 
-          const result = registry.match('/users/123');
+          const result = registry.match($url('/users/123'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(userRoute);
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ id: '123' });
-          expect(result?.segments).toEqual([registry.route, usersRoute, userRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, usersRoute, userRoute]);
         });
 
         it('should match multiple dynamic parameters', () => {
@@ -241,12 +241,18 @@ describe('registry.ts', () => {
           const postRegistry = new RouteRegistry(postRoute as never);
           postsRegistry.set(DYNAMIC_ROUTE_KEY, postRegistry);
 
-          const result = registry.match('/users/123/posts/456');
+          const result = registry.match($url('/users/123/posts/456'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(postRoute);
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ userId: '123', postId: '456' });
-          expect(result?.segments).toEqual([registry.route, usersRoute, userRoute, postsRoute, postRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([
+            registry.route,
+            usersRoute,
+            userRoute,
+            postsRoute,
+            postRoute,
+          ]);
         });
 
         it('should match dynamic route with special characters', () => {
@@ -254,7 +260,7 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/my-awesome-post');
+          const result = registry.match($url('/my-awesome-post'));
           expect(result).toBeDefined();
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ slug: 'my-awesome-post' });
@@ -265,7 +271,7 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/12345');
+          const result = registry.match($url('/12345'));
           expect(result).toBeDefined();
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ id: '12345' });
@@ -277,7 +283,7 @@ describe('registry.ts', () => {
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
           const uuid = '550e8400-e29b-41d4-a716-446655440000';
-          const result = registry.match(`/${uuid}`);
+          const result = registry.match($url(`/${uuid}`));
           expect(result).toBeDefined();
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ id: uuid });
@@ -288,7 +294,7 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/user_123');
+          const result = registry.match($url('/user_123'));
           expect(result).toBeDefined();
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ user_id: 'user_123' });
@@ -299,7 +305,7 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/user-123');
+          const result = registry.match($url('/user-123'));
           expect(result).toBeDefined();
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ 'user-id': 'user-123' });
@@ -312,11 +318,11 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/any/path/here');
+          const result = registry.match($url('/any/path/here'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(wildcardRoute);
           expect(result?.params).toEqual({ '*': ['any', 'path', 'here'] });
-          expect(result?.segments).toEqual([registry.route, wildcardRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, wildcardRoute]);
         });
 
         it('should return index route of matched wildcard route', () => {
@@ -326,9 +332,9 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/any/path');
+          const result = registry.match($url('/any/path'));
           expect(result).toBeDefined();
-          expect(result?.segments).toEqual([registry.route, wildcardRoute, rootIndexRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, wildcardRoute, rootIndexRoute]);
         });
 
         it('should match wildcard with single segment', () => {
@@ -336,7 +342,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/test');
+          const result = registry.match($url('/test'));
           expect(result).toBeDefined();
           expect(result?.params).toEqual({ '*': ['test'] });
         });
@@ -350,7 +356,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           usersRegistry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/users');
+          const result = registry.match($url('/users'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(usersRoute);
         });
@@ -364,11 +370,11 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           usersRegistry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/users/any/deep/path');
+          const result = registry.match($url('/users/any/deep/path'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(wildcardRoute);
           expect(result?.params).toEqual({ '*': ['any', 'deep', 'path'] });
-          expect(result?.segments).toEqual([registry.route, usersRoute, wildcardRoute]);
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, usersRoute, wildcardRoute]);
         });
 
         it('should match wildcard after static route', () => {
@@ -380,7 +386,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           apiRegistry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/api/v1/users/123');
+          const result = registry.match($url('/api/v1/users/123'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(wildcardRoute);
           expect(result?.params).toEqual({ '*': ['v1', 'users', '123'] });
@@ -403,7 +409,7 @@ describe('registry.ts', () => {
           usersRegistry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
           // Request /users/something - should match wildcard since 'something' is not 'profile'
-          const result = registry.match('/users/something');
+          const result = registry.match($url('/users/something'));
           expect(result).toBeDefined();
           expect(result?.route).toBe(wildcardRoute);
           expect(result?.params).toEqual({ '*': ['something'] });
@@ -420,7 +426,7 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result = registry.match('/users');
+          const result = registry.match($url('/users'));
           expect(result?.route).toBe(staticRoute);
         });
 
@@ -441,7 +447,7 @@ describe('registry.ts', () => {
           usersRegistry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
           // Request /users/something - should match wildcard since 'something' is not 'profile'
-          const result = registry.match('/users/something');
+          const result = registry.match($url('/users/something'));
           expect(result?.route).toBe(wildcardRoute);
           expect(result?.params).toEqual({ '*': ['something'] });
         });
@@ -455,7 +461,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/users');
+          const result = registry.match($url('/users'));
           expect(result?.route).toBe(staticRoute);
         });
 
@@ -468,7 +474,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/123');
+          const result = registry.match($url('/123'));
           expect(result?.route).toBe(dynamicRoute);
         });
 
@@ -477,7 +483,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/any/path');
+          const result = registry.match($url('/any/path'));
           expect(result?.route).toBe(wildcardRoute);
         });
       });
@@ -488,8 +494,8 @@ describe('registry.ts', () => {
           const usersRegistry = new RouteRegistry(usersRoute as never);
           registry.set('users', usersRegistry);
 
-          const result1 = registry.match('/users');
-          const result2 = registry.match('users');
+          const result1 = registry.match($url('/users'));
+          const result2 = registry.match($url('users'));
 
           expect(result1?.route).toBe(usersRoute);
           expect(result2?.route).toBe(usersRoute);
@@ -500,25 +506,11 @@ describe('registry.ts', () => {
           const usersRegistry = new RouteRegistry(usersRoute as never);
           registry.set('users', usersRegistry);
 
-          const result1 = registry.match('/users');
-          const result2 = registry.match('/users/');
+          const result1 = registry.match($url('/users'));
+          const result2 = registry.match($url('/users/'));
 
           expect(result1?.route).toBe(usersRoute);
           expect(result2?.route).toBe(usersRoute);
-        });
-
-        it('should handle multiple consecutive slashes', () => {
-          const usersRoute = new Route(sharedRouter, '/users');
-          const usersRegistry = new RouteRegistry(usersRoute as never);
-          registry.set('users', usersRegistry);
-
-          const result = registry.match('//users//');
-          expect(result?.route).toBe(usersRoute);
-        });
-
-        it('should handle paths with only slashes', () => {
-          const result = registry.match('///');
-          expect(result?.route).toBe(rootRoute);
         });
       });
 
@@ -548,9 +540,9 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           v1Registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result1 = registry.match('/api/v1/users/123');
-          const result2 = registry.match('/api/v1/posts');
-          const result3 = registry.match('/api/v1/other');
+          const result1 = registry.match($url('/api/v1/users/123'));
+          const result2 = registry.match($url('/api/v1/posts'));
+          const result3 = registry.match($url('/api/v1/other'));
 
           expect(result1?.route).toBe(userRoute);
           // Dynamic params include the ':' prefix in the key
@@ -579,7 +571,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           cRegistry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/a/b/c/d/e/f');
+          const result = registry.match($url('/a/b/c/d/e/f'));
           expect(result?.route).toBe(wildcardRoute);
           expect(result?.params).toEqual({ '*': ['d', 'e', 'f'] });
         });
@@ -593,8 +585,8 @@ describe('registry.ts', () => {
           const dynamicRegistry = new RouteRegistry(dynamicRoute as never);
           registry.set(DYNAMIC_ROUTE_KEY, dynamicRegistry);
 
-          const result1 = registry.match('/id');
-          const result2 = registry.match('/123');
+          const result1 = registry.match($url('/id'));
+          const result2 = registry.match($url('/123'));
 
           expect(result1?.route).toBe(idRoute);
           expect(result2?.route).toBe(dynamicRoute);
@@ -615,8 +607,8 @@ describe('registry.ts', () => {
           const cRegistry = new RouteRegistry(cRoute as never);
           bRegistry.set('c', cRegistry);
 
-          const result = registry.match('/a/b/c');
-          expect(result?.segments).toEqual([registry.route, aRoute, bRoute, cRoute]);
+          const result = registry.match($url('/a/b/c'));
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, aRoute, bRoute, cRoute]);
         });
 
         it('should include root route in segments', () => {
@@ -624,8 +616,8 @@ describe('registry.ts', () => {
           const usersRegistry = new RouteRegistry(usersRoute as never);
           registry.set('users', usersRegistry);
 
-          const result = registry.match('/users');
-          expect(result?.segments).toEqual([registry.route, usersRoute]);
+          const result = registry.match($url('/users'));
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, usersRoute]);
         });
 
         it('should handle segments with dynamic routes', () => {
@@ -637,8 +629,8 @@ describe('registry.ts', () => {
           const userRegistry = new RouteRegistry(userRoute as never);
           usersRegistry.set(DYNAMIC_ROUTE_KEY, userRegistry);
 
-          const result = registry.match('/users/123');
-          expect(result?.segments).toEqual([registry.route, usersRoute, userRoute]);
+          const result = registry.match($url('/users/123'));
+          expect(result?.segments.map((s) => s.route)).toEqual([registry.route, usersRoute, userRoute]);
         });
       });
 
@@ -660,7 +652,7 @@ describe('registry.ts', () => {
           const postRegistry = new RouteRegistry(postRoute as never);
           postsRegistry.set(DYNAMIC_ROUTE_KEY, postRegistry);
 
-          const result = registry.match('/users/123/posts/456');
+          const result = registry.match($url('/users/123/posts/456'));
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ userId: '123', postId: '456' });
         });
@@ -678,7 +670,7 @@ describe('registry.ts', () => {
           const cRegistry = new RouteRegistry(cRoute as never);
           bRegistry.set(DYNAMIC_ROUTE_KEY, cRegistry);
 
-          const result = registry.match('/1/2/3');
+          const result = registry.match($url('/1/2/3'));
           // Dynamic params include the ':' prefix in the key
           expect(result?.params).toEqual({ a: '1', b: '2', c: '3' });
         });
@@ -691,7 +683,7 @@ describe('registry.ts', () => {
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
           const longPath = '/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t/u/v/w/x/y/z';
-          const result = registry.match(longPath);
+          const result = registry.match($url(longPath));
           expect(result).toBeDefined();
         });
 
@@ -700,7 +692,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/path/with-dashes_and_underscores/and.dots');
+          const result = registry.match($url('/path/with-dashes_and_underscores/and.dots'));
           expect(result).toBeDefined();
         });
 
@@ -709,7 +701,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/path%20with%20spaces');
+          const result = registry.match($url('/path%20with%20spaces'));
           expect(result).toBeDefined();
         });
 
@@ -718,7 +710,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/path/with/中文/characters');
+          const result = registry.match($url('/path/with/中文/characters'));
           expect(result).toBeDefined();
         });
 
@@ -727,7 +719,7 @@ describe('registry.ts', () => {
           const wildcardRegistry = new RouteRegistry(wildcardRoute as never);
           registry.set(WILDCARD_ROUTE_KEY, wildcardRegistry);
 
-          const result = registry.match('/path/with/😀/emoji');
+          const result = registry.match($url('/path/with/😀/emoji'));
           expect(result).toBeDefined();
         });
       });

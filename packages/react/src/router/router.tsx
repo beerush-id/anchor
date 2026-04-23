@@ -87,14 +87,14 @@ const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry; stacks:
 }) => {
   if (route.renderer) {
     if (route.index?.renderer) {
-      (route.renderer as FC).displayName = `Layout(${route.path || '/'})`;
+      (route.renderer as FC).displayName = `Layout(${route.path})`;
     } else {
-      (route.renderer as FC).displayName = `Index(${route.path || '/'})`;
+      (route.renderer as FC).displayName = `Index(${route.path})`;
     }
   }
 
   if (route.index?.renderer) {
-    (route.index.renderer as FC).displayName = `Index(${route.path || '/'})`;
+    (route.index.renderer as FC).displayName = `Index(${route.path})`;
   }
 
   const children = Array.from(registry).map(([, child]) => {
@@ -163,7 +163,7 @@ export const UIRouter = CUIRouter;
  */
 export function page<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
   const UIRoute: FC<{ children?: ReactNode }> = ({ children }) => children;
-  UIRoute.displayName = `Route Factory(${routeNode.path || '/'})`;
+  UIRoute.displayName = `Route Factory(${routeNode.path})`;
 
   (UIRoute as RouteComponent<T>).index = routeNode as T;
   (UIRoute as RouteComponent<T>).route = (path: RoutePath, options?: RouteOptions) =>
@@ -191,6 +191,11 @@ export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
 }
 
 if (typeof window !== 'undefined') {
+  if (location.pathname.endsWith('/')) {
+    const url = `${location.pathname.replace(/\/$/, '')}${location.search}`;
+    history.replaceState(null, '', url);
+  }
+
   setRedirectHandler((redirect) => {
     navigate(redirect.route, {
       query: redirect.query,

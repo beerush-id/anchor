@@ -106,9 +106,6 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
     };
     Finish.displayName = `Finish(${componentName})`;
 
-    const Render = () => lifecycle.render(() => render(props));
-    Render.displayName = `Render(${componentName})`;
-
     return (
       <>
         <Start context={lifecycle.context} />

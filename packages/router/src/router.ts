@@ -1,6 +1,6 @@
-import { anchor, mutable } from '@anchorlib/core';
 import { URLCache } from './cache.js';
 import { DYNAMIC_ROUTE_KEY, inheritConfig, WILDCARD_ROUTE_KEY } from './constant.js';
+import { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
@@ -64,8 +64,9 @@ export class Router<Output = any> {
         cache: new URLCache(this.rootRegistry, this.options.cacheSize),
         activeUrl: undefined,
         activeRoute: undefined,
-        activeContext: mutable({ data: {}, query: {}, params: {} }),
+        activeContext: new RouterContext(),
         activeSegments: undefined,
+        activatingSegments: new Set(),
       });
     }
 
@@ -106,6 +107,10 @@ export class Router<Output = any> {
   }
   private set activeSegments(activeSegments) {
     this.storage.activeSegments = activeSegments;
+  }
+
+  private get activatingSegments() {
+    return this.storage.activatingSegments;
   }
 
   /**
@@ -157,13 +162,18 @@ export class Router<Output = any> {
     TOptions extends RouteOptions,
     TData,
   >(
-    path: TPath,
+    path?: TPath,
     options?: TOptions
-  ): Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
+  ): TPath extends '/'
+    ? Omit<Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>, 'route'>
+    : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
+    if (!path) return this.rootRoute as never;
     const route = new Route(this, path, options);
 
     if (path === ('/' as TPath)) {
-      return this.rootRoute as never;
+      route.closed = true;
+      this.rootRoute.index = route as never;
+      return route as never;
     }
 
     const routeMap = new RouteRegistry(route as never as UnknownRoute);
@@ -176,7 +186,7 @@ export class Router<Output = any> {
       this.rootRegistry.set(WILDCARD_ROUTE_KEY, routeMap);
     }
 
-    return route as Route<TPath, TParams, TQueryParams, TOptions, TData>;
+    return route as never;
   }
 
   /**
@@ -231,16 +241,22 @@ export class Router<Output = any> {
     // Set active URL synchronously - prevents race condition
     this.activeUrl = url.href;
 
+    // Cancel previous activations.
+    if (this.activatingSegments.size) {
+      this.activatingSegments.forEach((segment) => {
+        this.activeContext.detach(segment.store);
+      });
+
+      this.activatingSegments.clear();
+    }
+
     const match = this.find(url);
     if (!match) return;
 
-    const { segments, context } = match;
+    const { segments } = match;
 
     const currentSegments = this.activeSegments || [];
     const targetSegments = segments;
-
-    // Update the active context reference to point to this URL's context
-    anchor.assign(this.activeContext, context);
 
     // Update router state
     this.activeRoute = match.route;
@@ -248,35 +264,36 @@ export class Router<Output = any> {
 
     // Deactivate segments not in target (leaf to root)
     const toDeactivate = currentSegments.filter((r) => !targetSegments.includes(r));
-    for (const route of toDeactivate.reverse()) {
-      route.deactivate();
+    for (const segment of toDeactivate.reverse()) {
+      this.activeContext.detach(segment.store);
+      segment.route.deactivate();
     }
 
     // Activate new segments (root to leaf) without preloading
     const toActivate = targetSegments.filter((r) => !currentSegments.includes(r));
 
-    // Authenticate target segments.
-    const blockers = await Promise.all(
-      toActivate.map((r) => r.authenticate(context as ProviderContext<None, None, TRec>))
-    );
-    const blocker = blockers.find((b) => b instanceof Error || b instanceof Redirect);
-    if (blocker) return blocker;
+    // Attach store and activate immediate segments.
+    for (const segment of toActivate) {
+      this.activatingSegments.add(segment);
+      this.activeContext.attach(segment.store);
 
-    // Check if still active after authentication (guards).
-    if (this.activeUrl !== url.href) {
-      return; // Newer navigation started, abort
-    }
-
-    // Activate immediate segments.
-    for (const route of toActivate) {
-      if (route.options.renderMode === RENDER_MODE.IMMEDIATE) {
-        route.active = true;
+      if (segment.route.options.renderMode === RENDER_MODE.IMMEDIATE) {
+        segment.route.active = true;
       }
     }
 
     // Activate target segments.
-    for (const route of toActivate) {
-      await route.activate(this.activeContext as ProviderContext<None, None, TRec>);
+    for (const segment of toActivate) {
+      const { route, store } = segment;
+      if (!this.activatingSegments.has(segment)) return;
+
+      const blocker = await route.authenticate(this.activeContext as RouterContext<None, None, TRec>);
+      if (blocker instanceof Error || blocker instanceof Redirect) return blocker;
+
+      await route.activate(store as ProviderContext<None, None, TRec>);
+
+      // Remove from activating routes.
+      this.activatingSegments.delete(segment);
     }
   }
 
@@ -291,8 +308,8 @@ export class Router<Output = any> {
    * ```
    */
   public deactivate(): void {
-    for (const route of [...(this.activeSegments || [])].reverse()) {
-      route.deactivate();
+    for (const segment of [...(this.activeSegments || [])].reverse()) {
+      segment.route.deactivate();
     }
 
     this.activeUrl = undefined;
@@ -321,18 +338,26 @@ export class Router<Output = any> {
     const match = this.find(url);
     if (!match) return;
 
-    const { segments, context } = match;
+    const { segments } = match;
+    const tempContext = new RouterContext();
 
-    const blockers = await Promise.all(
-      segments.map((r) => r.authenticate(context as ProviderContext<None, None, TRec>))
-    );
-    const blocker = blockers.find((b) => b instanceof Error || b instanceof Redirect);
-    if (blocker) return;
+    for (const segment of segments) {
+      this.activeContext.attach(segment.store);
+    }
 
     // Preload all segments without activating them
-    for (const route of segments) {
-      await route.preload(context as ProviderContext<None, None, TRec>);
+    for (const { route, store } of segments) {
+      const blocked = await route.authenticate(tempContext as RouterContext<None, None, TRec>);
+      if (blocked instanceof Error || blocked instanceof Redirect) return;
+
+      await route.preload(store as ProviderContext<None, None, TRec>);
     }
+
+    tempContext.clear();
+  }
+
+  public cleanup() {
+    getStore().delete(this);
   }
 }
 

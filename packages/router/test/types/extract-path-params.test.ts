@@ -1,5 +1,5 @@
 import { describe, expectTypeOf, it } from 'vitest';
-import type { ExtractPathParams, None, RouteSegment } from '../../src/index.js';
+import type { ExtractPathParams, None } from '../../src/index.js';
 
 describe('ExtractPathParams', () => {
   it('extracts path params only when no query params', () => {

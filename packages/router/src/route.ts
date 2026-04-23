@@ -7,7 +7,6 @@ import { RouteRegistry } from './registry.js';
 import type { Router } from './router.js';
 import { getStore } from './store.js';
 import type {
-  ActiveContext,
   ExtractParams,
   ExtractQueryParams,
   GuardBlocker,
@@ -79,6 +78,7 @@ export class Route<
   /** The type of this route (static, dynamic, or wildcard) */
   public readonly type: RouteType;
   public readonly options: TOptions;
+  public closed = false;
 
   public renderer?: RouteInternalRenderer<TOutput>;
 
@@ -160,7 +160,7 @@ export class Route<
    *
    * @param value - The route data, or undefined to clear
    */
-  public set data(value: TData | undefined) {
+  public set data(value: TData) {
     this.state.data = value;
   }
 
@@ -183,30 +183,12 @@ export class Route<
   }
 
   /**
-   * Sets the active context for this route.
-   *
-   * @param value - The active context, or undefined to clear
-   */
-  public set context(value: ActiveContext<TParams, TQueryParams, TData> | undefined,) {
-    this.state.context = value;
-  }
-
-  /**
-   * Gets the active context for this route.
-   *
-   * @returns The active context, or undefined if not active
-   */
-  public get context(): ActiveContext<TParams, TQueryParams, TData> | undefined {
-    return this.state.context;
-  }
-
-  /**
    * Gets the query parameters for this route.
    *
    * @returns The query parameters, or undefined if not active
    */
   public get query(): TQueryParams | undefined {
-    return this.state.context?.query;
+    return this.state.query;
   }
 
   /**
@@ -215,7 +197,7 @@ export class Route<
    * @returns The route parameters, or undefined if not active
    */
   public get params(): TParams | undefined {
-    return this.state.context?.params;
+    return this.state.params;
   }
 
   /**
@@ -227,10 +209,11 @@ export class Route<
     const parent = this.parent as UnknownRoute;
 
     if (parent) {
-      return [parent.path, this.name].join('/') as never;
+      const parentPath = parent.path;
+      return [parentPath === '/' ? '' : parentPath, this.name].join('/') as never;
     }
 
-    return this.name as never;
+    return `/${this.name}` as never;
   }
 
   /** Optional index route for this route */
@@ -251,6 +234,9 @@ export class Route<
       untrack(() => {
         store.set(this, {
           state: mutable<RouteState<TParams, TQueryParams, TData>>({
+            data: {} as TData,
+            query: {} as TQueryParams,
+            params: {} as TParams,
             status: 'idle',
             active: false,
             resolved: false,
@@ -259,11 +245,15 @@ export class Route<
             authenticating: false,
           }),
           cache: new RouteCache(this as UnknownRoute),
-          dataCache: new WeakMap(),
           activeResolvers: new Map(),
           guardObserver: createObserver(() => {
             this.guardObserver.reset();
-            this.authenticate((this.context ?? {}) as GuardContext<TParams, TQueryParams>, true);
+            this.authenticate(
+              untrack(() => {
+                return { params: this.params, query: this.query };
+              }) as GuardContext<TParams, TQueryParams>,
+              true
+            );
           }),
           providerObservers: new WeakMap(),
         });
@@ -275,10 +265,6 @@ export class Route<
 
   private get cache(): RouteCache {
     return this.storage.cache;
-  }
-
-  private get dataCache(): WeakMap<ProviderContext<TRec, TRec, TRec>, TData> {
-    return this.storage.dataCache as WeakMap<ProviderContext<TRec, TRec, TRec>, TData>;
   }
 
   private get activeResolvers(): Map<ProviderContext<TRec, TRec, TRec>, AbortController> {
@@ -409,9 +395,11 @@ export class Route<
         this,
         TOutput
       > {
+    if (this.closed) throw new Error(`Index route can't have a child route.`);
     const child = new Route(this.router, path, inheritConfig(this.options, options), this);
 
     if (path === ('/' as TChildPath)) {
+      child.closed = true;
       this.index = child as never as UnknownRoute;
       return child as never;
     }
@@ -591,8 +579,6 @@ export class Route<
     this.activeResolvers.set(context, abortController);
 
     try {
-      const data = (this.dataCache.get(context) ?? mutable({} as TRec)) as TRec;
-
       for (const [name, { provider, options }] of this.providers) {
         if (!this.providerObservers.has(provider)) {
           const observer = createObserver(() => {
@@ -617,7 +603,7 @@ export class Route<
                 if (abortController.signal.aborted) return;
 
                 untrack(() => {
-                  context.data[name] = data[name] = providerData;
+                  context.data[name] = providerData;
                 });
 
                 return providerData;
@@ -656,10 +642,10 @@ export class Route<
         if (result instanceof Error) return;
       }
 
-      this.dataCache.set(context, data as TData);
+      this.data = context.data as TData;
       this.resolved = true;
 
-      return data as TData;
+      return context.data as TData;
     } finally {
       this.activeResolvers.delete(context);
     }
@@ -681,6 +667,8 @@ export class Route<
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
     this.status = ROUTE_STATUS.PENDING;
     this.error = undefined;
+    this.state.query = context.query;
+    this.state.params = context.params;
 
     // Set the route as active immediately if renderMode is immediate
     if (this.options.renderMode === RENDER_MODE.IMMEDIATE) {
@@ -694,8 +682,6 @@ export class Route<
     // If the route is deactivated during preload, do nothing.
     if (this.status !== ROUTE_STATUS.PENDING) return;
 
-    this.data = this.dataCache.get(context as ProviderContext<TRec, TRec, TRec>);
-    this.context = context as ActiveContext<TParams, TQueryParams, TData>;
     this.status = ROUTE_STATUS.SUCCESS;
     this.active = true;
   }
@@ -715,9 +701,8 @@ export class Route<
     this.status = ROUTE_STATUS.IDLE;
 
     if (!this.options?.keepAlive) {
-      this.data = undefined;
+      this.data = {} as TData;
       this.error = undefined;
-      this.context = undefined;
       this.resolved = false;
       this.authenticated = false;
       this.guardObserver.destroy();
@@ -772,8 +757,8 @@ let createRenderer = <TParams, TQueryParams, TData, TOutput>(
   layout?: boolean
 ): RouteInternalRenderer<TOutput> => {
   return ({ children }) => {
-    if (layout) return renderer(route.state as never, route.context as never, children);
-    return renderer(route.state as never);
+    if (layout) return untrack(() => renderer(route.state as never, route.router.activeContext as never, children));
+    return untrack(() => renderer(route.state as never, route.router.activeContext as never));
   };
 };
 

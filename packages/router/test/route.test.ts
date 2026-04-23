@@ -106,7 +106,7 @@ describe('Route class', () => {
 
     it('should initialize data as undefined', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.data).toBeUndefined();
+      expect(route.data).toEqual({});
     });
 
     it('should initialize error as undefined', () => {
@@ -114,19 +114,14 @@ describe('Route class', () => {
       expect(route.error).toBeUndefined();
     });
 
-    it('should initialize context as undefined', () => {
-      const route = new Route(sharedRouter, '/test');
-      expect(route.context).toBeUndefined();
-    });
-
     it('should initialize params as undefined', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.params).toBeUndefined();
+      expect(route.params).toEqual({});
     });
 
     it('should initialize query as undefined', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.query).toBeUndefined();
+      expect(route.query).toEqual({});
     });
 
     it('should initialize index as undefined', () => {
@@ -158,7 +153,7 @@ describe('Route class', () => {
   describe('data getter/setter', () => {
     it('should return undefined initially', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.data).toBeUndefined();
+      expect(route.data).toEqual({});
     });
 
     it('should allow setting data', () => {
@@ -196,28 +191,6 @@ describe('Route class', () => {
       route.error = { type: 'guard' as const, message: 'Test error' };
       route.error = undefined;
       expect(route.error).toBeUndefined();
-    });
-  });
-
-  describe('context getter/setter', () => {
-    it('should return undefined initially', () => {
-      const route = new Route(sharedRouter, '/test');
-      expect(route.context).toBeUndefined();
-    });
-
-    it('should allow setting context', () => {
-      const route = new Route(sharedRouter, '/test');
-      const testContext = { params: { id: '123' }, query: {}, data: {} };
-      route.context = testContext as never;
-      // Context is wrapped in mutable(), so use toEqual instead of toBe
-      expect(route.context).toEqual(testContext);
-    });
-
-    it('should allow clearing context with undefined', () => {
-      const route = new Route(sharedRouter, '/test');
-      route.context = { params: { id: '123' }, query: {}, data: {} } as never;
-      route.context = undefined;
-      expect(route.context).toBeUndefined();
     });
   });
 
@@ -260,7 +233,7 @@ describe('Route class', () => {
       expect(route.renderer).toBeDefined();
       if (route.renderer) {
         route.renderer({ children: [] } as never);
-        expect(renderer).toHaveBeenCalledWith(route.state as never, route.context as never, []);
+        expect(renderer).toHaveBeenCalledWith(route.state as never, route.router.activeContext as never, []);
 
         // Let's also test without layout by bypassing `createRenderer` behavior if we could
         // But `createRenderer` itself uses `layout = true`.
@@ -288,46 +261,34 @@ describe('Route class', () => {
       const renderer2 = vi.fn();
       const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
       internalRenderer({ children: [] } as never);
-      expect(renderer2).toHaveBeenCalledWith(route2.state as never);
+      expect(renderer2).toHaveBeenCalledWith(route2.state, sharedRouter.activeContext);
     });
   });
 
   describe('params getter', () => {
     it('should return undefined when context is not set', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.params).toBeUndefined();
-    });
-
-    it('should return params from context', () => {
-      const route = new Route(sharedRouter, '/test');
-      route.context = { params: { id: '123' }, query: {}, data: {} } as never;
-      expect(route.params).toEqual({ id: '123' });
+      expect(route.params).toEqual({});
     });
   });
 
   describe('query getter', () => {
     it('should return undefined when context is not set', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.query).toBeUndefined();
-    });
-
-    it('should return query from context', () => {
-      const route = new Route(sharedRouter, '/test');
-      route.context = { params: {}, query: { tab: 'profile' }, data: {} } as never;
-      expect(route.query).toEqual({ tab: 'profile' });
+      expect(route.query).toEqual({});
     });
   });
 
   describe('path getter', () => {
     it('should return route name for root route', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.path).toBe('test');
+      expect(route.path).toBe('/test');
     });
 
     it('should return full path including parent', () => {
       const parent = new Route(sharedRouter, '/users');
       const child = new Route(sharedRouter, '/profile', undefined, parent);
-      expect(child.path).toBe('users/profile');
+      expect(child.path).toBe('/users/profile');
     });
 
     it('should handle deeply nested routes', () => {
@@ -335,7 +296,7 @@ describe('Route class', () => {
       const v1 = new Route(sharedRouter, '/v1', undefined, root);
       const users = new Route(sharedRouter, '/users', undefined, v1);
       const profile = new Route(sharedRouter, '/profile', undefined, users);
-      expect(profile.path).toBe('api/v1/users/profile');
+      expect(profile.path).toBe('/api/v1/users/profile');
     });
 
     it('should handle parent with path /', () => {
@@ -349,7 +310,7 @@ describe('Route class', () => {
   describe('url method', () => {
     it('should return route path without params or query', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url()).toBe('users');
+      expect(route.url()).toBe('/users');
     });
 
     it('should replace route parameters', () => {
@@ -358,7 +319,7 @@ describe('Route class', () => {
       const parent = new Route(sharedRouter, '/users');
       const route = new Route(sharedRouter, '/:id', undefined, parent);
       // The url method replaces :key with value, so use 'id' not ':id'
-      expect(route.url({ id: '123' } as never)).toBe('users/123');
+      expect(route.url({ id: '123' } as never)).toBe('/users/123');
     });
 
     it('should replace multiple route parameters', () => {
@@ -368,17 +329,17 @@ describe('Route class', () => {
       const posts = new Route(sharedRouter, '/posts', undefined, user);
       const post = new Route(sharedRouter, '/:postId', undefined, posts);
       // The url method replaces :key with value
-      expect(post.url({ userId: '123', postId: '456' } as never)).toBe('users/123/posts/456');
+      expect(post.url({ userId: '123', postId: '456' } as never)).toBe('/users/123/posts/456');
     });
 
     it('should append query parameters', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url(undefined, { tab: 'profile' } as never)).toBe('users?tab=profile');
+      expect(route.url(undefined, { tab: 'profile' } as never)).toBe('/users?tab=profile');
     });
 
     it('should append multiple query parameters', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url(undefined, { tab: 'profile', sort: 'asc' } as never)).toBe('users?tab=profile&sort=asc');
+      expect(route.url(undefined, { tab: 'profile', sort: 'asc' } as never)).toBe('/users?tab=profile&sort=asc');
     });
 
     it('should replace params and append query', () => {
@@ -386,12 +347,12 @@ describe('Route class', () => {
       const parent = new Route(sharedRouter, '/users');
       const route = new Route(sharedRouter, '/:id', undefined, parent);
       // The url method replaces :key with value
-      expect(route.url({ id: '123' } as never, { tab: 'profile' } as never)).toBe('users/123?tab=profile');
+      expect(route.url({ id: '123' } as never, { tab: 'profile' } as never)).toBe('/users/123?tab=profile');
     });
 
     it('should handle array query values', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url(undefined, { tags: ['js', 'ts'] } as never)).toBe('users?tags=js&tags=ts');
+      expect(route.url(undefined, { tags: ['js', 'ts'] } as never)).toBe('/users?tags=js&tags=ts');
     });
 
     it('should handle numeric params', () => {
@@ -399,27 +360,27 @@ describe('Route class', () => {
       const parent = new Route(sharedRouter, '/users');
       const route = new Route(sharedRouter, '/:id', undefined, parent);
       // The url method replaces :key with value
-      expect(route.url({ id: 123 } as never)).toBe('users/123');
+      expect(route.url({ id: 123 } as never)).toBe('/users/123');
     });
 
     it('should handle numeric query values', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url(undefined, { page: 1 } as never)).toBe('users?page=1');
+      expect(route.url(undefined, { page: 1 } as never)).toBe('/users?page=1');
     });
 
     it('should handle boolean query values', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url(undefined, { debug: true } as never)).toBe('users?debug=true');
+      expect(route.url(undefined, { debug: true } as never)).toBe('/users?debug=true');
     });
 
     it('should handle empty params object', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url({})).toBe('users');
+      expect(route.url({})).toBe('/users');
     });
 
     it('should handle empty query object', () => {
       const route = new Route(sharedRouter, '/users');
-      expect(route.url(undefined, {})).toBe('users');
+      expect(route.url(undefined, {})).toBe('/users');
     });
 
     it('should handle special characters in params', () => {
@@ -427,13 +388,13 @@ describe('Route class', () => {
       const parent = new Route(sharedRouter, '/users');
       const route = new Route(sharedRouter, '/:slug', undefined, parent);
       // The url method replaces :key with value
-      expect(route.url({ slug: 'my-awesome-post' } as never)).toBe('users/my-awesome-post');
+      expect(route.url({ slug: 'my-awesome-post' } as never)).toBe('/users/my-awesome-post');
     });
 
     it('should handle special characters in query values', () => {
       const route = new Route(sharedRouter, '/users');
       // The url method doesn't encode spaces, it uses them directly
-      expect(route.url(undefined, { search: 'hello world' } as never)).toBe('users?search=hello world');
+      expect(route.url(undefined, { search: 'hello world' } as never)).toBe('/users?search=hello world');
     });
   });
 
@@ -444,6 +405,14 @@ describe('Route class', () => {
       parentRoute = new Route(sharedRouter, '/users') as never;
       // Create registry for parent
       new RouteRegistry(parentRoute as never);
+    });
+
+    it('should create index route', () => {
+      const indexRoute = parentRoute.route('/');
+
+      expect(indexRoute.name).toBe('');
+      expect(parentRoute.index).toBe(indexRoute);
+      expect(() => (indexRoute as any).route('/test')).toThrow();
     });
 
     it('should create a child route', () => {
@@ -525,7 +494,7 @@ describe('Route class', () => {
       const child = parent.route('/profile');
       const grandchild = child.route('/settings');
 
-      expect(grandchild.path).toBe('users/profile/settings');
+      expect(grandchild.path).toBe('/users/profile/settings');
     });
   });
 
@@ -838,8 +807,10 @@ describe('Route class', () => {
       const context = { params: { id: '123' }, query: {}, data: {} };
 
       await route.activate(context as never);
-      // Context is wrapped in mutable(), so use toEqual instead of toBe
-      expect(route.context).toEqual(context);
+
+      expect(route.data).toEqual(context.data);
+      expect(route.query).toEqual(context.query);
+      expect(route.params).toEqual(context.params);
     });
 
     it('should call authenticate', async () => {
@@ -862,7 +833,7 @@ describe('Route class', () => {
       route.guard(guard);
 
       const context = { params: {}, query: {}, data: {} };
-      const result = await route.activate(context);
+      await route.activate(context);
 
       // activate returns undefined on error, but sets the error property
       expect(route.error).toBeDefined();
@@ -879,30 +850,12 @@ describe('Route class', () => {
       expect(route.active).toBe(false);
     });
 
-    it('should clear context when keepAlive is false', () => {
-      const route = new Route(sharedRouter, '/test');
-      route.context = { params: {}, query: {}, data: {} };
-
-      route.deactivate();
-      expect(route.context).toBeUndefined();
-    });
-
-    it('should preserve context when keepAlive is true', () => {
-      const route = new Route(sharedRouter, '/test', { keepAlive: true });
-      const context = { params: {}, query: {}, data: {} };
-      route.context = context;
-
-      route.deactivate();
-      // Context is wrapped in mutable(), so use toEqual instead of toBe
-      expect(route.context).toEqual(context);
-    });
-
     it('should clear data when keepAlive is false', () => {
       const route = new Route(sharedRouter, '/test');
       route.data = { user: 'John' };
 
       route.deactivate();
-      expect(route.data).toBeUndefined();
+      expect(route.data).toEqual({});
     });
 
     it('should preserve data when keepAlive is true', () => {
@@ -1029,13 +982,13 @@ describe('Route class', () => {
       const context = { params: {}, query: {}, data: {} };
       await route.activate(context as never);
 
-      expect((route.context as any).data).toEqual({ test: 'data' });
+      expect(route.data).toEqual({ test: 'data' });
 
       canRead.value = false;
 
       await new Promise((resolve) => setTimeout(resolve, 1));
 
-      expect((route.context as any).data).toEqual({});
+      expect(route.data).toEqual({});
       expect(provider).toHaveBeenCalledTimes(2);
     });
   });
@@ -1106,7 +1059,7 @@ describe('Route class', () => {
       expect(preloadResult).toEqual({ user: { name: 'John' } });
 
       // Activate
-      const activateResult = await route.activate(context as never);
+      await route.activate(context as never);
       // activate returns the result from authenticate which could be true or the data
       expect(route.active).toBe(true);
 

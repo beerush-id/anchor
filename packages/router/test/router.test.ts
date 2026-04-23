@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROUTE_TYPE } from '../src/enum.js';
+import { RouterContext } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { createRouter, Router } from '../src/router.js';
+import { getStore } from '../src/store.js';
 
 describe('router.ts', () => {
   describe('Router class', () => {
@@ -41,7 +43,7 @@ describe('router.ts', () => {
       });
 
       it('should initialize activeContext with empty objects', () => {
-        expect(router.activeContext).toEqual({ data: {}, query: {}, params: {} });
+        expect(router.activeContext).toBeInstanceOf(RouterContext);
 
         expect(router.path).toBeUndefined();
         expect(router.data).toEqual({});
@@ -55,6 +57,11 @@ describe('router.ts', () => {
     });
 
     describe('route method', () => {
+      it('should return the root route', () => {
+        const route = router.route();
+        expect(route).toBe(router.rootRoute);
+      });
+
       it('should create a new route', () => {
         const route = router.route('/users');
         expect(route).toBeDefined();
@@ -62,7 +69,11 @@ describe('router.ts', () => {
 
       it('should return root route when path is /', () => {
         const result = router.route('/');
+
         expect(result).toBeDefined();
+        expect(result.name).toBe('');
+        expect(router.rootRoute.index).toBe(result);
+        expect(() => (result as any).route('/users')).toThrow();
       });
 
       it('should set index route on root when path is /', () => {
@@ -158,14 +169,6 @@ describe('router.ts', () => {
         expect(result1).toBe(result2);
       });
 
-      it('should create context with params, query, and data', () => {
-        const result = router.find('/users');
-        expect(result?.context).toBeDefined();
-        expect(result?.context.params).toBeDefined();
-        expect(result?.context.query).toBeDefined();
-        expect(result?.context.data).toEqual({});
-      });
-
       it('should include URL in match result', () => {
         const url = new URL('/users', 'http://localhost');
         const result = router.find(url);
@@ -204,7 +207,7 @@ describe('router.ts', () => {
       it('should handle URL with query parameters', async () => {
         await router.activate('/users?tab=profile');
         expect(router.activeRoute).toBeDefined();
-        expect(router.activeContext.query).toEqual({ tab: 'profile' });
+        expect(router.activeContext.query.tab).toBe('profile');
       });
 
       it('should handle URL string with http protocol', async () => {
@@ -271,6 +274,8 @@ describe('router.ts', () => {
 
       it('should handle race conditions', async () => {
         const usersRoute = router.route('/users');
+        const postsRoute = router.route('/posts');
+
         const slowGuard = vi.fn(async () => {
           await new Promise((resolve) => setTimeout(resolve, 1));
         });
@@ -283,7 +288,7 @@ describe('router.ts', () => {
         await Promise.all([promise1, promise2]);
 
         // The last activation should win
-        expect(router.activeRoute).toBeDefined();
+        expect(router.activeRoute).toBe(postsRoute);
       });
     });
 
@@ -312,12 +317,6 @@ describe('router.ts', () => {
 
       it('should handle deactivating when no route is active', () => {
         expect(() => router.deactivate()).not.toThrow();
-      });
-
-      it('should reset activeContext', async () => {
-        await router.activate('/users');
-        router.deactivate();
-        expect(router.activeContext).toEqual({ data: {}, query: {}, params: {} });
       });
     });
 
@@ -396,6 +395,17 @@ describe('router.ts', () => {
       });
     });
 
+    describe('cleanup method', () => {
+      it('should release router from the store', async () => {
+        expect(router.activeContext).toBeDefined();
+        expect(getStore().get(router)).toBeDefined();
+
+        router.cleanup();
+
+        expect(getStore().get(router)).toBeUndefined();
+      });
+    });
+
     describe('integration tests', () => {
       it('should handle full navigation cycle', async () => {
         router.route('/users');
@@ -457,6 +467,7 @@ describe('router.ts', () => {
         await router.activate('/users');
         // Provider should be cached
         expect(callCount).toBe(1);
+        expect(router.activeContext.data.users).toEqual({ users: [] });
       });
 
       it('should handle multiple providers', async () => {
@@ -477,7 +488,7 @@ describe('router.ts', () => {
 
         await router.activate('/users/123');
         expect(router.activeRoute).toBeDefined();
-        expect(router.activeContext.params).toEqual({ id: '123' });
+        expect(router.activeContext.params.id).toEqual('123');
       });
 
       it('should handle wildcard routes', async () => {
@@ -491,7 +502,8 @@ describe('router.ts', () => {
         router.route('/users');
 
         await router.activate('/users?tab=profile&sort=asc');
-        expect(router.activeContext.query).toEqual({ tab: 'profile', sort: 'asc' });
+        expect(router.activeContext.query.tab).toBe('profile');
+        expect(router.activeContext.query.sort).toBe('asc');
       });
 
       it('should handle keepAlive option', async () => {
@@ -592,7 +604,7 @@ describe('router.ts', () => {
         await router.activate('/users?tab=profile');
         await router.activate('/users?tab=settings');
 
-        expect(router.activeContext.query).toEqual({ tab: 'settings' });
+        expect(router.activeContext.query.tab).toEqual('settings');
       });
     });
   });

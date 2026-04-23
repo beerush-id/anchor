@@ -1,5 +1,6 @@
 import type { RetriableOptions, StateObserver } from '@anchorlib/core';
 import type { RouteCache, URLCache } from './cache.js';
+import type { RouterContext } from './context.js';
 import type { PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import type { Redirect } from './redirect.js';
 import type { Route } from './route.js';
@@ -177,9 +178,10 @@ export type RouteState<TParams, TQueryParams, TData> = {
   authenticated: boolean;
   authenticating: boolean;
 
-  data?: TData;
+  data: TData;
+  query: TQueryParams;
+  params: TParams;
   error?: RouteError;
-  context?: ActiveContext<FlatRec<TParams>, FlatRec<TQueryParams>, FlatRec<TData>>;
 };
 
 /** A route path string */
@@ -208,18 +210,22 @@ export type RoutePathOutput<TParent, TPath extends RoutePath> = TParent extends 
     : `${TParent['path']}${TPath}`
   : TPath;
 
+export type MatchRouteSegment = {
+  route: UnknownRoute;
+  store: ProviderContext<TRec, TRec, TRec>;
+};
+
 /** A matched route result */
 export type MatchedRoute = {
   route: UnknownRoute;
+  query: TRec;
   params: TRec;
-  segments: UnknownRoute[];
+  segments: MatchRouteSegment[];
 };
 
 /** A complete match result with URL and context */
 export type MatchResult = MatchedRoute & {
   url: URL;
-  query: TRec;
-  context: ProviderContext<TRec, TRec, TRec>;
 };
 
 /** Cached route data with expiration */
@@ -251,8 +257,9 @@ export type RouterStorage = {
   cache: URLCache;
   activeUrl: string | undefined;
   activeRoute: UnknownRoute | undefined;
-  activeContext: ActiveContext<TRec, TRec, TRec>;
-  activeSegments: UnknownRoute[] | undefined;
+  activeContext: RouterContext<TRec, TRec, TRec>;
+  activeSegments: MatchRouteSegment[] | undefined;
+  activatingSegments: Set<MatchRouteSegment>;
 };
 
 export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
@@ -262,6 +269,6 @@ export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => 
 
 export type RouteRendererFn<Params, QueryParams, Data, Output> = (
   state: RouteState<Params, QueryParams, Data>,
-  context?: ActiveContext<Params, QueryParams, Data>,
+  context?: RouterContext<Params, QueryParams, Data>,
   children?: Output
 ) => Output;

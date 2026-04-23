@@ -6,9 +6,10 @@ export function getStore() {
   let store = closure.get(ROUTER_STORE_KEY);
 
   if (!store) {
-    store = new Map();
+    store = new WeakMap();
     closure.set(ROUTER_STORE_KEY, store);
   }
 
-  return store as Map<unknown, unknown>;
+  // biome-ignore lint/suspicious/noExplicitAny: Expected.
+  return store as WeakMap<any, any>;
 }
