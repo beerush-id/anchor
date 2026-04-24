@@ -1,4 +1,4 @@
-import { closure } from './closure.js';
+import { closure } from '../closure.js';
 import { isFunction, isString } from './inspector.js';
 
 export type DebugFn = (...args: unknown[]) => void;

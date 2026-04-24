@@ -1,4 +1,4 @@
-import type { None, Route, RouteOptions, RoutePath } from '@anchorlib/router';
+import type { None, Route, RouteOptions, RoutePath, Router, UnknownRoute } from '@anchorlib/router';
 import type { AnchorHTMLAttributes, FC, ReactNode } from 'react';
 
 /**
@@ -43,4 +43,17 @@ export type LinkProps<R extends AnyRoute> = AnchorHTMLAttributes<HTMLAnchorEleme
 export type RouteComponent<T extends AnyRoute> = FC<{ children?: ReactNode }> & {
   index: T;
   route: T['route'];
+};
+
+export type RouteStacks = Map<UnknownRoute, FC>;
+
+/**
+ * Props for the root UIRouter component.
+ */
+export type UIRouterProps = {
+  router: Router<ReactNode>;
+  root: RouteComponent<AnyRoute>;
+  url?: string;
+  headless?: boolean;
+  resetScroll?: boolean | 'smooth' | 'auto' | 'instant';
 };

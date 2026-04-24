@@ -3,30 +3,27 @@ import {
   type MatchedRoute,
   type RouteOptions,
   type RoutePath,
-  type Router,
   type RouteRegistry,
   setRedirectHandler,
   type UnknownRoute,
 } from '@anchorlib/router';
 import type { FC, ReactNode } from 'react';
-import { snippet, template } from '../hoc.js';
+import { snippet } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';
 import { navigate } from './navigate.js';
-import type { AnyRoute, RouteComponent } from './types.js';
+import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
 const STACK_REGISTRY = new WeakSet<UnknownRoute>();
-
-type RouteStacks = Map<UnknownRoute, FC>;
 
 /**
  * A reactive snippet that renders the view for a given route and its children.
  */
 export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; children?: ReactNode }>(
-  ({ route, stacks, children }) => {
+  function RouteViewer({ route, stacks, children }) {
     const Index = route.index?.renderer;
     const Layout = route.renderer;
     const Snippet = snippet(
-      () => {
+      function RouteSnippet() {
         if (!route.active) return children;
 
         if (Layout) {
@@ -65,11 +62,18 @@ export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; c
   false
 );
 
-const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry; stacks: RouteStacks }> = ({
+/**
+ * Renders a specific route and recursively processes its child routes.
+ */
+export function RouteRenderer({
   route,
   registry,
   stacks,
-}) => {
+}: {
+  route: UnknownRoute;
+  registry: RouteRegistry;
+  stacks: RouteStacks;
+}) {
   if (route.renderer) {
     if (route.index?.renderer) {
       (route.renderer as FC).displayName = `Layout(${route.path})`;
@@ -91,34 +95,27 @@ const CRouteRenderer: FC<{ route: UnknownRoute; registry: RouteRegistry; stacks:
       {children}
     </RouteViewer>
   );
-};
+}
 
-CRouteRenderer.displayName = 'Definition(Route)';
-
-/**
- * Renders a specific route and recursively processes its child routes.
- */
-export const RouteRenderer = CRouteRenderer;
+RouteRenderer.displayName = 'Definition(Route)';
 
 /**
- * Props for the root UIRouter component.
+ * The root router component that mounts the application route tree to React.
  */
-export type UIRouterProps = {
-  router: Router<ReactNode>;
-  root: RouteComponent<AnyRoute>;
-  url?: string;
-  headless?: boolean;
-  resetScroll?: boolean;
-};
-
-const CUIRouter: FC<UIRouterProps> = ({ router, resetScroll, url, headless }) => {
+export function UIRouter({ router, resetScroll, url, headless }: UIRouterProps) {
   const stacks = createRef(new Map()).current;
   const activate = async () => {
     const match = router.find(url ?? location.href);
-    await router.activate(url ?? location.href);
 
-    if (!resetScroll || STACK_REGISTRY.has((match as MatchedRoute)?.route)) return;
-    window.scrollTo(0, 0);
+    if (resetScroll && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: typeof resetScroll === 'string' ? resetScroll : 'smooth',
+      });
+    }
+
+    await router.activate(url ?? location.href);
   };
 
   if (!headless) {
@@ -139,18 +136,18 @@ const CUIRouter: FC<UIRouterProps> = ({ router, resetScroll, url, headless }) =>
       <StackRenderer stacks={stacks} />
     </>
   );
-};
+}
 
-const StackRenderer = template<{ stacks: RouteStacks }>(({ stacks }) => {
-  return Array.from(stacks.entries()).map(([route, Stack]) => <Stack key={route.path} />);
-});
+const StackRenderer = snippet<{ stacks: RouteStacks }>(
+  function StackRenderer({ stacks }) {
+    return Array.from(stacks.entries()).map(([route, Stack]) => <Stack key={route.path} />);
+  },
+  'Modal',
+  'Renderer',
+  false
+);
 
-CUIRouter.displayName = 'UIRouter';
-
-/**
- * The root router component that mounts the application route tree to React.
- */
-export const UIRouter = CUIRouter;
+UIRouter.displayName = 'UIRouter';
 
 /**
  * Create a page component.
@@ -158,7 +155,9 @@ export const UIRouter = CUIRouter;
  * @returns {RouteComponent<T>}
  */
 export function page<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
-  const UIRoute: FC<{ children?: ReactNode }> = ({ children }) => children;
+  const UIRoute: FC<{ children?: ReactNode }> = function UIRoute({ children }) {
+    return children;
+  };
   UIRoute.displayName = `Route Factory(${routeNode.path})`;
 
   (UIRoute as RouteComponent<T>).index = routeNode as T;

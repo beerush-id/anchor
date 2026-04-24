@@ -1,3 +1,4 @@
+import { anchor, mutable, untrack } from '@anchorlib/core';
 import { URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
@@ -16,6 +17,7 @@ import type {
   RouteOptions,
   RoutePath,
   RouterOptions,
+  RouterState,
   RouterStorage,
   TRec,
   UnknownRoute,
@@ -56,11 +58,16 @@ export class Router<Output = any> {
     return this.context.params;
   }
 
+  public get state(): RouterState {
+    return this.storage.state;
+  }
+
   private get storage(): RouterStorage {
     const store = getStore();
 
     if (!store.has(this)) {
       store.set(this, {
+        state: mutable({ progress: 0, activating: 0 }),
         cache: new URLCache(this.rootRegistry, this.options.cacheSize),
         context: new RouterContext(),
         activeUrl: undefined,
@@ -272,6 +279,13 @@ export class Router<Output = any> {
       return !currentSegments.find((n) => n.route === r.route && n.store === r.store);
     });
 
+    const activationLengths = toActivate.reduce((acc, segment) => {
+      acc += segment.route.guards.size;
+      acc += segment.route.providers.size;
+
+      return acc;
+    }, 0);
+
     // Attach store and activate immediate segments.
     for (const segment of toActivate) {
       this.activatingSegments.add(segment);
@@ -282,13 +296,18 @@ export class Router<Output = any> {
       }
     }
 
+    this.start(activationLengths);
+
     // Activate target segments.
     for (const segment of toActivate) {
       const { route, store } = segment;
       if (!this.activatingSegments.has(segment)) return;
 
       const blocker = await route.authenticate(this.context as RouterContext<None, None, TRec>);
-      if (blocker instanceof Error || blocker instanceof Redirect) return blocker;
+      if (blocker instanceof Error || blocker instanceof Redirect) {
+        this.finish();
+        return blocker;
+      }
 
       await route.activate(store as ProviderContext<None, None, TRec>);
 
@@ -299,6 +318,36 @@ export class Router<Output = any> {
     // Update router state
     this.activeRoute = match.route;
     this.activeSegments = targetSegments;
+    this.finish();
+  }
+
+  /**
+   * Pushes a progress step for route activation.
+   * @param {number} step
+   */
+  public progress(step: number = 1): void {
+    this.state.progress = step;
+  }
+
+  /**
+   * Starts a progress indicator for route activation.
+   * @param {number} length
+   */
+  public start(length: number = 1) {
+    const { steps, activating } = untrack(() => ({ activating: this.state.activating, steps: this.state.steps }));
+
+    if (activating) {
+      anchor.assign(this.state, { steps: steps + length });
+    } else {
+      anchor.assign(this.state, { activating: true, steps: length, progress: 0 });
+    }
+  }
+
+  /**
+   * Finishes a progress indicator for route activation.
+   */
+  public finish() {
+    anchor.assign(this.state, { steps: 0, progress: 0, activating: false });
   }
 
   /**

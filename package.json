@@ -128,6 +128,7 @@
     "@vue/tsconfig": "0.8.1",
     "@zod/core": "0.11.6",
     "benny": "3.7.1",
+    "bun-plugin-tailwind": "0.1.2",
     "esbuild": "0.25.12",
     "esbuild-raw-plugin": "0.3.1",
     "globals": "16.4.0",
@@ -146,7 +147,7 @@
     "svelte-check": "4.3.3",
     "tsdown": "0.15.9",
     "tsup": "8.5.0",
-    "vite": "7.1.12",
+    "vite": "8.0.10",
     "vite-plugin-devtools-json": "1.0.0",
     "vite-plugin-solid": "2.11.10",
     "vite-tsconfig-paths": "5.1.4",
@@ -155,7 +156,7 @@
     "vitepress-plugin-sandpack": "1.1.4",
     "vitest": "^3.2.4",
     "vue-tsc": "3.1.1",
-    "wrangler": "4.45.0",
+    "wrangler": "4.85.0",
     "zod": "4.1.12"
   }
 }

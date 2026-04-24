@@ -57,13 +57,7 @@ export function attachHeading(name: string, props: Record<string, string>, Rende
   }
 
   if (name === 'title') {
-    const currentTitle = document.title;
     document.title = props.children;
-
-    createEffect(() => () => {
-      document.title = currentTitle;
-    });
-
     return;
   }
 

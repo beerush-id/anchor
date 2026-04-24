@@ -238,6 +238,11 @@ export type CachedRouteData = {
 /** Cache for provider data */
 export type ProviderCache = Map<string, CachedRouteData>;
 
+export type GuardObserver = {
+  observer: StateObserver;
+  authenticator: () => void | Promise<void>;
+};
+
 /** Observer for provider reactivity */
 export type ProviderObserver = {
   observer: StateObserver;
@@ -250,10 +255,18 @@ export type RouteStorage = {
   dataCache: WeakMap<ProviderContext<TRec, TRec, TRec>, TRec>;
   activeResolvers: Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
   guardObserver: StateObserver;
+  guardObservers: WeakMap<UnknownGuard, GuardObserver>;
   providerObservers: WeakMap<UnknownProvider, ProviderObserver>;
 };
 
+export type RouterState = {
+  steps: number;
+  progress: number;
+  activating: boolean;
+};
+
 export type RouterStorage = {
+  state: RouterState;
   cache: URLCache;
   context: RouterContext<TRec, TRec, TRec>;
   activeUrl: string | undefined;

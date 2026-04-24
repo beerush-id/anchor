@@ -1,10 +1,85 @@
-import { ANCHOR_SETTINGS } from '../constant.js';
-import { captureStack } from '../exception.js';
-import type { KeyLike } from '../types.js';
-import { isBrowser } from './inspector.js';
+import { ANCHOR_SETTINGS } from './constant.js';
+import { captureStack } from './exception.js';
+import { GLOBAL_CLOSURE_STORAGE } from './server/constant.js';
+import type { KeyLike } from './types.js';
+import { isBrowser } from './utils/index.js';
 
 export type Closure = Map<unknown, unknown>;
 export type ClosureMap = Map<KeyLike, Closure>;
+export type ClosureAdapterCompat = {
+  shared: ClosureMap;
+  getStore(): ClosureMap | undefined;
+  run<R>(ctx: ClosureMap, fn: () => R): R;
+};
+
+/**
+ * Interface for closure adapter mechanisms, typically used on the server-side
+ * for context management with features like AsyncLocalStorage.
+ *
+ * @template T - The type of data stored in the async storage
+ */
+export class ClosureAdapter {
+  /** The shared closure storage across module */
+  public shared: ClosureMap = new Map();
+
+  /**
+   * Executes a function within the provided context
+   *
+   * @template R - The return type of the function
+   * @param map - The context/data to run the function with
+   * @param fn - The function to execute
+   * @returns The result of the function execution
+   */
+  public run<R>(map: ClosureMap, fn: () => R): R {
+    this.warn();
+
+    const prevClosure = this.shared;
+    this.shared = map;
+
+    try {
+      return fn();
+    } finally {
+      this.shared = prevClosure;
+    }
+  }
+
+  /**
+   * Returns the current store or undefined
+   *
+   * @returns The current store or undefined
+   */
+  public getStore() {
+    this.warn();
+    return this.shared;
+  }
+
+  private warn() {
+    if (!isBrowser() && ANCHOR_SETTINGS.closureWarning) {
+      const error = new Error('AsyncLocalStorage not implemented.');
+      captureStack.violation.general(
+        'Missing AsyncLocalStorage implementation detected.',
+        'Attempted to use async storage on the server without implementing AsyncLocalStorage.',
+        error,
+        [
+          'AsyncLocalStorage is not available in this environment. This could lead to race condition.',
+          '- Make sure to call the "implementAsyncStorage()" on your server entry file.',
+          '- Consider using a different storage mechanism or environment.',
+          'Documentation: https://anchorlib.dev/docs/context#server-store',
+        ],
+        this.run,
+        this.getStore
+      );
+    }
+  }
+}
+
+let closureAdapter: ClosureAdapter | ClosureAdapterCompat = new ClosureAdapter();
+
+// biome-ignore lint/suspicious/noExplicitAny: Expect any.
+if (typeof (globalThis as any) !== 'undefined' && (globalThis as any)[GLOBAL_CLOSURE_STORAGE]) {
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  closureAdapter = (globalThis as any)[GLOBAL_CLOSURE_STORAGE];
+}
 
 /**
  * A storage mechanism for closures with context isolation.
@@ -47,68 +122,6 @@ export type ClosureStorage<K, V> = {
   run<R>(ctx: Closure, fn: () => R): R;
 };
 
-let currentClosure: ClosureMap = new Map();
-
-/**
- * Interface for closure adapter mechanisms, typically used on the server-side
- * for context management with features like AsyncLocalStorage.
- *
- * @template T - The type of data stored in the async storage
- */
-export class ClosureAdapter {
-  /**
-   * Executes a function within the provided context
-   *
-   * @template R - The return type of the function
-   * @param map - The context/data to run the function with
-   * @param fn - The function to execute
-   * @returns The result of the function execution
-   */
-  public run<R>(map: ClosureMap, fn: () => R): R {
-    this.warn();
-
-    const prevClosure = currentClosure;
-    currentClosure = map;
-
-    try {
-      return fn();
-    } finally {
-      currentClosure = prevClosure;
-    }
-  }
-
-  /**
-   * Returns the current store or undefined
-   *
-   * @returns The current store or undefined
-   */
-  public getStore() {
-    this.warn();
-    return currentClosure;
-  }
-
-  private warn() {
-    if (!isBrowser() && ANCHOR_SETTINGS.closureWarning) {
-      const error = new Error('AsyncLocalStorage not implemented.');
-      captureStack.violation.general(
-        'Missing AsyncLocalStorage implementation detected.',
-        'Attempted to use async storage on the server without implementing AsyncLocalStorage.',
-        error,
-        [
-          'AsyncLocalStorage is not available in this environment. This could lead to race condition.',
-          '- Make sure to call the "implementAsyncStorage()" on your server entry file.',
-          '- Consider using a different storage mechanism or environment.',
-          'Documentation: https://anchorlib.dev/docs/context#server-store',
-        ],
-        this.run,
-        this.getStore
-      );
-    }
-  }
-}
-
-let closureAdapter = new ClosureAdapter();
-
 /**
  * A global closure utility object for managing context values.
  * Provides simple get/set operations on the current context.
@@ -123,10 +136,24 @@ export const closure = {
    * @throws {Error} If no closure adapter is available
    */
   get<V>(key: KeyLike): V | undefined {
-    const storage = closureAdapter?.getStore();
+    const storage = closureAdapter?.getStore() ?? closureAdapter.shared;
 
-    if (!storage) {
+    if (!isBrowser() && closureAdapter instanceof ClosureAdapter) {
       throw new Error('Closure adapter is missing.');
+    }
+
+    if (!isBrowser() && storage === closureAdapter.shared) {
+      captureStack.warning.external(
+        'Attempted to access shared Closure Storage.',
+        [
+          'Accessing shared closure storage is highly discouraged.',
+          'This could lead to race condition.',
+          '- Make sure to use isolated context storage or implement a custom storage mechanism.',
+          'Documentation: https://anchorlib.dev/docs/context#isolated-store',
+        ].join('\n'),
+        'Shared Closure Storage Access Detected.',
+        this.get
+      );
     }
 
     return storage.get(key as never) as V;

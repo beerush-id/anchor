@@ -1,6 +1,6 @@
+import { closure, createClosure } from '../closure.js';
 import { captureStack } from '../exception.js';
 import type { KeyLike } from '../types.js';
-import { closure, createClosure } from './closure.js';
 
 export const RENDER_CONTEXT_KEY = Symbol('render-context');
 

@@ -1,4 +1,4 @@
-import { anchor, createObserver, mutable, retriable, type StateObserver, untrack } from '@anchorlib/core';
+import { anchor, createObserver, mutable, onCleanup, retriable, untrack } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -12,6 +12,7 @@ import type {
   GuardBlocker,
   GuardContext,
   GuardHandler,
+  GuardObserver,
   NestedParams,
   NestedQueryParams,
   ProviderContext,
@@ -245,16 +246,8 @@ export class Route<
             authenticating: false,
           }),
           cache: new RouteCache(this as UnknownRoute),
+          guardObservers: new WeakMap(),
           activeResolvers: new Map(),
-          guardObserver: createObserver(() => {
-            this.guardObserver.reset();
-            this.authenticate(
-              untrack(() => {
-                return { params: this.params, query: this.query };
-              }) as GuardContext<TParams, TQueryParams>,
-              true
-            );
-          }),
           providerObservers: new WeakMap(),
         });
       });
@@ -271,11 +264,9 @@ export class Route<
     return this.storage.activeResolvers as Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
   }
 
-  // Reactive observers.
-  private get guardObserver(): StateObserver {
-    return this.storage.guardObserver;
+  private get guardObservers(): WeakMap<UnknownGuard, GuardObserver> {
+    return this.storage.guardObservers;
   }
-
   private get providerObservers(): WeakMap<UnknownProvider, ProviderObserver> {
     return this.storage.providerObservers as WeakMap<UnknownProvider, ProviderObserver>;
   }
@@ -498,46 +489,72 @@ export class Route<
   public async authenticate(context: GuardContext<TParams, TQueryParams>, force = false): Promise<true | GuardBlocker> {
     if (this.state.authenticated && !force) return Promise.resolve(true);
 
-    // Run the guard inside an observer, so whenever the state it reads change,
-    // the observer will be re-run.
-    return await this.guardObserver.run(async () => {
-      this.authenticating = true;
+    this.authenticating = true;
 
-      try {
-        const guards = Array.from(this.guards);
-        await Promise.all(Array.from(guards).map((guard) => guard(context)));
+    try {
+      const authentications = Array.from(this.guards).map((guard) => {
+        if (!this.guardObservers.has(guard)) {
+          const observer = createObserver(() => {
+            this.router.start(1);
 
-        this.state.authenticated = true;
-      } catch (error) {
-        this.state.authenticated = false;
+            observer.reset();
+            authenticator();
+          });
 
-        if (error instanceof Redirect) {
-          return error;
-        } else if (error instanceof Error) {
-          this.error = {
-            type: 'guard',
-            cause: error,
-            message: error.message,
+          onCleanup(() => {
+            observer.destroy();
+          });
+
+          const authenticator = () => {
+            // Run the guard inside an observer, so whenever the state it reads change,
+            // the observer will be re-run.
+            return observer.run(async () => {
+              try {
+                return await guard(context);
+              } finally {
+                this.router.progress();
+              }
+            });
           };
 
-          return error;
-        } else {
-          const cause = new Error('Unknown guard error.');
-
-          this.error = {
-            type: 'guard',
-            cause,
-            message: cause.message,
-          };
-
-          return cause;
+          this.guardObservers.set(guard, { authenticator, observer });
         }
-      } finally {
-        this.authenticating = false;
-      }
 
-      return true;
-    });
+        const authenticate = this.guardObservers.get(guard)!.authenticator!;
+        return authenticate();
+      });
+      await Promise.all(authentications);
+
+      this.state.authenticated = true;
+    } catch (error) {
+      this.state.authenticated = false;
+
+      if (error instanceof Redirect) {
+        return error;
+      } else if (error instanceof Error) {
+        this.error = {
+          type: 'guard',
+          cause: error,
+          message: error.message,
+        };
+
+        return error;
+      } else {
+        const cause = new Error('Unknown guard error.');
+
+        this.error = {
+          type: 'guard',
+          cause,
+          message: cause.message,
+        };
+
+        return cause;
+      }
+    } finally {
+      this.authenticating = false;
+    }
+
+    return true;
   }
 
   /**
@@ -582,8 +599,13 @@ export class Route<
       for (const [name, { provider, options }] of this.providers) {
         if (!this.providerObservers.has(provider)) {
           const observer = createObserver(() => {
+            this.router.start(1);
             observer.reset();
             resolver();
+          });
+
+          onCleanup(() => {
+            observer.destroy();
           });
 
           // Run the provider inside an observer, so whenever the state it reads change,
@@ -636,9 +658,9 @@ export class Route<
           this.providerObservers.set(provider, { observer, resolver });
         }
 
-        const { resolver } = this.providerObservers.get(provider)!;
+        const resolve = this.providerObservers.get(provider)!.resolver;
 
-        const result = await resolver();
+        const result = await resolve();
         if (result instanceof Error) return;
       }
 
@@ -707,12 +729,7 @@ export class Route<
       this.error = undefined;
       this.resolved = false;
       this.authenticated = false;
-      this.guardObserver.destroy();
-
-      for (const { provider } of this.providers.values()) {
-        this.providerObservers.get(provider)?.observer.destroy();
-        this.providerObservers.delete(provider);
-      }
+      this.cleanupObservers();
     }
   }
 
@@ -750,6 +767,22 @@ export class Route<
   public render(renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>): this {
     this.renderer = createRenderer(this as UnknownRoute, renderer, true);
     return this;
+  }
+
+  public cleanup() {
+    this.cleanupObservers();
+  }
+
+  private cleanupObservers() {
+    for (const guard of this.guards.values()) {
+      this.guardObservers.get(guard)?.observer.destroy();
+      this.guardObservers.delete(guard);
+    }
+
+    for (const { provider } of this.providers.values()) {
+      this.providerObservers.get(provider)?.observer.destroy();
+      this.providerObservers.delete(provider);
+    }
   }
 }
 

@@ -1,10 +1,19 @@
-import { anchor, captureStack, createObserver, microtask, RenderContext, setRenderCtx } from '@anchorlib/core';
+import {
+  anchor,
+  captureStack,
+  createObserver,
+  isBrowser,
+  microtask,
+  RenderContext,
+  setRenderCtx,
+} from '@anchorlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, proxyProps } from './props.js';
 import type {
   Component,
+  ComponentProps,
   GenericProps,
   Snippet,
   SnippetView,
@@ -170,34 +179,41 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       snippet
     );
 
-    const Template = () => error.message;
-    Template.displayName = `Error(${displayName || 'Anonymous'})`;
-    return Template;
+    const Snippet = () => error.message;
+    Snippet.displayName = `Error(${displayName || 'Anonymous'})`;
+    return Snippet;
   }
 
   const viewName = displayName || (factory as FunctionComponent).name || 'Anonymous';
-  const parentProps = getProps<SP>();
+  let parentProps: ComponentProps<SP>;
 
-  if (!parentProps && needSetup) {
-    const error = new Error('Out of component scope.');
-    captureStack.violation.general(
-      `${scopeName} violation detected:`,
-      `Attempted to use ${scopeName} outside of a component.`,
-      error,
-      [
-        `${scopeName} must be declared inside a component (setup)`,
-        '- Use template if the view is meant to be reusable across application',
-      ],
-      snippet
-    );
+  if (needSetup) {
+    parentProps = getProps<SP>();
+
+    if (!parentProps) {
+      const error = new Error('Out of component scope.');
+      captureStack.violation.general(
+        `${scopeName} violation detected:`,
+        `Attempted to use ${scopeName} outside of a component.`,
+        error,
+        [
+          `${scopeName} must be declared inside a component (setup)`,
+          '- Use template if the view is meant to be reusable across application',
+        ],
+        snippet
+      );
+    }
   }
 
-  const Template = memoize((props: P) => {
+  const Snippet = memoize(function Snippet(props: P) {
     const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(CLEANUP_DEBOUNCE_TIME));
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
-    const [observer] = createState(() => {
-      return createObserver(() => {
+    const [observer] = createState(function createSnippetState() {
+      return createObserver(function snippetRenderer() {
+        // Prevent triggering re-render when not in browser.
         observer.reset();
+
+        if (!isBrowser()) return;
         setVersion((c) => c + 1);
       });
     });
@@ -219,8 +235,8 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
     });
   });
 
-  Template.displayName = `${scopeName}(${viewName})`;
-  return Template as SnippetView<P>;
+  Snippet.displayName = `${scopeName}(${viewName})`;
+  return Snippet as SnippetView<P>;
 }
 
 /**
@@ -242,7 +258,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
  * @returns {TemplateView<P>} A memoized functional component that re-executes when its props change
  */
 export function template<P>(factory: Template<P>, displayName?: string): TemplateView<P> {
-  const parentProps = getProps();
+  const parentProps = isBrowser() ? getProps() : undefined;
 
   if (parentProps) {
     captureStack.warning.external(
