@@ -189,7 +189,7 @@ export function cancelable<R>(fn: (signal: AbortSignal) => Promise<R> | R, signa
  * @returns A Promise that resolves with the result of the call, or rejects with an error
  *          if all retry attempts fail or if the timeout is reached
  */
-export function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T, options?: RetriableOptions) {
+export async function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T, options?: RetriableOptions) {
   const {
     timeout = 0,
     retryMode = 'exponential',
@@ -222,16 +222,24 @@ export function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T, opti
   };
 
   if (timeout) {
+    let timeId: ReturnType<typeof setTimeout>;
+
     const timer = new Promise((_, reject) => {
-      const timeId = setTimeout(() => {
+      timeId = setTimeout(() => {
         controller.abort();
         reject(new Error('Call timed out'));
       }, timeout);
-
-      controller.signal.addEventListener('abort', () => clearTimeout(timeId));
     });
 
-    return Promise.race([timer, execute()]);
+    const clearTimer = () => clearTimeout(timeId);
+    controller.signal.addEventListener('abort', () => clearTimer);
+
+    try {
+      return await Promise.race([timer, execute()]);
+    } finally {
+      clearTimer();
+      controller.signal.removeEventListener('abort', () => clearTimer);
+    }
   }
 
   return execute();

@@ -232,8 +232,7 @@ export const captureStack = {
     general(title: string, body: string, error: Error, notes?: string[], ...excludedStacks: unknown[]) {
       const message = generator.generalViolation(title, body, notes);
       shiftStack(error, captureStack.violation.general, excludedStacks);
-
-      schedule(() => console.error(message, error, '\n'));
+      console.error(message, error, '\n');
     },
     derivation(body: string, error: Error, ...excludedStacks: unknown[]) {
       const message = generator.generalViolation('Derivation violation detected:', body, [
