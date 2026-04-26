@@ -181,7 +181,6 @@ const generator = {
   },
 };
 
-const schedule = (fn: () => void) => setTimeout(fn, 0);
 export const captureStack = {
   warning: {
     external(title: string, body: string, trace: string | unknown, ...excludeStacks: unknown[]) {

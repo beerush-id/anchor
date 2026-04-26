@@ -5,6 +5,7 @@ import {
   awaited,
   getAllAsyncContext,
   getAsyncContext,
+  getAsyncStore,
   inContext,
   isolatedContext,
   resetGlobalStore,
@@ -21,6 +22,10 @@ describe('AsyncStore', () => {
   });
   afterEach(() => {
     warnSpy.mockRestore();
+  });
+
+  it('should get the active store', () => {
+    expect(getAsyncStore()).toBeInstanceOf(Map);
   });
 
   it('should store and retrieve values', () => {
@@ -482,7 +487,7 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
     const promise = isolatedContext(async () => {
       // We launch a Promise.race inside an isolated context.
       // The winner resolves, allowing isolatedContext to finish and safely destroy the store.
-      winner = awaited(() => new Promise((r) => setTimeout(r, 5)));
+      winner = awaited(() => new Promise((r) => setTimeout(r, 5))).finally();
 
       // The loser resolves LATER. Its Awaited.fork continuation will try to execute
       // AFTER the isolated context has already been destroyed!

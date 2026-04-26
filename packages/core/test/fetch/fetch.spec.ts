@@ -46,6 +46,7 @@ describe('Reactive Request', () => {
       expect(state.response).toBeUndefined();
 
       vi.runAllTimers();
+      await Promise.resolve();
     });
 
     it('should handle successful fetch response', async () => {
