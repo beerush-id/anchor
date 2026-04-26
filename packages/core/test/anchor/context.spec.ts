@@ -7,13 +7,16 @@ import {
   getAsyncContext,
   inContext,
   isolatedContext,
+  resetGlobalStore,
   setAsyncContext,
-} from '../../src/context.js';
+} from '../../src/context.js'; // No warning [check]
 
+// No warning [check]
 describe('AsyncStore', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
@@ -44,7 +47,12 @@ describe('AsyncStore', () => {
   });
 });
 
+// No warning [check]
 describe('AsyncContext (Sync Operations)', () => {
+  beforeEach(() => {
+    resetGlobalStore();
+  });
+
   it('should inject context synchronously during run', () => {
     const ctx = new AsyncContext('default');
 
@@ -71,7 +79,12 @@ describe('AsyncContext (Sync Operations)', () => {
   });
 });
 
+// No warning [check]
 describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
+  beforeEach(() => {
+    resetGlobalStore();
+  });
+
   it('MUST lose context on detached (native) await', async () => {
     const ctx = new AsyncContext('default');
 
@@ -139,11 +152,13 @@ describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
   });
 });
 
+// No warning [check]
 describe('Global Context & Store Management', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    resetGlobalStore();
+    warnSpy = vi.spyOn(console, 'error');
   });
   afterEach(() => {
     warnSpy.mockRestore();
@@ -202,14 +217,30 @@ describe('Global Context & Store Management', () => {
   });
 });
 
+// No warning [check]
 describe('Security: isolatedContext Boundaries', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
     warnSpy.mockRestore();
+  });
+
+  it('should restore global store in a strict isolation', async () => {
+    await isolatedContext(async () => {
+      setAsyncContext('isolated', 'val');
+      expect(getAsyncContext('isolated')).toBe('val');
+
+      await awaited(() => Promise.resolve());
+
+      expect(getAsyncContext('isolated')).toBe('val');
+    });
+
+    expect(getAsyncContext('isolated')).toBeUndefined();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('isolatedContext operates normally when properly awaited', async () => {
@@ -222,7 +253,7 @@ describe('Security: isolatedContext Boundaries', () => {
 
         await awaited(() => Promise.resolve());
         expect(getAsyncContext('isolated')).toBe('val2');
-      });
+      }, false);
 
       expect(getAsyncContext('isolated')).toBeUndefined();
     });
@@ -236,18 +267,44 @@ describe('Security: isolatedContext Boundaries', () => {
       floatingPromise = awaited(() => new Promise((resolve) => setTimeout(resolve, 10))).then(() => {
         getAsyncContext('foo');
       });
-    });
+    }, false);
 
     vi.runAllTimers();
     await floatingPromise!;
 
     // The Awaited.fork wrapper should have detected the detached access and fired the warning.
-    expect(warnSpy).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it('should throw if a floating promises detected in an strict isolated context', async () => {
+    vi.useFakeTimers();
+
+    await expect(() => {
+      return isolatedContext(async () => {
+        awaited(() => new Promise((resolve) => setTimeout(resolve, 10)));
+      });
+    }).rejects.toThrow();
+
+    vi.runAllTimers();
+    vi.useRealTimers();
+
+    expect(warnSpy).toHaveBeenCalled();
   });
 });
 
+// No warning [check]
 describe('Deep Concurrency & Edge Cases', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    resetGlobalStore();
+    warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
   it('should protect against race conditions when multiple async contexts overlap', async () => {
     vi.useFakeTimers();
     // 5 concurrent operations with different execution delays
@@ -345,7 +402,7 @@ describe('Deep Concurrency & Edge Cases', () => {
         await awaited(() => new Promise((r) => setTimeout(r, (index % 10) + 1)));
         expect(getAsyncContext('iso_id')).toBe(id);
         return id;
-      });
+      }, false);
     });
 
     // Explicitly step through the microtask queue 1ms at a time
@@ -372,6 +429,16 @@ describe('Deep Concurrency & Edge Cases', () => {
 });
 
 describe('Complex Execution Boundaries & Memory Traps', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    resetGlobalStore();
+    warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
   it('survives complex mixed chaining (sync/async/catch permutations) on Awaited instances', async () => {
     const ctx = new AsyncContext('root');
 
@@ -408,44 +475,41 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
 
   it('triggers detached warning for losing promises in Promise.race inside isolated context', async () => {
     vi.useFakeTimers();
-    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // biome-ignore lint/suspicious/noExplicitAny: Expected.
-    let loserPromise: Promise<any>;
+    let winner: Promise<unknown>;
+    let loser: Promise<void>;
 
-    const racePromise = isolatedContext(async () => {
+    const promise = isolatedContext(async () => {
       // We launch a Promise.race inside an isolated context.
       // The winner resolves, allowing isolatedContext to finish and safely destroy the store.
-      const winner = awaited(() => new Promise((r) => setTimeout(r, 5)));
+      winner = awaited(() => new Promise((r) => setTimeout(r, 5)));
 
       // The loser resolves LATER. Its Awaited.fork continuation will try to execute
       // AFTER the isolated context has already been destroyed!
-      const loser = awaited(() => new Promise((r) => setTimeout(r, 20))).then(() => {
+      loser = awaited(() => new Promise((r) => setTimeout(r, 20))).then(() => {
         getAsyncContext('foo');
       });
 
-      loserPromise = loser;
-
       await Promise.race([winner, loser]);
-    });
+    }, false);
 
     // Advance timers so the winner resolves, allowing the race and isolatedContext to finish!
     await vi.advanceTimersByTimeAsync(5);
-    await racePromise;
+    await winner!;
 
-    // The isolatedContext has now exited.
     // Advance timers so the loser finally resolves and triggers its detached continuation.
     await vi.advanceTimersByTimeAsync(15);
-    await loserPromise!;
+    await loser!;
+
+    await promise;
 
     // The system MUST catch the trailing memory access and fire the security warning.
-    expect(warnSpy).toHaveBeenCalledTimes(3);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
 
-    warnSpy.mockRestore();
     vi.useRealTimers();
   });
 
-  it('requires explicit context binding for non-promise event-driven callbacks (simulated Event Emitter)', () => {
+  it('requires explicit context binding for non-promise event-driven callbacks (simulated Event Emitter)', async () => {
     // If a system uses callbacks (like DOM events or Node Emitters), the context is naturally lost
     // because the event loop executes the callback detached from any Promise chain.
     let capturedOutside = false;
@@ -461,7 +525,7 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
       },
     };
 
-    inContext(() => {
+    await inContext(() => {
       setAsyncContext('event_key', 'bound');
 
       // 1. Raw callback -> Loses context when emitted later
@@ -533,12 +597,12 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
       const opA = inContext(async () => {
         setAsyncContext('inner', 'A1'); // A -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 10))); // A -> awaited (resumes at T=10)
-        
+
         // T=10
         expect(getAsyncContext('inner')).toBe('A1'); // A -> resume context, inner must survive
         setAsyncContext('inner', 'A2'); // A -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 10))); // A -> awaited (resumes at T=20)
-        
+
         // T=20
         expect(getAsyncContext('inner')).toBe('A2'); // A -> resume context
       });
@@ -547,22 +611,22 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
       const opB = inContext(async () => {
         setAsyncContext('inner', 'B1'); // B -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 15))); // B -> awaited (resumes at T=15)
-        
+
         // T=15
         expect(getAsyncContext('inner')).toBe('B1'); // B -> resume context, inner must survive
         setAsyncContext('inner', 'B2'); // B -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 10))); // B -> awaited (resumes at T=25)
-        
+
         // T=25
         expect(getAsyncContext('inner')).toBe('B2'); // B -> resume context
       });
 
       // We now explicitly step time forward to trigger the exact A-B-A-B-A-B alternating resumption trace
-      
+
       await vi.advanceTimersByTimeAsync(10); // Advances T=0 to T=10 -> A resumes, sets A2, awaits 10ms
-      await vi.advanceTimersByTimeAsync(5);  // Advances T=10 to T=15 -> B resumes, sets B2, awaits 10ms
-      await vi.advanceTimersByTimeAsync(5);  // Advances T=15 to T=20 -> A resumes, finishes
-      await vi.advanceTimersByTimeAsync(5);  // Advances T=20 to T=25 -> B resumes, finishes
+      await vi.advanceTimersByTimeAsync(5); // Advances T=10 to T=15 -> B resumes, sets B2, awaits 10ms
+      await vi.advanceTimersByTimeAsync(5); // Advances T=15 to T=20 -> A resumes, finishes
+      await vi.advanceTimersByTimeAsync(5); // Advances T=20 to T=25 -> B resumes, finishes
 
       await Promise.all([opA, opB]);
 
