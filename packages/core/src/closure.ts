@@ -138,7 +138,7 @@ export const closure = {
   get<V>(key: KeyLike): V | undefined {
     const storage = closureAdapter?.getStore() ?? closureAdapter.shared;
 
-    if (!isBrowser() && closureAdapter instanceof ClosureAdapter) {
+    if (!isBrowser() && (closureAdapter instanceof ClosureAdapter || !storage)) {
       throw new Error('Closure adapter is missing.');
     }
 

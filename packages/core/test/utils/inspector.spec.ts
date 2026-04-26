@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   isArray,
   isBoolean,
@@ -405,6 +405,7 @@ describe('Inspector Utilities', () => {
 
   describe('Environment Checks', () => {
     it('should check browser environment', () => {
+      vi.unstubAllGlobals();
       // Since we're running in Node.js for tests
       expect(isBrowser()).toBe(false);
     });

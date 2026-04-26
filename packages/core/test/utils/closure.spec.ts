@@ -288,6 +288,8 @@ describe('Anchor Utilities - Closure', () => {
     });
 
     it('should handle missing adapter error', () => {
+      vi.unstubAllGlobals();
+
       setAsyncStorageAdapter({
         run: () => {},
         getStore: () => undefined,
