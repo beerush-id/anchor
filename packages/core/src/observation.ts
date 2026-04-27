@@ -20,7 +20,6 @@ import type {
 import { isBrowser, isFunction, shortId } from './utils/index.js';
 
 const OBSERVER_SYMBOL = Symbol('state-observer');
-const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
 
 /**
  * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.
@@ -102,38 +101,6 @@ export const untrack = storeContract(OBSERVER_SYMBOL, undefined, undefined, unde
     captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
   }
 });
-
-/**
- * @deprecated This function is deprecated.
- * Sets the current observer context for state tracking.
- * This function is used internally to manage the observer stack during state derivation.
- *
- * @param observer - The observer to set as the current context
- * @returns A cleanup function that restores the previous observer context
- * @warning This is a low-level API designed for library authors or advanced use cases.
- */
-export function setObserver(observer: StateObserver) {
-  const currentObserver = getScope<StateObserver>(OBSERVER_SYMBOL);
-  const currentRestorer = getScope<() => void>(OBSERVER_RESTORER_SYMBOL);
-
-  // Make sure it handles duplicate observer such as when evaluated in React's strict mode.
-  if (currentObserver === observer) return currentRestorer as () => void;
-
-  let restored = false;
-
-  const nextRestore = () => {
-    if (!restored) {
-      setScope(OBSERVER_SYMBOL, currentObserver);
-      setScope(OBSERVER_RESTORER_SYMBOL, currentRestorer);
-      restored = true;
-    }
-  };
-
-  setScope(OBSERVER_SYMBOL, observer);
-  setScope(OBSERVER_RESTORER_SYMBOL, nextRestore);
-
-  return nextRestore;
-}
 
 /**
  * Gets the current observer context.
@@ -317,46 +284,6 @@ export function createObserver(
 
   return observer;
 }
-
-/**
- * Executes a function within a specific observer context.
- * This function temporarily sets the provided observer as the current context,
- * executes the provided function, and then restores the previous observer context.
- * It's useful for running code that should be tracked by a specific observer.
- *
- * @template R - The type of the return value of the function.
- * @param {() => R} fn - The function to execute within the observer context
- * @param {StateObserver} observer - The observer to set as the current context
- * @warning This is a low-level API designed for library authors or advanced use cases.
- */
-export function withinObserver<R>(fn: () => R, observer: StateObserver): R;
-export function withinObserver<R>(observer: StateObserver, fn: () => R): R;
-export function withinObserver<R>(observerOrFn: StateObserver | (() => R), fnOrObserver: (() => R) | StateObserver): R {
-  if (isFunction(observerOrFn)) return withinObserver(fnOrObserver as StateObserver, observerOrFn);
-
-  const restore = setObserver(observerOrFn);
-  let result: R | undefined = undefined;
-
-  if (typeof fnOrObserver === 'function') {
-    try {
-      result = fnOrObserver();
-    } catch (error) {
-      captureStack.error.external('Unable to execute the within observer function', error as Error, withinObserver);
-    }
-  } else {
-    const error = new Error('Invalid argument.');
-    captureStack.error.argument('The given argument is not a function', error, withinObserver);
-  }
-
-  restore?.();
-
-  return result as R;
-}
-
-/**
- * @deprecated Use {@link untrack} instead
- */
-export const outsideObserver = untrack;
 
 const TRACKER_SYMBOL = Symbol('state-tracker');
 const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');

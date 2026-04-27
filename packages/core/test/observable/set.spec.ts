@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, ObjectMutations, SetMutations, setObserver } from '../../src/index.js';
+import { anchor, createObserver, ObjectMutations, SetMutations } from '../../src/index.js';
 
 describe('Anchor Core - Observable Set', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -16,13 +16,11 @@ describe('Anchor Core - Observable Set', () => {
     it('should track set mutations when observable is enabled', () => {
       const state = anchor(new Set([1, 2, 3]), { observable: true });
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
-
-      // Access set to track it
-      const size = state.size;
-      expect(size).toBe(3);
-
-      restore();
+      observer.run(() => {
+        // Access set to track it
+        const size = state.size;
+        expect(size).toBe(3);
+      });
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
@@ -34,12 +32,11 @@ describe('Anchor Core - Observable Set', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
-
-      // Access set to track it
-      const size = state.size;
-      expect(size).toBe(3);
-      restore();
+      observer.run(() => {
+        // Access set to track it
+        const size = state.size;
+        expect(size).toBe(3);
+      });
 
       // Mutate set
       state.add(4);
@@ -57,12 +54,11 @@ describe('Anchor Core - Observable Set', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
-
-      // Access set to track it
-      const size = state.size;
-      expect(size).toBe(3);
-      restore();
+      observer.run(() => {
+        // Access set to track it
+        const size = state.size;
+        expect(size).toBe(3);
+      });
 
       // Test various set mutations
       state.add(4);
@@ -96,15 +92,16 @@ describe('Anchor Core - Observable Set', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
 
-      // Access set to track it
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const values = Array.from(state.values()) as any[];
-      const value1 = values[0].a;
-      expect(value1).toBe(1);
+      let values: any;
 
-      restore();
+      observer.run(() => {
+        // Access set to track it
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        values = Array.from(state.values()) as any[];
+        const value1 = values[0].a;
+        expect(value1).toBe(1);
+      });
 
       // Mutate nested object
       values[0].a = 3;
@@ -135,13 +132,11 @@ describe('Anchor Core - Observable Set', () => {
       const state = anchor(set, { observable: true, recursive: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
-
-      // Access set to track it
-      const size = state.size;
-      expect(size).toBe(3);
-
-      restore();
+      observer.run(() => {
+        // Access set to track it
+        const size = state.size;
+        expect(size).toBe(3);
+      });
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
@@ -154,23 +149,25 @@ describe('Anchor Core - Observable Set', () => {
       const state = anchor(new Set([nestedObj, nestedArr]), { observable: true, recursive: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
 
-      // Convert set to array for easier access
-      const values = Array.from(state.values());
-      const obj = values.find((v) => typeof v === 'object' && !Array.isArray(v));
-      const arr = values.find((v) => Array.isArray(v));
+      let obj: any;
+      let arr: any;
 
-      // Access nested structures
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const valueB = (obj as any).a.b;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const valueC = (arr[1] as any).c;
+      observer.run(() => {
+        // Convert set to array for easier access
+        const values = Array.from(state.values());
+        obj = values.find((v) => typeof v === 'object' && !Array.isArray(v));
+        arr = values.find((v) => Array.isArray(v));
 
-      expect(valueB).toBe(2);
-      expect(valueC).toBe(3);
+        // Access nested structures
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const valueB = (obj as any).a.b;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const valueC = (arr[1] as any).c;
 
-      restore();
+        expect(valueB).toBe(2);
+        expect(valueC).toBe(3);
+      });
       const trackedObjProps = observer.states.get(anchor.get(obj));
       const trackedArrProps = observer.states.get(anchor.get(arr));
 

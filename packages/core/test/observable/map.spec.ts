@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, MapMutations, setObserver } from '../../src/index.js';
+import { anchor, createObserver, MapMutations } from '../../src/index.js';
 
 describe('Anchor Core - Observable Map', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -23,13 +23,11 @@ describe('Anchor Core - Observable Map', () => {
       );
       const onTrack = vi.fn();
       const observer = createObserver(() => {}, onTrack);
-      const restore = setObserver(observer);
-
-      // Access map to track it
-      const size = state.size;
-      expect(size).toBe(2);
-
-      restore();
+      observer.run(() => {
+        // Access map to track it
+        const size = state.size;
+        expect(size).toBe(2);
+      });
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
@@ -48,12 +46,11 @@ describe('Anchor Core - Observable Map', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
-
-      // Access map to track it
-      const size = state.size;
-      expect(size).toBe(2);
-      restore();
+      observer.run(() => {
+        // Access map to track it
+        const size = state.size;
+        expect(size).toBe(2);
+      });
 
       // Mutate map
       state.set('c', 3);
@@ -70,14 +67,15 @@ describe('Anchor Core - Observable Map', () => {
       const nested = { a: 1 };
       const state = anchor(new Map([['key1', nested]]), { observable: true, recursive: true });
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
 
-      // Access map values to track them
-      const value = state.get('key1');
-      const valueA = value.a;
-      expect(valueA).toBe(1);
+      let value: any;
 
-      restore();
+      observer.run(() => {
+        // Access map values to track them
+        value = state.get('key1');
+        const valueA = (value as any).a;
+        expect(valueA).toBe(1);
+      });
       const trackedProps = observer.states.get(anchor.get(value));
 
       expect(trackedProps).toBeDefined();
@@ -95,12 +93,11 @@ describe('Anchor Core - Observable Map', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
-
-      // Access map to track it
-      const size = state.size;
-      expect(size).toBe(2);
-      restore();
+      observer.run(() => {
+        // Access map to track it
+        const size = state.size;
+        expect(size).toBe(2);
+      });
 
       // Test various map mutations
       state.set('c', 3);
@@ -138,15 +135,13 @@ describe('Anchor Core - Observable Map', () => {
       const state = anchor(map, { observable: true, recursive: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
-
-      // Access map values to track them
-      const valueA = state.get('a');
-      const circularRef = state.get('self');
-      expect(valueA).toBe(1);
-      expect(circularRef).toBe(state);
-
-      restore();
+      observer.run(() => {
+        // Access map values to track them
+        const valueA = state.get('a');
+        const circularRef = state.get('self');
+        expect(valueA).toBe(1);
+        expect(circularRef).toBe(state);
+      });
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
@@ -166,20 +161,21 @@ describe('Anchor Core - Observable Map', () => {
       );
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
+      let obj: any;
+      let arr: any;
 
-      // Access nested structures
-      const obj = state.get('obj');
-      const arr = state.get('arr');
-      const valueB = obj.a.b;
-      const valueC = arr[1].c;
+      observer.run(() => {
+        // Access nested structures
+        obj = state.get('obj');
+        arr = state.get('arr');
+        const valueB = obj.a.b;
+        const valueC = arr[1].c;
 
-      expect(obj).toEqual(nestedObj);
-      expect(arr).toEqual(nestedArr);
-      expect(valueB).toBe(2);
-      expect(valueC).toBe(3);
-
-      restore();
+        expect(obj).toEqual(nestedObj);
+        expect(arr).toEqual(nestedArr);
+        expect(valueB).toBe(2);
+        expect(valueC).toBe(3);
+      });
       const trackedObjProps = observer.states.get(anchor.get(obj));
       const trackedArrProps = observer.states.get(anchor.get(arr));
 

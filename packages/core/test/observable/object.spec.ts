@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, setObserver } from '../../src/index.js';
+import { anchor, createObserver } from '../../src/index.js';
 
 describe('Anchor Core - Observable Object', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -18,18 +18,17 @@ describe('Anchor Core - Observable Object', () => {
 
       const onTack = vi.fn();
       const observer = createObserver(() => {}, onTack);
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access properties to track them
+        const valueA = state.a;
+        const valueB = state.b;
 
-      // Access properties to track them
-      const valueA = state.a;
-      const valueB = state.b;
-
-      // Confirm accessed values
-      expect(valueA).toBe(1);
-      expect(valueB).toBe(2);
+        // Confirm accessed values
+        expect(valueA).toBe(1);
+        expect(valueB).toBe(2);
+      });
 
       const trackedProps = observer.states.get(anchor.get(state));
-      restore();
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('a')).toBe(true);
@@ -41,18 +40,17 @@ describe('Anchor Core - Observable Object', () => {
       const state = anchor({ a: 1, b: 2 }, { observable: false });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access properties
+        const valueA = state.a;
+        const valueB = state.b;
 
-      // Access properties
-      const valueA = state.a;
-      const valueB = state.b;
-
-      // Confirm accessed values
-      expect(valueA).toBe(1);
-      expect(valueB).toBe(2);
+        // Confirm accessed values
+        expect(valueA).toBe(1);
+        expect(valueB).toBe(2);
+      });
 
       const trackedProps = observer.states.get(anchor.get(state));
-      restore();
 
       expect(trackedProps).toBeUndefined();
     });
@@ -62,18 +60,15 @@ describe('Anchor Core - Observable Object', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access property to track it
+        const valueA = state.a;
+        const valueB = state.b;
 
-      // Access property to track it
-      const valueA = state.a;
-      const valueB = state.b;
+        expect(valueA).toBe(1);
+        expect(valueB).toBe(2);
+      });
 
-      expect(valueA).toBe(1);
-      expect(valueB).toBe(2);
-
-      restore();
-
-      // Change the tracked property
       state.a = 3;
 
       expect(state.a).toBe(3);
@@ -115,18 +110,17 @@ describe('Anchor Core - Observable Object', () => {
       const state = anchor({ nested: { a: 1, b: 2 } }, { observable: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access nested properties to track them
+        const valueA = state.nested.a;
+        const valueB = state.nested.b;
 
-      // Access nested properties to track them
-      const valueA = state.nested.a;
-      const valueB = state.nested.b;
-
-      // Confirm accessed values
-      expect(valueA).toBe(1);
-      expect(valueB).toBe(2);
+        // Confirm accessed values
+        expect(valueA).toBe(1);
+        expect(valueB).toBe(2);
+      });
 
       const trackedProps = observer.states.get(anchor.get(state.nested));
-      restore();
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('a')).toBe(true);
@@ -140,18 +134,17 @@ describe('Anchor Core - Observable Object', () => {
       const state = anchor(obj, { observable: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access properties to track them
+        const valueA = state.a;
+        const circularRef = state.self;
 
-      // Access properties to track them
-      const valueA = state.a;
-      const circularRef = state.self;
-
-      // Confirm accessed values
-      expect(valueA).toBe(1);
-      expect(circularRef).toBe(state);
+        // Confirm accessed values
+        expect(valueA).toBe(1);
+        expect(circularRef).toBe(state);
+      });
 
       const trackedProps = observer.states.get(anchor.get(state));
-      restore();
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('a')).toBe(true);
@@ -190,15 +183,15 @@ describe('Anchor Core - Observable Object', () => {
       const observer1 = createObserver(onChange1);
       const observer2 = createObserver(onChange2);
 
-      const restore1 = setObserver(observer1);
-      const valueA1 = state.a;
-      expect(valueA1).toBe(1);
-      restore1();
+      observer1.run(() => {
+        const valueA1 = state.a;
+        expect(valueA1).toBe(1);
+      });
 
-      const restore2 = setObserver(observer2);
-      const valueA2 = state.a;
-      expect(valueA2).toBe(1);
-      restore2();
+      observer2.run(() => {
+        const valueA2 = state.a;
+        expect(valueA2).toBe(1);
+      });
 
       // Change the tracked property
       state.a = 2;

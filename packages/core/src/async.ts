@@ -111,11 +111,6 @@ export function query<T extends Linkable, E extends Error = Error>(
 }
 
 /**
- * @deprecated Use "query()" instead.
- */
-export const asyncState = query;
-
-/**
  * Creates a cancelable promise from a synchronous function.
  * @param fn - A synchronous function that doesn't require an AbortSignal
  * @param signal - The AbortSignal to watch for cancellation

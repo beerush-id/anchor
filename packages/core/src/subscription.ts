@@ -160,10 +160,3 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
 }) satisfies SubscribeFn['bind'];
 
 export const subscribe: SubscribeFn = subscribeFn as SubscribeFn;
-
-/**
- * @deprecated Use `subscribe` instead.
- * The `derive` function is an alias for the `subscribe` function.
- * @type {SubscribeFn}
- */
-export const derive: SubscribeFn = subscribeFn as SubscribeFn;

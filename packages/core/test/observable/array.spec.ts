@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, setObserver } from '../../src/index.js';
+import { anchor, createObserver } from '../../src/index.js';
 
 describe('Anchor Core - Observable Array', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -18,14 +18,12 @@ describe('Anchor Core - Observable Array', () => {
 
       const onTrack = vi.fn();
       const observer = createObserver(() => {}, onTrack);
-      const restore = setObserver(observer);
-
-      // Access array to track it
-      const length = state.length;
-      expect(length).toBe(3);
-
+      observer.run(() => {
+        // Access array to track it
+        const length = state.length;
+        expect(length).toBe(3);
+      });
       const trackedProps = observer.states.get(anchor.get(state));
-      restore();
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('array_mutations')).toBe(true);
@@ -37,12 +35,12 @@ describe('Anchor Core - Observable Array', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
 
-      // Access array to track it
-      const length = state.length;
-      expect(length).toBe(3);
-      restore();
+      observer.run(() => {
+        // Access array to track it
+        const length = state.length;
+        expect(length).toBe(3);
+      });
 
       // Mutate array
       state.push(4);
@@ -59,18 +57,16 @@ describe('Anchor Core - Observable Array', () => {
       const state = anchor([{ a: 1 }, { b: 2 }], { observable: true, recursive: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access array elements to track them
+        const valueA = state[0].a;
+        const valueB = state[1].b;
 
-      // Access array elements to track them
-      const valueA = state[0].a;
-      const valueB = state[1].b;
-
-      // Confirm accessed values
-      expect(valueA).toBe(1);
-      expect(valueB).toBe(2);
-
+        // Confirm accessed values
+        expect(valueA).toBe(1);
+        expect(valueB).toBe(2);
+      });
       const trackedProps = observer.states.get(anchor.get(state[0]));
-      restore();
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('a')).toBe(true);
@@ -81,12 +77,11 @@ describe('Anchor Core - Observable Array', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
-
-      // Access array to track it
-      const length = state.length;
-      expect(length).toBe(3);
-      restore();
+      observer.run(() => {
+        // Access array to track it
+        const length = state.length;
+        expect(length).toBe(3);
+      });
 
       // Test various array mutations
       state.push(4); // [1, 2, 3, 4]
@@ -135,12 +130,11 @@ describe('Anchor Core - Observable Array', () => {
       const onChange = vi.fn();
 
       const observer = createObserver(onChange);
-      const restore = setObserver(observer);
-
-      // Access array to track it
-      const value = state[0].a;
-      expect(value).toBe(1);
-      restore();
+      observer.run(() => {
+        // Access array to track it
+        const value = state[0].a;
+        expect(value).toBe(1);
+      });
 
       // Modify nested object
       state[0].a = 3;
@@ -160,18 +154,16 @@ describe('Anchor Core - Observable Array', () => {
       const state = anchor(arr, { observable: true, recursive: true });
 
       const observer = createObserver(() => {});
-      const restore = setObserver(observer);
+      observer.run(() => {
+        // Access array elements to track them
+        const value1 = state[0];
+        const value2 = state[2]; // This is the circular reference
 
-      // Access array elements to track them
-      const value1 = state[0];
-      const value2 = state[2]; // This is the circular reference
-
-      // Confirm accessed values
-      expect(value1).toBe(1);
-      expect(value2).toBe(state);
-
+        // Confirm accessed values
+        expect(value1).toBe(1);
+        expect(value2).toBe(state);
+      });
       const trackedProps = observer.states.get(anchor.get(state));
-      restore();
 
       expect(trackedProps).toBeDefined();
       expect(trackedProps?.has('array_mutations')).toBe(true);
