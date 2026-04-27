@@ -1,10 +1,9 @@
+import { asyncContract, getAsyncContext } from './context.js';
 import { captureStack } from './exception.js';
-import { closure } from './utils/index.js';
 
 const DEFAULT_CLEANUP_HANDLER = (_handler: () => void) => {};
 
 const CLEANUP_SYMBOL = Symbol('cleanup-store');
-// closure.set(CLEANUP_SYMBOL, DEFAULT_CLEANUP_HANDLER);
 
 let currentCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;
 
@@ -15,7 +14,7 @@ let currentCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;
  * @returns The result of calling the current cleanup handler implementation
  */
 export function onCleanup(handler: () => void) {
-  const cleanupHandler = closure.get<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
+  const cleanupHandler = getAsyncContext<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
 
   if (typeof cleanupHandler === 'function') {
     return cleanupHandler(handler);
@@ -36,7 +35,7 @@ export function onCleanup(handler: () => void) {
  * @param handler - A function to be executed during global cleanup
  */
 export function onGlobalCleanup(handler: () => void) {
-  const cleanupHandler = closure.get<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
+  const cleanupHandler = getAsyncContext<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
   cleanupHandler?.(handler);
 }
 
@@ -47,7 +46,6 @@ export function onGlobalCleanup(handler: () => void) {
  * This allows for customization of how cleanup handlers are managed.
  */
 export function setCleanUpHandler(handler: (handler: () => void) => void) {
-  // closure.set(CLEANUP_SYMBOL, handler);
   currentCleanupHandler = handler;
 }
 
@@ -67,6 +65,16 @@ export function setCleanUpHandler(handler: (handler: () => void) => void) {
 export function createLifecycle() {
   const cleanupHandlers = new Set<() => void>();
 
+  const runner = asyncContract(CLEANUP_SYMBOL, (handler: () => void) => {
+    if (typeof handler !== 'function') {
+      const error = new Error('Invalid cleanup handler');
+      captureStack.error.argument('Cleanup handler must be a function', error, runner);
+      return;
+    }
+
+    cleanupHandlers.add(handler);
+  });
+
   return {
     /**
      * Runs a function while collecting cleanup handlers.
@@ -78,25 +86,7 @@ export function createLifecycle() {
      * @param fn - The function to execute
      * @returns The result of the executed function
      */
-    run<R>(fn: () => R) {
-      const prevCleanupHandler = closure.get<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
-
-      closure.set(CLEANUP_SYMBOL, (handler: () => void) => {
-        if (typeof handler !== 'function') {
-          const error = new Error('Invalid cleanup handler');
-          captureStack.error.argument('Cleanup handler must be a function', error, this.run);
-          return;
-        }
-
-        cleanupHandlers.add(handler);
-      });
-
-      try {
-        return fn();
-      } finally {
-        closure.set(CLEANUP_SYMBOL, prevCleanupHandler);
-      }
-    },
+    run: runner as <R>(fn: () => R) => R,
 
     /**
      * Runs an async function while collecting cleanup handlers.
@@ -108,25 +98,7 @@ export function createLifecycle() {
      * @param fn - The async function to execute
      * @returns A Promise resolving to the result of the executed function
      */
-    async runAsync<R>(fn: () => Promise<R>): Promise<R> {
-      const prevCleanupHandler = closure.get<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
-
-      closure.set(CLEANUP_SYMBOL, (handler: () => void) => {
-        if (typeof handler !== 'function') {
-          const error = new Error('Invalid cleanup handler');
-          captureStack.error.argument('Cleanup handler must be a function', error, this.run);
-          return;
-        }
-
-        cleanupHandlers.add(handler);
-      });
-
-      try {
-        return await fn();
-      } finally {
-        closure.set(CLEANUP_SYMBOL, prevCleanupHandler);
-      }
-    },
+    runAsync: runner as <R>(fn: () => Promise<R>) => Promise<R>,
 
     /**
      * Executes all collected cleanup handlers and clears the collection.

@@ -1,4 +1,5 @@
-import { closure, createClosure } from '../closure.js';
+import { createClosure } from '../closure.js';
+import { getAsyncContext, setAsyncContext } from '../context.js';
 import { captureStack } from '../exception.js';
 import type { KeyLike } from '../types.js';
 
@@ -48,7 +49,7 @@ export function createRenderCtx(name = 'Anonymous', parent?: RenderContext) {
  * @param ctx - The context to set, or undefined to clear the current context.
  */
 export function setRenderCtx(ctx?: RenderContext) {
-  closure.set(RENDER_CONTEXT_KEY, ctx);
+  setAsyncContext(RENDER_CONTEXT_KEY, ctx);
 }
 
 /**
@@ -56,7 +57,7 @@ export function setRenderCtx(ctx?: RenderContext) {
  * @returns The current RenderContext instance, or undefined if no context is active.
  */
 export function getRenderCtx(): RenderContext | undefined {
-  return closure.get(RENDER_CONTEXT_KEY);
+  return getAsyncContext(RENDER_CONTEXT_KEY);
 }
 
 /**

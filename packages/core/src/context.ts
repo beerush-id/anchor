@@ -64,15 +64,15 @@ export class AsyncStore extends Map<AsyncKey, AsyncValue> {
 class Awaited<T> {
   /**
    * @param promise  - The underlying native Promise to wrap.
-   * @param context  - The {@link AsyncContext} instance that owns the global `store` pointer.
+   * @param provide - A setter function that accepts a new store reference.
    * @param current  - The exact store reference to restore before each continuation.
-   * @param isolations - A set of all `Awaited` instances that are currently active.
+   * @param restore - A function that restores the previous event-loop context.
    */
   constructor(
     private promise: Promise<T>,
-    private context: AsyncContext<AsyncStore>,
-    private current: AsyncStore,
-    private isolations?: Set<Awaited<unknown>>
+    private provide: (value: unknown) => void,
+    private current: unknown,
+    private restore: () => void
   ) {}
 
   /**
@@ -88,16 +88,12 @@ class Awaited<T> {
     if (!fn) return;
 
     return (arg: unknown) => {
-      // Capture the event-loop context before we mutate it.
-      const current = this.context.getStore();
-      // Re-enter the scope that was active when this Awaited was created.
-      this.context.store = this.current;
+      this.provide(this.current);
 
       try {
         return fn(arg);
       } finally {
-        // Restore the event-loop context to exactly what it was before entry.
-        this.context.store = current;
+        this.restore();
       }
     };
   }
@@ -109,29 +105,13 @@ class Awaited<T> {
    * Returns a new `Awaited` instance, propagating the same `current` store and
    * `isolated` flag through the entire chain.
    *
-   * @param onfulfilled - Optional fulfillment handler.
+   * @param onresolved - Optional fulfillment handler.
    * @param onrejected  - Optional rejection handler.
    * @returns A new `Awaited` wrapping the chained Promise.
    */
-  // biome-ignore lint/suspicious/noThenProperty: Expect Any.
-  public then(onfulfilled?: (value: unknown) => unknown, onrejected?: (reason: unknown) => unknown) {
-    const accept = this.fork(onfulfilled);
-    const reject = this.fork(onrejected);
-    const future = this.promise.then(accept, reject);
-
-    return new Awaited(future, this.context, this.current, this.isolations);
-  }
-
-  /** Delegates to {@link then} with only a rejection handler. */
-  // biome-ignore lint/suspicious/noExplicitAny: Expect Any.
-  public catch<E>(onrejected?: (reason: any) => E | PromiseLike<E>) {
-    return this.then(undefined, onrejected);
-  }
-
-  /** Wraps a final handler with context bracketing, same as {@link then}. */
-  public finally(onfinally?: () => void) {
-    const future = this.promise.finally(this.fork(onfinally) as () => void);
-    return new Awaited(future, this.context, this.current, this.isolations);
+  // biome-ignore lint/suspicious/noThenProperty: Expect thenable.
+  public then<T>(onresolved?: (value: T) => T, onrejected?: (reason: unknown) => void): void {
+    this.promise.then(this.fork(onresolved as never), this.fork(onrejected));
   }
 }
 
@@ -190,7 +170,7 @@ export class AsyncContext<T> {
    * @param store - Optional store to activate before executing `fn`.
    * @returns The return value of `fn`, or an {@link Awaited} Thenable if `fn` returns a Promise.
    */
-  public awaited<R>(fn: () => R, store?: T) {
+  public awaited<R>(fn: () => R, store?: T): R extends Promise<infer F> ? PromiseLike<F> : R {
     const current = this.store;
     const restore = () => {
       this.store = current;
@@ -203,25 +183,25 @@ export class AsyncContext<T> {
     try {
       const result = fn();
 
-      if (result instanceof Promise) {
-        const isolations = this.store instanceof Map ? this.store.get(FLOATING_PROMISES_LIST_KEY) : undefined;
+      if (isPromise(result)) {
+        const isolate = this.store instanceof Map ? this.store.get(FLOATING_PROMISES_LIST_KEY) : undefined;
         const cleanup = () => {
-          isolations?.delete(promise);
+          isolate?.delete(promise);
           restore();
         };
 
-        const promise = new Awaited(
-          result.finally(cleanup),
-          this as AsyncContext<AsyncStore>,
+        const promise = new Awaited<R>(
+          result as Promise<R>,
+          (value) => (this.store = value as T),
           this.store as AsyncStore,
-          isolations
-        ) as never as Promise<R>;
+          cleanup
+        );
 
-        isolations?.add(promise);
-        return promise;
+        isolate?.add(promise);
+        return promise as never;
       }
 
-      return result;
+      return result as never;
     } finally {
       restore();
     }
@@ -240,6 +220,55 @@ const globalAsyncCtx = new AsyncContext(globalStore);
 
 export function resetGlobalStore() {
   globalStore.clear();
+}
+
+/**
+ * An async contract is a function that temporarily sets a value in the async context,
+ * and executes a function.
+ */
+export type AsyncContract = <T>(fn: () => T) => T extends Promise<infer R> ? PromiseLike<R> : T;
+
+/**
+ * Creates an async contract that temporarily sets the value of a given key in the async context.
+ *
+ * @param {AsyncKey} key - The key to set in the async context.
+ * @param value - The value to set in the async context.
+ * @param onstart - Optional callback that fires before the contract is entered.
+ * @param onfinally - Optional callback that fires after the contract is exited.
+ * @param runner
+ * @returns AsyncContract
+ */
+export function asyncContract<T>(
+  key: AsyncKey,
+  value: T,
+  onstart?: () => void,
+  onfinally?: () => void,
+  runner?: (fn: () => unknown) => unknown
+): AsyncContract {
+  return function asyncContract<R>(fn: () => R): R {
+    onstart?.();
+
+    const current = getAsyncContext(key);
+    setAsyncContext(key, value);
+
+    try {
+      const result = typeof runner === 'function' ? runner(fn) : fn();
+
+      if (result instanceof Promise) {
+        return new Awaited(
+          result,
+          (next) => setAsyncContext(key, next),
+          value,
+          () => setAsyncContext(key, current)
+        ) as never as R;
+      }
+
+      return result as R;
+    } finally {
+      setAsyncContext(key, current);
+      onfinally?.();
+    }
+  } as never;
 }
 
 /**
@@ -311,7 +340,7 @@ export async function isolatedContext<R>(fn: () => R, strict = true) {
   const isolatedStore = new AsyncStore([[FLOATING_PROMISES_LIST_KEY, floatingPromises]], parent);
 
   try {
-    const result = await globalAsyncCtx.awaited(fn, isolatedStore);
+    const result = await (globalAsyncCtx.awaited(fn, isolatedStore) as Promise<R>);
 
     if (floatingPromises.size) {
       const error = new Error('Hanging async context!');
@@ -333,7 +362,7 @@ export async function isolatedContext<R>(fn: () => R, strict = true) {
       }
     }
 
-    return result;
+    return result as R;
   } finally {
     floatingPromises.clear();
   }
@@ -371,7 +400,7 @@ export function awaited<R>(fn: () => R) {
  * @param key - The key to look up.
  * @returns The value, or `undefined` if not found in any ancestor.
  */
-export function getAsyncContext<R>(key: AsyncKey): R {
+export function getAsyncContext<R>(key: AsyncKey): R | undefined {
   return globalAsyncCtx.getStore()!.get(key);
 }
 
@@ -423,3 +452,7 @@ function getAll(list: AsyncStore[] = [], from?: AsyncStore) {
  * for later re-entry via {@link inContext}.
  */
 export const getAllAsyncContext = getAll as () => AsyncStore[];
+
+function isPromise<T>(value: unknown): value is Promise<T> {
+  return value instanceof Promise;
+}

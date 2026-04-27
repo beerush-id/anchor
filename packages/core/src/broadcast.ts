@@ -1,4 +1,5 @@
 import { BATCH_MUTATION_KEYS } from './constant.js';
+import { getAsyncContext, setAsyncContext } from './context.js';
 import { type BatchMutations, OBSERVER_KEYS } from './enum.js';
 import { captureStack } from './exception.js';
 import type {
@@ -10,7 +11,6 @@ import type {
   StateMetadata,
   StateSubscriber,
 } from './types.js';
-import { closure } from './utils/index.js';
 
 const INSPECTOR_SYMBOL = Symbol('state-inspector');
 
@@ -24,7 +24,7 @@ const INSPECTOR_SYMBOL = Symbol('state-inspector');
  * @param fn - A function that will be called with the next state change event.
  */
 export function setInspector(fn?: (init: Linkable, event: StateChange) => void) {
-  closure.set(INSPECTOR_SYMBOL, fn);
+  setAsyncContext(INSPECTOR_SYMBOL, fn);
 }
 
 /**
@@ -54,7 +54,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
      * @param prop - Optional property key that was changed.
      */
     emit(event, prop) {
-      const currentInspector = closure.get<(init: Linkable, event: StateChange) => void>(INSPECTOR_SYMBOL);
+      const currentInspector = getAsyncContext<(init: Linkable, event: StateChange) => void>(INSPECTOR_SYMBOL);
 
       if (typeof currentInspector === 'function') {
         currentInspector(init, event);

@@ -1,4 +1,5 @@
 import { AsyncStatus } from './constant.js';
+import { createObserver } from './observation.js';
 import { mutable, writable } from './ref.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from './types.js';
 
@@ -42,6 +43,11 @@ export function query<T extends Linkable, E extends Error = Error>(
   let abortError: E | undefined;
   let activePromise: Promise<T | undefined> | undefined;
 
+  const observer = createObserver(() => {
+    observer.reset();
+    start();
+  });
+
   const start = (async (newInit) => {
     if (writer.status === AsyncStatus.Pending) {
       controller?.abort();
@@ -56,7 +62,7 @@ export function query<T extends Linkable, E extends Error = Error>(
     Object.assign(writer, { status: AsyncStatus.Pending, error: undefined });
 
     try {
-      activePromise = cancelable(fn, controller.signal);
+      activePromise = observer.run(() => cancelable(fn, controller!.signal));
 
       const data = await activePromise;
       Object.assign(writer, { status: AsyncStatus.Success, data: data ? mutable(data, options) : data });

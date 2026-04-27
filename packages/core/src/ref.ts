@@ -6,7 +6,8 @@ import { onCleanup } from './lifecycle.js';
 import { createObserver, getObserver, untrack } from './observation.js';
 import { STACK_SYMBOL } from './stack.js';
 import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from './types.js';
-import { closure, softClone, softEqual } from './utils/index.js';
+import { softClone, softEqual } from './utils/index.js';
+import { getAsyncContext } from './context.js';
 
 /**
  * A mutable reference wrapper for primitive values that provides reactive capabilities.
@@ -364,7 +365,7 @@ export function isValueRef<T>(value: unknown): value is MutableRef<T> | Immutabl
  * @returns The created or cached reference value
  */
 function createRef<T>(fn: () => T, init: unknown) {
-  const currentStack = closure.get<RefStack>(STACK_SYMBOL);
+  const currentStack = getAsyncContext<RefStack>(STACK_SYMBOL);
   if (!currentStack || ANCHOR_SETTINGS.production) return fn();
 
   return untrack(() => {

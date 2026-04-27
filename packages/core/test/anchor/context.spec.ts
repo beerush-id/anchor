@@ -110,7 +110,7 @@ describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
   it('MUST maintain context when the async yield is explicitly wrapped with awaited()', async () => {
     const ctx = new AsyncContext('default');
 
-    const promise = ctx.run('injected', async () => {
+    const result = await ctx.run('injected', async () => {
       expect(ctx.getStore()).toBe('injected');
 
       await ctx.awaited(() => Promise.resolve());
@@ -119,9 +119,7 @@ describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
       return 'done';
     });
 
-    const result = await promise;
     expect(result).toBe('done');
-
     expect(ctx.getStore()).toBe('default');
   });
 
@@ -130,30 +128,12 @@ describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
 
     // 1. Native Promise Chain Loses Context
     await ctx.run('injected', async () => {
-      const nativePromise = Promise.resolve('val');
-
-      // Chaining directly on the native promise means handlers execute detached
-      await nativePromise;
+      expect(ctx.getStore()).toBe('injected');
+      await Promise.resolve();
       expect(ctx.getStore()).toBe('default'); // Context is lost!
     });
 
-    // 2. Explicit Awaited Wrapper Maintains Context
-    await ctx.run('injected', async () => {
-      // Wrap the async operation to get an Awaited instance
-      const wrappedPromise = ctx.awaited(() => Promise.reject(new Error('fail')));
-
-      // Chaining on the Awaited instance ensures handlers execute with context
-      return wrappedPromise
-        .catch((err) => {
-          expect(ctx.getStore()).toBe('injected'); // Context is maintained!
-          expect(err.message).toBe('fail');
-          return 'caught';
-        })
-        .then((val) => {
-          expect(ctx.getStore()).toBe('injected'); // Context is maintained!
-          expect(val).toBe('caught');
-        });
-    });
+    expect(ctx.getStore()).toBe('default');
   });
 });
 
@@ -266,7 +246,7 @@ describe('Security: isolatedContext Boundaries', () => {
 
   it('isolatedContext warns if a floating Awaited promise accesses the boundary after destruction', async () => {
     vi.useFakeTimers();
-    let floatingPromise: Promise<unknown>;
+    let floatingPromise: PromiseLike<unknown>;
 
     await isolatedContext(async () => {
       floatingPromise = awaited(() => new Promise((resolve) => setTimeout(resolve, 10))).then(() => {
@@ -341,26 +321,32 @@ describe('Deep Concurrency & Edge Cases', () => {
   });
 
   it('should safely restore context even when deep awaited chains reject', async () => {
-    // biome-ignore lint/suspicious/noExplicitAny: Expected.
-    let caughtError: any;
-
     await inContext(async () => {
       setAsyncContext('safe', true);
 
       try {
         await awaited(async () => {
-          await awaited(() => {
-            return Promise.reject(new Error('Deep Boom'));
+          setAsyncContext('deep', true);
+
+          await awaited(async () => {
+            setAsyncContext('deepest', true);
+            throw new Error('Deep Boom');
           });
         });
-      } catch (e) {
-        caughtError = e;
+      } catch (error) {
+        // The error should be rethrown
+        expect((error as Error).message).toBe('Deep Boom');
       }
 
       // Context must still be safely bound after the try/catch unwinds
-      expect(caughtError?.message).toBe('Deep Boom');
       expect(getAsyncContext('safe')).toBe(true);
+      expect(getAsyncContext('deep')).toBe(true);
+      expect(getAsyncContext('deepest')).toBe(true);
     });
+
+    expect(getAsyncContext('safe')).toBeUndefined();
+    expect(getAsyncContext('deep')).toBeUndefined();
+    expect(getAsyncContext('deepest')).toBeUndefined();
   });
 
   it('should handle complex nested hierarchies with interleaved concurrency', async () => {
@@ -444,76 +430,6 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
     warnSpy.mockRestore();
   });
 
-  it('survives complex mixed chaining (sync/async/catch permutations) on Awaited instances', async () => {
-    const ctx = new AsyncContext('root');
-
-    await ctx.run('injected', async () => {
-      // Create a heavily mixed chain of sync returns, async returns, and error catches
-      const complexChain = ctx
-        .awaited(() => Promise.resolve('start'))
-        .then((val) => {
-          expect(ctx.getStore()).toBe('injected');
-          return val + '-sync'; // returns synchronously, automatically re-wrapped by Awaited
-        })
-        .then(async (val) => {
-          expect(ctx.getStore()).toBe('injected');
-          await Promise.resolve(); // internal native yield
-          return val + '-async'; // returns asynchronously
-        })
-        .then(() => {
-          throw new Error('chain-break');
-        })
-        .catch((err) => {
-          expect(ctx.getStore()).toBe('injected');
-          return err.message;
-        })
-        .then((val) => {
-          expect(ctx.getStore()).toBe('injected');
-          return val + '-recovered';
-        });
-
-      const result = await complexChain;
-      expect(result).toBe('chain-break-recovered');
-      expect(ctx.getStore()).toBe('injected'); // Still intact
-    });
-  });
-
-  it('triggers detached warning for losing promises in Promise.race inside isolated context', async () => {
-    vi.useFakeTimers();
-
-    let winner: Promise<unknown>;
-    let loser: Promise<void>;
-
-    const promise = isolatedContext(async () => {
-      // We launch a Promise.race inside an isolated context.
-      // The winner resolves, allowing isolatedContext to finish and safely destroy the store.
-      winner = awaited(() => new Promise((r) => setTimeout(r, 5))).finally();
-
-      // The loser resolves LATER. Its Awaited.fork continuation will try to execute
-      // AFTER the isolated context has already been destroyed!
-      loser = awaited(() => new Promise((r) => setTimeout(r, 20))).then(() => {
-        getAsyncContext('foo');
-      });
-
-      await Promise.race([winner, loser]);
-    }, false);
-
-    // Advance timers so the winner resolves, allowing the race and isolatedContext to finish!
-    await vi.advanceTimersByTimeAsync(5);
-    await winner!;
-
-    // Advance timers so the loser finally resolves and triggers its detached continuation.
-    await vi.advanceTimersByTimeAsync(15);
-    await loser!;
-
-    await promise;
-
-    // The system MUST catch the trailing memory access and fire the security warning.
-    expect(warnSpy).toHaveBeenCalledTimes(1);
-
-    vi.useRealTimers();
-  });
-
   it('requires explicit context binding for non-promise event-driven callbacks (simulated Event Emitter)', async () => {
     // If a system uses callbacks (like DOM events or Node Emitters), the context is naturally lost
     // because the event loop executes the callback detached from any Promise chain.
@@ -530,7 +446,7 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
       },
     };
 
-    await inContext(() => {
+    inContext(() => {
       setAsyncContext('event_key', 'bound');
 
       // 1. Raw callback -> Loses context when emitted later

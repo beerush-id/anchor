@@ -1,4 +1,5 @@
 import { ANCHOR_SETTINGS } from './constant.js';
+import { asyncContract, getAsyncContext, setAsyncContext } from './context.js';
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
 import { onCleanup } from './lifecycle.js';
@@ -16,7 +17,7 @@ import type {
   StateTracker,
   StateUnsubscribe,
 } from './types.js';
-import { closure, isBrowser, isFunction, shortId } from './utils/index.js';
+import { isBrowser, isFunction, shortId } from './utils/index.js';
 
 const OBSERVER_SYMBOL = Symbol('state-observer');
 const OBSERVER_RESTORER_SYMBOL = Symbol('state-observer-restore');
@@ -38,17 +39,22 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
     cleanup?.();
     observer.reset();
 
-    runEffect(event);
+    runEffect(event).catch(console.error);
   });
   observer.name = `Effect(${displayName ?? 'Anonymous'})`;
 
-  const runEffect = (event: StateChange) => {
-    const unobserve = observer.run(() => fn(event));
+  const runEffect = async (event: StateChange) => {
+    try {
+      const cleanupFn = await observer.run(() => fn(event));
 
-    if (typeof unobserve === 'function') {
-      cleanup = unobserve as StateUnsubscribe;
-    } else {
+      if (typeof cleanupFn === 'function') {
+        cleanup = cleanupFn as StateUnsubscribe;
+      } else {
+        cleanup = undefined;
+      }
+    } catch (error) {
       cleanup = undefined;
+      throw error;
     }
   };
   const runCleanup = () => {
@@ -58,7 +64,7 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
 
   onCleanup(runCleanup);
 
-  runEffect({ type: 'init', keys: [] });
+  runEffect({ type: 'init', keys: [] }).catch(console.error);
 
   return runCleanup;
 }
@@ -89,25 +95,13 @@ export const effect = effectFn as Effect;
  *
  * @param fn - The function to execute outside of observer context
  */
-export function untrack<R>(fn: () => R): R {
-  const prevObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
-  closure.set(OBSERVER_SYMBOL, undefined as never);
-
-  if (typeof fn === 'function') {
-    try {
-      return fn();
-    } catch (error) {
-      captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
-    } finally {
-      closure.set(OBSERVER_SYMBOL, prevObserver);
-    }
-  } else {
-    const error = new Error('Invalid argument.');
-    captureStack.error.argument('The given argument is not a function', error, untrack);
+export const untrack = asyncContract(OBSERVER_SYMBOL, undefined, undefined, undefined, (fn) => {
+  try {
+    return fn();
+  } catch (error) {
+    captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
   }
-
-  return undefined as R;
-}
+});
 
 /**
  * @deprecated This function is deprecated.
@@ -119,8 +113,8 @@ export function untrack<R>(fn: () => R): R {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setObserver(observer: StateObserver) {
-  const currentObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
-  const currentRestorer = closure.get<() => void>(OBSERVER_RESTORER_SYMBOL);
+  const currentObserver = getAsyncContext<StateObserver>(OBSERVER_SYMBOL);
+  const currentRestorer = getAsyncContext<() => void>(OBSERVER_RESTORER_SYMBOL);
 
   // Make sure it handles duplicate observer such as when evaluated in React's strict mode.
   if (currentObserver === observer) return currentRestorer as () => void;
@@ -129,14 +123,14 @@ export function setObserver(observer: StateObserver) {
 
   const nextRestore = () => {
     if (!restored) {
-      closure.set(OBSERVER_SYMBOL, currentObserver);
-      closure.set(OBSERVER_RESTORER_SYMBOL, currentRestorer);
+      setAsyncContext(OBSERVER_SYMBOL, currentObserver);
+      setAsyncContext(OBSERVER_RESTORER_SYMBOL, currentRestorer);
       restored = true;
     }
   };
 
-  closure.set(OBSERVER_SYMBOL, observer);
-  closure.set(OBSERVER_RESTORER_SYMBOL, nextRestore);
+  setAsyncContext(OBSERVER_SYMBOL, observer);
+  setAsyncContext(OBSERVER_RESTORER_SYMBOL, nextRestore);
 
   return nextRestore;
 }
@@ -148,7 +142,7 @@ export function setObserver(observer: StateObserver) {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getObserver(): StateObserver | undefined {
-  return closure.get(OBSERVER_SYMBOL);
+  return getAsyncContext(OBSERVER_SYMBOL);
 }
 
 /**
@@ -259,21 +253,6 @@ export function createObserver(
     return (key) => track(init, key);
   }) satisfies StateObserver['assign'];
 
-  const run = <R>(fn: () => R): R => {
-    isObserving = true;
-    isDestroyed = false;
-
-    const prevObserver = closure.get<StateObserver>(OBSERVER_SYMBOL);
-    closure.set(OBSERVER_SYMBOL, observer);
-
-    try {
-      return fn();
-    } finally {
-      closure.set(OBSERVER_SYMBOL, prevObserver);
-      isObserving = false;
-    }
-  };
-
   const propagate = (event: StateChange) => {
     if (isObserving) {
       const error = new Error('Circular mutation.');
@@ -317,12 +296,24 @@ export function createObserver(
       return assign;
     },
     get run() {
-      return run;
+      return runner;
     },
     get track() {
       return track;
     },
-  };
+  } as StateObserver;
+
+  const runner = asyncContract(
+    OBSERVER_SYMBOL,
+    observer,
+    () => {
+      isObserving = true;
+      isDestroyed = false;
+    },
+    () => {
+      isObserving = false;
+    }
+  );
 
   return observer;
 }
@@ -383,8 +374,8 @@ const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setTracker(tracker: StatePublicTracker) {
-  const currentTracker = closure.get<StatePublicTracker>(TRACKER_SYMBOL);
-  const currentTrackerRestore = closure.get<() => void>(TRACKER_RESTORE_SYMBOL);
+  const currentTracker = getAsyncContext<StatePublicTracker>(TRACKER_SYMBOL);
+  const currentTrackerRestore = getAsyncContext<() => void>(TRACKER_RESTORE_SYMBOL);
 
   if (currentTracker === tracker) return currentTrackerRestore;
 
@@ -392,14 +383,14 @@ export function setTracker(tracker: StatePublicTracker) {
 
   const nextRestore = () => {
     if (!restored) {
-      closure.set(TRACKER_SYMBOL, currentTracker);
-      closure.set(TRACKER_RESTORE_SYMBOL, currentTrackerRestore);
+      setAsyncContext(TRACKER_SYMBOL, currentTracker);
+      setAsyncContext(TRACKER_RESTORE_SYMBOL, currentTrackerRestore);
       restored = true;
     }
   };
 
-  closure.set(TRACKER_SYMBOL, tracker);
-  closure.set(TRACKER_RESTORE_SYMBOL, nextRestore);
+  setAsyncContext(TRACKER_SYMBOL, tracker);
+  setAsyncContext(TRACKER_RESTORE_SYMBOL, nextRestore);
 
   return nextRestore;
 }
@@ -413,7 +404,7 @@ export function setTracker(tracker: StatePublicTracker) {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getTracker(): StatePublicTracker | undefined {
-  return closure.get<StatePublicTracker>(TRACKER_SYMBOL);
+  return getAsyncContext<StatePublicTracker>(TRACKER_SYMBOL);
 }
 
 /**
@@ -427,7 +418,7 @@ export function getTracker(): StatePublicTracker | undefined {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function track(init: Linkable, observers: StateObserverList, key: KeyLike) {
-  const currentTracker = closure.get<StatePublicTracker>(TRACKER_SYMBOL);
+  const currentTracker = getAsyncContext<StatePublicTracker>(TRACKER_SYMBOL);
   if (typeof currentTracker !== 'function') return;
   currentTracker(init, observers, key);
 }
