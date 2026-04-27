@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  AsyncContext,
+  AsyncScope,
   AsyncStore,
   awaited,
   getAllAsyncContext,
-  getAsyncContext,
   getAsyncStore,
-  inContext,
-  isolatedContext,
-  resetGlobalStore,
-  setAsyncContext,
+  getRootStore,
+  getScope,
+  setScope,
+  withIsolation,
+  withScope,
 } from '../../src/context.js'; // No warning [check]
 
 // No warning [check]
@@ -17,7 +17,6 @@ describe('AsyncStore', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
@@ -54,12 +53,10 @@ describe('AsyncStore', () => {
 
 // No warning [check]
 describe('AsyncContext (Sync Operations)', () => {
-  beforeEach(() => {
-    resetGlobalStore();
-  });
+  beforeEach(() => {});
 
   it('should inject context synchronously during run', () => {
-    const ctx = new AsyncContext('default');
+    const ctx = new AsyncScope('default');
 
     const result = ctx.run('injected', () => {
       expect(ctx.getStore()).toBe('injected');
@@ -71,7 +68,7 @@ describe('AsyncContext (Sync Operations)', () => {
   });
 
   it('should restore context even if sync function throws', () => {
-    const ctx = new AsyncContext('default');
+    const ctx = new AsyncScope('default');
 
     expect(() => {
       ctx.run('injected', () => {
@@ -86,12 +83,10 @@ describe('AsyncContext (Sync Operations)', () => {
 
 // No warning [check]
 describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
-  beforeEach(() => {
-    resetGlobalStore();
-  });
+  beforeEach(() => {});
 
   it('MUST lose context on detached (native) await', async () => {
-    const ctx = new AsyncContext('default');
+    const ctx = new AsyncScope('default');
 
     const promise = ctx.run('injected', async () => {
       expect(ctx.getStore()).toBe('injected'); // Sync phase holds context
@@ -108,7 +103,7 @@ describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
   });
 
   it('MUST maintain context when the async yield is explicitly wrapped with awaited()', async () => {
-    const ctx = new AsyncContext('default');
+    const ctx = new AsyncScope('default');
 
     const result = await ctx.run('injected', async () => {
       expect(ctx.getStore()).toBe('injected');
@@ -124,7 +119,7 @@ describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
   });
 
   it('MUST lose context when chaining on native Promise, but maintain it when explicitly wrapped with awaited', async () => {
-    const ctx = new AsyncContext('default');
+    const ctx = new AsyncScope('default');
 
     // 1. Native Promise Chain Loses Context
     await ctx.run('injected', async () => {
@@ -142,7 +137,6 @@ describe('Global Context & Store Management', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error');
   });
   afterEach(() => {
@@ -150,34 +144,34 @@ describe('Global Context & Store Management', () => {
   });
 
   it('inContext provides a synchronous context scope', () => {
-    inContext(() => {
-      setAsyncContext('key', 'val');
-      expect(getAsyncContext('key')).toBe('val');
+    withScope(() => {
+      setScope('key', 'val');
+      expect(getScope('key')).toBe('val');
     });
 
-    expect(getAsyncContext('key')).toBeUndefined();
+    expect(getScope('key')).toBeUndefined();
   });
 
   it('inContext inherits from parent scope', () => {
-    inContext(() => {
-      setAsyncContext('parentKey', 'parentVal');
+    withScope(() => {
+      setScope('parentKey', 'parentVal');
 
-      inContext(() => {
-        setAsyncContext('childKey', 'childVal');
-        expect(getAsyncContext('parentKey')).toBe('parentVal');
-        expect(getAsyncContext('childKey')).toBe('childVal');
+      withScope(() => {
+        setScope('childKey', 'childVal');
+        expect(getScope('parentKey')).toBe('parentVal');
+        expect(getScope('childKey')).toBe('childVal');
       });
 
-      expect(getAsyncContext('childKey')).toBeUndefined();
+      expect(getScope('childKey')).toBeUndefined();
     });
   });
 
   it('getAllAsyncContext aggregates the active store hierarchy', () => {
-    inContext(() => {
-      setAsyncContext('l1', 'v1');
+    withScope(() => {
+      setScope('l1', 'v1');
 
-      inContext(() => {
-        setAsyncContext('l2', 'v2');
+      withScope(() => {
+        setScope('l2', 'v2');
         const stores = getAllAsyncContext();
         expect(stores.length).toBeGreaterThanOrEqual(2);
         expect(stores[0].get('l2')).toBe('v2');
@@ -187,18 +181,18 @@ describe('Global Context & Store Management', () => {
   });
 
   it('global awaited behaves like Context.awaited: native await detaches to parent, explicit awaited maintains', async () => {
-    setAsyncContext('globalAwaitedKey', 'globalVal');
+    setScope('globalAwaitedKey', 'globalVal');
 
-    await inContext(async () => {
-      setAsyncContext('localAwaitedKey', 'localVal');
+    await withScope(async () => {
+      setScope('localAwaitedKey', 'localVal');
 
       await awaited(() => Promise.resolve());
 
-      expect(getAsyncContext('localAwaitedKey')).toBe('localVal');
-      expect(getAsyncContext('globalAwaitedKey')).toBe('globalVal');
+      expect(getScope('localAwaitedKey')).toBe('localVal');
+      expect(getScope('globalAwaitedKey')).toBe('globalVal');
     });
 
-    expect(getAsyncContext('localAwaitedKey')).toBeUndefined();
+    expect(getScope('localAwaitedKey')).toBeUndefined();
   });
 });
 
@@ -207,7 +201,6 @@ describe('Security: isolatedContext Boundaries', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
@@ -215,50 +208,52 @@ describe('Security: isolatedContext Boundaries', () => {
   });
 
   it('should restore global store in a strict isolation', async () => {
-    await isolatedContext(async () => {
-      setAsyncContext('isolated', 'val');
-      expect(getAsyncContext('isolated')).toBe('val');
+    await withIsolation(async () => {
+      setScope('isolated', 'val');
+      expect(getScope('isolated')).toBe('val');
 
       await awaited(() => Promise.resolve());
 
-      expect(getAsyncContext('isolated')).toBe('val');
+      expect(getScope('isolated')).toBe('val');
     });
 
-    expect(getAsyncContext('isolated')).toBeUndefined();
+    expect(getScope('isolated')).toBeUndefined();
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('isolatedContext operates normally when properly awaited', async () => {
-    await inContext(async () => {
-      setAsyncContext('base', 'val');
+    await withScope(async () => {
+      setScope('base', 'val');
 
-      await isolatedContext(async () => {
-        expect(getAsyncContext('base')).toBe('val');
-        setAsyncContext('isolated', 'val2');
+      await withIsolation(async () => {
+        expect(getScope('base')).toBe('val');
+        setScope('isolated', 'val2');
 
         await awaited(() => Promise.resolve());
-        expect(getAsyncContext('isolated')).toBe('val2');
+        expect(getScope('isolated')).toBe('val2');
       }, false);
 
-      expect(getAsyncContext('isolated')).toBeUndefined();
+      expect(getScope('isolated')).toBeUndefined();
     });
   });
 
   it('isolatedContext warns if a floating Awaited promise accesses the boundary after destruction', async () => {
     vi.useFakeTimers();
-    let floatingPromise: PromiseLike<unknown>;
 
-    await isolatedContext(async () => {
-      floatingPromise = awaited(() => new Promise((resolve) => setTimeout(resolve, 10))).then(() => {
-        getAsyncContext('foo');
+    await withIsolation(async () => {
+      setScope('foo', 'bar');
+
+      awaited(() => new Promise((resolve) => setTimeout(resolve, 10))).then(() => {
+        expect(getScope('foo')).toBe('bar');
       });
     }, false);
 
     vi.runAllTimers();
-    await floatingPromise!;
 
     // The Awaited.fork wrapper should have detected the detached access and fired the warning.
     expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(getAsyncStore()).toBe(getRootStore());
+
     vi.useRealTimers();
   });
 
@@ -266,7 +261,7 @@ describe('Security: isolatedContext Boundaries', () => {
     vi.useFakeTimers();
 
     await expect(() => {
-      return isolatedContext(async () => {
+      return withIsolation(async () => {
         awaited(() => new Promise((resolve) => setTimeout(resolve, 10)));
       });
     }).rejects.toThrow();
@@ -283,7 +278,6 @@ describe('Deep Concurrency & Edge Cases', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
@@ -295,14 +289,14 @@ describe('Deep Concurrency & Edge Cases', () => {
     // 5 concurrent operations with different execution delays
     const operations = [10, 20, 5, 15, 0].map((delay, index) => {
       const id = index + 1;
-      return inContext(async () => {
-        setAsyncContext('task_id', id);
+      return withScope(async () => {
+        setScope('task_id', id);
 
         // Sleep to force the event loop to interleave with other operations
         await awaited(() => new Promise((r) => setTimeout(r, delay)));
 
         // Verify the context hasn't been polluted by the other concurrent tasks
-        const currentId = getAsyncContext('task_id');
+        const currentId = getScope('task_id');
         expect(currentId).toBe(id);
 
         return currentId;
@@ -321,15 +315,15 @@ describe('Deep Concurrency & Edge Cases', () => {
   });
 
   it('should safely restore context even when deep awaited chains reject', async () => {
-    await inContext(async () => {
-      setAsyncContext('safe', true);
+    await withScope(async () => {
+      setScope('safe', true);
 
       try {
         await awaited(async () => {
-          setAsyncContext('deep', true);
+          setScope('deep', true);
 
           await awaited(async () => {
-            setAsyncContext('deepest', true);
+            setScope('deepest', true);
             throw new Error('Deep Boom');
           });
         });
@@ -339,38 +333,38 @@ describe('Deep Concurrency & Edge Cases', () => {
       }
 
       // Context must still be safely bound after the try/catch unwinds
-      expect(getAsyncContext('safe')).toBe(true);
-      expect(getAsyncContext('deep')).toBe(true);
-      expect(getAsyncContext('deepest')).toBe(true);
+      expect(getScope('safe')).toBe(true);
+      expect(getScope('deep')).toBe(true);
+      expect(getScope('deepest')).toBe(true);
     });
 
-    expect(getAsyncContext('safe')).toBeUndefined();
-    expect(getAsyncContext('deep')).toBeUndefined();
-    expect(getAsyncContext('deepest')).toBeUndefined();
+    expect(getScope('safe')).toBeUndefined();
+    expect(getScope('deep')).toBeUndefined();
+    expect(getScope('deepest')).toBeUndefined();
   });
 
   it('should handle complex nested hierarchies with interleaved concurrency', async () => {
     vi.useFakeTimers();
-    await inContext(async () => {
-      setAsyncContext('layer', 'root');
+    await withScope(async () => {
+      setScope('layer', 'root');
 
       const p1 = awaited(async () => {
-        return inContext(async () => {
-          setAsyncContext('layer', 'branch_1');
+        return withScope(async () => {
+          setScope('layer', 'branch_1');
           await awaited(() => new Promise((r) => setTimeout(r, 10)));
-          expect(getAsyncContext('layer')).toBe('branch_1');
+          expect(getScope('layer')).toBe('branch_1');
         });
       });
 
       const p2 = awaited(async () => {
-        return inContext(async () => {
-          setAsyncContext('layer', 'branch_2');
+        return withScope(async () => {
+          setScope('layer', 'branch_2');
           await awaited(() => new Promise((r) => setTimeout(r, 5)));
-          expect(getAsyncContext('layer')).toBe('branch_2');
+          expect(getScope('layer')).toBe('branch_2');
         });
       });
 
-      expect(getAsyncContext('layer')).toBe('root');
+      expect(getScope('layer')).toBe('root');
 
       // Interleave
       await vi.advanceTimersByTimeAsync(5); // p2 finishes
@@ -378,7 +372,7 @@ describe('Deep Concurrency & Edge Cases', () => {
 
       await Promise.all([p1, p2]);
 
-      expect(getAsyncContext('layer')).toBe('root');
+      expect(getScope('layer')).toBe('root');
     });
     vi.useRealTimers();
   });
@@ -387,11 +381,11 @@ describe('Deep Concurrency & Edge Cases', () => {
     vi.useFakeTimers();
     const promises = Array.from({ length: 10 }).map((_, index) => {
       const id = `iso_${index}`;
-      return isolatedContext(async () => {
-        setAsyncContext('iso_id', id);
+      return withIsolation(async () => {
+        setScope('iso_id', id);
         // Stagger timeouts from 1ms to 10ms
         await awaited(() => new Promise((r) => setTimeout(r, (index % 10) + 1)));
-        expect(getAsyncContext('iso_id')).toBe(id);
+        expect(getScope('iso_id')).toBe(id);
         return id;
       }, false);
     });
@@ -407,14 +401,14 @@ describe('Deep Concurrency & Edge Cases', () => {
   });
 
   it('should gracefully handle returning a native Promise directly from an awaited function block', async () => {
-    await inContext(async () => {
-      setAsyncContext('boundary', 'active');
+    await withScope(async () => {
+      setScope('boundary', 'active');
 
       // If we just return a native promise from awaited, it should still wrap the resolution
       const result = await awaited(() => new Promise((r) => setTimeout(() => r('ok'), 5)));
 
       expect(result).toBe('ok');
-      expect(getAsyncContext('boundary')).toBe('active');
+      expect(getScope('boundary')).toBe('active');
     });
   });
 });
@@ -423,7 +417,6 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    resetGlobalStore();
     warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
   afterEach(() => {
@@ -446,19 +439,19 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
       },
     };
 
-    inContext(() => {
-      setAsyncContext('event_key', 'bound');
+    withScope(() => {
+      setScope('event_key', 'bound');
 
       // 1. Raw callback -> Loses context when emitted later
       emitter.on(() => {
-        if (getAsyncContext('event_key') === undefined) capturedOutside = true;
+        if (getScope('event_key') === undefined) capturedOutside = true;
       });
 
       // 2. Bound callback -> Captures current context store and forces it into the callback closure
       const currentStore = getAllAsyncContext()[0]; // Capture active store
       emitter.on(() => {
-        inContext(() => {
-          if (getAsyncContext('event_key') === 'bound') capturedInside = true;
+        withScope(() => {
+          if (getScope('event_key') === 'bound') capturedInside = true;
         }, currentStore);
       });
     });
@@ -473,32 +466,32 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
   it('maintains strict lateral shadow independence across deeply branched parallel yields', async () => {
     vi.useFakeTimers();
 
-    const treePromise = inContext(async () => {
-      setAsyncContext('tree', 'root');
+    const treePromise = withScope(async () => {
+      setScope('tree', 'root');
 
       const leftBranch = awaited(async () => {
-        return inContext(async () => {
-          setAsyncContext('tree', 'left'); // shadows root
+        return withScope(async () => {
+          setScope('tree', 'left'); // shadows root
           await awaited(() => new Promise((r) => setTimeout(r, 5))); // Internal yield
-          setAsyncContext('left_data', 'L1'); // sets exclusively on left store
-          return (getAsyncContext('tree') as string) + getAsyncContext('left_data');
+          setScope('left_data', 'L1'); // sets exclusively on left store
+          return (getScope('tree') as string) + getScope('left_data');
         });
       });
 
       const rightBranch = awaited(async () => {
-        return inContext(async () => {
-          setAsyncContext('tree', 'right'); // shadows root
+        return withScope(async () => {
+          setScope('tree', 'right'); // shadows root
           await awaited(() => new Promise((r) => setTimeout(r, 5))); // Internal yield
-          expect(getAsyncContext('left_data')).toBeUndefined(); // strictly isolated from left sibling
-          return getAsyncContext('tree');
+          expect(getScope('left_data')).toBeUndefined(); // strictly isolated from left sibling
+          return getScope('tree');
         });
       });
 
       const results = await Promise.all([leftBranch, rightBranch]);
 
       expect(results).toEqual(['leftL1', 'right']);
-      expect(getAsyncContext('tree')).toBe('root'); // root remains totally unpolluted
-      expect(getAsyncContext('left_data')).toBeUndefined();
+      expect(getScope('tree')).toBe('root'); // root remains totally unpolluted
+      expect(getScope('left_data')).toBeUndefined();
     });
 
     // Advance both branches concurrently
@@ -511,35 +504,35 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
   it('protects against multiple interleaved race conditions with alternating yields', async () => {
     vi.useFakeTimers();
 
-    await inContext(async () => {
-      setAsyncContext('outer', 'root');
+    await withScope(async () => {
+      setScope('outer', 'root');
 
       // T=0
-      const opA = inContext(async () => {
-        setAsyncContext('inner', 'A1'); // A -> set context
+      const opA = withScope(async () => {
+        setScope('inner', 'A1'); // A -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 10))); // A -> awaited (resumes at T=10)
 
         // T=10
-        expect(getAsyncContext('inner')).toBe('A1'); // A -> resume context, inner must survive
-        setAsyncContext('inner', 'A2'); // A -> set context
+        expect(getScope('inner')).toBe('A1'); // A -> resume context, inner must survive
+        setScope('inner', 'A2'); // A -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 10))); // A -> awaited (resumes at T=20)
 
         // T=20
-        expect(getAsyncContext('inner')).toBe('A2'); // A -> resume context
+        expect(getScope('inner')).toBe('A2'); // A -> resume context
       });
 
       // T=0
-      const opB = inContext(async () => {
-        setAsyncContext('inner', 'B1'); // B -> set context
+      const opB = withScope(async () => {
+        setScope('inner', 'B1'); // B -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 15))); // B -> awaited (resumes at T=15)
 
         // T=15
-        expect(getAsyncContext('inner')).toBe('B1'); // B -> resume context, inner must survive
-        setAsyncContext('inner', 'B2'); // B -> set context
+        expect(getScope('inner')).toBe('B1'); // B -> resume context, inner must survive
+        setScope('inner', 'B2'); // B -> set context
         await awaited(() => new Promise((r) => setTimeout(r, 10))); // B -> awaited (resumes at T=25)
 
         // T=25
-        expect(getAsyncContext('inner')).toBe('B2'); // B -> resume context
+        expect(getScope('inner')).toBe('B2'); // B -> resume context
       });
 
       // We now explicitly step time forward to trigger the exact A-B-A-B-A-B alternating resumption trace
@@ -552,8 +545,8 @@ describe('Complex Execution Boundaries & Memory Traps', () => {
       await Promise.all([opA, opB]);
 
       // Outer context must restored
-      expect(getAsyncContext('outer')).toBe('root');
-      expect(getAsyncContext('inner')).toBeUndefined();
+      expect(getScope('outer')).toBe('root');
+      expect(getScope('inner')).toBeUndefined();
     });
 
     vi.useRealTimers();

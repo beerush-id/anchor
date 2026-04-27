@@ -1,4 +1,4 @@
-import { asyncContract, getAsyncContext } from './context.js';
+import { getScope, storeContract } from './context.js';
 import { captureStack } from './exception.js';
 
 const DEFAULT_CLEANUP_HANDLER = (_handler: () => void) => {};
@@ -14,7 +14,7 @@ let currentCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;
  * @returns The result of calling the current cleanup handler implementation
  */
 export function onCleanup(handler: () => void) {
-  const cleanupHandler = getAsyncContext<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
+  const cleanupHandler = getScope<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
 
   if (typeof cleanupHandler === 'function') {
     return cleanupHandler(handler);
@@ -35,7 +35,7 @@ export function onCleanup(handler: () => void) {
  * @param handler - A function to be executed during global cleanup
  */
 export function onGlobalCleanup(handler: () => void) {
-  const cleanupHandler = getAsyncContext<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
+  const cleanupHandler = getScope<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
   cleanupHandler?.(handler);
 }
 
@@ -65,7 +65,7 @@ export function setCleanUpHandler(handler: (handler: () => void) => void) {
 export function createLifecycle() {
   const cleanupHandlers = new Set<() => void>();
 
-  const runner = asyncContract(CLEANUP_SYMBOL, (handler: () => void) => {
+  const runner = storeContract(CLEANUP_SYMBOL, (handler: () => void) => {
     if (typeof handler !== 'function') {
       const error = new Error('Invalid cleanup handler');
       captureStack.error.argument('Cleanup handler must be a function', error, runner);

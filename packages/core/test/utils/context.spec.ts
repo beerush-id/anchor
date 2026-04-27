@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { anchor } from '../../src/index.js';
 import {
-  anchor,
   contextProvider,
   createContext,
   createRenderCtx,
@@ -11,7 +11,7 @@ import {
   setContext,
   setRenderCtx,
   withContext,
-} from '../../src/index.js';
+} from '../../src/utils/context.js';
 
 describe('Anchor Utilities - Context', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

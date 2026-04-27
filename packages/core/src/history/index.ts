@@ -8,18 +8,6 @@ import { subscribe } from '../subscription.js';
 import type { Linkable, State, StateChange } from '../types.js';
 import { microtask } from '../utils/index.js';
 
-/**
- * @deprecated Use `rollback()` instead.
- * @type {<T>(state: T, event: StateChange) => void}
- */
-export const undoChange = rollback;
-
-/**
- * @deprecated Use `replay()` instead.
- * @type {<T>(state: T, event: StateChange) => void}
- */
-export const redoChange = replay;
-
 export type HistoryOptions = {
   debounce?: number;
   maxHistory?: number;
@@ -51,6 +39,12 @@ export type HistoryState = {
   clear(): void;
   reset(): void;
 };
+export interface HistoryFactory {
+  (state: State, options?: HistoryOptions): HistoryState;
+
+  setDefaultOptions(options: HistoryOptions): void;
+  getDefaultOptions(): HistoryOptions;
+}
 
 /**
  * Creates a history management system for a reactive state object.
@@ -66,7 +60,7 @@ export type HistoryState = {
  * @param options.maxHistory - Maximum number of history states to keep (default: 100)
  * @returns A HistoryState object with methods and properties for history management
  */
-export function history<T extends State>(state: T, options?: HistoryOptions): HistoryState {
+function historyFn<T extends State>(state: T, options?: HistoryOptions): HistoryState {
   const {
     maxHistory = DEFAULT_HISTORY_OPTION.maxHistory,
     debounce = DEFAULT_HISTORY_OPTION.debounce,
@@ -157,7 +151,7 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   };
 
   // Subscribe for state changes and push the event to the backward stack, then clears the forward stack.
-  const unsubscribe = controller?.subscribe((snap, event) => {
+  const unsubscribe = controller?.subscribe((_snap, event) => {
     if (event.type !== 'init' && !isBusy) {
       mergeList.add(event);
 
@@ -209,8 +203,10 @@ export function history<T extends State>(state: T, options?: HistoryOptions): Hi
   return historyState;
 }
 
-history.setDefaultOptions = setDefaultOptions;
-history.getDefaultOptions = getDefaultOptions;
+historyFn.setDefaultOptions = setDefaultOptions;
+historyFn.getDefaultOptions = getDefaultOptions;
+
+export const history = historyFn as HistoryFactory;
 
 /**
  * Creates an undoable operation that can be executed and later reverted.

@@ -1,5 +1,5 @@
 import { DEV_TOOL_KEYS } from './constant.js';
-import { getAsyncContext, setAsyncContext } from './context.js';
+import { getScope, setScope } from './context.js';
 import { captureStack } from './exception.js';
 import type { DevTool } from './types.js';
 import { isFunction, isObjectLike } from './utils/index.js';
@@ -31,11 +31,11 @@ export function setDevTool(devTool: DevTool) {
     return;
   }
 
-  const prevDevTool = getAsyncContext<DevTool>(DEV_TOOL_SYMBOL);
-  setAsyncContext(DEV_TOOL_SYMBOL, devTool);
+  const prevDevTool = getScope<DevTool>(DEV_TOOL_SYMBOL);
+  setScope(DEV_TOOL_SYMBOL, devTool);
 
   return () => {
-    setAsyncContext(DEV_TOOL_SYMBOL, prevDevTool);
+    setScope(DEV_TOOL_SYMBOL, prevDevTool);
   };
 }
 
@@ -44,5 +44,5 @@ export function setDevTool(devTool: DevTool) {
  * @returns {DevTool | undefined} The active development tool, or `undefined` if none is set.
  */
 export function getDevTool(): DevTool | undefined {
-  return getAsyncContext(DEV_TOOL_SYMBOL);
+  return getScope(DEV_TOOL_SYMBOL);
 }

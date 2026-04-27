@@ -1,7 +1,7 @@
 export * from '../closure.js';
 export * from './batch.js';
 export * from './clone.js';
-export * from './context.js';
+// export * from './context.js';
 export * from './debounce.js';
 export * from './debug.js';
 export * from './inspector.js';

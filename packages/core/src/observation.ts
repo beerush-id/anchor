@@ -1,5 +1,5 @@
 import { ANCHOR_SETTINGS } from './constant.js';
-import { asyncContract, getAsyncContext, setAsyncContext } from './context.js';
+import { getScope, setScope, storeContract } from './context.js';
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
 import { onCleanup } from './lifecycle.js';
@@ -95,7 +95,7 @@ export const effect = effectFn as Effect;
  *
  * @param fn - The function to execute outside of observer context
  */
-export const untrack = asyncContract(OBSERVER_SYMBOL, undefined, undefined, undefined, (fn) => {
+export const untrack = storeContract(OBSERVER_SYMBOL, undefined, undefined, undefined, (fn) => {
   try {
     return fn();
   } catch (error) {
@@ -113,8 +113,8 @@ export const untrack = asyncContract(OBSERVER_SYMBOL, undefined, undefined, unde
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setObserver(observer: StateObserver) {
-  const currentObserver = getAsyncContext<StateObserver>(OBSERVER_SYMBOL);
-  const currentRestorer = getAsyncContext<() => void>(OBSERVER_RESTORER_SYMBOL);
+  const currentObserver = getScope<StateObserver>(OBSERVER_SYMBOL);
+  const currentRestorer = getScope<() => void>(OBSERVER_RESTORER_SYMBOL);
 
   // Make sure it handles duplicate observer such as when evaluated in React's strict mode.
   if (currentObserver === observer) return currentRestorer as () => void;
@@ -123,14 +123,14 @@ export function setObserver(observer: StateObserver) {
 
   const nextRestore = () => {
     if (!restored) {
-      setAsyncContext(OBSERVER_SYMBOL, currentObserver);
-      setAsyncContext(OBSERVER_RESTORER_SYMBOL, currentRestorer);
+      setScope(OBSERVER_SYMBOL, currentObserver);
+      setScope(OBSERVER_RESTORER_SYMBOL, currentRestorer);
       restored = true;
     }
   };
 
-  setAsyncContext(OBSERVER_SYMBOL, observer);
-  setAsyncContext(OBSERVER_RESTORER_SYMBOL, nextRestore);
+  setScope(OBSERVER_SYMBOL, observer);
+  setScope(OBSERVER_RESTORER_SYMBOL, nextRestore);
 
   return nextRestore;
 }
@@ -142,7 +142,7 @@ export function setObserver(observer: StateObserver) {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getObserver(): StateObserver | undefined {
-  return getAsyncContext(OBSERVER_SYMBOL);
+  return getScope(OBSERVER_SYMBOL);
 }
 
 /**
@@ -303,7 +303,7 @@ export function createObserver(
     },
   } as StateObserver;
 
-  const runner = asyncContract(
+  const runner = storeContract(
     OBSERVER_SYMBOL,
     observer,
     () => {
@@ -374,8 +374,8 @@ const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setTracker(tracker: StatePublicTracker) {
-  const currentTracker = getAsyncContext<StatePublicTracker>(TRACKER_SYMBOL);
-  const currentTrackerRestore = getAsyncContext<() => void>(TRACKER_RESTORE_SYMBOL);
+  const currentTracker = getScope<StatePublicTracker>(TRACKER_SYMBOL);
+  const currentTrackerRestore = getScope<() => void>(TRACKER_RESTORE_SYMBOL);
 
   if (currentTracker === tracker) return currentTrackerRestore;
 
@@ -383,14 +383,14 @@ export function setTracker(tracker: StatePublicTracker) {
 
   const nextRestore = () => {
     if (!restored) {
-      setAsyncContext(TRACKER_SYMBOL, currentTracker);
-      setAsyncContext(TRACKER_RESTORE_SYMBOL, currentTrackerRestore);
+      setScope(TRACKER_SYMBOL, currentTracker);
+      setScope(TRACKER_RESTORE_SYMBOL, currentTrackerRestore);
       restored = true;
     }
   };
 
-  setAsyncContext(TRACKER_SYMBOL, tracker);
-  setAsyncContext(TRACKER_RESTORE_SYMBOL, nextRestore);
+  setScope(TRACKER_SYMBOL, tracker);
+  setScope(TRACKER_RESTORE_SYMBOL, nextRestore);
 
   return nextRestore;
 }
@@ -404,7 +404,7 @@ export function setTracker(tracker: StatePublicTracker) {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getTracker(): StatePublicTracker | undefined {
-  return getAsyncContext<StatePublicTracker>(TRACKER_SYMBOL);
+  return getScope<StatePublicTracker>(TRACKER_SYMBOL);
 }
 
 /**
@@ -418,7 +418,7 @@ export function getTracker(): StatePublicTracker | undefined {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function track(init: Linkable, observers: StateObserverList, key: KeyLike) {
-  const currentTracker = getAsyncContext<StatePublicTracker>(TRACKER_SYMBOL);
+  const currentTracker = getScope<StatePublicTracker>(TRACKER_SYMBOL);
   if (typeof currentTracker !== 'function') return;
   currentTracker(init, observers, key);
 }

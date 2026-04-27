@@ -13,6 +13,7 @@ export {
   OBJECT_MUTATIONS,
   SET_MUTATIONS,
 } from './constant.js';
+export * from './context.js';
 export * from './dev.js';
 export * from './enum.js';
 export * from './event.js';
@@ -20,8 +21,8 @@ export * from './exception.js';
 export * from './fetch/index.js';
 export * from './form.js';
 export * from './history/index.js';
-export * from './internal.js';
 export * from './inspector.js';
+export * from './internal.js';
 export { createLifecycle, onCleanup, onGlobalCleanup, setCleanUpHandler } from './lifecycle.js';
 export * from './observation.js';
 export * from './ref.js';

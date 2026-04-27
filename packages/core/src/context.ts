@@ -1,5 +1,7 @@
 import { captureStack } from './exception.js';
 
+const FLOATING_PROMISES_LIST_KEY = Symbol('anchor-isolated-list');
+
 /** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
 export type AsyncKey = any;
@@ -53,13 +55,13 @@ export class AsyncStore extends Map<AsyncKey, AsyncValue> {
  * **Context Exit:** After the callback returns (or throws), the `finally` block restores
  * the event-loop context to exactly what it was before entry, preventing cross-microtask leaks.
  *
- * **Isolation Guard:** If the store belongs to a destroyed {@link isolatedContext}, the
+ * **Isolation Guard:** If the store belongs to a destroyed {@link withIsolation}, the
  * `fork()` handler fires a violation warning before executing the callback.
  *
  * Because `Awaited` implements the Thenable protocol, V8's native `await` automatically
  * calls `.then()` with its internal resume function, seamlessly integrating with `async/await`.
  *
- * @internal This class is not exported. Instances are created by {@link AsyncContext.awaited}.
+ * @internal This class is not exported. Instances are created by {@link AsyncScope.awaited}.
  */
 class Awaited<T> {
   /**
@@ -130,7 +132,7 @@ class Awaited<T> {
  *
  * @template T - The type of value stored (typically {@link AsyncStore}).
  */
-export class AsyncContext<T> {
+export class AsyncScope<T> {
   /** The currently active store for this context. Mutated during {@link run} and {@link awaited}. */
   public store?: T;
 
@@ -183,7 +185,7 @@ export class AsyncContext<T> {
     try {
       const result = fn();
 
-      if (isPromise(result)) {
+      if (result instanceof Promise) {
         const isolate = this.store instanceof Map ? this.store.get(FLOATING_PROMISES_LIST_KEY) : undefined;
         const cleanup = () => {
           isolate?.delete(promise);
@@ -207,26 +209,46 @@ export class AsyncContext<T> {
     }
   }
 
-  /** Returns the currently active store. */
-  public getStore() {
+  /**
+   * Returns the currently active store.
+   * @returns {T|undefined} The currently active store, or "undefined" if no active store.
+   */
+  public getStore(): T | undefined {
     return this.store;
   }
 }
 
-/** The root-level store. All {@link inContext} children ultimately chain back to this. */
+/** The root-level store. All {@link withScope} children ultimately chain back to this. */
 const globalStore = new AsyncStore();
-/** The singleton {@link AsyncContext} instance that powers the global helper functions. */
-const globalAsyncCtx = new AsyncContext(globalStore);
+/** The singleton {@link AsyncScope} instance that powers the global scope functions. */
+const globalAsyncCtx = new AsyncScope(globalStore);
+/** A list of all active {@link AsyncScope} instances for context lookups. */
+const contextLookups: AsyncScope<AsyncStore>[] = [];
 
-export function resetGlobalStore() {
-  globalStore.clear();
+/**
+ * Attaches an AsyncContext to the global context lookup list.
+ * @param {AsyncScope<unknown>} lookup
+ */
+export function attachContextLookup(lookup: AsyncScope<AsyncStore>) {
+  contextLookups.unshift(lookup);
+}
+
+/**
+ * Detaches an AsyncContext from the global context lookup list.
+ * @param {AsyncScope<unknown>} lookup
+ */
+export function detachContextLookup(lookup: AsyncScope<AsyncStore>) {
+  const index = contextLookups.indexOf(lookup);
+  if (index !== -1) {
+    contextLookups.splice(index, 1);
+  }
 }
 
 /**
  * An async contract is a function that temporarily sets a value in the async context,
  * and executes a function.
  */
-export type AsyncContract = <T>(fn: () => T) => T extends Promise<infer R> ? PromiseLike<R> : T;
+export type StoreContract = <T>(fn: () => T) => T extends Promise<infer R> ? PromiseLike<R> : T;
 
 /**
  * Creates an async contract that temporarily sets the value of a given key in the async context.
@@ -236,20 +258,20 @@ export type AsyncContract = <T>(fn: () => T) => T extends Promise<infer R> ? Pro
  * @param onstart - Optional callback that fires before the contract is entered.
  * @param onfinally - Optional callback that fires after the contract is exited.
  * @param runner
- * @returns AsyncContract
+ * @returns StoreContract
  */
-export function asyncContract<T>(
+export function storeContract<T>(
   key: AsyncKey,
   value: T,
   onstart?: () => void,
   onfinally?: () => void,
   runner?: (fn: () => unknown) => unknown
-): AsyncContract {
+): StoreContract {
   return function asyncContract<R>(fn: () => R): R {
     onstart?.();
 
-    const current = getAsyncContext(key);
-    setAsyncContext(key, value);
+    const current = getScope(key);
+    setScope(key, value);
 
     try {
       const result = typeof runner === 'function' ? runner(fn) : fn();
@@ -257,15 +279,15 @@ export function asyncContract<T>(
       if (result instanceof Promise) {
         return new Awaited(
           result,
-          (next) => setAsyncContext(key, next),
+          (next) => setScope(key, next),
           value,
-          () => setAsyncContext(key, current)
+          () => setScope(key, current)
         ) as never as R;
       }
 
       return result as R;
     } finally {
-      setAsyncContext(key, current);
+      setScope(key, current);
       onfinally?.();
     }
   } as never;
@@ -274,7 +296,7 @@ export function asyncContract<T>(
 /**
  * Creates a child context scope that inherits from the currently active store.
  *
- * If the parent belongs to an {@link isolatedContext}, the child automatically
+ * If the parent belongs to an {@link withIsolation}, the child automatically
  * inherits the isolation flag so that floating-promise detection propagates
  * through nested scopes.
  *
@@ -292,7 +314,7 @@ export function asyncContract<T>(
  * });
  * ```
  */
-export function inContext<R>(fn: () => R, store?: AsyncStore) {
+export function withScope<R>(fn: () => R, store?: AsyncStore) {
   const parent = globalAsyncCtx.getStore()!;
   const childStore = store ?? new AsyncStore(parent);
 
@@ -302,8 +324,6 @@ export function inContext<R>(fn: () => R, store?: AsyncStore) {
 
   return globalAsyncCtx.awaited(fn, childStore);
 }
-
-const FLOATING_PROMISES_LIST_KEY = Symbol('anchor-isolated-list');
 
 /**
  * Creates a fully isolated context boundary with lifecycle-aware destruction tracking.
@@ -333,20 +353,20 @@ const FLOATING_PROMISES_LIST_KEY = Symbol('anchor-isolated-list');
  * // that tries to access context will trigger a violation.
  * ```
  */
-export async function isolatedContext<R>(fn: () => R, strict = true) {
-  const floatingPromises = new Set<Awaited<unknown>>();
-
+export async function withIsolation<R>(fn: () => R, strict = true) {
   const parent = globalAsyncCtx.getStore()!;
-  const isolatedStore = new AsyncStore([[FLOATING_PROMISES_LIST_KEY, floatingPromises]], parent);
+
+  const floatingLists = new Set<Awaited<unknown>>();
+  const isolatedStore = new AsyncStore([[FLOATING_PROMISES_LIST_KEY, floatingLists]], parent);
 
   try {
     const result = await (globalAsyncCtx.awaited(fn, isolatedStore) as Promise<R>);
 
-    if (floatingPromises.size) {
-      const error = new Error('Hanging async context!');
+    if (floatingLists.size) {
+      const error = new Error('Floating Awaited Promise!');
       captureStack.violation.general(
-        'Hanging promises detected!',
-        `${floatingPromises.size} promises hanging in a detached isolated Async Context.`,
+        'Floating promise detected!',
+        `${floatingLists.size} promises hanging in a detached isolated Async Context.`,
         error,
         [
           'Accessing async context in a detached isolation is highly discouraged.',
@@ -354,7 +374,7 @@ export async function isolatedContext<R>(fn: () => R, strict = true) {
           '- Avoid running a hanging "then" in an isolated context.',
           '- Documentation: https://anchorlib.dev/docs/async-context',
         ],
-        getAsyncContext
+        getScope
       );
 
       if (strict) {
@@ -364,7 +384,7 @@ export async function isolatedContext<R>(fn: () => R, strict = true) {
 
     return result as R;
   } finally {
-    floatingPromises.clear();
+    floatingLists.clear();
   }
 }
 
@@ -400,8 +420,18 @@ export function awaited<R>(fn: () => R) {
  * @param key - The key to look up.
  * @returns The value, or `undefined` if not found in any ancestor.
  */
-export function getAsyncContext<R>(key: AsyncKey): R | undefined {
-  return globalAsyncCtx.getStore()!.get(key);
+export function getScope<R>(key: AsyncKey): R | undefined;
+/**
+ * Reads a value from the currently active {@link AsyncStore}, walking up
+ * the parent chain if the key is not found locally.
+ * @param {AsyncKey} key - The key to look up.
+ * @param fallback - A fallback value to return if the key is not found.
+ * @returns - The value, or `fallback` if not found in any ancestor.
+ */
+export function getScope<R>(key: AsyncKey, fallback: R): R;
+export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
+  const result = globalAsyncCtx.getStore()?.get(key);
+  return typeof result !== 'undefined' ? result : fallback;
 }
 
 /**
@@ -412,8 +442,53 @@ export function getAsyncContext<R>(key: AsyncKey): R | undefined {
  * @param key   - The key to set.
  * @param value - The value to associate with the key.
  */
-export function setAsyncContext(key: AsyncKey, value: AsyncValue) {
-  return globalAsyncCtx.getStore()!.set(key, value);
+export function setScope(key: AsyncKey, value: AsyncValue) {
+  return globalAsyncCtx.getStore()?.set(key, value);
+}
+
+/**
+ * Reads a value from the currently active {@link AsyncStore}s, walking up
+ * the parent chain if the key is not found locally.
+ *
+ * @param key - The key to look up.
+ * @returns The value, or `undefined` if not found in any ancestor.
+ */
+export function getContext<R>(key: AsyncKey): R | undefined;
+/**
+ * Reads a value from the currently active {@link AsyncStore}s, walking up
+ * the parent chain if the key is not found locally.
+ * @param {AsyncKey} key - The key to look up.
+ * @param fallback - A fallback value to return if the key is not found.
+ * @returns - The value, or `fallback` if not found in any ancestor.
+ */
+export function getContext<R>(key: AsyncKey, fallback: R): R;
+export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
+  const initLookup = contextLookups[0]?.getStore()?.get(key);
+  if (typeof initLookup !== 'undefined') return initLookup;
+
+  if (contextLookups.length > 1) {
+    const length = contextLookups.length;
+
+    for (let i = 1; i < length; i++) {
+      const result = contextLookups[i]?.getStore()?.get(key);
+      if (typeof result !== 'undefined') return result;
+    }
+  }
+
+  return fallback;
+}
+
+/**
+ * Writes a value to the first active {@link AsyncStore}.
+ * The value is set on the **current** (innermost) store only and does not
+ * propagate to parent stores.
+ *
+ * @param key   - The key to set.
+ * @param value - The value to associate with the key.
+ */
+export function setContext(key: AsyncKey, value: AsyncValue) {
+  const lookup = contextLookups[0];
+  return lookup?.getStore()?.set(key, value);
 }
 
 /**
@@ -423,6 +498,15 @@ export function setAsyncContext(key: AsyncKey, value: AsyncValue) {
  */
 export function getAsyncStore() {
   return globalAsyncCtx.getStore();
+}
+
+/**
+ * Returns the root {@link AsyncStore} instance.
+ *
+ * @returns The root {@link AsyncStore} instance.
+ */
+export function getRootStore() {
+  return globalStore;
 }
 
 /**
@@ -449,10 +533,6 @@ function getAll(list: AsyncStore[] = [], from?: AsyncStore) {
  * up to the global root, ordered innermost-first.
  *
  * Useful for debugging, diagnostics, or manually capturing a store reference
- * for later re-entry via {@link inContext}.
+ * for later re-entry via {@link withScope}.
  */
 export const getAllAsyncContext = getAll as () => AsyncStore[];
-
-function isPromise<T>(value: unknown): value is Promise<T> {
-  return value instanceof Promise;
-}

@@ -1,4 +1,4 @@
-import { getAsyncContext, setAsyncContext } from '../context.js';
+import { getScope, setScope } from '../context.js';
 import { isFunction, isString } from './inspector.js';
 
 export type DebugFn = (...args: unknown[]) => void;
@@ -20,12 +20,12 @@ export function setDebugger(debugFn: DebugFn | undefined) {
 
   let restored = false;
 
-  const prevLogger = getAsyncContext<DebugFn>(LOGGER_SYMBOL);
-  setAsyncContext(LOGGER_SYMBOL, debugFn);
+  const prevLogger = getScope<DebugFn>(LOGGER_SYMBOL);
+  setScope(LOGGER_SYMBOL, debugFn);
 
   return () => {
     if (!restored) {
-      setAsyncContext(LOGGER_SYMBOL, prevLogger);
+      setScope(LOGGER_SYMBOL, prevLogger);
       restored = true;
     }
   };
@@ -37,7 +37,7 @@ export function setDebugger(debugFn: DebugFn | undefined) {
  * @returns The current debugger function, or undefined if debugging is disabled
  */
 export function getDebugger(): DebugFn | undefined {
-  return getAsyncContext(LOGGER_SYMBOL);
+  return getScope(LOGGER_SYMBOL);
 }
 
 /**
@@ -51,7 +51,7 @@ export function getDebugger(): DebugFn | undefined {
  */
 export function withDebugger<R>(fn: () => R, debugFn: DebugFn): R {
   const restoreDebugger = setDebugger(debugFn);
-  const currentLogger = getAsyncContext<DebugFn>(LOGGER_SYMBOL);
+  const currentLogger = getScope<DebugFn>(LOGGER_SYMBOL);
 
   let result: R | undefined = undefined;
 
@@ -116,7 +116,7 @@ export interface Debugger {
 
 export function createDebugger(prefix?: string, logger?: DebugFn): Debugger {
   const log = (scope: keyof Debugger | 'default', ...args: unknown[]) => {
-    const currentLogger = getAsyncContext<DebugFn>(LOGGER_SYMBOL);
+    const currentLogger = getScope<DebugFn>(LOGGER_SYMBOL);
     const logFn =
       scope === 'default'
         ? (logger ?? currentLogger)

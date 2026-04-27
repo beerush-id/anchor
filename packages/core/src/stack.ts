@@ -1,4 +1,4 @@
-import { getAsyncContext, setAsyncContext } from './context.js';
+import { getScope, setScope } from './context.js';
 import type { RefStack } from './types.js';
 
 export const STACK_SYMBOL = Symbol('call-stack');
@@ -24,13 +24,13 @@ export function createStack(): RefStack {
  * @returns The result of the executed function
  */
 export function withStack<T>(scope: RefStack, fn: () => T) {
-  const prevStack = getAsyncContext<RefStack>(STACK_SYMBOL);
-  setAsyncContext(STACK_SYMBOL, scope);
+  const prevStack = getScope<RefStack>(STACK_SYMBOL);
+  setScope(STACK_SYMBOL, scope);
 
   try {
     return fn();
   } finally {
-    setAsyncContext(STACK_SYMBOL, prevStack);
+    setScope(STACK_SYMBOL, prevStack);
   }
 }
 
@@ -40,5 +40,5 @@ export function withStack<T>(scope: RefStack, fn: () => T) {
  * @returns The current RefStack if one exists, undefined otherwise
  */
 export function getCurrentStack() {
-  return getAsyncContext<RefStack>(STACK_SYMBOL);
+  return getScope<RefStack>(STACK_SYMBOL);
 }
