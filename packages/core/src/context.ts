@@ -230,6 +230,8 @@ const contextLookups: AsyncScope<AsyncStore>[] = [];
  * @param {AsyncScope<unknown>} lookup
  */
 export function attachContextLookup(lookup: AsyncScope<AsyncStore>) {
+  if (!(lookup instanceof AsyncScope) || !(lookup.getStore() instanceof Map)) return;
+  if (contextLookups.includes(lookup)) return;
   contextLookups.unshift(lookup);
 }
 
@@ -242,6 +244,14 @@ export function detachContextLookup(lookup: AsyncScope<AsyncStore>) {
   if (index !== -1) {
     contextLookups.splice(index, 1);
   }
+}
+
+/**
+ * Returns the global context lookup list.
+ * @returns {AsyncScope<AsyncStore>[]}
+ */
+export function getContextLookups(): AsyncScope<AsyncStore>[] {
+  return contextLookups;
 }
 
 /**
@@ -463,14 +473,17 @@ export function getContext<R>(key: AsyncKey): R | undefined;
  */
 export function getContext<R>(key: AsyncKey, fallback: R): R;
 export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
-  const initLookup = contextLookups[0]?.getStore()?.get(key);
+  const scope = contextLookups[0] as AsyncScope<AsyncStore>;
+  if (!scope) return fallback;
+
+  const initLookup = scope.getStore()!.get?.(key);
   if (typeof initLookup !== 'undefined') return initLookup;
 
   if (contextLookups.length > 1) {
     const length = contextLookups.length;
 
     for (let i = 1; i < length; i++) {
-      const result = contextLookups[i]?.getStore()?.get(key);
+      const result = contextLookups[i].getStore()!.get?.(key);
       if (typeof result !== 'undefined') return result;
     }
   }
@@ -487,8 +500,9 @@ export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
  * @param value - The value to associate with the key.
  */
 export function setContext(key: AsyncKey, value: AsyncValue) {
-  const lookup = contextLookups[0];
-  return lookup?.getStore()?.set(key, value);
+  const lookup = contextLookups[0] as AsyncScope<AsyncStore>;
+  if (!lookup) return;
+  return lookup.getStore()!.set(key, value);
 }
 
 /**

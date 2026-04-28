@@ -38,7 +38,7 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
     cleanup?.();
     observer.reset();
 
-    runEffect(event).catch(console.error);
+    runEffect(event).catch(handleError);
   });
   observer.name = `Effect(${displayName ?? 'Anonymous'})`;
 
@@ -60,10 +60,13 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
     cleanup?.();
     observer.destroy();
   };
+  const handleError = (error: Error) => {
+    captureStack.error.external('Unhandled effect exception', error, handleError, observer.run, runEffect, effect);
+  };
 
   onCleanup(runCleanup);
 
-  runEffect({ type: 'init', keys: [] }).catch(console.error);
+  runEffect({ type: 'init', keys: [] }).catch(handleError);
 
   return runCleanup;
 }

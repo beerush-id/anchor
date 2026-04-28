@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  anchor,
   closure as rootClosure,
   ClosureAdapter,
   createClosure,
   isolated,
   setAsyncStorageAdapter,
-} from '../../src/index.js';
+} from '../../src/closure.js';
+import { anchor } from '../../src/index.js';
 
 describe('Anchor Utilities - Closure', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

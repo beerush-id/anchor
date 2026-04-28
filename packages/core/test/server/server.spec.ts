@@ -1,6 +1,6 @@
 import '../../src/server/index.js';
 import { describe, expect, it, vi } from 'vitest';
-import { closure } from '../../src/index.js';
+import { closure } from '../../src/closure.js';
 
 describe('Anchor - Server binding', () => {
   it('should assign AsyncLocalStorage', async () => {

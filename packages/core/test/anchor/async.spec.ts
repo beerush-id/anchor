@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AsyncStatus, cancelable, query } from '../../src/index.js';
+import { AsyncStatus, cancelable, mutable, query } from '../../src/index.js';
 
 describe('Anchor Core - Async', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -12,7 +12,7 @@ describe('Anchor Core - Async', () => {
     errorSpy.mockRestore();
   });
 
-  describe('asyncState', () => {
+  describe('query', () => {
     it('should create async state without initial value', async () => {
       const state = query(async () => ({ value: 1 }));
 
@@ -46,6 +46,27 @@ describe('Anchor Core - Async', () => {
       expect(state.data).toEqual({ value: 42 });
       expect(state.status).toBe(AsyncStatus.Success);
       expect(handler).toHaveBeenCalled();
+    });
+
+    it('should restart async operation when the observed state changes', async () => {
+      const ref = mutable({ value: 42 });
+      const handler = vi.fn().mockImplementation(() => {
+        return { value: ref.value };
+      });
+      const state = query(handler);
+
+      // Wait for the initial async operation to complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(state.data).toEqual({ value: 42 });
+      expect(state.status).toBe(AsyncStatus.Success);
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      ref.value = 43;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(state.data).toEqual({ value: 43 });
+      expect(handler).toHaveBeenCalledTimes(2);
     });
 
     it('should handle deferred async operation', async () => {

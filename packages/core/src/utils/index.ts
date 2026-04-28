@@ -1,4 +1,3 @@
-export * from '../closure.js';
 export * from './batch.js';
 export * from './clone.js';
 // export * from './context.js';
