@@ -1,3 +1,4 @@
+import { createLifecycle } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROUTE_TYPE } from '../src/enum.js';
 import { RouterContext } from '../src/index.js';
@@ -215,7 +216,10 @@ describe('router.ts', () => {
         expect(router.context.data.post).toBeUndefined();
 
         // State 2: Activate /posts/456
-        await router.activate('/posts/456?sort=desc');
+        const runner = createLifecycle();
+        await runner.runAsync(async () => {
+          await router.activate('/posts/456?sort=desc');
+        });
 
         // Verify context updated to new state
         expect(router.context.params.postId).toBe('456');
@@ -226,6 +230,11 @@ describe('router.ts', () => {
         expect(router.context.params.id).toBeUndefined();
         expect(router.context.query.tab).toBeUndefined();
         expect(router.context.data.user).toBeUndefined();
+
+        router.cleanup();
+        runner.destroy();
+
+        await Promise.resolve();
       });
 
       it('should handle URL object', async () => {

@@ -1,4 +1,4 @@
-import { closure } from '@anchorlib/core';
+import { getScope, setScope } from '@anchorlib/core';
 import type { Route } from './route.js';
 import type { ExtractParams, ExtractQueryParams, RouteOptions, RoutePath, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
@@ -24,7 +24,7 @@ const REDIRECT_HANDLER = Symbol('redirect-handler');
  * ```
  */
 export function setRedirectHandler(handler: (redirect: UnknownRedirect) => void) {
-  closure.set(REDIRECT_HANDLER, handler);
+  setScope(REDIRECT_HANDLER, handler);
 }
 
 /**
@@ -106,7 +106,7 @@ export function redirect<
   query?: TQueryParams
 ): Redirect<TPath, TParams, TQueryParams, TOptions, TData> {
   const redirect = new Redirect(route, params, query);
-  closure.get<(redirect: UnknownRedirect) => void>(REDIRECT_HANDLER)?.(redirect as UnknownRedirect);
+  getScope<(redirect: UnknownRedirect) => void>(REDIRECT_HANDLER)?.(redirect as UnknownRedirect);
   return redirect;
 }
 

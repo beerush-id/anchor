@@ -337,9 +337,9 @@ export class Router<Output = any> {
     const { steps, activating } = untrack(() => ({ activating: this.state.activating, steps: this.state.steps }));
 
     if (activating) {
-      anchor.assign(this.state, { steps: steps + length });
+      untrack(() => anchor.assign(this.state, { steps: steps + length }));
     } else {
-      anchor.assign(this.state, { activating: true, steps: length, progress: 0 });
+      untrack(() => anchor.assign(this.state, { activating: true, steps: length, progress: 0 }));
     }
   }
 
@@ -347,7 +347,7 @@ export class Router<Output = any> {
    * Finishes a progress indicator for route activation.
    */
   public finish() {
-    anchor.assign(this.state, { steps: 0, progress: 0, activating: false });
+    untrack(() => anchor.assign(this.state, { steps: 0, progress: 0, activating: false }));
   }
 
   /**
@@ -411,6 +411,10 @@ export class Router<Output = any> {
   }
 
   public cleanup() {
+    for (const segment of [...(this.activeSegments || [])].reverse()) {
+      segment.route.cleanup();
+    }
+
     getStore().delete(this);
   }
 }

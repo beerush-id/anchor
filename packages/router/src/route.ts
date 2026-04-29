@@ -1,4 +1,4 @@
-import { anchor, createObserver, mutable, onCleanup, retriable, untrack } from '@anchorlib/core';
+import { anchor, createObserver, mutable, retriable, untrack } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -72,6 +72,7 @@ export class Route<
   TOptions extends RouteOptions,
   TData,
   TParent = never,
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   TOutput = any,
 > {
   /** The name of this route */
@@ -501,18 +502,14 @@ export class Route<
             authenticator();
           });
 
-          onCleanup(() => {
-            observer.destroy();
-          });
-
           const authenticator = () => {
             // Run the guard inside an observer, so whenever the state it reads change,
             // the observer will be re-run.
-            return observer.run(async () => {
+            return observer.runAsync(async () => {
               try {
                 return await guard(context);
               } finally {
-                this.router.progress();
+                untrack(() => this.router.progress());
               }
             });
           };
@@ -604,14 +601,10 @@ export class Route<
             resolver();
           });
 
-          onCleanup(() => {
-            observer.destroy();
-          });
-
           // Run the provider inside an observer, so whenever the state it reads change,
           // the observer will be re-run.
           const resolver = () => {
-            return observer.run(async () => {
+            return observer.runAsync(async () => {
               this.resolving = true;
 
               try {
@@ -687,6 +680,8 @@ export class Route<
    * ```
    */
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
+    await Promise.resolve(); // Push to microtask queue to prevent tracking.
+
     this.status = ROUTE_STATUS.PENDING;
     this.error = undefined;
     this.state.query = context.query;
@@ -719,18 +714,20 @@ export class Route<
    * ```
    */
   public deactivate(): void {
-    this.active = false;
-    this.status = ROUTE_STATUS.IDLE;
+    untrack(() => {
+      this.active = false;
+      this.status = ROUTE_STATUS.IDLE;
 
-    if (!this.options?.keepAlive) {
-      anchor.assign(this.state as TRec, { query: {}, params: {}, data: {} });
+      if (!this.options?.keepAlive) {
+        anchor.assign(this.state as TRec, { query: {}, params: {}, data: {} });
 
-      this.data = {} as TData;
-      this.error = undefined;
-      this.resolved = false;
-      this.authenticated = false;
-      this.cleanupObservers();
-    }
+        this.data = {} as TData;
+        this.error = undefined;
+        this.resolved = false;
+        this.authenticated = false;
+        this.cleanupObservers();
+      }
+    });
   }
 
   /**
@@ -770,6 +767,7 @@ export class Route<
   }
 
   public cleanup() {
+    this.deactivate();
     this.cleanupObservers();
   }
 

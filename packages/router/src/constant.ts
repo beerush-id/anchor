@@ -1,6 +1,5 @@
-import { isObject } from '@anchorlib/core';
 import { PRELOAD_MODE, RENDER_MODE, RETRY_MODE, ROUTE_TYPE } from './enum.js';
-import type { RouteOptions, RouterOptions } from './types.js';
+import type { RouterOptions } from './types.js';
 
 /**
  * Default configuration options for the router.
@@ -49,27 +48,6 @@ export const DEFAULT_CONFIG: RouterOptions = {
  */
 export function configure(config: Partial<RouterOptions>) {
   Object.assign(DEFAULT_CONFIG, config);
-}
-
-export function inheritConfig(...overrides: Array<RouteOptions | undefined>) {
-  return new Proxy(
-    {},
-    {
-      get(_target, key) {
-        let value = DEFAULT_CONFIG[key as keyof RouterOptions];
-
-        for (const override of overrides) {
-          if (!isObject(override)) continue;
-
-          if (typeof override[key as keyof RouterOptions] !== 'undefined') {
-            value = override[key as keyof RouterOptions] as RouterOptions[keyof RouterOptions];
-          }
-        }
-
-        return value;
-      },
-    }
-  ) as RouteOptions;
 }
 
 /**
