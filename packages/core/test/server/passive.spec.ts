@@ -3,14 +3,18 @@ import { anchor, createObserver, effect, getTracker, setTracker, subscribe } fro
 import { setReactive } from '../../src/internal.js';
 
 describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeAll(() => {
     // Disable reactivity globally to simulate the passive SSR behavior
     setReactive(false);
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterAll(() => {
     // Restore reactivity for other tests in the suite
     setReactive(true);
+    errorSpy.mockRestore();
   });
 
   describe('State Mutations', () => {

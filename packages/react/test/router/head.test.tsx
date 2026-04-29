@@ -1,5 +1,5 @@
 import '../../src/client/index';
-import { createLifecycle } from '@anchorlib/core';
+import { createLifecycle, withIsolation } from '@anchorlib/core';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { template } from '../../src/hoc.js';
@@ -81,95 +81,104 @@ describe('Anchor React - Head APIs', () => {
       // Stub window to simulate SSR
       vi.stubGlobal('window', undefined);
 
-      await ssr.runAsync(async () => {
-        Title({ children: 'SSR Title' });
-        Meta({ name: 'description', content: 'SSR description' });
-        HeadLink({ rel: 'preload', href: '/style.css' });
-        Style({ children: '.test { color: blue; }' });
+      await withIsolation(async () => {
+        await ssr.runAsync(async () => {
+          Title({ children: 'SSR Title' });
+          Meta({ name: 'description', content: 'SSR description' });
+          HeadLink({ rel: 'preload', href: '/style.css' });
+          Style({ children: '.test { color: blue; }' });
 
-        const map = headings();
+          const map = headings();
 
-        expect(map.size).toBe(4);
+          expect(map.size).toBe(4);
 
-        expect(map.has('title')).toBe(true);
-        expect(map.get('title')?.props.children).toBe('SSR Title');
+          expect(map.has('title')).toBe(true);
+          expect(map.get('title')?.props.children).toBe('SSR Title');
 
-        expect(map.has('meta:description')).toBe(true);
-        expect(map.get('meta:description')?.props.content).toBe('SSR description');
+          expect(map.has('meta:description')).toBe(true);
+          expect(map.get('meta:description')?.props.content).toBe('SSR description');
 
-        expect(map.has('link:/style.css')).toBe(true);
-        expect(map.get('link:/style.css')?.props.href).toBe('/style.css');
+          expect(map.has('link:/style.css')).toBe(true);
+          expect(map.get('link:/style.css')?.props.href).toBe('/style.css');
 
-        // Style uses performance.now() as part of the key, so we check if a style exists
-        const styleKeys = Array.from(map.keys()).filter((key) => key.startsWith('style:'));
-        expect(styleKeys.length).toBe(1);
-        expect(map.get(styleKeys[0])?.props.children).toBe('.test { color: blue; }');
+          // Style uses performance.now() as part of the key, so we check if a style exists
+          const styleKeys = Array.from(map.keys()).filter((key) => key.startsWith('style:'));
+          expect(styleKeys.length).toBe(1);
+          expect(map.get(styleKeys[0])?.props.children).toBe('.test { color: blue; }');
 
-        // The Renderer should be a function
-        expect(typeof map.get('title')?.Renderer).toBe('function');
+          // The Renderer should be a function
+          expect(typeof map.get('title')?.Renderer).toBe('function');
+        });
+
+        ssr.destroy();
       });
-
-      ssr.destroy();
     });
 
     it('deduplicates tags appropriately in SSR', async () => {
       vi.stubGlobal('window', undefined);
 
-      await ssr.runAsync(async () => {
-        // First layout
-        Title({ children: 'Base Title' });
-        Meta({ name: 'description', content: 'Base description' });
-        Meta({ property: 'og:title', content: 'Base OG Title' });
+      await withIsolation(async () => {
+        await ssr.runAsync(async () => {
+          // First layout
+          Title({ children: 'Base Title' });
+          Meta({ name: 'description', content: 'Base description' });
+          Meta({ property: 'og:title', content: 'Base OG Title' });
 
-        // Child page overrides
-        Title({ children: 'Page Title' });
-        Meta({ name: 'description', content: 'Page description' });
-        Meta({ property: 'og:title', content: 'Page OG Title' });
+          // Child page overrides
+          Title({ children: 'Page Title' });
+          Meta({ name: 'description', content: 'Page description' });
+          Meta({ property: 'og:title', content: 'Page OG Title' });
 
-        const map = headings();
+          const map = headings();
 
-        expect(map.get('title')?.props.children).toBe('Page Title');
-        expect(map.get('meta:description')?.props.content).toBe('Page description');
-        expect(map.get('meta:og:title')?.props.content).toBe('Page OG Title');
+          expect(map.get('title')?.props.children).toBe('Page Title');
+          expect(map.get('meta:description')?.props.content).toBe('Page description');
+          expect(map.get('meta:og:title')?.props.content).toBe('Page OG Title');
 
-        // No duplicates for title or same-name meta
-        const metaKeys = Array.from(map.keys()).filter((key) => key.startsWith('meta:'));
-        expect(metaKeys.length).toBe(2);
+          // No duplicates for title or same-name meta
+          const metaKeys = Array.from(map.keys()).filter((key) => key.startsWith('meta:'));
+          expect(metaKeys.length).toBe(2);
+        });
+
+        ssr.destroy();
       });
-
-      ssr.destroy();
     });
 
     it('cleans up tags from the map on unmount in SSR', async () => {
       vi.stubGlobal('window', undefined);
 
-      await ssr.runAsync(async () => {
-        Title({ children: 'SSR Cleanup Title' });
-        const map = headings();
-        expect(map.has('title')).toBe(true);
-      });
+      await withIsolation(async () => {
+        await ssr.runAsync(async () => {
+          Title({ children: 'SSR Cleanup Title' });
+          const map = headings();
+          expect(map.has('title')).toBe(true);
+        });
 
-      ssr.destroy();
-      expect(headings().has('title')).toBe(false);
+        ssr.destroy();
+
+        expect(headings().has('title')).toBe(false);
+      });
     });
 
     it('should render headings as html', async () => {
       vi.stubGlobal('window', undefined);
 
-      await ssr.runAsync(async () => {
-        Title({ children: undefined as never });
-        Meta({ name: 'description', content: 'Base description' });
-        HeadLink({ rel: 'preload', href: '/style.css' });
-        Style({ children: '.test { color: blue; }' });
+      await withIsolation(async () => {
+        await ssr.runAsync(async () => {
+          Title({ children: undefined as never });
+          Meta({ name: 'description', content: 'Base description' });
+          HeadLink({ rel: 'preload', href: '/style.css' });
+          Style({ children: '.test { color: blue; }' });
+        });
+
+        vi.unstubAllGlobals();
+
+        const map = headings();
+        const heads = [...map.values()].map(({ Renderer }, index) => <Renderer key={index} />);
+        const { unmount } = render(heads);
+
+        ssr.destroy();
       });
-
-      vi.unstubAllGlobals();
-
-      const map = headings();
-      const heads = [...map.values()].map(({ Renderer }, index) => <Renderer key={index} />);
-      const { unmount } = render(heads);
-
-      ssr.destroy();
     });
   });
 });

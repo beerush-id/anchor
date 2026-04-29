@@ -1,8 +1,5 @@
-import { AsyncScope, AsyncStore, attachContextLookup, getContext, setContext, shortId } from '@anchorlib/core';
+import { AsyncStore, getContext, setContext, shortId } from '@anchorlib/core';
 import type { FC, ReactNode } from 'react';
-
-const renderCtx = new AsyncScope(new AsyncStore());
-attachContextLookup(renderCtx);
 
 /**
  * @deprecated use setContext() at the setup component instead.

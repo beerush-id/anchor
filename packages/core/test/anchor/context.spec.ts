@@ -489,7 +489,7 @@ describe('Anchor - Async Context', () => {
       expect(() => attachContextLookup(renderCtx)).not.toThrow();
       expect(() => attachContextLookup(renderCtx)).not.toThrow();
       expect(getContextLookups().includes(renderCtx)).toBe(true);
-      expect(getContextLookups().length).toBe(1);
+      expect(getContextLookups().length).toBe(2);
     });
 
     it('should handle detaching the same scope', () => {

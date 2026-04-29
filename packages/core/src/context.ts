@@ -35,7 +35,7 @@ export class AsyncStore extends Map<AsyncKey, AsyncValue> {
 /** The root-level store. All {@link withScope} children ultimately chain back to this. */
 const globalStore = new AsyncStore();
 /** A list of all active {@link AsyncScope} instances for context lookups. */
-const contextLookups: AsyncScope<AsyncStore>[] = [];
+const contextLookups: AsyncScope<AsyncStore>[] = [new AsyncScope(new AsyncStore())];
 
 /** The singleton {@link AsyncScope} instance that powers the global scope functions. */
 let globalAsyncCtx = new AsyncScope(globalStore);
@@ -354,3 +354,7 @@ function getAll(list: AsyncStore[] = [], from?: AsyncStore) {
  * for later re-entry via {@link withScope}.
  */
 export const getAllAsyncContext = getAll as () => AsyncStore[];
+
+export function isGlobalScope() {
+  return globalAsyncCtx.getStore() === globalStore;
+}
