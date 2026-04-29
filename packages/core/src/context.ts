@@ -289,7 +289,7 @@ export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
 export function setContext(key: AsyncKey, value: AsyncValue) {
   const lookup = contextLookups[0] as AsyncScope<AsyncStore>;
   if (!lookup) return;
-  return lookup.getStore()!.set(key, value);
+  lookup.getStore()!.set(key, value);
 }
 
 /**
