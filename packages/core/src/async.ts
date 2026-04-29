@@ -1,7 +1,6 @@
 import { AsyncStatus } from './constant.js';
 import { createObserver } from './observation.js';
 import { mutable, writable } from './ref.js';
-import type { Future } from './scope.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from './types.js';
 
 export function query<T extends Linkable, E extends Error = Error>(
@@ -42,7 +41,7 @@ export function query<T extends Linkable, E extends Error = Error>(
 ): Readonly<AsyncState<T, E>> {
   let controller: AbortController | undefined;
   let abortError: E | undefined;
-  let activePromise: Future<T | undefined> | undefined;
+  let activePromise: Promise<T | undefined> | undefined;
 
   const observer = createObserver(() => {
     observer.reset();
@@ -97,7 +96,7 @@ export function query<T extends Linkable, E extends Error = Error>(
       start,
       abort,
       get promise() {
-        return activePromise ?? (Promise.resolve(undefined) as never as Future<T>);
+        return activePromise ?? (Promise.resolve(undefined) as Promise<T | undefined>);
       },
     },
     { immutable: true, recursive: false }

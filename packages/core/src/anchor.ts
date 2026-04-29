@@ -102,7 +102,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     options = schemaOptions as StateOptions<S>;
   }
 
-  const cloned = options?.cloned ?? ANCHOR_SETTINGS.cloned;
+  const cloned = !!(options?.cloned ?? ANCHOR_SETTINGS.cloned);
   const schema = (schemaOptions as LinkableSchema)?._zod
     ? (schemaOptions as S)
     : (schemaOptions as StateOptions<S>)?.schema;

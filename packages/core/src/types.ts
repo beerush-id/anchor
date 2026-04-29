@@ -11,7 +11,6 @@ import type {
 } from './constant.js';
 import type { Linkables } from './enum.js';
 import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
-import type { Future } from './scope.js';
 
 export type Enum<T> = T[keyof T];
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
@@ -48,7 +47,7 @@ export type StateObserver = {
   readonly destroy: () => void;
   readonly reset: () => void;
   readonly run: <R>(fn: () => R) => R;
-  readonly runAsync: <R>(fn: () => Promise<R>) => Future<R>;
+  readonly runAsync: <R>(fn: () => Promise<R>) => Promise<R>;
   name?: string;
 };
 
@@ -71,6 +70,7 @@ export type StateBaseOptions = {
   silentInit?: boolean;
   compare?: (a: unknown, b: unknown) => number;
   safeParse?: boolean;
+  reactive?: boolean;
 };
 export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseOptions & {
   schema?: S;
@@ -969,7 +969,7 @@ export type AsyncStatus = Enum<typeof AsyncStatusType>;
 export type AsyncState<T, E extends Error = Error> = {
   data: T;
   status: AsyncStatus;
-  promise: Future<T | undefined>;
+  promise: Promise<T | undefined>;
   start: (init?: T) => Promise<T | undefined>;
   abort: (error?: E) => void;
   error?: E;

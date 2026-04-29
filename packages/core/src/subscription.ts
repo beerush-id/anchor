@@ -1,6 +1,7 @@
 import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { assign } from './helper.js';
+import { isReactive } from './internal.js';
 import { onCleanup } from './lifecycle.js';
 import { CONTROLLER_REGISTRY } from './registry.js';
 import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from './types.js';
@@ -21,6 +22,20 @@ function subscribeFn<T extends Linkable>(
   handler: StateSubscriber<T>,
   recursive?: boolean
 ): StateUnsubscribe {
+  if (!isReactive()) {
+    try {
+      handler(state, { type: 'init', keys: [] });
+    } catch (error) {
+      captureStack.error.external(
+        'Unable to execute the subscription handler function.',
+        error as Error,
+        subscribeFn,
+        subscribeFn.pipe
+      );
+    }
+
+    return () => {};
+  }
   const ctrl = CONTROLLER_REGISTRY.get(state);
 
   if (typeof ctrl?.subscribe !== 'function') {
@@ -74,6 +89,16 @@ subscribeFn.pipe = ((source, target, transform) => {
     return () => {};
   }
 
+  if (!isReactive()) {
+    if (!isFunction(transform)) {
+      assign(target as ObjLike, source as ObjLike);
+      return () => {};
+    }
+
+    assign(target as ObjLike, transform(source as never));
+    return () => {};
+  }
+
   if (!isFunction(transform)) {
     return subscribeFn(source, (current) => {
       assign(target as ObjLike, current as ObjLike);
@@ -101,13 +126,13 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
   let updatingLeft = false;
   let updatingRight = false;
 
-  const unsubscribeLeft = subscribeFn(left, (current) => {
+  const handleLeft = (current: Linkable) => {
     if (updatingLeft) return;
 
     updatingRight = true;
 
     if (isFunction(transformLeft)) {
-      const result = transformLeft(current);
+      const result = transformLeft(current as never);
 
       if (result) {
         anchor.assign(right, result);
@@ -123,15 +148,14 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
     }
 
     updatingRight = false;
-  });
-
-  const unsubscribeRight = subscribeFn(right, (current) => {
+  };
+  const handleRight = (current: Linkable) => {
     if (updatingRight) return;
 
     updatingLeft = true;
 
     if (isFunction(transformRight)) {
-      const result = transformRight(current);
+      const result = transformRight(current as never);
 
       if (result) {
         anchor.assign(left, result);
@@ -147,7 +171,17 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
     }
 
     updatingLeft = false;
-  });
+  };
+
+  if (!isReactive()) {
+    handleLeft(left as never);
+    handleRight(right as never);
+
+    return () => {};
+  }
+
+  const unsubscribeLeft = subscribeFn(left, handleLeft);
+  const unsubscribeRight = subscribeFn(right, handleRight);
 
   const unsubscribeAll = () => {
     unsubscribeLeft();

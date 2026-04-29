@@ -41,7 +41,8 @@ export const ANCHOR_SETTINGS = {
   safeObservationThreshold: 100,
   closureWarning: false,
   safeParse: false,
-} satisfies AnchorSettings;
+  reactive: true,
+} as AnchorSettings;
 
 export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);
 export const ARRAY_MUTATION_KEYS = new Set(ARRAY_MUTATIONS);

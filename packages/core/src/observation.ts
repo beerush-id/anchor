@@ -2,6 +2,7 @@ import { ANCHOR_SETTINGS } from './constant.js';
 import { asyncStoreContract, getScope, setScope, storeContract } from './context.js';
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
+import { isReactive } from './internal.js';
 import { onCleanup } from './lifecycle.js';
 import { META_REGISTRY } from './registry.js';
 import type {
@@ -33,6 +34,11 @@ const OBSERVER_SYMBOL = Symbol('state-observer');
  *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
  */
 function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe {
+  if (!isReactive()) {
+    fn({ type: 'init', keys: [] });
+    return () => {};
+  }
+
   let cleanup: StateUnsubscribe | undefined;
 
   const observer = createObserver((event) => {
@@ -73,6 +79,15 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
  * @returns {StateUnsubscribe}
  */
 function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): StateUnsubscribe {
+  const handleError = (error: Error) => {
+    captureStack.error.external('Unhandled effect exception', error, handleError, observer.run, runEffect, effect);
+  };
+
+  if (!isReactive()) {
+    fn({ type: 'init', keys: [] }).catch(handleError);
+    return () => {};
+  }
+
   let cleanup: StateUnsubscribe | undefined;
 
   const observer = createObserver((event) => {
@@ -100,9 +115,6 @@ function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): Stat
   const runCleanup = () => {
     cleanup?.();
     observer.destroy();
-  };
-  const handleError = (error: Error) => {
-    captureStack.error.external('Unhandled effect exception', error, handleError, observer.run, runEffect, effect);
   };
 
   onCleanup(runCleanup);
@@ -173,11 +185,32 @@ export function createObserver(
   onTrack?: (state: Linkable, key: KeyLike) => void,
   controlled?: boolean
 ): StateObserver {
+  const states = new WeakMap();
+
+  if (!isReactive()) {
+    return {
+      id: shortId(),
+      states,
+      onChange() {},
+      destroy() {},
+      reset() {},
+      assign() {
+        return () => {};
+      },
+      run(fn: () => unknown) {
+        return fn();
+      },
+      runAsync(fn: () => unknown) {
+        return fn();
+      },
+      track() {},
+    } as never as StateObserver;
+  }
+
   let observedSize = 0;
   let isObserving = false;
   let isDestroyed = false;
 
-  const states = new WeakMap();
   const cleaners = new Set<() => void>();
   const resetters = new Set<() => void>();
 
@@ -361,6 +394,8 @@ const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function setTracker(tracker: StatePublicTracker) {
+  if (!isReactive()) return;
+
   const currentTracker = getScope<StatePublicTracker>(TRACKER_SYMBOL);
   const currentTrackerRestore = getScope<() => void>(TRACKER_RESTORE_SYMBOL);
 

@@ -79,7 +79,7 @@ export function getContextLookups(): AsyncScope<AsyncStore>[] {
  * and executes a function.
  */
 export type StoreContract = <T>(fn: () => T) => T;
-export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Future<T>;
+export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Promise<T>;
 
 /**
  * Creates an async contract that temporarily sets the value of a given key in the async context.
@@ -88,7 +88,6 @@ export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Future<T>;
  * @param value - The value to set in the async context.
  * @param onstart - Optional callback that fires before the contract is entered.
  * @param onfinally - Optional callback that fires after the contract is exited.
- * @param runner
  * @returns AsyncStoreContract
  */
 export function asyncStoreContract<T>(
@@ -97,13 +96,13 @@ export function asyncStoreContract<T>(
   onstart?: () => void,
   onfinally?: () => void
 ): AsyncStoreContract {
-  return function asyncContract<R>(fn: () => Promise<R>): Future<R> {
+  return async function asyncContract<R>(fn: () => Promise<R>): Promise<R> {
     onstart?.();
 
     const store = new AsyncStore([[key, value]], getAsyncStore());
 
     try {
-      return globalAsyncCtx.run(store, fn) as never;
+      return await globalAsyncCtx.run<R>(store, fn);
     } finally {
       onfinally?.();
     }

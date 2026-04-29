@@ -1,6 +1,6 @@
-import type { Linkable } from './types.js';
+import { ANCHOR_SETTINGS, LINKABLE } from './constant.js';
 import type { Linkables } from './enum.js';
-import { LINKABLE } from './constant.js';
+import type { Linkable } from './types.js';
 import { typeOf } from './utils/index.js';
 
 /**
@@ -14,4 +14,12 @@ import { typeOf } from './utils/index.js';
  */
 export function linkable(value: unknown): value is Linkable {
   return LINKABLE.has(typeOf(value) as Linkables);
+}
+
+export function isReactive() {
+  return ANCHOR_SETTINGS.reactive;
+}
+
+export function setReactive(reactive: boolean) {
+  ANCHOR_SETTINGS.reactive = reactive;
 }

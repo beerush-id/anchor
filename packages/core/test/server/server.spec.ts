@@ -63,7 +63,7 @@ describe('Anchor - Server binding', () => {
 
     effect.async(() => handler());
 
-    await Promise.resolve();
+    await sleep(0);
 
     expect(errorSpy).toHaveBeenCalled();
   });

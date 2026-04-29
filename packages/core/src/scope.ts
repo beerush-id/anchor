@@ -95,9 +95,18 @@ export class AsyncScope<T> {
   /**
    * Executes `fn` with the given `store` as the active store for this scope.
    *
-   * For synchronous callbacks, the store is set before `fn` runs and restored
-   * after it returns. For async callbacks, the returned {@link Future} thenable
-   * ensures the store is restored when the async chain completes.
+   * Nested calls to `run` on the same or different scopes are supported.
+   * Each `run` creates its own checkpoint and runner, and cleanup is handled
+   * via the restore closure in `finally`.
+   *
+   * @param store - The store value to activate for the duration of `fn`.
+   * @param fn - The callback to execute within this scope.
+   * @param queues - An optional set of queues to add this Future to.
+   * @returns The return value of `fn`, or a {@link Future} thenable if `fn` returns a Promise.
+   */
+  public run<R>(store: T, fn: () => R, queues?: Set<Future<unknown>>): R;
+  /**
+   * Executes asynchronous `fn` with the given `store` as the active store for this scope.
    *
    * Nested calls to `run` on the same or different scopes are supported.
    * Each `run` creates its own checkpoint and runner, and cleanup is handled
@@ -105,10 +114,11 @@ export class AsyncScope<T> {
    *
    * @param store - The store value to activate for the duration of `fn`.
    * @param fn - The callback to execute within this scope.
-   * @param queues
+   * @param queues - An optional set of queues to add this Future to.
    * @returns The return value of `fn`, or a {@link Future} thenable if `fn` returns a Promise.
    */
-  public run<R>(store: T, fn: () => R, queues?: Set<Future<unknown>>) {
+  public run<R>(store: T, fn: () => Promise<R>, queues?: Set<Future<unknown>>): Future<R>;
+  public run<R>(store: T, fn: () => R | Promise<R>, queues?: Set<Future<unknown>>) {
     const restorePoint: AsyncCheckpoint | undefined = globalCheckpoint;
     const checkpoint: AsyncCheckpoint = {
       scope: this,
