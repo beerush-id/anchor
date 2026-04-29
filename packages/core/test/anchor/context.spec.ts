@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  AsyncScope,
   AsyncStore,
   attachContextLookup,
-  awaited,
   detachContextLookup,
   getAllAsyncContext,
   getAsyncStore,
@@ -15,7 +13,8 @@ import {
   setScope,
   withIsolation,
   withScope,
-} from '../../src/context.js'; // No warning [check]
+} from '../../src/context.js';
+import { AsyncScope, awaited } from '../../src/scope.js';
 
 describe('Anchor - Async Context', () => {
   describe('AsyncStore', () => {
@@ -53,85 +52,6 @@ describe('Anchor - Async Context', () => {
       const child = new AsyncStore([['key', 'childVal']], parent);
 
       expect(child.get('key')).toBe('childVal');
-    });
-  });
-
-  describe('AsyncContext (Sync Operations)', () => {
-    beforeEach(() => {});
-
-    it('should inject context synchronously during run', () => {
-      const ctx = new AsyncScope('default');
-
-      const result = ctx.run('injected', () => {
-        expect(ctx.getStore()).toBe('injected');
-        return 'success';
-      });
-
-      expect(result).toBe('success');
-      expect(ctx.getStore()).toBe('default');
-    });
-
-    it('should restore context even if sync function throws', () => {
-      const ctx = new AsyncScope('default');
-
-      expect(() => {
-        ctx.run('injected', () => {
-          expect(ctx.getStore()).toBe('injected');
-          throw new Error('Sync Error');
-        });
-      }).toThrow('Sync Error');
-
-      expect(ctx.getStore()).toBe('default');
-    });
-  });
-
-  describe('AsyncContext & Awaited (Async Propagation Constraints)', () => {
-    beforeEach(() => {});
-
-    it('MUST lose context on detached (native) await', async () => {
-      const ctx = new AsyncScope('default');
-
-      const promise = ctx.run('injected', async () => {
-        expect(ctx.getStore()).toBe('injected'); // Sync phase holds context
-
-        await Promise.resolve(); // V8 yields here. ctx.run's finally block executes.
-
-        // Resuming the microtask... Context is now what it was outside ctx.run!
-        expect(ctx.getStore()).toBe('default');
-        return 'done';
-      });
-
-      const result = await promise;
-      expect(result).toBe('done');
-    });
-
-    it('MUST maintain context when the async yield is explicitly wrapped with awaited()', async () => {
-      const ctx = new AsyncScope('default');
-
-      const result = await ctx.run('injected', async () => {
-        expect(ctx.getStore()).toBe('injected');
-
-        await ctx.awaited(() => Promise.resolve());
-
-        expect(ctx.getStore()).toBe('injected');
-        return 'done';
-      });
-
-      expect(result).toBe('done');
-      expect(ctx.getStore()).toBe('default');
-    });
-
-    it('MUST lose context when chaining on native Promise, but maintain it when explicitly wrapped with awaited', async () => {
-      const ctx = new AsyncScope('default');
-
-      // 1. Native Promise Chain Loses Context
-      await ctx.run('injected', async () => {
-        expect(ctx.getStore()).toBe('injected');
-        await Promise.resolve();
-        expect(ctx.getStore()).toBe('default'); // Context is lost!
-      });
-
-      expect(ctx.getStore()).toBe('default');
     });
   });
 
@@ -261,7 +181,7 @@ describe('Anchor - Async Context', () => {
     it('should throw if a floating promises detected in an strict isolated context', async () => {
       vi.useFakeTimers();
 
-      await expect(() => {
+      await expect(async () => {
         return withIsolation(async () => {
           awaited(() => new Promise((resolve) => setTimeout(resolve, 10)));
         });
@@ -345,23 +265,20 @@ describe('Anchor - Async Context', () => {
 
     it('should handle complex nested hierarchies with interleaved concurrency', async () => {
       vi.useFakeTimers();
+
       await withScope(async () => {
         setScope('layer', 'root');
 
-        const p1 = awaited(async () => {
-          return withScope(async () => {
-            setScope('layer', 'branch_1');
-            await awaited(() => new Promise((r) => setTimeout(r, 10)));
-            expect(getScope('layer')).toBe('branch_1');
-          });
+        const p1 = withScope(async () => {
+          setScope('layer', 'branch_1');
+          await awaited(() => new Promise((r) => setTimeout(r, 10)));
+          expect(getScope('layer')).toBe('branch_1');
         });
 
-        const p2 = awaited(async () => {
-          return withScope(async () => {
-            setScope('layer', 'branch_2');
-            await awaited(() => new Promise((r) => setTimeout(r, 5)));
-            expect(getScope('layer')).toBe('branch_2');
-          });
+        const p2 = withScope(async () => {
+          setScope('layer', 'branch_2');
+          await awaited(() => new Promise((r) => setTimeout(r, 5)));
+          expect(getScope('layer')).toBe('branch_2');
         });
 
         expect(getScope('layer')).toBe('root');
@@ -370,10 +287,11 @@ describe('Anchor - Async Context', () => {
         await vi.advanceTimersByTimeAsync(5); // p2 finishes
         await vi.advanceTimersByTimeAsync(5); // p1 finishes
 
-        await Promise.all([p1, p2]);
+        await awaited(() => Promise.all([p1, p2]));
 
         expect(getScope('layer')).toBe('root');
       });
+
       vi.useRealTimers();
     });
 

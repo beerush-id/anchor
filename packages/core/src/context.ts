@@ -1,6 +1,6 @@
 import { captureStack } from './exception.js';
-
-const FLOATING_PROMISES_LIST_KEY = Symbol('anchor-isolated-list');
+import { AsyncScope, Future } from './scope.js';
+import { GLOBAL_ASYNC_SCOPE } from './server/constant.js';
 
 /** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
@@ -15,13 +15,6 @@ export type AsyncValue = any;
  * Each store optionally links to a `parent`, creating a prototype-chain-like lookup.
  * When a key is not found in the current store, the lookup automatically walks
  * up the parent chain until a value is found or the root is reached.
- *
- * @example
- * ```ts
- * const root = new AsyncStore([['theme', 'dark']]);
- * const child = new AsyncStore(root);
- * child.get('theme'); // 'dark' — inherited from parent
- * ```
  */
 export class AsyncStore extends Map<AsyncKey, AsyncValue> {
   /** The parent store to fall back to during {@link get} lookups. */
@@ -45,185 +38,24 @@ export class AsyncStore extends Map<AsyncKey, AsyncValue> {
   }
 }
 
-/**
- * A Thenable wrapper that intercepts `.then()`, `.catch()`, and `.finally()` to bracket
- * each continuation with deterministic context entry and exit.
- *
- * **Context Entry:** Before executing a user callback, `fork()` saves the current event-loop
- * context and writes `this.current` into `this.context.store`, re-entering the correct scope.
- *
- * **Context Exit:** After the callback returns (or throws), the `finally` block restores
- * the event-loop context to exactly what it was before entry, preventing cross-microtask leaks.
- *
- * **Isolation Guard:** If the store belongs to a destroyed {@link withIsolation}, the
- * `fork()` handler fires a violation warning before executing the callback.
- *
- * Because `Awaited` implements the Thenable protocol, V8's native `await` automatically
- * calls `.then()` with its internal resume function, seamlessly integrating with `async/await`.
- *
- * @internal This class is not exported. Instances are created by {@link AsyncScope.awaited}.
- */
-class Awaited<T> {
-  /**
-   * @param promise  - The underlying native Promise to wrap.
-   * @param provide - A setter function that accepts a new store reference.
-   * @param current  - The exact store reference to restore before each continuation.
-   * @param restore - A function that restores the previous event-loop context.
-   */
-  constructor(
-    private promise: Promise<T>,
-    private provide: (value: unknown) => void,
-    private current: unknown,
-    private restore: () => void
-  ) {}
-
-  /**
-   * Wraps a user-provided callback with context entry/exit bracketing.
-   *
-   * Returns `undefined` if no callback is provided, which causes the native Promise
-   * to transparently forward the resolved value without executing any user code.
-   *
-   * @param fn - The user callback (e.g. `onfulfilled` or `onrejected`).
-   * @returns A wrapped handler, or `undefined` if `fn` is not provided.
-   */
-  private fork(fn?: (arg: unknown) => unknown) {
-    if (!fn) return;
-
-    return (arg: unknown) => {
-      this.provide(this.current);
-
-      try {
-        return fn(arg);
-      } finally {
-        this.restore();
-      }
-    };
-  }
-
-  /**
-   * Thenable implementation that wraps both fulfillment and rejection handlers
-   * with context bracketing via {@link fork}.
-   *
-   * Returns a new `Awaited` instance, propagating the same `current` store and
-   * `isolated` flag through the entire chain.
-   *
-   * @param onresolved - Optional fulfillment handler.
-   * @param onrejected  - Optional rejection handler.
-   * @returns A new `Awaited` wrapping the chained Promise.
-   */
-  // biome-ignore lint/suspicious/noThenProperty: Expect thenable.
-  public then<T>(onresolved?: (value: T) => T, onrejected?: (reason: unknown) => void): void {
-    this.promise.then(this.fork(onresolved as never), this.fork(onrejected));
-  }
-}
-
-/**
- * A synchronous, single-slot context container.
- *
- * Holds a mutable `store` reference that represents the "current" context for the
- * active synchronous execution frame. Context switching is performed by temporarily
- * overwriting `store`, executing a function, and restoring the previous value in a
- * `finally` block.
- *
- * When the executed function returns a Promise, the synchronous `finally` block
- * immediately restores the parent context (so the event loop is never polluted),
- * and an {@link Awaited} wrapper is returned to re-enter the correct scope
- * before each async continuation.
- *
- * @template T - The type of value stored (typically {@link AsyncStore}).
- */
-export class AsyncScope<T> {
-  /** The currently active store for this context. Mutated during {@link run} and {@link awaited}. */
-  public store?: T;
-
-  /**
-   * @param init - Optional initial store value (e.g. the global root {@link AsyncStore}).
-   */
-  constructor(init?: T) {
-    this.store = init;
-  }
-
-  /**
-   * Executes `fn` with `store` as the active context, restoring the previous
-   * context when `fn` completes (synchronously or asynchronously).
-   *
-   * @param store - The store to activate for the duration of `fn`.
-   * @param fn    - The function to execute within the context.
-   * @returns The return value of `fn`, or an {@link Awaited} if `fn` returns a Promise.
-   */
-  public run<R>(store: T, fn: () => R) {
-    return this.awaited(fn, store);
-  }
-
-  /**
-   * Core context-switching primitive. Executes `fn` and ensures the context is
-   * deterministically restored regardless of sync return, async resolution, or exception.
-   *
-   * **Sync path:** `fn` runs, the result is returned, and `restore()` fires in the
-   * `finally` block.
-   *
-   * **Async path:** `fn` returns a Promise. The `finally` block immediately restores
-   * the parent context (keeping the event loop clean). A `.finally(restore)` callback
-   * is attached to the inner Promise for native lifecycle cleanup. An {@link Awaited}
-   * wrapper is returned, capturing `this.store` as `current` so that every chained
-   * continuation re-enters the correct scope.
-   *
-   * @param fn    - The function to execute.
-   * @param store - Optional store to activate before executing `fn`.
-   * @returns The return value of `fn`, or an {@link Awaited} Thenable if `fn` returns a Promise.
-   */
-  public awaited<R>(fn: () => R, store?: T): R extends Promise<infer F> ? PromiseLike<F> : R {
-    const current = this.store;
-    const restore = () => {
-      this.store = current;
-    };
-
-    if (store) {
-      this.store = store;
-    }
-
-    try {
-      const result = fn();
-
-      if (result instanceof Promise) {
-        const isolate = this.store instanceof Map ? this.store.get(FLOATING_PROMISES_LIST_KEY) : undefined;
-        const cleanup = () => {
-          isolate?.delete(promise);
-          restore();
-        };
-
-        const promise = new Awaited<R>(
-          result as Promise<R>,
-          (value) => (this.store = value as T),
-          this.store as AsyncStore,
-          cleanup
-        );
-
-        isolate?.add(promise);
-        return promise as never;
-      }
-
-      return result as never;
-    } finally {
-      restore();
-    }
-  }
-
-  /**
-   * Returns the currently active store.
-   * @returns {T|undefined} The currently active store, or "undefined" if no active store.
-   */
-  public getStore(): T | undefined {
-    return this.store;
-  }
-}
-
 /** The root-level store. All {@link withScope} children ultimately chain back to this. */
 const globalStore = new AsyncStore();
-/** The singleton {@link AsyncScope} instance that powers the global scope functions. */
-const globalAsyncCtx = new AsyncScope(globalStore);
 /** A list of all active {@link AsyncScope} instances for context lookups. */
 const contextLookups: AsyncScope<AsyncStore>[] = [];
+
+/** The singleton {@link AsyncScope} instance that powers the global scope functions. */
+let globalAsyncCtx = new AsyncScope(globalStore);
+
+// biome-ignore lint/suspicious/noExplicitAny: Expected.
+if (typeof (globalThis as any) !== 'undefined') {
+  // biome-ignore lint/suspicious/noExplicitAny: Expected.
+  const asyncLocalStorage = (globalThis as any)[GLOBAL_ASYNC_SCOPE];
+
+  if (asyncLocalStorage) {
+    asyncLocalStorage.store = globalStore;
+    globalAsyncCtx = asyncLocalStorage;
+  }
+}
 
 /**
  * Attaches an AsyncContext to the global context lookup list.
@@ -277,7 +109,7 @@ export function storeContract<T>(
   onfinally?: () => void,
   runner?: (fn: () => unknown) => unknown
 ): StoreContract {
-  return function asyncContract<R>(fn: () => R): R {
+  return function asyncContract<R>(fn: () => R): R | Future<R> {
     onstart?.();
 
     const current = getScope(key);
@@ -287,12 +119,7 @@ export function storeContract<T>(
       const result = typeof runner === 'function' ? runner(fn) : fn();
 
       if (result instanceof Promise) {
-        return new Awaited(
-          result,
-          (next) => setScope(key, next),
-          value,
-          () => setScope(key, current)
-        ) as never as R;
+        return new Future(result);
       }
 
       return result as R;
@@ -313,33 +140,19 @@ export function storeContract<T>(
  * @param fn    - The function to execute within the child context.
  * @param store - Optional pre-built {@link AsyncStore} to use instead of creating a new one.
  *                Useful for re-entering a previously captured store (e.g. in event callbacks).
- * @returns The return value of `fn`, or an {@link Awaited} Thenable if `fn` is async.
- *
- * @example
- * ```ts
- * await inContext(async () => {
- *   setAsyncContext('user', 'alice');
- *   await awaited(() => fetch('/api'));
- *   getAsyncContext('user'); // 'alice'
- * });
- * ```
+ * @returns The return value of `fn`, or an {@link Future} Thenable if `fn` is async.
  */
 export function withScope<R>(fn: () => R, store?: AsyncStore) {
   const parent = globalAsyncCtx.getStore()!;
   const childStore = store ?? new AsyncStore(parent);
-
-  const isolations = parent.get(FLOATING_PROMISES_LIST_KEY);
-
-  if (isolations) childStore.set(FLOATING_PROMISES_LIST_KEY, isolations);
-
-  return globalAsyncCtx.awaited(fn, childStore);
+  return globalAsyncCtx.run(childStore, fn);
 }
 
 /**
  * Creates a fully isolated context boundary with lifecycle-aware destruction tracking.
  *
  * When `fn` completes (or the returned Promise settles), the `destroyed` flag is set
- * to `true`. Any floating {@link Awaited} promise that later attempts to execute a
+ * to `true`. Any floating {@link Future} promise that later attempts to execute a
  * continuation inside this boundary will trigger a violation warning via
  * {@link captureStack}, alerting the developer to a memory-unsafe hanging promise.
  *
@@ -350,30 +163,18 @@ export function withScope<R>(fn: () => R, store?: AsyncStore) {
  * @param fn - The function to execute within the isolated boundary.
  * @param strict - Whether to enable strict mode for this boundary.
  * @returns The resolved return value of `fn`.
- *
- * @example
- * ```ts
- * // SSR request handler
- * await isolatedContext(async () => {
- *   setAsyncContext('requestId', req.id);
- *   const html = await awaited(() => renderApp());
- *   return html;
- * });
- * // After this point, any floating promise from renderApp()
- * // that tries to access context will trigger a violation.
- * ```
  */
 export async function withIsolation<R>(fn: () => R, strict = true) {
   const parent = globalAsyncCtx.getStore()!;
 
-  const floatingLists = new Set<Awaited<unknown>>();
-  const isolatedStore = new AsyncStore([[FLOATING_PROMISES_LIST_KEY, floatingLists]], parent);
+  const floatingLists = new Set<Future<unknown>>();
+  const isolatedStore = new AsyncStore(parent);
 
   try {
-    const result = await (globalAsyncCtx.awaited(fn, isolatedStore) as Promise<R>);
+    const result = await (globalAsyncCtx.run(isolatedStore, fn, floatingLists) as Promise<R>);
 
     if (floatingLists.size) {
-      const error = new Error('Floating Awaited Promise!');
+      const error = new Error('Floating promise detected!');
       captureStack.violation.general(
         'Floating promise detected!',
         `${floatingLists.size} promises hanging in a detached isolated Async Context.`,
@@ -396,31 +197,6 @@ export async function withIsolation<R>(fn: () => R, strict = true) {
   } finally {
     floatingLists.clear();
   }
-}
-
-/**
- * Wraps a function that may return a Promise, ensuring the currently active
- * context is preserved across `await` boundaries.
- *
- * This is the primary user-facing API for async context safety. Any async
- * operation that crosses a microtask boundary **must** be wrapped with `awaited()`
- * to prevent context loss.
- *
- * @param fn - A function that returns a value or a Promise.
- * @returns The return value of `fn`, or an {@link Awaited} Thenable if `fn` returns a Promise.
- *
- * @example
- * ```ts
- * await inContext(async () => {
- *   setAsyncContext('key', 'value');
- *   // Without awaited(), context would be lost after the await:
- *   await awaited(() => fetch('/api'));
- *   getAsyncContext('key'); // 'value' — safely preserved
- * });
- * ```
- */
-export function awaited<R>(fn: () => R) {
-  return globalAsyncCtx.awaited<R>(fn);
 }
 
 /**

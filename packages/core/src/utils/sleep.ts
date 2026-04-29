@@ -1,4 +1,4 @@
-import { awaited } from '../context.js';
+import { awaited } from '../scope.js';
 
 /**
  * Creates a promise that resolves after a specified delay.

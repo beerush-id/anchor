@@ -26,6 +26,7 @@ export * from './internal.js';
 export { createLifecycle, onCleanup, onGlobalCleanup, setCleanUpHandler } from './lifecycle.js';
 export * from './observation.js';
 export * from './ref.js';
+export * from './scope.js';
 export * from './stack.js';
 export * from './subscription.js';
 export * from './types.js';
