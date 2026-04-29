@@ -1,4 +1,4 @@
-import { getScope, storeContract } from './context.js';
+import { asyncStoreContract, getScope, storeContract } from './context.js';
 import { captureStack } from './exception.js';
 
 const DEFAULT_CLEANUP_HANDLER = (_handler: () => void) => {};
@@ -74,6 +74,15 @@ export function createLifecycle() {
 
     cleanupHandlers.add(handler);
   });
+  const asyncRunner = asyncStoreContract(CLEANUP_SYMBOL, (handler: () => void) => {
+    if (typeof handler !== 'function') {
+      const error = new Error('Invalid cleanup handler');
+      captureStack.error.argument('Cleanup handler must be a function', error, asyncRunner);
+      return;
+    }
+
+    cleanupHandlers.add(handler);
+  });
 
   return {
     /**
@@ -86,7 +95,7 @@ export function createLifecycle() {
      * @param fn - The function to execute
      * @returns The result of the executed function
      */
-    run: runner as <R>(fn: () => R) => R,
+    run: runner,
 
     /**
      * Runs an async function while collecting cleanup handlers.
@@ -98,7 +107,7 @@ export function createLifecycle() {
      * @param fn - The async function to execute
      * @returns A Promise resolving to the result of the executed function
      */
-    runAsync: runner as <R>(fn: () => Promise<R>) => Promise<R>,
+    runAsync: asyncRunner,
 
     /**
      * Executes all collected cleanup handlers and clears the collection.

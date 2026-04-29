@@ -11,6 +11,7 @@ import type {
 } from './constant.js';
 import type { Linkables } from './enum.js';
 import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
+import type { Future } from './scope.js';
 
 export type Enum<T> = T[keyof T];
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
@@ -47,6 +48,7 @@ export type StateObserver = {
   readonly destroy: () => void;
   readonly reset: () => void;
   readonly run: <R>(fn: () => R) => R;
+  readonly runAsync: <R>(fn: () => Promise<R>) => Future<R>;
   name?: string;
 };
 
@@ -967,7 +969,7 @@ export type AsyncStatus = Enum<typeof AsyncStatusType>;
 export type AsyncState<T, E extends Error = Error> = {
   data: T;
   status: AsyncStatus;
-  promise: Promise<T | undefined>;
+  promise: Future<T | undefined>;
   start: (init?: T) => Promise<T | undefined>;
   abort: (error?: E) => void;
   error?: E;
@@ -997,10 +999,35 @@ export type RefStack = {
 export type ValueRef<T> = MutableRef<T> | ImmutableRef<T> | DerivedRef<T>;
 
 export type EffectHandler<T> = (event: StateChange) => StateUnsubscribe | T;
+export type AsyncEffectHandler<T> = (event: StateChange) => Promise<StateUnsubscribe | T>;
+
+/**
+ * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.
+ * The effect function will be executed immediately and then again whenever any tracked state changes.
+ *
+ * @param fn - The effect function to execute. It receives a StateChange event object containing
+ *                 information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+ * @param displayName - Optional effect name for debugging.
+ * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
+ *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
+ */
 export interface Effect {
   <T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe;
 
+  /**
+   * A client-side only version of the effect function.
+   * This effect will only run in browser environments and will be skipped in server-side environments.
+   * Useful for effects that rely on browser-specific APIs or DOM manipulation.
+   *
+   * @param fn - The effect function to execute. It receives a StateChange event object containing
+   *                 information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+   * @param displayName - Optional effect name for debugging.
+   * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
+   *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
+   */
   client<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe;
+
+  async<T>(fn: AsyncEffectHandler<T>, displayName?: string): StateUnsubscribe;
 }
 
 /**

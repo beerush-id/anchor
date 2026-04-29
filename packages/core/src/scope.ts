@@ -1,3 +1,12 @@
+import { hasASL } from './server/constant.js';
+
+/** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
+// biome-ignore lint/suspicious/noExplicitAny: Expected.
+export type AsyncKey = any;
+/** Value type for {@link AsyncStore} entries. */
+// biome-ignore lint/suspicious/noExplicitAny: Expected.
+export type AsyncValue = any;
+
 /**
  * An active execution context within an {@link AsyncScope}.
  *
@@ -9,7 +18,7 @@
  */
 export type AsyncRunner<T> = {
   store: T;
-  queues?: Set<Future<unknown>>;
+  queues?: Set<Future<AsyncValue>>;
   restorePoint?: AsyncCheckpoint;
 };
 
@@ -301,6 +310,8 @@ export class Future<T> {
 export function awaited<T>(promise: Promise<T>): Future<T>;
 export function awaited<T>(fn: () => Promise<T> | T): Future<T>;
 export function awaited<T>(promise: Promise<T> | (() => T | Promise<T>)): Future<T> {
+  if (hasASL()) return (typeof promise === 'function' ? promise() : promise) as Future<T>;
+
   const future = new Future<T>();
 
   let result: T | Promise<T> = promise as T;
@@ -346,7 +357,7 @@ function resolveCall(runner: Future<unknown>) {
  * If the checkpoint is `undefined`, clears the global state.
  * @internal
  */
-function restoreCheckpoint(checkpoint?: AsyncCheckpoint) {
+export function restoreCheckpoint(checkpoint?: AsyncCheckpoint) {
   globalCheckpoint = checkpoint;
   if (!globalCheckpoint) return;
 

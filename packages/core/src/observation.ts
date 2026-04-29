@@ -1,10 +1,11 @@
 import { ANCHOR_SETTINGS } from './constant.js';
-import { getScope, setScope, storeContract } from './context.js';
+import { asyncStoreContract, getScope, setScope, storeContract } from './context.js';
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
 import { onCleanup } from './lifecycle.js';
 import { META_REGISTRY } from './registry.js';
 import type {
+  AsyncEffectHandler,
   Effect,
   EffectHandler,
   KeyLike,
@@ -38,13 +39,53 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
     cleanup?.();
     observer.reset();
 
+    runEffect(event);
+  });
+  observer.name = `Effect(${displayName ?? 'Anonymous'})`;
+
+  const runEffect = (event: StateChange) => {
+    const cleanupFn = observer.run(() => fn(event));
+
+    if (typeof cleanupFn === 'function') {
+      cleanup = cleanupFn as StateUnsubscribe;
+    } else {
+      cleanup = undefined;
+    }
+  };
+  const runCleanup = () => {
+    cleanup?.();
+    observer.destroy();
+  };
+
+  onCleanup(runCleanup);
+
+  runEffect({ type: 'init', keys: [] });
+
+  return runCleanup;
+}
+
+/**
+ * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.
+ * The effect function will be executed immediately and then again whenever any tracked state changes.
+ *
+ * @param {AsyncEffectHandler<T>} fn
+ * @param {string} displayName
+ * @returns {StateUnsubscribe}
+ */
+function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): StateUnsubscribe {
+  let cleanup: StateUnsubscribe | undefined;
+
+  const observer = createObserver((event) => {
+    cleanup?.();
+    observer.reset();
+
     runEffect(event).catch(handleError);
   });
   observer.name = `Effect(${displayName ?? 'Anonymous'})`;
 
   const runEffect = async (event: StateChange) => {
     try {
-      const cleanupFn = await observer.run(() => fn(event));
+      const cleanupFn = await observer.runAsync(() => fn(event));
 
       if (typeof cleanupFn === 'function') {
         cleanup = cleanupFn as StateUnsubscribe;
@@ -70,6 +111,8 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
 
   return runCleanup;
 }
+
+effectFn.async = asyncEffectFn as Effect['async'];
 
 /**
  * A client-side only version of the effect function.
@@ -268,12 +311,26 @@ export function createObserver(
     get run() {
       return runner;
     },
+    get runAsync() {
+      return asyncRunner;
+    },
     get track() {
       return track;
     },
   } as StateObserver;
 
   const runner = storeContract(
+    OBSERVER_SYMBOL,
+    observer,
+    () => {
+      isObserving = true;
+      isDestroyed = false;
+    },
+    () => {
+      isObserving = false;
+    }
+  );
+  const asyncRunner = asyncStoreContract(
     OBSERVER_SYMBOL,
     observer,
     () => {

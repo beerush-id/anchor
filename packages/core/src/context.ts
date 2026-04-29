@@ -1,13 +1,6 @@
 import { captureStack } from './exception.js';
-import { AsyncScope, Future } from './scope.js';
-import { GLOBAL_ASYNC_SCOPE } from './server/constant.js';
-
-/** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
-// biome-ignore lint/suspicious/noExplicitAny: Expected.
-export type AsyncKey = any;
-/** Value type for {@link AsyncStore} entries. */
-// biome-ignore lint/suspicious/noExplicitAny: Expected.
-export type AsyncValue = any;
+import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
+import { GLOBAL_ASYNC_SCOPE, GLOBAL_THIS, hasASL } from './server/constant.js';
 
 /**
  * A hierarchical key-value store that forms the backbone of Anchor's async context system.
@@ -46,15 +39,10 @@ const contextLookups: AsyncScope<AsyncStore>[] = [];
 /** The singleton {@link AsyncScope} instance that powers the global scope functions. */
 let globalAsyncCtx = new AsyncScope(globalStore);
 
-// biome-ignore lint/suspicious/noExplicitAny: Expected.
-if (typeof (globalThis as any) !== 'undefined') {
-  // biome-ignore lint/suspicious/noExplicitAny: Expected.
-  const asyncLocalStorage = (globalThis as any)[GLOBAL_ASYNC_SCOPE];
-
-  if (asyncLocalStorage) {
-    asyncLocalStorage.store = globalStore;
-    globalAsyncCtx = asyncLocalStorage;
-  }
+if (hasASL()) {
+  const asl = GLOBAL_THIS[GLOBAL_ASYNC_SCOPE];
+  asl.store = globalStore;
+  globalAsyncCtx = asl;
 }
 
 /**
@@ -90,10 +78,40 @@ export function getContextLookups(): AsyncScope<AsyncStore>[] {
  * An async contract is a function that temporarily sets a value in the async context,
  * and executes a function.
  */
-export type StoreContract = <T>(fn: () => T) => T extends Promise<infer R> ? PromiseLike<R> : T;
+export type StoreContract = <T>(fn: () => T) => T;
+export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Future<T>;
 
 /**
  * Creates an async contract that temporarily sets the value of a given key in the async context.
+ *
+ * @param {AsyncKey} key - The key to set in the async context.
+ * @param value - The value to set in the async context.
+ * @param onstart - Optional callback that fires before the contract is entered.
+ * @param onfinally - Optional callback that fires after the contract is exited.
+ * @param runner
+ * @returns AsyncStoreContract
+ */
+export function asyncStoreContract<T>(
+  key: AsyncKey,
+  value: T,
+  onstart?: () => void,
+  onfinally?: () => void
+): AsyncStoreContract {
+  return function asyncContract<R>(fn: () => Promise<R>): Future<R> {
+    onstart?.();
+
+    const store = new AsyncStore([[key, value]], getAsyncStore());
+
+    try {
+      return globalAsyncCtx.run(store, fn) as never;
+    } finally {
+      onfinally?.();
+    }
+  } as AsyncStoreContract;
+}
+
+/**
+ * Creates a contract that temporarily sets the value of a given key in the async context.
  *
  * @param {AsyncKey} key - The key to set in the async context.
  * @param value - The value to set in the async context.
@@ -107,27 +125,21 @@ export function storeContract<T>(
   value: T,
   onstart?: () => void,
   onfinally?: () => void,
-  runner?: (fn: () => unknown) => unknown
+  runner?: <R>(fn: () => R) => R | undefined
 ): StoreContract {
-  return function asyncContract<R>(fn: () => R): R | Future<R> {
+  return function contract<R>(fn: () => R): R {
     onstart?.();
 
     const current = getScope(key);
     setScope(key, value);
 
     try {
-      const result = typeof runner === 'function' ? runner(fn) : fn();
-
-      if (result instanceof Promise) {
-        return new Future(result);
-      }
-
-      return result as R;
+      return typeof runner === 'function' ? (runner(fn) as R) : fn();
     } finally {
       setScope(key, current);
       onfinally?.();
     }
-  } as never;
+  } as StoreContract;
 }
 
 /**

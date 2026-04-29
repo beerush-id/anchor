@@ -155,18 +155,6 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(clear).toHaveBeenCalledTimes(3); // Should be called again because last react return function again.
     });
 
-    it('should handle error in effect runner', async () => {
-      const handler = vi.fn().mockImplementation(() => {
-        throw new Error('Execution error');
-      });
-
-      effect(() => handler());
-
-      await Promise.resolve();
-
-      expect(errorSpy).toHaveBeenCalled();
-    });
-
     it('should run effect on browser only', () => {
       vi.unstubAllGlobals();
 

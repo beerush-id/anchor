@@ -1,8 +1,8 @@
 // @ts-expect-error
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { GLOBAL_ASYNC_SCOPE } from './constant.js';
+import { GLOBAL_ASYNC_SCOPE, GLOBAL_THIS } from './constant.js';
 
-class AsyncScope<T> extends AsyncLocalStorage<T> {
+class ExtendedASL<T> extends AsyncLocalStorage<T> {
   private store?: T = new Map() as T;
 
   public getStore(): T {
@@ -10,8 +10,6 @@ class AsyncScope<T> extends AsyncLocalStorage<T> {
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Expected.
-if (typeof (globalThis as any) !== 'undefined') {
-  // biome-ignore lint/suspicious/noExplicitAny: Expected.
-  (globalThis as any)[GLOBAL_ASYNC_SCOPE] = new AsyncScope();
+if (GLOBAL_THIS) {
+  GLOBAL_THIS[GLOBAL_ASYNC_SCOPE] = new ExtendedASL();
 }
