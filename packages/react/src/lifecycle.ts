@@ -1,15 +1,17 @@
 import {
   anchor,
   captureStack,
-  closure,
-  createRenderCtx,
   createStack,
+  getAsyncStore,
+  getScope,
   onGlobalCleanup,
   type RefStack,
   setCleanUpHandler,
+  setScope,
   STACK_SYMBOL,
   untrack,
 } from '@anchorlib/core';
+import { RenderContext } from './context.js';
 import { PROPS_SYMBOL, proxyProps } from './props.js';
 import type { CleanupHandler, Lifecycle, MountHandler } from './types.js';
 
@@ -37,7 +39,7 @@ export function createLifecycle(setupProps: Record<string, unknown>, name?: stri
   const mountHandlers = new Set<MountHandler>();
   const cleanupHandlers = new Set<CleanupHandler>();
 
-  const context = createRenderCtx(name);
+  const context = new RenderContext(name ?? 'Anonymous', getAsyncStore());
   const propsRef = anchor({ ...setupProps }, { recursive: false });
 
   const stack = createStack();
@@ -66,23 +68,23 @@ export function createLifecycle(setupProps: Record<string, unknown>, name?: stri
       cleanupHandlers.clear();
     },
     render<R>(fn: () => R) {
-      const prevMountHandlers = closure.get<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL),
-        prevCleanupHandlers = closure.get<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL),
-        prevStack = closure.get<RefStack>(STACK_SYMBOL),
-        prevProps = closure.get<Record<string, unknown>>(PROPS_SYMBOL);
+      const prevMountHandlers = getScope<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL),
+        prevCleanupHandlers = getScope<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL),
+        prevStack = getScope<RefStack>(STACK_SYMBOL),
+        prevProps = getScope<Record<string, unknown>>(PROPS_SYMBOL);
 
-      closure.set(STACK_SYMBOL, stack);
-      closure.set(PROPS_SYMBOL, props);
-      closure.set(MOUNT_HANDLER_SYMBOL, mountHandlers);
-      closure.set(CLEANUP_HANDLER_SYMBOL, cleanupHandlers);
+      setScope(STACK_SYMBOL, stack);
+      setScope(PROPS_SYMBOL, props);
+      setScope(MOUNT_HANDLER_SYMBOL, mountHandlers);
+      setScope(CLEANUP_HANDLER_SYMBOL, cleanupHandlers);
 
       try {
         return untrack(fn) as R;
       } finally {
-        closure.set(STACK_SYMBOL, prevStack);
-        closure.set(PROPS_SYMBOL, prevProps);
-        closure.set(MOUNT_HANDLER_SYMBOL, prevMountHandlers);
-        closure.set(CLEANUP_HANDLER_SYMBOL, prevCleanupHandlers);
+        setScope(STACK_SYMBOL, prevStack);
+        setScope(PROPS_SYMBOL, prevProps);
+        setScope(MOUNT_HANDLER_SYMBOL, prevMountHandlers);
+        setScope(CLEANUP_HANDLER_SYMBOL, prevCleanupHandlers);
       }
     },
   };
@@ -99,7 +101,7 @@ export function createLifecycle(setupProps: Record<string, unknown>, name?: stri
  * @throws {Error} If called outside a Setup component context
  */
 export function onMount(fn: MountHandler) {
-  const currentMountHandlers = closure.get<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL);
+  const currentMountHandlers = getScope<Set<MountHandler>>(MOUNT_HANDLER_SYMBOL);
 
   if (!currentMountHandlers) {
     const error = new Error('Out of Setup component.');
@@ -126,7 +128,7 @@ export function onMount(fn: MountHandler) {
  * @throws {Error} If called outside a Setup component context
  */
 export function onCleanup(fn: CleanupHandler) {
-  const currentCleanupHandlers = closure.get<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL);
+  const currentCleanupHandlers = getScope<Set<CleanupHandler>>(CLEANUP_HANDLER_SYMBOL);
 
   if (currentCleanupHandlers) {
     currentCleanupHandlers?.add(fn);

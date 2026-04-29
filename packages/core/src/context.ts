@@ -1,6 +1,7 @@
 import { captureStack } from './exception.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
 import { GLOBAL_ASYNC_SCOPE, GLOBAL_THIS, hasASL } from './server/constant.js';
+import { isBrowser } from './utils/index.js';
 
 /**
  * A hierarchical key-value store that forms the backbone of Anchor's async context system.
@@ -227,7 +228,23 @@ export function getScope<R>(key: AsyncKey): R | undefined;
  */
 export function getScope<R>(key: AsyncKey, fallback: R): R;
 export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
-  const result = globalAsyncCtx.getStore()?.get(key);
+  const store = globalAsyncCtx.getStore();
+
+  if (!isBrowser() && store === globalStore) {
+    captureStack.warning.external(
+      'Attempted to access global scope.',
+      [
+        'Accessing global scope is highly discouraged.',
+        'This could lead to race condition.',
+        '- Make sure to use isolated context storage or implement a custom storage mechanism.',
+        'Documentation: https://anchorlib.dev/docs/context#isolated-store',
+      ].join('\n'),
+      'Global Scope Access Detected.',
+      getScope
+    );
+  }
+
+  const result = store?.get(key);
   return typeof result !== 'undefined' ? result : fallback;
 }
 

@@ -1,12 +1,12 @@
 import { derived } from '@anchorlib/core';
 import { createUrl } from '@anchorlib/router';
-import { navigate } from './navigate.js';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { render, setup } from '../hoc.js';
 import type { ComponentProps } from '../types.js';
+import { navigate } from './navigate.js';
 import type { AnyRoute, LinkProps } from './types.js';
 
-type LinkComponent = <T extends AnyRoute>(props: LinkProps<T>) => ReactNode;
+type LinkComponent = <T>(props: LinkProps<T>) => ReactNode;
 
 /**
  * A reactive anchor component for client-side navigation.
@@ -30,8 +30,8 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
     if (route.active) return true;
 
-    // If this route is an Index child route, its native .active state drops when navigating 
-    // into deep sibling dynamic routes (like /users/1). 
+    // If this route is an Index child route, its native .active state drops when navigating
+    // into deep sibling dynamic routes (like /users/1).
     // Visually, the NavLink should still be active if its true parent is active.
     if (route.parent && route.parent.index === route) {
       return !!route.parent.active;
@@ -73,7 +73,18 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
         onMouseEnter={handleHover}
         aria-current={isActive.value ? 'page' : undefined}
         className={[props.className, isActive.value ? props.activeClass : ''].filter(Boolean).join(' ') || undefined}
-        {...$props.$omit(['to', 'params' as never, 'query' as never, 'onClick', 'onMouseEnter', 'preload', 'replace', 'activeClass', 'className', 'children'])}
+        {...$props.$omit([
+          'to',
+          'params' as never,
+          'query' as never,
+          'onClick',
+          'onMouseEnter',
+          'preload',
+          'replace',
+          'activeClass',
+          'className',
+          'children',
+        ])}
       >
         {props.children}
       </a>

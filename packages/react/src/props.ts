@@ -1,4 +1,4 @@
-import { captureStack, closure, getObserver, isBrowser, isMutableRef, untrack } from '@anchorlib/core';
+import { captureStack, getObserver, getScope, isBrowser, isMutableRef, setScope, untrack } from '@anchorlib/core';
 import { isBinding, isLinkingRef } from './binding.js';
 import type { ComponentProps, ReactiveProps } from './types.js';
 
@@ -18,13 +18,13 @@ export const PROPS_SYMBOL = Symbol('setup-props');
  * @returns The result of executing the provided function
  */
 export function withProps<P, R>(props: P, fn: () => R) {
-  const prevProps = closure.get<ReactiveProps<Record<string, unknown>>>(PROPS_SYMBOL);
-  closure.set(PROPS_SYMBOL, props);
+  const prevProps = getScope<ReactiveProps<Record<string, unknown>>>(PROPS_SYMBOL);
+  setScope(PROPS_SYMBOL, props);
 
   try {
     return fn();
   } finally {
-    closure.set(PROPS_SYMBOL, prevProps);
+    setScope(PROPS_SYMBOL, prevProps);
   }
 }
 
@@ -38,7 +38,7 @@ export function withProps<P, R>(props: P, fn: () => R) {
  * @returns The props from the current context
  */
 export function getProps<P>(): ComponentProps<P> {
-  return closure.get(PROPS_SYMBOL) as ComponentProps<P>;
+  return getScope(PROPS_SYMBOL) as ComponentProps<P>;
 }
 
 /**

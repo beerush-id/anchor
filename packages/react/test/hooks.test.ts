@@ -2,11 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEffect, createMemo, createRef, createState, memoize } from '../src/hooks';
 
 describe('Anchor React - Hooks', () => {
+  let errSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
+    errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.useFakeTimers();
   });
 
   afterEach(() => {
+    errSpy.mockRestore();
+    warnSpy.mockRestore();
     vi.restoreAllMocks();
   });
 

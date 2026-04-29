@@ -177,6 +177,7 @@ export type RouteState<TParams, TQueryParams, TData> = {
   resolving: boolean;
   authenticated: boolean;
   authenticating: boolean;
+  renderer?: RouteInternalRenderer<unknown>;
 
   data: TData;
   query: TQueryParams;
@@ -278,7 +279,7 @@ export type RouterStorage = {
 export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
 export type RenderMode = (typeof RENDER_MODE)[keyof typeof RENDER_MODE];
 
-export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => TOutput;
+export type RouteInternalRenderer<TOutput> = (props: { version?: number; children?: TOutput }) => TOutput;
 
 export type RouteRendererFn<Params, QueryParams, Data, Output> = (
   state: RouteState<Params, QueryParams, Data>,

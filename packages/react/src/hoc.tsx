@@ -1,13 +1,6 @@
-import {
-  anchor,
-  captureStack,
-  createObserver,
-  isBrowser,
-  microtask,
-  RenderContext,
-  setRenderCtx,
-} from '@anchorlib/core';
+import { anchor, captureStack, createObserver, isBrowser, microtask } from '@anchorlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
+import { type RenderContext, setRenderCtx } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, proxyProps } from './props.js';
@@ -167,7 +160,8 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
   displayName?: string,
   scopeName = 'Snippet',
   needSetup = true,
-  inherited = false
+  inherited = false,
+  optimized = false
 ): SnippetView<P> {
   if (typeof factory !== 'function') {
     const error = new Error('Renderer must be a function.');
@@ -204,8 +198,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       );
     }
   }
-
-  const Snippet = memoize(function Snippet(props: P) {
+  function SnippetBody(props: P) {
     const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(CLEANUP_DEBOUNCE_TIME));
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
     const [observer] = createState(function createSnippetState() {
@@ -233,9 +226,10 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       if (inherited) return factory(parentProps as never, parentProps);
       return factory(proxyProps({ ...props }, false) as P, parentProps);
     });
-  });
+  }
+  const Snippet = optimized ? SnippetBody : memoize(SnippetBody);
+  (Snippet as SnippetView<P>).displayName = `${scopeName}(${viewName})`;
 
-  Snippet.displayName = `${scopeName}(${viewName})`;
   return Snippet as SnippetView<P>;
 }
 

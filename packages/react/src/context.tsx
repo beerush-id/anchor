@@ -1,5 +1,8 @@
-import { getContext, setContext, shortId } from '@anchorlib/core';
+import { AsyncScope, AsyncStore, attachContextLookup, getContext, setContext, shortId } from '@anchorlib/core';
 import type { FC, ReactNode } from 'react';
+
+const renderCtx = new AsyncScope(new AsyncStore());
+attachContextLookup(renderCtx);
 
 /**
  * @deprecated use setContext() at the setup component instead.
@@ -34,4 +37,23 @@ export function contextProvider<T>(key: symbol = Symbol(shortId()), displayName?
   Provider.displayName = `Enter Context(${displayName || 'Anonymous'})`;
 
   return Provider as FC<{ value: T; children: ReactNode }>;
+}
+
+const RENDER_CONTEXT_KEY = Symbol('render-context');
+
+export class RenderContext extends AsyncStore {
+  constructor(
+    public name?: string,
+    parent?: AsyncStore
+  ) {
+    super(parent);
+  }
+}
+
+export function setRenderCtx(context?: RenderContext) {
+  setContext(RENDER_CONTEXT_KEY, context);
+}
+
+export function getRenderCtx() {
+  return getContext(RENDER_CONTEXT_KEY);
 }

@@ -18,49 +18,54 @@ const STACK_REGISTRY = new WeakSet<UnknownRoute>();
 /**
  * A reactive snippet that renders the view for a given route and its children.
  */
-export const RouteViewer = snippet<{ route: UnknownRoute; stacks: RouteStacks; children?: ReactNode }>(
-  function RouteViewer({ route, stacks, children }) {
-    const Index = route.index?.renderer;
-    const Layout = route.renderer;
-    const Snippet = snippet(
-      function RouteSnippet() {
-        if (!route.active) return children;
+export function RouteViewer({
+  route,
+  stacks,
+  children,
+}: {
+  route: UnknownRoute;
+  stacks: RouteStacks;
+  children?: ReactNode;
+}) {
+  const Snippet = snippet(
+    function RouteSnippet() {
+      const Index = route.index?.renderer;
+      const Layout = route.renderer;
 
-        if (Layout) {
-          if (Index && route.index?.active) {
-            return (
-              <Layout>
-                <Index />
-                {children}
-              </Layout>
-            );
-          }
+      if (!route.active) return children;
 
-          return <Layout>{children}</Layout>;
+      if (Layout) {
+        if (Index && route.index?.active) {
+          return (
+            <Layout>
+              <Index />
+              {children}
+            </Layout>
+          );
         }
 
-        if (Index) {
-          return <Index />;
-        }
+        return <Layout>{children}</Layout>;
+      }
 
-        return children;
-      },
-      route.path,
-      STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
-      false
-    );
+      if (Index) {
+        return <Index />;
+      }
 
-    if (STACK_REGISTRY.has(route)) {
-      untrack(() => stacks.set(route, Snippet));
-      return null;
-    }
+      return children;
+    },
+    route.path,
+    STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
+    false
+  );
 
-    return <Snippet />;
-  },
-  'Route',
-  'Renderer',
-  false
-);
+  if (STACK_REGISTRY.has(route)) {
+    untrack(() => stacks.set(route, Snippet));
+    return null;
+  }
+
+  return <Snippet />;
+}
+RouteViewer.displayName = 'Renderer(Route)';
 
 /**
  * Renders a specific route and recursively processes its child routes.
@@ -154,15 +159,21 @@ UIRouter.displayName = 'UIRouter';
  * @param {T} routeNode
  * @returns {RouteComponent<T>}
  */
-export function page<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
+export function page<T>(routeNode: T): RouteComponent<T> {
   const UIRoute: FC<{ children?: ReactNode }> = function UIRoute({ children }) {
     return children;
   };
-  UIRoute.displayName = `Route Factory(${routeNode.path})`;
+  UIRoute.displayName = `Route Factory(${(routeNode as AnyRoute).path})`;
 
-  (UIRoute as RouteComponent<T>).index = routeNode as T;
-  (UIRoute as RouteComponent<T>).route = (path: RoutePath, options?: RouteOptions) =>
-    routeNode.route(path as never, options);
+  (UIRoute as RouteComponent<AnyRoute>).index = routeNode as AnyRoute;
+  (UIRoute as RouteComponent<AnyRoute>).route = (path: RoutePath, options?: RouteOptions) => {
+    return (routeNode as AnyRoute).route(path as never, options);
+  };
+  (UIRoute as RouteComponent<AnyRoute>).render = (renderer) => {
+    (routeNode as AnyRoute).render(renderer);
+
+    return UIRoute as RouteComponent<AnyRoute>;
+  };
 
   return UIRoute as RouteComponent<T>;
 }

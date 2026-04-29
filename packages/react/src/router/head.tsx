@@ -1,4 +1,4 @@
-import { closure, onCleanup } from '@anchorlib/core';
+import { getScope, isBrowser, onCleanup, setScope } from '@anchorlib/core';
 import type { FC, HTMLAttributes } from 'react';
 import { createEffect } from '../hooks.js';
 
@@ -24,11 +24,11 @@ export type HeadingMap = Map<string, HeadingRef>;
  * @returns The heading map for the current execution context.
  */
 export function headings() {
-  let store = closure.get<HeadingMap>(HEADING_SET_CLOSURE);
+  let store = getScope<HeadingMap>(HEADING_SET_CLOSURE);
 
   if (!store) {
     store = new Map();
-    closure.set(HEADING_SET_CLOSURE, store);
+    setScope(HEADING_SET_CLOSURE, store);
   }
 
   return store as HeadingMap;
@@ -42,7 +42,7 @@ export function headings() {
  * @param Renderer The React component used to render the tag during SSR.
  */
 export function attachHeading(name: string, props: Record<string, string>, Renderer: FC) {
-  if (typeof window === 'undefined') {
+  if (!isBrowser()) {
     if (name === 'meta') name = `${name}:${props.name || props.property}`;
     if (name === 'link') name = `${name}:${props.href}`;
     if (name === 'style') name = `${name}:${performance.now()}`;

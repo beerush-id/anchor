@@ -36,6 +36,16 @@ import type {
   UnknownRoute,
 } from './types.js';
 
+export type IndexRoute<
+  TPath extends RoutePath,
+  TParams extends ExtractParams<TPath>,
+  TQueryParams extends ExtractQueryParams<TPath>,
+  TOptions extends RouteOptions,
+  TData,
+  TParent = never,
+  TOutput = any,
+> = Omit<Route<TPath, TParams, TQueryParams, TOptions, TData, TParent, TOutput>, 'route'>;
+
 /**
  * Represents a route in the router with support for guards, providers, and nested routes.
  *
@@ -82,7 +92,14 @@ export class Route<
   public readonly options: TOptions;
   public closed = false;
 
-  public renderer?: RouteInternalRenderer<TOutput>;
+  private rendererState = mutable<RouteInternalRenderer<TOutput> | undefined>(undefined);
+
+  public get renderer(): RouteInternalRenderer<TOutput> | undefined {
+    return this.rendererState.value as RouteInternalRenderer<TOutput>;
+  }
+  public set renderer(value: RouteInternalRenderer<TOutput> | undefined) {
+    this.rendererState.value = value as RouteInternalRenderer<TOutput>;
+  }
 
   /**
    * Sets whether this route is currently active.
@@ -366,17 +383,14 @@ export class Route<
     path: TChildPath,
     options?: TChildOptions
   ): TChildPath extends '/'
-    ? Omit<
-        Route<
-          TChildPath,
-          NestedParams<TParams, TChildParams>,
-          NestedQueryParams<TQueryParams, TChildQueryParams>,
-          RouteOptions & TOptions & TChildOptions,
-          TData & TChildData,
-          this,
-          TOutput
-        >,
-        'route'
+    ? IndexRoute<
+        TChildPath,
+        NestedParams<TParams, TChildParams>,
+        NestedQueryParams<TQueryParams, TChildQueryParams>,
+        RouteOptions & TOptions & TChildOptions,
+        TData & TChildData,
+        this,
+        TOutput
       >
     : Route<
         TChildPath,
@@ -700,7 +714,6 @@ export class Route<
     if (this.status !== ROUTE_STATUS.PENDING) return;
 
     this.status = ROUTE_STATUS.SUCCESS;
-    this.active = true;
   }
 
   /**

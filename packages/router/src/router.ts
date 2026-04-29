@@ -269,10 +269,6 @@ export class Router<Output = any> {
     const toDeactivate = currentSegments.filter((r) => {
       return !targetSegments.find((n) => n.route === r.route && n.store === r.store);
     });
-    for (const segment of toDeactivate.reverse()) {
-      this.context.detach(segment.store);
-      segment.route.deactivate();
-    }
 
     // Activate new segments (root to leaf) without preloading
     const toActivate = targetSegments.filter((r) => {
@@ -314,6 +310,19 @@ export class Router<Output = any> {
       // Remove from activating routes.
       this.activatingSegments.delete(segment);
     }
+
+    untrack(() => {
+      for (const segment of toDeactivate.reverse()) {
+        this.context.detach(segment.store);
+        segment.route.deactivate();
+      }
+
+      for (const { route } of toActivate) {
+        if (route.options.renderMode !== RENDER_MODE.IMMEDIATE) {
+          route.active = true;
+        }
+      }
+    });
 
     // Update router state
     this.activeRoute = match.route;

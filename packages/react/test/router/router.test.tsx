@@ -437,7 +437,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       });
 
       expect(activateSpy).toHaveBeenCalled();
-      expect(scrollToSpy).toHaveBeenCalledWith(0, 0);
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
     });
 
     it('skips scrolling to top if a modal stack is active', async () => {

@@ -76,7 +76,7 @@ describe('Anchor React - Head APIs', () => {
     });
   });
 
-  describe('SSR Mode', () => {
+  describe('SSR Mode', async () => {
     it('collects headings in the closure map when window is undefined', async () => {
       // Stub window to simulate SSR
       vi.stubGlobal('window', undefined);

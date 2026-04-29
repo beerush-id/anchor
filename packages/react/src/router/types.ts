@@ -1,4 +1,13 @@
-import type { None, Route, RouteOptions, RoutePath, Router, UnknownRoute } from '@anchorlib/router';
+import type {
+  IndexRoute,
+  None,
+  Route,
+  RouteOptions,
+  RoutePath,
+  Router,
+  RouteRendererFn,
+  UnknownRoute,
+} from '@anchorlib/router';
 import type { AnchorHTMLAttributes, FC, ReactNode } from 'react';
 
 /**
@@ -7,10 +16,18 @@ import type { AnchorHTMLAttributes, FC, ReactNode } from 'react';
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
 export type AnyRoute = Route<RoutePath, any, any, RouteOptions, any, any>;
 
+export type LinkDynamicProps<T, Params, Query> = Params extends None
+  ? Query extends None
+    ? { to?: RouteComponent<T> }
+    : { to: RouteComponent<T>; query: Query }
+  : Query extends None
+    ? { to: RouteComponent<T>; params: Params }
+    : { to: RouteComponent<T>; params: Params; query: Query };
+
 /**
  * Derives the required props for a Link component based on the target Route's params and query requirements.
  */
-export type ComposedLinkProps<T extends AnyRoute> = T extends Route<
+export type ComposedLinkProps<T> = T extends IndexRoute<
   infer _Path,
   infer Params,
   infer Query,
@@ -18,19 +35,15 @@ export type ComposedLinkProps<T extends AnyRoute> = T extends Route<
   infer _Data,
   infer _Parent
 >
-  ? Params extends None
-    ? Query extends None
-      ? { to?: RouteComponent<T> }
-      : { to: RouteComponent<T>; query: Query }
-    : Query extends None
-      ? { to: RouteComponent<T>; params: Params }
-      : { to: RouteComponent<T>; params: Params; query: Query }
-  : { to?: RouteComponent<T> };
+  ? LinkDynamicProps<T, Params, Query>
+  : T extends Route<infer _Path, infer Params, infer Query, infer _Options, infer _Data, infer _Parent>
+    ? LinkDynamicProps<T, Params, Query>
+    : { to?: RouteComponent<T> };
 
 /**
  * Props for the Anchor Link component.
  */
-export type LinkProps<R extends AnyRoute> = AnchorHTMLAttributes<HTMLAnchorElement> &
+export type LinkProps<R> = AnchorHTMLAttributes<HTMLAnchorElement> &
   ComposedLinkProps<R> & {
     preload?: 'hover' | 'always' | 'never';
     replace?: boolean;
@@ -40,9 +53,30 @@ export type LinkProps<R extends AnyRoute> = AnchorHTMLAttributes<HTMLAnchorEleme
 /**
  * A React component that represents a Route and provides static access to its underlying route definition.
  */
-export type RouteComponent<T extends AnyRoute> = FC<{ children?: ReactNode }> & {
+export type RouteComponent<T> = FC<{ children?: ReactNode }> & {
   index: T;
-  route: T['route'];
+  route: T extends AnyRoute ? T['route'] : never;
+  render: T extends Route<
+    infer _TPath,
+    infer TParams,
+    infer TQueryParams,
+    infer _TOptions,
+    infer TData,
+    infer _TParent,
+    infer TOutput
+  >
+    ? (renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>) => RouteComponent<T>
+    : T extends IndexRoute<
+          infer _TPath,
+          infer TParams,
+          infer TQueryParams,
+          infer _TOptions,
+          infer TData,
+          infer _TParent,
+          infer TOutput
+        >
+      ? (renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>) => RouteComponent<T>
+      : never;
 };
 
 export type RouteStacks = Map<UnknownRoute, FC>;
