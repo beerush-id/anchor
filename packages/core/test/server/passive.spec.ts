@@ -65,7 +65,7 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
       const handler = vi.fn(() => state.value);
 
       const observer = createObserver(handler);
-      
+
       // observer.run Async or Sync executes the function natively in passive mode
       const result = observer.run(handler);
       expect(result).toBe('hello');
@@ -101,14 +101,14 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
     it('should provide dummy methods for createObserver', async () => {
       const observer = createObserver(() => {});
       const state = anchor({ count: 0 });
-      
+
       const trackFn = observer.assign(state as never, new Set());
       expect(typeof trackFn).toBe('function');
       trackFn('count'); // Should not throw
 
       const handler = vi.fn(async () => 'async-hello');
       const result = await observer.runAsync(handler);
-      
+
       expect(result).toBe('async-hello');
       expect(handler).toHaveBeenCalledTimes(1);
 
@@ -116,16 +116,17 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
       expect(() => observer.onChange({ type: 'init', keys: [] })).not.toThrow();
       expect(() => observer.destroy()).not.toThrow();
       expect(() => observer.reset()).not.toThrow();
-      expect(() => observer.track(state as never, 'count')).not.toThrow();
+      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+      expect(() => (observer as any).track(state as never, 'count')).not.toThrow();
     });
 
     it('should bypass setTracker in passive mode', () => {
       const tracker = vi.fn();
       const restore = setTracker(tracker);
-      
+
       // Should return undefined when !isReactive()
       expect(restore).toBeUndefined();
-      
+
       // The tracker should not be set
       expect(getTracker()).toBeUndefined();
     });
@@ -192,7 +193,7 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
       const right = anchor({ count: 0 });
 
       const cleanup = subscribe.bind(left, right);
-      
+
       // Initial sync from left to right happens immediately
       expect(right.count).toBe(1);
 
