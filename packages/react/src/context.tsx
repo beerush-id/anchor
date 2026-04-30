@@ -50,7 +50,3 @@ export class RenderContext extends AsyncStore {
 export function setRenderCtx(context?: RenderContext) {
   setContext(RENDER_CONTEXT_KEY, context);
 }
-
-export function getRenderCtx() {
-  return getContext(RENDER_CONTEXT_KEY);
-}

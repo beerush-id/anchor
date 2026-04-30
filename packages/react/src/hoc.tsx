@@ -252,7 +252,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
  * @returns {TemplateView<P>} A memoized functional component that re-executes when its props change
  */
 export function template<P>(factory: Template<P>, displayName?: string): TemplateView<P> {
-  const parentProps = isBrowser() ? getProps() : undefined;
+  const parentProps = getProps();
 
   if (parentProps) {
     captureStack.warning.external(

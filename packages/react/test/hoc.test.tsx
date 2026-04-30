@@ -136,9 +136,11 @@ describe('Anchor React - HOC', () => {
       vi.useFakeTimers();
 
       const TestTemplate = snippet(() => 'Test Template');
+      const OptSnippet = snippet(() => 'test', 'Test', 'View', false, false, true);
 
       const { container } = render(<TestTemplate />);
       expect(container.textContent).toBe('Test Template');
+      render(<OptSnippet />);
 
       vi.runAllTimers();
 
@@ -190,6 +192,14 @@ describe('Anchor React - HOC', () => {
       rerender(<TestComponent />);
       // The setup component should not re-render, but the view should
       expect(renderCount).toBe(2);
+
+      // Should not re-render.
+      vi.stubGlobal('window', undefined);
+      act(() => {
+        count.value++;
+      });
+      expect(renderCount).toBe(2);
+      vi.unstubAllGlobals();
     });
   });
 

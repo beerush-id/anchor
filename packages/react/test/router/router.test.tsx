@@ -404,7 +404,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
   describe('UIRouter', () => {
     it('binds memory listeners upon mounting and destroys upon unmounting', () => {
       const router = createRouter();
-      const RootUi = page(router.rootRoute);
+      const RootUi = page(router.rootRoute).render(() => <span>OK</span>);
 
       vi.spyOn(router, 'activate').mockImplementation(async () => {});
 
@@ -428,7 +428,8 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
 
-      render(<UIRouter router={router} root={rootUi} resetScroll={true} />);
+      const { unmount } = render(<UIRouter router={router} root={rootUi} resetScroll={true} />);
+      unmount();
 
       // Because activation fires twice initially via direct invoke and effects loop, verify scrollTo also fires properly
       // Awaiting UI router cycle natively:
@@ -438,6 +439,8 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       expect(activateSpy).toHaveBeenCalled();
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
+
+      render(<UIRouter router={router} root={rootUi} resetScroll={'instant'} />);
     });
 
     it('skips scrolling to top if a modal stack is active', async () => {
