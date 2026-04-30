@@ -78,6 +78,8 @@ export {
   writable,
 } from '@anchorlib/core';
 
+export { createRouter, MAX_AGE, Redirect, redirect, redirectUrl } from '@anchorlib/router';
+
 export * from './binding.js';
 export * from './context.js';
 export * from './hoc.js';
