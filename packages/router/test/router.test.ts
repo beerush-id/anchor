@@ -585,6 +585,7 @@ describe('router.ts', () => {
 
     describe('reactive navigation', () => {
       beforeEach(() => {
+        vi.stubGlobal('window', {});
         router.deactivate();
       });
 

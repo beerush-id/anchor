@@ -1,25 +1,22 @@
-import { anchor, createObserver, mutable, retriable, untrack } from '@anchorlib/core';
+import { createObserver, retriable } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type { Router } from './router.js';
-import { getStore } from './store.js';
+import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
   ExtractQueryParams,
   GuardBlocker,
   GuardContext,
   GuardHandler,
-  GuardObserver,
   NestedParams,
   NestedQueryParams,
   ProviderContext,
   ProviderMap,
-  ProviderObserver,
   ProviderOptions,
-  RouteError,
   RouteInternalRenderer,
   RouteName,
   RouteOptions,
@@ -27,12 +24,10 @@ import type {
   RoutePathOutput,
   RouteRendererFn,
   RouteState,
-  RouteStatus,
   RouteStorage,
   RouteType,
   TRec,
   UnknownGuard,
-  UnknownProvider,
   UnknownRoute,
 } from './types.js';
 
@@ -92,11 +87,12 @@ export class Route<
   public readonly options: TOptions;
   public closed = false;
 
-  private rendererState = mutable<RouteInternalRenderer<TOutput> | undefined>(undefined);
+  private rendererState = createState<RouteInternalRenderer<TOutput> | undefined>(undefined);
 
   public get renderer(): RouteInternalRenderer<TOutput> | undefined {
     return this.rendererState.value as RouteInternalRenderer<TOutput>;
   }
+
   public set renderer(value: RouteInternalRenderer<TOutput> | undefined) {
     this.rendererState.value = value as RouteInternalRenderer<TOutput>;
   }
@@ -107,13 +103,15 @@ export class Route<
    * @param value - true if the route is active, false otherwise
    */
   public set active(value: boolean) {
-    untrack(() => {
-      if (value && !this.state.resolved) {
-        this.state.resolving = true;
+    const { state } = this.storage;
+
+    safeRead(() => {
+      if (value && !state.resolved) {
+        state.resolving = true;
       }
     });
 
-    this.state.active = value;
+    state.active = value;
   }
 
   /**
@@ -122,101 +120,11 @@ export class Route<
    * @returns true if the route is active, false otherwise
    */
   public get active(): boolean {
-    return this.state.active;
+    return this.storage.state.active;
   }
 
-  public get status(): RouteStatus {
-    return this.state.status;
-  }
-
-  public set status(value: RouteStatus) {
-    this.state.status = value;
-  }
-
-  public get authenticated() {
-    return this.state.authenticated;
-  }
-
-  public set authenticated(value: boolean) {
-    this.state.authenticated = value;
-  }
-
-  public get authenticating() {
-    return this.state.authenticating;
-  }
-
-  public set authenticating(value: boolean) {
-    this.state.authenticating = value;
-  }
-
-  public get resolved() {
-    return this.state.resolved;
-  }
-
-  public set resolved(value: boolean) {
-    this.state.resolved = value;
-  }
-
-  public get resolving() {
-    return this.state.resolving;
-  }
-
-  public set resolving(value: boolean) {
-    this.state.resolving = value;
-  }
-
-  /**
-   * Gets the data loaded for this route.
-   *
-   * @returns The route data, or undefined if not loaded
-   */
-  public get data(): TData | undefined {
-    return this.state.data;
-  }
-
-  /**
-   * Sets the data for this route.
-   *
-   * @param value - The route data, or undefined to clear
-   */
-  public set data(value: TData) {
-    this.state.data = value;
-  }
-
-  /**
-   * Gets any error that occurred during route loading.
-   *
-   * @returns The route error, or undefined if no error
-   */
-  public get error(): RouteError | undefined {
-    return this.state.error;
-  }
-
-  /**
-   * Sets the error for this route.
-   *
-   * @param value - The route error, or undefined to clear
-   */
-  public set error(value: RouteError | undefined) {
-    this.state.error = value;
-  }
-
-  /**
-   * Gets the query parameters for this route.
-   *
-   * @returns The query parameters, or undefined if not active
-   */
-  public get query(): TQueryParams | undefined {
-    return this.state.query;
-  }
-
-  /**
-   * Gets the route parameters for this route.
-   *
-   * @returns The route parameters, or undefined if not active
-   */
-  public get params(): TParams | undefined {
-    return this.state.params;
+  public get data(): TData {
+    return this.storage.state.data as TData;
   }
 
   /**
@@ -250,9 +158,9 @@ export class Route<
     const store = getStore();
 
     if (!store.has(this)) {
-      untrack(() => {
+      safeRead(() => {
         store.set(this, {
-          state: mutable<RouteState<TParams, TQueryParams, TData>>({
+          state: createState<RouteState<TParams, TQueryParams, TData>>({
             data: {} as TData,
             query: {} as TQueryParams,
             params: {} as TParams,
@@ -272,21 +180,6 @@ export class Route<
     }
 
     return store.get(this) as RouteStorage;
-  }
-
-  private get cache(): RouteCache {
-    return this.storage.cache;
-  }
-
-  private get activeResolvers(): Map<ProviderContext<TRec, TRec, TRec>, AbortController> {
-    return this.storage.activeResolvers as Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
-  }
-
-  private get guardObservers(): WeakMap<UnknownGuard, GuardObserver> {
-    return this.storage.guardObservers;
-  }
-  private get providerObservers(): WeakMap<UnknownProvider, ProviderObserver> {
-    return this.storage.providerObservers as WeakMap<UnknownProvider, ProviderObserver>;
   }
 
   /**
@@ -502,13 +395,14 @@ export class Route<
    * ```
    */
   public async authenticate(context: GuardContext<TParams, TQueryParams>, force = false): Promise<true | GuardBlocker> {
-    if (this.state.authenticated && !force) return Promise.resolve(true);
+    const { state, guardObservers } = this.storage;
 
-    this.authenticating = true;
+    if (state.authenticated && !force) return Promise.resolve(true);
+    state.authenticating = true;
 
     try {
       const authentications = Array.from(this.guards).map((guard) => {
-        if (!this.guardObservers.has(guard)) {
+        if (!guardObservers.has(guard)) {
           const observer = createObserver(() => {
             this.router.start(1);
 
@@ -523,27 +417,27 @@ export class Route<
               try {
                 return await guard(context);
               } finally {
-                untrack(() => this.router.progress());
+                safeRead(() => this.router.progress());
               }
             });
           };
 
-          this.guardObservers.set(guard, { authenticator, observer });
+          guardObservers.set(guard, { authenticator, observer });
         }
 
-        const authenticate = this.guardObservers.get(guard)!.authenticator!;
+        const authenticate = guardObservers.get(guard)!.authenticator!;
         return authenticate();
       });
       await Promise.all(authentications);
 
-      this.state.authenticated = true;
+      state.authenticated = true;
     } catch (error) {
-      this.state.authenticated = false;
+      state.authenticated = false;
 
       if (error instanceof Redirect) {
         return error;
       } else if (error instanceof Error) {
-        this.error = {
+        state.error = {
           type: 'guard',
           cause: error,
           message: error.message,
@@ -553,7 +447,7 @@ export class Route<
       } else {
         const cause = new Error('Unknown guard error.');
 
-        this.error = {
+        state.error = {
           type: 'guard',
           cause,
           message: cause.message,
@@ -562,7 +456,7 @@ export class Route<
         return cause;
       }
     } finally {
-      this.authenticating = false;
+      state.authenticating = false;
     }
 
     return true;
@@ -603,12 +497,14 @@ export class Route<
    * ```
    */
   public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
+    const { state, cache, activeResolvers, providerObservers } = this.storage;
+
     const abortController = new AbortController();
-    this.activeResolvers.set(context, abortController);
+    activeResolvers.set(context, abortController);
 
     try {
       for (const [name, { provider, options }] of this.providers) {
-        if (!this.providerObservers.has(provider)) {
+        if (!providerObservers.has(provider)) {
           const observer = createObserver(() => {
             this.router.start(1);
             observer.reset();
@@ -619,28 +515,28 @@ export class Route<
           // the observer will be re-run.
           const resolver = () => {
             return observer.runAsync(async () => {
-              this.resolving = true;
+              state.resolving = true;
 
               try {
                 const providerData = await retriable(
                   async () => {
-                    return await this.cache.resolve(provider, context, options);
+                    return await cache.resolve(provider, context, options);
                   },
                   { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
                 );
 
                 if (abortController.signal.aborted) return;
 
-                untrack(() => {
+                safeRead(() => {
                   context.data[name] = providerData;
                 });
 
                 return providerData;
               } catch (error) {
-                this.status = ROUTE_STATUS.ERROR;
+                state.status = ROUTE_STATUS.ERROR;
 
                 if (error instanceof Error) {
-                  this.error = {
+                  state.error = {
                     type: 'provider',
                     cause: error,
                     message: error.message,
@@ -648,7 +544,7 @@ export class Route<
                   return error;
                 } else {
                   const cause = new Error('Unknown provider error.');
-                  this.error = {
+                  state.error = {
                     type: 'provider',
                     cause,
                     message: cause.message,
@@ -657,26 +553,26 @@ export class Route<
                 }
                 /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
               } finally {
-                this.resolving = false;
+                state.resolving = false;
               }
             });
           };
 
-          this.providerObservers.set(provider, { observer, resolver });
+          providerObservers.set(provider, { observer, resolver });
         }
 
-        const resolve = this.providerObservers.get(provider)!.resolver;
+        const resolve = providerObservers.get(provider)!.resolver;
 
         const result = await resolve();
         if (result instanceof Error) return;
       }
 
-      this.data = context.data as TData;
-      this.resolved = true;
+      state.data = context.data as TData;
+      state.resolved = true;
 
       return context.data as TData;
     } finally {
-      this.activeResolvers.delete(context);
+      activeResolvers.delete(context);
     }
   }
 
@@ -694,16 +590,18 @@ export class Route<
    * ```
    */
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
+    const { state } = this.storage;
+
     await Promise.resolve(); // Push to microtask queue to prevent tracking.
 
-    this.status = ROUTE_STATUS.PENDING;
-    this.error = undefined;
-    this.state.query = context.query;
-    this.state.params = context.params;
+    state.status = ROUTE_STATUS.PENDING;
+    state.error = undefined;
+    state.query = context.query;
+    state.params = context.params;
 
     // Set the route as active immediately if renderMode is immediate
     if (this.options.renderMode === RENDER_MODE.IMMEDIATE) {
-      this.active = true;
+      state.active = true;
     }
 
     if (preload) {
@@ -711,9 +609,9 @@ export class Route<
     }
 
     // If the route is deactivated during preload, do nothing.
-    if (this.status !== ROUTE_STATUS.PENDING) return;
+    if (state.status !== ROUTE_STATUS.PENDING) return;
 
-    this.status = ROUTE_STATUS.SUCCESS;
+    state.status = ROUTE_STATUS.SUCCESS;
   }
 
   /**
@@ -727,17 +625,19 @@ export class Route<
    * ```
    */
   public deactivate(): void {
-    untrack(() => {
-      this.active = false;
-      this.status = ROUTE_STATUS.IDLE;
+    const { state } = this.storage;
+
+    safeRead(() => {
+      state.active = false;
+      state.status = ROUTE_STATUS.IDLE;
 
       if (!this.options?.keepAlive) {
-        anchor.assign(this.state as TRec, { query: {}, params: {}, data: {} });
+        safeAssign(state as TRec, { query: {}, params: {}, data: {} });
 
-        this.data = {} as TData;
-        this.error = undefined;
-        this.resolved = false;
-        this.authenticated = false;
+        state.data = {} as TData;
+        state.error = undefined;
+        state.resolved = false;
+        state.authenticated = false;
         this.cleanupObservers();
       }
     });
@@ -758,19 +658,21 @@ export class Route<
    * ```
    */
   public cancel(context?: ProviderContext<TRec, TRec, TRec>): void {
+    const { activeResolvers } = this.storage;
+
     if (context) {
-      const controller = this.activeResolvers.get(context);
+      const controller = activeResolvers.get(context);
 
       if (controller) {
         controller.abort('Resolution cancelled');
-        this.activeResolvers.delete(context);
+        activeResolvers.delete(context);
       }
     } else {
-      for (const controller of this.activeResolvers.values()) {
+      for (const controller of activeResolvers.values()) {
         controller.abort('Resolution cancelled');
       }
 
-      this.activeResolvers.clear();
+      activeResolvers.clear();
     }
   }
 
@@ -785,14 +687,16 @@ export class Route<
   }
 
   private cleanupObservers() {
+    const { guardObservers, providerObservers } = this.storage;
+
     for (const guard of this.guards.values()) {
-      this.guardObservers.get(guard)?.observer.destroy();
-      this.guardObservers.delete(guard);
+      guardObservers.get(guard)?.observer.destroy();
+      guardObservers.delete(guard);
     }
 
     for (const { provider } of this.providers.values()) {
-      this.providerObservers.get(provider)?.observer.destroy();
-      this.providerObservers.delete(provider);
+      providerObservers.get(provider)?.observer.destroy();
+      providerObservers.delete(provider);
     }
   }
 }
@@ -803,8 +707,8 @@ let createRenderer = <TParams, TQueryParams, TData, TOutput>(
   layout?: boolean
 ): RouteInternalRenderer<TOutput> => {
   return ({ children }) => {
-    if (layout) return untrack(() => renderer(route.state as never, route.router.context as never, children));
-    return untrack(() => renderer(route.state as never, route.router.context as never));
+    if (layout) return safeRead(() => renderer(route.state as never, route.router.context as never, children));
+    return safeRead(() => renderer(route.state as never, route.router.context as never));
   };
 };
 

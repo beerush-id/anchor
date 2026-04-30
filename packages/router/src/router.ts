@@ -1,4 +1,3 @@
-import { anchor, mutable, untrack } from '@anchorlib/core';
 import { URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
@@ -6,7 +5,7 @@ import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { Route } from './route.js';
-import { getStore } from './store.js';
+import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
   ExtractQueryParams,
@@ -67,7 +66,7 @@ export class Router<Output = any> {
 
     if (!store.has(this)) {
       store.set(this, {
-        state: mutable({ progress: 0, activating: 0 }),
+        state: createState({ progress: 0, activating: 0 }),
         cache: new URLCache(this.rootRegistry, this.options.cacheSize),
         context: new RouterContext(),
         activeUrl: undefined,
@@ -88,19 +87,9 @@ export class Router<Output = any> {
     return this.storage.cache;
   }
 
-  private get activeUrl() {
-    return this.storage.activeUrl;
-  }
-  private set activeUrl(activeUrl) {
-    this.storage.activeUrl = activeUrl;
-  }
-
   /** The currently active route */
   public get activeRoute() {
     return this.storage.activeRoute;
-  }
-  private set activeRoute(activeRoute) {
-    this.storage.activeRoute = activeRoute;
   }
 
   /** The active context shared across all routes */
@@ -111,13 +100,6 @@ export class Router<Output = any> {
   /** The currently active route segments */
   public get activeSegments() {
     return this.storage.activeSegments;
-  }
-  private set activeSegments(activeSegments) {
-    this.storage.activeSegments = activeSegments;
-  }
-
-  private get activatingSegments() {
-    return this.storage.activatingSegments;
   }
 
   /**
@@ -239,22 +221,24 @@ export class Router<Output = any> {
    * ```
    */
   public async activate(url: string | URL): Promise<void | GuardBlocker> {
+    const storage = this.storage;
+
     if (typeof url === 'string') {
       url = new URL(url, url.startsWith('http') ? undefined : this.options.baseUrl);
     }
 
-    if (this.activeUrl === url.href) return;
+    if (storage.activeUrl === url.href) return;
 
     // Set active URL synchronously - prevents race condition
-    this.activeUrl = url.href;
+    storage.activeUrl = url.href;
 
     // Cancel previous activations.
-    if (this.activatingSegments.size) {
-      this.activatingSegments.forEach((segment) => {
-        this.context.detach(segment.store);
+    if (storage.activatingSegments.size) {
+      storage.activatingSegments.forEach((segment) => {
+        storage.context.detach(segment.store);
       });
 
-      this.activatingSegments.clear();
+      storage.activatingSegments.clear();
     }
 
     const match = this.find(url);
@@ -262,7 +246,7 @@ export class Router<Output = any> {
 
     const { segments } = match;
 
-    const currentSegments = this.activeSegments || [];
+    const currentSegments = storage.activeSegments || [];
     const targetSegments = segments;
 
     // Deactivate segments not in target (leaf to root)
@@ -284,8 +268,8 @@ export class Router<Output = any> {
 
     // Attach store and activate immediate segments.
     for (const segment of toActivate) {
-      this.activatingSegments.add(segment);
-      this.context.attach(segment.store);
+      storage.activatingSegments.add(segment);
+      storage.context.attach(segment.store);
 
       if (segment.route.options.renderMode === RENDER_MODE.IMMEDIATE) {
         segment.route.active = true;
@@ -297,9 +281,9 @@ export class Router<Output = any> {
     // Activate target segments.
     for (const segment of toActivate) {
       const { route, store } = segment;
-      if (!this.activatingSegments.has(segment)) return;
+      if (!storage.activatingSegments.has(segment)) return;
 
-      const blocker = await route.authenticate(this.context as RouterContext<None, None, TRec>);
+      const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
       if (blocker instanceof Error || blocker instanceof Redirect) {
         this.finish();
         return blocker;
@@ -308,25 +292,23 @@ export class Router<Output = any> {
       await route.activate(store as ProviderContext<None, None, TRec>);
 
       // Remove from activating routes.
-      this.activatingSegments.delete(segment);
+      storage.activatingSegments.delete(segment);
     }
 
-    untrack(() => {
+    safeRead(() => {
       for (const segment of toDeactivate.reverse()) {
-        this.context.detach(segment.store);
+        storage.context.detach(segment.store);
         segment.route.deactivate();
       }
 
       for (const { route } of toActivate) {
-        if (route.options.renderMode !== RENDER_MODE.IMMEDIATE) {
-          route.active = true;
-        }
+        route.active = true;
       }
     });
 
     // Update router state
-    this.activeRoute = match.route;
-    this.activeSegments = targetSegments;
+    storage.activeRoute = match.route;
+    storage.activeSegments = targetSegments;
     this.finish();
   }
 
@@ -343,12 +325,13 @@ export class Router<Output = any> {
    * @param {number} length
    */
   public start(length: number = 1) {
-    const { steps, activating } = untrack(() => ({ activating: this.state.activating, steps: this.state.steps }));
+    const { state } = this.storage;
+    const { steps, activating } = safeRead(() => ({ activating: state.activating, steps: state.steps }));
 
     if (activating) {
-      untrack(() => anchor.assign(this.state, { steps: steps + length }));
+      safeRead(() => safeAssign(state, { steps: steps + length }));
     } else {
-      untrack(() => anchor.assign(this.state, { activating: true, steps: length, progress: 0 }));
+      safeRead(() => safeAssign(state, { activating: true, steps: length, progress: 0 }));
     }
   }
 
@@ -356,7 +339,7 @@ export class Router<Output = any> {
    * Finishes a progress indicator for route activation.
    */
   public finish() {
-    untrack(() => anchor.assign(this.state, { steps: 0, progress: 0, activating: false }));
+    safeRead(() => safeAssign(this.state, { steps: 0, progress: 0, activating: false }));
   }
 
   /**
@@ -370,14 +353,16 @@ export class Router<Output = any> {
    * ```
    */
   public deactivate(): void {
-    for (const segment of [...(this.activeSegments || [])].reverse()) {
+    const storage = this.storage;
+
+    for (const segment of [...(storage.activeSegments || [])].reverse()) {
       segment.route.deactivate();
-      this.context.detach(segment.store);
+      storage.context.detach(segment.store);
     }
 
-    this.activeUrl = undefined;
-    this.activeRoute = undefined;
-    this.activeSegments = undefined;
+    storage.activeUrl = undefined;
+    storage.activeRoute = undefined;
+    storage.activeSegments = undefined;
   }
 
   /**
@@ -394,6 +379,8 @@ export class Router<Output = any> {
    * ```
    */
   public async preload(url: string | URL): Promise<void> {
+    const storage = this.storage;
+
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
     }
@@ -405,7 +392,7 @@ export class Router<Output = any> {
     const tempContext = new RouterContext();
 
     for (const segment of segments) {
-      this.context.attach(segment.store);
+      storage.context.attach(segment.store);
     }
 
     // Preload all segments without activating them
@@ -420,7 +407,9 @@ export class Router<Output = any> {
   }
 
   public cleanup() {
-    for (const segment of [...(this.activeSegments || [])].reverse()) {
+    const { activeSegments } = this.storage;
+
+    for (const segment of [...(activeSegments || [])].reverse()) {
       segment.route.cleanup();
     }
 

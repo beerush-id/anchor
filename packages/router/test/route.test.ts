@@ -100,27 +100,27 @@ describe('Route class', () => {
     });
 
     it('should initialize active as false', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.active).toBe(false);
     });
 
     it('should initialize data as undefined', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.data).toEqual({});
     });
 
     it('should initialize error as undefined', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.error).toBeUndefined();
     });
 
     it('should initialize params as undefined', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.params).toEqual({});
     });
 
     it('should initialize query as undefined', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.query).toEqual({});
     });
 
@@ -132,18 +132,18 @@ describe('Route class', () => {
 
   describe('active getter/setter', () => {
     it('should return false initially', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.active).toBe(false);
     });
 
     it('should allow setting active to true', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       route.active = true;
       expect(route.active).toBe(true);
     });
 
     it('should allow setting active to false', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       route.active = true;
       route.active = false;
       expect(route.active).toBe(false);
@@ -152,12 +152,12 @@ describe('Route class', () => {
 
   describe('data getter/setter', () => {
     it('should return undefined initially', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.data).toEqual({});
     });
 
     it('should allow setting data', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       const testData = { user: 'John' };
       route.data = testData;
       // Data is wrapped in mutable(), so use toEqual instead of toBe
@@ -165,7 +165,7 @@ describe('Route class', () => {
     });
 
     it('should allow clearing data with undefined', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       route.data = { user: 'John' };
       route.data = undefined;
       expect(route.data).toBeUndefined();
@@ -174,12 +174,12 @@ describe('Route class', () => {
 
   describe('error getter/setter', () => {
     it('should return undefined initially', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.error).toBeUndefined();
     });
 
     it('should allow setting error', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       const testError = { type: 'guard' as const, message: 'Test error' };
       route.error = testError;
       // Error is wrapped in mutable(), so use toEqual instead of toBe
@@ -187,7 +187,7 @@ describe('Route class', () => {
     });
 
     it('should allow clearing error with undefined', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       route.error = { type: 'guard' as const, message: 'Test error' };
       route.error = undefined;
       expect(route.error).toBeUndefined();
@@ -197,30 +197,34 @@ describe('Route class', () => {
   describe('state properties (authenticated, authenticating, resolved, resolving)', () => {
     it('should get and set authenticated state', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.authenticated).toBe(false);
-      route.authenticated = true;
-      expect(route.authenticated).toBe(true);
+      const state = route.state;
+      expect(state.authenticated).toBe(false);
+      state.authenticated = true;
+      expect(state.authenticated).toBe(true);
     });
 
     it('should get and set authenticating state', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.authenticating).toBe(false);
-      route.authenticating = true;
-      expect(route.authenticating).toBe(true);
+      const state = route.state;
+      expect(state.authenticating).toBe(false);
+      state.authenticating = true;
+      expect(state.authenticating).toBe(true);
     });
 
     it('should get and set resolved state', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.resolved).toBe(false);
-      route.resolved = true;
-      expect(route.resolved).toBe(true);
+      const state = route.state;
+      expect(state.resolved).toBe(false);
+      state.resolved = true;
+      expect(state.resolved).toBe(true);
     });
 
     it('should get and set resolving state', () => {
       const route = new Route(sharedRouter, '/test');
-      expect(route.resolving).toBe(false);
-      route.resolving = true;
-      expect(route.resolving).toBe(true);
+      const state = route.state;
+      expect(state.resolving).toBe(false);
+      state.resolving = true;
+      expect(state.resolving).toBe(true);
     });
   });
 
@@ -267,14 +271,14 @@ describe('Route class', () => {
 
   describe('params getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.params).toEqual({});
     });
   });
 
   describe('query getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route(sharedRouter, '/test');
+      const route = new Route(sharedRouter, '/test').state;
       expect(route.query).toEqual({});
     });
   });
@@ -683,7 +687,7 @@ describe('Route class', () => {
       const context = { params: {}, query: {} };
       await route.authenticate(context);
 
-      expect(route.error).toEqual({
+      expect(route.state.error).toEqual({
         type: 'guard',
         cause: error,
         message: error.message,
@@ -700,7 +704,7 @@ describe('Route class', () => {
       const context = { params: {}, query: {} };
       await route.authenticate(context);
 
-      expect(route.error).toEqual({
+      expect(route.state.error).toEqual({
         type: 'guard',
         cause: expect.any(Error),
         message: 'Unknown guard error.',
@@ -804,13 +808,14 @@ describe('Route class', () => {
 
     it('should set context', async () => {
       const route = new Route(sharedRouter, '/test');
+      const state = route.state;
       const context = { params: { id: '123' }, query: {}, data: {} };
 
       await route.activate(context as never);
 
-      expect(route.data).toEqual(context.data);
-      expect(route.query).toEqual(context.query);
-      expect(route.params).toEqual(context.params);
+      expect(state.data).toEqual(context.data);
+      expect(state.query).toEqual(context.query);
+      expect(state.params).toEqual(context.params);
     });
 
     it('should call authenticate', async () => {
@@ -826,6 +831,7 @@ describe('Route class', () => {
 
     it('should return GuardBlocker when authentication fails', async () => {
       const route = new Route(sharedRouter, '/test');
+      const state = route.state;
       const error = new Error('Guard failed');
       const guard = vi.fn(() => {
         throw error;
@@ -836,8 +842,8 @@ describe('Route class', () => {
       await route.activate(context);
 
       // activate returns undefined on error, but sets the error property
-      expect(route.error).toBeDefined();
-      expect(route.error?.message).toBe('Guard failed');
+      expect(state.error).toBeDefined();
+      expect(state.error?.message).toBe('Guard failed');
     });
   });
 
@@ -852,37 +858,42 @@ describe('Route class', () => {
 
     it('should clear data when keepAlive is false', () => {
       const route = new Route(sharedRouter, '/test');
-      route.data = { user: 'John' };
+      const state = route.state;
+      state.data = { user: 'John' };
 
       route.deactivate();
-      expect(route.data).toEqual({});
+      expect(state.data).toEqual({});
     });
 
     it('should preserve data when keepAlive is true', () => {
       const route = new Route(sharedRouter, '/test', { keepAlive: true });
+      const state = route.state;
       const data = { user: 'John' };
-      route.data = data;
+      state.data = data;
 
       route.deactivate();
       // Data is wrapped in mutable(), so use toEqual instead of toBe
-      expect(route.data).toEqual(data);
+      expect(state.data).toEqual(data);
     });
 
     it('should clear error', () => {
       const route = new Route(sharedRouter, '/test');
-      route.error = { type: 'guard', message: 'Error' };
+      const state = route.state;
+      state.error = { type: 'guard', message: 'Error' };
 
       route.deactivate();
-      expect(route.error).toBeUndefined();
+      expect(state.error).toBeUndefined();
     });
 
     it('should set authenticated to false', () => {
       const route = new Route(sharedRouter, '/test');
-      route.active = true;
+      const state = route.state;
+      state.authenticated = true;
       // This would be set to true by authenticate
       // We can't directly test this without calling authenticate
 
       route.deactivate();
+      expect(state.authenticated).toBe(false);
       // After deactivate, authenticated should be false
     });
   });
@@ -973,6 +984,7 @@ describe('Route class', () => {
 
     it('should re-run the providers', async () => {
       const route = new Route(sharedRouter, '/test');
+      const state = route.state;
       const canRead = mutable(true);
       const provider = vi.fn(() => {
         if (canRead.value) return 'data';
@@ -982,13 +994,13 @@ describe('Route class', () => {
       const context = { params: {}, query: {}, data: {} };
       await route.activate(context as never);
 
-      expect(route.data).toEqual({ test: 'data' });
+      expect(state.data).toEqual({ test: 'data' });
 
       canRead.value = false;
 
       await new Promise((resolve) => setTimeout(resolve, 1));
 
-      expect(route.data).toEqual({});
+      expect(state.data).toEqual({});
       expect(provider).toHaveBeenCalledTimes(2);
     });
   });
@@ -1110,7 +1122,7 @@ describe('Route class', () => {
 
       const result = await route.resolve(context);
       expect(result).toBeUndefined();
-      expect(route.error).toEqual({
+      expect(route.state.error).toEqual({
         type: 'provider',
         cause: expect.any(Error),
         message: 'Unknown provider error.',
