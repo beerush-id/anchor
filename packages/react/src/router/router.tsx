@@ -27,43 +27,49 @@ export function RouteViewer({
   stacks: RouteStacks;
   children?: ReactNode;
 }) {
-  const Snippet = snippet(
-    function RouteSnippet() {
+  const IndexSnippet = snippet<Record<string, unknown>>(
+    function IndexSnippet() {
+      if (!route.index?.active) return;
       const Index = route.index?.renderer;
+      return Index ? <Index /> : null;
+    },
+    'Index',
+    'Renderer',
+    false
+  );
+
+  const LayoutSnippet = snippet(
+    function RouteSnippet() {
+      if (!route.active) return children;
       const Layout = route.renderer;
 
-      if (!route.active) return children;
-
-      if (Layout) {
-        if (Index && route.index?.active) {
-          return (
-            <Layout>
-              <Index />
-              {children}
-            </Layout>
-          );
-        }
-
-        return <Layout>{children}</Layout>;
+      if (!Layout) {
+        return (
+          <>
+            {route.index ? <IndexSnippet /> : null}
+            {children}
+          </>
+        );
       }
 
-      if (Index) {
-        return <Index />;
-      }
-
-      return children;
+      return (
+        <Layout>
+          {route.index ? <IndexSnippet /> : null}
+          {children}
+        </Layout>
+      );
     },
     route.path,
-    STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
+    STACK_REGISTRY.has(route) ? 'Modal' : route.path === '/' ? 'Root' : 'Page',
     false
   );
 
   if (STACK_REGISTRY.has(route)) {
-    untrack(() => stacks.set(route, Snippet));
+    untrack(() => stacks.set(route, LayoutSnippet));
     return null;
   }
 
-  return <Snippet />;
+  return <LayoutSnippet />;
 }
 RouteViewer.displayName = 'Renderer(Route)';
 
@@ -83,12 +89,12 @@ export function RouteRenderer({
     if (route.index?.renderer) {
       (route.renderer as FC).displayName = `Layout(${route.path})`;
     } else {
-      (route.renderer as FC).displayName = `Index(${route.path})`;
+      (route.renderer as FC).displayName = `Content(${route.path})`;
     }
   }
 
   if (route.index?.renderer) {
-    (route.index.renderer as FC).displayName = `Index(${route.path})`;
+    (route.index.renderer as FC).displayName = `Content(${route.path})`;
   }
 
   const children = Array.from(registry).map(([, child]) => {

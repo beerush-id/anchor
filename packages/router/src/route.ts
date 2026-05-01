@@ -93,10 +93,6 @@ export class Route<
     return this.rendererState.value as RouteInternalRenderer<TOutput>;
   }
 
-  public set renderer(value: RouteInternalRenderer<TOutput> | undefined) {
-    this.rendererState.value = value as RouteInternalRenderer<TOutput>;
-  }
-
   /**
    * Sets whether this route is currently active.
    *
@@ -677,7 +673,7 @@ export class Route<
   }
 
   public render(renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>): this {
-    this.renderer = createRenderer(this as UnknownRoute, renderer, true);
+    this.rendererState.value = createRenderer(this as UnknownRoute, renderer, true);
     return this;
   }
 

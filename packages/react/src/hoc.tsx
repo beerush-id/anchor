@@ -61,6 +61,18 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   const render = Component as (props: unknown) => ReactNode;
   const propsMap = new WeakMap();
 
+  const Start: FC<{ context: RenderContext }> = ({ context }) => {
+    setRenderCtx(context);
+    return null;
+  };
+  Start.displayName = `Setup(${componentName})`;
+
+  const Finish: FC<{ context?: RenderContext }> = ({ context }) => {
+    setRenderCtx(context);
+    return null;
+  };
+  Finish.displayName = `Return(${componentName})`;
+
   const Factory = (currentProps: Record<string, unknown>) => {
     const [scheduleMount, cancelMount] = microtask(CLEANUP_DEBOUNCE_TIME);
     const [scheduleCleanup, cancelCleanup] = microtask(CLEANUP_DEBOUNCE_TIME);
@@ -96,18 +108,6 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
      */
     lifecycle.cleanup();
 
-    const Start: FC<{ context: RenderContext }> = ({ context }) => {
-      setRenderCtx(context);
-      return null;
-    };
-    Start.displayName = `Start(${componentName})`;
-
-    const Finish: FC<{ context?: RenderContext }> = ({ context }) => {
-      setRenderCtx(context);
-      return null;
-    };
-    Finish.displayName = `Finish(${componentName})`;
-
     return (
       <>
         <Start context={lifecycle.context} />
@@ -117,7 +117,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
     );
   };
 
-  Factory.displayName = `Component(${componentName})`;
+  Factory.displayName = `Constructor(${componentName})`;
 
   const Setup = memoize(Factory, (prevProps, nextProps) => {
     const prevPropsRef = propsMap.get(prevProps);
@@ -129,7 +129,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
     return true;
   });
 
-  Setup.displayName = componentName;
+  Setup.displayName = `Component(${componentName})`;
   return Setup as StableComponent<P>;
 }
 
@@ -153,6 +153,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
  * @param needSetup - Whether to force a strict scope for the snippet (internal use).
  * @param scopeName - The scope name for the snippet (internal use).
  * @param inherited - Whether the snippet is inheriting parent props.
+ * @param optimized - Whether the snippet is already in optimized boundary.
  * @returns {SnippetView<P>} A memoized functional component that re-executes when dependencies change
  */
 export function snippet<P, SP extends GenericProps = GenericProps>(
@@ -199,18 +200,20 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
     }
   }
   function SnippetBody(props: P) {
-    const [[scheduleCleanup, cancelCleanup]] = createState(() => microtask(CLEANUP_DEBOUNCE_TIME));
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
-    const [observer] = createState(function createSnippetState() {
-      return createObserver(function snippetRenderer() {
+    const [{ observer, scheduleCleanup, cancelCleanup }] = createState(() => {
+      const [scheduleCleanup, cancelCleanup] = microtask(CLEANUP_DEBOUNCE_TIME);
+      const observer = createObserver(function snippetRenderer() {
         // Prevent triggering re-render when not in browser.
         observer.reset();
 
         if (!isBrowser()) return;
         setVersion((c) => c + 1);
       });
+
+      observer.name = `${scopeName}(${viewName})`;
+      return { observer, cancelCleanup, scheduleCleanup };
     });
-    observer.name = `${scopeName}(${viewName})`;
 
     createEffect(() => {
       cancelCleanup();
@@ -287,6 +290,6 @@ export const view = template;
  * @returns {ReactNode} The rendered output of the reactive component
  */
 export function render<P>(View: View<P>, displayName?: string): ReactNode {
-  const Snippet = snippet<Record<string, unknown>>(View as Snippet<unknown>, displayName, 'View', true, true);
+  const Snippet = snippet<Record<string, unknown>>(View as Snippet<unknown>, displayName, 'Render', true, true);
   return <Snippet />;
 }

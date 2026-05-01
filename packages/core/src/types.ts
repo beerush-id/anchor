@@ -476,9 +476,10 @@ export interface Anchor {
    * Gets the current state value.
    *
    * @param state - The reactive state
+   * @param silent - If true, does not throw an error if the state is not reactive.
    * @returns Current state value
    */
-  get<T extends Linkable>(state: State<T>): T;
+  get<T extends Linkable>(state: State<T>, silent?: boolean): T;
 
   /**
    * Finds and returns a reactive state instance that matches the given initial state.
