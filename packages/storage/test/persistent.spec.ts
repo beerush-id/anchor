@@ -1,9 +1,12 @@
 import type { ObjLike } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
 import { persistent, PersistentStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
 
 describe('Storage Module', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   describe('Persistent Storage', () => {
     it('should initialize a persistent storage', () => {
       const storage = new PersistentStorage('test', { a: 1 });
@@ -104,13 +107,12 @@ describe('Mocked Storage Module', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    localStorage.clear();
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockBrowserStorage();
   });
 
   afterEach(() => {
     errorSpy.mockRestore();
-    clearStorageMocks();
   });
 
   describe('Persistent Storage', () => {
@@ -156,21 +158,18 @@ describe('Mocked Storage Module', () => {
       expect(localStorage.getItem(newKey)).toBe(upgraded.json());
     });
 
-    it('should handle localStorage errors gracefully', () => {
+    it('should handle localStorage errors gracefully', async () => {
       const storage = new PersistentStorage<ObjLike>('test', { a: 1 });
 
-      // Mock setItem to throw an error
-      const originalSetItem = localStorage.setItem;
-      localStorage.setItem = () => {
-        throw new Error('Storage full');
+      (storage as any).adapter = {
+        setItem: vi.fn().mockImplementation(() => {
+          throw new Error('Storage full');
+        }),
       };
-
       storage.set('b', 2);
 
+      await Promise.resolve();
       expect(errorSpy).toHaveBeenCalled();
-
-      // Restore original function
-      localStorage.setItem = originalSetItem;
     });
   });
 
@@ -182,12 +181,11 @@ describe('Mocked Storage Module', () => {
 describe('Reactive Storage', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    mockBrowserStorage();
+    localStorage.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    clearStorageMocks();
   });
 
   describe('Persistent Storage', () => {

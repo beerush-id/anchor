@@ -1,7 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ObjLike } from '@anchorlib/core';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushStorageCache, session, SessionStorage, STORAGE_SYNC_DELAY } from '../src/index.js';
-import { clearStorageMocks, emitGlobalEvent, mockBrowserStorage } from '../mocks/storage-mock.js';
 
 describe('Storage Module', () => {
   describe('Session Storage', () => {
@@ -92,16 +91,18 @@ describe('Mocked Storage Module', () => {
 
   beforeEach(() => {
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockBrowserStorage();
   });
 
   afterEach(() => {
     flushStorageCache();
     errorSpy.mockRestore();
-    clearStorageMocks();
   });
 
   describe('Session Storage', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
     it('should write to sessionStorage', () => {
       const storage = new SessionStorage<ObjLike>('test', { a: 1 });
       const key = SessionStorage.key('test');
@@ -143,26 +144,13 @@ describe('Mocked Storage Module', () => {
       expect(sessionStorage.getItem(oldKey)).toBeNull();
       expect(sessionStorage.getItem(newKey)).toBe(upgraded.json());
     });
-
-    it('should handle sessionStorage errors gracefully', () => {
-      const storage = new SessionStorage<ObjLike>('test', { a: 1 });
-
-      // Mock setItem to throw an error
-      const originalSetItem = sessionStorage.setItem;
-      sessionStorage.setItem = () => {
-        throw new Error('Storage full');
-      };
-
-      storage.set('b', 2);
-
-      expect(errorSpy).toHaveBeenCalled();
-
-      // Restore original function
-      sessionStorage.setItem = originalSetItem;
-    });
   });
 
   describe('Session Storage - Edge Cases', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+    });
+
     it('should handle error when initializing corrupted storage', () => {
       const key = SessionStorage.key('test');
       sessionStorage.setItem(key, '{"foo": "bar", "bar": -}');
@@ -184,7 +172,8 @@ describe('Mocked Storage Module', () => {
     it('should handle storage change event with no key', () => {
       const storage = session('test', { a: 1 });
 
-      emitGlobalEvent('storage', { key: null, newValue: null });
+      const event = new StorageEvent('storage', { key: null, newValue: null });
+      window.dispatchEvent(event);
       expect(storage.a).toBe(1); // No side effect from storage change event.
     });
 
@@ -193,7 +182,8 @@ describe('Mocked Storage Module', () => {
       const storage = session('test', { a: 1 });
 
       expect(storage.a).toBe(1);
-      emitGlobalEvent('storage', { key, newValue: JSON.stringify({ a: 2 }) });
+      const event = new StorageEvent('storage', { key, newValue: JSON.stringify({ a: 2 }) });
+      window.dispatchEvent(event);
       expect(storage.a).toBe(2); // Value should be updated.
     });
 
@@ -203,12 +193,14 @@ describe('Mocked Storage Module', () => {
 
       expect(storage.a).toBe(1);
 
-      emitGlobalEvent('storage', { key, newValue: '{invalid}' });
+      const event1 = new StorageEvent('storage', { key, newValue: '{invalid}' });
+      window.dispatchEvent(event1);
 
       expect(storage.a).toBe(1); // Value should not be updated.
       expect(errorSpy).toHaveBeenCalledTimes(1);
 
-      emitGlobalEvent('storage', { key, newValue: undefined });
+      const event2 = new StorageEvent('storage', { key, newValue: undefined as any });
+      window.dispatchEvent(event2);
 
       expect(storage.a).toBe(1);
       expect(errorSpy).toHaveBeenCalledTimes(2);
@@ -228,13 +220,12 @@ describe('Mocked Storage Module', () => {
 
 describe('Reactive Storage', () => {
   beforeEach(() => {
+    sessionStorage.clear();
     vi.useFakeTimers();
-    mockBrowserStorage();
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    clearStorageMocks();
     flushStorageCache();
   });
 

@@ -3,13 +3,7 @@
   "name": "@anchorlib/storage",
   "version": "1.0.0-beta.22",
   "description": "Persistent storage solutions for Anchor state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "storage"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "storage"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -32,9 +26,7 @@
       "import": "./dist/db/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -45,9 +37,7 @@
     "@anchorlib/core": "workspace:*"
   },
   "devDependencies": {
-    "@beerush/utils": "^0.5.0",
     "@biomejs/biome": "catalog:",
-    "@playwright/test": "^1.54.2",
     "@types/bun": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
@@ -69,9 +59,7 @@
     "format": "biome format --write",
     "prepublish": "rimraf dist && tsdown && publint",
     "test": "rimraf coverage && vitest --run",
-    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },
   "optionalDependencies": {
     "zod": "catalog:lib"
