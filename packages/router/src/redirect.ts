@@ -1,6 +1,13 @@
 import { getScope, setScope } from '@anchorlib/core';
-import type { Route } from './route.js';
-import type { ExtractParams, ExtractQueryParams, RouteOptions, RoutePath, UnknownRedirect } from './types.js';
+import type { IndexRoute, Route } from './route.js';
+import type {
+  ExtractParams,
+  ExtractQueryParams,
+  RouteOptions,
+  RoutePath,
+  UnknownRedirect,
+  UnknownRoute,
+} from './types.js';
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = Symbol('redirect-handler');
@@ -101,13 +108,16 @@ export function redirect<
   TOptions extends RouteOptions,
   TData,
 >(
-  route: Route<TPath, TParams, TQueryParams, TOptions, TData>,
+  route:
+    | Route<TPath, TParams, TQueryParams, TOptions, TData>
+    | IndexRoute<TPath, TParams, TQueryParams, TOptions, TData>
+    | UnknownRoute,
   params?: TParams,
   query?: TQueryParams
 ): Redirect<TPath, TParams, TQueryParams, TOptions, TData> {
-  const redirect = new Redirect(route, params, query);
+  const redirect = new Redirect(route as Route<TPath, TParams, TQueryParams, TOptions, TData>, params, query);
   getScope<(redirect: UnknownRedirect) => void>(REDIRECT_HANDLER)?.(redirect as UnknownRedirect);
-  return redirect;
+  return redirect as Redirect<TPath, TParams, TQueryParams, TOptions, TData>;
 }
 
 /**

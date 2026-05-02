@@ -42,22 +42,29 @@ export function RouteViewer({
     function RouteSnippet() {
       if (!route.active) return children;
       const Layout = route.renderer;
+      const Exception = route.exceptionRenderer;
+      const exception = route.state.exception && Exception ? <Exception /> : null;
+      const content = (
+        <>
+          <IndexSnippet />
+          {children}
+          {exception}
+        </>
+      );
 
-      if (!Layout) {
+      if (STACK_REGISTRY.has(route)) {
+        if (!Layout) {
+          return <div className={'route-modal'}>{content}</div>;
+        }
+
         return (
-          <>
-            {route.index ? <IndexSnippet /> : null}
-            {children}
-          </>
+          <div className={'route-modal'}>
+            <Layout>{content}</Layout>
+          </div>
         );
       }
 
-      return (
-        <Layout>
-          {route.index ? <IndexSnippet /> : null}
-          {children}
-        </Layout>
-      );
+      return Layout ? <Layout>{content}</Layout> : content;
     },
     route.path,
     STACK_REGISTRY.has(route) ? 'Modal' : route.path === '/' ? 'Root' : 'Page',

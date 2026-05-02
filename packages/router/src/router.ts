@@ -4,7 +4,7 @@ import { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
-import { Route } from './route.js';
+import { getExceptionRendererFactory, Route } from './route.js';
 import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
@@ -13,6 +13,8 @@ import type {
   MatchResult,
   None,
   ProviderContext,
+  RouteExceptionRendererFn,
+  RouteInternalRenderer,
   RouteOptions,
   RoutePath,
   RouterOptions,
@@ -82,6 +84,12 @@ export class Router<Output = any> {
   public readonly options: RouterOptions;
   public readonly rootRoute: UnknownRoute;
   public readonly rootRegistry: RouteRegistry;
+
+  private exceptionRendererState = createState<RouteInternalRenderer<Output> | undefined>(undefined);
+
+  public get exceptionRenderer() {
+    return this.exceptionRendererState.value;
+  }
 
   private get cache() {
     return this.storage.cache;
@@ -229,9 +237,6 @@ export class Router<Output = any> {
 
     if (storage.activeUrl === url.href) return;
 
-    // Set active URL synchronously - prevents race condition
-    storage.activeUrl = url.href;
-
     // Cancel previous activations.
     if (storage.activatingSegments.size) {
       storage.activatingSegments.forEach((segment) => {
@@ -309,6 +314,10 @@ export class Router<Output = any> {
     // Update router state
     storage.activeRoute = match.route;
     storage.activeSegments = targetSegments;
+    storage.activeUrl = url.href;
+
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    (this.context as any).urlState.value = url.href;
     this.finish();
   }
 
@@ -414,6 +423,10 @@ export class Router<Output = any> {
     }
 
     getStore().delete(this);
+  }
+
+  public catch(renderer: RouteExceptionRendererFn<None, None, TRec, Output>) {
+    this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute as UnknownRoute, renderer, true);
   }
 }
 

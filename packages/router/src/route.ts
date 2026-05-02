@@ -17,6 +17,7 @@ import type {
   ProviderContext,
   ProviderMap,
   ProviderOptions,
+  RouteExceptionRendererFn,
   RouteInternalRenderer,
   RouteName,
   RouteOptions,
@@ -88,9 +89,14 @@ export class Route<
   public closed = false;
 
   private rendererState = createState<RouteInternalRenderer<TOutput> | undefined>(undefined);
+  private exceptionRendererState = createState<RouteInternalRenderer<TOutput> | undefined>(undefined);
 
   public get renderer(): RouteInternalRenderer<TOutput> | undefined {
     return this.rendererState.value as RouteInternalRenderer<TOutput>;
+  }
+
+  public get exceptionRenderer(): RouteInternalRenderer<TOutput> | undefined {
+    return (this.exceptionRendererState.value ?? this.router.exceptionRenderer) as RouteInternalRenderer<TOutput>;
   }
 
   /**
@@ -677,6 +683,10 @@ export class Route<
     return this;
   }
 
+  public catch(renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>) {
+    this.exceptionRendererState.value = createExceptionRenderer(this as UnknownRoute, renderer, true);
+  }
+
   public cleanup() {
     this.deactivate();
     this.cleanupObservers();
@@ -708,12 +718,37 @@ let createRenderer = <TParams, TQueryParams, TData, TOutput>(
   };
 };
 
+let createExceptionRenderer = <TParams, TQueryParams, TData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>,
+  layout?: boolean
+): RouteInternalRenderer<TOutput> => {
+  return ({ children }) => {
+    if (layout)
+      return safeRead(() =>
+        renderer(route.state.exception as never, route.state as never, route.router.context as never, children)
+      );
+    return safeRead(() =>
+      renderer(route.state.exception as never, route.state as never, route.router.context as never)
+    );
+  };
+};
+
 export type RendererFactory = typeof createRenderer;
+export type ExceptionRendererFactory = typeof createExceptionRenderer;
 
 export function getRendererFactory(): RendererFactory {
   return createRenderer;
 }
 
+export function getExceptionRendererFactory(): ExceptionRendererFactory {
+  return createExceptionRenderer;
+}
+
 export function setRendererFactory(factory: RendererFactory) {
   createRenderer = factory;
+}
+
+export function setExceptionRendererFactory(factory: ExceptionRendererFactory) {
+  createExceptionRenderer = factory;
 }

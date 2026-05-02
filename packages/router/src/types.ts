@@ -143,7 +143,7 @@ export type UnknownParams = ExtractParams<''>;
 /** Unknown query parameters type */
 export type UnknownQueryParams = ExtractQueryParams<''>;
 /** Unknown route type */
-export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, TRec, unknown>;
+export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, unknown, unknown>;
 /** Unknown provider type */
 export type UnknownProvider = (ctx: ProviderContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */
@@ -178,6 +178,7 @@ export type RouteState<TParams, TQueryParams, TData> = {
   authenticated: boolean;
   authenticating: boolean;
   renderer?: RouteInternalRenderer<unknown>;
+  exception?: Error;
 
   data: TData;
   query: TQueryParams;
@@ -279,9 +280,16 @@ export type RouterStorage = {
 export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
 export type RenderMode = (typeof RENDER_MODE)[keyof typeof RENDER_MODE];
 
-export type RouteInternalRenderer<TOutput> = (props: { version?: number; children?: TOutput }) => TOutput;
+export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => TOutput;
 
 export type RouteRendererFn<Params, QueryParams, Data, Output> = (
+  state: RouteState<Params, QueryParams, Data>,
+  context: RouterContext<Params, QueryParams, Data>,
+  children?: Output
+) => Output;
+
+export type RouteExceptionRendererFn<Params, QueryParams, Data, Output> = (
+  error: Error,
   state: RouteState<Params, QueryParams, Data>,
   context: RouterContext<Params, QueryParams, Data>,
   children?: Output

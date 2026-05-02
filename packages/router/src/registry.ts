@@ -178,6 +178,14 @@ export class RouteRegistry extends Map {
         segments,
         params,
       };
+    } else {
+      const lastSegment = segments[segments.length - 1];
+
+      if (lastSegment) {
+        lastSegment.route.state.exception = new Error('Not found.');
+      }
+
+      return { query, route: lastSegment.route, segments, params };
     }
   }
 }

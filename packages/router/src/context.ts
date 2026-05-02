@@ -1,7 +1,13 @@
+import { createState } from './store.js';
 import type { ProviderContext, TRec } from './types.js';
 
 export class RouterContext<TParams, TQueryParams, TData> {
   private sources: ProviderContext<TRec, TRec, TRec>[] = [];
+  private urlState = createState<string | undefined>(undefined);
+
+  public get url() {
+    return this.urlState.value;
+  }
 
   public params = new Proxy(
     {},
