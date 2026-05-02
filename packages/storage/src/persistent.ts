@@ -1,5 +1,5 @@
-import { session, SessionStorage, STORAGE_KEY } from './session.js';
 import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
+import { session, SessionStorage, STORAGE_KEY } from './session.js';
 import type { PersistentFn } from './types.js';
 
 const hasLocalStorage = () => typeof localStorage !== 'undefined';

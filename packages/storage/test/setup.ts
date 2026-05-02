@@ -1,7 +1,11 @@
-import { setCleanUpHandler } from '@anchorlib/core';
-import { afterAll, beforeAll } from 'vitest';
+import { anchor, setCleanUpHandler } from '@anchorlib/core';
+import { afterAll, beforeAll, beforeEach } from 'vitest';
 
 const cleanupList = new Set<() => void>();
+
+beforeEach(() => {
+  anchor.configure({ closureWarning: false });
+});
 
 beforeAll(() => {
   setCleanUpHandler((fn) => {

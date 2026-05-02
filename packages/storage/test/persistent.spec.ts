@@ -1,7 +1,7 @@
+import type { ObjLike } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ObjLike } from '@anchorlib/core';
-import { persistent, PersistentStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
 import { clearStorageMocks, mockBrowserStorage } from '../mocks/storage-mock.js';
+import { persistent, PersistentStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
 
 describe('Storage Module', () => {
   describe('Persistent Storage', () => {
