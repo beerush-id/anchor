@@ -1,6 +1,6 @@
-import { anchor, captureStack, createObserver, isBrowser, microtask } from '@anchorlib/core';
+import { anchor, captureStack, createObserver, isBrowser, microtask, setContextStore } from '@anchorlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
-import { type RenderContext, setRenderCtx } from './context.js';
+import { type RenderContext } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, proxyProps } from './props.js';
@@ -62,13 +62,13 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   const propsMap = new WeakMap();
 
   const Start: FC<{ context: RenderContext }> = ({ context }) => {
-    setRenderCtx(context);
+    setContextStore(context);
     return null;
   };
   Start.displayName = `Setup(${componentName})`;
 
   const Finish: FC<{ context: RenderContext }> = ({ context }) => {
-    setRenderCtx(context);
+    setContextStore(context);
     return null;
   };
   Finish.displayName = `Return(${componentName})`;

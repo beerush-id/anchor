@@ -159,7 +159,8 @@ describe('registry.ts', () => {
           registry.set('users', usersRegistry);
 
           const result = registry.match($url('/posts'));
-          expect(result).toBeUndefined();
+          expect(result).toBeDefined();
+          expect(result!.exception).toBeInstanceOf(Error);
         });
 
         it('should handle multiple static routes at same level', () => {

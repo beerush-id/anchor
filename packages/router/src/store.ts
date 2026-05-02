@@ -31,6 +31,6 @@ export const safeRead = ((fn: () => any) => {
 
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 export const safeAssign = ((left: any, right: any) => {
-  if (!isBrowser()) Object.assign(left, right);
+  if (!isBrowser()) return Object.assign(left, right);
   return anchor.assign(left, right);
 }) as typeof anchor.assign;

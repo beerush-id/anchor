@@ -204,7 +204,7 @@ export class Route<
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
-    this.options = { ...DEFAULT_CONFIG, ...router.options, ...options } as TOptions;
+    this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options } as TOptions;
   }
 
   /**

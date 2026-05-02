@@ -235,6 +235,9 @@ export class Router<Output = any> {
       url = new URL(url, url.startsWith('http') ? undefined : this.options.baseUrl);
     }
 
+    const match = this.find(url);
+    if (!match) return;
+
     if (storage.activeUrl === url.href) return;
 
     // Cancel previous activations.
@@ -245,9 +248,6 @@ export class Router<Output = any> {
 
       storage.activatingSegments.clear();
     }
-
-    const match = this.find(url);
-    if (!match) return;
 
     const { segments } = match;
 

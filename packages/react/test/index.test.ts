@@ -9,7 +9,6 @@ import {
   bindable,
   BindingRef,
   callback,
-  contextProvider,
   createEffect,
   createMemo,
   createRef,
@@ -79,10 +78,6 @@ describe('Anchor React - Index', () => {
     expect(isBinding).toBeDefined();
     expect(isBindable).toBeDefined();
     expect(BindingRef).toBeDefined();
-  });
-
-  it('should export context functions', () => {
-    expect(contextProvider).toBeDefined();
   });
 
   it('should export hoc functions', () => {

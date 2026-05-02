@@ -2,7 +2,7 @@ import { mutable } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { ROUTE_TYPE } from '../src/enum.js';
-import { Router } from '../src/index.js';
+import { getExceptionRendererFactory, Router, setExceptionRendererFactory } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
@@ -266,6 +266,26 @@ describe('Route class', () => {
       const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
       internalRenderer({ children: [] } as never);
       expect(renderer2).toHaveBeenCalledWith(route2.state, sharedRouter.context);
+    });
+
+    it('should allow setting an exception renderer', () => {
+      const route = new Route(sharedRouter, '/test');
+
+      expect(route.exceptionRenderer).toBeUndefined();
+      route.catch(() => 'Ok');
+
+      expect(route.exceptionRenderer).toBeDefined();
+      expect(route.exceptionRenderer!({} as never)).toBe('Ok');
+    });
+
+    it('should allow setting an exception renderer factory', () => {
+      const factory = getExceptionRendererFactory();
+      setExceptionRendererFactory(factory);
+      expect(getExceptionRendererFactory()).toBe(factory);
+
+      const route = new Route(sharedRouter, '/test');
+      const renderer = factory(route, () => 'Ok');
+      expect(renderer({})).toBe('Ok');
     });
   });
 

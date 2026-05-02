@@ -3,7 +3,7 @@ import { mutable } from '@anchorlib/core';
 import type { UnknownRoute } from '@anchorlib/router';
 import { createRouter, redirect } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { modal, page, RouteRenderer, RouteViewer, UIRouter } from '../../src/router/router.js';
 
@@ -382,7 +382,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       render(<RouteRenderer route={emptyRoot} registry={router.rootRegistry} stacks={stacks} />);
 
       // Since emptyRoot lacks an index renderer, it drops into the explicit Index() fallback naming branch
-      expect((emptyRoot.renderer as any).displayName).toBe('Index(/)');
+      expect((emptyRoot.renderer as any).displayName).toBe('Content(/)');
     });
 
     it('assigns both Layout and Index displayNames with generic fallback paths when both exist on the absolute root', () => {
@@ -397,13 +397,13 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       render(<RouteRenderer route={root} registry={router.rootRegistry} stacks={stacks} />);
 
       expect((root.renderer as any).displayName).toBe('Layout(/)');
-      expect((rootIndex.renderer as any).displayName).toBe('Index(/)');
+      expect((rootIndex.renderer as any).displayName).toBe('Content(/)');
     });
   });
 
   describe('UIRouter', () => {
     it('binds memory listeners upon mounting and destroys upon unmounting', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const RootUi = page(router.rootRoute).render(() => <span>OK</span>);
 
       vi.spyOn(router, 'activate').mockImplementation(async () => {});
@@ -423,7 +423,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('scrolls cleanly to top visually alongside its activation', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rootUi = page(router.rootRoute);
 
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
@@ -444,7 +444,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('skips scrolling to top if a modal stack is active', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rootUi = page(router.rootRoute);
       const modalRoute = router.route('/modal');
       modal(modalRoute);

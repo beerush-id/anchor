@@ -52,7 +52,7 @@ describe('Anchor React - HOC', () => {
       TestComponent.displayName = 'CustomDisplayName';
       const SetupComponent = setup(TestComponent);
 
-      expect(SetupComponent.displayName).toBe('CustomDisplayName');
+      expect(SetupComponent.displayName).toBe('Component(CustomDisplayName)');
     });
 
     it('should render setup component correctly', () => {

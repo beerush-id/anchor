@@ -223,6 +223,7 @@ export type MatchedRoute = {
   query: TRec;
   params: TRec;
   segments: MatchRouteSegment[];
+  exception?: Error;
 };
 
 /** A complete match result with URL and context */

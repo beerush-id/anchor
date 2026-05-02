@@ -509,7 +509,8 @@ describe('URLCache', () => {
     it('should return undefined for non-matching URL', () => {
       const url = new URL('/nonexistent', 'http://localhost');
       const result = cache.get(url);
-      expect(result).toBeUndefined();
+      expect(result).toBeDefined();
+      expect(result?.exception).toBeInstanceOf(Error);
     });
 
     it('should cache and return match result', () => {

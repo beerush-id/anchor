@@ -143,7 +143,9 @@ describe('router.ts', () => {
 
       it('should return undefined for non-matching URL', () => {
         const result = router.find('/nonexistent');
-        expect(result).toBeUndefined();
+
+        expect(result).toBeDefined();
+        expect(result!.exception).toBeInstanceOf(Error);
       });
 
       it('should handle URL object', () => {
@@ -207,6 +209,7 @@ describe('router.ts', () => {
 
         // State 1: Activate /users/123
         await router.activate('/users/123?tab=profile');
+        expect(router.context.url).toBeDefined();
         expect(router.context.params.id).toBe('123');
         expect(router.context.query.tab).toBe('profile');
         expect(router.context.data.user).toEqual({ name: 'John' });
@@ -1014,6 +1017,24 @@ describe('router.ts', () => {
       // The router returns undefined when provider fails
       const result = await router.activate('/users');
       expect(result).toBeUndefined();
+    });
+
+    it('should detect exception renderer', () => {
+      expect(router.exceptionRenderer).toBeUndefined();
+      router.catch(() => 'Ok');
+      expect(router.exceptionRenderer).toBeDefined();
+    });
+
+    it('should return when finding undefined url', () => {
+      expect(router.find(undefined as never)).toBeUndefined();
+    });
+
+    it('should return when activating undefined url', async () => {
+      expect(await router.activate(undefined as never)).toBeUndefined();
+    });
+
+    it('should return when preloading undefined url', async () => {
+      expect(await router.preload(undefined as never)).toBeUndefined();
     });
   });
 

@@ -191,6 +191,7 @@ export class URLCache {
    * ```
    */
   public get(url: URL): MatchResult | undefined {
+    if (!url) return;
     const cacheKey = url.href;
 
     // Check cache first - return cached match if exists

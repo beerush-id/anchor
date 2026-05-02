@@ -179,13 +179,14 @@ export class RouteRegistry extends Map {
         params,
       };
     } else {
+      const exception = new Error('Not found.');
       const lastSegment = segments[segments.length - 1];
 
       if (lastSegment) {
-        lastSegment.route.state.exception = new Error('Not found.');
+        lastSegment.route.state.exception = exception;
       }
 
-      return { query, route: lastSegment.route, segments, params };
+      return { query, route: lastSegment.route, segments, params, exception };
     }
   }
 }
