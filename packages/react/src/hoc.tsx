@@ -67,7 +67,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   };
   Start.displayName = `Setup(${componentName})`;
 
-  const Finish: FC<{ context?: RenderContext }> = ({ context }) => {
+  const Finish: FC<{ context: RenderContext }> = ({ context }) => {
     setRenderCtx(context);
     return null;
   };
@@ -112,7 +112,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
       <>
         <Start context={lifecycle.context} />
         {lifecycle.render(() => render(props))}
-        <Finish context={lifecycle.context.parent} />
+        <Finish context={lifecycle.context.parent!} />
       </>
     );
   };
