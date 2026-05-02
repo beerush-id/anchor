@@ -1,3 +1,4 @@
+import { ANCHOR_SETTINGS } from './constant.js';
 import { captureStack } from './exception.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
 import { GLOBAL_ASYNC_SCOPE, GLOBAL_THIS, hasASL } from './server/constant.js';
@@ -45,6 +46,23 @@ if (hasASL()) {
   const asl = GLOBAL_THIS[GLOBAL_ASYNC_SCOPE];
   asl.store = globalStore;
   globalAsyncCtx = asl;
+}
+
+/**
+ * Sets the global async scope.
+ * @param {AsyncScope<AsyncStore>} scope
+ */
+export function setAsyncScope(scope: AsyncScope<AsyncStore>) {
+  globalAsyncCtx = scope as AsyncScope<AsyncStore>;
+  globalAsyncCtx.store = globalStore;
+}
+
+/**
+ * Retrieves the global async scope.
+ * @returns The global async scope.
+ */
+export function getAsyncScope() {
+  return globalAsyncCtx;
 }
 
 /**
@@ -202,7 +220,7 @@ export function getScope<R>(key: AsyncKey, fallback: R): R;
 export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
   const store = globalAsyncCtx.getStore();
 
-  if (!isBrowser() && store === globalStore) {
+  if (!isBrowser() && store === globalStore && ANCHOR_SETTINGS.closureWarning) {
     captureStack.warning.external(
       'Attempted to access global scope.',
       [
@@ -237,7 +255,7 @@ export function setScope(key: AsyncKey, value: AsyncValue) {
  * @param {[AsyncKey, AsyncValue][]} init
  * @returns {AsyncStore}
  */
-export function createContextStore(init?: [AsyncKey, AsyncValue][]) {
+export function createContextStore(init?: [AsyncKey, AsyncValue][]): AsyncStore {
   return init ? new AsyncStore(init, getContextStore()) : new AsyncStore(getContextStore());
 }
 

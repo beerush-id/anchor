@@ -4,12 +4,14 @@ import {
   clearContextStore,
   createContextStore,
   getAllScopes,
+  getAsyncScope,
   getContext,
   getContextStore,
   getRootStore,
   getScope,
   getScopeStore,
   isGlobalScope,
+  setAsyncScope,
   setContext,
   setContextStore,
   setScope,
@@ -36,6 +38,17 @@ describe('Anchor - Async Scope', () => {
 
     it('should detect global scope', () => {
       expect(isGlobalScope()).toBe(true);
+    });
+
+    it('should change the async scope', () => {
+      const prevStore = getAsyncScope();
+      const nextStore = new AsyncScope<AsyncStore>();
+
+      expect(prevStore.store !== nextStore.store);
+      setAsyncScope(nextStore);
+
+      expect(getAsyncScope()).toBe(nextStore);
+      expect(getAsyncScope().store).toBe(nextStore.store);
     });
 
     it('should store and retrieve values', () => {
