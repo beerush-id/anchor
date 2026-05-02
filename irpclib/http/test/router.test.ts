@@ -1,10 +1,8 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { createPackage, IRPC_FILE_STATUS, type IRPCContextProvider, setContextProvider } from '@irpclib/irpc';
+import '@irpclib/irpc/server';
+import { createPackage, IRPC_FILE_STATUS } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 import { HTTPRouter } from '../src/router.js';
-
-setContextProvider(new AsyncLocalStorage() as IRPCContextProvider);
 
 describe('HTTPRouter', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;

@@ -1,6 +1,9 @@
-import { vi } from 'vitest';
+import { anchor } from '@anchorlib/core';
+import { beforeEach } from 'vitest';
 
 // Mock for any global setup needed for tests
-export const mockGlobal = () => {
-  // Any global mocks can be set up here
-};
+export const mockGlobal = () => {};
+
+beforeEach(() => {
+  anchor.configure({ closureWarning: false });
+});
