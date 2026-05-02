@@ -1,10 +1,8 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { createPackage, IRPC_STATUS, type IRPCContextProvider, setContextProvider } from '@irpclib/irpc';
+import '@irpclib/irpc/server';
+import { createPackage, IRPC_STATUS } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BroadcastTransport } from '../src/index.js';
 import { BroadcastRouter } from '../src/router.js';
-import { BroadcastTransport } from '../src/transport.js';
-
-setContextProvider(new AsyncLocalStorage() as IRPCContextProvider);
 
 describe('BroadcastRouter', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -126,15 +124,21 @@ describe('BroadcastRouter', () => {
       const handler: TestFunc = async (file) => file.meta.name;
       module.construct(testFunc, handler);
 
-      const filePointer = { id: 'file-123', type: 'IRPC_PACKET_FILE', meta: { name: 'blob.txt', size: 12, type: 'text/plain', lastModified: 0 } };
+      const filePointer = {
+        id: 'file-123',
+        type: 'IRPC_PACKET_FILE',
+        meta: { name: 'blob.txt', size: 12, type: 'text/plain', lastModified: 0 },
+      };
       const blob = new Blob(['blob content'], { type: 'text/plain' });
-      const requests = [{ 
-        id: '1', 
-        name: 'testFunc', 
-        args: [filePointer],
-        files: [filePointer],
-        blobs: { 'file-123': blob }
-      }];
+      const requests = [
+        {
+          id: '1',
+          name: 'testFunc',
+          args: [filePointer],
+          files: [filePointer],
+          blobs: { 'file-123': blob },
+        },
+      ];
       await router.resolve(requests as any);
 
       await new Promise((resolve) => setTimeout(resolve, 10));
