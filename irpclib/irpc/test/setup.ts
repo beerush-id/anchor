@@ -1,9 +1,11 @@
+import { anchor } from '@anchorlib/core';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 let errorSpy: ReturnType<typeof vi.spyOn>;
 
 // Reset mocks before each test
 beforeEach(() => {
+  anchor.configure({ closureWarning: false });
   errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   // Set up fake timers for all tests

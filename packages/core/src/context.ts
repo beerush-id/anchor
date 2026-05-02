@@ -164,13 +164,14 @@ export function withScope<R>(fn: () => R, store?: AsyncStore) {
  *
  * @param fn - The function to execute within the isolated boundary.
  * @param strict - Whether to enable strict mode for this boundary.
+ * @param context - Optional pre-built {@link AsyncStore} to use instead of creating a new one.
  * @returns The resolved return value of `fn`.
  */
-export async function withIsolation<R>(fn: () => R, strict = true) {
+export async function withIsolation<R>(fn: () => R, strict = true, context?: AsyncStore) {
   const parent = globalAsyncCtx.getStore()!;
 
   const floatingLists = new Set<Future<unknown>>();
-  const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, new AsyncStore()]], parent);
+  const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, context ?? new AsyncStore()]], parent);
 
   try {
     const result = await (globalAsyncCtx.run(isolatedStore, fn, floatingLists) as Promise<R>);
