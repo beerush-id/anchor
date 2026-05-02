@@ -5,9 +5,9 @@ import {
   isBrowser,
   microtask,
   mutable,
+  type ObjLike,
   setScope,
   subscribe,
-  type ObjLike,
 } from '@anchorlib/core';
 
 export const COOKIE_PREFIX = 'anchor-cookie://';

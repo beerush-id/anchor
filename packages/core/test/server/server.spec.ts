@@ -4,8 +4,8 @@ import {
   AsyncStore,
   awaited,
   effect,
-  getAsyncStore,
   getScope,
+  getScopeStore,
   mutable,
   setScope,
   sleep,
@@ -29,15 +29,15 @@ describe('Anchor - Server binding', () => {
   it('should assign AsyncLocalStorage', async () => {
     vi.unstubAllGlobals();
 
-    expect(getAsyncStore()).toBeInstanceOf(AsyncStore);
+    expect(getScopeStore()).toBeInstanceOf(AsyncStore);
     expect(getScope('test')).toBeUndefined();
   });
 
   it('should handle async context', async () => {
-    expect(getAsyncStore()).toBeInstanceOf(Map);
+    expect(getScopeStore()).toBeInstanceOf(Map);
 
     await withScope(async () => {
-      expect(getAsyncStore()).toBeInstanceOf(Map);
+      expect(getScopeStore()).toBeInstanceOf(Map);
 
       setScope('test', 'test');
 

@@ -32,10 +32,11 @@ export class AsyncStore extends Map<AsyncKey, AsyncValue> {
   }
 }
 
+/** The key used to store the context store in the active scope. */
+const CONTEXT_STORE_KEY = Symbol('anchor-context');
+
 /** The root-level store. All {@link withScope} children ultimately chain back to this. */
-const globalStore = new AsyncStore();
-/** A list of all active {@link AsyncScope} instances for context lookups. */
-const contextLookups: AsyncScope<AsyncStore>[] = [new AsyncScope(new AsyncStore())];
+const globalStore = new AsyncStore([[CONTEXT_STORE_KEY, new AsyncStore()]]);
 
 /** The singleton {@link AsyncScope} instance that powers the global scope functions. */
 let globalAsyncCtx = new AsyncScope(globalStore);
@@ -44,35 +45,6 @@ if (hasASL()) {
   const asl = GLOBAL_THIS[GLOBAL_ASYNC_SCOPE];
   asl.store = globalStore;
   globalAsyncCtx = asl;
-}
-
-/**
- * Attaches an AsyncContext to the global context lookup list.
- * @param {AsyncScope<unknown>} lookup
- */
-export function attachContextLookup(lookup: AsyncScope<AsyncStore>) {
-  if (!(lookup instanceof AsyncScope) || !(lookup.getStore() instanceof Map)) return;
-  if (contextLookups.includes(lookup)) return;
-  contextLookups.unshift(lookup);
-}
-
-/**
- * Detaches an AsyncContext from the global context lookup list.
- * @param {AsyncScope<unknown>} lookup
- */
-export function detachContextLookup(lookup: AsyncScope<AsyncStore>) {
-  const index = contextLookups.indexOf(lookup);
-  if (index !== -1) {
-    contextLookups.splice(index, 1);
-  }
-}
-
-/**
- * Returns the global context lookup list.
- * @returns {AsyncScope<AsyncStore>[]}
- */
-export function getContextLookups(): AsyncScope<AsyncStore>[] {
-  return contextLookups;
 }
 
 /**
@@ -100,7 +72,7 @@ export function asyncStoreContract<T>(
   return async function asyncContract<R>(fn: () => Promise<R>): Promise<R> {
     onstart?.();
 
-    const store = new AsyncStore([[key, value]], getAsyncStore());
+    const store = new AsyncStore([[key, value]], getScopeStore());
 
     try {
       return await globalAsyncCtx.run<R>(store, fn);
@@ -180,7 +152,7 @@ export async function withIsolation<R>(fn: () => R, strict = true) {
   const parent = globalAsyncCtx.getStore()!;
 
   const floatingLists = new Set<Future<unknown>>();
-  const isolatedStore = new AsyncStore(parent);
+  const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, new AsyncStore()]], parent);
 
   try {
     const result = await (globalAsyncCtx.run(isolatedStore, fn, floatingLists) as Promise<R>);
@@ -261,6 +233,39 @@ export function setScope(key: AsyncKey, value: AsyncValue) {
 }
 
 /**
+ * Creates a new Context Store with the given initial values.
+ * @param {[AsyncKey, AsyncValue][]} init
+ * @returns {AsyncStore}
+ */
+export function createContextStore(init?: [AsyncKey, AsyncValue][]) {
+  return init ? new AsyncStore(init, getContextStore()) : new AsyncStore(getContextStore());
+}
+
+/**
+ * Gets the currently active Context Store.
+ * @returns {AsyncStore}
+ */
+export function getContextStore(): AsyncStore {
+  return globalAsyncCtx.getStore()!.get(CONTEXT_STORE_KEY) as AsyncStore;
+}
+
+/**
+ * Sets the currently active Context Store.
+ * @param {AsyncStore} store
+ * @returns {void}
+ */
+export function setContextStore(store: AsyncStore): void {
+  globalAsyncCtx.getStore()!.set(CONTEXT_STORE_KEY, store);
+}
+
+/**
+ * Clears the currently active Context Store.
+ */
+export function clearContextStore() {
+  getContextStore()!.clear();
+}
+
+/**
  * Reads a value from the currently active {@link AsyncStore}s, walking up
  * the parent chain if the key is not found locally.
  *
@@ -277,22 +282,8 @@ export function getContext<R>(key: AsyncKey): R | undefined;
  */
 export function getContext<R>(key: AsyncKey, fallback: R): R;
 export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
-  const scope = contextLookups[0] as AsyncScope<AsyncStore>;
-  if (!scope) return fallback;
-
-  const initLookup = scope.getStore()!.get?.(key);
-  if (typeof initLookup !== 'undefined') return initLookup;
-
-  if (contextLookups.length > 1) {
-    const length = contextLookups.length;
-
-    for (let i = 1; i < length; i++) {
-      const result = contextLookups[i].getStore()!.get?.(key);
-      if (typeof result !== 'undefined') return result;
-    }
-  }
-
-  return fallback;
+  const value = getContextStore().get(key);
+  return typeof value !== 'undefined' ? value : fallback;
 }
 
 /**
@@ -304,9 +295,7 @@ export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
  * @param value - The value to associate with the key.
  */
 export function setContext(key: AsyncKey, value: AsyncValue) {
-  const lookup = contextLookups[0] as AsyncScope<AsyncStore>;
-  if (!lookup) return;
-  lookup.getStore()!.set(key, value);
+  getContextStore()!.set(key, value);
 }
 
 /**
@@ -314,7 +303,7 @@ export function setContext(key: AsyncKey, value: AsyncValue) {
  *
  * @returns The currently active {@link AsyncStore}, or `undefined` if none is active.
  */
-export function getAsyncStore() {
+export function getScopeStore() {
   return globalAsyncCtx.getStore();
 }
 
@@ -353,7 +342,7 @@ function getAll(list: AsyncStore[] = [], from?: AsyncStore) {
  * Useful for debugging, diagnostics, or manually capturing a store reference
  * for later re-entry via {@link withScope}.
  */
-export const getAllAsyncContext = getAll as () => AsyncStore[];
+export const getAllScopes = getAll as () => AsyncStore[];
 
 export function isGlobalScope() {
   return globalAsyncCtx.getStore() === globalStore;

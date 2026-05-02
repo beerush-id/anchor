@@ -2,7 +2,7 @@ import {
   anchor,
   captureStack,
   createStack,
-  getAsyncStore,
+  getContextStore,
   getScope,
   onGlobalCleanup,
   type RefStack,
@@ -39,7 +39,7 @@ export function createLifecycle(setupProps: Record<string, unknown>, name?: stri
   const mountHandlers = new Set<MountHandler>();
   const cleanupHandlers = new Set<CleanupHandler>();
 
-  const context = new RenderContext(name ?? 'Anonymous', getAsyncStore());
+  const context = new RenderContext(name ?? 'Anonymous', getContextStore());
   const propsRef = anchor({ ...setupProps }, { recursive: false });
 
   const stack = createStack();

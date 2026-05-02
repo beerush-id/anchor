@@ -1,23 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AsyncStore,
-  attachContextLookup,
-  detachContextLookup,
-  getAllAsyncContext,
-  getAsyncStore,
+  clearContextStore,
+  createContextStore,
+  getAllScopes,
   getContext,
-  getContextLookups,
+  getContextStore,
   getRootStore,
   getScope,
+  getScopeStore,
+  isGlobalScope,
   setContext,
+  setContextStore,
   setScope,
   withIsolation,
   withScope,
 } from '../../src/context.js';
+import { sleep } from '../../src/index.js';
 import { AsyncScope, awaited } from '../../src/scope.js';
 
-describe('Anchor - Async Context', () => {
-  describe('AsyncStore', () => {
+describe('Anchor - Async Scope', () => {
+  describe('AsyncScope', () => {
     let warnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
@@ -28,7 +31,11 @@ describe('Anchor - Async Context', () => {
     });
 
     it('should get the active store', () => {
-      expect(getAsyncStore()).toBeInstanceOf(Map);
+      expect(getScopeStore()).toBeInstanceOf(Map);
+    });
+
+    it('should detect global scope', () => {
+      expect(isGlobalScope()).toBe(true);
     });
 
     it('should store and retrieve values', () => {
@@ -55,7 +62,7 @@ describe('Anchor - Async Context', () => {
     });
   });
 
-  describe('Global Context & Store Management', () => {
+  describe('Global Scope & Store Management', () => {
     let warnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
@@ -65,7 +72,7 @@ describe('Anchor - Async Context', () => {
       warnSpy.mockRestore();
     });
 
-    it('inContext provides a synchronous context scope', () => {
+    it('withScope provides a synchronous context scope', () => {
       withScope(() => {
         setScope('key', 'val');
         expect(getScope('key')).toBe('val');
@@ -74,7 +81,7 @@ describe('Anchor - Async Context', () => {
       expect(getScope('key')).toBeUndefined();
     });
 
-    it('inContext inherits from parent scope', () => {
+    it('withScope inherits from parent scope', () => {
       withScope(() => {
         setScope('parentKey', 'parentVal');
 
@@ -88,13 +95,13 @@ describe('Anchor - Async Context', () => {
       });
     });
 
-    it('getAllAsyncContext aggregates the active store hierarchy', () => {
+    it('getAllScopes aggregates the active store hierarchy', () => {
       withScope(() => {
         setScope('l1', 'v1');
 
         withScope(() => {
           setScope('l2', 'v2');
-          const stores = getAllAsyncContext();
+          const stores = getAllScopes();
           expect(stores.length).toBeGreaterThanOrEqual(2);
           expect(stores[0].get('l2')).toBe('v2');
           expect(stores[1].get('l1')).toBe('v1');
@@ -118,7 +125,7 @@ describe('Anchor - Async Context', () => {
     });
   });
 
-  describe('Security: isolatedContext Boundaries', () => {
+  describe('Security: withIsolation Boundaries', () => {
     let warnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
@@ -142,7 +149,7 @@ describe('Anchor - Async Context', () => {
       expect(warnSpy).not.toHaveBeenCalled();
     });
 
-    it('isolatedContext operates normally when properly awaited', async () => {
+    it('withIsolation operates normally when properly awaited', async () => {
       await withScope(async () => {
         setScope('base', 'val');
 
@@ -158,7 +165,7 @@ describe('Anchor - Async Context', () => {
       });
     });
 
-    it('isolatedContext warns if a floating Awaited promise accesses the boundary after destruction', async () => {
+    it('withIsolation warns if a floating Awaited promise accesses the boundary after destruction', async () => {
       vi.useFakeTimers();
 
       await withIsolation(async () => {
@@ -173,7 +180,7 @@ describe('Anchor - Async Context', () => {
 
       // The Awaited.fork wrapper should have detected the detached access and fired the warning.
       expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(getAsyncStore()).toBe(getRootStore());
+      expect(getScopeStore()).toBe(getRootStore());
 
       vi.useRealTimers();
     });
@@ -295,7 +302,7 @@ describe('Anchor - Async Context', () => {
       vi.useRealTimers();
     });
 
-    it('should prevent isolatedContexts from leaking into each other during massive concurrent execution', async () => {
+    it('should prevent withIsolations from leaking into each other during massive concurrent execution', async () => {
       vi.useFakeTimers();
       const promises = Array.from({ length: 10 }).map((_, index) => {
         const id = `iso_${index}`;
@@ -366,7 +373,7 @@ describe('Anchor - Async Context', () => {
         });
 
         // 2. Bound callback -> Captures current context store and forces it into the callback closure
-        const currentStore = getAllAsyncContext()[0]; // Capture active store
+        const currentStore = getAllScopes()[0]; // Capture active store
         emitter.on(() => {
           withScope(() => {
             if (getScope('event_key') === 'bound') capturedInside = true;
@@ -471,70 +478,49 @@ describe('Anchor - Async Context', () => {
     });
   });
 
-  describe('Context Lookup', () => {
-    const renderStore = new AsyncStore([['theme', 'light']]);
-    const renderCtx = new AsyncScope(renderStore);
-
-    it('should handle context lookup attachment', () => {
-      expect(() => attachContextLookup(renderCtx)).not.toThrow();
-      expect(getContextLookups().includes(renderCtx)).toBe(true);
+  describe('Context System', () => {
+    beforeEach(() => {
+      clearContextStore();
     });
 
-    it('should handle context lookup detachment', () => {
-      expect(() => detachContextLookup(renderCtx)).not.toThrow();
-      expect(getContextLookups().includes(renderCtx)).toBe(false);
+    it('should handle getContext and setContext in global scope', () => {
+      expect(getContext('foo')).toBeUndefined();
+      setContext('foo', 'bar');
+      expect(getContext('foo')).toBe('bar');
     });
 
-    it('should handle attaching the same scope', () => {
-      expect(() => attachContextLookup(renderCtx)).not.toThrow();
-      expect(() => attachContextLookup(renderCtx)).not.toThrow();
-      expect(getContextLookups().includes(renderCtx)).toBe(true);
-      expect(getContextLookups().length).toBe(2);
-    });
+    it('should handle getContext and setContext in an isolated scope', async () => {
+      await withIsolation(async () => {
+        expect(getContext('foo')).toBeUndefined();
+        setContext('foo', 'baz');
+        expect(getContext('foo')).toBe('baz');
 
-    it('should handle detaching the same scope', () => {
-      expect(() => attachContextLookup(renderCtx)).not.toThrow();
-      expect(() => detachContextLookup(renderCtx)).not.toThrow();
-      expect(() => detachContextLookup(renderCtx)).not.toThrow();
-      expect(getContextLookups().includes(renderCtx)).toBe(false);
-    });
+        await awaited(sleep(0));
 
-    it('should handle getContext', () => {
-      const subScope = new AsyncScope(new AsyncStore());
-
-      attachContextLookup(renderCtx);
-      attachContextLookup(subScope);
-
-      attachContextLookup(undefined as never);
-      attachContextLookup({} as never);
-      attachContextLookup({ getStore: () => undefined } as never);
-
-      expect(getContext('theme')).toBe('light');
-      expect(getContext('fallback', 'fallback')).toBe('fallback');
-
-      subScope.run(new AsyncStore(), () => {
-        setContext('sub', 'sub');
-
-        expect(getContext('theme')).toBe('light');
-        expect(getContext('sub')).toBe('sub');
-        expect(getContext('fallback', 'fallback')).toBe('fallback');
+        expect(getContext('foo')).toBe('baz');
       });
+
+      expect(getContext('foo')).toBeUndefined();
     });
 
-    it('should handle attaching scope without default store', () => {
-      const scope = new AsyncScope() as AsyncScope<AsyncStore>;
-      attachContextLookup(scope);
-      expect(getContextLookups().includes(scope)).toBe(false);
-    });
+    it('should override the currently active Context Store', () => {
+      const prevStore = getContextStore();
 
-    it('should handle getContext and setContext on empty lookups', async () => {
-      const lookups = [...getContextLookups()];
-      lookups.forEach((lookup) => detachContextLookup(lookup));
+      setContext('foo', 'bar');
+      expect(getContext('foo')).toBe('bar');
 
-      expect(getContext('theme')).toBeUndefined();
-      expect(setContext('theme', 'light')).toBeUndefined();
-      expect(getContext('theme')).toBeUndefined();
-      expect(getContext('theme', 'fallback')).toBe('fallback');
+      const nextStore = createContextStore([['foo', 'baz']]);
+
+      setContextStore(nextStore);
+      expect(getContext('foo')).toBe('baz');
+
+      setContextStore(prevStore);
+      expect(getContext('foo')).toBe('bar');
+
+      setContextStore(createContextStore());
+      expect(getContext('foo')).toBe('bar');
+
+      setContextStore(prevStore);
     });
   });
 });
