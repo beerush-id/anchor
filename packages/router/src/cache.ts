@@ -164,11 +164,11 @@ export class URLCache {
   /**
    * Creates a new URLCache instance.
    *
-   * @param registry - The route registry used for matching URLs
+   * @param registries - The route registries to use for matching
    * @param maxSize - Maximum number of entries to cache (default: 100)
    */
   constructor(
-    private registry: RouteRegistry,
+    private registries: Set<RouteRegistry>,
     private maxSize = 100
   ) {}
 
@@ -204,10 +204,31 @@ export class URLCache {
     }
 
     // Not cached - match and create context
-    const match = this.registry.match(url) as MatchResult;
+    // const match = this.registry.match(url) as MatchResult;
+    let match: MatchResult | undefined;
+
+    for (const registry of this.registries) {
+      const nextMatch = registry.match(url) as MatchResult;
+
+      if (nextMatch) {
+        if (nextMatch.exception && (!match || nextMatch.segments.length >= match.segments.length)) {
+          match = nextMatch;
+        }
+        if (!nextMatch.exception) {
+          match = nextMatch;
+          break;
+        }
+      }
+    }
 
     if (match) {
       match.url = url;
+
+      // Don't cache exceptions.
+      if (match.exception) return match;
+
+      // Clear any exceptions from segments.
+      match.segments.forEach((s) => (s.store.exception = undefined));
 
       // Evict oldest entry if at capacity
       if (this.cache.size >= this.maxSize) {

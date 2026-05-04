@@ -1,7 +1,7 @@
 import { URLCache } from './cache.js';
-import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
+import { DEFAULT_CONFIG } from './constant.js';
 import { RouterContext } from './context.js';
-import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
+import { RENDER_MODE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { getExceptionRendererFactory, Route } from './route.js';
@@ -69,7 +69,7 @@ export class Router<Output = any> {
     if (!store.has(this)) {
       store.set(this, {
         state: createState({ progress: 0, activating: 0 }),
-        cache: new URLCache(this.rootRegistry, this.options.cacheSize),
+        cache: new URLCache(this.routes, this.options.cacheSize),
         context: new RouterContext(),
         activeUrl: undefined,
         activeRoute: undefined,
@@ -84,6 +84,7 @@ export class Router<Output = any> {
   public readonly options: RouterOptions;
   public readonly rootRoute: UnknownRoute;
   public readonly rootRegistry: RouteRegistry;
+  public readonly routes = new Set<RouteRegistry>();
 
   private exceptionRendererState = createState<RouteInternalRenderer<Output> | undefined>(undefined);
 
@@ -126,8 +127,9 @@ export class Router<Output = any> {
    */
   constructor(options?: RouterOptions) {
     this.options = { ...DEFAULT_CONFIG, ...options };
-    this.rootRoute = new Route(this, '/', this.options);
+    this.rootRoute = new Route(this, '/', this.options, undefined, '/');
     this.rootRegistry = new RouteRegistry(this.rootRoute);
+    this.routes.add(this.rootRegistry);
   }
 
   /**
@@ -165,23 +167,17 @@ export class Router<Output = any> {
     ? Omit<Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>, 'route'>
     : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
     if (!path) return this.rootRoute as never;
-    const route = new Route(this, path, options);
 
     if (path === ('/' as TPath)) {
+      const route = new Route(this, path, options);
       route.closed = true;
       this.rootRoute.index = route as never;
       return route as never;
     }
 
-    const routeMap = new RouteRegistry(route as never as UnknownRoute);
-
-    if (route.type === ROUTE_TYPE.STATIC) {
-      this.rootRegistry.set(route.name, routeMap);
-    } else if (route.type === ROUTE_TYPE.DYNAMIC) {
-      this.rootRegistry.set(DYNAMIC_ROUTE_KEY, routeMap);
-    } else if (route.type === ROUTE_TYPE.WILDCARD) {
-      this.rootRegistry.set(WILDCARD_ROUTE_KEY, routeMap);
-    }
+    const route = new Route(this, path, options);
+    const routeMap = new RouteRegistry(route as never as UnknownRoute, true);
+    this.routes.add(routeMap);
 
     return route as never;
   }
@@ -249,7 +245,8 @@ export class Router<Output = any> {
       storage.activatingSegments.clear();
     }
 
-    const { segments } = match;
+    const { segments, exception } = match;
+    storage.context.exception = exception;
 
     const currentSegments = storage.activeSegments || [];
     const targetSegments = segments;
@@ -426,7 +423,7 @@ export class Router<Output = any> {
   }
 
   public catch(renderer: RouteExceptionRendererFn<None, None, TRec, Output>) {
-    this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute as UnknownRoute, renderer, true);
+    this.exceptionRendererState.value = getExceptionRendererFactory()(this, renderer);
   }
 }
 

@@ -98,6 +98,7 @@ export type ProviderContext<TParams, TQueryParams, TData> = {
   data: TData;
   query: TQueryParams;
   params: TParams;
+  exception?: Error;
 };
 
 /** Possible error types for routes */
@@ -170,20 +171,16 @@ export type FlatRec<TParams> = {
 export type RouteStatus = (typeof ROUTE_STATUS)[keyof typeof ROUTE_STATUS];
 
 /** Internal state for a route */
-export type RouteState<TParams, TQueryParams, TData> = {
+export type RouteState = {
   status: RouteStatus;
   active: boolean;
   resolved: boolean;
   resolving: boolean;
   authenticated: boolean;
   authenticating: boolean;
-  renderer?: RouteInternalRenderer<unknown>;
-  exception?: Error;
 
-  data: TData;
-  query: TQueryParams;
-  params: TParams;
   error?: RouteError;
+  renderer?: RouteInternalRenderer<unknown>;
 };
 
 /** A route path string */
@@ -253,8 +250,9 @@ export type ProviderObserver = {
 };
 
 export type RouteStorage = {
-  state: RouteState<unknown, unknown, unknown>;
+  state: RouteState;
   cache: RouteCache;
+  context: { value: ProviderContext<TRec, TRec, TRec> };
   dataCache: WeakMap<ProviderContext<TRec, TRec, TRec>, TRec>;
   activeResolvers: Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
   guardObserver: StateObserver;
@@ -283,15 +281,24 @@ export type RenderMode = (typeof RENDER_MODE)[keyof typeof RENDER_MODE];
 
 export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => TOutput;
 
+export type RenderContext<Params, QueryParams, Data> = {
+  status: RouteStatus;
+  active: boolean;
+  resolved: boolean;
+  resolving: boolean;
+  authenticated: boolean;
+  authenticating: boolean;
+  data: Data;
+  query: QueryParams;
+  params: Params;
+  error?: RouteError;
+};
 export type RouteRendererFn<Params, QueryParams, Data, Output> = (
-  state: RouteState<Params, QueryParams, Data>,
+  state: RenderContext<Params, QueryParams, Data>,
   context: RouterContext<Params, QueryParams, Data>,
   children?: Output
 ) => Output;
 
 export type RouteExceptionRendererFn<Params, QueryParams, Data, Output> = (
-  error: Error,
-  state: RouteState<Params, QueryParams, Data>,
-  context: RouterContext<Params, QueryParams, Data>,
-  children?: Output
+  context: RouterContext<Params, QueryParams, Data>
 ) => Output;

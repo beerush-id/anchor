@@ -23,7 +23,7 @@ export * from './form.js';
 export * from './history/index.js';
 export * from './inspector.js';
 export * from './internal.js';
-export { createLifecycle, onCleanup, onGlobalCleanup, setCleanUpHandler } from './lifecycle.js';
+export { createLifecycle, globalRun, onCleanup, onGlobalCleanup, setCleanUpHandler } from './lifecycle.js';
 export * from './observation.js';
 export * from './ref.js';
 export * from './scope.js';

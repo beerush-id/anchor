@@ -4,6 +4,14 @@ import type { ProviderContext, TRec } from './types.js';
 export class RouterContext<TParams, TQueryParams, TData> {
   private sources: ProviderContext<TRec, TRec, TRec>[] = [];
   private urlState = createState<string | undefined>(undefined);
+  private exceptionState = createState<Error | undefined>(undefined);
+
+  public get exception() {
+    return this.exceptionState.value;
+  }
+  public set exception(value: Error | undefined) {
+    this.exceptionState.value = value;
+  }
 
   public get url() {
     return this.urlState.value;

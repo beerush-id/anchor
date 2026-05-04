@@ -168,10 +168,8 @@ export function withScope<R>(fn: () => R, store?: AsyncStore) {
  * @returns The resolved return value of `fn`.
  */
 export async function withIsolation<R>(fn: () => R, strict = true, context?: AsyncStore) {
-  const parent = globalAsyncCtx.getStore()!;
-
   const floatingLists = new Set<Future<unknown>>();
-  const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, context ?? new AsyncStore()]], parent);
+  const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, context ?? new AsyncStore()]]);
 
   try {
     const result = await (globalAsyncCtx.run(isolatedStore, fn, floatingLists) as Promise<R>);

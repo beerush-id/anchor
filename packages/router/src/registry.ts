@@ -48,8 +48,12 @@ export class RouteRegistry extends Map {
    * Creates a new RouteRegistry instance.
    *
    * @param route - The route this registry is associated with
+   * @param slave
    */
-  constructor(public route: UnknownRoute) {
+  constructor(
+    public route: UnknownRoute,
+    public slave = false
+  ) {
     super();
     ROUTE_MAP_LINK.set(this.route, this);
   }
@@ -89,7 +93,7 @@ export class RouteRegistry extends Map {
     if (!url || !url.pathname) return;
 
     if (!urlSegments) {
-      urlSegments = cleanPath(url.pathname).split('/');
+      urlSegments = cleanPath(url.pathname, this.slave ? '' : '/').split('/');
     }
 
     if (!query) {
@@ -100,7 +104,7 @@ export class RouteRegistry extends Map {
     const segment = urlSegments[index];
     const recursive = urlSegments.length > index + 1;
 
-    const staticRoute = segment === '' ? this : (this.get(segment) as RouteRegistry);
+    const staticRoute = segment === this.route.name ? this : (this.get(segment) as RouteRegistry);
     const dynamicRoute = this.get(DYNAMIC_ROUTE_KEY) as RouteRegistry;
     const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteRegistry;
 
@@ -183,10 +187,10 @@ export class RouteRegistry extends Map {
       const lastSegment = segments[segments.length - 1];
 
       if (lastSegment) {
-        lastSegment.route.state.exception = exception;
+        lastSegment.store.exception = exception;
       }
 
-      return { query, route: lastSegment.route, segments, params, exception };
+      return { query, route: lastSegment?.route, segments, params, exception };
     }
   }
 }
@@ -197,13 +201,14 @@ export class RouteRegistry extends Map {
  * Removes leading, trailing, and duplicate slashes.
  *
  * @param path - The path string to clean
+ * @param leading - The leading slash to use (default: '/')
  * @returns The cleaned path string
  *
  * @internal
  */
-function cleanPath(path: string) {
+function cleanPath(path: string, leading = '/') {
   return path
-    .replace(/^[\/]+/, '/')
+    .replace(/^[\/]+/, leading)
     .replace(/[\/]+/g, '/')
     .replace(/[\/]+$/, '');
 }

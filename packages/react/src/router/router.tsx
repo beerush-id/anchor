@@ -1,4 +1,4 @@
-import { untrack } from '@anchorlib/core';
+import { isBrowser, untrack } from '@anchorlib/core';
 import {
   type MatchedRoute,
   type RouteOptions,
@@ -33,17 +33,21 @@ export function RouteViewer({
       const Index = route.index?.renderer;
       return Index ? <Index /> : null;
     },
+    route.path,
     'Index',
-    'Renderer',
     false
   );
 
   const LayoutSnippet = snippet(
     function RouteSnippet() {
       if (!route.active) return children;
+
       const Layout = route.renderer;
       const Exception = route.exceptionRenderer;
-      const exception = route.state.exception && Exception ? <Exception /> : null;
+      if (Exception) {
+        (Exception as FC).displayName = `Exception(${route.path})`;
+      }
+      const exception = route.exception && Exception ? <Exception /> : null;
       const content = (
         <>
           <IndexSnippet />
@@ -67,7 +71,7 @@ export function RouteViewer({
       return Layout ? <Layout>{content}</Layout> : content;
     },
     route.path,
-    STACK_REGISTRY.has(route) ? 'Modal' : route.path === '/' ? 'Root' : 'Page',
+    STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
     false
   );
 
@@ -93,7 +97,7 @@ export function RouteRenderer({
   stacks: RouteStacks;
 }) {
   if (route.renderer) {
-    if (route.index?.renderer) {
+    if (registry.size) {
       (route.renderer as FC).displayName = `Layout(${route.path})`;
     } else {
       (route.renderer as FC).displayName = `Content(${route.path})`;
@@ -109,7 +113,7 @@ export function RouteRenderer({
   });
 
   return (
-    <RouteViewer route={route} stacks={stacks}>
+    <RouteViewer key={route.path} route={route} stacks={stacks}>
       {children}
     </RouteViewer>
   );
@@ -148,9 +152,13 @@ export function UIRouter({ router, resetScroll, url, headless }: UIRouterProps) 
     };
   });
 
+  const routes = Array.from(router.routes).map((registry, i) => (
+    <RouteRenderer key={registry.route.path} route={registry.route} registry={registry} stacks={stacks} />
+  ));
+
   return (
     <>
-      <RouteRenderer key={'/'} route={router.rootRoute} registry={router.rootRegistry} stacks={stacks} />
+      {routes}
       <StackRenderer stacks={stacks} />
     </>
   );
@@ -209,7 +217,7 @@ export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
   return page(routeNode);
 }
 
-if (typeof window !== 'undefined') {
+if (isBrowser()) {
   if (location.pathname.endsWith('/')) {
     const url = `${location.pathname.replace(/\/$/, '')}${location.search}`;
     history.replaceState(null, '', url);

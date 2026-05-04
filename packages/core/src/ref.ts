@@ -196,6 +196,79 @@ export function mutable<T>(init: T, options?: StateOptions | boolean) {
 }
 
 /**
+ * A Signal is a function that returns its current value when called,
+ * and provides a `set` method to update that value.
+ */
+export interface Signal<T> {
+  (): T;
+  /**
+   * Updates the signal's value.
+   * @param value - The new value or a function that computes the new value from the current one.
+   */
+  set(value: T | ((current: T) => T)): T;
+}
+
+export const SIGNAL_IDENTIFIER = Symbol('anchor-signal');
+/**
+ * An ImmutableSignal is a read-only function that returns its current value.
+ */
+export type ImmutableSignal<T> = () => T;
+
+/**
+ * Creates a reactive signal for a value.
+ *
+ * @template T - The type of value stored in the signal
+ * @param init - The initial value
+ * @returns A Signal function with a .set() method
+ */
+export function signal<T>(init: T): Signal<T>;
+
+/**
+ * Creates an immutable reactive signal for a value.
+ *
+ * @param init - The initial value
+ * @param immutable - Must be true to create an immutable signal
+ * @returns A read-only function that returns the value
+ */
+export function signal<T>(init: T, immutable: true): ImmutableSignal<T>;
+export function signal<T>(init: T, immutable?: boolean): Signal<T> | ImmutableSignal<T> {
+  const base = { value: init };
+  const state = anchor(base);
+
+  onCleanup(() => {
+    if (anchor.has(state)) anchor.destroy(state);
+  });
+
+  function getter() {
+    return state.value;
+  }
+  getter[SIGNAL_IDENTIFIER] = true;
+
+  if (!immutable) {
+    getter.set = (setValue: T | ((c: T) => T)) => {
+      if (typeof setValue === 'function') {
+        setValue = (setValue as (val: T) => T)(base.value);
+      }
+
+      return (state.value = setValue);
+    };
+  }
+
+  return getter;
+}
+
+/**
+ * Checks if a given value is a Signal or an ImmutableSignal.
+ *
+ * @template T - The type of value stored in the signal
+ * @param value - The value to check
+ * @returns True if the value is a signal, false otherwise
+ */
+export function isSignal<T>(value: unknown): value is Signal<T> | ImmutableSignal<T> {
+  return typeof value === 'function' && value[SIGNAL_IDENTIFIER as never] === true;
+}
+
+/**
  * Creates an immutable reference for primitive values.
  *
  * @template T - The primitive type (string, number, boolean, etc.)

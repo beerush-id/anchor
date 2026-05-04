@@ -1,6 +1,7 @@
 import { createObserver, retriable } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
+import type { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
@@ -17,6 +18,7 @@ import type {
   ProviderContext,
   ProviderMap,
   ProviderOptions,
+  RenderContext,
   RouteExceptionRendererFn,
   RouteInternalRenderer,
   RouteName,
@@ -126,7 +128,15 @@ export class Route<
   }
 
   public get data(): TData {
-    return this.storage.state.data as TData;
+    return this.storage.context.value.data as TData;
+  }
+
+  /**
+   * Gets the exception for this route.
+   * @returns {Error | undefined}
+   */
+  public get exception(): Error | undefined {
+    return this.storage.context.value.exception;
   }
 
   /**
@@ -152,20 +162,21 @@ export class Route<
   /** Map of data providers for this route */
   public providers = new Map<string, ProviderMap>();
 
-  public get state(): RouteState<TParams, TQueryParams, TData> {
-    return this.storage.state as RouteState<TParams, TQueryParams, TData>;
+  public get state(): RouteState {
+    return this.storage.state;
   }
 
-  private get storage(): RouteStorage {
+  public get context(): ProviderContext<TParams, TQueryParams, TData> {
+    return this.storage.context.value as ProviderContext<TParams, TQueryParams, TData>;
+  }
+
+  public get storage(): RouteStorage {
     const store = getStore();
 
     if (!store.has(this)) {
       safeRead(() => {
         store.set(this, {
-          state: createState<RouteState<TParams, TQueryParams, TData>>({
-            data: {} as TData,
-            query: {} as TQueryParams,
-            params: {} as TParams,
+          state: createState<RouteState>({
             status: 'idle',
             active: false,
             resolved: false,
@@ -174,6 +185,7 @@ export class Route<
             authenticating: false,
           }),
           cache: new RouteCache(this as UnknownRoute),
+          context: createState({ value: { data: {}, query: {}, params: {} } }),
           guardObservers: new WeakMap(),
           activeResolvers: new Map(),
           providerObservers: new WeakMap(),
@@ -191,12 +203,14 @@ export class Route<
    * @param name - The route path
    * @param options - Optional route options
    * @param parent - Optional parent route
+   * @param displayName - Optional display name for the route
    */
   public constructor(
     public router: Router<TOutput>,
     name: TPath,
     options?: RouteOptions,
-    public parent?: TParent
+    public parent?: TParent,
+    public displayName?: string
   ) {
     this.name = (name ?? '').replace(/^\//, '').split(/\//g)[0] as RouteName<TPath>;
     this.type = this.name.startsWith(':')
@@ -297,7 +311,7 @@ export class Route<
         TOutput
       > {
     if (this.closed) throw new Error(`Index route can't have a child route.`);
-    const child = new Route(this.router, path, { ...this.options, ...options }, this);
+    const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
 
     if (path === ('/' as TChildPath)) {
       child.closed = true;
@@ -569,7 +583,6 @@ export class Route<
         if (result instanceof Error) return;
       }
 
-      state.data = context.data as TData;
       state.resolved = true;
 
       return context.data as TData;
@@ -592,14 +605,11 @@ export class Route<
    * ```
    */
   public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
-    const { state } = this.storage;
-
-    await Promise.resolve(); // Push to microtask queue to prevent tracking.
+    const { state, context: ctx } = this.storage;
+    ctx.value = context as ProviderContext<TRec, TRec, TRec>;
 
     state.status = ROUTE_STATUS.PENDING;
     state.error = undefined;
-    state.query = context.query;
-    state.params = context.params;
 
     // Set the route as active immediately if renderMode is immediate
     if (this.options.renderMode === RENDER_MODE.IMMEDIATE) {
@@ -636,7 +646,6 @@ export class Route<
       if (!this.options?.keepAlive) {
         safeAssign(state as TRec, { query: {}, params: {}, data: {} });
 
-        state.data = {} as TData;
         state.error = undefined;
         state.resolved = false;
         state.authenticated = false;
@@ -684,7 +693,7 @@ export class Route<
   }
 
   public catch(renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>) {
-    this.exceptionRendererState.value = createExceptionRenderer(this as UnknownRoute, renderer, true);
+    this.exceptionRendererState.value = createExceptionRenderer(this.router, renderer);
   }
 
   public cleanup() {
@@ -713,24 +722,55 @@ let createRenderer = <TParams, TQueryParams, TData, TOutput>(
   layout?: boolean
 ): RouteInternalRenderer<TOutput> => {
   return ({ children }) => {
-    if (layout) return safeRead(() => renderer(route.state as never, route.router.context as never, children));
-    return safeRead(() => renderer(route.state as never, route.router.context as never));
+    const { state, context } = route.storage;
+    const reader = {
+      get active() {
+        return state.active;
+      },
+      get status() {
+        return state.status;
+      },
+      get resolved() {
+        return state.resolved;
+      },
+      get resolving() {
+        return state.resolving;
+      },
+      get authenticated() {
+        return state.authenticated;
+      },
+      get authenticating() {
+        return state.authenticating;
+      },
+      get data() {
+        return context.value.data;
+      },
+      get error() {
+        return state.error;
+      },
+      get query() {
+        return context.value.query;
+      },
+      get params() {
+        return context.value.params;
+      },
+      get exception() {
+        return context.value.exception;
+      },
+    } as RenderContext<TParams, TQueryParams, TData>;
+
+    if (layout) return safeRead(() => renderer(reader, route.router.context as never, children));
+    return safeRead(() => renderer(reader, route.router.context as never));
   };
 };
 
 let createExceptionRenderer = <TParams, TQueryParams, TData, TOutput>(
-  route: UnknownRoute,
-  renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>,
-  layout?: boolean
+  router: Router,
+  renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>
 ): RouteInternalRenderer<TOutput> => {
-  return ({ children }) => {
-    if (layout)
-      return safeRead(() =>
-        renderer(route.state.exception as never, route.state as never, route.router.context as never, children)
-      );
-    return safeRead(() =>
-      renderer(route.state.exception as never, route.state as never, route.router.context as never)
-    );
+  return () => {
+    const context = router.context as RouterContext<TParams, TQueryParams, TData>;
+    return safeRead(() => renderer(context));
   };
 };
 

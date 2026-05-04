@@ -1,6 +1,6 @@
 import { anchor, captureStack, createObserver, isBrowser, microtask, setContextStore } from '@anchorlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
-import { type RenderContext } from './context.js';
+import type { RenderContext } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
 import { getProps, proxyProps } from './props.js';
@@ -255,17 +255,6 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
  * @returns {TemplateView<P>} A memoized functional component that re-executes when its props change
  */
 export function template<P>(factory: Template<P>, displayName?: string): TemplateView<P> {
-  const parentProps = getProps();
-
-  if (parentProps) {
-    captureStack.warning.external(
-      'Using template inside a component',
-      'Template should not be used inside a component. Use snippet instead for better clarity of the concern.',
-      ['Template should be used outside of a component'].join('\n'),
-      template
-    );
-  }
-
   return snippet(factory, displayName, 'Template', false) as TemplateView<P>;
 }
 
