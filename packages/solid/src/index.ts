@@ -6,14 +6,11 @@ export type {
   AsyncOptions,
   AsyncState,
   BatchHandler,
-  ClosureAdapter,
-  ClosureStorage,
-  Context,
-  ContextProvider,
   Debouncer,
   EffectHandler,
   FetchOptions,
   FetchState,
+  Future,
   HistoryOptions,
   HistoryState,
   Immutable,
@@ -43,6 +40,7 @@ export type {
 export {
   AsyncStatus,
   anchor,
+  awaited,
   createLifecycle,
   DerivedRef,
   debouncer,
@@ -58,7 +56,6 @@ export {
   immutable,
   isImmutableRef,
   isMutableRef,
-  isolated,
   isValueRef,
   MutableRef,
   microbatch,
@@ -69,8 +66,8 @@ export {
   mutable,
   ordered,
   query,
-  setAsyncStorageAdapter,
   setContext,
+  setReactive,
   shortId,
   snapshot,
   streamState,
@@ -78,8 +75,12 @@ export {
   subscribe,
   undoable,
   untrack,
+  withIsolation,
+  withScope,
   writable,
 } from '@anchorlib/core';
+
+export { createRouter, MAX_AGE, Redirect, redirect, redirectUrl } from '@anchorlib/router';
 
 export * from './anchor.js';
 export * from './binding.js';
@@ -92,4 +93,9 @@ export * from './model.js';
 export * from './observable.js';
 export * from './props.js';
 export * from './ref.js';
+export * from './router/head.js';
+export * from './router/link.js';
+export * from './router/navigate.js';
+export * from './router/router.js';
+export * from './router/types.js';
 export * from './types.js';
