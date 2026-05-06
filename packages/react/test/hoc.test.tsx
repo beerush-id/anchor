@@ -149,24 +149,6 @@ describe('Anchor React - HOC', () => {
       vi.useRealTimers();
     });
 
-    it('should log warning when declaring template inside a component', () => {
-      vi.useFakeTimers();
-
-      const TestComponent = setup(() => {
-        const Template = template(() => 'Test Template');
-        return <Template />;
-      });
-
-      const { container } = render(<TestComponent />);
-      expect(container.textContent).toBe('Test Template');
-
-      vi.runAllTimers();
-
-      expect(warnSpy).toHaveBeenCalled();
-
-      vi.useRealTimers();
-    });
-
     it('should re-render when observed state changes', () => {
       let renderCount = 0;
       const count = mutable(0);

@@ -106,8 +106,10 @@ describe('Anchor React - Head APIs', () => {
           expect(styleKeys.length).toBe(1);
           expect(map.get(styleKeys[0])?.props.children).toBe('.test { color: blue; }');
 
-          // The Renderer should be a function
-          expect(typeof map.get('title')?.Renderer).toBe('function');
+          for (const head of map.values()) {
+            expect(typeof head.Renderer).toBe('function');
+            expect(() => head.Renderer({})).not.toThrow();
+          }
         });
 
         ssr.destroy();

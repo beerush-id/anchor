@@ -1,11 +1,11 @@
 import '../../src/client/index.js';
 import { mutable } from '@anchorlib/core';
 import type { UnknownRoute } from '@anchorlib/router';
-import { createRouter, redirect } from '@anchorlib/router';
+import { createRouter } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { modal, page, RouteRenderer, RouteViewer, UIRouter } from '../../src/router/router.js';
+import { modal, page, redirect, RouteRenderer, RouteViewer, UIRouter } from '../../src/index.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -70,7 +70,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
   });
 
   describe('RouteViewer', () => {
-    const createStacks = () => mutable<Map<UnknownRoute, FC>>(new Map());
+    const createStacks = () => new Map();
 
     it('returns children natively if the route is inactive or lacks a renderer', () => {
       const router = createRouter();
@@ -186,6 +186,28 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       expect(screen.getByTestId('bypassed-child')).toBeDefined();
       expect(container.textContent).toBe('Bypassed Child');
+    });
+
+    it('renders the Exception component and sets its displayName when exceptionRenderer exists', () => {
+      const router = createRouter();
+      const ExceptionComponent = () => <div data-testid="error-view">Error</div>;
+      const testRoute = router.route().route('/error-route');
+      const child = testRoute.route('/');
+      testRoute.render((_s, _c, children) => children).catch(ExceptionComponent);
+
+      // Simulate route with an exception
+      child.active = true;
+      testRoute.active = true;
+      testRoute.context.exception = new Error();
+      const stacks = createStacks();
+
+      render(
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div data-testid="bypassed-child">Child</div>
+        </RouteViewer>
+      );
+
+      expect(screen.getByTestId('error-view')).toBeDefined();
     });
   });
 
@@ -388,6 +410,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     it('assigns both Layout and Index displayNames with generic fallback paths when both exist on the absolute root', () => {
       const router = createRouter();
       const root = router.rootRoute;
+      root.route('/child');
       const rootIndex = root.route('/');
 
       root.render((state, context, children) => <div>{children as any}</div>);
@@ -483,7 +506,12 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const rawRoute = router.route('/redirect-target');
 
       // Creating a redirect invokes the handler registered natively by router.tsx
-      redirect(rawRoute, { id: '1' } as any, { foo: 'bar' } as any);
+      redirect(rawRoute, {
+        params: { id: '1' },
+        query: { foo: 'bar' },
+      } as any);
+
+      await Promise.resolve();
 
       expect(pushSpy).toHaveBeenCalledWith(
         { href: '/redirect-target?foo=bar', query: { foo: 'bar' }, params: { id: '1' }, redirect: location.href },

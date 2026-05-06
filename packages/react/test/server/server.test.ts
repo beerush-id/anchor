@@ -1,10 +1,20 @@
-import '../../src/server/index.js';
 import { getScope } from '@anchorlib/core';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Server Module', () => {
-  it('should warn when accessing global scope', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', undefined);
+  });
+
+  it('should warn when accessing global scope', async () => {
+    const errSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await import('../../src/server/index.js');
     const result = getScope('global');
+
     expect(result).toBeUndefined();
+    expect(errSpy).toHaveBeenCalled();
+
+    errSpy.mockRestore();
   });
 });

@@ -49,7 +49,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     e.preventDefault();
 
     if (!location.href.endsWith(href.value)) {
-      navigate(href.value, { query: query.value, params: params.value, replace: props.replace });
+      navigate(href.value as never, { query: query.value, params: params.value, replace: props.replace } as never);
     }
 
     $props.onClick?.(e);

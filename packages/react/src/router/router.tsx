@@ -224,11 +224,14 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    navigate(redirect.route, {
-      query: redirect.query,
-      params: redirect.params,
-      redirect: location.href,
-      replace: true,
-    });
+    navigate(
+      redirect.route as never,
+      {
+        query: redirect.query,
+        params: redirect.params,
+        redirect: location.href,
+        replace: true,
+      } as never
+    );
   });
 }

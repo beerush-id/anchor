@@ -1,8 +1,7 @@
 import '../../src/client/index.js';
 import { createRouter } from '@anchorlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { navigate } from '../../src/router/navigate.js';
-import { route } from '../../src/router/router.js';
+import { navigate, page, redirect } from '../../src/index.js';
 
 describe('Anchor React - Navigate Utility', () => {
   let pushSpy: ReturnType<typeof vi.spyOn>;
@@ -22,7 +21,7 @@ describe('Anchor React - Navigate Utility', () => {
   });
 
   it('should navigate to a string path using pushState by default', () => {
-    navigate('/dashboard', { params: { id: '123' }, query: { tab: 'settings' } });
+    navigate('/dashboard' as never, { params: { id: '123' }, query: { tab: 'settings' } } as never);
 
     expect(pushSpy).toHaveBeenCalledWith(
       { href: '/dashboard?tab=settings', query: { tab: 'settings' }, params: { id: '123' } },
@@ -42,7 +41,7 @@ describe('Anchor React - Navigate Utility', () => {
   });
 
   it('should use replaceState when options.replace is true', () => {
-    navigate('/login', { replace: true });
+    navigate('/login' as never, { replace: true } as never);
 
     expect(replaceSpy).toHaveBeenCalledWith({ href: '/login', query: undefined, params: undefined }, '', '/login');
     expect(pushSpy).not.toHaveBeenCalled();
@@ -52,9 +51,9 @@ describe('Anchor React - Navigate Utility', () => {
   it('should navigate to a RouteComponent correctly', () => {
     const router = createRouter();
     const coreRoute = router.route('/users').route('/:id');
-    const UiRoute = route(coreRoute);
+    const UiRoute = page(coreRoute);
 
-    navigate(UiRoute, { params: { id: '456' } });
+    navigate(UiRoute as never, { params: { id: '456' } } as never);
 
     expect(pushSpy).toHaveBeenCalledWith(
       { href: '/users/456', query: undefined, params: { id: '456' } },
@@ -67,12 +66,25 @@ describe('Anchor React - Navigate Utility', () => {
     const router = createRouter();
     const coreRoute = router.route('/users').route('/:id');
 
-    navigate(coreRoute, { params: { id: '789' } });
+    navigate(coreRoute as never, { params: { id: '789' } } as never);
 
     expect(pushSpy).toHaveBeenCalledWith(
       { href: '/users/789', query: undefined, params: { id: '789' } },
       '',
       '/users/789'
     );
+  });
+
+  describe('redirect utility', () => {
+    it('should return a Redirect instance when called with a RouteComponent', () => {
+      const router = createRouter();
+      const coreRoute = router.route('/redirect-test');
+      const UiRoute = page(coreRoute);
+
+      const result = redirect(UiRoute as never, { params: { id: '1' }, query: { foo: 'bar' } } as never) as any;
+
+      expect(result.route).toBe(coreRoute);
+      expect(result.params).toEqual({ id: '1' });
+    });
   });
 });
