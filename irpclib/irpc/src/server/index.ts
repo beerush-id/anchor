@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { setAsyncScope } from '@anchorlib/core';
 
-class ExtendedASL<T> extends AsyncLocalStorage<T> {
+class AnchorASL<T> extends AsyncLocalStorage<T> {
   private store: T = new Map() as T;
 
   public getStore(): T {
@@ -9,4 +9,4 @@ class ExtendedASL<T> extends AsyncLocalStorage<T> {
   }
 }
 
-setAsyncScope(new ExtendedASL() as AsyncLocalStorage<Map<string, unknown>>);
+setAsyncScope(new AnchorASL() as AsyncLocalStorage<Map<string, unknown>>);
