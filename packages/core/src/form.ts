@@ -1,4 +1,4 @@
-import { onCleanup } from './lifecycle.js';
+import { onGlobalCleanup } from './lifecycle.js';
 import { exception, model } from './ref.js';
 import { subscribe } from './subscription.js';
 import type { ExceptionMap, ExceptionType, LinkableSchema, ModelInput, ModelOutput, StateChange } from './types.js';
@@ -49,7 +49,7 @@ export function form<S extends LinkableSchema, T extends ModelInput<S>>(
     }
   });
 
-  onCleanup(() => {
+  onGlobalCleanup(() => {
     unsubscribe();
     destroy();
   });

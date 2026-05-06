@@ -3,7 +3,7 @@ import { asyncStoreContract, getScope, setScope, storeContract } from './context
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
 import { isReactive } from './internal.js';
-import { onCleanup } from './lifecycle.js';
+import { onGlobalCleanup } from './lifecycle.js';
 import { META_REGISTRY } from './registry.js';
 import type {
   AsyncEffectHandler,
@@ -41,12 +41,16 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
 
   let cleanup: StateUnsubscribe | undefined;
 
-  const observer = createObserver((event) => {
-    cleanup?.();
-    observer.reset();
+  const observer = createObserver(
+    (event) => {
+      cleanup?.();
+      observer.reset();
 
-    runEffect(event);
-  });
+      runEffect(event);
+    },
+    undefined,
+    true
+  );
   observer.name = `Effect(${displayName ?? 'Anonymous'})`;
 
   const runEffect = (event: StateChange) => {
@@ -63,7 +67,7 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
     observer.destroy();
   };
 
-  onCleanup(runCleanup);
+  onGlobalCleanup(runCleanup);
 
   runEffect({ type: 'init', keys: [] });
 
@@ -90,12 +94,16 @@ function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): Stat
 
   let cleanup: StateUnsubscribe | undefined;
 
-  const observer = createObserver((event) => {
-    cleanup?.();
-    observer.reset();
+  const observer = createObserver(
+    (event) => {
+      cleanup?.();
+      observer.reset();
 
-    runEffect(event).catch(handleError);
-  });
+      runEffect(event).catch(handleError);
+    },
+    undefined,
+    true
+  );
   observer.name = `Effect(${displayName ?? 'Anonymous'})`;
 
   const runEffect = async (event: StateChange) => {
@@ -117,7 +125,7 @@ function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): Stat
     observer.destroy();
   };
 
-  onCleanup(runCleanup);
+  onGlobalCleanup(runCleanup);
 
   runEffect({ type: 'init', keys: [] }).catch(handleError);
 
@@ -156,7 +164,7 @@ export const untrack = storeContract(OBSERVER_SYMBOL, undefined, undefined, unde
   try {
     return fn();
   } catch (error) {
-    captureStack.error.external('Unable to execute the outside of observer function', error as Error, untrack);
+    captureStack.error.external('Unable to execute the outside of observer function', error as Error);
   }
 });
 
@@ -321,7 +329,7 @@ export function createObserver(
   };
 
   if (!controlled) {
-    onCleanup(destroy);
+    onGlobalCleanup(destroy);
   }
 
   const observer = {

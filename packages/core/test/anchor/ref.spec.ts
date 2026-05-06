@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, getCurrentStack, setStabilityDetector } from '../../src/index.js';
+import {
+  anchor,
+  createLifecycle,
+  createObserver,
+  getCurrentStack,
+  globalRun,
+  onCleanup,
+  setStabilityDetector,
+} from '../../src/index.js';
 import {
   derived,
   DerivedRef,
@@ -9,9 +17,11 @@ import {
   isDerivedRef,
   isImmutableRef,
   isMutableRef,
+  isSignal,
   isValueRef,
   mutable,
   MutableRef,
+  signal,
 } from '../../src/ref.js';
 import { createStack, withStack } from '../../src/stack.js';
 
@@ -121,11 +131,17 @@ describe('Anchor Core - Ref', () => {
   describe('mutable function', () => {
     it('should create MutableRef for primitive values', () => {
       const ref = mutable(42);
+      const gref = globalRun(() => {
+        const state = mutable(40);
+        onCleanup(() => {});
+        return state;
+      });
       expect(isMutableRef(ref)).toBe(true);
       expect(ref.value).toBe(42);
 
       ref.value = 100;
       expect(ref.value).toBe(100);
+      expect(gref.value).toBe(40);
     });
 
     it('should create reactive state for linkable objects', () => {
@@ -188,6 +204,60 @@ describe('Anchor Core - Ref', () => {
 
       source.value = 15;
       expect(ref.value).toBe(30);
+    });
+  });
+
+  describe('signal function', () => {
+    it('should create a reactive signal for a value', () => {
+      const sig = signal(42);
+      expect(typeof sig).toBe('function');
+      expect(sig()).toBe(42);
+    });
+
+    it('should allow setting a new value', () => {
+      const sig = signal(42);
+      sig.set(100);
+      expect(sig()).toBe(100);
+    });
+
+    it('should allow setting a new value using a function', () => {
+      const sig = signal(42);
+      sig.set((current) => current + 10);
+      expect(sig()).toBe(52);
+    });
+
+    it('should create an immutable signal when specified', () => {
+      const sig = signal(42, true);
+      expect(typeof sig).toBe('function');
+      expect(sig()).toBe(42);
+      // @ts-ignore
+      expect(sig.set).toBeUndefined();
+    });
+
+    it('should registered to global cleanup', () => {
+      const ctx = createLifecycle();
+      const sig = ctx.run(() => signal(42));
+      expect(sig()).toBe(42);
+      ctx.destroy();
+    })
+  });
+
+  describe('isSignal function', () => {
+    it('should correctly identify a mutable signal', () => {
+      const sig = signal(42);
+      expect(isSignal(sig)).toBe(true);
+    });
+
+    it('should correctly identify an immutable signal', () => {
+      const sig = signal(42, true);
+      expect(isSignal(sig)).toBe(true);
+    });
+
+    it('should return false for non-signals', () => {
+      expect(isSignal(() => {})).toBe(false);
+      expect(isSignal(42)).toBe(false);
+      expect(isSignal({})).toBe(false);
+      expect(isSignal(mutable(42))).toBe(false);
     });
   });
 

@@ -3,7 +3,7 @@ import { ANCHOR_SETTINGS } from './constant.js';
 import { getScope } from './context.js';
 import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
-import { onCleanup } from './lifecycle.js';
+import { onGlobalCleanup } from './lifecycle.js';
 import { createObserver, getObserver, untrack } from './observation.js';
 import { STACK_SYMBOL } from './stack.js';
 import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from './types.js';
@@ -129,9 +129,13 @@ export class DerivedRef<T> {
    * @param derive - A function that computes and returns the derived value
    */
   constructor(derive: () => T) {
-    this.observer = createObserver(() => {
-      this.state.value = this.observer.run(derive);
-    });
+    this.observer = createObserver(
+      () => {
+        this.state.value = this.observer.run(derive);
+      },
+      undefined,
+      true
+    );
     this.observer.name = 'DerivedRef';
     this.state = anchor(
       {
@@ -140,7 +144,7 @@ export class DerivedRef<T> {
       { recursive: false }
     );
 
-    onCleanup(() => this.destroy());
+    onGlobalCleanup(() => this.destroy());
   }
 
   /**
@@ -184,13 +188,13 @@ export function mutable<T>(init: T, options?: StateOptions | boolean) {
 
   if (linkable(init)) {
     const ref = createRef(() => anchor(init, options as StateOptions), { init, options });
-    onCleanup(() => destroyRef(ref));
+    onGlobalCleanup(() => destroyRef(ref));
     return ref;
     // return anchor(init, options as StateOptions);
   }
 
   const ref = createRef(() => new MutableRef(init), init);
-  onCleanup(() => destroyRef(ref));
+  onGlobalCleanup(() => destroyRef(ref));
   return ref;
   // return new MutableRef(init);
 }
@@ -235,7 +239,7 @@ export function signal<T>(init: T, immutable?: boolean): Signal<T> | ImmutableSi
   const base = { value: init };
   const state = anchor(base);
 
-  onCleanup(() => {
+  onGlobalCleanup(() => {
     if (anchor.has(state)) anchor.destroy(state);
   });
 
@@ -300,13 +304,13 @@ export function immutable<T>(init: T, options?: StateOptions) {
 
   if (linkable(init)) {
     const ref = createRef(() => anchor.immutable(init, options), { init, options });
-    onCleanup(() => destroyRef(ref));
+    onGlobalCleanup(() => destroyRef(ref));
     return ref;
     // return anchor.immutable(init, options);
   }
 
   const ref = createRef(() => new ImmutableRef(init), init);
-  onCleanup(() => destroyRef(ref));
+  onGlobalCleanup(() => destroyRef(ref));
   return ref;
   // return new ImmutableRef(init);
 }
@@ -315,7 +319,7 @@ export const model = ((schema, init, options) => {
   detectStability(model);
 
   const ref = createRef(() => anchor.model(schema, init, options), { schema, init, options });
-  onCleanup(() => destroyRef(ref));
+  onGlobalCleanup(() => destroyRef(ref));
   return ref;
 }) as Anchor['model'];
 
@@ -323,7 +327,7 @@ export const ordered = ((init, compare) => {
   detectStability(ordered);
 
   const ref = createRef(() => anchor.ordered(init, compare), { init, compare });
-  onCleanup(() => destroyRef(ref));
+  onGlobalCleanup(() => destroyRef(ref));
   return ref;
 }) as Anchor['ordered'];
 
@@ -336,7 +340,7 @@ export const writable = ((state, contracts) => {
   detectStability(writable);
 
   const ref = anchor.writable(state, contracts);
-  onCleanup(() => destroyRef(ref));
+  onGlobalCleanup(() => destroyRef(ref));
   return ref;
 }) as Anchor['writable'];
 
@@ -346,7 +350,7 @@ export const exception = ((state, handler) => {
   const result = anchor.catch(state, handler);
 
   if (typeof result === 'function') {
-    onCleanup(result);
+    onGlobalCleanup(result);
   }
 
   return result;

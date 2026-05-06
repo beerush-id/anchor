@@ -5,8 +5,8 @@ const DEFAULT_CLEANUP_HANDLER = (_handler: () => void) => {};
 
 const CLEANUP_SYMBOL = Symbol('cleanup-store');
 
-let currentCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;
 let selfCleanupEnabled = true;
+let localCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;
 
 /**
  * Registers a cleanup handler that will be called when the application shuts down.
@@ -15,13 +15,13 @@ let selfCleanupEnabled = true;
  * @returns The result of calling the current cleanup handler implementation
  */
 export function onCleanup(handler: () => void) {
-  const cleanupHandler = getScope<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
-  if (!cleanupHandler && !selfCleanupEnabled) return;
+  const globalCleanupHandler = getScope<typeof DEFAULT_CLEANUP_HANDLER>(CLEANUP_SYMBOL);
+  if (!globalCleanupHandler && !selfCleanupEnabled) return;
 
-  if (typeof cleanupHandler === 'function') {
-    return cleanupHandler(handler);
-  } else if (typeof currentCleanupHandler === 'function') {
-    return currentCleanupHandler(handler);
+  if (typeof globalCleanupHandler === 'function') {
+    return globalCleanupHandler(handler);
+  } else if (typeof localCleanupHandler === 'function') {
+    return localCleanupHandler(handler);
   } else {
     return DEFAULT_CLEANUP_HANDLER(handler);
   }
@@ -32,7 +32,7 @@ export function onCleanup(handler: () => void) {
  * @param {() => T} fn
  * @returns {T}
  */
-export function globalRun<T>(fn: () => T) {
+export function globalRun<T>(fn: () => T): T {
   selfCleanupEnabled = false;
 
   try {
@@ -63,7 +63,7 @@ export function onGlobalCleanup(handler: () => void) {
  * This allows for customization of how cleanup handlers are managed.
  */
 export function setCleanUpHandler(handler: (handler: () => void) => void) {
-  currentCleanupHandler = handler;
+  localCleanupHandler = handler;
 }
 
 /**

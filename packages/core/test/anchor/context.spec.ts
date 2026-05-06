@@ -163,19 +163,19 @@ describe('Anchor - Async Scope', () => {
     });
 
     it('withIsolation operates normally when properly awaited', async () => {
-      await withScope(async () => {
+      await withIsolation(async () => {
         setScope('base', 'val');
 
-        await withIsolation(async () => {
+        await withScope(async () => {
           expect(getScope('base')).toBe('val');
           setScope('isolated', 'val2');
 
           await awaited(() => Promise.resolve());
           expect(getScope('isolated')).toBe('val2');
-        }, false);
+        });
 
         expect(getScope('isolated')).toBeUndefined();
-      });
+      }, false);
     });
 
     it('withIsolation warns if a floating Awaited promise accesses the boundary after destruction', async () => {

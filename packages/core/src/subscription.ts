@@ -2,7 +2,7 @@ import { anchor } from './anchor.js';
 import { captureStack } from './exception.js';
 import { assign } from './helper.js';
 import { isReactive } from './internal.js';
-import { onCleanup } from './lifecycle.js';
+import { onGlobalCleanup } from './lifecycle.js';
 import { CONTROLLER_REGISTRY } from './registry.js';
 import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from './types.js';
 import { isFunction } from './utils/index.js';
@@ -64,7 +64,7 @@ function subscribeFn<T extends Linkable>(
   }
 
   const unsubscribe = ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
-  onCleanup(unsubscribe);
+  onGlobalCleanup(unsubscribe);
   return unsubscribe;
 }
 
@@ -188,7 +188,7 @@ subscribeFn.bind = ((left, right, transformLeft, transformRight) => {
     unsubscribeRight();
   };
 
-  onCleanup(unsubscribeAll);
+  onGlobalCleanup(unsubscribeAll);
 
   return unsubscribeAll;
 }) satisfies SubscribeFn['bind'];

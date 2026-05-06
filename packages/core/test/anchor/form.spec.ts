@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod/v4';
-import { form, setCleanUpHandler } from '../../src/index.js';
+import { createLifecycle, form, setCleanUpHandler } from '../../src/index.js';
 
 describe('Anchor Core - Form API', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -114,17 +114,20 @@ describe('Anchor Core - Form API', () => {
 
   describe('Form Error Tracking', () => {
     it('should track validation errors properly', () => {
+      const ctx = createLifecycle();
       const schema = z.object({
         name: z.string().min(3),
         age: z.number().min(18),
         email: z.string().email(),
       });
 
-      const [input, errors] = form(schema, {
-        name: 'John',
-        age: 30,
-        email: 'john@example.com',
-      });
+      const [input, errors] = ctx.run(() =>
+        form(schema, {
+          name: 'John',
+          age: 30,
+          email: 'john@example.com',
+        })
+      );
 
       expect(errors).toEqual({});
 
@@ -151,6 +154,8 @@ describe('Anchor Core - Form API', () => {
 
       expect(input.age).toBeUndefined();
       expect(errors.age).toBeDefined();
+
+      ctx.destroy();
     });
 
     it('should track nested validation errors', () => {
