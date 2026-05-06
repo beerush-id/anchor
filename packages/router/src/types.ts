@@ -348,7 +348,13 @@ export type InferOptions<T> = T extends IndexRoute<infer _Path, infer Params, in
     ? ExtractOptions<Params, Query>
     : never;
 
-export type NavigateParams<Params, Query> = ExtractOptions<Params, Query> & { replace?: boolean; redirect?: string };
+export type NavigateParams<Params, Query> = Params extends None
+  ? Query extends None
+    ? { replace?: boolean; redirect?: string }
+    : { replace?: boolean; redirect?: string; query: Query }
+  : Query extends None
+    ? { replace?: boolean; redirect?: string; params: Params }
+    : { replace?: boolean; redirect?: string; query: Query; params: Params };
 
 /**
  * Navigation options for programmatic routing.
