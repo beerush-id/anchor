@@ -78,14 +78,14 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
               }
             }
           } else if (Array.isArray(init)) {
-            if (keys.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
+            if (keys?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
               observer.onChange(event);
             }
           } else if (init instanceof Set || init instanceof Map) {
-            if (keys.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
+            if (keys?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
               observer.onChange(event);
             }
-          } else if (keys.has(prop as KeyLike)) {
+          } else if (keys?.has(prop as KeyLike)) {
             observer.onChange(event);
           }
         }

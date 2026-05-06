@@ -3,7 +3,7 @@ import { asyncStoreContract, getScope, setScope, storeContract } from './context
 import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
 import { isReactive } from './internal.js';
-import { onGlobalCleanup } from './lifecycle.js';
+import { onCleanup } from './lifecycle.js';
 import { META_REGISTRY } from './registry.js';
 import type {
   AsyncEffectHandler,
@@ -67,7 +67,7 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
     observer.destroy();
   };
 
-  onGlobalCleanup(runCleanup);
+  onCleanup(runCleanup);
 
   runEffect({ type: 'init', keys: [] });
 
@@ -125,7 +125,7 @@ function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): Stat
     observer.destroy();
   };
 
-  onGlobalCleanup(runCleanup);
+  onCleanup(runCleanup);
 
   runEffect({ type: 'init', keys: [] }).catch(handleError);
 
@@ -329,7 +329,7 @@ export function createObserver(
   };
 
   if (!controlled) {
-    onGlobalCleanup(destroy);
+    onCleanup(destroy);
   }
 
   const observer = {
