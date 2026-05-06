@@ -3,7 +3,7 @@ import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
 import type { PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import type { Redirect } from './redirect.js';
-import type { ContextReader, Route } from './route.js';
+import type { ContextReader, IndexRoute, Route } from './route.js';
 
 /** A generic record type with string keys and unknown values */
 export type TRec = Record<string, unknown>;
@@ -290,3 +290,77 @@ export type RouteRendererFn<Params, QueryParams, Data, Output> = (
 export type RouteExceptionRendererFn<Params, QueryParams, Data, Output> = (
   context: RouterContext<Params, QueryParams, Data>
 ) => Output;
+
+export type RouteArg<T> = T extends Route<
+  infer _Path,
+  infer _Params,
+  infer _Query,
+  infer _Options,
+  infer _Data,
+  infer _Parent
+>
+  ? T
+  : T extends IndexRoute<infer _Path, infer _Params, infer _Query, infer _Options, infer _Data, infer _Parent>
+    ? T
+    : never;
+
+export type InferParams<T> = T extends IndexRoute<
+  infer _Path,
+  infer Params,
+  infer _Query,
+  infer _TOptions,
+  infer _TData,
+  infer _TParent
+>
+  ? Params
+  : T extends Route<infer _Path, infer Params, infer _Query, infer _TOptions, infer _TData, infer _TParent>
+    ? Params
+    : None;
+export type InferQuery<T> = T extends IndexRoute<
+  infer _Path,
+  infer _Params,
+  infer Query,
+  infer _TOptions,
+  infer _TData,
+  infer _TParent
+>
+  ? Query
+  : T extends Route<infer _Path, infer _Params, infer Query, infer _TOptions, infer _TData, infer _TParent>
+    ? Query
+    : None;
+export type InferRedirect<T> = T extends IndexRoute<infer Path, infer Params, infer Query, infer Options, infer Data>
+  ? Redirect<Path, Params, Query, Options, Data>
+  : T extends Route<infer Path, infer Params, infer Query, infer Options, infer Data>
+    ? Redirect<Path, Params, Query, Options, Data>
+    : never;
+
+export type ExtractOptions<Params, Query> = Params extends None
+  ? Query extends None
+    ? None
+    : { query: Query }
+  : Query extends None
+    ? { params: Params }
+    : { query: Query; params: Params };
+
+export type InferOptions<T> = T extends IndexRoute<infer _Path, infer Params, infer Query, infer _Options, infer _Data>
+  ? ExtractOptions<Params, Query>
+  : T extends Route<infer _Path, infer Params, infer Query, infer _Options, infer _Data>
+    ? ExtractOptions<Params, Query>
+    : never;
+
+export type NavigateParams<Params, Query> = ExtractOptions<Params, Query> & { replace?: boolean; redirect?: string };
+
+/**
+ * Navigation options for programmatic routing.
+ */
+export type NavigateOptions<T> = T extends IndexRoute<
+  infer Params,
+  infer Query,
+  infer _Options,
+  infer _Data,
+  infer _Parent
+>
+  ? NavigateParams<Params, Query>
+  : T extends Route<infer Params, infer Query, infer _Options, infer _Data, infer _Parent>
+    ? NavigateParams<Params, Query>
+    : NavigateParams<None, None>;

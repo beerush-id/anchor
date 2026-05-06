@@ -365,11 +365,10 @@ export class Router<Output = any> {
 
     // Update router state
     storage.activeUrl = url.href;
+    storage.context.url = url.href;
     storage.activeRoute = match.route;
     storage.activeSegments = targetSegments;
 
-    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-    (this.context as any).urlState.value = url.href;
     this.finish();
   }
 

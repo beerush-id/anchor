@@ -16,6 +16,9 @@ export class RouterContext<TParams, TQueryParams, TData> {
   public get url() {
     return this.urlState.value;
   }
+  public set url(value: string | undefined) {
+    this.urlState.value = value;
+  }
 
   public params = new Proxy(
     {},
