@@ -3,7 +3,7 @@ import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
 import type { PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import type { Redirect } from './redirect.js';
-import type { Route } from './route.js';
+import type { ContextReader, Route } from './route.js';
 
 /** A generic record type with string keys and unknown values */
 export type TRec = Record<string, unknown>;
@@ -281,20 +281,8 @@ export type RenderMode = (typeof RENDER_MODE)[keyof typeof RENDER_MODE];
 
 export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => TOutput;
 
-export type RenderContext<Params, QueryParams, Data> = {
-  status: RouteStatus;
-  active: boolean;
-  resolved: boolean;
-  resolving: boolean;
-  authenticated: boolean;
-  authenticating: boolean;
-  data: Data;
-  query: QueryParams;
-  params: Params;
-  error?: RouteError;
-};
 export type RouteRendererFn<Params, QueryParams, Data, Output> = (
-  state: RenderContext<Params, QueryParams, Data>,
+  state: ContextReader<Params, QueryParams, Data>,
   context: RouterContext<Params, QueryParams, Data>,
   children?: Output
 ) => Output;
