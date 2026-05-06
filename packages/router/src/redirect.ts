@@ -1,4 +1,4 @@
-import { getScope, setScope } from '@anchorlib/core';
+import { getScope, microtask, setScope } from '@anchorlib/core';
 import type { IndexRoute, Route } from './route.js';
 import type {
   ExtractParams,
@@ -11,6 +11,14 @@ import type {
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = Symbol('redirect-handler');
+
+/**
+ * Gets the handler for processing redirects.
+ * @returns {((redirect: UnknownRedirect) => void) | undefined}
+ */
+export function getRedirectHandler(): ((redirect: UnknownRedirect) => void) | undefined {
+  return getScope<(redirect: UnknownRedirect) => void>(REDIRECT_HANDLER);
+}
 
 /**
  * Sets the handler for processing redirects.
@@ -74,6 +82,8 @@ export class Redirect<
   ) {}
 }
 
+const [schedule] = microtask(0);
+
 /**
  * Creates a redirect to a different route.
  *
@@ -116,7 +126,10 @@ export function redirect<
   query?: TQueryParams
 ): Redirect<TPath, TParams, TQueryParams, TOptions, TData> {
   const redirect = new Redirect(route as Route<TPath, TParams, TQueryParams, TOptions, TData>, params, query);
-  getScope<(redirect: UnknownRedirect) => void>(REDIRECT_HANDLER)?.(redirect as UnknownRedirect);
+
+  const redirectTo = getRedirectHandler();
+  schedule(() => redirectTo?.(redirect as UnknownRedirect));
+
   return redirect as Redirect<TPath, TParams, TQueryParams, TOptions, TData>;
 }
 

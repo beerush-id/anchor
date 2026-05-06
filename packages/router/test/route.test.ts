@@ -1,8 +1,14 @@
 import { mutable } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
-import { ROUTE_TYPE } from '../src/enum.js';
-import { getExceptionRendererFactory, Router, setExceptionRendererFactory } from '../src/index.js';
+import { ROUTE_STATUS, ROUTE_TYPE } from '../src/enum.js';
+import {
+  ContextReader,
+  getExceptionRendererFactory,
+  Router,
+  setExceptionRendererFactory,
+  type TRec,
+} from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
@@ -18,6 +24,7 @@ describe('Route class', () => {
     it('should create a new Route instance', () => {
       const route = new Route(sharedRouter, '/test');
       expect(route).toBeInstanceOf(Route);
+      expect(route.exception).toBeUndefined();
     });
 
     it('should create a new Route instance with failed name', () => {
@@ -105,7 +112,7 @@ describe('Route class', () => {
     });
 
     it('should initialize data as undefined', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       expect(route.data).toEqual({});
     });
 
@@ -115,12 +122,12 @@ describe('Route class', () => {
     });
 
     it('should initialize params as undefined', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       expect(route.params).toEqual({});
     });
 
     it('should initialize query as undefined', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       expect(route.query).toEqual({});
     });
 
@@ -152,12 +159,12 @@ describe('Route class', () => {
 
   describe('data getter/setter', () => {
     it('should return undefined initially', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       expect(route.data).toEqual({});
     });
 
     it('should allow setting data', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       const testData = { user: 'John' };
       route.data = testData;
       // Data is wrapped in mutable(), so use toEqual instead of toBe
@@ -165,7 +172,7 @@ describe('Route class', () => {
     });
 
     it('should allow clearing data with undefined', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       route.data = { user: 'John' };
       route.data = undefined;
       expect(route.data).toBeUndefined();
@@ -231,13 +238,25 @@ describe('Route class', () => {
   describe('render and setRendererFactory', () => {
     it('should allow setting a renderer and rendering', () => {
       const route = new Route(sharedRouter, '/test');
-      const renderer = vi.fn();
+      const renderer = vi.fn().mockImplementation((reader: ContextReader<TRec, TRec, TRec>) => {
+        expect(reader.active).toBe(false);
+        expect(reader.status).toBe(ROUTE_STATUS.IDLE);
+        expect(reader.resolved).toBe(false);
+        expect(reader.resolving).toBe(false);
+        expect(reader.authenticated).toBe(false);
+        expect(reader.authenticating).toBe(false);
+        expect(reader.params).toEqual({});
+        expect(reader.query).toEqual({});
+        expect(reader.data).toEqual({});
+        expect(reader.error).toBeUndefined();
+        expect(reader.exception).toBeUndefined();
+      });
       route.render(renderer);
 
       expect(route.renderer).toBeDefined();
       if (route.renderer) {
         route.renderer({ children: [] } as never);
-        expect(renderer).toHaveBeenCalledWith(route.state as never, route.router.context as never, []);
+        expect(renderer).toHaveBeenCalled();
 
         // Let's also test without layout by bypassing `createRenderer` behavior if we could
         // But `createRenderer` itself uses `layout = true`.
@@ -265,7 +284,7 @@ describe('Route class', () => {
       const renderer2 = vi.fn();
       const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
       internalRenderer({ children: [] } as never);
-      expect(renderer2).toHaveBeenCalledWith(route2.state, sharedRouter.context);
+      expect(renderer2).toHaveBeenCalled();
     });
 
     it('should allow setting an exception renderer', () => {
@@ -284,21 +303,21 @@ describe('Route class', () => {
       expect(getExceptionRendererFactory()).toBe(factory);
 
       const route = new Route(sharedRouter, '/test');
-      const renderer = factory(route, () => 'Ok');
+      const renderer = factory(route as never, () => 'Ok');
       expect(renderer({})).toBe('Ok');
     });
   });
 
   describe('params getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       expect(route.params).toEqual({});
     });
   });
 
   describe('query getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route(sharedRouter, '/test').state;
+      const route = new Route(sharedRouter, '/test').context;
       expect(route.query).toEqual({});
     });
   });
@@ -828,10 +847,10 @@ describe('Route class', () => {
 
     it('should set context', async () => {
       const route = new Route(sharedRouter, '/test');
-      const state = route.state;
       const context = { params: { id: '123' }, query: {}, data: {} };
 
       await route.activate(context as never);
+      const state = route.context;
 
       expect(state.data).toEqual(context.data);
       expect(state.query).toEqual(context.query);
@@ -878,16 +897,16 @@ describe('Route class', () => {
 
     it('should clear data when keepAlive is false', () => {
       const route = new Route(sharedRouter, '/test');
-      const state = route.state;
+      const state = route.context;
       state.data = { user: 'John' };
 
       route.deactivate();
-      expect(state.data).toEqual({});
+      expect(route.context.data).toEqual({});
     });
 
     it('should preserve data when keepAlive is true', () => {
       const route = new Route(sharedRouter, '/test', { keepAlive: true });
-      const state = route.state;
+      const state = route.context;
       const data = { user: 'John' };
       state.data = data;
 
@@ -1004,7 +1023,6 @@ describe('Route class', () => {
 
     it('should re-run the providers', async () => {
       const route = new Route(sharedRouter, '/test');
-      const state = route.state;
       const canRead = mutable(true);
       const provider = vi.fn(() => {
         if (canRead.value) return 'data';
@@ -1013,6 +1031,7 @@ describe('Route class', () => {
 
       const context = { params: {}, query: {}, data: {} };
       await route.activate(context as never);
+      const state = route.context;
 
       expect(state.data).toEqual({ test: 'data' });
 

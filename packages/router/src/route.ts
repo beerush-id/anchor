@@ -6,7 +6,7 @@ import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type { Router } from './router.js';
-import { createState, getStore, safeAssign, safeRead } from './store.js';
+import { createState, getStore, safeRead } from './store.js';
 import type {
   ExtractParams,
   ExtractQueryParams,
@@ -18,7 +18,6 @@ import type {
   ProviderContext,
   ProviderMap,
   ProviderOptions,
-  RenderContext,
   RouteExceptionRendererFn,
   RouteInternalRenderer,
   RouteName,
@@ -107,15 +106,15 @@ export class Route<
    * @param value - true if the route is active, false otherwise
    */
   public set active(value: boolean) {
-    const { state } = this.storage;
-
     safeRead(() => {
+      const { state } = this.storage;
+
       if (value && !state.resolved) {
         state.resolving = true;
       }
-    });
 
-    state.active = value;
+      state.active = value;
+    });
   }
 
   /**
@@ -637,14 +636,15 @@ export class Route<
    * ```
    */
   public deactivate(): void {
-    const { state } = this.storage;
-
     safeRead(() => {
+      const { state, context } = this.storage;
+
       state.active = false;
       state.status = ROUTE_STATUS.IDLE;
 
       if (!this.options?.keepAlive) {
-        safeAssign(state as TRec, { query: {}, params: {}, data: {} });
+        context.value = { query: {}, params: {}, data: {} };
+        // safeAssign(context.value, { query: {}, params: {}, data: {} });
 
         state.error = undefined;
         state.resolved = false;
@@ -716,6 +716,50 @@ export class Route<
   }
 }
 
+/**
+ * A context reader for route state.
+ */
+export class ContextReader<Params, Query, Data> {
+  constructor(
+    private state: RouteState,
+    private context: { value: ProviderContext<Params, Query, Data> }
+  ) {}
+
+  get active() {
+    return this.state.active;
+  }
+  get status() {
+    return this.state.status;
+  }
+  get resolved() {
+    return this.state.resolved;
+  }
+  get resolving() {
+    return this.state.resolving;
+  }
+  get authenticated() {
+    return this.state.authenticated;
+  }
+  get authenticating() {
+    return this.state.authenticating;
+  }
+  get data() {
+    return this.context.value.data;
+  }
+  get error() {
+    return this.state.error;
+  }
+  get query() {
+    return this.context.value.query;
+  }
+  get params() {
+    return this.context.value.params;
+  }
+  get exception() {
+    return this.context.value.exception;
+  }
+}
+
 let createRenderer = <TParams, TQueryParams, TData, TOutput>(
   route: UnknownRoute,
   renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>,
@@ -723,41 +767,10 @@ let createRenderer = <TParams, TQueryParams, TData, TOutput>(
 ): RouteInternalRenderer<TOutput> => {
   return ({ children }) => {
     const { state, context } = route.storage;
-    const reader = {
-      get active() {
-        return state.active;
-      },
-      get status() {
-        return state.status;
-      },
-      get resolved() {
-        return state.resolved;
-      },
-      get resolving() {
-        return state.resolving;
-      },
-      get authenticated() {
-        return state.authenticated;
-      },
-      get authenticating() {
-        return state.authenticating;
-      },
-      get data() {
-        return context.value.data;
-      },
-      get error() {
-        return state.error;
-      },
-      get query() {
-        return context.value.query;
-      },
-      get params() {
-        return context.value.params;
-      },
-      get exception() {
-        return context.value.exception;
-      },
-    } as RenderContext<TParams, TQueryParams, TData>;
+    const reader = new ContextReader<TParams, TQueryParams, TData>(
+      state,
+      context as { value: ProviderContext<TParams, TQueryParams, TData> }
+    );
 
     if (layout) return safeRead(() => renderer(reader, route.router.context as never, children));
     return safeRead(() => renderer(reader, route.router.context as never));

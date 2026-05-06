@@ -17,6 +17,8 @@ describe('router.ts', () => {
     describe('constructor', () => {
       it('should create a new Router instance', () => {
         expect(router).toBeInstanceOf(Router);
+        expect(router.context.exception).toBeUndefined();
+        expect(() => router.context.clear()).not.toThrow();
       });
 
       it('should use default baseUrl when not provided', () => {
@@ -58,6 +60,10 @@ describe('router.ts', () => {
     });
 
     describe('route method', () => {
+      beforeEach(() => {
+        router.clear();
+      });
+
       it('should return the root route', () => {
         const route = router.route();
         expect(route).toBe(router.rootRoute);
@@ -103,12 +109,12 @@ describe('router.ts', () => {
       });
 
       it('should register dynamic route with DYNAMIC_ROUTE_KEY', () => {
-        const route = router.route('/:id');
+        const route = router.rootRoute.route('/:id');
         expect(router.find('/123')?.route).toBe(route);
       });
 
       it('should register wildcard route with WILDCARD_ROUTE_KEY', () => {
-        const route = router.route('/*');
+        const route = router.rootRoute.route('/*');
         expect(router.find('/anything')?.route).toBe(route);
       });
 
@@ -127,6 +133,20 @@ describe('router.ts', () => {
         expect(usersRoute.path).toBe('/users');
         expect(postsRoute.path).toBe('/posts');
         expect(commentsRoute.path).toBe('/comments');
+      });
+    });
+
+    describe('append method', () => {
+      it('should create top-level route', () => {
+        const auth = router.append('/auth');
+        expect(auth.path).toBe('/auth');
+        expect(router.find('/auth')?.route).toBe(auth);
+      });
+
+      it('should throw when appending invalid path', () => {
+        expect(() => router.append('' as never)).toThrow();
+        expect(() => router.append('/' as never)).toThrow();
+        expect(() => router.append(undefined as never)).toThrow();
       });
     });
 
@@ -180,16 +200,17 @@ describe('router.ts', () => {
 
     describe('activate method', () => {
       beforeEach(() => {
-        router.route('/users');
-        router.route('/posts');
+        router.clear();
       });
 
       it('should activate a route', async () => {
+        router.route('/users');
         await router.activate('/users');
         expect(router.activeRoute?.path).toBe('/users');
       });
 
       it('should set activeSegments', async () => {
+        router.route('/users');
         await router.activate('/users');
         expect(router.activeSegments?.length).toBe(2);
       });
@@ -242,17 +263,20 @@ describe('router.ts', () => {
 
       it('should handle URL object', async () => {
         const url = new URL('/users', 'http://localhost');
+        router.route('/users');
         await router.activate(url);
         expect(router.activeRoute?.path).toBe('/users');
       });
 
       it('should handle URL with query parameters', async () => {
+        router.route('/users');
         await router.activate('/users?tab=profile');
         expect(router.activeRoute?.path).toBe('/users');
         expect(router.context.query.tab).toBe('profile');
       });
 
       it('should handle URL string with http protocol', async () => {
+        router.route('/users');
         await router.activate('http://localhost/users');
         expect(router.activeRoute?.path).toBe('/users');
       });
@@ -306,9 +330,11 @@ describe('router.ts', () => {
       });
 
       it('should deactivate old segments when activating new route', async () => {
+        router.route('/users');
         await router.activate('/users');
         const firstActiveRoute = router.activeRoute;
 
+        router.route('/posts');
         await router.activate('/posts');
         expect(router.activeRoute).not.toBe(firstActiveRoute);
         expect(router.path).toBe('/posts');
@@ -331,6 +357,54 @@ describe('router.ts', () => {
 
         // The last activation should win
         expect(router.activeRoute).toBe(postsRoute);
+      });
+
+      it('should handle race conditions with real-world overlapping async timings', async () => {
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+        const projectsRoute = router.route('/projects');
+        const projectRoute = projectsRoute.route('/:id');
+
+        // Real-world scenario: different segments have different loading times
+        const userGuard = vi.fn(async () => {
+          await new Promise((r) => setTimeout(r, 10));
+        });
+        const userProvider = vi.fn(async () => {
+          await new Promise((r) => setTimeout(r, 20));
+          return {};
+        });
+
+        const projectGuard = vi.fn(async () => {
+          await new Promise((r) => setTimeout(r, 5));
+        });
+        const projectProvider = vi.fn(async () => {
+          await new Promise((r) => setTimeout(r, 15));
+          return {};
+        });
+
+        usersRoute.guard(userGuard);
+        usersRoute.provide('data', userProvider);
+        userRoute.guard(userGuard);
+        userRoute.provide('data', userProvider);
+
+        projectsRoute.guard(projectGuard);
+        projectsRoute.provide('data', projectProvider);
+        projectRoute.guard(projectGuard);
+        projectRoute.provide('data', projectProvider);
+
+        // We stagger the timings to hit all three asynchronous escape boundaries:
+        // - p1 (users) is interrupted by p2 (projects) during p1's 20ms provider (covers line 351)
+        // - p3 (users) is interrupted by p4 (users) during p3's 20ms provider. Because they share
+        //   the parent '/users' prefix, p3 survives line 351, deletes the parent segment,
+        //   and then fails exactly at line 341 when it moves to the nested segment.
+        const promises = [
+          router.activate('/users/1'), // starts 0ms, provider runs 10ms-30ms
+          new Promise((r) => setTimeout(() => r(router.activate('/projects/1')), 20)), // interrupts p1 at 20ms
+          new Promise((r) => setTimeout(() => r(router.activate('/users/2')), 50)), // starts 50ms, provider runs 60ms-80ms
+          new Promise((r) => setTimeout(() => r(router.activate('/users/3')), 70)), // interrupts p3 at 70ms
+        ];
+
+        await Promise.all(promises);
       });
     });
 
@@ -389,7 +463,7 @@ describe('router.ts', () => {
       });
 
       it('should call guards during preload', async () => {
-        const usersRoute = router.route('/users');
+        const usersRoute = router.rootRoute.route('/users');
         const guard = vi.fn();
         usersRoute.guard(guard);
 
@@ -398,9 +472,9 @@ describe('router.ts', () => {
       });
 
       it('should abort preload if guard returns Redirect', async () => {
-        const usersRoute = router.route('/users');
-        const loginRoute = router.route('/login');
-        const redirect = new Redirect(loginRoute);
+        const usersRoute = router.rootRoute.route('/users');
+        const loginRoute = router.rootRoute.route('/login');
+        const redirect = new Redirect(loginRoute as never);
         const guard = vi.fn(() => {
           throw redirect;
         });
@@ -411,7 +485,7 @@ describe('router.ts', () => {
       });
 
       it('should abort preload if guard returns Error', async () => {
-        const usersRoute = router.route('/users');
+        const usersRoute = router.rootRoute.route('/users');
         const error = new Error('guard error');
         const guard = vi.fn(() => {
           throw error;
@@ -423,7 +497,7 @@ describe('router.ts', () => {
       });
 
       it('should call providers during preload', async () => {
-        const usersRoute = router.route('/users');
+        const usersRoute = router.rootRoute.route('/users');
         const provider = vi.fn(() => ({ users: [] }));
         usersRoute.provide('users', provider);
 
@@ -755,7 +829,7 @@ describe('router.ts', () => {
       });
 
       it('should restore exact state identity from cache after full tree teardown', async () => {
-        const usersRoute = router.route('/users');
+        const usersRoute = router.rootRoute.route('/users');
         const userRoute = usersRoute.route('/:id');
 
         const usersProvider = vi.fn(() => ({ type: 'users' }));

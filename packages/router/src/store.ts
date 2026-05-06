@@ -2,10 +2,7 @@ import { anchor, getScope, globalRun, isBrowser, mutable, setScope, untrack } fr
 
 export const ROUTER_STORE_KEY = Symbol('router-store');
 
-const globalStore = isBrowser() ? new WeakMap() : undefined;
-
 export function getStore() {
-  if (globalStore) return globalStore;
   let store = getScope(ROUTER_STORE_KEY);
 
   if (!store) {

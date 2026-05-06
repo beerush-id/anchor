@@ -217,9 +217,9 @@ describe('redirect.ts', () => {
 
       await Promise.resolve();
 
-      expect(mockHandler).toHaveBeenCalledTimes(2);
-      expect(mockHandler).toHaveBeenNthCalledWith(1, result1);
-      expect(mockHandler).toHaveBeenNthCalledWith(2, result2);
+      expect(mockHandler).toHaveBeenCalledTimes(1);
+      expect(mockHandler).not.toHaveBeenNthCalledWith(1, result1);
+      expect(mockHandler).toHaveBeenNthCalledWith(1, result2);
     });
 
     it('should work without handler set', () => {
@@ -589,12 +589,12 @@ describe('redirect.ts', () => {
       });
       setRedirectHandler(handler);
 
-      expect(() => redirect(testRoute as never)).toThrow();
+      redirect(testRoute as never);
 
       await Promise.resolve();
 
       expect(handler).toHaveBeenCalled();
-      expect(errorSpy).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
 
       errorSpy.mockRestore();
     });

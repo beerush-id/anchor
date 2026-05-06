@@ -1,7 +1,7 @@
 import { URLCache } from './cache.js';
-import { DEFAULT_CONFIG } from './constant.js';
+import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
-import { RENDER_MODE } from './enum.js';
+import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { getExceptionRendererFactory, Route } from './route.js';
@@ -132,6 +132,11 @@ export class Router<Output = any> {
     this.routes.add(this.rootRegistry);
   }
 
+  public clear() {
+    this.routes.clear();
+    this.routes.add(this.rootRegistry);
+  }
+
   /**
    * Creates a new route.
    *
@@ -167,13 +172,62 @@ export class Router<Output = any> {
     ? Omit<Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>, 'route'>
     : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
     if (!path) return this.rootRoute as never;
+    const route = new Route(this, path, options);
 
     if (path === ('/' as TPath)) {
-      const route = new Route(this, path, options);
       route.closed = true;
       this.rootRoute.index = route as never;
       return route as never;
     }
+
+    const routeMap = new RouteRegistry(route as never as UnknownRoute);
+
+    if (route.type === ROUTE_TYPE.STATIC) {
+      this.rootRegistry.set(route.name, routeMap);
+    } else if (route.type === ROUTE_TYPE.DYNAMIC) {
+      this.rootRegistry.set(DYNAMIC_ROUTE_KEY, routeMap);
+    } else if (route.type === ROUTE_TYPE.WILDCARD) {
+      this.rootRegistry.set(WILDCARD_ROUTE_KEY, routeMap);
+    }
+
+    return route as never;
+  }
+
+  /**
+   * Creates a new top-level route.
+   *
+   * If path is '/', creates an index route and returns the root route.
+   * Otherwise, creates a new child route and returns it.
+   *
+   * @template TPath - The route path type
+   * @template TParams - The route parameters type
+   * @template TQueryParams - The query parameters type
+   * @template TOptions - The route options type
+   * @template TData - The route data type
+   * @param path - The route path
+   * @param options - Optional route options
+   * @returns The created route
+   *
+   * @example
+   * ```ts
+   * const usersRoute = router.route('/users');
+   * const userRoute = usersRoute.route('/:id');
+   * const indexRoute = router.route('/');
+   * ```
+   */
+  public append<
+    TPath extends RoutePath,
+    TParams extends ExtractParams<TPath>,
+    TQueryParams extends ExtractQueryParams<TPath>,
+    TOptions extends RouteOptions,
+    TData,
+  >(
+    path?: TPath,
+    options?: TOptions
+  ): TPath extends '/'
+    ? Omit<Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>, 'route'>
+    : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
+    if (!path || path === ('/' as never)) throw new Error('Invalid path: Path must be string "/{path}".');
 
     const route = new Route(this, path, options);
     const routeMap = new RouteRegistry(route as never as UnknownRoute, true);
@@ -198,7 +252,7 @@ export class Router<Output = any> {
    * }
    * ```
    */
-  public find(url: string | URL): MatchResult | void {
+  public find(url: string | URL): MatchResult | undefined {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
     }
@@ -283,15 +337,16 @@ export class Router<Output = any> {
     // Activate target segments.
     for (const segment of toActivate) {
       const { route, store } = segment;
-      if (!storage.activatingSegments.has(segment)) return;
 
       const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
       if (blocker instanceof Error || blocker instanceof Redirect) {
         this.finish();
         return blocker;
       }
+      if (!storage.activatingSegments.has(segment)) return;
 
       await route.activate(store as ProviderContext<None, None, TRec>);
+      if (!storage.activatingSegments.has(segment)) return;
 
       // Remove from activating routes.
       storage.activatingSegments.delete(segment);
@@ -309,9 +364,9 @@ export class Router<Output = any> {
     });
 
     // Update router state
+    storage.activeUrl = url.href;
     storage.activeRoute = match.route;
     storage.activeSegments = targetSegments;
-    storage.activeUrl = url.href;
 
     // biome-ignore lint/suspicious/noExplicitAny: Expect any.
     (this.context as any).urlState.value = url.href;
@@ -395,7 +450,6 @@ export class Router<Output = any> {
     if (!match) return;
 
     const { segments } = match;
-    const tempContext = new RouterContext();
 
     for (const segment of segments) {
       storage.context.attach(segment.store);
@@ -403,13 +457,11 @@ export class Router<Output = any> {
 
     // Preload all segments without activating them
     for (const { route, store } of segments) {
-      const blocked = await route.authenticate(tempContext as RouterContext<None, None, TRec>);
+      const blocked = await route.authenticate(store as RouterContext<None, None, TRec>);
       if (blocked instanceof Error || blocked instanceof Redirect) return;
 
       await route.preload(store as ProviderContext<None, None, TRec>);
     }
-
-    tempContext.clear();
   }
 
   public cleanup() {

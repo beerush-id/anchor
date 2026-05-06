@@ -26,7 +26,7 @@ export class ContextStore extends Map {
  * const match = registry.match('/users/123');
  * ```
  */
-export class RouteRegistry extends Map {
+export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
   private get store(): ContextStore {
     const rootStore = getStore();
     if (!rootStore.has(this)) {

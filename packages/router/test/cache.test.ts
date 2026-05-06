@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouteCache, URLCache } from '../src/cache.js';
-import { Router } from '../src/index.js';
+import { createRouter, Router } from '../src/index.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
 import type { ProviderContext, TRec } from '../src/types.js';
@@ -486,7 +486,7 @@ describe('URLCache', () => {
   beforeEach(() => {
     rootRoute = new Route(sharedRouter, '/');
     registry = new RouteRegistry(rootRoute);
-    cache = new URLCache(registry, 3);
+    cache = new URLCache(new Set([registry]), 3);
   });
 
   describe('constructor', () => {
@@ -495,12 +495,12 @@ describe('URLCache', () => {
     });
 
     it('should use default maxSize when not provided', () => {
-      const defaultCache = new URLCache(registry);
+      const defaultCache = new URLCache(new Set([registry]));
       expect(defaultCache).toBeDefined();
     });
 
     it('should use provided maxSize', () => {
-      const customCache = new URLCache(registry, 50);
+      const customCache = new URLCache(new Set([registry]), 50);
       expect(customCache).toBeDefined();
     });
   });
@@ -694,6 +694,14 @@ describe('URLCache', () => {
 
       expect(result).toBeDefined();
       expect(result?.query).toEqual({ email: 'test@example.com' });
+    });
+
+    it('should use the longest segments as the exception match', () => {
+      const router = createRouter();
+      router.route().route('/users');
+      const signIn = router.append('/auth').route('/signin');
+      const match = router.find('/auth/signin/ghost');
+      expect(match?.route).toBe(signIn);
     });
   });
 });
