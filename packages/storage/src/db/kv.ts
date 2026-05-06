@@ -1,4 +1,5 @@
-import { anchor, captureStack, microtask, mutable, onCleanup, type StateUnsubscribe, subscribe } from '@anchorlib/core';
+import { anchor, captureStack, microtask, onGlobalCleanup, type StateUnsubscribe, subscribe } from '@anchorlib/core';
+import { createState } from '../state.js';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';
 import {
@@ -373,7 +374,7 @@ export function createKVStore<T extends Storable>(
       return state;
     }
 
-    const state = mutable({ data: init, status: 'init' } as KVState<T>);
+    const state = createState({ data: init, status: 'init' } as KVState<T>);
     const [schedule] = microtask(DB_SYNC_DELAY);
 
     const readKv = () => {
@@ -440,7 +441,7 @@ export function createKVStore<T extends Storable>(
       stateUsage.set(state, 1);
     }
 
-    onCleanup(() => {
+    onGlobalCleanup(() => {
       kvFn.leave(state);
     });
 

@@ -4,11 +4,12 @@ import {
   getScope,
   isBrowser,
   microtask,
-  mutable,
   type ObjLike,
+  onGlobalCleanup,
   setScope,
   subscribe,
 } from '@anchorlib/core';
+import { createState } from './state.js';
 
 export const COOKIE_PREFIX = 'anchor-cookie://';
 
@@ -22,14 +23,14 @@ export type CookieOptions = {
 };
 
 function parseCookieValue<T extends ObjLike>(value: string, init: T): T {
-  if (!value) return mutable<T>({ ...init });
+  if (!value) return createState<T>({ ...init });
 
   try {
     const parsed = JSON.parse(decodeURIComponent(value)) as Partial<T>;
-    return mutable<T>({ ...init, ...parsed });
+    return createState<T>({ ...init, ...parsed });
   } catch (error) {
     captureStack.error.external(`Unable to parse cookie value:`, error as Error, parseCookieValue);
-    return mutable<T>({ ...init });
+    return createState<T>({ ...init });
   }
 }
 
@@ -102,7 +103,10 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
     const controller = subscribe.resolve(state);
 
     if (typeof controller?.subscribe === 'function') {
-      controller.subscribe(() => schedule(() => writeDocumentCookie(cookieName, state, options ?? {})));
+      const unsubscribe = controller.subscribe(() =>
+        schedule(() => writeDocumentCookie(cookieName, state, options ?? {}))
+      );
+      onGlobalCleanup(unsubscribe);
     }
   }
 

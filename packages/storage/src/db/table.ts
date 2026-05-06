@@ -5,11 +5,11 @@ import {
   isDefined,
   isFunction,
   microtask,
-  mutable,
-  onCleanup,
+  onGlobalCleanup,
   type StateUnsubscribe,
   subscribe,
 } from '@anchorlib/core';
+import { createState } from '../state.js';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import {
   count as countRecord,
@@ -543,7 +543,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       return rowMaps.get(id) as RowState<R>;
     }
 
-    const state = mutable({ data, status }) as RowState<R>;
+    const state = createState({ data, status } as RowState<R>);
     const [schedule] = microtask(DB_SYNC_DELAY);
 
     rowMaps.set(id, state);
@@ -584,7 +584,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
 
     rowSubscriptions.set(state, unsubscribe);
 
-    onCleanup(() => {
+    onGlobalCleanup(() => {
       unsubscribe();
     });
 
@@ -653,7 +653,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
      * @returns A state object containing the list of records
      */
     list(filter?: IDBKeyRange | FilterFn<R>, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
-      const state = mutable<RowListState<R>>({
+      const state = createState<RowListState<R>>({
         data: [],
         count: 0,
         status: 'pending',
@@ -694,7 +694,7 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       limit?: number,
       direction?: IDBCursorDirection
     ): RowListState<R> {
-      const state = mutable<RowListState<R>>({
+      const state = createState<RowListState<R>>({
         data: [],
         count: 0,
         status: 'pending',

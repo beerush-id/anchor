@@ -4,15 +4,15 @@ import {
   isBrowser,
   type LinkableSchema,
   microtask,
-  mutable,
   type ObjLike,
-  onCleanup,
+  onGlobalCleanup,
   type State,
   type StateOptions,
   type StateUnsubscribe,
   subscribe,
 } from '@anchorlib/core';
 import { MemoryStorage } from './memory.js';
+import { createState } from './state.js';
 import type { SessionFn } from './types.js';
 
 export const STORAGE_KEY = 'anchor';
@@ -181,7 +181,7 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
     return STORAGE_MAP.get(key) as T;
   }
 
-  const state = mutable(init, options);
+  const state = createState(init, options);
 
   STORAGE_MAP.set(key, state);
   STORAGE_USAGE.set(key, 1);
@@ -232,7 +232,7 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
     }
   }
 
-  onCleanup(() => {
+  onGlobalCleanup(() => {
     session.leave(state);
   });
 
