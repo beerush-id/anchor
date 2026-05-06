@@ -1,4 +1,4 @@
-import type { StateObserver } from '@anchorlib/core';
+import { type StateObserver } from '@anchorlib/core';
 import type { Owner } from 'solid-js';
 import { describe, expect, it } from 'vitest';
 import { attachCleanup, COMPONENT_REGISTRY, ELEMENT_OBSERVER_REGISTRY, REF_REGISTRY } from '../../src/reactive.js';

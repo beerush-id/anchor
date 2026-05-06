@@ -4,10 +4,9 @@ import { createRouter } from '@anchorlib/router';
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import type { Component } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Link } from '../../src/router/link.js';
+import type { AnyRoute } from '../../src/index.js';
+import { Link, page } from '../../src/index.js';
 import * as NavigateModule from '../../src/router/navigate.js';
-import { page } from '../../src/router/router.js';
-import type { AnyRoute } from '../../src/router/types.js';
 
 describe('Anchor Solid - Link Component', () => {
   let navigateSpy: ReturnType<typeof vi.spyOn>;
@@ -158,9 +157,7 @@ describe('Anchor Solid - Link Component', () => {
 
     preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
 
-    render(() => (
-      <Link to={NativeHeavyRoute}>Heavy Native</Link>
-    ));
+    render(() => <Link to={NativeHeavyRoute}>Heavy Native</Link>);
     const anchor = screen.getByText('Heavy Native');
 
     fireEvent.mouseEnter(anchor);

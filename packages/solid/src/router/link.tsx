@@ -14,7 +14,7 @@ type LinkComponent = <T>(props: LinkProps<T>) => JSX.Element;
  * @param props Link properties including the target route (`to`), params, and query.
  * @returns A reactive `<a>` element.
  */
-export const Link: LinkComponent = ((allProps: LinkProps<AnyRoute>) => {
+export const Link = ((allProps: LinkProps<AnyRoute>) => {
   const [props, rest] = splitProps(allProps, [
     'to',
     'preload',
@@ -59,7 +59,7 @@ export const Link: LinkComponent = ((allProps: LinkProps<AnyRoute>) => {
     e.preventDefault();
 
     if (!location.href.endsWith(href.value)) {
-      navigate(href.value, { query: query.value, params: params.value, replace: props.replace });
+      navigate(href.value, { query: query.value, params: params.value, replace: props.replace } as never);
     }
 
     if (typeof props.onClick === 'function') {

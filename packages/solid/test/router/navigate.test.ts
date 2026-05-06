@@ -1,6 +1,6 @@
 import { createRouter } from '@anchorlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { navigate } from '../../src/router/navigate.js';
+import { navigate, redirect } from '../../src/router/navigate.js';
 import { page } from '../../src/router/router.js';
 
 describe('Anchor Solid - Navigate Utility', () => {
@@ -21,7 +21,7 @@ describe('Anchor Solid - Navigate Utility', () => {
   });
 
   it('should navigate to a string path using pushState by default', () => {
-    navigate('/dashboard', { params: { id: '123' }, query: { tab: 'settings' } });
+    navigate('/dashboard' as never, { params: { id: '123' }, query: { tab: 'settings' } } as never);
 
     expect(pushSpy).toHaveBeenCalledWith(
       { href: '/dashboard?tab=settings', query: { tab: 'settings' }, params: { id: '123' } },
@@ -53,12 +53,12 @@ describe('Anchor Solid - Navigate Utility', () => {
     const coreRoute = router.route('/users').route('/:id');
     const UiRoute = page(coreRoute);
 
-    navigate(UiRoute, { params: { id: '456' } });
+    navigate(UiRoute, { params: { id: '456' }, query: { foo: 'bar' } } as never);
 
     expect(pushSpy).toHaveBeenCalledWith(
-      { href: '/users/456', query: undefined, params: { id: '456' } },
+      { href: '/users/456?foo=bar', query: { foo: 'bar' }, params: { id: '456' } },
       '',
-      '/users/456'
+      '/users/456?foo=bar'
     );
   });
 
@@ -66,12 +66,28 @@ describe('Anchor Solid - Navigate Utility', () => {
     const router = createRouter();
     const coreRoute = router.route('/users').route('/:id');
 
-    navigate(coreRoute, { params: { id: '789' } });
+    navigate(coreRoute, { params: { id: '789' } } as never);
 
     expect(pushSpy).toHaveBeenCalledWith(
       { href: '/users/789', query: undefined, params: { id: '789' } },
       '',
       '/users/789'
     );
+  });
+
+  it('should redirect to a RouteComponent without options correctly', () => {
+    const router = createRouter();
+    const coreRoute = router.route('/users').route('/:id');
+    const UiRoute = page(coreRoute);
+
+    redirect(UiRoute);
+  });
+
+  it('should redirect to a RouteComponent without correctly', () => {
+    const router = createRouter();
+    const coreRoute = router.route('/users').route('/:id');
+    const UiRoute = page(coreRoute);
+
+    redirect(UiRoute, { params: { id: '456' }, query: { foo: 'bar' } } as never);
   });
 });

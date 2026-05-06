@@ -1,5 +1,4 @@
-import type { StateObserver } from '@anchorlib/core';
-import { createObserver, microbatch, onGlobalCleanup, setCleanUpHandler, setTracker } from '@anchorlib/core';
+import { createObserver, onGlobalCleanup, setCleanUpHandler, setTracker, type StateObserver } from '@anchorlib/core';
 import { createSignal, getOwner, onCleanup, type Owner } from 'solid-js';
 import type { ConstantRef, VariableRef } from './types.js';
 
@@ -15,8 +14,6 @@ type InternalOwner = Owner & {
 export const REF_REGISTRY = new WeakSet<VariableRef<unknown> | ConstantRef<unknown>>();
 export const COMPONENT_REGISTRY = new WeakMap<Owner, Map<Owner, ElementRef>>();
 export const ELEMENT_OBSERVER_REGISTRY = new WeakMap<Owner, StateObserver>();
-
-const [batch] = microbatch(0);
 
 let bindingInitialized = false;
 
@@ -46,15 +43,12 @@ if (!bindingInitialized) {
       COMPONENT_REGISTRY.set(component, elements);
 
       attachCleanup(component, () => {
-        // Batch the cleanup to unblock the component destruction.
-        batch(() => {
-          for (const [, { observer }] of elements) {
-            observer.destroy();
-          }
+        for (const [, { observer }] of elements) {
+          observer.destroy();
+        }
 
-          elements.clear();
-          COMPONENT_REGISTRY.delete(component);
-        });
+        elements.clear();
+        COMPONENT_REGISTRY.delete(component);
       });
     }
 
@@ -90,17 +84,15 @@ if (!bindingInitialized) {
 
     // Batch the tracking to unblock the property reads.
     const observer = ELEMENT_OBSERVER_REGISTRY.get(element);
-    batch(() => {
-      observer?.assign(init, observers)(key);
-    });
+    observer?.assign(init, observers)(key);
   });
 
   setCleanUpHandler((handler) => {
     if (getOwner()) {
       return onCleanup(handler);
+    } else {
+      onGlobalCleanup(handler);
     }
-
-    return onGlobalCleanup(handler);
   });
 }
 

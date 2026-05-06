@@ -1,4 +1,4 @@
-import { derived, isBrowser, untrack } from '@anchorlib/core';
+import { isBrowser } from '@anchorlib/core';
 import {
   type MatchedRoute,
   type RouteOptions,
@@ -7,8 +7,7 @@ import {
   setRedirectHandler,
   type UnknownRoute,
 } from '@anchorlib/router';
-import type { JSX, ParentComponent } from 'solid-js';
-import { For, onCleanup, onMount } from 'solid-js';
+import { For, type JSX, onCleanup, onMount, type ParentComponent, Show } from 'solid-js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
@@ -17,58 +16,91 @@ const STACK_REGISTRY = new WeakSet<UnknownRoute>();
 /**
  * A reactive component that renders the view for a given route and its children.
  */
-export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; children?: JSX.Element }) {
+export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; children?: JSX.Element }): JSX.Element {
   const { route, stacks } = props;
 
-  const index = derived(() => route.index?.active && route.index.renderer?.({}));
-  const exception = derived(() => route.exception && route.exceptionRenderer?.({}));
-  const content = (
+  const Index = () => {
+    const Renderer = route.index?.renderer ?? (() => null);
+    return <Show when={route.index?.active}>{(() => <Renderer />) as never}</Show>;
+  };
+  const Layout = route.renderer ?? (({ children }) => children);
+  const Exception = () => {
+    const Renderer = route.exceptionRenderer ?? (() => null);
+    return <Show when={route.exception}>{(() => <Renderer />) as never}</Show>;
+  };
+  const Content = () => (
     <>
-      {index.value}
+      <Index />
       {props.children}
-      {exception.value}
+      <Exception />
     </>
   );
-  const shell = derived(() => {
-    if (!route.active) return props.children;
-
-    const rendered = route.renderer?.({ children: content }) ?? content;
-
+  const Shell = () => {
     if (STACK_REGISTRY.has(route)) {
-      return <div class={'route-modal'}>{rendered}</div>;
+      return (
+        <Show when={route.active} fallback={props.children}>
+          {
+            (() => (
+              <div class={'route-modal'}>
+                <Layout>
+                  <Content />
+                </Layout>
+              </div>
+            )) as never
+          }
+        </Show>
+      );
     }
 
-    return rendered;
-  });
+    return (
+      <Show when={route.active} fallback={props.children}>
+        {
+          (() => (
+            <Layout>
+              <Content />
+            </Layout>
+          )) as never
+        }
+      </Show>
+    );
+  };
 
   if (STACK_REGISTRY.has(route)) {
-    untrack(() => stacks.set(route, () => <>{shell.value}</>));
-    return null as unknown as JSX.Element;
+    stacks.set(route, Shell);
+    return null;
   }
 
-  return <>{shell.value}</> as JSX.Element;
+  return <Shell />;
 }
 
 /**
  * Renders a specific route and recursively processes its child routes.
  */
-export function RouteRenderer(props: { route: UnknownRoute; registry: RouteRegistry; stacks: RouteStacks }) {
-  const children = Array.from(props.registry).map(([, child]) => (
-    /* v8 ignore next */
-    <RouteRenderer route={child.route} registry={child} stacks={props.stacks} />
-  ));
-
+export function RouteRenderer(props: {
+  route: UnknownRoute;
+  registry: RouteRegistry;
+  stacks: RouteStacks;
+}): JSX.Element {
   return (
     <RouteViewer route={props.route} stacks={props.stacks}>
-      {children}
+      <For each={Array.from(props.registry.values())}>
+        {(child) => <RouteRenderer route={child.route} registry={child} stacks={props.stacks} />}
+      </For>
     </RouteViewer>
   );
 }
 
 /**
+ * Renders stacked (modal) routes.
+ */
+function StackRenderer(props: { stacks: RouteStacks }): JSX.Element {
+  return <For each={Array.from(props.stacks.values())}>{(Stack) => <Stack />}</For>;
+}
+
+/**
  * The root router component that mounts the application route tree to Solid.
  */
-export function UIRouter(props: UIRouterProps) {
+export function UIRouter(props: UIRouterProps): JSX.Element {
   const stacks: RouteStacks = new Map();
 
   const activate = async () => {
@@ -90,34 +122,25 @@ export function UIRouter(props: UIRouterProps) {
     activate();
   }
 
-  onMount(() => {
-    window.addEventListener('popstate', activate);
-  });
+  if (isBrowser()) {
+    onMount(() => {
+      window.addEventListener('popstate', activate);
+    });
 
-  onCleanup(() => {
-    window.removeEventListener('popstate', activate);
-  });
-
-  const routes = Array.from(props.router.routes).map((registry) => (
-    <RouteRenderer route={registry.route} registry={registry} stacks={stacks} />
-  ));
+    onCleanup(() => {
+      window.removeEventListener('popstate', activate);
+    });
+  }
 
   return (
     <>
-      {routes}
+      <For each={Array.from(props.router.routes)}>
+        {(registry) => {
+          return <RouteRenderer route={registry.route} registry={registry} stacks={stacks} />;
+        }}
+      </For>
       <StackRenderer stacks={stacks} />
     </>
-  );
-}
-
-/**
- * Renders stacked (modal) routes.
- */
-function StackRenderer(props: { stacks: RouteStacks }) {
-  return (
-    <For each={Array.from(props.stacks.entries())}>
-      {([, Stack]) => <Stack />}
-    </For>
   );
 }
 
@@ -174,6 +197,6 @@ if (isBrowser()) {
       params: redirect.params,
       redirect: location.href,
       replace: true,
-    });
+    } as never);
   });
 }

@@ -1,10 +1,10 @@
 /** @jsxImportSource solid-js */
 
-import { mutable } from '@anchorlib/core';
+import { mutable, onCleanup } from '@anchorlib/core';
 import { render } from '@solidjs/testing-library';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'solid-js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { bind, type Bindable, bindable, proxyProps } from '../../src/index.js';
 import type { BindableComponentProps } from '../../src/types.js';
 
@@ -74,6 +74,12 @@ describe('Anchor Solid - Reactive Binding Tests', () => {
       // Update input value
       userEvent.type(input, 'hello');
       // Note: This is a simplified test - actual input handling might need more setup
+    });
+
+    it('should delegate to global cleanup handler', async () => {
+      const handler = vi.fn();
+      onCleanup(handler);
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 

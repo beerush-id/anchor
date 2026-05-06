@@ -1,11 +1,11 @@
 /** @jsxImportSource solid-js */
 
-import { createRouter, redirect } from '@anchorlib/router';
+import { createRouter } from '@anchorlib/router';
 import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { modal, page, route, RouteRenderer, RouteViewer, UIRouter } from '../../src/router/router.js';
-import type { RouteStacks } from '../../src/router/types.js';
+import type { RouteStacks } from '../../src/index.js';
+import { modal, page, redirect, route, RouteRenderer, RouteViewer, UIRouter } from '../../src/index.js';
 
 describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -94,6 +94,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
     it('renders the Layout and children when active', () => {
       const router = createRouter();
       const testRoute = router.route('/active');
+      testRoute.route('/');
       testRoute.render((state, context, children) => (
         <div>
           <span data-testid="layout" />
@@ -101,6 +102,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
         </div>
       ));
       testRoute.active = true;
+      testRoute.index!.active = true;
       const stacks = createStacks();
 
       const { container } = render(() => (
@@ -170,6 +172,24 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       expect(container.querySelector('[data-testid="error-view"]')).toBeDefined();
     });
+
+    it('renders null renderer when route has an exception', async () => {
+      const router = createRouter();
+      const testRoute = router.route('/error');
+      testRoute.render((_state, _context, children) => <div>{children as any}</div>);
+      const stacks = createStacks();
+
+      // Activate a non-matching URL to trigger exception on the route
+      await router.activate('http://localhost/error/nonexistent');
+
+      const { container } = render(() => (
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div>Child</div>
+        </RouteViewer>
+      ));
+
+      expect(container.querySelector('[data-testid="error-view"]')).toBeNull();
+    });
   });
 
   describe('RouteViewer - modal/stack branch', () => {
@@ -192,6 +212,25 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       expect(container.innerHTML).toBe('');
       expect(stacks.size).toBe(1);
       expect(stacks.has(modalRoute as never)).toBe(true);
+    });
+
+    it('renders a modal when inactive', () => {
+      const router = createRouter();
+      const modalRoute = router.route('/modal-full');
+      modal(modalRoute);
+
+      modalRoute.render((_state, _context, children) => <div data-testid="modal-layout">{children as any}</div>);
+
+      const stacks = createStacks();
+
+      render(() => <RouteViewer route={modalRoute as never} stacks={stacks} />);
+
+      // Render the Stack component from the map
+      const Stack = stacks.get(modalRoute as never)!;
+      expect(Stack).toBeDefined();
+
+      const { container } = render(() => <Stack />);
+      expect(container.querySelector('[data-testid="modal-layout"]')).toBeNull();
     });
 
     it('renders a modal with Layout and Index in the stack when both are active', () => {
@@ -220,7 +259,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
   });
 
   describe('UIRouter', () => {
-    it('binds popstate listener on mount and removes on unmount', () => {
+    it('binds popstate listener on mount and removes on unmount', async () => {
       const router = createRouter<JSX.Element>();
       const RootUi = page(router.rootRoute).render(() => <span>OK</span>);
 
@@ -231,6 +270,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
 
       unmount();
+      await Promise.resolve();
+
       expect(removeEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
     });
 
@@ -285,11 +326,16 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       pushSpy.mockRestore();
     });
 
-    it('should navigate automatically when a Redirect is created', () => {
+    it('should navigate automatically when a Redirect is created', async () => {
       const router = createRouter();
       const rawRoute = router.route('/redirect-target');
 
-      redirect(rawRoute, { id: '1' } as any, { foo: 'bar' } as any);
+      redirect(rawRoute, {
+        params: { id: '1' },
+        query: { foo: 'bar' },
+      } as never);
+
+      await Promise.resolve();
 
       expect(pushSpy).toHaveBeenCalledWith(
         { href: '/redirect-target?foo=bar', query: { foo: 'bar' }, params: { id: '1' }, redirect: location.href },

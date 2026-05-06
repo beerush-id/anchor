@@ -67,6 +67,7 @@
     "rimraf": "catalog:",
     "solid-js": "catalog:lib",
     "tsdown": "catalog:",
+    "unplugin-solid": "catalog:lib",
     "vite": "catalog:",
     "vite-plugin-solid": "catalog:",
     "vitest": "catalog:"

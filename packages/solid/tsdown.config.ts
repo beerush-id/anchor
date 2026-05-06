@@ -1,7 +1,8 @@
 import { defineConfig } from 'tsdown';
+import solid from 'unplugin-solid/rolldown';
 
 export default defineConfig({
-  entry: ['./src/**/*.ts'],
+  entry: ['./src/**/*.ts', './src/**/*.tsx'],
   outDir: './dist',
   dts: true,
   clean: false,
@@ -10,4 +11,6 @@ export default defineConfig({
   format: ['esm'],
   unbundle: true,
   platform: 'neutral',
+  plugins: [solid()],
+  external: ['node:async_hooks'],
 });
