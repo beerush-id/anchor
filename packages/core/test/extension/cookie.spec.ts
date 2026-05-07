@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  anchor,
   COOKIE_PREFIX,
   CookieJar,
   cookies,
@@ -7,6 +8,7 @@ import {
   encodeCookies,
   getCookieJar,
   setCookieContext,
+  syncCookies,
   withIsolation,
 } from '../../src/index.js';
 
@@ -268,6 +270,139 @@ describe('Cookie Storage', () => {
       });
 
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('syncCookies', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should sync updated cookie values into reactive state', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies('');
+        setCookieContext(jar);
+
+        const state = cookies('sync-test', { theme: 'light' });
+        expect(state.theme).toBe('light');
+
+        // Simulate server setting a new cookie value
+        Object.defineProperty(document, 'cookie', {
+          get: () => `${COOKIE_PREFIX}sync-test=${encodeURIComponent(JSON.stringify({ theme: 'dark' }))}`,
+          configurable: true,
+        });
+
+        syncCookies();
+
+        expect(state.theme).toBe('dark');
+      });
+    });
+
+    it('should reset state to init when cookie is deleted', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies(
+          `${COOKIE_PREFIX}del-test=${encodeURIComponent(JSON.stringify({ count: 5, extra: 'yes' }))}`
+        );
+        setCookieContext(jar);
+
+        const state = cookies('del-test', { count: 0 });
+        expect(state.count).toBe(5);
+        expect(jar.has(`${COOKIE_PREFIX}del-test`)).toBe(true);
+
+        // Simulate cookie deletion (server set max-age=0)
+        Object.defineProperty(document, 'cookie', {
+          get: () => '',
+          configurable: true,
+        });
+
+        syncCookies();
+
+        // State reset to init defaults
+        expect(state.count).toBe(0);
+        // Entry removed from jar
+        expect(jar.has(`${COOKIE_PREFIX}del-test`)).toBe(false);
+      });
+    });
+
+    it('should skip entries without init on deletion', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies('');
+        setCookieContext(jar);
+
+        // Manually add a jar entry without init (simulates decoded-only entry)
+        jar.set(`${COOKIE_PREFIX}no-init`, { name: `${COOKIE_PREFIX}no-init`, value: { x: 1 } });
+
+        Object.defineProperty(document, 'cookie', {
+          get: () => '',
+          configurable: true,
+        });
+
+        syncCookies();
+
+        // Entry without init is not deleted
+        expect(jar.has(`${COOKIE_PREFIX}no-init`)).toBe(true);
+      });
+    });
+
+    it('should return early when no jar exists', async () => {
+      await withIsolation(async () => {
+        expect(() => syncCookies()).not.toThrow();
+      });
+    });
+
+    it('should return early in non-browser environment', async () => {
+      vi.stubGlobal('window', undefined);
+
+      await withIsolation(async () => {
+        setCookieContext(decodeCookies(''));
+        expect(() => syncCookies()).not.toThrow();
+      });
+
+      vi.unstubAllGlobals();
+    });
+
+    it('should be triggered via DOM event dispatch', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies('');
+        setCookieContext(jar);
+
+        const state = cookies('event-test', { v: 1 });
+
+        Object.defineProperty(document, 'cookie', {
+          get: () => `${COOKIE_PREFIX}event-test=${encodeURIComponent(JSON.stringify({ v: 99 }))}`,
+          configurable: true,
+        });
+
+        window.dispatchEvent(new Event('anchor:cookie-sync'));
+
+        expect(state.v).toBe(99);
+      });
+    });
+
+    it('should not touch unresolved jar entries during sync', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies(
+          `${COOKIE_PREFIX}unresolved=${encodeURIComponent(JSON.stringify({ a: 1 }))}`
+        );
+        setCookieContext(jar);
+
+        // Don't call cookies() — entry exists but value is not reactive
+        Object.defineProperty(document, 'cookie', {
+          get: () => `${COOKIE_PREFIX}unresolved=${encodeURIComponent(JSON.stringify({ a: 2 }))}`,
+          configurable: true,
+        });
+
+        syncCookies();
+
+        // Entry still in jar, value not reactive so not synced
+        const entry = jar.get(`${COOKIE_PREFIX}unresolved`);
+        expect(entry).toBeDefined();
+        expect(anchor.has(entry!.value)).toBe(false);
+      });
     });
   });
 });

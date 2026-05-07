@@ -109,6 +109,74 @@ describe('Anchor Helpers', () => {
 
       expect(state).toEqual(['x', 'b', 'z']);
     });
+
+    it('should replace object state by deleting extra keys', () => {
+      const state = anchor({ a: 1, b: 2, c: 3 });
+
+      anchor.assign<ObjLike>(state, { a: 10, d: 4 }, true);
+
+      expect(state).toEqual({ a: 10, d: 4 });
+      expect((state as ObjLike).b).toBeUndefined();
+      expect((state as ObjLike).c).toBeUndefined();
+    });
+
+    it('should replace Map state by deleting extra keys', () => {
+      const state = anchor(
+        new Map([
+          ['a', 1],
+          ['b', 2],
+          ['c', 3],
+        ])
+      );
+
+      anchor.assign(state, { a: 10, d: 4 }, true);
+
+      expect(anchor.get(state)).toEqual(
+        new Map([
+          ['a', 10],
+          ['d', 4],
+        ])
+      );
+      expect(state.has('b')).toBe(false);
+      expect(state.has('c')).toBe(false);
+    });
+
+    it('should notify with replace event type', () => {
+      const state = anchor({ a: 1, b: 2 });
+      const handler = vi.fn();
+      const unsubscribe = subscribe(state, handler);
+
+      anchor.assign<ObjLike>(state, { a: 10, c: 3 }, true);
+
+      expect(state).toEqual({ a: 10, c: 3 });
+      expect(handler).toHaveBeenCalledWith(state, expect.objectContaining({
+        type: 'replace',
+        changes: expect.arrayContaining(['b', 'a', 'c']),
+      }));
+
+      unsubscribe();
+    });
+
+    it('should handle replace with empty source (deletes all keys)', () => {
+      const state = anchor({ a: 1, b: 2 });
+
+      anchor.assign<ObjLike>(state, {}, true);
+
+      expect(state).toEqual({});
+    });
+
+    it('should not emit when replace source matches target', () => {
+      const state = anchor({ a: 1 });
+      const handler = vi.fn();
+      const unsubscribe = subscribe(state, handler);
+
+      anchor.assign<ObjLike>(state, { a: 1 }, true);
+
+      // init + replace (no actual changes, but still emits replace event)
+      expect(handler).toHaveBeenCalledTimes(2);
+
+      unsubscribe();
+    });
   });
 
   describe('State Property Removal', () => {

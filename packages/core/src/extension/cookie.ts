@@ -24,6 +24,8 @@ export type CookieOptions = {
 export type CookieEntry<T extends ObjLike = ObjLike> = {
   name: string;
   value: T;
+  /** The original default values, used to reset state when the cookie is deleted. */
+  init?: T;
   options?: CookieOptions;
 };
 
@@ -141,8 +143,61 @@ export function setCookieContext(jar: CookieJar) {
   setScope(COOKIE_JAR_KEY, jar);
 }
 
+/**
+ * Re-reads `document.cookie` and synchronizes any server-set cookie values
+ * into the corresponding reactive state objects in the current {@link CookieJar}.
+ *
+ * This is useful after a server response that includes `Set-Cookie` headers,
+ * so the client-side reactive state reflects the server's changes immediately.
+ *
+ * Can be triggered manually or via a DOM event:
+ * ```ts
+ * // Direct call (requires Anchor dependency):
+ * syncCookies();
+ *
+ * // DOM event (zero dependency — any library can dispatch):
+ * window.dispatchEvent(new Event('anchor:cookie-sync'));
+ * ```
+ */
+let syncing = false;
+
+export function syncCookies() {
+  if (!isBrowser()) return;
+
+  const jar = getScope<CookieJar>(COOKIE_JAR_KEY);
+  if (!jar) return;
+
+  syncing = true;
+
+  try {
+    const current = decodeCookies(document.cookie);
+
+    // Sync updated values
+    for (const [name, incoming] of current) {
+      const entry = jar.get(name);
+
+      if (entry && anchor.has(entry.value)) {
+        anchor.assign(entry.value, incoming.value);
+      }
+    }
+
+    // Handle deletions — cookie removed by server (max-age=0)
+    for (const [name, entry] of jar) {
+      if (!current.has(name) && entry.init) {
+        if (anchor.has(entry.value)) {
+          anchor.assign(entry.value, entry.init, true);
+        }
+        jar.delete(name);
+      }
+    }
+  } finally {
+    syncing = false;
+  }
+}
+
 if (isBrowser()) {
   setCookieContext(decodeCookies(document.cookie));
+  window.addEventListener('anchor:cookie-sync', syncCookies);
 }
 
 function writeDocumentCookie(entry: CookieEntry) {
@@ -186,10 +241,11 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
   const state = globalRun(() => mutable({ ...init, ...(entry?.value as Partial<T>) }));
 
   if (!entry) {
-    entry = { name: cookieName, value: state, options };
+    entry = { name: cookieName, value: state, init: { ...init } as T, options };
     jar?.set(cookieName, entry);
   } else {
     entry.value = state;
+    entry.init = { ...init } as T;
     entry.options = options;
   }
 
@@ -199,14 +255,14 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
     if (isBrowser()) {
       const [schedule] = microtask(0);
       const unsubscribe = controller.subscribe((_s, e) => {
-        if (e.type === 'init') return;
+        if (e.type === 'init' || syncing) return;
         jar?.changes.add(entry);
         schedule(() => writeDocumentCookie(entry));
       });
       onGlobalCleanup(unsubscribe);
     } else if (jar) {
       const unsubscribe = controller.subscribe((_s, e) => {
-        if (e.type === 'init') return;
+        if (e.type === 'init' || syncing) return;
         jar.changes.add(entry);
       });
       onGlobalCleanup(unsubscribe);

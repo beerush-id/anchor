@@ -550,14 +550,31 @@ export interface Anchor {
   // Utility methods.
 
   /**
+   * Assigns properties from source to target collection.
+   * @param target - Target collection
+   * @param source - Source collection or record
+   * @param replace - If true, replaces existing properties instead of merging
+   */
+  assign<T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>, replace?: boolean): void;
+  /**
+   * Reassigns properties from source to target array.
+   * @param target - Target array
+   * @param source - Source object or record
+   * @param replace - If true, replaces existing properties instead of merging
+   */
+  assign<T extends unknown[]>(
+    target: T,
+    source: { [key: string]: T[number] } | Record<string, T[number]>,
+    replace?: boolean
+  ): void;
+  /**
    * Assigns properties from source to target object.
    *
-   * @param target - Target object
+   * @param target - Target object to assign properties to
    * @param source - Source object with properties to assign
+   * @param replace - If true, replaces existing properties instead of merging
    */
-  assign<T, K>(target: Map<T, K>, source: Map<T, K> | Record<KeyLike, K>): void;
-  assign<T extends unknown[]>(target: T, source: { [key: string]: T[number] } | Record<string, T[number]>): void;
-  assign<T extends object>(target: T, source: Partial<T>): void;
+  assign<T extends object>(target: T, source: Partial<T>, replace?: boolean): void;
 
   /**
    * Removes keys from a collection.

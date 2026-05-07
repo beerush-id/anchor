@@ -25,6 +25,7 @@ export const BatchMutations = {
   CLEAR: 'clear',
   ASSIGN: 'assign',
   REMOVE: 'remove',
+  REPLACE: 'replace',
 } as const;
 
 export type BatchMutations = Enum<typeof BatchMutations>;

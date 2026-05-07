@@ -1,6 +1,6 @@
 import { plugin } from '../extension/plugin.js';
 import { BatchMutations } from '../shared/enum.js';
-import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from '../types.js';
+import type { Assignable, AssignablePart, Broadcaster, Linkable, ObjLike, StateChange } from '../types.js';
 import { softEntries, softKeys } from '../utils/clone.js';
 import { isArray, isDefined, isMap, isSet } from '../utils/index.js';
 import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
@@ -18,7 +18,7 @@ import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } 
  * @param {P} source - The partial object containing the new values
  * @throws {Error} If the target is not an assignable state or if the source is not an object-like value
  */
-export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P) => {
+export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P, replace?: boolean) => {
   if (!isSafeObject(target) && !isArray(target)) {
     throw new Error('Cannot assign to non-assignable state.');
   }
@@ -37,11 +37,31 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
   const prev: AssignablePart<T> = {};
   const entries = softEntries(source);
-  if (!entries.length) return;
+  if (!entries.length && !replace) return;
 
   const changes: unknown[] = [];
+  const sourceKeys = new Set(entries.map(([k]) => k));
 
-  for (const [key, val] of softEntries(source)) {
+  // In replace mode, delete keys not present in source
+  if (replace) {
+    const targetKeys = isMap(target) ? target.keys() : softKeys(target as ObjLike);
+
+    for (const key of targetKeys) {
+      if (!sourceKeys.has(key as keyof P)) {
+        changes.push(key);
+
+        if (isMap(target)) {
+          prev[key as never] = target.get(key) as never;
+          target.delete(key);
+        } else if (isSafeObject(target)) {
+          prev[key as keyof T] = target[key as keyof T];
+          delete target[key as never];
+        }
+      }
+    }
+  }
+
+  for (const [key, val] of entries) {
     if (isMap(target)) {
       prev[key as never] = target.get(key) as never;
 
@@ -64,7 +84,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   const event = {
-    type: BatchMutations.ASSIGN,
+    type: replace ? BatchMutations.REPLACE : BatchMutations.ASSIGN,
     prev,
     keys: [],
     changes,
