@@ -6,12 +6,12 @@ export function getStore() {
   let store = getScope(ROUTER_STORE_KEY);
 
   if (!store) {
-    store = new WeakMap();
+    store = new Map();
     setScope(ROUTER_STORE_KEY, store);
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Expected.
-  return store as WeakMap<any, any>;
+  return store as Map<any, any>;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.

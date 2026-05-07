@@ -642,10 +642,13 @@ export class Route<
       state.active = false;
       state.status = ROUTE_STATUS.IDLE;
 
-      if (!this.options?.keepAlive) {
-        context.value = { query: {}, params: {}, data: {} };
-        // safeAssign(context.value, { query: {}, params: {}, data: {} });
+      if (this.options?.keepAlive) {
+        context.value.exception = undefined;
+      } else {
+        context.value = { query: {}, params: {}, data: {}, exception: undefined };
+      }
 
+      if (!this.options?.keepAlive) {
         state.error = undefined;
         state.resolved = false;
         state.authenticated = false;
@@ -699,6 +702,7 @@ export class Route<
   public cleanup() {
     this.deactivate();
     this.cleanupObservers();
+    getStore().delete(this);
   }
 
   private cleanupObservers() {

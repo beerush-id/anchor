@@ -225,7 +225,11 @@ export class URLCache {
       match.url = url;
 
       // Don't cache exceptions.
-      if (match.exception) return match;
+      if (match.exception) {
+        const lastSegment = match.segments[match.segments.length - 1];
+        lastSegment.store.exception = match.exception;
+        return match;
+      }
 
       // Clear any exceptions from segments.
       match.segments.forEach((s) => (s.store.exception = undefined));

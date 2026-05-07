@@ -354,8 +354,9 @@ export class Router<Output = any> {
 
     safeRead(() => {
       for (const segment of toDeactivate.reverse()) {
-        storage.context.detach(segment.store);
+        segment.store.exception = undefined;
         segment.route.deactivate();
+        storage.context.detach(segment.store);
       }
 
       for (const { route } of toActivate) {
@@ -470,7 +471,7 @@ export class Router<Output = any> {
       segment.route.cleanup();
     }
 
-    getStore().delete(this);
+    getStore().clear();
   }
 
   public catch(renderer: RouteExceptionRendererFn<None, None, TRec, Output>) {

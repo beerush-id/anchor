@@ -186,10 +186,6 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
       const exception = new Error('Not found.');
       const lastSegment = segments[segments.length - 1];
 
-      if (lastSegment) {
-        lastSegment.store.exception = exception;
-      }
-
       return { query, route: lastSegment?.route, segments, params, exception };
     }
   }
