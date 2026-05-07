@@ -1,8 +1,8 @@
 import { createArrayMutator } from './array.js';
 import { createBroadcaster } from './broadcast.js';
 import { createCollectionMutator } from './collection.js';
-import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from './constant.js';
-import { type ArrayMutations, Linkables } from './enum.js';
+import { ANCHOR_SETTINGS } from './constant.js';
+import { Linkables } from './enum.js';
 import { captureStack } from './exception.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { assign, clear, remove } from './helper.js';
@@ -26,7 +26,6 @@ import { createGetter, createRemover, createSetter } from './trap.js';
 import type {
   Anchor,
   AnchorSettings,
-  ArrayMutation,
   ExceptionMap,
   Immutable,
   Linkable,
@@ -34,7 +33,6 @@ import type {
   ModelError,
   ModelObject,
   ObjLike,
-  SetMutation,
   State,
   StateController,
   StateExceptionHandlerList,
@@ -322,50 +320,6 @@ anchorFn.find = ((init) => {
   return INIT_REGISTRY.get(init) as typeof init;
 }) satisfies Anchor['find'];
 
-anchorFn.read = ((state) => {
-  if (anchorFn.has(state)) state = anchorFn.get(state);
-
-  const handler = {
-    get: (target, prop, receiver) => {
-      const value = Reflect.get(target, prop, receiver);
-
-      if (linkable(value)) {
-        return anchorFn.read(value);
-      }
-
-      if (ARRAY_MUTATION_KEYS.has(prop as ArrayMutations)) {
-        const fn = (...args: unknown[]) => {
-          captureStack.violation.methodCall(prop as ArrayMutation, fn);
-          return (createArrayMutator.mock?.[prop as never] as Array<unknown>['push'])?.(target, ...args);
-        };
-
-        return fn;
-      }
-
-      if (COLLECTION_MUTATION_PROPS.has(prop as SetMutation)) {
-        const fn = (...args: unknown[]) => {
-          captureStack.violation.methodCall(prop as SetMutation, fn);
-          return (createCollectionMutator.mock?.[prop as never] as Array<unknown>['push'])?.(target, ...args);
-        };
-
-        return fn;
-      }
-
-      return value;
-    },
-    set: (_target, prop) => {
-      captureStack.violation.setter(prop, handler.set);
-      return true;
-    },
-    deleteProperty: (_target, prop) => {
-      captureStack.violation.remover(prop, handler.deleteProperty);
-      return true;
-    },
-  } as ProxyHandler<typeof state>;
-
-  return new Proxy(state, handler) as Immutable<typeof state>;
-}) satisfies Anchor['read'];
-
 anchorFn.snapshot = ((state, recursive = true) => {
   const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
 
@@ -385,7 +339,7 @@ anchorFn.stringify = ((state, replacer, space) => {
     captureStack.error.external('Cannot stringify non-existence state.', error, anchorFn.snapshot);
   }
 
-  return JSON.stringify(target ?? state, replacer, space);
+  return JSON.stringify(target ?? state, replacer as never, space);
 }) as Anchor['stringify'];
 
 anchorFn.destroy = ((state, warn?: boolean) => {

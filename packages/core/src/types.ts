@@ -482,21 +482,6 @@ export interface Anchor {
   find<T extends Linkable>(init: T): T;
 
   /**
-   * Creates a read-only version of the given state.
-   *
-   * This method returns an `Immutable<T>` type, which is a deep readonly version of the state.
-   * It is useful for scenarios where you want to ensure that a state object
-   * cannot be modified, providing immutability guarantees while
-   * enabling optimizations for read-only access by bypassing reactive traps.
-   *
-   * The returned object is a proxy that prevents direct mutations.
-   *
-   * @param state - The state object to make read-only.
-   * @returns A read-only proxy of the state.
-   */
-  read<T extends State>(state: T): Immutable<T>;
-
-  /**
    * Retrieves the exception map for a given state, allowing access to validation errors and exceptions.
    *
    * This method returns a **StateExceptionMap** which contains:
@@ -541,7 +526,7 @@ export interface Anchor {
    */
   stringify<T extends State>(
     state: T,
-    replacer?: (this: unknown, key: string, value: unknown) => unknown,
+    replacer?: null | ((this: unknown, key: string, value: unknown) => unknown),
     space?: string | number
   ): string;
 

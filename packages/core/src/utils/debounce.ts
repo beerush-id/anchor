@@ -28,7 +28,7 @@ export type Debouncer = [DebounceScheduler, DebounceCleaner];
  */
 export function debouncer(delay = 10): Debouncer {
   let handler: DebounceHandler | undefined;
-  let activeId: number | undefined;
+  let activeId: ReturnType<typeof setTimeout> | undefined;
 
   const schedule = ((fn) => {
     if (typeof fn !== 'function') {
