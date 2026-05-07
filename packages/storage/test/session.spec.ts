@@ -1,4 +1,4 @@
-import { type ObjLike } from '@anchorlib/core';
+import { createLifecycle, type ObjLike } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushStorageCache, session, SessionStorage, STORAGE_SYNC_DELAY } from '../src/index.js';
 
@@ -280,7 +280,8 @@ describe('Reactive Storage', () => {
     });
 
     it('should handle leaving shared reactive session objects', () => {
-      const state1 = session('test', { a: 1 });
+      const ssr = createLifecycle();
+      const state1 = ssr.run(() => session('test', { a: 1 }));
       const state2 = session('test', { a: 1 });
       const key = SessionStorage.key('test');
 
@@ -306,6 +307,7 @@ describe('Reactive Storage', () => {
       expect(state2.a).toBe(3);
 
       expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 2 }));
+      ssr.destroy();
     });
   });
 });

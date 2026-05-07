@@ -1,4 +1,4 @@
-import type { ObjLike } from '@anchorlib/core';
+import { createLifecycle, type ObjLike } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { persistent, PersistentStorage, STORAGE_KEY, STORAGE_SYNC_DELAY } from '../src/index.js';
 
@@ -190,7 +190,8 @@ describe('Reactive Storage', () => {
 
   describe('Persistent Storage', () => {
     it('should create a reactive persistent object', () => {
-      const state = persistent('test-1', { a: 1, b: 'test' });
+      const ssr = createLifecycle();
+      const state = ssr.run(() => persistent('test-1', { a: 1, b: 'test' }));
 
       expect(state.a).toBe(1);
       expect(state.b).toBe('test');
@@ -198,6 +199,7 @@ describe('Reactive Storage', () => {
       // Check if the state is stored in localStorage
       const key = PersistentStorage.key('test-1');
       expect(localStorage.getItem(key)).toBe(JSON.stringify({ a: 1, b: 'test' }));
+      ssr.destroy();
     });
 
     it('should share the same persistent state with the same name', () => {

@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor, createLifecycle } from '@anchorlib/core';
 import { sleep } from '@beerush/utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
@@ -195,7 +195,7 @@ describe('Reactive KV Module', () => {
 
       // Test leaving non-existent state
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fakeState = anchor.raw({ data: 'fake', status: 'ready' }) as KVState<any>;
+      const fakeState = anchor({ data: 'fake', status: 'ready' }) as KVState<any>;
       expect(() => kv.leave(fakeState)).not.toThrow();
     });
 
@@ -358,7 +358,8 @@ describe('Reactive KV Module', () => {
     });
 
     it('should handle falsy values correctly', async () => {
-      const kv = createKVStore('test-falsy-kv');
+      const ssr = createLifecycle();
+      const kv = ssr.run(() => createKVStore('test-falsy-kv'));
 
       const state1 = kv<number>('falsy-key-1', 0);
       const state2 = kv<string>('falsy-key-2', '');
@@ -389,6 +390,8 @@ describe('Reactive KV Module', () => {
       expect(newState2.data).toBe('non-empty');
       expect(newState3.data).toBe(true);
       expect(newState4.data).toBe('not-null');
+
+      ssr.destroy();
     });
   });
 });

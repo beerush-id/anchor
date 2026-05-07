@@ -585,7 +585,9 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     rowSubscriptions.set(state, unsubscribe);
 
     onGlobalCleanup(() => {
+      /* v8 ignore start */
       unsubscribe();
+      /* v8 ignore end */
     });
 
     return state;
@@ -653,11 +655,11 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
      * @returns A state object containing the list of records
      */
     list(filter?: IDBKeyRange | FilterFn<R>, limit = DEFAULT_FIND_LIMIT, direction?: IDBCursorDirection) {
-      const state = createState<RowListState<R>>({
+      const state = createState({
         data: [],
         count: 0,
         status: 'pending',
-      });
+      } as RowListState<R>);
 
       table
         .list(filter, limit, direction)
@@ -694,11 +696,11 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
       limit?: number,
       direction?: IDBCursorDirection
     ): RowListState<R> {
-      const state = createState<RowListState<R>>({
+      const state = createState({
         data: [],
         count: 0,
         status: 'pending',
-      });
+      } as RowListState<R>);
 
       table
         .listByIndex(name, filter, limit, direction)

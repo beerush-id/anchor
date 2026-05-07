@@ -1,3 +1,4 @@
+import { createLifecycle } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { createRecord, createTable, DB_SYNC_DELAY, type Rec } from '../../src/db/index.js';
@@ -112,6 +113,7 @@ describe('Reactive Table Module', () => {
     });
 
     it('should get existing row from database', async () => {
+      const ssr = createLifecycle();
       // First create a record directly in the database
       const table = createTable<TestRecord>('test-reactive-table');
       const reactiveTable = table.add({ id: 'existing-id', name: 'existing', value: 100 });
@@ -120,7 +122,7 @@ describe('Reactive Table Module', () => {
 
       // Create a new reactive table instance to simulate fresh access
       const newTable = createTable<TestRecord>('test-reactive-table');
-      const rowState = newTable.get('existing-id');
+      const rowState = ssr.run(() => newTable.get('existing-id'));
 
       expect(rowState.status).toBe('pending');
 
@@ -130,6 +132,8 @@ describe('Reactive Table Module', () => {
       expect(rowState.data.id).toBe('existing-id');
       expect(rowState.data.name).toBe('existing');
       expect(rowState.data.value).toBe(100);
+
+      ssr.destroy();
     });
 
     it('should handle getting non-existent row', async () => {

@@ -442,7 +442,9 @@ export function createKVStore<T extends Storable>(
     }
 
     onGlobalCleanup(() => {
+      /* v8 ignore start */
       kvFn.leave(state);
+      /* v8 ignore end */
     });
 
     return state;
