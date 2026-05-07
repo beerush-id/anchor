@@ -98,7 +98,9 @@ export class HTTPRouter {
     builder?: HTTPResponseBuilder
   ) {
     const formData = await httpReq.formData();
-    const irpcRequests = JSON.parse(formData.get(IRPC_JSON_KEY) as string) as (IRPCRequest & { files?: IRPCFilePointer[] })[];
+    const irpcRequests = JSON.parse(formData.get(IRPC_JSON_KEY) as string) as (IRPCRequest & {
+      files?: IRPCFilePointer[];
+    })[];
 
     const requests = irpcRequests.map((req) => {
       if (req.files?.length) {

@@ -1,6 +1,6 @@
-import { ERROR_CODE, IRPCFile, IRPC_PACKET_TYPE, IRPC_STATUS, type IRPCCall } from '@irpclib/irpc';
+import { ERROR_CODE, IRPC_PACKET_TYPE, IRPC_STATUS, type IRPCCall, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
+import { COOKIES_EVENT, COOKIES_SYNC_KEY, DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 
 describe('HTTPTransport', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -61,6 +61,13 @@ describe('HTTPTransport', () => {
 
       expect(transport.url.toString()).toBe(`https://api.example.com${DEFAULT_ENDPOINT}`);
     });
+
+    it('should use default baseURL when not configured', () => {
+      vi.stubGlobal('window', {});
+      const transport = new HTTPTransport({});
+      expect(transport.url.href).toBeDefined();
+      vi.unstubAllGlobals();
+    });
   });
 
   describe('close', () => {
@@ -68,15 +75,17 @@ describe('HTTPTransport', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const call = { id: 'call-id' } as any;
       const abortSpy = vi.fn();
-      
-      const mapGetSpy = vi.spyOn(transport['abortControllers'] as any, 'get').mockReturnValue({ abort: abortSpy } as any);
+
+      const mapGetSpy = vi
+        .spyOn(transport['abortControllers'] as any, 'get')
+        .mockReturnValue({ abort: abortSpy } as any);
       const mapDeleteSpy = vi.spyOn(transport['abortControllers'] as any, 'delete');
 
       transport.close(call);
-      
+
       expect(abortSpy).toHaveBeenCalledTimes(1);
       expect(mapDeleteSpy).toHaveBeenCalledWith(call);
-      
+
       mapGetSpy.mockRestore();
       mapDeleteSpy.mockRestore();
     });
@@ -137,9 +146,7 @@ describe('HTTPTransport', () => {
 
       await transport['dispatch'](calls);
 
-      expect(calls[0].enqueue).not.toHaveBeenCalledWith(
-        expect.objectContaining({ status: IRPC_STATUS.ERROR })
-      );
+      expect(calls[0].enqueue).not.toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.ERROR }));
 
       expect(fetchBody).toBeTruthy();
       expect(fetchBody.constructor.name).toBe('FormData');
@@ -595,7 +602,7 @@ describe('HTTPTransport', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const call1 = { id: '1', enqueue: vi.fn() } as any;
       const textEncoder = new TextEncoder();
-      
+
       let callCount = 0;
       const response = {
         ok: true,
@@ -603,7 +610,8 @@ describe('HTTPTransport', () => {
           getReader: () => ({
             read: vi.fn().mockImplementation(() => {
               callCount++;
-              if (callCount === 1) return Promise.resolve({ done: false, value: textEncoder.encode('invalid terminator') });
+              if (callCount === 1)
+                return Promise.resolve({ done: false, value: textEncoder.encode('invalid terminator') });
               return Promise.resolve({ done: true, value: undefined });
             }),
             releaseLock: vi.fn(),
@@ -619,7 +627,7 @@ describe('HTTPTransport', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const call1 = { id: '1', enqueue: vi.fn() } as any;
       const textEncoder = new TextEncoder();
-      
+
       let callCount = 0;
       const response = {
         ok: true,
@@ -627,7 +635,13 @@ describe('HTTPTransport', () => {
           getReader: () => ({
             read: vi.fn().mockImplementation(() => {
               callCount++;
-              if (callCount === 1) return Promise.resolve({ done: false, value: textEncoder.encode(JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.EVENT, data: 'eof_terminator' })) });
+              if (callCount === 1)
+                return Promise.resolve({
+                  done: false,
+                  value: textEncoder.encode(
+                    JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.EVENT, data: 'eof_terminator' })
+                  ),
+                });
               return Promise.resolve({ done: true, value: undefined });
             }),
             releaseLock: vi.fn(),
@@ -643,7 +657,7 @@ describe('HTTPTransport', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const call1 = { id: '1', enqueue: vi.fn() } as any;
       const textEncoder = new TextEncoder();
-      
+
       let callCount = 0;
       const response = {
         ok: true,
@@ -697,23 +711,25 @@ describe('HTTPTransport', () => {
     it('should dispatch anchor:cookie-sync event when x-anchor-set-cookie header is present', async () => {
       const isWindowDefined = typeof window !== 'undefined';
       if (!isWindowDefined) {
-        (globalThis as any).window = { dispatchEvent: vi.fn() };
+        (globalThis as any).window = { dispatchEvent: vi.fn(), location: { origin: 'http://localhost' } };
       }
       const isCustomEventDefined = typeof CustomEvent !== 'undefined';
       if (!isCustomEventDefined) {
         (globalThis as any).CustomEvent = class {
           type: string;
-          constructor(type: string) { this.type = type; }
+          constructor(type: string) {
+            this.type = type;
+          }
         };
       }
-      
+
       const dispatchSpy = vi.spyOn(window, 'dispatchEvent').mockImplementation(() => true);
 
-      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const transport = new HTTPTransport({});
       const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
         return {
           ok: true,
-          headers: { has: (key: string) => key.toLowerCase() === 'x-anchor-set-cookie' },
+          headers: { has: (key: string) => key.toLowerCase() === COOKIES_SYNC_KEY },
           body: { getReader: () => ({ read: async () => ({ done: true }), releaseLock: () => {} }) },
         } as any;
       });
@@ -721,11 +737,11 @@ describe('HTTPTransport', () => {
       await transport['dispatch']([]);
 
       expect(dispatchSpy).toHaveBeenCalled();
-      expect((dispatchSpy.mock.calls[0][0] as any).type).toBe('anchor:cookie-sync');
+      expect((dispatchSpy.mock.calls[0][0] as any).type).toBe(COOKIES_EVENT);
 
       dispatchSpy.mockRestore();
       mockFetch.mockRestore();
-      
+
       if (!isWindowDefined) {
         delete (globalThis as any).window;
       }

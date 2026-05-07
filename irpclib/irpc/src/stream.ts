@@ -165,14 +165,22 @@ export class IRPCStream<T extends IRPCData> {
         );
       } else {
         this.value = result as T;
-        this.status = IRPC_STATUS.SUCCESS;
+
+        if (response.error) {
+          this.error = { code: ERROR_CODE.STREAM_ERROR, message: response.error.message };
+          this.status = IRPC_STATUS.ERROR;
+          this.errorHandlers.forEach((handler) => handler(this.error!));
+        } else {
+          this.status = IRPC_STATUS.SUCCESS;
+        }
 
         const packet = {
           id,
           name,
           type: IRPC_PACKET_TYPE.ANSWER,
-          status: IRPC_STATUS.SUCCESS,
           data: this.value as T,
+          error: this.error,
+          status: this.status,
           createdAt: Date.now(),
         } satisfies IRPCPacketAnswer<T>;
 

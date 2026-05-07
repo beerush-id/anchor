@@ -52,6 +52,28 @@ describe('IRPCStream', () => {
     expect(errHandler.mock.calls[0][0].message).toBe('Sync fail');
   });
 
+  it('should stream error as an ANSWER ERROR', async () => {
+    const stream = new IRPCStream('id2', 'test_err', async () => {
+      return { id: 'id2', name: 'test', error: { message: 'Sync fail' } } as never;
+    });
+
+    const pipeline = vi.fn();
+    const errHandler = vi.fn();
+
+    stream.pipe(pipeline);
+    stream.catch(errHandler);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(pipeline).toHaveBeenCalledTimes(1);
+    const packet = pipeline.mock.calls[0][0] as IRPCPacketAnswer<string>;
+    expect(packet.status).toBe(IRPC_STATUS.ERROR);
+    expect(packet.error?.message).toBe('Sync fail');
+
+    expect(errHandler).toHaveBeenCalledTimes(1);
+    expect(errHandler.mock.calls[0][0].message).toBe('Sync fail');
+  });
+
   it('should send early ANSWER PENDING for active RemoteState', async () => {
     const state = new RemoteState('partial');
     const stream = new IRPCStream('id3', 'test_stream', async () => ({ id: 'id3', name: 'test', result: state }));
@@ -215,14 +237,18 @@ describe('IRPCStream', () => {
   it('should explicitly bypass pipeline internally when prematurely aborted', async () => {
     const abortController = new AbortController();
     vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-    
+
     abortController.abort(); // Cancel before execution
 
-    const stream = new IRPCStream('id-abort-safe', 'test_abort', async () => ({ id: '1', name: 'abc', result: 'dropped' }));
-    
+    const stream = new IRPCStream('id-abort-safe', 'test_abort', async () => ({
+      id: '1',
+      name: 'abc',
+      result: 'dropped',
+    }));
+
     const pipeline = vi.fn();
     stream.pipe(pipeline);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(pipeline).not.toHaveBeenCalled();
@@ -232,7 +258,7 @@ describe('IRPCStream', () => {
   it('should drop async response stream cleanly natively mapped', async () => {
     const abortController = new AbortController();
     vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-    
+
     const stream = new IRPCStream('id-abort-2', 'test_abort_2', async () => {
       abortController.abort(); // Abort during await initializer execution explicitly
       return { id: '2', name: 'def', result: 'discarded' };
@@ -240,7 +266,7 @@ describe('IRPCStream', () => {
 
     const pipeline = vi.fn();
     stream.pipe(pipeline);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(pipeline).not.toHaveBeenCalled();
@@ -250,22 +276,22 @@ describe('IRPCStream', () => {
   it('should unsubscribe internally when abort hook triggers continuously mapped stream', async () => {
     const abortController = new AbortController();
     vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-    
+
     const state = new RemoteState('stable');
     const subscribeSpy = vi.spyOn(state, 'subscribe');
-    
+
     const stream = new IRPCStream('id-abort-3', 'test_abort_3', async () => ({ id: '3', name: 'ghi', result: state }));
-    
+
     stream.pipe(vi.fn());
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     // Make sure subscribe returned something hookable natively
     expect(subscribeSpy).toHaveBeenCalled();
-    
+
     // Trigger the abort mapped explicitly on state stream pipeline bound hooks structurally
     abortController.abort();
-    
+
     // Status should be effectively terminated natively internally without output payload tracking pipeline properly functionally
     expect(stream.closed).toBe(true);
 
@@ -273,7 +299,7 @@ describe('IRPCStream', () => {
   });
 
   it('should ignore pipe registrations safely when already closed completely', () => {
-    const stream = new IRPCStream('id-closed-1', 'test_pipe', async () => ({} as any));
+    const stream = new IRPCStream('id-closed-1', 'test_pipe', async () => ({}) as any);
     stream.closed = true;
     const pipeline = vi.fn();
     stream.pipe(pipeline);
@@ -281,7 +307,7 @@ describe('IRPCStream', () => {
   });
 
   it('should ignore catch registrations safely when completely closed', () => {
-    const stream = new IRPCStream('id-closed-2', 'test_catch', async () => ({} as any));
+    const stream = new IRPCStream('id-closed-2', 'test_catch', async () => ({}) as any);
     stream.closed = true;
     const errHandler = vi.fn();
     stream.catch(errHandler);
@@ -289,7 +315,7 @@ describe('IRPCStream', () => {
   });
 
   it('should ignore close registrations safely when natively closed completely', () => {
-    const stream = new IRPCStream('id-closed-3', 'test_close', async () => ({} as any));
+    const stream = new IRPCStream('id-closed-3', 'test_close', async () => ({}) as any);
     stream.closed = true;
     const closeHandler = vi.fn();
     stream.close(closeHandler);

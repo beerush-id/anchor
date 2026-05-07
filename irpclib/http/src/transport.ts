@@ -1,4 +1,5 @@
 import {
+  encode,
   ERROR_CODE,
   ERROR_MESSAGE,
   IRPC_PACKET_TYPE,
@@ -6,13 +7,14 @@ import {
   type IRPCCall,
   type IRPCData,
   type IRPCPacketStream,
-  type IRPCRequest,
   IRPCTransport,
   type TransportConfig,
-  encode,
 } from '@irpclib/irpc';
 import { IRPC_JSON_KEY } from './enum.js';
 
+export const COOKIES_EVENT = 'anchor:cookie-sync';
+export const DEFAULT_ORIGIN = 'http://localhost';
+export const COOKIES_SYNC_KEY = 'x-anchor-set-cookie';
 export const DEFAULT_ENDPOINT = '/irpc';
 
 /**
@@ -65,7 +67,8 @@ export class HTTPTransport extends IRPCTransport {
    * Combines the baseURL and endpoint to create a complete URL.
    */
   public get url() {
-    return new URL(this.endpoint, this.config.baseURL);
+    const defaultUrl = typeof window !== 'undefined' ? (window.location?.origin ?? DEFAULT_ORIGIN) : DEFAULT_ORIGIN;
+    return new URL(this.endpoint, this.config.baseURL || defaultUrl);
   }
 
   /**
@@ -92,7 +95,7 @@ export class HTTPTransport extends IRPCTransport {
           form.append(queue.file.id, queue.data, queue.file.meta.name);
         }
 
-        return { id, name, args: packet.json.data, files: packet.json.files };
+        return { id, name, args: packet.json.data, files: packet.json.files.length ? packet.json.files : undefined };
       });
 
       form.append(IRPC_JSON_KEY, JSON.stringify(requests));
@@ -125,9 +128,8 @@ export class HTTPTransport extends IRPCTransport {
       });
 
       clearTimeout(breaker);
-
-      if (typeof window !== 'undefined' && response?.headers?.has('x-anchor-set-cookie')) {
-        window.dispatchEvent(new CustomEvent('anchor:cookie-sync'));
+      if (typeof window !== 'undefined' && response?.headers?.has(COOKIES_SYNC_KEY)) {
+        window.dispatchEvent(new CustomEvent(COOKIES_EVENT));
       }
 
       if (!response?.ok) {
