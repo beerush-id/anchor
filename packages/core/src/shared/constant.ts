@@ -3,7 +3,12 @@ import { ArrayMutations, BatchMutations, Linkables, MapMutations, ObjectMutation
 
 export const SET_MUTATIONS = [SetMutations.ADD, SetMutations.DELETE, SetMutations.CLEAR] as const;
 export const MAP_MUTATIONS = [MapMutations.SET, MapMutations.DELETE, MapMutations.CLEAR] as const;
-export const BATCH_MUTATIONS = [BatchMutations.ASSIGN, BatchMutations.REMOVE, BatchMutations.CLEAR] as const;
+export const BATCH_MUTATIONS = [
+  BatchMutations.ASSIGN,
+  BatchMutations.REMOVE,
+  BatchMutations.CLEAR,
+  BatchMutations.REPLACE,
+] as const;
 export const OBJECT_MUTATIONS = [ObjectMutations.SET, ObjectMutations.DELETE] as const;
 
 export const ARRAY_MUTATIONS = [

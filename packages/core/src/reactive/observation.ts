@@ -168,6 +168,16 @@ export const untrack = storeContract(OBSERVER_SYMBOL, undefined, undefined, unde
 });
 
 /**
+ * Executes a function outside any observer context.
+ * This function temporarily removes the current observer context,
+ * executes the provided function, and then restores the previous observer context.
+ * It's useful for running code that shouldn't be tracked by the reactive system.
+ *
+ * @param fn - The function to execute outside of observer context
+ */
+export const $do = untrack;
+
+/**
  * Gets the current observer context.
  *
  * @returns The current observer or undefined if none is set
