@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, history, softEntries, softValues } from '../../src/index.js';
 
 const defaultOptions = { ...history.getDefaultOptions() };
-const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? defaultOptions.debounce);
+const timeTravel = (time?: number) => vi.advanceTimersByTime(time ?? (defaultOptions.debounce as number));
 
 describe('Anchor History', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -279,6 +279,25 @@ describe('Anchor History', () => {
 
       anchor.assign(state, { count: 1, name: 'test' });
       timeTravel();
+      expect(state.count).toBe(1);
+      expect(state.name).toBe('test');
+
+      stateHistory.backward();
+      expect(state.count).toBe(0);
+      expect(state.name).toBeUndefined();
+
+      stateHistory.forward();
+      expect(state.count).toBe(1);
+      expect(state.name).toBe('test');
+    });
+
+    it('should handle "assign" operation with "replace"', () => {
+      const state = anchor({ count: 0 }) as Record<string, unknown>;
+      const stateHistory = history(state);
+
+      anchor.assign(state, { count: 1, name: 'test' }, true);
+      timeTravel();
+
       expect(state.count).toBe(1);
       expect(state.name).toBe('test');
 

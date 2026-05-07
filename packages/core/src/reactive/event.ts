@@ -13,6 +13,7 @@ import type {
   StateChange,
   StateGateway,
 } from '../types.js';
+import { untrack } from './observation.js';
 
 /**
  * Replays a state change event on the given state.
@@ -33,38 +34,46 @@ import type {
  * @internal
  */
 export function replay<T>(state: T, event: StateChange) {
-  const init = STATE_REGISTRY.get(state as Linkable);
-  const { type, prev, value } = event;
-  const { key, target } = getEventTarget(init, event);
-  const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
+  untrack(() => {
+    const { type, prev, value } = event;
 
-  if (type === ObjectMutations.SET) {
-    gateway.setter(target, key, value, target);
-  } else if (type === MapMutations.SET) {
-    (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
-  } else if (type === SetMutations.ADD) {
-    (gateway.mutator as SetMutator<unknown>).add(value);
-  } else if (type === ObjectMutations.DELETE) {
-    gateway.remover(target, key, target);
-  } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
-    if (target instanceof Map) {
-      (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
-    } else if (target instanceof Set) {
-      (gateway.mutator as SetMutator<unknown>).delete(prev);
+    // Walk through the state tree to find the target object.
+    const { key, target } = getEventTarget(state, event);
+    const init = STATE_REGISTRY.get(target as Linkable) as Linkable;
+    const gateway = INIT_GATEWAY_REGISTRY.get(init as Linkable) as StateGateway;
+
+    if (type === ObjectMutations.SET) {
+      gateway.setter(target, key, value, target);
+    } else if (type === MapMutations.SET) {
+      (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
+    } else if (type === SetMutations.ADD) {
+      (gateway.mutator as SetMutator<unknown>).add(value);
+    } else if (type === ObjectMutations.DELETE) {
+      gateway.remover(target, key, target);
+    } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
+      if (target instanceof Map) {
+        (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
+      } else if (target instanceof Set) {
+        (gateway.mutator as SetMutator<unknown>).delete(prev);
+      }
+    } else if (type === BatchMutations.ASSIGN) {
+      // assign(anchor.find(target) as never, value as never);
+      assign(target as never, value as never);
+    } else if (type === BatchMutations.REPLACE) {
+      // assign(anchor.find(target) as never, value as never);
+      assign(target as never, value as never, true);
+    } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
+      if (target instanceof Map) {
+        (gateway.mutator as MapMutator<unknown, unknown>).clear();
+      } else if (target instanceof Set) {
+        (gateway.mutator as SetMutator<unknown>).clear();
+      }
+    } else if (ARRAY_MUTATIONS.includes(type as ArrayMutations)) {
+      ((gateway.mutator as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
+        ...(value as unknown[])
+      );
     }
-  } else if (type === BatchMutations.ASSIGN) {
-    assign(anchor.find(target) as never, value as never);
-  } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
-    if (target instanceof Map) {
-      (gateway.mutator as MapMutator<unknown, unknown>).clear();
-    } else if (target instanceof Set) {
-      (gateway.mutator as SetMutator<unknown>).clear();
-    }
-  } else if (ARRAY_MUTATIONS.includes(type as ArrayMutations)) {
-    ((gateway.mutator as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
-      ...(value as unknown[])
-    );
-  }
+  });
 }
 
 /**
@@ -84,81 +93,86 @@ export function replay<T>(state: T, event: StateChange) {
  * @param event - The state change event to revert
  */
 export function rollback<T>(state: T, event: StateChange) {
-  const init = STATE_REGISTRY.get(state as Linkable) as Linkable;
-  const { type, prev } = event;
-  const { key, target } = getEventTarget(init, event);
-  const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
+  untrack(() => {
+    const init = STATE_REGISTRY.get(state as Linkable) as Linkable;
+    const { type, prev } = event;
+    const { key, target } = getEventTarget(init, event);
+    const gateway = INIT_GATEWAY_REGISTRY.get(target as Linkable) as StateGateway;
 
-  if (type === ObjectMutations.SET) {
-    if (typeof prev === 'undefined') {
-      gateway.remover(target, key, target);
-    } else {
-      gateway.setter(target, key, prev, target);
-    }
-    // target[key as never] = prev as never;
-  } else if (type === MapMutations.SET) {
-    if (typeof prev === 'undefined') {
-      // target.delete(key);
-      (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
-    } else {
-      // target.set(key, prev);
-      (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
-    }
-  } else if (type === SetMutations.ADD) {
-    (gateway.mutator as SetMutator<unknown>).delete(event.value);
-    // (target[key as never] as Set<unknown>).delete(event.value);
-  } else if (type === ObjectMutations.DELETE) {
-    // (target as ObjLike)[key] = prev;
-    gateway?.setter(target, key, prev, target);
-  } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
-    if (target instanceof Map) {
-      // target.set(key, prev);
-      (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
-    } else if (target instanceof Set) {
-      // (target[key as never] as Set<unknown>).add(prev);
-      (gateway.mutator as SetMutator<unknown>).add(prev);
-    }
-  } else if (type === BatchMutations.ASSIGN) {
-    // assign(target as never, prev as never);
-    assign(anchor.find(target) as never, prev as never);
-  } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
-    if (target instanceof Map) {
-      for (const [key, value] of prev as [[unknown, unknown]]) {
-        // target.set(key as never, value);
-        (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
+    if (type === ObjectMutations.SET) {
+      if (typeof prev === 'undefined') {
+        gateway.remover(target, key, target);
+      } else {
+        gateway.setter(target, key, prev, target);
       }
-    } else if (target instanceof Set) {
-      for (const value of prev as [unknown]) {
-        // target.add(value);
-        (gateway.mutator as SetMutator<unknown>).add(value);
+      target[key as never] = prev as never;
+    } else if (type === MapMutations.SET) {
+      if (typeof prev === 'undefined') {
+        // target.delete(key);
+        (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
+      } else {
+        // target.set(key, prev);
+        (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
       }
-    }
-  } else if (ARRAY_MUTATIONS.includes(type as never)) {
-    const items = target as unknown[];
-
-    if (type === 'shift') {
-      // items.unshift(prev);
-      (gateway.mutator as ArrayMutator<unknown>).unshift(prev);
-    } else if (type === 'pop') {
-      // items.push(prev);
-      (gateway.mutator as ArrayMutator<unknown>).push(prev);
-    } else if (type === 'push') {
-      const initItems = (anchor.get as (item: unknown, silent: boolean) => unknown[])(items, true);
-      for (const item of event.value as unknown[]) {
-        const index = initItems.indexOf(item);
-        if (index >= 0) {
-          // items.splice(index, 1);
-          (gateway.mutator as ArrayMutator<unknown>).splice(index, 1);
+    } else if (type === SetMutations.ADD) {
+      (gateway.mutator as SetMutator<unknown>).delete(event.value);
+      // (target[key as never] as Set<unknown>).delete(event.value);
+    } else if (type === ObjectMutations.DELETE) {
+      // (target as ObjLike)[key] = prev;
+      gateway?.setter(target, key, prev, target);
+    } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
+      if (target instanceof Map) {
+        // target.set(key, prev);
+        (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
+      } else if (target instanceof Set) {
+        // (target[key as never] as Set<unknown>).add(prev);
+        (gateway.mutator as SetMutator<unknown>).add(prev);
+      }
+    } else if (type === BatchMutations.ASSIGN) {
+      // assign(target as never, prev as never);
+      assign(anchor.find(target) as never, prev as never);
+    } else if (type === BatchMutations.REPLACE) {
+      // assign(target as never, prev as never);
+      assign(anchor.find(target) as never, prev as never, true);
+    } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
+      if (target instanceof Map) {
+        for (const [key, value] of prev as [[unknown, unknown]]) {
+          // target.set(key as never, value);
+          (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
+        }
+      } else if (target instanceof Set) {
+        for (const value of prev as [unknown]) {
+          // target.add(value);
+          (gateway.mutator as SetMutator<unknown>).add(value);
         }
       }
-    } else if (type === 'unshift') {
-      // items.shift();
-      (gateway.mutator as ArrayMutator<unknown>).shift();
-    } else {
-      // items.splice(0, items.length, ...(prev as unknown[]));
-      (gateway.mutator as ArrayMutator<unknown>).splice(0, items.length, ...(prev as unknown[]));
+    } else if (ARRAY_MUTATIONS.includes(type as never)) {
+      const items = target as unknown[];
+
+      if (type === 'shift') {
+        // items.unshift(prev);
+        (gateway.mutator as ArrayMutator<unknown>).unshift(prev);
+      } else if (type === 'pop') {
+        // items.push(prev);
+        (gateway.mutator as ArrayMutator<unknown>).push(prev);
+      } else if (type === 'push') {
+        const initItems = (anchor.get as (item: unknown, silent: boolean) => unknown[])(items, true);
+        for (const item of event.value as unknown[]) {
+          const index = initItems.indexOf(item);
+          if (index >= 0) {
+            // items.splice(index, 1);
+            (gateway.mutator as ArrayMutator<unknown>).splice(index, 1);
+          }
+        }
+      } else if (type === 'unshift') {
+        // items.shift();
+        (gateway.mutator as ArrayMutator<unknown>).shift();
+      } else {
+        // items.splice(0, items.length, ...(prev as unknown[]));
+        (gateway.mutator as ArrayMutator<unknown>).splice(0, items.length, ...(prev as unknown[]));
+      }
     }
-  }
+  });
 }
 
 /**
