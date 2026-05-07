@@ -1,5 +1,5 @@
-import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from './inspector.js';
 import type { Linkable, ObjLike, Recursive } from '../types.js';
+import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from './inspector.js';
 
 /**
  * Deep clone an object with proper handling of circular references

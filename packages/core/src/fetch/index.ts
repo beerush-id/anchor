@@ -1,8 +1,8 @@
-import { anchor } from '../anchor.js';
-import { captureStack } from '../exception.js';
-import { linkable } from '../internal.js';
-import { mutable } from '../ref.js';
-import { subscribe } from '../subscription.js';
+import { anchor } from '../engine/anchor.js';
+import { linkable } from '../engine/config.js';
+import { subscribe } from '../reactive/index.js';
+import { mutable } from '../reactive/ref.js';
+import { captureStack } from '../shared/index.js';
 import type { Enum, Linkable, LinkableSchema, ObjLike, StateOptions } from '../types.js';
 import { isArray, isDefined, isFunction, isObject, isString, typeOf } from '../utils/index.js';
 

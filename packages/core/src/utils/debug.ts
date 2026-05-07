@@ -1,4 +1,4 @@
-import { getScope, setScope } from '../context.js';
+import { getScope, setScope } from '../scope/context.js';
 import { isFunction, isString } from './inspector.js';
 
 export type DebugFn = (...args: unknown[]) => void;

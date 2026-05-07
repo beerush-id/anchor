@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { setReactive } from '../../src/engine/config.js';
 import { anchor, createObserver, effect, getTracker, setTracker, subscribe } from '../../src/index.js';
-import { setReactive } from '../../src/internal.js';
 
 describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

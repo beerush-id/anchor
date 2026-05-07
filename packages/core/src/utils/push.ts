@@ -1,4 +1,4 @@
-import { captureStack } from '../exception.js';
+import { captureStack } from '../shared/index.js';
 
 export type PushHandler = () => void;
 export type PushFn = () => void;

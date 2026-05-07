@@ -1,5 +1,6 @@
 import type { $ZodError, $ZodIssue } from '@zod/core';
 import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod/v4';
+import type { DerivedRef, ImmutableRef, MutableRef } from './reactive/ref.js';
 import type {
   ARRAY_MUTATIONS,
   AsyncStatus as AsyncStatusType,
@@ -7,9 +8,8 @@ import type {
   MAP_MUTATIONS,
   OBJECT_MUTATIONS,
   SET_MUTATIONS,
-} from './constant.js';
-import type { Linkables } from './enum.js';
-import type { DerivedRef, ImmutableRef, MutableRef } from './ref.js';
+} from './shared/constant.js';
+import type { Linkables } from './shared/enum.js';
 
 export type Enum<T> = T[keyof T];
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;

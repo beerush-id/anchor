@@ -1,10 +1,10 @@
-import { anchor } from '../anchor.js';
-import { setInspector } from '../broadcast.js';
-import { replay, rollback } from '../event.js';
-import { captureStack } from '../exception.js';
-import { assign } from '../helper.js';
-import { mutable } from '../ref.js';
-import { subscribe } from '../subscription.js';
+import { anchor } from '../engine/anchor.js';
+import { assign } from '../engine/helper.js';
+import { setInspector } from '../engine/index.js';
+import { replay, rollback } from '../reactive/event.js';
+import { subscribe } from '../reactive/index.js';
+import { mutable } from '../reactive/ref.js';
+import { captureStack } from '../shared/index.js';
 import type { Linkable, State, StateChange } from '../types.js';
 import { microtask } from '../utils/index.js';
 

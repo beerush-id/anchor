@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, createLifecycle, setCleanUpHandler, subscribe } from '../../src/index.js';
-import { onCleanup, onGlobalCleanup } from '../../src/lifecycle.js';
+import { onCleanup, onGlobalCleanup } from '../../src/scope/lifecycle.js';
 
 describe('Anchor Core - Basic Operations', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

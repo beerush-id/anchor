@@ -22,8 +22,8 @@ import {
   mutable,
   MutableRef,
   signal,
-} from '../../src/ref.js';
-import { createStack, withStack } from '../../src/stack.js';
+} from '../../src/reactive/ref.js';
+import { createStack, withStack } from '../../src/scope/stack.js';
 
 describe('Anchor Core - Ref', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -239,7 +239,7 @@ describe('Anchor Core - Ref', () => {
       const sig = ctx.run(() => signal(42));
       expect(sig()).toBe(42);
       ctx.destroy();
-    })
+    });
   });
 
   describe('isSignal function', () => {

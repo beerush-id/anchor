@@ -1,4 +1,4 @@
-import { captureStack } from '../exception.js';
+import { captureStack } from '../shared/index.js';
 
 export type LoopFn = (fn: () => void) => Promise<number>;
 export type StopFn = () => void;

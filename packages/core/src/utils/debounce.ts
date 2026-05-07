@@ -1,4 +1,4 @@
-import { captureStack } from '../exception.js';
+import { captureStack } from '../shared/index.js';
 
 /**
  * Type representing a debounce handler function that takes no arguments and returns void.

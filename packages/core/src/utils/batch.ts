@@ -1,4 +1,4 @@
-import { captureStack } from '../exception.js';
+import { captureStack } from '../shared/index.js';
 
 /**
  * Type definition for a batch handler function.

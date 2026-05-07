@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createArrayMutator } from '../../src/array.js';
-import { createCollectionGetter, createCollectionMutator } from '../../src/collection.js';
-import { createLinkFactory } from '../../src/factory.js';
+import { createArrayMutator } from '../../src/engine/array.js';
+import { createCollectionGetter, createCollectionMutator } from '../../src/engine/collection.js';
+import { createLinkFactory } from '../../src/engine/factory.js';
+import { createGetter, createRemover, createSetter } from '../../src/engine/trap.js';
 import { anchor, type Linkable, subscribe } from '../../src/index.js';
-import { createGetter, createRemover, createSetter } from '../../src/trap.js';
 
 describe('Anchor Core - Edge Cases', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
