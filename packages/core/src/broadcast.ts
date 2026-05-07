@@ -140,17 +140,15 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
       }
 
       for (const subscriber of subscribers) {
-        if (typeof subscriber === 'function') {
-          const receiver = (subscriber as never as { __internal_id__: string }).__internal_id__;
+        const receiver = (subscriber as never as { __internal_id__: string }).__internal_id__;
 
-          if (receiver) {
-            if (receiver !== emitter) {
-              (subscriber as StateSubscriber<unknown>)(snapshot, event, emitter);
-            }
-          } else {
-            if (!event.error) {
-              (subscriber as StateSubscriber<unknown>)(snapshot, event);
-            }
+        if (receiver) {
+          if (receiver !== emitter) {
+            (subscriber as StateSubscriber<unknown>)(snapshot, event, emitter);
+          }
+        } else {
+          if (!event.error) {
+            (subscriber as StateSubscriber<unknown>)(snapshot, event);
           }
         }
       }
