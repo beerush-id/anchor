@@ -60,32 +60,48 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
         currentInspector(init, event);
       }
 
-      if (observers.size) {
-        const currentObservers = Array.from(observers);
+      if (!observers.size) return;
 
-        for (const observer of currentObservers) {
+      const observerList = Array.from(observers);
+
+      if (BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) {
+        if (init instanceof Set) {
+          for (const observer of observerList) {
+            observer.onChange(event);
+          }
+        } else {
+          const { changes = [] } = event as BatchChange;
+
+          for (const observer of observerList) {
+            const keys = observer.states.get(init) as Set<KeyLike>;
+            const needUpdate = changes.some((change) => keys.has(change));
+
+            if (needUpdate) {
+              observer.onChange(event);
+            }
+          }
+        }
+      } else if (Array.isArray(init)) {
+        for (const observer of observerList) {
           const keys = observer.states.get(init) as Set<KeyLike>;
 
-          if (BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) {
-            if (init instanceof Set) {
-              observer.onChange(event);
-            } else {
-              const { changes = [] } = event as BatchChange;
-              const needUpdate = changes.some((change) => keys.has(change));
+          if (keys?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
+            observer.onChange(event);
+          }
+        }
+      } else if (init instanceof Set || init instanceof Map) {
+        for (const observer of observerList) {
+          const keys = observer.states.get(init) as Set<KeyLike>;
 
-              if (needUpdate) {
-                observer.onChange(event);
-              }
-            }
-          } else if (Array.isArray(init)) {
-            if (keys?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
-              observer.onChange(event);
-            }
-          } else if (init instanceof Set || init instanceof Map) {
-            if (keys?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
-              observer.onChange(event);
-            }
-          } else if (keys?.has(prop as KeyLike)) {
+          if (keys?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
+            observer.onChange(event);
+          }
+        }
+      } else {
+        for (const observer of observerList) {
+          const keys = observer.states.get(init) as Set<KeyLike>;
+
+          if (keys?.has(prop as KeyLike)) {
             observer.onChange(event);
           }
         }

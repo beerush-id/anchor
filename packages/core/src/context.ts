@@ -196,6 +196,10 @@ export async function withIsolation<R>(fn: () => R, strict = true, context?: Asy
 
     return result as R;
   } finally {
+    if (!floatingLists.size) {
+      isolatedStore.clear();
+    }
+
     floatingLists.clear();
   }
 }
