@@ -1,19 +1,10 @@
-import {
-  ArrayMutations,
-  BatchMutations,
-  Linkables,
-  MapMutations,
-  ObjectMutations,
-  SetMutations,
-  StringMutations,
-} from './enum.js';
+import { ArrayMutations, BatchMutations, Linkables, MapMutations, ObjectMutations, SetMutations } from './enum.js';
 import type { AnchorSettings } from './types.js';
 
 export const SET_MUTATIONS = [SetMutations.ADD, SetMutations.DELETE, SetMutations.CLEAR] as const;
 export const MAP_MUTATIONS = [MapMutations.SET, MapMutations.DELETE, MapMutations.CLEAR] as const;
 export const BATCH_MUTATIONS = [BatchMutations.ASSIGN, BatchMutations.REMOVE, BatchMutations.CLEAR] as const;
 export const OBJECT_MUTATIONS = [ObjectMutations.SET, ObjectMutations.DELETE] as const;
-export const STRING_MUTATIONS = [StringMutations.APPEND, StringMutations.PREPEND] as const;
 
 export const ARRAY_MUTATIONS = [
   ArrayMutations.PUSH,
@@ -29,14 +20,12 @@ export const ARRAY_MUTATIONS = [
 
 export const LINKABLE = new Set([Linkables.OBJECT, Linkables.ARRAY, Linkables.SET, Linkables.MAP]);
 export const ANCHOR_SETTINGS = {
-  cloned: false,
   strict: false,
   deferred: true,
   recursive: true,
   immutable: false,
   observable: true,
   production: true,
-  silentInit: false,
   safeObservation: true,
   safeObservationThreshold: 100,
   globalScopeWarning: true,

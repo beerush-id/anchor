@@ -5,7 +5,7 @@ import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from 
 import { type ArrayMutations, Linkables } from './enum.js';
 import { captureStack } from './exception.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
-import { append, assign, clear, prepend, remove } from './helper.js';
+import { assign, clear, remove } from './helper.js';
 import { linkable } from './internal.js';
 import { plugin } from './plugin.js';
 import { createProxyHandler, writeContract } from './proxy.js';
@@ -99,29 +99,22 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     options = schemaOptions as StateOptions<S>;
   }
 
-  const cloned = !!(options?.cloned ?? ANCHOR_SETTINGS.cloned);
   const schema = (schemaOptions as LinkableSchema)?._zod
     ? (schemaOptions as S)
     : (schemaOptions as StateOptions<S>)?.schema;
   const configs: StateOptions<S> = {
-    cloned: false,
     deferred: true,
     strict: options?.strict ?? ANCHOR_SETTINGS.strict,
     ordered: (options?.ordered ?? false) && isFunction(options?.compare),
     recursive: options?.recursive ?? ANCHOR_SETTINGS.recursive,
     immutable: options?.immutable ?? ANCHOR_SETTINGS.immutable,
     observable: options?.observable ?? ANCHOR_SETTINGS.observable,
-    silentInit: options?.silentInit ?? ANCHOR_SETTINGS.silentInit,
     safeParse: options?.safeParse ?? ANCHOR_SETTINGS.safeParse,
   };
   const observers: StateObserverList = new Set();
   const subscribers: StateSubscriberList<T> = new Set();
   const subscriptions: StateSubscriptionMap = new Map();
   const exceptionHandlers: StateExceptionHandlerList = new Set();
-
-  if (cloned && !configs.immutable) {
-    init = softClone(init, configs.recursive);
-  }
 
   if (schema) {
     if (!isObject(init) && !isArray(init)) {
@@ -138,7 +131,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
           } else if (isObject(init)) {
             Object.assign(init, result.data);
           }
-        } else if (!configs.silentInit) {
+        } else {
           captureStack.error.validation(
             'Attempted to initialize state with schema:',
             result.error,
@@ -176,7 +169,6 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     root,
     type,
     parent,
-    cloned,
     schema,
     configs,
     observers,
@@ -310,10 +302,6 @@ anchorFn.catch = ((state, handler) => {
   };
 }) as Anchor['catch'];
 
-anchorFn.raw = ((init, options) => {
-  return anchorFn(init, { ...options, cloned: false });
-}) as Anchor['raw'];
-
 anchorFn.has = ((state) => {
   return CONTROLLER_REGISTRY.has(state);
 }) satisfies Anchor['has'];
@@ -424,8 +412,6 @@ anchorFn.writable = writeContract;
 anchorFn.assign = assign;
 anchorFn.remove = remove;
 anchorFn.clear = clear;
-anchorFn.append = append;
-anchorFn.prepend = prepend;
 
 export const anchor = anchorFn as Anchor;
 export const snapshot = anchorFn.snapshot as Anchor['snapshot'];

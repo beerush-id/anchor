@@ -30,14 +30,9 @@ describe('Anchor Return Type Integrity', () => {
     expectTypeOf(setState).toEqualTypeOf<Immutable<Set<number>>>();
   });
 
-  it('should return correct type for anchor.raw call', () => {
-    const state = anchor.raw({ a: 1, b: 'test' });
-    expectTypeOf(state).toEqualTypeOf<{ a: number; b: string }>();
-  });
-
   it('should return correct type for anchor.flat call', () => {
-    const state = anchor.flat({ a: 1, b: 'test' });
-    expectTypeOf(state).toEqualTypeOf<{ a: number; b: string }>();
+    const state = anchor.flat([{ a: 1, b: 'test' }]);
+    expectTypeOf(state).toEqualTypeOf<{ a: number; b: string }[]>();
   });
 
   it('should return correct type for anchor.get call', () => {

@@ -1,3 +1,7 @@
+import { createArrayMutator } from './array.js';
+import { createCollectionMutator } from './collection.js';
+import { captureStack } from './exception.js';
+import { CONTROLLER_REGISTRY, INIT_GATEWAY_REGISTRY, META_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createGetter } from './trap.js';
 import type {
   KeyLike,
@@ -12,10 +16,6 @@ import type {
   StatePropGetter,
   TrapOverrides,
 } from './types.js';
-import { createCollectionMutator } from './collection.js';
-import { CONTROLLER_REGISTRY, INIT_GATEWAY_REGISTRY, META_REGISTRY, STATE_REGISTRY } from './registry.js';
-import { createArrayMutator } from './array.js';
-import { captureStack } from './exception.js';
 
 /**
  * Creates a ProxyHandler for the given state object based on its mutability configuration.
@@ -88,7 +88,6 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
   const newOptions = {
     configs: {
       ...meta.configs,
-      cloned: false,
       immutable: false,
       recursive: false,
     },
