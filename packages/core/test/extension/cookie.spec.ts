@@ -128,6 +128,37 @@ describe('Cookie Storage', () => {
     });
   });
 
+  describe('CookieJar.encode()', () => {
+    it('should encode changed entries via jar.encode()', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies('');
+        setCookieContext(jar);
+
+        const state = cookies('jar-encode', { lang: 'en' }, { path: '/' });
+        state.lang = 'fr';
+
+        const headers = jar.encode();
+        expect(headers).toHaveLength(1);
+        expect(headers[0]).toContain(`${COOKIE_PREFIX}jar-encode=`);
+        expect(headers[0]).toContain(encodeURIComponent(JSON.stringify({ lang: 'fr' })));
+      });
+    });
+
+    it('should encode all entries via jar.encode(false)', async () => {
+      await withIsolation(async () => {
+        const jar = decodeCookies(
+          `${COOKIE_PREFIX}enc-a=${encodeURIComponent(JSON.stringify({ a: 1 }))}; ${COOKIE_PREFIX}enc-b=${encodeURIComponent(JSON.stringify({ b: 2 }))}`
+        );
+        setCookieContext(jar);
+
+        cookies('enc-a', { a: 1 });
+
+        const headers = jar.encode(false);
+        expect(headers).toHaveLength(2);
+      });
+    });
+  });
+
   describe('setCookieContext / getCookieJar', () => {
     it('should inject and retrieve the jar from scope', async () => {
       await withIsolation(async () => {

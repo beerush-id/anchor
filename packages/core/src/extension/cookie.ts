@@ -33,6 +33,16 @@ export type CookieEntry<T extends ObjLike = ObjLike> = {
 export class CookieJar extends Map<string, CookieEntry> {
   /** Entries that have been mutated since the jar was created. */
   public changes = new Set<CookieEntry>();
+
+  /**
+   * Encodes cookie entries into an array of `Set-Cookie` header strings.
+   *
+   * @param onlyChanged - If `true` (default), encode only mutated entries.
+   * @returns An array of `Set-Cookie` header strings.
+   */
+  encode(onlyChanged = true): string[] {
+    return encodeCookies(this, onlyChanged);
+  }
 }
 
 /**
