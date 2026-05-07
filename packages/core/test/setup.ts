@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 
 beforeEach(() => {
-  vi.stubGlobal('window', {});
+  // vi.stubGlobal('window', {});
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
+  // vi.unstubAllGlobals();
 });

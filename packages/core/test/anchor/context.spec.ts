@@ -76,13 +76,26 @@ describe('Anchor - Async Scope', () => {
   });
 
   describe('Global Scope & Store Management', () => {
+    let errSpy: ReturnType<typeof vi.spyOn>;
     let warnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      warnSpy = vi.spyOn(console, 'error');
+      errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
     afterEach(() => {
+      errSpy.mockRestore();
       warnSpy.mockRestore();
+    });
+
+    it('should warn on global scope access', async () => {
+      vi.stubGlobal('window', undefined);
+
+      expect(getScope('any')).toBeUndefined();
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      vi.unstubAllGlobals();
     });
 
     it('withScope provides a synchronous context scope', () => {

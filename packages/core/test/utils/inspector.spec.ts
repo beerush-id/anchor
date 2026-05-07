@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   isArray,
   isBoolean,
   isBooleanString,
-  isBrowser,
   isDate,
   isDateString,
   isDefined,
@@ -400,14 +399,6 @@ describe('Inspector Utilities', () => {
       expect(isEmpty(() => {})).toBe(false);
       expect(isEmpty(new Set([1]))).toBe(false);
       expect(isEmpty(new Map([['key', 'value']]))).toBe(false);
-    });
-  });
-
-  describe('Environment Checks', () => {
-    it('should check browser environment', () => {
-      vi.unstubAllGlobals();
-      // Since we're running in Node.js for tests
-      expect(isBrowser()).toBe(false);
     });
   });
 });

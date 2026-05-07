@@ -164,7 +164,7 @@ describe('Anchor Core - Observable Observer Management', () => {
     });
 
     it('should run effect on browser only', () => {
-      vi.unstubAllGlobals();
+      vi.stubGlobal('window', undefined);
 
       const handler = vi.fn();
       const cleanup1 = effect.client(handler);
@@ -172,13 +172,11 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(typeof cleanup1).toBe('function');
       expect(handler).not.toHaveBeenCalled();
 
-      vi.stubGlobal('window', {});
+      vi.unstubAllGlobals();
       const cleanup2 = effect.client(handler);
 
       expect(typeof cleanup2).toBe('function');
       expect(handler).toHaveBeenCalled();
-
-      vi.unstubAllGlobals();
     });
   });
 });

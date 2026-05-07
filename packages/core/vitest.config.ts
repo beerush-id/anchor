@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.{test,spec}.{ts,js}'],
+    environment: 'jsdom',
     reporters: ['default', 'html'],
     outputFile: './coverage/index.html',
     setupFiles: ['./test/setup.ts'],
