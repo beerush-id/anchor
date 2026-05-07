@@ -54,7 +54,7 @@ export class ClosureAdapter {
   }
 
   private warn() {
-    if (!isBrowser() && ANCHOR_SETTINGS.closureWarning) {
+    if (!isBrowser() && ANCHOR_SETTINGS.globalScopeWarning) {
       const error = new Error('AsyncLocalStorage not implemented.');
       captureStack.violation.general(
         'Missing AsyncLocalStorage implementation detected.',

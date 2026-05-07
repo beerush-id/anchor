@@ -223,7 +223,7 @@ export function getScope<R>(key: AsyncKey, fallback: R): R;
 export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
   const store = globalAsyncCtx.getStore();
 
-  if (!isBrowser() && store === globalStore && ANCHOR_SETTINGS.closureWarning) {
+  if (!isBrowser() && store === globalStore && ANCHOR_SETTINGS.globalScopeWarning) {
     captureStack.warning.external(
       'Attempted to access global scope.',
       [

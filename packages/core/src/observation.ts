@@ -334,33 +334,16 @@ export function createObserver(
 
   const observer = {
     id: shortId(),
-    get states() {
-      return states;
-    },
-    get onChange() {
-      return propagate;
-    },
-    get destroy() {
-      return destroy;
-    },
-    get reset() {
-      return reset;
-    },
-    get assign() {
-      return assign;
-    },
-    get run() {
-      return runner;
-    },
-    get runAsync() {
-      return asyncRunner;
-    },
-    get track() {
-      return track;
-    },
-  } as StateObserver;
+    states,
+    destroy,
+    reset,
+    track,
+    assign,
+    onChange: propagate,
+  } as never as StateObserver;
 
-  const runner = storeContract(
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  (observer as any).run = storeContract(
     OBSERVER_SYMBOL,
     observer,
     () => {
@@ -371,7 +354,8 @@ export function createObserver(
       isObserving = false;
     }
   );
-  const asyncRunner = asyncStoreContract(
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  (observer as any).runAsync = asyncStoreContract(
     OBSERVER_SYMBOL,
     observer,
     () => {

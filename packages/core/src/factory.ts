@@ -1,14 +1,5 @@
-import type {
-  Broadcaster,
-  KeyLike,
-  Linkable,
-  ObjLike,
-  State,
-  StateMetadata,
-  StateSubscribeFn,
-  StateSubscriber,
-  SubscribeFactoryInit,
-} from './types.js';
+import { getDevTool } from './dev.js';
+import { captureStack } from './exception.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -21,12 +12,19 @@ import {
   RELATION_REGISTRY,
   SORTER_REGISTRY,
   STATE_REGISTRY,
-  SUBSCRIBER_REGISTRY,
-  SUBSCRIPTION_REGISTRY,
 } from './registry.js';
-import { captureStack } from './exception.js';
+import type {
+  Broadcaster,
+  KeyLike,
+  Linkable,
+  ObjLike,
+  State,
+  StateMetadata,
+  StateSubscribeFn,
+  StateSubscriber,
+  SubscribeFactoryInit,
+} from './types.js';
 import { shortId, softEntries, softValues } from './utils/index.js';
-import { getDevTool } from './dev.js';
 
 /**
  * Creates a factory function for linking child states to a parent state.
@@ -286,8 +284,6 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
 
     STATE_REGISTRY.delete(state);
     CONTROLLER_REGISTRY.delete(state);
-    SUBSCRIBER_REGISTRY.delete(state);
-    SUBSCRIPTION_REGISTRY.delete(state);
     EXCEPTION_HANDLER_REGISTRY.delete(state);
     META_INIT_REGISTRY.delete(meta as StateMetadata);
 

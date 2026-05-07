@@ -80,7 +80,7 @@ export type AnchorSettings = StateBaseOptions & {
   production: boolean;
   safeObservation: boolean;
   safeObservationThreshold: number;
-  closureWarning?: boolean;
+  globalScopeWarning?: boolean;
 };
 
 export type StateSubscriber<T> = (snapshot: T, event: StateChange, emitter?: string) => void;

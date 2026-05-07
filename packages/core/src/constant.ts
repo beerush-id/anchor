@@ -39,7 +39,7 @@ export const ANCHOR_SETTINGS = {
   silentInit: false,
   safeObservation: true,
   safeObservationThreshold: 100,
-  closureWarning: true,
+  globalScopeWarning: true,
   safeParse: false,
   reactive: true,
 } as AnchorSettings;

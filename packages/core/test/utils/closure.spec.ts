@@ -268,7 +268,7 @@ describe('Anchor Utilities - Closure', () => {
 
   describe('Error Handling', () => {
     it('should warn when no server adapter implemented', () => {
-      anchor.configure({ closureWarning: true });
+      anchor.configure({ globalScopeWarning: true });
 
       vi.stubGlobal('window', undefined);
       vi.useFakeTimers();
@@ -284,7 +284,7 @@ describe('Anchor Utilities - Closure', () => {
       vi.restoreAllMocks();
       vi.useRealTimers();
 
-      anchor.configure({ closureWarning: false });
+      anchor.configure({ globalScopeWarning: false });
     });
 
     it('should handle missing adapter error', () => {

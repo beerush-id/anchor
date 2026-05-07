@@ -5,5 +5,5 @@ import { beforeEach } from 'vitest';
 export const mockGlobal = () => {};
 
 beforeEach(() => {
-  anchor.configure({ closureWarning: false });
+  anchor.configure({ globalScopeWarning: false });
 });

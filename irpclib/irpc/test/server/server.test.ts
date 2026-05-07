@@ -8,7 +8,7 @@ describe('Server Module', () => {
 
   beforeEach(() => {
     vi.useRealTimers();
-    anchor.configure({ closureWarning: true });
+    anchor.configure({ globalScopeWarning: true });
     warnSpy = vi.spyOn(console, 'warn');
   });
 

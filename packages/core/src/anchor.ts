@@ -20,10 +20,7 @@ import {
   MUTATOR_REGISTRY,
   RELATION_REGISTRY,
   SORTER_REGISTRY,
-  STATE_GATEWAY_REGISTRY,
   STATE_REGISTRY,
-  SUBSCRIBER_REGISTRY,
-  SUBSCRIPTION_REGISTRY,
 } from './registry.js';
 import { createGetter, createRemover, createSetter } from './trap.js';
 import type {
@@ -232,10 +229,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   INIT_REGISTRY.set(init, state);
   STATE_REGISTRY.set(state, init);
   CONTROLLER_REGISTRY.set(state, controller as never);
-  SUBSCRIBER_REGISTRY.set(state, subscribers as never);
-  SUBSCRIPTION_REGISTRY.set(state, subscriptions);
   EXCEPTION_HANDLER_REGISTRY.set(state, exceptionHandlers);
-  STATE_GATEWAY_REGISTRY.set(state, gateway as StateGateway);
 
   // Trigger dev tool if it is available.
   getDevTool()?.onInit?.(init, meta);
