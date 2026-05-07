@@ -1,7 +1,7 @@
 import { anchor } from './anchor.js';
 import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from './constant.js';
-import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
+import { plugin } from './plugin.js';
 import { BROADCASTER_REGISTRY, INIT_REGISTRY, META_REGISTRY, RELATION_REGISTRY, SORTER_REGISTRY } from './registry.js';
 import type {
   ArrayMutation,
@@ -69,7 +69,6 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
     throw new Error(`Array trap factory called on non-reactive state.`);
   }
 
-  const devTool = getDevTool();
   const compare = SORTER_REGISTRY.get(init);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
@@ -264,7 +263,7 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
       broadcaster.broadcast(init, event, meta.id);
       broadcaster.emit(event);
 
-      devTool?.onCall?.(meta, method, args);
+      plugin.devTool?.onCall?.(meta, method, args);
 
       if (result === init) {
         return INIT_REGISTRY.get(init);

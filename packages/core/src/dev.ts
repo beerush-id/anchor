@@ -1,10 +1,8 @@
 import { DEV_TOOL_KEYS } from './constant.js';
-import { getScope, setScope } from './context.js';
 import { captureStack } from './exception.js';
+import { plugin } from './plugin.js';
 import type { DevTool } from './types.js';
 import { isFunction, isObjectLike } from './utils/index.js';
-
-const DEV_TOOL_SYMBOL = Symbol('dev-tool');
 
 /**
  * Sets the active development tool. This tool will receive callbacks for various state-related events.
@@ -31,12 +29,10 @@ export function setDevTool(devTool: DevTool) {
     return;
   }
 
-  const prevDevTool = getScope<DevTool>(DEV_TOOL_SYMBOL);
-  setScope(DEV_TOOL_SYMBOL, devTool);
+  const prevDevTool = plugin.devTool;
+  plugin.devTool = devTool;
 
-  return () => {
-    setScope(DEV_TOOL_SYMBOL, prevDevTool);
-  };
+  return () => (plugin.devTool = prevDevTool);
 }
 
 /**
@@ -44,5 +40,5 @@ export function setDevTool(devTool: DevTool) {
  * @returns {DevTool | undefined} The active development tool, or `undefined` if none is set.
  */
 export function getDevTool(): DevTool | undefined {
-  return getScope(DEV_TOOL_SYMBOL);
+  return plugin.devTool;
 }

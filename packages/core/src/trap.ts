@@ -1,10 +1,10 @@
 import { anchor } from './anchor.js';
 import { createCollectionGetter } from './collection.js';
-import { getDevTool } from './dev.js';
 import { ObjectMutations, OBSERVER_KEYS } from './enum.js';
 import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
-import { getObserver, track } from './observation.js';
+import { getObserver } from './observation.js';
+import { plugin } from './plugin.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -58,7 +58,6 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const devTool = getDevTool();
   const mutator = options?.mutator ?? MUTATOR_REGISTRY.get(init)?.mutatorMap;
 
   const { link } = RELATION_REGISTRY.get(init) as StateRelation;
@@ -73,26 +72,35 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     const observer = getObserver();
 
     if (configs.observable) {
-      track(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+      plugin.track?.(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
     }
 
     if (configs.observable && observer) {
       const trackProp = observer.assign(init, observers);
       const tracked = trackProp(Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
 
-      if (!tracked && devTool?.onTrack) {
-        devTool.onTrack(meta, observer, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+      if (!tracked) {
+        plugin.devTool?.onTrack?.(meta, observer, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
       }
     }
 
     let value = Reflect.get(target, prop, receiver) as Linkable;
 
     // Trigger the dev tool callback if available.
-    devTool?.onGet?.(meta, prop);
+    plugin.devTool?.onGet?.(meta, prop);
 
     if (value === init) {
       captureStack.violation.circular(prop, getter);
       return INIT_REGISTRY.get(init) as T;
+    }
+
+    // Skip primitive value checks.
+    if (value === null || (typeof value !== 'object' && typeof value !== 'function')) return value;
+
+    // If the value is an array method, set method, or map method,
+    // try to get the method trap from the mutator map.
+    if (mutator?.has(value)) {
+      return mutator.get(value);
     }
 
     if (STATE_REGISTRY.has(value)) {
@@ -104,12 +112,6 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
 
     if (INIT_REGISTRY.has(value)) {
       value = INIT_REGISTRY.get(value) as Linkable;
-    }
-
-    // If the value is an array method, set method, or map method,
-    // try to get the method trap from the mutator map.
-    if (mutator?.has(value)) {
-      return mutator.get(value);
     }
 
     if (configs.recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
@@ -162,7 +164,6 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
     throw new Error(`Set trap factory called on non-reactive state.`);
   }
 
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
@@ -246,7 +247,7 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
       broadcaster.emit(event, prop);
 
       // Trigger the dev tool callback if available.
-      devTool?.onSet?.(meta, prop, value);
+      plugin.devTool?.onSet?.(meta, prop, value);
     }
 
     return true;
@@ -277,7 +278,6 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
     throw new Error(`Delete trap factory called on non-reactive state.`);
   }
 
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
@@ -345,7 +345,7 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
       broadcaster.emit(event, prop);
 
       // Trigger the dev tool callback if available.
-      devTool?.onDelete?.(meta, prop);
+      plugin.devTool?.onDelete?.(meta, prop);
     }
 
     return true;

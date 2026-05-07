@@ -1,9 +1,9 @@
 import { ANCHOR_SETTINGS } from './constant.js';
-import { asyncStoreContract, getScope, setScope, storeContract } from './context.js';
-import { getDevTool } from './dev.js';
+import { asyncStoreContract, getScope, storeContract } from './context.js';
 import { captureStack } from './exception.js';
 import { isReactive } from './internal.js';
 import { onCleanup } from './lifecycle.js';
+import { plugin } from './plugin.js';
 import { META_REGISTRY } from './registry.js';
 import type {
   AsyncEffectHandler,
@@ -14,7 +14,6 @@ import type {
   StateChange,
   StateMetadata,
   StateObserver,
-  StateObserverList,
   StatePublicTracker,
   StateTracker,
   StateUnsubscribe,
@@ -265,6 +264,7 @@ export function createObserver(
     });
   };
 
+  const keyTrackers = new WeakMap();
   const assign = ((init, observers) => {
     if (!observers.has(observer)) {
       observers.add(observer);
@@ -272,7 +272,7 @@ export function createObserver(
       cleaners.add(() => {
         states.delete(init);
         observers.delete(observer);
-        getDevTool()?.onUntrack?.(META_REGISTRY.get(init) as StateMetadata, observer);
+        plugin.devTool?.onUntrack?.(META_REGISTRY.get(init) as StateMetadata, observer);
       });
     }
 
@@ -304,7 +304,11 @@ export function createObserver(
       }
     }
 
-    return (key) => track(init, key);
+    if (!keyTrackers.has(init)) {
+      keyTrackers.set(init, (key: KeyLike) => track(init, key));
+    }
+
+    return keyTrackers.get(init);
   }) satisfies StateObserver['assign'];
 
   const propagate = (event: StateChange) => {
@@ -370,9 +374,6 @@ export function createObserver(
   return observer;
 }
 
-const TRACKER_SYMBOL = Symbol('state-tracker');
-const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
-
 /**
  * Sets the current tracker function for state observation.
  * This function manages the tracker stack, allowing for nested tracker contexts.
@@ -387,26 +388,9 @@ const TRACKER_RESTORE_SYMBOL = Symbol('state-tracker-restore');
  */
 export function setTracker(tracker: StatePublicTracker) {
   if (!isReactive()) return;
-
-  const currentTracker = getScope<StatePublicTracker>(TRACKER_SYMBOL);
-  const currentTrackerRestore = getScope<() => void>(TRACKER_RESTORE_SYMBOL);
-
-  if (currentTracker === tracker) return currentTrackerRestore;
-
-  let restored = false;
-
-  const nextRestore = () => {
-    if (!restored) {
-      setScope(TRACKER_SYMBOL, currentTracker);
-      setScope(TRACKER_RESTORE_SYMBOL, currentTrackerRestore);
-      restored = true;
-    }
-  };
-
-  setScope(TRACKER_SYMBOL, tracker);
-  setScope(TRACKER_RESTORE_SYMBOL, nextRestore);
-
-  return nextRestore;
+  const current = plugin.track;
+  plugin.track = tracker;
+  return () => (plugin.track = current);
 }
 
 /**
@@ -418,21 +402,5 @@ export function setTracker(tracker: StatePublicTracker) {
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getTracker(): StatePublicTracker | undefined {
-  return getScope<StatePublicTracker>(TRACKER_SYMBOL);
-}
-
-/**
- * Tracks a state change by invoking the current tracker function if one is set.
- * This function is used internally by the reactive system to notify observers
- * about state changes and their dependencies.
- *
- * @param init - The initial state value that is being tracked
- * @param observers - A collection of observers that are watching this state
- * @param key - The key or property identifier for the state change
- * @warning This is a low-level API designed for library authors or advanced use cases.
- */
-export function track(init: Linkable, observers: StateObserverList, key: KeyLike) {
-  const currentTracker = getScope<StatePublicTracker>(TRACKER_SYMBOL);
-  if (typeof currentTracker !== 'function') return;
-  currentTracker(init, observers, key);
+  return plugin.track;
 }

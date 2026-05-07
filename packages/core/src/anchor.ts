@@ -2,12 +2,12 @@ import { createArrayMutator } from './array.js';
 import { createBroadcaster } from './broadcast.js';
 import { createCollectionMutator } from './collection.js';
 import { ANCHOR_SETTINGS, ARRAY_MUTATION_KEYS, COLLECTION_MUTATION_PROPS } from './constant.js';
-import { getDevTool } from './dev.js';
 import { type ArrayMutations, Linkables } from './enum.js';
 import { captureStack } from './exception.js';
 import { createDestroyFactory, createLinkFactory, createSubscribeFactory, createUnlinkFactory } from './factory.js';
 import { append, assign, clear, prepend, remove } from './helper.js';
 import { linkable } from './internal.js';
+import { plugin } from './plugin.js';
 import { createProxyHandler, writeContract } from './proxy.js';
 import {
   BROADCASTER_REGISTRY,
@@ -232,7 +232,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   EXCEPTION_HANDLER_REGISTRY.set(state, exceptionHandlers);
 
   // Trigger dev tool if it is available.
-  getDevTool()?.onInit?.(init, meta);
+  plugin.devTool?.onInit?.(init, meta);
 
   // Return the proxied state object
   return state;

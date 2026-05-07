@@ -1,5 +1,5 @@
-import { getDevTool } from './dev.js';
 import { captureStack } from './exception.js';
+import { plugin } from './plugin.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -44,7 +44,6 @@ export function createLinkFactory<T extends Linkable>(
   init: T,
   meta: StateMetadata<T>
 ): (childPath: KeyLike, childState: State, receiver?: State) => void {
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   return (childPath: KeyLike, childState: State, receiver?: State): void => {
@@ -76,7 +75,7 @@ export function createLinkFactory<T extends Linkable>(
       // Store the unsubscribe function for cleanup
       meta.subscriptions.set(childState, childUnsubscribe);
 
-      devTool?.onLink?.(meta, childMeta);
+      plugin.devTool?.onLink?.(meta, childMeta);
     }
   };
 }
@@ -93,7 +92,6 @@ export function createLinkFactory<T extends Linkable>(
  * @returns {(childState: Linkable) => void} A function that unlinks a child state from the parent state
  */
 export function createUnlinkFactory<T extends Linkable>(meta: StateMetadata<T>): (childState: Linkable) => void {
-  const devTool = getDevTool();
   const { subscriptions } = meta;
 
   return (childState: State) => {
@@ -103,10 +101,10 @@ export function createUnlinkFactory<T extends Linkable>(meta: StateMetadata<T>):
       unsubscribe();
       subscriptions.delete(childState);
 
-      if (devTool?.onUnlink) {
+      if (plugin.devTool?.onUnlink) {
         const childInit = STATE_REGISTRY.get(childState) as Linkable;
         const childMeta = META_REGISTRY.get(childInit) as StateMetadata;
-        devTool.onUnlink(meta, childMeta);
+        plugin.devTool.onUnlink(meta, childMeta);
       }
     }
   };
@@ -134,7 +132,6 @@ export function createSubscribeFactory<T extends Linkable>(
   meta: StateMetadata<T>,
   helper: SubscribeFactoryInit
 ): StateSubscribeFn<T> {
-  const devTool = getDevTool();
   const { subscribers, subscriptions } = meta;
 
   const subscribeFn = (handler: StateSubscriber<T>, receiver?: State, recursive = meta.configs.recursive) => {
@@ -164,7 +161,7 @@ export function createSubscribeFactory<T extends Linkable>(
         }
       }
 
-      devTool?.onUnsubscribe?.(meta, handler, receiver);
+      plugin.devTool?.onUnsubscribe?.(meta, handler, receiver);
     };
 
     // Check if the handler is already subscribed.
@@ -192,7 +189,7 @@ export function createSubscribeFactory<T extends Linkable>(
       }
     }
 
-    devTool?.onSubscribe?.(meta, handler, receiver);
+    plugin.devTool?.onSubscribe?.(meta, handler, receiver);
 
     // Return the unsubscribe function
     return unsubscribeFn;
@@ -224,7 +221,6 @@ export function createSubscribeFactory<T extends Linkable>(
  * @returns {() => void} A function that destroys the state and cleans up all resources
  */
 export function createDestroyFactory<T extends Linkable>(init: T, state: State<T>, meta: StateMetadata<T>): () => void {
-  const devTool = getDevTool();
   const { observers, subscribers, subscriptions, exceptionHandlers } = meta;
 
   const handler = (propagation?: boolean) => {
@@ -287,7 +283,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     EXCEPTION_HANDLER_REGISTRY.delete(state);
     META_INIT_REGISTRY.delete(meta as StateMetadata);
 
-    devTool?.onDestroy?.(init, meta);
+    plugin.devTool?.onDestroy?.(init, meta);
   };
 
   return handler;

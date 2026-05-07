@@ -19,11 +19,9 @@ describe('Anchor Core - Observable Observer Management', () => {
       expect(getTracker()).toBeUndefined();
 
       const untrack = setTracker(tracker);
-      const untrack2 = setTracker(tracker); // Make sure to handle duplicate tracker.
 
       expect(getTracker()).toBe(tracker);
       expect(tracker).not.toHaveBeenCalled();
-      expect(untrack2).toBe(untrack);
 
       const count = state.count;
       expect(count).toBe(1);
@@ -36,6 +34,16 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       expect(state.count).toBe(1);
       expect(tracker).toHaveBeenCalledTimes(1);
+
+      setTracker(tracker);
+
+      const array = anchor<number[]>([]);
+      const map = anchor(new Map());
+
+      array.push(1);
+      map.set('key', 1);
+
+      expect(tracker).toHaveBeenCalledTimes(3);
     });
 
     it('should handle outside of observer function', () => {

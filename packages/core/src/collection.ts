@@ -1,4 +1,10 @@
+import { anchor } from './anchor.js';
+import { COLLECTION_MUTATION_KEYS } from './constant.js';
+import { MapMutations, OBSERVER_KEYS, SetMutations } from './enum.js';
+import { captureStack } from './exception.js';
 import { linkable } from './internal.js';
+import { getObserver } from './observation.js';
+import { plugin } from './plugin.js';
 import {
   BROADCASTER_REGISTRY,
   CONTROLLER_REGISTRY,
@@ -22,12 +28,6 @@ import type {
   StateRelation,
   TrapOverrides,
 } from './types.js';
-import { anchor } from './anchor.js';
-import { captureStack } from './exception.js';
-import { COLLECTION_MUTATION_KEYS } from './constant.js';
-import { getObserver, track } from './observation.js';
-import { getDevTool } from './dev.js';
-import { MapMutations, OBSERVER_KEYS, SetMutations } from './enum.js';
 
 const mockReturn = {
   set(map: Map<unknown, unknown>) {
@@ -54,7 +54,6 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
     throw new Error(`Get trap factory called on non-reactive state.`);
   }
 
-  const devTool = getDevTool();
   const mutator = options?.mutator ?? MUTATOR_REGISTRY.get(init)?.mutatorMap;
 
   const { link } = RELATION_REGISTRY.get(init) as StateRelation;
@@ -65,15 +64,15 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
     const observer = getObserver();
 
     if (configs.observable && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
-      track(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+      plugin.track?.(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
     }
 
     if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
       const track = observer.assign(init, observers);
       const tracked = track(OBSERVER_KEYS.COLLECTION_MUTATIONS);
 
-      if (!tracked && devTool?.onTrack) {
-        devTool.onTrack(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+      if (!tracked) {
+        plugin.devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
     }
 
@@ -170,7 +169,6 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
     throw new Error(`Collection trap factory called on non-reactive state.`);
   }
 
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   const { subscriptions } = meta;
@@ -257,7 +255,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         broadcaster.broadcast(init, event, meta.id);
         broadcaster.emit(event);
 
-        devTool?.onCall?.(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
+        plugin.devTool?.onCall?.(meta, method, method === 'set' ? [keyValue, newValue] : [keyValue]);
       }
 
       // Collection mutation will always return itself for chaining.
@@ -307,7 +305,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           broadcaster.broadcast(self, event, meta.id);
           broadcaster.emit(event);
 
-          devTool?.onCall?.(meta, method, [keyValue]);
+          plugin.devTool?.onCall?.(meta, method, [keyValue]);
         }
 
         return result;
@@ -339,7 +337,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           broadcaster.broadcast(self, event, meta.id);
           broadcaster.emit(event);
 
-          devTool?.onCall?.(meta, method, []);
+          plugin.devTool?.onCall?.(meta, method, []);
         }
 
         return result;

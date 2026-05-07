@@ -1,5 +1,5 @@
-import { getDevTool } from './dev.js';
 import { BatchMutations, StringMutations } from './enum.js';
+import { plugin } from './plugin.js';
 import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
 import type { Assignable, AssignablePart, Broadcaster, Linkable, StateChange } from './types.js';
 import { softEntries, softKeys } from './utils/clone.js';
@@ -29,7 +29,6 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
   const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
@@ -76,8 +75,8 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     broadcaster?.emit(event);
     broadcaster?.broadcast(init, event, meta?.id);
 
-    if (meta && devTool?.onAssign) {
-      devTool?.onAssign(meta, source);
+    if (meta) {
+      plugin.devTool?.onAssign?.(meta, source);
     }
   } finally {
     if (isDefined(init)) {
@@ -105,7 +104,6 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
 
   const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
@@ -166,8 +164,8 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     broadcaster?.emit(event);
     broadcaster?.broadcast(init, event, meta?.id);
 
-    if (meta && devTool?.onRemove) {
-      devTool?.onRemove(meta, keys);
+    if (meta) {
+      plugin.devTool?.onRemove?.(meta, keys);
     }
   } finally {
     if (isDefined(init)) {
@@ -194,7 +192,6 @@ export const clear = <T extends Assignable>(target: T) => {
 
   const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
@@ -228,8 +225,8 @@ export const clear = <T extends Assignable>(target: T) => {
     broadcaster?.emit(event);
     broadcaster?.broadcast(init, event, meta?.id);
 
-    if (meta && devTool?.onClear) {
-      devTool?.onClear(meta);
+    if (meta) {
+      plugin.devTool?.onClear?.(meta);
     }
   } finally {
     if (isDefined(init)) {
@@ -335,10 +332,9 @@ export function prepend<T, K extends keyof T>(target: T, prop: K, value: T[K]) {
 function targetInfo(target: Linkable) {
   const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
-  const devTool = getDevTool();
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
-  return { init, meta, devTool, broadcaster };
+  return { init, meta, devTool: plugin.devTool, broadcaster };
 }
 
 function isSafeObject(value: unknown): value is object {
