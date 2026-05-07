@@ -37,6 +37,12 @@ export type HTTPTransportConfig = TransportConfig & {
    * Allows setting authentication tokens, content types, etc.
    */
   headers?: Record<string, string>;
+
+  /**
+   * Additional options to be passed to the fetch request.
+   * Allows configuring credentials, mode, cache, etc.
+   */
+  fetchOptions?: RequestInit;
 };
 
 /**
@@ -108,13 +114,21 @@ export class HTTPTransport extends IRPCTransport {
       }
 
       const response = await fetch(this.url, {
+        ...this.config.fetchOptions,
         method: 'POST',
-        headers: { ...this.config.headers },
+        headers: {
+          ...this.config.headers,
+          ...this.config.fetchOptions?.headers,
+        },
         body: form,
         signal: controller.signal,
       });
 
       clearTimeout(breaker);
+
+      if (typeof window !== 'undefined' && response?.headers?.has('x-anchor-set-cookie')) {
+        window.dispatchEvent(new CustomEvent('anchor:cookie-sync'));
+      }
 
       if (!response?.ok) {
         calls.forEach((call) => {

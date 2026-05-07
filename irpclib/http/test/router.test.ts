@@ -317,5 +317,43 @@ describe('HTTPRouter', () => {
       expect(receivedFile?.data).toBe(dummyFile);
       expect(receivedFile?.status).toBe(IRPC_FILE_STATUS.SUCCESS);
     });
+
+    it('should use custom response builder for empty requests', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const request = createMockRequest('[]'); // Empty request returns 400 early return
+
+      const response = await router.resolve(request, [], (body, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set('x-custom-builder', 'true');
+        return new Response(body, { ...init, headers });
+      });
+
+      expect(response.headers.get('x-custom-builder')).toBe('true');
+      expect(response.status).toBe(400);
+    });
+
+    it('should use custom response builder for valid streaming requests', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = () => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testBuilder' } as any);
+      module.construct(testFunc, async () => 'success');
+
+      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testBuilder', args: [] }]));
+
+      const response = await router.resolve(request, [], (body, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set('x-custom-stream', 'true');
+        return new Response(body, { ...init, headers });
+      });
+
+      expect(response.headers.get('x-custom-stream')).toBe('true');
+      expect(response.status).toBe(200);
+    });
   });
 });

@@ -44,6 +44,11 @@ export type HTTPResolveConfig = {
 export type HTTPMiddleware = () => void | Promise<void>;
 
 /**
+ * Custom response builder to override default response creation
+ */
+export type HTTPResponseBuilder = (body: BodyInit, init: ResponseInit) => Response | Promise<Response>;
+
+/**
  * HTTP router that handles IRPC requests over HTTP transport
  */
 export class HTTPRouter {
@@ -84,9 +89,14 @@ export class HTTPRouter {
    * Resolves incoming HTTP requests
    * @param httpReq - The incoming HTTP request
    * @param initContext - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
    * @returns A Response object with the resolved data
    */
-  public async resolve(httpReq: Request, initContext: [string | symbol, unknown][] = []) {
+  public async resolve(
+    httpReq: Request,
+    initContext: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder
+  ) {
     const formData = await httpReq.formData();
     const irpcRequests = JSON.parse(formData.get(IRPC_JSON_KEY) as string) as (IRPCRequest & { files?: IRPCFilePointer[] })[];
 
@@ -106,8 +116,13 @@ export class HTTPRouter {
       return this.config.resolver(req, this.module);
     });
 
+    const buildResponse = (body: BodyInit, init: ResponseInit) => {
+      if (builder) return builder(body, init);
+      return new Response(body, init);
+    };
+
     if (!requests.length) {
-      return new Response(JSON.stringify([]), { status: 400 });
+      return buildResponse(JSON.stringify([]), { status: 400 });
     }
 
     const abortController = new AbortController();
@@ -162,7 +177,7 @@ export class HTTPRouter {
       },
     });
 
-    return new Response(readable, { status: 200 });
+    return buildResponse(readable, { status: 200 });
   }
 
   /**

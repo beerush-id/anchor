@@ -663,5 +663,75 @@ describe('HTTPTransport', () => {
       expect(call1.enqueue).not.toHaveBeenCalled();
       expect(errSpy).not.toHaveBeenCalled();
     });
+
+    it('should correctly merge fetchOptions', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        headers: { Authorization: 'Bearer token' },
+        fetchOptions: { credentials: 'omit', headers: { 'X-Custom': 'value' } },
+      });
+
+      let fetchOptions: any = null;
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_, options) => {
+        fetchOptions = options;
+        return {
+          ok: true,
+          body: { getReader: () => ({ read: async () => ({ done: true }), releaseLock: () => {} }) },
+        } as any;
+      });
+
+      await transport['dispatch']([]);
+
+      expect(fetchOptions).toMatchObject({
+        method: 'POST',
+        credentials: 'omit',
+        headers: {
+          Authorization: 'Bearer token',
+          'X-Custom': 'value',
+        },
+      });
+
+      mockFetch.mockRestore();
+    });
+
+    it('should dispatch anchor:cookie-sync event when x-anchor-set-cookie header is present', async () => {
+      const isWindowDefined = typeof window !== 'undefined';
+      if (!isWindowDefined) {
+        (globalThis as any).window = { dispatchEvent: vi.fn() };
+      }
+      const isCustomEventDefined = typeof CustomEvent !== 'undefined';
+      if (!isCustomEventDefined) {
+        (globalThis as any).CustomEvent = class {
+          type: string;
+          constructor(type: string) { this.type = type; }
+        };
+      }
+      
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent').mockImplementation(() => true);
+
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        return {
+          ok: true,
+          headers: { has: (key: string) => key.toLowerCase() === 'x-anchor-set-cookie' },
+          body: { getReader: () => ({ read: async () => ({ done: true }), releaseLock: () => {} }) },
+        } as any;
+      });
+
+      await transport['dispatch']([]);
+
+      expect(dispatchSpy).toHaveBeenCalled();
+      expect((dispatchSpy.mock.calls[0][0] as any).type).toBe('anchor:cookie-sync');
+
+      dispatchSpy.mockRestore();
+      mockFetch.mockRestore();
+      
+      if (!isWindowDefined) {
+        delete (globalThis as any).window;
+      }
+      if (!isCustomEventDefined) {
+        delete (globalThis as any).CustomEvent;
+      }
+    });
   });
 });

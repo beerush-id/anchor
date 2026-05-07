@@ -82,6 +82,7 @@ type HTTPTransportConfig = {
   baseURL?: string;              // Base URL for requests
   endpoint?: string;             // Endpoint path (default: '/irpc')
   headers?: Record<string, string>; // Custom headers
+  fetchOptions?: RequestInit;    // Custom fetch options
   timeout?: number;              // Request timeout in ms
   debounce?: number;             // Batching delay in ms (default: 0)
   maxRetries?: number;           // Max retry attempts (default: 0)
@@ -126,6 +127,18 @@ const transport = new HTTPTransport({
   headers: {
     'Authorization': 'Bearer token',
     'X-Custom-Header': 'value',
+  },
+});
+```
+
+#### fetchOptions
+
+Custom `fetch` options to be merged into every request. This is useful for passing credentials, caching rules, or other standard `RequestInit` parameters.
+
+```typescript
+const transport = new HTTPTransport({
+  fetchOptions: {
+    credentials: 'include', // Automatically send cookies
   },
 });
 ```
@@ -204,6 +217,31 @@ Bun.serve({
       return router.resolve(req, [
         ['token', req.headers.get('authorization')],
       ]);
+    }
+    return new Response('Not Found', { status: 404 });
+  },
+});
+```
+
+### Custom Response Builder
+
+By default, the router constructs and returns a standard HTTP `Response`. If you need to intercept the response creation — such as dynamically appending HTTP headers after middleware runs or based on custom server state — you can pass a custom response builder as the third argument to `router.resolve()`.
+
+```typescript
+Bun.serve({
+  fetch(req) {
+    if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
+      return router.resolve(req, [], async (body, init) => {
+        // Yield to microtasks if you need handlers/middleware to flush side-effects
+        await Promise.resolve();
+
+        const headers = new Headers(init.headers);
+        
+        // Example: Append a custom header dynamically
+        headers.set('x-processed-by', 'anchor-router');
+
+        return new Response(body, { ...init, headers });
+      });
     }
     return new Response('Not Found', { status: 404 });
   },
