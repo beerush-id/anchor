@@ -90,8 +90,20 @@ export class RemoteState<T> extends Promise<T> {
     return subscribe(this.state, handler);
   }
 
+  /**
+   * Closes the reactive state and terminates the underlying Promise.
+   */
   public close() {
     this.destroy();
+  }
+
+  /**
+   * Starts the reactive state pipeline on the client side.
+   * This method is intended to be overridden by subclasses for custom initialization logic.
+   * On the server side, this method is a no-op.
+   */
+  public start(): this {
+    return this;
   }
 
   /**

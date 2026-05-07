@@ -197,6 +197,19 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
 } & IRPCCallConfig;
 
 /**
+ * Configuration options for initializing an RPC stream function.
+ * Contains metadata and constraints for the RPC stream function.
+ *
+ * @template I - Tuple of input validation schemas
+ * @template O - Output validation schema
+ */
+export type IRPCStreamInit<I extends IRPCInputs, O extends IRPCOutput, R> = IRPCInit<I, O> & {
+  init: () => R;
+  ttl?: number;
+  deferred?: boolean;
+};
+
+/**
  * Type definition for an RPC declaration.
  * Represents an RPC function with its name, description, and configuration.
  *
@@ -208,7 +221,7 @@ export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F e
   // biome-ignore lint/suspicious/noExplicitAny: Expected
   ...args: any[]
 ) => RemoteState<infer R>
-  ? IRPCInit<I, IRPCOutput> & { init: () => R; ttl?: number }
+  ? IRPCStreamInit<I, O, R>
   : IRPCInit<I, O>;
 
 /**
@@ -225,7 +238,10 @@ export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<I, O
   stream?: boolean;
   /** The actual handler function that implements the RPC */
   handler: IRPCHandler;
+  /** Optional initialization function for a stream RPC */
   init?: () => unknown;
+  /** Whether to defer the call of a stream RPC */
+  deferred?: boolean;
 };
 
 /**
@@ -291,6 +307,10 @@ export type IRPCCallConfig = {
   retryMode?: 'linear' | 'exponential';
   /** Base delay between retries in milliseconds */
   retryDelay?: number;
+  /** Optional initialization function for a stream RPC */
+  init?: () => unknown;
+  /** Whether to defer the call of a stream RPC */
+  deferred?: boolean;
 };
 
 /**

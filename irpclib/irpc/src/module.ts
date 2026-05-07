@@ -119,8 +119,8 @@ export class IRPCPackage {
         return calls.get(callKey);
       }
 
-      const { timeout, maxRetries, retryDelay, retryMode } = { ...this.config, ...spec };
-      const config = { timeout, maxRetries, retryDelay, retryMode } as IRPCCallConfig;
+      const { timeout, maxRetries, retryDelay, retryMode, init, deferred = true } = { ...this.config, ...spec };
+      const config = { timeout, maxRetries, retryDelay, retryMode, init, deferred } as IRPCCallConfig;
 
       const call =
         typeof spec.handler === 'function'

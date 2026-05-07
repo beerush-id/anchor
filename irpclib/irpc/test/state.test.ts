@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Context from '../src/context.js';
 import { IRPC_STATUS } from '../src/enum.js';
 import { RemoteState, stream } from '../src/state.js';
@@ -13,6 +13,11 @@ describe('RemoteState', () => {
     expect(state.data).toBe('initial');
     expect(state.status).toBe(IRPC_STATUS.PENDING);
     expect(state.error).toBeUndefined();
+  });
+
+  it('should call no-op start method', () => {
+    const state = new RemoteState('initial');
+    expect(() => state.start()).not.toThrow();
   });
 
   it('should react to data changes via subscription', () => {
@@ -141,7 +146,7 @@ describe('RemoteState', () => {
     it('should invoke async cleanup cleanly if aborted before promise resolves natively', async () => {
       const abortController = new AbortController();
       vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-      
+
       const futureCleanup = vi.fn();
       const activeStream = stream(async () => {
         return futureCleanup;
@@ -152,18 +157,20 @@ describe('RemoteState', () => {
       await new Promise((resolve) => setTimeout(resolve, 10)); // Flush promises
 
       expect(futureCleanup).toHaveBeenCalled();
-      
+
       vi.restoreAllMocks();
     });
 
     it('should register abort listener for async cleanup if not yet aborted natively', async () => {
       const abortController = new AbortController();
       vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-      
+
       const futureCleanup = vi.fn();
       let resolveCleanup: any;
       stream(async () => {
-        await new Promise((r) => { resolveCleanup = r; });
+        await new Promise((r) => {
+          resolveCleanup = r;
+        });
         return futureCleanup;
       });
 
@@ -179,14 +186,14 @@ describe('RemoteState', () => {
     it('should safely bind sync cleanup statically to abort hook pipeline', async () => {
       const abortController = new AbortController();
       vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-      
+
       const syncCleanup = vi.fn();
       stream(() => {
         return syncCleanup;
       });
 
       abortController.abort();
-      
+
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(syncCleanup).toHaveBeenCalledTimes(1);
@@ -197,7 +204,7 @@ describe('RemoteState', () => {
     it('should fire sync cleanup dynamically if previously aborted', async () => {
       const abortController = new AbortController();
       vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
-      
+
       abortController.abort(); // Aborted before mapping
 
       const syncCleanup = vi.fn();

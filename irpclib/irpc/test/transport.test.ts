@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
-import { type IRPCCall, type IRPCData, IRPCTransport } from '../src/index.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
+import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
+import { createPackage, type IRPCCall, type IRPCData, IRPCTransport, RemoteState } from '../src/index.js';
 
 abstract class TransportType {
   abstract schedule(call: unknown): unknown;
@@ -69,10 +69,8 @@ describe('IRPC Transport', () => {
     });
 
     it('should dispatch instantly and return reader statically when stream spec flag is true', () => {
-      const dispatchSpy = vi
-        .spyOn(transport as any, 'dispatch')
-        .mockImplementation(() => Promise.resolve());
-      
+      const dispatchSpy = vi.spyOn(transport as any, 'dispatch').mockImplementation(() => Promise.resolve());
+
       const spec = {
         name: 'testStreamFunc',
         handler: vi.fn(),
@@ -80,10 +78,35 @@ describe('IRPC Transport', () => {
       };
 
       const result = transport.call(spec, []);
-      
+
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(result).toBeDefined(); // Returns call.reader inherently
       expect(transport.queue.size).toBe(0); // Safely bypassed queue schedule
+
+      dispatchSpy.mockRestore();
+    });
+
+    it('should defer stream call when called with deferred option', async () => {
+      const irpc = createPackage();
+      irpc.use(transport);
+
+      type TestFn = () => RemoteState<string>;
+      const test = irpc.declare<TestFn>({
+        name: 'testStreamFunc',
+        init: () => 'Init',
+      });
+      const dispatchSpy = vi.spyOn(transport as any, 'dispatch').mockImplementation(() => Promise.resolve());
+
+      const result = test();
+
+      expect(dispatchSpy).not.toHaveBeenCalledTimes(1);
+      expect(result.data).toBe('Init');
+
+      const reader = result.start();
+      await Promise.resolve();
+
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(reader).toBe(result);
 
       dispatchSpy.mockRestore();
     });

@@ -36,11 +36,22 @@ export class IRPCTransport {
    */
   public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[], config?: IRPCCallConfig) {
     const payload: IRPCPayload = { name: spec.name, args };
-    const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
+    const { timeout, maxRetries, retryMode, retryDelay, init, deferred } = { ...this.config, ...config };
 
-    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay });
+    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay, init, deferred });
 
     if (spec.stream) {
+      if (deferred) {
+        call.reader.start = () => {
+          this.dispatch([call])
+            .finally(() => {})
+            .catch(() => {});
+          return call.reader;
+        };
+
+        return call.reader;
+      }
+
       this.dispatch([call])
         .finally(() => {})
         .catch(() => {});

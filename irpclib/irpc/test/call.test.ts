@@ -24,6 +24,14 @@ describe('IRPCCall', () => {
       expect(call.reader).toBeDefined();
     });
 
+    it('should create call with initial data', () => {
+      const payload = { name: 'testFunc', args: ['arg1'] };
+      const options = { init: () => 'Init' };
+
+      const call = new IRPCCall(mockTransport, payload, options);
+      expect(call.reader.data).toBe('Init');
+    });
+
     it('should set timeout timer if timeout option is provided and dispatch CLOSE to reader', () => {
       vi.useFakeTimers();
       const payload = { name: 'testFunc', args: [] };

@@ -81,7 +81,8 @@ export class IRPCCall {
       }, options.timeout) as never as number;
     }
 
-    this.reader = new IRPCReader(this.id);
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    this.reader = new IRPCReader(this.id, options?.init?.() as any);
     this.reader.onClose = () => this.close();
   }
 
