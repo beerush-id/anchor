@@ -18,35 +18,42 @@
   "module": "./dist/index.js",
   "exports": {
     ".": {
+      "solid": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./binding": {
+      "solid": "./src/binding.ts",
       "types": "./dist/reactive.d.ts",
       "import": "./dist/reactive.js"
     },
     "./reactive": {
+      "solid": "./src/reactive.ts",
       "types": "./dist/reactive.d.ts",
       "import": "./dist/reactive.js"
     },
     "./core": {
+      "solid": "./src/core/index.ts",
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
     },
     "./router": {
+      "solid": "./src/router/index.ts",
       "types": "./dist/router/index.d.ts",
       "import": "./dist/router/index.js"
     },
     "./server": {
+      "solid": "./src/server/index.ts",
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js"
     },
     "./storage": {
+      "solid": "./src/storage/index.ts",
       "types": "./dist/storage/index.d.ts",
       "import": "./dist/storage/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "src"],
   "directories": {
     "dist": "./dist"
   },
