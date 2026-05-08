@@ -46,6 +46,7 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
 
   public close() {
     this.status = IRPC_STATUS.SUCCESS;
+    super.close();
     this.onClose?.();
   }
 }
