@@ -231,15 +231,15 @@ async function createServer() {
     appType: 'custom'
   });
 
-  app.use(vite.middlewares);
+  app.use(vite.hooks);
 
   app.use('*', async (req, res, next) => {
     try {
       const url = req.originalUrl;
-      
+
       // Load the Vite SSR entry point
       const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
-      
+
       // Call the Anchor render function
       const { html, head, redirect } = await render(url);
 

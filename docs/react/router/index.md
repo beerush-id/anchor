@@ -158,7 +158,7 @@ Each file exports a route segment. Children import from parents:
 ```ts
 // routes/route.ts
 import { router } from '../lib/router.js';
-export const rootRoute = router.route('/');
+export const rootRoute = router.route(); // Getting the root route object.
 
 // routes/users/route.ts
 import { rootRoute } from '../route.js';

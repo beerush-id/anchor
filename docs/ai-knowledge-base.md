@@ -654,6 +654,35 @@ effect(() => {
 effect.client(() => { document.title = state.pageTitle; });
 ```
 
+### awaited()
+
+Preserves reactive context across `await` boundaries. In the browser, `await` breaks the synchronous execution chain — the observer loses track of which scope initiated the async call. `awaited()` wraps a promise to restore the correct reactive context when it resolves, ensuring state reads after `await` are still tracked by the originating observer.
+
+Available from `@anchorlib/core` or `@anchorlib/react`. Client-side only — on the server, context is delegated to `AsyncLocalStorage` natively, so `awaited()` works but provides no additional benefit. Use inside any client-side async reactive boundary: `effect.async()`, `.guard()`, `.provide()`, `query()`.
+
+```tsx
+import { awaited } from '@anchorlib/core';
+
+// Inside effect.async
+effect.async(async () => {
+  const user = await awaited(getUser(state.userId));
+  console.log(user.name);
+});
+
+// Inside route provider
+dashboardRoute.provide('stats', async ({ params }) => {
+  const user = await awaited(getUser(params.userId));
+  const stats = await awaited(getStats(user.id));
+  return { user, stats };
+});
+
+// Inside query
+const userQuery = query(async (signal) => {
+  const user = await awaited(getUser(state.userId));
+  return user;
+});
+```
+
 ### Utilities
 
 ```tsx
@@ -672,11 +701,18 @@ stringify(state);
 subscribe(user, (val, event) => { console.log('Changed'); });
 ```
 
-## View (React Components)
+## View (React)
 
-### setup()
+### Component vs View
 
-Every component uses `setup()`. It runs **exactly once** — a constructor, not a render function.
+A **component** owns state or logic — it has behavior. Use `setup()`.
+A **view** displays — it reflects state from props or external sources. Use `template()` or `snippet()`.
+
+If a unit has no `mutable()`, `effect()`, `onMount()`, or `onCleanup()` — it has no behavior. It is a view, not a component. Do NOT use `setup()` for views — it creates an unused reactive proxy, lifecycle scope, and effect handlers, wasting resources.
+
+### setup() — Component
+
+`setup()` creates a component — a unit that owns state and/or logic. It runs **exactly once** — a constructor, not a render function. Use it ONLY when the unit needs its own `mutable()`, `effect()`, `onMount()`, or `onCleanup()`.
 
 ```tsx
 import { setup, render, mutable } from '@anchorlib/react';
@@ -695,7 +731,7 @@ export const Counter = setup((props) => {
 
 The point of AIR Stack is **fine-grained reactivity**. Do NOT put everything in a single `render()` — that recreates React's re-render cascade where the entire component re-renders on any state change.
 
-**snippet()** — THE DEFAULT. Each snippet is an independent reactive boundary that updates only when its tracked state changes:
+**snippet()** — Reactive fragment scoped to a `setup()` component. Each snippet is an independent reactive boundary that updates only when its tracked state changes. `snippet()` MUST be declared inside `setup()` — it requires a parent component scope. Using `snippet()` outside `setup()` is an error.
 
 ```tsx
 export const Dashboard = setup(() => {
@@ -733,20 +769,33 @@ return render(() => (
 ));
 ```
 
-**render()** — Use ONLY for simple components with a single reactive concern:
+**render()** — Use ONLY inside `setup()` for components with a single reactive concern:
 
 ```tsx
 return render(() => <button onClick={increment}>Count: {state.count}</button>);
 ```
 
-**template()** — Standalone reusable view, props-only:
+**template()** — Standalone reusable reactive boundary. Tracks state reads in its body and re-renders when tracked state changes. Use for reusable views that receive data via props or read external state. Unlike `setup()`, it does not own state or logic — no `mutable()`, `effect()`, or lifecycle primitives inside it.
 
 ```tsx
 import { template } from '@anchorlib/react';
 
+// Reusable view — tracks reactive props, re-renders when user changes
 const UserCard = template<{ user: User }>(({ user }) => (
   <div><h2>{user.name}</h2></div>
 ), 'UserCard');
+
+// Reads external reactive state — re-renders when auth changes
+export const NavBar = template(() => (
+  <nav>{auth.isAuthenticated ? <LogoutButton /> : <LoginButton />}</nav>
+), 'NavBar');
+```
+
+```tsx
+// ❌ WRONG — setup() for a unit with no state/logic. Wasteful overhead.
+export const NavBar = setup(() => {
+  return (<nav>{auth.isAuthenticated ? <LogoutButton /> : <LoginButton />}</nav>);
+}, 'NavBar');
 ```
 
 Static layout: JSX returned from `setup()` without `render()` is static — created once, never re-evaluated. Reactive reads in static JSX show initial values only.
@@ -885,8 +934,8 @@ routes/                         # /
 ```tsx
 // routes/route.ts
 import { router } from '../lib/router.js';
-export const rootRoute = router.route('/');
-export const homeRoute = rootRoute.route('/');
+export const rootRoute = router.route(); // Getting the root route object.
+export const homeRoute = rootRoute.route('/'); // Creating the index route object.
 ```
 
 ```tsx
@@ -917,7 +966,7 @@ Guards and providers run inside reactive observers — reading Anchor state auto
 
 ### Route Views
 
-`.render()` accepts a render function `(state, context, children?) => ReactNode` — not a Component. The returned JSX is non-reactive. Reactive state reads inside it will not trigger re-renders.
+`.render()` accepts a render function `(state, context, children?) => ReactNode` — it is NOT a component and NOT a `setup()` scope. The returned JSX is non-reactive. Do NOT use `mutable()`, `snippet()`, `effect()`, `onMount()`, `onCleanup()`, or any lifecycle primitive inside `.render()`. If you need reactive content, delegate to a `template()` or a `setup()` component defined outside.
 
 Choose the right tool based on the source data and target view:
 
@@ -964,19 +1013,17 @@ import { rootRoute } from './route.js';
 import { HomePage } from './index.js';
 import { UsersLayout } from './users/index.js';
 
-export const RootLayout = page(
-  rootRoute.render((_state, _ctx, children) => (
-    <div className="app-layout">
-      <Title>My App</Title>
-      <Meta name="description" content="My App description" />
-      <nav>
-        <Link to={HomePage}>Home</Link>
-        <Link to={UsersLayout}>Users</Link>
-      </nav>
-      <main>{children}</main>
-    </div>
-  ))
-);
+export const RootLayout = page(rootRoute).render((_state, _ctx, children) => (
+  <div className="app-layout">
+    <Title>My App</Title>
+    <Meta name="description" content="My App description" />
+    <nav>
+      <Link to={HomePage}>Home</Link>
+      <Link to={UsersLayout}>Users</Link>
+    </nav>
+    <main>{children}</main>
+  </div>
+));
 export default RootLayout;
 ```
 
@@ -985,14 +1032,12 @@ export default RootLayout;
 import { page, Title } from '@anchorlib/react';
 import { homeRoute } from './route.js';
 
-export const HomePage = page(
-  homeRoute.render(() => (
-    <>
-      <Title>Home — My App</Title>
-      <h1>Welcome</h1>
-    </>
-  ))
-);
+export const HomePage = page(homeRoute).render(() => (
+  <>
+    <Title>Home — My App</Title>
+    <h1>Welcome</h1>
+  </>
+));
 export default HomePage;
 ```
 
@@ -1001,9 +1046,8 @@ export default HomePage;
 import { page, Title } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
-export const ProfilePage = page(
-  profileRoute.render((state) => <UserProfile user={state.data?.user} />)
-);
+export const ProfilePage = page(profileRoute)
+  .render((state) => <UserProfile user={state.data?.user} />);
 export default ProfilePage;
 ```
 
@@ -1025,11 +1069,9 @@ URL `/users/42` → `rootRoute` → `usersRoute` → `profileRoute`.
 import { modal } from '@anchorlib/react';
 import { photoRoute } from './route.js';
 
-export const PhotoDetail = modal(
-  photoRoute.render((state) => (
-    <Lightbox src={state.data?.photo?.url} />
-  ))
-);
+export const PhotoDetail = modal(photoRoute).render((state) => (
+  <Lightbox src={state.data?.photo?.url} />
+));
 export default PhotoDetail;
 ```
 
@@ -1069,22 +1111,28 @@ navigate(history.state?.redirect ?? '/');
 
 ## Server-Side Rendering (SSR)
 
-SSR requires request isolation and headless routing to function safely in concurrent Node.js environments.
+SSR requires request isolation, headless routing, and disabled reactivity to function safely in concurrent environments.
+
+### setReactive()
+
+`setReactive(false)` disables Anchor's observation, subscription, and broadcasting systems. State registration, schema validation, and registry lookups remain fully operational. Call this at the top of the SSR entry module — server renders are single-pass, so reactive tracking provides no benefit and wastes resources.
+
+Available from `@anchorlib/core` or `@anchorlib/react`.
 
 ```tsx
-import { setAsyncStorageAdapter, isolated, createLifecycle, UIRouter } from '@anchorlib/react';
+import '@anchorlib/core/server'; // MUST be first — sets up AsyncLocalStorage for request isolation
+import { setReactive, withIsolation, createLifecycle, UIRouter } from '@anchorlib/react';
 import { Redirect, redirectUrl } from '@anchorlib/router';
-import { AsyncLocalStorage } from 'node:async_hooks';
 import { renderToString } from 'react-dom/server';
 import { router } from './lib/router';
 import { RootLayout } from './routes/index';
 
-// 1. Isolate state per request (Run ONCE at server startup)
-setAsyncStorageAdapter(new AsyncLocalStorage());
+// Disable reactivity for SSR (MUST be before any rendering)
+setReactive(false);
 
 app.get('*', async (req, res) => {
   // 2. Isolate context layer (storage.run)
-  await isolated.async(async () => {
+  await withIsolation(async () => {
     // 3. Create a scoped lifecycle
     const scope = createLifecycle();
     await scope.runAsync(async () => {
@@ -1135,18 +1183,21 @@ Vite SSR entry point:
 
 ```tsx
 // entry-server.tsx
-import { renderToString } from 'react-dom/server';
-import { isolated, createLifecycle, UIRouter, headings } from '@anchorlib/react';
+import '@anchorlib/core/server';
+import { createLifecycle, headings, setReactive, UIRouter, withIsolation } from '@anchorlib/react';
 import { Redirect, redirectUrl } from '@anchorlib/router';
+import { renderToString } from 'react-dom/server';
 import { router } from './router';
 import AppRoot from './Index';
+
+setReactive(false);
 
 export async function render(url: string) {
   let html = '';
   let head = '';
   let redirect: string | undefined;
 
-  await isolated.async(async () => {
+  await withIsolation(async () => {
     const scope = createLifecycle();
     await scope.runAsync(async () => {
       try {
@@ -1184,7 +1235,7 @@ setAsyncStorageAdapter(new AsyncLocalStorage());
 async function createServer() {
   const app = express();
   const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'custom' });
-  app.use(vite.middlewares);
+  app.use(vite.hooks);
 
   app.use('*all', async (req, res, next) => {
     try {
@@ -1380,17 +1431,28 @@ effect(() => console.log(JSON.stringify(state)));
 return <span>{state.count}</span>; // Initial value only
 // ❌ Stubs and constructors in the same file
 // ❌ API declarations trapped inside the app (not portable)
+// ❌ setup() for views — wasteful lifecycle overhead
+export const Footer = setup(() => { return <footer>...</footer>; }, 'Footer');
+// ❌ snippet() outside setup() — requires component scope
+const Title = snippet(() => <h1>{state.title}</h1>, 'Title'); // module level = error
+// ❌ State/snippet/lifecycle inside route .render()
+route.render(() => { const s = mutable({ count: 0 }); ... }); // .render() is NOT a component
 ```
 
 ## Best Practices
 
 ```tsx
-// ✅ setup() for ALL components
-export const MyComponent = setup(() => { ... });
-// ✅ Access props directly
-effect(() => console.log(props.name));
-// ✅ snippet/template for reactive parts
+// ✅ setup() for components — units with their own state/logic
+export const Counter = setup(() => {
+  const state = mutable({ count: 0 });
+  return render(() => <button>{state.count}</button>);
+}, 'Counter');
+// ✅ template() for views — units that only display
+export const Footer = template(() => <footer>...</footer>, 'Footer');
+// ✅ snippet() inside setup() for fine-grained reactive boundaries
 const Title = snippet(() => <h1>{state.title}</h1>, 'Title');
+// ✅ Access props directly (setup only)
+effect(() => console.log(props.name));
 // ✅ stringify() or snapshot() for serialization
 effect(() => console.log(stringify(state)));
 // ✅ $omit/$pick for prop spreading
@@ -1427,7 +1489,7 @@ import {
   // Head
   Title, Meta, HeadLink, Style, headings,
   // SSR
-  isolated, createLifecycle, setAsyncStorageAdapter,
+  withIsolation, createLifecycle, setReactive,
   // Other
   callback, type Bindable,
 } from '@anchorlib/react';
@@ -1456,7 +1518,7 @@ import { redirect } from '@anchorlib/router';
 
 ```tsx
 import {
-  mutable, immutable, writable, derived, effect,
+  mutable, immutable, writable, derived, effect, awaited,
   subscribe, untrack, snapshot, stringify, model, form, query,
 } from '@anchorlib/core';
 ```

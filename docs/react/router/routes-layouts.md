@@ -22,7 +22,7 @@ export const router = createRouter<ReactNode>();
 // routes/route.ts
 import { router } from '../lib/router.js';
 
-export const rootRoute = router.route('/');
+export const rootRoute = router.route(); // Getting the root route object.
 ```
 
 ```ts
