@@ -281,6 +281,12 @@ interface IRPCFactory {
   // Register handler implementation
   construct<F>(irpc: F, handler: F): void;
 
+  // Register a per-function hook
+  hook<F>(stub: F, handler: (req: IRPCRequest) => void | Promise<void>): void;
+
+  // Resolve hooks for a request
+  resolveHooks(req: IRPCRequest): Promise<void>;
+
   // Configure transport
   use(transport: IRPCTransport): void;
 

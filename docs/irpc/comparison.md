@@ -136,7 +136,7 @@ const user = await createUser({ name: 'John', email: 'john@example.com' });
 | **Batching** | Automatic | Opt-in |
 | **Setup** | Package + transport | Router + client |
 | **Streaming / Subscriptions**| Identical signature, identical transport | Separate procedure, dedicated WS transport |
-| **Middleware** | Transport-level | Procedure-level |
+| **Hooks** | Two-level (router + per-function) | Procedure-level |
 | **Caching** | Built-in per-function | Client-side (manual or via React Query) |
 
 tRPC maps closely to REST and HTTP verbs, forcing you to classify every endpoint as a `.query()`, `.mutation()`, or `.subscription()`. IRPC treats the network purely as a remote execution layer — you don't classify HTTP intents, you just call standard isomorphic functions.

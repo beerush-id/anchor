@@ -142,7 +142,7 @@ export class WebSocketRouter extends IRPCRouter {
         this.abortControllers.set(resolver.req.id, abortController);
 
         return withContext(ctx, async () => {
-          const error = await this.resolveMiddleware(resolver.req);
+          const error = await this.resolveHooks(resolver.req);
 
           if (error) {
             this.abortControllers.delete(resolver.req.id);

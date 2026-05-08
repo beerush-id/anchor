@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
-import { createPackage, type IRPCCall, type IRPCData, IRPCTransport, RemoteState } from '../src/index.js';
+import { createPackage, type IRPCCall, type IRPCData, IRPCTransport, type RemoteState } from '../src/index.js';
 
 abstract class TransportType {
   abstract schedule(call: unknown): unknown;

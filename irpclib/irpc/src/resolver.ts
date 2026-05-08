@@ -85,6 +85,8 @@ export class IRPCResolver {
    */
   public async forward({ id, name, args }: IRPCRequest, schema?: IRPCOutput): Promise<IRPCResponse> {
     try {
+      await this.module.resolveHooks({ id, name, args });
+
       const result = this.module.resolve({ id, name, args });
 
       if (result instanceof RemoteState) {

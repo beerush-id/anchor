@@ -29,7 +29,7 @@ Server runs on `http://localhost:3000`
 The template includes:
 - Pre-configured IRPC package and HTTP transport
 - Example IRPC functions
-- Server setup with middleware
+- Server setup with hooks
 - TypeScript configuration
 - Docker support
 
@@ -174,6 +174,10 @@ Because it exposes `state.data`, `state.status`, and `state.error`, you can use 
 - Monitor the exact execution status (`PENDING`, `SUCCESS`, or `ERROR`).
 - Handle mid-stream pipeline errors directly via `state.error`.
 
+::: tip Deferred by Default
+Stream calls are deferred — calling the stub returns a `RemoteState` seeded with the `init()` value, but the handler doesn't execute until `.start()` is called. Deferring prevents wasted I/O during SSR (where the connection would be discarded once the HTML is sent) and avoids hydration mismatches caused by data arriving between the server render and client mount.
+:::
+
 The function signature is isomorphic—it works perfectly across the client and server.
 
 ### Step 3: Implement Handlers (Server)
@@ -272,17 +276,14 @@ Configure the server to handle IRPC requests.
 
 The server requires `AsyncLocalStorage` to isolate context across concurrent requests. Without it, context from one user's request could leak into another's.
 
-The router's `resolve` method accepts the HTTP request and an optional `initContext` — an array of `[key, value]` tuples that seed the request context. Extract application-level values (tokens, locale, tenant ID) at the integration point. Middleware and handlers then consume these values through `getContext()` without knowing which transport delivered the request.
+The router's `resolve` method accepts the HTTP request and an optional `initContext` — an array of `[key, value]` tuples that seed the request context. Extract application-level values (tokens, locale, tenant ID) at the integration point. Hooks and handlers then consume these values through `getContext()` without knowing which transport delivered the request.
 
 ```typescript
 // server.ts
-import { setContextProvider } from '@irpclib/irpc';
-import { AsyncLocalStorage } from 'node:async_hooks';
+import '@irpclib/server';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
 import './rpc/hello/constructor.js';
-
-setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
 
@@ -319,10 +320,11 @@ const message = await hello('John');
 
 // Reactive UI binding over the network
 const PoemWidget = setup(() => {
-  // Generates the call stream.
   const poem = generatePoem('Space');
-  
-  // Renders based on `state.data` mutations from the remote server.
+
+  // Start the stream after hydration.
+  onMount(() => poem.start());
+
   return render(() => <div>{poem.data}</div>);
 });
 ```
@@ -444,6 +446,8 @@ On the client, the UI skeleton can begin rendering as the stream fields populate
 ```typescript
 const DashboardWidget = setup(({ user }) => {
   const dashboard = getDashboard(user.id);
+
+  onMount(() => dashboard.start());
   
   return render(() => (
     <div>
@@ -565,11 +569,11 @@ Invalid inputs or outputs will throw validation errors.
 
 ### Context
 
-Every router's `resolve` method accepts an `initContext` parameter — an array of `[key, value]` tuples that seed the request context. Middleware and handlers access these values via `getContext()` and can add more via `setContext()`.
+Every router's `resolve` method accepts an `initContext` parameter — an array of `[key, value]` tuples that seed the request context. Hooks and handlers access these values via `getContext()` and can add more via `setContext()`.
 
-The router itself only manages the internal `AbortController`. All other context is the caller's responsibility. This is the key architectural constraint: the integration point extracts application-level values from whatever transport object it has, and injects them as standardized keys. Middleware and handlers never reference `Request`, `WebSocket`, or `BroadcastChannel`.
+The router itself only manages the internal `AbortController`. All other context is the caller's responsibility. This is the key architectural constraint: the integration point extracts application-level values from whatever transport object it has, and injects them as standardized keys. Hooks and handlers never reference `Request`, `WebSocket`, or `BroadcastChannel`.
 
-Define your application's context contract once. Each transport maps its specific objects into the same keys. The middleware stays identical:
+Define your application's context contract once. Each transport maps its specific objects into the same keys. The hook stays identical:
 
 ```typescript
 import { getContext, setContext } from '@irpclib/irpc';
@@ -594,6 +598,86 @@ irpc.construct(getProfile, async () => {
 ```
 
 Context is scoped to each request.
+
+## Hooks
+
+IRPC has a two-level hook system for guarding and intercepting calls.
+
+### Router Hooks (Global)
+
+Router hooks run before every request processed by that router. They have no access to the request arguments — they read from the standardized context keys seeded by `initContext`.
+
+```typescript
+router.use(async () => {
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
+});
+```
+
+Router hooks run in order. If any hook throws, the request is rejected before the handler executes.
+
+### Spec Hooks (Per-Function)
+
+Spec hooks guard individual functions. They receive the typed request arguments and run at the module level — right before the handler.
+
+```typescript
+irpc.hook(deleteUser, async (req) => {
+  const user = getContext<User>('user');
+  if (!user?.admin) throw new Error('Forbidden');
+});
+```
+
+The hook receives a typed `req` object with `name` and `args` inferred from the stub's type signature:
+
+```typescript
+type DeleteUserFn = (userId: string) => Promise<void>;
+const deleteUser = irpc.declare<DeleteUserFn>({ name: 'deleteUser' });
+
+irpc.hook(deleteUser, (req) => {
+  req.args[0]; // typed as string (userId)
+});
+```
+
+### Execution Order
+
+1. **Router hooks** — global guards (auth, rate limiting)
+2. **Spec hooks** — per-function guards (authorization, validation)
+3. **Handler** — business logic
+
+If any hook throws, execution stops and the error propagates.
+
+### Isomorphic Hooks
+
+Spec hooks are module-scoped, not environment-scoped. When client and server share a module instance (SSR), all registered hooks run at the call site. On the client, hooks execute synchronously. On the server (inside the resolver), hooks are awaited.
+
+## Monitoring (IRPCStore)
+
+IRPC provides a global store for observing the system's live state. Packages, routers, and streams self-register — no manual tracking.
+
+```typescript
+import { IRPC_STORE } from '@irpclib/irpc';
+
+// Live snapshot
+IRPC_STORE.packages; // Set of registered packages
+IRPC_STORE.routers;  // Set of active routers
+IRPC_STORE.calls;    // Set of active streams
+```
+
+Subscribe to lifecycle events:
+
+```typescript
+const unsubscribe = IRPC_STORE.subscribe((event) => {
+  switch (event.type) {
+    case 'register': // Package registered
+    case 'route':    // Router created
+    case 'queue':    // Stream started
+    case 'dequeue':  // Stream finished
+  }
+});
+```
+
+The store is a live window, not a log. It tracks what's active right now. Zero overhead when nobody subscribes. Build logging, metrics, dashboards, or alerting on top — the store has no opinions about what you do with the data.
 
 ## Multiple Functions
 

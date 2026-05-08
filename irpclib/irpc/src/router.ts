@@ -5,11 +5,11 @@ import { IRPC_STORE } from './store.js';
 import type { IRPCTransport } from './transport.js';
 import type { IRPCRequest } from './types.js';
 
-export type IRPCMiddleware = () => void | Promise<void>;
+export type IRPCHook = () => void | Promise<void>;
 
 export class IRPCRouter {
   /** Array of middleware functions to be executed */
-  public middlewares: IRPCMiddleware[] = [];
+  public hooks: IRPCHook[] = [];
 
   /**
    * Creates a new Router instance
@@ -24,30 +24,30 @@ export class IRPCRouter {
   }
 
   /**
-   * Adds a middleware function to the router
-   * @param middleware - The middleware function to add
+   * Adds a hook function to the router
+   * @param hook - The hook function to add
    * @returns The current Router instance for chaining
    */
-  public use(middleware: IRPCMiddleware): this {
-    if (typeof middleware !== 'function') {
-      const error = new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_MIDDLEWARE]);
+  public use(hook: IRPCHook): this {
+    if (typeof hook !== 'function') {
+      const error = new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_HOOK]);
       console.error(error);
       return this;
     }
 
-    this.middlewares.push(middleware);
+    this.hooks.push(hook);
     return this;
   }
 
   /**
-   * Resolves middleware functions for a given request
-   * @param req - The IRPC request to process middleware for
-   * @returns An error response if middleware fails, undefined otherwise
+   * Resolves hook functions for a given request
+   * @param req - The IRPC request to process hook for
+   * @returns An error response if hook fails, undefined otherwise
    */
-  protected async resolveMiddleware(req: IRPCRequest) {
-    for (const middleware of this.middlewares) {
+  protected async resolveHooks(req: IRPCRequest) {
+    for (const hook of this.hooks) {
       try {
-        await middleware();
+        await hook();
       } catch (error) {
         console.error(error);
 

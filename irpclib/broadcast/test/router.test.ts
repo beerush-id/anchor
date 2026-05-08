@@ -35,7 +35,7 @@ describe('BroadcastRouter', () => {
 
       expect(router.module).toBe(module);
       expect(router.transport).toBe(transport);
-      expect(router.middlewares).toEqual([]);
+      expect(router.hooks).toEqual([]);
       expect(router.config.endpoint).toBe('irpc://test-channel');
       expect(router.endpoint).toBeDefined();
     });
@@ -74,7 +74,7 @@ describe('BroadcastRouter', () => {
 
       const result = router.use(middleware);
 
-      expect(router.middlewares).toContain(middleware);
+      expect(router.hooks).toContain(middleware);
       expect(result).toBe(router);
     });
 

@@ -112,12 +112,19 @@ irpc.construct(loadDashboard, (userId) => {
 ```
 
 ```typescript
-// Call (Client) — UI hydrates as each query resolves
+// Call (Client) — deferred, returns init() immediately
 const call = loadDashboard('user-123');
 call.subscribe(state => renderDashboard(state.data));
+
+// Start the stream when ready (e.g., after hydration, on user action)
+call.start();
 ```
 
 No WebSocket configuration. No polling. No separate subscription endpoints. The same `declare` / `construct` / `call` pattern.
+
+::: tip Deferred Streams
+Stream calls are deferred by default — calling the stub returns a `RemoteState` seeded with the `init()` value, but the handler doesn't execute until `.start()` is called. Deferring prevents wasted I/O during SSR (where the connection would be discarded once the HTML is sent) and avoids hydration mismatches caused by data arriving between the server render and client mount.
+:::
 
 ## Why Not X?
 

@@ -1,4 +1,4 @@
-import { AsyncScope, AsyncStore, getAsyncScope } from '@anchorlib/core';
+import { AsyncScope, type AsyncStore, getAsyncScope } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContext, getContext, setContext, setContextProvider, withContext } from '../src/context.js';
 import type { IRPCContextProvider } from '../src/index.js';

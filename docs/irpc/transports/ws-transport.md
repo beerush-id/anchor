@@ -47,7 +47,7 @@ irpc.construct(hello, async (name) => `Hello ${name}`);
 
 ### 3. Server Setup
 
-The WebSocket upgrade happens at connection time, but IRPC messages arrive later during the session. Extract application-level values (e.g., auth tokens) from the upgrade request in `fetch`, attach them to `ws.data`, and forward them as `initContext` on each `resolve` call. This gives middleware the same standardized keys as the HTTP router.
+The WebSocket upgrade happens at connection time, but IRPC messages arrive later during the session. Extract application-level values (e.g., auth tokens) from the upgrade request in `fetch`, attach them to `ws.data`, and forward them as `initContext` on each `resolve` call. This gives hooks the same standardized keys as the HTTP router.
 
 ```typescript
 // server.ts
@@ -227,9 +227,9 @@ const transport = new WebSocketTransport({
 });
 ```
 
-### Middleware
+### Hooks
 
-Because the integration point injects the same standardized keys as HTTP (`'token'`, `'user'`, etc.), the exact same middleware function works on both routers. No transport-specific imports, no conditional logic.
+Because the integration point injects the same standardized keys as HTTP (`'token'`, `'user'`, etc.), the exact same hook function works on both routers. No transport-specific imports, no conditional logic.
 
 ```typescript
 router.use(async () => {

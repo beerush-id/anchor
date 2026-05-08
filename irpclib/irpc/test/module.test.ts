@@ -77,7 +77,7 @@ describe('IRPCPackage', () => {
       });
 
       expect(typeof testFunc).toBe('function');
-      expect(rpc.specs.has('testFunc')).toBe(true);
+      expect((rpc as any).specs.has('testFunc')).toBe(true);
 
       const spec = rpc.get('testFunc');
       expect(spec?.name).toBe('testFunc');
@@ -98,7 +98,7 @@ describe('IRPCPackage', () => {
       const handler: TestFunc = vi.fn((async (name) => `Hello ${name}`) as TestFunc);
       rpc.construct(testFunc, handler);
 
-      const spec = rpc.stubs.get(testFunc);
+      const spec = (rpc as any).stubs.get(testFunc);
       expect(spec?.handler).toBe(handler);
     });
 
@@ -503,6 +503,126 @@ describe('IRPCPackage', () => {
       // Advance to trigger accept (status -> SUCCESS), which unsubscribes.
       vi.advanceTimersByTime(5);
       expect(result.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+  });
+
+  describe('Spec Hooks', () => {
+    it('should register a hook on a valid stub', () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookTest' });
+      const hookFn = vi.fn();
+
+      rpc.hook(testFunc, hookFn);
+
+      const spec = (rpc as any).stubs.get(testFunc)!;
+      expect((rpc as any).hooks.get(spec)!.has(hookFn)).toBe(true);
+    });
+
+    it('should support chaining when registering hooks', () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookChain' });
+      const hook1 = vi.fn();
+      const hook2 = vi.fn();
+
+      const result = rpc.hook(testFunc, hook1).hook(testFunc, hook2);
+
+      expect(result).toBe(rpc);
+      const spec = (rpc as any).stubs.get(testFunc)!;
+      expect((rpc as any).hooks.get(spec)!.size).toBe(2);
+    });
+
+    it('should log error and return self when hooking an invalid stub', () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const unknownStub = () => {};
+
+      const result = rpc.hook(unknownStub, vi.fn());
+
+      expect(errSpy).toHaveBeenCalled();
+      expect(result).toBe(rpc);
+      errSpy.mockRestore();
+    });
+  });
+
+  describe('Resolve Hooks', () => {
+    it('should execute all hooks in order for a valid spec', async () => {
+      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookResolve' });
+      rpc.construct(testFunc, async (name) => `Hello ${name}`);
+
+      const order: number[] = [];
+      rpc.hook(testFunc, () => {
+        order.push(1);
+      });
+      rpc.hook(testFunc, () => {
+        order.push(2);
+      });
+      rpc.hook(testFunc, () => {
+        order.push(3);
+      });
+
+      const req = { id: '1', name: 'hookResolve', args: ['World'] };
+      await rpc.resolveHooks(req);
+
+      expect(order).toEqual([1, 2, 3]);
+    });
+
+    it('should pass the request to each hook', async () => {
+      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookReq' });
+      rpc.construct(testFunc, async (name) => `Hello ${name}`);
+
+      const hookFn = vi.fn();
+      rpc.hook(testFunc, hookFn);
+
+      const req = { id: '1', name: 'hookReq', args: ['World'] };
+      await rpc.resolveHooks(req);
+
+      expect(hookFn).toHaveBeenCalledWith(req);
+    });
+
+    it('should throw when resolving hooks for a non-existent spec', async () => {
+      const req = { id: '1', name: 'nonExistent', args: [] };
+
+      await expect(rpc.resolveHooks(req)).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+    });
+
+    it('should propagate errors thrown by hooks', async () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookError' });
+      rpc.construct(testFunc, async () => 'ok');
+
+      rpc.hook(testFunc, () => {
+        throw new Error('Hook denied');
+      });
+
+      const req = { id: '1', name: 'hookError', args: [] };
+      await expect(rpc.resolveHooks(req)).rejects.toThrow('Hook denied');
+    });
+
+    it('should stop execution when a hook throws', async () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookStop' });
+      rpc.construct(testFunc, async () => 'ok');
+
+      const afterThrow = vi.fn();
+
+      rpc.hook(testFunc, () => {
+        throw new Error('Stopped');
+      });
+      rpc.hook(testFunc, afterThrow);
+
+      const req = { id: '1', name: 'hookStop', args: [] };
+      await expect(rpc.resolveHooks(req)).rejects.toThrow('Stopped');
+      expect(afterThrow).not.toHaveBeenCalled();
+    });
+
+    it('should await async hooks', async () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookAsync' });
+      rpc.construct(testFunc, async () => 'ok');
+
+      const executed = vi.fn();
+      rpc.hook(testFunc, async () => {
+        executed();
+      });
+
+      const req = { id: '1', name: 'hookAsync', args: [] };
+      await rpc.resolveHooks(req);
+
+      expect(executed).toHaveBeenCalled();
     });
   });
 });

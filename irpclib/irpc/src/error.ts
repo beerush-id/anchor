@@ -11,7 +11,7 @@ export const ERROR_CODE = {
   NOT_IMPLEMENTED: 'not_implemented',
   INVALID_HANDLER: 'invalid_handler',
   INVALID_OPERATION: 'invalid_operation',
-  INVALID_MIDDLEWARE: 'invalid_middleware',
+  INVALID_HOOK: 'invalid_middleware',
 
   TRANSPORT_MISSING: 'transport_missing',
   TRANSPORT_INVALID: 'transport_invalid',
@@ -46,7 +46,7 @@ export const ERROR_MESSAGE = {
   [ERROR_CODE.NOT_IMPLEMENTED]: 'IRPC: Not implemented error',
   [ERROR_CODE.INVALID_HANDLER]: 'IRPC: Invalid handler error',
   [ERROR_CODE.INVALID_OPERATION]: 'IRPC: Invalid operation error',
-  [ERROR_CODE.INVALID_MIDDLEWARE]: 'IRPC: Invalid middleware error',
+  [ERROR_CODE.INVALID_HOOK]: 'IRPC: Invalid hook error',
 
   [ERROR_CODE.TRANSPORT_MISSING]: 'IRPC: Transport missing error',
   [ERROR_CODE.TRANSPORT_INVALID]: 'IRPC: Transport invalid error',

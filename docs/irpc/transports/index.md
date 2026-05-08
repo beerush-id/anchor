@@ -48,7 +48,7 @@ Transports include routing functionality that:
 - Handles error propagation
 - Supports request/response correlation
 
-The routing happens server-side within the transport layer, eliminating the need for separate routing middleware.
+The routing happens server-side within the transport layer, eliminating the need for separate routing hooks.
 
 ## Stream Lifecycle
 
@@ -80,7 +80,7 @@ const transport = new HTTPTransport({
 - Continuous streaming responses via `IRPCPacketStream` (progressive resolution)
 - Retry logic (linear or exponential backoff)
 - Timeout handling
-- Middleware support
+- Hook support
 
 [Learn more about HTTP Transport →](/irpc/transports/http-transport)
 

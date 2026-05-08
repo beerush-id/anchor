@@ -121,7 +121,7 @@ export class HTTPRouter extends IRPCRouter {
           ]);
 
           return withContext(ctx, async () => {
-            const error = await this.resolveMiddleware(resolver.req);
+            const error = await this.resolveHooks(resolver.req);
 
             if (error) {
               if (abortController.signal.aborted) return;

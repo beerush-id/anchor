@@ -9,6 +9,7 @@ import { IRPCTransport } from './transport.js';
 import type {
   IRPCCallConfig,
   IRPCData,
+  IRPCDataSchema,
   IRPCDeclareInit,
   IRPCHandler,
   IRPCInputs,
@@ -28,6 +29,11 @@ const DEFAULT_TIMEOUT = 20000;
 const NAME_CONSTRAINT = /^[a-zA-Z0-9\-_]+$/;
 const VERSION_CONSTRAINT = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
+export type IRPCHookArgs<F> = F extends (...args: infer A) => unknown
+  ? { name: string; args: A }
+  : { name: string; args: unknown[] };
+export type IRPCSpecHook<F> = (req: IRPCHookArgs<F>) => void | Promise<void>;
+
 /**
  * IRPCPackage represents a package containing multiple IRPC (Isomorphic-RPC) specifications
  * and their corresponding stubs. It manages the configuration, transport, and execution
@@ -37,17 +43,19 @@ export class IRPCPackage {
   /**
    * A map storing all IRPC specifications by their names
    */
-  public specs: IRPCSpecStore = new Map();
+  private specs: IRPCSpecStore = new Map();
+
+  private hooks = new Map<IRPCSpec<IRPCInputs, IRPCDataSchema>, Set<IRPCSpecHook<IRPCHandler>>>();
 
   /**
    * A weak map linking stub functions to their corresponding specifications
    */
-  public stubs: IRPCStubStore = new WeakMap();
+  private stubs: IRPCStubStore = new WeakMap();
 
   /**
    * A map storing caches for each IRPC Entry
    */
-  public cache = new WeakMap<IRPCHandler, IRPCCacher>();
+  private cache = new WeakMap<IRPCHandler, IRPCCacher>();
 
   /**
    * Configuration object for the IRPC package
@@ -129,6 +137,11 @@ export class IRPCPackage {
       const { timeout, maxRetries, retryDelay, retryMode, init, deferred = true } = { ...this.config, ...spec };
       const config = { timeout, maxRetries, retryDelay, retryMode, init, deferred } as IRPCCallConfig;
 
+      const hooks = this.hooks.get(spec);
+      if (hooks) {
+        hooks.forEach((hook) => hook({ name: spec.name, args }));
+      }
+
       // Intercept deferred local call.
       if (typeof spec.handler === 'function' && spec.stream && deferred) {
         return intercept(spec, args, init);
@@ -165,6 +178,7 @@ export class IRPCPackage {
     this.specs.set(options.name, spec);
     this.stubs.set(stub, spec);
     this.cache.set(stub, caches);
+    this.hooks.set(spec, new Set());
 
     return stub as F;
   }
@@ -214,6 +228,45 @@ export class IRPCPackage {
     spec.handler = handler;
 
     return this;
+  }
+
+  /**
+   * Registers a hook function for a specific stub function
+   * @param stub - The stub function created by declare()
+   * @param handler - The hook function to register
+   * @returns This IRPCPackage instance for chaining
+   * @throws Error if the stub is invalid or if no IRPC exists for the stub
+   */
+  public hook<F extends IRPCHandler>(stub: F, handler: IRPCSpecHook<F>): this {
+    if (!this.stubs.has(stub as IRPCHandler)) {
+      const error = new Error(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      console.error(error, stub);
+      return this;
+    }
+
+    const spec = this.stubs.get(stub as IRPCHandler)!;
+    this.hooks.get(spec)!.add(handler as IRPCSpecHook<IRPCHandler>);
+    return this;
+  }
+
+  /**
+   * Resolves and executes all registered hooks for a given request
+   * @param req - The request containing the IRPC name and arguments
+   * @returns A promise that resolves when all hooks have been executed
+   * @throws Error if no IRPC exists for the request or if the hooks are not registered
+   */
+  public async resolveHooks(req: IRPCRequest): Promise<void> {
+    const spec = this.specs.get(req.name);
+
+    if (!spec || !this.hooks.has(spec)) {
+      throw new Error(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+    }
+
+    const hooks = this.hooks.get(spec)!;
+
+    for (const hook of hooks) {
+      await hook(req);
+    }
   }
 
   /**

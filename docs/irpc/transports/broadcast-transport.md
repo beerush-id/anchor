@@ -330,7 +330,7 @@ try {
 
 ## Advanced Usage
 
-### Middleware
+### Hooks
 
 Unlike HTTP and WebSocket, BroadcastChannel has no incoming request object. The router injects only the internal `AbortController` by default. To supply the same standardized context keys used across other transports, pass `initContext` when calling `resolve()` directly.
 

@@ -1,18 +1,18 @@
 ---
 title: "HTTP Transport"
-description: "Complete guide to configuring and using the HTTP transport for IRPC with automatic batching, streaming, retry logic, and middleware support."
+description: "Complete guide to configuring and using the HTTP transport for IRPC with automatic batching, streaming, retry logic, and hook support."
 keywords:
   - irpc
   - http transport
   - batching
   - streaming
-  - middleware
+  - hooks
   - retry
 ---
 
 # HTTP Transport
 
-The HTTP transport provides automatic batching, streaming responses, retry logic, and middleware support for IRPC over HTTP.
+The HTTP transport provides automatic batching, streaming responses, retry logic, and hook support for IRPC over HTTP.
 
 ## Installation
 
@@ -44,15 +44,14 @@ irpc.use(transport);
 
 ### Server Configuration
 
-`AsyncLocalStorage` is required to isolate context across concurrent requests. The router's `resolve` method accepts the HTTP request and an `initContext` array that seeds the request context with application-level values. Middleware reads these standardized keys via `getContext()`, never touching the raw `Request` object directly.
+`import '@irpclib/server'` sets up `AsyncLocalStorage` for request isolation.
+
+The router's `resolve` method accepts the HTTP request and an `initContext` array — `[key, value]` tuples that seed the request context. Hooks and handlers read these keys via `getContext()`, never touching the raw `Request` object.
 
 ```typescript
-import { setContextProvider } from '@irpclib/irpc';
-import { AsyncLocalStorage } from 'node:async_hooks';
+import '@irpclib/server';
 import { HTTPRouter } from '@irpclib/http';
 import { irpc, transport } from './lib/module.js';
-
-setContextProvider(new AsyncLocalStorage());
 
 const router = new HTTPRouter(irpc, transport);
 
@@ -206,7 +205,7 @@ The router handles incoming HTTP requests and routes them to IRPC handlers.
 
 ### Basic Usage
 
-`router.resolve()` takes the HTTP request as its first argument and an `initContext` array as its second. The context entries become available to all middleware and handlers for that request.
+`router.resolve()` takes the HTTP request as its first argument and an `initContext` array as its second. The context entries become available to all hooks and handlers for that request.
 
 ```typescript
 const router = new HTTPRouter(irpc, transport);
@@ -225,14 +224,14 @@ Bun.serve({
 
 ### Custom Response Builder
 
-By default, the router constructs and returns a standard HTTP `Response`. If you need to intercept the response creation — such as dynamically appending HTTP headers after middleware runs or based on custom server state — you can pass a custom response builder as the third argument to `router.resolve()`.
+By default, the router constructs and returns a standard HTTP `Response`. If you need to intercept the response creation — such as dynamically appending HTTP headers after hooks run or based on custom server state — you can pass a custom response builder as the third argument to `router.resolve()`.
 
 ```typescript
 Bun.serve({
   fetch(req) {
     if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
       return router.resolve(req, [], async (body, init) => {
-        // Yield to microtasks if you need handlers/middleware to flush side-effects
+        // Yield to microtasks if you need handlers/hooks to flush side-effects
         await Promise.resolve();
 
         const headers = new Headers(init.headers);
@@ -248,11 +247,11 @@ Bun.serve({
 });
 ```
 
-### Middleware
+### Hooks
 
-Middleware runs before handlers execute. It reads from the standardized context keys seeded by `initContext` — it never references transport-specific types like `Request` or `Headers`.
+Hooks run before handlers execute. They read from the standardized context keys seeded by `initContext` — they never reference transport-specific types like `Request` or `Headers`.
 
-This decoupling means you can extract middleware into a shared library and reuse it across HTTP, WebSocket, and BroadcastChannel routers without modification.
+This decoupling means you can extract hooks into a shared library and reuse them across HTTP, WebSocket, and BroadcastChannel routers without modification.
 
 ```typescript
 router.use(async () => {
@@ -266,14 +265,14 @@ router.use(async () => {
 });
 ```
 
-Middleware can:
+Hooks can:
 - Read standardized context via `getContext(key)`
 - Set additional context for handlers via `setContext(key, value)`
 - Throw errors to reject the request
 
-### Multiple Middleware
+### Multiple Hooks
 
-Middleware executes in order. If any middleware throws, the request is rejected.
+Hooks execute in order. If any hook throws, the request is rejected.
 
 ```typescript
 router.use(async () => {
@@ -372,9 +371,9 @@ irpc.construct(getUser, async (id) => {
 });
 ```
 
-### Middleware Errors
+### Hook Errors
 
-Middleware errors reject the entire request before handlers execute.
+Hook errors reject the call before its handler executes. Other calls in the same batch are unaffected.
 
 ```typescript
 router.use(async () => {
@@ -388,7 +387,7 @@ router.use(async () => {
 
 The router's `resolve` method accepts an `initContext` parameter — an array of `[key, value]` tuples that seed the request context. The router only manages the internal `AbortController`.
 
-The integration point extracts application-level values from transport-specific objects and injects them as standardized keys. Middleware and handlers never reference transport types — they consume the same standardized context contract regardless of which transport delivered the call.
+The integration point extracts application-level values from transport-specific objects and injects them as standardized keys. Hooks and handlers never reference transport types — they consume the same standardized context contract regardless of which transport delivered the call.
 
 ### Standardizing Context Across Transports
 
@@ -414,9 +413,9 @@ router.resolve(requests, [
 ]);
 ```
 
-Middleware and handlers see the same `'token'` and `'locale'` keys everywhere. No transport awareness required.
+Hooks and handlers see the same `'token'` and `'locale'` keys everywhere. No transport awareness required.
 
-### Reading Context in Middleware
+### Reading Context in Hooks
 
 ```typescript
 router.use(async () => {
@@ -495,14 +494,14 @@ const transport = new HTTPTransport({
 });
 ```
 
-### Use Middleware for Cross-Cutting Concerns
+### Use Hooks for Cross-Cutting Concerns
 
-Implement authentication, logging, and rate limiting in middleware.
+Implement authentication, logging, and rate limiting in hooks.
 
 ```typescript
-router.use(authMiddleware);
-router.use(rateLimitMiddleware);
-router.use(loggingMiddleware);
+router.use(authHook);
+router.use(rateLimitHook);
+router.use(loggingHook);
 ```
 
 ### Stream Responses
