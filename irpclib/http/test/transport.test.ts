@@ -1125,7 +1125,7 @@ describe('HTTPTransport', () => {
       expect(true).toBe(true);
     });
 
-    it('should handle onabort after onload (ctrl.error is no-op on closed stream)', async () => {
+    it('should handle onabort after onload (ctrl.close is no-op on closed stream)', async () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
 
       xhrInstance.send.mockImplementation(() => {
@@ -1135,7 +1135,7 @@ describe('HTTPTransport', () => {
         xhrInstance.onreadystatechange();
 
         xhrInstance.onload();
-        // ctrl.error() is a no-op on a closed stream — should not crash.
+        // ctrl.close() is a no-op on a closed stream — should not crash.
         xhrInstance.onabort();
       });
 
