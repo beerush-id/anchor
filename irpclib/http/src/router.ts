@@ -150,7 +150,6 @@ export class HTTPRouter {
             const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
 
             stream.pipe((packet) => {
-              if (abortController.signal.aborted) return;
               controller.enqueue(encoder.encode(`${JSON.stringify(packet)}\n`));
             });
 

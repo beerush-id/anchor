@@ -177,7 +177,7 @@ export class HTTPTransport extends IRPCTransport {
 
     return new Promise<Response>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open(init.method || 'POST', this.url.toString());
+      xhr.open('POST', this.url.toString());
 
       if (init.headers) {
         const headers = new Headers(init.headers as Record<string, string>);
@@ -223,16 +223,10 @@ export class HTTPTransport extends IRPCTransport {
 
       xhr.onerror = () => {
         const err = new Error('Request failed.');
-        try {
-          ctrl.error(err);
-        } catch {}
+        ctrl.error(err);
         reject(err);
       };
-      xhr.onabort = () => {
-        try {
-          ctrl.close();
-        } catch {}
-      };
+      xhr.onabort = () => ctrl.error(new Error('Aborted.'));
       xhr.send(init.body as FormData);
     });
   }

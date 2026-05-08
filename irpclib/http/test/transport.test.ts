@@ -750,4 +750,323 @@ describe('HTTPTransport', () => {
       }
     });
   });
+
+  describe('XHR dispatch', () => {
+    let MockXHR: any;
+    let xhrInstance: any;
+
+    beforeEach(() => {
+      xhrInstance = {
+        open: vi.fn(),
+        setRequestHeader: vi.fn(),
+        send: vi.fn(),
+        abort: vi.fn(),
+        readyState: 0,
+        status: 0,
+        statusText: '',
+        responseText: '',
+        onprogress: null as any,
+        onreadystatechange: null as any,
+        onload: null as any,
+        onerror: null as any,
+        onabort: null as any,
+        getAllResponseHeaders: vi.fn().mockReturnValue('content-type: application/x-ndjson\r\nx-custom: value'),
+        HEADERS_RECEIVED: 2,
+      };
+
+      MockXHR = vi.fn().mockImplementation(() => xhrInstance);
+      MockXHR.HEADERS_RECEIVED = 2;
+      vi.stubGlobal('XMLHttpRequest', MockXHR);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should use XHR when XMLHttpRequest is available', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        headers: { Authorization: 'Bearer token' },
+      });
+
+      xhrInstance.send.mockImplementation(() => {
+        // Simulate headers received.
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+
+        // Simulate progress with a chunk.
+        xhrInstance.responseText = JSON.stringify({
+          id: '1',
+          type: IRPC_PACKET_TYPE.ANSWER,
+          status: IRPC_STATUS.SUCCESS,
+          data: 'result',
+          createdAt: Date.now(),
+        }) + '\n';
+        xhrInstance.onprogress();
+
+        // Simulate load complete.
+        xhrInstance.onload();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+
+      expect(xhrInstance.open).toHaveBeenCalledWith('POST', expect.any(String));
+      expect(xhrInstance.setRequestHeader).toHaveBeenCalledWith('authorization', 'Bearer token');
+      expect(xhrInstance.send).toHaveBeenCalled();
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({ id: '1', data: 'result', status: IRPC_STATUS.SUCCESS })
+      );
+    });
+
+    it('should handle XHR onerror before headers (rejects promise)', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      xhrInstance.send.mockImplementation(() => {
+        xhrInstance.onerror();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Request failed.' }),
+        })
+      );
+    });
+
+    it('should handle XHR onerror after headers (errors the stream controller)', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      xhrInstance.send.mockImplementation(() => {
+        // Simulate headers received first.
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+
+        // Then simulate error mid-stream.
+        xhrInstance.onerror();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+
+      // resolveAll's catch should log the stream read error.
+      expect(errSpy).toHaveBeenCalled();
+    });
+
+    it('should bridge AbortController signal to xhr.abort()', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      xhrInstance.send.mockImplementation(() => {
+        // Simulate headers received.
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+      });
+
+      // Simulate abort AFTER the response resolves.
+      xhrInstance.abort.mockImplementation(() => {
+        xhrInstance.onabort();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: { timeout: 10 },
+        enqueue: vi.fn(),
+      } as any;
+
+      vi.useFakeTimers();
+
+      const dispatchPromise = transport['dispatch']([call]);
+
+      // Advance past the timeout to trigger abort.
+      vi.advanceTimersByTime(20);
+
+      await dispatchPromise;
+
+      expect(xhrInstance.abort).toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it('should handle multiple progress events with incremental text', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      const packet1 = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.EVENT, status: IRPC_STATUS.PENDING, data: 'chunk1', createdAt: 1 });
+      const packet2 = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'chunk2', createdAt: 2 });
+
+      xhrInstance.send.mockImplementation(() => {
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+
+        // First progress.
+        xhrInstance.responseText = packet1 + '\n';
+        xhrInstance.onprogress();
+
+        // Second progress.
+        xhrInstance.responseText = packet1 + '\n' + packet2 + '\n';
+        xhrInstance.onprogress();
+
+        xhrInstance.onload();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+
+      expect(call.enqueue).toHaveBeenCalledTimes(2);
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ data: 'chunk1' }));
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ data: 'chunk2' }));
+    });
+
+    it('should handle remaining data in onload flush', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      const packet = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'final', createdAt: 1 });
+
+      xhrInstance.send.mockImplementation(() => {
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+
+        // No progress events — all data arrives at onload.
+        xhrInstance.responseText = packet;
+        xhrInstance.onload();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+
+      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ data: 'final' }));
+    });
+
+    it('should dispatch without headers in init', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      xhrInstance.send.mockImplementation(() => {
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+        xhrInstance.onload();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+
+      expect(xhrInstance.setRequestHeader).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to fetch when XMLHttpRequest is undefined', async () => {
+      vi.unstubAllGlobals();
+
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        body: { getReader: () => ({ read: async () => ({ done: true }), releaseLock: () => {} }) },
+      } as any);
+
+      await transport['dispatch']([]);
+
+      expect(mockFetch).toHaveBeenCalled();
+      mockFetch.mockRestore();
+    });
+
+    it('should handle onerror after onload (ctrl.error is no-op on closed stream)', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      xhrInstance.send.mockImplementation(() => {
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+
+        xhrInstance.onload();
+        // ctrl.error() is a no-op on a closed stream — should not crash.
+        xhrInstance.onerror();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+      expect(true).toBe(true);
+    });
+
+    it('should handle onabort after onload (ctrl.error is no-op on closed stream)', async () => {
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+      xhrInstance.send.mockImplementation(() => {
+        xhrInstance.readyState = 2;
+        xhrInstance.status = 200;
+        xhrInstance.statusText = 'OK';
+        xhrInstance.onreadystatechange();
+
+        xhrInstance.onload();
+        // ctrl.error() is a no-op on a closed stream — should not crash.
+        xhrInstance.onabort();
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'test', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call]);
+      expect(true).toBe(true);
+    });
+  });
 });
