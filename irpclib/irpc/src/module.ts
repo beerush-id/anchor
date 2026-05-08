@@ -293,7 +293,6 @@ export function intercept(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: unknown[
 
   call.start = () => {
     const result = spec.handler(...args) as RemoteState<unknown>;
-    console.error('result', result.state);
     anchor.assign(call.state as IRPCReadable<unknown>, result.state as IRPCReadable<unknown>);
 
     const unsubscribe = result.subscribe((_, event) => {

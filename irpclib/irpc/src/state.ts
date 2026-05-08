@@ -149,7 +149,9 @@ export class RemoteState<T> extends Promise<T> {
    */
   public close() {
     if (this.#closed) return;
+
     this.#closed = true;
+    this.#accept(this.data);
     this.destroy();
   }
 

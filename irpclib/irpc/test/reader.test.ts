@@ -33,7 +33,6 @@ describe('IRPCReader', () => {
 
     expect(reader.data).toBe('initial-load');
     expect(reader.status).toBe(IRPC_STATUS.PENDING);
-    expect(reader.packets.size).toBe(1);
   });
 
   it('should map replay events strictly to data', () => {

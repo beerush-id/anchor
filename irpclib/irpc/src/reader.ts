@@ -9,7 +9,6 @@ import type { IRPCData, IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent, IRPC
  * @template T - The type of data yielded by the stream.
  */
 export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
-  public packets: Set<IRPCPacketStream<T>> = new Set();
   public onClose?: () => void;
 
   constructor(
@@ -27,8 +26,6 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
    */
   public push(packet: IRPCPacketStream<T>) {
     packet.arrivedAt = Date.now();
-
-    this.packets.add(packet);
 
     if (packet.type === IRPC_PACKET_TYPE.ANSWER) {
       if (packet.status === IRPC_STATUS.ERROR) {

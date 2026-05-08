@@ -45,7 +45,8 @@ export class IRPCCall {
   public value?: unknown;
   public error?: Error;
 
-  private readonly timerId?: number;
+  private timerId?: ReturnType<typeof setTimeout>;
+  private retryId?: ReturnType<typeof setTimeout>;
   private retries = 0;
   private retryReasons = new Set<Error>();
 
@@ -77,8 +78,9 @@ export class IRPCCall {
           createdAt: Date.now(),
         } satisfies IRPCPacketStream<IRPCData>);
 
+        clearTimeout(this.retryId);
         this.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]), false);
-      }, options.timeout) as never as number;
+      }, options.timeout);
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: Expect any.
@@ -110,6 +112,7 @@ export class IRPCCall {
     this.status = IRPC_STATUS.SUCCESS;
     this.resolved = true;
     this.finishedAt = Date.now();
+    this.retryReasons.clear();
 
     clearTimeout(this.timerId);
   }
@@ -133,12 +136,13 @@ export class IRPCCall {
       if (this.retries >= maxRetries) {
         console.error(ERROR_MESSAGE[ERROR_CODE.CALL_MAX_RETRIES_REACHED], this.retryReasons);
         this.reject(reason, false);
+        this.retryReasons.clear();
         return;
       }
 
       const delay = retryMode === 'linear' ? retryDelay : retryDelay * 2 ** this.retries;
 
-      setTimeout(() => {
+      this.retryId = setTimeout(() => {
         this.retries++;
         this.transport.schedule(this);
       }, delay);
@@ -147,6 +151,7 @@ export class IRPCCall {
       this.status = IRPC_STATUS.ERROR;
       this.resolved = true;
       this.finishedAt = Date.now();
+      this.retryReasons.clear();
 
       clearTimeout(this.timerId);
     }

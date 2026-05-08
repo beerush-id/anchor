@@ -61,11 +61,13 @@ export class IRPCFile {
 
 export class IRPCFileStream extends IRPCFile {
   private pipes = new Set<IRPCFilePipe>();
-  private chunks: Uint8Array[] = [];
+  private buffer: Uint8Array | undefined;
 
   constructor(meta: IRPCFileMeta) {
     super(meta);
+
     this.data = new Blob([], { type: meta.type });
+    this.buffer = new Uint8Array(meta.size);
   }
 
   public write(chunk: Uint8Array) {
@@ -78,7 +80,7 @@ export class IRPCFileStream extends IRPCFile {
       const nextChunk = needSlice ? chunk.slice(0, chunkSize) : chunk;
       const leftovers = needSlice ? chunk.slice(chunkSize) : null;
 
-      this.chunks.push(nextChunk);
+      this.buffer?.set(nextChunk, this.state.downloaded);
       this.state.downloaded += chunkSize;
 
       this.pipes.forEach((fn) => {
@@ -90,7 +92,8 @@ export class IRPCFileStream extends IRPCFile {
       });
 
       if (this.downloaded >= this.meta.size) {
-        this.data = new Blob(this.chunks as BlobPart[], { type: this.meta.type });
+        this.data = new Blob([this.buffer as BlobPart], { type: this.meta.type });
+        this.buffer = undefined;
         this.state.status = IRPC_FILE_STATUS.SUCCESS;
       }
 
@@ -106,13 +109,13 @@ export class IRPCFileStream extends IRPCFile {
   public pipe(fn: IRPCFilePipe): IRPCFileUnpipe {
     this.pipes.add(fn);
 
-    this.chunks.forEach((c) => {
+    if (this.state.downloaded > 0) {
       try {
-        fn(c);
+        fn(this.buffer?.subarray(0, this.state.downloaded) as Uint8Array);
       } catch (error) {
         console.error(error);
       }
-    });
+    }
 
     return () => this.pipes.delete(fn);
   }

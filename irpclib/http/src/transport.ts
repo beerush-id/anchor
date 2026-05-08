@@ -184,8 +184,10 @@ export class HTTPTransport extends IRPCTransport {
         headers.forEach((v, k) => xhr.setRequestHeader(k, v));
       }
 
+      const abort = () => xhr.abort();
+
       if (init.signal) {
-        init.signal.addEventListener('abort', () => xhr.abort());
+        init.signal.addEventListener('abort', abort);
       }
 
       let lastIndex = 0;
@@ -219,14 +221,21 @@ export class HTTPTransport extends IRPCTransport {
         const chunk = xhr.responseText.substring(lastIndex);
         if (chunk) ctrl.enqueue(chunk);
         ctrl.close();
+        init.signal?.removeEventListener('abort', abort);
       };
 
       xhr.onerror = () => {
         const err = new Error('Request failed.');
         ctrl.error(err);
         reject(err);
+        init.signal?.removeEventListener('abort', abort);
       };
-      xhr.onabort = () => ctrl.error(new Error('Aborted.'));
+
+      xhr.onabort = () => {
+        ctrl.error(new Error('Aborted.'));
+        init.signal?.removeEventListener('abort', abort);
+      };
+
       xhr.send(init.body as FormData);
     });
   }

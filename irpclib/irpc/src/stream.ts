@@ -150,19 +150,19 @@ export class IRPCStream<T extends IRPCData> {
               } satisfies IRPCPacketClose);
             });
 
+            abortSignal!.removeEventListener('abort', abortStream);
+
             this.finish();
             unsubscribe();
           }
         });
 
-        abortSignal?.addEventListener(
-          'abort',
-          () => {
-            unsubscribe();
-            this.finish();
-          },
-          { once: true }
-        );
+        const abortStream = () => {
+          unsubscribe();
+          this.finish();
+        };
+
+        abortSignal?.addEventListener('abort', abortStream, { once: true });
       } else {
         this.value = result as T;
 
