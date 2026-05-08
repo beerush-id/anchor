@@ -67,8 +67,9 @@ export class HTTPTransport extends IRPCTransport {
    * Combines the baseURL and endpoint to create a complete URL.
    */
   public get url() {
-    const defaultUrl = typeof window !== 'undefined' ? (window.location?.origin ?? DEFAULT_ORIGIN) : DEFAULT_ORIGIN;
-    return new URL(this.endpoint, this.config.baseURL || defaultUrl);
+    const defaultUrl =
+      typeof globalThis.location !== 'undefined' ? (globalThis.location.origin ?? DEFAULT_ORIGIN) : DEFAULT_ORIGIN;
+    return new URL(this.endpoint, this.config.baseURL ?? defaultUrl);
   }
 
   /**
@@ -253,6 +254,7 @@ export class HTTPTransport extends IRPCTransport {
    */
   protected async resolveAll(calls: IRPCCall[], response: Response) {
     const reader = response.body?.getReader?.();
+    const pendingCalls = new Map<string, IRPCCall>(calls.map((call) => [call.id, call]));
 
     if (!reader) {
       calls.forEach((call) => {
@@ -288,13 +290,14 @@ export class HTTPTransport extends IRPCTransport {
 
             try {
               const packet: IRPCPacketStream<IRPCData> = JSON.parse(part);
-              const call = calls.find((call) => call.id === packet.id);
+              const call = pendingCalls.get(packet.id);
 
               if (call) {
                 call.enqueue(packet);
 
                 if (packet.status !== IRPC_STATUS.PENDING) {
                   this.abortControllers.delete(call);
+                  pendingCalls.delete(packet.id);
                 }
               }
             } catch (error) {
@@ -307,8 +310,13 @@ export class HTTPTransport extends IRPCTransport {
           if (buffer.trim()) {
             try {
               const packet: IRPCPacketStream<IRPCData> = JSON.parse(buffer);
-              const call = calls.find((call) => call.id === packet.id);
-              if (call) call.enqueue(packet);
+              const call = pendingCalls.get(packet.id);
+
+              if (call) {
+                call.enqueue(packet);
+                pendingCalls.delete(packet.id);
+                this.abortControllers.delete(call);
+              }
             } catch (error) {
               console.error('Unable to parse final response chunk:', buffer, error);
             }
@@ -322,6 +330,7 @@ export class HTTPTransport extends IRPCTransport {
       calls.forEach((call) => {
         if (call.resolved) return;
         this.abortControllers.delete(call);
+        pendingCalls.delete(call.id);
 
         call.enqueue({
           id: call.id,

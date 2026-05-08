@@ -493,7 +493,13 @@ describe('HTTPTransport', () => {
                 return Promise.resolve({
                   done: false,
                   value: textEncoder.encode(
-                    JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'ok', createdAt: 1 }) + '\n'
+                    JSON.stringify({
+                      id: '1',
+                      type: IRPC_PACKET_TYPE.ANSWER,
+                      status: IRPC_STATUS.SUCCESS,
+                      data: 'ok',
+                      createdAt: 1,
+                    }) + '\n'
                   ),
                 });
               }
@@ -750,6 +756,7 @@ describe('HTTPTransport', () => {
     });
 
     it('should correctly merge fetchOptions', async () => {
+      vi.stubGlobal('location', { origin: undefined });
       const transport = new HTTPTransport({
         baseURL: 'https://api.example.com',
         headers: { Authorization: 'Bearer token' },
@@ -777,12 +784,14 @@ describe('HTTPTransport', () => {
       });
 
       mockFetch.mockRestore();
+      vi.unstubAllGlobals();
     });
 
     it('should dispatch anchor:cookie-sync event when x-anchor-set-cookie header is present', async () => {
       const isWindowDefined = typeof window !== 'undefined';
       if (!isWindowDefined) {
-        (globalThis as any).window = { dispatchEvent: vi.fn(), location: { origin: 'http://localhost' } };
+        (globalThis as any).window = { dispatchEvent: vi.fn() };
+        (globalThis as any).location = { origin: 'http://localhost' };
       }
       const isCustomEventDefined = typeof CustomEvent !== 'undefined';
       if (!isCustomEventDefined) {
@@ -868,13 +877,14 @@ describe('HTTPTransport', () => {
         xhrInstance.onreadystatechange();
 
         // Simulate progress with a chunk.
-        xhrInstance.responseText = JSON.stringify({
-          id: '1',
-          type: IRPC_PACKET_TYPE.ANSWER,
-          status: IRPC_STATUS.SUCCESS,
-          data: 'result',
-          createdAt: Date.now(),
-        }) + '\n';
+        xhrInstance.responseText =
+          JSON.stringify({
+            id: '1',
+            type: IRPC_PACKET_TYPE.ANSWER,
+            status: IRPC_STATUS.SUCCESS,
+            data: 'result',
+            createdAt: Date.now(),
+          }) + '\n';
         xhrInstance.onprogress();
 
         // Simulate load complete.
@@ -999,8 +1009,20 @@ describe('HTTPTransport', () => {
     it('should handle multiple progress events with incremental text', async () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
 
-      const packet1 = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.EVENT, status: IRPC_STATUS.PENDING, data: 'chunk1', createdAt: 1 });
-      const packet2 = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'chunk2', createdAt: 2 });
+      const packet1 = JSON.stringify({
+        id: '1',
+        type: IRPC_PACKET_TYPE.EVENT,
+        status: IRPC_STATUS.PENDING,
+        data: 'chunk1',
+        createdAt: 1,
+      });
+      const packet2 = JSON.stringify({
+        id: '1',
+        type: IRPC_PACKET_TYPE.ANSWER,
+        status: IRPC_STATUS.SUCCESS,
+        data: 'chunk2',
+        createdAt: 2,
+      });
 
       xhrInstance.send.mockImplementation(() => {
         xhrInstance.readyState = 2;
@@ -1036,7 +1058,13 @@ describe('HTTPTransport', () => {
     it('should handle remaining data in onload flush', async () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
 
-      const packet = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'final', createdAt: 1 });
+      const packet = JSON.stringify({
+        id: '1',
+        type: IRPC_PACKET_TYPE.ANSWER,
+        status: IRPC_STATUS.SUCCESS,
+        data: 'final',
+        createdAt: 1,
+      });
 
       xhrInstance.send.mockImplementation(() => {
         xhrInstance.readyState = 2;
