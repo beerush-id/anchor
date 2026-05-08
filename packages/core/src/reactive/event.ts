@@ -13,7 +13,7 @@ import type {
   StateChange,
   StateGateway,
 } from '../types.js';
-import { untrack } from './observation.js';
+import { $do } from './observation.js';
 
 /**
  * Replays a state change event on the given state.
@@ -34,7 +34,7 @@ import { untrack } from './observation.js';
  * @internal
  */
 export function replay<T>(state: T, event: StateChange) {
-  untrack(() => {
+  $do(() => {
     const { type, prev, value } = event;
 
     // Walk through the state tree to find the target object.
@@ -93,7 +93,7 @@ export function replay<T>(state: T, event: StateChange) {
  * @param event - The state change event to revert
  */
 export function rollback<T>(state: T, event: StateChange) {
-  untrack(() => {
+  $do(() => {
     const init = STATE_REGISTRY.get(state as Linkable) as Linkable;
     const { type, prev } = event;
     const { key, target } = getEventTarget(init, event);

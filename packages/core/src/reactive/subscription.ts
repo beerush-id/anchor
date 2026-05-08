@@ -22,20 +22,6 @@ function subscribeFn<T extends Linkable>(
   handler: StateSubscriber<T>,
   recursive?: boolean
 ): StateUnsubscribe {
-  if (!isReactive()) {
-    try {
-      handler(state, { type: 'init', keys: [] });
-    } catch (error) {
-      captureStack.error.external(
-        'Unable to execute the subscription handler function.',
-        error as Error,
-        subscribeFn,
-        subscribeFn.pipe
-      );
-    }
-
-    return () => {};
-  }
   const ctrl = CONTROLLER_REGISTRY.get(state);
 
   if (typeof ctrl?.subscribe !== 'function') {

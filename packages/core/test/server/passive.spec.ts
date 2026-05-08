@@ -137,7 +137,7 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
   });
 
   describe('Subscription Bypass', () => {
-    it('should not trigger subscribe handlers on state mutation', async () => {
+    it('should never bypass subscribe function', async () => {
       const state = anchor({ count: 0 });
       const handler = vi.fn();
 
@@ -153,7 +153,7 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
       await Promise.resolve();
 
       // Handler should not receive mutation events
-      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledTimes(3);
 
       unsubscribe();
     });

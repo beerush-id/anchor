@@ -1,4 +1,5 @@
 import { plugin } from '../extension/plugin.js';
+import { $do } from '../reactive/index.js';
 import { BATCH_MUTATION_KEYS } from '../shared/constant.js';
 import { type BatchMutations, OBSERVER_KEYS } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
@@ -103,7 +104,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
     },
     catch(error, event) {
       for (const handler of exceptionHandlers) {
-        handler({ ...event, error, issues: error.issues });
+        $do(() => handler({ ...event, error, issues: error.issues }));
       }
       return true;
     },
@@ -138,11 +139,11 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
 
         if (receiver) {
           if (receiver !== emitter) {
-            (subscriber as StateSubscriber<unknown>)(snapshot, event, emitter);
+            $do(() => (subscriber as StateSubscriber<unknown>)(snapshot, event, emitter));
           }
         } else {
           if (!event.error) {
-            (subscriber as StateSubscriber<unknown>)(snapshot, event);
+            $do(() => (subscriber as StateSubscriber<unknown>)(snapshot, event));
           }
         }
       }

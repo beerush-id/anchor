@@ -6,7 +6,7 @@ import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from '../types.js';
 import { softClone, softEqual } from '../utils/index.js';
-import { createObserver, getObserver, untrack } from './observation.js';
+import { $do, createObserver, getObserver } from './observation.js';
 
 /**
  * A mutable reference wrapper for primitive values that provides reactive capabilities.
@@ -426,7 +426,7 @@ function createRef<T>(fn: () => T, init: unknown) {
   const currentStack = getScope<RefStack>(STACK_SYMBOL);
   if (!currentStack || ANCHOR_SETTINGS.production) return fn();
 
-  return untrack(() => {
+  return $do(() => {
     let current = currentStack.states.get(currentStack.index);
 
     if (!softEqual(current?.init, init, true)) {
