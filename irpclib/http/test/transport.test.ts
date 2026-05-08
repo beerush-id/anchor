@@ -423,14 +423,15 @@ describe('HTTPTransport', () => {
       );
     });
 
-    it('should handle stream reading errors', async () => {
+    it('should handle stream reading errors and clean up unresolved calls', async () => {
       const transport = new HTTPTransport({
         baseURL: 'https://api.example.com',
       });
 
       // Mock calls
-      const call1 = { id: '1', reject: vi.fn() } as any;
-      const calls = [call1];
+      const call1 = { id: '1', payload: { name: 'test1' }, resolved: false, enqueue: vi.fn() } as any;
+      const call2 = { id: '2', payload: { name: 'test2' }, resolved: false, enqueue: vi.fn() } as any;
+      const calls = [call1, call2];
 
       // Create a mock response with a reader that throws an error
       const response = {
@@ -445,9 +446,79 @@ describe('HTTPTransport', () => {
 
       await transport['resolveAll'](calls, response as any);
 
-      // The call should not be rejected in this case as the error is caught and logged
-      // but we can verify the function doesn't crash
-      expect(true).toBe(true);
+      expect(errSpy).toHaveBeenCalled();
+
+      // Both unresolved calls should receive CLOSE/ERROR packets.
+      expect(call1.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Response stream terminated.' }),
+        })
+      );
+      expect(call2.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Response stream terminated.' }),
+        })
+      );
+    });
+
+    it('should only clean up unresolved calls on stream error, skipping already resolved ones', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+      });
+
+      const textEncoder = new TextEncoder();
+
+      // call1 will be resolved before the stream errors, call2 will not.
+      const call1 = { id: '1', payload: { name: 'test1' }, resolved: false, enqueue: vi.fn() } as any;
+      const call2 = { id: '2', payload: { name: 'test2' }, resolved: false, enqueue: vi.fn() } as any;
+
+      // Mark call1 as resolved after it receives its packet.
+      call1.enqueue.mockImplementation(() => {
+        call1.resolved = true;
+      });
+
+      let readCount = 0;
+      const response = {
+        ok: true,
+        body: {
+          getReader: () => ({
+            read: vi.fn().mockImplementation(() => {
+              readCount++;
+              if (readCount === 1) {
+                // Deliver a terminal packet for call1.
+                return Promise.resolve({
+                  done: false,
+                  value: textEncoder.encode(
+                    JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: 'ok', createdAt: 1 }) + '\n'
+                  ),
+                });
+              }
+              // Then stream errors.
+              return Promise.reject(new Error('Connection reset'));
+            }),
+            releaseLock: vi.fn(),
+          }),
+        },
+      };
+
+      await transport['resolveAll']([call1, call2], response as any);
+
+      // call1 received its packet (ANSWER) and was marked resolved.
+      expect(call1.enqueue).toHaveBeenCalledTimes(1);
+      expect(call1.enqueue).toHaveBeenCalledWith(expect.objectContaining({ id: '1', status: IRPC_STATUS.SUCCESS }));
+
+      // call2 was unresolved and should receive CLOSE/ERROR from the cleanup.
+      expect(call2.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Response stream terminated.' }),
+        })
+      );
     });
 
     it('should resolve calls with valid response data', async () => {
@@ -852,7 +923,7 @@ describe('HTTPTransport', () => {
       );
     });
 
-    it('should handle XHR onerror after headers (errors the stream controller)', async () => {
+    it('should handle XHR onerror after headers and clean up unresolved calls', async () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
 
       xhrInstance.send.mockImplementation(() => {
@@ -870,6 +941,7 @@ describe('HTTPTransport', () => {
         id: '1',
         payload: { name: 'test', args: [] },
         options: {},
+        resolved: false,
         enqueue: vi.fn(),
       } as any;
 
@@ -877,6 +949,15 @@ describe('HTTPTransport', () => {
 
       // resolveAll's catch should log the stream read error.
       expect(errSpy).toHaveBeenCalled();
+
+      // Unresolved call should receive CLOSE/ERROR from cleanup.
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Response stream terminated.' }),
+        })
+      );
     });
 
     it('should bridge AbortController signal to xhr.abort()', async () => {

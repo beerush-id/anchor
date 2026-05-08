@@ -232,7 +232,7 @@ export class HTTPTransport extends IRPCTransport {
       };
 
       xhr.onabort = () => {
-        ctrl.error(new Error('Aborted.'));
+        ctrl.close();
         init.signal?.removeEventListener('abort', abort);
       };
 
@@ -318,6 +318,20 @@ export class HTTPTransport extends IRPCTransport {
       }
     } catch (error) {
       console.error('Unable to read response stream:', error);
+
+      calls.forEach((call) => {
+        if (call.resolved) return;
+        this.abortControllers.delete(call);
+
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { code: ERROR_CODE.UNKNOWN, message: 'Response stream terminated.' },
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
+      });
     } finally {
       reader.releaseLock();
     }
