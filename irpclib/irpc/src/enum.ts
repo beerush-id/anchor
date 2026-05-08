@@ -20,6 +20,7 @@ export const IRPC_STATUS = {
   ERROR: 'error',
   PENDING: 'pending',
   SUCCESS: 'success',
+  ABORTED: 'aborted',
 } as const;
 
 export const IRPC_BASE_CONTEXT = {

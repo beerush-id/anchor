@@ -1,6 +1,8 @@
-import { onCleanup } from '@anchorlib/core';
+import { anchor, onCleanup, replay } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
+import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { IRPCReader } from './reader.js';
 import { RemoteState } from './state.js';
 import { IRPCTransport } from './transport.js';
 import type {
@@ -12,11 +14,14 @@ import type {
   IRPCOutput,
   IRPCPackageConfig,
   IRPCPackageInfo,
+  IRPCReadable,
   IRPCRequest,
   IRPCSpec,
   IRPCSpecStore,
+  IRPCStatus,
   IRPCStubStore,
 } from './types.js';
+import { uuid } from './uuid.js';
 
 const DEFAULT_TIMEOUT = 20000;
 const NAME_CONSTRAINT = /^[a-zA-Z0-9\-_]+$/;
@@ -121,6 +126,11 @@ export class IRPCPackage {
 
       const { timeout, maxRetries, retryDelay, retryMode, init, deferred = true } = { ...this.config, ...spec };
       const config = { timeout, maxRetries, retryDelay, retryMode, init, deferred } as IRPCCallConfig;
+
+      // Intercept deferred local call.
+      if (typeof spec.handler === 'function' && spec.stream && deferred) {
+        return intercept(spec, args, init);
+      }
 
       const call =
         typeof spec.handler === 'function'
@@ -276,4 +286,35 @@ export class IRPCPackage {
  */
 export function createPackage(config?: Partial<IRPCPackageConfig>): IRPCPackage {
   return new IRPCPackage(config);
+}
+
+export function intercept(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: unknown[], init?: () => unknown) {
+  const call = new IRPCReader(uuid(), init?.() as never);
+
+  call.start = () => {
+    const result = spec.handler(...args) as RemoteState<unknown>;
+    console.error('result', result.state);
+    anchor.assign(call.state as IRPCReadable<unknown>, result.state as IRPCReadable<unknown>);
+
+    const unsubscribe = result.subscribe((_, event) => {
+      if (event.type === 'init') return;
+
+      const [rootKey] = event.keys;
+      if (rootKey === 'status') {
+        call.status = event.value as IRPCStatus;
+
+        if (call.status === IRPC_STATUS.SUCCESS) {
+          unsubscribe();
+        }
+
+        return;
+      }
+
+      replay(call.state, event);
+    });
+
+    return call;
+  };
+
+  return call;
 }

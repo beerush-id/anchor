@@ -127,7 +127,9 @@ export class HTTPRouter {
       return buildResponse(JSON.stringify([]), { status: 400 });
     }
 
+    const encoder = new TextEncoder();
     const abortController = new AbortController();
+
     const readable = new ReadableStream({
       start: (controller) => {
         const promises = requests.map((req) => {
@@ -141,14 +143,15 @@ export class HTTPRouter {
 
             if (error) {
               if (abortController.signal.aborted) return;
-              controller.enqueue(`${JSON.stringify(error)}\n`);
+              controller.enqueue(encoder.encode(`${JSON.stringify(error)}\n`));
               return;
             }
 
             const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
 
             stream.pipe((packet) => {
-              controller.enqueue(`${JSON.stringify(packet)}\n`);
+              if (abortController.signal.aborted) return;
+              controller.enqueue(encoder.encode(`${JSON.stringify(packet)}\n`));
             });
 
             await new Promise<void>((resolve) => {
@@ -179,7 +182,13 @@ export class HTTPRouter {
       },
     });
 
-    return buildResponse(readable, { status: 200 });
+    return buildResponse(readable, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
   }
 
   /**

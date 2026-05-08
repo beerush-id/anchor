@@ -1,4 +1,4 @@
-import { AsyncStore, getContext, getContextStore, setAsyncScope, setContext, withIsolation } from '@anchorlib/core';
+import { AsyncStore, getContext, setAsyncScope, setContext, withIsolation } from '@anchorlib/core';
 import { IRPC_BASE_CONTEXT } from './enum.js';
 import type { IRPCContext, IRPCContextProvider } from './types.js';
 
@@ -31,7 +31,7 @@ export function withContext<R>(ctx: IRPCContext<string | symbol, unknown>, fn: (
  * @returns A new Map instance representing the context
  */
 export function createContext<K extends string | symbol, V>(init?: [K, V][]) {
-  return init ? new AsyncStore(init, getContextStore()) : new AsyncStore(getContextStore());
+  return new AsyncStore(init as [K, V][]);
 }
 
 export function getAbortSignal(): AbortSignal | undefined {

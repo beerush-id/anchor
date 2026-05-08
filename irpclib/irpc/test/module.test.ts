@@ -1,8 +1,8 @@
+import { createLifecycle } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { createPackage, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
-import { createLifecycle } from '@anchorlib/core';
 import { RemoteState } from '../src/state.js';
 
 describe('IRPCPackage', () => {
@@ -196,6 +196,7 @@ describe('IRPCPackage', () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
         init: () => '',
+        deferred: false,
       });
       rpc.construct(hello, (name) => new RemoteState<string>(`Hello ${name}`));
 
@@ -209,6 +210,7 @@ describe('IRPCPackage', () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
         init: () => 'Init',
+        deferred: false,
       });
       rpc.construct(hello, (_name) => new RemoteState<string>());
 
@@ -222,6 +224,7 @@ describe('IRPCPackage', () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'helloAutoCleanup',
         init: () => 'Init',
+        deferred: false,
       });
       rpc.construct(hello, (_name) => new RemoteState<string>());
 
@@ -233,11 +236,11 @@ describe('IRPCPackage', () => {
       });
 
       expect(result?.status).toBe(IRPC_STATUS.PENDING);
-      
+
       const closeSpy = vi.spyOn(result!, 'close');
-      
+
       lifecycle.destroy();
-      
+
       expect(closeSpy).toHaveBeenCalled();
     });
 
@@ -442,6 +445,64 @@ describe('IRPCPackage', () => {
           args: [],
         })
       ).rejects.toThrow('IRPC unimplemented does not have an implementation.');
+    });
+  });
+
+  describe('Deferred Local Stream (intercept)', () => {
+    it('should return a deferred IRPCReader when handler is a local stream with deferred=true', () => {
+      const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
+        name: 'helloDeferred',
+        init: () => ({ message: '' }),
+      });
+
+      rpc.construct(hello, (name) => {
+        const state = new RemoteState<{ message: string }>({ message: `Hello ${name}` });
+        setTimeout(() => state.accept(), 10);
+        return state;
+      });
+
+      // deferred=true is default, so calling the stub returns an IRPCReader (not the handler result).
+      const result = hello('World');
+
+      // The result should have the init() value, not the handler value (not started yet).
+      expect(result.data).toEqual({ message: '' });
+      expect(result.status).toBe(IRPC_STATUS.PENDING);
+      expect(typeof result.start).toBe('function');
+    });
+
+    it('should invoke handler and relay data mutations when start() is called', async () => {
+      const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
+        name: 'helloStart',
+        init: () => ({ message: '' }),
+      });
+
+      rpc.construct(hello, (name) => {
+        const state = new RemoteState<{ message: string }>({ message: `Hello ${name}` });
+
+        setTimeout(() => {
+          state.data.message = 'Updated';
+        }, 5);
+
+        setTimeout(() => {
+          state.accept();
+        }, 10);
+
+        return state;
+      });
+
+      const result = hello('World');
+      result.start();
+
+      // After start, the handler's initial data should be assigned.
+      expect(result.data.message).toBe('Hello World');
+
+      // Advance to trigger the data mutation.
+      vi.advanceTimersByTime(5);
+      expect(result.data.message).toBe('Updated');
+
+      // Advance to trigger accept (status -> SUCCESS), which unsubscribes.
+      vi.advanceTimersByTime(5);
+      expect(result.status).toBe(IRPC_STATUS.SUCCESS);
     });
   });
 });

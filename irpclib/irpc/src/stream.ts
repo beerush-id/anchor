@@ -123,9 +123,9 @@ export class IRPCStream<T extends IRPCData> {
               handler({
                 id,
                 name,
+                data: { type, keys, value },
                 type: IRPC_PACKET_TYPE.EVENT,
                 status: state.status,
-                data: { type, keys, value },
                 createdAt: Date.now(),
               } satisfies IRPCPacketEvent);
             });

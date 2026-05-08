@@ -216,5 +216,98 @@ describe('RemoteState', () => {
 
       vi.restoreAllMocks();
     });
+
+    it('should remove abort listener when resolved with active abortSignal', async () => {
+      const abortController = new AbortController();
+      vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
+
+      const activeStream = stream<string>((_state, resolve) => {
+        resolve('done');
+      }, 'init');
+
+      const result = await activeStream;
+      expect(result).toBe('done');
+      expect(activeStream.status).toBe(IRPC_STATUS.SUCCESS);
+
+      vi.restoreAllMocks();
+    });
+
+    it('should remove abort listener when rejected with active abortSignal', async () => {
+      const abortController = new AbortController();
+      vi.spyOn(Context, 'getAbortSignal').mockReturnValue(abortController.signal);
+
+      const activeStream = stream<string>((_state, _resolve, reject) => {
+        reject(new Error('fail'));
+      }, 'init');
+
+      await expect(activeStream).rejects.toThrow('fail');
+      expect(activeStream.status).toBe(IRPC_STATUS.ERROR);
+
+      vi.restoreAllMocks();
+    });
+  });
+
+  describe('closed state guards', () => {
+    it('should ignore data setter after accept', () => {
+      const state = new RemoteState('initial');
+      state.accept('final');
+      state.data = 'should-be-ignored';
+      expect(state.data).toBe('final');
+    });
+
+    it('should ignore error setter after accept', () => {
+      const state = new RemoteState('initial');
+      state.accept();
+      state.error = new Error('ignored');
+      expect(state.error).toBeUndefined();
+    });
+
+    it('should ignore status setter after accept', () => {
+      const state = new RemoteState('initial');
+      state.accept();
+      state.status = IRPC_STATUS.ERROR;
+      expect(state.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should ignore second accept call', async () => {
+      const state = new RemoteState('initial');
+      state.accept('first');
+      state.accept('second');
+      expect(await state).toBe('first');
+    });
+
+    it('should ignore second reject call', async () => {
+      const state = new RemoteState('initial');
+      state.reject(new Error('first'));
+      state.reject(new Error('second'));
+      await expect(state).rejects.toThrow('first');
+    });
+
+    it('should ignore close after already closed', () => {
+      const state = new RemoteState('initial');
+      const destroySpy = vi.spyOn(state as any, 'destroy');
+      state.close();
+      state.close();
+      expect(destroySpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should accept with implicit value (no args)', async () => {
+      const state = new RemoteState('current');
+      state.accept();
+      expect(await state).toBe('current');
+    });
+
+    it('should reject with implicit error (no args)', async () => {
+      const state = new RemoteState('current');
+      state.reject();
+      await expect(state).rejects.toThrow('Unknown Error');
+    });
+
+    it('should reject with the existing error message when no arg provided', async () => {
+      const state = new RemoteState('current');
+      state.error = new Error('Existing error');
+      state.reject();
+      await expect(state).rejects.toThrow('Existing error');
+    });
   });
 });

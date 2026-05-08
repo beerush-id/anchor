@@ -116,7 +116,7 @@ export class HTTPTransport extends IRPCTransport {
         }, maxTimeout) as never;
       }
 
-      const response = await fetch(this.url, {
+      const response = await this.request({
         ...this.config.fetchOptions,
         method: 'POST',
         headers: {
@@ -165,6 +165,78 @@ export class HTTPTransport extends IRPCTransport {
     }
   }
 
+  /**
+   * Sends an HTTP request. Uses XHR in browsers to work around Chromium/WebKit
+   * buffering fetch() POST streaming responses after page load.
+   * Falls back to fetch() in non-browser environments (Workers, Deno).
+   */
+  private request(init: RequestInit): Promise<Response> {
+    if (typeof XMLHttpRequest === 'undefined') {
+      return fetch(this.url, init);
+    }
+
+    return new Promise<Response>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(init.method || 'POST', this.url.toString());
+
+      if (init.headers) {
+        const headers = new Headers(init.headers as Record<string, string>);
+        headers.forEach((v, k) => xhr.setRequestHeader(k, v));
+      }
+
+      if (init.signal) {
+        init.signal.addEventListener('abort', () => xhr.abort());
+      }
+
+      let lastIndex = 0;
+      let ctrl: ReadableStreamDefaultController;
+
+      const body = new ReadableStream({
+        start(c) {
+          ctrl = c;
+        },
+      });
+
+      xhr.onprogress = () => {
+        const chunk = xhr.responseText.substring(lastIndex);
+        lastIndex = xhr.responseText.length;
+        if (chunk) ctrl.enqueue(chunk);
+      };
+
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+          const raw = xhr.getAllResponseHeaders().trim();
+          const headers = new Headers();
+          for (const line of raw.split('\r\n')) {
+            const i = line.indexOf(': ');
+            if (i > 0) headers.append(line.substring(0, i), line.substring(i + 2));
+          }
+          resolve(new Response(body, { status: xhr.status, statusText: xhr.statusText, headers }));
+        }
+      };
+
+      xhr.onload = () => {
+        const chunk = xhr.responseText.substring(lastIndex);
+        if (chunk) ctrl.enqueue(chunk);
+        ctrl.close();
+      };
+
+      xhr.onerror = () => {
+        const err = new Error('Request failed.');
+        try {
+          ctrl.error(err);
+        } catch {}
+        reject(err);
+      };
+      xhr.onabort = () => {
+        try {
+          ctrl.close();
+        } catch {}
+      };
+      xhr.send(init.body as FormData);
+    });
+  }
+
   public close(call: IRPCCall) {
     this.abortControllers.get(call)?.abort();
     this.abortControllers.delete(call);
@@ -203,7 +275,7 @@ export class HTTPTransport extends IRPCTransport {
         const { done, value } = await reader.read();
 
         if (value) {
-          buffer += decoder.decode(value, { stream: true });
+          buffer += typeof value === 'string' ? value : decoder.decode(value, { stream: true });
           const parts = buffer.split('\n');
 
           buffer = parts.pop() || '';

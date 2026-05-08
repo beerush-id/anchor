@@ -1,6 +1,7 @@
-import { anchor, mutable, type StateSubscriber, subscribe } from '@anchorlib/core';
+import { $do, anchor, mutable, type StateSubscriber, subscribe } from '@anchorlib/core';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
+import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import type { IRPCReadable, IRPCStatus, StreamConstructor } from './types.js';
 
 /**
@@ -13,28 +14,36 @@ import type { IRPCReadable, IRPCStatus, StreamConstructor } from './types.js';
  * @template T - The type of data held by the state.
  */
 export class RemoteState<T> extends Promise<T> {
-  protected readonly state: IRPCReadable<T>;
-  protected readonly accept: (value: T) => void;
-  protected readonly reject: (error: Error) => void;
+  readonly #state: IRPCReadable<T>;
+  readonly #accept: (value: T) => void;
+  readonly #reject: (error: Error) => void;
+
+  #closed = false;
+
+  public get state(): IRPCReadable<T> {
+    return this.#state;
+  }
 
   /**
    * The current data payload of the state.
    */
   public get data(): T {
-    return this.state.data;
+    return this.#state.data;
   }
   public set data(data: T) {
-    this.state.data = data;
+    if (this.#closed) return;
+    this.#state.data = data;
   }
 
   /**
    * The current error encountered by the state, if any.
    */
   public get error(): Error | undefined {
-    return this.state.error;
+    return this.#state.error;
   }
   public set error(error: Error | undefined) {
-    this.state.error = error;
+    if (this.#closed) return;
+    this.#state.error = error;
   }
 
   /**
@@ -42,17 +51,17 @@ export class RemoteState<T> extends Promise<T> {
    * Transitioning to a terminal status (SUCCESS or ERROR) will automatically resolve or reject the underlying Promise.
    */
   public get status(): IRPCStatus {
-    return this.state.status;
+    return this.#state.status;
   }
   public set status(status: IRPCStatus) {
+    if (this.#closed) return;
+
     this.state.status = status;
 
-    if (this.status === IRPC_STATUS.ERROR) {
-      this.reject(new Error(this.error!.message));
-      this.destroy();
-    } else if (this.status === IRPC_STATUS.SUCCESS) {
-      this.accept(this.data as T);
-      this.destroy();
+    if (status === IRPC_STATUS.ERROR) {
+      this.reject();
+    } else if (status === IRPC_STATUS.SUCCESS) {
+      this.accept();
     }
   }
 
@@ -70,13 +79,58 @@ export class RemoteState<T> extends Promise<T> {
       rejectFn = reject;
     });
 
-    this.accept = acceptFn!;
-    this.reject = rejectFn!;
+    this.#accept = acceptFn!;
+    this.#reject = rejectFn!;
 
-    this.state = mutable({
+    this.#state = mutable({
       data: init as T,
       error: undefined,
       status: IRPC_STATUS.PENDING,
+    });
+  }
+
+  public accept(value?: T): void;
+  public accept(...args: [T]) {
+    $do(() => {
+      if (this.#closed) return;
+
+      const value = args.length ? args[0] : this.data;
+
+      this.#closed = true;
+      this.#state.status = IRPC_STATUS.SUCCESS;
+      this.#state.data = value;
+      this.#accept(value);
+      this.destroy();
+    });
+  }
+
+  public reject(error?: Error): void;
+  public reject(...args: [Error]) {
+    $do(() => {
+      if (this.#closed) return;
+
+      const error = args.length ? args[0] : new Error(this.error?.message ?? 'Unknown Error');
+
+      if (args.length) {
+        this.#state.error = {
+          name: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
+          message: error.message,
+        };
+      }
+
+      this.#closed = true;
+      this.#state.status = IRPC_STATUS.ERROR;
+      this.#reject(error);
+      this.destroy();
+    });
+  }
+
+  public abort() {
+    $do(() => {
+      this.#closed = true;
+      this.#state.status = IRPC_STATUS.ABORTED;
+      this.#accept(this.data);
+      this.destroy();
     });
   }
 
@@ -94,6 +148,8 @@ export class RemoteState<T> extends Promise<T> {
    * Closes the reactive state and terminates the underlying Promise.
    */
   public close() {
+    if (this.#closed) return;
+    this.#closed = true;
     this.destroy();
   }
 
@@ -142,12 +198,17 @@ export function stream<T>(construct: StreamConstructor<T>, init?: T) {
     }
 
     state.status = IRPC_STATUS.SUCCESS;
+    abortSignal?.removeEventListener('abort', abort);
   }) as (value?: T) => void;
 
   const reject = (error: Error) => {
     state.error = error;
     state.status = IRPC_STATUS.ERROR;
+    abortSignal?.removeEventListener('abort', abort);
   };
+  const abort = () => state.abort();
+
+  abortSignal?.addEventListener('abort', abort, { once: true });
 
   try {
     const cleanup = construct(state, accept, reject);
@@ -157,9 +218,9 @@ export function stream<T>(construct: StreamConstructor<T>, init?: T) {
         .then((futureCleanup) => {
           if (typeof futureCleanup === 'function') {
             if (abortSignal?.aborted || state.status !== IRPC_STATUS.PENDING) {
-              futureCleanup();
+              $do(futureCleanup);
             } else {
-              abortSignal?.addEventListener('abort', futureCleanup, { once: true });
+              abortSignal?.addEventListener('abort', () => $do(futureCleanup), { once: true });
             }
           }
         })
@@ -167,9 +228,9 @@ export function stream<T>(construct: StreamConstructor<T>, init?: T) {
     } else {
       if (typeof cleanup === 'function') {
         if (abortSignal?.aborted || state.status !== IRPC_STATUS.PENDING) {
-          cleanup();
+          $do(cleanup);
         } else {
-          abortSignal?.addEventListener('abort', cleanup, { once: true });
+          abortSignal?.addEventListener('abort', () => $do(cleanup), { once: true });
         }
       }
     }
