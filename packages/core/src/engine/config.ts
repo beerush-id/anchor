@@ -2,6 +2,7 @@ import { ANCHOR_SETTINGS, LINKABLE } from '../shared/constant.js';
 import type { Linkables } from '../shared/enum.js';
 import type { Linkable } from '../types.js';
 import { typeOf } from '../utils/index.js';
+import { restoreSwitch, suspendSwitch } from './switchable.js';
 
 /**
  * Checks if a given value is linkable.
@@ -22,4 +23,10 @@ export function isReactive() {
 
 export function setReactive(reactive: boolean) {
   ANCHOR_SETTINGS.reactive = reactive;
+
+  if (reactive) {
+    restoreSwitch();
+  } else {
+    suspendSwitch();
+  }
 }

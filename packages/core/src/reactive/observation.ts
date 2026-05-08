@@ -1,7 +1,8 @@
 import { isReactive } from '../engine/config.js';
+import { OBSERVER_SYMBOL, switchable } from '../engine/index.js';
 import { META_REGISTRY } from '../engine/registry.js';
 import { plugin } from '../extension/plugin.js';
-import { asyncStoreContract, getScope, storeContract } from '../scope/context.js';
+import { asyncStoreContract, storeContract } from '../scope/context.js';
 import { onCleanup } from '../scope/index.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
@@ -19,8 +20,6 @@ import type {
   StateUnsubscribe,
 } from '../types.js';
 import { isBrowser, isFunction, shortId } from '../utils/index.js';
-
-const OBSERVER_SYMBOL = Symbol('state-observer');
 
 /**
  * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.
@@ -77,9 +76,11 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
  * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.
  * The effect function will be executed immediately and then again whenever any tracked state changes.
  *
- * @param {AsyncEffectHandler<T>} fn
- * @param {string} displayName
- * @returns {StateUnsubscribe}
+ * @param fn - The effect function to execute. It receives a StateChange event object containing
+ *             information about what triggered the effect (init, set, delete, etc.) and which keys changed.
+ * @param displayName - Optional effect name for debugging.
+ * @returns A cleanup function that can be called to manually dispose of the effect and unsubscribe
+ *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
  */
 function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): StateUnsubscribe {
   const handleError = (error: Error) => {
@@ -159,13 +160,9 @@ export const effect = effectFn as Effect;
  *
  * @param fn - The function to execute outside of observer context
  */
-export const untrack = storeContract(OBSERVER_SYMBOL, undefined, undefined, undefined, (fn) => {
-  try {
-    return fn();
-  } catch (error) {
-    captureStack.error.external('Unable to execute the outside of observer function', error as Error);
-  }
-});
+export function untrack<T>(fn: () => T): T {
+  return switchable.untrack(fn) as T;
+}
 
 /**
  * Executes a function outside any observer context.
@@ -184,7 +181,7 @@ export const $do = untrack;
  * @warning This is a low-level API designed for library authors or advanced use cases.
  */
 export function getObserver(): StateObserver | undefined {
-  return getScope(OBSERVER_SYMBOL);
+  return switchable.getObserver();
 }
 
 /**

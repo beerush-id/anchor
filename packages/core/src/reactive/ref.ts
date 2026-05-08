@@ -1,12 +1,13 @@
 import { anchor } from '../engine/anchor.js';
 import { linkable } from '../engine/config.js';
+import { switchable } from '../engine/index.js';
 import { getScope } from '../scope/context.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from '../types.js';
 import { softClone, softEqual } from '../utils/index.js';
-import { $do, createObserver, getObserver } from './observation.js';
+import { $do, createObserver } from './observation.js';
 
 /**
  * A mutable reference wrapper for primitive values that provides reactive capabilities.
@@ -441,7 +442,7 @@ function createRef<T>(fn: () => T, init: unknown) {
 }
 
 let stabilityDetector = (stacks: Array<Function> = []) => {
-  if (getObserver()) {
+  if (switchable.getObserver()) {
     const error = new Error('State created in an unstable boundary.');
     captureStack.violation.general(
       'Unstable state declaration detected.',

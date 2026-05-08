@@ -107,16 +107,9 @@ export function asyncStoreContract<T>(
  * @param value - The value to set in the async context.
  * @param onstart - Optional callback that fires before the contract is entered.
  * @param onfinally - Optional callback that fires after the contract is exited.
- * @param runner
  * @returns StoreContract
  */
-export function storeContract<T>(
-  key: AsyncKey,
-  value: T,
-  onstart?: () => void,
-  onfinally?: () => void,
-  runner?: <R>(fn: () => R) => R | undefined
-): StoreContract {
+export function storeContract<T>(key: AsyncKey, value: T, onstart?: () => void, onfinally?: () => void): StoreContract {
   return function contract<R>(fn: () => R): R {
     onstart?.();
 
@@ -124,7 +117,7 @@ export function storeContract<T>(
     setScope(key, value);
 
     try {
-      return typeof runner === 'function' ? (runner(fn) as R) : fn();
+      return fn();
     } finally {
       setScope(key, current);
       onfinally?.();

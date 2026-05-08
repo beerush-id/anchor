@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { $do, anchor, createObserver, effect, getTracker, mutable, setTracker, untrack } from '../../src/index.js';
+import {
+  $do,
+  anchor,
+  createObserver,
+  effect,
+  getObserver,
+  getTracker,
+  mutable,
+  setTracker,
+  untrack,
+} from '../../src/index.js';
 
 describe('Anchor Core - Observable Observer Management', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -34,6 +44,7 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       expect(state.count).toBe(1);
       expect(tracker).toHaveBeenCalledTimes(1);
+      expect(getObserver()).toBeUndefined();
 
       setTracker(tracker);
 

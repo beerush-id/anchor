@@ -7,4 +7,5 @@ export * from './factory.js';
 export * from './helper.js';
 export * from './proxy.js';
 export * from './registry.js';
+export { OBSERVER_SYMBOL, switchable } from './switchable.js';
 export * from './trap.js';

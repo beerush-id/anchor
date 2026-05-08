@@ -1,5 +1,4 @@
 import { plugin } from '../extension/index.js';
-import { getObserver } from '../reactive/index.js';
 import { ObjectMutations, OBSERVER_KEYS } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
 import type {
@@ -32,6 +31,7 @@ import {
   STATE_BUSY_LIST,
   STATE_REGISTRY,
 } from './registry.js';
+import { switchable } from './switchable.js';
 
 /**
  * Creates a getter trap function for a reactive state object.
@@ -69,7 +69,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
   }
 
   const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
-    const observer = getObserver();
+    const observer = switchable.getObserver();
 
     if (configs.observable) {
       plugin.track?.(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
