@@ -1,15 +1,20 @@
-import { getAbortSignal } from './context.js';
+import { getAbortController, getAbortSignal } from './context.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE } from './error.js';
+import type { IRPCRouter } from './router.js';
 import { RemoteState } from './state.js';
+import { IRPC_STORE } from './store.js';
 import type {
   IRPCData,
+  IRPCDataSchema,
   IRPCError,
+  IRPCInputs,
   IRPCPacketAnswer,
   IRPCPacketClose,
   IRPCPacketEvent,
   IRPCPacketStream,
   IRPCResponse,
+  IRPCSpec,
   IRPCStatus,
 } from './types.js';
 
@@ -31,18 +36,29 @@ export class IRPCStream<T extends IRPCData> {
   public status: IRPCStatus = IRPC_STATUS.IDLE;
   public closed = false;
 
+  public createdAt = Date.now();
+  public startedAt?: number;
+  public updatedAt?: number;
+  public controller?: AbortController;
+
   /**
    * Initializes a stream wrapping an asynchronous RPC execution.
    *
    * @param id - The unique identifier of the RPC request.
    * @param name - The name of the specification processing the execution.
    * @param initializer - An execution callback that yields an IRPCResponse.
+   * @param spec - The specification for the RPC execution.
+   * @param router - The router instance managing the stream.
    */
   constructor(
     private id: string,
     private name: string,
-    private initializer: () => Promise<IRPCResponse>
-  ) {}
+    private initializer: () => Promise<IRPCResponse>,
+    public spec?: IRPCSpec<IRPCInputs, IRPCDataSchema>,
+    public router?: IRPCRouter
+  ) {
+    IRPC_STORE.queue(this);
+  }
 
   /**
    * Evaluates the underlying initializer and propagates standard transport packets
@@ -50,6 +66,9 @@ export class IRPCStream<T extends IRPCData> {
    */
   private async start() {
     if (this.status !== IRPC_STATUS.IDLE || this.closed) return;
+
+    this.startedAt = Date.now();
+    this.controller = getAbortController();
 
     const abortSignal = getAbortSignal();
 
@@ -274,5 +293,8 @@ export class IRPCStream<T extends IRPCData> {
     this.pipeHandlers.clear();
     this.errorHandlers.clear();
     this.closeHandlers.clear();
+    this.updatedAt = Date.now();
+
+    IRPC_STORE.dequeue(this);
   }
 }

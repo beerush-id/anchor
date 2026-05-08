@@ -23,7 +23,15 @@ export const IRPC_STATUS = {
   ABORTED: 'aborted',
 } as const;
 
+export const IRPC_STORE_EVENT = {
+  ROUTE: 'route',
+  QUEUE: 'queue',
+  DEQUEUE: 'dequeue',
+  REGISTER: 'register',
+} as const;
+
 export const IRPC_BASE_CONTEXT = {
+  ABORT_SIGNAL: Symbol('abort-signal'),
   ABORT_CONTROLLER: Symbol('abort-controller'),
 } as const;
 

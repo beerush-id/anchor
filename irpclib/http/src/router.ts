@@ -1,17 +1,14 @@
 import {
   createContext,
   decode,
-  ERROR_CODE,
-  ERROR_MESSAGE,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
-  IRPC_PACKET_TYPE,
-  IRPC_STATUS,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
+  IRPCRouter,
   IRPCStream,
   withContext,
 } from '@irpclib/irpc';
@@ -39,11 +36,6 @@ export type HTTPResolveConfig = {
 };
 
 /**
- * Middleware function that can process HTTP requests
- */
-export type HTTPMiddleware = () => void | Promise<void>;
-
-/**
  * Custom response builder to override default response creation
  */
 export type HTTPResponseBuilder = (body: BodyInit, init: ResponseInit) => Response | Promise<Response>;
@@ -51,11 +43,9 @@ export type HTTPResponseBuilder = (body: BodyInit, init: ResponseInit) => Respon
 /**
  * HTTP router that handles IRPC requests over HTTP transport
  */
-export class HTTPRouter {
+export class HTTPRouter extends IRPCRouter {
   /** Configuration for the HTTP resolver */
   public config: HTTPResolveConfig;
-  /** Array of middleware functions to be executed */
-  public middlewares: HTTPMiddleware[] = [];
 
   /**
    * Creates a new HTTPResolver instance
@@ -68,21 +58,12 @@ export class HTTPRouter {
     public transport: HTTPTransport,
     config: Partial<HTTPResolveConfig> = {}
   ) {
+    super(module, transport);
     this.config = {
       endpoint: transport.endpoint,
       resolver: defaultResolver,
       ...config,
     };
-  }
-
-  /**
-   * Adds a middleware function to the resolver
-   * @param middleware - The middleware function to add
-   * @returns The current HTTPResolver instance for chaining
-   */
-  public use(middleware: HTTPMiddleware) {
-    this.middlewares.push(middleware);
-    return this;
   }
 
   /**
@@ -132,14 +113,15 @@ export class HTTPRouter {
 
     const readable = new ReadableStream({
       start: (controller) => {
-        const promises = requests.map((req) => {
+        const promises = requests.map((resolver) => {
           const ctx = createContext<string | symbol, unknown>([
-            [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
+            [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
+            [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
             ...initContext,
           ]);
 
           return withContext(ctx, async () => {
-            const error = await this.resolveMiddleware(req.req);
+            const error = await this.resolveMiddleware(resolver.req);
 
             if (error) {
               if (abortController.signal.aborted) return;
@@ -147,7 +129,13 @@ export class HTTPRouter {
               return;
             }
 
-            const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
+            const stream = new IRPCStream(
+              resolver.req.id,
+              resolver.req.name,
+              () => resolver.resolve(),
+              resolver.spec,
+              this
+            );
 
             stream.pipe((packet) => {
               controller.enqueue(encoder.encode(`${JSON.stringify(packet)}\n`));
@@ -156,11 +144,11 @@ export class HTTPRouter {
             await new Promise<void>((resolve) => {
               let abortTimer: ReturnType<typeof setTimeout>;
 
-              if (req.spec?.ttl) {
+              if (resolver.spec?.ttl) {
                 abortTimer = setTimeout(() => {
                   abortController.abort();
                   resolve();
-                }, req.spec.ttl);
+                }, resolver.spec.ttl);
               }
 
               stream.close(() => {
@@ -188,32 +176,5 @@ export class HTTPRouter {
         'Transfer-Encoding': 'chunked',
       },
     });
-  }
-
-  /**
-   * Resolves middleware functions for a given request
-   * @param req - The IRPC request to process middleware for
-   * @returns An error response if middleware fails, undefined otherwise
-   */
-  protected async resolveMiddleware(req: IRPCRequest) {
-    for (const middleware of this.middlewares) {
-      try {
-        await middleware();
-      } catch (error) {
-        console.error(error);
-
-        return {
-          id: req.id,
-          name: req.name,
-          type: IRPC_PACKET_TYPE.CLOSE,
-          status: IRPC_STATUS.ERROR,
-          error: {
-            code: ERROR_CODE.UNKNOWN,
-            message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
-          },
-          createdAt: Date.now(),
-        };
-      }
-    }
   }
 }

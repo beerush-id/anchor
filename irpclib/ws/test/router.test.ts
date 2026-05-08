@@ -79,7 +79,7 @@ describe('WebSocketRouter', () => {
       const ws = { readyState: 1, send: vi.fn() } as any;
       await router.resolve(JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]), ws);
 
-      expect(errSpy).not.toHaveBeenCalled();
+      expect(errSpy).toHaveBeenCalled();
     });
   });
 

@@ -4,6 +4,7 @@ import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCReader } from './reader.js';
 import { RemoteState } from './state.js';
+import { IRPC_STORE } from './store.js';
 import { IRPCTransport } from './transport.js';
 import type {
   IRPCCallConfig,
@@ -86,6 +87,7 @@ export class IRPCPackage {
    */
   constructor(config?: Partial<IRPCPackageConfig>) {
     this.configure(config ?? {});
+    IRPC_STORE.register(this);
   }
 
   /**

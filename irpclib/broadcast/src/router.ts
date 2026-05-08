@@ -1,17 +1,14 @@
 import {
   createContext,
   decode,
-  ERROR_CODE,
-  ERROR_MESSAGE,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
-  IRPC_PACKET_TYPE,
-  IRPC_STATUS,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
+  IRPCRouter,
   IRPCStream,
   withContext,
 } from '@irpclib/irpc';
@@ -46,11 +43,9 @@ export type BroadcastMiddleware = () => void | Promise<void>;
 /**
  * BroadcastChannel router that handles IRPC requests over BroadcastChannel transport
  */
-export class BroadcastRouter {
+export class BroadcastRouter extends IRPCRouter {
   /** Configuration for BroadcastChannel resolver */
   public config: BroadcastResolveConfig;
-  /** Array of middleware functions to be executed */
-  public middlewares: BroadcastMiddleware[] = [];
   /** BroadcastChannel instance for listening to requests */
   private channel?: BroadcastChannel;
   /** AbortControllers for active stream requests */
@@ -75,6 +70,7 @@ export class BroadcastRouter {
     public transport: BroadcastTransport,
     config: Partial<BroadcastResolveConfig> = {}
   ) {
+    super(module, transport);
     this.config = {
       endpoint: transport.endpoint,
       resolver: defaultResolver,
@@ -118,16 +114,6 @@ export class BroadcastRouter {
   }
 
   /**
-   * Adds a middleware function to the router
-   * @param middleware - The middleware function to add
-   * @returns The current BroadcastRouter instance for chaining
-   */
-  public use(middleware: BroadcastMiddleware) {
-    this.middlewares.push(middleware);
-    return this;
-  }
-
-  /**
    * Resolves incoming BroadcastChannel messages
    * @param requests - The incoming IRPC requests
    * @param initContext - Optional initial context entries to inject
@@ -138,32 +124,35 @@ export class BroadcastRouter {
       return;
     }
 
-    const resolvers = (requests as (IRPCRequest & { files?: IRPCFilePointer[]; blobs?: Record<string, Blob> })[]).map((req) => {
-      if (req.files?.length) {
-        const stream = decode({ data: req.args as IRPCData, files: req.files });
+    const resolvers = (requests as (IRPCRequest & { files?: IRPCFilePointer[]; blobs?: Record<string, Blob> })[]).map(
+      (req) => {
+        if (req.files?.length) {
+          const stream = decode({ data: req.args as IRPCData, files: req.files });
 
-        for (const [id, file] of stream.files) {
-          const blob = req.blobs?.[id];
+          for (const [id, file] of stream.files) {
+            const blob = req.blobs?.[id];
 
-          if (blob) {
-            file.data = blob;
-            file.status = IRPC_FILE_STATUS.SUCCESS;
+            if (blob) {
+              file.data = blob;
+              file.status = IRPC_FILE_STATUS.SUCCESS;
+            }
           }
+
+          req.args = stream.data as unknown[];
+          delete req.files;
+          delete req.blobs;
         }
 
-        req.args = stream.data as unknown[];
-        delete req.files;
-        delete req.blobs;
+        return this.config.resolver(req, this.module);
       }
-
-      return this.config.resolver(req, this.module);
-    });
+    );
 
     await Promise.all(
       resolvers.map((resolver) => {
         const abortController = new AbortController();
         const ctx = createContext<string | symbol, unknown>([
-          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
+          [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
+          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
           ...initContext,
         ]);
 
@@ -180,7 +169,13 @@ export class BroadcastRouter {
             return;
           }
 
-          const stream = new IRPCStream(resolver.req.id, resolver.req.name, () => resolver.resolve());
+          const stream = new IRPCStream(
+            resolver.req.id,
+            resolver.req.name,
+            () => resolver.resolve(),
+            resolver.spec,
+            this
+          );
 
           stream.pipe((packet) => {
             if (this.channel) {
@@ -215,35 +210,6 @@ export class BroadcastRouter {
   public disconnect() {
     this.abortControllers.forEach((controller) => controller.abort());
     this.abortControllers.clear();
-  }
-
-  /**
-   * Resolves middleware functions for a given request
-   * @param req - The IRPC request to process middleware for
-   * @returns An error response if middleware fails, undefined otherwise
-   */
-  protected async resolveMiddleware(req: IRPCRequest) {
-    for (const middleware of this.middlewares) {
-      if (typeof middleware === 'function') {
-        try {
-          await middleware();
-        } catch (error) {
-          console.error(error);
-
-          return {
-            id: req.id,
-            name: req.name,
-            type: IRPC_PACKET_TYPE.CLOSE,
-            status: IRPC_STATUS.ERROR,
-            error: {
-              code: ERROR_CODE.UNKNOWN,
-              message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
-            },
-            createdAt: Date.now(),
-          };
-        }
-      }
-    }
   }
 
   /**

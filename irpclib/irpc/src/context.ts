@@ -35,5 +35,9 @@ export function createContext<K extends string | symbol, V>(init?: [K, V][]) {
 }
 
 export function getAbortSignal(): AbortSignal | undefined {
+  return getContext(IRPC_BASE_CONTEXT.ABORT_SIGNAL);
+}
+
+export function getAbortController(): AbortController | undefined {
   return getContext(IRPC_BASE_CONTEXT.ABORT_CONTROLLER);
 }

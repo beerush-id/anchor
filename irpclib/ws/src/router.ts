@@ -1,17 +1,14 @@
 import {
   createContext,
   decode,
-  ERROR_CODE,
-  ERROR_MESSAGE,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
-  IRPC_PACKET_TYPE,
-  IRPC_STATUS,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
   type IRPCRequest,
   IRPCResolver,
+  IRPCRouter,
   IRPCStream,
   withContext,
 } from '@irpclib/irpc';
@@ -39,18 +36,11 @@ export type WebSocketResolveConfig = {
 };
 
 /**
- * Middleware function that can process WebSocket messages
- */
-export type WebSocketMiddleware = () => void | Promise<void>;
-
-/**
  * WebSocket router that handles IRPC requests over WebSocket transport
  */
-export class WebSocketRouter {
+export class WebSocketRouter extends IRPCRouter {
   /** Configuration for WebSocket resolver */
   public config: WebSocketResolveConfig;
-  /** Array of middleware functions to be executed */
-  public middlewares: WebSocketMiddleware[] = [];
   /** AbortControllers for active stream requests */
   private abortControllers = new Map<string, AbortController>();
   /** Buffered binary data waiting for JSON requests, keyed by file pointer ID */
@@ -75,22 +65,13 @@ export class WebSocketRouter {
     public transport: WebSocketTransport,
     config: Partial<WebSocketResolveConfig> = {}
   ) {
+    super(module, transport);
     this.config = {
       endpoint: transport.endpoint,
       resolver: defaultResolver,
       fileBufferTTL: FILE_BUFFER_TTL,
       ...config,
     };
-  }
-
-  /**
-   * Adds a middleware function to the router
-   * @param middleware - The middleware function to add
-   * @returns The current WebSocketRouter instance for chaining
-   */
-  public use(middleware: WebSocketMiddleware) {
-    this.middlewares.push(middleware);
-    return this;
   }
 
   /**
@@ -150,27 +131,34 @@ export class WebSocketRouter {
     });
 
     await Promise.all(
-      requests.map((req) => {
+      requests.map((resolver) => {
         const abortController = new AbortController();
         const ctx = createContext<string | symbol, unknown>([
-          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController.signal],
+          [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
+          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
           ...initContext,
         ]);
 
-        this.abortControllers.set(req.req.id, abortController);
+        this.abortControllers.set(resolver.req.id, abortController);
 
         return withContext(ctx, async () => {
-          const error = await this.resolveMiddleware(req.req);
+          const error = await this.resolveMiddleware(resolver.req);
 
           if (error) {
-            this.abortControllers.delete(req.req.id);
+            this.abortControllers.delete(resolver.req.id);
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify(error));
             }
             return;
           }
 
-          const stream = new IRPCStream(req.req.id, req.req.name, () => req.resolve());
+          const stream = new IRPCStream(
+            resolver.req.id,
+            resolver.req.name,
+            () => resolver.resolve(),
+            resolver.spec,
+            this
+          );
 
           stream.pipe((packet) => {
             if (ws.readyState === WebSocket.OPEN) {
@@ -180,16 +168,16 @@ export class WebSocketRouter {
 
           let ttlTimer: ReturnType<typeof setTimeout>;
 
-          if (req.spec?.ttl) {
+          if (resolver.spec?.ttl) {
             ttlTimer = setTimeout(() => {
               abortController.abort();
-            }, req.spec.ttl);
+            }, resolver.spec.ttl);
           }
 
           await new Promise<void>((resolve) => {
             stream.close(() => {
               clearTimeout(ttlTimer);
-              this.abortControllers.delete(req.req.id);
+              this.abortControllers.delete(resolver.req.id);
               resolve();
             });
           });
@@ -206,35 +194,6 @@ export class WebSocketRouter {
     this.abortControllers.forEach((controller) => controller.abort());
     this.abortControllers.clear();
     this.fileBuffer.clear();
-  }
-
-  /**
-   * Resolves middleware functions for a given request
-   * @param req - The IRPC request to process middleware for
-   * @returns An error response if middleware fails, undefined otherwise
-   */
-  protected async resolveMiddleware(req: IRPCRequest) {
-    for (const middleware of this.middlewares) {
-      if (typeof middleware === 'function') {
-        try {
-          await middleware();
-        } catch (error) {
-          console.error(error);
-
-          return {
-            id: req.id,
-            name: req.name,
-            type: IRPC_PACKET_TYPE.CLOSE,
-            status: IRPC_STATUS.ERROR,
-            error: {
-              code: ERROR_CODE.UNKNOWN,
-              message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
-            },
-            createdAt: Date.now(),
-          };
-        }
-      }
-    }
   }
 
   /**

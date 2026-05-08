@@ -87,7 +87,7 @@ describe('BroadcastRouter', () => {
 
       await router.resolve([{ id: '1', name: 'testFunc', args: [] }]);
 
-      expect(errSpy).not.toHaveBeenCalled();
+      expect(errSpy).toHaveBeenCalled();
     });
   });
 
