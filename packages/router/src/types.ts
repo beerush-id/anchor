@@ -180,7 +180,6 @@ export type RouteState = {
   authenticating: boolean;
 
   error?: RouteError;
-  renderer?: RouteInternalRenderer<unknown>;
 };
 
 /** A route path string */
@@ -279,17 +278,29 @@ export type RouterStorage = {
 export type PreloadMode = (typeof PRELOAD_MODE)[keyof typeof PRELOAD_MODE];
 export type RenderMode = (typeof RENDER_MODE)[keyof typeof RENDER_MODE];
 
-export type RouteInternalRenderer<TOutput> = (props: { children?: TOutput }) => TOutput;
+export type RouteRenderProps<Params, QueryParams, Data> = {
+  state: ContextReader<Params, QueryParams, Data>;
+  context: RouterContext<Params, QueryParams, Data>;
+};
 
-export type RouteRendererFn<Params, QueryParams, Data, Output> = (
-  state: ContextReader<Params, QueryParams, Data>,
-  context: RouterContext<Params, QueryParams, Data>,
-  children?: Output
-) => Output;
+export type RouteLayoutRenderer<Params, QueryParams, Data, Output> = (props: {
+  state: ContextReader<Params, QueryParams, Data>;
+  context: RouterContext<Params, QueryParams, Data>;
+  children: Output;
+}) => Output;
+export type RoutePageRenderer<Params, QueryParams, Data, Output> = (props: {
+  state: ContextReader<Params, QueryParams, Data>;
+  context: RouterContext<Params, QueryParams, Data>;
+}) => Output;
+export type RouteRenderer<Path, Params, QueryParams, Data, Output> = Path extends '/'
+  ? RoutePageRenderer<Params, QueryParams, Data, Output>
+  : RouteLayoutRenderer<Params, QueryParams, Data, Output>;
 
-export type RouteExceptionRendererFn<Params, QueryParams, Data, Output> = (
-  context: RouterContext<Params, QueryParams, Data>
-) => Output;
+export type RouteExceptionRenderer<Params, QueryParams, Data, Output> = (props: {
+  error: Error;
+  state: ContextReader<Params, QueryParams, Data>;
+  context: RouterContext<Params, QueryParams, Data>;
+}) => Output;
 
 export type RouteArg<T> = T extends Route<
   infer _Path,

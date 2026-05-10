@@ -121,7 +121,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
           const $store = storage.get(`${segment}:index`);
           safeAssign($store.query, store.query);
 
-          segments.push({ route: staticRoute.route.index, store: $store });
+          segments.push({ route: staticRoute.route.index as never, store: $store });
         }
 
         return {
@@ -149,7 +149,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
           safeAssign($store.query, store.query);
           safeAssign($store.params, store.params);
 
-          segments.push({ route: dynamicRoute.route.index, store: $store });
+          segments.push({ route: dynamicRoute.route.index as never, store: $store });
         }
 
         return {
@@ -173,7 +173,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
         safeAssign($store.query, store.query);
         safeAssign($store.params, store.params);
 
-        segments.push({ route: wildcardRoute.route.index, store: $store });
+        segments.push({ route: wildcardRoute.route.index as never, store: $store });
       }
 
       return {

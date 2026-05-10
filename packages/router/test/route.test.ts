@@ -2,13 +2,7 @@ import { mutable } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { ROUTE_STATUS, ROUTE_TYPE } from '../src/enum.js';
-import {
-  ContextReader,
-  getExceptionRendererFactory,
-  Router,
-  setExceptionRendererFactory,
-  type TRec,
-} from '../src/index.js';
+import { getExceptionRendererFactory, getRenderProps, Router, setExceptionRendererFactory } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
@@ -238,7 +232,7 @@ describe('Route class', () => {
   describe('render and setRendererFactory', () => {
     it('should allow setting a renderer and rendering', () => {
       const route = new Route(sharedRouter, '/test');
-      const renderer = vi.fn().mockImplementation((reader: ContextReader<TRec, TRec, TRec>) => {
+      const renderer = vi.fn().mockImplementation(({ state: reader }) => {
         expect(reader.active).toBe(false);
         expect(reader.status).toBe(ROUTE_STATUS.IDLE);
         expect(reader.resolved).toBe(false);
@@ -255,7 +249,7 @@ describe('Route class', () => {
 
       expect(route.renderer).toBeDefined();
       if (route.renderer) {
-        route.renderer({ children: [] } as never);
+        route.renderer(getRenderProps(route as never) as never);
         expect(renderer).toHaveBeenCalled();
 
         // Let's also test without layout by bypassing `createRenderer` behavior if we could
@@ -282,7 +276,7 @@ describe('Route class', () => {
       // Test without layout
       const route2 = new Route(sharedRouter, '/test2');
       const renderer2 = vi.fn();
-      const internalRenderer = originalFactory(route2 as never, renderer2 as never, false);
+      const internalRenderer = originalFactory(route2 as never, renderer2 as never);
       internalRenderer({ children: [] } as never);
       expect(renderer2).toHaveBeenCalled();
     });
@@ -304,7 +298,7 @@ describe('Route class', () => {
 
       const route = new Route(sharedRouter, '/test');
       const renderer = factory(route as never, () => 'Ok');
-      expect(renderer({})).toBe('Ok');
+      expect(renderer({} as never)).toBe('Ok');
     });
   });
 

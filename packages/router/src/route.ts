@@ -1,7 +1,6 @@
 import { createObserver, retriable } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
-import type { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
@@ -15,16 +14,18 @@ import type {
   GuardHandler,
   NestedParams,
   NestedQueryParams,
+  None,
   ProviderContext,
   ProviderMap,
   ProviderOptions,
-  RouteExceptionRendererFn,
-  RouteInternalRenderer,
+  RouteExceptionRenderer,
   RouteName,
   RouteOptions,
+  RoutePageRenderer,
   RoutePath,
   RoutePathOutput,
-  RouteRendererFn,
+  RouteRenderer,
+  RouteRenderProps,
   RouteState,
   RouteStorage,
   RouteType,
@@ -41,7 +42,9 @@ export type IndexRoute<
   TData,
   TParent = never,
   TOutput = any,
-> = Omit<Route<TPath, TParams, TQueryParams, TOptions, TData, TParent, TOutput>, 'route'>;
+> = Omit<Route<TPath, TParams, TQueryParams, TOptions, TData, TParent, TOutput>, 'route' | 'renderer'> & {
+  renderer: RoutePageRenderer<TParams, TQueryParams, TData, TOutput>;
+};
 
 /**
  * Represents a route in the router with support for guards, providers, and nested routes.
@@ -89,15 +92,22 @@ export class Route<
   public readonly options: TOptions;
   public closed = false;
 
-  private rendererState = createState<RouteInternalRenderer<TOutput> | undefined>(undefined);
-  private exceptionRendererState = createState<RouteInternalRenderer<TOutput> | undefined>(undefined);
+  private rendererState = createState<RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> | unknown>(undefined);
+  private exceptionRendererState = createState<
+    RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> | undefined
+  >(undefined);
 
-  public get renderer(): RouteInternalRenderer<TOutput> | undefined {
-    return this.rendererState.value as RouteInternalRenderer<TOutput>;
+  public get renderer(): RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> | undefined {
+    return this.rendererState.value as RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>;
   }
 
-  public get exceptionRenderer(): RouteInternalRenderer<TOutput> | undefined {
-    return (this.exceptionRendererState.value ?? this.router.exceptionRenderer) as RouteInternalRenderer<TOutput>;
+  public get exceptionRenderer(): RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> | undefined {
+    return (this.exceptionRendererState.value ?? this.router.exceptionRenderer) as RouteExceptionRenderer<
+      TParams,
+      TQueryParams,
+      TData,
+      TOutput
+    >;
   }
 
   /**
@@ -155,7 +165,7 @@ export class Route<
   }
 
   /** Optional index route for this route */
-  public index?: UnknownRoute;
+  public index?: IndexRoute<TPath, TParams, TQueryParams, TOptions, TData, this, TOutput>;
   /** Set of guards for this route */
   public guards = new Set<UnknownGuard>();
   /** Map of data providers for this route */
@@ -314,7 +324,7 @@ export class Route<
 
     if (path === ('/' as TChildPath)) {
       child.closed = true;
-      this.index = child as never as UnknownRoute;
+      this.index = child as never as IndexRoute<TPath, TParams, TQueryParams, TOptions, TData, this, TOutput>;
       return child as never;
     }
 
@@ -690,13 +700,13 @@ export class Route<
     }
   }
 
-  public render(renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>): this {
-    this.rendererState.value = createRenderer(this as UnknownRoute, renderer, true);
+  public render(renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>): this {
+    this.rendererState.value = createRenderer(this as never, renderer);
     return this;
   }
 
-  public catch(renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>) {
-    this.exceptionRendererState.value = createExceptionRenderer(this.router, renderer);
+  public catch(renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>) {
+    this.exceptionRendererState.value = createExceptionRenderer(this as never, renderer);
   }
 
   public cleanup() {
@@ -764,31 +774,29 @@ export class ContextReader<Params, Query, Data> {
   }
 }
 
-let createRenderer = <TParams, TQueryParams, TData, TOutput>(
-  route: UnknownRoute,
-  renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>,
-  layout?: boolean
-): RouteInternalRenderer<TOutput> => {
-  return ({ children }) => {
-    const { state, context } = route.storage;
-    const reader = new ContextReader<TParams, TQueryParams, TData>(
-      state,
-      context as { value: ProviderContext<TParams, TQueryParams, TData> }
-    );
+/**
+ * Get render props for a route.
+ * @param {UnknownRoute} route
+ * @returns {RouteRenderProps<None, None, TRec>}
+ */
+export function getRenderProps(route: UnknownRoute): RouteRenderProps<None, None, TRec> {
+  const { state, context } = route.storage;
+  const reader = new ContextReader<None, None, TRec>(state, context as { value: ProviderContext<None, None, TRec> });
+  return { state: reader, context: route.router.context as never };
+}
 
-    if (layout) return safeRead(() => renderer(reader, route.router.context as never, children));
-    return safeRead(() => renderer(reader, route.router.context as never));
-  };
+let createRenderer = <TPath, TParams, TQueryParams, TData, TOutput>(
+  _route: UnknownRoute,
+  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>
+): RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> => {
+  return renderer;
 };
 
 let createExceptionRenderer = <TParams, TQueryParams, TData, TOutput>(
-  router: Router,
-  renderer: RouteExceptionRendererFn<TParams, TQueryParams, TData, TOutput>
-): RouteInternalRenderer<TOutput> => {
-  return () => {
-    const context = router.context as RouterContext<TParams, TQueryParams, TData>;
-    return safeRead(() => renderer(context));
-  };
+  _route: UnknownRoute,
+  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>
+): RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> => {
+  return renderer;
 };
 
 export type RendererFactory = typeof createRenderer;

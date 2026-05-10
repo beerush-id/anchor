@@ -13,8 +13,7 @@ import type {
   MatchResult,
   None,
   ProviderContext,
-  RouteExceptionRendererFn,
-  RouteInternalRenderer,
+  RouteExceptionRenderer,
   RouteOptions,
   RoutePath,
   RouterOptions,
@@ -86,7 +85,7 @@ export class Router<Output = any> {
   public readonly rootRegistry: RouteRegistry;
   public readonly routes = new Set<RouteRegistry>();
 
-  private exceptionRendererState = createState<RouteInternalRenderer<Output> | undefined>(undefined);
+  private exceptionRendererState = createState<RouteExceptionRenderer<None, None, TRec, Output> | undefined>(undefined);
 
   public get exceptionRenderer() {
     return this.exceptionRendererState.value;
@@ -474,8 +473,8 @@ export class Router<Output = any> {
     getStore().clear();
   }
 
-  public catch(renderer: RouteExceptionRendererFn<None, None, TRec, Output>) {
-    this.exceptionRendererState.value = getExceptionRendererFactory()(this, renderer);
+  public catch(renderer: RouteExceptionRenderer<None, None, TRec, Output>) {
+    this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute, renderer);
   }
 }
 
