@@ -93,14 +93,6 @@ export type GuardHandler<TParams, TQueryParams> = (
 /** An untyped guard function */
 export type UnknownGuard = (context: GuardContext<TRec, TRec>) => Promise<void> | void;
 
-/** Context passed to provider functions */
-export type ProviderContext<TParams, TQueryParams, TData> = {
-  data: TData;
-  query: TQueryParams;
-  params: TParams;
-  exception?: Error;
-};
-
 /** Possible error types for routes */
 export type RouteErrorType = 'guard' | 'provider' | 'timeout' | 'cancel';
 
@@ -146,7 +138,7 @@ export type UnknownQueryParams = ExtractQueryParams<''>;
 /** Unknown route type */
 export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, unknown, unknown>;
 /** Unknown provider type */
-export type UnknownProvider = (ctx: ProviderContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
+export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */
 export type UnknownRedirect = Redirect<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, TRec>;
 
@@ -182,6 +174,39 @@ export type RouteState = {
   error?: RouteError;
 };
 
+/** Internal context for a route */
+export type RouteContext<Params, QueryParams, Data> = {
+  data: Data;
+  query: QueryParams;
+  params: Params;
+  exception?: Error;
+};
+
+export type RouteNestedContext<Params, Query, Data, Parent> = Parent extends IndexRoute<
+  infer _Path,
+  infer _Params,
+  infer _QueryParams,
+  infer _Options,
+  infer _Data,
+  infer _Parent
+>
+  ? {
+      data: Data & Parent['data'];
+      query: Query & Parent['query'];
+      params: Params & Parent['params'];
+    }
+  : Parent extends Route<infer _Path, infer _Params, infer _QueryParams, infer _Options, infer _Data, infer _Parent>
+    ? {
+        data: Data & Parent['data'];
+        query: Query & Parent['query'];
+        params: Params & Parent['params'];
+      }
+    : {
+        data: Data;
+        query: Query;
+        params: Query;
+      };
+
 /** A route path string */
 export type RoutePath = `${'/'}${string | never}`;
 
@@ -210,7 +235,7 @@ export type RoutePathOutput<TParent, TPath extends RoutePath> = TParent extends 
 
 export type MatchRouteSegment = {
   route: UnknownRoute;
-  store: ProviderContext<TRec, TRec, TRec>;
+  store: RouteContext<TRec, TRec, TRec>;
 };
 
 /** A matched route result */
@@ -251,9 +276,9 @@ export type ProviderObserver = {
 export type RouteStorage = {
   state: RouteState;
   cache: RouteCache;
-  context: { value: ProviderContext<TRec, TRec, TRec> };
-  dataCache: WeakMap<ProviderContext<TRec, TRec, TRec>, TRec>;
-  activeResolvers: Map<ProviderContext<TRec, TRec, TRec>, AbortController>;
+  context: { value: RouteContext<TRec, TRec, TRec> };
+  dataCache: WeakMap<RouteContext<TRec, TRec, TRec>, TRec>;
+  activeResolvers: Map<RouteContext<TRec, TRec, TRec>, AbortController>;
   guardObserver: StateObserver;
   guardObservers: WeakMap<UnknownGuard, GuardObserver>;
   providerObservers: WeakMap<UnknownProvider, ProviderObserver>;
@@ -288,12 +313,12 @@ export type RouteLayoutRenderer<Params, QueryParams, Data, Output> = (props: {
   context: RouterContext<Params, QueryParams, Data>;
   children: Output;
 }) => Output;
-export type RoutePageRenderer<Params, QueryParams, Data, Output> = (props: {
+export type RouteIndexRenderer<Params, QueryParams, Data, Output> = (props: {
   state: ContextReader<Params, QueryParams, Data>;
   context: RouterContext<Params, QueryParams, Data>;
 }) => Output;
 export type RouteRenderer<Path, Params, QueryParams, Data, Output> = Path extends '/'
-  ? RoutePageRenderer<Params, QueryParams, Data, Output>
+  ? RouteIndexRenderer<Params, QueryParams, Data, Output>
   : RouteLayoutRenderer<Params, QueryParams, Data, Output>;
 
 export type RouteExceptionRenderer<Params, QueryParams, Data, Output> = (props: {
@@ -302,18 +327,24 @@ export type RouteExceptionRenderer<Params, QueryParams, Data, Output> = (props: 
   context: RouterContext<Params, QueryParams, Data>;
 }) => Output;
 
-export type RouteArg<T> = T extends Route<
-  infer _Path,
-  infer _Params,
-  infer _Query,
-  infer _Options,
-  infer _Data,
-  infer _Parent
->
+export type RouteTarget<T> = T extends
+  | Route<infer _Path, infer _Params, infer _Query, infer _Options, infer _Data, infer _Parent>
+  | IndexRoute<infer _IPath, infer _IParams, infer _IQuery, infer _IOptions, infer _IData, infer _IParent>
   ? T
-  : T extends IndexRoute<infer _Path, infer _Params, infer _Query, infer _Options, infer _Data, infer _Parent>
-    ? T
-    : never;
+  : never;
+
+export type InferState<T> = T extends
+  | IndexRoute<infer _Path, infer Params, infer Query, infer _TOptions, infer Data, infer _TParent>
+  // biome-ignore lint/suspicious/noRedeclare: Expect override
+  | Route<infer _Path, infer Params, infer Query, infer _TOptions, infer Data, infer _TParent>
+  ? ContextReader<Params, Query, Data>
+  : None;
+export type InferContext<T> = T extends
+  | IndexRoute<infer _Path, infer _Params, infer _Query, infer _TOptions, infer _TData, infer _TParent>
+  // biome-ignore lint/suspicious/noRedeclare: Expect override
+  | Route<infer _Path, infer _Params, infer _Query, infer _TOptions, infer _TData, infer _TParent>
+  ? ContextReader<T['params'], T['query'], T['data']>
+  : None;
 
 export type InferParams<T> = T extends IndexRoute<
   infer _Path,
@@ -353,7 +384,13 @@ export type ExtractOptions<Params, Query> = Params extends None
     ? { params: Params }
     : { query: Query; params: Params };
 
-export type InferOptions<T> = T extends IndexRoute<infer _Path, infer Params, infer Query, infer _Options, infer _Data>
+export type RedirectOptions<T> = T extends IndexRoute<
+  infer _Path,
+  infer Params,
+  infer Query,
+  infer _Options,
+  infer _Data
+>
   ? ExtractOptions<Params, Query>
   : T extends Route<infer _Path, infer Params, infer Query, infer _Options, infer _Data>
     ? ExtractOptions<Params, Query>

@@ -4,7 +4,7 @@ import { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
-import { getExceptionRendererFactory, Route } from './route.js';
+import { getExceptionRendererFactory, type IndexRoute, Route } from './route.js';
 import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
@@ -12,7 +12,7 @@ import type {
   GuardBlocker,
   MatchResult,
   None,
-  ProviderContext,
+  RouteContext,
   RouteExceptionRenderer,
   RouteOptions,
   RoutePath,
@@ -168,7 +168,7 @@ export class Router<Output = any> {
     path?: TPath,
     options?: TOptions
   ): TPath extends '/'
-    ? Omit<Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>, 'route'>
+    ? IndexRoute<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>
     : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
     if (!path) return this.rootRoute as never;
     const route = new Route(this, path, options);
@@ -224,7 +224,7 @@ export class Router<Output = any> {
     path?: TPath,
     options?: TOptions
   ): TPath extends '/'
-    ? Omit<Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>, 'route'>
+    ? IndexRoute<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>
     : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
     if (!path || path === ('/' as never)) throw new Error('Invalid path: Path must be string "/{path}".');
 
@@ -344,7 +344,7 @@ export class Router<Output = any> {
       }
       if (!storage.activatingSegments.has(segment)) return;
 
-      await route.activate(store as ProviderContext<None, None, TRec>);
+      await route.activate(store as RouteContext<None, None, TRec>);
       if (!storage.activatingSegments.has(segment)) return;
 
       // Remove from activating routes.
@@ -459,7 +459,7 @@ export class Router<Output = any> {
       const blocked = await route.authenticate(store as RouterContext<None, None, TRec>);
       if (blocked instanceof Error || blocked instanceof Redirect) return;
 
-      await route.preload(store as ProviderContext<None, None, TRec>);
+      await route.preload(store as RouteContext<None, None, TRec>);
     }
   }
 

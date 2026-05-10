@@ -3,8 +3,8 @@ import type { RouteRegistry } from './registry.js';
 import type {
   MatchResult,
   ProviderCache,
-  ProviderContext,
   ProviderOptions,
+  RouteContext,
   TRec,
   UnknownProvider,
   UnknownRoute,
@@ -58,7 +58,7 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    */
   public async resolve<T>(
     provider: UnknownProvider,
-    context: ProviderContext<TRec, TRec, TRec>,
+    context: RouteContext<TRec, TRec, TRec>,
     options?: ProviderOptions
   ): Promise<T> {
     const maxAge = options?.maxAge ?? this.route.options?.maxAge;
@@ -100,7 +100,7 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    * cache.invalidate(provider, { params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public invalidate(provider: UnknownProvider, context: ProviderContext<TRec, TRec, TRec>): void {
+  public invalidate(provider: UnknownProvider, context: RouteContext<TRec, TRec, TRec>): void {
     const { params, query } = (anchor.get as (ctx: typeof context, silent: boolean) => typeof context)(context, true);
     const key = JSON.stringify({ params, query });
     const cache = this.get(provider);

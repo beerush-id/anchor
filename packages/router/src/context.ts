@@ -1,8 +1,8 @@
 import { createState } from './store.js';
-import type { ProviderContext, TRec } from './types.js';
+import type { RouteContext, TRec } from './types.js';
 
 export class RouterContext<TParams, TQueryParams, TData> {
-  private sources: ProviderContext<TRec, TRec, TRec>[] = [];
+  private sources: RouteContext<TRec, TRec, TRec>[] = [];
   private urlState = createState<string | undefined>(undefined);
   private exceptionState = createState<Error | undefined>(undefined);
 
@@ -57,13 +57,13 @@ export class RouterContext<TParams, TQueryParams, TData> {
     }
   ) as TData;
 
-  public attach(context: ProviderContext<TRec, TRec, TRec>) {
+  public attach(context: RouteContext<TRec, TRec, TRec>) {
     if (!this.sources.includes(context)) {
       this.sources.unshift(context);
     }
   }
 
-  public detach(context: ProviderContext<TRec, TRec, TRec>) {
+  public detach(context: RouteContext<TRec, TRec, TRec>) {
     if (this.sources.includes(context)) {
       this.sources.splice(this.sources.indexOf(context), 1);
     }

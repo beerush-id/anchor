@@ -304,15 +304,17 @@ describe('Route class', () => {
 
   describe('params getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route(sharedRouter, '/test').context;
+      const route = new Route(sharedRouter, '/test');
       expect(route.params).toEqual({});
+      expect(route.context.params).toEqual({});
     });
   });
 
   describe('query getter', () => {
     it('should return undefined when context is not set', () => {
-      const route = new Route(sharedRouter, '/test').context;
+      const route = new Route(sharedRouter, '/test');
       expect(route.query).toEqual({});
+      expect(route.context.query).toEqual({});
     });
   });
 

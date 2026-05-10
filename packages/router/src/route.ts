@@ -1,4 +1,4 @@
-import { createObserver, retriable } from '@anchorlib/core';
+import { $do, createObserver, retriable } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -12,16 +12,14 @@ import type {
   GuardBlocker,
   GuardContext,
   GuardHandler,
-  NestedParams,
-  NestedQueryParams,
   None,
-  ProviderContext,
   ProviderMap,
   ProviderOptions,
+  RouteContext,
   RouteExceptionRenderer,
+  RouteIndexRenderer,
   RouteName,
   RouteOptions,
-  RoutePageRenderer,
   RoutePath,
   RoutePathOutput,
   RouteRenderer,
@@ -41,9 +39,10 @@ export type IndexRoute<
   TOptions extends RouteOptions,
   TData,
   TParent = never,
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   TOutput = any,
 > = Omit<Route<TPath, TParams, TQueryParams, TOptions, TData, TParent, TOutput>, 'route' | 'renderer'> & {
-  renderer: RoutePageRenderer<TParams, TQueryParams, TData, TOutput>;
+  renderer: RouteIndexRenderer<TParams, TQueryParams, TData, TOutput>;
 };
 
 /**
@@ -136,10 +135,6 @@ export class Route<
     return this.storage.state.active;
   }
 
-  public get data(): TData {
-    return this.storage.context.value.data as TData;
-  }
-
   /**
    * Gets the exception for this route.
    * @returns {Error | undefined}
@@ -175,8 +170,20 @@ export class Route<
     return this.storage.state;
   }
 
-  public get context(): ProviderContext<TParams, TQueryParams, TData> {
-    return this.storage.context.value as ProviderContext<TParams, TQueryParams, TData>;
+  public get context(): RouteContext<TParams, TQueryParams, TData> {
+    return this.storage.context.value as RouteContext<TParams, TQueryParams, TData>;
+  }
+
+  public get params(): TParams {
+    return this.storage.context.value.params as TParams;
+  }
+
+  public get query(): TQueryParams {
+    return this.storage.context.value.query as TQueryParams;
+  }
+
+  public get data(): TData {
+    return this.storage.context.value.data as TData;
   }
 
   public get storage(): RouteStorage {
@@ -301,24 +308,8 @@ export class Route<
     path: TChildPath,
     options?: TChildOptions
   ): TChildPath extends '/'
-    ? IndexRoute<
-        TChildPath,
-        NestedParams<TParams, TChildParams>,
-        NestedQueryParams<TQueryParams, TChildQueryParams>,
-        RouteOptions & TOptions & TChildOptions,
-        TData & TChildData,
-        this,
-        TOutput
-      >
-    : Route<
-        TChildPath,
-        NestedParams<TParams, TChildParams>,
-        NestedQueryParams<TQueryParams, TChildQueryParams>,
-        RouteOptions & TOptions & TChildOptions,
-        TData & TChildData,
-        this,
-        TOutput
-      > {
+    ? IndexRoute<TChildPath, TChildParams, TChildQueryParams, RouteOptions & TChildOptions, TChildData, this, TOutput>
+    : Route<TChildPath, TChildParams, TChildQueryParams, RouteOptions & TChildOptions, TChildData, this, TOutput> {
     if (this.closed) throw new Error(`Index route can't have a child route.`);
     const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
 
@@ -394,7 +385,7 @@ export class Route<
    */
   public provide<TName extends string, TProviderData>(
     name: TName,
-    provider: (context: ProviderContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData,
+    provider: (context: RouteContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData,
     options?: ProviderOptions
   ): Route<TPath, TParams, TQueryParams, TOptions, TData & { [PK in TName]: TProviderData }, TParent> {
     this.providers.set(name, { name, provider, options } as ProviderMap);
@@ -500,11 +491,11 @@ export class Route<
    * await route.preload({ params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public async preload(context: ProviderContext<TParams, TQueryParams, TData>): Promise<TData | GuardBlocker> {
+  public async preload(context: RouteContext<TParams, TQueryParams, TData>): Promise<TData | GuardBlocker> {
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
 
-    return (await this.resolve(context as ProviderContext<TRec, TRec, TRec>)) as TData;
+    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>)) as TData;
   }
 
   /**
@@ -521,7 +512,7 @@ export class Route<
    * const data = await route.resolve({ params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public async resolve(context: ProviderContext<TRec, TRec, TRec>): Promise<TData | undefined> {
+  public async resolve(context: RouteContext<TRec, TRec, TRec>): Promise<TData | undefined> {
     const { state, cache, activeResolvers, providerObservers } = this.storage;
 
     const abortController = new AbortController();
@@ -613,9 +604,9 @@ export class Route<
    * await route.activate({ params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public async activate(context: ProviderContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
+  public async activate(context: RouteContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
     const { state, context: ctx } = this.storage;
-    ctx.value = context as ProviderContext<TRec, TRec, TRec>;
+    ctx.value = context as RouteContext<TRec, TRec, TRec>;
 
     state.status = ROUTE_STATUS.PENDING;
     state.error = undefined;
@@ -681,7 +672,7 @@ export class Route<
    * route.cancel(context); // Cancel specific
    * ```
    */
-  public cancel(context?: ProviderContext<TRec, TRec, TRec>): void {
+  public cancel(context?: RouteContext<TRec, TRec, TRec>): void {
     const { activeResolvers } = this.storage;
 
     if (context) {
@@ -736,7 +727,7 @@ export class Route<
 export class ContextReader<Params, Query, Data> {
   constructor(
     private state: RouteState,
-    private context: { value: ProviderContext<Params, Query, Data> }
+    private context: { value: RouteContext<Params, Query, Data> }
   ) {}
 
   get active() {
@@ -780,9 +771,11 @@ export class ContextReader<Params, Query, Data> {
  * @returns {RouteRenderProps<None, None, TRec>}
  */
 export function getRenderProps(route: UnknownRoute): RouteRenderProps<None, None, TRec> {
-  const { state, context } = route.storage;
-  const reader = new ContextReader<None, None, TRec>(state, context as { value: ProviderContext<None, None, TRec> });
-  return { state: reader, context: route.router.context as never };
+  return $do(() => {
+    const { state, context } = route.storage;
+    const reader = new ContextReader<None, None, TRec>(state, context as { value: RouteContext<None, None, TRec> });
+    return { state: reader, context: route.router.context as never };
+  });
 }
 
 let createRenderer = <TPath, TParams, TQueryParams, TData, TOutput>(

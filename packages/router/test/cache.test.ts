@@ -1,22 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouteCache, URLCache } from '../src/cache.js';
-import { createRouter, Router } from '../src/index.js';
+import { createRouter, type RouteContext, Router, type UnknownRoute } from '../src/index.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
-import type { ProviderContext, TRec } from '../src/types.js';
+import type { TRec } from '../src/types.js';
 
 let sharedRouter: Router;
 
 describe('RouteCache', () => {
   let route: Route<'/test', {}, {}, {}, {}>;
   let cache: RouteCache;
-  let mockProvider: (ctx: ProviderContext<TRec, TRec, TRec>) => Promise<string>;
+  let mockProvider: (ctx: RouteContext<TRec, TRec, TRec>) => Promise<string>;
 
   beforeEach(() => {
     vi.useFakeTimers();
     sharedRouter = new Router();
     route = new Route(sharedRouter, '/test');
-    cache = new RouteCache(route);
+    cache = new RouteCache(route as UnknownRoute);
     mockProvider = vi.fn(async () => 'test-data');
   });
 
@@ -41,7 +41,7 @@ describe('RouteCache', () => {
 
   describe('resolve', () => {
     it('should call provider when maxAge is 0 (no caching)', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -56,7 +56,7 @@ describe('RouteCache', () => {
     });
 
     it('should call provider when maxAge is undefined and route has no maxAge', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -69,7 +69,7 @@ describe('RouteCache', () => {
     });
 
     it('should cache provider result when maxAge > 0', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -86,7 +86,7 @@ describe('RouteCache', () => {
     it('should use route options maxAge when options not provided', async () => {
       const routeWithMaxAge = new Route(sharedRouter, '/test', { maxAge: 1000 });
       const cacheWithRoute = new RouteCache(routeWithMaxAge as never);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -101,7 +101,7 @@ describe('RouteCache', () => {
     });
 
     it('should expire cache after maxAge milliseconds', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -117,12 +117,12 @@ describe('RouteCache', () => {
     });
 
     it('should create separate cache entries for different params', async () => {
-      const context1: ProviderContext<TRec, TRec, TRec> = {
+      const context1: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
       };
-      const context2: ProviderContext<TRec, TRec, TRec> = {
+      const context2: RouteContext<TRec, TRec, TRec> = {
         params: { id: '456' },
         query: {},
         data: {},
@@ -139,12 +139,12 @@ describe('RouteCache', () => {
     });
 
     it('should create separate cache entries for different query params', async () => {
-      const context1: ProviderContext<TRec, TRec, TRec> = {
+      const context1: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: { tab: 'profile' },
         data: {},
       };
-      const context2: ProviderContext<TRec, TRec, TRec> = {
+      const context2: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: { tab: 'settings' },
         data: {},
@@ -162,7 +162,7 @@ describe('RouteCache', () => {
 
     it('should not cache when provider returns falsy value', async () => {
       const falsyProvider = vi.fn(async () => null as never);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -178,7 +178,7 @@ describe('RouteCache', () => {
 
     it('should not cache when provider returns undefined', async () => {
       const undefinedProvider = vi.fn(async () => undefined as never);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -194,7 +194,7 @@ describe('RouteCache', () => {
 
     it('should cache when provider returns empty string', async () => {
       const emptyStringProvider = vi.fn(async () => '' as never);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -210,7 +210,7 @@ describe('RouteCache', () => {
 
     it('should cache when provider returns 0', async () => {
       const zeroProvider = vi.fn(async () => 0 as never);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -226,7 +226,7 @@ describe('RouteCache', () => {
 
     it('should cache when provider returns false', async () => {
       const falseProvider = vi.fn(async () => false as never);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -244,7 +244,7 @@ describe('RouteCache', () => {
       const errorProvider = vi.fn(async () => {
         throw new Error('Provider error');
       });
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -259,7 +259,7 @@ describe('RouteCache', () => {
         name: 'Test User',
         nested: { value: 42 } as never,
       }));
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -279,7 +279,7 @@ describe('RouteCache', () => {
 
     it('should handle arrays in cache', async () => {
       const arrayProvider = vi.fn(async () => [1, 2, 3, 4, 5]);
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -296,7 +296,7 @@ describe('RouteCache', () => {
 
   describe('invalidate', () => {
     it('should remove cached entry for specific context', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -312,7 +312,7 @@ describe('RouteCache', () => {
     });
 
     it('should clear timeout for invalidated entry', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -331,12 +331,12 @@ describe('RouteCache', () => {
     });
 
     it('should not affect other cached entries', async () => {
-      const context1: ProviderContext<TRec, TRec, TRec> = {
+      const context1: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
       };
-      const context2: ProviderContext<TRec, TRec, TRec> = {
+      const context2: RouteContext<TRec, TRec, TRec> = {
         params: { id: '456' },
         query: {},
         data: {},
@@ -358,7 +358,7 @@ describe('RouteCache', () => {
     });
 
     it('should handle invalidating non-existent entry', () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -368,7 +368,7 @@ describe('RouteCache', () => {
     });
 
     it('should handle invalidating entry for non-existent provider', () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -380,7 +380,7 @@ describe('RouteCache', () => {
 
   describe('delete', () => {
     it('should remove provider from cache', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -404,12 +404,12 @@ describe('RouteCache', () => {
     });
 
     it('should clear all cached entries for provider', async () => {
-      const context1: ProviderContext<TRec, TRec, TRec> = {
+      const context1: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
       };
-      const context2: ProviderContext<TRec, TRec, TRec> = {
+      const context2: RouteContext<TRec, TRec, TRec> = {
         params: { id: '456' },
         query: {},
         data: {},
@@ -431,7 +431,7 @@ describe('RouteCache', () => {
 
   describe('clear', () => {
     it('should clear all cached entries for provider without removing provider', async () => {
-      const context: ProviderContext<TRec, TRec, TRec> = {
+      const context: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
@@ -452,12 +452,12 @@ describe('RouteCache', () => {
     });
 
     it('should clear multiple cached entries for provider', async () => {
-      const context1: ProviderContext<TRec, TRec, TRec> = {
+      const context1: RouteContext<TRec, TRec, TRec> = {
         params: { id: '123' },
         query: {},
         data: {},
       };
-      const context2: ProviderContext<TRec, TRec, TRec> = {
+      const context2: RouteContext<TRec, TRec, TRec> = {
         params: { id: '456' },
         query: {},
         data: {},
@@ -485,7 +485,7 @@ describe('URLCache', () => {
 
   beforeEach(() => {
     rootRoute = new Route(sharedRouter, '/');
-    registry = new RouteRegistry(rootRoute);
+    registry = new RouteRegistry(rootRoute as UnknownRoute);
     cache = new URLCache(new Set([registry]), 3);
   });
 

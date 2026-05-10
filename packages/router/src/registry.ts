@@ -2,7 +2,7 @@ import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constan
 import { ROUTE_TYPE } from './enum.js';
 import { parseQuery } from './query.js';
 import { createState, getStore, safeAssign } from './store.js';
-import type { MatchedRoute, MatchRouteSegment, ProviderContext, TRec, UnknownRoute } from './types.js';
+import type { MatchedRoute, MatchRouteSegment, RouteContext, TRec, UnknownRoute } from './types.js';
 
 export class ContextStore extends Map {
   public get(key: string | symbol) {
@@ -10,7 +10,7 @@ export class ContextStore extends Map {
       this.set(key, createState({ params: {}, query: {}, data: {} }));
     }
 
-    return super.get(key) as ProviderContext<TRec, TRec, TRec>;
+    return super.get(key) as RouteContext<TRec, TRec, TRec>;
   }
 }
 
