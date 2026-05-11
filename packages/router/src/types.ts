@@ -3,7 +3,7 @@ import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
 import type { PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import type { Redirect } from './redirect.js';
-import type { ContextReader, Route } from './route.js';
+import type { ContextReader, IndexRoute, Route } from './route.js';
 
 /** A generic record type with string keys and unknown values */
 export type TRec = Record<string, unknown>;
@@ -296,15 +296,26 @@ export type RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryPar
   context: RouterContext<PParams, PQueryParams, PData>;
 }) => Output;
 
-export type RouteTarget<T> = T extends Route<infer _Path, infer _Params, infer _Query, infer _Data, infer _Parent>
+export type RouteTarget<T> = T extends
+  | Route<infer _Path, infer _Params, infer _Query, infer _Data, infer _Parent>
+  | IndexRoute<infer _IPath, infer _IParams, infer _IQuery, infer _IData, infer _IParent>
   ? T
   : never;
 
 export type InferState<T> = T extends Route<infer _Path, infer Params, infer Query, infer Data, infer _TParent>
   ? ContextReader<Params, Query, Data>
   : None;
-export type InferContext<T> = T extends Route<infer _Path, infer _Params, infer _Query, infer _TData, infer _TParent>
-  ? ContextReader<T['params'], T['query'], T['data']>
+export type InferContext<T> = T extends Route<
+  infer _Path,
+  infer _Params,
+  infer _Query,
+  infer _TData,
+  infer _TParent,
+  infer PParams,
+  infer PQuery,
+  infer PData
+>
+  ? RouterContext<PParams, PQuery, PData>
   : None;
 
 export type InferParams<T> = T extends Route<infer _Path, infer Params, infer _Query, infer _TData, infer _TParent>
