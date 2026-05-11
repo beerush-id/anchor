@@ -1,8 +1,7 @@
 import { isBrowser } from '@anchorlib/core';
 import {
+  getRenderProps,
   type MatchedRoute,
-  type RouteOptions,
-  type RoutePath,
   type RouteRegistry,
   setRedirectHandler,
   type UnknownRoute,
@@ -21,12 +20,17 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
 
   const Index = () => {
     const Renderer = route.index?.renderer ?? (() => null);
-    return <Show when={route.index?.active}>{(() => <Renderer />) as never}</Show>;
+    return (
+      <Show when={route.index?.active}>{(() => <Renderer {...getRenderProps(route.index as never)} />) as never}</Show>
+    );
   };
   const Layout = route.renderer ?? (({ children }) => children);
+  const layoutProps = getRenderProps(route);
   const Exception = () => {
     const Renderer = route.exceptionRenderer ?? (() => null);
-    return <Show when={route.exception}>{(() => <Renderer />) as never}</Show>;
+    return (
+      <Show when={route.exception}>{(() => <Renderer error={route.exception!} {...layoutProps} />) as never}</Show>
+    );
   };
   const Content = () => (
     <>
@@ -42,7 +46,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
           {
             (() => (
               <div class={'route-modal'}>
-                <Layout>
+                <Layout {...layoutProps}>
                   <Content />
                 </Layout>
               </div>
@@ -56,7 +60,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
       <Show when={route.active} fallback={props.children}>
         {
           (() => (
-            <Layout>
+            <Layout {...layoutProps}>
               <Content />
             </Layout>
           )) as never
@@ -76,7 +80,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
 /**
  * Renders a specific route and recursively processes its child routes.
  */
-export function RouteRenderer(props: {
+export function RouteRendererComponent(props: {
   route: UnknownRoute;
   registry: RouteRegistry;
   stacks: RouteStacks;
@@ -84,7 +88,7 @@ export function RouteRenderer(props: {
   return (
     <RouteViewer route={props.route} stacks={props.stacks}>
       <For each={Array.from(props.registry.values())}>
-        {(child) => <RouteRenderer route={child.route} registry={child} stacks={props.stacks} />}
+        {(child) => <RouteRendererComponent route={child.route} registry={child} stacks={props.stacks} />}
       </For>
     </RouteViewer>
   );
@@ -136,7 +140,7 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
     <>
       <For each={Array.from(props.router.routes)}>
         {(registry) => {
-          return <RouteRenderer route={registry.route} registry={registry} stacks={stacks} />;
+          return <RouteRendererComponent route={registry.route} registry={registry} stacks={stacks} />;
         }}
       </For>
       <StackRenderer stacks={stacks} />
@@ -154,10 +158,7 @@ export function page<T>(routeNode: T): RouteComponent<T> {
     return props.children;
   };
 
-  (UIRoute as RouteComponent<AnyRoute>).index = routeNode as AnyRoute;
-  (UIRoute as RouteComponent<AnyRoute>).route = (path: RoutePath, options?: RouteOptions) => {
-    return (routeNode as AnyRoute).route(path as never, options);
-  };
+  (UIRoute as RouteComponent<AnyRoute>).route = routeNode as AnyRoute;
   (UIRoute as RouteComponent<AnyRoute>).render = (renderer) => {
     (routeNode as AnyRoute).render(renderer);
 
@@ -181,7 +182,7 @@ export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
  * @returns {RouteComponent<T>}
  */
 export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
-  STACK_REGISTRY.add(routeNode);
+  STACK_REGISTRY.add(routeNode as never);
   return page(routeNode);
 }
 

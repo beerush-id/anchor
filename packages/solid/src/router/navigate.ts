@@ -1,12 +1,6 @@
-import {
-  createUrl,
-  type InferOptions,
-  type InferRedirect,
-  type NavigateOptions,
-  redirect as redirectTo,
-  Route,
-  type RouteArg,
-} from '@anchorlib/router';
+// biome-ignore assist/source/organizeImports: false
+import type { NavigateOptions, Redirect, RedirectOptions, RouteTarget } from '@anchorlib/router';
+import { createUrl, redirect as redirectTo, Route } from '@anchorlib/router';
 import type { AnyRoute, RouteComponent } from './types.js';
 
 /**
@@ -23,7 +17,7 @@ export function navigate(path: string, options?: NavigateOptions<string>): void;
  * @param route The Route defining the destination.
  * @param options Query, params, and history replacement options.
  */
-export function navigate<T>(route: RouteArg<T>, options?: NavigateOptions<T>): void;
+export function navigate<T>(route: RouteTarget<T>, options?: NavigateOptions<T>): void;
 
 /**
  * Programmatically navigate to a route component.
@@ -33,10 +27,13 @@ export function navigate<T>(route: RouteArg<T>, options?: NavigateOptions<T>): v
  */
 export function navigate<T>(route: RouteComponent<T>, options?: NavigateOptions<T>): void;
 
-export function navigate<T>(target: RouteArg<T>, options: NavigateOptions<T> = {} as NavigateOptions<T>) {
+export function navigate<T>(
+  target: string | RouteTarget<T> | RouteComponent<T>,
+  options: NavigateOptions<T> = {} as NavigateOptions<T>
+) {
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   const { params, query, redirect, replace } = options as any;
-  const path = (target as AnyRoute).index?.path ?? (target as AnyRoute).path;
+  const path = ((target as RouteComponent<T>).route as AnyRoute)?.path ?? (target as AnyRoute).path;
   const href = createUrl(typeof target === 'string' ? target : path, params, query);
 
   const state = { href, query, params, redirect };
@@ -51,23 +48,14 @@ export function navigate<T>(target: RouteArg<T>, options: NavigateOptions<T> = {
 }
 
 /**
- * Programmatically redirect to a route.
- *
- * @param route - The route to redirect to.
- * @param options - Optional redirect options.
- */
-export function redirect<T>(route: RouteArg<T>, options?: InferOptions<T>): InferRedirect<T>;
-/**
  * Programmatically redirect to a route component.
- * @param component - The route component to redirect to.
+ * @param route - The route component to redirect to.
  * @param options - Optional redirect options.
  */
-export function redirect<T>(component: RouteComponent<T>, options?: InferOptions<T>): InferRedirect<T>;
-
-export function redirect<T>(route: RouteArg<T> | RouteComponent<T>, options?: InferOptions<T>): InferRedirect<T> {
+export function redirect<T>(route: RouteTarget<T> | RouteComponent<T>, options?: RedirectOptions<T>): Redirect<T> {
   if (route instanceof Route) {
-    return redirectTo(route, options?.params, options?.query) as never;
+    return redirectTo(route as never, options?.params, options?.query) as never;
   }
 
-  return redirectTo((route as RouteComponent<T>).index as never, options?.params, options?.query) as never;
+  return redirectTo((route as RouteComponent<T>).route as never, options?.params, options?.query) as never;
 }

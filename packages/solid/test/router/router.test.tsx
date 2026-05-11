@@ -5,7 +5,8 @@ import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RouteStacks } from '../../src/index.js';
-import { modal, page, redirect, route, RouteRenderer, RouteViewer, UIRouter } from '../../src/index.js';
+import { redirect, RouteRendererComponent, RouteViewer, UIRouter } from '../../src/index.js';
+import { modal, page, route } from '../../src/router/index.js';
 
 describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -30,11 +31,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const rawRoute = router.route('/testing');
       const UiRoute = page(rawRoute);
 
-      expect(UiRoute.index).toBe(rawRoute);
-      expect(typeof UiRoute.route).toBe('function');
-
-      const childUiRoute = UiRoute.route('/child');
-      expect(childUiRoute.path).toBe('/testing/child');
+      expect(UiRoute.route).toBe(rawRoute);
+      expect(typeof UiRoute.render).toBe('function');
     });
   });
 
@@ -44,17 +42,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const rawRoute = router.route('/modal-test');
       const UiModal = modal(rawRoute);
 
-      expect(UiModal.index).toBe(rawRoute);
-      expect(typeof UiModal.route).toBe('function');
-    });
-
-    it('supports child routes like page()', () => {
-      const router = createRouter();
-      const rawRoute = router.route('/modal-parent');
-      const UiModal = modal(rawRoute);
-
-      const child = UiModal.route('/child');
-      expect(child.path).toBe('/modal-parent/child');
+      expect(UiModal.route).toBe(rawRoute);
+      expect(typeof UiModal.render).toBe('function');
     });
   });
 
@@ -95,7 +84,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/active');
       testRoute.route('/');
-      testRoute.render((state, context, children) => (
+      testRoute.render(({ children }) => (
         <div>
           <span data-testid="layout" />
           {children as any}
@@ -118,7 +107,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
     it('renders Layout and Index child when both are active', () => {
       const router = createRouter();
       const parentRoute = router.route('/parent');
-      parentRoute.render((state, context, children) => <div data-testid="parent-layout">{children as any}</div>);
+      parentRoute.render(({ children }) => <div data-testid="parent-layout">{children as any}</div>);
 
       const indexRoute = parentRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view">Index!</div>);
@@ -157,8 +146,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
     it('renders exception renderer when route has an exception', async () => {
       const router = createRouter();
       const testRoute = router.route('/error');
-      testRoute.render((state, context, children) => <div>{children as any}</div>);
-      testRoute.catch(() => <div data-testid="error-view">Error!</div>);
+      testRoute.render(({ children }) => <div>{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="error-view">Error! {error.message}</div>);
       const stacks = createStacks();
 
       // Activate a non-matching URL to trigger exception on the route
@@ -176,7 +165,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
     it('renders null renderer when route has an exception', async () => {
       const router = createRouter();
       const testRoute = router.route('/error');
-      testRoute.render((_state, _context, children) => <div>{children as any}</div>);
+      testRoute.render(({ children }) => <div>{children as any}</div>);
       const stacks = createStacks();
 
       // Activate a non-matching URL to trigger exception on the route
@@ -219,7 +208,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const modalRoute = router.route('/modal-full');
       modal(modalRoute);
 
-      modalRoute.render((_state, _context, children) => <div data-testid="modal-layout">{children as any}</div>);
+      modalRoute.render(({ children }) => <div data-testid="modal-layout">{children as any}</div>);
 
       const stacks = createStacks();
 
@@ -238,7 +227,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const modalRoute = router.route('/modal-full');
       modal(modalRoute);
 
-      modalRoute.render((state, context, children) => <div data-testid="modal-layout">{children as any}</div>);
+      modalRoute.render(({ children }) => <div data-testid="modal-layout">{children as any}</div>);
       const indexRoute = modalRoute.route('/');
       indexRoute.render(() => <div data-testid="modal-index">Modal Index</div>);
 
@@ -350,7 +339,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
     it('recursively renders child routes through the registry', () => {
       const router = createRouter();
       const rootRoute = router.route('/root');
-      rootRoute.render((state, context, children) => <div data-testid="root-layout">{children as any}</div>);
+      rootRoute.render(({ children }) => <div data-testid="root-layout">{children as any}</div>);
 
       const childRoute = rootRoute.route('/child-1');
       childRoute.render(() => <div data-testid="child-1">Child 1</div>);
@@ -361,7 +350,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       const registry = Array.from(router.routes)[0];
       const { container } = render(() => (
-        <RouteRenderer route={rootRoute as never} registry={registry as any} stacks={stacks} />
+        <RouteRendererComponent route={rootRoute as never} registry={registry as any} stacks={stacks} />
       ));
 
       expect(container.querySelector('[data-testid="root-layout"]')).toBeDefined();
@@ -402,8 +391,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const rawRoute = router.route('/deprecated');
       const UiRoute = route(rawRoute);
 
-      expect(UiRoute.index).toBe(rawRoute);
-      expect(typeof UiRoute.route).toBe('function');
+      expect(UiRoute.route).toBe(rawRoute);
+      expect(typeof UiRoute.render).toBe('function');
     });
   });
 });

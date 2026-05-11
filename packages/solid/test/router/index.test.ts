@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('Anchor Solid - Router Index Barrel', () => {
   it('re-exports all router modules', async () => {
-    const routerIndex = await import('../../src/router/index.js');
+    const routerIndex = await import('../../src/index.js');
 
     // Core router re-exports
     expect(routerIndex.createRouter).toBeDefined();
@@ -24,7 +24,7 @@ describe('Anchor Solid - Router Index Barrel', () => {
     // Router
     expect(routerIndex.UIRouter).toBeDefined();
     expect(routerIndex.RouteViewer).toBeDefined();
-    expect(routerIndex.RouteRenderer).toBeDefined();
+    expect(routerIndex.RouteRendererComponent).toBeDefined();
     expect(routerIndex.page).toBeDefined();
     expect(routerIndex.modal).toBeDefined();
   });

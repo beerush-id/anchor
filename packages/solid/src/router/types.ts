@@ -2,10 +2,10 @@ import type {
   IndexRoute,
   None,
   Route,
-  RouteOptions,
+  RouteIndexRenderer,
+  RouteLayoutRenderer,
   RoutePath,
   Router,
-  RouteRendererFn,
   UnknownRoute,
 } from '@anchorlib/router';
 import type { JSX, ParentComponent } from 'solid-js';
@@ -14,15 +14,15 @@ import type { JSX, ParentComponent } from 'solid-js';
  * Represents any generic Route definition from the core router.
  */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
-export type AnyRoute = Route<RoutePath, any, any, RouteOptions, any, any>;
+export type AnyRoute = Route<RoutePath, any, any, any, any>;
 
 export type LinkDynamicProps<T, Params, Query> = Params extends None
   ? Query extends None
     ? { to?: RouteComponent<T> }
-    : { to: RouteComponent<T>; query: Query }
+    : { to: RouteComponent<T>; query?: Query }
   : Query extends None
     ? { to: RouteComponent<T>; params: Params }
-    : { to: RouteComponent<T>; params: Params; query: Query };
+    : { to: RouteComponent<T>; params: Params; query?: Query };
 
 /**
  * Derives the required props for a Link component based on the target Route's params and query requirements.
@@ -31,12 +31,11 @@ export type ComposedLinkProps<T> = T extends IndexRoute<
   infer _Path,
   infer Params,
   infer Query,
-  infer _Options,
   infer _Data,
   infer _Parent
 >
   ? LinkDynamicProps<T, Params, Query>
-  : T extends Route<infer _Path, infer Params, infer Query, infer _Options, infer _Data, infer _Parent>
+  : T extends Route<infer _Path, infer Params, infer Query, infer _Data, infer _Parent>
     ? LinkDynamicProps<T, Params, Query>
     : { to?: RouteComponent<T> };
 
@@ -54,28 +53,35 @@ export type LinkProps<R> = JSX.AnchorHTMLAttributes<HTMLAnchorElement> &
  * A Solid component that represents a Route and provides static access to its underlying route definition.
  */
 export type RouteComponent<T> = ParentComponent & {
-  index: T;
-  route: T extends AnyRoute ? T['route'] : never;
+  route: T;
   render: T extends Route<
     infer _TPath,
     infer TParams,
     infer TQueryParams,
-    infer _TOptions,
     infer TData,
     infer _TParent,
-    infer TOutput
+    infer TOutput,
+    infer PParams,
+    infer PQueryParams,
+    infer PData
   >
-    ? (renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>) => RouteComponent<T>
+    ? (
+        renderer: RouteLayoutRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+      ) => RouteComponent<T>
     : T extends IndexRoute<
           infer _TPath,
           infer TParams,
           infer TQueryParams,
-          infer _TOptions,
           infer TData,
           infer _TParent,
-          infer TOutput
+          infer TOutput,
+          infer PParams,
+          infer PQueryParams,
+          infer PData
         >
-      ? (renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>) => RouteComponent<T>
+      ? (
+          renderer: RouteIndexRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+        ) => RouteComponent<T>
       : never;
 };
 
