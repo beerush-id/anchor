@@ -3,8 +3,6 @@ import {
   getRenderProps,
   type MatchedRoute,
   type RouteExceptionRenderer,
-  type RouteOptions,
-  type RoutePath,
   type RouteRegistry,
   type RouteRenderer,
   type RouteTarget,
@@ -52,7 +50,7 @@ export function RouteViewer({
       const layoutProps = getRenderProps(route);
       const Exception = route.exceptionRenderer;
       if (Exception) {
-        (Exception as any).displayName = `Exception(${route.path})`;
+        (Exception as FC).displayName = `Exception(${route.path})`;
       }
       const exception = route.exception && Exception ? <Exception error={route.exception} {...layoutProps} /> : null;
       const content = (
@@ -105,14 +103,14 @@ export function RouteRendererComponent({
 }) {
   if (route.renderer) {
     if (registry.size) {
-      (route.renderer as any).displayName = `Layout(${route.path})`;
+      (route.renderer as FC).displayName = `Layout(${route.path})`;
     } else {
-      (route.renderer as any).displayName = `Content(${route.path})`;
+      (route.renderer as FC).displayName = `Content(${route.path})`;
     }
   }
 
   if (route.index?.renderer) {
-    (route.index.renderer as any).displayName = `Content(${route.path})`;
+    (route.index.renderer as FC).displayName = `Content(${route.path})`;
   }
 
   const children = Array.from(registry).map(([, child]) => {
@@ -159,7 +157,7 @@ export function UIRouter({ router, resetScroll, url, headless }: UIRouterProps) 
     };
   });
 
-  const routes = Array.from(router.routes).map((registry, i) => (
+  const routes = Array.from(router.routes).map((registry) => (
     <RouteRendererComponent key={registry.route.path} route={registry.route} registry={registry} stacks={stacks} />
   ));
 
@@ -184,8 +182,8 @@ UIRouter.displayName = 'UIRouter';
 
 /**
  * Create a page component.
- * @param {T} routeNode
- * @returns {RouteComponent<T>}
+ * @param routeNode - The route node to create a component for.
+ * @returns A route component.
  */
 export function page<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   const UIRoute: FC<{ children?: ReactNode }> = function UIRoute({ children }) {
@@ -193,10 +191,7 @@ export function page<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   };
   UIRoute.displayName = `Route Factory(${(routeNode as AnyRoute).path})`;
 
-  (UIRoute as RouteComponent<AnyRoute>).index = routeNode as AnyRoute;
-  (UIRoute as RouteComponent<AnyRoute>).route = (path: RoutePath, options?: RouteOptions) => {
-    return (routeNode as AnyRoute).route(path as never, options);
-  };
+  (UIRoute as RouteComponent<AnyRoute>).route = routeNode as AnyRoute;
   (UIRoute as RouteComponent<AnyRoute>).render = (renderer) => {
     (routeNode as AnyRoute).render(renderer);
 
@@ -216,26 +211,43 @@ export function route<T>(routeNode: T): RouteComponent<T> {
 
 /**
  * Create a modal component.
- * @param {T} routeNode
- * @returns {RouteComponent<T>}
+ * @param routeNode - The route node to create a component for.
+ * @returns A route component.
  */
 export function modal<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   STACK_REGISTRY.add(routeNode as never);
   return page(routeNode);
 }
 
-const createRenderer = <TPath, TParams, TQueryParams, TData, TOutput>(
+const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
   route: UnknownRoute,
-  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>
-): RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> => {
-  return setup(renderer as never, route.path) as RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>;
+  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
+): RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
+  return setup(renderer as never, route.path) as RouteRenderer<
+    TPath,
+    TParams,
+    TQueryParams,
+    TData,
+    PParams,
+    PQuery,
+    PData,
+    TOutput
+  >;
 };
 
-const createExceptionRenderer = <TParams, TQueryParams, TData, TOutput>(
+const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
   route: UnknownRoute,
-  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>
-): RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> => {
-  return setup(renderer as never, route.path) as RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>;
+  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
+): RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
+  return setup(renderer as never, route.path) as RouteExceptionRenderer<
+    TParams,
+    TQueryParams,
+    TData,
+    PParams,
+    PQuery,
+    PData,
+    TOutput
+  >;
 };
 
 setRendererFactory(createRenderer);

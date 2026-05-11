@@ -26,46 +26,34 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
   describe('route() HOC wrapper', () => {
     it('wraps an @anchorlib/router Route and exposes it accurately via the .index and .route properties', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rawRoute = router.route('/testing');
       const UiRoute = page(rawRoute);
 
-      expect(UiRoute.index).toBe(rawRoute);
-      expect(typeof UiRoute.route).toBe('function');
-
-      const childUiRoute = UiRoute.route('/child');
-      expect(childUiRoute.path).toBe('/testing/child');
+      expect(UiRoute.route).toBe(rawRoute);
+      expect(typeof UiRoute.render).toBe('function');
     });
   });
 
   describe('page() factory', () => {
     it('creates a RouteComponent identical to route()', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rawRoute = router.route('/page-test');
       const UiPage = page(rawRoute);
 
-      expect(UiPage.index).toBe(rawRoute);
-      expect(typeof UiPage.route).toBe('function');
+      expect(UiPage.route).toBe(rawRoute);
+      expect(typeof UiPage.render).toBe('function');
     });
   });
 
   describe('modal() factory', () => {
     it('creates a RouteComponent with the route registered in the stack registry', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rawRoute = router.route('/modal-test');
       const UiModal = modal(rawRoute);
 
-      expect(UiModal.index).toBe(rawRoute);
-      expect(typeof UiModal.route).toBe('function');
-    });
-
-    it('supports child routes like page()', () => {
-      const router = createRouter();
-      const rawRoute = router.route('/modal-parent');
-      const UiModal = modal(rawRoute);
-
-      const child = UiModal.route('/child');
-      expect(child.path).toBe('/modal-parent/child');
+      expect(UiModal.route).toBe(rawRoute);
+      expect(typeof UiModal.render).toBe('function');
     });
   });
 
@@ -73,11 +61,11 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     const createStacks = () => new Map();
 
     it('returns children natively if the route is inactive or lacks a renderer', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const testRoute = router.route('/blank');
       const stacks = createStacks();
 
-      const { container } = render(
+      render(
         <RouteViewer route={testRoute as never} stacks={stacks}>
           <div data-testid="fallback">Fallback</div>
         </RouteViewer>
@@ -87,7 +75,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('returns null visually when inactive but holding a layout (React natively outputs empty for null/inactive Snippets wrapped)', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const testRoute = router.route('/inactive');
       testRoute.render(() => <div>Layout</div>);
       testRoute.active = false;
@@ -105,12 +93,12 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('renders the Layout and children when active', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const testRoute = router.route('/active');
       testRoute.render(({ children }) => (
         <div>
           <span data-testid="layout" />
-          {children as any}
+          {children}
         </div>
       ));
       testRoute.active = true;
@@ -127,9 +115,9 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('renders Layout and Index child exactly if both components exist and both are active', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const parentRoute = router.route('/parent');
-      parentRoute.render(({ children }) => <div data-testid="parent-layout">{children as any}</div>);
+      parentRoute.render(({ children }) => <div data-testid="parent-layout">{children}</div>);
 
       const indexRoute = parentRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view">Index!</div>);
@@ -240,11 +228,11 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('renders a modal with Layout and Index in the stack when both are active', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const modalRoute = router.route('/modal-full');
       modal(modalRoute);
 
-      modalRoute.render(({ children }) => <div data-testid="modal-layout">{children as any}</div>);
+      modalRoute.render(({ children }) => <div data-testid="modal-layout">{children}</div>);
       const indexRoute = modalRoute.route('/');
       indexRoute.render(() => <div data-testid="modal-index">Modal Index</div>);
 
@@ -262,17 +250,17 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const Stack = stacks.get(modalRoute as never)!;
       expect(Stack).toBeDefined();
 
-      const { container } = render(<Stack />);
+      render(<Stack />);
       expect(screen.getByTestId('modal-layout')).toBeDefined();
       expect(screen.getByTestId('modal-index')).toBeDefined();
     });
 
     it('renders a modal with Layout only (no Index) in the stack', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const modalRoute = router.route('/modal-layout-only');
       modal(modalRoute);
 
-      modalRoute.render(({ children }) => <div data-testid="modal-layout-only">{children as any}</div>);
+      modalRoute.render(({ children }) => <div data-testid="modal-layout-only">{children}</div>);
 
       modalRoute.active = true;
       const stacks = createStacks();
@@ -288,12 +276,12 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       });
 
       const Stack = stacks.get(modalRoute as never)!;
-      const { container } = render(<Stack />);
+      render(<Stack />);
       expect(screen.getByTestId('modal-layout-only')).toBeDefined();
     });
 
     it('renders a modal with Index only (no Layout) in the stack', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const modalRoute = router.route('/modal-index-only');
       modal(modalRoute);
       // No layout renderer, but add an index route
@@ -311,12 +299,12 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       });
 
       const Stack = stacks.get(modalRoute as never)!;
-      const { container } = render(<Stack />);
+      render(<Stack />);
       expect(screen.getByTestId('modal-index-alone')).toBeDefined();
     });
 
     it('renders children passthrough in the stack when inactive', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const modalRoute = router.route('/modal-inactive');
       modal(modalRoute);
       modalRoute.active = false;
@@ -333,13 +321,13 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       });
 
       const Stack = stacks.get(modalRoute as never)!;
-      const { container } = render(<Stack />);
+      render(<Stack />);
       // When inactive, the stack's render block returns children (passthrough)
       expect(screen.getByTestId('inactive-child')).toBeDefined();
     });
 
     it('renders children in the stack when active but has no Layout or Index', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const modalRoute = router.route('/modal-empty');
       modal(modalRoute);
       // No layout renderer, no index route
@@ -358,7 +346,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       const Stack = stacks.get(modalRoute as never)!;
       expect(Stack).toBeDefined();
-      const { container } = render(<Stack />);
+      render(<Stack />);
       expect(screen.getByTestId('empty-modal-child')).toBeDefined();
     });
   });
@@ -367,10 +355,10 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     const createStacks = () => mutable<Map<UnknownRoute, FC>>(new Map());
 
     it('recursively renders children mapping through the RouteRegistry and mutates displayNames', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rootRoute = router.route('/root');
 
-      rootRoute.render(({ children }) => <div data-testid="layout">{children as any}</div>);
+      rootRoute.render(({ children }) => <div data-testid="layout">{children}</div>);
       rootRoute.route('/').render(() => <div>Index</div>);
 
       // Dynamic child inside registry
@@ -394,7 +382,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('assigns generic fallback / displayNames to empty root layout blocks automatically', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const emptyRoot = router.rootRoute;
 
       // When route.path parses generically to '', test the || '/' internal fallback mechanism.
@@ -408,12 +396,12 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('assigns both Layout and Index displayNames with generic fallback paths when both exist on the absolute root', () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const root = router.rootRoute;
       root.route('/child');
       const rootIndex = root.route('/');
 
-      root.render(({ children }) => <div>{children as any}</div>);
+      page(root).render(({ children }) => <div>{children}</div>);
       rootIndex.render(() => <div>Root Index</div>);
 
       const stacks = createStacks();
@@ -502,7 +490,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     });
 
     it('should navigate automatically when a Redirect is thrown/created', async () => {
-      const router = createRouter();
+      const router = createRouter<ReactNode>();
       const rawRoute = router.route('/redirect-target');
 
       // Creating a redirect invokes the handler registered natively by router.tsx

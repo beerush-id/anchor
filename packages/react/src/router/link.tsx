@@ -23,9 +23,9 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
   const query = derived(() => $props.query);
   const params = derived(() => $props.params);
-  const href = derived(() => createUrl(props.href ?? $props.to?.index.path ?? '/', params.value, query.value));
+  const href = derived(() => createUrl(props.href ?? $props.to?.route.path ?? '/', params.value, query.value));
   const isActive = derived(() => {
-    const route = $props.to?.index;
+    const route = $props.to?.route;
     if (!route) return false;
 
     if (route.active) return true;
@@ -59,8 +59,8 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
   const handleHover: MouseEventHandler<HTMLAnchorElement> = (e) => {
     const { to } = $props;
 
-    if (to && (props.preload === 'hover' || to.index.options.preloadMode === 'hover')) {
-      to.index.router.preload(href.value);
+    if (to && (props.preload === 'hover' || to.route.options.preloadMode === 'hover')) {
+      to.route.router.preload(href.value);
     }
 
     $props.onMouseEnter?.(e);

@@ -1,12 +1,6 @@
-import {
-  createUrl,
-  type InferRedirect,
-  type NavigateOptions,
-  redirect as redirectTo,
-  type RedirectOptions,
-  Route,
-  type RouteTarget,
-} from '@anchorlib/router';
+// biome-ignore assist/source/organizeImports: false
+import type { NavigateOptions, Redirect, RedirectOptions, RouteTarget } from '@anchorlib/router';
+import { createUrl, redirect as redirectTo, Route } from '@anchorlib/router';
 import type { AnyRoute, RouteComponent } from './types.js';
 
 /**
@@ -33,10 +27,13 @@ export function navigate<T>(route: RouteTarget<T>, options?: NavigateOptions<T>)
  */
 export function navigate<T>(route: RouteComponent<T>, options?: NavigateOptions<T>): void;
 
-export function navigate<T>(target: RouteTarget<T>, options: NavigateOptions<T> = {} as NavigateOptions<T>) {
+export function navigate<T>(
+  target: string | RouteTarget<T> | RouteComponent<T>,
+  options: NavigateOptions<T> = {} as NavigateOptions<T>
+) {
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   const { params, query, redirect, replace } = options as any;
-  const path = (target as AnyRoute).index?.path ?? (target as AnyRoute).path;
+  const path = ((target as RouteComponent<T>).route as AnyRoute)?.path ?? (target as AnyRoute).path;
   const href = createUrl(typeof target === 'string' ? target : path, params, query);
 
   const state = { href, query, params, redirect };
@@ -55,10 +52,10 @@ export function navigate<T>(target: RouteTarget<T>, options: NavigateOptions<T> 
  * @param route - The route component to redirect to.
  * @param options - Optional redirect options.
  */
-export function redirect<T>(route: RouteTarget<T> | RouteComponent<T>, options?: RedirectOptions<T>): InferRedirect<T> {
+export function redirect<T>(route: RouteTarget<T> | RouteComponent<T>, options?: RedirectOptions<T>): Redirect<T> {
   if (route instanceof Route) {
     return redirectTo(route as never, options?.params, options?.query) as never;
   }
 
-  return redirectTo((route as RouteComponent<T>).index as never, options?.params, options?.query) as never;
+  return redirectTo((route as RouteComponent<T>).route as never, options?.params, options?.query) as never;
 }
