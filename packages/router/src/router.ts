@@ -81,7 +81,7 @@ export class Router<Output = any> {
   }
 
   public readonly options: RouterOptions;
-  public readonly rootRoute: UnknownRoute;
+  public readonly rootRoute: Route<'/', None, None>;
   public readonly rootRegistry: RouteRegistry;
   public readonly routes = new Set<RouteRegistry>();
 
@@ -126,7 +126,7 @@ export class Router<Output = any> {
    */
   constructor(options?: RouterOptions) {
     this.options = { ...DEFAULT_CONFIG, ...options };
-    this.rootRoute = new Route(this, '/', this.options, undefined, '/');
+    this.rootRoute = new Route<'/', None, None>(this, '/', this.options, undefined, '/');
     this.rootRegistry = new RouteRegistry(this.rootRoute);
     this.routes.add(this.rootRegistry);
   }
@@ -136,17 +136,18 @@ export class Router<Output = any> {
     this.routes.add(this.rootRegistry);
   }
 
+  public route(): Route<'/', None, None, TRec, never, Output>;
   /**
    * Creates a new route.
    *
    * If path is '/', creates an index route and returns the root route.
    * Otherwise, creates a new child route and returns it.
    *
-   * @template TPath - The route path type
-   * @template TParams - The route parameters type
-   * @template TQueryParams - The query parameters type
+   * @template Path - The route path type
+   * @template Params - The route parameters type
+   * @template QueryParams - The query parameters type
    * @template TOptions - The route options type
-   * @template TData - The route data type
+   * @template Data - The route data type
    * @param path - The route path
    * @param options - Optional route options
    * @returns The created route
@@ -159,20 +160,20 @@ export class Router<Output = any> {
    * ```
    */
   public route<
-    TPath extends RoutePath,
-    TParams extends ExtractParams<TPath>,
-    TQueryParams extends ExtractQueryParams<TPath>,
-    TData,
+    Path extends RoutePath,
+    Params extends ExtractParams<Path>,
+    QueryParams extends ExtractQueryParams<Path>,
+    Data extends TRec = TRec,
   >(
-    path?: TPath,
+    path?: Path,
     options?: RouteOptions
-  ): TPath extends '/'
-    ? IndexRoute<TPath, TParams, TQueryParams, TData, never, Output>
-    : Route<TPath, TParams, TQueryParams, TData, never, Output> {
+  ): Path extends '/'
+    ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
+    : Route<Path, Params, QueryParams, Data, never, Output> {
     if (!path) return this.rootRoute as never;
     const route = new Route(this, path, options);
 
-    if (path === ('/' as TPath)) {
+    if (path === ('/' as Path)) {
       route.closed = true;
       this.rootRoute.index = route as never;
       return route as never;
@@ -197,11 +198,11 @@ export class Router<Output = any> {
    * If path is '/', creates an index route and returns the root route.
    * Otherwise, creates a new child route and returns it.
    *
-   * @template TPath - The route path type
-   * @template TParams - The route parameters type
-   * @template TQueryParams - The query parameters type
+   * @template Path - The route path type
+   * @template Params - The route parameters type
+   * @template QueryParams - The query parameters type
    * @template TOptions - The route options type
-   * @template TData - The route data type
+   * @template Data - The route data type
    * @param path - The route path
    * @param options - Optional route options
    * @returns The created route
@@ -214,16 +215,16 @@ export class Router<Output = any> {
    * ```
    */
   public append<
-    TPath extends RoutePath,
-    TParams extends ExtractParams<TPath>,
-    TQueryParams extends ExtractQueryParams<TPath>,
-    TData,
+    Path extends RoutePath,
+    Params extends ExtractParams<Path>,
+    QueryParams extends ExtractQueryParams<Path>,
+    Data extends TRec = TRec,
   >(
-    path?: TPath,
+    path?: Path,
     options?: RouteOptions
-  ): TPath extends '/'
-    ? IndexRoute<TPath, TParams, TQueryParams, TData, never, Output>
-    : Route<TPath, TParams, TQueryParams, TData, never, Output> {
+  ): Path extends '/'
+    ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
+    : Route<Path, Params, QueryParams, Data, never, Output> {
     if (!path || path === ('/' as never)) throw new Error('Invalid path: Path must be string "/{path}".');
 
     const route = new Route(this, path, options);

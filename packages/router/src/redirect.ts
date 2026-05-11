@@ -1,6 +1,6 @@
 import { getScope, microtask, setScope } from '@anchorlib/core';
 import type { IndexRoute, Route } from './route.js';
-import type { ExtractParams, ExtractQueryParams, RoutePath, UnknownRedirect, UnknownRoute } from './types.js';
+import type { ExtractParams, ExtractQueryParams, RoutePath, TRec, UnknownRedirect, UnknownRoute } from './types.js';
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = Symbol('redirect-handler');
@@ -58,7 +58,7 @@ export class Redirect<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
   TQueryParams extends ExtractQueryParams<TPath>,
-  TData = unknown,
+  TData extends TRec = TRec,
 > {
   /**
    * Creates a new Redirect instance.
@@ -107,7 +107,7 @@ export function redirect<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
   TQueryParams extends ExtractQueryParams<TPath>,
-  TData,
+  TData extends TRec = TRec,
 >(
   route: Route<TPath, TParams, TQueryParams, TData> | IndexRoute<TPath, TParams, TQueryParams, TData> | UnknownRoute,
   params?: TParams,

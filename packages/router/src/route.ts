@@ -33,15 +33,14 @@ import type {
 } from './types.js';
 
 export type IndexRoute<
-  TPath extends RoutePath,
-  TParams extends ExtractParams<TPath>,
-  TQueryParams extends ExtractQueryParams<TPath>,
-  TData,
-  TParent = never,
-  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-  TOutput = any,
-> = Omit<Route<TPath, TParams, TQueryParams, TData, TParent, TOutput>, 'route' | 'renderer'> & {
-  renderer: RouteIndexRenderer<TParams, TQueryParams, TData, TOutput>;
+  Path extends RoutePath,
+  Params extends ExtractParams<Path>,
+  QueryParams extends ExtractQueryParams<Path>,
+  Data extends TRec = TRec,
+  Parent = never,
+  Output = any,
+> = Omit<Route<Path, Params, QueryParams, Data, Parent, Output>, 'route' | 'renderer'> & {
+  renderer: RouteIndexRenderer<Params, QueryParams, Data, Output>;
 };
 
 /**
@@ -50,12 +49,12 @@ export type IndexRoute<
  * Routes can be static, dynamic (with parameters), or wildcards.
  * They support authentication guards, data providers, and reactive state management.
  *
- * @template TPath - The route path type
- * @template TParams - The route parameters type
- * @template TQueryParams - The query parameters type
+ * @template Path - The route path type
+ * @template Params - The route parameters type
+ * @template QueryParams - The query parameters type
  * @template TOptions - The route options type
- * @template TData - The route data type
- * @template TParent - The parent route type
+ * @template Data - The route data type
+ * @template Parent - The parent route type
  *
  * @example
  * ```ts
@@ -74,36 +73,35 @@ export type IndexRoute<
  * ```
  */
 export class Route<
-  TPath extends RoutePath,
-  TParams extends ExtractParams<TPath>,
-  TQueryParams extends ExtractQueryParams<TPath>,
-  TData,
-  TParent = never,
-  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-  TOutput = any,
+  Path extends RoutePath,
+  Params extends ExtractParams<Path>,
+  QueryParams extends ExtractQueryParams<Path>,
+  Data extends TRec = TRec,
+  Parent = never,
+  Output = any,
 > {
   /** The name of this route */
-  public readonly name: RouteName<TPath>;
+  public readonly name: RouteName<Path>;
   /** The type of this route (static, dynamic, or wildcard) */
   public readonly type: RouteType;
   public readonly options: RouteOptions;
   public closed = false;
 
-  private rendererState = createState<RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> | unknown>(undefined);
-  private exceptionRendererState = createState<
-    RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> | undefined
-  >(undefined);
+  private rendererState = createState<RouteRenderer<Path, Params, QueryParams, Data, Output> | unknown>(undefined);
+  private exceptionRendererState = createState<RouteExceptionRenderer<Params, QueryParams, Data, Output> | undefined>(
+    undefined
+  );
 
-  public get renderer(): RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> | undefined {
-    return this.rendererState.value as RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>;
+  public get renderer(): RouteRenderer<Path, Params, QueryParams, Data, Output> | undefined {
+    return this.rendererState.value as RouteRenderer<Path, Params, QueryParams, Data, Output>;
   }
 
-  public get exceptionRenderer(): RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> | undefined {
+  public get exceptionRenderer(): RouteExceptionRenderer<Params, QueryParams, Data, Output> | undefined {
     return (this.exceptionRendererState.value ?? this.router.exceptionRenderer) as RouteExceptionRenderer<
-      TParams,
-      TQueryParams,
-      TData,
-      TOutput
+      Params,
+      QueryParams,
+      Data,
+      Output
     >;
   }
 
@@ -146,7 +144,7 @@ export class Route<
    *
    * @returns The full route path
    */
-  public get path(): RoutePathOutput<TParent, TPath> {
+  public get path(): RoutePathOutput<Parent, Path> {
     const parent = this.parent as UnknownRoute;
 
     if (parent) {
@@ -158,7 +156,7 @@ export class Route<
   }
 
   /** Optional index route for this route */
-  public index?: IndexRoute<TPath, TParams, TQueryParams, TData, this, TOutput>;
+  public index?: IndexRoute<Path, Params, QueryParams, Data, this, Output>;
   /** Set of guards for this route */
   public guards = new Set<UnknownGuard>();
   /** Map of data providers for this route */
@@ -168,20 +166,20 @@ export class Route<
     return this.storage.state;
   }
 
-  public get context(): RouteContext<TParams, TQueryParams, TData> {
-    return this.storage.context.value as RouteContext<TParams, TQueryParams, TData>;
+  public get context(): RouteContext<Params, QueryParams, Data> {
+    return this.storage.context.value as RouteContext<Params, QueryParams, Data>;
   }
 
-  public get params(): TParams {
-    return this.storage.context.value.params as TParams;
+  public get params(): Params {
+    return this.storage.context.value.params as Params;
   }
 
-  public get query(): TQueryParams {
-    return this.storage.context.value.query as TQueryParams;
+  public get query(): QueryParams {
+    return this.storage.context.value.query as QueryParams;
   }
 
-  public get data(): TData {
-    return this.storage.context.value.data as TData;
+  public get data(): Data {
+    return this.storage.context.value.data as Data;
   }
 
   public get storage(): RouteStorage {
@@ -198,7 +196,7 @@ export class Route<
             authenticated: false,
             authenticating: false,
           }),
-          cache: new RouteCache(this as UnknownRoute),
+          cache: new RouteCache(this as never),
           context: createState({ value: { data: {}, query: {}, params: {} } }),
           guardObservers: new WeakMap(),
           activeResolvers: new Map(),
@@ -220,14 +218,14 @@ export class Route<
    * @param displayName - Optional display name for the route
    */
   public constructor(
-    public router: Router<TOutput>,
-    name: TPath,
+    public router: Router<Output>,
+    name: Path,
     options?: RouteOptions,
-    public parent?: TParent,
+    public parent?: Parent,
     public displayName?: string
   ) {
     const [path] = (name ?? '').split(/\?/);
-    this.name = path.replace(/^\//, '').split(/\//g)[0] as RouteName<TPath>;
+    this.name = path.replace(/^\//, '').split(/\//g)[0] as RouteName<Path>;
     this.type = this.name.startsWith(':')
       ? ROUTE_TYPE.DYNAMIC
       : this.name.startsWith('*')
@@ -249,7 +247,7 @@ export class Route<
    * // Returns: '/users/123?tab=profile'
    * ```
    */
-  public url(params?: TParams, query?: TQueryParams) {
+  public url(params?: Params, query?: QueryParams) {
     let url = this.path as string;
 
     for (const [key, value] of Object.entries((params ?? {}) as TRec)) {
@@ -301,19 +299,19 @@ export class Route<
     TChildPath extends RoutePath,
     TChildParams extends ExtractParams<TChildPath>,
     TChildQueryParams extends ExtractQueryParams<TChildPath>,
-    TChildData,
+    TChildData extends TRec = TRec,
   >(
     path: TChildPath,
     options?: RouteOptions
   ): TChildPath extends '/'
-    ? IndexRoute<TChildPath, TChildParams, TChildQueryParams, TChildData, this, TOutput>
-    : Route<TChildPath, TChildParams, TChildQueryParams, TChildData, this, TOutput> {
+    ? IndexRoute<TChildPath, TChildParams, TChildQueryParams, TChildData, this, Output>
+    : Route<TChildPath, TChildParams, TChildQueryParams, TChildData, this, Output> {
     if (this.closed) throw new Error(`Index route can't have a child route.`);
     const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
 
     if (path === ('/' as TChildPath)) {
       child.closed = true;
-      this.index = child as never as IndexRoute<TPath, TParams, TQueryParams, TData, this, TOutput>;
+      this.index = child as never as IndexRoute<Path, Params, QueryParams, Data, this, Output>;
       return child as never;
     }
 
@@ -354,9 +352,9 @@ export class Route<
    * });
    * ```
    */
-  public guard<TGuard extends GuardHandler<TParams, TQueryParams>>(
+  public guard<TGuard extends GuardHandler<Params, QueryParams>>(
     guard: TGuard
-  ): Route<TPath, TParams, TQueryParams, TData, TParent> {
+  ): Route<Path, Params, QueryParams, Data, Parent> {
     this.guards.add(guard as UnknownGuard);
     return this as never;
   }
@@ -383,9 +381,9 @@ export class Route<
    */
   public provide<TName extends string, TProviderData>(
     name: TName,
-    provider: (context: RouteContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData,
+    provider: (context: RouteContext<Params, QueryParams, Data>) => Promise<TProviderData> | TProviderData,
     options?: ProviderOptions
-  ): Route<TPath, TParams, TQueryParams, TData & { [PK in TName]: TProviderData }, TParent> {
+  ): Route<Path, Params, QueryParams, Data & { [PK in TName]: TProviderData }, Parent> {
     this.providers.set(name, { name, provider, options } as ProviderMap);
     return this as never;
   }
@@ -408,7 +406,7 @@ export class Route<
    * }
    * ```
    */
-  public async authenticate(context: GuardContext<TParams, TQueryParams>, force = false): Promise<true | GuardBlocker> {
+  public async authenticate(context: GuardContext<Params, QueryParams>, force = false): Promise<true | GuardBlocker> {
     const { state, guardObservers } = this.storage;
 
     if (state.authenticated && !force) return Promise.resolve(true);
@@ -489,11 +487,11 @@ export class Route<
    * await route.preload({ params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public async preload(context: RouteContext<TParams, TQueryParams, TData>): Promise<TData | GuardBlocker> {
+  public async preload(context: RouteContext<Params, QueryParams, Data>): Promise<Data | GuardBlocker> {
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
 
-    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>)) as TData;
+    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>)) as Data;
   }
 
   /**
@@ -510,7 +508,7 @@ export class Route<
    * const data = await route.resolve({ params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public async resolve(context: RouteContext<TRec, TRec, TRec>): Promise<TData | undefined> {
+  public async resolve(context: RouteContext<TRec, TRec, TRec>): Promise<Data | undefined> {
     const { state, cache, activeResolvers, providerObservers } = this.storage;
 
     const abortController = new AbortController();
@@ -583,7 +581,7 @@ export class Route<
 
       state.resolved = true;
 
-      return context.data as TData;
+      return context.data as Data;
     } finally {
       activeResolvers.delete(context);
     }
@@ -602,7 +600,7 @@ export class Route<
    * await route.activate({ params: { id: '123' }, query: {}, data: {} });
    * ```
    */
-  public async activate(context: RouteContext<TParams, TQueryParams, TData>, preload = true): Promise<void> {
+  public async activate(context: RouteContext<Params, QueryParams, Data>, preload = true): Promise<void> {
     const { state, context: ctx } = this.storage;
     ctx.value = context as RouteContext<TRec, TRec, TRec>;
 
@@ -689,12 +687,12 @@ export class Route<
     }
   }
 
-  public render(renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>): this {
+  public render(renderer: RouteRenderer<Path, Params, QueryParams, Data, Output>): this {
     this.rendererState.value = createRenderer(this as never, renderer);
     return this;
   }
 
-  public catch(renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>) {
+  public catch(renderer: RouteExceptionRenderer<Params, QueryParams, Data, Output>) {
     this.exceptionRendererState.value = createExceptionRenderer(this as never, renderer);
   }
 
@@ -776,17 +774,17 @@ export function getRenderProps(route: UnknownRoute): RouteRenderProps<None, None
   });
 }
 
-let createRenderer = <TPath, TParams, TQueryParams, TData, TOutput>(
+let createRenderer = <Path, Params, QueryParams, Data, Output>(
   _route: UnknownRoute,
-  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>
-): RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> => {
+  renderer: RouteRenderer<Path, Params, QueryParams, Data, Output>
+): RouteRenderer<Path, Params, QueryParams, Data, Output> => {
   return renderer;
 };
 
-let createExceptionRenderer = <TParams, TQueryParams, TData, TOutput>(
+let createExceptionRenderer = <Params, QueryParams, Data, Output>(
   _route: UnknownRoute,
-  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>
-): RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> => {
+  renderer: RouteExceptionRenderer<Params, QueryParams, Data, Output>
+): RouteExceptionRenderer<Params, QueryParams, Data, Output> => {
   return renderer;
 };
 

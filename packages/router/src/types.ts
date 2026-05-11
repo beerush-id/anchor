@@ -136,7 +136,7 @@ export type UnknownParams = ExtractParams<''>;
 /** Unknown query parameters type */
 export type UnknownQueryParams = ExtractQueryParams<''>;
 /** Unknown route type */
-export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, unknown, unknown>;
+export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams>;
 /** Unknown provider type */
 export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */
@@ -153,11 +153,6 @@ export type context<TParams, TQueryParams, TData> = {
 export type RouterOptions = RouteOptions & {
   baseUrl?: string;
   cacheSize?: number;
-};
-
-/** Flattens a record type */
-export type FlatRec<TParams> = {
-  [K in keyof TParams]: TParams[K];
 };
 
 export type RouteStatus = (typeof ROUTE_STATUS)[keyof typeof ROUTE_STATUS];
