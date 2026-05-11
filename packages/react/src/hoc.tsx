@@ -1,4 +1,4 @@
-import { anchor, captureStack, createObserver, isBrowser, microtask, setContextStore } from '@anchorlib/core';
+import { $do, anchor, captureStack, createObserver, isBrowser, microtask, setContextStore } from '@anchorlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
 import type { RenderContext } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';
@@ -227,7 +227,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
 
     return observer.run(() => {
       if (inherited) return factory(parentProps as never, parentProps);
-      return factory(proxyProps({ ...props }, false) as P, parentProps);
+      return factory($do(() => proxyProps({ ...props }, false)) as P, parentProps);
     });
   }
   const Snippet = optimized ? SnippetBody : memoize(SnippetBody);

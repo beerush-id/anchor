@@ -2,10 +2,10 @@ import type {
   IndexRoute,
   None,
   Route,
-  RouteOptions,
+  RouteIndexRenderer,
+  RouteLayoutRenderer,
   RoutePath,
   Router,
-  RouteRendererFn,
   UnknownRoute,
 } from '@anchorlib/router';
 import type { AnchorHTMLAttributes, FC, ReactNode } from 'react';
@@ -14,7 +14,7 @@ import type { AnchorHTMLAttributes, FC, ReactNode } from 'react';
  * Represents any generic Route definition from the core router.
  */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
-export type AnyRoute = Route<RoutePath, any, any, RouteOptions, any, any>;
+export type AnyRoute = Route<RoutePath, any, any, any, any>;
 
 export type LinkDynamicProps<T, Params, Query> = Params extends None
   ? Query extends None
@@ -60,22 +60,30 @@ export type RouteComponent<T> = FC<{ children?: ReactNode }> & {
     infer _TPath,
     infer TParams,
     infer TQueryParams,
-    infer _TOptions,
     infer TData,
     infer _TParent,
-    infer TOutput
+    infer TOutput,
+    infer PParams,
+    infer PQueryParams,
+    infer PData
   >
-    ? (renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>) => RouteComponent<T>
+    ? (
+        renderer: RouteLayoutRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+      ) => RouteComponent<T>
     : T extends IndexRoute<
           infer _TPath,
           infer TParams,
           infer TQueryParams,
-          infer _TOptions,
           infer TData,
           infer _TParent,
-          infer TOutput
+          infer TOutput,
+          infer PParams,
+          infer PQueryParams,
+          infer PData
         >
-      ? (renderer: RouteRendererFn<TParams, TQueryParams, TData, TOutput>) => RouteComponent<T>
+      ? (
+          renderer: RouteIndexRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+        ) => RouteComponent<T>
       : never;
 };
 

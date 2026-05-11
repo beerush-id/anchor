@@ -5,7 +5,7 @@ import { createRouter } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { modal, page, redirect, RouteRenderer, RouteViewer, UIRouter } from '../../src/index.js';
+import { modal, page, redirect, RouteRendererComponent, RouteViewer, UIRouter } from '../../src/index.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -107,7 +107,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     it('renders the Layout and children when active', () => {
       const router = createRouter();
       const testRoute = router.route('/active');
-      testRoute.render((state, context, children) => (
+      testRoute.render(({ children }) => (
         <div>
           <span data-testid="layout" />
           {children as any}
@@ -129,7 +129,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     it('renders Layout and Index child exactly if both components exist and both are active', () => {
       const router = createRouter();
       const parentRoute = router.route('/parent');
-      parentRoute.render((state, context, children) => <div data-testid="parent-layout">{children as any}</div>);
+      parentRoute.render(({ children }) => <div data-testid="parent-layout">{children as any}</div>);
 
       const indexRoute = parentRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view">Index!</div>);
@@ -193,7 +193,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const ExceptionComponent = () => <div data-testid="error-view">Error</div>;
       const testRoute = router.route().route('/error-route');
       const child = testRoute.route('/');
-      testRoute.render((_s, _c, children) => children).catch(ExceptionComponent);
+      testRoute.render(({ children }) => children).catch(ExceptionComponent);
 
       // Simulate route with an exception
       child.active = true;
@@ -244,7 +244,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const modalRoute = router.route('/modal-full');
       modal(modalRoute);
 
-      modalRoute.render((state, context, children) => <div data-testid="modal-layout">{children as any}</div>);
+      modalRoute.render(({ children }) => <div data-testid="modal-layout">{children as any}</div>);
       const indexRoute = modalRoute.route('/');
       indexRoute.render(() => <div data-testid="modal-index">Modal Index</div>);
 
@@ -272,7 +272,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const modalRoute = router.route('/modal-layout-only');
       modal(modalRoute);
 
-      modalRoute.render((state, context, children) => <div data-testid="modal-layout-only">{children as any}</div>);
+      modalRoute.render(({ children }) => <div data-testid="modal-layout-only">{children as any}</div>);
 
       modalRoute.active = true;
       const stacks = createStacks();
@@ -370,7 +370,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const rootRoute = router.route('/root');
 
-      rootRoute.render((state, context, children) => <div data-testid="layout">{children as any}</div>);
+      rootRoute.render(({ children }) => <div data-testid="layout">{children as any}</div>);
       rootRoute.route('/').render(() => <div>Index</div>);
 
       // Dynamic child inside registry
@@ -382,7 +382,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const stacks = createStacks();
 
       render(
-        <RouteRenderer
+        <RouteRendererComponent
           route={rootRoute as never}
           registry={rootRoute.router.rootRegistry.get('root') as object as any}
           stacks={stacks}
@@ -401,7 +401,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       emptyRoot.render(() => <div>Root</div>);
 
       const stacks = createStacks();
-      render(<RouteRenderer route={emptyRoot} registry={router.rootRegistry} stacks={stacks} />);
+      render(<RouteRendererComponent route={emptyRoot} registry={router.rootRegistry} stacks={stacks} />);
 
       // Since emptyRoot lacks an index renderer, it drops into the explicit Index() fallback naming branch
       expect((emptyRoot.renderer as any).displayName).toBe('Content(/)');
@@ -413,11 +413,11 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       root.route('/child');
       const rootIndex = root.route('/');
 
-      root.render((state, context, children) => <div>{children as any}</div>);
+      root.render(({ children }) => <div>{children as any}</div>);
       rootIndex.render(() => <div>Root Index</div>);
 
       const stacks = createStacks();
-      render(<RouteRenderer route={root} registry={router.rootRegistry} stacks={stacks} />);
+      render(<RouteRendererComponent route={root} registry={router.rootRegistry} stacks={stacks} />);
 
       expect((root.renderer as any).displayName).toBe('Layout(/)');
       expect((rootIndex.renderer as any).displayName).toBe('Content(/)');

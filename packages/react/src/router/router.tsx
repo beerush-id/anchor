@@ -1,14 +1,20 @@
 import { isBrowser, untrack } from '@anchorlib/core';
 import {
+  getRenderProps,
   type MatchedRoute,
+  type RouteExceptionRenderer,
   type RouteOptions,
   type RoutePath,
   type RouteRegistry,
+  type RouteRenderer,
+  type RouteTarget,
+  setExceptionRendererFactory,
   setRedirectHandler,
+  setRendererFactory,
   type UnknownRoute,
 } from '@anchorlib/router';
 import type { FC, ReactNode } from 'react';
-import { snippet } from '../hoc.js';
+import { setup, snippet } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
@@ -31,7 +37,7 @@ export function RouteViewer({
     function IndexSnippet() {
       if (!route.index?.active) return;
       const Index = route.index?.renderer;
-      return Index ? <Index /> : null;
+      return Index ? <Index {...getRenderProps(route.index as never)} /> : null;
     },
     route.path,
     'Index',
@@ -43,11 +49,12 @@ export function RouteViewer({
       if (!route.active) return children;
 
       const Layout = route.renderer;
+      const layoutProps = getRenderProps(route);
       const Exception = route.exceptionRenderer;
       if (Exception) {
-        (Exception as FC).displayName = `Exception(${route.path})`;
+        (Exception as any).displayName = `Exception(${route.path})`;
       }
-      const exception = route.exception && Exception ? <Exception /> : null;
+      const exception = route.exception && Exception ? <Exception error={route.exception} {...layoutProps} /> : null;
       const content = (
         <>
           <IndexSnippet />
@@ -63,12 +70,12 @@ export function RouteViewer({
 
         return (
           <div className={'route-modal'}>
-            <Layout>{content}</Layout>
+            <Layout {...layoutProps}>{content}</Layout>
           </div>
         );
       }
 
-      return Layout ? <Layout>{content}</Layout> : content;
+      return Layout ? <Layout {...layoutProps}>{content}</Layout> : content;
     },
     route.path,
     STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
@@ -87,7 +94,7 @@ RouteViewer.displayName = 'Renderer(Route)';
 /**
  * Renders a specific route and recursively processes its child routes.
  */
-export function RouteRenderer({
+export function RouteRendererComponent({
   route,
   registry,
   stacks,
@@ -98,18 +105,18 @@ export function RouteRenderer({
 }) {
   if (route.renderer) {
     if (registry.size) {
-      (route.renderer as FC).displayName = `Layout(${route.path})`;
+      (route.renderer as any).displayName = `Layout(${route.path})`;
     } else {
-      (route.renderer as FC).displayName = `Content(${route.path})`;
+      (route.renderer as any).displayName = `Content(${route.path})`;
     }
   }
 
   if (route.index?.renderer) {
-    (route.index.renderer as FC).displayName = `Content(${route.path})`;
+    (route.index.renderer as any).displayName = `Content(${route.path})`;
   }
 
   const children = Array.from(registry).map(([, child]) => {
-    return <RouteRenderer key={child.route.path} route={child.route} registry={child} stacks={stacks} />;
+    return <RouteRendererComponent key={child.route.path} route={child.route} registry={child} stacks={stacks} />;
   });
 
   return (
@@ -119,7 +126,7 @@ export function RouteRenderer({
   );
 }
 
-RouteRenderer.displayName = 'Definition(Route)';
+RouteRendererComponent.displayName = 'Definition(Route)';
 
 /**
  * The root router component that mounts the application route tree to React.
@@ -153,7 +160,7 @@ export function UIRouter({ router, resetScroll, url, headless }: UIRouterProps) 
   });
 
   const routes = Array.from(router.routes).map((registry, i) => (
-    <RouteRenderer key={registry.route.path} route={registry.route} registry={registry} stacks={stacks} />
+    <RouteRendererComponent key={registry.route.path} route={registry.route} registry={registry} stacks={stacks} />
   ));
 
   return (
@@ -180,7 +187,7 @@ UIRouter.displayName = 'UIRouter';
  * @param {T} routeNode
  * @returns {RouteComponent<T>}
  */
-export function page<T>(routeNode: T): RouteComponent<T> {
+export function page<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   const UIRoute: FC<{ children?: ReactNode }> = function UIRoute({ children }) {
     return children;
   };
@@ -203,8 +210,8 @@ export function page<T>(routeNode: T): RouteComponent<T> {
  * @deprecated Use `page()` instead.
  * @type {<T extends AnyRoute>(routeNode: T) => RouteComponent<T>}
  */
-export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
-  return page(routeNode);
+export function route<T>(routeNode: T): RouteComponent<T> {
+  return page(routeNode as never);
 }
 
 /**
@@ -212,10 +219,27 @@ export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
  * @param {T} routeNode
  * @returns {RouteComponent<T>}
  */
-export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
-  STACK_REGISTRY.add(routeNode);
+export function modal<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
+  STACK_REGISTRY.add(routeNode as never);
   return page(routeNode);
 }
+
+const createRenderer = <TPath, TParams, TQueryParams, TData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>
+): RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> => {
+  return setup(renderer as never, route.path) as RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput>;
+};
+
+const createExceptionRenderer = <TParams, TQueryParams, TData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>
+): RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput> => {
+  return setup(renderer as never, route.path) as RouteExceptionRenderer<TParams, TQueryParams, TData, TOutput>;
+};
+
+setRendererFactory(createRenderer);
+setExceptionRendererFactory(createExceptionRenderer);
 
 if (isBrowser()) {
   if (location.pathname.endsWith('/')) {

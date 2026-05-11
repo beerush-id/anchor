@@ -33,8 +33,9 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     // If this route is an Index child route, its native .active state drops when navigating
     // into deep sibling dynamic routes (like /users/1).
     // Visually, the NavLink should still be active if its true parent is active.
-    if (route.parent && route.parent.index === route) {
-      return !!route.parent.active;
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    if (route.parent && (route.parent as any).index === route) {
+      return (route.parent as AnyRoute).active;
     }
 
     return false;
