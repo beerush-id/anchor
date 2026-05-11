@@ -36,12 +36,11 @@ export type IndexRoute<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
   TQueryParams extends ExtractQueryParams<TPath>,
-  TOptions extends RouteOptions,
   TData,
   TParent = never,
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   TOutput = any,
-> = Omit<Route<TPath, TParams, TQueryParams, TOptions, TData, TParent, TOutput>, 'route' | 'renderer'> & {
+> = Omit<Route<TPath, TParams, TQueryParams, TData, TParent, TOutput>, 'route' | 'renderer'> & {
   renderer: RouteIndexRenderer<TParams, TQueryParams, TData, TOutput>;
 };
 
@@ -78,7 +77,6 @@ export class Route<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
   TQueryParams extends ExtractQueryParams<TPath>,
-  TOptions extends RouteOptions,
   TData,
   TParent = never,
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
@@ -88,7 +86,7 @@ export class Route<
   public readonly name: RouteName<TPath>;
   /** The type of this route (static, dynamic, or wildcard) */
   public readonly type: RouteType;
-  public readonly options: TOptions;
+  public readonly options: RouteOptions;
   public closed = false;
 
   private rendererState = createState<RouteRenderer<TPath, TParams, TQueryParams, TData, TOutput> | unknown>(undefined);
@@ -160,7 +158,7 @@ export class Route<
   }
 
   /** Optional index route for this route */
-  public index?: IndexRoute<TPath, TParams, TQueryParams, TOptions, TData, this, TOutput>;
+  public index?: IndexRoute<TPath, TParams, TQueryParams, TData, this, TOutput>;
   /** Set of guards for this route */
   public guards = new Set<UnknownGuard>();
   /** Map of data providers for this route */
@@ -235,7 +233,7 @@ export class Route<
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
-    this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options } as TOptions;
+    this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options };
   }
 
   /**
@@ -303,20 +301,19 @@ export class Route<
     TChildPath extends RoutePath,
     TChildParams extends ExtractParams<TChildPath>,
     TChildQueryParams extends ExtractQueryParams<TChildPath>,
-    TChildOptions extends RouteOptions,
     TChildData,
   >(
     path: TChildPath,
-    options?: TChildOptions
+    options?: RouteOptions
   ): TChildPath extends '/'
-    ? IndexRoute<TChildPath, TChildParams, TChildQueryParams, RouteOptions & TChildOptions, TChildData, this, TOutput>
-    : Route<TChildPath, TChildParams, TChildQueryParams, RouteOptions & TChildOptions, TChildData, this, TOutput> {
+    ? IndexRoute<TChildPath, TChildParams, TChildQueryParams, TChildData, this, TOutput>
+    : Route<TChildPath, TChildParams, TChildQueryParams, TChildData, this, TOutput> {
     if (this.closed) throw new Error(`Index route can't have a child route.`);
     const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
 
     if (path === ('/' as TChildPath)) {
       child.closed = true;
-      this.index = child as never as IndexRoute<TPath, TParams, TQueryParams, TOptions, TData, this, TOutput>;
+      this.index = child as never as IndexRoute<TPath, TParams, TQueryParams, TData, this, TOutput>;
       return child as never;
     }
 
@@ -359,7 +356,7 @@ export class Route<
    */
   public guard<TGuard extends GuardHandler<TParams, TQueryParams>>(
     guard: TGuard
-  ): Route<TPath, TParams, TQueryParams, TOptions, TData, TParent> {
+  ): Route<TPath, TParams, TQueryParams, TData, TParent> {
     this.guards.add(guard as UnknownGuard);
     return this as never;
   }
@@ -388,7 +385,7 @@ export class Route<
     name: TName,
     provider: (context: RouteContext<TParams, TQueryParams, TData>) => Promise<TProviderData> | TProviderData,
     options?: ProviderOptions
-  ): Route<TPath, TParams, TQueryParams, TOptions, TData & { [PK in TName]: TProviderData }, TParent> {
+  ): Route<TPath, TParams, TQueryParams, TData & { [PK in TName]: TProviderData }, TParent> {
     this.providers.set(name, { name, provider, options } as ProviderMap);
     return this as never;
   }

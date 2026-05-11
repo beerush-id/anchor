@@ -1,13 +1,6 @@
 import { getScope, microtask, setScope } from '@anchorlib/core';
 import type { IndexRoute, Route } from './route.js';
-import type {
-  ExtractParams,
-  ExtractQueryParams,
-  RouteOptions,
-  RoutePath,
-  UnknownRedirect,
-  UnknownRoute,
-} from './types.js';
+import type { ExtractParams, ExtractQueryParams, RoutePath, UnknownRedirect, UnknownRoute } from './types.js';
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = Symbol('redirect-handler');
@@ -65,7 +58,6 @@ export class Redirect<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
   TQueryParams extends ExtractQueryParams<TPath>,
-  TOptions extends RouteOptions,
   TData = unknown,
 > {
   /**
@@ -76,7 +68,7 @@ export class Redirect<
    * @param query - Optional query parameters
    */
   constructor(
-    public route: Route<TPath, TParams, TQueryParams, TOptions, TData>,
+    public route: Route<TPath, TParams, TQueryParams, TData>,
     public params?: TParams,
     public query?: TQueryParams
   ) {}
@@ -115,22 +107,18 @@ export function redirect<
   TPath extends RoutePath,
   TParams extends ExtractParams<TPath>,
   TQueryParams extends ExtractQueryParams<TPath>,
-  TOptions extends RouteOptions,
   TData,
 >(
-  route:
-    | Route<TPath, TParams, TQueryParams, TOptions, TData>
-    | IndexRoute<TPath, TParams, TQueryParams, TOptions, TData>
-    | UnknownRoute,
+  route: Route<TPath, TParams, TQueryParams, TData> | IndexRoute<TPath, TParams, TQueryParams, TData> | UnknownRoute,
   params?: TParams,
   query?: TQueryParams
-): Redirect<TPath, TParams, TQueryParams, TOptions, TData> {
-  const redirect = new Redirect(route as Route<TPath, TParams, TQueryParams, TOptions, TData>, params, query);
+): Redirect<TPath, TParams, TQueryParams, TData> {
+  const redirect = new Redirect(route as Route<TPath, TParams, TQueryParams, TData>, params, query);
 
   const redirectTo = getRedirectHandler();
   schedule(() => redirectTo?.(redirect as UnknownRedirect));
 
-  return redirect as Redirect<TPath, TParams, TQueryParams, TOptions, TData>;
+  return redirect as Redirect<TPath, TParams, TQueryParams, TData>;
 }
 
 /**

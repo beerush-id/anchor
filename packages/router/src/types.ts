@@ -136,11 +136,11 @@ export type UnknownParams = ExtractParams<''>;
 /** Unknown query parameters type */
 export type UnknownQueryParams = ExtractQueryParams<''>;
 /** Unknown route type */
-export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, unknown, unknown>;
+export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams, unknown, unknown>;
 /** Unknown provider type */
 export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */
-export type UnknownRedirect = Redirect<RoutePath, UnknownParams, UnknownQueryParams, RouteOptions, TRec>;
+export type UnknownRedirect = Redirect<RoutePath, UnknownParams, UnknownQueryParams, TRec>;
 
 /** Active context for a route */
 export type context<TParams, TQueryParams, TData> = {
@@ -334,46 +334,32 @@ export type RouteTarget<T> = T extends
   : never;
 
 export type InferState<T> = T extends
-  | IndexRoute<infer _Path, infer Params, infer Query, infer _TOptions, infer Data, infer _TParent>
+  | IndexRoute<infer _Path, infer Params, infer Query, infer Data, infer _TParent>
   // biome-ignore lint/suspicious/noRedeclare: Expect override
-  | Route<infer _Path, infer Params, infer Query, infer _TOptions, infer Data, infer _TParent>
+  | Route<infer _Path, infer Params, infer Query, infer Data, infer _TParent>
   ? ContextReader<Params, Query, Data>
   : None;
 export type InferContext<T> = T extends
-  | IndexRoute<infer _Path, infer _Params, infer _Query, infer _TOptions, infer _TData, infer _TParent>
+  | IndexRoute<infer _Path, infer _Params, infer _Query, infer _TData, infer _TParent>
   // biome-ignore lint/suspicious/noRedeclare: Expect override
-  | Route<infer _Path, infer _Params, infer _Query, infer _TOptions, infer _TData, infer _TParent>
+  | Route<infer _Path, infer _Params, infer _Query, infer _TData, infer _TParent>
   ? ContextReader<T['params'], T['query'], T['data']>
   : None;
 
-export type InferParams<T> = T extends IndexRoute<
-  infer _Path,
-  infer Params,
-  infer _Query,
-  infer _TOptions,
-  infer _TData,
-  infer _TParent
->
+export type InferParams<T> = T extends IndexRoute<infer _Path, infer Params, infer _Query, infer _TData, infer _TParent>
   ? Params
-  : T extends Route<infer _Path, infer Params, infer _Query, infer _TOptions, infer _TData, infer _TParent>
+  : T extends Route<infer _Path, infer Params, infer _Query, infer _TData, infer _TParent>
     ? Params
     : None;
-export type InferQuery<T> = T extends IndexRoute<
-  infer _Path,
-  infer _Params,
-  infer Query,
-  infer _TOptions,
-  infer _TData,
-  infer _TParent
->
+export type InferQuery<T> = T extends IndexRoute<infer _Path, infer _Params, infer Query, infer _TData, infer _TParent>
   ? Query
-  : T extends Route<infer _Path, infer _Params, infer Query, infer _TOptions, infer _TData, infer _TParent>
+  : T extends Route<infer _Path, infer _Params, infer Query, infer _TData, infer _TParent>
     ? Query
     : None;
-export type InferRedirect<T> = T extends IndexRoute<infer Path, infer Params, infer Query, infer Options, infer Data>
-  ? Redirect<Path, Params, Query, Options, Data>
-  : T extends Route<infer Path, infer Params, infer Query, infer Options, infer Data>
-    ? Redirect<Path, Params, Query, Options, Data>
+export type InferRedirect<T> = T extends IndexRoute<infer Path, infer Params, infer Query, infer Data>
+  ? Redirect<Path, Params, Query, Data>
+  : T extends Route<infer Path, infer Params, infer Query, infer Data>
+    ? Redirect<Path, Params, Query, Data>
     : never;
 
 export type ExtractOptions<Params, Query> = Params extends None

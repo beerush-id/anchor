@@ -162,14 +162,13 @@ export class Router<Output = any> {
     TPath extends RoutePath,
     TParams extends ExtractParams<TPath>,
     TQueryParams extends ExtractQueryParams<TPath>,
-    TOptions extends RouteOptions,
     TData,
   >(
     path?: TPath,
-    options?: TOptions
+    options?: RouteOptions
   ): TPath extends '/'
-    ? IndexRoute<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>
-    : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
+    ? IndexRoute<TPath, TParams, TQueryParams, TData, never, Output>
+    : Route<TPath, TParams, TQueryParams, TData, never, Output> {
     if (!path) return this.rootRoute as never;
     const route = new Route(this, path, options);
 
@@ -218,14 +217,13 @@ export class Router<Output = any> {
     TPath extends RoutePath,
     TParams extends ExtractParams<TPath>,
     TQueryParams extends ExtractQueryParams<TPath>,
-    TOptions extends RouteOptions,
     TData,
   >(
     path?: TPath,
-    options?: TOptions
+    options?: RouteOptions
   ): TPath extends '/'
-    ? IndexRoute<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output>
-    : Route<TPath, TParams, TQueryParams, RouteOptions & TOptions, TData, never, Output> {
+    ? IndexRoute<TPath, TParams, TQueryParams, TData, never, Output>
+    : Route<TPath, TParams, TQueryParams, TData, never, Output> {
     if (!path || path === ('/' as never)) throw new Error('Invalid path: Path must be string "/{path}".');
 
     const route = new Route(this, path, options);
