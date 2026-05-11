@@ -177,31 +177,6 @@ export type RouteContext<Params, QueryParams, Data> = {
   exception?: Error;
 };
 
-export type RouteNestedContext<Params, Query, Data, Parent> = Parent extends IndexRoute<
-  infer _Path,
-  infer _Params,
-  infer _QueryParams,
-  infer _Options,
-  infer _Data,
-  infer _Parent
->
-  ? {
-      data: Data & Parent['data'];
-      query: Query & Parent['query'];
-      params: Params & Parent['params'];
-    }
-  : Parent extends Route<infer _Path, infer _Params, infer _QueryParams, infer _Options, infer _Data, infer _Parent>
-    ? {
-        data: Data & Parent['data'];
-        query: Query & Parent['query'];
-        params: Params & Parent['params'];
-      }
-    : {
-        data: Data;
-        query: Query;
-        params: Query;
-      };
-
 /** A route path string */
 export type RoutePath = `${'/'}${string | never}`;
 
@@ -303,23 +278,23 @@ export type RouteRenderProps<Params, QueryParams, Data> = {
   context: RouterContext<Params, QueryParams, Data>;
 };
 
-export type RouteLayoutRenderer<Params, QueryParams, Data, Output> = (props: {
+export type RouteLayoutRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = (props: {
   state: ContextReader<Params, QueryParams, Data>;
-  context: RouterContext<Params, QueryParams, Data>;
+  context: RouterContext<PParams, PQueryParams, PData>;
   children: Output;
 }) => Output;
-export type RouteIndexRenderer<Params, QueryParams, Data, Output> = (props: {
+export type RouteIndexRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = (props: {
   state: ContextReader<Params, QueryParams, Data>;
-  context: RouterContext<Params, QueryParams, Data>;
+  context: RouterContext<PParams, PQueryParams, PData>;
 }) => Output;
-export type RouteRenderer<Path, Params, QueryParams, Data, Output> = Path extends '/'
-  ? RouteIndexRenderer<Params, QueryParams, Data, Output>
-  : RouteLayoutRenderer<Params, QueryParams, Data, Output>;
+export type RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = Path extends '/'
+  ? RouteIndexRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
+  : RouteLayoutRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>;
 
-export type RouteExceptionRenderer<Params, QueryParams, Data, Output> = (props: {
+export type RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = (props: {
   error: Error;
   state: ContextReader<Params, QueryParams, Data>;
-  context: RouterContext<Params, QueryParams, Data>;
+  context: RouterContext<PParams, PQueryParams, PData>;
 }) => Output;
 
 export type RouteTarget<T> = T extends

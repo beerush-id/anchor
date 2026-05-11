@@ -12,6 +12,8 @@ import type {
   GuardBlocker,
   GuardContext,
   GuardHandler,
+  NestedParams,
+  NestedQueryParams,
   None,
   ProviderMap,
   ProviderOptions,
@@ -38,9 +40,13 @@ export type IndexRoute<
   QueryParams extends ExtractQueryParams<Path>,
   Data extends TRec = TRec,
   Parent = never,
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   Output = any,
-> = Omit<Route<Path, Params, QueryParams, Data, Parent, Output>, 'route' | 'renderer'> & {
-  renderer: RouteIndexRenderer<Params, QueryParams, Data, Output>;
+  PParams = Params,
+  PQueryParams = QueryParams,
+  PData = Data,
+> = Omit<Route<Path, Params, QueryParams, Data, Parent, Output, PParams, PQueryParams, PData>, 'route' | 'renderer'> & {
+  renderer: RouteIndexRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>;
 };
 
 /**
@@ -78,7 +84,11 @@ export class Route<
   QueryParams extends ExtractQueryParams<Path>,
   Data extends TRec = TRec,
   Parent = never,
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   Output = any,
+  PParams = Params,
+  PQueryParams = QueryParams,
+  PData = Data,
 > {
   /** The name of this route */
   public readonly name: RouteName<Path>;
@@ -87,20 +97,38 @@ export class Route<
   public readonly options: RouteOptions;
   public closed = false;
 
-  private rendererState = createState<RouteRenderer<Path, Params, QueryParams, Data, Output> | unknown>(undefined);
-  private exceptionRendererState = createState<RouteExceptionRenderer<Params, QueryParams, Data, Output> | undefined>(
-    undefined
-  );
+  private rendererState = createState<
+    RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output> | unknown
+  >(undefined);
+  private exceptionRendererState = createState<
+    RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> | undefined
+  >(undefined);
 
-  public get renderer(): RouteRenderer<Path, Params, QueryParams, Data, Output> | undefined {
-    return this.rendererState.value as RouteRenderer<Path, Params, QueryParams, Data, Output>;
+  public get renderer():
+    | RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
+    | undefined {
+    return this.rendererState.value as RouteRenderer<
+      Path,
+      Params,
+      QueryParams,
+      Data,
+      PParams,
+      PQueryParams,
+      PData,
+      Output
+    >;
   }
 
-  public get exceptionRenderer(): RouteExceptionRenderer<Params, QueryParams, Data, Output> | undefined {
+  public get exceptionRenderer():
+    | RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
+    | undefined {
     return (this.exceptionRendererState.value ?? this.router.exceptionRenderer) as RouteExceptionRenderer<
       Params,
       QueryParams,
       Data,
+      PParams,
+      PQueryParams,
+      PData,
       Output
     >;
   }
@@ -304,8 +332,28 @@ export class Route<
     path: TChildPath,
     options?: RouteOptions
   ): TChildPath extends '/'
-    ? IndexRoute<TChildPath, TChildParams, TChildQueryParams, TChildData, this, Output>
-    : Route<TChildPath, TChildParams, TChildQueryParams, TChildData, this, Output> {
+    ? IndexRoute<
+        TChildPath,
+        TChildParams,
+        TChildQueryParams,
+        TChildData,
+        this,
+        Output,
+        NestedParams<Params, TChildParams>,
+        NestedQueryParams<QueryParams, TChildQueryParams>,
+        Data & TChildData
+      >
+    : Route<
+        TChildPath,
+        TChildParams,
+        TChildQueryParams,
+        TChildData,
+        this,
+        Output,
+        NestedParams<Params, TChildParams>,
+        NestedQueryParams<QueryParams, TChildQueryParams>,
+        Data & TChildData
+      > {
     if (this.closed) throw new Error(`Index route can't have a child route.`);
     const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
 
@@ -687,13 +735,13 @@ export class Route<
     }
   }
 
-  public render(renderer: RouteRenderer<Path, Params, QueryParams, Data, Output>): this {
-    this.rendererState.value = createRenderer(this as never, renderer);
+  public render(renderer: RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output>): this {
+    this.rendererState.value = createRenderer(this as never, renderer as never);
     return this;
   }
 
-  public catch(renderer: RouteExceptionRenderer<Params, QueryParams, Data, Output>) {
-    this.exceptionRendererState.value = createExceptionRenderer(this as never, renderer);
+  public catch(renderer: RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>) {
+    this.exceptionRendererState.value = createExceptionRenderer(this as never, renderer as never);
   }
 
   public cleanup() {
@@ -776,15 +824,15 @@ export function getRenderProps(route: UnknownRoute): RouteRenderProps<None, None
 
 let createRenderer = <Path, Params, QueryParams, Data, Output>(
   _route: UnknownRoute,
-  renderer: RouteRenderer<Path, Params, QueryParams, Data, Output>
-): RouteRenderer<Path, Params, QueryParams, Data, Output> => {
+  renderer: RouteRenderer<Path, Params, QueryParams, Data, Params, QueryParams, Data, Output>
+): RouteRenderer<Path, Params, QueryParams, Data, Params, QueryParams, Data, Output> => {
   return renderer;
 };
 
-let createExceptionRenderer = <Params, QueryParams, Data, Output>(
+let createExceptionRenderer = <Params, QueryParams, Data, PParams, PQueryParams, PData, Output>(
   _route: UnknownRoute,
-  renderer: RouteExceptionRenderer<Params, QueryParams, Data, Output>
-): RouteExceptionRenderer<Params, QueryParams, Data, Output> => {
+  renderer: RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
+): RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> => {
   return renderer;
 };
 
