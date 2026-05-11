@@ -228,7 +228,8 @@ export class Route<
     public parent?: TParent,
     public displayName?: string
   ) {
-    this.name = (name ?? '').replace(/^\//, '').split(/\//g)[0] as RouteName<TPath>;
+    const [path] = (name ?? '').split(/\?/);
+    this.name = path.replace(/^\//, '').split(/\//g)[0] as RouteName<TPath>;
     this.type = this.name.startsWith(':')
       ? ROUTE_TYPE.DYNAMIC
       : this.name.startsWith('*')

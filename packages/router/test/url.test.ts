@@ -14,4 +14,8 @@ describe('createUrl', () => {
   it('should handle URL with trailing slash and query params', () => {
     expect(createUrl('/users/', undefined, { page: 1 })).toBe('/users?page=1');
   });
+
+  it('should handle URL with query params', () => {
+    expect(createUrl('/users?limit=1', undefined, { page: 1 })).toBe('/users?limit=1&page=1');
+  });
 });

@@ -513,16 +513,6 @@ describe('redirect.ts', () => {
       );
     });
 
-    it('should handle URL that already contains query separator', () => {
-      // Route with existing query in path
-      const routeWithQuery = new Route(sharedRouter, '/search?q=default');
-      const query = { sort: 'asc' };
-      const redirect = new Redirect(routeWithQuery as never, undefined, query as never);
-      const url = redirectUrl(redirect as never);
-      // Should use & to append additional query params
-      expect(url).toBe('/search?q=default&sort=asc');
-    });
-
     it('should handle URL without leading slash', () => {
       const noLeadingSlashRoute = new Route(sharedRouter, 'users/:id' as never);
       const params = { id: '123' };
@@ -531,16 +521,6 @@ describe('redirect.ts', () => {
       // The route name is 'users' (first segment), so the URL is based on that
       // Since it doesn't start with '/', it gets one added
       expect(url).toBe('/users');
-    });
-
-    it('should handle URL with existing query separator and additional query', () => {
-      // Test the branch where URL already contains '?'
-      const routeWithQuery = new Route(sharedRouter, '/search?existing=value');
-      const query = { new: 'param' };
-      const redirect = new Redirect(routeWithQuery as never, undefined, query as never);
-      const url = redirectUrl(redirect as never);
-      // Should use '&' to append since URL already has '?'
-      expect(url).toBe('/search?existing=value&new=param');
     });
   });
 
