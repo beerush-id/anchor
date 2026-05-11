@@ -2,6 +2,7 @@ import { createObserver } from '../reactive/index.js';
 import { mutable, writable } from '../reactive/ref.js';
 import { AsyncStatus } from '../shared/constant.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from '../types.js';
+import { isBrowser } from '../utils/index.js';
 
 export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>
@@ -106,7 +107,11 @@ export function query<T extends Linkable, E extends Error = Error>(
   const writer = writable(state);
 
   if (!options?.deferred) {
-    state.start();
+    if (isBrowser()) {
+      state.start();
+    } else {
+      writer.status = AsyncStatus.Pending;
+    }
   }
 
   return state as AsyncState<T, E>;

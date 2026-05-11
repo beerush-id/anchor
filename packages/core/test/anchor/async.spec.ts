@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AsyncStatus, cancelable, mutable, query } from '../../src/index.js';
+import { withIsolation } from '../../src/scope/index.js';
 
 describe('Anchor Core - Async', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -24,6 +25,21 @@ describe('Anchor Core - Async', () => {
       await state.promise;
 
       expect(state.data).toEqual({ value: 1 });
+    });
+
+    it('should set status to pending during SSR', () => {
+      vi.stubGlobal('window', undefined);
+
+      const init = { value: 0 };
+
+      withIsolation(() => {
+        const state = query(async () => ({ value: 1 }), init);
+        expect(state.status).toBe(AsyncStatus.Pending);
+        expect(state.promise).toBeInstanceOf(Promise);
+        expect(state.data).toEqual(init);
+      });
+
+      vi.unstubAllGlobals();
     });
 
     it('should create async state with initial value', async () => {
