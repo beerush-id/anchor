@@ -17,12 +17,6 @@ import type {
  * Each provider has its own Map of cached entries keyed by params and query.
  *
  * @template T - The type of data returned by providers
- *
- * @example
- * ```ts
- * const cache = new RouteCache(route);
- * const data = await cache.resolve(provider, context, { maxAge: 60000 });
- * ```
  */
 export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
   /**
@@ -46,15 +40,6 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    * @param context - The provider context containing params, query, and data
    * @param options - Optional provider options including maxAge for caching
    * @returns A promise that resolves to the provider's data
-   *
-   * @example
-   * ```ts
-   * const data = await cache.resolve(
-   *   async (ctx) => await fetchUser(ctx.params.id),
-   *   { params: { id: '123' }, query: {}, data: {} },
-   *   { maxAge: 60000 }
-   * );
-   * ```
    */
   public async resolve<T>(
     provider: UnknownProvider,
@@ -94,11 +79,6 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    *
    * @param provider - The provider whose cache should be invalidated
    * @param context - The context identifying which cache entry to invalidate
-   *
-   * @example
-   * ```ts
-   * cache.invalidate(provider, { params: { id: '123' }, query: {}, data: {} });
-   * ```
    */
   public invalidate(provider: UnknownProvider, context: RouteContext<TRec, TRec, TRec>): void {
     const { params, query } = (anchor.get as (ctx: typeof context, silent: boolean) => typeof context)(context, true);
@@ -119,11 +99,6 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    *
    * @param provider - The provider to delete from the cache
    * @returns true if the provider was in the cache, false otherwise
-   *
-   * @example
-   * ```ts
-   * cache.delete(provider);
-   * ```
    */
   public delete(provider: UnknownProvider): boolean {
     this.clear(provider);
@@ -134,11 +109,6 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    * Clears all cached entries for a provider without removing the provider itself.
    *
    * @param provider - The provider whose cache should be cleared
-   *
-   * @example
-   * ```ts
-   * cache.clear(provider);
-   * ```
    */
   public clear(provider: UnknownProvider): void {
     this.get(provider)?.clear();
@@ -151,12 +121,6 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
  * Caches parsed and matched route results to avoid repeated parsing and matching.
  * Uses a Map with LRU behavior - accessed entries are moved to the end,
  * and the oldest entry is evicted when the cache reaches maxSize.
- *
- * @example
- * ```ts
- * const cache = new URLCache(registry, 100);
- * const match = cache.get(new URL('/users/123', baseUrl));
- * ```
  */
 export class URLCache {
   private cache = new Map<string, MatchResult>();
@@ -181,14 +145,6 @@ export class URLCache {
    *
    * @param url - The URL to match
    * @returns The match result, or undefined if no match is found
-   *
-   * @example
-   * ```ts
-   * const match = cache.get(new URL('/users/123', baseUrl));
-   * if (match) {
-   *   console.log(match.route, match.params);
-   * }
-   * ```
    */
   public get(url: URL): MatchResult | undefined {
     if (!url) return;

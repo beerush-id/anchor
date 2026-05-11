@@ -6,12 +6,6 @@ import type { RouterOptions } from './types.js';
  *
  * These values are used as fallbacks when specific options are not provided.
  * Can be modified using the {@link configure} function.
- *
- * @example
- * ```ts
- * // Modify default configuration
- * configure({ baseUrl: 'https://example.com', maxAge: 60000 });
- * ```
  */
 export const DEFAULT_CONFIG: RouterOptions = {
   baseUrl: 'http://localhost',
@@ -33,18 +27,6 @@ export const DEFAULT_CONFIG: RouterOptions = {
  * This affects all routers created after this call.
  *
  * @param config - Partial configuration options to merge with defaults
- *
- * @example
- * ```ts
- * configure({
- *   baseUrl: 'https://api.example.com',
- *   maxAge: 300000, // 5 minutes
- *   keepAlive: true,
- *   retryMode: 'exponential',
- *   retryDelay: 1000,
- *   maxRetries: 3
- * });
- * ```
  */
 export function configure(config: Partial<RouterOptions>) {
   Object.assign(DEFAULT_CONFIG, config);

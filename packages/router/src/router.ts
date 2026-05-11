@@ -28,16 +28,6 @@ import type {
  *
  * Supports nested routes, guards, data providers, and caching.
  * Routes can be activated, deactivated, and preloaded.
- *
- * @example
- * ```ts
- * const router = new Router({ baseUrl: 'https://example.com' });
- *
- * const usersRoute = router.route('/users');
- * const userRoute = usersRoute.route('/:id');
- *
- * await router.activate('/users/123');
- * ```
  */
 
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
@@ -85,7 +75,9 @@ export class Router<Output = any> {
   public readonly rootRegistry: RouteRegistry;
   public readonly routes = new Set<RouteRegistry>();
 
-  private exceptionRendererState = createState<RouteExceptionRenderer<None, None, TRec, Output> | undefined>(undefined);
+  private exceptionRendererState = createState<
+    RouteExceptionRenderer<None, None, TRec, None, None, TRec, Output> | undefined
+  >(undefined);
 
   public get exceptionRenderer() {
     return this.exceptionRendererState.value;
@@ -114,15 +106,6 @@ export class Router<Output = any> {
    * Creates a new Router instance.
    *
    * @param options - Optional router configuration
-   *
-   * @example
-   * ```ts
-   * const router = new Router({
-   *   baseUrl: 'https://example.com',
-   *   cacheSize: 100,
-   *   maxAge: 60000
-   * });
-   * ```
    */
   constructor(options?: RouterOptions) {
     this.options = { ...DEFAULT_CONFIG, ...options };
@@ -131,12 +114,20 @@ export class Router<Output = any> {
     this.routes.add(this.rootRegistry);
   }
 
+  /**
+   * Clears all routes from the router.
+   */
   public clear() {
     this.routes.clear();
     this.routes.add(this.rootRegistry);
   }
 
+  /**
+   * Get the root route object.
+   * @returns Route - The root route.
+   */
   public route(): Route<'/', None, None, TRec, never, Output>;
+
   /**
    * Creates a new route.
    *
@@ -151,14 +142,19 @@ export class Router<Output = any> {
    * @param path - The route path
    * @param options - Optional route options
    * @returns The created route
-   *
-   * @example
-   * ```ts
-   * const usersRoute = router.route('/users');
-   * const userRoute = usersRoute.route('/:id');
-   * const indexRoute = router.route('/');
-   * ```
    */
+  public route<
+    Path extends RoutePath,
+    Params extends ExtractParams<Path>,
+    QueryParams extends ExtractQueryParams<Path>,
+    Data extends TRec = TRec,
+  >(
+    path?: Path,
+    options?: RouteOptions
+  ): Path extends '/'
+    ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
+    : Route<Path, Params, QueryParams, Data, never, Output>;
+
   public route<
     Path extends RoutePath,
     Params extends ExtractParams<Path>,
@@ -193,10 +189,7 @@ export class Router<Output = any> {
   }
 
   /**
-   * Creates a new top-level route.
-   *
-   * If path is '/', creates an index route and returns the root route.
-   * Otherwise, creates a new child route and returns it.
+   * Creates a new top-level route that independently handles navigation.
    *
    * @template Path - The route path type
    * @template Params - The route parameters type
@@ -206,13 +199,6 @@ export class Router<Output = any> {
    * @param path - The route path
    * @param options - Optional route options
    * @returns The created route
-   *
-   * @example
-   * ```ts
-   * const usersRoute = router.route('/users');
-   * const userRoute = usersRoute.route('/:id');
-   * const indexRoute = router.route('/');
-   * ```
    */
   public append<
     Path extends RoutePath,
@@ -241,14 +227,6 @@ export class Router<Output = any> {
    *
    * @param url - The URL to match (string or URL object)
    * @returns The match result, or undefined if no match
-   *
-   * @example
-   * ```ts
-   * const match = router.find('/users/123');
-   * if (match) {
-   *   console.log(match.route, match.params);
-   * }
-   * ```
    */
   public find(url: string | URL): MatchResult | undefined {
     if (typeof url === 'string') {
@@ -267,14 +245,6 @@ export class Router<Output = any> {
    *
    * @param url - The URL to activate (string or URL object)
    * @returns A GuardBlocker if navigation was blocked, otherwise void
-   *
-   * @example
-   * ```ts
-   * const blocker = await router.activate('/users/123');
-   * if (blocker) {
-   *   console.log('Navigation blocked:', blocker);
-   * }
-   * ```
    */
   public async activate(url: string | URL): Promise<void | GuardBlocker> {
     const storage = this.storage;
@@ -405,11 +375,6 @@ export class Router<Output = any> {
    * Deactivates all currently active routes.
    *
    * Clears all active segments and resets router state.
-   *
-   * @example
-   * ```ts
-   * router.deactivate();
-   * ```
    */
   public deactivate(): void {
     const storage = this.storage;
@@ -430,12 +395,6 @@ export class Router<Output = any> {
    * Useful for prefetching routes before navigation.
    *
    * @param url - The URL to preload (string or URL object)
-   *
-   * @example
-   * ```ts
-   * await router.preload('/users/123');
-   * // Route data is now cached
-   * ```
    */
   public async preload(url: string | URL): Promise<void> {
     const storage = this.storage;
@@ -462,6 +421,10 @@ export class Router<Output = any> {
     }
   }
 
+  /**
+   * Cleans up all route data and resources.
+   * Useful for cleaning up after a server side rendering.
+   */
   public cleanup() {
     const { activeSegments } = this.storage;
 
@@ -472,7 +435,11 @@ export class Router<Output = any> {
     getStore().clear();
   }
 
-  public catch(renderer: RouteExceptionRenderer<None, None, TRec, Output>) {
+  /**
+   * Sets a custom exception renderer for route exceptions.
+   * @param {RouteExceptionRenderer<None, None, TRec, None, None, TRec, unknown>} renderer - The exception renderer function.
+   */
+  public catch(renderer: RouteExceptionRenderer<None, None, TRec, None, None, TRec, Output>) {
     this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute, renderer);
   }
 }
@@ -484,11 +451,6 @@ export class Router<Output = any> {
  *
  * @param options - Optional router configuration
  * @returns A new Router instance
- *
- * @example
- * ```ts
- * const router = createRouter({ baseUrl: 'https://example.com' });
- * ```
  */
 export function createRouter<Output>(options?: RouterOptions): Router<Output> {
   return new Router(options);

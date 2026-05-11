@@ -19,12 +19,6 @@ export class ContextStore extends Map {
  *
  * Extends Map to store child routes keyed by their segment names.
  * Supports static, dynamic (`:param`), and wildcard (`*`) route matching.
- *
- * @example
- * ```ts
- * const registry = new RouteRegistry(route);
- * const match = registry.match('/users/123');
- * ```
  */
 export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
   private get store(): ContextStore {
@@ -71,16 +65,6 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
    * @param query
    * @param index - Current segment index (internal use)
    * @returns A matched route with segments and params, or undefined if no match
-   *
-   * @example
-   * ```ts
-   * const match = registry.match('/users/123');
-   * if (match) {
-   *   console.log(match.route); // The matched route
-   *   console.log(match.params); // { id: '123' }
-   *   console.log(match.segments); // Array of matched routes
-   * }
-   * ```
    */
   public match(
     url: URL,

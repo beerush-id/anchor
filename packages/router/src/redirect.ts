@@ -1,6 +1,5 @@
 import { getScope, microtask, setScope } from '@anchorlib/core';
-import type { IndexRoute, Route } from './route.js';
-import type { ExtractParams, ExtractQueryParams, RoutePath, TRec, UnknownRedirect, UnknownRoute } from './types.js';
+import type { InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = Symbol('redirect-handler');
@@ -20,16 +19,6 @@ export function getRedirectHandler(): ((redirect: UnknownRedirect) => void) | un
  * integrating with a specific routing library or browser history API.
  *
  * @param handler - A function that receives a redirect object
- *
- * @example
- * ```ts
- * import { setRedirectHandler } from '@anchorlib/router';
- *
- * setRedirectHandler((redirect) => {
- *   const url = redirectUrl(redirect);
- *   window.location.href = url;
- * });
- * ```
  */
 export function setRedirectHandler(handler: (redirect: UnknownRedirect) => void) {
   setScope(REDIRECT_HANDLER, handler);
@@ -45,21 +34,8 @@ export function setRedirectHandler(handler: (redirect: UnknownRedirect) => void)
  * @template TQueryParams - The query parameters type
  * @template TOptions - The route options type
  * @template TData - The route data type
- *
- * @example
- * ```ts
- * import { Redirect } from '@anchorlib/router';
- *
- * const redirect = new Redirect(loginRoute, { returnTo: '/dashboard' });
- * throw redirect;
- * ```
  */
-export class Redirect<
-  TPath extends RoutePath,
-  TParams extends ExtractParams<TPath>,
-  TQueryParams extends ExtractQueryParams<TPath>,
-  TData extends TRec = TRec,
-> {
+export class Redirect<T> {
   /**
    * Creates a new Redirect instance.
    *
@@ -68,9 +44,9 @@ export class Redirect<
    * @param query - Optional query parameters
    */
   constructor(
-    public route: Route<TPath, TParams, TQueryParams, TData>,
-    public params?: TParams,
-    public query?: TQueryParams
+    public route: RouteTarget<T>,
+    public params?: InferParams<T>,
+    public query?: InferQuery<T>
   ) {}
 }
 
@@ -91,34 +67,13 @@ const [schedule] = microtask(0);
  * @param params - Optional route parameters
  * @param query - Optional query parameters
  * @returns A Redirect object
- *
- * @example
- * ```ts
- * import { redirect } from '@anchorlib/router';
- *
- * route.guard(async ({ params }) => {
- *   if (!await isAuthenticated()) {
- *     throw redirect(loginRoute, { returnTo: '/dashboard' });
- *   }
- * });
- * ```
  */
-export function redirect<
-  TPath extends RoutePath,
-  TParams extends ExtractParams<TPath>,
-  TQueryParams extends ExtractQueryParams<TPath>,
-  TData extends TRec = TRec,
->(
-  route: Route<TPath, TParams, TQueryParams, TData> | IndexRoute<TPath, TParams, TQueryParams, TData> | UnknownRoute,
-  params?: TParams,
-  query?: TQueryParams
-): Redirect<TPath, TParams, TQueryParams, TData> {
-  const redirect = new Redirect(route as Route<TPath, TParams, TQueryParams, TData>, params, query);
-
+export function redirect<T>(route: RouteTarget<T>, params?: InferParams<T>, query?: InferQuery<T>): Redirect<T> {
+  const redirect = new Redirect(route, params, query);
   const redirectTo = getRedirectHandler();
-  schedule(() => redirectTo?.(redirect as UnknownRedirect));
 
-  return redirect as Redirect<TPath, TParams, TQueryParams, TData>;
+  schedule(() => redirectTo?.(redirect as UnknownRedirect));
+  return redirect;
 }
 
 /**
@@ -128,15 +83,6 @@ export function redirect<
  *
  * @param redirect - The redirect object to convert
  * @returns The full URL string for the redirect
- *
- * @example
- * ```ts
- * import { redirect, redirectUrl } from '@anchorlib/router';
- *
- * const r = redirect(userRoute, { id: '123' }, { tab: 'profile' });
- * const url = redirectUrl(r);
- * // Returns: '/users/123?tab=profile'
- * ```
  */
 export function redirectUrl(redirect: UnknownRedirect): string {
   return createUrl(redirect.route.path, redirect.params, redirect.query);

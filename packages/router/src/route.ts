@@ -61,22 +61,6 @@ export type IndexRoute<
  * @template TOptions - The route options type
  * @template Data - The route data type
  * @template Parent - The parent route type
- *
- * @example
- * ```ts
- * const usersRoute = router.route('/users');
- * const userRoute = usersRoute.route('/:id');
- *
- * userRoute
- *   .guard(async ({ params }) => {
- *     if (!await isAuthenticated()) {
- *       throw redirect(loginRoute);
- *     }
- *   })
- *   .provide('user', async ({ params }) => {
- *     return await fetchUser(params.id);
- *   });
- * ```
  */
 export class Route<
   Path extends RoutePath,
@@ -268,12 +252,6 @@ export class Route<
    * @param params - Optional route parameters
    * @param query - Optional query parameters
    * @returns The generated URL string
-   *
-   * @example
-   * ```ts
-   * const url = userRoute.url({ id: '123' }, { tab: 'profile' });
-   * // Returns: '/users/123?tab=profile'
-   * ```
    */
   public url(params?: Params, query?: QueryParams) {
     let url = this.path as string;
@@ -315,13 +293,6 @@ export class Route<
    * @param path - The child route path
    * @param options - Optional child route options
    * @returns This route if path is '/', otherwise the new child route
-   *
-   * @example
-   * ```ts
-   * const usersRoute = router.route('/users');
-   * const userRoute = usersRoute.route('/:id');
-   * const postsRoute = userRoute.route('/posts');
-   * ```
    */
   public route<
     TChildPath extends RoutePath,
@@ -390,15 +361,6 @@ export class Route<
    * @template TGuard - The guard handler type
    * @param guard - The guard function to add
    * @returns This route for chaining
-   *
-   * @example
-   * ```ts
-   * route.guard(async ({ params }) => {
-   *   if (!await isAuthenticated()) {
-   *     throw redirect(loginRoute);
-   *   }
-   * });
-   * ```
    */
   public guard<TGuard extends GuardHandler<Params, QueryParams>>(
     guard: TGuard
@@ -419,13 +381,6 @@ export class Route<
    * @param provider - The provider function
    * @param options - Optional provider options
    * @returns This route for chaining
-   *
-   * @example
-   * ```ts
-   * route.provide('user', async ({ params }) => {
-   *   return await fetchUser(params.id);
-   * });
-   * ```
    */
   public provide<TName extends string, TProviderData>(
     name: TName,
@@ -445,14 +400,6 @@ export class Route<
    * @param context - The guard context
    * @param force - Whether to force re-running the guards
    * @returns true if all guards pass, otherwise a GuardBlocker
-   *
-   * @example
-   * ```ts
-   * const result = await route.authenticate({ params: { id: '123' }, query: {} });
-   * if (result !== true) {
-   *   // Navigation was blocked
-   * }
-   * ```
    */
   public async authenticate(context: GuardContext<Params, QueryParams>, force = false): Promise<true | GuardBlocker> {
     const { state, guardObservers } = this.storage;
@@ -529,11 +476,6 @@ export class Route<
    *
    * @param context - The provider context
    * @returns The loaded data, or a GuardBlocker if authentication failed
-   *
-   * @example
-   * ```ts
-   * await route.preload({ params: { id: '123' }, query: {}, data: {} });
-   * ```
    */
   public async preload(context: RouteContext<Params, QueryParams, Data>): Promise<Data | GuardBlocker> {
     const authenticated = await this.authenticate(context);
@@ -550,11 +492,6 @@ export class Route<
    *
    * @param context - The provider context
    * @returns The resolved data, or undefined if a provider failed
-   *
-   * @example
-   * ```ts
-   * const data = await route.resolve({ params: { id: '123' }, query: {}, data: {} });
-   * ```
    */
   public async resolve(context: RouteContext<TRec, TRec, TRec>): Promise<Data | undefined> {
     const { state, cache, activeResolvers, providerObservers } = this.storage;
@@ -642,11 +579,6 @@ export class Route<
    *
    * @param context - The provider context
    * @param preload - Whether to preload data (default: true)
-   *
-   * @example
-   * ```ts
-   * await route.activate({ params: { id: '123' }, query: {}, data: {} });
-   * ```
    */
   public async activate(context: RouteContext<Params, QueryParams, Data>, preload = true): Promise<void> {
     const { state, context: ctx } = this.storage;
@@ -674,11 +606,6 @@ export class Route<
    * Deactivates this route.
    *
    * Clears data and context unless keepAlive is enabled.
-   *
-   * @example
-   * ```ts
-   * route.deactivate();
-   * ```
    */
   public deactivate(): void {
     safeRead(() => {
@@ -709,12 +636,6 @@ export class Route<
    * Otherwise, cancels all pending resolutions.
    *
    * @param context - Optional context to cancel
-   *
-   * @example
-   * ```ts
-   * route.cancel(); // Cancel all
-   * route.cancel(context); // Cancel specific
-   * ```
    */
   public cancel(context?: RouteContext<TRec, TRec, TRec>): void {
     const { activeResolvers } = this.storage;
