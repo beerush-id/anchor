@@ -52,7 +52,8 @@ export type HTTPTransportConfig = TransportConfig & {
  * Handles sending RPC calls over HTTP and processing streaming responses.
  */
 export class HTTPTransport extends IRPCTransport {
-  private abortControllers = new Map<IRPCCall, AbortController>();
+  private callControllers = new Map<IRPCCall, AbortController>();
+  private abortControllers = new Map<AbortController, Set<IRPCCall>>();
 
   /**
    * Gets the endpoint path for RPC calls.
@@ -80,6 +81,24 @@ export class HTTPTransport extends IRPCTransport {
     super(config);
   }
 
+  private dequeue(call: IRPCCall, abort?: boolean) {
+    const controller = this.callControllers.get(call);
+    this.callControllers.delete(call);
+
+    const queues = this.abortControllers.get(controller!);
+    if (!controller || !queues) return;
+
+    queues.delete(call);
+
+    if (!queues.size) {
+      if (abort && !controller.signal.aborted) {
+        controller.abort();
+      }
+
+      this.abortControllers.delete(controller);
+    }
+  }
+
   /**
    * Dispatches RPC calls over HTTP.
    * Sends all pending calls in a single HTTP POST request.
@@ -105,8 +124,12 @@ export class HTTPTransport extends IRPCTransport {
         calls.reduce((acc, req) => Math.max(acc, req.options?.timeout ?? 0), 0) || this.config?.timeout;
 
       const controller = new AbortController();
+      const controllerSet = new Set<IRPCCall>();
+      this.abortControllers.set(controller, controllerSet);
+
       calls.forEach((call) => {
-        this.abortControllers.set(call, controller);
+        this.callControllers.set(call, controller);
+        controllerSet.add(call);
       });
 
       let breaker: number | undefined;
@@ -135,7 +158,7 @@ export class HTTPTransport extends IRPCTransport {
 
       if (!response?.ok) {
         calls.forEach((call) => {
-          this.abortControllers.delete(call);
+          this.dequeue(call);
 
           call.enqueue({
             id: call.id,
@@ -152,7 +175,7 @@ export class HTTPTransport extends IRPCTransport {
       await this.resolveAll(calls, response);
     } catch (error) {
       calls.forEach((call) => {
-        this.abortControllers.delete(call);
+        this.dequeue(call);
 
         call.enqueue({
           id: call.id,
@@ -242,8 +265,7 @@ export class HTTPTransport extends IRPCTransport {
   }
 
   public close(call: IRPCCall) {
-    this.abortControllers.get(call)?.abort();
-    this.abortControllers.delete(call);
+    this.dequeue(call, true);
   }
 
   /**
@@ -258,7 +280,7 @@ export class HTTPTransport extends IRPCTransport {
 
     if (!reader) {
       calls.forEach((call) => {
-        this.abortControllers.delete(call);
+        this.dequeue(call);
 
         call.enqueue({
           id: call.id,
@@ -296,7 +318,7 @@ export class HTTPTransport extends IRPCTransport {
                 call.enqueue(packet);
 
                 if (packet.status !== IRPC_STATUS.PENDING) {
-                  this.abortControllers.delete(call);
+                  this.dequeue(call);
                   pendingCalls.delete(packet.id);
                 }
               }
@@ -315,7 +337,7 @@ export class HTTPTransport extends IRPCTransport {
               if (call) {
                 call.enqueue(packet);
                 pendingCalls.delete(packet.id);
-                this.abortControllers.delete(call);
+                this.dequeue(call);
               }
             } catch (error) {
               console.error('Unable to parse final response chunk:', buffer, error);
@@ -329,7 +351,7 @@ export class HTTPTransport extends IRPCTransport {
 
       calls.forEach((call) => {
         if (call.resolved) return;
-        this.abortControllers.delete(call);
+        this.dequeue(call);
         pendingCalls.delete(call.id);
 
         call.enqueue({

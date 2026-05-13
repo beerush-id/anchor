@@ -74,20 +74,23 @@ describe('HTTPTransport', () => {
     it('should cleanly abort active requests dynamically mapped natively', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const call = { id: 'call-id' } as any;
-      const abortSpy = vi.fn();
 
-      const mapGetSpy = vi
-        .spyOn(transport['abortControllers'] as any, 'get')
-        .mockReturnValue({ abort: abortSpy } as any);
-      const mapDeleteSpy = vi.spyOn(transport['abortControllers'] as any, 'delete');
+      const controller = new AbortController();
+      const controllerSet = new Set<IRPCCall>();
+
+      const abortSpy = vi.spyOn(controller, 'abort');
+
+      transport['abortControllers'].set(controller, controllerSet);
+      transport['callControllers'].set(call, controller);
 
       transport.close(call);
 
       expect(abortSpy).toHaveBeenCalledTimes(1);
-      expect(mapDeleteSpy).toHaveBeenCalledWith(call);
+      expect(transport['abortControllers'].size).toBe(0);
+      expect(transport['callControllers'].size).toBe(0);
+      expect(controllerSet.size).toBe(0);
 
-      mapGetSpy.mockRestore();
-      mapDeleteSpy.mockRestore();
+      abortSpy.mockRestore();
     });
   });
 
