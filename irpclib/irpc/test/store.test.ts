@@ -32,9 +32,7 @@ describe('IRPCStore', () => {
     it('should throw when registering non-IRPCPackage', () => {
       const store = new IRPCStore();
 
-      expect(() => store.register({} as any)).toThrow(
-        'Invalid package: package must be an instance of IRPCPackage.'
-      );
+      expect(() => store.register({} as any)).toThrow('Invalid package: package must be an instance of IRPCPackage.');
     });
   });
 
@@ -64,9 +62,7 @@ describe('IRPCStore', () => {
     it('should throw when routing non-IRPCRouter', () => {
       const store = new IRPCStore();
 
-      expect(() => store.route({} as any)).toThrow(
-        'Invalid router: router must be an instance of IRPCRouter.'
-      );
+      expect(() => store.route({} as any)).toThrow('Invalid router: router must be an instance of IRPCRouter.');
     });
   });
 
@@ -96,9 +92,7 @@ describe('IRPCStore', () => {
     it('should throw when queuing non-IRPCStream', () => {
       const store = new IRPCStore();
 
-      expect(() => store.queue({} as any)).toThrow(
-        'Invalid call: call must be an instance of IRPCStream.'
-      );
+      expect(() => store.queue({} as any)).toThrow('Invalid call: call must be an instance of IRPCStream.');
     });
   });
 
@@ -132,9 +126,7 @@ describe('IRPCStore', () => {
     it('should throw when dequeuing non-IRPCStream', () => {
       const store = new IRPCStore();
 
-      expect(() => store.dequeue({} as any)).toThrow(
-        'Invalid call: call must be an instance of IRPCStream.'
-      );
+      expect(() => store.dequeue({} as any)).toThrow('Invalid call: call must be an instance of IRPCStream.');
     });
   });
 
@@ -159,9 +151,7 @@ describe('IRPCStore', () => {
     it('should throw when handler is not a function', () => {
       const store = new IRPCStore();
 
-      expect(() => store.subscribe('not-a-function' as any)).toThrow(
-        'Invalid handler: handler must be a function.'
-      );
+      expect(() => store.subscribe('not-a-function' as any)).toThrow('Invalid handler: handler must be a function.');
     });
 
     it('should support multiple subscribers', () => {
@@ -185,6 +175,16 @@ describe('IRPCStore', () => {
 
       // Should not throw.
       expect(() => store.register(pkg)).not.toThrow();
+    });
+  });
+
+  describe('print', () => {
+    it('should print to console', () => {
+      const store = new IRPCStore();
+      const tableSpy = vi.spyOn(console, 'table').mockImplementation(() => {});
+      store.print();
+      expect(tableSpy).toHaveBeenCalled();
+      tableSpy.mockRestore();
     });
   });
 });

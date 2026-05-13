@@ -30,6 +30,7 @@ export class IRPCStore {
   public calls = new Set<IRPCStream<IRPCData>>();
   public routers = new Set<IRPCRouter>();
   public packages = new Set<IRPCPackage>();
+  public callCount = 0;
 
   public register(pkg: IRPCPackage) {
     if (!(pkg instanceof IRPCPackage)) {
@@ -51,7 +52,9 @@ export class IRPCStore {
     if (!(call instanceof IRPCStream)) {
       throw new Error('Invalid call: call must be an instance of IRPCStream.');
     }
+
     this.calls.add(call);
+    this.callCount += 1;
     this.broadcast({ type: IRPC_STORE_EVENT.QUEUE, data: call });
   }
 
@@ -61,6 +64,17 @@ export class IRPCStore {
     }
     this.calls.delete(call);
     this.broadcast({ type: IRPC_STORE_EVENT.DEQUEUE, data: call });
+  }
+
+  public print() {
+    console.table([
+      {
+        Packages: this.packages.size,
+        Routers: this.routers.size,
+        'Running Calls': this.calls.size,
+        'Total Calls': this.callCount,
+      },
+    ]);
   }
 
   public subscribe(handler: IRPCStoreSubscriber) {
