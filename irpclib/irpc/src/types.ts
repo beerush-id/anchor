@@ -12,6 +12,7 @@ import type {
 import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
 import type { IRPCFile } from './file.js';
+import type { IRPCReader } from './reader.js';
 import type { RemoteState } from './state.js';
 import type { IRPCTransport } from './transport.js';
 
@@ -41,11 +42,6 @@ export type IRPCPacketBase = {
   arrivedAt?: number;
 };
 
-export type IRPCPacketData = {
-  type: IRPCDataType;
-  value: IRPCData;
-};
-
 export type IRPCPacketCall = IRPCPacketBase & {
   args: IRPCData[];
 };
@@ -70,6 +66,72 @@ export interface IRPCReadable<T> {
   error: Error | undefined;
   status: IRPCStatus;
 }
+
+/**
+ * Represents a client-side stub for a remote function.
+ * When called, it returns an IRPCReader to handle the asynchronous result or stream.
+ *
+ * @template T - The original function type.
+ * @template A - The argument types of the function.
+ * @template R - The return data type.
+ */
+export interface IRPCStub<T, A extends unknown[], R extends IRPCData> {
+  (...args: A): IRPCReader<R>;
+
+  /* The original function type. */
+  stub: T;
+
+  /**
+   * Creates a call that expect to run in browser environment.
+   * The function runs immediately on the browser and will not re-run.
+   *
+   * @param args - A factory function returning the argument array.
+   * @returns An IRPCReader instance for handling the asynchronous result or stream.
+   */
+  once(...args: A): IRPCReader<R>;
+
+  /**
+   * Creates a reactive call that expect to run in browser environment.
+   * The function runs immediately on the browser and will re-run when
+   * the reactive dependencies change.
+   *
+   * @param args - A factory function returning the argument array.
+   * @param debounce - The debounce time in milliseconds.
+   * @returns An IRPCReader instance for handling the asynchronous result or stream.
+   */
+  with(args: () => A, debounce?: number): IRPCReader<R>;
+
+  /**
+   * Creates a reactive call that expect to run in browser environment.
+   * The function only runs on the first dependency change and re-run
+   * when the reactive dependencies change.
+   *
+   * @param args - A factory function returning the argument array.
+   * @param debounce - The debounce time in milliseconds.
+   * @returns An IRPCReader instance for handling the asynchronous result or stream.
+   */
+  when(args: () => A, debounce?: number): IRPCReader<R>;
+}
+
+/**
+ * A utility type that transforms a standard function type into its corresponding IRPCStub.
+ * It automatically unwraps RemoteState types to determine the underlying data type.
+ *
+ * @template T - The function type to be transformed.
+ */
+export type IRPCFunction<T> = T extends (...args: infer A) => infer R
+  ? R extends RemoteState<infer S>
+    ? S extends IRPCData
+      ? IRPCStub<T, A, S>
+      : IRPCStub<T, A, IRPCData>
+    : R extends Promise<infer O>
+      ? O extends IRPCData
+        ? IRPCStub<T, A, O>
+        : IRPCStub<T, A, IRPCData>
+      : R extends IRPCData
+        ? IRPCStub<T, A, R>
+        : IRPCStub<T, A, IRPCData>
+  : IRPCStub<T, [], IRPCData>;
 
 /**
  * Represents primitive data types that can be used in IRPC communications.
@@ -176,7 +238,7 @@ export type IRPCHandler = Function;
  * @template I - Tuple of input validation schemas
  * @template O - Output validation schema
  */
-export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
+export type IRPCInit<R, I extends IRPCInputs, O extends IRPCOutput> = {
   /** The name of the RPC function */
   name: string;
   /** Optional description of the RPC function */
@@ -194,6 +256,9 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
    * This can help reduce the number of actual function executions.
    */
   coalesce?: boolean;
+
+  /** Optional initialization function to seed the data */
+  init?: () => R;
 } & IRPCCallConfig;
 
 /**
@@ -203,10 +268,9 @@ export type IRPCInit<I extends IRPCInputs, O extends IRPCOutput> = {
  * @template I - Tuple of input validation schemas
  * @template O - Output validation schema
  */
-export type IRPCStreamInit<I extends IRPCInputs, O extends IRPCOutput, R> = IRPCInit<I, O> & {
-  init: () => R;
+export type IRPCStreamInit<I extends IRPCInputs, O extends IRPCOutput, R> = IRPCInit<R, I, O> & {
+  stream: true;
   ttl?: number;
-  deferred?: boolean;
 };
 
 /**
@@ -217,12 +281,19 @@ export type IRPCStreamInit<I extends IRPCInputs, O extends IRPCOutput, R> = IRPC
  * @template I - Tuple of input validation schemas
  * @template O - Output validation schema
  */
-export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F extends (
-  // biome-ignore lint/suspicious/noExplicitAny: Expected
-  ...args: any[]
-) => RemoteState<infer R>
-  ? IRPCStreamInit<I, O, R>
-  : IRPCInit<I, O>;
+export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F extends (...args: IRPCData[]) => infer R
+  ? R extends RemoteState<infer S>
+    ? S extends IRPCData
+      ? IRPCStreamInit<I, O, S>
+      : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>
+    : R extends Promise<infer D>
+      ? D extends IRPCData
+        ? IRPCInit<D, I, O>
+        : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>
+      : R extends IRPCData
+        ? IRPCInit<R, I, O>
+        : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>
+  : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>;
 
 /**
  * Complete specification for an RPC function including its implementation.
@@ -231,7 +302,7 @@ export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F e
  * @template I - Tuple of input validation schemas
  * @template O - Output validation schema
  */
-export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<I, O> & {
+export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<IRPCData, I, O> & {
   /** Optional time-to-live for a call in milliseconds */
   ttl?: number;
   /** Whether to stream the result of the RPC call */
@@ -240,8 +311,6 @@ export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<I, O
   handler: IRPCHandler;
   /** Optional initialization function for a stream RPC */
   init?: () => unknown;
-  /** Whether to defer the call of a stream RPC */
-  deferred?: boolean;
 };
 
 /**
@@ -309,8 +378,6 @@ export type IRPCCallConfig = {
   retryDelay?: number;
   /** Optional initialization function for a stream RPC */
   init?: () => unknown;
-  /** Whether to defer the call of a stream RPC */
-  deferred?: boolean;
 };
 
 /**

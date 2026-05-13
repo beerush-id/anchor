@@ -15,11 +15,6 @@ describe('RemoteState', () => {
     expect(state.error).toBeUndefined();
   });
 
-  it('should call no-op start method', () => {
-    const state = new RemoteState('initial');
-    expect(() => state.start()).not.toThrow();
-  });
-
   it('should react to data changes via subscription', () => {
     const state = new RemoteState(0);
     const subscriber = vi.fn();

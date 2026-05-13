@@ -16,7 +16,7 @@ export class IRPCCall {
   /**
    * Unique identifier for this RPC call, generated using shortId().
    */
-  public id = uuid();
+  public readonly id: string;
 
   /**
    * The status of the RPC call, indicating whether it is pending, resolved, or rejected.
@@ -54,14 +54,16 @@ export class IRPCCall {
 
   /**
    * Creates a new IRPCCall instance.
-   * @param transport
+   * @param reader - The reader associated with this call.
+   * @param transport - The transport used for dispatching calls.
    * @param payload - The RPC payload containing method and parameters
    * @param options - Options for the call, such as timeout, maxRetries, etc.
    */
   constructor(
     public transport: IRPCTransport,
     public payload: IRPCPayload,
-    public options: IRPCCallConfig
+    public options: IRPCCallConfig,
+    reader?: IRPCReader<IRPCData>
   ) {
     if (options.timeout) {
       this.timerId = setTimeout(() => {
@@ -83,9 +85,9 @@ export class IRPCCall {
       }, options.timeout);
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-    this.reader = new IRPCReader(this.id, options?.init?.() as any);
+    this.reader = reader ?? new IRPCReader<IRPCData>(uuid(), options?.init?.() as IRPCData);
     this.reader.onClose = () => this.close();
+    this.id = this.reader.id;
   }
 
   public enqueue(packet: IRPCPacketStream<IRPCData>) {

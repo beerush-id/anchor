@@ -118,7 +118,7 @@ describe('IRPCPackage', () => {
     it('should throw error for stub without spec', () => {
       const testFunc = () => {};
       const handler = () => {};
-      expect(() => rpc.construct(testFunc, handler)).toThrow(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      expect(() => rpc.construct(testFunc as never, handler)).toThrow(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
     });
   });
 
@@ -189,14 +189,13 @@ describe('IRPCPackage', () => {
       });
       rpc.construct(hello, (name) => `Hello ${name}`);
 
-      expect(hello('World')).toBe('Hello World');
+      expect(await hello('World')).toBe('Hello World');
     });
 
     it('should call local RemoteState implementation', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
         init: () => '',
-        deferred: false,
       });
       rpc.construct(hello, (name) => new RemoteState<string>(`Hello ${name}`));
 
@@ -209,10 +208,9 @@ describe('IRPCPackage', () => {
     it('should call local RemoteState init implementation', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
-        init: () => 'Init',
-        deferred: false,
+        init: () => 'Stub init',
       });
-      rpc.construct(hello, (_name) => new RemoteState<string>());
+      rpc.construct(hello, (_name) => new RemoteState<string>('Init'));
 
       const result = hello('World');
 
@@ -224,7 +222,6 @@ describe('IRPCPackage', () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'helloAutoCleanup',
         init: () => 'Init',
-        deferred: false,
       });
       rpc.construct(hello, (_name) => new RemoteState<string>());
 
@@ -448,10 +445,32 @@ describe('IRPCPackage', () => {
     });
   });
 
-  describe('Deferred Local Stream (intercept)', () => {
-    it('should return a deferred IRPCReader when handler is a local stream with deferred=true', () => {
+  describe('Local Call (intercept)', () => {
+    it('should handle non promise that throws', async () => {
+      const hello = rpc.declare<(name: string) => string>({
+        name: 'hello',
+      });
+      rpc.construct(hello, () => {
+        throw new Error('Hello World');
+      });
+
+      await expect(() => hello('World')).rejects.toThrow('Hello World');
+    });
+
+    it('should handle promise that throws', async () => {
+      const hello = rpc.declare({
+        name: 'hello',
+      });
+      rpc.construct(hello, () => {
+        return Promise.reject(new Error('Hello World'));
+      });
+
+      await expect(() => hello()).rejects.toThrow('Hello World');
+    });
+
+    it('should return an IRPCReader when handler is a local stream', () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
-        name: 'helloDeferred',
+        name: 'helloLocalStream',
         init: () => ({ message: '' }),
       });
 
@@ -461,13 +480,11 @@ describe('IRPCPackage', () => {
         return state;
       });
 
-      // deferred=true is default, so calling the stub returns an IRPCReader (not the handler result).
       const result = hello('World');
 
       // The result should have the init() value, not the handler value (not started yet).
-      expect(result.data).toEqual({ message: '' });
+      expect(result.data).toEqual({ message: 'Hello World' });
       expect(result.status).toBe(IRPC_STATUS.PENDING);
-      expect(typeof result.start).toBe('function');
     });
 
     it('should invoke handler and relay data mutations when start() is called', async () => {
@@ -491,7 +508,6 @@ describe('IRPCPackage', () => {
       });
 
       const result = hello('World');
-      result.start();
 
       // After start, the handler's initial data should be assigned.
       expect(result.data.message).toBe('Hello World');

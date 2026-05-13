@@ -1,7 +1,14 @@
 import { replay, type StateChange } from '@anchorlib/core';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { RemoteState } from './state.js';
-import type { IRPCData, IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent, IRPCPacketStream } from './types.js';
+import type {
+  IRPCData,
+  IRPCPacketAnswer,
+  IRPCPacketClose,
+  IRPCPacketEvent,
+  IRPCPacketStream,
+  IRPCStatus,
+} from './types.js';
 
 /**
  * A client-side consumer that hydrates `RemoteState` instances from network stream packets.
@@ -11,11 +18,19 @@ import type { IRPCData, IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent, IRPC
 export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
   public onClose?: () => void;
 
+  /**
+   * Initializes a new RemoteState with an optional initial payload.
+   *
+   * @param id - The unique identifier for this state instance.
+   * @param init - An optional starting value for the data payload.
+   * @param status - The initial status of the state (PENDING, SUCCESS, ERROR).
+   */
   constructor(
     public id: string,
-    init?: T
+    init?: T,
+    status: IRPCStatus = IRPC_STATUS.PENDING
   ) {
-    super(init);
+    super(init, status);
   }
 
   /**
@@ -48,5 +63,13 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
     this.status = IRPC_STATUS.SUCCESS;
     super.close();
     this.onClose?.();
+  }
+
+  /**
+   * Ensures that chained Promise operations return standard Promises
+   * rather than instantiating new RemoteState subclasses.
+   */
+  static get [Symbol.species]() {
+    return Promise;
   }
 }

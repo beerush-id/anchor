@@ -1,4 +1,4 @@
-import { $do, anchor, mutable, type StateSubscriber, subscribe } from '@anchorlib/core';
+import { $do, anchor, mutable, onCleanup, type StateSubscriber, subscribe } from '@anchorlib/core';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
@@ -69,8 +69,9 @@ export class RemoteState<T> extends Promise<T> {
    * Initializes a new RemoteState with an optional initial payload.
    *
    * @param init - An optional starting value for the data payload.
+   * @param status - The initial status of the state (PENDING, SUCCESS, ERROR).
    */
-  constructor(init?: T) {
+  constructor(init?: T, status: IRPCStatus = IRPC_STATUS.PENDING) {
     let acceptFn: (value: T) => void;
     let rejectFn: (error: Error) => void;
 
@@ -85,8 +86,10 @@ export class RemoteState<T> extends Promise<T> {
     this.#state = mutable({
       data: init as T,
       error: undefined,
-      status: IRPC_STATUS.PENDING,
+      status,
     });
+
+    onCleanup(() => this.close());
   }
 
   public accept(value?: T): void;
@@ -153,15 +156,6 @@ export class RemoteState<T> extends Promise<T> {
     this.#closed = true;
     this.#accept(this.data);
     this.destroy();
-  }
-
-  /**
-   * Starts the reactive state pipeline on the client side.
-   * This method is intended to be overridden by subclasses for custom initialization logic.
-   * On the server side, this method is a no-op.
-   */
-  public start(): this {
-    return this;
   }
 
   /**

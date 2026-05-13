@@ -1,6 +1,8 @@
+import { onCleanup } from '@anchorlib/core';
 import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { IRPCReader } from './reader.js';
 import type {
   IRPCCallConfig,
   IRPCData,
@@ -10,6 +12,7 @@ import type {
   IRPCSpec,
   TransportConfig,
 } from './types.js';
+import { uuid } from './uuid.js';
 
 /**
  * IRPCTransport is responsible for managing and dispatching RPC calls.
@@ -29,29 +32,24 @@ export class IRPCTransport {
 
   /**
    * Initiates an RPC call with the given specification and arguments.
+   * @param reader - The reader instance to attach to the RPC call.
    * @param spec - The RPC specification defining the method to call.
    * @param args - An array of arguments to pass to the RPC method.
    * @param config - Optional call configuration, including timeout, retry settings, and more.
    * @returns A promise that resolves with the RPC response data or rejects with an error.
    */
-  public call(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: IRPCData[], config?: IRPCCallConfig) {
+  public call(
+    spec: IRPCSpec<IRPCInputs, IRPCOutput>,
+    args: IRPCData[],
+    config?: IRPCCallConfig,
+    reader: IRPCReader<IRPCData> = new IRPCReader(uuid())
+  ) {
     const payload: IRPCPayload = { name: spec.name, args };
-    const { timeout, maxRetries, retryMode, retryDelay, init, deferred } = { ...this.config, ...config };
+    const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
 
-    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay, init, deferred });
+    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay }, reader);
 
     if (spec.stream) {
-      if (deferred) {
-        call.reader.start = () => {
-          this.dispatch([call])
-            .finally(() => {})
-            .catch(() => {});
-          return call.reader;
-        };
-
-        return call.reader;
-      }
-
       this.dispatch([call])
         .finally(() => {})
         .catch(() => {});
@@ -59,6 +57,8 @@ export class IRPCTransport {
     } else {
       this.schedule(call);
     }
+
+    onCleanup(() => this.close(call));
 
     return call.reader;
   }
@@ -103,7 +103,9 @@ export class IRPCTransport {
    * Subclasses should override this method to provide closing logic.
    * @param call - The RPC call to cancel.
    */
-  public close(call: IRPCCall) {}
+  public close(call: IRPCCall) {
+    console.log('[irpc] Closing call', call);
+  }
 
   /**
    * Dispatches a batch of RPC calls. This base implementation rejects all calls

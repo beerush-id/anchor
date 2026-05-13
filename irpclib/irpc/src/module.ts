@@ -1,4 +1,4 @@
-import { anchor, onCleanup, replay } from '@anchorlib/core';
+import { anchor, createObserver, isBrowser, microtask, onCleanup, replay } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
 import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
@@ -11,6 +11,7 @@ import type {
   IRPCData,
   IRPCDataSchema,
   IRPCDeclareInit,
+  IRPCFunction,
   IRPCHandler,
   IRPCInputs,
   IRPCOutput,
@@ -21,6 +22,8 @@ import type {
   IRPCSpec,
   IRPCSpecStore,
   IRPCStatus,
+  IRPCStreamInit,
+  IRPCStub,
   IRPCStubStore,
 } from './types.js';
 import { uuid } from './uuid.js';
@@ -106,22 +109,87 @@ export class IRPCPackage {
    */
   public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
     options: IRPCDeclareInit<F, I, O>
-  ): F {
-    if (this.specs.has(options.name)) {
-      throw new Error(`IRPC ${options.name} already exists.`);
+  ): IRPCFunction<F> {
+    const $options = options as never as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData>;
+
+    if (this.specs.has($options.name)) {
+      throw new Error(`IRPC ${$options.name} already exists.`);
     }
 
-    const spec = {
-      ...options,
-      stream: typeof (options as { init?: () => void }).init === 'function',
-    } as never as IRPCSpec<IRPCInputs, IRPCOutput>;
+    const spec = { init: () => undefined, ...$options } as IRPCSpec<IRPCInputs, IRPCOutput>;
     const calls = new Map<string, unknown>();
     const caches = new IRPCCacher();
 
+    /* General stub for immediate execution */
     const stub = ((...args: IRPCData[]) => {
+      return execute(args, new IRPCReader<IRPCData>(uuid(), spec.init!()));
+    }) as IRPCStub<F, unknown[], IRPCData>;
+
+    /** Browser only stub for single immediate execution **/
+    stub.once = (...args: IRPCData[]) => {
+      return prepare(() => args);
+    };
+
+    /* Browser only stub with immediate execution */
+    stub.with = (getArgs, debounce) => {
+      const readArgs = typeof getArgs === 'function' ? getArgs : () => getArgs;
+      return prepare(readArgs, false, debounce);
+    };
+
+    /* Browser only stub with deferred execution */
+    stub.when = (getArgs, debounce) => {
+      const readArgs = typeof getArgs === 'function' ? getArgs : () => getArgs;
+      return prepare(readArgs, true, debounce);
+    };
+
+    /**
+     * A preparation utility to generate and schedule call on the browser environment.
+     *
+     * @param getArgs - A function that returns the arguments for the call.
+     * @param deferred - A flag indicating whether the call should be deferred.
+     * @param debounce - The debounce time in milliseconds.
+     * @returns {IRPCReader<IRPCData>} - The reader for the call.
+     */
+    function prepare(getArgs: () => unknown[], deferred?: boolean, debounce = 0): IRPCReader<IRPCData> {
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.init!(), deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING);
+
+      if (isBrowser()) {
+        const observer = createObserver(() => {
+          observer.reset();
+          dispatch();
+        });
+        const [schedule, cancel] = microtask(debounce);
+        const dispatch = (coalesce = true) => {
+          const args = observer.run(getArgs);
+
+          if (!coalesce) return execute(args as IRPCData[], reader);
+
+          schedule(() => {
+            execute(args as IRPCData[], reader);
+          });
+        };
+
+        if (deferred) {
+          observer.run(getArgs);
+        } else {
+          dispatch(false);
+        }
+
+        onCleanup(() => {
+          cancel();
+          observer.destroy();
+        });
+      }
+
+      return reader;
+    }
+
+    const execute = (args: IRPCData[], reader: IRPCReader<IRPCData>) => {
       if (!this.transport && typeof spec.handler !== 'function') {
         return Promise.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]));
       }
+
+      reader.status = IRPC_STATUS.PENDING;
 
       const callKey = JSON.stringify(args);
       const cached = caches.get(callKey);
@@ -134,23 +202,18 @@ export class IRPCPackage {
         return calls.get(callKey);
       }
 
-      const { timeout, maxRetries, retryDelay, retryMode, init, deferred = true } = { ...this.config, ...spec };
-      const config = { timeout, maxRetries, retryDelay, retryMode, init, deferred } as IRPCCallConfig;
+      const { timeout, maxRetries, retryDelay, retryMode, init } = { ...this.config, ...spec };
+      const config = { timeout, maxRetries, retryDelay, retryMode, init } as IRPCCallConfig;
 
       const hooks = this.hooks.get(spec);
       if (hooks) {
         hooks.forEach((hook) => hook({ name: spec.name, args }));
       }
 
-      // Intercept deferred local call.
-      if (typeof spec.handler === 'function' && spec.stream && deferred) {
-        return intercept(spec, args, init);
-      }
-
       const call =
         typeof spec.handler === 'function'
-          ? (spec.handler as (...args: unknown[]) => unknown)(...args)
-          : this.transport!.call(spec, args, config);
+          ? intercept(spec, args, reader)
+          : this.transport!.call(spec, args, config, reader);
 
       calls.set(callKey, call);
 
@@ -158,29 +221,18 @@ export class IRPCPackage {
         caches.set(callKey, call, spec.maxAge);
       }
 
-      if (typeof spec.init === 'function' && call instanceof RemoteState && typeof call.data === 'undefined') {
-        call.data = spec.init();
-      }
+      onCleanup(() => call.close());
+      call.finally(() => calls.delete(callKey)).catch(() => {});
 
-      if (call instanceof RemoteState) {
-        onCleanup(() => call.close());
-      }
+      return reader;
+    };
 
-      if (call instanceof Promise) {
-        call.finally(() => calls.delete(callKey)).catch(() => {});
-      } else {
-        calls.delete(callKey);
-      }
-
-      return call;
-    }) as IRPCHandler;
-
-    this.specs.set(options.name, spec);
+    this.specs.set($options.name, spec);
     this.stubs.set(stub, spec);
     this.cache.set(stub, caches);
     this.hooks.set(spec, new Set());
 
-    return stub as F;
+    return stub as IRPCFunction<F>;
   }
 
   /**
@@ -210,7 +262,7 @@ export class IRPCPackage {
    * @returns This IRPCPackage instance for chaining
    * @throws Error if the stub or handler is invalid, or if no IRPC exists for the stub
    */
-  public construct<F extends IRPCHandler>(stub: F, handler: F): this {
+  public construct<F, A extends unknown[], R extends IRPCData>(stub: IRPCStub<F, A, R>, handler: F): this {
     if (typeof stub !== 'function') {
       throw new Error(ERROR_MESSAGE[ERROR_CODE.STUB_INVALID]);
     }
@@ -343,32 +395,60 @@ export function createPackage(config?: Partial<IRPCPackageConfig>): IRPCPackage 
   return new IRPCPackage(config);
 }
 
-export function intercept(spec: IRPCSpec<IRPCInputs, IRPCOutput>, args: unknown[], init?: () => unknown) {
-  const call = new IRPCReader(uuid(), init?.() as never);
-
-  call.start = () => {
+/**
+ * Intercepts local function call to get an instant response without remote execution.
+ *
+ * @param reader - The reader object to intercept.
+ * @param spec - The IRPC specification for the function call.
+ * @param args - The arguments to be passed to the function.
+ * @returns {IRPCReader<IRPCData>} - The IRPCReader object for consumer.
+ */
+export function intercept(
+  spec: IRPCSpec<IRPCInputs, IRPCOutput>,
+  args: unknown[],
+  reader: IRPCReader<IRPCData>
+): IRPCReader<IRPCData> {
+  try {
     const result = spec.handler(...args) as RemoteState<unknown>;
-    anchor.assign(call.state as IRPCReadable<unknown>, result.state as IRPCReadable<unknown>);
+
+    if (!(result instanceof Promise)) {
+      reader.accept(result);
+      return reader;
+    }
+
+    if (!(result instanceof RemoteState)) {
+      (result as Promise<IRPCData>)
+        .then((value) => {
+          reader.accept(value);
+        })
+        .catch((err) => {
+          reader.reject(err);
+        });
+
+      return reader;
+    }
+
+    anchor.assign(reader.state as IRPCReadable<unknown>, result.state as IRPCReadable<unknown>);
 
     const unsubscribe = result.subscribe((_, event) => {
       if (event.type === 'init') return;
 
       const [rootKey] = event.keys;
       if (rootKey === 'status') {
-        call.status = event.value as IRPCStatus;
+        reader.status = event.value as IRPCStatus;
 
-        if (call.status === IRPC_STATUS.SUCCESS) {
+        if (reader.status === IRPC_STATUS.SUCCESS) {
           unsubscribe();
         }
 
         return;
       }
 
-      replay(call.state, event);
+      replay(reader.state, event);
     });
+  } catch (error) {
+    reader.reject(error as Error);
+  }
 
-    return call;
-  };
-
-  return call;
+  return reader;
 }
