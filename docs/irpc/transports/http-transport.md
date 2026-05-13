@@ -383,6 +383,22 @@ router.use(async () => {
 });
 ```
 
+### Stream Cancellation
+
+Clients can cancel individual streams by calling `.close()` on the `RemoteState`. The transport aborts the underlying HTTP request for that batch:
+
+```typescript
+const prices = watchPrices('AAPL');
+prices.start();
+
+// Later — cancel this specific stream
+prices.close();
+```
+
+### Read Error Termination
+
+If the HTTP response stream encounters a reading error (e.g., network interruption), all pending calls within that batch are terminated with error packets, preventing dangling unresolved promises on the client.
+
 ## Context Management
 
 The router's `resolve` method accepts an `initContext` parameter — an array of `[key, value]` tuples that seed the request context. The router only manages the internal `AbortController`.

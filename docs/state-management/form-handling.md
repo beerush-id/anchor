@@ -19,7 +19,6 @@ It automatically handles state tracking, validation feedback, and error mapping 
 The `form` function takes a Zod schema and an initial value. It returns a tuple containing the **State** and the **Errors** map.
 
 ```ts
-import { form } from '@anchorlib/react';
 import { z } from 'zod';
 
 // Define Validation Schema
@@ -27,6 +26,12 @@ const schema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
+```
+
+::: code-group
+
+```ts [React]
+import { form } from '@anchorlib/react';
 
 // Create Form State
 const [state, errors] = form(schema, {
@@ -35,6 +40,18 @@ const [state, errors] = form(schema, {
 });
 ```
 
+```ts [SolidJS]
+import { form } from '@anchorlib/solid';
+
+// Create Form State
+const [state, errors] = form(schema, {
+  email: '',
+  password: '',
+});
+```
+
+:::
+
 - **`state`**: A mutable reactive object containing the form values.
 - **`errors`**: A reactive map containing validation issues for each field.
 
@@ -42,7 +59,9 @@ const [state, errors] = form(schema, {
 
 Since the form state is mutable, you can bind it directly to input elements. Changes to the input will update the state, and validation runs automatically.
 
-```tsx
+::: code-group
+
+```tsx [React]
 import { setup, render, form, $bind, $use } from '@anchorlib/react';
 import type { Bindable, Linked } from '@anchorlib/react';
 
@@ -88,6 +107,56 @@ export const LoginForm = setup(() => {
 });
 ```
 
+```tsx [SolidJS]
+import { form, $bind, $use, bindable } from '@anchorlib/solid';
+import type { Bindable, Linked } from '@anchorlib/solid';
+import { Show } from 'solid-js';
+
+// 1. Create a reusable, bindable Input Component
+export const TextInput = bindable((props: { 
+  label: string, 
+  value?: Bindable<string>, 
+  error?: Linked<{ message: string } | undefined>,
+  type?: string 
+}) => {
+  return (
+    <div>
+      <label>{props.label}</label>
+      <input
+        type={props.type || 'text'}
+        value={props.value ?? ''}
+        onInput={(e) => (props.value = e.currentTarget.value)}
+      />
+      <Show when={props.error}>
+        <span className="error">{props.error!.message}</span>
+      </Show>
+    </div>
+  );
+});
+
+// 2. Use $bind() and $use() in your Form
+export const LoginForm = () => {
+  const [state, errors] = form(schema, { email: '', password: '' });
+
+  return (
+    <form>
+      <TextInput 
+        label="Email" 
+        value={$bind(state, 'email')} 
+        error={$use(errors, 'email')} 
+      />
+      <TextInput 
+        label="Password" 
+        type="password" 
+        value={$bind(state, 'password')} 
+        error={$use(errors, 'password')} 
+      />
+    </form>
+  );
+};
+```
+
+:::
 
 ## Validation Logic
 
@@ -112,7 +181,9 @@ if (errors.email) {
 
 When submitting the form, you can validate the entire state at once using `schema.safeParse(state)`.
 
-```tsx
+::: code-group
+
+```tsx [React]
 const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
 
@@ -135,6 +206,32 @@ return render(() => (
   </form>
 ));
 ```
+
+```tsx [SolidJS]
+const handleSubmit = (e: Event) => {
+  e.preventDefault();
+
+  const result = schema.safeParse(state);
+
+  if (!result.success) {
+    // Validation failed
+    console.error('Form is invalid');
+    return;
+  }
+
+  // Validation succeeded
+  console.log('Submitting:', result.data);
+};
+
+return (
+  <form onSubmit={handleSubmit}>
+    {/* ... inputs ... */}
+    <button type="submit">Login</button>
+  </form>
+);
+```
+
+:::
 
 ## Configuration
 

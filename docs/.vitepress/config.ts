@@ -93,8 +93,76 @@ export default defineConfig({
         link: '/getting-started',
       },
       {
-        text: 'Anchor for React',
+        text: 'Remote Function',
         collapsed: false,
+        items: [
+          { text: 'Overview', link: '/remote-function/index.html' },
+          { text: 'Functions', link: '/remote-function/function' },
+          { text: 'Handlers', link: '/remote-function/handler' },
+          { text: 'Transports', link: '/remote-function/transport' },
+          { text: 'Distribution', link: '/remote-function/distribution' },
+        ],
+      },
+      {
+        text: 'State Management',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/state-management/index.html' },
+          { text: 'Mutable State', link: '/state-management/mutable' },
+          { text: 'Immutable State', link: '/state-management/immutable' },
+          { text: 'Derived State', link: '/state-management/derived' },
+          { text: 'Side Effects', link: '/state-management/side-effect' },
+          { text: 'Async Handling', link: '/state-management/async-handling' },
+          { text: 'Form Handling', link: '/state-management/form-handling' },
+          { text: 'Advanced', link: '/state-management/advanced' },
+        ],
+      },
+      {
+        text: 'Routing',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/routing/index.html' },
+          { text: 'Routes & Layouts', link: '/routing/routes-layouts' },
+          { text: 'Navigation', link: '/routing/navigation' },
+          { text: 'Guards & Authentication', link: '/routing/guards' },
+          { text: 'Data Loaders & Providers', link: '/routing/data-loaders' },
+        ],
+      },
+      {
+        text: 'Component',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/component/index.html' },
+          { text: 'Reactive Components', link: '/component/reactive' },
+          { text: 'Data Components', link: '/component/data' },
+          { text: 'Form Components', link: '/component/form' },
+          { text: 'Headless Components', link: '/component/headless' },
+          { text: 'Composition', link: '/component/composition' },
+        ],
+      },
+      {
+        text: 'IRPC',
+        collapsed: true,
+        items: [
+          { text: 'Overview', link: '/irpc/index.html' },
+          { text: 'Getting Started', link: '/irpc/getting-started' },
+          { text: 'Comparison', link: '/irpc/comparison' },
+          { text: 'Specification', link: '/irpc/specification' },
+          {
+            text: 'Transports',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/irpc/transports/index.html' },
+              { text: 'HTTP', link: '/irpc/transports/http-transport' },
+              { text: 'WebSocket', link: '/irpc/transports/ws-transport' },
+              { text: 'BroadcastChannel', link: '/irpc/transports/broadcast-transport' },
+            ],
+          },
+        ],
+      },
+      {
+        text: 'Anchor for React',
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/react/index.html' },
           { text: 'Getting Started', link: '/react/getting-started' },
@@ -131,6 +199,7 @@ export default defineConfig({
               { text: 'Overview', link: '/react/router/index.html' },
               { text: 'Routes & Layouts', link: '/react/router/routes-layouts' },
               { text: 'Navigation', link: '/react/router/navigation' },
+              { text: 'Guards & Authentication', link: '/react/router/guards' },
               { text: 'Data Loaders & Providers', link: '/react/router/data-loaders' },
             ],
           },
@@ -159,33 +228,8 @@ export default defineConfig({
         ],
       },
       {
-        text: 'IRPC',
-        collapsed: false,
-        items: [
-          { text: 'Overview', link: '/irpc/index.html' },
-          { text: 'Getting Started', link: '/irpc/getting-started' },
-          { text: 'Comparison', link: '/irpc/comparison' },
-          { text: 'Specification', link: '/irpc/specification' },
-          {
-            text: 'Transports',
-            collapsed: true,
-            items: [
-              { text: 'Overview', link: '/irpc/transports/index.html' },
-              { text: 'HTTP', link: '/irpc/transports/http-transport' },
-              { text: 'WebSocket', link: '/irpc/transports/ws-transport' },
-              { text: 'BroadcastChannel', link: '/irpc/transports/broadcast-transport' },
-            ],
-          },
-        ],
-      },
-      {
-        text: 'Examples',
-        collapsed: false,
-        items: [{ text: 'Analytics Dashboard', link: '/examples/dashboard' }],
-      },
-      {
         text: 'Anchor for Solid',
-        collapsed: false,
+        collapsed: true,
         items: [
           {
             text: 'Overview',
@@ -209,6 +253,18 @@ export default defineConfig({
               { text: 'Advanced', link: '/solid/state/advanced' },
             ],
           },
+          {
+            text: 'Router',
+            collapsed: true,
+            items: [
+              { text: 'Overview', link: '/solid/router/index.html' },
+              { text: 'Routes & Layouts', link: '/solid/router/routes-layouts' },
+              { text: 'Navigation', link: '/solid/router/navigation' },
+              { text: 'Guards & Authentication', link: '/solid/router/guards' },
+              { text: 'Data Loaders & Providers', link: '/solid/router/data-loaders' },
+            ],
+          },
+          { text: 'Server-Side Rendering', link: '/solid/ssr' },
           { text: 'AI Knowledge Base', link: '/solid/ai-knowledge-base' },
           { text: 'AI System Prompt', link: '/solid/ai-system-prompt' },
           { text: 'FAQ', link: '/solid/faq' },
@@ -216,7 +272,7 @@ export default defineConfig({
       },
       {
         text: 'Anchor for Svelte',
-        collapsed: false,
+        collapsed: true,
         items: [
           {
             text: 'Overview',
@@ -246,7 +302,7 @@ export default defineConfig({
       },
       {
         text: 'Anchor for Vue',
-        collapsed: false,
+        collapsed: true,
         items: [
           {
             text: 'Overview',
@@ -269,8 +325,13 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Examples',
+        collapsed: true,
+        items: [{ text: 'Analytics Dashboard', link: '/examples/dashboard' }],
+      },
+      {
         text: 'Async',
-        collapsed: false,
+        collapsed: true,
         items: [
           {
             text: 'Getting Started',
@@ -292,7 +353,7 @@ export default defineConfig({
       },
       {
         text: 'Storage',
-        collapsed: false,
+        collapsed: true,
         items: [
           {
             text: 'Getting Started',
@@ -322,7 +383,7 @@ export default defineConfig({
       },
       {
         text: 'API Reference',
-        collapsed: false,
+        collapsed: true,
         items: [
           {
             text: 'Core',

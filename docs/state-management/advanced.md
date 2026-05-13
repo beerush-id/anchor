@@ -11,9 +11,11 @@ While `mutable` and `derived` are powerful on their own, scaling an application 
 
 Global state is state that is accessible from anywhere in your application, usually defined at the module scope (top-level variable in a file).
 
-```ts
+::: code-group
+
+```ts [React]
 // store.ts
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@anchorlib/react';
 
 // This is a global state
 export const appState = mutable({
@@ -21,6 +23,19 @@ export const appState = mutable({
   sidebarOpen: false
 });
 ```
+
+```ts [SolidJS]
+// store.ts
+import { mutable } from '@anchorlib/solid';
+
+// This is a global state
+export const appState = mutable({
+  theme: 'dark',
+  sidebarOpen: false
+});
+```
+
+:::
 
 ### Pros
 - **Simplicity**: Just import and use. No Context providers or prop drilling required.
@@ -43,9 +58,11 @@ Headless state involves separating *business logic* from the *UI*. In Anchor, th
 
 The simplest way is a function returning a reactive object with methods.
 
-```ts
+::: code-group
+
+```ts [React]
 // counter.ts
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@anchorlib/react';
 
 export function createCounter() {
   return mutable({
@@ -60,16 +77,34 @@ export function createCounter() {
 }
 ```
 
+```ts [SolidJS]
+// counter.ts
+import { mutable } from '@anchorlib/solid';
+
+export function createCounter() {
+  return mutable({
+    count: 0,
+    increment() {
+      this.count++;
+    },
+    decrement() {
+      this.count--;
+    }
+  });
+}
+```
+
+:::
+
 ### Option 2: Class Pattern
 
 For more complex logic, Classes offer better structure and inheritance. You can pass a class instance directly to `mutable()`, and the proxy engine will automatically track mutations, even when methods use `this`.
-  
-> [!WARNING] Deep Reactivity
-> Wrapping the entire class instance with `mutable()` makes all of its properties deeply reactive. If your class contains properties that should remain passive (non-reactive) for performance or logic reasons, do **not** wrap the class instance. Instead, initialize only specific properties with `mutable()` inside the class.
 
-```ts
+::: code-group
+
+```ts [React]
 // tabs.ts
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@anchorlib/react';
 
 export class TabState {
   public active: string;
@@ -88,6 +123,32 @@ export function createTab(initial?: string) {
 }
 ```
 
+```ts [SolidJS]
+// tabs.ts
+import { mutable } from '@anchorlib/solid';
+
+export class TabState {
+  public active: string;
+
+  constructor(init?: string) {
+    this.active = init ?? 'home';
+  }
+
+  public setActive(tab: string) {
+    this.active = tab;
+  }
+}
+
+export function createTab(initial?: string) {
+  return mutable(new TabState(initial));
+}
+```
+
+:::
+
+> [!WARNING] Deep Reactivity
+> Wrapping the entire class instance with `mutable()` makes all of its properties deeply reactive. If your class contains properties that should remain passive (non-reactive) for performance or logic reasons, do **not** wrap the class instance. Instead, initialize only specific properties with `mutable()` inside the class.
+
 ### Pros
 - **Encapsulation**: logic stays with data (e.g., `counter.increment()` or `tab.setActive()`).
 - **Flexibility**: Use whatever JS pattern you prefer (Object, Class, Factory).
@@ -104,10 +165,27 @@ export function createTab(initial?: string) {
 
 Local state is state that is created and destroyed with a specific component instance. In Anchor, this is typically done inside a `setup` function or a component body.
 
-```tsx
-import { setup, mutable } from '@anchorlib/react';
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
 
 export const Counter = setup(() => {
+  // This state is local to this instance of Counter
+  const state = mutable({ count: 0 });
+
+  return render(() => (
+    <button onClick={() => state.count++}>
+      Count: {state.count}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { mutable } from '@anchorlib/solid';
+
+export const Counter = () => {
   // This state is local to this instance of Counter
   const state = mutable({ count: 0 });
 
@@ -116,8 +194,10 @@ export const Counter = setup(() => {
       Count: {state.count}
     </button>
   );
-});
+};
 ```
+
+:::
 
 ### Pros
 - **Safety**: State is automatically garbage collected when the component unmounts. No risk of data leaking between users or sessions.

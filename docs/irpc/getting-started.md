@@ -331,6 +331,10 @@ const PoemWidget = setup(() => {
 
 No fetch calls, manual serialization, or separate WebSocket connections required.
 
+::: tip Automatic Stream Cleanup
+Stream proxies (`RemoteState`) are automatically closed when the owning component unmounts. You do not need to manually call `.close()` in `onCleanup()` — the framework handles this via `createLifecycle`.
+:::
+
 ## Advanced Features
 
 ### Stream Subscriptions & Cleanup
@@ -484,6 +488,20 @@ export const slowQuery = irpc.declare<SlowQueryFn>({
 ```
 
 Calls exceeding the timeout will reject with an error.
+
+### TTL (Time-To-Live)
+
+Set a maximum lifetime for stream handlers. If a stream remains open longer than the specified TTL, the router automatically aborts its `AbortController`, shutting down the stream server-side.
+
+```typescript
+export const watchPrices = irpc.declare<WatchPricesFn>({
+  name: 'watchPrices',
+  init: () => 0,
+  ttl: 300000, // 5 minute maximum stream lifetime
+});
+```
+
+TTL is enforced by the router (HTTP, WebSocket, and BroadcastChannel). It applies only to stream handlers — standard promise-based calls use `timeout` instead.
 
 ### Retry Configuration
 

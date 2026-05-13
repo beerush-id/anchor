@@ -1,135 +1,353 @@
 ---
-title: 'AIR Stack: A Technical Overview'
-description: 'The Zero-Boilerplate, AI-Native Stack. Eliminate the network layer, React Query, and re-render cascades with Anchor and IRPC.'
+title: 'AIR Stack: Overview'
+description: 'The Zero-Boilerplate, AI-Native Stack. Full-stack TypeScript architecture with fine-grained reactivity, reactive network transport, and reactive routing.'
 keywords:
   - AIR Stack
   - Anchor
   - IRPC
+  - Router
   - Zero Boilerplate
-  - React Query alternative
-  - tRPC alternative
-  - API batching
+  - AI-Native
   - fine-grained reactivity
-  - enterprise web development
+  - full-stack TypeScript
 ---
 
-# AIR Stack: A Technical Overview
+# AIR Stack: Overview
 
-**The Zero-Boilerplate, AI-Native Stack**
+**Zero-Boilerplate, AI-Native Reactive Application Stack**
 
-The modern web development ecosystem is fragmented. You use React for UI, Zustand for state, tRPC for API contracts, React Query for caching, and Socket.io for live streaming.
+You want to build an app that is **highly reactive**, **performant**, and **maintainable**, you are forced to stitch together:
 
-You spend 70% of your time writing "glue code" to wire these disparate systems together. 
+- A UI framework — **React**, **Solid**, **Vue**, **Svelte**.
+- A state library — **Zustand**, **Redux**, **MobX**, **Pinia**.
+- An API framework — **tRPC**, **Express**, **Hono**, **Elysia**.
+- A caching layer — **React Query**, **SWR**, **Apollo**.
+- A streaming transport — **Socket.io**, **ws**, **Ably**.
+- A form library — **React Hook Form**, **Formik**.
+- A validation library — **Zod**, **Yup**, **Joi**.
+- A runtime — **Node**, **Bun**, **Deno**.
+- A deployment target — **Vercel**, **Cloudflare**, **AWS**.
 
-The **AIR Stack** is a fundamental architectural shift. It fuses state management, network transport, and reactive rendering into a single, cohesive pipeline:
+Each with its own **mental model**, its own **lifecycle**, and its own **failure modes**. And even then, you often end up sacrificing **maintainability** just to keep the **performance** intact.
 
-- **A** = **Anchor** (Fine-grained reactive view binding)
-- **I** = **IRPC** (Universal Remote Procedure Calls & Streaming)
-- **R** = **Reactive UI** (React, Solid, Svelte, Vue, vanilla JS)
+::: tip What if building an application is just writing a function?
+:::
 
-<div style="display: flex; align-items: center; justify-content: center; margin-top: 48px;">
-  <img src="/schemas/dsv-model.webp" alt="DSV (Data-State-View) Model Schema" />
-</div>
+```ts
+// Server: write the function
+const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
 
-## **The Problem: Boilerplate Fatigue**
-
-Traditional stacks force you to juggle immense cognitive load just to get data onto the screen:
-
-### **1. The API & Network Burden (The tRPC / REST problem)**
-- **Boilerplate Routing:** You must define explicit routes, endpoints, or tRPC router trees just to expose a single function.
-- **The Subscription Nightmare:** Want real-time data? Standard API calls won't work. You have to set up entirely separate WebSocket infrastructure and write different "subscription" procedures.
-
-### **2. The Caching Burden (The React Query problem)**
-- **Heavy Dependencies:** You wrap your app in massive provider libraries just to avoid fetching the same resource twice.
-- **Manual Invalidation:** You have to manually track query keys and trigger invalidations when data changes.
-
-### **3. The Rendering Burden (The React problem)**
-- **Re-render Cascades:** When your API data updates, React re-renders the entire component tree.
-- **useEffect Hell:** Fetching data safely requires managing `useEffect` dependency arrays, leading to infinite loops and stale closures.
-- **AI Hallucinations:** Because the rendering lifecycle is implicit and highly dependent on glue code, AI coding assistants struggle to generate correct, bug-free components.
-
-## **The Solution: End-to-End Reactivity**
-
-The AIR Stack completely eliminates the glue code. 
-
-**Server Mutation → IRPC Transport → Anchor DOM Binding.**
-
-The pipeline handles caching, loading states, chunk streaming, and UI updates invisibly.
-
-### **1. IRPC: Zero-Plumbing Network Transport**
-
-IRPC makes remote functions feel local. It handles the transport layer entirely. 
-
-**Key Features:**
-- **Zero Boilerplate:** Declare the function, construct the handler. No routes, no controllers.
-- **Native Streaming:** Return `RemoteState` instead of a Promise to seamlessly yield chunks over standard HTTP (SSE). **No WebSockets required for real-time dashboards.**
-- **Automatic Batching:** Simultaneous calls are batched into a single request with 6.96x faster throughput.
-- **Intelligent Caching:** Built right into the protocol. Bypasses the need for React Query.
-
-```typescript
-// Define it (Shared)
-const getPrice = irpc.declare<PriceFn>({ name: 'getPrice' });
-
-// Implement it (Server)
-irpc.construct(getPrice, async (ticker) => db.prices.find(ticker));
-```
-
-### **2. Anchor: Fine-Grained View Binding**
-
-Anchor introduces the **DSV (Data-State-View)** model. Logic runs exactly once, and data is bound directly to fine-grained DOM snippets.
-
-**Key Features:**
-- **Logic Runs Once:** Your component wrapper runs once. No `useState`, no `useEffect` loops, no stale variables.
-- **Surgical DOM Updates:** Only the exact `snippet` that depends on changed data will re-render. The rest of your app remains perfectly still.
-- **AI-Native:** Deterministic logic flows are trivial for AI assistants to generate without bugs.
-
-```tsx
-import { setup, snippet } from '@anchorlib/react';
-
-const Profile = setup(() => {
-  // Logic runs once.
-  const user = getPrice('AAPL'); // Call the IRPC remote function
-
-  // Only this exact snippet re-renders when data streams in.
-  const PriceView = snippet(() => <span>${user.data.current}</span>);
-
-  return (
-    <div>
-      <Header />
-      <PriceView />
-    </div>
-  );
+irpc.construct(getUser, async (id) => {
+  return db.users.find(id);
 });
 ```
 
-### **3. Universal Reactive UI Support**
+::: code-group
 
-Because the AIR Stack handles the state and network layers natively, your business logic is completely portable. The View layer acts simply as a rendering surface.
+```tsx [React]
+// Client: call it and render
+const UserCard = setup((props) => {
+  const user = getUser(props.id);
 
-**Supported Interfaces:**
-- React (replaces React Query & Redux/Zustand)
-- Svelte (enhances standard stores with Zod integrity and immutability)
-- SolidJS
-- Vue 
-- Vanilla TypeScript
-
-## **The "Aha!" Moment**
-
-In a traditional stack, building a live-streaming dashboard requires:
-`WebSocket Server` + `tRPC Subscription Procedure` + `React Query Provider` + `useEffect Data Loading` + `useMemo Layout Optimization`.
-
-In the AIR Stack, it requires:
-**Calling a function.**
-
-```typescript
-// Client
-const prices = streamPrices(); 
-call.subscribe(state => console.log(state.data)); // Streams natively.
+  return render(() => (
+    <div>
+      <h1>{user.data.name}</h1>
+    </div>
+  ));
+});
 ```
 
-## **Next Steps**
+```tsx [Solid]
+// Client: call it and render
+const UserCard = (props) => {
+  const user = getUser(() => props.id);
 
-- [Anchor Getting Started](/getting-started) - Set up state management
-- [IRPC Overview](/irpc/index.html) - Build type-safe APIs
-- [React Guide](/react/getting-started) - Framework-specific integration
-- [Svelte Guide](/svelte/getting-started) - True Immutability for Svelte
+  return (
+    <div>
+      <h1>{user.data.name}</h1>
+    </div>
+  );
+}
+```
+
+:::
+
+With AIR Stack, you don't need to install a million libraries to build an app that is **highly reactive**, **performant**, and **maintainable**—all **without making sacrifices**.
+
+## IRPC: Reactive Network Abstraction
+
+To use server data in the UI, you pick:
+
+- **Express** — define routes, handlers, middleware, no type inference across the boundary.
+- **Hono** — define routes, handlers, RPC mode still needs a separate caching layer.
+- **Elysia** — end-to-end types, but still needs a separate caching and streaming layer.
+- **tRPC** — define procedures and routers, still wire **React Query** for caching.
+- **GraphQL** — write schemas, resolvers, run code generation for every change.
+- **gRPC** — write protobuf definitions, generate client stubs, handle browser incompatibility.
+
+Whichever you pick, you still:
+
+- Wire a **caching** layer — **React Query**, **SWR**, **Apollo Client** — and manually track cache keys.
+- Set up **streaming** — **Socket.io**, **ws**, **Ably**, **Pusher** — with its own connection lifecycle.
+- Manage **loading**, **error**, and **success** states in every component.
+- Configure **retry** and **deduplication** logic per query.
+- Handle **serialization** and **error formatting** between server and client.
+- Write the same **boilerplate** for every new endpoint — route, handler, validation, fetch wrapper, loading state.
+- **Rename** a route — then hunt through every controller, every `fetch('/api/old-name')`, every `queryClient.invalidateQueries(['old-name'])` to update them.
+- Keep server and client **types in sync** manually — or run **code generation** on every change.
+
+::: tip What if using server data is just writing a function and calling it?
+:::
+
+### Data Fetching
+
+```ts
+// Declare (shared)
+const getPrice = irpc.declare<PriceFn>({ name: 'getPrice' });
+
+// Implement (server)
+irpc.construct(getPrice, async (ticker) => {
+  return db.prices.find(ticker);
+});
+
+// Call (client)
+const price = await getPrice('AAPL');
+```
+
+### Streaming
+
+Now look at streaming — a completely different problem that normally needs **WebSocket** servers, connection lifecycle, and reconnection logic:
+
+```ts
+// Same declare
+const watchPrice = irpc.declare<WatchPriceFn>({
+  name: 'watchPrice',
+  init: () => ({ symbol: '', price: 0 }),
+});
+
+// Same construct — but this one streams live data
+irpc.construct(watchPrice, (symbol) => {
+  return stream((state, resolve) => {
+    state.data = { symbol, price: 50 }; // [!code highlight]
+
+    const interval = setInterval(() => {
+      state.data.price += Math.random() * 2 - 1; // [!code highlight]
+    }, 100);
+
+    return () => clearInterval(interval);
+  });
+});
+```
+
+Same API. Two different worlds — one pattern. **Batching**, **caching**, **retry logic**, and **call coalescing** are built into the protocol.
+
+## Anchor: Reactive State Engine
+
+To present data on the screen, you pick a UI library or framework:
+
+- **React** — huge ecosystem, but you battle hook cascades, stale closures, and component re-renders.
+- **Solid**, **Vue**, or **Svelte** — fine-grained reactivity without the re-render battles, but they each invent their own reactive primitives.
+
+Whichever you pick, your state is still locked inside client code, and you still need to:
+
+- Wire a separate **server state** library — **React Query**, **SWR**, or **Apollo** — to fetch and cache data.
+- Wire a separate **global state** library — **Zustand**, **Redux**, **Pinia**, or **MobX** — to hold data outside components.
+- Wire a separate **form state** library — **React Hook Form**, **Formik**, or **VeeValidate** — to manage inputs and validation.
+- Write bridging logic and effects to keep all these fragmented state libraries in sync.
+- Wrap your application in a nested tree of **Context** providers or **Stores** just to share state across components.
+- Trace through multiple stores, caching layers, and subscription chains to debug why the UI is out of sync with the data.
+
+::: tip What if one library can do them all?
+:::
+
+::: code-group
+
+```tsx [React]
+import { setup, snippet, onMount } from '@anchorlib/react';
+import { watchPrice } from './function.js';
+
+const PriceCard = setup(() => {
+  const stream = watchPrice('AAPL');
+
+  onMount(() => stream.start());
+
+  return render(() => (
+    <div>
+      <h2>AAPL</h2>
+      <span>${stream.data.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
+    </div>
+  ));
+});
+```
+
+```tsx [Solid]
+import { onMount } from 'solid-js';
+import { watchPrice } from './function.js';
+
+const PriceCard = () => {
+  const stream = watchPrice('AAPL');
+
+  onMount(() => stream.start());
+
+  return (
+    <div>
+      <h2>AAPL</h2>
+      <span>${stream.data.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
+    </div>
+  );
+}
+```
+
+:::
+
+With Anchor, you stop wiring libraries together. Whether it's a **live data stream**, a **global user session**, or a **complex form**, it's just **reactive state**. One field changes, one fragment updates. Everything else stays still. You get **fine-grained updates**, **controlled write contracts**, and **schema validation** through Zod — all for free.
+
+## Router: Reactive Routing Engine
+
+You have a page. You need it to always reflect the current state of your application.
+
+Whether you use **React Router**, **Next.js**, **TanStack Router**, or **Solid Router**, routing is fundamentally driven by the URL. When a user navigates, the route fetches data and renders. But once the page is loaded, you still have to:
+
+- Write **imperative redirects** inside component effects to kick the user out if their session expires.
+- Manually trigger **data revalidation** when global state changes, or force a hard page refresh.
+- Build nested trees of **Error Boundaries** and **Suspense components** just to catch loading and failure states.
+- Coordinate **loading spinners** manually for every async transition across your component tree.
+- Wire up separate **subscription tracking** just to keep the route's data in sync with live state.
+- Scatter **guard logic** across middlewares, loaders, and component render functions.
+
+::: tip What if the route reacts to the state, not just the URL?
+:::
+
+::: code-group
+
+```tsx [React] {3,4,8}
+export const userRoute = usersRoute.route('/:user_id')
+  .guard(() => {
+    if (!auth.isAuthenticated) {
+      throw redirect(loginRoute);
+    }
+  })
+  .provide('profile', async ({ params }) => {
+    return await getUser(params.user_id);
+  })
+  .render((state) => (
+    <div className="profile-view">
+      <h1>{state.data.profile.name}</h1>
+      <span>{state.data.profile.email}</span>
+    </div>
+  ));
+```
+
+```tsx [Solid] {3,4,8}
+export const userRoute = usersRoute.route('/:user_id')
+  .guard(() => {
+    if (!auth.isAuthenticated) {
+      throw redirect(loginRoute);
+    }
+  })
+  .provide('profile', async ({ params }) => {
+    return await getUser(params.user_id);
+  })
+  .render((state) => (
+    <div class="profile-view">
+      <h1>{state.data.profile.name}</h1>
+      <span>{state.data.profile.email}</span>
+    </div>
+  ));
+```
+
+:::
+
+With Anchor's router, navigation is just reactive state. **Guards** and **providers** automatically re-evaluate when their **dependencies change**. If `auth.isAuthenticated` becomes false while the user is sitting on the page, the guard instantly kicks them out. **Loading**, **error**, and **authorization** states are handled centrally. Everything is fully type-safe with zero code generation, and the exact same route definition works seamlessly in both React and Solid.
+
+## Server-Side Rendering
+
+You want to render your application on the server for speed and SEO.
+
+With modern meta-frameworks, moving client-side state to the server fractures your application. You still have to:
+
+- Sprinkle **`'use client'`** and **`'use server'`** directives everywhere, fracturing your codebase across **arbitrary execution boundaries**.
+- Lose access to **reactive hooks** on the server because traditional **server components** are strictly static.
+- Manually parse request cookies, track mutations during render, and manually reconstruct `Set-Cookie` headers.
+
+::: tip What if the server just creates a scope and runs the exact same code?
+:::
+
+::: code-group
+
+```tsx [React] {6,8,14,18}
+export async function render(url: string, cookie = '') {
+  let html = '';
+  let cookies: string[] = [];
+
+  // 1. Create a completely isolated reactive scope for this request
+  await withIsolation(async () => {
+    const jar = decodeCookies(cookie);
+    setCookieContext(jar);
+
+    const ssr = createLifecycle();
+    
+    await ssr.runAsync(async () => {
+      await router.activate(url);
+      html = renderToString(<UIRouter router={router} root={RootLayout} url={url} />);
+      router.cleanup();
+    });
+
+    cookies = jar.encode();
+    ssr.destroy();
+  });
+
+  return { html, cookies };
+}
+```
+
+```tsx [Solid] {6,8,14,18}
+export async function render(url: string, cookie = '') {
+  let html = '';
+  let cookies: string[] = [];
+
+  // 1. Create a completely isolated reactive scope for this request
+  await withIsolation(async () => {
+    const jar = decodeCookies(cookie);
+    setCookieContext(jar);
+
+    const ssr = createLifecycle();
+    
+    await ssr.runAsync(async () => {
+      await router.activate(url);
+      html = renderToString(() => <UIRouter router={router} root={RootLayout} url={url} />);
+      router.cleanup();
+    });
+
+    cookies = jar.encode();
+    ssr.destroy();
+  });
+
+  return { html, cookies };
+}
+```
+
+:::
+
+With Anchor, state is automatically scoped to the request lifecycle. There are no **`'use client'` directives**, no **arbitrary server boundaries**, and full access to **reactive hooks** on the server. The reactive graph serializes itself, **cookie mutations are automatically tracked**, and client hydration automatically rebuilds the state by simply re-activating the router. Because it relies purely on standard Web APIs, the exact same code deploys seamlessly to **Bun**, **Node.js**, **Cloudflare Workers**, and **Deno**.
+
+## Portability
+
+| Layer | Package | Depends on |
+|---|---|---|
+| Data types | Plain TypeScript | Nothing |
+| State & logic | `@anchorlib/core` | Nothing |
+| IRPC | `@irpclib/irpc` | `@anchorlib/core` |
+| Route definitions | `@anchorlib/router` | `@anchorlib/core` |
+| View integration | `@anchorlib/react` or `@anchorlib/solid` | `@anchorlib/core` & Framework |
+
+Because every layer of the architecture ultimately depends purely on **`@anchorlib/core`**, your business logic, routing, and remote procedures are completely decoupled from the UI. Switching view frameworks or deployment runtimes changes only the view layer.
+
+## Next Steps
+
+- [Installation](/installation) — Add AIR Stack to your project
+- [Getting Started](/getting-started) — Build your first application
+- [Anchor for React](/react/getting-started) — React integration
+- [Anchor for Solid](/solid/getting-started) — Solid integration
+- [Router](/react/router/) — Routing, guards, and data loading
+- [IRPC](/irpc/) — Remote procedure calls, streaming, and transports

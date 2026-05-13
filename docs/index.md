@@ -2,137 +2,52 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
-title: 'AIR Stack: The Zero-Boilerplate, AI-Native Stack'
-description: 'Eliminate the network layer. Eliminate React Query. Eliminate re-render cascades. Build type-safe, real-time web applications instantly with Anchor and IRPC.'
+title: 'AIR Stack'
+description: 'Zero-Boilerplate, AI-Native Full-Stack TypeScript Architecture. Anchor for reactivity, IRPC for transport, Router for navigation.'
 keywords:
   - AIR Stack
   - Anchor
   - IRPC
-  - Zero Boilerplate
-  - Full-stack React
-  - RPC framework
-  - API batching
-  - React Query alternative
-  - tRPC alternative
-  - AI Native
-  - TypeScript
+  - Router
+  - full-stack TypeScript
+  - fine-grained reactivity
+  - isomorphic remote procedure call
+  - type-safe routing
+  - server-side rendering
+  - React
+  - SolidJS
 
 hero:
   name: 'AIR Stack'
   text: 'Zero-Boilerplate, AI-Native'
-  tagline: 'Eliminate the network layer. Eliminate complex caching. Eliminate re-render cascades. Build type-safe, real-time apps instantly.'
-  image: /icon.svg
+  tagline: 'Full-Stack TypeScript Architecture — state management, remote functions, routing, and SSR unified into one cohesive pipeline.'
+  image: /airstack.svg
 
   actions:
     - theme: brand
       text: Get Started
       link: /getting-started
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/beerush-id/anchor
+      text: Overview
+      link: /overview
 
 features:
-  - icon: 🤖
-    title: AI-Native Architecture
-    details: Eliminates opaque boilerplate and implicit rendering lifecycles. Less "glue code" means AI assistants generate correct, deterministic components without hallucinating dependencies.
-  - icon: 🔌
-    title: Zero Network Plumbing
-    details: No tRPC routers. No manual fetchers. IRPC seamlessly syncs your backend to a RemoteState over HTTP or WebSockets.
   - icon: ⚡
-    title: Kill Subscriptions
-    details: Get real-time streaming natively over standard HTTP. Use the exact same function signature for a simple query as you do for a live dashboard.
-  - icon: ⚛️
-    title: Kill React Query
-    details: You don't need heavy query libraries. IRPC handles intelligent caching, loading states, retry logic, and call coalescing automatically.
-  - icon: 🛑
-    title: Kill Re-Render Cascades
-    details: Anchor separates logic from presentation. Fetch data once without useEffect loops, and bind it directly to fine-grained DOM snippets.
+    title: Reactive State
+    details: Direct mutation with fine-grained reactivity. Schema validation, immutability contracts, and computed properties — built in.
+  - icon: 🔌
+    title: Network Transparency
+    details: Declare a function, implement it, call it. IRPC abstracts HTTP, WebSocket, and BroadcastChannel into a single function call.
+  - icon: 🛤️
+    title: Reactive Routing
+    details: Guards and data providers execute before the view renders. Route state re-evaluates when its dependencies change.
   - icon: 🌐
-    title: Universal Reactive UI
-    details: Works perfectly with React, Solid, Svelte, Vue, and vanilla JavaScript. One cohesive reactive architecture for any framework.
+    title: Universal SSR
+    details: One render function deploys to Bun, Node.js, Cloudflare Workers, and Deno. Request isolation handles concurrency natively.
+  - icon: 🤖
+    title: AI-Native
+    details: Transparent architecture that both humans and AI reason about efficiently — fewer tokens, fewer wrong guesses, faster iteration.
+  - icon: 🎯
+    title: Framework Agnostic
+    details: State, IRPC stubs, and route definitions are framework-agnostic. Only the view layer depends on React or Solid.
 ---
-
-::: anchor-react-sandbox {class="sp-grid"}
-
-```tsx /App.tsx [active]
-import '@tailwindcss/browser';
-import '@anchorlib/react/client';
-import { setup, anchor, subscribe, snippet, mutable, effect } from '@anchorlib/react';
-
-import { getMarket } from './module';
-
-const Counter = setup(() => {
-  const counter = mutable({ count: 0 });
-  const market = getMarket('ACH');
-
-  // 😏 Only this tiny part of the UI that need to be updated!
-  const CounterView = snippet(() => <h1>Counter: {counter.count}</h1>);
-  const MarketView = snippet(() => <h3 className={'text-yellow-50 bg-yellow-600 rounded-md px-3 py-1'}>{market.data.name}: ${market.data.price}</h3>);
-
-  return (
-    <div className="flex flex-col w-screen h-screen justify-center items-center gap-6">
-      <img src="https://anchorlib.dev/docs/icon.svg" alt="Anchor Logo" className="w-24" />
-      <CounterView />
-      <MarketView />
-      <div className="flex items-center gap-2">
-        <button
-          className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
-          onClick={() => counter.count++}>
-          Increment
-        </button>
-        <button
-          className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
-          onClick={() => counter.count--}>
-          Decrement
-        </button>
-        <button
-          className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 font-semibold rounded-sm"
-          onClick={() => (counter.count = 0)}>
-          Reset
-        </button>
-      </div>
-    </div>
-  );
-});
-
-import './constructor';
-export default Counter;
-```
-
-```ts /module.ts
-import { createPackage, type RemoteState } from '@irpclib/irpc';
-
-export const irpc = createPackage({
-  name: 'market',
-  version: '1.0.0',
-});
-
-export type GetMarket = (name: string) => RemoteState<{ name: string; price: number }>;
-export const getMarket = irpc.declare<GetMarket>({ 
-  name: 'getMarket',
-  init: () => ({ name: '', price: 0 })
-});
-```
-
-```ts /constructor.ts
-import { sleep } from '@anchorlib/react/core';
-import { stream } from '@irpclib/irpc';
-import { irpc, getMarket } from './module';
-
-irpc.construct(getMarket, (name) => {
-  return stream(async ({ data = {} }, done) => {
-    let ticks = 0;
-    
-    while (ticks < 100) {
-      data.price = (Math.random() * 1000).toFixed(2);
-
-      await sleep(500);
-      ticks++;
-    }
-    
-    done();
-  }, { name, price: 0 });
-});
-```
-
-:::

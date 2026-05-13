@@ -52,11 +52,12 @@ The routing happens server-side within the transport layer, eliminating the need
 
 ## Stream Lifecycle
 
-IRPC transports manage active streams through three cancellation boundaries:
+IRPC transports manage active streams through four cancellation boundaries:
 
-1. **Client Cancellation**: Calling `call.close()` on the client sends a `CANCEL` packet to the router. The router invokes the call's bound `AbortController` and drops the stream.
-2. **Context Signals**: The router injects an `AbortSignal` into `IRPC_BASE_CONTEXT.ABORT_CONTROLLER`. Handlers must listen to this signal and exit when aborted.
+1. **Client Cancellation**: Calling `.close()` on a `RemoteState` sends a `CANCEL` packet to the router. The router invokes the stream's bound `AbortController` and drops the stream.
+2. **Context Signals**: The router injects an `AbortSignal` into `IRPC_BASE_CONTEXT.ABORT_CONTROLLER`. Handlers listen to this signal and exit when aborted.
 3. **TTL Timeouts**: If a function defines a `ttl` specification, the router aborts the stream when the timeout is reached.
+4. **Connection Disconnect**: When a WebSocket connection closes or a BroadcastChannel router shuts down, calling `router.disconnect()` aborts all active streams for that connection.
 
 ## Available Transports
 

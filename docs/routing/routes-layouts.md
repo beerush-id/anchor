@@ -1,22 +1,47 @@
+---
+title: "Routes & Layouts"
+description: "Route definitions, nesting, layouts, independent routes, modals, and error boundaries in Anchor."
+keywords:
+  - anchor
+  - routes
+  - layouts
+  - page factory
+  - error boundaries
+---
+
 # Routes & Layouts
 
-Anchor decouples the structure of your application from its UI implementation. Routes are defined mathematically as pure TypeScript objects, forming an abstract tree independent of React.
+Anchor decouples the structure of your application from its UI implementation. Routes are defined mathematically as pure TypeScript objects, forming an abstract tree independent of the view framework.
 
 **What it solves:**
-- **Massive Central Routers:** Huge `App.tsx` files filled with hundreds of `<Route>` JSX blobs that cause team merge conflicts.
+- **Massive Central Routers:** Huge global component files filled with hundreds of `<Route>` markup tags that cause team merge conflicts.
 - **Node Incompatibility:** The inability to parse, test, or evaluate application routing paths outside of a browser environment.
 
 ## Defining Routes
 
 Start with a router instance, then chain `.route()` calls to create the tree structure. 
 
-```ts
+::: code-group
+
+```ts [React]
 // lib/router.ts
-import { createRouter } from '@anchorlib/react/router';
+import { createRouter } from '@anchorlib/react';
 import type { ReactNode } from 'react';
 
 export const router = createRouter<ReactNode>();
 ```
+
+```ts [SolidJS]
+// lib/router.ts
+import { createRouter } from '@anchorlib/solid';
+import type { JSX } from 'solid-js';
+
+export const router = createRouter<JSX.Element>();
+```
+
+:::
+
+The routing structure itself is completely framework-agnostic:
 
 ```ts
 // routes/route.ts
@@ -48,7 +73,7 @@ This structural chaining produces a strict tree:
 │   └── /:user_id   → profileRoute
 ```
 
-By defining routes as objects rather than React components, Anchor forces a scalable architecture. The route files express *what* your application is, without importing a single kilobyte of React view logic. 
+By defining routes as objects rather than framework components, Anchor forces a scalable architecture. The route files express *what* your application is, without importing a single kilobyte of view logic. 
 
 **What it solves:**
 - **String Typos:** Manually typing broken string paths across large applications, instead of utilizing programmatic tree navigation.
@@ -57,7 +82,9 @@ By defining routes as objects rather than React components, Anchor forces a scal
 
 Once a route exists in the abstract tree, you attach the actual UI using `.render()` and wrap the result back to the framework using `page()`.
 
-```tsx
+::: code-group
+
+```tsx [React]
 // routes/users/layout.tsx
 import { page } from '@anchorlib/react';
 import { usersRoute } from './route.js';
@@ -72,19 +99,44 @@ export const UsersLayout = page(usersRoute).render(({ children }) => (
 export default UsersLayout;
 ```
 
+```tsx [SolidJS]
+// routes/users/layout.tsx
+import { page } from '@anchorlib/solid';
+import { usersRoute } from './route.js';
+
+export const UsersLayout = page(usersRoute).render(({ children }) => (
+  <div>
+    <header>Users</header>
+    {children}
+  </div>
+));
+
+export default UsersLayout;
+```
+
+:::
+
+### Render Callback Arguments
+
+| Argument | Type | Description |
+|---|---|---|
+| `state` | Route state | The reactive state for this specific route segment. |
+| `context` | Context | The shared `RouterContext` across the entire active route tree. |
+| `children` | `Node` | The child route's rendered output (layout routes only). |
+
 **What it solves:**
 - **Circular Dependencies:** UI components attempting to import the router, while the router simultaneously tries to import the UI components.
 - **Bundle Bloat:** Forcing an application to eagerly evaluate or import every single View module just to construct the initial routing paths.
 
 ## Fine-Grained Routing
 
-Anchor routing is decentralized. In traditional React applications, navigating triggers a global context change at the top-level `<Router>`, forcing an expensive VDOM diff across the entire app.
+Anchor routing is decentralized. In traditional applications, navigating triggers a global context change at the top-level `<Router>`, forcing an expensive view diff across the entire app.
 
 Anchor bypasses this cascade. By driving route states with native observables, Anchor achieves **fine-grained routing**. 
 
-When navigation occurs, the router computes the exact structural node that changed. Instead of re-rendering from the top down, only the specific React component observing that precise state evaluates. 
+When navigation occurs, the router computes the exact structural node that changed. Instead of re-rendering from the top down, only the specific component observing that precise state evaluates. 
 
-- **Parameter Mutations:** If a user remains on a route but the URL parameter mutates (`/users/1` to `/users/2`), the React view **does not unmount**. The route mutates the observable `state`, and only the specific DOM elements bound to that state update in place.
+- **Parameter Mutations:** If a user remains on a route but the URL parameter mutates (`/users/1` to `/users/2`), the view **does not unmount**. The route mutates the observable `state`, and only the specific DOM elements bound to that state update in place.
 - **Node Swapping:** If a user swaps branches (`/profile` to `/settings`), unchanged parent nodes are ignored by the render cycle. Anchor replaces only the exact leaf component at the point of intersection.
 
 **What it solves:**
@@ -139,7 +191,9 @@ export const usersIndexRoute = usersRoute
   ]);
 ```
 
-```tsx
+::: code-group
+
+```tsx [React]
 // routes/users/page.tsx
 import { page, snippet, render, Link } from '@anchorlib/react';
 import { usersIndexRoute } from './route.js';
@@ -160,6 +214,30 @@ export const UsersPage = page(usersIndexRoute).render(({ state }) => {
 });
 ```
 
+```tsx [SolidJS]
+// routes/users/page.tsx
+import { page, Link } from '@anchorlib/solid';
+import { For } from 'solid-js';
+import { usersIndexRoute } from './route.js';
+import { ProfilePage } from './[user_id]/page.js';
+
+export const UsersPage = page(usersIndexRoute).render(({ state }) => (
+  <ul>
+    <For each={state.data?.users}>
+      {(user) => (
+        <li>
+          <Link to={ProfilePage} params={{ user_id: user.id }}>
+            {user.name}
+          </Link>
+        </li>
+      )}
+    </For>
+  </ul>
+));
+```
+
+:::
+
 When the URL is `/users`, the layout renders with `UsersPage` sitting in its `{children}` slot. When the user navigates to `/users/42`, the parent layout stays where it is, `UsersPage` unmounts, and the Profile leaf route replaces it.
 
 ## Modal Routes
@@ -173,7 +251,9 @@ import { usersRoute } from '../route.js';
 export const userInviteRoute = usersRoute.route('/invite');
 ```
 
-```tsx
+::: code-group
+
+```tsx [React]
 // routes/users/invite/page.tsx
 import { modal, render } from '@anchorlib/react';
 import { userInviteRoute } from './route.js';
@@ -184,6 +264,20 @@ export const UserInvitePage = modal(userInviteRoute).render(() => (
   </dialog>
 ));
 ```
+
+```tsx [SolidJS]
+// routes/users/invite/page.tsx
+import { modal } from '@anchorlib/solid';
+import { userInviteRoute } from './route.js';
+
+export const UserInvitePage = modal(userInviteRoute).render(() => (
+  <dialog open>
+    <h1>Invite User</h1>
+  </dialog>
+));
+```
+
+:::
 
 When navigating to `/users/invite`, the main page remains mounted as it was. The `UserInvitePage` renders globally in a separate, top-level reactive stack managed by `<UIRouter>`, placing it above the rest of the application tree. Everything else (guards, providers, reactivity) functions like a standard `page()` route. Shareable links and browser back navigation are handled out of the box.
 
@@ -211,7 +305,9 @@ Use `state` when you only care about the lifecycle and data of the current compo
 
 You can leverage `state.status` to render loading layouts while preserving the layout shell:
 
-```tsx
+::: code-group
+
+```tsx [React]
 .render(({ state, context }) => {
   return render(() => {
     if (state.status === 'pending') return <div>Loading Profile...</div>;
@@ -220,6 +316,21 @@ You can leverage `state.status` to render loading layouts while preserving the l
   });
 })
 ```
+
+```tsx [SolidJS]
+.render(({ state, context }) => {
+  return (
+    <Show 
+      when={state.status !== 'pending'} 
+      fallback={<div>Loading Profile...</div>}
+    >
+      <h1>{context?.data?.profile?.name}</h1>
+    </Show>
+  );
+})
+```
+
+:::
 
 ## Route Options
 
@@ -285,7 +396,9 @@ export const signinRoute = authRoute.route('/signin');
 
 An index route on an independent tree can redirect to a specific child:
 
-```ts
+::: code-group
+
+```ts [React]
 import { redirect } from '@anchorlib/react';
 import { SignInPage } from './signin/index.js';
 
@@ -294,24 +407,16 @@ authRoute.route('/').guard(() => {
 });
 ```
 
-## Modals
+```ts [SolidJS]
+import { redirect } from '@anchorlib/solid';
+import { SignInPage } from './signin/index.js';
 
-The `modal()` factory creates routes that render as overlays on top of the current page. The parent/background route remains visible beneath the modal.
-
-```tsx
-import { modal, render } from '@anchorlib/react';
-import { editRoute } from './route.js';
-
-export const EditModal = modal(editRoute).render(({ state }) => (
-  <div className="modal-overlay">
-    <div className="modal-content">
-      <h2>Edit</h2>
-    </div>
-  </div>
-));
+authRoute.route('/').guard(() => {
+  throw redirect(SignInPage);
+});
 ```
 
-Modals are registered in the router's stack registry, enabling stack-based rendering where multiple modals can layer on top of each other.
+:::
 
 ## Error Boundaries
 
@@ -319,7 +424,9 @@ Modals are registered in the router's stack registry, enabling stack-based rende
 
 Use `router.catch()` to define a fallback renderer for unmatched routes or unhandled errors:
 
-```tsx
+::: code-group
+
+```tsx [React]
 import { router } from '../lib/router.js';
 
 router.catch(() => {
@@ -332,11 +439,28 @@ router.catch(() => {
 });
 ```
 
+```tsx [SolidJS]
+import { router } from '../lib/router.js';
+
+router.catch(() => {
+  return (
+    <div class="error-page">
+      <h1>404</h1>
+      <p>Page not found</p>
+    </div>
+  );
+});
+```
+
+:::
+
 ### Per-Route Error Boundary
 
 Use `.catch()` on individual routes to define route-specific error renderers:
 
-```tsx
+::: code-group
+
+```tsx [React]
 usersRoute.catch((error) => {
   return (
     <div className="error">
@@ -346,5 +470,18 @@ usersRoute.catch((error) => {
   );
 });
 ```
+
+```tsx [SolidJS]
+usersRoute.catch((error) => {
+  return (
+    <div class="error">
+      <h2>Something went wrong</h2>
+      <p>{error.message}</p>
+    </div>
+  );
+});
+```
+
+:::
 
 If a route defines a `.catch()` handler, errors during that route's activation or rendering are caught and rendered by the handler instead of propagating to the global boundary.

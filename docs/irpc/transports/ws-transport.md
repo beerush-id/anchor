@@ -55,7 +55,9 @@ import { WebSocketRouter } from '@irpclib/ws';
 import { irpc, transport } from './lib/module.js';
 import './rpc/hello/constructor.js';
 
-const router = new WebSocketRouter(irpc, transport);
+const router = new WebSocketRouter(irpc, transport, {
+  fileBufferTTL: 30000, // Clean up orphaned binary frames after 30s (default)
+});
 
 Bun.serve({
   port: 8080,
@@ -69,6 +71,10 @@ Bun.serve({
       await router.resolve(message.toString(), ws, [
         ['token', ws.data.token],
       ]);
+    },
+    close(ws) {
+      // Abort all active streams for this connection
+      router.disconnect(ws);
     },
   },
 });
@@ -185,10 +191,37 @@ Because the WebSocket channel persists, responses are yielded dynamically as con
 
 ### File Upload Constraints
 
-WebSocket transport fully supports `IRPCFile` uploads natively via length-prefixed binary framing.
+WebSocket transport fully supports `IRPCFile` uploads natively via length-prefixed binary framing. The router buffers incoming `ArrayBuffer` payloads and matches them to file pointers when the JSON payload arrives.
+
+The `fileBufferTTL` option (default: 30000ms) controls how long orphaned binary frames are held in memory before being discarded. If the matching JSON payload never arrives within the TTL window, the buffered file data is automatically cleaned up.
 
 > [!WARNING]
 > Sending large files over a WebSocket connection will block the persistent socket pipeline until the binary transfer completes. This means other simultaneous small RPC calls won't reach the server until the file finishes uploading. For applications heavily reliant on file uploads alongside real-time interactions, **HTTP Transport** is the strongly recommended approach, as standard HTTP multi-part requests are offloaded to background browser processes, keeping the WebSocket connection responsive.
+
+### Connection Disconnect
+
+The router tracks `AbortController` instances for every active stream. When a WebSocket connection closes, call `router.disconnect(ws)` to abort all active streams for that connection:
+
+```typescript
+websocket: {
+  close(ws) {
+    router.disconnect(ws);
+  },
+}
+```
+
+### Stream Cancellation
+
+Clients can cancel individual streams by calling `.close()` on the `RemoteState`. The transport sends a cancellation packet to the server, which aborts the stream's `AbortController` and triggers cleanup:
+
+```typescript
+// Client
+const prices = watchPrices('AAPL');
+prices.start();
+
+// Later — cancel this specific stream
+prices.close();
+```
 
 ## Error Handling
 

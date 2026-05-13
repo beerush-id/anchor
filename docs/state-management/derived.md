@@ -1,11 +1,10 @@
 ---
 title: "Derived State"
-description: "Understanding the concept of computed state and single source of truth in SolidJS."
+description: "Understanding the concept of computed state and single source of truth."
 keywords:
   - derived state
   - computed
   - single source of truth
-  - solidjs
 ---
 
 # Derived State
@@ -20,7 +19,25 @@ When a computed value belongs logically to a specific object, use standard **Jav
 
 This is the most common form of derivation in Anchor.
 
-```ts
+::: code-group
+
+```ts [React]
+import { mutable } from '@anchorlib/react';
+
+const cart = mutable({
+  price: 10,
+  quantity: 2,
+  
+  // The 'total' is a property of the cart, derived from its other properties.
+  get total() {
+    return this.price * this.quantity;
+  }
+});
+
+console.log(cart.total); // 20
+```
+
+```ts [SolidJS]
 import { mutable } from '@anchorlib/solid';
 
 const cart = mutable({
@@ -36,13 +53,30 @@ const cart = mutable({
 console.log(cart.total); // 20
 ```
 
+:::
+
 ## Composite Computation
 
 Sometimes, a value depends on multiple *separate* state sources that do not share a common parent object. Or, you may need to transform data for a specific UI view (like a View Model) without modifying the original domain object.
 
 In these cases, you define a **Reactive Computation** that combines these sources.
 
-```ts
+::: code-group
+
+```ts [React]
+import { mutable, derived } from '@anchorlib/react';
+
+const todos = mutable([{ text: 'Buy milk', done: false }]);
+const filter = mutable('SHOW_ALL');
+
+// This value is computed from two independent sources: 'todos' and 'filter'
+const visibleTodos = derived(() => {
+  if (filter.value === 'SHOW_COMPLETED') return todos.filter(t => t.done);
+  return todos;
+});
+```
+
+```ts [SolidJS]
 import { mutable, derived } from '@anchorlib/solid';
 
 const todos = mutable([{ text: 'Buy milk', done: false }]);
@@ -54,6 +88,8 @@ const visibleTodos = derived(() => {
   return todos;
 });
 ```
+
+:::
 
 ### Characteristics
 

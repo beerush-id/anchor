@@ -100,3 +100,12 @@ experience:
 
 Anchor is designed for developers who want to leverage Solid's excellent reactivity while benefiting from additional
 features that enhance code quality and maintainability.
+
+## Beyond State Management
+
+Anchor for Solid also provides a full application layer:
+
+- **[Routing](/solid/router/index.html)** — Page factories (`page()`, `modal()`), typed navigation (`<Link>`, `navigate()`), guards, error boundaries (`router.catch()`), and independent top-level routes (`router.append()`).
+- **[SSR](/solid/ssr)** — Server-side rendering with `@anchorlib/solid/server`, request isolation (`withIsolation`), and cookie round-tripping.
+- **Head Management** — SSR-safe `<Title>`, `<Meta>`, `<HeadLink>`, and `<Style>` components with `headings()` collection for server rendering.
+- **Cookie State** — Reactive state backed by browser cookies via `cookies()`, with full SSR support through `decodeCookies()` and `setCookieContext()`.

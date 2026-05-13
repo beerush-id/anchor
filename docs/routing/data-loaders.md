@@ -1,8 +1,18 @@
+---
+title: "Data Loaders & Providers"
+description: "Route-level data loading with providers, caching, and reactive re-evaluation in Anchor."
+keywords:
+  - anchor
+  - data loaders
+  - providers
+  - route data
+---
+
 # Data Loaders & Providers
 
 Providers act as the dependency injection layer for your routes. 
 
-It executes out-of-band during the navigation phase—after guards pass, but *before* the React component mounts. Whether a route needs to fetch an API payload, initialize a WebSocket connection, or supply static metadata, the Provider ensures the React component gets what it needs without having to construct or load it itself.
+It executes out-of-band during the navigation phase—after guards pass, but *before* the UI component mounts. Whether a route needs to fetch an API payload, initialize a WebSocket connection, or supply static metadata, the Provider ensures the UI component gets what it needs without having to construct or load it itself.
 
 Because providers are chained to the route builder, TypeScript tracks the return types. The framework knows the shape `state.data` takes without requiring a single generic declaration.
 
@@ -15,7 +25,7 @@ Because providers are chained to the route builder, TypeScript tracks the return
 
 Call `.provide()` to attach a named data fetcher to a route. It receives the URL `params` and `query` directly.
 
-```tsx
+```ts
 // route.ts
 import { usersRoute } from '../route.js';
 
@@ -27,7 +37,9 @@ export const profileRoute = usersRoute
   });
 ```
 
-```tsx
+::: code-group
+
+```tsx [React]
 // page.tsx
 import { page, snippet, render } from '@anchorlib/react';
 import { profileRoute } from './route.js';
@@ -42,13 +54,41 @@ export const ProfilePage = page(profileRoute).render(({ state }) => {
 });
 ```
 
+```tsx [SolidJS]
+// page.tsx
+import { page } from '@anchorlib/solid';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <div>
+    <h1>{state.data.profile?.name}</h1>
+    <p>{state.data.profile?.email}</p>
+  </div>
+));
+```
+
+:::
+
+## Provider Arguments
+
+The provider callback receives the route's activation context:
+
+| Property | Type | Description |
+|---|---|---|
+| `params` | `InferParams` | Parsed URL parameters (e.g., `{ user_id: '42' }`) |
+| `query` | `InferQuery` | Parsed query string parameters |
+| `data` | `ProviderContext` | Data resolved by previous providers in the chain |
+| `url` | `string` | The full matched URL |
+
 ## Reactive Re-evaluation
 
 Providers run inside reactive observers. If a provider reads global reactive state (an Anchor `mutable` or `derived`), it re-runs when that state changes. 
 
 This allows you to resolve complex dependencies based on non-URL state without tracking anything or invalidating caches. For example, if a provider reads a dynamic array of active dashboard widgets from a global store, modifying those widgets triggers a background provider re-evaluation:
 
-```tsx
+::: code-group
+
+```ts [React]
 // route.ts
 import { mutable } from '@anchorlib/react';
 import { rootRoute } from '../route.js';
@@ -73,7 +113,36 @@ export const dashboardRoute = rootRoute
   });
 ```
 
-```tsx
+```ts [SolidJS]
+// route.ts
+import { mutable } from '@anchorlib/solid';
+import { rootRoute } from '../route.js';
+
+// 1. A global dynamic state (e.g., manipulated by a settings panel)
+export const dashboardState = mutable({ 
+  showMetrics: true,
+  activeWidgets: ['revenue', 'activity'] 
+});
+
+export const dashboardRoute = rootRoute
+  .route('/dashboard')
+  .provide('analytics', async () => {
+    // 2. The provider reads complex state. Anchor tracks the array and boolean!
+    const query = new URLSearchParams({
+      metrics: String(dashboardState.showMetrics),
+      widgets: dashboardState.activeWidgets.join(',')
+    });
+    
+    const res = await fetch(`/api/analytics?${query}`);
+    return res.json();
+  });
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
 // page.tsx
 import { page, render } from '@anchorlib/react';
 import { dashboardRoute } from './route.js';
@@ -84,8 +153,21 @@ export const DashboardPage = page(dashboardRoute).render(({ state }) => {
 });
 ```
 
+```tsx [SolidJS]
+// page.tsx
+import { page } from '@anchorlib/solid';
+import { dashboardRoute } from './route.js';
+import { Dashboard } from './Dashboard.js';
+
+export const DashboardPage = page(dashboardRoute).render(({ state }) => (
+  <Dashboard data={state.data?.analytics} />
+));
+```
+
+:::
+
 **What it solves:**
-- **Zero wiring:** You don't need to pass global state through the React component tree just to get it inside a fetch function.
+- **Zero wiring:** You don't need to pass global state through the UI component tree just to get it inside a fetch function.
 - **No manual dependency tracking:** You never have to declare and maintain exhaustive `queryKey` arrays.
 - **Eliminates stale data bugs:** You avoid bugs where the UI state changes but the data fails to refresh because a developer forgot to write a cache invalidation hook.
 
@@ -93,7 +175,7 @@ export const DashboardPage = page(dashboardRoute).render(({ state }) => {
 
 You can chain multiple `.provide()` calls on a single route. They run in sequence in the order you define them, and downstream providers receive the data resolved by the upstream providers.
 
-```tsx
+```ts
 // route.ts
 export const profileRoute = usersRoute
   .route('/:user_id')
@@ -108,20 +190,8 @@ export const profileRoute = usersRoute
   });
 ```
 
-```tsx
-// page.tsx
-export const ProfilePage = page(profileRoute).render(({ state }) => {
-  return render(() => (
-    <div>
-      <h1>Feeds</h1>
-      <Feed items={state.data?.posts} />
-    </div>
-  ));
-});
-```
-
 **What it solves:**
-- **Conditional fetching hacks:** Writing messy `enabled: !!userData` conditional flags in React Query just to make two API calls wait for each other.
+- **Conditional fetching hacks:** Writing messy `enabled: !!userData` conditional flags in standalone fetchers just to make two API calls wait for each other.
 - **God-functions:** Jamming multiple unrelated `await fetch()` calls into a single massive loader function just to sequentially use the results.
 
 ## Caching
@@ -136,13 +206,25 @@ const profile = usersRoute.route('/:user_id', {
 
 Or set a global cache policy on the router:
 
-```ts
-import { createRouter, MAX_AGE } from '@anchorlib/react/router';
+::: code-group
+
+```ts [React]
+import { createRouter, MAX_AGE } from '@anchorlib/react';
 
 const router = createRouter<ReactNode>({
   maxAge: MAX_AGE.DAY,
 });
 ```
+
+```ts [SolidJS]
+import { createRouter, MAX_AGE } from '@anchorlib/solid';
+
+const router = createRouter<JSX.Element>({
+  maxAge: MAX_AGE.DAY,
+});
+```
+
+:::
 
 **What it solves:**
 - **Redundant fetching:** Hitting the API for the same data because a user clicked a link, navigated away, and hit the "Back" button three seconds later.
@@ -185,8 +267,12 @@ You can access this data in two distinct ways, depending on what you need:
 1. **`state.data` (Route-Local Data):** Contains *only* the data resolved by the providers attached directly to this specific route.
 2. **`context.data` (Global Merged Data):** Contains the merged data from all providers across the entire active route tree (including parent layouts). Available via the second parameter of the `.render()` function.
 
-```tsx
+::: code-group
+
+```tsx [React]
 // page.tsx
+import { page, snippet, render } from '@anchorlib/react';
+
 export const ProfilePage = page(profileRoute).render(({ state, context }) => {
   return render(() => (
     <div>
@@ -199,3 +285,18 @@ export const ProfilePage = page(profileRoute).render(({ state, context }) => {
   ));
 });
 ```
+
+```tsx [SolidJS]
+// page.tsx
+export const ProfilePage = page(profileRoute).render(({ state, context }) => (
+  <div>
+    {/* Accessing local provider data */}
+    <h1>{state.data?.profile?.name}</h1>
+    
+    {/* Accessing global data provided by a parent layout */}
+    <p>Current Theme: {context?.data?.theme}</p>
+  </div>
+));
+```
+
+:::

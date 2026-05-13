@@ -43,9 +43,22 @@ const [state, errors] = form(schema, {
 Since the form state is mutable, you can bind it directly to input elements. Changes to the input will update the state, and validation runs automatically.
 
 ```tsx
-import { form } from '@anchorlib/solid';
+import { form, $bind, bindable } from '@anchorlib/solid';
+import type { Bindable } from '@anchorlib/solid';
 import { Show } from 'solid-js';
 
+// 1. Create a reusable, bindable Input Component
+export const TextInput = bindable((props: { value?: Bindable<string>, type?: string }) => {
+  return (
+    <input
+      type={props.type || 'text'}
+      value={props.value ?? ''}
+      onInput={(e) => (props.value = e.currentTarget.value)}
+    />
+  );
+});
+
+// 2. Use $bind() in your Form
 export const LoginForm = () => {
   const [state, errors] = form(schema, { email: '', password: '' });
 
@@ -53,10 +66,7 @@ export const LoginForm = () => {
     <form>
       <div>
         <label>Email</label>
-        <input
-          value={state.email}
-          onInput={(e) => (state.email = e.currentTarget.value)}
-        />
+        <TextInput value={$bind(state, 'email')} />
         {/* Display Error Message */}
         <Show when={errors.email}>
           <span className="error">{errors.email.message}</span>
@@ -65,11 +75,7 @@ export const LoginForm = () => {
 
       <div>
         <label>Password</label>
-        <input
-          type="password"
-          value={state.password}
-          onInput={(e) => (state.password = e.currentTarget.value)}
-        />
+        <TextInput type="password" value={$bind(state, 'password')} />
         <Show when={errors.password}>
           <span className="error">{errors.password.message}</span>
         </Show>

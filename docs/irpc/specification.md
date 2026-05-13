@@ -209,6 +209,9 @@ interface IRPCSpec {
     output?: ValidationSchema;
   };
   description?: string;
+  stream?: boolean;          // Auto-detected if init is provided
+  ttl?: number;              // Maximum stream lifetime in milliseconds
+  init?: () => unknown;      // Initial data factory for stream stubs
 }
 ```
 
@@ -317,9 +320,44 @@ interface IRPCNamespace {
 }
 ```
 
-## 8. Execution Model
+## 8. Global Store (`IRPCStore`)
 
-### 8.1 Call Flow
+### 8.1 Singleton Registry
+
+Implementations MUST expose a global `IRPC_STORE` singleton that acts as a centralized registry for live lifecycle observation. All package registrations, router bindings, and active calls MUST be tracked by this store.
+
+### 8.2 Tracked Sets
+
+The store MUST maintain the following live tracking sets:
+
+| Property | Type | Description |
+|---|---|---|
+| `packages` | `Set<IRPCPackage>` | All registered IRPC packages. |
+| `routers` | `Set<IRPCRouter>` | All active transport routers. |
+| `calls` | `Set<IRPCCall>` | All in-flight calls (pending resolution). |
+
+### 8.3 Event Subscription
+
+The store MUST expose a `.subscribe()` method that emits events for lifecycle transitions:
+
+```typescript
+// Example TypeScript syntax
+IRPC_STORE.subscribe((event) => {
+  // event.type: 'register' | 'route' | 'queue' | 'dequeue'
+  // event.detail: the affected package, router, or call
+});
+```
+
+| Event | Trigger |
+|---|---|
+| `register` | A new package or router is registered. |
+| `route` | A router begins resolving a request batch. |
+| `queue` | A new call is added to the in-flight set. |
+| `dequeue` | A call resolves or rejects and is removed from the in-flight set. |
+
+## 9. Execution Model
+
+### 9.1 Call Flow
 
 1. **Client Invocation**: Stub function called with arguments
 2. **Request Creation**: Request object created with unique ID
@@ -331,31 +369,31 @@ interface IRPCNamespace {
 8. **Transport Return**: Response transmitted back
 9. **Promise Resolution**: Client promise resolved or rejected
 
-### 8.2 Error Handling
+### 9.2 Error Handling
 
 Errors MUST be propagated through the transport layer as error strings in the response. Implementations SHOULD preserve error context where possible.
 
-### 8.3 Timeout Management
+### 9.3 Timeout Management
 
 Factories MUST support configurable timeouts for remote calls. Timeouts SHOULD result in promise rejection.
 
-## 9. Batching and Optimization
+## 10. Batching and Optimization
 
-### 9.1 Automatic Batching
+### 10.1 Automatic Batching
 
 Implementations SHOULD batch multiple IRPC calls made within a short time window to reduce network overhead.
 
-### 9.2 Connection Reuse
+### 10.2 Connection Reuse
 
 Transports SHOULD reuse connections for multiple requests to improve performance.
 
-### 9.3 Lazy Loading
+### 10.3 Lazy Loading
 
 Implementations SHOULD support lazy loading of IRPC functions to minimize resource usage.
 
-## 10. Context Management
+## 11. Context Management
 
-### 10.1 Request Context
+### 11.1 Request Context
 
 Factories MAY support context propagation across request boundaries for:
 
@@ -363,7 +401,7 @@ Factories MAY support context propagation across request boundaries for:
 - Request tracing
 - Custom metadata
 
-### 10.2 Context Interface
+### 11.2 Context Interface
 
 ```typescript
 // Example TypeScript syntax - implementations should use language-appropriate syntax
@@ -375,23 +413,23 @@ interface IRPCContext<K, V> {
 }
 ```
 
-## 11. Security Considerations
+## 12. Security Considerations
 
-### 11.1 Authentication and Authorization
+### 12.1 Authentication and Authorization
 
 Authentication and authorization are out-of-band concerns and MUST NOT modify function signatures. Transports MAY enforce authorization via lifecycle hooks.
 
-### 11.2 Input Validation
+### 12.2 Input Validation
 
 Implementations SHOULD validate inputs before handler execution to prevent injection attacks and malformed data.
 
-### 11.3 Transport Security
+### 12.3 Transport Security
 
 Transports SHOULD support secure communication channels (TLS, WSS, etc.) when operating over untrusted networks.
 
-## 12. Implementation Guidelines
+## 13. Implementation Guidelines
 
-### 12.1 Language-Agnostic Requirements
+### 13.1 Language-Agnostic Requirements
 
 All IRPC implementations MUST:
 
@@ -401,7 +439,7 @@ All IRPC implementations MUST:
 4. Provide the factory methods
 5. Support batching and optimization
 
-### 12.2 Type Preservation
+### 13.2 Type Preservation
 
 Implementations SHOULD preserve type information where the host language supports it, enabling:
 
@@ -410,7 +448,7 @@ Implementations SHOULD preserve type information where the host language support
 - Refactoring safety
 - Self-documenting APIs
 
-### 12.3 Error Semantics
+### 13.3 Error Semantics
 
 Implementations MUST:
 
@@ -418,9 +456,9 @@ Implementations MUST:
 - Maintain stack traces where possible
 - Distinguish between transport and business logic errors
 
-## 13. Conformance
+## 14. Conformance
 
-### 13.1 Required Conformance
+### 14.1 Required Conformance
 
 To be IRPC-compliant, an implementation MUST:
 
@@ -430,7 +468,7 @@ To be IRPC-compliant, an implementation MUST:
 4. Handle errors according to this specification
 5. Include routing within the transport layer
 
-### 13.2 Optional Features
+### 14.2 Optional Features
 
 Implementations MAY include:
 
@@ -439,23 +477,23 @@ Implementations MAY include:
 - Advanced optimization strategies
 - Enhanced debugging capabilities
 
-## 14. Versioning and Compatibility
+## 15. Versioning and Compatibility
 
-### 14.1 Specification Versioning
+### 15.1 Specification Versioning
 
 This specification follows semantic versioning. Major version changes indicate breaking changes to the wire protocol or required interfaces.
 
-### 14.2 Backward Compatibility
+### 15.2 Backward Compatibility
 
 Implementations SHOULD maintain backward compatibility within major versions. Changes to the wire protocol require a major version increment.
 
-### 14.3 Feature Detection
+### 15.3 Feature Detection
 
 Implementations MAY provide feature detection mechanisms to negotiate capabilities between client and server.
 
-## 15. Examples
+## 16. Examples
 
-### 15.1 Function Definition
+### 16.1 Function Definition
 
 ```typescript
 // Example TypeScript syntax - implementations should use language-appropriate syntax
@@ -471,7 +509,7 @@ export const readFile = irpc.declare<ReadFileFn>({
 });
 ```
 
-### 15.2 Handler Implementation
+### 16.2 Handler Implementation
 
 ```typescript
 // Example TypeScript syntax - implementations should use language-appropriate syntax
@@ -481,7 +519,7 @@ irpc.construct(readFile, async (path, encoding) => {
 });
 ```
 
-### 15.3 Client Invocation
+### 16.3 Client Invocation
 
 ```typescript
 // Example TypeScript syntax - implementations should use language-appropriate syntax
@@ -489,26 +527,26 @@ irpc.construct(readFile, async (path, encoding) => {
 const content = await readFile('file.txt', 'utf8');
 ```
 
-## 16. Migration Guide
+## 17. Migration Guide
 
-### 16.1 From REST
+### 17.1 From REST
 
 1. Replace endpoint definitions with IRPC function specifications
 2. Convert request/response handling to function signatures
 3. Remove manual serialization logic
 4. Implement handlers instead of route controllers
 
-### 16.2 From gRPC
+### 17.2 From gRPC
 
 1. Replace proto files with IRPC specifications
 2. Convert service definitions to function registrations
 3. Maintain existing handler logic with updated signatures
 
-## 17. Reference Implementation
+## 18. Reference Implementation
 
 The TypeScript implementation in this repository serves as the reference implementation for this specification. Language-specific implementations should follow the same patterns and behaviors.
 
-## 18. Change Log
+## 19. Change Log
 
 ### v1.0
 

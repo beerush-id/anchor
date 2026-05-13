@@ -1,61 +1,46 @@
 ---
-title: 'AIR Stack Installation Guide: Anchor State Management'
-description: 'Learn how to install Anchor, the state management component of the AIR Stack. Get started quickly with React, Vue, Svelte, Solid, or vanilla JavaScript.'
+title: 'AIR Stack: Installation'
+description: 'Learn how to install the AIR Stack packages: Anchor, Router, and IRPC.'
 keywords:
   - AIR Stack installation
   - Anchor installation
-  - install anchor
-  - state management installation
-  - React state management
-  - Vue state management
-  - Svelte state management
-  - '@anchorlib/core'
+  - IRPC installation
+  - Router installation
 ---
 
-# Installing Anchor
+# Installation
 
-Learn how to install **Anchor**, the state management component of the **AIR Stack** (Anchor + IRPC + Reactive UI).
+The AIR Stack is modular. You only install the layers you need for your application.
 
-> **Note:** This guide covers Anchor installation. For IRPC (API framework), see [IRPC Getting Started](/irpc/getting-started).
+## Core Packages
 
-## **Prerequisites**
-
-Before installing Anchor, ensure you have:
-
-- A modern web browser for development
-- A package manager like bun, npm, yarn, or pnpm
-
-## **Installation Options**
-
-Anchor provides multiple packages depending on your framework:
-
-### **Core Package (Vanilla JavaScript/TypeScript)**
-
-Install the core package for framework-agnostic state management:
+The core packages contain the state engine, routing engine, and network transport. They are entirely framework-agnostic.
 
 ::: code-group
 
 ```bash [Bun]
-bun add @anchorlib/core
+bun add @anchorlib/core @anchorlib/router @irpclib/irpc
 ```
 
 ```bash [NPM]
-npm install @anchorlib/core
+npm install @anchorlib/core @anchorlib/router @irpclib/irpc
 ```
 
 ```bash [Yarn]
-yarn add @anchorlib/core
+yarn add @anchorlib/core @anchorlib/router @irpclib/irpc
 ```
 
 ```bash [PNPM]
-pnpm add @anchorlib/core
+pnpm add @anchorlib/core @anchorlib/router @irpclib/irpc
 ```
 
 :::
 
-### **React Integration**
+## View Integrations
 
-For React applications, install the React-specific package:
+To bind the reactive graph to the DOM, install the integration package for your view framework.
+
+### React
 
 ::: code-group
 
@@ -77,9 +62,7 @@ pnpm add @anchorlib/react
 
 :::
 
-### **SolidJS Integration**
-
-For SolidJS applications, install the SolidJS-specific package:
+### SolidJS
 
 ::: code-group
 
@@ -101,146 +84,19 @@ pnpm add @anchorlib/solid
 
 :::
 
-### **Svelte Integration**
+## Next Steps
 
-For Svelte applications, install the Svelte-specific package:
+After installation, choose a module to begin integrating:
 
-::: code-group
+- [Getting Started](/getting-started) - Build your first application using the full AIR Stack.
+- [Router](/router/) - Set up your URL and state-driven routing.
+- [IRPC](/irpc/) - Configure your isomorphic network transport.
+- [React Guide](/react/getting-started) - Specific bindings for React.
+- [Solid Guide](/solid/getting-started) - Specific bindings for SolidJS.
 
-```bash [Bun]
-bun add @anchorlib/svelte
-```
+## Need Help?
 
-```bash [NPM]
-npm install @anchorlib/svelte
-```
-
-```bash [Yarn]
-yarn add @anchorlib/svelte
-```
-
-```bash [PNPM]
-pnpm add @anchorlib/svelte
-```
-
-:::
-
-### **Vue Integration**
-
-For Vue applications, install the Vue-specific package:
-
-::: code-group
-
-```bash [Bun]
-bun add @anchorlib/vue
-```
-
-```bash [NPM]
-npm install @anchorlib/vue
-```
-
-```bash [Yarn]
-yarn add @anchorlib/vue
-```
-
-```bash [PNPM]
-pnpm add @anchorlib/vue
-```
-
-:::
-
-## **Basic Setup**
-
-After installation, you can start using Anchor in your project:
-
-::: code-group
-
-```js [state.js]
-import { mutable } from '@anchorlib/core';
-
-// Create a shared, reactive state object.
-export const state = mutable({
-  count: 0,
-  name: 'My App',
-});
-```
-
-```tsx [ReactCounter.tsx]
-import { template } from '@anchorlib/react';
-import { state } from '../state.js';
-
-export const Counter = template(() => (
-  <div>
-    <p>Count: {state.count}</p>
-    <button onClick={() => state.count++}>Increment</button>
-  </div>
-));
-```
-
-```jsx [SolidCounter.jsx]
-import { state } from '../state.js';
-
-const Counter = () => {
-  return (
-    <div>
-      <p>Count: {state.count}</p>
-      <button onClick={() => state.count++}>Increment</button>
-    </div>
-  );
-};
-```
-
-```sveltehtml [Counter.svelte]
-<script>
-  import { state } from '../state.js';
-</script>
-
-<div>
-  <p>Count: {state.count}</p>
-  <button onclick={() => state.count++}>Increment</button>
-</div>
-```
-
-```vue [Counter.vue]
-<script setup>
-import { observedRef } from '@anchorlib/vue';
-import { state } from '../state.js';
-
-// Observe the count value.
-const count = observedRef(() => state.count);
-</script>
-
-<template>
-  <div>
-    <p>Count: {{ count }}</p>
-    <button @click="state.count++">Increment</button>
-  </div>
-</template>
-```
-
-:::
-
-## **TypeScript Support**
-
-Anchor is written in TypeScript and provides first-class TypeScript support with comprehensive type definitions included in every package.
-
-## **Next Steps**
-
-After installing Anchor, check out these guides to get started:
-
-- [Configuration Guide](/configuration) - Learn how to configure Anchor
-- [Reactivity](/reactivity) - Understand Anchor's fine-grained reactivity system
-- [Immutability](/immutability) - Learn about Anchor's true immutability approach
-- [Data Integrity](/data-integrity) - Learn about Anchor's Data Integrity
-- Framework-specific guides:
-  - [React Guide](/react/getting-started)
-  - [Solid Guide](/react/getting-started)
-  - [Svelte Guide](/svelte/getting-started)
-  - [Vue Guide](/vue/getting-started)
-
-## **Need Help?**
-
-If you're having trouble with installation:
+If you encounter issues during installation:
 
 1. Check the [FAQ](/faq) for common issues
 2. Open an issue on [GitHub](https://github.com/beerush-id/anchor/issues)

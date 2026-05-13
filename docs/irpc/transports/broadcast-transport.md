@@ -359,6 +359,27 @@ const router = new BroadcastRouter(irpc, transport, {
 });
 ```
 
+### Router Disconnect
+
+The router tracks `AbortController` instances for every active stream. Call `router.disconnect()` to abort all active streams when the router is shut down:
+
+```typescript
+// Abort all active streams and clean up
+router.disconnect();
+```
+
+### Stream Cancellation
+
+Clients can cancel individual streams by calling `.close()` on the `RemoteState`. The transport sends a cancellation packet to the router, which aborts the stream's `AbortController` and triggers cleanup:
+
+```typescript
+const stream = watchData('key');
+stream.start();
+
+// Later — cancel this specific stream
+stream.close();
+```
+
 ### Multiple Channels
 
 Use different channels for different purposes:

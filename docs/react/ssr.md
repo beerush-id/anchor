@@ -13,283 +13,294 @@ keywords:
 
 Anchor's fine-grained reactivity and component model work seamlessly on the server. Because `setup()` functions act as constructors that run exactly once, they translate perfectly to the server environment where components render to static HTML strings.
 
-Implementing SSR with Anchor requires two key adjustments to handle the concurrent nature of Node.js environments:
+Implementing SSR with Anchor requires three adjustments to handle the concurrent nature of Node.js environments:
 
-1. **Request-Isolated State:** Utilizing `AsyncLocalStorage` to ensure state doesn't leak across concurrent requests.
-2. **Headless Routing:** Bypassing browser-specific APIs (`window`, `popstate`, `scroll`) during the server render pass.
+1. **Server Module Import:** Configuring `AsyncLocalStorage` and disabling reactive tracking.
+2. **Request Isolation:** Scoping state per request with `withIsolation` and `createLifecycle`.
+3. **Headless Routing:** Bypassing browser-specific APIs during the server render pass.
 
-## 1. Request-Isolated State (`AsyncLocalStorage`)
+## 1. Server Module
 
-In a browser, global state is safe because each user has their own JavaScript environment. On a Node.js server, global state is shared across all incoming requests. To prevent data leakage between users, you must isolate state per request.
+Import `@anchorlib/react/server` **before any other Anchor import** in your server entry point. This performs two critical operations:
 
-Anchor requires two steps to achieve this:
-
-**Step A: Initialize the Global Storage Adapter**
-You must set this up exactly once in your server entry point. This tells Anchor to use Node's `AsyncLocalStorage` under the hood.
+- Binds Node's `AsyncLocalStorage` as the async context provider, ensuring state isolation across concurrent requests.
+- Disables reactive tracking (`setReactive(false)`) for single-pass server rendering, eliminating observer overhead.
 
 ```tsx
-import { setAsyncStorageAdapter } from '@anchorlib/react';
-import { AsyncLocalStorage } from 'node:async_hooks';
-
-// Call this BEFORE starting your server or handling requests
-setAsyncStorageAdapter(new AsyncLocalStorage());
+// entry-server.tsx
+import '@anchorlib/react/server'; // MUST be the first import
+import { createLifecycle, UIRouter, withIsolation } from '@anchorlib/react';
 ```
 
-**Step B: Isolate the Request Context**
-For *every incoming request*, you must wrap your routing and rendering logic inside `isolated.async` and `createLifecycle()`. 
+This single import replaces any manual `AsyncLocalStorage` or `setReactive(false)` configuration.
 
-- `isolated.async()` provides the underlying context layer (`storage.run()`) to ensure state is strictly scoped to the current execution branch.
-- `createLifecycle()` ensures that any providers, state bindings, or side effects generated during the request are properly tracked and explicitly destroyed.
+## 2. Request Isolation
+
+For every incoming request, wrap your rendering logic inside `withIsolation()` and `createLifecycle()`.
+
+- **`withIsolation()`** creates an isolated async execution boundary. All state created within the callback is scoped to that boundary, preventing data leakage across concurrent requests.
+- **`createLifecycle()`** tracks providers, state bindings, and side effects generated during the request. Calling `.destroy()` after rendering releases all tracked resources.
 
 ```tsx
-import { isolated, createLifecycle } from '@anchorlib/react';
+import { withIsolation, createLifecycle } from '@anchorlib/react';
 
-app.get('*', async (req, res) => {
-  // 1. Isolate the execution context
-  await isolated.async(async () => {
-    // 2. Create the request scope
-    const scope = createLifecycle();
-    
-    await scope.runAsync(async () => {
-      // 3. Activate router and render your app safely...
-    });
-    
-    // 4. Destroy the scope to prevent memory leaks
-    scope.destroy();
+await withIsolation(async () => {
+  const ssr = createLifecycle();
+
+  await ssr.runAsync(async () => {
+    // Activate router, render app...
   });
+
+  // Release all tracked resources
+  ssr.destroy();
 });
 ```
 
-## 2. Headless Routing
+## 3. Headless Routing
 
 The `UIRouter` component automatically handles browser history and scroll restoration. During SSR, these browser APIs (`window`, `location`, etc.) do not exist.
 
-To render the router on the server, you must pass the `headless` prop to disable browser integrations, and explicitly provide the requested `url`.
+To render the router on the server, pass the `headless` prop to disable browser integrations, and explicitly provide the requested `url`.
 
 ```tsx
 import { UIRouter } from '@anchorlib/react';
-import { router } from './router.js'; // Your application's router instance
-import AppRoot from './routes/Index.js'; // Your root component
+import { router } from './router.js';
+import { RootLayout } from './pages/layout.js';
 
-export function renderApp(requestUrl: string) {
-  return (
-    <UIRouter 
-      router={router} 
-      root={AppRoot}
-      url={requestUrl} 
-      headless={true} 
-    />
-  );
-}
+<UIRouter
+  router={router}
+  root={RootLayout}
+  url={requestUrl}
+  headless={true}
+  resetScroll
+/>
 ```
 
 ### Why `headless={true}`?
 
 *   **Bypasses DOM APIs:** Prevents calls to `window.addEventListener('popstate')` and `window.scrollTo()`.
 *   **Synchronous Rendering:** Forces `UIRouter` to resolve matching routes immediately without waiting for microtasks.
-*   **Persistent Stacks:** Under the hood, `UIRouter` uses non-reactive `createRef` to manage modal stacks, ensuring rendering remains synchronous and thread-safe.
 
-## Complete SSR Example
+## 4. Cookie Round-Tripping
 
-Here is a simplified example of a server entry point using Express and `react-dom/server`.
+Anchor provides isomorphic cookie utilities for SSR. Decode incoming cookies from the request header, inject them into the async scope, and encode mutations back into response headers.
 
 ```tsx
-import express from 'express';
-import { renderToString } from 'react-dom/server';
-import { setAsyncStorageAdapter, isolated, createLifecycle, UIRouter, headings } from '@anchorlib/react';
-import { AsyncLocalStorage } from 'node:async_hooks';
+import { decodeCookies, setCookieContext } from '@anchorlib/react';
 
-// 1. Initialize the Async Storage Adapter
-setAsyncStorageAdapter(new AsyncLocalStorage());
+await withIsolation(async () => {
+  // Parse the incoming Cookie header into a CookieJar
+  const jar = decodeCookies(cookieHeader);
 
-import { Redirect, redirectUrl } from '@anchorlib/react/router';
-import { router } from './app/router'; // Your Anchor Router
-import AppRoot from './app/Index'; // Your root component
+  // Inject the jar into the async scope.
+  // Components using cookies() will read/write to this jar.
+  setCookieContext(jar);
 
-const app = express();
-
-app.get('*', async (req, res) => {
-  // 2. Isolate the request context
-  await isolated.async(async () => {
-    // 3. Create a lifecycle scope for the request
-    const scope = createLifecycle();
-    
-    await scope.runAsync(async () => {
-      try {
-        // 4. Pre-activate the router to load initial data/providers
-        await router.activate(req.url);
-
-        // 5. Render the application in headless mode
-        const html = renderToString(
-          <UIRouter 
-            router={router} 
-            root={AppRoot}
-            url={req.url} 
-            headless={true} 
-          />
-        );
-        const head = renderToString(<>{[...headings()].map(([, { Renderer }], i) => <Renderer key={i} />)}</>);
-
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              ${head}
-            </head>
-            <body>
-              <div id="root">${html}</div>
-            </body>
-          </html>
-        `);
-      } catch (error) {
-        // Handle router guard redirects
-        if (error instanceof Redirect) {
-          res.redirect(302, redirectUrl(error));
-        } else {
-          console.error('SSR Error:', error);
-          res.status(500).send('Internal Server Error');
-        }
-      }
-    });
-
-    // 6. Destroy the lifecycle to free memory
-    scope.destroy();
+  const ssr = createLifecycle();
+  await ssr.runAsync(async () => {
+    // ... render ...
   });
-});
 
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+  // Encode only mutated cookies into Set-Cookie header strings
+  const setCookieHeaders = jar.encode();
+
+  ssr.destroy();
 });
 ```
 
-## Vite SSR Setup
+During rendering, any component that calls `cookies('name', defaultValue)` will read from and write to this jar. After rendering, `jar.encode()` returns an array of `Set-Cookie` header strings containing only the cookies that were modified during the request.
 
-Vite provides excellent native support for SSR. To use Anchor with Vite SSR, you typically split your server logic into two files: a server entry point and your main Node/Express server.
+## 5. Redirect Handling
 
-### 1. Server Entry (`entry-server.tsx`)
-
-This file exposes a `render` function that Vite will load dynamically. It isolates the request and renders the headless router.
+`router.activate()` returns a blocker when a guard triggers a redirect. Check the return value before rendering:
 
 ```tsx
-import { renderToString } from 'react-dom/server';
-import { isolated, createLifecycle, UIRouter, headings } from '@anchorlib/react';
-import { Redirect, redirectUrl } from '@anchorlib/react/router';
-import { router } from './router';
-import AppRoot from './Index';
+import { Redirect, redirectUrl } from '@anchorlib/react';
 
-export async function render(url: string) {
-  let html = '';
-  let head = '';
-  let redirect: string | undefined;
+const blocker = await router.activate(url);
 
-  await isolated.async(async () => {
-    const scope = createLifecycle();
-    
-    await scope.runAsync(async () => {
-      try {
-        await router.activate(url);
-        html = renderToString(
-          <UIRouter router={router} root={AppRoot} url={url} headless={true} />
-        );
-        head = renderToString(<>{[...headings()].map(([, { Renderer }], i) => <Renderer key={i} />)}</>);
-      } catch (error) {
-        if (error instanceof Redirect) {
-          redirect = redirectUrl(error);
-        } else {
-          throw error;
-        }
-      }
-    });
+if (blocker instanceof Redirect) {
+  const target = redirectUrl(blocker);
+  // Send a 302 redirect response
+  return { redirect: target };
+}
 
-    scope.destroy();
-  });
+// No redirect — safe to render
+const html = renderToString(/* ... */);
+```
 
-  return { html, head, redirect };
+Guards that `throw redirect(target)` will also propagate as thrown errors. Handle both paths:
+
+```tsx
+try {
+  const blocker = await router.activate(url);
+
+  if (blocker instanceof Redirect) {
+    redirect = redirectUrl(blocker);
+    return { redirect };
+  }
+
+  html = renderToString(/* ... */);
+} catch (error) {
+  if (error instanceof Redirect) {
+    redirect = redirectUrl(error);
+  } else {
+    html = `SSR Render Error: ${error}`;
+  }
+} finally {
+  router.cleanup();
 }
 ```
 
-### 2. Vite Dev Server (`server.js`)
+Call `router.cleanup()` in the `finally` block to release route state after rendering.
 
-In your Vite development server, you initialize the storage adapter once, then call your `render` function for incoming requests.
+## Complete SSR Example (Vite)
 
-```javascript
-import fs from 'node:fs';
+### Server Entry (`entry-server.tsx`)
+
+This file exposes a `render` function that Vite loads dynamically. It isolates the request, handles cookies, and renders the headless router.
+
+```tsx
+import '@anchorlib/react/server'; // MUST be first!
+import {
+  createLifecycle,
+  decodeCookies,
+  headings,
+  Redirect,
+  redirectUrl,
+  setCookieContext,
+  UIRouter,
+  withIsolation,
+} from '@anchorlib/react';
+import { renderToString } from 'react-dom/server';
+import { router } from './lib/router.js';
+import { RootLayout } from './pages/layout.js';
+
+export async function render(url: string, cookie = '') {
+  let html = '';
+  let head = '';
+  let redirect: string | undefined;
+  let cookies: string[] = [];
+
+  await withIsolation(async () => {
+    const jar = decodeCookies(cookie);
+    setCookieContext(jar);
+
+    const ssr = createLifecycle();
+    await ssr.runAsync(async () => {
+      try {
+        const blocker = await router.activate(url);
+
+        if (blocker instanceof Redirect) {
+          redirect = redirectUrl(blocker);
+          return { redirect };
+        }
+
+        html = renderToString(
+          <UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />
+        );
+        head = renderToString(
+          [...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />)
+        );
+      } catch (error) {
+        head = '';
+        html = `SSR Render Error: ${error}`;
+      } finally {
+        router.cleanup();
+      }
+    });
+
+    cookies = jar.encode();
+    ssr.destroy();
+  });
+
+  return { html, head, redirect, cookies };
+}
+```
+
+### Vite Dev Server (`server.ts`)
+
+The dev server loads your `entry-server.tsx` module via Vite's SSR loader and calls the `render` function for each request.
+
+```typescript
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { setAsyncStorageAdapter } from '@anchorlib/react';
-import { AsyncLocalStorage } from 'node:async_hooks';
-
-// 1. Initialize Async Storage for the entire server
-setAsyncStorageAdapter(new AsyncLocalStorage());
 
 async function createServer() {
   const app = express();
   const vite = await createViteServer({
     server: { middlewareMode: true },
-    appType: 'custom'
+    appType: 'custom',
   });
 
-  app.use(vite.hooks);
-
-  app.use('*', async (req, res, next) => {
+  app.use(vite.middlewares);
+  app.use(async (req, res, next) => {
     try {
       const url = req.originalUrl;
 
-      // Load the Vite SSR entry point
-      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
+      let template = await fs.readFile(
+        path.resolve(import.meta.dirname, 'index.html'), 'utf-8'
+      );
+      template = await vite.transformIndexHtml(url, template);
 
-      // Call the Anchor render function
-      const { html, head, redirect } = await render(url);
+      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
+      const { html, head, redirect, cookies } = await render(url, req.headers.cookie ?? '');
 
       if (redirect) {
         return res.redirect(302, redirect);
       }
 
-      // Load index.html and inject the rendered app
-      let template = fs.readFileSync(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
-      template = await vite.transformIndexHtml(url, template);
+      // Set mutated cookies as response headers
+      for (const cookie of cookies) {
+        res.append('Set-Cookie', cookie);
+      }
+
       const page = template
-        .replace('<!--head-outlet-->', () => head)
-        .replace('<!--ssr-outlet-->', () => html);
+        .replace('<!--ssr-head-->', head)
+        .replace('<!--ssr-outlet-->', html);
 
       res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
     } catch (e) {
-      vite.ssrFixStacktrace(e);
+      vite.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
 
-  app.listen(5173, () => console.log('Vite SSR server running on http://localhost:5173'));
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5173;
+  app.listen(port, () => console.log(`Vite SSR Dev Server running on http://localhost:${port}`));
 }
 
 createServer();
 ```
 
+::: tip No Manual Adapter Setup
+The server entry file (`entry-server.tsx`) handles all `AsyncLocalStorage` and reactivity configuration via `import '@anchorlib/react/server'`. The dev server itself requires no Anchor-specific initialization.
+:::
+
 ## Client Hydration
 
-On the client side, initialization remains mostly the same. You just need to ensure the router matches the current URL before rendering, so hydration works correctly without flashes of content.
+On the client side, import the client entry point first, then activate the router before hydrating.
 
 ```tsx
 import '@anchorlib/react/client'; // MUST be first
 import { hydrateRoot } from 'react-dom/client';
 import { UIRouter } from '@anchorlib/react';
-import { router } from './router';
-import AppRoot from './routes/Index';
+import { router } from './lib/router.js';
+import { RootLayout } from './pages/layout.js';
 
-// Initialize the router with the current browser URL
 router.activate(window.location.href).then(() => {
   hydrateRoot(
     document.getElementById('root')!,
-    <UIRouter router={router} root={AppRoot} />
+    <UIRouter router={router} root={RootLayout} />
   );
 });
 ```
 
 ### Why No Data Transfer During Hydration?
 
-Unlike traditional SSR frameworks (Next.js, Nuxt) that inject a massive JSON payload (like `window.__INITIAL_STATE__`) into the HTML to prevent double-fetching on the client, Anchor takes a completely different approach.
+Unlike traditional SSR frameworks that inject a massive JSON payload (like `window.__INITIAL_STATE__`) into the HTML to prevent double-fetching on the client, Anchor takes a completely different approach.
 
 In Anchor, the router implements a **reactive graph** of states and dependencies. A reactive graph is impossible to be simply re-created or serialized directly during hydration.
 
@@ -311,6 +322,9 @@ While Anchor does perform a network request on the client during hydration, this
 
 ## Key Takeaways
 
-*   **`setAsyncStorageAdapter(new AsyncLocalStorage())`**: Non-negotiable for thread-safe state on the server.
-*   **`<UIRouter headless root={AppRoot} url={req.url} />`**: Required to bypass browser APIs and run routing synchronously during SSR.
+*   **`import '@anchorlib/react/server'`**: Configures `AsyncLocalStorage` and disables reactive tracking. Must be the first import in your server entry.
+*   **`withIsolation()`**: Isolates each request's state boundary.
+*   **`createLifecycle()`**: Tracks and explicitly destroys request-scoped resources.
+*   **`router.cleanup()`**: Releases route state after rendering.
+*   **`<UIRouter headless root={RootLayout} url={req.url} />`**: Required to bypass browser APIs and run routing synchronously during SSR.
 *   **Agnostic Logic**: Your Anchor Components (`setup()`) and state do not need to change. The architecture remains isomorphic.

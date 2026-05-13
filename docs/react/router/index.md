@@ -19,35 +19,32 @@ export const profileRoute = usersRoute
 
 ```tsx
 // page.tsx
-import { page } from '@anchorlib/react';
-import { template } from '@anchorlib/react';
+import { page, snippet, render } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
-export const ProfilePage = page(
-  profileRoute.render(({ data }) => {
-    const ProfileCard = template(() => (
-      <div>
-        <h1>{data.profile?.name}</h1>
-        <p>{data.profile?.email}</p>
-      </div>
-    ));
+export const ProfilePage = page(profileRoute).render(({ state }) => {
+  const ProfileCard = snippet(() => (
+    <div>
+      <h1>{state.data?.profile?.name}</h1>
+      <p>{state.data?.profile?.email}</p>
+    </div>
+  ));
 
-    const Notifications = template(() => (
-      <ul>
-        {data.notifications?.map((notification) => (
-          <li key={notification.id}>{notification.message}</li>
-        ))}
-      </ul>
-    ));
+  const Notifications = snippet(() => (
+    <ul>
+      {state.data?.notifications?.map((notification) => (
+        <li key={notification.id}>{notification.message}</li>
+      ))}
+    </ul>
+  ));
 
-    return (
-      <>
-        <ProfileCard />
-        <Notifications />
-      </>
-    );
-  })
-);
+  return (
+    <>
+      <ProfileCard />
+      <Notifications />
+    </>
+  );
+});
 ```
 
 ### What's happening here
@@ -88,7 +85,7 @@ Data loading is handled by providers, which also execute outside the React lifec
 
 Because Anchor resolves guards and providers outside the React lifecycle, the `.render()` function represents pure UI injection. It is a plain function, not a reactive block. Because the route is a single chain, TypeScript infers the exact shape of your data—giving you perfect autocomplete for `state.data.profile` and `state.data.notifications`. 
 
-By wrapping your components in the `template()` HOC, you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the specific DOM node reading that data re-renders, not the entire page.
+By wrapping your components natively or using `snippet()` (in React), you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the specific DOM node reading that data re-renders, not the entire page.
 
 **What it solves:**
 - Installing **Zustand** or **Redux** just to share data between sibling components (like `ProfileCard` and `Notifications`)
@@ -117,7 +114,7 @@ Anchor resolves the final URL at runtime. If you change `/:user_id` to `/:id` in
 |---|---|
 | Install **React Router** for routing | Built into the route tree |
 | Install **React Query** / SWR for data fetching and caching | `.provide('key', fetchFn)` on the route |
-| Install **Zustand** or **Redux** for global state management | Route `state` is inherently reactive via `template()` |
+| Install **Zustand** or **Redux** for global state management | Route `state` is inherently reactive via `snippet()` and `render()` |
 | Write `if (!x) return <Navigate />` in every component for auth, feature flags, subscriptions | `.guard(checkFn)` on the route — runs before anything renders |
 | Write **useState + useEffect** for loading/error states in every component | `state.status` and `state.data` managed by the router |
 | Write **string paths** in `<Link to="/users/42">` that break on rename | `<Link to={Profile} params={\{ user_id: '42' \}}>` — typed, refactor-safe |
@@ -128,11 +125,10 @@ Create a router and mount it:
 
 ```ts
 // lib/router.ts
-import { createRouter, RENDER_MODE, MAX_AGE } from '@anchorlib/react/router';
+import { createRouter, MAX_AGE } from '@anchorlib/react/router';
 import type { ReactNode } from 'react';
 
 export const router = createRouter<ReactNode>({
-  renderMode: RENDER_MODE.IMMEDIATE,
   maxAge: MAX_AGE.DAY,
 });
 ```
@@ -148,7 +144,7 @@ createRoot(document.body).render(
 );
 ```
 
-`RENDER_MODE.IMMEDIATE` mounts the component before providers finish — use `state.status` to show loading UI. The default (`DEFERRED`) waits for all providers to resolve. `MAX_AGE.DAY` caches provider results for 24 hours so returning to a route skips the fetch. The `resetScroll` prop (default `false`) ensures the window scrolls to top on navigation, unless the destination is a modal route.
+`MAX_AGE.DAY` caches provider results for 24 hours so returning to a route skips the fetch. The `resetScroll` prop (default `false`) ensures the window scrolls to top on navigation, unless the destination is a modal route.
 
 
 ## Route tree
@@ -178,14 +174,12 @@ Layout routes receive `children` as the third argument to `.render()`:
 import { page } from '@anchorlib/react';
 import { usersRoute } from './route.js';
 
-export const UsersLayout = page(
-  usersRoute.render((_state, _ctx, children) => (
-    <div>
-      <header>Users</header>
-      {children}
-    </div>
-  ))
-);
+export const UsersLayout = page(usersRoute).render(({ children }) => (
+  <div>
+    <header>Users</header>
+    {children}
+  </div>
+));
 ```
 
 When the URL is `/users`, `{children}` contains the index route. Navigate to `/users/42`, and only `{children}` swaps to the profile — the layout stays mounted.

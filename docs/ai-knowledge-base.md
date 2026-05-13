@@ -884,11 +884,10 @@ If a 3rd party component manages its own internal state (e.g., a rich text edito
 
 ```tsx
 // lib/router.ts
-import { createRouter, RENDER_MODE, MAX_AGE } from '@anchorlib/router';
+import { createRouter, MAX_AGE } from '@anchorlib/router';
 import type { ReactNode } from 'react';
 
 export const router = createRouter<ReactNode>({
-  renderMode: RENDER_MODE.IMMEDIATE,
   maxAge: MAX_AGE.DAY,
 });
 
@@ -1505,7 +1504,7 @@ import '@anchorlib/react/client'; // MUST be first import at app entry
 
 ```tsx
 // Re-exports @anchorlib/router — use for core router primitives
-import { createRouter, RENDER_MODE, MAX_AGE, Redirect, redirectUrl } from '@anchorlib/router';
+import { createRouter, MAX_AGE, Redirect, redirectUrl } from '@anchorlib/router';
 ```
 
 ### @anchorlib/router

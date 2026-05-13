@@ -1,14 +1,34 @@
+---
+title: "Navigation"
+description: "Link component, programmatic navigation, active state, and URL generation in Anchor."
+keywords:
+  - anchor
+  - navigation
+  - link
+  - navigate
+---
+
 # Navigation
 
-Two ways to navigate: `<Link>` in JSX, `navigate()` in code.
+Two ways to navigate: `<Link>` in view templates, and `navigate()` in code.
 
 ## Link Component
 
-```tsx
+::: code-group
+
+```tsx [React]
 import { Link } from '@anchorlib/react';
 import { UsersPage } from './routes/users/page.js';
 import { ProfilePage } from './routes/users/[user_id]/page.js';
 ```
+
+```tsx [SolidJS]
+import { Link } from '@anchorlib/solid';
+import { UsersPage } from './routes/users/page.js';
+import { ProfilePage } from './routes/users/[user_id]/page.js';
+```
+
+:::
 
 ### Route object binding
 
@@ -16,7 +36,7 @@ Pass a route component to `to`. The link href is derived from the route's path:
 
 ```tsx
 <Link to={UsersPage}>Users</Link>
-<!-- renders: <a href="/users">Users</a> -->
+{/* renders: <a href="/users">Users</a> */}
 ```
 
 For routes with parameters, pass `params`:
@@ -25,10 +45,12 @@ For routes with parameters, pass `params`:
 <Link to={ProfilePage} params={{ user_id: '42' }}>
   View Profile
 </Link>
-<!-- renders: <a href="/users/42">View Profile</a> -->
+{/* renders: <a href="/users/42">View Profile</a> */}
 ```
 
 This is the primary way to link. If you rename `/users` to `/people` in your route definition, every `<Link to={UsersPage}>` updates. Nothing breaks.
+
+`params` and `query` requirements are statically enforced via `InferParams` and `InferQuery` generics derived from the route configuration. Missing required params will produce a compile-time error.
 
 ### String href
 
@@ -44,7 +66,7 @@ For static paths or external links, use `href`:
 <Link to={UsersPage} query={{ page: 2, sort: 'name' }}>
   Page 2
 </Link>
-<!-- renders: <a href="/users?page=2&sort=name">Page 2</a> -->
+{/* renders: <a href="/users?page=2&sort=name">Page 2</a> */}
 ```
 
 ### Active state
@@ -55,7 +77,7 @@ When a route is active, its `<Link>` gets `aria-current="page"` and an active cl
 <Link to={UsersPage} className="nav-link" activeClass="active">
   Users
 </Link>
-<!-- when on /users: <a href="/users" class="nav-link active" aria-current="page"> -->
+{/* when on /users: <a href="/users" class="nav-link active" aria-current="page"> */}
 ```
 
 The active state is hierarchical. If the user is on `/users/42`, the link to `UsersPage` (`/users`) is also active because `/users` is a parent segment of the current route.
@@ -98,7 +120,9 @@ Replace the current history entry instead of pushing a new one:
 
 Use `navigate()` from event handlers, form submissions, or any non-JSX context:
 
-```tsx
+::: code-group
+
+```tsx [React]
 import { navigate } from '@anchorlib/react';
 import { ProfilePage } from './routes/users/[user_id]/page.js';
 
@@ -108,6 +132,19 @@ function handleUserSelect(userId: string) {
   });
 }
 ```
+
+```tsx [SolidJS]
+import { navigate } from '@anchorlib/solid';
+import { ProfilePage } from './routes/users/[user_id]/page.js';
+
+function handleUserSelect(userId: string) {
+  navigate(ProfilePage, {
+    params: { user_id: userId },
+  });
+}
+```
+
+:::
 
 ### Overloads
 
@@ -128,11 +165,9 @@ navigate(UsersPage, { query: { page: 2 } });
 navigate(ProfilePage, { params: { user_id: '42' }, replace: true });
 ```
 
-`params` and `query` requirements are statically enforced via `InferParams` and `InferQuery` generics derived from the route configuration. Missing required params will produce a compile-time error.
-
 `navigate()` pushes a new entry to `history.pushState` and dispatches a `popstate` event, which the router picks up. With `replace: true`, it uses `history.replaceState` instead.
 
-### Route URL generation
+## Route URL generation
 
 If you need the URL string without navigating (for copying, logging, or external use), call `.url()` on the route object:
 

@@ -1,0 +1,1344 @@
+---
+title: 'Component: Reactive Components'
+description: 'When a concern needs its own reactivity — and what makes it a component.'
+---
+
+# Reactive Components
+
+In AIR Stack, components carry HTML's mental model. An `<input>` element is not a dumb box that waits for its parent to
+set a value — it updates itself when the user types, has its own default type (`text`), manages its own selection and
+focus, and emits events when things change. The parent can configure it with attributes, but the element governs itself.
+
+AIR Stack reactive components work the same way. Each component is a **self-governing unit** with its own
+responsibility. A `PriceTag` formats and displays a price. A `StatusBadge` resolves a status into a visual indicator. A
+`QuantitySelector` manages a number within boundaries. Each one handles its concern without waiting for the parent to
+tell it how.
+
+## When You Need a Component
+
+Not everything on the screen needs its own reactive boundary.
+
+```tsx
+<h1>Welcome</h1>
+<p>This is static content.</p>
+```
+
+This is markup. It renders once, never changes, and belongs inline in whatever view contains it. No state, no behavior,
+no side-effect — no reason to isolate it.
+
+But when a piece of UI is **reused across multiple views** and **updates frequently**, it earns its own reactive
+boundary:
+
+```tsx
+<PriceTag amount={ item.price } />
+<PriceTag amount={ cart.subtotal } />
+<PriceTag amount={ order.total } />
+```
+
+A `PriceTag` formats a number as currency. It appears in product listings, carts, and checkout. When the amount changes,
+only the `PriceTag` updates — not the entire view around it.
+
+## Reactive View vs. Component
+
+A reactive boundary alone doesn't make something a component. Should you make a **reactive view** or a **component**?
+
+### Reactive View
+
+A piece of UI becomes a **reactive view** when: it presents reactive data without owning it — a reusable fragment that
+presents reactive
+data. Reactive views are always **one-way**: they receive data and present it.
+
+**For example**: A **`Label`** renders the **text** and **class** with defaults. No state, no behavior, no side-effect:
+
+::: code-group
+
+```tsx [React]
+import { template } from '@anchorlib/react';
+
+const Label = template<{ text?: string; type?: string }>((props) => (
+  <span className={ `label ${ props.type ?? 'muted' }` }>{ props.text ?? '—' }</span>
+));
+```
+
+```tsx [SolidJS]
+function Label(props: { text?: string; type?: string }) {
+  return (
+    <span class={ `label ${ props.type ?? 'muted' }` }>{ props.text ?? '—' }</span>
+  );
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+// In React, use pass-by-reference — lazy read for reactive updates
+<Label text={ $use(appState, 'userName') } type="primary" />
+```
+
+```tsx [SolidJS]
+// In SolidJS, expressions automatically wrapped as a lazy read
+<Label text={ appState.userName } type="primary" />
+```
+
+:::
+
+::: details What you learned {open}
+
+Creating an isolated reactive boundary that update itself without needing the parent to re-render,
+and doesn't re-run when the parent re-renders.
+
+**From these two examples, you know:**
+
+- An isolated reactive view **updates itself** when the data it read changes
+- **React:** `template()` used to create a reactive boundary that **runs once** and **only re-renders when the data it
+  read changes**. Parent re-render **doesn't re-run the reactive view** because it's self-governing.
+- **React:** `$use(state, 'key')` creates a **pass-by-reference** link so **state reads** happens at the reactive
+  boundary, not the parent.
+- **SolidJS:** component functions **run once** by default, and `state.text` is already wrapped as a **lazy read**
+  :::
+
+### Component
+
+A piece of UI becomes a **component** when it has its own:
+
+- **State** — it holds data that belongs to itself (loading, selected, count), used only inside the component scope
+- **Behavior** — it does something (format, validate, toggle)
+- **Side-effect** — it triggers something (fetch, sync, animate)
+
+**For example:** A **`PriceTag`** has **state** (the derived formatted value) and **behavior** (formatting, error
+handling):
+
+::: code-group
+
+```tsx [React]
+import { setup, render, derived } from '@anchorlib/react';
+
+const PriceTag = setup<{ amount: number; currency?: string }>((props) => {
+  const formatter = derived(() => new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: props.currency ?? 'USD',
+  }));
+
+  const display = derived(() => {
+    try { return formatter.value.format(props.amount); } catch { return 'N/A'; }
+  });
+
+  return render(() => <span className="price">{ display.value }</span>);
+});
+```
+
+```tsx [SolidJS]
+import { derived } from '@anchorlib/solid';
+
+function PriceTag(props: { amount: number; currency?: string }) {
+  const formatter = derived(() => new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: props.currency ?? 'USD',
+  }));
+
+  const display = derived(() => {
+    try { return formatter.value.format(props.amount); } catch { return 'N/A'; }
+  });
+
+  return <span class="price">{ display.value }</span>;
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+// In React, use pass-by-reference — lazy read for reactive updates
+<PriceTag amount={$use(item, 'price')} />
+<PriceTag amount={$use(cart, 'subtotal')} />
+<PriceTag amount={$use(cart, 'total')} />
+```
+
+```tsx [SolidJS]
+// In SolidJS, expressions automatically wrapped as a lazy read
+<PriceTag amount={item.price} />
+<PriceTag amount={cart.subtotal} />
+<PriceTag amount={cart.total} />
+```
+:::
+
+::: details What you learned {open}
+
+Creating a **stable component** that only runs-once. It **survives parent re-renders**, have stable closure, and its internal
+state and views **reacts individually** when the **data it reads changes**.
+
+**From these two examples, you know:**
+
+- **`derived()`** creates a **cached value** that **automatically re-create only when any dependency changes**
+- `formatter` **recomputes only when `currency` changes**, avoiding unnecessary `Intl.NumberFormat` construction
+- `display` **recomputes when `amount` or `formatter` changes**, chaining dependencies automatically
+- **React:** **`setup()`** makes the component **function run once**, guaranteeing **stable closure** to survive parent re-renders.
+- **React:** **`render()`** creates a **reactive view** that belongs to the component itself.
+- **SolidJS:** the function already runs once, and **JSX expressions are tracked automatically**
+  :::
+
+
+## Presenting Data
+
+A piece of UI becomes a **presentational component** when it transforms data into a visual output — formatting,
+mapping, or resolving values into display. The component **centralizes the transformation** so every consumer gets the
+same result.
+
+### From Props
+
+Data comes from the parent as props. The component transforms it.
+
+**For example:** A **`StatusBadge`** resolves a status code into a visual indicator, centralizing the mapping in one
+place:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, derived } from '@anchorlib/react';
+
+const StatusBadge = setup<{ status: 'online' | 'away' | 'offline' }>((props) => {
+  const label = derived(() => {
+    switch (props.status) {
+      case 'online':
+        return '🟢 Online';
+      case 'away':
+        return '🟡 Away';
+      case 'offline':
+        return '⚫ Offline';
+      default:
+        return '⚪ Unknown';
+    }
+  });
+
+  return render(() => (
+    <span className={ `badge ${ props.status }` }>{ label.value }</span>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { derived } from '@anchorlib/solid';
+
+function StatusBadge(props: { status: 'online' | 'away' | 'offline' }) {
+  const label = derived(() => {
+    switch (props.status) {
+      case 'online':
+        return '🟢 Online';
+      case 'away':
+        return '🟡 Away';
+      case 'offline':
+        return '⚫ Offline';
+      default:
+        return '⚪ Unknown';
+    }
+  });
+
+  return <span class={ `badge ${ props.status }` }>{ label.value }</span>;
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+// In React, use pass-by-reference — lazy read for reactive updates
+<StatusBadge status={ $use(user, 'status') } />
+```
+
+```tsx [SolidJS]
+// In SolidJS, expressions automatically wrapped as a lazy read
+<StatusBadge status={ user.status } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Using **`derived()`** to **centralize a value mapping** so the view doesn't change when new statuses are added.
+
+**From these two examples, you know:**
+
+- **`derived()`** centralizes the status-to-label mapping so **the view stays the same when new statuses are added**
+- `label.value` reads the **cached result**, **only recomputing when `status` changes**
+- `StatusBadge` is **one-way**: it receives `status` from the parent and presents it
+  :::
+
+### From Global State
+
+Data comes from a shared store, not from props. The component reads it directly.
+
+**For example:** A **`ThemeIndicator`** reads the current theme from global state:
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { appState } from '../states/app.js';
+
+const ThemeIndicator = setup(() => {
+  return render(() => (
+    <span className={ `theme ${ appState.theme }` }>{ appState.theme }</span>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { appState } from '../states/app.js';
+
+function ThemeIndicator() {
+  return <span class={ `theme ${ appState.theme }` }>{ appState.theme }</span>;
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<ThemeIndicator />
+```
+
+```tsx [SolidJS]
+<ThemeIndicator />
+```
+
+:::
+
+::: details What you learned {open}
+
+Reading **global reactive state** directly inside a component, without props.
+
+**From these two examples, you know:**
+
+- `appState` is a **`mutable()`** store — **reactive across components**
+- **React:** **`setup()`** ensures **reactive store reads** instead of capturing stale values
+- **SolidJS:** store access is **tracked automatically**
+- No props needed — the component **reads from the store directly**
+  :::
+
+## Responding to Interaction
+
+A piece of UI becomes an **interactive component** when it responds to user input. Interactive components can be
+**two-way** — they receive data AND write back to it. This is where `Bindable` comes in.
+
+### Instant Interaction
+
+The simplest form: one action, one state change.
+
+**For example:** A **`Toggle`** receives a boolean value and flips it on click:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, type Bindable } from '@anchorlib/react';
+
+const Toggle = setup<{ value?: Bindable<boolean>; onChange?: () => void }>((props) => {
+  const toggle = () => {
+    props.value = !props.value;
+    props.onChange?.();
+  };
+
+  return render(() => (
+    <button className={ props.value ? 'on' : 'off' } onClick={ toggle }>
+      { props.value ? 'On' : 'Off' }
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { bindable, type Bindable } from '@anchorlib/solid';
+
+const Toggle = bindable<{ value?: Bindable<boolean>; onChange?: () => void }>((props) => {
+  const toggle = () => {
+    props.value = !props.value;
+    props.onChange?.();
+  };
+
+  return (
+    <button classList={ { on: props.value, off: !props.value } } onClick={ toggle }>
+      { props.value ? 'On' : 'Off' }
+    </button>
+  );
+});
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+// $bind() connects the prop to the parent's state — writes propagate automatically
+<Toggle value={ $bind(formState, 'notifications') } onChange={ () => savePrefs() } />
+```
+
+```tsx [SolidJS]
+// $bind() connects the prop to the parent's state — writes propagate automatically
+<Toggle value={ $bind(formState, 'notifications') } onChange={ () => savePrefs() } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Creating a **two-way component** where the component **writes directly** to the parent's state.
+
+**From these two examples, you know:**
+
+- **`Bindable<boolean>`** makes `value` two-way: the component **reads and writes it directly** via `props.value = ...`
+- **`$bind()`** connects the prop to the parent's state, so **writes propagate to the parent automatically**
+- `onChange` is for side effects (logging, analytics) — **not state control**, the component already wrote the value
+- **SolidJS:** **`bindable()`** wraps the component to **enable two-way prop assignment**
+- **React:** `Bindable` props are **writable inside `setup()`** without additional wrappers
+  :::
+
+### Self-Binding
+
+Some components don't receive a trigger element — they find it themselves.
+
+**For example:** A **`Tooltip`** shows text when the user hovers over its parent element. It sits alongside siblings
+instead of wrapping them, so it **never re-renders sibling content**:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable, onMount, onCleanup } from '@anchorlib/react';
+
+const Tooltip = setup<{ text: string }>((props) => {
+  const state = mutable({ visible: false });
+  let ref: HTMLSpanElement;
+
+  onMount(() => {
+    const parent = ref.parentElement;
+    if (!parent) return;
+
+    const show = () => { state.visible = true; };
+    const hide = () => { state.visible = false; };
+
+    parent.addEventListener('mouseenter', show);
+    parent.addEventListener('mouseleave', hide);
+
+    onCleanup(() => {
+      parent.removeEventListener('mouseenter', show);
+      parent.removeEventListener('mouseleave', hide);
+    });
+  });
+
+  return render(() => (
+    <span ref={ (el) => { ref = el; } } className="tooltip-anchor">
+      { state.visible && <span className="tooltip">{ props.text }</span> }
+    </span>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { mutable, onMount, onCleanup } from '@anchorlib/solid';
+
+function Tooltip(props: { text: string }) {
+  const state = mutable({ visible: false });
+  let ref: HTMLSpanElement;
+
+  onMount(() => {
+    const parent = ref.parentElement;
+    if (!parent) return;
+
+    const show = () => { state.visible = true; };
+    const hide = () => { state.visible = false; };
+
+    parent.addEventListener('mouseenter', show);
+    parent.addEventListener('mouseleave', hide);
+
+    onCleanup(() => {
+      parent.removeEventListener('mouseenter', show);
+      parent.removeEventListener('mouseleave', hide);
+    });
+  });
+
+  return (
+    <span ref={ (el) => { ref = el; } } class="tooltip-anchor">
+      { state.visible && <span class="tooltip">{ props.text }</span> }
+    </span>
+  );
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<div className="user-card">
+  <Avatar src={ user.photo } />
+  <Tooltip text="Click to edit profile" />
+</div>
+```
+
+```tsx [SolidJS]
+<div class="user-card">
+  <Avatar src={ user.photo } />
+  <Tooltip text="Click to edit profile" />
+</div>
+```
+
+:::
+
+::: details What you learned {open}
+
+Creating a **standalone component** that **binds to its parent element** instead of wrapping children.
+
+**From these two examples, you know:**
+
+- Tooltip sits alongside siblings instead of wrapping them, so **showing/hiding never re-renders sibling content**
+- **`mutable()`** creates reactive state; **only the tooltip's view updates** when `visible` changes
+- **`onMount()`** runs after the component is in the DOM, making **`ref.parentElement` available for event binding**
+- **`onCleanup()`** removes listeners when the component is destroyed, **preventing memory leaks**
+  :::
+
+### Interaction Sequence
+
+A drag is a sequence — start, continue, end. The component owns the full lifecycle.
+
+**For example:** A **`Slider`** tracks the pointer across the full drag sequence:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable, onCleanup, type Bindable } from '@anchorlib/react';
+
+const Slider = setup<{ value?: Bindable<number>; min?: number; max?: number }>((props) => {
+  const min = props.min ?? 0;
+  const max = props.max ?? 100;
+  const state = mutable({ dragging: false });
+  let trackRef: HTMLDivElement;
+
+  const updateValue = (clientX: number) => {
+    const rect = trackRef.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    props.value = Math.round(min + ratio * (max - min));
+  };
+
+  const cleanup = () => {
+    state.dragging = false;
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+  };
+
+  const onPointerMove = (e: PointerEvent) => updateValue(e.clientX);
+  const onPointerUp = () => cleanup();
+
+  const onPointerDown = (e: PointerEvent) => {
+    state.dragging = true;
+    updateValue(e.clientX);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  onCleanup(cleanup);
+
+  return render(() => {
+    const percent = ((props.value - min) / (max - min)) * 100;
+    return (
+      <div
+        className={ `slider ${ state.dragging ? 'dragging' : '' }` }
+        ref={ (el) => { trackRef = el; } }
+        onPointerDown={ onPointerDown }
+      >
+        <div className="slider-fill" style={ { width: `${ percent }%` } } />
+        <div className="slider-thumb" style={ { left: `${ percent }%` } } />
+      </div>
+    );
+  });
+});
+```
+
+```tsx [SolidJS]
+import { bindable, mutable, onCleanup, type Bindable } from '@anchorlib/solid';
+
+const Slider = bindable<{ value?: Bindable<number>; min?: number; max?: number }>((props) => {
+  const min = props.min ?? 0;
+  const max = props.max ?? 100;
+  const state = mutable({ dragging: false });
+  let trackRef: HTMLDivElement;
+
+  const updateValue = (clientX: number) => {
+    const rect = trackRef.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    props.value = Math.round(min + ratio * (max - min));
+  };
+
+  const cleanup = () => {
+    state.dragging = false;
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+  };
+
+  const onPointerMove = (e: PointerEvent) => updateValue(e.clientX);
+  const onPointerUp = () => cleanup();
+
+  const onPointerDown = (e: PointerEvent) => {
+    state.dragging = true;
+    updateValue(e.clientX);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  onCleanup(cleanup);
+
+  return (
+    <div
+      class={ `slider ${ state.dragging ? 'dragging' : '' }` }
+      ref={ (el) => { trackRef = el; } }
+      onPointerDown={ onPointerDown }
+    >
+      <div class="slider-fill" style={ { width: `${ ((props.value - min) / (max - min)) * 100 }%` } } />
+      <div class="slider-thumb" style={ { left: `${ ((props.value - min) / (max - min)) * 100 }%` } } />
+    </div>
+  );
+});
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<Slider value={ $bind(settings, 'volume') } min={ 0 } max={ 100 } />
+```
+
+```tsx [SolidJS]
+<Slider value={ $bind(settings, 'volume') } min={ 0 } max={ 100 } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Managing a **drag interaction sequence** where the component **owns the full pointer lifecycle**.
+
+**From these two examples, you know:**
+
+- **`Bindable`** makes `value` two-way, so **pointer movement writes directly to the parent's state** via **`$bind()`**
+- `cleanup()` is shared between `onPointerUp` and **`onCleanup`**, **covering both normal drag end and mid-drag removal**
+- **`mutable({ dragging })`** tracks internal state **the parent doesn't need**
+- Document-level listeners **capture pointer events outside the slider element** during drag
+  :::
+
+## Owning State
+
+A piece of UI becomes a **stateful component** when it tracks values that serve its concern. The state can be
+**internal** (only the component needs it), **bound from the parent** (`Bindable`), or both.
+
+### Guarding Boundaries
+
+The component enforces rules on a two-way value before writing it.
+
+**For example:** A **`QuantitySelector`** manages a number within boundaries. It has both one-way props (`min`, `max`)
+and a two-way prop (`value`):
+
+::: code-group
+
+```tsx [React]
+import { setup, render, type Bindable } from '@anchorlib/react';
+
+const QuantitySelector = setup<{
+  value?: Bindable<number>;
+  min?: number;
+  max?: number;
+  onChange?: () => void;
+}>((props) => {
+  const min = props.min ?? 0;
+  const max = props.max ?? Infinity;
+
+  const increment = () => {
+    if (props.value < max) {
+      props.value++;
+      props.onChange?.();
+    }
+  };
+
+  const decrement = () => {
+    if (props.value > min) {
+      props.value--;
+      props.onChange?.();
+    }
+  };
+
+  return render(() => (
+    <div className="quantity">
+      <button disabled={ props.value <= min } onClick={ decrement }>−</button>
+      <span>{ props.value }</span>
+      <button disabled={ props.value >= max } onClick={ increment }>+</button>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { bindable, type Bindable } from '@anchorlib/solid';
+
+const QuantitySelector = bindable<{
+  value?: Bindable<number>;
+  min?: number;
+  max?: number;
+  onChange?: () => void;
+}>((props) => {
+  const min = props.min ?? 0;
+  const max = props.max ?? Infinity;
+
+  const increment = () => {
+    if (props.value < max) {
+      props.value++;
+      props.onChange?.();
+    }
+  };
+
+  const decrement = () => {
+    if (props.value > min) {
+      props.value--;
+      props.onChange?.();
+    }
+  };
+
+  return (
+    <div class="quantity">
+      <button disabled={ props.value <= min } onClick={ decrement }>−</button>
+      <span>{ props.value }</span>
+      <button disabled={ props.value >= max } onClick={ increment }>+</button>
+    </div>
+  );
+});
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<QuantitySelector value={ $bind(cartItem, 'quantity') } min={ 1 } max={ 99 } />
+```
+
+```tsx [SolidJS]
+<QuantitySelector value={ $bind(cartItem, 'quantity') } min={ 1 } max={ 99 } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Creating a component that **owns and guards** a two-way value with **boundary enforcement**.
+
+**From these two examples, you know:**
+
+- `value` is **`Bindable<number>`** (two-way): the component **enforces boundaries before writing**
+- `min` and `max` are one-way: the component **reads them but never changes them**
+- The component **guarantees the value stays in range**, so **the parent never needs to guard against invalid values**
+  :::
+
+### Dynamic Structure
+
+The component builds its own structure from configuration, then manages interaction through it.
+
+**For example:** A **`RatingStars`** builds its structure from `max`, then manages the rating through click:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, type Bindable } from '@anchorlib/react';
+
+const RatingStars = setup<{
+  value?: Bindable<number>;
+  max?: number;
+  onChange?: () => void;
+}>((props) => {
+  const max = props.max ?? 5;
+
+  const rate = (star: number) => {
+    props.value = star;
+    props.onChange?.();
+  };
+
+  return render(() => (
+    <div className="rating">
+      { Array.from({ length: max }, (_, i) => (
+        <button
+          className={ i < props.value ? 'filled' : 'empty' }
+          onClick={ () => rate(i + 1) }
+        >
+          ★
+        </button>
+      )) }
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { bindable, type Bindable } from '@anchorlib/solid';
+import { Index } from 'solid-js';
+
+const RatingStars = bindable<{
+  value?: Bindable<number>;
+  max?: number;
+  onChange?: () => void;
+}>((props) => {
+  const max = props.max ?? 5;
+
+  const rate = (star: number) => {
+    props.value = star;
+    props.onChange?.();
+  };
+
+  return (
+    <div class="rating">
+      <Index each={ Array.from({ length: max }) }>
+        { (_, i) => (
+          <button
+            classList={ { filled: i < props.value, empty: i >= props.value } }
+            onClick={ () => rate(i + 1) }
+          >
+            ★
+          </button>
+        ) }
+      </Index>
+    </div>
+  );
+});
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<RatingStars value={ $bind(review, 'rating') } max={ 5 } />
+```
+
+```tsx [SolidJS]
+<RatingStars value={ $bind(review, 'rating') } max={ 5 } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Building a **dynamic structure** from configuration, then managing **two-way interaction** through it.
+
+**From these two examples, you know:**
+
+- `max` (one-way) determines **how many stars to render** at creation
+- `value` (two-way) is **written when the user clicks** a star
+- **SolidJS:** **`Index`** renders a fixed list **without re-creating DOM nodes**; only `classList` bindings update
+  reactively
+  :::
+
+## Calling Remote Functions
+
+IRPC functions are declared on the server and called on the client like local functions. How you call them determines
+**when** they execute and **whether** they react to changes.
+
+| Call | When it runs | Reactive | Use case |
+|---|---|---|---|
+| `fn(arg)` | Immediately when called | No | Event handlers, user-triggered actions |
+| `fn.once(arg)` | Immediately (browser only) | No | One-time browser actions |
+| `fn.with(() => [args])` | Immediately (browser), re-runs when arguments change | Yes | Live streams, auto-refreshing data |
+| `fn.when(() => [args], ms)` | Only when arguments change, debounced | Yes | Search, filtering, user-driven queries |
+
+The getter returns the function's **arguments as an array**: `() => [arg1, arg2]`. When the reactive values inside the
+getter produce different arguments, the function **re-invokes automatically**.
+
+Default debounce is **0 (microtask)**. If 100 synchronous changes happen, **only the last runs**.
+
+### Direct Call
+
+A component calls a remote function **in response to a user action** — click, submit, gesture. The call happens once,
+when the user triggers it.
+
+**For example:** A **`LogoutButton`** calls `signOut()` when the user clicks:
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { signOut } from '../rpc/auth/index.js';
+
+const LogoutButton = setup(() => {
+  const handleClick = () => {
+    signOut().then(() => {
+      window.location.href = '/login';
+    });
+  };
+
+  return render(() => (
+    <button className="btn-logout" onClick={ handleClick }>Sign Out</button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { signOut } from '../rpc/auth/index.js';
+
+function LogoutButton() {
+  const handleClick = () => {
+    signOut().then(() => {
+      window.location.href = '/login';
+    });
+  };
+
+  return <button class="btn-logout" onClick={ handleClick }>Sign Out</button>;
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<LogoutButton />
+```
+
+```tsx [SolidJS]
+<LogoutButton />
+```
+
+:::
+
+::: details What you learned {open}
+
+Using a direct call for a **user-triggered action** the view doesn't need to track.
+
+**From these two examples, you know:**
+
+- Direct calls are for **actions** — the component **triggers work** without tracking the result in the view
+  :::
+
+### Once
+
+The component needs to call a function **once in the browser** with static arguments. The result **won't update** if
+props change later.
+
+**For example:** A **`CurrentPrice`** shows the price for a fixed currency — fetched once, never re-fetched:
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { watchPrice } from '../rpc/market/index.js';
+
+const CurrentPrice = setup(() => {
+  const stream = watchPrice.once('USD');
+
+  return render(() => (
+    <span className="price">
+      ${ stream.data.price.toFixed(2) }
+      { stream.status === 'pending' ? ' ⏳' : '' }
+    </span>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { watchPrice } from '../rpc/market/index.js';
+
+function CurrentPrice() {
+  const stream = watchPrice.once('USD');
+
+  return (
+    <span class="price">
+      ${ stream.data.price.toFixed(2) }
+      { stream.status === 'pending' ? ' ⏳' : '' }
+    </span>
+  );
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<CurrentPrice />
+```
+
+```tsx [SolidJS]
+<CurrentPrice />
+```
+
+:::
+
+::: details What you learned {open}
+
+Calling a remote function **once in the browser** with **static arguments**.
+
+**From these two examples, you know:**
+
+- **`watchPrice.once('USD')`** calls the function **once on mount** with a fixed argument — skipped during SSR
+- The result **won't re-fetch** if the component re-renders or props change
+- `stream.status` and `stream.data` are still **reactive** — the view updates when the response arrives
+  :::
+
+### With
+
+The component needs data **immediately in the browser** and the data must **stay current** when arguments change.
+
+**For example:** A **`LivePrice`** shows a live price stream that reconnects when the symbol changes:
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { watchPrice } from '../rpc/market/index.js';
+
+const LivePrice = setup<{ symbol: string }>((props) => {
+  const stream = watchPrice.with(() => [props.symbol]);
+
+  return render(() => (
+    <span className="price live">
+      ${ stream.data.price.toFixed(2) }
+      { stream.status === 'pending' ? ' 🟢' : ' 🛑' }
+    </span>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { watchPrice } from '../rpc/market/index.js';
+
+function LivePrice(props: { symbol: string }) {
+  const stream = watchPrice.with(() => [props.symbol]);
+
+  return (
+    <span class="price live">
+      ${ stream.data.price.toFixed(2) }
+      { stream.status === 'pending' ? ' 🟢' : ' 🛑' }
+    </span>
+  );
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<LivePrice symbol={ $use(portfolio, 'selectedSymbol') } />
+```
+
+```tsx [SolidJS]
+<LivePrice symbol={ portfolio.selectedSymbol } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Connecting to a **live data stream** that **starts immediately on browser** and **reconnects when arguments change**.
+
+**From these two examples, you know:**
+
+- **`watchPrice.with(() => [props.symbol])`** starts the stream **immediately on browser** — skipped during SSR
+- When `props.symbol` changes, the stream **reconnects with the new arguments automatically**
+- No **`onMount()`** needed — **`.with()`** handles browser-only execution
+- `stream.data` and `stream.status` are **reactive** — the view updates as data arrives
+  :::
+
+### When
+
+The component should **not call the function on mount** — only when the user **actually provides input**.
+
+**For example:** A **`SearchBox`** searches products as the user types — not on page load:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { searchProducts } from '../rpc/product/index.js';
+
+const SearchBox = setup(() => {
+  const state = mutable({ query: '' });
+  const results = searchProducts.when(() => [state.query.trim()], 300);
+
+  return render(() => (
+    <div className="search">
+      <input
+        value={ state.query }
+        onInput={ (e) => { state.query = e.target.value; } }
+        placeholder="Search..."
+      />
+      { results.status === 'pending' && <span className="spinner" /> }
+      { results.status === 'success' && (
+        <ul>
+          { results.data.map((item) => (
+            <li>{ item.name }</li>
+          )) }
+        </ul>
+      ) }
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { mutable } from '@anchorlib/solid';
+import { searchProducts } from '../rpc/product/index.js';
+
+function SearchBox() {
+  const state = mutable({ query: '' });
+  const results = searchProducts.when(() => [state.query.trim()], 300);
+
+  return (
+    <div class="search">
+      <input
+        value={ state.query }
+        onInput={ (e) => { state.query = e.currentTarget.value; } }
+        placeholder="Search..."
+      />
+      { results.status === 'pending' && <span class="spinner" /> }
+      { results.status === 'success' && (
+        <ul>
+          { results.data.map((item) => (
+            <li>{ item.name }</li>
+          )) }
+        </ul>
+      ) }
+    </div>
+  );
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<SearchBox />
+```
+
+```tsx [SolidJS]
+<SearchBox />
+```
+
+:::
+
+::: details What you learned {open}
+
+Using **`.when()`** to trigger an IRPC function **only when arguments change**, with debounce.
+
+**From these two examples, you know:**
+
+- **`searchProducts.when(() => [query], 300)`** — only fires when `state.query` **actually changes**, with **300ms
+  debounce**
+- **`.when()`** skips the initial mount — **no empty search on page load**
+- Default debounce is **0 (microtask)** — if 100 synchronous changes happen, **only the last runs**
+- `results.status` (`idle | pending | success | error`) and `results.data` are **reactive** — no manual state needed
+  :::
+
+## Managing Lifecycle
+
+A piece of UI becomes a **lifecycle component** when it works with external resources that need to **start** and
+**stop** — timers, event listeners, manual subscriptions. Code in the component body runs during both SSR and
+browser — use `onMount()` for browser-only work.
+
+> IRPC streams and reactive calls manage their own lifecycle automatically through `.with()` and `.when()`. Use
+> `onMount()` for non-IRPC resources like timers and DOM event listeners.
+
+**For example:** A **`Countdown`** manages a timer that starts in the browser and cleans up when the component is
+removed:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable, onMount, onCleanup } from '@anchorlib/react';
+
+const Countdown = setup<{ seconds: number; onComplete?: () => void }>((props) => {
+  const state = mutable({ remaining: props.seconds });
+
+  onMount(() => {
+    const interval = setInterval(() => {
+      if (state.remaining > 0) {
+        state.remaining--;
+      } else {
+        clearInterval(interval);
+        props.onComplete?.();
+      }
+    }, 1000);
+
+    onCleanup(() => clearInterval(interval));
+  });
+
+  return render(() => (
+    <span className="countdown">{ state.remaining }s</span>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { mutable, onMount, onCleanup } from '@anchorlib/solid';
+
+function Countdown(props: { seconds: number; onComplete?: () => void }) {
+  const state = mutable({ remaining: props.seconds });
+
+  onMount(() => {
+    const interval = setInterval(() => {
+      if (state.remaining > 0) {
+        state.remaining--;
+      } else {
+        clearInterval(interval);
+        props.onComplete?.();
+      }
+    }, 1000);
+
+    onCleanup(() => clearInterval(interval));
+  });
+
+  return <span class="countdown">{ state.remaining }s</span>;
+}
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<Countdown seconds={ 30 } onComplete={ () => expireOffer() } />
+```
+
+```tsx [SolidJS]
+<Countdown seconds={ 30 } onComplete={ () => expireOffer() } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Managing a **browser-only timer** that is **safe during SSR** and **cleans up** when the component is removed.
+
+**From these two examples, you know:**
+
+- **`mutable()`** creates **reactive state** safely anywhere, including during SSR
+- `setInterval` runs inside **`onMount()`** so the timer **only starts in the browser**
+- **`onCleanup()`** inside **`onMount()`** ties the interval cleanup to the **component's lifecycle**
+  :::
+
+## Reacting to Change
+
+A piece of UI becomes **reactive** when some of its work re-runs in response to changing inputs.
+
+- **`derived()`** — produces a **cached value** that recomputes when its dependencies change
+- **`effect()`** — performs a **side effect** when its dependencies change
+
+**For example:** A **`ProductCard`** uses `derived()` to compute a line total from `price × quantity`:
+
+```tsx
+const total = derived(() => (props.product.price * props.quantity).toFixed(2));
+```
+
+The total **recomputes automatically** when either `price` or `quantity` changes. No manual recalculation, no stale
+values.
+
+**For example:** An `effect()` saves the theme to localStorage when it changes:
+
+```tsx
+effect(() => {
+  localStorage.setItem('theme', appState.theme);
+});
+```
+
+The effect **re-runs automatically** when `appState.theme` changes. No manual event listener, no subscription
+management.
+
+> IRPC reactive calls (`.with()`, `.when()`) are covered in [Calling Remote Functions](#calling-remote-functions).
+> `derived()` and `effect()` are for local reactive computations and side effects.
+
+## Domain Boundaries
+
+A component crosses its boundary when it handles work that doesn't serve its concern.
+
+**For example:** A **`ProductCard`** that displays a product, manages quantity, and computes a line total — that's one
+concern:
+
+::: code-group
+
+```tsx [React]
+import { setup, render, derived, type Bindable } from '@anchorlib/react';
+
+const ProductCard = setup<{ product: Product; quantity?: Bindable<number> }>((props) => {
+  const total = derived(() => (props.product.price * props.quantity).toFixed(2));
+
+  const increment = () => { props.quantity++; };
+  const decrement = () => { if (props.quantity > 1) props.quantity--; };
+
+  return render(() => (
+    <div className="product-card">
+      <span>{ props.product.name }</span>
+      <span>${ props.product.price }</span>
+      <div className="quantity">
+        <button disabled={ props.quantity <= 1 } onClick={ decrement }>−</button>
+        <span>{ props.quantity }</span>
+        <button onClick={ increment }>+</button>
+      </div>
+      <span className="total">${ total.value }</span>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { bindable, derived, type Bindable } from '@anchorlib/solid';
+
+const ProductCard = bindable<{ product: Product; quantity?: Bindable<number> }>((props) => {
+  const total = derived(() => (props.product.price * props.quantity).toFixed(2));
+
+  const increment = () => { props.quantity++; };
+  const decrement = () => { if (props.quantity > 1) props.quantity--; };
+
+  return (
+    <div class="product-card">
+      <span>{ props.product.name }</span>
+      <span>${ props.product.price }</span>
+      <div class="quantity">
+        <button disabled={ props.quantity <= 1 } onClick={ decrement }>−</button>
+        <span>{ props.quantity }</span>
+        <button onClick={ increment }>+</button>
+      </div>
+      <span class="total">${ total.value }</span>
+    </div>
+  );
+});
+```
+
+:::
+
+::: code-group
+
+```tsx [React]
+<ProductCard product={ item } quantity={ $bind(cartItem, 'quantity') } />
+```
+
+```tsx [SolidJS]
+<ProductCard product={ item } quantity={ $bind(cartItem, 'quantity') } />
+```
+
+:::
+
+::: details What you learned {open}
+
+Combining **one-way display** and **two-way interaction** within a single concern.
+
+**From these two examples, you know:**
+
+- `product` is **one-way**: the card displays it but **doesn't modify it**
+- `quantity` is **`Bindable`** (**two-way**): the card adjusts it, and the **parent's state updates automatically**
+- **`derived()`** computes the total **reactively** from `price × quantity`, so the view **always reflects the current
+  math**
+  :::
+
+The boundary is crossed when work leaves the component's domain. A `ProductCard` that also refreshes the user's profile,
+updates the shipping estimate, or syncs the cart to the server — that's crossing into concerns that belong elsewhere.
+
+The question isn't "how many things does this component do?" It's "does everything this component does serve the same
+concern?"

@@ -20,6 +20,8 @@ When a computed value belongs logically to a specific object, use standard **Jav
 This is the most common form of derivation in Anchor.
 
 ```ts
+import { mutable } from '@anchorlib/react';
+
 const cart = mutable({
   price: 10,
   quantity: 2,

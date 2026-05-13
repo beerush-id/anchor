@@ -27,12 +27,13 @@ export const appState = mutable({
 - **Convenience**: Great for truly static configuration or singleton resources in Client-Side Rendering (CSR).
 
 ### Cons
-- **SSR Risk (Critical)**: In a Server-Side Rendering (SSR) environment like SolidStart, module-level variables are shared across **all requests**. If one user changes `appState.theme`, *every* concurrent user on that server instance sees the change. This creates data leaks and race conditions.
+- **SSR Risk (Critical)**: In a Server-Side Rendering (SSR) environment, module-level variables are shared across **all requests**. If one user changes `appState.theme`, *every* concurrent user on that server instance sees the change. This creates data leaks and race conditions.
 - **Testing**: Harder to reset between tests since the state persists in the module.
 
 ### Best Practice
 - **Use for**: App-wide constants, configuration that never changes at runtime, or strictly CSR-only applications.
 - **Avoid for**: User sessions, request-specific data, or anything that changes based on the user.
+- **Alternative**: For SSR-safe global state, use Anchor's Context API by injecting `setContext(KEY, state)` at your root layout and retrieving it with `getContext(KEY)` where needed.
 
 ## Headless State
 
@@ -61,24 +62,34 @@ export function createCounter() {
 
 ### Option 2: Class Pattern
 
-For more complex logic (like the Tab example above), Classes offer better structure and inheritance.
+For more complex logic, Classes offer better structure and inheritance. You can pass a class instance directly to `mutable()`, and the proxy engine will automatically track mutations, even when methods use `this`.
+  
+> [!WARNING] Deep Reactivity
+> Wrapping the entire class instance with `mutable()` makes all of its properties deeply reactive. If your class contains properties that should remain passive (non-reactive) for performance or logic reasons, do **not** wrap the class instance. Instead, initialize only specific properties with `mutable()` inside the class.
 
 ```ts
 // tabs.ts
 import { mutable } from '@anchorlib/core';
 
 export class TabState {
-  public active = 'home';
-  // ... methods ...
+  public active: string;
+
+  constructor(init?: string) {
+    this.active = init ?? 'home';
+  }
+
+  public setActive(tab: string) {
+    this.active = tab;
+  }
 }
 
-export function createTab(active?: string) {
-  return mutable(new TabState(active));
+export function createTab(initial?: string) {
+  return mutable(new TabState(initial));
 }
 ```
 
 ### Pros
-- **Encapsulation**: logic stays with data (`counter.increment()`).
+- **Encapsulation**: logic stays with data (e.g., `counter.increment()` or `tab.setActive()`).
 - **Flexibility**: Use whatever JS pattern you prefer (Object, Class, Factory).
 - **Testability**: Logic is independent of UI.
 

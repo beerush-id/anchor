@@ -438,6 +438,8 @@ user.name = 'Jane';
 
 Now that you've learned the basics of Anchor for Solid, you can explore:
 
+- [Routing](/solid/router/index.html) - Router overview, route definitions, and page factories
+- [Server-Side Rendering](/solid/ssr) - SSR setup with request isolation, cookies, and headless routing
 - [Mutable State](/solid/state/mutable) - Deep dive into creating and modifying reactive state
 - [Immutable State](/solid/state/immutable) - How Anchor provides true immutability
 - [Derived State](/solid/state/derived) - Creating computed values that update automatically
