@@ -15,6 +15,11 @@ import type {
 } from '../types.js';
 import { $do } from './observation.js';
 
+export interface Replay {
+  <T>(state: T, event: StateChange): void;
+  any<T>(state: T, event: StateChange): void;
+}
+
 /**
  * Replays a state change event on the given state.
  *
@@ -33,7 +38,7 @@ import { $do } from './observation.js';
  *
  * @internal
  */
-export function replay<T>(state: T, event: StateChange) {
+export function replayFn<T>(state: T, event: StateChange) {
   $do(() => {
     const { type, prev, value } = event;
 
@@ -75,6 +80,47 @@ export function replay<T>(state: T, event: StateChange) {
     }
   });
 }
+
+replayFn.any = <T>(state: T, event: StateChange) => {
+  $do(() => {
+    const { type, prev, value } = event;
+
+    // Walk through the state tree to find the target object.
+    const { key, target } = getEventTarget(state, event);
+
+    if (type === ObjectMutations.SET) {
+      target[key as never] = value as never;
+    } else if (type === MapMutations.SET) {
+      (target as Map<unknown, unknown>).set(key, value);
+    } else if (type === SetMutations.ADD) {
+      (target as Set<unknown>).add(value);
+    } else if (type === ObjectMutations.DELETE) {
+      delete target[key as never];
+    } else if (type === MapMutations.DELETE || type === SetMutations.DELETE) {
+      if (target instanceof Map) {
+        (target as Map<unknown, unknown>).delete(key);
+      } else if (target instanceof Set) {
+        (target as Set<unknown>).delete(prev);
+      }
+    } else if (type === BatchMutations.ASSIGN) {
+      assign(target as never, value as never);
+    } else if (type === BatchMutations.REPLACE) {
+      assign(target as never, value as never, true);
+    } else if (type === MapMutations.CLEAR || type === SetMutations.CLEAR) {
+      if (target instanceof Map) {
+        (target as Map<unknown, unknown>).clear();
+      } else if (target instanceof Set) {
+        (target as Set<unknown>).clear();
+      }
+    } else if (ARRAY_MUTATIONS.includes(type as ArrayMutations)) {
+      ((target as unknown as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
+        ...(value as unknown[])
+      );
+    }
+  });
+};
+
+export const replay = replayFn as Replay;
 
 /**
  * Reverts a state change event on the given state.
