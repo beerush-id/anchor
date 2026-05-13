@@ -455,7 +455,7 @@ The entry point mounts the router and imports constructors. `AsyncLocalStorage` 
 // api.ts
 import { setContextProvider } from '@irpclib/irpc';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { HTTPRouter } from '@irpclib/http';
+import { HTTPRouter } from '@irpclib/http/router';
 import { irpc, transport } from './lib/module.js';
 import './constructors/index.js'; // Imports all constructors
 
@@ -1542,7 +1542,8 @@ import {
 ### @irpclib/http
 
 ```tsx
-import { HTTPTransport, HTTPRouter } from '@irpclib/http';
+import { HTTPTransport } from '@irpclib/http';
+import { HTTPRouter } from '@irpclib/http/router';
 ```
 
 ### @irpclib/ws

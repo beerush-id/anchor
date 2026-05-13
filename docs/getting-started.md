@@ -361,7 +361,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { decodeCookies, getContext, setCookieContext } from '@anchorlib/react';
-import { HTTPRouter } from '@irpclib/http';
+import { HTTPRouter } from '@irpclib/http/router';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 
@@ -433,7 +433,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { decodeCookies, getContext, setCookieContext } from '@anchorlib/solid';
-import { HTTPRouter } from '@irpclib/http';
+import { HTTPRouter } from '@irpclib/http/router';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 

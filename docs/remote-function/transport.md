@@ -67,8 +67,8 @@ irpc.use(transport);
 ### Server Setup (HTTPRouter)
 
 ```typescript
-import '@irpclib/server';
-import { HTTPRouter } from '@irpclib/http';
+import '@irpclib/irpc/server';
+import { HTTPRouter } from '@irpclib/http/router';
 import { irpc, transport } from './lib/module.js';
 
 // Import all constructor files
@@ -190,7 +190,7 @@ irpc.use(transport);
 WebSocket authentication happens at **upgrade time**, not per-message. Extract tokens from the upgrade request, attach them to `ws.data`, and forward them as `initContext` on each `resolve()` call:
 
 ```typescript
-import { WebSocketRouter } from '@irpclib/ws';
+import { WebSocketRouter } from '@irpclib/ws/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/hello/constructor.js';
 
@@ -283,7 +283,7 @@ Using the package's `href` (`name/version`) as the channel name provides automat
 
 ```typescript
 // worker.ts
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/data/constructor.js';
 

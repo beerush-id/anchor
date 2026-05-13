@@ -52,7 +52,7 @@ irpc.construct(processData, async (data) => {
 
 ```typescript
 // worker.ts
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/data/constructor.js';
 
@@ -140,7 +140,7 @@ irpc.construct(generateVideo, async (timeline) => {
 
 ```typescript
 // worker.ts
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/video/constructor.js';
 
@@ -182,7 +182,7 @@ await updateCart(cartItems);
 
 **Tab 2 — Receive updates:**
 ```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/cart/constructor.js';
 
@@ -217,7 +217,7 @@ const response = await sendMessage('Hello iframe');
 
 **Iframe:**
 ```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/messaging/constructor.js';
 
@@ -261,7 +261,7 @@ await startSync();
 
 **Tab 2 — Handle sync:**
 ```typescript
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/sync/constructor.js';
 

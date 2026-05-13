@@ -27,12 +27,12 @@ The handler receives the **exact same typed arguments** as the declared function
 
 ### Server-Side Setup
 
-For server runtimes like Node or Bun, import `@irpclib/server` to enable `AsyncLocalStorage` for request context isolation. This prevents context from one user's request leaking into another's under concurrent load.
+For server runtimes like Node or Bun, import `@irpclib/irpc/server` to enable `AsyncLocalStorage` for request context isolation. This prevents context from one user's request leaking into another's under concurrent load.
 
 ```typescript
 // server.ts
-import '@irpclib/server';
-import { HTTPRouter } from '@irpclib/http';
+import '@irpclib/irpc/server';
+import { HTTPRouter } from '@irpclib/http/router';
 import { irpc, transport } from './lib/module.js';
 
 // Register all handlers

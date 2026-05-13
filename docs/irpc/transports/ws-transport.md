@@ -51,7 +51,7 @@ The WebSocket upgrade happens at connection time, but IRPC messages arrive later
 
 ```typescript
 // server.ts
-import { WebSocketRouter } from '@irpclib/ws';
+import { WebSocketRouter } from '@irpclib/ws/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/hello/constructor.js';
 

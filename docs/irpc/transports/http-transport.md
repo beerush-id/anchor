@@ -44,13 +44,13 @@ irpc.use(transport);
 
 ### Server Configuration
 
-`import '@irpclib/server'` sets up `AsyncLocalStorage` for request isolation.
+`import '@irpclib/irpc/server'` sets up `AsyncLocalStorage` for request isolation.
 
 The router's `resolve` method accepts the HTTP request and an `initContext` array — `[key, value]` tuples that seed the request context. Hooks and handlers read these keys via `getContext()`, never touching the raw `Request` object.
 
 ```typescript
-import '@irpclib/server';
-import { HTTPRouter } from '@irpclib/http';
+import '@irpclib/irpc/server';
+import { HTTPRouter } from '@irpclib/http/router';
 import { irpc, transport } from './lib/module.js';
 
 const router = new HTTPRouter(irpc, transport);

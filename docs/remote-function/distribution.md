@@ -224,7 +224,7 @@ The Web Worker hosts the same handler implementations, running locally:
 
 ```typescript
 // worker.ts
-import { BroadcastRouter } from '@irpclib/broadcast';
+import { BroadcastRouter } from '@irpclib/broadcast/router';
 import { irpc, transport } from './lib/module.js';
 
 // Import the same constructor files
