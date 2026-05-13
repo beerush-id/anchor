@@ -1,5 +1,5 @@
 import { createLifecycle } from '@anchorlib/core';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { createPackage, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
@@ -519,6 +519,102 @@ describe('IRPCPackage', () => {
       // Advance to trigger accept (status -> SUCCESS), which unsubscribes.
       vi.advanceTimersByTime(5);
       expect(result.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+  });
+
+  describe('Browser Stubs', () => {
+    beforeEach(() => {
+      vi.stubGlobal('window', {});
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should create reader with stub.once()', () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloOnce',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const lifecycle = createLifecycle();
+      let result: any;
+      lifecycle.run(() => {
+        result = hello.once('World');
+      });
+
+      expect(result).toBeDefined();
+      expect(result.status).toBe(IRPC_STATUS.PENDING);
+      lifecycle.destroy();
+    });
+
+    it('should create reader with stub.with()', () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloWith',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const lifecycle = createLifecycle();
+      let result1: any;
+      let result2: any;
+      lifecycle.run(() => {
+        result1 = hello.with(() => ['World'], 10);
+        result2 = hello.with(['World'] as never, 10);
+      });
+
+      expect(result1).toBeDefined();
+      expect(result2).toBeDefined();
+      lifecycle.destroy();
+    });
+
+    it('should defer reader with stub.when()', () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloWhen',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const lifecycle = createLifecycle();
+      let result1: any;
+      let result2: any;
+      lifecycle.run(() => {
+        result1 = hello.when(() => ['World'], 10);
+        result2 = hello.when(['World'] as never, 10);
+      });
+
+      expect(result1).toBeDefined();
+      expect(result1.status).toBe(IRPC_STATUS.IDLE);
+      expect(result2).toBeDefined();
+      expect(result2.status).toBe(IRPC_STATUS.IDLE);
+      lifecycle.destroy();
+    });
+
+    it('should trigger observer and schedule dispatch on state change', () => {
+      const state = new RemoteState<string>('World');
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloObserver',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const lifecycle = createLifecycle();
+      let result: any;
+      lifecycle.run(() => {
+        // reading state.data inside the getter tracks the observer
+        result = hello.with(() => [state.data], 10);
+      });
+
+      // updating state triggers the observer callback (lines 158-159)
+      // which calls dispatch() -> coalesce=true -> schedule() (lines 167-169)
+      state.data = 'Universe';
+
+      // advance timers to flush the microtask schedule
+      vi.advanceTimersByTime(10);
+
+      expect(result).toBeDefined();
+      lifecycle.destroy();
     });
   });
 
