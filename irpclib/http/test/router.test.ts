@@ -1,5 +1,5 @@
 import '@irpclib/irpc/server';
-import { createPackage, IRPC_FILE_STATUS } from '@irpclib/irpc';
+import { createPackage, ERROR_CODE, IRPC_FILE_STATUS } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 import { HTTPRouter } from '../src/router.js';
@@ -354,6 +354,136 @@ describe('HTTPRouter', () => {
 
       expect(response.headers.get('x-custom-stream')).toBe('true');
       expect(response.status).toBe(200);
+    });
+  });
+
+  describe('resolveJson', () => {
+    it('should resolve incoming JSON requests', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = (input: { name: string }) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      module.construct(testFunc, async (input) => `Hello ${input.name}`);
+
+      const request = new Request('https://api.example.com/rpc', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'World' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await router.resolveJson(request, 'testFunc');
+      expect(response.status).toBe(200);
+      expect(await response.json()).toBe('Hello World');
+    });
+
+    it('should handle JSON parsing errors', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const request = new Request('https://api.example.com/rpc', {
+        method: 'POST',
+        body: 'invalid json',
+      });
+
+      const response = await router.resolveJson(request, 'testFunc');
+      expect(response.status).toBe(500);
+    });
+  });
+
+  describe('resolveJsonReq', () => {
+    it('should process events correctly with replay.any', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = () => Promise<{ a: number }>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      module.construct(testFunc, async () => ({ a: 1 }));
+
+      const packets = [
+        JSON.stringify({ type: 'answer', status: 'success', data: { a: 0 } }),
+        JSON.stringify({ type: 'event', data: { type: 'set', keys: ['data', 'a'], value: 2 } }),
+      ];
+
+      const mockResponse = new Response(packets.join('\n'));
+      vi.spyOn(router as any, 'resolveRequests').mockReturnValue(mockResponse);
+
+      const response = await router.resolveJsonReq({ id: '1', name: 'testFunc', args: [] });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ a: 2 });
+    });
+
+    it('should return 404 if error code is NOT_FOUND', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const packets = [
+        JSON.stringify({
+          type: 'answer',
+          status: 'error',
+          error: { code: ERROR_CODE.NOT_FOUND, message: 'Not found' },
+        }),
+      ];
+      const mockResponse = new Response(packets.join('\n'));
+      vi.spyOn(router as any, 'resolveRequests').mockReturnValue(mockResponse);
+
+      const response = await router.resolveJsonReq({ id: '1', name: 'testFunc', args: [] });
+      expect(response.status).toBe(404);
+      expect((await response.json()).message).toBe('Not found');
+    });
+
+    it('should return 500 if error code is something else', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const packets = [
+        JSON.stringify({ type: 'answer', status: 'error', error: { code: 'OTHER_ERROR', message: 'Other error' } }),
+      ];
+      const mockResponse = new Response(packets.join('\n'));
+      vi.spyOn(router as any, 'resolveRequests').mockReturnValue(mockResponse);
+
+      const response = await router.resolveJsonReq({ id: '1', name: 'testFunc', args: [] });
+      expect(response.status).toBe(500);
+      expect((await response.json()).message).toBe('Other error');
+    });
+
+    it('should use custom builder', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const packets = [JSON.stringify({ type: 'answer', status: 'success', data: 'ok' })];
+      const mockResponse = new Response(packets.join('\n'));
+      vi.spyOn(router as any, 'resolveRequests').mockReturnValue(mockResponse);
+
+      const response = await router.resolveJsonReq({ id: '1', name: 'testFunc', args: [] }, [], (body, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set('x-custom-json-req', 'true');
+        return new Response(body, { ...init, headers });
+      });
+
+      expect(response.headers.get('x-custom-json-req')).toBe('true');
+      expect(response.status).toBe(200);
+      expect(await response.json()).toBe('ok');
+    });
+
+    it('should handle thrown errors', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      vi.spyOn(router as any, 'resolveRequests').mockImplementation(() => {
+        throw new Error('Unexpected Error');
+      });
+
+      const response = await router.resolveJsonReq({ id: '1', name: 'testFunc', args: [] });
+      expect(response.status).toBe(500);
+      expect((await response.json()).message).toBe('Unexpected Error');
     });
   });
 });

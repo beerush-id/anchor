@@ -1,11 +1,19 @@
+import * as crypto from 'node:crypto';
+import { replay } from '@anchorlib/core';
 import {
   createContext,
   decode,
+  ERROR_CODE,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
+  type IRPCPacketAnswer,
+  type IRPCPacketEvent,
+  type IRPCPacketStream,
   type IRPCRequest,
   IRPCResolver,
   IRPCRouter,
@@ -38,7 +46,7 @@ export type HTTPResolveConfig = {
 /**
  * Custom response builder to override default response creation
  */
-export type HTTPResponseBuilder = (body: BodyInit, init: ResponseInit) => Response | Promise<Response>;
+export type HTTPResponseBuilder = (body: BodyInit, init: ResponseInit) => Response;
 
 /**
  * HTTP router that handles IRPC requests over HTTP transport
@@ -68,18 +76,26 @@ export class HTTPRouter extends IRPCRouter {
 
   /**
    * Resolves incoming HTTP requests
-   * @param httpReq - The incoming HTTP request
-   * @param initContext - Optional context to initialize the resolver with
+   *
+   * @param request - The incoming HTTP request
+   * @param context - Optional context to initialize the resolver with
    * @param builder - Optional custom response builder function
    * @returns A Response object with the resolved data
    */
-  public async resolve(
-    httpReq: Request,
-    initContext: [string | symbol, unknown][] = [],
-    builder?: HTTPResponseBuilder
-  ) {
-    const formData = await httpReq.formData();
-    const irpcRequests = JSON.parse(formData.get(IRPC_JSON_KEY) as string) as (IRPCRequest & {
+  public async resolve(request: Request, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder) {
+    return this.resolveForm(await request.formData(), context, builder);
+  }
+
+  /**
+   * Resolves incoming HTTP requests with FormData
+   *
+   * @param body - The incoming HTTP request body
+   * @param context - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
+   * @returns A Response object with the resolved data
+   */
+  public async resolveForm(body: FormData, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder) {
+    const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as (IRPCRequest & {
       files?: IRPCFilePointer[];
     })[];
 
@@ -88,7 +104,7 @@ export class HTTPRouter extends IRPCRouter {
         const stream = decode({ data: req.args as IRPCData, files: req.files });
 
         for (const [id, file] of stream.files) {
-          file.data = formData.get(id) as File;
+          file.data = body.get(id) as File;
           file.status = IRPC_FILE_STATUS.SUCCESS;
         }
 
@@ -99,12 +115,111 @@ export class HTTPRouter extends IRPCRouter {
       return this.config.resolver(req, this.module);
     });
 
+    return this.resolveRequests(requests, context, builder);
+  }
+
+  /**
+   * Resolves incoming HTTP requests with JSON payload
+   *
+   * @param req - The incoming HTTP request
+   * @param name - The name of the RPC function to call
+   * @param initContext - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
+   * @returns A Response object with the resolved data
+   */
+  public async resolveJson(
+    req: Request,
+    name: string,
+    initContext: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder
+  ) {
+    try {
+      const payload = await req.json();
+      return this.resolveJsonReq({ name, id: crypto.randomUUID(), args: [payload] }, initContext, builder);
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          code: ERROR_CODE.UNKNOWN,
+          message: (error as Error)?.message as string,
+        }),
+        { status: 500 }
+      );
+    }
+  }
+
+  /**
+   * Resolves incoming HTTP requests with JSON payload
+   *
+   * @param req - The incoming HTTP request
+   * @param initContext - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
+   * @returns A Response object with the resolved data
+   */
+  public async resolveJsonReq(
+    req: IRPCRequest,
+    initContext: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder
+  ) {
     const buildResponse = (body: BodyInit, init: ResponseInit) => {
       if (builder) return builder(body, init);
       return new Response(body, init);
     };
 
-    if (!requests.length) {
+    try {
+      const result = {} as IRPCPacketStream<IRPCData>;
+      const response = this.resolveRequests([this.config.resolver(req, this.module)], initContext, builder);
+      const packets = (await response.text())
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as IRPCPacketStream<IRPCData>);
+
+      for (const packet of packets) {
+        if (packet.type === IRPC_PACKET_TYPE.EVENT) {
+          replay.any(result, (packet as IRPCPacketEvent).data);
+          continue;
+        }
+
+        Object.assign(result, packet);
+      }
+
+      if (result.status === IRPC_STATUS.ERROR) {
+        const { error } = result as IRPCPacketAnswer<IRPCData>;
+        return buildResponse(JSON.stringify(error), {
+          status: error?.code === ERROR_CODE.NOT_FOUND ? 404 : 500,
+        });
+      }
+
+      return buildResponse(JSON.stringify((result as IRPCPacketAnswer<IRPCData>).data), { status: 200 });
+    } catch (error) {
+      return buildResponse(
+        JSON.stringify({
+          code: ERROR_CODE.UNKNOWN,
+          message: (error as Error)?.message as string,
+        }),
+        { status: 500 }
+      );
+    }
+  }
+
+  /**
+   * Resolves incoming HTTP requests
+   *
+   * @param resolvers - The incoming HTTP request resolvers
+   * @param initContext - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
+   * @returns A Response object with the resolved data
+   */
+  private resolveRequests(
+    resolvers: IRPCResolver[],
+    initContext: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder
+  ): Response {
+    const buildResponse = (body: BodyInit, init: ResponseInit) => {
+      if (builder) return builder(body, init);
+      return new Response(body, init);
+    };
+
+    if (!resolvers.length) {
       return buildResponse(JSON.stringify([]), { status: 400 });
     }
 
@@ -113,7 +228,7 @@ export class HTTPRouter extends IRPCRouter {
 
     const readable = new ReadableStream({
       start: (controller) => {
-        const promises = requests.map((resolver) => {
+        const promises = resolvers.map((resolver) => {
           const ctx = createContext<string | symbol, unknown>([
             [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
             [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
