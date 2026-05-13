@@ -142,7 +142,7 @@ export class HTTPRouter extends IRPCRouter {
           code: ERROR_CODE.UNKNOWN,
           message: (error as Error)?.message as string,
         }),
-        { status: 500 }
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
   }
@@ -186,17 +186,21 @@ export class HTTPRouter extends IRPCRouter {
         const { error } = result as IRPCPacketAnswer<IRPCData>;
         return buildResponse(JSON.stringify(error), {
           status: error?.code === ERROR_CODE.NOT_FOUND ? 404 : 500,
+          headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      return buildResponse(JSON.stringify((result as IRPCPacketAnswer<IRPCData>).data), { status: 200 });
+      return buildResponse(JSON.stringify((result as IRPCPacketAnswer<IRPCData>).data), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     } catch (error) {
       return buildResponse(
         JSON.stringify({
           code: ERROR_CODE.UNKNOWN,
           message: (error as Error)?.message as string,
         }),
-        { status: 500 }
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
   }
@@ -220,7 +224,7 @@ export class HTTPRouter extends IRPCRouter {
     };
 
     if (!resolvers.length) {
-      return buildResponse(JSON.stringify([]), { status: 400 });
+      return buildResponse(JSON.stringify([]), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const encoder = new TextEncoder();
