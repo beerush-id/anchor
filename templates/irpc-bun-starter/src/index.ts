@@ -1,11 +1,8 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { HTTPRouter } from '@irpclib/http';
+import '@irpclib/irpc/server';
+import { HTTPRouter } from '@irpclib/http/router';
 import { type IRPCContextProvider, setContextProvider } from '@irpclib/irpc';
 import { irpc, transport } from '@lib';
 import { Glob } from 'bun';
-
-// Set up AsyncLocalStorage as the context provider for IRPC
-setContextProvider(new AsyncLocalStorage() as IRPCContextProvider);
 
 // Create a glob pattern to find all constructor files
 const constructors = new Glob('**/*constructor.ts');
