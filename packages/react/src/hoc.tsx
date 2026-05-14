@@ -108,10 +108,25 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
      */
     lifecycle.cleanup();
 
+    const content = () => {
+      try {
+        return lifecycle.render(() => render(props));
+      } catch (error) {
+        const newErr = new Error(`[${componentName}] failed to render.`);
+        captureStack.error.external(
+          `Render error: uncaught render exception in ${componentName}.`,
+          error as Error,
+          snippet
+        );
+        console.error(error);
+        return newErr.message;
+      }
+    };
+
     return (
       <>
         <Start context={lifecycle.context} />
-        {lifecycle.render(() => render(props))}
+        {content()}
         <Finish context={lifecycle.context.parent!} />
       </>
     );
@@ -199,6 +214,9 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       );
     }
   }
+
+  const snippetName = `${scopeName}(${viewName})`;
+
   function SnippetBody(props: P) {
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
     const [{ observer, scheduleCleanup, cancelCleanup }] = createState(() => {
@@ -211,7 +229,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
         setVersion((c) => c + 1);
       });
 
-      observer.name = `${scopeName}(${viewName})`;
+      observer.name = snippetName;
       return { observer, cancelCleanup, scheduleCleanup };
     });
 
@@ -226,12 +244,22 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
     }, []);
 
     return observer.run(() => {
-      if (inherited) return factory(parentProps as never, parentProps);
-      return factory($do(() => proxyProps({ ...props }, false)) as P, parentProps);
+      try {
+        if (inherited) return factory(parentProps as never, parentProps);
+        return factory($do(() => proxyProps({ ...props }, false)) as P, parentProps);
+      } catch (error) {
+        const newErr = new Error(`[${snippetName}] failed to render.`);
+        captureStack.error.external(
+          `Render error: uncaught render exception in ${snippetName}.`,
+          error as Error,
+          snippet
+        );
+        return newErr.message;
+      }
     });
   }
   const Snippet = optimized ? SnippetBody : memoize(SnippetBody);
-  (Snippet as SnippetView<P>).displayName = `${scopeName}(${viewName})`;
+  (Snippet as SnippetView<P>).displayName = snippetName;
 
   return Snippet as SnippetView<P>;
 }

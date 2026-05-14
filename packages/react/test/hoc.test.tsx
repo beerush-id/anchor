@@ -88,6 +88,17 @@ describe('Anchor React - HOC', () => {
       expect(renderCount).toBe(1);
       expect(screen.getByText('Test Component: second')).toBeDefined();
     });
+
+    it('should handle errors in component render gracefully', () => {
+      const ErrorComponent = setup(() => {
+        throw new Error('Render error');
+      }, 'ErrorComponent');
+
+      const { container } = render(<ErrorComponent />);
+
+      expect(container.textContent).toContain('[ErrorComponent] failed to render.');
+      expect(errSpy).toHaveBeenCalled();
+    });
   });
 
   describe('template/snippet', () => {
@@ -182,6 +193,21 @@ describe('Anchor React - HOC', () => {
       });
       expect(renderCount).toBe(2);
       vi.unstubAllGlobals();
+    });
+
+    it('should handle errors in snippet render gracefully', () => {
+      const ErrorSnippet = setup(() => {
+        const ErrorView = snippet(() => {
+          throw new Error('Snippet render error');
+        }, 'ErrorView');
+
+        return <ErrorView />;
+      }, 'ErrorSnippet');
+
+      const { container } = render(<ErrorSnippet />);
+
+      expect(container.textContent).toContain('[Snippet(ErrorView)] failed to render.');
+      expect(errSpy).toHaveBeenCalled();
     });
   });
 

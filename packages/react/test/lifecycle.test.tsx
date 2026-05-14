@@ -55,6 +55,38 @@ describe('Anchor React - Lifecycle', () => {
       expect(cleanupHandler).toHaveBeenCalled();
     });
 
+    it('should handle errors in mount handlers gracefully', () => {
+      const lifecycle = createLifecycle({});
+      const errorHandler = vi.fn().mockImplementation(() => {
+        throw new Error('Mount handler error');
+      });
+
+      lifecycle.render(() => {
+        onMount(errorHandler);
+      });
+
+      lifecycle.mount();
+
+      expect(errorHandler).toHaveBeenCalled();
+      expect(errSpy).toHaveBeenCalled();
+    });
+
+    it('should handle errors in cleanup handlers gracefully', () => {
+      const lifecycle = createLifecycle({});
+      const errorHandler = vi.fn().mockImplementation(() => {
+        throw new Error('Cleanup handler error');
+      });
+
+      lifecycle.render(() => {
+        onCleanup(errorHandler);
+      });
+
+      lifecycle.cleanup();
+
+      expect(errorHandler).toHaveBeenCalled();
+      expect(errSpy).toHaveBeenCalled();
+    });
+
     it('should execute render function', () => {
       const lifecycle = createLifecycle({});
       const renderFn = vi.fn().mockReturnValue('result');

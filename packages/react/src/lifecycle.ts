@@ -52,16 +52,23 @@ export function createLifecycle(setupProps: Record<string, unknown>, name?: stri
     context,
     mount() {
       mountHandlers.forEach((mount) => {
-        const cleanup = mount();
-
-        if (typeof cleanup === 'function') {
-          cleanupHandlers.add(cleanup);
+        try {
+          const cleanup = mount();
+          if (typeof cleanup === 'function') {
+            cleanupHandlers.add(cleanup);
+          }
+        } catch (error) {
+          captureStack.error.external('An error occurred while executing a mount handler.', error as Error);
         }
       });
     },
     cleanup() {
       cleanupHandlers.forEach((cleanup) => {
-        cleanup();
+        try {
+          cleanup();
+        } catch (error) {
+          captureStack.error.external('An error occurred while executing a cleanup handler.', error as Error);
+        }
       });
 
       mountHandlers.clear();
