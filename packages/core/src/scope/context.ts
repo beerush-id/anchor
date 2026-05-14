@@ -279,6 +279,17 @@ export function clearContextStore() {
   getContextStore()!.clear();
 }
 
+// Centralized Context API that replaceable.
+export const CONTEXT_STORE = {
+  get: (key: AsyncKey, fallback?: unknown) => {
+    const value = getContextStore().get(key);
+    return typeof value !== 'undefined' ? value : fallback;
+  },
+  set: (key: AsyncKey, value: AsyncValue) => {
+    getContextStore().set(key, value);
+  },
+};
+
 /**
  * Reads a value from the currently active {@link AsyncStore}s, walking up
  * the parent chain if the key is not found locally.
@@ -296,8 +307,7 @@ export function getContext<R>(key: AsyncKey): R | undefined;
  */
 export function getContext<R>(key: AsyncKey, fallback: R): R;
 export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
-  const value = getContextStore().get(key);
-  return typeof value !== 'undefined' ? value : fallback;
+  return CONTEXT_STORE.get(key, fallback);
 }
 
 /**
@@ -309,7 +319,7 @@ export function getContext<R>(key: AsyncKey, fallback?: R): R | undefined {
  * @param value - The value to associate with the key.
  */
 export function setContext(key: AsyncKey, value: AsyncValue) {
-  getContextStore()!.set(key, value);
+  CONTEXT_STORE.set(key, value);
 }
 
 /**
