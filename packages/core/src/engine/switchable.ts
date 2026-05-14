@@ -1,5 +1,4 @@
 import { getScope, setScope } from '../scope/index.js';
-import { captureStack } from '../shared/index.js';
 import type { StateObserver } from '../types.js';
 
 export const OBSERVER_SYMBOL = Symbol('state-observer');
@@ -14,8 +13,6 @@ const switchableDefaults = {
 
     try {
       return fn() as T;
-    } catch (error) {
-      captureStack.error.external('Unable to execute the outside of observer function', error as Error);
     } finally {
       setScope(OBSERVER_SYMBOL, prev);
     }

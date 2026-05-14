@@ -1,15 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  $do,
-  anchor,
-  createObserver,
-  effect,
-  getObserver,
-  getTracker,
-  mutable,
-  setTracker,
-  untrack,
-} from '../../src/index.js';
+import { $do, anchor, createObserver, effect, getObserver, getTracker, mutable, setTracker } from '../../src/index.js';
 
 describe('Anchor Core - Observable Observer Management', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -62,23 +52,6 @@ describe('Anchor Core - Observable Observer Management', () => {
       const result = $do<string>(handler);
 
       expect(result).toBe('Success');
-    });
-
-    it('should handle outside of observer function that throws', () => {
-      const handler = vi.fn().mockImplementation(() => {
-        throw new Error('Execution error');
-      });
-      const result = untrack(handler);
-
-      expect(result).toBeUndefined();
-      expect(errorSpy).toHaveBeenCalled();
-    });
-
-    it('should handle outside of observer function with invalid function', () => {
-      const result = untrack(null as never);
-
-      expect(result).toBeUndefined();
-      expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should handle tracking on a destroyed observer', async () => {
