@@ -1,10 +1,10 @@
 <script lang="ts">
   import { subscribe } from '@anchorlib/core';
-  import { persistentRef } from '@anchorlib/svelte/storage';
+  import { persistent } from '@anchorlib/svelte/storage';
   import TodoApp from '$lib/components/todo/TodoApp.svelte';
   import ProfileForm from '$lib/components/form/ProfileForm.svelte';
 
-  const settings = persistentRef('settings', {
+  const settings = persistent('settings', {
     theme: 'light',
   });
 
