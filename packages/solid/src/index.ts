@@ -1,4 +1,4 @@
-import './reactive.js';
+import './client/index.js';
 
 export type {
   AnchorSettings,
@@ -90,17 +90,9 @@ export {
 
 export { createRouter, MAX_AGE, Redirect, redirectUrl } from '@anchorlib/router';
 
-export * from './anchor.js';
 export * from './binding.js';
-export * from './derive.js';
-export * from './fetch.js';
-export * from './history.js';
 export * from './hoc.js';
-export * from './immutable.js';
-export * from './model.js';
-export * from './observable.js';
 export * from './props.js';
-export * from './ref.js';
 export * from './router/head.js';
 export * from './router/link.js';
 export * from './router/navigate.js';

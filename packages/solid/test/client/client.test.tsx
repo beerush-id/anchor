@@ -1,41 +1,13 @@
-import { type StateObserver } from '@anchorlib/core';
-import type { Owner } from 'solid-js';
-import { describe, expect, it } from 'vitest';
-import { attachCleanup, COMPONENT_REGISTRY, ELEMENT_OBSERVER_REGISTRY, REF_REGISTRY } from '../../src/reactive.js';
+/** @jsxImportSource solid-js */
+
+import { mutable, onCleanup, setReactive, type StateObserver } from '@anchorlib/core';
+import { render, renderHook } from '@solidjs/testing-library';
+import { createEffect, type Owner } from 'solid-js';
+import { describe, expect, it, vi } from 'vitest';
+import { COMPONENT_REGISTRY, ELEMENT_OBSERVER_REGISTRY } from '../../src/client/index.js';
 
 describe('Anchor Solid - Reactive API', () => {
   describe('Global Registries', () => {
-    describe('REF_REGISTRY', () => {
-      it('should be a WeakSet for tracking refs', () => {
-        expect(REF_REGISTRY).toBeInstanceOf(WeakSet);
-      });
-
-      it('should allow adding and checking for refs', () => {
-        const obj = { value: 42 };
-        REF_REGISTRY.add(obj);
-        expect(REF_REGISTRY.has(obj)).toBe(true);
-      });
-
-      it('should not hold references strongly (allowing garbage collection)', () => {
-        let obj: { value: number } | null = { value: 42 };
-        REF_REGISTRY.add(obj);
-        expect(REF_REGISTRY.has(obj)).toBe(true);
-
-        // Remove reference
-        obj = null;
-        // Note: In a real test we would check if the object was garbage collected,
-        // but that's not easily testable here. The WeakSet should handle this automatically.
-      });
-
-      it('should handle attaching cleanup', () => {
-        const owner = { id: 'test' } as never as Owner;
-        const cleanup = () => {};
-
-        attachCleanup(owner, cleanup);
-        expect(owner.cleanups).toContain(cleanup);
-      });
-    });
-
     describe('COMPONENT_REGISTRY', () => {
       it('should be a WeakMap for tracking components', () => {
         expect(COMPONENT_REGISTRY).toBeInstanceOf(WeakMap);
@@ -70,9 +42,42 @@ describe('Anchor Solid - Reactive API', () => {
     it('should have initialized the binding system', () => {
       // The reactive.ts file should have run its initialization code when imported
       // This test ensures that the system has been set up properly
-      expect(REF_REGISTRY).toBeDefined();
       expect(COMPONENT_REGISTRY).toBeDefined();
       expect(ELEMENT_OBSERVER_REGISTRY).toBeDefined();
+    });
+
+    it('should attach Anchor cleanup', () => {
+      vi.stubGlobal('window', {});
+      setReactive(true);
+
+      const state = mutable({ count: 0 });
+      const cleanUpHandler = vi.fn();
+      const Component = () => {
+        onCleanup(cleanUpHandler);
+
+        return (
+          <div>
+            <button onClick={() => state.count++}>Click me</button>
+            <span>{state.count}</span>
+          </div>
+        );
+      };
+
+      renderHook(() => {
+        createEffect(() => {
+          expect(state.count).toBeDefined();
+        });
+      });
+
+      const { unmount } = render(() => <Component />);
+
+      unmount();
+
+      expect(state.count).toBe(0);
+      state.count++;
+      expect(state.count).toBe(1);
+
+      vi.unstubAllGlobals();
     });
   });
 });

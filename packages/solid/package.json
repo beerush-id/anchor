@@ -22,15 +22,15 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./binding": {
-      "solid": "./src/binding.ts",
-      "types": "./dist/reactive.d.ts",
-      "import": "./dist/reactive.js"
+    "./client": {
+      "solid": "./src/client/index.ts",
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
     },
     "./reactive": {
-      "solid": "./src/reactive.ts",
-      "types": "./dist/reactive.d.ts",
-      "import": "./dist/reactive.js"
+      "solid": "./src/client/index.ts",
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
     },
     "./core": {
       "solid": "./src/core/index.ts",

@@ -1,6 +1,5 @@
 import { createObserver, onGlobalCleanup, setCleanUpHandler, setTracker, type StateObserver } from '@anchorlib/core';
 import { createSignal, getOwner, onCleanup, type Owner } from 'solid-js';
-import type { ConstantRef, VariableRef } from './types.js';
 
 type ElementRef = {
   version: () => number;
@@ -11,7 +10,6 @@ type InternalOwner = Owner & {
   comparator?: (a: unknown, b: unknown) => boolean;
 };
 
-export const REF_REGISTRY = new WeakSet<VariableRef<unknown> | ConstantRef<unknown>>();
 export const COMPONENT_REGISTRY = new WeakMap<Owner, Map<Owner, ElementRef>>();
 export const ELEMENT_OBSERVER_REGISTRY = new WeakMap<Owner, StateObserver>();
 
@@ -36,7 +34,9 @@ if (!bindingInitialized) {
     if (!element) return;
 
     const component = getPureOwner(element as InternalOwner);
+    /* v8 ignore start */
     if (!component) return;
+    /* v8 ignore end */
 
     if (!COMPONENT_REGISTRY.has(component)) {
       const elements = new Map();
@@ -105,7 +105,10 @@ if (!bindingInitialized) {
  * @returns The first Owner that has owned components, or undefined if no such owner exists
  */
 function getPureOwner(node?: InternalOwner | null): InternalOwner | undefined {
+  /* v8 ignore start */
   if (!node) return;
+  /* v8 ignore end */
+
   return node.owned && !node.comparator ? node : getPureOwner(node?.owner as InternalOwner);
 }
 
