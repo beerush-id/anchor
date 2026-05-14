@@ -1,4 +1,4 @@
-import './reactive.js';
+import './client/index.js';
 
 export type {
   AnchorSettings,
@@ -6,14 +6,13 @@ export type {
   AsyncOptions,
   AsyncState,
   BatchHandler,
-  ClosureAdapter,
-  ClosureStorage,
-  Context,
-  ContextProvider,
+  CookieEntry,
+  CookieOptions,
   Debouncer,
   EffectHandler,
   FetchOptions,
   FetchState,
+  Future,
   HistoryOptions,
   HistoryState,
   Immutable,
@@ -43,22 +42,27 @@ export type {
 export {
   AsyncStatus,
   anchor,
+  awaited,
+  CookieJar,
+  cookies,
   createLifecycle,
   DerivedRef,
   debouncer,
+  decodeCookies,
   derived,
   effect,
+  encodeCookies,
   exception,
   FetchStatus,
   fetchState,
   form,
   getContext,
+  getCookieJar,
   history,
   ImmutableRef,
   immutable,
   isImmutableRef,
   isMutableRef,
-  isolated,
   isValueRef,
   MutableRef,
   microbatch,
@@ -69,8 +73,9 @@ export {
   mutable,
   ordered,
   query,
-  setAsyncStorageAdapter,
   setContext,
+  setCookieContext,
+  setReactive,
   shortId,
   snapshot,
   streamState,
@@ -78,16 +83,7 @@ export {
   subscribe,
   undoable,
   untrack,
+  withIsolation,
+  withScope,
   writable,
 } from '@anchorlib/core';
-
-export * from './anchor.js';
-export * from './derive.js';
-export * from './fetch.js';
-export * from './history.js';
-export * from './immutable.js';
-export * from './model.js';
-export * from './observable.js';
-export * from './prop.js';
-export * from './ref.js';
-export * from './types.js';

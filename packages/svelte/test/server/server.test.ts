@@ -1,11 +1,12 @@
 import { act, render, screen } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
-import { anchor, mutable, onCleanup } from '../../src/core/index.js';
-import AnchorBasic from './anchor/anchor-basic.svelte';
-import CounterBasic from './anchor/counter.svelte';
-import ReactiveBasic from './anchor/reactive-basic.svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mutable, onCleanup } from '../../src/core/index.js';
+import { persistent } from '../../src/storage/index.js';
+import AnchorBasic from '../core/anchor/anchor-basic.svelte';
+import CounterBasic from '../core/anchor/counter.svelte';
+import ReactiveBasic from '../core/anchor/reactive-basic.svelte';
 
-describe('Anchor Svelte - Client', () => {
+describe('Anchor Svelte - Server', () => {
   describe('mutable', () => {
     describe('Basic Usage', () => {
       it('should create a reactive reference with initial value', () => {
@@ -13,16 +14,22 @@ describe('Anchor Svelte - Client', () => {
 
         expect(() => mutable(0)).not.toThrow();
         expect(screen.getByTestId('state-value').textContent).toBe('42-test');
-      });
-
-      it('should import from the core path', () => {
-        expect(typeof anchor).toBe('function');
+        expect(persistent).toBeDefined();
       });
     });
   });
 
   describe('reactive', () => {
+    beforeEach(() => {
+      vi.stubGlobal('window', undefined);
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
     it('should create a reactive reference with initial value', async () => {
+      await import('../../src/server/index.js');
+
       render(ReactiveBasic);
       const { unmount } = render(CounterBasic);
 

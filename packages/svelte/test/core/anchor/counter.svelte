@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { anchorRef } from '@anchorlib/svelte';
+  import '../../../src/index.js';
+  import { mutable, onCleanup } from '@anchorlib/core';
 
-  const counter = anchorRef({ count: 0 });
+  const counter = mutable({ count: 0 });
   const onclick = () => counter.count++;
+
+  onCleanup(() => console.log('cleanup'));
 </script>
 
 <span data-testid="count">Count: {counter.count}</span>
-<button data-testid="increment" {onclick}>Increment</button>
+<button data-testid="increment" on:click={onclick}>Increment</button>

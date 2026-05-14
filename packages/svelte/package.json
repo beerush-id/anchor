@@ -2,13 +2,7 @@
   "name": "@anchorlib/svelte",
   "version": "1.0.0-beta.22",
   "description": "Svelte bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "svelte"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "svelte"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -29,10 +23,15 @@
       "svelte": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "svelte": "./dist/client/index.js",
+      "import": "./dist/client/index.js"
+    },
     "./reactive": {
-      "types": "./dist/reactive.d.ts",
-      "svelte": "./dist/reactive.js",
-      "import": "./dist/reactive.js"
+      "types": "./dist/client/index.d.ts",
+      "svelte": "./dist/client/index.js",
+      "import": "./dist/client/index.js"
     },
     "./core": {
       "types": "./dist/core/index.d.ts",
@@ -48,9 +47,7 @@
   "directories": {
     "dist": "./dist"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -63,6 +60,7 @@
     "@sveltejs/vite-plugin-svelte": "catalog:",
     "@testing-library/svelte": "catalog:",
     "@testing-library/user-event": "catalog:",
+    "@types/bun": "catalog:",
     "@types/react": "catalog:lib",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",

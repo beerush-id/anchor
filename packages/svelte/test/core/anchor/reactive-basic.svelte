@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { reactiveRef } from '@anchorlib/svelte';
+  import '../../../src/index.js';
+  import { mutable } from '@anchorlib/core';
 
   const initialValue = { count: 42, name: 'test' };
-  const state = reactiveRef(initialValue);
+  const state = mutable(initialValue);
 </script>
 
 <span data-testid="state-value">{state.count}-{state.name}</span>
