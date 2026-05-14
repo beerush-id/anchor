@@ -1,5 +1,7 @@
 import {
+  anchor,
   createObserver,
+  isBrowser,
   type KeyLike,
   type Linkable,
   onGlobalCleanup,
@@ -9,11 +11,13 @@ import {
 import { onDestroy } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
 
+anchor.configure({ globalScopeWarning: false });
+
 export const TRACKER_REGISTRY = new WeakMap<Linkable, (prop: KeyLike) => void>();
 
 let bindingInitialized = false;
 
-if (!bindingInitialized && typeof window !== 'undefined') {
+if (!bindingInitialized && isBrowser()) {
   bindingInitialized = true;
 
   /**
