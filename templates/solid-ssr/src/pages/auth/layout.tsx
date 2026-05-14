@@ -10,7 +10,7 @@ authRoute.route('/').guard(() => {
   throw redirect(SignInPage);
 });
 
-export const AuthLayout = page(authRoute).render((_, ctx, children) => {
+export const AuthLayout = page(authRoute).render(({ context: ctx, children }) => {
   createSettings();
 
   const title = derived(() => (ctx.url?.endsWith('/signin') ? 'In' : 'Up'));

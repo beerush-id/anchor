@@ -14,7 +14,7 @@ router.catch(() => {
   );
 });
 
-export const RootLayout = page(rootRoute).render((_state, _ctx, children) => {
+export const RootLayout = page(rootRoute).render(({ children }) => {
   createSettings();
 
   return (

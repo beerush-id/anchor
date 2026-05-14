@@ -4,14 +4,13 @@ import { createSettings } from '../../lib/settings.js';
 import { RootPage } from '../page.js';
 import { authRoute } from './route.js';
 import { SignInPage } from './signin/index.js';
-import { signInRoute } from './signin/route.js';
 import { SignUpPage } from './signup/index.js';
 
 authRoute.route('/').guard(() => {
-  throw redirect(signInRoute);
+  throw redirect(SignInPage);
 });
 
-export const AuthLayout = page(authRoute).render((_, ctx, children) => {
+export const AuthLayout = page(authRoute).render(({ context: ctx, children }) => {
   createSettings();
 
   const Title = template(
