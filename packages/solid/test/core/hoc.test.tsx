@@ -1,7 +1,11 @@
+/** @jsxImportSource solid-js */
+
+import { render } from '@solidjs/testing-library';
+import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
-import { bindable } from '../../src/hoc.js';
-import type { BindableComponentProps } from '../../src/index.js';
+import { bindable, setup } from '../../src/hoc.js';
+import { type BindableComponentProps, getContext, setContext } from '../../src/index.js';
 
 describe('Anchor Solid - HOC API', () => {
   describe('bindable', () => {
@@ -166,6 +170,39 @@ describe('Anchor Solid - HOC API', () => {
         expect(picked.count).toBe(42);
         expect(picked.email).toBeUndefined();
       });
+    });
+  });
+
+  describe('setup', () => {
+    it('should create component with setup', async () => {
+      setContext('name', 'Root');
+
+      const TopComponent = setup<{ children?: JSX.Element }>(function TopComp({ children }) {
+        setContext('name', 'TOP');
+        expect(getContext('name')).toBe('TOP');
+
+        return <div class="top">{children}</div>;
+      });
+
+      const BottomComponent = setup<{ children?: JSX.Element }>((props) => (
+        <div class="bottom">
+          {props.children}
+          <span class="name">{getContext('name')}</span>
+        </div>
+      ));
+
+      const { unmount } = render(() => (
+        <TopComponent>
+          <BottomComponent>
+            <div>Hello World</div>
+          </BottomComponent>
+        </TopComponent>
+      ));
+
+      expect(getContext('name')).toBe('Root');
+      expect(getContext('foo', 'bar')).toBe('bar');
+
+      unmount();
     });
   });
 });

@@ -2,11 +2,16 @@ import { isBrowser } from '@anchorlib/core';
 import {
   getRenderProps,
   type MatchedRoute,
+  type RouteExceptionRenderer,
   type RouteRegistry,
+  type RouteRenderer,
+  setExceptionRendererFactory,
   setRedirectHandler,
+  setRendererFactory,
   type UnknownRoute,
 } from '@anchorlib/router';
 import { For, type JSX, onCleanup, onMount, type ParentComponent, Show } from 'solid-js';
+import { setup } from '../hoc.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
@@ -20,8 +25,11 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
 
   const Index = () => {
     const Renderer = route.index?.renderer ?? (() => null);
+
     return (
-      <Show when={route.index?.active}>{(() => <Renderer {...getRenderProps(route.index as never)} />) as never}</Show>
+      <Show when={route.index?.active}>
+        <Renderer {...getRenderProps(route.index as never)} />
+      </Show>
     );
   };
   const Layout = route.renderer ?? (({ children }) => children);
@@ -41,30 +49,30 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
   );
   const Shell = () => {
     if (STACK_REGISTRY.has(route)) {
+      const Renderer = () => (
+        <div class={'route-modal'}>
+          <Layout {...layoutProps}>
+            <Content />
+          </Layout>
+        </div>
+      );
+
       return (
         <Show when={route.active} fallback={props.children}>
-          {
-            (() => (
-              <div class={'route-modal'}>
-                <Layout {...layoutProps}>
-                  <Content />
-                </Layout>
-              </div>
-            )) as never
-          }
+          <Renderer />
         </Show>
       );
     }
 
+    const Renderer = () => (
+      <Layout {...layoutProps}>
+        <Content />
+      </Layout>
+    );
+
     return (
       <Show when={route.active} fallback={props.children}>
-        {
-          (() => (
-            <Layout {...layoutProps}>
-              <Content />
-            </Layout>
-          )) as never
-        }
+        <Renderer />
       </Show>
     );
   };
@@ -193,7 +201,8 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    navigate(redirect.route, {
+    // biome-ignore lint/suspicious/noExplicitAny: expect any
+    navigate((redirect as any).route, {
       query: redirect.query,
       params: redirect.params,
       redirect: location.href,
@@ -201,3 +210,37 @@ if (isBrowser()) {
     } as never);
   });
 }
+
+const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
+): RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
+  return setup(renderer as never, `Route(${route.path})`) as RouteRenderer<
+    TPath,
+    TParams,
+    TQueryParams,
+    TData,
+    PParams,
+    PQuery,
+    PData,
+    TOutput
+  >;
+};
+
+const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
+): RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
+  return setup(renderer as never, `Exception(${route.path})`) as RouteExceptionRenderer<
+    TParams,
+    TQueryParams,
+    TData,
+    PParams,
+    PQuery,
+    PData,
+    TOutput
+  >;
+};
+
+setRendererFactory(createRenderer);
+setExceptionRendererFactory(createExceptionRenderer);

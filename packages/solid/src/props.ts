@@ -22,11 +22,13 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
   const pick = (keys: Array<keyof P>) => {
     return pickProps(props, newProps, keys ?? []);
   };
+  const children = () => props.children;
 
   const newProps = new Proxy(props as P, {
     get(target, key, receiver) {
       if (key === '$omit') return omit;
       if (key === '$pick') return pick;
+      if (key === 'children') return () => children;
 
       const bindingRef = Reflect.get(target, key, receiver);
 
