@@ -1,10 +1,11 @@
-import { isBrowser, untrack } from '@anchorlib/core';
+import { isBrowser, setContext, untrack } from '@anchorlib/core';
 import {
   getRenderProps,
   type MatchedRoute,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
+  type RouteStatus,
   type RouteTarget,
   setExceptionRendererFactory,
   setRedirectHandler,
@@ -14,6 +15,7 @@ import {
 import type { FC, ReactNode } from 'react';
 import { setup, snippet } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';
+import { createSlot } from '../switch.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
@@ -219,21 +221,25 @@ export function modal<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   return page(routeNode);
 }
 
+const ROUTE_CTX = Symbol('route-context');
+const ROUTE_KEY = 'status' as RouteStatus;
+
 const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
   route: UnknownRoute,
   renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
 ): RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
-  return setup(renderer as never, route.path) as RouteRenderer<
-    TPath,
-    TParams,
-    TQueryParams,
-    TData,
-    PParams,
-    PQuery,
-    PData,
-    TOutput
-  >;
+  return setup((props) => {
+    setContext(ROUTE_CTX, route.state);
+    return renderer(props as never) as never;
+  }, route.path) as RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
 };
+
+/**
+ * A slot component for the {@link Route} component.
+ * @property for - The status value to match against.
+ * @property children - The children to render if the status matches.
+ */
+export const RouteSlot = createSlot<RouteStatus>(ROUTE_CTX, ROUTE_KEY, 'RouteSwitch');
 
 const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
   route: UnknownRoute,
@@ -260,14 +266,11 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    navigate(
-      redirect.route as never,
-      {
-        query: redirect.query,
-        params: redirect.params,
-        redirect: location.href,
-        replace: true,
-      } as never
-    );
+    navigate((redirect as any).route, {
+      query: redirect.query,
+      params: redirect.params,
+      redirect: location.href,
+      replace: true,
+    } as never);
   });
 }

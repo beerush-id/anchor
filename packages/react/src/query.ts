@@ -1,0 +1,28 @@
+import type { AsyncStatus } from '@anchorlib/core';
+import type { ReactNode } from 'react';
+import { createSwitch, type SlotNode, type SwitchProps } from './switch.js';
+
+export type QueryState = {
+  status: AsyncStatus;
+};
+
+export type QueryNode = (<S extends QueryState>(props: SwitchProps<S>) => ReactNode) & {
+  Slot: SlotNode<AsyncStatus>;
+};
+
+const QUERY_CTX = Symbol('query');
+const QUERY_KEY = 'status';
+
+/**
+ * A component that renders its children based on the status of an asynchronous operation.
+ * @property for - The asynchronous operation to watch for.
+ * @property children - The children to render.
+ */
+export const Query: QueryNode = createSwitch(QUERY_CTX, QUERY_KEY, 'Query') as never;
+
+/**
+ * A slot component for the {@link Query} component.
+ * @property for - The status value to match against.
+ * @property children - The children to render if the status matches.
+ */
+export const QuerySlot = Query.Slot;

@@ -38,7 +38,7 @@ export type {
 } from '@anchorlib/core';
 
 export {
-  AsyncStatus,
+  ASYNC_STATUS,
   anchor,
   awaited,
   CookieJar,
@@ -100,9 +100,11 @@ export {
 export { onCleanup, onMount } from './lifecycle.js';
 export * from './node.js';
 export * from './props.js';
+export * from './query.js';
 export * from './router/head.js';
 export * from './router/link.js';
 export * from './router/navigate.js';
 export * from './router/router.js';
 export * from './router/types.js';
+export * from './switch.js';
 export * from './types.js';

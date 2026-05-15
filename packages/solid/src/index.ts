@@ -40,7 +40,7 @@ export type {
 } from '@anchorlib/core';
 
 export {
-  AsyncStatus,
+  ASYNC_STATUS,
   anchor,
   awaited,
   CookieJar,

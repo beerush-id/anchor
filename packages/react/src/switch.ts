@@ -1,0 +1,68 @@
+import { getContext, setContext } from '@anchorlib/core';
+import type { ReactNode } from 'react';
+import { render, setup, snippet } from './hoc.js';
+
+export type SlotProps<K> = {
+  for: K;
+  children?: ReactNode | (() => ReactNode);
+};
+
+export type SlotNode<K> = (props: SlotProps<K>) => ReactNode;
+
+export type SwitchProps<T> = {
+  for: T;
+  children?: ReactNode;
+};
+
+export type SwitchNode<T, K> = ((props: SwitchProps<T>) => ReactNode) & {
+  displayName: string;
+  Slot: SlotNode<K>;
+};
+
+/**
+ * Creates a Slot component that conditionally renders its children based on a context value.
+ *
+ * @param ctx - The context key to retrieve the state from.
+ * @param key - The property key within the state to compare against.
+ * @param displayName - Optional display name for the component.
+ * @returns A Slot component.
+ */
+export function createSlot<K>(ctx: string | symbol, key: string | symbol, displayName = 'Anonymous') {
+  return snippet<SlotProps<string>>(
+    (props) => {
+      const state = getContext(ctx) as Record<string, unknown>;
+      if (!state) return '<>[Slot Error: Slot rendered outside of Switch]</>';
+      const children = typeof props.children === 'function' ? props.children() : props.children;
+      return state[key as string] === props.for ? children : null;
+    },
+    displayName,
+    'Slot',
+    false
+  ) as SlotNode<K>;
+}
+
+/**
+ * Creates a Switch component and an associated Slot component for conditional rendering.
+ *
+ * @param ctx - The context key to store the switch state.
+ * @param key - The property key within the state that Slots will check.
+ * @param displayName - Optional display name for the Switch component.
+ * @param scopeName - Optional scope name for the display name (defaults to 'Switch').
+ * @returns A Switch component with a static Slot property.
+ */
+export function createSwitch<T, K>(
+  ctx: string | symbol,
+  key: string | symbol,
+  displayName = 'Anonymous',
+  scopeName = 'Switch'
+) {
+  const Switch = setup((props) => {
+    setContext(ctx, (props as never as SwitchProps<T>).for);
+    return render(() => (props as never as SwitchProps<T>).children);
+  }, displayName) as SwitchNode<T, K>;
+
+  Switch.displayName = `${scopeName}(${displayName})`;
+  Switch.Slot = createSlot<K>(ctx, key, displayName);
+
+  return Switch as SwitchNode<T, K>;
+}
