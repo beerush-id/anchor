@@ -1,6 +1,6 @@
 import { createObserver } from '../reactive/index.js';
 import { mutable, writable } from '../reactive/ref.js';
-import { AsyncStatus } from '../shared/constant.js';
+import { ASYNC_STATUS } from '../shared/constant.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from '../types.js';
 import { isBrowser } from '../utils/index.js';
 
@@ -50,7 +50,7 @@ export function query<T extends Linkable, E extends Error = Error>(
   });
 
   const start = (async (newInit) => {
-    if (writer.status === AsyncStatus.Pending) {
+    if (writer.status === ASYNC_STATUS.Pending) {
       controller?.abort();
       abortError = undefined;
     }
@@ -60,7 +60,7 @@ export function query<T extends Linkable, E extends Error = Error>(
     }
 
     controller = new AbortController();
-    Object.assign(writer, { status: AsyncStatus.Pending, error: undefined });
+    Object.assign(writer, { status: ASYNC_STATUS.Pending, error: undefined });
 
     try {
       activePromise = !options?.deferred
@@ -68,14 +68,14 @@ export function query<T extends Linkable, E extends Error = Error>(
         : cancelable(fn, controller.signal);
 
       const data = await activePromise;
-      Object.assign(writer, { status: AsyncStatus.Success, data: data ? mutable(data, options) : data });
+      Object.assign(writer, { status: ASYNC_STATUS.Success, data: data ? mutable(data, options) : data });
 
       return data;
     } catch (error) {
       if (controller.signal.aborted && abortError) {
-        Object.assign(writer, { status: AsyncStatus.Aborted, error: abortError });
+        Object.assign(writer, { status: ASYNC_STATUS.Aborted, error: abortError });
       } else {
-        Object.assign(writer, { status: AsyncStatus.Error, error: error as E });
+        Object.assign(writer, { status: ASYNC_STATUS.Error, error: error as E });
       }
     } finally {
       controller = undefined;
@@ -86,7 +86,7 @@ export function query<T extends Linkable, E extends Error = Error>(
   const abort = ((error) => {
     if (controller?.signal.aborted) return;
 
-    Object.assign(writer, { status: AsyncStatus.Aborted, error: undefined });
+    Object.assign(writer, { status: ASYNC_STATUS.Aborted, error: undefined });
 
     abortError = error;
     controller?.abort(error);
@@ -95,7 +95,7 @@ export function query<T extends Linkable, E extends Error = Error>(
   const state = mutable<AsyncState<T, E>>(
     {
       data: (init ? mutable(init, options) : undefined) as T,
-      status: AsyncStatus.Idle,
+      status: ASYNC_STATUS.Idle,
       start,
       abort,
       get promise() {
@@ -110,7 +110,7 @@ export function query<T extends Linkable, E extends Error = Error>(
     if (isBrowser()) {
       state.start();
     } else {
-      writer.status = AsyncStatus.Pending;
+      writer.status = ASYNC_STATUS.Pending;
     }
   }
 

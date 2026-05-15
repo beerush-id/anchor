@@ -3,7 +3,7 @@ import type { input, output, ZodArray, ZodObject, ZodSafeParseResult } from 'zod
 import type { DerivedRef, ImmutableRef, MutableRef } from './reactive/ref.js';
 import type {
   ARRAY_MUTATIONS,
-  AsyncStatus as AsyncStatusType,
+  ASYNC_STATUS as AsyncStatusType,
   BATCH_MUTATIONS,
   MAP_MUTATIONS,
   OBJECT_MUTATIONS,

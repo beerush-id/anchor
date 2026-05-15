@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AsyncStatus, cancelable, mutable, query } from '../../src/index.js';
+import { ASYNC_STATUS, cancelable, mutable, query } from '../../src/index.js';
 import { withIsolation } from '../../src/scope/index.js';
 
 describe('Anchor Core - Async', () => {
@@ -18,7 +18,7 @@ describe('Anchor Core - Async', () => {
       const state = query(async () => ({ value: 1 }));
 
       expect(state.data).toBeUndefined();
-      expect(state.status).toBe(AsyncStatus.Pending);
+      expect(state.status).toBe(ASYNC_STATUS.Pending);
       expect(typeof state.start).toBe('function');
       expect(typeof state.abort).toBe('function');
 
@@ -34,7 +34,7 @@ describe('Anchor Core - Async', () => {
 
       withIsolation(() => {
         const state = query(async () => ({ value: 1 }), init);
-        expect(state.status).toBe(AsyncStatus.Pending);
+        expect(state.status).toBe(ASYNC_STATUS.Pending);
         expect(state.promise).toBeInstanceOf(Promise);
         expect(state.data).toEqual(init);
       });
@@ -49,7 +49,7 @@ describe('Anchor Core - Async', () => {
       await state.promise;
 
       expect(state.data).toEqual({ value: 1 });
-      expect(state.status).toBe(AsyncStatus.Success);
+      expect(state.status).toBe(ASYNC_STATUS.Success);
     });
 
     it('should start async operation automatically', async () => {
@@ -60,7 +60,7 @@ describe('Anchor Core - Async', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(state.data).toEqual({ value: 42 });
-      expect(state.status).toBe(AsyncStatus.Success);
+      expect(state.status).toBe(ASYNC_STATUS.Success);
       expect(handler).toHaveBeenCalled();
     });
 
@@ -75,7 +75,7 @@ describe('Anchor Core - Async', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(state.data).toEqual({ value: 42 });
-      expect(state.status).toBe(AsyncStatus.Success);
+      expect(state.status).toBe(ASYNC_STATUS.Success);
       expect(handler).toHaveBeenCalledTimes(1);
 
       ref.value = 43;
@@ -92,13 +92,13 @@ describe('Anchor Core - Async', () => {
       await state.promise; // A no-op since the state is idle.
 
       expect(state.data).toEqual({ value: 0 });
-      expect(state.status).toBe(AsyncStatus.Idle);
+      expect(state.status).toBe(ASYNC_STATUS.Idle);
       expect(handler).not.toHaveBeenCalled();
 
       await state.start();
 
       expect(state.data).toEqual({ value: 42 });
-      expect(state.status).toBe(AsyncStatus.Success);
+      expect(state.status).toBe(ASYNC_STATUS.Success);
       expect(handler).toHaveBeenCalled();
     });
 
@@ -110,7 +110,7 @@ describe('Anchor Core - Async', () => {
       await state.start();
 
       expect(state.data).toEqual({ value: 0 });
-      expect(state.status).toBe(AsyncStatus.Error);
+      expect(state.status).toBe(ASYNC_STATUS.Error);
       expect(state.error).toBe(error);
     });
 
@@ -122,17 +122,17 @@ describe('Anchor Core - Async', () => {
       await state.start();
 
       expect(state.data).toEqual({ value: 0 });
-      expect(state.status).toBe(AsyncStatus.Error);
+      expect(state.status).toBe(ASYNC_STATUS.Error);
       expect(state.error).toBe(error);
 
       const promise = state.start();
 
       expect(state.error).toBeUndefined();
-      expect(state.status).toBe(AsyncStatus.Pending);
+      expect(state.status).toBe(ASYNC_STATUS.Pending);
 
       await promise;
 
-      expect(state.status).toBe(AsyncStatus.Error);
+      expect(state.status).toBe(ASYNC_STATUS.Error);
       expect(state.error).toBe(error);
     });
 
@@ -158,7 +158,7 @@ describe('Anchor Core - Async', () => {
       await promise;
 
       expect(state.data).toEqual({ value: 0 });
-      expect(state.status).toBe(AsyncStatus.Aborted);
+      expect(state.status).toBe(ASYNC_STATUS.Aborted);
       expect(state.error?.message).toBe('Aborted');
       expect(signal?.aborted).toBe(true);
     });
@@ -176,7 +176,7 @@ describe('Anchor Core - Async', () => {
 
       expect(handler).toHaveBeenCalledTimes(2);
       expect(state.data).toEqual({ value: 42 });
-      expect(state.status).toBe(AsyncStatus.Success);
+      expect(state.status).toBe(ASYNC_STATUS.Success);
     });
 
     it('should update data with new initial value', async () => {
@@ -187,7 +187,7 @@ describe('Anchor Core - Async', () => {
       expect(state.data).toEqual({ value: 10 });
 
       await promise;
-      expect(state.status).toBe(AsyncStatus.Success);
+      expect(state.status).toBe(ASYNC_STATUS.Success);
     });
   });
 

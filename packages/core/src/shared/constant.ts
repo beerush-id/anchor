@@ -66,7 +66,7 @@ export const DEV_TOOL_KEYS = new Set([
   'onUntrack',
 ]);
 
-export const AsyncStatus = {
+export const ASYNC_STATUS = {
   Idle: 'idle',
   Error: 'error',
   Aborted: 'aborted',

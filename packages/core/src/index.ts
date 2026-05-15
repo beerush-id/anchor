@@ -17,7 +17,7 @@ export * from './scope/scope.js';
 export * from './scope/stack.js';
 export {
   ARRAY_MUTATIONS,
-  AsyncStatus,
+  ASYNC_STATUS,
   BATCH_MUTATION_KEYS,
   BATCH_MUTATIONS,
   COLLECTION_MUTATION_KEYS,
