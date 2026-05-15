@@ -290,21 +290,28 @@ export class Router<Output = any> {
       return acc;
     }, 0);
 
-    // Attach store and activate immediate segments.
-    for (const segment of toActivate) {
-      storage.activatingSegments.add(segment);
-      storage.context.attach(segment.store);
+    // Detach stores from previous segments.
+    for (const segment of toDeactivate) {
+      safeRead(() => {
+        segment.store.exception = undefined;
+        storage.context.detach(segment.store);
+      });
+    }
 
-      if (segment.route.options.renderMode === RENDER_MODE.IMMEDIATE) {
-        segment.route.active = true;
-      }
+    // Attach stores to new segments and register to activating segments.
+    for (const segment of toActivate) {
+      safeRead(() => {
+        storage.activatingSegments.add(segment);
+        storage.context.attach(segment.store);
+        segment.route.preActivate(segment.store as RouteContext<None, None, TRec>);
+      });
     }
 
     this.start(activationLengths);
 
-    // Activate target segments.
+    // Authenticate all routes before activating.
     for (const segment of toActivate) {
-      const { route, store } = segment;
+      const { route } = segment;
 
       const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
       if (blocker instanceof Error || blocker instanceof Redirect) {
@@ -312,25 +319,42 @@ export class Router<Output = any> {
         return blocker;
       }
       if (!storage.activatingSegments.has(segment)) return;
+    }
 
-      await route.activate(store as RouteContext<None, None, TRec>);
+    // Immediately tell renderer to render when the render mode is immediate.
+    if (this.options.renderMode === RENDER_MODE.IMMEDIATE) {
+      safeRead(() => {
+        for (const { route } of toDeactivate.reverse()) {
+          route.deactivate();
+        }
+        for (const { route } of toActivate) {
+          route.active = true;
+        }
+      });
+    }
+
+    // Activate target segments.
+    for (const segment of toActivate) {
+      const { route, store } = segment;
+
+      await route.activate(store as RouteContext<None, None, TRec>, true, true);
       if (!storage.activatingSegments.has(segment)) return;
 
       // Remove from activating routes.
       storage.activatingSegments.delete(segment);
     }
 
-    safeRead(() => {
-      for (const segment of toDeactivate.reverse()) {
-        segment.store.exception = undefined;
-        segment.route.deactivate();
-        storage.context.detach(segment.store);
-      }
-
-      for (const { route } of toActivate) {
-        route.active = true;
-      }
-    });
+    // Render target segments if not already rendered.
+    if (this.options.renderMode !== RENDER_MODE.IMMEDIATE) {
+      safeRead(() => {
+        for (const { route } of toDeactivate.reverse()) {
+          route.deactivate();
+        }
+        for (const { route } of toActivate) {
+          route.active = true;
+        }
+      });
+    }
 
     // Update router state
     storage.activeUrl = url.href;

@@ -1,6 +1,6 @@
 import { createLifecycle } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ROUTE_TYPE } from '../src/enum.js';
+import { RENDER_MODE, ROUTE_TYPE } from '../src/enum.js';
 import { RouterContext } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { createRouter, Router } from '../src/router.js';
@@ -204,9 +204,17 @@ describe('router.ts', () => {
       });
 
       it('should activate a route', async () => {
+        router.options.renderMode = RENDER_MODE.IMMEDIATE;
         router.route('/users');
+        router.route('/projects');
+
         await router.activate('/users');
         expect(router.activeRoute?.path).toBe('/users');
+
+        await router.activate('/projects');
+        expect(router.activeRoute?.path).toBe('/projects');
+
+        router.options.renderMode = RENDER_MODE.DEFERRED;
       });
 
       it('should set activeSegments', async () => {

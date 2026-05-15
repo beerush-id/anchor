@@ -124,7 +124,6 @@ export type RouteType = (typeof ROUTE_TYPE)[keyof typeof ROUTE_TYPE];
 /** Options for configuring a route */
 export interface RouteOptions extends ProviderOptions {
   /** Blocking mode for route rendering */
-  renderMode?: RenderMode;
   preloadMode?: PreloadMode;
 
   /** Keep the route's context when de-activating */
@@ -153,6 +152,7 @@ export type context<TParams, TQueryParams, TData> = {
 export type RouterOptions = RouteOptions & {
   baseUrl?: string;
   cacheSize?: number;
+  renderMode?: RenderMode;
 };
 
 export type RouteStatus = (typeof ROUTE_STATUS)[keyof typeof ROUTE_STATUS];

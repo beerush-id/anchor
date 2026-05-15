@@ -1,7 +1,7 @@
 import { $do, createObserver, retriable } from '@anchorlib/core';
 import { RouteCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
-import { RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
+import { ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type { Router } from './router.js';
@@ -201,7 +201,7 @@ export class Route<
       safeRead(() => {
         store.set(this, {
           state: createState<RouteState>({
-            status: 'idle',
+            status: ROUTE_STATUS.IDLE,
             active: false,
             resolved: false,
             resolving: false,
@@ -573,31 +573,49 @@ export class Route<
   }
 
   /**
+   * Pre-activates this route.
+   *
+   * Sets the route as pending, and sets the route context.
+   *
+   * @param context - The provider context
+   */
+  public preActivate(context: RouteContext<Params, QueryParams, Data>) {
+    const { state, context: ctx } = this.storage;
+
+    ctx.value = context as RouteContext<TRec, TRec, TRec>;
+
+    state.error = undefined;
+    state.status = ROUTE_STATUS.PENDING;
+  }
+
+  /**
    * Activates this route.
    *
    * Optionally preloads data, then sets the route as active.
    *
    * @param context - The provider context
    * @param preload - Whether to preload data (default: true)
+   * @param controlled - Whether the activation is controlled.
    */
-  public async activate(context: RouteContext<Params, QueryParams, Data>, preload = true): Promise<void> {
-    const { state, context: ctx } = this.storage;
-    ctx.value = context as RouteContext<TRec, TRec, TRec>;
+  public async activate(
+    context: RouteContext<Params, QueryParams, Data>,
+    preload = true,
+    controlled?: boolean
+  ): Promise<void> {
+    const { state } = this.storage;
 
-    state.status = ROUTE_STATUS.PENDING;
-    state.error = undefined;
+    this.preActivate(context);
 
-    // Set the route as active immediately if renderMode is immediate
-    if (this.options.renderMode === RENDER_MODE.IMMEDIATE) {
-      state.active = true;
-    }
-
+    // Preload data if preload is enabled.
     if (preload) {
       await this.preload(context);
     }
 
     // If the route is deactivated during preload, do nothing.
     if (state.status !== ROUTE_STATUS.PENDING) return;
+
+    // Set the route as active if full is enabled.
+    if (!controlled) state.active = true;
 
     state.status = ROUTE_STATUS.SUCCESS;
   }

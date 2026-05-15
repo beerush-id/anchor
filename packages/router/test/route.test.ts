@@ -168,7 +168,7 @@ describe('Route class', () => {
     it('should allow clearing data with undefined', () => {
       const route = new Route(sharedRouter, '/test').context;
       route.data = { user: 'John' };
-      route.data = undefined;
+      route.data = undefined as never;
       expect(route.data).toBeUndefined();
     });
   });
@@ -500,7 +500,7 @@ describe('Route class', () => {
 
     it('should throw error when parent has no registry', () => {
       const parent = new Route(sharedRouter, '/users');
-      expect(() => parent.route('/profile')).toThrow('RouteMap not found');
+      expect(() => parent.route('/profile' as never)).toThrow('RouteMap not found');
     });
 
     it('should register static child in parent registry', () => {
@@ -685,7 +685,7 @@ describe('Route class', () => {
     it('should return Redirect when guard throws Redirect', async () => {
       const route = new Route(sharedRouter, '/test');
       const targetRoute = new Route(sharedRouter, '/login');
-      const redirect = new Redirect(targetRoute);
+      const redirect = new Redirect(targetRoute as any);
       const guard = vi.fn(() => {
         throw redirect;
       });

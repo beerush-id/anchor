@@ -16,7 +16,7 @@ export const DEFAULT_CONFIG: RouterOptions = {
   retryMode: RETRY_MODE.LINEAR,
   retryDelay: 0,
   maxRetries: 0,
-  renderMode: RENDER_MODE.IMMEDIATE,
+  renderMode: RENDER_MODE.DEFERRED,
   preloadMode: PRELOAD_MODE.MANUAL,
 };
 
