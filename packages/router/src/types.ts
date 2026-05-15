@@ -141,13 +141,6 @@ export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<u
 /** Unknown redirect type */
 export type UnknownRedirect = Redirect<UnknownRoute>;
 
-/** Active context for a route */
-export type context<TParams, TQueryParams, TData> = {
-  data: TData;
-  query: TQueryParams;
-  params: TParams;
-};
-
 /** Options for configuring the router */
 export type RouterOptions = RouteOptions & {
   baseUrl?: string;
