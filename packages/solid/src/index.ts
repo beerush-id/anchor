@@ -100,3 +100,4 @@ export * from './router/router.js';
 export * from './router/types.js';
 export * from './switch.js';
 export * from './types.js';
+export { For, onMount, onCleanup } from 'solid-js';
