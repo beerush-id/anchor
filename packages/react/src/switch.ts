@@ -67,26 +67,29 @@ export function createSwitch<T, K>(
   return Switch as SwitchNode<T, K>;
 }
 
-export type ShowProps = {
-  when: unknown | (() => unknown);
-  children: ReactNode | (() => ReactNode);
+export type ShowProps<T> = {
+  when: T | (() => T);
+  children: ReactNode | ((value: T) => ReactNode);
   fallback?: () => ReactNode;
 };
 
+export type ShowNode = <T>(props: ShowProps<T>) => ReactNode;
+
 /**
- * Conditionally renders children based on a boolean condition.
+ * Conditionally renders children based on a truthy condition.
  *
  * @param props.when - The condition to evaluate.
- * @param props.children - The content to render when the condition is true.
- * @param props.fallback - Optional content to render when the condition is false.
+ * @param props.children - The content to render when the condition is truthy.
+ * @param props.fallback - Optional content to render when the condition is falsy.
  * @returns The rendered content or null.
  */
-export const Show = snippet<ShowProps>(
+export const Show = snippet<ShowProps<boolean>>(
   (props) => {
-    const shouldShow = typeof props.when === 'function' ? props.when : () => props.when;
+    const check = typeof props.when === 'function' ? props.when : () => props.when;
+    const value = check() as boolean;
 
-    if (shouldShow()) {
-      return typeof props.children === 'function' ? props.children() : props.children;
+    if (value) {
+      return typeof props.children === 'function' ? props.children(value) : props.children;
     }
 
     return typeof props.fallback === 'function' ? props.fallback() : null;
@@ -94,4 +97,4 @@ export const Show = snippet<ShowProps>(
   'Show',
   'Slot',
   false
-);
+) as ShowNode;

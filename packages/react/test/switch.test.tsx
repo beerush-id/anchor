@@ -70,7 +70,7 @@ describe('Switches', () => {
         <Show when={() => state.status === 'ready'}>
           <div>Ready!</div>
         </Show>
-        <Show when={() => state.status === 'ready'}>{() => <div>Factory!</div>}</Show>
+        <Show when={() => state.status === 'ready'}>{(value) => <div>Factory!{value}</div>}</Show>
       </>
     );
 
