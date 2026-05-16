@@ -47,11 +47,11 @@ irpc.construct(getUser, async (id) => {
 ```tsx [React]
 // Client: call it and render
 const UserCard = setup((props) => {
-  const user = getUser(props.id);
+  const user = getUser.with(() => [props.id]);
 
   return render(() => (
     <div>
-      <h1>{user.data.name}</h1>
+      <h1>{user.data?.name}</h1>
     </div>
   ));
 });
@@ -59,15 +59,15 @@ const UserCard = setup((props) => {
 
 ```tsx [Solid]
 // Client: call it and render
-const UserCard = (props) => {
-  const user = getUser(() => props.id);
+const UserCard = setup((props) => {
+  const user = getUser.with(() => [props.id]);
 
   return (
     <div>
-      <h1>{user.data.name}</h1>
+      <h1>{user.data?.name}</h1>
     </div>
   );
-}
+});
 ```
 
 :::
@@ -131,7 +131,7 @@ irpc.construct(watchPrice, (symbol) => {
     state.data = { symbol, price: 50 }; // [!code highlight]
 
     const interval = setInterval(() => {
-      state.data.price += Math.random() * 2 - 1; // [!code highlight]
+      state.data?.price += Math.random() * 2 - 1; // [!code highlight]
     }, 100);
 
     return () => clearInterval(interval);
@@ -163,39 +163,35 @@ Whichever you pick, your state is still locked inside client code, and you still
 ::: code-group
 
 ```tsx [React]
-import { setup, snippet, onMount } from '@anchorlib/react';
+import { setup, snippet } from '@anchorlib/react';
 import { watchPrice } from './function.js';
 
 const PriceCard = setup(() => {
-  const stream = watchPrice('AAPL');
-
-  onMount(() => stream.start());
+  const stream = watchPrice.with(() => ['AAPL']);
 
   return render(() => (
     <div>
       <h2>AAPL</h2>
-      <span>${stream.data.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
+      <span>${stream.data?.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
     </div>
   ));
 });
 ```
 
 ```tsx [Solid]
-import { onMount } from 'solid-js';
+import { setup } from '@anchorlib/solid';
 import { watchPrice } from './function.js';
 
-const PriceCard = () => {
-  const stream = watchPrice('AAPL');
-
-  onMount(() => stream.start());
+const PriceCard = setup(() => {
+  const stream = watchPrice.with(() => ['AAPL']);
 
   return (
     <div>
       <h2>AAPL</h2>
-      <span>${stream.data.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
+      <span>${stream.data?.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
     </div>
   );
-}
+});
 ```
 
 :::
@@ -232,8 +228,8 @@ export const userRoute = usersRoute.route('/:user_id')
   })
   .render((state) => (
     <div className="profile-view">
-      <h1>{state.data.profile.name}</h1>
-      <span>{state.data.profile.email}</span>
+      <h1>{state.data?.profile.name}</h1>
+      <span>{state.data?.profile.email}</span>
     </div>
   ));
 ```
@@ -250,8 +246,8 @@ export const userRoute = usersRoute.route('/:user_id')
   })
   .render((state) => (
     <div class="profile-view">
-      <h1>{state.data.profile.name}</h1>
-      <span>{state.data.profile.email}</span>
+      <h1>{state.data?.profile.name}</h1>
+      <span>{state.data?.profile.email}</span>
     </div>
   ));
 ```

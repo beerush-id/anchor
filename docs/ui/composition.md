@@ -1,6 +1,6 @@
 ---
-title: 'Component: Composition'
-description: 'Coordinating autonomous components into complete application interfaces.'
+title: 'UI Composition'
+description: 'Learn how to compose complete application interfaces in the AIR Stack by coordinating autonomous components through reactive contracts.'
 ---
 
 # Composition

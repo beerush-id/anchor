@@ -108,12 +108,12 @@ export const LoginForm = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { form, $bind, $use, bindable } from '@anchorlib/solid';
+import { setup, form, $bind } from '@anchorlib/solid';
 import type { Bindable, Linked } from '@anchorlib/solid';
 import { Show } from 'solid-js';
 
 // 1. Create a reusable, bindable Input Component
-export const TextInput = bindable((props: { 
+export const TextInput = setup((props: { 
   label: string, 
   value?: Bindable<string>, 
   error?: Linked<{ message: string } | undefined>,
@@ -134,8 +134,8 @@ export const TextInput = bindable((props: {
   );
 });
 
-// 2. Use $bind() and $use() in your Form
-export const LoginForm = () => {
+// 2. Use $bind() in your Form
+export const LoginForm = setup(() => {
   const [state, errors] = form(schema, { email: '', password: '' });
 
   return (
@@ -143,17 +143,17 @@ export const LoginForm = () => {
       <TextInput 
         label="Email" 
         value={$bind(state, 'email')} 
-        error={$use(errors, 'email')} 
+        error={errors.email)} 
       />
       <TextInput 
         label="Password" 
         type="password" 
         value={$bind(state, 'password')} 
-        error={$use(errors, 'password')} 
+        error={errors.password} 
       />
     </form>
   );
-};
+});
 ```
 
 :::

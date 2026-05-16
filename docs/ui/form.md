@@ -1,6 +1,6 @@
 ---
-title: 'Component: Form Components'
-description: 'User-driven form components with built-in validation — restoring the natural HTML form model.'
+title: 'Form Components'
+description: 'Build user-driven form components in the AIR Stack with built-in validation, restoring the natural HTML form model with reactive state.'
 ---
 
 # Form Components

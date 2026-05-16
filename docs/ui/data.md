@@ -1,6 +1,6 @@
 ---
-title: 'Component: Data Components'
-description: 'Components that own their server data — fetching, streaming, and reacting autonomously.'
+title: 'Data Components'
+description: 'Build data components in the AIR Stack that fetch, stream, and react autonomously without side-effect fetch cycles or manual loading states.'
 ---
 
 # Data Components

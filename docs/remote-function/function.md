@@ -23,7 +23,7 @@ export const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
 
 The generic `<GetUserFn>` enforces the exact parameter and return types across both the client call site and the server handler. Misspelled arguments or wrong return shapes are caught at compile time.
 
-On the client, calling `getUser('123')` is all you ever do. The stub looks and behaves like a local async function — the network is invisible.
+The return value of `irpc.declare()` is an **`IRPCStub`**. This stub acts as a smart proxy—it looks and behaves exactly like a standard async function, but calling it returns an `IRPCReader` instead of a raw `Promise`. The stub also exposes specialized lifecycle APIs (`.once()`, `.with()`, `.when()`) for use inside reactive component bodies.
 
 ## Naming Conventions
 
@@ -332,6 +332,145 @@ Without `init`, `reader.data` is `undefined` until the server responds.
 
 The handler implements its logic using the declared return type — returning a value, a Promise, or a `stream()`. See the [Handlers](/remote-function/handler) page for implementation details.
 
+## Execution
+
+Calling the stub fires the call **immediately**. It returns an `IRPCReader`—which acts as a reactive proxy but also extends `Promise`—so you can `await` it or use `.then()` exactly like a standard async function:
+
+```typescript
+// 1. await — waits for the result
+const user = await getUser('123');
+
+// 2. .then() — handles the result via callback
+getUser('123').then(user => console.log(user));
+
+// 3. Background execution — the call fires immediately without awaiting
+const reader = getUser('123');
+// reader.status === 'pending'
+```
+
+### Reactive Execution (Components)
+
+When calling functions inside reactive component bodies (like `setup()`), you use specific lifecycle methods exposed by the `IRPCStub` to manage execution timing and reactivity automatically. These methods return an `IRPCReader` that the UI binds directly to:
+
+::: tip Why execute in the component body?
+If you wait to fire a call inside an `onMount` effect, the component initially renders an `IRPCReader` with an `idle` status. Once mounted, the effect fires the call, changing the status to `pending` and forcing the renderer to re-run immediately. 
+
+By executing these APIs directly in the synchronous `setup()` body, the reader is born in the `pending` state. The UI renders the correct loading state on the very first pass, completely avoiding the wasted double-render.
+:::
+
+#### `.once()`
+
+Runs the function **exactly once** when the component body runs on the browser. It doesn't track dependencies and will not re-run. Perfect for static initialization.
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { getAppConfig } from './rpc/config/index.js';
+
+export const ConfigWidget = setup(() => {
+  const config = getAppConfig.once('web');
+
+  return render(() => <div>Version: {config.data?.version}</div>);
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
+import { getAppConfig } from './rpc/config/index.js';
+
+export const ConfigWidget = setup(() => {
+  const config = getAppConfig.once('web');
+
+  return <div>Version: {config.data?.version}</div>;
+});
+```
+
+:::
+
+#### `.with(args, debounce?)`
+
+Creates an **eager reactive call**. It fires immediately when the component body runs on the browser, and because the arguments are wrapped in a factory function, it tracks any reactive dependencies used inside. If a dependency changes, the call automatically re-runs.
+
+You can pass an optional `debounce` (in milliseconds) as the second argument to prevent flooding the server with requests during rapid state changes (like typing).
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { getUser } from './rpc/users/index.js';
+
+export const UserProfile = setup<{ id: string }>((props) => {
+  const user = getUser.with(() => [props.id]);
+
+  return render(() => <div>User: {user.data?.name}</div>);
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
+import { getUser } from './rpc/users/index.js';
+
+export const UserProfile = setup<{ id: string }>((props) => {
+  const user = getUser.with(() => [props.id]);
+
+  return <div>User: {user.data?.name}</div>;
+});
+```
+
+:::
+
+#### `.when(args, debounce?)`
+
+Creates a **lazy reactive call**. It completely skips the initial execution. The call only fires *after* a tracked dependency changes for the first time.
+
+Like `.with()`, it accepts an optional `debounce` (in milliseconds) as the second argument to delay execution until the dependencies stop changing for the specified duration.
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable, $bind } from '@anchorlib/react';
+import { searchUsers } from './rpc/users/index.js';
+
+export const SearchBar = setup(() => {
+  const state = mutable({ query: '' });
+  const search = searchUsers.when(() => [state.query], 300); // 300ms debounce
+
+  return render(() => (
+    <div>
+      <input value={$bind(state, 'query')} placeholder="Search..." />
+      <ul>
+        {search.data?.map(u => <li key={u.id}>{u.name}</li>)}
+      </ul>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable, $bind } from '@anchorlib/solid';
+import { searchUsers } from './rpc/users/index.js';
+import { For } from 'solid-js';
+
+export const SearchBar = setup(() => {
+  const state = mutable({ query: '' });
+  const search = searchUsers.when(() => [state.query], 300); // 300ms debounce
+
+  return (
+    <div>
+      <input value={$bind(state, 'query')} placeholder="Search..." />
+      <ul>
+        <For each={search.data}>
+          {(u) => <li>{u.name}</li>}
+        </For>
+      </ul>
+    </div>
+  );
+});
+```
+
+:::
+
 ## IRPCReader
 
 Every call returns an `IRPCReader<T>`, where `T` is the unwrapped data type:
@@ -352,73 +491,6 @@ Every call returns an `IRPCReader<T>`, where `T` is the unwrapped data type:
 | `status` | `'idle' \| 'pending' \| 'success' \| 'error'` | The execution lifecycle state |
 | `error` | `{ code: number; message: string }` | Error details when `status` is `'error'` |
 
-### Execution
-
-A call is **never executed until consumed**. Calling the stub creates an `IRPCReader` but the call doesn't fire until you consume it — via `await`, `.then()`, or `.start()`:
-
-```typescript
-const reader = getUser('123');
-// reader.status === 'idle'
-// No call has been made.
-
-const user = await reader;
-// Now the call fires, resolves, and returns the User.
-```
-
-You can consume a call in three ways:
-
-```typescript
-// 1. await — fires the call and waits for the result
-const user = await getUser('123');
-
-// 2. .then() — fires the call and handles the result via callback
-getUser('123').then(user => console.log(user));
-
-// 3. .start() — fires the call without waiting for completion
-const reader = getUser('123');
-reader.start();
-// reader.data will populate when the call resolves
-```
-
-### Deferred Execution
-
-With `{ deferred: true }`, the call ignores `await` and `.then()` as triggers — only `.start()` can fire it. This is useful when you want to bind the reader to the UI immediately but control exactly when execution starts:
-
-```typescript
-export const watchPrices = irpc.declare<WatchPricesFn>({
-  name: 'watchPrices',
-  stream: true,
-  deferred: true,
-});
-```
-
-::: code-group
-
-```tsx [React]
-import { setup, render, onMount } from '@anchorlib/react';
-import { watchPrices } from './rpc/prices/index.js';
-
-export const PriceWidget = setup(({ ticker }) => {
-  const prices = watchPrices(ticker);
-  onMount(() => prices.start());
-
-  return render(() => <span>${prices.data}</span>);
-});
-```
-
-```tsx [SolidJS]
-import { onMount } from 'solid-js';
-import { watchPrices } from './rpc/prices/index.js';
-
-export const PriceWidget = (props) => {
-  const prices = watchPrices(props.ticker);
-  onMount(() => prices.start());
-
-  return <span>${prices.data}</span>;
-};
-```
-
-:::
 
 ### Subscription
 
@@ -432,7 +504,7 @@ prices.subscribe((state) => {
   console.log('Status:', state.status);
 });
 
-prices.start();
+
 ```
 
 ### Cancellation
@@ -441,7 +513,6 @@ Close a call to abort the server handler and trigger cleanup:
 
 ```typescript
 const prices = watchPrices('AAPL');
-prices.start();
 
 // Later
 prices.close();

@@ -181,10 +181,10 @@ export const UserProfile = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { query } from '@anchorlib/solid';
+import { setup, query } from '@anchorlib/solid';
 import { Show, Switch, Match } from 'solid-js';
 
-export const UserProfile = () => {
+export const UserProfile = setup(() => {
   const user = query(
     async (signal) => {
       const res = await fetch('/api/user', { signal });
@@ -208,7 +208,7 @@ export const UserProfile = () => {
       </Switch>
     </div>
   );
-};
+});
 ```
 
 :::
@@ -408,7 +408,7 @@ export const Dashboard = setup(() => {
 ```
 
 ```tsx [SolidJS]
-export const Dashboard = () => {
+export const Dashboard = setup(() => {
   const store = mutable({
     user: query(fetchUser, { name: '' }),
     stats: query(fetchStats, { total: 0 }),
@@ -428,7 +428,7 @@ export const Dashboard = () => {
       </Show>
     </div>
   );
-};
+});
 ```
 
 :::

@@ -1,0 +1,265 @@
+---
+title: 'Static UI'
+description: 'Learn how to manage static UI in the AIR Stack. Understand when to keep markup inline and when to extract it into reusable components.'
+---
+
+# Static UI
+
+A Static UI is an interface boundary that provides structure (markup) **without owning the reactive data** inside it.
+
+### The Problem
+The most common architectural mistake is **premature abstraction**. Developers often create components for elements that are only ever used once, scattering **single-use markup** across the entire repository. This breaks the natural top-down reading flow and forces you into **back-and-forth code scanning** for absolutely **zero reusability return**.
+
+### What This Page Covers
+This page establishes a definitive **Scaling Ladder** for your UI. You will learn how to manage **Markup**, ensuring it only graduates to higher abstractions when its **scope of reuse** actually demands it.
+
+## Static Element (Single-Use)
+When markup is used exactly once, keep it inline. 
+
+::: code-group
+
+```tsx [React]
+import { page, $use } from '@anchorlib/react';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <main>
+    <div className="profile-card">
+      <span className="profile-label">Profile</span>
+      <Avatar url={$use(state.data.user, 'avatarUrl')} />
+      <div className="profile-action">
+        <span className="flex-1"></span>
+        <LikeProfile profile={state.data.user} />
+      </div>
+    </div>
+  </main>
+));
+```
+
+```tsx [SolidJS]
+import { page } from '@anchorlib/solid';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <main>
+    <div class="profile-card">
+      <span class="profile-label">Profile</span>
+      <Avatar url={state.data.user.avatarUrl} />
+      <div class="profile-action">
+        <span class="flex-1"></span>
+        <LikeProfile profile={state.data.user} />
+      </div>
+    </div>
+  </main>
+));
+```
+
+:::
+
+::: tip Why keep it inline?
+Maintaining code is top-down. If you scatter your markup into components just to "split" it, you force yourself into back-and-forth scanning for zero reusability return.
+:::
+
+::: details Experience the Bad Practice
+
+When you prematurely abstract single-use markup, reading the code becomes a vertical scavenger hunt. You break the natural top-down reading flow by forcing the reader to scan back and forth just to piece together the structure:
+
+```tsx
+import { page } from '@anchorlib/react'; // or @anchorlib/solid
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <main>
+    <ProfileCard user={state.data.user} />
+  </main>
+));
+
+// Only used in ProfilePage
+const ProfileCard = ({ user }: { user: Profile }) => (
+  <div className="profile-card">
+    <span className="profile-label">Profile</span>
+    <Avatar url={user.avatarUrl} />
+    <ProfileAction user={user} />
+  </div>
+);
+
+// Only used in ProfileCard
+const ProfileAction = ({ user }: { user: Profile }) => (
+  <div className="profile-action">
+    <span className="flex-1"></span>
+    <LikeProfile profile={user} />
+  </div>
+);
+```
+
+To understand what the `ProfilePage` actually renders, you must scan up and down through three different component declarations. You gained absolutely no reusability, but significantly increased the cognitive load required to read and maintain the UI.
+:::
+
+## Static Component (Local Reuse)
+When markup is repeated multiple times on the same page, abstract it locally.
+
+::: code-group
+
+```tsx [React]
+import { page, $use, For } from '@anchorlib/react';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <div className="grid">
+    <For each={state.data.users}>
+      {user => <ProfileCard profile={user} />}
+    </For>
+  </div>
+));
+
+const ProfileCard = ({ profile }: { profile: Profile }) => (
+  <div className="profile-card">
+    <span className="profile-label">Profile</span>
+    <Avatar url={$use(profile, 'avatarUrl')} />
+    <div className="profile-action">
+      <span className="flex-1"></span>
+      <LikeProfile profile={profile} />
+    </div>
+  </div>
+);
+```
+
+```tsx [SolidJS]
+import { page, For } from '@anchorlib/solid';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <div class="grid">
+    <For each={state.data.users}>
+      {user => <ProfileCard profile={user} />}
+    </For>
+  </div>
+));
+
+const ProfileCard = ({ profile }: { profile: Profile }) => (
+  <div class="profile-card">
+    <span class="profile-label">Profile</span>
+    <Avatar url={profile.avatarUrl} />
+    <div class="profile-action">
+      <span class="flex-1"></span>
+      <LikeProfile profile={profile} />
+    </div>
+  </div>
+);
+```
+
+:::
+
+::: tip Why not global?
+Abstracting locally prevents repetition without introducing the "navigating multiple files" problem for a strictly local structural concern.
+:::
+
+:::: details Experience the Bad Practice
+
+When you push locally reused markup into a global components directory, you fragment the page's context across tabs:
+
+::: code-group
+
+```tsx [ProfilePage.tsx]
+import { page, For } from '@anchorlib/react'; // or @anchorlib/solid
+import { profileRoute } from './route.js';
+import { ProfileCard } from '@/lib/components/ProfileCard';
+
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <div className="grid">
+    <For each={state.data.users}>
+      {user => <ProfileCard profile={user} />}
+    </For>
+  </div>
+));
+```
+
+```tsx [ProfileCard.tsx]
+// @/lib/components/ProfileCard.tsx
+export const ProfileCard = ({ profile }: { profile: Profile }) => (
+  <div className="profile-card">
+    <span className="profile-label">Profile</span>
+    <Avatar url={profile.avatarUrl} />
+    <div className="profile-action">
+      <span className="flex-1"></span>
+      <LikeProfile profile={profile} />
+    </div>
+  </div>
+);
+```
+
+:::
+
+Now, every time you need to adjust the layout of the list or tweak how the card aligns within it, you have to switch back and forth between two different tabs. For a structural concern that is *only* ever used on the `ProfilePage`, you have manufactured an artificial boundary that slows you down.
+::::
+
+## Shared Static Component (Global Reuse)
+When markup is repeated across multiple pages, graduate it to a shared global directory.
+
+::: code-group
+
+```tsx [React]
+// @/lib/components/ProfileCard.tsx
+import { $use } from '@anchorlib/react';
+
+export const ProfileCard = ({ profile }: { profile: Profile }) => (
+  <div className="profile-card">
+    <span className="profile-label">Profile</span>
+    <Avatar url={$use(profile, 'avatarUrl')} />
+    <div className="profile-action">
+      <span className="flex-1"></span>
+      <LikeProfile profile={profile} />
+    </div>
+  </div>
+);
+
+// AnyOtherPage.tsx
+import { page } from '@anchorlib/react';
+import { otherRoute } from './route.js';
+import { ProfileCard } from '@/lib/components/ProfileCard';
+
+export const AnyOtherPage = page(otherRoute).render(({ state }) => (
+  <main>
+    <ProfileCard profile={state.data.currentUser} />
+  </main>
+));
+```
+
+```tsx [SolidJS]
+// @/lib/components/ProfileCard.tsx
+export const ProfileCard = ({ profile }: { profile: Profile }) => (
+  <div class="profile-card">
+    <span class="profile-label">Profile</span>
+    <Avatar url={profile.avatarUrl} />
+    <div class="profile-action">
+      <span class="flex-1"></span>
+      <LikeProfile profile={profile} />
+    </div>
+  </div>
+);
+
+// AnyOtherPage.tsx
+import { page } from '@anchorlib/solid';
+import { otherRoute } from './route.js';
+import { ProfileCard } from '@/lib/components/ProfileCard';
+
+export const AnyOtherPage = page(otherRoute).render(({ state }) => (
+  <main>
+    <ProfileCard profile={state.data.currentUser} />
+  </main>
+));
+```
+
+:::
+
+## Learn More
+
+- [Styling](./styling) — How to manage visual reuse and conditional states
+- [Reactive UI](./view) — Presenting reactive data without owning it
+- [Component](./component) — When a concern needs its own state, behavior, and reactivity
+- [Data Components](./data) — Components that own and manage their server data
+- [Form Components](./form) — User-driven form components with built-in validation
+- [Headless Components](./headless) — Reusable logic units without a view
+- [Composition](./composition) — Coordinating autonomous components into complete interfaces
+
+

@@ -149,8 +149,7 @@ On the client, the `IRPCReader` populates each field independently. The UI skele
 
 ```tsx [React]
 export const DashboardWidget = setup(({ userId }) => {
-  const dashboard = getDashboard(userId);
-  onMount(() => dashboard.start());
+  const dashboard = getDashboard.with(() => [userId]);
   
   return render(() => (
     <div>
@@ -163,9 +162,8 @@ export const DashboardWidget = setup(({ userId }) => {
 ```
 
 ```tsx [SolidJS]
-export const DashboardWidget = (props) => {
-  const dashboard = getDashboard(props.userId);
-  onMount(() => dashboard.start());
+export const DashboardWidget = setup((props) => {
+  const dashboard = getDashboard.with(() => [props.userId]);
   
   return (
     <div>
@@ -174,7 +172,7 @@ export const DashboardWidget = (props) => {
       <Metrics data={dashboard.data.telemetry} />
     </div>
   );
-};
+});
 ```
 
 :::

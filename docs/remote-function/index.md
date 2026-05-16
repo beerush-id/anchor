@@ -75,10 +75,10 @@ export const Greeting = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { mutable } from '@anchorlib/solid';
+import { setup, mutable } from '@anchorlib/solid';
 import { hello } from './rpc/hello/index.js';
 
-export const Greeting = () => {
+export const Greeting = setup(() => {
   const state = mutable({ message: '' });
 
   const fetchGreeting = async () => {
@@ -91,7 +91,7 @@ export const Greeting = () => {
       <p>{state.message}</p>
     </div>
   );
-};
+});
 ```
 
 :::
@@ -149,14 +149,11 @@ Every call returns an `IRPCReader<T>` — a reactive proxy with `.data`, `.statu
 ::: code-group
 
 ```tsx [React]
-import { setup, render, onMount } from '@anchorlib/react';
+import { setup, render } from '@anchorlib/react';
 import { generatePoem } from './rpc/poem/index.js';
 
 export const PoemWidget = setup(() => {
-  const poem = generatePoem('Space');
-
-  // Start the stream after mount
-  onMount(() => poem.start());
+  const poem = generatePoem.with(() => ['Space']);
 
   // Bind directly — re-renders as data arrives
   return render(() => <div>{poem.data}</div>);
@@ -164,18 +161,15 @@ export const PoemWidget = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { onMount } from 'solid-js';
+import { setup } from '@anchorlib/solid';
 import { generatePoem } from './rpc/poem/index.js';
 
-export const PoemWidget = () => {
-  const poem = generatePoem('Space');
-
-  // Start the stream after mount
-  onMount(() => poem.start());
+export const PoemWidget = setup(() => {
+  const poem = generatePoem.with(() => ['Space']);
 
   // Bind directly — natively reactive
   return <div>{poem.data}</div>;
-};
+});
 ```
 
 :::

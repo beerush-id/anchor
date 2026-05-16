@@ -30,68 +30,82 @@ export const profileRoute = usersRoute
 
 ```tsx [React]
 // page.tsx
-import { page, snippet, render } from '@anchorlib/react';
+import { page, Show, For } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
-export const ProfilePage = page(profileRoute).render(({ state }) => {
-  const ProfileCard = snippet(() => (
-    <div>
-      <h1>{state.data?.profile?.name}</h1>
-      <p>{state.data?.profile?.email}</p>
-    </div>
-  ));
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <>
+    <Show when={() => state.status === 'pending'}>
+      <div>Loading...</div>
+    </Show>
 
-  const Notifications = snippet(() => (
-    <ul>
-      {state.data?.notifications?.map((notification) => (
-        <li key={notification.id}>{notification.message}</li>
-      ))}
-    </ul>
-  ));
+    <Show when={() => state.data.profile}>
+      {({ name, email }) => (
+        <div>
+          <h1>{name}</h1>
+          <p>{email}</p>
+        </div>
+      )}
+    </Show>
 
-  return (
-    <>
-      <ProfileCard />
-      <Notifications />
-    </>
-  );
-});
+    <Show when={() => state.data.notifications}>
+      {(notifications) => (
+        <ul>
+          <For each={notifications}>
+            {(n) => <li>{n.message}</li>}
+          </For>
+        </ul>
+      )}
+    </Show>
+  </>
+));
 ```
 
 ```tsx [SolidJS]
 // page.tsx
-import { page } from '@anchorlib/solid';
-import { For } from 'solid-js';
+import { page, Show, For } from '@anchorlib/solid';
 import { profileRoute } from './route.js';
 
-export const ProfilePage = page(profileRoute).render(({ state }) => {
-  const ProfileCard = () => (
-    <div>
-      <h1>{state.data?.profile?.name}</h1>
-      <p>{state.data?.profile?.email}</p>
-    </div>
-  );
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <>
+    <Show when={state.status === 'pending'}>
+      <div>Loading...</div>
+    </Show>
 
-  const Notifications = () => (
-    <ul>
-      <For each={state.data?.notifications}>
-        {(notification) => <li>{notification.message}</li>}
-      </For>
-    </ul>
-  );
+    <Show when={state.data.profile}>
+      {(profile) => (
+        <div>
+          <h1>{profile.name}</h1>
+          <p>{profile.email}</p>
+        </div>
+      )}
+    </Show>
 
-  return (
-    <>
-      <ProfileCard />
-      <Notifications />
-    </>
-  );
-});
+    <Show when={state.data.notifications}>
+      {(notifications) => (
+        <ul>
+          <For each={notifications}>
+            {(n) => <li>{n.message}</li>}
+          </For>
+        </ul>
+      )}
+    </Show>
+  </>
+));
 ```
 
 :::
 
 ### What's happening here
+
+When the route activates, Anchor automatically manages the UI lifecycle and data bindings for you:
+
+1. **Pending State**: The `state.status` becomes `pending` while the providers fetch data, triggering your loading indicator.
+2. **Success State**: Once the data resolves, the status switches to `success`.
+3. **Render Props**: The `<Show>` component safely unwraps the truthy `state.data.profile` and `state.data.notifications` objects, passing them directly to your children functions. This gives you instant access to the data without needing to write deep, repetitive object chains (`state.data.profile.name`).
+
+> [!TIP]
+> If you configure your router with `{ renderMode: 'immediate' }`, the route becomes active immediately. The loading indicator is shown instantly, and the `profile` and `notifications` sections will individually appear as soon as their respective providers resolve!
 
 #### Route Nesting
 
@@ -125,7 +139,7 @@ Data loading is handled by providers, which also execute outside the component l
 
 Because Anchor resolves guards and providers outside the component lifecycle, the `.render()` function represents pure UI injection. It is a plain function, not a reactive block. Because the route is a single chain, TypeScript infers the exact shape of your data—giving you perfect autocomplete for `state.data.profile` and `state.data.notifications`. 
 
-By wrapping your components natively or using `snippet()` (in React), you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the specific DOM node reading that data re-renders, not the entire page.
+By using the `<Show>` component, you opt into **fine-grained reactivity**. The injected `state` is observable—when a specific piece of data updates in the background, only the specific DOM node reading that data re-renders, not the entire page.
 
 #### Navigation
 

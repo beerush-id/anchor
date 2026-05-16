@@ -36,9 +36,9 @@ export const Logger = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { mutable, effect } from '@anchorlib/solid';
+import { setup, mutable, effect } from '@anchorlib/solid';
 
-export const Logger = () => {
+export const Logger = setup(() => {
   const state = mutable({ count: 0 });
 
   // 1. Runs immediately
@@ -49,7 +49,7 @@ export const Logger = () => {
   });
 
   return <button onClick={() => state.count++}>Increment</button>;
-};
+});
 ```
 
 :::

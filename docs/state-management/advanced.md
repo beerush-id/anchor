@@ -183,9 +183,9 @@ export const Counter = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { mutable } from '@anchorlib/solid';
+import { setup, mutable } from '@anchorlib/solid';
 
-export const Counter = () => {
+export const Counter = setup(() => {
   // This state is local to this instance of Counter
   const state = mutable({ count: 0 });
 
@@ -194,7 +194,7 @@ export const Counter = () => {
       Count: {state.count}
     </button>
   );
-};
+});
 ```
 
 :::

@@ -1,0 +1,525 @@
+---
+title: 'Reactive UI'
+description: 'Learn how to build Reactive UIs in the AIR Stack that present reactive data from props, stores, or context without owning it.'
+---
+
+# Reactive UI
+
+When building an application, the goals are simple: **Performance, Scalability, and Maintainability**. You want to **build fast**, and you want the app to **run fast**.
+
+In **React**, you are often forced to sacrifice one for the other:
+- **Build Fast (The God Component):** You shove massive amounts of reactive logic and static markup into a single block. You ship the feature quickly, but you **ignore the performance issues** because you don't have time to fight the framework's render cycle, causing expensive parent re-renders.
+- **Run Fast (Memoization Hell):** You try to achieve **fine-grained reactivity** by wrapping every single state in its own tiny component. You spend the majority of your time fighting the framework—drowning the codebase in `React.memo()`, fragile dependency arrays, and stale state bugs.
+
+The **AIR Stack** eliminates this sacrifice by enforcing a strict **Reactive UI** architecture: **isolating frequently updating elements** into **Views** that inherently **absorb the re-render cascades**.
+
+This allows you to **contain the God Component** while completely **bypassing the fragile dependency arrays of Memoization Hell**.
+
+## Isolation & Extraction
+
+Isolation protects the surrounding layout from fast updates. Extraction moves repetitive markup into reusable blocks.
+
+Let's take a look at a standard React component that fails to do this:
+
+```tsx {11,15}
+import { useMetrics, useTheme } from '@/stores/index.js';
+
+export default function HeroSection() {
+  const { downloads } = useMetrics();
+  const { theme } = useTheme();
+
+  return (
+    <section className="hero">
+      <div className="hero-content">
+        <h1>Welcome to Our Product</h1>
+        <span className="downloads">Downloads: {downloads}</span>
+      </div>
+
+      <div className="hero-features">
+        <div className={`feature-card ${theme}`}>
+          <h3>Lightning Fast</h3>
+          <p>Zero configuration required.</p>
+        </div>
+        
+        <div className={`feature-card ${theme}`}>
+          <h3>Type Safe</h3>
+          <p>End-to-end type safety.</p>
+        </div>
+        
+        <div className={`feature-card ${theme}`}>
+          <h3>Isomorphic</h3>
+          <p>Runs anywhere.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+```
+
+This creates two distinct issues:
+1. **Performance Bottleneck:** The fast `downloads` counter updates 60 times a second. In **React**, the parent needs to re-render every frame just to update the counter, dragging the heavy feature cards down with it.
+2. **Structural Repetition:** The heavy feature card markup is repeated three times, and the `theme` also demands expensive re-renders.
+
+To solve this, you need to:
+1. **Isolate** the fast updates to prevent them from dragging down the parent.
+2. **Extract** repetitive markup to eliminate structural repetition and reduce the size of the parent.
+
+### Isolation
+
+To protect the surrounding layout from expensive re-renders, you isolate frequently updating elements by moving it into a **View**, a reactive boundary that re-renders independently of the parent.
+
+```tsx [React]
+const DownloadsCounter = template<{ metrics: Metrics }>(({ metrics: { downloads } }) => (
+  <span className="downloads">Downloads: {downloads}</span>
+));
+```
+
+### Extraction
+
+You extract pieces of UI for structural reuse.
+
+The three feature cards share the exact same heavy structure, so you extract them into a `<FeatureCard />` View. By doing so, you solve the structural repetition. As a bonus, the extracted View naturally isolates the `theme` reactivity inside itself.
+
+::: code-group
+
+```tsx [React]
+const FeatureCard = template<{ title: string, description: string, theme: Theme }>(
+  ({ title, description, theme: { current } }) => (
+    <div className={`feature-card ${current}`}>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  )
+);
+```
+
+```tsx [SolidJS]
+const FeatureCard = (props: { title: string, description: string, theme: Theme }) => (
+  <div class={`feature-card ${props.theme.current}`}>
+      <h3>{props.title}</h3>
+      <p>{props.description}</p>
+    </div>
+  );
+};
+```
+
+:::
+
+### The Refactored Component
+
+By isolating the fast updates and extracting the repetitive structure, the God Component is dismantled into highly performant and maintainable Views.
+
+::: code-group
+
+```tsx [React]
+import { setup, getContext, template } from '@anchorlib/react';
+
+export const HeroSection = setup(() => {
+  const metrics = getContext(METRICS);
+  const theme = getContext(THEME);
+
+  return (
+    <section className="hero">
+      <div className="hero-content">
+        <h1>Welcome to Our Product</h1>
+        <DownloadsCounter metrics={metrics} />
+      </div>
+
+      <div className="hero-features">
+        <FeatureCard theme={theme} title="Lightning Fast" description="Zero configuration required." />
+        <FeatureCard theme={theme} title="Type Safe" description="End-to-end type safety." />
+        <FeatureCard theme={theme} title="Isomorphic" description="Runs anywhere." />
+      </div>
+    </section>
+  );
+});
+
+const DownloadsCounter = template<{ metrics: Metrics }>(({ metrics: { downloads } }) => (
+  <span className="downloads">Downloads: {downloads}</span>
+));
+
+const FeatureCard = template<{ title: string, description: string, theme: Theme }>(
+  ({ title, description, theme: { current } }) => (
+    <div className={`feature-card ${current}`}>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  )
+);
+```
+
+```tsx [SolidJS]
+import { setup, getContext } from '@anchorlib/solid';
+
+export const HeroSection = setup(() => {
+  const metrics = getContext(METRICS);
+  const theme = getContext(THEME);
+
+  return (
+    <section class="hero">
+      <div class="hero-content">
+        <h1>Welcome to Our Product</h1>
+        <span class="downloads">Downloads: {metrics.downloads}</span>
+      </div>
+
+      <div class="hero-features">
+        <FeatureCard theme={theme} title="Lightning Fast" description="Zero configuration required." />
+        <FeatureCard theme={theme} title="Type Safe" description="End-to-end type safety." />
+        <FeatureCard theme={theme} title="Isomorphic" description="Runs anywhere." />
+      </div>
+    </section>
+  );
+});
+
+const FeatureCard = (props: { title: string, description: string, theme: Theme }) => (
+  <div class={`feature-card ${props.theme.current}`}>
+      <h3>{props.title}</h3>
+      <p>{props.description}</p>
+    </div>
+  );
+};
+```
+
+:::
+
+## Separation of Concerns
+
+A core architectural rule is **separating distinct domains** into their own structural Views. This ensures that each part of the UI is **highly maintainable** and **easy to reason about**.
+
+Let's take a look at a **God Component** that fails to do this by mixing unrelated domains:
+
+```tsx
+import { useAuth, useMetrics } from '@/stores/index.js';
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const { metrics } = useMetrics();
+
+  return (
+    <div className="dashboard">
+      <div className="profile">
+        <h2>{user.firstName} {user.lastName}</h2>
+        <span>{user.role}</span>
+      </div>
+      <div className="metrics-panel">
+        <h3>System Status</h3>
+        <div>RAM: {metrics.ram}GB</div>
+        <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
+      </div>
+    </div>
+  );
+}
+```
+
+This single component suffers from three distinct problems:
+1. **Mixed Structural Domains:** The `profile` and `metrics-panel` markup are bundled together.
+2. **Mixed Reactive Domains:** It subscribes to unrelated data sources.
+3. **Mixed Update Behaviors:** The fast-updating `cpu` updates 60 times a second. In **React**, this drags the static `User` profile into an expensive re-render every frame.
+
+To solve this, you must break the component down into its distinct concerns. 
+
+### Grouping Concerns
+
+When separating concerns, you must first **define your boundaries**. If the structures **share the same logical domain** (they are "family"), put them together. You **group logically related data** to **avoid scattering the UI into fragmented pieces** unless forced to by performance.
+
+::: code-group
+
+```tsx [React]
+const UserProfile = snippet(() => (
+  <div className="profile">
+    <h2>{user.firstName} {user.lastName}</h2>
+    <span>{user.role}</span>
+  </div>
+));
+
+const SystemMetrics = snippet(() => (
+  <div className="metrics-panel">
+    <h3>System Status</h3>
+    <div>RAM: {metrics.ram}GB</div>
+    <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
+  </div>
+));
+```
+
+```tsx [SolidJS]
+const UserProfile = () => (
+  <div class="profile">
+    <h2>{user.firstName} {user.lastName}</h2>
+    <span>{user.role}</span>
+  </div>
+);
+
+const SystemMetrics = () => (
+  <div class="metrics-panel">
+    <h3>System Status</h3>
+    <div>RAM: {metrics.ram}GB</div>
+    <div class="cpu-fast-update">CPU: {metrics.cpu}%</div>
+  </div>
+);
+```
+
+:::
+
+::: tip React Performance Collisions
+
+In React, separating `UserProfile` and `SystemMetrics`, you solve the mixed structural and reactive domains. But because `cpu` updates at 60fps, it still creates a performance collision that demands to separate it from the slow `ram` updates. 
+
+You need **isolate the fast update** into its own **View**, passing a reactive reference so the parent doesn't track the read.
+
+```tsx [React]
+const SystemMetrics = snippet(() => (
+  <div className="metrics-panel">
+    <h3>System Status</h3>
+    <div>RAM: {metrics.ram}GB</div>
+    <CpuMeter />
+  </div>
+));
+
+const CpuMeter = snippet(() => (
+  <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
+));
+```
+:::
+
+### The Refactored Component
+
+By separating domains and isolating internal performance collisions, the God Component is cleanly dismantled. The component becomes highly performant and easy to maintain.
+
+::: code-group
+
+```tsx [React]
+import { setup, getContext, snippet } from '@anchorlib/react';
+
+export const Dashboard = setup(() => {
+  const user = getContext(AUTH);
+  const metrics = getContext(METRICS);
+
+  const UserProfile = snippet(() => (
+    <div className="profile">
+      <h2>{user.firstName} {user.lastName}</h2>
+      <span>{user.role}</span>
+    </div>
+  ));
+
+  const SystemMetrics = snippet(() => (
+    <div className="metrics-panel">
+      <h3>System Status</h3>
+      <div>RAM: {metrics.ram}GB</div>
+      <CpuMeter />
+    </div>
+  ));
+
+  const CpuMeter = snippet(() => (
+    <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
+  ));
+
+  return (
+    <div className="dashboard">
+      <UserProfile />
+      <SystemMetrics />
+    </div>
+  );
+});
+```
+
+```tsx [SolidJS]
+import { getContext, setup } from 'solid-js';
+
+export const Dashboard = setup(() => {
+  const user = getContext(AUTH);
+  const metrics = getContext(METRICS);
+
+  const UserProfile = () => (
+    <div class="profile">
+      <h2>{user.firstName} {user.lastName}</h2>
+      <span>{user.role}</span>
+    </div>
+  );
+
+  const SystemMetrics = () => (
+    <div class="metrics-panel">
+      <h3>System Status</h3>
+      <div>RAM: {metrics.ram}GB</div>
+      <div class="cpu-fast-update">CPU: {metrics.cpu}%</div>
+    </div>
+  );
+
+  return (
+    <div class="dashboard">
+      <UserProfile user={user} />
+      <SystemMetrics metrics={metrics} />
+    </div>
+  );
+});
+```
+
+:::
+
+::: tip Is This Over-Engineering?
+
+You might think this is **over-engineering** or **anti-pattern**. But consider the alternative: if you don't separate concerns, you end up with a God Component that is hard to maintain. The component carries a high cognitive load, making it hard to reason about, debug, and maintain.
+
+The moment you need to **add a feature** or **fix a bug**, you have to **scan the entire component** to understand **where to add the code**, you might **break something unrelated**, and even worse, **the entire component breaks**.
+
+In **React**, adding a feature is even harder. You need to think about **memoization**, **stable references**, **unnecessary re-renders**, and **stale closures**. Every single change might introduce a performance regression that you won't catch until runtime.
+
+:::
+
+## Binding
+
+In **React**, property is **pass-by-value**. When you pass a fast-updating value directly, it forces the parent component to re-render to update the value. This drags the parent into an expensive re-render cascade.
+
+```tsx [React]
+<ProgressBar progress={metrics.cpu} />
+```
+
+To fix this, use **Binding** to wrap a value that the parent component should not track. In **SolidJS**, the compiler handles this automatically, so you don't need to wrap anything.
+
+Here is the fully resolved implementation where the parent safely defers the update to the child:
+
+::: code-group
+
+```tsx [React]
+import { setup, getContext, template, $use } from '@anchorlib/react';
+
+export const SystemMetrics = setup(() => {
+  const metrics = getContext(METRICS);
+
+  return (
+    <div className="metrics-panel">
+      <h3>System Status</h3>
+      <ProgressBar progress={$use(metrics, 'cpu')} />
+    </div>
+  );
+});
+
+const ProgressBar = template<{ progress: number }>(({ progress }) => (
+  <div className="progress-bar" style={{ width: `${progress}%` }} />
+));
+```
+
+```tsx [SolidJS]
+import { setup, getContext } from '@anchorlib/solid';
+
+export const SystemMetrics = setup(() => {
+  const metrics = getContext(METRICS);
+
+  return (
+    <div class="metrics-panel">
+      <h3>System Status</h3>
+      <ProgressBar progress={metrics.cpu} />
+    </div>
+  );
+});
+
+const ProgressBar = (props: { progress: number }) => (
+  <div class="progress-bar" style={{ width: `${props.progress}%` }} />
+);
+```
+
+:::
+
+## View vs Static Component
+
+Since both **Views** and **Static Components** are presentation layer (rendering UI), when should you use which?
+
+- If the UI is purely for **structural sharing**, **does not consume props for itself**, and **does not change after the initial render**, use a **[Static Component](./static)** (a standard function).
+- If the UI receives **state that changes over time** and **consumed by itself**, it is **reactive**, so you must use a **View** (`template()` or `snippet()`) to isolate the updates.
+
+::: code-group
+
+```tsx [React]
+const ProfileCard = ({ profile }: { profile: Profile }) => (
+  <div className="card">
+    <Avatar url={$use(profile, 'avatarUrl')} />
+  </div>
+);
+
+const Avatar = template<{ url: string }>(({ url }) => (
+  <img src={url} alt="Avatar" />
+));
+```
+
+```tsx [SolidJS]
+const ProfileCard = (props: { profile: Profile }) => (
+  <div class="card">
+    <Avatar url={props.profile.avatarUrl} />
+  </div>
+);
+
+const Avatar = (props: { url: string }) => (
+  <img src={props.url} alt="Avatar" />
+);
+```
+
+:::
+
+::: tip The SolidJS Exception
+
+Because the SolidJS compiler natively tracks and isolates every JSX expression, the line between a Static Component and a View is completely blurred. In SolidJS, every Static Component naturally acts as a highly optimized View.
+
+:::
+
+## Upgrading to a Component
+
+In the AIR Stack, a **Component** is a self-governing unit that **owns state**, **handles side effects**, or **manages behavior**, while a **View** is purely a **one-way** reactive boundary that **renders the state as is**.
+
+The moment your **UI demands internal state** (like toggling a menu), side-effects (like fetching data), or behavior (like formatting), it crosses the **View Boundary**, so you need to graduate it into a **Component**.
+
+::: code-group
+
+```tsx [React]
+import { setup, render, type Bindable } from '@anchorlib/react';
+
+export const ToggleButton = setup<{ active: Bindable<boolean> }>((props) => {
+  const toggle = () => props.active = !props.active;
+
+  return render(() => (
+    <button className={props.active ? 'on' : 'off'} onClick={toggle}>
+      {props.active ? 'Turn Off' : 'Turn On'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, type Bindable } from '@anchorlib/solid';
+
+export const ToggleButton = setup<{ active: Bindable<boolean> }>((props) => {
+  const toggle = () => props.active = !props.active;
+
+  return (
+    <button class={props.active ? 'on' : 'off'} onClick={toggle}>
+      {props.active ? 'Turn Off' : 'Turn On'}
+    </button>
+  );
+});
+```
+
+:::
+
+Learn more about building autonomous components in the **[Component](./component)** guide.
+
+## What You Learned
+
+Building **Reactive UIs** by extracting repetitive structures, grouping logical domains, and isolating fast updates to prevent performance collisions.
+
+**From this guide, you know:**
+
+- **Static vs View:** If it's structural and never changes, it's a Static Component. If it's **reactive**, it's a View.
+- **Views** are pure, **one-way reactive boundaries** that **render state as is**, but never own state or behavior.
+- **React:** **`template()`** creates a **standalone reactive view** that receives explicit props.
+- **React:** **`snippet()`** creates an **inline reactive boundary** that naturally inherits the parent closure.
+- **React:** **Binding (`$use()`)** creates a **pass-by-reference** so the parent component doesn't need to **re-render to update the value**.
+- **SolidJS:** The compiler handles **fine-grained tracking natively**, so standard functional closures automatically act as **perfect boundaries** without needing utilities like `$use()` or `snippet()`.
+- **Isolation:** You extract fast-updating properties (`cpu`) into their own Views to protect slow properties (`ram`) from **expensive re-renders**.
+- **Component Upgrade:** The moment your UI needs to **manage state**, **execute behavior**, or **handle side effects**, it crosses the boundary and becomes a **Component**.
+
+## Learn More
+
+- [Styling](./styling) — Managing visual logic and conditional states
+- [Component](./component) — Building autonomous, self-governing UI units
+- [Data Components](./data) — Components that own and manage their server data
+- [Form Components](./form) — User-driven form components with built-in validation
+- [Headless Components](./headless) — Reusable logic units without a view
+- [Composition](./composition) — Coordinating autonomous components into complete interfaces

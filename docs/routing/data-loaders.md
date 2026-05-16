@@ -41,33 +41,57 @@ export const profileRoute = usersRoute
 
 ```tsx [React]
 // page.tsx
-import { page, snippet, render } from '@anchorlib/react';
+import { page, Show } from '@anchorlib/react';
 import { profileRoute } from './route.js';
 
-export const ProfilePage = page(profileRoute).render(({ state }) => {
-  return render(() => (
-    <div>
-      <h1>{state.data?.profile?.name}</h1>
-      <p>{state.data?.profile?.email}</p>
-    </div>
-  ));
-});
+export const ProfilePage = page(profileRoute).render(({ state }) => (
+  <>
+    <Show when={() => state.status === 'pending'}>
+      <div>Loading profile...</div>
+    </Show>
+
+    <Show when={() => state.data.profile}>
+      {({ name, email }) => (
+        <div>
+          <h1>{name}</h1>
+          <p>{email}</p>
+        </div>
+      )}
+    </Show>
+  </>
+));
 ```
 
 ```tsx [SolidJS]
 // page.tsx
-import { page } from '@anchorlib/solid';
+import { page, Show } from '@anchorlib/solid';
 import { profileRoute } from './route.js';
 
 export const ProfilePage = page(profileRoute).render(({ state }) => (
-  <div>
-    <h1>{state.data.profile?.name}</h1>
-    <p>{state.data.profile?.email}</p>
-  </div>
+  <>
+    <Show when={state.status === 'pending'}>
+      <div>Loading profile...</div>
+    </Show>
+
+    <Show when={state.data.profile}>
+      {(profile) => (
+        <div>
+          <h1>{profile.name}</h1>
+          <p>{profile.email}</p>
+        </div>
+      )}
+    </Show>
+  </>
 ));
 ```
 
 :::
+
+When the route activates, Anchor automatically manages the lifecycle and data bindings for you:
+
+1. **Pending State**: The `state.status` becomes `pending` while the `.provide()` callback fetches the data, triggering your loading indicator.
+2. **Success State**: Once the data resolves, the status switches to `success` and the data is bound to the route.
+3. **Render Props**: The `<Show>` component safely unwraps the truthy `state.data.profile` object and passes it directly to your children function. This gives you instant access to the data without needing to write `state.data.profile.X` repeatedly.
 
 ## Provider Arguments
 
@@ -144,23 +168,39 @@ export const dashboardRoute = rootRoute
 
 ```tsx [React]
 // page.tsx
-import { page, render } from '@anchorlib/react';
-import { dashboardRoute } from './route.js';
-import { Dashboard } from './Dashboard.js';
-
-export const DashboardPage = page(dashboardRoute).render(({ state }) => {
-  return render(() => <Dashboard data={state.data?.analytics} />);
-});
-```
-
-```tsx [SolidJS]
-// page.tsx
-import { page } from '@anchorlib/solid';
+import { page, Show } from '@anchorlib/react';
 import { dashboardRoute } from './route.js';
 import { Dashboard } from './Dashboard.js';
 
 export const DashboardPage = page(dashboardRoute).render(({ state }) => (
-  <Dashboard data={state.data?.analytics} />
+  <>
+    <Show when={() => state.status === 'pending'}>
+      <div>Loading analytics...</div>
+    </Show>
+
+    <Show when={() => state.data.analytics}>
+      {(analytics) => <Dashboard data={analytics} />}
+    </Show>
+  </>
+));
+```
+
+```tsx [SolidJS]
+// page.tsx
+import { page, Show } from '@anchorlib/solid';
+import { dashboardRoute } from './route.js';
+import { Dashboard } from './Dashboard.js';
+
+export const DashboardPage = page(dashboardRoute).render(({ state }) => (
+  <>
+    <Show when={state.status === 'pending'}>
+      <div>Loading analytics...</div>
+    </Show>
+
+    <Show when={state.data.analytics}>
+      {(analytics) => <Dashboard data={analytics} />}
+    </Show>
+  </>
 ));
 ```
 
@@ -271,30 +311,38 @@ You can access this data in two distinct ways, depending on what you need:
 
 ```tsx [React]
 // page.tsx
-import { page, snippet, render } from '@anchorlib/react';
+import { page, Show } from '@anchorlib/react';
 
-export const ProfilePage = page(profileRoute).render(({ state, context }) => {
-  return render(() => (
-    <div>
-      {/* Accessing local provider data */}
-      <h1>{state.data?.profile?.name}</h1>
-      
-      {/* Accessing global data provided by a parent layout */}
-      <p>Current Theme: {context?.data?.theme}</p>
-    </div>
-  ));
-});
+export const ProfilePage = page(profileRoute).render(({ state, context }) => (
+  <div>
+    {/* Accessing local provider data */}
+    <Show when={() => state.data.profile}>
+      {({ name }) => <h1>{name}</h1>}
+    </Show>
+    
+    {/* Accessing global data provided by a parent layout */}
+    <Show when={() => context.data.theme}>
+      {(theme) => <p>Current Theme: {theme}</p>}
+    </Show>
+  </div>
+));
 ```
 
 ```tsx [SolidJS]
 // page.tsx
+import { page, Show } from '@anchorlib/solid';
+
 export const ProfilePage = page(profileRoute).render(({ state, context }) => (
   <div>
     {/* Accessing local provider data */}
-    <h1>{state.data?.profile?.name}</h1>
+    <Show when={state.data.profile}>
+      {(profile) => <h1>{profile.name}</h1>}
+    </Show>
     
     {/* Accessing global data provided by a parent layout */}
-    <p>Current Theme: {context?.data?.theme}</p>
+    <Show when={context.data.theme}>
+      {(theme) => <p>Current Theme: {theme}</p>}
+    </Show>
   </div>
 ));
 ```

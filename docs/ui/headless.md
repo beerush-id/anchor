@@ -1,6 +1,6 @@
 ---
-title: 'Component: Headless Components'
-description: 'Reusable logic units without a view — behavior that works anywhere.'
+title: 'Headless Components'
+description: 'Create headless components in the AIR Stack. Encapsulate reusable UI logic and behavior without a view, working seamlessly across environments.'
 ---
 
 # Headless Components

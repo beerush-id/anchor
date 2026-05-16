@@ -350,7 +350,6 @@ Calling `.close()` on an `IRPCReader` sends a `CANCEL` packet to the router. The
 
 ```typescript
 const prices = watchPrices('AAPL');
-prices.start();
 
 // Later
 prices.close(); // CANCEL packet → server cleanup

@@ -1,105 +1,15 @@
 ---
-title: 'Component: Reactive Components'
-description: 'When a concern needs its own reactivity — and what makes it a component.'
+title: 'Component'
+description: 'Learn how to build autonomous, self-governing UI components that manage their own state, behavior, and reactivity in the AIR Stack.'
 ---
 
-# Reactive Components
+# Component
 
-In AIR Stack, components carry HTML's mental model. An `<input>` element is not a dumb box that waits for its parent to
-set a value — it updates itself when the user types, has its own default type (`text`), manages its own selection and
-focus, and emits events when things change. The parent can configure it with attributes, but the element governs itself.
+In the AIR Stack, components carry HTML's mental model. A native `<input>` element is not a dumb box that waits for its parent to set a value — it updates itself when the user types, has its own default type, manages its own selection, and emits events when things change. The parent can configure it with attributes, but the element governs itself.
 
-AIR Stack reactive components work the same way. Each component is a **self-governing unit** with its own
-responsibility. A `PriceTag` formats and displays a price. A `StatusBadge` resolves a status into a visual indicator. A
-`QuantitySelector` manages a number within boundaries. Each one handles its concern without waiting for the parent to
-tell it how.
+AIR Stack components work the exact same way. Each component is a **self-governing unit** with its own responsibility. A `PriceTag` formats and displays a price. A `StatusBadge` resolves a status into a visual indicator. A `QuantitySelector` manages a number within boundaries. Each one handles its concern without waiting for the parent to tell it how.
 
-## When You Need a Component
-
-Not everything on the screen needs its own reactive boundary.
-
-```tsx
-<h1>Welcome</h1>
-<p>This is static content.</p>
-```
-
-This is markup. It renders once, never changes, and belongs inline in whatever view contains it. No state, no behavior,
-no side-effect — no reason to isolate it.
-
-But when a piece of UI is **reused across multiple views** and **updates frequently**, it earns its own reactive
-boundary:
-
-```tsx
-<PriceTag amount={ item.price } />
-<PriceTag amount={ cart.subtotal } />
-<PriceTag amount={ order.total } />
-```
-
-A `PriceTag` formats a number as currency. It appears in product listings, carts, and checkout. When the amount changes,
-only the `PriceTag` updates — not the entire view around it.
-
-## Reactive View vs. Component
-
-A reactive boundary alone doesn't make something a component. Should you make a **reactive view** or a **component**?
-
-### Reactive View
-
-A piece of UI becomes a **reactive view** when: it presents reactive data without owning it — a reusable fragment that
-presents reactive
-data. Reactive views are always **one-way**: they receive data and present it.
-
-**For example**: A **`Label`** renders the **text** and **class** with defaults. No state, no behavior, no side-effect:
-
-::: code-group
-
-```tsx [React]
-import { template } from '@anchorlib/react';
-
-const Label = template<{ text?: string; type?: string }>((props) => (
-  <span className={ `label ${ props.type ?? 'muted' }` }>{ props.text ?? '—' }</span>
-));
-```
-
-```tsx [SolidJS]
-function Label(props: { text?: string; type?: string }) {
-  return (
-    <span class={ `label ${ props.type ?? 'muted' }` }>{ props.text ?? '—' }</span>
-  );
-}
-```
-
-:::
-
-::: code-group
-
-```tsx [React]
-// In React, use pass-by-reference — lazy read for reactive updates
-<Label text={ $use(appState, 'userName') } type="primary" />
-```
-
-```tsx [SolidJS]
-// In SolidJS, expressions automatically wrapped as a lazy read
-<Label text={ appState.userName } type="primary" />
-```
-
-:::
-
-::: details What you learned {open}
-
-Creating an isolated reactive boundary that update itself without needing the parent to re-render,
-and doesn't re-run when the parent re-renders.
-
-**From these two examples, you know:**
-
-- An isolated reactive view **updates itself** when the data it read changes
-- **React:** `template()` used to create a reactive boundary that **runs once** and **only re-renders when the data it
-  read changes**. Parent re-render **doesn't re-run the reactive view** because it's self-governing.
-- **React:** `$use(state, 'key')` creates a **pass-by-reference** link so **state reads** happens at the reactive
-  boundary, not the parent.
-- **SolidJS:** component functions **run once** by default, and `state.text` is already wrapped as a **lazy read**
-  :::
-
-### Component
+## What Makes a Component?
 
 A piece of UI becomes a **component** when it has its own:
 
@@ -130,9 +40,9 @@ const PriceTag = setup<{ amount: number; currency?: string }>((props) => {
 ```
 
 ```tsx [SolidJS]
-import { derived } from '@anchorlib/solid';
+import { setup, derived } from '@anchorlib/solid';
 
-function PriceTag(props: { amount: number; currency?: string }) {
+const PriceTag = setup<{ amount: number; currency?: string }>((props) => {
   const formatter = derived(() => new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: props.currency ?? 'USD',
@@ -143,7 +53,7 @@ function PriceTag(props: { amount: number; currency?: string }) {
   });
 
   return <span class="price">{ display.value }</span>;
-}
+});
 ```
 
 :::
@@ -181,7 +91,7 @@ state and views **reacts individually** when the **data it reads changes**.
   :::
 
 
-## Presenting Data
+## Presentational Components
 
 A piece of UI becomes a **presentational component** when it transforms data into a visual output — formatting,
 mapping, or resolving values into display. The component **centralizes the transformation** so every consumer gets the
@@ -220,9 +130,9 @@ const StatusBadge = setup<{ status: 'online' | 'away' | 'offline' }>((props) => 
 ```
 
 ```tsx [SolidJS]
-import { derived } from '@anchorlib/solid';
+import { setup, derived } from '@anchorlib/solid';
 
-function StatusBadge(props: { status: 'online' | 'away' | 'offline' }) {
+const StatusBadge = setup<{ status: 'online' | 'away' | 'offline' }>((props) => {
   const label = derived(() => {
     switch (props.status) {
       case 'online':
@@ -237,7 +147,7 @@ function StatusBadge(props: { status: 'online' | 'away' | 'offline' }) {
   });
 
   return <span class={ `badge ${ props.status }` }>{ label.value }</span>;
-}
+});
 ```
 
 :::
@@ -287,11 +197,12 @@ const ThemeIndicator = setup(() => {
 ```
 
 ```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
 import { appState } from '../states/app.js';
 
-function ThemeIndicator() {
+const ThemeIndicator = setup(() => {
   return <span class={ `theme ${ appState.theme }` }>{ appState.theme }</span>;
-}
+});
 ```
 
 :::
@@ -320,7 +231,7 @@ Reading **global reactive state** directly inside a component, without props.
 - No props needed — the component **reads from the store directly**
   :::
 
-## Responding to Interaction
+## Interactive Components
 
 A piece of UI becomes an **interactive component** when it responds to user input. Interactive components can be
 **two-way** — they receive data AND write back to it. This is where `Bindable` comes in.
@@ -351,9 +262,9 @@ const Toggle = setup<{ value?: Bindable<boolean>; onChange?: () => void }>((prop
 ```
 
 ```tsx [SolidJS]
-import { bindable, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@anchorlib/solid';
 
-const Toggle = bindable<{ value?: Bindable<boolean>; onChange?: () => void }>((props) => {
+const Toggle = setup<{ value?: Bindable<boolean>; onChange?: () => void }>((props) => {
   const toggle = () => {
     props.value = !props.value;
     props.onChange?.();
@@ -437,9 +348,9 @@ const Tooltip = setup<{ text: string }>((props) => {
 ```
 
 ```tsx [SolidJS]
-import { mutable, onMount, onCleanup } from '@anchorlib/solid';
+import { setup, mutable, onMount, onCleanup } from '@anchorlib/solid';
 
-function Tooltip(props: { text: string }) {
+const Tooltip = setup<{ text: string }>((props) => {
   const state = mutable({ visible: false });
   let ref: HTMLSpanElement;
 
@@ -464,7 +375,7 @@ function Tooltip(props: { text: string }) {
       { state.visible && <span class="tooltip">{ props.text }</span> }
     </span>
   );
-}
+});
 ```
 
 :::
@@ -557,9 +468,9 @@ const Slider = setup<{ value?: Bindable<number>; min?: number; max?: number }>((
 ```
 
 ```tsx [SolidJS]
-import { bindable, mutable, onCleanup, type Bindable } from '@anchorlib/solid';
+import { setup, mutable, onCleanup, type Bindable } from '@anchorlib/solid';
 
-const Slider = bindable<{ value?: Bindable<number>; min?: number; max?: number }>((props) => {
+const Slider = setup<{ value?: Bindable<number>; min?: number; max?: number }>((props) => {
   const min = props.min ?? 0;
   const max = props.max ?? 100;
   const state = mutable({ dragging: false });
@@ -679,9 +590,9 @@ const QuantitySelector = setup<{
 ```
 
 ```tsx [SolidJS]
-import { bindable, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@anchorlib/solid';
 
-const QuantitySelector = bindable<{
+const QuantitySelector = setup<{
   value?: Bindable<number>;
   min?: number;
   max?: number;
@@ -778,10 +689,10 @@ const RatingStars = setup<{
 ```
 
 ```tsx [SolidJS]
-import { bindable, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@anchorlib/solid';
 import { Index } from 'solid-js';
 
-const RatingStars = bindable<{
+const RatingStars = setup<{
   value?: Bindable<number>;
   max?: number;
   onChange?: () => void;
@@ -880,9 +791,10 @@ const LogoutButton = setup(() => {
 ```
 
 ```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
 import { signOut } from '../rpc/auth/index.js';
 
-function LogoutButton() {
+const LogoutButton = setup(() => {
   const handleClick = () => {
     signOut().then(() => {
       window.location.href = '/login';
@@ -890,7 +802,7 @@ function LogoutButton() {
   };
 
   return <button class="btn-logout" onClick={ handleClick }>Sign Out</button>;
-}
+});
 ```
 
 :::
@@ -942,9 +854,10 @@ const CurrentPrice = setup(() => {
 ```
 
 ```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
 import { watchPrice } from '../rpc/market/index.js';
 
-function CurrentPrice() {
+const CurrentPrice = setup(() => {
   const stream = watchPrice.once('USD');
 
   return (
@@ -953,7 +866,7 @@ function CurrentPrice() {
       { stream.status === 'pending' ? ' ⏳' : '' }
     </span>
   );
-}
+});
 ```
 
 :::
@@ -1006,9 +919,10 @@ const LivePrice = setup<{ symbol: string }>((props) => {
 ```
 
 ```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
 import { watchPrice } from '../rpc/market/index.js';
 
-function LivePrice(props: { symbol: string }) {
+const LivePrice = setup<{ symbol: string }>((props) => {
   const stream = watchPrice.with(() => [props.symbol]);
 
   return (
@@ -1017,7 +931,7 @@ function LivePrice(props: { symbol: string }) {
       { stream.status === 'pending' ? ' 🟢' : ' 🛑' }
     </span>
   );
-}
+});
 ```
 
 :::
@@ -1083,10 +997,10 @@ const SearchBox = setup(() => {
 ```
 
 ```tsx [SolidJS]
-import { mutable } from '@anchorlib/solid';
+import { setup, mutable } from '@anchorlib/solid';
 import { searchProducts } from '../rpc/product/index.js';
 
-function SearchBox() {
+const SearchBox = setup(() => {
   const state = mutable({ query: '' });
   const results = searchProducts.when(() => [state.query.trim()], 300);
 
@@ -1107,7 +1021,7 @@ function SearchBox() {
       ) }
     </div>
   );
-}
+});
 ```
 
 :::
@@ -1177,9 +1091,9 @@ const Countdown = setup<{ seconds: number; onComplete?: () => void }>((props) =>
 ```
 
 ```tsx [SolidJS]
-import { mutable, onMount, onCleanup } from '@anchorlib/solid';
+import { setup, mutable, onMount, onCleanup } from '@anchorlib/solid';
 
-function Countdown(props: { seconds: number; onComplete?: () => void }) {
+const Countdown = setup<{ seconds: number; onComplete?: () => void }>((props) => {
   const state = mutable({ remaining: props.seconds });
 
   onMount(() => {
@@ -1196,7 +1110,7 @@ function Countdown(props: { seconds: number; onComplete?: () => void }) {
   });
 
   return <span class="countdown">{ state.remaining }s</span>;
-}
+});
 ```
 
 :::
@@ -1288,9 +1202,9 @@ const ProductCard = setup<{ product: Product; quantity?: Bindable<number> }>((pr
 ```
 
 ```tsx [SolidJS]
-import { bindable, derived, type Bindable } from '@anchorlib/solid';
+import { setup, derived, type Bindable } from '@anchorlib/solid';
 
-const ProductCard = bindable<{ product: Product; quantity?: Bindable<number> }>((props) => {
+const ProductCard = setup<{ product: Product; quantity?: Bindable<number> }>((props) => {
   const total = derived(() => (props.product.price * props.quantity).toFixed(2));
 
   const increment = () => { props.quantity++; };

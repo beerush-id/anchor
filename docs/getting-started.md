@@ -69,14 +69,19 @@ export const router = createRouter<JSX.Element>();
 The network layer is completely decoupled from your view framework. Create `src/lib/module.ts` to define your network transport:
 
 ```typescript [src/lib/module.ts]
-import { IRPC } from '@irpclib/irpc';
 import { HTTPTransport } from '@irpclib/http';
+import { createPackage } from '@irpclib/irpc';
 
-export const irpc = new IRPC();
+export const irpc = createPackage({
+  name: 'irpc',
+  version: '1.0.0',
+});
 
 export const transport = new HTTPTransport({
-  endpoint: '/api/rpc',
+  endpoint: `/api/${irpc.href}`,
 });
+
+irpc.use(transport);
 ```
 
 ## **2. Define Your Routes**
@@ -506,6 +511,7 @@ createServer();
 
 You now have a fully functional AIR Stack foundation! From here, you can dive deeper into specific modules:
 
-- [Anchor Core](/anchor/) - Master fine-grained state management, immutability, and write contracts.
-- [Router](/router/) - Learn how to add data loaders and reactive navigation guards.
-- [IRPC](/irpc/) - Connect your UI to a Node.js or Bun backend.
+- [Remote Function](/irpc/) - Connect your UI to a Node.js or Bun backend.
+- [State Management](/anchor/) - Master fine-grained state management, immutability, and write contracts.
+- [Routing](/routing/) - Learn how to add data loaders and reactive navigation guards.
+- [User Interface](/ui/) - Leverage declarative components to build your views.

@@ -180,3 +180,55 @@ const url = profileRoute.url(
 );
 // → '/users/42?tab=settings'
 ```
+
+## Global Loading Indicator
+
+When a navigation occurs, the router automatically calculates the number of providers and guards it needs to resolve and pushes progression steps. You can use this to build a global loading indicator (like a top-level progress bar) by observing the `router.state` object.
+
+::: code-group
+
+```tsx [React]
+import { Show } from '@anchorlib/react';
+import { router } from '../lib/router.js';
+
+export function GlobalProgress() {
+  return (
+    <Show when={() => router.state.activating}>
+      <div className="progress-bar">
+        <div 
+          className="progress-fill" 
+          style={{ 
+            width: `${(router.state.progress / router.state.steps) * 100}%` 
+          }}
+        />
+      </div>
+    </Show>
+  );
+}
+```
+
+```tsx [SolidJS]
+import { Show } from '@anchorlib/solid';
+import { router } from '../lib/router.js';
+
+export function GlobalProgress() {
+  return (
+    <Show when={router.state.activating}>
+      <div class="progress-bar">
+        <div 
+          class="progress-fill" 
+          style={{ 
+            width: `${(router.state.progress / router.state.steps) * 100}%` 
+          }}
+        />
+      </div>
+    </Show>
+  );
+}
+```
+
+:::
+
+- `router.state.activating`: A boolean indicating whether a navigation is actively resolving.
+- `router.state.steps`: The total number of asynchronous steps (providers, guards) required to finish the navigation.
+- `router.state.progress`: The current number of steps that have successfully completed.

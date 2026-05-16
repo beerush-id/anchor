@@ -78,6 +78,21 @@ By defining routes as objects rather than framework components, Anchor forces a 
 **What it solves:**
 - **String Typos:** Manually typing broken string paths across large applications, instead of utilizing programmatic tree navigation.
 
+### Subdirectory Hosting
+
+Because Anchor avoids string-based navigation in your components, changing your app's base URL is trivial. If you want to host your app in a subdirectory (like `https://example.com/app`), you don't need to change a single `<Link>` or `navigate()` call across your entire codebase.
+
+You simply change the path of your root route:
+
+```ts
+// routes/route.ts
+import { router } from '../lib/router.js';
+
+export const rootRoute = router.route('/app');
+```
+
+Because all other routes chain off `rootRoute`, the entire routing tree instantly rebases itself to `/app`!
+
 ## Decoupled Rendering
 
 Once a route exists in the abstract tree, you attach the actual UI using `.render()` and wrap the result back to the framework using `page()`.
@@ -195,29 +210,28 @@ export const usersIndexRoute = usersRoute
 
 ```tsx [React]
 // routes/users/page.tsx
-import { page, snippet, render, Link } from '@anchorlib/react';
+import { page, Link, For } from '@anchorlib/react';
 import { usersIndexRoute } from './route.js';
 import { ProfilePage } from './[user_id]/page.js';
 
-export const UsersPage = page(usersIndexRoute).render(({ state }) => {
-  return render(() => (
-    <ul>
-      {state.data?.users?.map((user) => (
-        <li key={user.id}>
+export const UsersPage = page(usersIndexRoute).render(({ state }) => (
+  <ul>
+    <For each={() => state.data?.users}>
+      {(user) => (
+        <li>
           <Link to={ProfilePage} params={{ user_id: user.id }}>
             {user.name}
           </Link>
         </li>
-      ))}
-    </ul>
-  ));
-});
+      )}
+    </For>
+  </ul>
+));
 ```
 
 ```tsx [SolidJS]
 // routes/users/page.tsx
-import { page, Link } from '@anchorlib/solid';
-import { For } from 'solid-js';
+import { page, Link, For } from '@anchorlib/solid';
 import { usersIndexRoute } from './route.js';
 import { ProfilePage } from './[user_id]/page.js';
 
@@ -332,9 +346,75 @@ You can leverage `state.status` to render loading layouts while preserving the l
 
 :::
 
+## Router Options
+
+Because `RouterOptions` extends `RouteOptions`, you can set global defaults for all routes and providers when creating the router instance.
+
+```ts
+// lib/router.ts
+import { createRouter } from '@anchorlib/react';
+
+export const router = createRouter({
+  // Router-specific options
+  renderMode: 'immediate',
+  baseUrl: 'https://example.com', // Base URL for resolving relative paths
+  cacheSize: 100,
+
+  // Global route defaults
+  keepAlive: true,
+  preloadMode: 'hover',
+  maxAge: 60000,
+});
+```
+
+### Render Modes
+
+The `renderMode` option controls how the router handles the UI transition while data is being fetched.
+
+- `'deferred'` **(Default):** The route blocks the navigation and waits for the entire provider tree to resolve before rendering. This prevents UI flashes and avoids showing partial layouts. The previous page remains visible until the new route is fully ready.
+- `'immediate'`: The route activates immediately, unmounting the previous page and rendering the new layout shell instantly. Providers execute in the background, allowing you to show specific loading indicators and stream data in as it resolves using `<Show when={() => state.status === 'pending'}>`.
+
+> [!WARNING]
+> **Server-Side Rendering (SSR) Compatibility**
+> 
+> The `'immediate'` render mode is generally incompatible with SSR. During SSR, the server must wait for the entire provider tree to resolve before rendering to ensure a complete HTML response:
+> 
+> ```ts
+> // Server always blocks
+> await router.activate();
+> const body = renderToString();
+> ```
+> 
+> To ensure hydration matches the server's fully-resolved output, the client must also block:
+> 
+> ```ts
+> // Client hydration blocks to match server
+> await router.activate();
+> hydrate();
+> ```
+> 
+> If you want true `immediate` behavior (where the client immediately mounts a loading state and fetches data asynchronously), you must opt out of SSR and use Client-Side Rendering (CSR) via `createRoot()` instead of `hydrate()`.
+> 
+> **Mixed SSR and CSR**
+> 
+> If you need to use SSR but still want deferred data loading (CSR) for specific routes, move the fetch logic *out* of the route's `.provide()` and into the component itself using an observable `.with()` binding. This allows the server to instantly render the `pending` state, which the client hydrates and then fetches:
+> 
+> ```tsx
+> const ProfilePage = page(profileRoute).render(({ context }) => {
+>   // Data loading is bound to the component, not the route!
+>   const state = getProfile.with(() => [context.params.user_id]);
+> 
+>   return (
+>     <Show when={() => state.status === 'pending'}>
+>       <div>Loading profile...</div>
+>     </Show>
+>   );
+> });
+> ```
+
 ## Route Options
 
-You can enforce specific behaviors by passing options directly into `.route()`. Options set on the root router instance apply globally, while per-route options override the defaults for that specific route block.
+You can enforce specific behaviors by passing options directly into `.route()`. Route options override the global router defaults for that specific route block.
 
 ```ts
 const profile = usersRoute.route('/:user_id', {
