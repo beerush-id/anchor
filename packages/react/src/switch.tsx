@@ -98,3 +98,59 @@ export const Show = snippet<ShowProps<boolean>>(
   'Slot',
   false
 ) as ShowNode;
+
+export type ForProps<T> = {
+  each: T[] | (() => T[]) | undefined | null;
+  children: (item: T, index: number) => ReactNode;
+  fallback?: ReactNode | (() => ReactNode);
+};
+
+export type ForNode = <T>(props: ForProps<T>) => ReactNode;
+
+const ForItem = snippet<{ item: unknown; index: number; render: (item: unknown, index: number) => ReactNode }>(
+  (props) => props.render(props.item, props.index),
+  'ForItem',
+  'Slot',
+  false
+);
+
+const objectKeys = new WeakMap<object, string>();
+let nextKeyId = 0;
+
+function getItemKey(item: unknown, index: number) {
+  if (typeof item === 'object' && item !== null) {
+    let key = objectKeys.get(item);
+    if (!key) {
+      key = `ok_${++nextKeyId}`;
+      objectKeys.set(item, key);
+    }
+    return key;
+  }
+  return index;
+}
+
+/**
+ * Conditionally renders a list of items using a map function.
+ *
+ * @param props.each - The array or accessor to iterate over.
+ * @param props.children - The render function for each item.
+ * @param props.fallback - Optional content to render when the array is empty.
+ * @returns The rendered list or fallback.
+ */
+export const For = snippet<ForProps<unknown>>(
+  (props) => {
+    const check = typeof props.each === 'function' ? props.each : () => props.each;
+    const items = check() as unknown[] | undefined | null;
+
+    if (items && items.length > 0) {
+      return items.map((item, index) => {
+        return <ForItem key={getItemKey(item, index)} item={item} index={index} render={props.children} />;
+      });
+    }
+
+    return typeof props.fallback === 'function' ? props.fallback() : props.fallback || null;
+  },
+  'For',
+  'Slot',
+  false
+) as ForNode;
