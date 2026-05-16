@@ -98,4 +98,5 @@ export * from './router/link.js';
 export * from './router/navigate.js';
 export * from './router/router.js';
 export * from './router/types.js';
+export * from './switch.js';
 export * from './types.js';
