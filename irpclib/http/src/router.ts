@@ -83,7 +83,55 @@ export class HTTPRouter extends IRPCRouter {
    * @returns A Response object with the resolved data
    */
   public async resolve(request: Request, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder) {
-    return this.resolveForm(await request.formData(), context, builder);
+    const buildResponse = (body: BodyInit, init: ResponseInit) => {
+      if (builder) return builder(body, init);
+      return new Response(body, init);
+    };
+
+    try {
+      return this.resolveForm(await request.formData(), context, builder);
+    } catch (error) {
+      return buildResponse(
+        JSON.stringify({
+          code: ERROR_CODE.UNKNOWN,
+          message: (error as Error)?.message as string,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  /**
+   * Resolves incoming HTTP requests with JSON payload
+   *
+   * @param req - The incoming HTTP request
+   * @param name - The name of the RPC function to call
+   * @param context - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
+   * @returns A Response object with the resolved data
+   */
+  public async resolveRest(
+    req: Request,
+    name: string,
+    context: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder
+  ) {
+    const buildResponse = (body: BodyInit, init: ResponseInit) => {
+      if (builder) return builder(body, init);
+      return new Response(body, init);
+    };
+
+    try {
+      return this.resolveJson(await req.json(), name, context, builder);
+    } catch (error) {
+      return buildResponse(
+        JSON.stringify({
+          code: ERROR_CODE.UNKNOWN,
+          message: (error as Error)?.message as string,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
   }
 
   /**
@@ -123,41 +171,30 @@ export class HTTPRouter extends IRPCRouter {
    *
    * @param req - The incoming HTTP request
    * @param name - The name of the RPC function to call
-   * @param initContext - Optional context to initialize the resolver with
+   * @param context - Optional context to initialize the resolver with
    * @param builder - Optional custom response builder function
    * @returns A Response object with the resolved data
    */
   public async resolveJson(
-    req: Request,
+    req: unknown,
     name: string,
-    initContext: [string | symbol, unknown][] = [],
+    context: [string | symbol, unknown][] = [],
     builder?: HTTPResponseBuilder
   ) {
-    try {
-      const payload = await req.json();
-      return this.resolveJsonReq({ name, id: crypto.randomUUID(), args: [payload] }, initContext, builder);
-    } catch (error) {
-      return new Response(
-        JSON.stringify({
-          code: ERROR_CODE.UNKNOWN,
-          message: (error as Error)?.message as string,
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    return this.resolveJsonReq({ name, id: crypto.randomUUID(), args: [req] }, context, builder);
   }
 
   /**
    * Resolves incoming HTTP requests with JSON payload
    *
    * @param req - The incoming HTTP request
-   * @param initContext - Optional context to initialize the resolver with
+   * @param context - Optional context to initialize the resolver with
    * @param builder - Optional custom response builder function
    * @returns A Response object with the resolved data
    */
   public async resolveJsonReq(
     req: IRPCRequest,
-    initContext: [string | symbol, unknown][] = [],
+    context: [string | symbol, unknown][] = [],
     builder?: HTTPResponseBuilder
   ) {
     const buildResponse = (body: BodyInit, init: ResponseInit) => {
@@ -167,7 +204,7 @@ export class HTTPRouter extends IRPCRouter {
 
     try {
       const result = {} as IRPCPacketStream<IRPCData>;
-      const response = this.resolveRequests([this.config.resolver(req, this.module)], initContext, builder);
+      const response = this.resolveRequests([this.config.resolver(req, this.module)], context, builder);
       const packets = (await response.text())
         .split('\n')
         .filter(Boolean)

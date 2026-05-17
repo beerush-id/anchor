@@ -79,6 +79,38 @@ describe('HTTPRouter', () => {
       expect(response.status).toBe(400);
     });
 
+    it('should return 400 for invalid request body', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const request = new Request('https://api.example.com/rpc', {
+        method: 'POST',
+        body: 'invalid json',
+      });
+
+      const response = await router.resolve(request);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 for invalid request body with custom builder', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const request = new Request('https://api.example.com/rpc', {
+        method: 'POST',
+        body: 'invalid json',
+      });
+
+      const response = await router.resolve(request, undefined, (body, init) => {
+        return new Response(body, init);
+      });
+
+      expect(response.status).toBe(400);
+    });
+
     it('should process requests with middleware', async () => {
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
@@ -357,7 +389,7 @@ describe('HTTPRouter', () => {
     });
   });
 
-  describe('resolveJson', () => {
+  describe('resolveReq', () => {
     it('should resolve incoming JSON requests', async () => {
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
@@ -373,7 +405,7 @@ describe('HTTPRouter', () => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      const response = await router.resolveJson(request, 'testFunc');
+      const response = await router.resolveRest(request, 'testFunc');
       expect(response.status).toBe(200);
       expect(await response.json()).toBe('Hello World');
     });
@@ -388,7 +420,48 @@ describe('HTTPRouter', () => {
         body: 'invalid json',
       });
 
-      const response = await router.resolveJson(request, 'testFunc');
+      const response = await router.resolveRest(request, 'testFunc');
+      expect(response.status).toBe(400);
+    });
+
+    it('should handle JSON parsing errors with custom builder', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const request = new Request('https://api.example.com/rpc', {
+        method: 'POST',
+        body: 'invalid json',
+      });
+
+      const response = await router.resolveRest(request, 'testFunc', undefined, (body, init) => {
+        return new Response(body, init);
+      });
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('resolveJson', () => {
+    it('should resolve incoming JSON requests', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = (input: { name: string }) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      module.construct(testFunc, async (input) => `Hello ${input.name}`);
+
+      const response = await router.resolveJson({ name: 'World' }, 'testFunc');
+      expect(response.status).toBe(200);
+      expect(await response.json()).toBe('Hello World');
+    });
+
+    it('should handle JSON parsing errors', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      const response = await router.resolveJson('invalid json', 'testFunc');
       expect(response.status).toBe(500);
     });
   });
