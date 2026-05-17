@@ -752,18 +752,6 @@ Building a **dynamic structure** from configuration, then managing **two-way int
 IRPC functions are declared on the server and called on the client like local functions. How you call them determines
 **when** they execute and **whether** they react to changes.
 
-| Call | When it runs | Reactive | Use case |
-|---|---|---|---|
-| `fn(arg)` | Immediately when called | No | Event handlers, user-triggered actions |
-| `fn.once(arg)` | Immediately (browser only) | No | One-time browser actions |
-| `fn.with(() => [args])` | Immediately (browser), re-runs when arguments change | Yes | Live streams, auto-refreshing data |
-| `fn.when(() => [args], ms)` | Only when arguments change, debounced | Yes | Search, filtering, user-driven queries |
-
-The getter returns the function's **arguments as an array**: `() => [arg1, arg2]`. When the reactive values inside the
-getter produce different arguments, the function **re-invokes automatically**.
-
-Default debounce is **0 (microtask)**. If 100 synchronous changes happen, **only the last runs**.
-
 ### Direct Call
 
 A component calls a remote function **in response to a user action** — click, submit, gesture. The call happens once,
@@ -823,10 +811,7 @@ const LogoutButton = setup(() => {
 
 Using a direct call for a **user-triggered action** the view doesn't need to track.
 
-**From these two examples, you know:**
-
-- Direct calls are for **actions** — the component **triggers work** without tracking the result in the view
-  :::
+:::
 
 ### Once
 
@@ -842,12 +827,12 @@ import { setup, render } from '@anchorlib/react';
 import { watchPrice } from '../rpc/market/index.js';
 
 const CurrentPrice = setup(() => {
-  const stream = watchPrice.once('USD');
+  const stock = watchPrice.once('USD');
 
   return render(() => (
     <span className="price">
-      ${ stream.data.price.toFixed(2) }
-      { stream.status === 'pending' ? ' ⏳' : '' }
+      ${ stock.data.price.toFixed(2) }
+      { stock.status === 'pending' ? ' ⏳' : '' }
     </span>
   ));
 });
@@ -858,12 +843,12 @@ import { setup } from '@anchorlib/solid';
 import { watchPrice } from '../rpc/market/index.js';
 
 const CurrentPrice = setup(() => {
-  const stream = watchPrice.once('USD');
+  const stock = watchPrice.once('USD');
 
   return (
     <span class="price">
-      ${ stream.data.price.toFixed(2) }
-      { stream.status === 'pending' ? ' ⏳' : '' }
+      ${ stock.data.price.toFixed(2) }
+      { stock.status === 'pending' ? ' ⏳' : '' }
     </span>
   );
 });
@@ -1050,6 +1035,15 @@ Using **`.when()`** to trigger an IRPC function **only when arguments change**, 
 - Default debounce is **0 (microtask)** — if 100 synchronous changes happen, **only the last runs**
 - `results.status` (`idle | pending | success | error`) and `results.data` are **reactive** — no manual state needed
   :::
+
+### Function Signatures
+
+| Call | When it runs | Reactive | Use case |
+|---|---|---|---|
+| `fn(arg)` | Immediately when called | No | Event handlers, user-triggered actions |
+| `fn.once(arg)` | Immediately (browser only) | No | One-time browser actions |
+| `fn.with(() => [args])` | Immediately (browser), re-runs when arguments change | Yes | Live streams, auto-refreshing data |
+| `fn.when(() => [args], ms)` | Only when arguments change, debounced | Yes | Search, filtering, user-driven queries |
 
 ## Managing Lifecycle
 
@@ -1256,3 +1250,13 @@ updates the shipping estimate, or syncs the cart to the server — that's crossi
 
 The question isn't "how many things does this component do?" It's "does everything this component does serve the same
 concern?"
+
+## Learn More
+
+- [Styling](./styling) — When a concern needs its own state, behavior, and reactivity
+- [Static UI](./static) — When UI should remain inline, and when it should graduate
+- [Reactive UI](./view) — Presenting reactive data without owning it
+- [Data Components](./data) — Components that own and manage their server data
+- [Form Components](./form) — User-driven form components with built-in validation
+- [Headless Components](./headless) — Reusable logic units without a view
+- [Composition](./composition) — Coordinating autonomous components into complete interfaces

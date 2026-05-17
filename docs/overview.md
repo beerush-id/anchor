@@ -30,13 +30,16 @@ You want to build an app that is **highly reactive**, **performant**, and **main
 
 Each with its own **mental model**, its own **lifecycle**, and its own **failure modes**. And even then, you often end up sacrificing **maintainability** just to keep the **performance** intact.
 
-::: tip What if building an application is just writing a function?
+::: tip What if:
+**Building an application is just writing functions and calling them?**
 :::
 
 ```ts
-// Server: write the function
+type GetUserFn = (id: string) => Promise<User>;
 const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
+```
 
+```ts
 irpc.construct(getUser, async (id) => {
   return db.users.find(id);
 });
@@ -44,13 +47,26 @@ irpc.construct(getUser, async (id) => {
 
 ::: code-group
 
+```ts [Anywhere]
+const user = await getUser('1');
+console.log(user);
+```
+
+```ts [Provider]
+profileRoute.provide('user', ({ params }) => {
+  return getUser(params.id);
+});
+```
+
 ```tsx [React]
-// Client: call it and render
 const UserCard = setup((props) => {
-  const user = getUser.with(() => [props.id]);
+  const user = getUser.once(props.id]);
 
   return render(() => (
     <div>
+      <Show when={() => user.status === 'pendin'}>
+        <span>Loading...</span>
+      </Show>
       <h1>{user.data?.name}</h1>
     </div>
   ));
@@ -58,12 +74,14 @@ const UserCard = setup((props) => {
 ```
 
 ```tsx [Solid]
-// Client: call it and render
 const UserCard = setup((props) => {
-  const user = getUser.with(() => [props.id]);
+  const user = getUser.once(props.id]);
 
   return (
     <div>
+      <Show when={user.status === 'pendin'}>
+        <span>Loading...</span>
+      </Show>
       <h1>{user.data?.name}</h1>
     </div>
   );
@@ -96,21 +114,27 @@ Whichever you pick, you still:
 - **Rename** a route — then hunt through every controller, every `fetch('/api/old-name')`, every `queryClient.invalidateQueries(['old-name'])` to update them.
 - Keep server and client **types in sync** manually — or run **code generation** on every change.
 
-::: tip What if using server data is just writing a function and calling it?
+::: tip What if:
+**Using server data is just writing a function and calling it?**
 :::
 
-### Data Fetching
+### Async Function
 
+**Declare** the function signature:
 ```ts
-// Declare (shared)
+type PriceFn = (ticker: string) => Promise<number>;
 const getPrice = irpc.declare<PriceFn>({ name: 'getPrice' });
+```
 
-// Implement (server)
+**Construct** the function implementation:
+```ts
 irpc.construct(getPrice, async (ticker) => {
   return db.prices.find(ticker);
 });
+```
 
-// Call (client)
+**Call** the function:
+```ts
 const price = await getPrice('AAPL');
 ```
 
@@ -118,14 +142,17 @@ const price = await getPrice('AAPL');
 
 Now look at streaming — a completely different problem that normally needs **WebSocket** servers, connection lifecycle, and reconnection logic:
 
+**Declare** a streaming function:
 ```ts
-// Same declare
+type WatchPriceFn = (symbol: string) => RemoteState<Stock>;
 const watchPrice = irpc.declare<WatchPriceFn>({
   name: 'watchPrice',
   init: () => ({ symbol: '', price: 0 }),
 });
+```
 
-// Same construct — but this one streams live data
+**Construct** the streaming handler:
+```ts
 irpc.construct(watchPrice, (symbol) => {
   return stream((state, resolve) => {
     state.data = { symbol, price: 50 }; // [!code highlight]
@@ -139,7 +166,45 @@ irpc.construct(watchPrice, (symbol) => {
 });
 ```
 
+**Call** the streaming function and observe:
+
+::: code-group
+
+```tsx [React]
+const StockCard = setup((props) => {
+  const stock = watchPrice.with(() => [props.symbol]);
+
+  return render(() => (
+    <div>
+      <h1>{stock.data?.symbol}: {stock.data?.price}</h1>
+    </div>
+  ));
+});
+```
+
+```tsx [Solid]
+const StockCard = setup((props) => {
+  const stock = watchPrice.with(() => [props.symbol]);
+
+  return (
+    <div>
+      <h1>{stock.data?.symbol}: {stock.data?.price}</h1>
+    </div>
+  );
+});
+```
+
+```tsx [Anywhere]
+watchPrice('AAPL').subscribe((stock) => {
+  console.log('Stock:', stock.data?.symbol, stock.data?.price);
+});
+```
+
+:::
+
+::: tip Isomorphic RPC
 Same API. Two different worlds — one pattern. **Batching**, **caching**, **retry logic**, and **call coalescing** are built into the protocol.
+:::
 
 ## Anchor: Reactive State Engine
 
@@ -157,7 +222,8 @@ Whichever you pick, your state is still locked inside client code, and you still
 - Wrap your application in a nested tree of **Context** providers or **Stores** just to share state across components.
 - Trace through multiple stores, caching layers, and subscription chains to debug why the UI is out of sync with the data.
 
-::: tip What if one library can do them all?
+::: tip What if:
+**One library can do them all?**
 :::
 
 ::: code-group
@@ -211,7 +277,8 @@ Whether you use **React Router**, **Next.js**, **TanStack Router**, or **Solid R
 - Wire up separate **subscription tracking** just to keep the route's data in sync with live state.
 - Scatter **guard logic** across middlewares, loaders, and component render functions.
 
-::: tip What if the route reacts to the state, not just the URL?
+::: tip What if:
+**The route reacts to the state, not just the URL?**
 :::
 
 ::: code-group
@@ -266,7 +333,8 @@ With modern meta-frameworks, moving client-side state to the server fractures yo
 - Lose access to **reactive hooks** on the server because traditional **server components** are strictly static.
 - Manually parse request cookies, track mutations during render, and manually reconstruct `Set-Cookie` headers.
 
-::: tip What if the server just creates a scope and runs the exact same code?
+::: tip What if:
+**The server just creates a scope and runs the exact same code?**
 :::
 
 ::: code-group

@@ -19,9 +19,9 @@ IRPC completely separates the function **signature** from its **implementation**
 In IRPC, "server" doesn't mean a remote machine, and "client" doesn't mean a browser. The **server** is any execution context that implements the handler — a remote server, a WebWorker, or even the same thread. The **client** is whatever calls the stub.
 :::
 
-## **1. Declare the Signature (Shared)**
+## **Declaration (Stub)**
 
-First, define the type-safe contract that both the client and server will use. This is your unbreakable API boundary.
+First, define the type-safe contract that both the client and server will use. This is your **isomorphic function** that runs anywhere.
 
 ```typescript
 // rpc/hello/index.ts
@@ -33,9 +33,9 @@ export type HelloFn = (name: string) => Promise<string>;
 export const hello = irpc.declare<HelloFn>({ name: 'hello' });
 ```
 
-## **2. Implement the Handler (Server)**
+## **Implementation (Handler)**
 
-On your backend, you **construct** the actual logic that fulfills the signature. 
+To fulfill the stub's contract, you **construct** the actual logic that handles the execution. The constructor automatically infers the types from the stub.
 
 ```typescript
 // rpc/hello/constructor.ts
@@ -48,7 +48,7 @@ irpc.construct(hello, (name: string) => {
 });
 ```
 
-## **3. Execute the Function (Client)**
+## **Execution (Call)**
 
 On the client, you just import the signature and call it inside your component logic. No `fetch`, no routes, no manual serialization.
 
@@ -102,7 +102,7 @@ The true power of IRPC in the AIR Stack is its ability to handle **continuous da
 
 Instead of returning a static `Promise<T>`, you return a `RemoteState<T>`. The UI binds directly to the returned `IRPCReader`, which hydrates progressively as the server yields data chunks over the wire.
 
-### **1. Declare the Stream**
+### **1. Declare the Stream (Stub)**
 
 When declaring a reactive stream, set `{ stream: true }`. Optionally provide an `init()` factory to seed client-side data before the server responds.
 
@@ -119,7 +119,7 @@ export const generatePoem = irpc.declare<GeneratePoemFn>({
 });
 ```
 
-### **2. Yield the Stream (Server)**
+### **2. Yield the Stream (Handler)**
 
 Use the `stream` wrapper to continuously push mutations back to the client.
 
@@ -142,7 +142,7 @@ irpc.construct(generatePoem, (prompt) => {
 });
 ```
 
-### **3. Bind the Stream (Client)**
+### **3. Bind the Stream (Call)**
 
 Every call returns an `IRPCReader<T>` — a reactive proxy with `.data`, `.status`, and `.error` properties. UI frameworks bind directly to it. The UI re-renders surgically as data chunks arrive.
 

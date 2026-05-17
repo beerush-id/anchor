@@ -101,6 +101,7 @@ export default defineConfig({
           { text: 'Handlers', link: '/remote-function/handler' },
           { text: 'Transports', link: '/remote-function/transport' },
           { text: 'Distribution', link: '/remote-function/distribution' },
+          { text: 'WebHooks', link: '/remote-function/webhook' },
         ],
       },
       {
@@ -137,9 +138,9 @@ export default defineConfig({
           { text: 'Static UI', link: '/ui/static' },
           { text: 'Reactive UI', link: '/ui/view' },
           { text: 'Component', link: '/ui/component' },
-          { text: 'Data Components', link: '/ui/data' },
           { text: 'Form Components', link: '/ui/form' },
           { text: 'Headless Components', link: '/ui/headless' },
+          { text: 'Data Components', link: '/ui/data' },
           { text: 'Composition', link: '/ui/composition' },
         ],
       },
@@ -510,7 +511,7 @@ export default defineConfig({
 
     footer: {
       message: 'Made with ❤️ by <a href="https://www.mahdaen.name" target="_blank">Nanang Mahdaen El Agung</a>',
-      copyright: 'Copyright © 2025 Anchor. All rights reserved.',
+      copyright: 'Copyright © 2026 Anchor. All rights reserved.',
     },
     editLink: {
       pattern: 'https://github.com/beerush-id/anchor/edit/main/docs/:path',
