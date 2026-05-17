@@ -1,4 +1,4 @@
-import { ERROR_CODE, ERROR_MESSAGE, IRPC_PACKET_TYPE, IRPC_STATUS, IRPCFile } from '@irpclib/irpc';
+import { ERROR_CODE, ERROR_MESSAGE, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketState, WebSocketTransport } from '../src/index.js';
 
@@ -165,7 +165,13 @@ describe('WebSocketTransport', () => {
 
       await transport['dispatch']([call]);
 
-      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: 'Connection failed' }) }));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Connection failed' }),
+        })
+      );
     });
 
     it('should reject calls if state is CLOSING', async () => {
@@ -177,7 +183,13 @@ describe('WebSocketTransport', () => {
 
       await transport['dispatch']([call]);
 
-      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }) }));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }),
+        })
+      );
     });
 
     it('should reject calls if state is CLOSED and autoReconnect is false', async () => {
@@ -190,7 +202,13 @@ describe('WebSocketTransport', () => {
 
       await transport['dispatch']([call]);
 
-      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }) }));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }),
+        })
+      );
     });
 
     it('should reject calls if pending connection fails', async () => {
@@ -208,7 +226,13 @@ describe('WebSocketTransport', () => {
 
       await transport['dispatch']([call]);
 
-      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: error.message }) }));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: error.message }),
+        })
+      );
     });
 
     it('should wait for pending connection', async () => {
@@ -261,7 +285,13 @@ describe('WebSocketTransport', () => {
 
       await transport['dispatch']([call]);
 
-      expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ type: IRPC_PACKET_TYPE.CLOSE, status: IRPC_STATUS.ERROR, error: expect.objectContaining({ message: 'Send failed' }) }));
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: expect.objectContaining({ message: 'Send failed' }),
+        })
+      );
     });
 
     it('should correctly stream file binaries natively prioritizing framing ahead of enveloping gracefully', async () => {
@@ -289,7 +319,7 @@ describe('WebSocketTransport', () => {
       expect(secondCallArg).toContain('"id":"file-call"');
       expect(secondCallArg).toContain('"name":"testFiles"');
       expect(secondCallArg).toContain('"files":[');
-      
+
       expect(transport['pendingCalls'].has('file-call')).toBe(true);
     });
   });
@@ -310,7 +340,9 @@ describe('WebSocketTransport', () => {
       const call = { id: '1', enqueue: vi.fn() } as any;
       transport['pendingCalls'].set('1', call);
 
-      const event = { data: JSON.stringify({ id: '1', status: IRPC_STATUS.ERROR, error: { message: 'failed' } }) } as MessageEvent;
+      const event = {
+        data: JSON.stringify({ id: '1', status: IRPC_STATUS.ERROR, error: { message: 'failed' } }),
+      } as MessageEvent;
       transport['resolve'](event);
 
       expect(call.enqueue).toHaveBeenCalledWith(expect.objectContaining({ status: IRPC_STATUS.ERROR }));
@@ -339,7 +371,7 @@ describe('WebSocketTransport', () => {
     });
 
     it('should handle invalid JSON', () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const event = { data: 'invalid json' } as MessageEvent;
 
       transport['resolve'](event);
@@ -381,7 +413,7 @@ describe('WebSocketTransport', () => {
       expect(packet).toContain('"id":"call-1"');
       expect(packet).toContain('"name":"test-func"');
       expect(packet).toContain('"type":"cancel"'); // WS_MESSAGE_TYPE.CANCEL
-      
+
       expect(transport['pendingCalls'].has('call-1')).toBe(false);
     });
 
@@ -487,7 +519,10 @@ describe('WebSocketTransport', () => {
       transport.config.autoReconnect = true;
       // Do completely NOT define reconnectDelay to explicitly trigger ?? DEFAULT_RECONNECT_DELAY fallback natively!
 
-      const connectSpy = vi.spyOn(transport as any, 'connect').mockRejectedValueOnce(new Error('Fail')).mockResolvedValue(undefined);
+      const connectSpy = vi
+        .spyOn(transport as any, 'connect')
+        .mockRejectedValueOnce(new Error('Fail'))
+        .mockResolvedValue(undefined);
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       (transport as any).scheduleReconnect();
@@ -504,15 +539,15 @@ describe('WebSocketTransport', () => {
     it('should evaluate successful scheduleReconnect execution path accurately natively', async () => {
       transport.config.autoReconnect = true;
       transport.config.reconnectDelay = 10;
-      
+
       const connectSpy = vi.spyOn(transport as any, 'connect').mockResolvedValue(undefined);
 
       (transport as any).scheduleReconnect();
 
       vi.advanceTimersByTime(10);
-      await Promise.resolve(); 
+      await Promise.resolve();
       // The awaited `this.connect()` naturally succeeds resolving the `try` block explicitly fully!
-      
+
       expect(connectSpy).toHaveBeenCalledTimes(1);
     });
   });

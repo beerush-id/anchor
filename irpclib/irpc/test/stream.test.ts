@@ -1,6 +1,7 @@
+import { AsyncStore, withIsolation } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Context from '../src/context.js';
-import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
+import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { RemoteState } from '../src/state.js';
 import { IRPCStream } from '../src/stream.js';
 import type { IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent } from '../src/types.js';
@@ -117,7 +118,14 @@ describe('IRPCStream', () => {
     const stream = new IRPCStream('id5', 'test_close', async () => ({ id: 'id5', name: 'test', result: state }));
 
     const pipeline = vi.fn();
-    stream.pipe(pipeline);
+
+    await withIsolation(
+      () => {
+        stream.pipe(pipeline);
+      },
+      false,
+      new AsyncStore([[IRPC_BASE_CONTEXT.ABORT_SIGNAL, new AbortController().signal]])
+    );
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     pipeline.mockClear();

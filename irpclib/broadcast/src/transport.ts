@@ -9,6 +9,7 @@ import {
   IRPCTransport,
   type TransportConfig,
   encode,
+  IRPC_STORE,
 } from '@irpclib/irpc';
 import { BC_MESSAGE_TYPE } from './enum.js';
 
@@ -87,7 +88,7 @@ export class BroadcastTransport extends IRPCTransport {
       // Otherwise, it's a request that should be handled by the router
       // The router will set up its own message listener
     } catch (error) {
-      console.error('Failed to handle BroadcastChannel message:', error);
+      IRPC_STORE.error(new Error('Failed to handle BroadcastChannel message:', { cause: error }), [{ endpoint: this.endpoint }]);
     }
   }
 
@@ -159,6 +160,7 @@ export class BroadcastTransport extends IRPCTransport {
         this.channel!.postMessage([req]);
       });
     } catch (error) {
+      IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
       calls.forEach((call) => {
         this.pendingCalls.delete(call.id);
 

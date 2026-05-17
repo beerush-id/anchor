@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_FILE_STATUS } from '../src/enum.js';
 import { IRPCFile, IRPCFileStream } from '../src/file.js';
+import { IRPC_STORE } from '../src/index.js';
 
 describe('IRPCFile', () => {
   it('should initialize correctly as PENDING when no blob is provided', () => {
@@ -136,7 +137,7 @@ describe('IRPCFileStream', () => {
     stream.write(new Uint8Array([1, 2]));
 
     let loggedError: any = null;
-    const errSpy = vi.spyOn(console, 'error').mockImplementation((e) => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation((e) => {
       loggedError = e;
     });
 

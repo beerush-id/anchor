@@ -222,7 +222,7 @@ export class IRPCPackage {
       }
 
       onCleanup(() => call.close());
-      call.finally(() => calls.delete(callKey)).catch(() => {});
+      call.finally(() => calls.delete(callKey)).catch((err) => IRPC_STORE.error(err, [{ name: spec.name }]));
 
       return reader;
     };
@@ -292,7 +292,7 @@ export class IRPCPackage {
   public hook<F extends IRPCHandler>(stub: F, handler: IRPCSpecHook<F>): this {
     if (!this.stubs.has(stub as IRPCHandler)) {
       const error = new Error(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
-      console.error(error, stub);
+      IRPC_STORE.error(error);
       return this;
     }
 

@@ -11,6 +11,7 @@ import {
   type IRPCPacketStream,
   IRPCTransport,
   type TransportConfig,
+  IRPC_STORE,
 } from '@irpclib/irpc';
 import {
   DEFAULT_CONNECTION_TIMEOUT,
@@ -163,7 +164,7 @@ export class WebSocketTransport extends IRPCTransport {
         this.ws.onerror = (event) => {
           clearTimeout(timeout);
           delete this.pendingConnection;
-          console.error('WebSocket error:', event);
+          IRPC_STORE.error(new Error('WebSocket connection failed', { cause: event }), [{ url: this.config.url }]);
           reject(new Error('WebSocket connection failed'));
         };
 
@@ -172,6 +173,7 @@ export class WebSocketTransport extends IRPCTransport {
         };
       } catch (error) {
         delete this.pendingConnection;
+        IRPC_STORE.error(error as Error, [{ url: this.config.url }]);
         reject(error);
       }
     });
@@ -220,7 +222,7 @@ export class WebSocketTransport extends IRPCTransport {
         this.reconnectAttempts++;
         await this.connect();
       } catch (error) {
-        console.error('Reconnection failed:', error);
+        IRPC_STORE.error(new Error('Reconnection failed', { cause: error }), [{ url: this.config.url, attempts: this.reconnectAttempts }]);
         if (
           this.config.autoReconnect !== false &&
           this.reconnectAttempts < (this.config.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS)
@@ -254,7 +256,7 @@ export class WebSocketTransport extends IRPCTransport {
         this.pendingCalls.delete(response.id);
       }
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+      IRPC_STORE.error(new Error('Failed to parse WebSocket message:', { cause: error }), [{ url: this.config.url }]);
     }
   }
 
@@ -287,6 +289,7 @@ export class WebSocketTransport extends IRPCTransport {
       try {
         await this.pendingConnection;
       } catch (error) {
+        IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
         calls.forEach((call) => {
           call.enqueue({
             id: call.id,
@@ -307,6 +310,7 @@ export class WebSocketTransport extends IRPCTransport {
       try {
         await this.connect();
       } catch (error) {
+        IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
         calls.forEach((call) => {
           call.enqueue({
             id: call.id,
@@ -353,6 +357,7 @@ export class WebSocketTransport extends IRPCTransport {
 
       queues.clear();
     } catch (error) {
+      IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
       calls.forEach((call) => {
         this.pendingCalls.delete(call.id);
 

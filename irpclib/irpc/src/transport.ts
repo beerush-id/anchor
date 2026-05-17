@@ -3,6 +3,7 @@ import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCReader } from './reader.js';
+import { IRPC_STORE } from './store.js';
 import type {
   IRPCCallConfig,
   IRPCData,
@@ -52,7 +53,7 @@ export class IRPCTransport {
     if (spec.stream) {
       this.dispatch([call])
         .finally(() => {})
-        .catch(() => {});
+        .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return call.reader;
     } else {
       this.schedule(call);
@@ -74,16 +75,17 @@ export class IRPCTransport {
     if (debounce === false) {
       this.dispatch([call])
         .finally(() => {})
-        .catch(() => {});
+        .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return;
     }
 
     const timeout = typeof debounce === 'number' && !Number.isNaN(debounce) ? debounce : 0;
 
     const dispatch = () => {
-      this.dispatch(Array.from(this.queue))
+      const pending = Array.from(this.queue);
+      this.dispatch(pending)
         .finally(() => {})
-        .catch(() => {});
+        .catch((err) => IRPC_STORE.error(err, pending.map((c) => ({ id: c.id, name: c.payload.name }))));
       this.queue.clear();
     };
 

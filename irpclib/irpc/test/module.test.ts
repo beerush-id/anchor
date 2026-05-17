@@ -2,7 +2,7 @@ import { createLifecycle } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
-import { createPackage, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
+import { createPackage, IRPC_STORE, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
 import { RemoteState } from '../src/state.js';
 
 describe('IRPCPackage', () => {
@@ -642,7 +642,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should log error and return self when hooking an invalid stub', () => {
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const unknownStub = () => {};
 
       const result = rpc.hook(unknownStub, vi.fn());

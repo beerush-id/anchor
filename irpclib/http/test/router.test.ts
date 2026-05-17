@@ -1,5 +1,5 @@
 import '@irpclib/irpc/server';
-import { createPackage, ERROR_CODE, IRPC_FILE_STATUS } from '@irpclib/irpc';
+import { createPackage, ERROR_CODE, IRPC_FILE_STATUS, IRPC_STORE } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 import { HTTPRouter } from '../src/router.js';
@@ -134,6 +134,7 @@ describe('HTTPRouter', () => {
     });
 
     it('should handle middleware errors', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const router = new HTTPRouter(module, transport);
@@ -157,6 +158,7 @@ describe('HTTPRouter', () => {
 
       expect(result).toBeInstanceOf(Response);
       expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
     });
 
     it('should handle JSON parsing errors', async () => {

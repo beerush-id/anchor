@@ -28,6 +28,7 @@ export const IRPC_STORE_EVENT = {
   QUEUE: 'queue',
   DEQUEUE: 'dequeue',
   REGISTER: 'register',
+  ERROR: 'error',
 } as const;
 
 export const IRPC_BASE_CONTEXT = {

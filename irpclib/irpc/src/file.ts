@@ -1,5 +1,6 @@
 import { mutable } from '@anchorlib/core';
 import { IRPC_FILE_STATUS } from './enum.js';
+import { IRPC_STORE } from './store.js';
 
 export type IRPCFileStatus = (typeof IRPC_FILE_STATUS)[keyof typeof IRPC_FILE_STATUS];
 
@@ -87,7 +88,7 @@ export class IRPCFileStream extends IRPCFile {
         try {
           fn(nextChunk);
         } catch (error) {
-          console.error(error);
+          IRPC_STORE.error(error as Error, [this.meta]);
         }
       });
 
@@ -99,6 +100,7 @@ export class IRPCFileStream extends IRPCFile {
 
       return leftovers;
     } catch (error) {
+      IRPC_STORE.error(error as Error, [this.meta]);
       this.state.error = error as Error;
       this.state.status = IRPC_FILE_STATUS.ERROR;
     }
@@ -113,7 +115,7 @@ export class IRPCFileStream extends IRPCFile {
       try {
         fn(this.buffer?.subarray(0, this.state.downloaded) as Uint8Array);
       } catch (error) {
-        console.error(error);
+        IRPC_STORE.error(error as Error, [this.meta]);
       }
     }
 

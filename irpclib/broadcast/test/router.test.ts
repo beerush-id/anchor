@@ -1,5 +1,5 @@
 import '@irpclib/irpc/server';
-import { createPackage, IRPC_STATUS } from '@irpclib/irpc';
+import { createPackage, IRPC_STATUS, IRPC_STORE } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../src/index.js';
 import { BroadcastRouter } from '../src/router.js';
@@ -79,6 +79,7 @@ describe('BroadcastRouter', () => {
     });
 
     it('should safely ignore non-function middleware entities gracefully', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new BroadcastTransport({ channel: 'test-channel' });
       const router = new BroadcastRouter(module, transport);
@@ -88,6 +89,7 @@ describe('BroadcastRouter', () => {
       await router.resolve([{ id: '1', name: 'testFunc', args: [] }]);
 
       expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
     });
   });
 
@@ -150,6 +152,7 @@ describe('BroadcastRouter', () => {
     });
 
     it('should handle middleware errors', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new BroadcastTransport({ channel: 'test-channel' });
       const router = new BroadcastRouter(module, transport);
@@ -168,6 +171,7 @@ describe('BroadcastRouter', () => {
 
       expect(errSpy).toHaveBeenCalled();
       expect(mockChannel.postMessage).toHaveBeenCalled();
+      errSpy.mockRestore();
     });
 
     it('should execute valid middleware and cleanly proceed to route resolution', async () => {

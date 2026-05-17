@@ -1,4 +1,4 @@
-import { ERROR_CODE, IRPC_PACKET_TYPE, IRPC_STATUS, type IRPCCall, IRPCFile } from '@irpclib/irpc';
+import { ERROR_CODE, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COOKIES_EVENT, COOKIES_SYNC_KEY, DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 
@@ -427,6 +427,7 @@ describe('HTTPTransport', () => {
     });
 
     it('should handle stream reading errors and clean up unresolved calls', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error');
       const transport = new HTTPTransport({
         baseURL: 'https://api.example.com',
       });
@@ -466,6 +467,7 @@ describe('HTTPTransport', () => {
           error: expect.objectContaining({ message: 'Response stream terminated.' }),
         })
       );
+      errSpy.mockRestore();
     });
 
     it('should only clean up unresolved calls on stream error, skipping already resolved ones', async () => {
@@ -632,6 +634,7 @@ describe('HTTPTransport', () => {
     });
 
     it('should handle JSON parsing errors in response stream', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error');
       const transport = new HTTPTransport({
         baseURL: 'https://api.example.com',
       });
@@ -676,9 +679,11 @@ describe('HTTPTransport', () => {
       // but we can verify the function doesn't crash
       expect(true).toBe(true);
       expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
     });
 
     it('should handle EOF invalid framing securely', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error');
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const call1 = { id: '1', enqueue: vi.fn() } as any;
       const textEncoder = new TextEncoder();
@@ -701,6 +706,7 @@ describe('HTTPTransport', () => {
 
       await transport['resolveAll']([call1], response as any);
       expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
     });
 
     it('should evaluate EOF perfectly structured final packet block securely', async () => {
@@ -937,6 +943,7 @@ describe('HTTPTransport', () => {
     });
 
     it('should handle XHR onerror after headers and clean up unresolved calls', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
 
       xhrInstance.send.mockImplementation(() => {
@@ -971,6 +978,7 @@ describe('HTTPTransport', () => {
           error: expect.objectContaining({ message: 'Response stream terminated.' }),
         })
       );
+      errSpy.mockRestore();
     });
 
     it('should bridge AbortController signal to xhr.abort()', async () => {

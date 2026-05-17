@@ -20,6 +20,11 @@ export type IRPCStoreEvent =
   | {
       type: typeof IRPC_STORE_EVENT.DEQUEUE;
       data: IRPCStream<IRPCData>;
+    }
+  | {
+      type: typeof IRPC_STORE_EVENT.ERROR;
+      error: Error;
+      data?: unknown[];
     };
 
 export type IRPCStoreSubscriber = (event: IRPCStoreEvent) => void;
@@ -31,6 +36,7 @@ export class IRPCStore {
   public routers = new Set<IRPCRouter>();
   public packages = new Set<IRPCPackage>();
   public callCount = 0;
+  public errorCount = 0;
 
   public register(pkg: IRPCPackage) {
     if (!(pkg instanceof IRPCPackage)) {
@@ -66,6 +72,11 @@ export class IRPCStore {
     this.broadcast({ type: IRPC_STORE_EVENT.DEQUEUE, data: call });
   }
 
+  public error(error: Error, data?: unknown[]) {
+    this.errorCount += 1;
+    this.broadcast({ type: IRPC_STORE_EVENT.ERROR, error, data });
+  }
+
   public print() {
     console.table([
       {
@@ -73,6 +84,7 @@ export class IRPCStore {
         Routers: this.routers.size,
         'Running Calls': this.calls.size,
         'Total Calls': this.callCount,
+        'Error Count': this.errorCount,
       },
     ]);
   }

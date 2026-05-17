@@ -1,5 +1,5 @@
 import '@irpclib/irpc/server';
-import { createPackage, encode, type IRPCData, IRPCFile } from '@irpclib/irpc';
+import { createPackage, encode, IRPC_STORE, type IRPCData, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeFileFrame } from '../src/frame.js';
 import { WebSocketTransport } from '../src/index.js';
@@ -70,6 +70,7 @@ describe('WebSocketRouter', () => {
     });
 
     it('should safely ignore non-function middleware entities gracefully', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
       const router = new WebSocketRouter(module, transport);
@@ -106,6 +107,7 @@ describe('WebSocketRouter', () => {
     });
 
     it('should handle middleware errors', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
       const router = new WebSocketRouter(module, transport);
@@ -125,6 +127,7 @@ describe('WebSocketRouter', () => {
       await router.resolve(message, ws);
 
       expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
     });
 
     it('should execute valid middleware and cleanly proceed to route resolution', async () => {
@@ -207,6 +210,7 @@ describe('WebSocketRouter', () => {
     });
 
     it('should safely swallow invalid malformed payload parsing operations explicitly quietly natively', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
       const router = new WebSocketRouter(module, transport);
@@ -217,6 +221,7 @@ describe('WebSocketRouter', () => {
 
       expect(errSpy).toHaveBeenCalled();
       expect(ws.send).not.toHaveBeenCalled();
+      errSpy.mockRestore();
     });
 
     it('should buffer binary frames and automatically discard orphaned frames via TTL natively', async () => {

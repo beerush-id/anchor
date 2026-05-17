@@ -11,6 +11,7 @@ import {
   IRPCRouter,
   IRPCStream,
   withContext,
+  IRPC_STORE,
 } from '@irpclib/irpc';
 import { FILE_BUFFER_TTL, WS_MESSAGE_TYPE } from './enum.js';
 import { decodeFileFrame } from './frame.js';
@@ -207,7 +208,7 @@ export class WebSocketRouter extends IRPCRouter {
       const parsed = JSON.parse(message);
       return Array.isArray(parsed) ? parsed : [parsed];
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+      IRPC_STORE.error(new Error('Failed to parse WebSocket message:', { cause: error }), [{ endpoint: this.endpoint }]);
       return [];
     }
   }

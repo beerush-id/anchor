@@ -169,7 +169,7 @@ export class IRPCStream<T extends IRPCData> {
               } satisfies IRPCPacketClose);
             });
 
-            abortSignal!.removeEventListener('abort', abortStream);
+            abortSignal?.removeEventListener('abort', abortStream);
 
             this.finish();
             unsubscribe();
@@ -207,6 +207,7 @@ export class IRPCStream<T extends IRPCData> {
         this.finish();
       }
     } catch (error) {
+      IRPC_STORE.error(error as Error, [{ id: this.id, name: this.name }]);
       this.error = { code: ERROR_CODE.STREAM_ERROR, message: (error as Error).message };
       this.status = IRPC_STATUS.ERROR;
 
@@ -251,7 +252,7 @@ export class IRPCStream<T extends IRPCData> {
 
     if (this.closed) return;
     this.pipeHandlers.add(handler);
-    this.start().catch(() => {});
+    this.start().catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.name }]));
   }
 
   /**
@@ -267,7 +268,7 @@ export class IRPCStream<T extends IRPCData> {
 
     if (this.closed) return;
     this.errorHandlers.add(handler);
-    this.start().catch(() => {});
+    this.start().catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.name }]));
   }
 
   /**
@@ -283,7 +284,7 @@ export class IRPCStream<T extends IRPCData> {
 
     if (this.closed) return;
     this.closeHandlers.add(handler);
-    this.start().catch(() => {});
+    this.start().catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.name }]));
   }
 
   private finish() {

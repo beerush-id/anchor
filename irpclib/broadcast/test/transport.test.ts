@@ -1,7 +1,6 @@
-import { createPackage } from '@irpclib/irpc';
+import { createPackage, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../src/index.js';
-import { IRPC_PACKET_TYPE, IRPC_STATUS, IRPCFile } from '@irpclib/irpc';
 
 describe('BroadcastTransport', () => {
   let mockChannel: any;
@@ -222,7 +221,7 @@ describe('BroadcastTransport', () => {
 
     it('should send CANCEL message natively identifying target streams if openly connected explicitly', () => {
       const transport = new BroadcastTransport({ channel: 'test-channel' });
-      
+
       const call = { id: 'call-1', payload: { name: 'test-func' } } as any;
       transport['pendingCalls'].set('call-1', call);
 
@@ -230,18 +229,18 @@ describe('BroadcastTransport', () => {
 
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const packet = mockChannel.postMessage.mock.calls[0][0];
-      
+
       expect(packet.id).toBe('call-1');
       expect(packet.name).toBe('test-func');
       expect(packet.type).toBe('cancel'); // BC_MESSAGE_TYPE.CANCEL
-      
+
       expect(transport['pendingCalls'].has('call-1')).toBe(false);
     });
 
     it('should quietly delete tracking mappings exclusively offline safely if close is requested implicitly safely', () => {
       const transport = new BroadcastTransport({ channel: 'test-channel' });
       transport['channel'] = undefined;
-      
+
       const call = { id: 'call-2', payload: { name: 'test-func-2' } } as any;
       transport['pendingCalls'].set('call-2', call);
 
@@ -254,7 +253,7 @@ describe('BroadcastTransport', () => {
 
   describe('error handling', () => {
     it('should handle message parsing errors', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
       const transport = new BroadcastTransport({ channel: 'test-channel' });
 
       // Simulate an error by passing invalid data that will fail during processing
@@ -270,7 +269,7 @@ describe('BroadcastTransport', () => {
 
       mockChannel.onmessage(invalidEvent);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to handle BroadcastChannel message:', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
     });

@@ -19,6 +19,7 @@ import {
   IRPCRouter,
   IRPCStream,
   withContext,
+  IRPC_STORE,
 } from '@irpclib/irpc';
 import { IRPC_JSON_KEY } from './enum.js';
 import type { HTTPTransport } from './transport.js';
@@ -91,6 +92,7 @@ export class HTTPRouter extends IRPCRouter {
     try {
       return this.resolveForm(await request.formData(), context, builder);
     } catch (error) {
+      IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
       return buildResponse(
         JSON.stringify({
           code: ERROR_CODE.UNKNOWN,
@@ -124,6 +126,7 @@ export class HTTPRouter extends IRPCRouter {
     try {
       return this.resolveJson(await req.json(), name, context, builder);
     } catch (error) {
+      IRPC_STORE.error(error as Error, [{ name, method: req.method, url: req.url }]);
       return buildResponse(
         JSON.stringify({
           code: ERROR_CODE.UNKNOWN,
@@ -232,6 +235,7 @@ export class HTTPRouter extends IRPCRouter {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
+      IRPC_STORE.error(error as Error, [{ id: req.id, name: req.name }]);
       return buildResponse(
         JSON.stringify({
           code: ERROR_CODE.UNKNOWN,

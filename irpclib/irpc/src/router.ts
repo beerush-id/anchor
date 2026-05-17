@@ -31,7 +31,7 @@ export class IRPCRouter {
   public use(hook: IRPCHook): this {
     if (typeof hook !== 'function') {
       const error = new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_HOOK]);
-      console.error(error);
+      IRPC_STORE.error(error);
       return this;
     }
 
@@ -49,7 +49,7 @@ export class IRPCRouter {
       try {
         await hook();
       } catch (error) {
-        console.error(error);
+        IRPC_STORE.error(error as Error, [req.id, req.name]);
 
         return {
           id: req.id,

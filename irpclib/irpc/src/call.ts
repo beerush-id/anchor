@@ -1,6 +1,7 @@
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCReader } from './reader.js';
+import { IRPC_STORE } from './store.js';
 import type { IRPCTransport } from './transport.js';
 import type { IRPCCallConfig, IRPCData, IRPCPacketStream, IRPCPayload, IRPCStatus } from './types.js';
 import { uuid } from './uuid.js';
@@ -136,7 +137,14 @@ export class IRPCCall {
       }
 
       if (this.retries >= maxRetries) {
-        console.error(ERROR_MESSAGE[ERROR_CODE.CALL_MAX_RETRIES_REACHED], this.retryReasons);
+        IRPC_STORE.error(
+          new Error(
+            `${ERROR_MESSAGE[ERROR_CODE.CALL_MAX_RETRIES_REACHED]}: ${Array.from(this.retryReasons)
+              .map((r) => r.message)
+              .join(', ')}`
+          ),
+          [{ id: this.id, name: this.payload.name }]
+        );
         this.reject(reason, false);
         this.retryReasons.clear();
         return;

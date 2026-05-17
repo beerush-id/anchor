@@ -73,7 +73,7 @@ describe('IRPCRouter', () => {
 
     it('should log error and return self when hook is not a function', () => {
       const router = createMockRouter();
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
 
       const result = router.use('not-a-function' as any);
 
