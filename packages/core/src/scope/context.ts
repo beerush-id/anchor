@@ -5,6 +5,13 @@ import { isBrowser } from '../utils/index.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
 
 /**
+ * An async contract is a function that temporarily sets a value in the async context,
+ * and executes a function.
+ */
+export type StoreContract = <T>(fn: () => T) => T;
+export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Promise<T>;
+
+/**
  * A hierarchical key-value store that forms the backbone of Anchor's async context system.
  *
  * Each store optionally links to a `parent`, creating a prototype-chain-like lookup.
@@ -48,6 +55,25 @@ if (hasASL()) {
   globalAsyncCtx = asl;
 }
 
+let bypassWarning = false;
+
+/**
+ * Run function in safe execution context to bypass warning.
+ * Use this only on context you truly trust.
+ *
+ * @param fn - Function to run.
+ * @returns T - What the function returns.
+ */
+export function safeRun<T>(fn: () => T) {
+  bypassWarning = true;
+
+  try {
+    return fn();
+  } finally {
+    bypassWarning = false;
+  }
+}
+
 /**
  * Sets the global async scope.
  * @param {AsyncScope<AsyncStore>} scope
@@ -64,13 +90,6 @@ export function setAsyncScope(scope: AsyncScope<AsyncStore>) {
 export function getAsyncScope() {
   return globalAsyncCtx;
 }
-
-/**
- * An async contract is a function that temporarily sets a value in the async context,
- * and executes a function.
- */
-export type StoreContract = <T>(fn: () => T) => T;
-export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Promise<T>;
 
 /**
  * Creates an async contract that temporarily sets the value of a given key in the async context.
@@ -194,25 +213,6 @@ export async function withIsolation<R>(fn: () => R, strict = true, context?: Asy
     }
 
     floatingLists.clear();
-  }
-}
-
-let bypassWarning = false;
-
-/**
- * Run function in safe execution context to bypass warning.
- * Use this only on context you truly trust.
- *
- * @param fn - Function to run.
- * @returns T - What the function returns.
- */
-export function safeRun<T>(fn: () => T) {
-  bypassWarning = true;
-
-  try {
-    return fn();
-  } finally {
-    bypassWarning = false;
   }
 }
 
@@ -360,33 +360,29 @@ export function getRootStore() {
 }
 
 /**
- * Recursively collects the full store hierarchy from a starting store up to the root.
- *
- * @param list - Accumulator array (used internally for recursion).
- * @param from - The store to start from. Defaults to the currently active store.
- * @returns An array of {@link AsyncStore} instances, ordered from innermost to root.
- */
-function getAll(list: AsyncStore[] = [], from?: AsyncStore) {
-  const store = from ?? globalAsyncCtx.getStore()!;
-
-  list.push(store);
-
-  if (store.parent) {
-    return getAll(list, store.parent);
-  }
-
-  return list;
-}
-
-/**
  * Returns the full {@link AsyncStore} hierarchy from the currently active store
  * up to the global root, ordered innermost-first.
  *
  * Useful for debugging, diagnostics, or manually capturing a store reference
  * for later re-entry via {@link withScope}.
  */
-export const getAllScopes = getAll as () => AsyncStore[];
+export function getAllScopes(list: AsyncStore[] = [], from?: AsyncStore) {
+  const store = from ?? globalAsyncCtx.getStore()!;
 
-export function isGlobalScope() {
+  list.push(store);
+
+  if (store.parent) {
+    return getAllScopes(list, store.parent);
+  }
+
+  return list;
+}
+
+/**
+ * Detect if currently in Global Scope.
+ *
+ * @returns {boolean} - True if the currently active scope is global scope.
+ */
+export function isGlobalScope(): boolean {
   return globalAsyncCtx.getStore() === globalStore;
 }
