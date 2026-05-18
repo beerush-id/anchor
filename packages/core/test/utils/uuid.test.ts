@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { setUUIDProvider, uuid } from '../src/uuid.js';
+import { setUUIDProvider, uuid } from '../../src/index.js';
 
 describe('UUID', () => {
   describe('UUID Generation', () => {

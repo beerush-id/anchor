@@ -197,6 +197,25 @@ export async function withIsolation<R>(fn: () => R, strict = true, context?: Asy
   }
 }
 
+let bypassWarning = false;
+
+/**
+ * Run function in safe execution context to bypass warning.
+ * Use this only on context you truly trust.
+ *
+ * @param fn - Function to run.
+ * @returns T - What the function returns.
+ */
+export function safeRun<T>(fn: () => T) {
+  bypassWarning = true;
+
+  try {
+    return fn();
+  } finally {
+    bypassWarning = false;
+  }
+}
+
 /**
  * Reads a value from the currently active {@link AsyncStore}, walking up
  * the parent chain if the key is not found locally.
@@ -216,7 +235,7 @@ export function getScope<R>(key: AsyncKey, fallback: R): R;
 export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
   const store = globalAsyncCtx.getStore();
 
-  if (!isBrowser() && store === globalStore && ANCHOR_SETTINGS.globalScopeWarning) {
+  if (!isBrowser() && !bypassWarning && store === globalStore && ANCHOR_SETTINGS.globalScopeWarning) {
     captureStack.warning.external(
       'Attempted to access global scope.',
       [
