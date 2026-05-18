@@ -82,9 +82,9 @@ export class IRPCStore {
       {
         Packages: this.packages.size,
         Routers: this.routers.size,
-        'Running Calls': this.calls.size,
-        'Total Calls': this.callCount,
-        'Error Count': this.errorCount,
+        Running: this.calls.size,
+        Calls: this.callCount,
+        Errors: this.errorCount,
       },
     ]);
   }

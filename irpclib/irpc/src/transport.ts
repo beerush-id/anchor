@@ -1,4 +1,4 @@
-import { onCleanup } from '@anchorlib/core';
+import { onCleanup, uuid } from '@anchorlib/core';
 import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
@@ -13,7 +13,6 @@ import type {
   IRPCSpec,
   TransportConfig,
 } from './types.js';
-import { uuid } from './uuid.js';
 
 /**
  * IRPCTransport is responsible for managing and dispatching RPC calls.
@@ -83,9 +82,7 @@ export class IRPCTransport {
 
     const dispatch = () => {
       const pending = Array.from(this.queue);
-      this.dispatch(pending)
-        .finally(() => {})
-        .catch((err) => IRPC_STORE.error(err, pending.map((c) => ({ id: c.id, name: c.payload.name }))));
+      this.dispatch(pending);
       this.queue.clear();
     };
 

@@ -1,4 +1,4 @@
-import { anchor, createObserver, isBrowser, microtask, onCleanup, replay } from '@anchorlib/core';
+import { anchor, createObserver, isBrowser, microtask, onCleanup, replay, uuid } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
 import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
@@ -26,7 +26,6 @@ import type {
   IRPCStub,
   IRPCStubStore,
 } from './types.js';
-import { uuid } from './uuid.js';
 
 const DEFAULT_TIMEOUT = 20000;
 const NAME_CONSTRAINT = /^[a-zA-Z0-9\-_]+$/;

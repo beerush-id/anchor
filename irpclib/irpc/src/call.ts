@@ -1,10 +1,10 @@
+import { uuid } from '@anchorlib/core';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCReader } from './reader.js';
 import { IRPC_STORE } from './store.js';
 import type { IRPCTransport } from './transport.js';
 import type { IRPCCallConfig, IRPCData, IRPCPacketStream, IRPCPayload, IRPCStatus } from './types.js';
-import { uuid } from './uuid.js';
 
 export const DEFAULT_RETRY_MODE = 'exponential';
 export const DEFAULT_RETRY_DELAY = 1000;

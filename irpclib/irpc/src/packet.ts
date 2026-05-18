@@ -1,7 +1,6 @@
-import { isArray, isObject } from '@anchorlib/core';
+import { isArray, isObject, uuid } from '@anchorlib/core';
 import { IRPCFile, type IRPCFileMeta, IRPCFileStream } from './file.js';
 import type { IRPCData } from './types.js';
-import { uuid } from './uuid.js';
 
 export const IRPC_FILE_IDENTIFIER = 'IRPC_PACKET_FILE' as const;
 
