@@ -15,6 +15,7 @@ export * from './scope/context.js';
 export { createLifecycle, globalRun, onCleanup, onGlobalCleanup, setCleanUpHandler } from './scope/lifecycle.js';
 export * from './scope/scope.js';
 export * from './scope/stack.js';
+export * from './scope/store.js';
 export {
   ARRAY_MUTATIONS,
   ASYNC_STATUS,

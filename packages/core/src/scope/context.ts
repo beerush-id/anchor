@@ -3,42 +3,7 @@ import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import { isBrowser } from '../utils/index.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
-
-/**
- * An async contract is a function that temporarily sets a value in the async context,
- * and executes a function.
- */
-export type StoreContract = <T>(fn: () => T) => T;
-export type AsyncStoreContract = <T>(fn: () => Promise<T>) => Promise<T>;
-
-/**
- * A hierarchical key-value store that forms the backbone of Anchor's async context system.
- *
- * Each store optionally links to a `parent`, creating a prototype-chain-like lookup.
- * When a key is not found in the current store, the lookup automatically walks
- * up the parent chain until a value is found or the root is reached.
- */
-export class AsyncStore extends Map<AsyncKey, AsyncValue> {
-  /** The parent store to fall back to during {@link get} lookups. */
-  public parent?: AsyncStore;
-
-  constructor(parent?: AsyncStore);
-  constructor(seeds: Iterable<readonly [AsyncKey, AsyncValue]>, parent?: AsyncStore);
-  constructor(seeds?: Iterable<readonly [AsyncKey, AsyncValue]> | AsyncStore, parent?: AsyncStore) {
-    super(seeds instanceof AsyncStore ? undefined : seeds);
-    this.parent = seeds instanceof AsyncStore ? seeds : parent;
-  }
-
-  /**
-   * Retrieves a value by key, walking up the parent chain if not found locally.
-   *
-   * @param key - The key to look up.
-   * @returns The value from this store or the nearest ancestor, or `undefined`.
-   */
-  public get(key: AsyncKey): AsyncValue | undefined {
-    return super.get(key) ?? this.parent?.get(key);
-  }
-}
+import { AsyncStore, type AsyncStoreContract, type StoreContract } from './store.js';
 
 /** The key used to store the context store in the active scope. */
 const CONTEXT_STORE_KEY = Symbol('anchor-context');
@@ -56,6 +21,17 @@ if (hasASL()) {
 }
 
 let bypassWarning = false;
+
+// Centralized Context API that replaceable.
+export const CONTEXT_STORE = {
+  get: (key: AsyncKey, fallback?: unknown) => {
+    const value = getContextStore().get(key);
+    return typeof value !== 'undefined' ? value : fallback;
+  },
+  set: (key: AsyncKey, value: AsyncValue) => {
+    getContextStore().set(key, value);
+  },
+};
 
 /**
  * Run function in safe execution context to bypass warning.
@@ -297,17 +273,6 @@ export function setContextStore(store: AsyncStore): void {
 export function clearContextStore() {
   getContextStore()!.clear();
 }
-
-// Centralized Context API that replaceable.
-export const CONTEXT_STORE = {
-  get: (key: AsyncKey, fallback?: unknown) => {
-    const value = getContextStore().get(key);
-    return typeof value !== 'undefined' ? value : fallback;
-  },
-  set: (key: AsyncKey, value: AsyncValue) => {
-    getContextStore().set(key, value);
-  },
-};
 
 /**
  * Reads a value from the currently active {@link AsyncStore}s, walking up
