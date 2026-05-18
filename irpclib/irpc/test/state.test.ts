@@ -295,7 +295,7 @@ describe('RemoteState', () => {
     it('should reject with implicit error (no args)', async () => {
       const state = new RemoteState('current');
       state.reject();
-      await expect(state).rejects.toThrow('Unknown Error');
+      await expect(state).rejects.toThrow('IRPC: Unknown error');
     });
 
     it('should reject with the existing error message when no arg provided', async () => {

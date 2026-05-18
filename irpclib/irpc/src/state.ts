@@ -112,18 +112,13 @@ export class RemoteState<T> extends Promise<T> {
     $do(() => {
       if (this.#closed) return;
 
-      const error = args.length ? args[0] : new Error(this.error?.message ?? 'Unknown Error');
-
       if (args.length) {
-        this.#state.error = {
-          name: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
-          message: error.message,
-        };
+        this.#state.error = args[0];
       }
 
       this.#closed = true;
       this.#state.status = IRPC_STATUS.ERROR;
-      this.#reject(error);
+      this.#reject(this.error ?? new Error(ERROR_MESSAGE[ERROR_CODE.UNKNOWN]));
       this.destroy();
     });
   }
