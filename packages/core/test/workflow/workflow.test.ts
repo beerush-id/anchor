@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { plan, WORKFLOW_HOOKS, type WorkflowSwitch } from '../../src/workflow/index.js';
+import { z } from 'zod';
+import { plan, WORKFLOW_HOOKS, type WorkflowSwitch } from '../../src/index.js';
 
 describe('Workflow API', () => {
   beforeEach(() => {
@@ -37,6 +38,68 @@ describe('Workflow API', () => {
 
       const res2 = await forked({ val: 1 });
       expect(res2.val).toBe(4);
+    });
+  });
+
+  describe('schema validation', () => {
+    it('should infer type and validate initial input via plan()', async () => {
+      const schema = z.object({ id: z.string(), count: z.number().default(0) });
+      const workflow = plan({ input: schema }).then((input) => ({ total: input.count + 1 }));
+
+      // @ts-expect-error missing id
+      await expect(workflow({})).rejects.toThrow();
+
+      // Valid input, should apply default value
+      const res = await workflow({ id: 'abc' });
+      expect(res.total).toBe(1);
+    });
+
+    it('should validate and transform final output via plan()', async () => {
+      const schema = z.object({ result: z.string().transform((s) => s.toUpperCase()) });
+      const workflow = plan({ output: schema }).then((input: { val: string }) => ({ result: input.val }));
+
+      const res = await workflow({ val: 'hello' });
+      expect(res.result).toBe('HELLO'); // Transformed by zod
+
+      const badWorkflow = plan({ output: z.object({ result: z.number() }) }).then((input: { val: string }) => ({
+        result: input.val,
+      }));
+      await expect(badWorkflow({ val: 'string' })).rejects.toThrow();
+    });
+
+    it('should validate step boundaries', async () => {
+      const stepInputSchema = z.object({ value: z.number().min(10) });
+      const stepOutputSchema = z.object({ result: z.number().max(100) });
+
+      const workflow = plan<{ value: number }>().then((input) => ({ result: input.value * 2 }), {
+        input: stepInputSchema,
+        output: stepOutputSchema,
+      });
+
+      // Fails input schema (value < 10)
+      await expect(workflow({ value: 5 })).rejects.toThrow();
+
+      // Fails output schema (result > 100)
+      await expect(workflow({ value: 60 })).rejects.toThrow();
+
+      // Passes both
+      const res = await workflow({ value: 20 });
+      expect(res.result).toBe(40);
+    });
+
+    it('should support raw functions as schemas', async () => {
+      const inputSchema = (val: { count?: number }) => ({ ...val, count: (val.count || 0) + 1 });
+      const outputSchema = (val: { count: number }) => ({ ...val, count: val.count + 1 });
+      const stepSchema = (val: { count: number }) => ({ ...val, count: val.count + 1 });
+
+      const workflow = plan({ input: inputSchema, output: outputSchema }).then((input) => input, {
+        input: stepSchema,
+        output: stepSchema,
+      });
+
+      const res = await workflow({ count: 0 });
+      // inputSchema (+1) -> step.input (+1) -> handler -> step.output (+1) -> outputSchema (+1) = 4
+      expect(res.count).toBe(4);
     });
   });
 
@@ -309,6 +372,64 @@ describe('Workflow API', () => {
       const workflow = plan<{ val: number }>();
       const result = await workflow({ val: 5 });
       expect(result.val).toBe(5);
+    });
+  });
+
+  describe('complex integration', () => {
+    it('should successfully execute a full pipeline with schemas, switches, errors, recovery, and finally blocks', async () => {
+      const finallyExecuted = vi.fn();
+
+      // 1. Initial workflow with Input and Output schemas
+      const workflow = plan({
+        input: z.object({ userId: z.string(), action: z.enum(['charge', 'refund', 'fail']) }),
+        output: z.object({ status: z.string(), amount: z.number(), final: z.boolean() }),
+      })
+        // 2. Initial Step with strict internal step schema
+        .then(
+          (input) => {
+            return { ...input, amount: input.action === 'charge' ? 100 : input.action === 'refund' ? -50 : 0 };
+          },
+          { output: z.object({ userId: z.string(), action: z.string(), amount: z.number() }) }
+        )
+        // 3. Switch statement
+        .switch('action', {
+          charge: (resolve) => resolve((input) => ({ status: 'charged', amount: input.amount })),
+          refund: (resolve) => resolve((input) => ({ status: 'refunded', amount: input.amount })),
+          default: (resolve) =>
+            resolve(() => {
+              throw new Error('Unknown or failing action');
+            }),
+        })
+        // 4. Catch block to recover from 'fail' action
+        .catch((error) => {
+          expect(error.message).toBe('Unknown or failing action');
+          return { status: 'recovered', amount: 0 };
+        })
+        // 5. Final transformation to match the workflow's Output schema
+        .then((input) => ({ ...input, final: true }))
+        // 6. Finally block to guarantee execution
+        .finally(() => {
+          finallyExecuted();
+        });
+
+      // Execute 'charge' branch
+      const chargeRes = await workflow({ userId: 'u1', action: 'charge' });
+      expect(chargeRes).toEqual({ status: 'charged', amount: 100, final: true });
+      expect(finallyExecuted).toHaveBeenCalledTimes(1);
+
+      // Execute 'refund' branch
+      const refundRes = await workflow({ userId: 'u2', action: 'refund' });
+      expect(refundRes).toEqual({ status: 'refunded', amount: -50, final: true });
+      expect(finallyExecuted).toHaveBeenCalledTimes(2);
+
+      // Execute 'fail' branch (triggers switch default -> throws -> catches -> recovers)
+      const failRes = await workflow({ userId: 'u3', action: 'fail' });
+      expect(failRes).toEqual({ status: 'recovered', amount: 0, final: true });
+      expect(finallyExecuted).toHaveBeenCalledTimes(3);
+
+      // Verify input validation completely blocks bad requests BEFORE steps execute
+      // @ts-expect-error intentionally passing invalid action to test runtime validation
+      await expect(workflow({ userId: 'u4', action: 'invalid_action' })).rejects.toThrow();
     });
   });
 });

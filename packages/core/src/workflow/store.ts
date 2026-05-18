@@ -1,6 +1,6 @@
 import { mutable } from '../reactive/ref.js';
 import { safeRun } from '../scope/index.js';
-import type { Workflow, WorkflowData, WorkflowEntry, WorkflowInstance } from './workflow.js';
+import type { Workflow, WorkflowData, WorkflowEntry, WorkflowInstance } from './types.js';
 import { WORKFLOW_HOOKS } from './workflow.js';
 
 export const WORKFLOW_EVENT = {
