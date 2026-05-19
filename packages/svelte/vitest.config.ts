@@ -4,20 +4,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 
 export default defineConfig({
-  plugins: [
-    {
-      name: 'mock-ws',
-      configureServer(server) {
-        if (!server.ws) {
-          server.ws = { on: () => {}, send: () => {}, close: () => {} } as any;
-        } else if (!server.ws.on) {
-          server.ws.on = () => {};
-        }
-      }
-    },
-    svelte({ hot: false }) as never, 
-    svelteTesting() as never
-  ],
+  plugins: [svelte({ hot: false }) as never, svelteTesting() as never],
   resolve: {
     alias: {
       '@base': resolve(__dirname, 'src'),
