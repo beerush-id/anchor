@@ -1,0 +1,36 @@
+{
+  "name": "air-react",
+  "private": false,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "AIR Stack for React — Vite SSR Starter",
+  "scripts": {
+    "dev": "bun server",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --ssr src/worker.ts --outDir dist/server",
+    "build": "bun run build:client && bun run build:server",
+    "start": "NODE_ENV=production bun dist/server/worker.js",
+    "preview": "vite preview --outDir dist/client"
+  },
+  "dependencies": {
+    "@anchorlib/react": "latest",
+    "@irpclib/http": "latest",
+    "@irpclib/irpc": "latest",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.3",
+    "@tailwindcss/vite": "4.1.16",
+    "@types/bun": "latest",
+    "@types/express": "latest",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "5.0.4",
+    "express": "latest",
+    "tailwindcss": "4.1.16",
+    "typescript": "5.9.3",
+    "vite": "8.0.10",
+    "zod": "4.1.12"
+  }
+}
