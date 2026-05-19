@@ -57,7 +57,7 @@ bun run docs:build
 
 # Run tests to generate coverage in the dist folder
 echo "🧪 Running tests and generating coverage..."
-NODE_ENV=test bun run test
+bun run test
 
 # Build React app
 # echo "⚛️  Building React app..."
