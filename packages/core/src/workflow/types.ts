@@ -278,6 +278,14 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @returns A WorkflowReader tracking the deferred execution.
    */
   when(getInput: () => I, debounce?: number): WorkflowReader<O>;
+
+  /**
+   * Browser-only: Creates a deferred WorkflowReader that can be manually dispatched.
+   * Useful for binding to event handlers like onClick.
+   *
+   * @returns A WorkflowReader tracking the deferred execution.
+   */
+  later(): WorkflowReader<O> & { dispatch: (input: I) => void };
 }
 
 /**

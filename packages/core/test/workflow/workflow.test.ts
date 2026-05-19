@@ -630,5 +630,23 @@ describe('Workflow API', () => {
       const staticReader = workflow.when(() => ({ value: 10 }), 10);
       expect(staticReader.status).toBe('idle');
     });
+
+    it('should return a reader that can be dispatched manually later using later()', async () => {
+      vi.useRealTimers();
+
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
+
+      const reader = workflow.later();
+
+      expect(reader.status).toBe('idle');
+      expect(reader.data).toBeUndefined();
+
+      reader.dispatch({ value: 21 });
+
+      await reader;
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 42 });
+    });
   });
 });

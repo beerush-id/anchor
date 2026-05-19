@@ -290,6 +290,13 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     return prepare(getInput, true, debounce);
   };
 
+  fn.later = () => {
+    const { reader, start } = initialize(undefined as unknown as I, false);
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    (reader as any).dispatch = (input: I) => start(input);
+    return reader as WorkflowReader<O> & { dispatch: (input: I) => void };
+  };
+
   return fn;
 }
 
