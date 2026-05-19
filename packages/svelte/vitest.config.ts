@@ -4,7 +4,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
 
 export default defineConfig({
-  plugins: [svelte({ hot: false }) as never, svelteTesting() as never],
+  plugins: [svelte() as never, svelteTesting() as never],
   resolve: {
     alias: {
       '@base': resolve(__dirname, 'src'),
