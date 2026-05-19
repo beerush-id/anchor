@@ -108,6 +108,13 @@ export default defineConfig({
           { text: 'Svelte', link: '/svelte/index.html' },
         ],
       },
+      {
+        text: 'Coverage',
+        items: [
+          { text: 'Test Results', link: '/coverage/index.html', target: '_blank' },
+          { text: 'Coverage Details', link: '/coverage/details/index.html', target: '_blank' }
+        ]
+      },
     ],
 
     sidebar: [

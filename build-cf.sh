@@ -51,13 +51,13 @@ bun install
 # echo "🔨 Building IRPC Broadcast Transport Package..."
 # bun run --filter "@irpclib/broadcast" build
 
-# Run tests
-# echo "🧪 Running tests..."
-# bun run test
-
 # Build documentation
 echo "📚 Building documentation..."
 bun run docs:build
+
+# Run tests to generate coverage in the dist folder
+echo "🧪 Running tests and generating coverage..."
+bun run test
 
 # Build React app
 # echo "⚛️  Building React app..."
