@@ -4,8 +4,8 @@ import llmstxt from 'vitepress-plugin-llms';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 
 const BASE_URL = '';
-const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchorlib.dev/';
-const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://anchorlib.dev';
+const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://airlib.dev/';
+const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://airlib.dev';
 const PAGE_TITLE = 'AIR Stack';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
@@ -112,8 +112,8 @@ export default defineConfig({
         text: 'Coverage',
         items: [
           { text: 'Test Results', link: '/coverage/index.html', target: '_blank' },
-          { text: 'Coverage Details', link: '/coverage/details/index.html', target: '_blank' }
-        ]
+          { text: 'Coverage Details', link: '/coverage/details/index.html', target: '_blank' },
+        ],
       },
     ],
 
