@@ -51,13 +51,18 @@ bun install
 # echo "🔨 Building IRPC Broadcast Transport Package..."
 # bun run --filter "@irpclib/broadcast" build
 
+# Run tests first to avoid memory/cache issues with VitePress
+echo "🧪 Running tests and generating coverage..."
+bun run test
+
 # Build documentation
 echo "📚 Building documentation..."
 bun run docs:build
 
-# Run tests to generate coverage in the dist folder
-echo "🧪 Running tests and generating coverage..."
-NODE_ENV=test bun run test
+# Move the coverage report into the VitePress dist folder
+echo "🚚 Moving coverage report to docs dist..."
+mkdir -p docs/.vitepress/dist
+mv coverage docs/.vitepress/dist/coverage
 
 # Build React app
 # echo "⚛️  Building React app..."

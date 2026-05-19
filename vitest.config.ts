@@ -25,7 +25,7 @@ export default defineConfig({
     ],
     exclude: ['packages/react-classic'],
     reporters: ['default', 'html'],
-    outputFile: 'docs/.vitepress/dist/coverage/index.html',
+    outputFile: 'coverage/index.html',
     coverage: {
       provider: 'v8',
       enabled: true,
@@ -43,7 +43,7 @@ export default defineConfig({
         'irpclib/ws/src/**/*.{ts}',
         'irpclib/broadcast/src/**/*.{ts}',
       ],
-      reportsDirectory: 'docs/.vitepress/dist/coverage/details',
+      reportsDirectory: 'coverage/details',
     },
   },
 });
