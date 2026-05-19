@@ -2,4 +2,4 @@ name = "airstack"
 compatibility_date = "2025-08-01"
 
 [assets]
-directory = "docs/.vitepress/dist"
+directory = ".vitepress/dist"
