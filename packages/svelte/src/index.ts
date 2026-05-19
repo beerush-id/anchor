@@ -72,6 +72,7 @@ export {
   model,
   mutable,
   ordered,
+  plan,
   query,
   setContext,
   setCookieContext,

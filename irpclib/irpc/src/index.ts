@@ -1,3 +1,5 @@
+export { plan } from '@anchorlib/core';
+
 export * from './cache.js';
 export * from './call.js';
 export * from './context.js';

@@ -72,6 +72,7 @@ export {
   model,
   mutable,
   ordered,
+  plan,
   query,
   setContext,
   setCookieContext,
@@ -89,7 +90,7 @@ export {
 } from '@anchorlib/core';
 
 export { createRouter, MAX_AGE, Redirect, redirectUrl } from '@anchorlib/router';
-
+export { For, onCleanup, onMount } from 'solid-js';
 export * from './binding.js';
 export * from './hoc.js';
 export * from './props.js';
@@ -100,4 +101,3 @@ export * from './router/router.js';
 export * from './router/types.js';
 export * from './switch.js';
 export * from './types.js';
-export { For, onMount, onCleanup } from 'solid-js';
