@@ -1,4 +1,4 @@
-import { anchor, shortId } from '@anchorlib/core';
+import { anchor, shortId, stringify } from '@anchorlib/core';
 
 export const TOOL_ICON_SIZE = 16;
 
@@ -169,7 +169,7 @@ export const editorApp = anchor.immutable({
   nodes: initNodes,
   viewMode: 'canvas',
   css: () => parseAllCss(),
-  json: () => JSON.stringify(anchor.read(editorApp.nodes), null, 2),
+  json: () => stringify(editorApp.nodes, null, 2),
 } as Editor);
 
 export const editorWriter = anchor.writable(editorApp, ['currentStyle', 'current', 'currentCssContent']);
@@ -177,7 +177,7 @@ export const editorWriter = anchor.writable(editorApp, ['currentStyle', 'current
 export function parseAllCss() {
   const contents: string[] = [];
 
-  for (const node of anchor.read(editorApp.nodes)) {
+  for (const node of editorApp.nodes) {
     const content = parseCss(node as CssNode);
     if (content) {
       contents.push(content);
@@ -188,7 +188,6 @@ export function parseAllCss() {
 }
 
 export function parseCss(node: CssNode) {
-  if (anchor.has(node)) node = anchor.read(node) as CssNode;
   if (!Object.keys(node?.style ?? {}).length) return '';
 
   const contents = [styleToCss(node.selector, node.style)];
