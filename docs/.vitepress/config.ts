@@ -94,7 +94,7 @@ export default defineConfig({
       },
       {
         text: 'Remote Function',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/remote-function/index.html' },
           { text: 'Functions', link: '/remote-function/function' },
@@ -106,7 +106,7 @@ export default defineConfig({
       },
       {
         text: 'Workflows',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/workflow/index.html' },
           { text: 'Plan & Recover', link: '/workflow/plan' },
@@ -117,7 +117,7 @@ export default defineConfig({
       },
       {
         text: 'State Management',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/state-management/index.html' },
           { text: 'Mutable State', link: '/state-management/mutable' },
@@ -131,7 +131,7 @@ export default defineConfig({
       },
       {
         text: 'Routing',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/routing/index.html' },
           { text: 'Routes & Layouts', link: '/routing/routes-layouts' },
@@ -142,7 +142,7 @@ export default defineConfig({
       },
       {
         text: 'User Interface',
-        collapsed: false,
+        collapsed: true,
         items: [
           { text: 'Overview', link: '/ui/index.html' },
           { text: 'Styling', link: '/ui/styling' },
@@ -315,57 +315,57 @@ export default defineConfig({
           { text: 'FAQ', link: '/svelte/faq' },
         ],
       },
-      {
-        text: 'Anchor for Vue',
-        collapsed: true,
-        items: [
-          {
-            text: 'Overview',
-            link: '/vue/index.html',
-          },
-          {
-            text: 'Getting Started',
-            link: '/vue/getting-started',
-          },
-          {
-            text: 'State Management',
-            collapsed: true,
-            items: [
-              { text: 'Overview', link: '/vue/state/index.html' },
-              { text: 'Mutable State', link: '/vue/state/mutable' },
-              { text: 'Immutable State', link: '/vue/state/immutable' },
-              { text: 'Derived State', link: '/vue/state/derived' },
-            ],
-          },
-        ],
-      },
-      {
-        text: 'Examples',
-        collapsed: true,
-        items: [{ text: 'Analytics Dashboard', link: '/examples/dashboard' }],
-      },
-      {
-        text: 'Async',
-        collapsed: true,
-        items: [
-          {
-            text: 'Getting Started',
-            link: '/async/getting-started',
-          },
-          {
-            text: 'Query',
-            link: '/async/query',
-          },
-          {
-            text: 'Fetch',
-            link: '/async/fetch',
-          },
-          {
-            text: 'Stream',
-            link: '/async/stream',
-          },
-        ],
-      },
+      // {
+      //   text: 'Anchor for Vue',
+      //   collapsed: true,
+      //   items: [
+      //     {
+      //       text: 'Overview',
+      //       link: '/vue/index.html',
+      //     },
+      //     {
+      //       text: 'Getting Started',
+      //       link: '/vue/getting-started',
+      //     },
+      //     {
+      //       text: 'State Management',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Overview', link: '/vue/state/index.html' },
+      //         { text: 'Mutable State', link: '/vue/state/mutable' },
+      //         { text: 'Immutable State', link: '/vue/state/immutable' },
+      //         { text: 'Derived State', link: '/vue/state/derived' },
+      //       ],
+      //     },
+      //   ],
+      // },
+      // {
+      //   text: 'Examples',
+      //   collapsed: true,
+      //   items: [{ text: 'Analytics Dashboard', link: '/examples/dashboard' }],
+      // },
+      // {
+      //   text: 'Async',
+      //   collapsed: true,
+      //   items: [
+      //     {
+      //       text: 'Getting Started',
+      //       link: '/async/getting-started',
+      //     },
+      //     {
+      //       text: 'Query',
+      //       link: '/async/query',
+      //     },
+      //     {
+      //       text: 'Fetch',
+      //       link: '/async/fetch',
+      //     },
+      //     {
+      //       text: 'Stream',
+      //       link: '/async/stream',
+      //     },
+      //   ],
+      // },
       {
         text: 'Storage',
         collapsed: true,
@@ -396,112 +396,112 @@ export default defineConfig({
           },
         ],
       },
-      {
-        text: 'API Reference',
-        collapsed: true,
-        items: [
-          {
-            text: 'Core',
-            collapsed: true,
-            items: [
-              { text: 'Reactivity', link: '/apis/core/reactivity' },
-              { text: 'Async', link: '/apis/core/async' },
-              { text: 'Fetch', link: '/apis/core/fetch' },
-              { text: 'Subscription', link: '/apis/core/subscription' },
-              { text: 'Binding', link: '/apis/core/binding' },
-              { text: 'Form', link: '/apis/core/form' },
-              { text: 'Context', link: '/apis/core/context' },
-              { text: 'Lifecycle', link: '/apis/core/lifecycle' },
-              { text: 'Dev Tools', link: '/apis/core/dev-tools' },
-              { text: 'History', link: '/apis/core/history' },
-              { text: 'Anchor', link: '/apis/core/anchor' },
-              { text: 'Observation (Low-Level)', link: '/apis/core/observation' },
-              { text: 'Types', link: '/apis/core/types' },
-              { text: 'Utilities', link: '/apis/core/utility' },
-            ],
-          },
-          {
-            text: 'Storage',
-            collapsed: true,
-            items: [
-              { text: 'Persistent', link: '/apis/storage/persistent' },
-              { text: 'Session', link: '/apis/storage/session' },
-              { text: 'Key-Value', link: '/apis/storage/kv' },
-              { text: 'Table', link: '/apis/storage/table' },
-              { text: 'Types', link: '/apis/storage/types' },
-            ],
-          },
-          {
-            text: 'React (Legacy)',
-            collapsed: true,
-            items: [
-              { text: 'Initialization', link: '/apis/react/initialization' },
-              { text: 'Observation', link: '/apis/react/observation' },
-              { text: 'Derivation', link: '/apis/react/derivation' },
-              { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
-              { text: 'Storage', link: '/apis/react/storage' },
-              // { text: 'Components', link: '/apis/react/components' },
-              { text: 'Error Handling', link: '/apis/react/error-handling' },
-              { text: 'Utilities', link: '/apis/react/utilities' },
-            ],
-          },
-          {
-            text: 'Solid',
-            collapsed: true,
-            items: [
-              { text: 'Initialization', link: '/apis/solid/initialization' },
-              { text: 'Observation', link: '/apis/solid/observation' },
-              { text: 'Fetch', link: '/apis/solid/fetch' },
-              { text: 'History', link: '/apis/solid/history' },
-              { text: 'Storage', link: '/apis/solid/storage' },
-            ],
-          },
-          {
-            text: 'Svelte',
-            collapsed: true,
-            items: [
-              { text: 'Initialization', link: '/apis/svelte/initialization' },
-              { text: 'Derivation', link: '/apis/svelte/derivation' },
-              { text: 'Observation', link: '/apis/svelte/observation' },
-              { text: 'Error Handling', link: '/apis/svelte/error-handling' },
-              { text: 'Storage', link: '/apis/svelte/storage' },
-              { text: 'Utilities', link: '/apis/svelte/utilities' },
-            ],
-          },
-          {
-            text: 'Vue',
-            collapsed: true,
-            items: [
-              { text: 'Initialization', link: '/apis/vue/initialization' },
-              { text: 'Derivation', link: '/apis/vue/derivation' },
-              { text: 'Observation', link: '/apis/vue/observation' },
-              { text: 'Error Handling', link: '/apis/vue/error-handling' },
-              { text: 'Storage', link: '/apis/vue/storage' },
-              { text: 'Utilities', link: '/apis/vue/utilities' },
-            ],
-          },
-          {
-            text: 'Dev Tools',
-            link: '/apis/devtool',
-          },
-        ],
-      },
-      {
-        text: 'Configuration',
-        link: '/configuration',
-      },
-      {
-        text: 'Reactivity',
-        link: '/reactivity',
-      },
-      {
-        text: 'Immutability',
-        link: '/immutability',
-      },
-      {
-        text: 'Data Integrity',
-        link: '/data-integrity',
-      },
+      // {
+      //   text: 'API Reference',
+      //   collapsed: true,
+      //   items: [
+      //     {
+      //       text: 'Core',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Reactivity', link: '/apis/core/reactivity' },
+      //         { text: 'Async', link: '/apis/core/async' },
+      //         { text: 'Fetch', link: '/apis/core/fetch' },
+      //         { text: 'Subscription', link: '/apis/core/subscription' },
+      //         { text: 'Binding', link: '/apis/core/binding' },
+      //         { text: 'Form', link: '/apis/core/form' },
+      //         { text: 'Context', link: '/apis/core/context' },
+      //         { text: 'Lifecycle', link: '/apis/core/lifecycle' },
+      //         { text: 'Dev Tools', link: '/apis/core/dev-tools' },
+      //         { text: 'History', link: '/apis/core/history' },
+      //         { text: 'Anchor', link: '/apis/core/anchor' },
+      //         { text: 'Observation (Low-Level)', link: '/apis/core/observation' },
+      //         { text: 'Types', link: '/apis/core/types' },
+      //         { text: 'Utilities', link: '/apis/core/utility' },
+      //       ],
+      //     },
+      //     {
+      //       text: 'Storage',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Persistent', link: '/apis/storage/persistent' },
+      //         { text: 'Session', link: '/apis/storage/session' },
+      //         { text: 'Key-Value', link: '/apis/storage/kv' },
+      //         { text: 'Table', link: '/apis/storage/table' },
+      //         { text: 'Types', link: '/apis/storage/types' },
+      //       ],
+      //     },
+      //     {
+      //       text: 'React (Legacy)',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Initialization', link: '/apis/react/initialization' },
+      //         { text: 'Observation', link: '/apis/react/observation' },
+      //         { text: 'Derivation', link: '/apis/react/derivation' },
+      //         { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
+      //         { text: 'Storage', link: '/apis/react/storage' },
+      //         // { text: 'Components', link: '/apis/react/components' },
+      //         { text: 'Error Handling', link: '/apis/react/error-handling' },
+      //         { text: 'Utilities', link: '/apis/react/utilities' },
+      //       ],
+      //     },
+      //     {
+      //       text: 'Solid',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Initialization', link: '/apis/solid/initialization' },
+      //         { text: 'Observation', link: '/apis/solid/observation' },
+      //         { text: 'Fetch', link: '/apis/solid/fetch' },
+      //         { text: 'History', link: '/apis/solid/history' },
+      //         { text: 'Storage', link: '/apis/solid/storage' },
+      //       ],
+      //     },
+      //     {
+      //       text: 'Svelte',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Initialization', link: '/apis/svelte/initialization' },
+      //         { text: 'Derivation', link: '/apis/svelte/derivation' },
+      //         { text: 'Observation', link: '/apis/svelte/observation' },
+      //         { text: 'Error Handling', link: '/apis/svelte/error-handling' },
+      //         { text: 'Storage', link: '/apis/svelte/storage' },
+      //         { text: 'Utilities', link: '/apis/svelte/utilities' },
+      //       ],
+      //     },
+      //     {
+      //       text: 'Vue',
+      //       collapsed: true,
+      //       items: [
+      //         { text: 'Initialization', link: '/apis/vue/initialization' },
+      //         { text: 'Derivation', link: '/apis/vue/derivation' },
+      //         { text: 'Observation', link: '/apis/vue/observation' },
+      //         { text: 'Error Handling', link: '/apis/vue/error-handling' },
+      //         { text: 'Storage', link: '/apis/vue/storage' },
+      //         { text: 'Utilities', link: '/apis/vue/utilities' },
+      //       ],
+      //     },
+      //     {
+      //       text: 'Dev Tools',
+      //       link: '/apis/devtool',
+      //     },
+      //   ],
+      // },
+      // {
+      //   text: 'Configuration',
+      //   link: '/configuration',
+      // },
+      // {
+      //   text: 'Reactivity',
+      //   link: '/reactivity',
+      // },
+      // {
+      //   text: 'Immutability',
+      //   link: '/immutability',
+      // },
+      // {
+      //   text: 'Data Integrity',
+      //   link: '/data-integrity',
+      // },
       // {
       //   text: 'Architecture',
       //   link: '/architecture',
@@ -514,10 +514,10 @@ export default defineConfig({
       //   text: 'Philosophy',
       //   link: '/philosophy',
       // },
-      {
-        text: 'FAQ',
-        link: '/faq',
-      },
+      // {
+      //   text: 'FAQ',
+      //   link: '/faq',
+      // },
     ],
 
     footer: {

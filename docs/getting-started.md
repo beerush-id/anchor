@@ -511,7 +511,8 @@ createServer();
 
 You now have a fully functional AIR Stack foundation! From here, you can dive deeper into specific modules:
 
-- [Remote Function](/irpc/) - Connect your UI to a Node.js or Bun backend.
-- [State Management](/anchor/) - Master fine-grained state management, immutability, and write contracts.
-- [Routing](/routing/) - Learn how to add data loaders and reactive navigation guards.
-- [User Interface](/ui/) - Leverage declarative components to build your views.
+- [Remote Function](/remote-function/index.md) - Connect your UI to a Node.js or Bun backend.
+- [Workflows](/workflow/index.md) - Create reactive workflows to orchestrate your data.
+- [State Management](/state-management/index.md) - Master fine-grained state management, immutability, and write contracts.
+- [Routing](/routing/index.md) - Learn how to add data loaders and reactive navigation guards.
+- [User Interface](/ui/index.md) - Leverage declarative components to build your views.
