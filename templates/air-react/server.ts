@@ -57,7 +57,6 @@ async function createServer() {
     try {
       const url = req.originalUrl;
 
-      // @ts-expect-error
       let template = await fs.readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
       template = await vite.transformIndexHtml(url, template);
 

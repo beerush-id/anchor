@@ -11,6 +11,6 @@ export default defineConfig({
   format: ['esm'],
   unbundle: true,
   platform: 'neutral',
-  plugins: [solid()],
+  plugins: [solid({ ssr: true })],
   external: ['node:async_hooks'],
 });
