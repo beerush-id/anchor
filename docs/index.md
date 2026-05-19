@@ -2,7 +2,7 @@
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
-title: 'AIR Stack'
+title: 'AIR Stack - AI-Native, Full-Stack TypeScript Architecture'
 description: 'AI-Native, Full-Stack TypeScript Architecture. Unify fine-grained reactivity, isomorphic RPC, state management, routing, reactive workflows, and universal SSR into one cohesive, zero-boilerplate system.'
 keywords:
   - AIR Stack

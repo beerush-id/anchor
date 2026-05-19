@@ -7,10 +7,10 @@ const BASE_URL = '';
 const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://airlib.dev/';
 const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://airlib.dev';
 const PAGE_TITLE = 'AIR Stack';
-const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
+const PAGE_OPEN_TITLE = `${PAGE_TITLE} - AI-Native, Full-Stack TypeScript Architecture`;
 const PAGE_OPEN_DESCRIPTION =
-  'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
-const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}social.jpg`;
+  'AI-Native, Full-Stack TypeScript Architecture. Unify fine-grained reactivity, isomorphic RPC, state management, routing, reactive workflows, and universal SSR into one cohesive, zero-boilerplate system.';
+const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}social.png`;
 
 const analytics =
   process.env.NODE_ENV === 'production'
