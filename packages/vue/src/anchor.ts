@@ -120,23 +120,3 @@ export function orderedRef<T extends unknown[], S extends ModelArray = ModelArra
   const state = anchor.ordered(init, compare, options);
   return variableRef(state) as VariableRef<T>;
 }
-
-/**
- * Creates a reactive object that mutates the original object.
- * This is a Vue wrapper around anchor.raw that returns a Ref.
- *
- * Unless you set the global options to `cloned: true`, you don't want to use this.
- *
- * @template T - The type of the initial object
- * @template S - The schema type for validation
- * @param init - Initial object value
- * @param options - Configuration options
- * @returns A Vue Ref containing the raw reactive object
- */
-export function rawRef<T extends Linkable, S extends LinkableSchema = LinkableSchema>(
-  init: T,
-  options?: StateOptions<S>
-): VariableRef<T> {
-  const state = anchor.raw(init, options);
-  return variableRef(state) as VariableRef<T>;
-}

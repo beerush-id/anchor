@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { anchorRef, flatRef, orderedRef, rawRef, reactiveRef } from '../../src/anchor.js';
+import { describe, expect, it, vi } from 'vitest';
 import type { Ref } from 'vue';
+import { anchorRef, flatRef, orderedRef, reactiveRef } from '../../src/anchor.js';
 
 describe('Anchor Vue - Anchor System', () => {
   describe('anchorRef', () => {
@@ -79,21 +79,6 @@ describe('Anchor Vue - Anchor System', () => {
       });
 
       expect(wrapper.text()).toBe('1,2,3');
-    });
-  });
-
-  describe('rawRef', () => {
-    it('should create a raw reactive reference', () => {
-      const initialValue = { count: 42, name: 'test' };
-      const wrapper = mount({
-        template: '<div>{{ state.count }}-{{ state.name }}</div>',
-        setup() {
-          const state = rawRef(initialValue);
-          return { state };
-        },
-      });
-
-      expect(wrapper.text()).toBe('42-test');
     });
   });
 });
