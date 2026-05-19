@@ -233,7 +233,7 @@ Only network errors are retried. Handler errors fail immediately.
 
 ## Documentation
 
-For detailed documentation, visit [https://anchorlib.dev/docs/irpc/http](https://anchorlib.dev/docs/irpc)
+For detailed documentation, visit [https://airlib.dev/irpc/http](https://airlib.dev/irpc)
 
 ## License
 

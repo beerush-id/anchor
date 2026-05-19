@@ -261,7 +261,7 @@ export const createUser = irpc.declare({
 
 ## Documentation
 
-For detailed documentation, visit [https://anchorlib.dev/docs/irpc](https://anchorlib.dev/docs/irpc)
+For detailed documentation, visit [https://airlib.dev/irpc](https://airlib.dev/irpc)
 
 ## License
 

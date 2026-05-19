@@ -19,7 +19,7 @@ npm install @anchorlib/storage
 
 ## Documentation
 
-For full documentation, visit [Anchor Storage Documentation](https://anchorlib.dev/docs/storage/getting-started.html)
+For full documentation, visit [Anchor Storage Documentation](https://airlib.dev/storage/getting-started.html)
 
 ## Quick Start
 

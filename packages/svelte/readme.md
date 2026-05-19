@@ -10,7 +10,7 @@ npm install @anchorlib/svelte
 
 ## Documentation
 
-For full documentation, visit [Anchor for Svelte](https://anchorlib.dev/docs/svelte/introduction.html)
+For full documentation, visit [Anchor for Svelte](https://airlib.dev/svelte/introduction.html)
 
 ## Quick Start
 

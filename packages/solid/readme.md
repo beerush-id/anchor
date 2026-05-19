@@ -10,7 +10,7 @@ npm install @anchorlib/solid
 
 ## Documentation
 
-For full documentation, visit [Anchor for Solid](https://anchorlib.dev/docs/solid/introduction.html)
+For full documentation, visit [Anchor for Solid](https://airlib.dev/solid/introduction.html)
 
 ## Quick Start
 

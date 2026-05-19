@@ -172,7 +172,7 @@ export async function withIsolation<R>(fn: () => R, strict = true, context?: Asy
           'Accessing async context in a detached isolation is highly discouraged.',
           '- Make sure to await your awaited function.',
           '- Avoid running a hanging "then" in an isolated context.',
-          '- Documentation: https://anchorlib.dev/docs/async-context',
+          '- Documentation: https://airlib.dev/async-context',
         ],
         getScope
       );
@@ -218,7 +218,7 @@ export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
         'Accessing global scope is highly discouraged.',
         'This could lead to race condition.',
         '- Make sure to use isolated context storage or implement a custom storage mechanism.',
-        'Documentation: https://anchorlib.dev/docs/context#isolated-store',
+        'Documentation: https://airlib.dev/context#isolated-store',
       ].join('\n'),
       'Global Scope Access Detected.',
       getScope
