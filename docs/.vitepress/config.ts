@@ -105,6 +105,17 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Workflows',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/workflow/index.html' },
+          { text: 'Plan & Recover', link: '/workflow/plan' },
+          { text: 'Schema Validation', link: '/workflow/schema' },
+          { text: 'Branching', link: '/workflow/switch' },
+          { text: 'Observability', link: '/workflow/monitoring' },
+        ],
+      },
+      {
         text: 'State Management',
         collapsed: false,
         items: [

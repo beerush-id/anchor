@@ -1,0 +1,324 @@
+---
+title: 'AIR Stack: Workflow Planning & Composition'
+description: 'Learn how to compose, chain, and recover sequential asynchronous pipelines natively with Anchor Workflows.'
+keywords:
+  - AIR Stack
+  - Anchor
+  - Workflows
+  - Promise Chaining
+  - Error Recovery
+  - Pipeline Composition
+---
+
+# Planning a Workflow
+
+Use the `plan()` function to initialize a new workflow pipeline. It returns an executable pipeline that can be extended with sequential or branching logic.
+
+## Sequential Pipelines
+
+You can build sequential steps using the `.then()` method. Each step receives the output of the preceding step.
+
+```typescript
+import { plan } from '@irpclib/irpc';
+
+const checkoutFlow = plan<{ cartId: string; userId: string }>()
+  .then(async (input) => {
+    const cart = await db.carts.findById(input.cartId);
+    return { ...input, cart };
+  })
+  .then(async (input) => {
+    const payment = await stripe.charge(input.cart.total, input.userId);
+    return { ...input, paymentId: payment.id };
+  });
+
+irpc.construct(checkout, (cartId, userId) => {
+  return checkoutFlow({ cartId, userId });
+});
+```
+
+::: code-group
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { checkout } from './function.js';
+
+export const CheckoutButton = setup((props: { cartId: string; userId: string }) => {
+  const isPending = mutable(false);
+
+  const pay = async () => {
+    isPending.value = true;
+
+    try {
+      const result = await checkout(props.cartId, props.userId);
+      console.log('Payment ID:', result.paymentId);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={pay} disabled={isPending.value}>
+      {isPending.value ? 'Processing...' : 'Checkout'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { checkout } from './function.js';
+
+export const CheckoutButton = setup((props: { cartId: string; userId: string }) => {
+  const isPending = mutable(false);
+
+  const pay = async () => {
+    isPending.value = true;
+
+    try {
+      const result = await checkout(props.cartId, props.userId);
+      console.log('Payment ID:', result.paymentId);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={pay} disabled={isPending.value}>
+      {isPending.value ? 'Processing...' : 'Checkout'}
+    </button>
+  );
+});
+```
+:::
+
+## Reusing and Composing Pipelines
+
+When building **multiple workflows**, you often need to execute the **same initial steps**—like verifying a token and fetching a user profile—before proceeding with route-specific logic. **Rewriting these steps** for every pipeline causes **code duplication**.
+
+To solve this, you need a way to **define a base sequence once** and use it as the **starting point** for multiple different workflows.
+
+You can achieve this by passing an existing workflow into **`plan()`**. This creates a **new, distinct pipeline** that inherits all the steps from the base sequence, which you can then **extend** with specific logic.
+
+```typescript
+import { plan } from '@irpclib/irpc';
+
+// 1. Create a base authentication pipeline
+const authenticatedBase = plan<{ token: string }>()
+  .then(async (input) => {
+    const user = await verifyToken(input.token);
+    return { user };
+  });
+
+// 2. Clone and extend safely for specific routes
+const adminFlow = plan(authenticatedBase)
+  .then((input) => {
+    if (input.user.role !== 'admin') throw new Error('Unauthorized');
+    return input;
+  });
+
+const userFlow = plan(authenticatedBase)
+  .then((input) => {
+    return { data: 'User Data' };
+  });
+
+irpc.construct(getAdminData, (token) => adminFlow({ token }));
+irpc.construct(getUserData, (token) => userFlow({ token }));
+```
+
+::: code-group
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { getAdminData } from './function.js';
+
+export const AdminPanel = setup((props: { token: string }) => {
+  const isPending = mutable(false);
+
+  const loadData = async () => {
+    isPending.value = true;
+    try {
+      const result = await getAdminData(props.token);
+      console.log(result);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={loadData} disabled={isPending.value}>
+      {isPending.value ? 'Loading...' : 'Load Admin Data'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { getAdminData } from './function.js';
+
+export const AdminPanel = setup((props: { token: string }) => {
+  const isPending = mutable(false);
+
+  const loadData = async () => {
+    isPending.value = true;
+    try {
+      const result = await getAdminData(props.token);
+      console.log(result);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={loadData} disabled={isPending.value}>
+      {isPending.value ? 'Loading...' : 'Load Admin Data'}
+    </button>
+  );
+});
+```
+:::
+
+## Error Handling & Recovery
+
+**Errors thrown** within any step immediately **halt sequential execution**. The engine will **skip** subsequent `.then()` blocks until it encounters a **`.catch()`** block.
+
+### Recovering from Errors
+
+A **`.catch()`** block allows you to **trap the error** and **recover the pipeline state**. If a catch block successfully returns a value, the workflow **exits the error state** and **resumes normal execution** for any subsequent `.then()` blocks.
+
+```typescript
+import { plan } from '@irpclib/irpc';
+
+const resilientFlow = plan<{ id: string }>()
+  .then((input) => fetchExternalData(input.id))
+  .catch((err, originalInput) => {
+    console.error('Fetch failed, using cache:', err);
+    // Recover by returning fallback data
+    return getCachedData(originalInput.id); 
+  })
+  .then((data) => processData(data)); // Executes cleanly using the fallback data
+
+irpc.construct(getData, (id) => resilientFlow({ id }));
+```
+
+::: code-group
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { getData } from './function.js';
+
+export const DataView = setup((props: { id: string }) => {
+  const isPending = mutable(false);
+
+  const load = async () => {
+    isPending.value = true;
+    try {
+      const result = await getData(props.id);
+      console.log(result);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={load} disabled={isPending.value}>
+      {isPending.value ? 'Loading...' : 'Load Data'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { getData } from './function.js';
+
+export const DataView = setup((props: { id: string }) => {
+  const isPending = mutable(false);
+
+  const load = async () => {
+    isPending.value = true;
+    try {
+      const result = await getData(props.id);
+      console.log(result);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={load} disabled={isPending.value}>
+      {isPending.value ? 'Loading...' : 'Load Data'}
+    </button>
+  );
+});
+```
+:::
+
+### Guaranteed Execution
+
+The **`.finally()`** block acts as a **cleanup utility**. It **executes regardless** of whether the pipeline succeeded or failed. It **does not mutate** the pipeline's output.
+
+```typescript
+import { plan } from '@irpclib/irpc';
+
+const resourceFlow = plan<{ fileId: string }>()
+  .then((input) => lockFile(input.fileId))
+  .then((input) => processFile(input.fileId))
+  .finally((input, error) => {
+    unlockFile(input.fileId); // Always runs, even if processFile throws
+  });
+
+irpc.construct(processItem, (fileId) => resourceFlow({ fileId }));
+```
+
+::: code-group
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { processItem } from './function.js';
+
+export const FileProcessor = setup((props: { fileId: string }) => {
+  const isPending = mutable(false);
+
+  const process = async () => {
+    isPending.value = true;
+    try {
+      await processItem(props.fileId);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={process} disabled={isPending.value}>
+      {isPending.value ? 'Processing...' : 'Process File'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { processItem } from './function.js';
+
+export const FileProcessor = setup((props: { fileId: string }) => {
+  const isPending = mutable(false);
+
+  const process = async () => {
+    isPending.value = true;
+    try {
+      await processItem(props.fileId);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={process} disabled={isPending.value}>
+      {isPending.value ? 'Processing...' : 'Process File'}
+    </button>
+  );
+});
+```
+:::
+
+## Learn More
+
+- **[Schema Validation](./schema)**: Learn how to strictly enforce data boundaries across your pipelines.
+- **[Branching Logic](./switch)**: Learn how to execute isolated, conditional branches based on data states.

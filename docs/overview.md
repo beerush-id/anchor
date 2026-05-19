@@ -206,6 +206,54 @@ watchPrice('AAPL').subscribe((stock) => {
 Same API. Two different worlds — one pattern. **Batching**, **caching**, **retry logic**, and **call coalescing** are built into the protocol.
 :::
 
+## Workflows: Promise-like Execution Pipelines
+
+You want to build a reliable payment processor, an AI agent loop, or a complex background job. To handle it safely, you are forced to:
+
+- Write massive, deeply nested **`try/catch`** blocks to handle intermediate failures.
+- Manually pass **mutable state** from one asynchronous operation to the next.
+- Wire bespoke **`if/else`** branching logic that makes the function impossible to read.
+
+Whichever way you structure it, business logic is quickly **buried** under error handling, logging, and data validation.
+
+::: tip What if:
+Multi-step asynchronous logic was just a predictable, **Promise-like chaining?**
+:::
+
+**Define** the pipeline:
+```ts
+type ChatInput = {
+  prompt: string
+  model: 'gpt-4' | 'claude-3'
+};
+
+export const chatWorkflow = plan<ChatInput>()
+  .then(async (input) => {
+    const system = 'You are a helpful assistant.';
+    return { ...input, system };
+  })
+  .switch('model', {
+    'gpt-4': (resolve) => resolve((input) => openai.chat(input.prompt, input.system)),
+    'claude-3': (resolve) => resolve((input) => anthropic.chat(input.prompt, input.system)),
+  })
+  .catch((error) => {
+    console.error('AI Request failed!', error);
+    return { text: 'An error occurred.', error: true };
+  });
+```
+
+**Execute** the pipeline:
+```ts
+const response = await chatWorkflow({ 
+  prompt: 'Hello!', 
+  model: 'gpt-4' 
+});
+
+console.log(response.text);
+```
+
+Because the **Workflow API** is just JavaScript, you can **orchestrate complex logic anywhere** JavaScript runs—in the **browser**, **Bun**, **Deno**, **Node.js**, or **Cloudflare Workers**.
+
 ## Anchor: Reactive State Engine
 
 To present data on the screen, you pick a UI library or framework:

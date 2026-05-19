@@ -1,0 +1,170 @@
+---
+title: 'AIR Stack: Workflow Schema Validation'
+description: 'Enforce strict type-safe data boundaries across asynchronous pipelines using Zod, Valibot, or custom validators within Anchor Workflows.'
+keywords:
+  - AIR Stack
+  - Anchor
+  - Workflows
+  - Schema Validation
+  - Zod
+  - Valibot
+  - Type Safety
+---
+
+# Schema Validation
+
+Workflows support native **zero-dependency schema validation** via duck-typing. By passing a validator (like Zod, Valibot, or a custom function) into the workflow metadata, the engine automatically enforces data boundaries at runtime and infers precise TypeScript typings.
+
+## Initial and Final Validation
+
+Provide `input` and `output` schemas to `plan()` to validate the entry and exit points of the entire pipeline. The initial generic `I` is automatically inferred from your `input` schema.
+
+```typescript
+import { plan } from '@irpclib/irpc';
+import { z } from 'zod';
+
+const userSchema = z.object({ id: z.string(), isActive: z.boolean().default(true) });
+
+const createUserFlow = plan({ 
+  input: userSchema, 
+  output: z.object({ success: z.boolean() }) 
+})
+  .then((user) => {
+    // `user` is strictly inferred as { id: string, isActive: boolean }
+    // Zod transformations (like .default) are applied BEFORE this step executes.
+    return { success: true };
+  });
+
+irpc.construct(createUser, (id, isActive) => {
+  return createUserFlow({ id, isActive });
+});
+```
+
+::: code-group
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { createUser } from './function.js';
+
+export const UserCreator = setup(() => {
+  const isPending = mutable(false);
+
+  const create = async () => {
+    isPending.value = true;
+    try {
+      const result = await createUser('user_123', true);
+      console.log(result.success);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={create} disabled={isPending.value}>
+      {isPending.value ? 'Creating...' : 'Create User'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { createUser } from './function.js';
+
+export const UserCreator = setup(() => {
+  const isPending = mutable(false);
+
+  const create = async () => {
+    isPending.value = true;
+    try {
+      const result = await createUser('user_123', true);
+      console.log(result.success);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={create} disabled={isPending.value}>
+      {isPending.value ? 'Creating...' : 'Create User'}
+    </button>
+  );
+});
+```
+:::
+
+## Step Boundary Validation
+
+You can also enforce validation at individual step boundaries to guarantee intermediate operations haven't corrupted the state.
+
+```typescript
+import { plan } from '@irpclib/irpc';
+import { z } from 'zod';
+
+const secureFlow = plan({ input: z.object({ query: z.string() }) })
+  .then(
+    async (input) => {
+      const results = await db.search(input.query);
+      return { ...input, results };
+    },
+    { output: z.object({ query: z.string(), results: z.array(z.any()).max(100) }) } // strictly enforced
+  );
+
+irpc.construct(searchData, (query) => secureFlow({ query }));
+```
+
+::: code-group
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { searchData } from './function.js';
+
+export const SearchBar = setup(() => {
+  const isPending = mutable(false);
+
+  const search = async () => {
+    isPending.value = true;
+    try {
+      const result = await searchData('test query');
+      console.log(result.results);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={search} disabled={isPending.value}>
+      {isPending.value ? 'Searching...' : 'Search'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { searchData } from './function.js';
+
+export const SearchBar = setup(() => {
+  const isPending = mutable(false);
+
+  const search = async () => {
+    isPending.value = true;
+    try {
+      const result = await searchData('test query');
+      console.log(result.results);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={search} disabled={isPending.value}>
+      {isPending.value ? 'Searching...' : 'Search'}
+    </button>
+  );
+});
+```
+:::
+
+## Learn More
+
+- **[Branching Logic](./switch)**: Learn how to conditionally route your strictly validated data into isolated pipelines.
+- **[Plan & Recover](./plan)**: Explore how to chain sequential steps and handle error recovery natively.
