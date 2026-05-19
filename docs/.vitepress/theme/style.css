@@ -160,3 +160,12 @@
 .sp-wrapper.preview-flex .sp-stack.sp-preset-column {
   min-height: 640px;
 }
+
+/**
+ * Component: Images and Icons Dark Mode
+ * -------------------------------------------------------------------------- */
+
+.dark .VPNavBar .VPImage.logo,
+.dark .VPHome .VPImage {
+  filter: invert(1) hue-rotate(180deg) !important;
+}

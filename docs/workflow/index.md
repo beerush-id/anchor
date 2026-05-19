@@ -116,6 +116,7 @@ Because the **Workflow API** is just JavaScript, you can **orchestrate complex l
 Explore the core architectural pillars of the Workflow engine:
 
 - **[Plan & Recover](./plan)**: Learn how to chain sequential steps, compose pipelines, and handle error recovery natively.
+- **[Reactive Execution](./reactive)**: Learn how to track progress step-by-step and defer execution based on state dependencies.
 - **[Schema Validation](./schema)**: Learn how to strictly enforce data boundaries using Zod, Valibot, or duck-typed functions.
 - **[Branching Logic](./switch)**: Learn how to execute isolated, conditional branches based on data states or matcher functions.
 - **[Observability & Monitoring](./monitoring)**: Learn how to globally monitor execution states and instantly build reactive telemetry dashboards.

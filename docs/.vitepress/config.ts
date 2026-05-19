@@ -3,10 +3,10 @@ import { defineConfig, type HeadConfig } from 'vitepress';
 import llmstxt from 'vitepress-plugin-llms';
 import { renderSandbox } from 'vitepress-plugin-sandpack';
 
-const BASE_URL = '/docs';
-const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchorlib.dev/docs/';
+const BASE_URL = '';
+const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://anchorlib.dev/';
 const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://anchorlib.dev';
-const PAGE_TITLE = 'AIR Stack Docs';
+const PAGE_TITLE = 'AIR Stack';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - Fine-Grained Reactivity with True Immutability`;
 const PAGE_OPEN_DESCRIPTION =
   'Anchor is a revolutionary state management framework for modern web applications with fine-grained reactivity and true immutability. First-class support for React, Vue, Svelte, and vanilla JavaScript/TypeScript.';
@@ -38,12 +38,7 @@ export default defineConfig({
   description: PAGE_OPEN_DESCRIPTION,
   head: [
     ['link', { rel: 'canonical', href: PAGE_URL }],
-    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon.ico` }],
-    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-196x196.png`, sizes: '196x196' }],
-    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-128x128.png`, sizes: '128x128' }],
-    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-96x96.png`, sizes: '96x96' }],
-    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-32x32.png`, sizes: '32x32' }],
-    ['link', { rel: 'icon', href: `${BASE_URL}/icons/favicon-16x16.png`, sizes: '16x16' }],
+    ['link', { rel: 'icon', href: `${BASE_URL}/airstack.svg`, type: 'image/svg+xml' }],
     ...(analytics as HeadConfig[]),
     [
       'meta',
@@ -70,13 +65,29 @@ export default defineConfig({
     ['link', { rel: 'canonical', href: PAGE_URL }],
   ],
   themeConfig: {
+    logo: '/airstack.svg',
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Home', link: ROOT_URL },
       { text: 'Overview', link: '/overview' },
       { text: 'Get Started', link: '/getting-started' },
-      { text: 'Unit Tests', link: 'https://anchorlib.dev/coverage' },
-      { text: 'Test Coverage', link: 'https://anchorlib.dev/coverage/details' },
+      {
+        text: 'Architecture',
+        items: [
+          { text: 'State Management', link: '/state-management/index.html' },
+          { text: 'Remote Function', link: '/remote-function/index.html' },
+          { text: 'Workflows', link: '/workflow/index.html' },
+          { text: 'User Interface', link: '/ui/index.html' },
+          { text: 'Routing', link: '/routing/index.html' },
+        ],
+      },
+      {
+        text: 'Integrations',
+        items: [
+          { text: 'React', link: '/react/index.html' },
+          { text: 'SolidJS', link: '/solid/index.html' },
+          { text: 'Svelte', link: '/svelte/index.html' },
+        ],
+      },
     ],
 
     sidebar: [
@@ -110,6 +121,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/workflow/index.html' },
           { text: 'Plan & Recover', link: '/workflow/plan' },
+          { text: 'Reactive Execution', link: '/workflow/reactive' },
           { text: 'Schema Validation', link: '/workflow/schema' },
           { text: 'Branching', link: '/workflow/switch' },
           { text: 'Observability', link: '/workflow/monitoring' },
@@ -150,9 +162,9 @@ export default defineConfig({
           { text: 'Reactive UI', link: '/ui/view' },
           { text: 'Component', link: '/ui/component' },
           { text: 'Form Components', link: '/ui/form' },
-          { text: 'Headless Components', link: '/ui/headless' },
-          { text: 'Data Components', link: '/ui/data' },
-          { text: 'Composition', link: '/ui/composition' },
+          // { text: 'Headless Components', link: '/ui/headless' },
+          // { text: 'Data Components', link: '/ui/data' },
+          // { text: 'Composition', link: '/ui/composition' },
         ],
       },
       {

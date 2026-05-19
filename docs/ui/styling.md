@@ -318,7 +318,4 @@ If the value comes from a database, a scroll event, mouse coordinates, or mathem
 - [Static UI](./static) — When UI should remain inline, and when it should graduate
 - [Reactive UI](./view) — Presenting reactive data without owning it
 - [Component](./component) — When a concern needs its own state, behavior, and reactivity
-- [Data Components](./data) — Components that own and manage their server data
 - [Form Components](./form) — User-driven form components with built-in validation
-- [Headless Components](./headless) — Reusable logic units without a view
-- [Composition](./composition) — Coordinating autonomous components into complete interfaces

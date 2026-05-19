@@ -562,6 +562,4 @@ const UserForm = setup(() => {
 - [Styling](./styling) — When a concern needs its own state, behavior, and reactivity
 - [Static UI](./static) — When UI should remain inline, and when it should graduate
 - [Reactive UI](./view) — Presenting reactive data without owning it
-- [Data Components](./data) — Components that own and manage their server data
-- [Headless Components](./headless) — Reusable logic units without a view
-- [Composition](./composition) — Coordinating autonomous components into complete interfaces
+- [Form Components](./form) — User-driven form components with built-in validation

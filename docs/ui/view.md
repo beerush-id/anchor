@@ -519,7 +519,4 @@ Building **Reactive UIs** by extracting repetitive structures, grouping logical 
 
 - [Styling](./styling) — Managing visual logic and conditional states
 - [Component](./component) — Building autonomous, self-governing UI units
-- [Data Components](./data) — Components that own and manage their server data
 - [Form Components](./form) — User-driven form components with built-in validation
-- [Headless Components](./headless) — Reusable logic units without a view
-- [Composition](./composition) — Coordinating autonomous components into complete interfaces
