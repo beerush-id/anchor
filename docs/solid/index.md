@@ -58,7 +58,7 @@ state.name = 'Anchor Solid';
 ```
 
 - [Getting Started](/solid/getting-started) - Get started with Anchor for Solid.
-- [Core API Reference](/apis/solid/initialization) - API reference for the core APIs.
+
 
 ### 2. True Immutability
 
@@ -66,7 +66,7 @@ Anchor provides true immutability through controlled mutations. State objects ar
 defined contracts, preventing accidental mutations while maintaining performance.
 
 - [Immutability](/solid/state/immutable) - Learn more about immutability.
-- [Immutability API Reference](/apis/solid/initialization#immutable-apis) - API reference for immutability.
+
 
 ### 3. Data Integrity
 
@@ -74,7 +74,7 @@ With schema support and runtime validation, Anchor ensures your state maintains 
 errors early in development.
 
 - [Schema Support](/solid/getting-started#schema-support) - Learn more about schema support.
-- [Schema API Reference](/apis/solid/initialization#data-integrity-apis) - API reference for schema support.
+
 
 ## Solid Integration
 

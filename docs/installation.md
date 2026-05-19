@@ -89,7 +89,7 @@ pnpm add @anchorlib/solid
 After installation, choose a module to begin integrating:
 
 - [Getting Started](/getting-started) - Build your first application using the full AIR Stack.
-- [Router](/router/) - Set up your URL and state-driven routing.
+- [Router](/routing/) - Set up your URL and state-driven routing.
 - [IRPC](/irpc/) - Configure your isomorphic network transport.
 - [React Guide](/react/getting-started) - Specific bindings for React.
 - [Solid Guide](/solid/getting-started) - Specific bindings for SolidJS.

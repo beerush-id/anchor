@@ -432,7 +432,7 @@ user.name = 'Jane';
 
 ## API Reference
 
-- [API Reference](/apis/solid/) - Complete documentation of all functions and types
+
 
 ## Next Steps
 

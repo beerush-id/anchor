@@ -57,7 +57,7 @@ state.name = 'Anchor Svelte';
 ```
 
 - [Getting Started](/svelte/getting-started) - Get started with Anchor for Svelte.
-- [Core API Reference](/apis/svelte/initialization) - API reference for the core APIs.
+
 
 ### 2. True Immutability
 
@@ -65,7 +65,7 @@ Anchor provides true immutability through controlled mutations. State objects ar
 defined contracts, preventing accidental mutations while maintaining performance.
 
 - [Immutability](/svelte/state/immutable) - Learn more about immutability.
-- [Immutability API Reference](/apis/svelte/initialization#immutable-apis) - API reference for immutability.
+
 
 ### 3. Data Integrity
 
@@ -73,7 +73,7 @@ With schema support and runtime validation, Anchor ensures your state maintains 
 errors early in development.
 
 - [Schema Support](/svelte/getting-started#schema-support) - Learn more about schema support.
-- [Schema API Reference](/apis/svelte/initialization#data-integrity-apis) - API reference for schema support.
+
 
 ## Svelte Integration
 

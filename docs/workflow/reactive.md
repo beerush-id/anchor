@@ -97,7 +97,7 @@ export const Checkout = setup((props: { cartId: string }) => {
 
 Instead of manually invoking the workflow in an event handler, you can bind it directly to the reactive graph. By using `.once()`, `.with()`, or `.when()`, the workflow will automatically execute based on the reactive dependencies accessed inside its getter function.
 
-This perfectly mirrors the **[IRPC Execution Pattern](../irpc/transport.md)**, allowing you to seamlessly debounce and orchestrate browser-only tasks.
+This perfectly mirrors the **[IRPC Execution Pattern](/remote-function/transport)**, allowing you to seamlessly debounce and orchestrate browser-only tasks.
 
 ### `.once(input)`
 

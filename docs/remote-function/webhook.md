@@ -38,9 +38,9 @@ irpc.construct(stripeWebhook, async (payload) => {
 
 ::: tip Webhook Validation
 
-In most cases, IRPC's [Validation](http://localhost:6611/docs/remote-function/function.html#validation) will be enough to validate the incoming requests. However, if you can't guarantee the shape of the incoming requests, you should **always** validate the incoming requests yourself before passing to the resolver.
+In most cases, IRPC's [Validation](./function#validation) will be enough to validate the incoming requests. However, if you can't guarantee the shape of the incoming requests, you should **always** validate the incoming requests yourself before passing to the resolver.
 
-You can also use [Spec Hooks](http://localhost:6611/docs/remote-function/handler.html#spec-hooks-per-function) to intercept the incoming requests and validate them.
+You can also use [Spec Hooks](./handler#spec-hooks-per-function) to intercept the incoming requests and validate them.
 
 :::
 
