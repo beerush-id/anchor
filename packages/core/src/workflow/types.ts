@@ -1,3 +1,6 @@
+import type { WORKFLOW_STATUS } from './constant.js';
+import type { WorkflowReader } from './reader.js';
+
 /**
  * Base constraint for all workflow I/O — must be a record (object).
  */
@@ -83,14 +86,26 @@ export type WorkflowFinally = WorkflowBase & {
  * Discriminated union of all step types in a workflow pipeline.
  */
 export type WorkflowEntry = WorkflowStep | WorkflowSwitch | WorkflowCatch | WorkflowFinally;
+
+/**
+ * The status of a workflow step.
+ */
+export type WorkflowStatus = (typeof WORKFLOW_STATUS)[keyof typeof WORKFLOW_STATUS];
+
 /**
  * Represents the state of a single execution step.
  */
 export type StepState = {
-  status: 'idle' | 'pending' | 'success' | 'error' | 'skipped';
+  id: string;
+  status: WorkflowStatus;
+
+  name?: string;
+  description?: string;
+
   data?: WorkflowData;
   error?: Error;
 };
+
 /**
  * Represents a single running instance of a workflow pipeline.
  */
@@ -99,6 +114,7 @@ export type WorkflowInstance = {
   workflow: Workflow<WorkflowData, WorkflowData>;
   input: WorkflowData;
   states: WeakMap<WorkflowEntry, StepState>;
+  controller: AbortController;
 };
 export type Narrow<O, K extends keyof O, V> = O & Record<K, V>;
 export type SwitchCases<O extends WorkflowData, K extends keyof O> = {
@@ -128,6 +144,7 @@ export type SwitchCasesFn<O extends WorkflowData, U extends string | number | bo
     // biome-ignore lint/suspicious/noExplicitAny: Expect any.
     | 'default']?: (resolve: Workflow<O, O>['then']) => any;
 };
+
 /**
  * Extracts the union of output types from all branches in a switch cases map.
  */
@@ -149,7 +166,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
   /**
    * Executes the pipeline with the given input.
    */
-  (input: I): Promise<O>;
+  (input: I): WorkflowReader<O>;
 
   /**
    * The unique identifier for this workflow chain.
@@ -233,6 +250,34 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
     fn: (input: In, error?: Error) => void | Promise<void>,
     meta?: WorkflowMeta
   ): Workflow<I, O>;
+
+  /**
+   * Browser-only: Executes the workflow once, deferring evaluation until the microtask queue flushes.
+   *
+   * @param input - The input value.
+   * @returns A WorkflowReader tracking the execution.
+   */
+  once(input: I): WorkflowReader<O>;
+
+  /**
+   * Browser-only: Executes the workflow reactively whenever the getter dependencies change,
+   * starting immediately.
+   *
+   * @param getInput - A function that reactively provides the input, or a static input.
+   * @param debounce - The debounce time in milliseconds for input changes.
+   * @returns A WorkflowReader tracking the debounced execution.
+   */
+  with(getInput: () => I, debounce?: number): WorkflowReader<O>;
+
+  /**
+   * Browser-only: Executes the workflow reactively whenever the getter dependencies change,
+   * but defers the initial execution until manually triggered or a dependency updates.
+   *
+   * @param getInput - A function that reactively provides the input, or a static input.
+   * @param debounce - The debounce time in milliseconds for input changes.
+   * @returns A WorkflowReader tracking the deferred execution.
+   */
+  when(getInput: () => I, debounce?: number): WorkflowReader<O>;
 }
 
 /**

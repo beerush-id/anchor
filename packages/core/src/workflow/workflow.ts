@@ -1,5 +1,9 @@
-import { mutable } from '../reactive/ref.js';
+import { createObserver, mutable } from '../reactive/index.js';
+import { onCleanup } from '../scope/index.js';
+import { isBrowser, microtask } from '../utils/index.js';
 import { uuid } from '../utils/uuid.js';
+import { WORKFLOW_STATUS } from './constant.js';
+import { WorkflowReader } from './reader.js';
 import type {
   ResolveInput,
   ResolveOutput,
@@ -57,31 +61,81 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   steps: WorkflowEntry[],
   workflowMeta?: WorkflowMeta
 ): Workflow<I, O> {
-  const fn = (async (input: I) => {
+  const fn = ((input: I) => {
+    return initialize(input, true).reader;
+  }) as Workflow<I, O>;
+
+  const initialize = (input: I, run?: boolean) => {
     const states = new WeakMap<WorkflowEntry, StepState>();
+
     for (const step of steps) {
-      states.set(step, mutable<StepState>({ status: 'idle' }, { recursive: false }));
+      states.set(
+        step,
+        mutable<StepState>(
+          {
+            id: uuid(),
+            name: step.meta?.name ?? step.path,
+            description: step.meta?.description,
+            status: 'idle',
+          },
+          { recursive: false }
+        )
+      );
     }
 
     const instance: WorkflowInstance = {
-      id: uuid(),
-      workflow: fn as Workflow<WorkflowData, WorkflowData>,
       input,
       states,
+      id: uuid(),
+      workflow: fn as Workflow<WorkflowData, WorkflowData>,
+      controller: new AbortController(),
     };
 
-    for (const hook of WORKFLOW_HOOKS.onQueue) hook(instance);
+    const reader = new WorkflowReader<O>(
+      instance,
+      input as unknown as O,
+      run ? WORKFLOW_STATUS.PENDING : WORKFLOW_STATUS.IDLE
+    );
 
-    try {
-      const output = await execute(instance, steps, input);
-      for (const hook of WORKFLOW_HOOKS.onDequeue) hook(instance, output);
-      return output;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      for (const hook of WORKFLOW_HOOKS.onDequeue) hook(instance, undefined, error);
-      throw error;
-    }
-  }) as Workflow<I, O>;
+    let shouldReset = false;
+
+    const start = (startInput: I) => {
+      if (shouldReset) {
+        for (const step of steps) {
+          const state = states.get(step)!;
+
+          state.id = uuid();
+          state.data = undefined;
+          state.error = undefined;
+          state.status = WORKFLOW_STATUS.IDLE;
+        }
+
+        reader.state.status = WORKFLOW_STATUS.PENDING;
+        reader.state.error = undefined;
+        reader.state.data = startInput as unknown as O;
+        reader.controller = instance.controller = new AbortController();
+      }
+
+      for (const hook of WORKFLOW_HOOKS.onQueue) hook(instance);
+
+      execute(instance, steps, startInput, reader as WorkflowReader<WorkflowData>).then(
+        (output) => {
+          reader.accept(output as O, shouldReset);
+          for (const hook of WORKFLOW_HOOKS.onDequeue) hook(instance, output);
+          shouldReset = true;
+        },
+        (error) => {
+          reader.reject(error, shouldReset);
+          for (const hook of WORKFLOW_HOOKS.onDequeue) hook(instance, undefined, error);
+          shouldReset = true;
+        }
+      );
+    };
+
+    if (run) start(input);
+
+    return { reader, start };
+  };
 
   Object.defineProperty(fn, 'id', { value: id, enumerable: true });
   Object.defineProperty(fn, 'steps', { value: steps, enumerable: true });
@@ -90,10 +144,10 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   for (const hook of WORKFLOW_HOOKS.onRegister) hook(fn as Workflow<WorkflowData, WorkflowData>);
 
   // biome-ignore lint/suspicious/noThenProperty: expect promise-like.
-  fn.then = <R extends WorkflowData, In extends O = O>(
+  fn.then = (<R extends WorkflowData, In extends O = O>(
     handler: (input: In) => R | Promise<R>,
     meta?: WorkflowMeta
-  ): Workflow<I, [R] extends [never] ? O : Awaited<R>> => {
+  ) => {
     const path = `${prefix}${steps.length + 1}`;
 
     const step: WorkflowStep = {
@@ -106,17 +160,14 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
 
     for (const hook of WORKFLOW_HOOKS.onStep) hook(step);
 
-    return createWorkflow(id, prefix, [...steps, step], workflowMeta) as unknown as Workflow<
-      I,
-      [R] extends [never] ? O : Awaited<R>
-    >;
-  };
+    return createWorkflow(id, prefix, [...steps, step], workflowMeta);
+  }) as Workflow<I, O>['then'];
 
-  fn.switch = (
+  fn.switch = ((
     keyOrMatcher: string | ((input: O) => string | number | boolean | Promise<string | number | boolean>),
     cases: Record<string, Workflow<WorkflowData, WorkflowData>>,
     meta?: WorkflowMeta
-  ): Workflow<I, O> => {
+  ) => {
     const path = `${prefix}${steps.length + 1}`;
     const switches: Record<string, Workflow<WorkflowData, WorkflowData>> = {};
 
@@ -146,12 +197,12 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     for (const hook of WORKFLOW_HOOKS.onStep) hook(entry);
 
     return createWorkflow(id, prefix, [...steps, entry], workflowMeta);
-  };
+  }) as Workflow<I, O>['switch'];
 
-  fn.catch = <R extends WorkflowData, In extends O = O>(
+  fn.catch = (<R extends WorkflowData, In extends O = O>(
     handler: (error: Error, input: In) => R | Promise<R>,
     meta?: WorkflowMeta
-  ): Workflow<I, O> => {
+  ) => {
     const path = `${prefix}${steps.length + 1}`;
     const entry: WorkflowCatch = {
       id: uuid(),
@@ -164,12 +215,12 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     for (const hook of WORKFLOW_HOOKS.onStep) hook(entry);
 
     return createWorkflow(id, prefix, [...steps, entry], workflowMeta);
-  };
+  }) as Workflow<I, O>['catch'];
 
-  fn.finally = <In extends O = O>(
+  fn.finally = (<In extends O = O>(
     handler: (input: In, error?: Error) => void | Promise<void>,
     meta?: WorkflowMeta
-  ): Workflow<I, O> => {
+  ) => {
     const path = `${prefix}${steps.length + 1}`;
     const entry: WorkflowFinally = {
       id: uuid(),
@@ -182,6 +233,61 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     for (const hook of WORKFLOW_HOOKS.onStep) hook(entry);
 
     return createWorkflow(id, prefix, [...steps, entry], workflowMeta);
+  }) as Workflow<I, O>['finally'];
+
+  const prepare = (getInput: () => I, deferred?: boolean, debounce = 0) => {
+    const { reader, start } = initialize(getInput(), false);
+
+    if (!deferred) {
+      reader.state.status = WORKFLOW_STATUS.PENDING;
+    }
+
+    if (isBrowser()) {
+      const observer = createObserver(() => {
+        observer.reset();
+        dispatch();
+      });
+
+      const [schedule, cancel] = microtask(debounce);
+
+      const dispatch = (coalesce = true) => {
+        const input = observer.run(getInput);
+
+        if (!coalesce) {
+          start(input);
+          return;
+        }
+
+        schedule(() => {
+          start(input);
+        });
+      };
+
+      if (deferred) {
+        observer.run(getInput);
+      } else {
+        dispatch(false);
+      }
+
+      onCleanup(() => {
+        cancel();
+        observer.destroy();
+      });
+    }
+
+    return reader;
+  };
+
+  fn.once = (input: I) => {
+    return prepare(() => input);
+  };
+
+  fn.with = (getInput: () => I, debounce = 0) => {
+    return prepare(getInput, false, debounce);
+  };
+
+  fn.when = (getInput: () => I, debounce = 0) => {
+    return prepare(getInput, true, debounce);
   };
 
   return fn;
@@ -194,9 +300,15 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
  * @param instance - The running instance tracking step states.
  * @param steps - The ordered list of steps to execute.
  * @param input - The initial input value.
+ * @param reader - The reader for reporting progress and accepting output.
  * @returns The final output after all steps have executed.
  */
-async function execute(instance: WorkflowInstance, steps: WorkflowEntry[], input: WorkflowData): Promise<WorkflowData> {
+async function execute(
+  instance: WorkflowInstance,
+  steps: WorkflowEntry[],
+  input: WorkflowData,
+  reader: WorkflowReader<WorkflowData>
+): Promise<WorkflowData> {
   let value: WorkflowData = input;
   let currentError: Error | undefined;
 
@@ -206,17 +318,22 @@ async function execute(instance: WorkflowInstance, steps: WorkflowEntry[], input
   }
 
   for (const entry of steps) {
-    const state = instance.states.get(entry);
+    if (instance.controller.signal.aborted) {
+      break;
+    }
+
+    const state = instance.states.get(entry)!;
+    reader.current = state;
 
     try {
       if (currentError && entry.type !== 'catch' && entry.type !== 'finally') {
-        state!.status = 'skipped';
-        state!.error = currentError;
+        state.error = currentError;
+        state.status = 'skipped';
         continue; // Skip normal steps when in error state
       }
 
-      state!.status = 'pending';
-      state!.data = value;
+      state.data = value;
+      state.status = 'pending';
 
       if (entry.type === 'step') {
         if (entry.meta?.input) {
@@ -248,16 +365,16 @@ async function execute(instance: WorkflowInstance, steps: WorkflowEntry[], input
         await entry.handler(value, currentError);
       }
 
-      state!.status = 'success';
-      state!.data = value;
+      state.data = value;
+      state.status = 'success';
     } catch (err) {
       currentError = err instanceof Error ? err : new Error(String(err));
-      state!.status = 'error';
-      state!.error = currentError;
+      state.error = currentError;
+      state.status = 'error';
     }
   }
 
-  if (instance.workflow.meta?.output && !currentError) {
+  if (instance.workflow.meta?.output && !currentError && !instance.controller.signal.aborted) {
     const schema = instance.workflow.meta.output as SchemaLike;
     value = typeof schema === 'function' ? await schema(value) : await schema.parse(value);
   }

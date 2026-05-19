@@ -1,10 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { plan, WORKFLOW_HOOKS, type WorkflowSwitch } from '../../src/index.js';
+import { createLifecycle, plan, type WorkflowSwitch } from '../../src/index.js';
+import { mutable } from '../../src/reactive/ref.js';
+import type { WorkflowReaderState } from '../../src/workflow/reader.js';
 
 describe('Workflow API', () => {
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.useRealTimers();
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
   });
 
   describe('plan', () => {
@@ -339,19 +348,6 @@ describe('Workflow API', () => {
       expect(result.val).toBe(2);
     });
 
-    it('should sanitize non-Error objects thrown by onDequeue hooks', async () => {
-      const hook = () => {
-        throw 'String error from hook';
-      };
-      WORKFLOW_HOOKS.onDequeue.add(hook);
-
-      const workflow = plan<{ val: number }>().then((i) => i);
-
-      await expect(workflow({ val: 1 })).rejects.toThrow('String error from hook');
-
-      WORKFLOW_HOOKS.onDequeue.delete(hook);
-    });
-
     it('should catch errors thrown inside a switch matcher', async () => {
       const workflow = plan<{ status: string }>()
         .switch(
@@ -372,6 +368,125 @@ describe('Workflow API', () => {
       const workflow = plan<{ val: number }>();
       const result = await workflow({ val: 5 });
       expect(result.val).toBe(5);
+    });
+  });
+
+  describe('abortion and reader APIs', () => {
+    it('should halt execution when aborted via reader', async () => {
+      vi.useRealTimers();
+
+      const step2 = vi.fn();
+      const workflow = plan<{ value: number }>()
+        .then(async (input) => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return { value: input.value + 1 };
+        })
+        .then((input) => {
+          step2();
+          return input;
+        });
+
+      const reader = workflow({ value: 1 });
+      reader.abort(); // Abort immediately
+
+      await reader; // reader resolves with current data on abort
+
+      // Wait a bit to ensure step2 isn't called after the timeout
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      expect(step2).not.toHaveBeenCalled();
+      expect(reader.status).toBe('aborted');
+      expect(reader.data).toEqual({ value: 1 });
+      expect(reader.controller).toBeDefined();
+      expect(() => {
+        reader.controller = new AbortController();
+      }).not.toThrow();
+    });
+
+    it('should handle manual close gracefully without changing status to aborted', async () => {
+      const workflow = plan<{ value: number }>().then((i) => i);
+      const reader = workflow({ value: 1 });
+      reader.close();
+
+      expect(reader.status).not.toBe('aborted');
+      expect(reader.data).toEqual({ value: 1 });
+    });
+
+    it('should expose reader methods, getters, and state subscriptions correctly', async () => {
+      const workflow = plan<{ value: number }>().then((i) => i);
+      const reader = workflow({ value: 1 });
+
+      let observedState: WorkflowReaderState<{ value: number }> | undefined;
+      reader.subscribe((state) => {
+        observedState = state;
+      });
+
+      const res = await reader;
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 1 });
+      expect(reader.error).toBeUndefined();
+
+      expect(observedState).toBeDefined();
+      expect(reader.state.status).toBe('success');
+
+      // Explicitly cover the `current` getter
+      expect(reader.current).toBeDefined();
+
+      // Wait for any async $do microtasks to flush to cover internal destroy calls
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Explicitly invoke protected destroy to guarantee coverage without relying on timing
+      (reader as any).destroy();
+
+      // Cover the [Symbol.species] static getters (lines 136-137)
+      const readerConstructor = reader.constructor as any;
+      expect(readerConstructor[Symbol.species]).toBe(Promise);
+
+      const asyncReaderConstructor = Object.getPrototypeOf(readerConstructor);
+      expect(asyncReaderConstructor[Symbol.species]).toBe(Promise);
+    });
+
+    it('should safely ignore redundant accept/reject/abort calls if already closed', async () => {
+      const workflow = plan<{ value: number }>().then((i) => i);
+      const reader = workflow({ value: 1 });
+
+      reader.accept({ value: 99 });
+      expect(reader.data).toEqual({ value: 99 });
+
+      // Should be ignored (covers early returns in accept, reject, abort, close)
+      reader.accept({ value: 100 });
+      reader.catch(() => {}); // absorb just in case
+      reader.reject(new Error('late error'));
+      reader.abort();
+      reader.close();
+
+      expect(reader.data).toEqual({ value: 99 });
+      expect(reader.status).toBe('success');
+
+      await reader;
+    });
+
+    it('should handle zero-argument accept and reject calls', async () => {
+      const workflow = plan<{ value: number }>().then((i) => i);
+
+      const reader1 = workflow({ value: 1 });
+      reader1.accept(); // no args, uses this.data
+      expect(reader1.data).toEqual({ value: 1 });
+      expect(reader1.status).toBe('success');
+
+      const reader2 = workflow({ value: 2 });
+      reader2.catch(() => {}); // prevent unhandled promise rejection
+      reader2.reject(); // no args, does not mutate the state error
+      expect(reader2.status).toBe('error');
+      expect(reader2.error).toBeUndefined();
+
+      // Test zero-argument reject when an error is already present in state
+      const reader3 = workflow({ value: 3 });
+      reader3.catch(() => {}); // prevent unhandled promise rejection
+      reader3.state.error = new Error('Pre-existing error');
+      reader3.reject(); // no args, uses pre-existing error message
+      expect(reader3.error?.message).toBe('Pre-existing error');
     });
   });
 
@@ -430,6 +545,90 @@ describe('Workflow API', () => {
       // Verify input validation completely blocks bad requests BEFORE steps execute
       // @ts-expect-error intentionally passing invalid action to test runtime validation
       await expect(workflow({ userId: 'u4', action: 'invalid_action' })).rejects.toThrow();
+    });
+  });
+
+  describe('reactive stubs (browser-only)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.stubGlobal('window', {});
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    });
+
+    it('should defer execution using once()', async () => {
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value + 1 }));
+      const reader = workflow.once({ value: 5 });
+
+      expect(reader.status).toBe('pending');
+      expect(reader.data).toEqual({ value: 5 });
+
+      vi.advanceTimersByTime(0); // flush microtasks
+      await reader;
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 6 });
+    });
+
+    it('should execute reactively with debouncing using with()', async () => {
+      const workflow = plan<{ value: number }>().then((input) => {
+        return { value: input.value + 1 };
+      });
+
+      const scope = createLifecycle();
+      const inputSignal = mutable({ value: 5 });
+      const reader = scope.run(() => workflow.with(() => ({ value: inputSignal.value }), 10));
+
+      // Executes immediately on initial call
+      expect(reader.status).toBe('pending');
+
+      await vi.runAllTimersAsync();
+
+      expect(reader.data).toEqual({ value: 6 });
+
+      // Trigger reactive update
+      inputSignal.value = 10;
+
+      // Advance timers by debounce amount
+      await vi.runAllTimersAsync();
+
+      // The reader should have reset and re-executed, resulting in 11
+      expect(reader.data).toEqual({ value: 11 });
+
+      // Static value test
+      const staticReader = workflow.with(() => ({ value: 20 }), 10);
+      await vi.runAllTimersAsync();
+      await staticReader;
+      expect(staticReader.data).toEqual({ value: 21 });
+      scope.destroy();
+    });
+
+    it('should defer execution until manually triggered using when()', async () => {
+      vi.useRealTimers();
+
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
+
+      const inputSignal = mutable({ value: 5 });
+      const reader = workflow.when(() => ({ value: inputSignal.value }), 10);
+
+      // when() defers the first execution
+      expect(reader.status).toBe('idle');
+      expect(reader.data).toEqual({ value: 5 });
+
+      // Trigger reactive update
+      inputSignal.value = 10;
+
+      await reader;
+
+      // The reader should have executed, resulting in 20
+      expect(reader.data).toEqual({ value: 20 });
+
+      // Static value test
+      const staticReader = workflow.when(() => ({ value: 10 }), 10);
+      expect(staticReader.status).toBe('idle');
     });
   });
 });
