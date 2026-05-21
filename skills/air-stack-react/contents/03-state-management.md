@@ -31,6 +31,9 @@ export function writable<T>(state: T, allowedKeys?: Array<keyof T>): T;
 // Creates a read-only computed primitive from independent sources
 export function derived<T>(compute: () => T): { readonly value: T };
 
+// Creates a reactive, read-only sorted view of an array without mutating the source
+export function ordered<T>(source: T[], sortFn: (a: T, b: T) => number): { readonly value: T[] } | ReadonlyArray<T>;
+
 import { form, $bind } from '@anchorlib/react';
 
 // Creates a reactive form state and a reactive errors map from a Zod schema
@@ -142,6 +145,23 @@ export const visibleTodos = derived(() => {
 
 // Derived values are read-only primitives accessed via .value
 console.log(visibleTodos.value);
+```
+
+### State: Reactive Sorting (`ordered`)
+When maintaining sorted lists in a reactive system, calling `array.sort()` on every update triggers a full O(N log N) re-evaluation. The `ordered()` primitive solves this by maintaining a reactive sorted view using **binary search insertion**. When the source array updates, it computes the exact index to insert the new items in O(log N) time, preventing expensive full array re-sorts.
+
+```typescript
+import { mutable, ordered } from '@anchorlib/core';
+
+const state = mutable({
+  movies: [{ title: 'Zoolander' }, { title: 'Alien' }]
+});
+
+// Creates a reactive, read-only sorted view
+// It automatically updates whenever the source array changes
+const sortedMovies = ordered(state.movies, (a, b) => a.title.localeCompare(b.title));
+
+console.log(sortedMovies); // [{ title: 'Alien' }, { title: 'Zoolander' }]
 ```
 
 ### State: Read/Write Segregation (Immutable)

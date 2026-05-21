@@ -466,11 +466,38 @@ export const Button = setup<ButtonProps>((props) => {
 });
 ```
 
+##### Direct DOM Manipulation (`nodeRef`)
+When you need to frequently update an element's attributes, classes, or styles based on state changes (e.g., animations, drag-and-drop, or toggling visibility of a heavy container), use `nodeRef()`.
+
+```tsx
+import { setup, render, mutable, nodeRef } from '@anchorlib/react';
+
+export const AnimatedBox = setup(() => {
+  const state = mutable({ x: 0, y: 0, active: false });
+
+  // High-performance direct DOM manipulation
+  const boxRef = nodeRef(() => ({
+    className: state.active ? 'box active' : 'box',
+    style: { transform: `translate(${state.x}px, ${state.y}px)` }
+  }));
+
+  return render(() => (
+    <div 
+      ref={boxRef} 
+      {...boxRef.attributes} 
+      onClick={() => state.active = !state.active}
+    >
+      <HeavyContent /> {/* Changing box location/class won't re-render this */}
+    </div>
+  ));
+});
+```
+
 #### Component Lifecycle
 A component's lifecycle is bound to its initialization scope (`setup()`), which runs exactly once to initialize state, build closures, and attach scoped side-effects.
 
 ##### DOM Element Access
-For one-time initialization of static elements, use a standard local variable and a `ref` callback. Because the element is static and assigned once, `onMount` safely guarantees the physical element has been created before running one-time logic (e.g., drawing to a canvas or initializing a DOM library).
+For one-time initialization of static elements, use a standard local variable and a `ref` callback.
 
 ```tsx
 import { setup, render, onMount } from '@anchorlib/react';
@@ -514,5 +541,96 @@ export const GlobalShortcut = setup(() => {
   }
 
   return render(() => <div />);
+});
+```
+
+### Optimistic UI
+A user interface pattern for immediate feedback. AI can implement this using different combinations, including:
+
+#### The `undoable` Primitive
+It applies mutations instantly using `undoable()` and provides an `undo` function to rollback if the network request fails.
+
+```tsx
+import { setup, render, undoable } from '@anchorlib/react';
+
+export const LikeButton = setup<{ post: any }>((props) => {
+  const toggleLike = async () => {
+    const [undo, settled] = undoable(() => {
+      props.post.liked = !props.post.liked;
+    });
+
+    await likePost(props.post.id).then(settled, undo);
+  };
+
+  return render(() => (
+    <button onClick={toggleLike}>
+      {props.post.liked ? 'Unlike' : 'Like'}
+    </button>
+  ));
+});
+```
+
+#### Custom State Tracking
+Manually saving the previous state before applying mutations, and manually restoring it if the operation fails. Use this when you need to perform sequential state mutations separated by asynchronous boundaries (`await`), where the rollback itself requires manual, asynchronous orchestration.
+
+```tsx
+import { setup, render } from '@anchorlib/react';
+
+export const Checkout = setup<{ cart: any }>((props) => {
+  const processCheckout = async () => {
+    // 1. Manually track the state
+    let prevStatus = props.cart.status;
+
+    try {
+      // 2. First mutation
+      props.cart.status = 'locking';
+      await api.lockInventory(props.cart.id);
+      
+      // Update tracking variable before next step
+      prevStatus = props.cart.status;
+      
+      // 3. Second mutation
+      props.cart.status = 'paying';
+      await api.processPayment(props.cart.id);
+
+      props.cart.status = 'complete';
+    } catch (e) {
+      // 4. Automatically restores the immediately previous state, regardless of where it failed
+      props.cart.status = prevStatus;
+    }
+  };
+
+  return render(() => (
+    <button onClick={processCheckout}>Checkout</button>
+  ));
+});
+```
+
+#### Workflows
+Using the workflow engine where each step handles its own isolated optimistic updates and rollback logic. This is ideal for complex, multi-stage pipelines because it prevents massive centralized error handlers.
+
+```tsx
+import { setup, render, plan, undoable, mutable } from '@anchorlib/react';
+
+export const Checkout = setup(() => {
+  const cart = mutable({ id: 'cart_123', status: 'idle' });
+
+  // Define the workflow natively bound to the component's state
+  const checkoutFlow = plan()
+    .then(async () => {
+      const [undo, settled] = undoable(() => cart.status = 'locking');
+      await api.lockInventory(cart.id).then(settled).catch((e) => { undo(); throw e; });
+    })
+    .then(async () => {
+      const [undo, settled] = undoable(() => cart.status = 'paying');
+      await api.processPayment(cart.id).then(settled).catch((e) => { undo(); throw e; });
+      cart.status = 'complete';
+    });
+
+  return render(() => (
+    <button onClick={checkoutFlow}>
+      {cart.status === 'idle' ? 'Checkout' : cart.status}
+    </button>
+  ));
 });
 ```
