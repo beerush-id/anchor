@@ -682,6 +682,34 @@ describe('IRPCPackage', () => {
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe('Hello Universe');
     });
+
+    it('should cancel debounced dispatch when scope is destroyed', async () => {
+      vi.useFakeTimers();
+      
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloLaterCancel',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const scope = createLifecycle();
+      const reader: any = scope.run(() => (hello as any).later(10));
+
+      expect(reader.status).toBe(IRPC_STATUS.IDLE);
+      
+      reader.dispatch('World');
+      expect(reader.status).toBe(IRPC_STATUS.IDLE);
+
+      // Destroy the scope before timers run
+      scope.destroy();
+      
+      vi.advanceTimersByTime(10);
+      await Promise.resolve();
+      
+      // In IRPC, scope disposal transitions the reader to SUCCESS
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+      expect(reader.data).toBe(''); // The init value, not updated
+    });
   });
 
   describe('Spec Hooks', () => {

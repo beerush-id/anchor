@@ -147,7 +147,7 @@ export class IRPCPackage {
       const reader = new IRPCReader<IRPCData>(uuid(), spec.init!(), IRPC_STATUS.IDLE, true) as any;
 
       if (debounce) {
-        const [schedule] = microtask(debounce);
+        const [schedule, cancel] = microtask(debounce);
 
         reader.dispatch = (...args: unknown[]) =>
           schedule(() => {
@@ -155,6 +155,7 @@ export class IRPCPackage {
             execute(args as IRPCData[], reader);
           });
 
+        onCleanup(cancel);
         return reader as never;
       }
 
