@@ -1,7 +1,7 @@
 import { createLifecycle } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RENDER_MODE, ROUTE_TYPE } from '../src/enum.js';
-import { RouterContext } from '../src/index.js';
+import { RouterContext, type RouterSnapshot } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { createRouter, Router } from '../src/router.js';
 import { getStore } from '../src/store.js';
@@ -291,7 +291,7 @@ describe('router.ts', () => {
 
       it('should return undefined for non-matching URL', async () => {
         const result = await router.activate('/nonexistent');
-        expect(result).toBeUndefined();
+        expect(result).toEqual([]);
       });
 
       it('should handle guards that pass', async () => {
@@ -318,7 +318,7 @@ describe('router.ts', () => {
       it('should return Redirect when guard throws Redirect', async () => {
         const usersRoute = router.route('/users');
         const loginRoute = router.route('/login');
-        const redirect = new Redirect(loginRoute);
+        const redirect = new Redirect(loginRoute as any);
         const guard = vi.fn(() => {
           throw redirect;
         });
@@ -587,7 +587,7 @@ describe('router.ts', () => {
       it('should handle guards with redirects', async () => {
         const loginRoute = router.route('/login');
         const dashboardRoute = router.route('/dashboard');
-        const redirect = new Redirect(loginRoute);
+        const redirect = new Redirect(loginRoute as any);
 
         const guard = vi.fn(() => {
           throw redirect;
@@ -875,7 +875,7 @@ describe('router.ts', () => {
     describe('edge cases', () => {
       it('should handle empty path', async () => {
         const result = await router.activate('');
-        expect(result).toBeUndefined();
+        expect(result).toEqual([]);
       });
 
       it('should handle root path', async () => {
@@ -1048,7 +1048,7 @@ describe('router.ts', () => {
 
     it('should handle invalid URLs gracefully', async () => {
       const result = await router.activate('/invalid-route');
-      expect(result).toBeUndefined();
+      expect(result).toEqual([]);
     });
 
     it('should handle provider errors', async () => {
@@ -1061,7 +1061,7 @@ describe('router.ts', () => {
 
       // The router returns undefined when provider fails
       const result = await router.activate('/users');
-      expect(result).toBeUndefined();
+      expect(result).toEqual([]);
     });
 
     it('should handle guard errors', async () => {
@@ -1098,7 +1098,7 @@ describe('router.ts', () => {
 
       // The router returns undefined when provider fails
       const result = await router.activate('/users');
-      expect(result).toBeUndefined();
+      expect(result).toEqual([]);
     });
 
     it('should detect exception renderer', () => {
@@ -1112,7 +1112,7 @@ describe('router.ts', () => {
     });
 
     it('should return when activating undefined url', async () => {
-      expect(await router.activate(undefined as never)).toBeUndefined();
+      expect(await router.activate(undefined as never)).toEqual([]);
     });
 
     it('should return when preloading undefined url', async () => {
@@ -1159,6 +1159,159 @@ describe('router.ts', () => {
       }
 
       expect(router).toBeDefined();
+    });
+  });
+
+  describe('hydration', () => {
+    it('should check window for hydration data in browser (lines 124-126)', () => {
+      // Simulate browser environment with hydration data
+      const HYDRATION_KEY = '__ANCHOR_ROUTER_CACHE__';
+      const mockHydrationData = [[{ name: 'test', cache: [] }]];
+
+      // Stub window object with hydration data
+      vi.stubGlobal('window', {
+        [HYDRATION_KEY]: mockHydrationData,
+      });
+
+      // Create router - should pick up hydration data
+      const routerWithHydration = new Router();
+
+      // Verify hydration data was captured
+      expect((routerWithHydration as any).hydratedSegments).toEqual(mockHydrationData);
+
+      // Clean up
+      vi.unstubAllGlobals();
+    });
+
+    it('should not check window in non-browser environment', () => {
+      // Ensure no window object exists
+      vi.unstubAllGlobals();
+
+      const router = new Router();
+      expect((router as any).hydratedSegments).toBeUndefined();
+    });
+
+    it('should hydrate segments during activation (lines 301-312)', async () => {
+      const router = new Router();
+      const route = router.route('/test', { maxAge: 1000 });
+      const mockProvider = vi.fn(async () => 'test-data');
+      route.provide('data', mockProvider);
+
+      // First activate to populate cache
+      await router.activate('/test');
+
+      // Get the snapshot from the activated route
+      const snapshot = route.snapshot();
+
+      // Deactivate
+      router.deactivate();
+
+      // Clear provider call count
+      mockProvider.mockClear();
+
+      // Set hydratedSegments for next activation
+      (router as any).hydratedSegments = [snapshot];
+
+      // Activate route again - should use hydration
+      await router.activate('/test', false);
+
+      // Verify hydration was used (provider should not be called)
+      expect(mockProvider).toHaveBeenCalledTimes(0);
+
+      // Verify hydratedSegments was deleted after use
+      expect((router as any).hydratedSegments).toBeUndefined();
+    });
+
+    it('should skip hydration when snapshot is undefined', async () => {
+      const router = new Router();
+      const route = router.route('/test', { maxAge: 1000 });
+      const mockProvider = vi.fn(async () => 'test-data');
+      route.provide('data', mockProvider);
+
+      // Set hydratedSegments with undefined snapshot for the segment
+      (router as any).hydratedSegments = [undefined];
+
+      // Activate route
+      await router.activate('/test', false);
+
+      // Provider should be called since no valid snapshot
+      expect(mockProvider).toHaveBeenCalledTimes(1);
+
+      // Verify hydratedSegments was still deleted
+      expect((router as any).hydratedSegments).toBeUndefined();
+    });
+
+    it('should create hydration script with escaped characters (lines 499-507)', () => {
+      const router = new Router();
+      const snapshot = [
+        [
+          {
+            name: 'test',
+            cache: [
+              {
+                key: '{"params":{},"query":{}}',
+                value: {
+                  data: '<script>alert("xss")</script>',
+                  timestamp: Date.now(),
+                  maxAge: 1000,
+                },
+              },
+            ],
+          },
+        ],
+      ];
+
+      const script = router.createHydrationScript(snapshot as RouterSnapshot);
+
+      // Verify script tag structure
+      expect(script).toContain('<script>');
+      expect(script).toContain('</script>');
+      expect(script).toContain('__ANCHOR_ROUTER_CACHE__');
+
+      // Verify dangerous characters are escaped
+      expect(script).not.toContain('<script>alert');
+      expect(script).toContain('\\u003C'); // < escaped
+      expect(script).toContain('\\u003E'); // > escaped
+      expect(script).toContain('\\u002F'); // / escaped
+    });
+
+    it('should handle empty snapshot in hydration script', () => {
+      const router = new Router();
+      const snapshot: any[] = [];
+
+      const script = router.createHydrationScript(snapshot);
+
+      expect(script).toContain('<script>');
+      expect(script).toContain('</script>');
+      expect(script).toContain('__ANCHOR_ROUTER_CACHE__');
+      expect(script).toContain('[]');
+    });
+
+    it('should escape Unicode line separators in hydration script', () => {
+      const router = new Router();
+      const snapshot = [
+        [
+          {
+            name: 'test',
+            cache: [
+              {
+                key: 'test-key',
+                value: {
+                  data: 'line1\u2028line2\u2029line3',
+                  timestamp: Date.now(),
+                  maxAge: 1000,
+                },
+              },
+            ],
+          },
+        ],
+      ];
+
+      const script = router.createHydrationScript(snapshot as RouterSnapshot);
+
+      // Verify Unicode line separators are escaped
+      expect(script).toContain('\\u2028');
+      expect(script).toContain('\\u2029');
     });
   });
 });

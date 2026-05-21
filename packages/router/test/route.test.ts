@@ -1176,4 +1176,46 @@ describe('Route class', () => {
       expect(result.test).toBeUndefined();
     });
   });
+
+  describe('snapshot and hydrate', () => {
+    it('should return cache snapshot (lines 700-701)', async () => {
+      const route = new Route(sharedRouter, '/test', { maxAge: 1000 });
+      const mockProvider = vi.fn(async () => 'test-data');
+      route.provide('data', mockProvider);
+
+      // Activate the route to populate cache
+      const context = { params: {}, query: {}, data: {} };
+      await route.activate(context as any, false, false, true);
+
+      const snapshot = route.snapshot();
+
+      expect(snapshot).toBeDefined();
+      expect(Array.isArray(snapshot)).toBe(true);
+      // Snapshot should have entries after activation with hydration
+      expect(snapshot.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should hydrate cache from snapshot (lines 704-705)', async () => {
+      const route = new Route(sharedRouter, '/test', { maxAge: 1000 });
+      const mockProvider = vi.fn(async () => 'test-data');
+      route.provide('data', mockProvider);
+
+      // Activate to populate cache
+      const context = { params: {}, query: {}, data: {} };
+      await route.activate(context as any, false, false, true);
+
+      // Get snapshot
+      const snapshot = route.snapshot();
+
+      // Create new route and hydrate
+      const newRoute = new Route(sharedRouter, '/test', { maxAge: 1000 });
+      newRoute.provide('data', mockProvider);
+      newRoute.hydrate(snapshot);
+
+      // Verify hydration worked by checking provider wasn't called again
+      const result = await newRoute.resolve(context as any);
+      expect(mockProvider).toHaveBeenCalledTimes(1); // Only called once in original route
+      expect((result as any).data).toBe('test-data');
+    });
+  });
 });

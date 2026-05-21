@@ -1,6 +1,7 @@
-import { anchor } from '@anchorlib/core';
+import { anchor, isBrowser } from '@anchorlib/core';
 import type { RouteRegistry } from './registry.js';
 import type {
+  CachedRouteData,
   MatchResult,
   ProviderCache,
   ProviderOptions,
@@ -10,6 +11,16 @@ import type {
   UnknownRoute,
 } from './types.js';
 
+export type RouteCacheEntry = {
+  key: string;
+  value: CachedRouteData;
+};
+
+export type RouteCacheSnapshot = {
+  name: string;
+  cache: Array<RouteCacheEntry>;
+};
+
 /**
  * A cache for route provider data with time-based expiration.
  *
@@ -18,7 +29,7 @@ import type {
  *
  * @template T - The type of data returned by providers
  */
-export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
+export class RouteCache extends Map<string, ProviderCache> {
   /**
    * Creates a new RouteCache instance.
    *
@@ -36,37 +47,52 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    * Otherwise, calls the provider and caches the result.
    *
    * @template T - The type of data returned by the provider
+   * @param name - The name of the provider
    * @param provider - The provider function to resolve
    * @param context - The provider context containing params, query, and data
    * @param options - Optional provider options including maxAge for caching
+   * @param hydration - Whether to use caching for hydration purposes
    * @returns A promise that resolves to the provider's data
    */
   public async resolve<T>(
+    name: string,
     provider: UnknownProvider,
     context: RouteContext<TRec, TRec, TRec>,
-    options?: ProviderOptions
+    options?: ProviderOptions,
+    hydration?: boolean
   ): Promise<T> {
-    const maxAge = options?.maxAge ?? this.route.options?.maxAge;
-    if (!maxAge) return (await provider(context)) as T;
+    const maxAge = (options?.maxAge ?? this.route.options?.maxAge)!;
+    if (!maxAge && !hydration) return (await provider(context)) as T;
 
-    if (!this.has(provider)) {
-      this.set(provider, new Map());
+    if (!this.has(name)) {
+      this.set(name, new Map());
     }
 
     const { params, query } = (anchor.get as (ctx: typeof context, silent: boolean) => typeof context)(context, true);
 
     const key = JSON.stringify({ params, query });
-    const cache = this.get(provider)!;
+    const cache = this.get(name)!;
     const cached = cache.get(key);
 
-    if (cached && Date.now() - cached.timestamp <= maxAge) {
+    if (cached?.temporary) {
+      cache.delete(key);
+      return cached.data as T;
+    }
+
+    if (cached?.maxAge && Date.now() - cached.timestamp <= cached.maxAge) {
       return cached.data as T;
     }
 
     const data = await provider(context);
+
     if (data !== null && typeof data !== 'undefined') {
-      const scheduler = setTimeout(() => cache.delete(key), maxAge) as never as number;
-      cache.set(key, { data, timestamp: Date.now(), scheduler });
+      let scheduler = 0;
+
+      if (isBrowser() && maxAge) {
+        scheduler = setTimeout(() => cache.delete(key), maxAge) as never as number;
+      }
+
+      cache.set(key, { data, timestamp: Date.now(), maxAge, scheduler });
     }
 
     return data as T;
@@ -77,13 +103,13 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    *
    * Removes the cached data and clears any pending expiration timeout.
    *
-   * @param provider - The provider whose cache should be invalidated
+   * @param name - The name of the provider
    * @param context - The context identifying which cache entry to invalidate
    */
-  public invalidate(provider: UnknownProvider, context: RouteContext<TRec, TRec, TRec>): void {
+  public invalidate(name: string, context: RouteContext<TRec, TRec, TRec>): void {
     const { params, query } = (anchor.get as (ctx: typeof context, silent: boolean) => typeof context)(context, true);
     const key = JSON.stringify({ params, query });
-    const cache = this.get(provider);
+    const cache = this.get(name);
     const cached = cache?.get(key);
 
     if (cache && cached) {
@@ -96,22 +122,64 @@ export class RouteCache extends WeakMap<UnknownProvider, ProviderCache> {
    * Deletes all cached entries for a provider.
    *
    * Clears all cached data and removes the provider from the cache.
-   *
-   * @param provider - The provider to delete from the cache
+   * @param name - The provider whose cache should be deleted
    * @returns true if the provider was in the cache, false otherwise
    */
-  public delete(provider: UnknownProvider): boolean {
-    this.clear(provider);
-    return super.delete(provider);
+  public delete(name: string): boolean {
+    this.cleanup(name);
+    return super.delete(name);
   }
 
   /**
    * Clears all cached entries for a provider without removing the provider itself.
    *
-   * @param provider - The provider whose cache should be cleared
+   * @param name - The provider whose cache should be cleared
    */
-  public clear(provider: UnknownProvider): void {
-    this.get(provider)?.clear();
+  public cleanup(name: string): void {
+    this.get(name)?.clear();
+  }
+
+  public snapshot() {
+    const snapshot: RouteCacheSnapshot[] = [];
+
+    for (const [name, cache] of this.entries()) {
+      const snapshotCache = [];
+
+      for (const [key, value] of cache.entries()) {
+        snapshotCache.push({ key, value });
+      }
+
+      snapshot.push({ name, cache: snapshotCache });
+    }
+
+    return snapshot;
+  }
+
+  public hydrate(snapshot: RouteCacheSnapshot[]) {
+    try {
+      for (const { name, cache } of snapshot) {
+        if (!this.has(name)) {
+          this.set(name, new Map());
+        }
+
+        const cacheMap = this.get(name)!;
+
+        for (const { key, value } of cache) {
+          if (value.maxAge) {
+            value.timestamp = Date.now();
+            value.scheduler = setTimeout(() => {
+              cacheMap.delete(key);
+            }, value.maxAge) as never as number;
+          } else {
+            value.temporary = true;
+          }
+
+          cacheMap.set(key, value);
+        }
+      }
+    } catch (error) {
+      console.error('Error hydrating route cache:', error);
+    }
   }
 }
 

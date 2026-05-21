@@ -217,8 +217,10 @@ export type MatchResult = MatchedRoute & {
 /** Cached route data with expiration */
 export type CachedRouteData = {
   data: unknown;
+  maxAge: number;
   timestamp: number;
   scheduler: number;
+  temporary?: boolean;
 };
 
 /** Cache for provider data */

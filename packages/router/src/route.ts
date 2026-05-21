@@ -1,5 +1,5 @@
 import { $do, createObserver, retriable } from '@anchorlib/core';
-import { RouteCache } from './cache.js';
+import { RouteCache, type RouteCacheSnapshot } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import { Redirect } from './redirect.js';
@@ -475,13 +475,17 @@ export class Route<
    * Runs authentication and resolves all providers.
    *
    * @param context - The provider context
+   * @param hydration - Whether this is a hydration request
    * @returns The loaded data, or a GuardBlocker if authentication failed
    */
-  public async preload(context: RouteContext<Params, QueryParams, Data>): Promise<Data | GuardBlocker> {
+  public async preload(
+    context: RouteContext<Params, QueryParams, Data>,
+    hydration?: boolean
+  ): Promise<Data | GuardBlocker> {
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
 
-    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>)) as Data;
+    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>, hydration)) as Data;
   }
 
   /**
@@ -491,9 +495,10 @@ export class Route<
    * reactive state they depend on changes.
    *
    * @param context - The provider context
+   * @param hydration - Whether this is a hydration request
    * @returns The resolved data, or undefined if a provider failed
    */
-  public async resolve(context: RouteContext<TRec, TRec, TRec>): Promise<Data | undefined> {
+  public async resolve(context: RouteContext<TRec, TRec, TRec>, hydration?: boolean): Promise<Data | undefined> {
     const { state, cache, activeResolvers, providerObservers } = this.storage;
 
     const abortController = new AbortController();
@@ -517,7 +522,7 @@ export class Route<
               try {
                 const providerData = await retriable(
                   async () => {
-                    return await cache.resolve(provider, context, options);
+                    return await cache.resolve(name, provider, context, options, hydration);
                   },
                   { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
                 );
@@ -596,11 +601,13 @@ export class Route<
    * @param context - The provider context
    * @param preload - Whether to preload data (default: true)
    * @param controlled - Whether the activation is controlled.
+   * @param hydration - Whether this is a hydration request
    */
   public async activate(
     context: RouteContext<Params, QueryParams, Data>,
     preload = true,
-    controlled?: boolean
+    controlled?: boolean,
+    hydration?: boolean
   ): Promise<void> {
     const { state } = this.storage;
 
@@ -608,7 +615,7 @@ export class Route<
 
     // Preload data if preload is enabled.
     if (preload) {
-      await this.preload(context);
+      await this.preload(context, hydration);
     }
 
     // If the route is deactivated during preload, do nothing.
@@ -687,6 +694,14 @@ export class Route<
     this.deactivate();
     this.cleanupObservers();
     getStore().delete(this);
+  }
+
+  public snapshot() {
+    return this.storage.cache.snapshot();
+  }
+
+  public hydrate(snapshot: RouteCacheSnapshot[]) {
+    this.storage.cache.hydrate(snapshot);
   }
 
   private cleanupObservers() {

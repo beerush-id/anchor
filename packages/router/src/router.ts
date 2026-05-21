@@ -1,4 +1,5 @@
-import { URLCache } from './cache.js';
+import { isBrowser } from '@anchorlib/core';
+import { type RouteCacheSnapshot, URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
 import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
@@ -30,8 +31,14 @@ import type {
  * Routes can be activated, deactivated, and preloaded.
  */
 
+export const HYDRATION_KEY = '__ANCHOR_ROUTER_CACHE__';
+
+export type RouterSnapshot = Array<RouteCacheSnapshot[]>;
+
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 export class Router<Output = any> {
+  private hydratedSegments?: RouterSnapshot;
+
   public get path() {
     return this.activeRoute?.path;
   }
@@ -112,6 +119,11 @@ export class Router<Output = any> {
     this.rootRoute = new Route<'/', None, None>(this, '/', this.options, undefined, '/');
     this.rootRegistry = new RouteRegistry(this.rootRoute);
     this.routes.add(this.rootRegistry);
+
+    if (isBrowser() && Array.isArray(window[HYDRATION_KEY as keyof Window])) {
+      this.hydratedSegments = window[HYDRATION_KEY as keyof Window] as RouterSnapshot;
+      delete window[HYDRATION_KEY as keyof Window];
+    }
   }
 
   /**
@@ -244,9 +256,11 @@ export class Router<Output = any> {
    * checking if the URL is still active after preloading.
    *
    * @param url - The URL to activate (string or URL object)
+   * @param withHydration - Whether to hydrate the route with cached data
    * @returns A GuardBlocker if navigation was blocked, otherwise void
    */
-  public async activate(url: string | URL): Promise<void | GuardBlocker> {
+  public async activate(url: string | URL, withHydration?: boolean): Promise<RouterSnapshot | GuardBlocker> {
+    const snapshots: RouterSnapshot = [];
     const storage = this.storage;
 
     if (typeof url === 'string') {
@@ -254,9 +268,9 @@ export class Router<Output = any> {
     }
 
     const match = this.find(url);
-    if (!match) return;
+    if (!match) return snapshots;
 
-    if (storage.activeUrl === url.href) return;
+    if (storage.activeUrl === url.href) return snapshots;
 
     // Cancel previous activations.
     if (storage.activatingSegments.size) {
@@ -282,6 +296,20 @@ export class Router<Output = any> {
     const toActivate = targetSegments.filter((r) => {
       return !currentSegments.find((n) => n.route === r.route && n.store === r.store);
     });
+
+    if (Array.isArray(this.hydratedSegments)) {
+      withHydration = true;
+
+      toActivate.forEach((segment, i) => {
+        const snapshot = this.hydratedSegments![i];
+
+        if (snapshot) {
+          segment.route.hydrate(snapshot);
+        }
+      });
+
+      delete this.hydratedSegments;
+    }
 
     const activationLengths = toActivate.reduce((acc, segment) => {
       acc += segment.route.guards.size;
@@ -318,7 +346,7 @@ export class Router<Output = any> {
         this.finish();
         return blocker;
       }
-      if (!storage.activatingSegments.has(segment)) return;
+      if (!storage.activatingSegments.has(segment)) return snapshots;
     }
 
     // Immediately tell renderer to render when the render mode is immediate.
@@ -336,11 +364,10 @@ export class Router<Output = any> {
     // Activate target segments.
     for (const segment of toActivate) {
       const { route, store } = segment;
+      await route.activate(store as RouteContext<None, None, TRec>, true, true, withHydration);
 
-      await route.activate(store as RouteContext<None, None, TRec>, true, true);
-      if (!storage.activatingSegments.has(segment)) return;
-
-      // Remove from activating routes.
+      if (withHydration) snapshots.push(route.snapshot());
+      if (!storage.activatingSegments.has(segment)) return snapshots;
       storage.activatingSegments.delete(segment);
     }
 
@@ -363,6 +390,7 @@ export class Router<Output = any> {
     storage.activeSegments = targetSegments;
 
     this.finish();
+    return snapshots;
   }
 
   /**
@@ -465,6 +493,17 @@ export class Router<Output = any> {
    */
   public catch(renderer: RouteExceptionRenderer<None, None, TRec, None, None, TRec, Output>) {
     this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute, renderer);
+  }
+
+  public createHydrationScript(snapshot: RouterSnapshot) {
+    const jsonString = JSON.stringify(snapshot)
+      .replace(/</g, '\\u003C')
+      .replace(/>/g, '\\u003E')
+      .replace(/\//g, '\\u002F')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029');
+
+    return `<script>window.${HYDRATION_KEY} = ${jsonString}</script>`;
   }
 }
 
