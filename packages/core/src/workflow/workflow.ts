@@ -65,7 +65,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     return initialize(input, true).reader;
   }) as Workflow<I, O>;
 
-  const initialize = (input: I, run?: boolean) => {
+  const initialize = (input: I, run?: boolean, resumbable?: boolean) => {
     const states = new WeakMap<WorkflowEntry, StepState>();
 
     for (const step of steps) {
@@ -94,7 +94,8 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     const reader = new WorkflowReader<O>(
       instance,
       input as unknown as O,
-      run ? WORKFLOW_STATUS.PENDING : WORKFLOW_STATUS.IDLE
+      run ? WORKFLOW_STATUS.PENDING : WORKFLOW_STATUS.IDLE,
+      resumbable
     );
 
     let shouldReset = false;
@@ -290,10 +291,29 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     return prepare(getInput, true, debounce);
   };
 
-  fn.later = () => {
-    const { reader, start } = initialize(undefined as unknown as I, false);
-    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-    (reader as any).dispatch = (input: I) => start(input);
+  fn.later = (debounce) => {
+    const { reader, start } = initialize(undefined as unknown as I, false, true);
+    // biome-ignore lint/suspicious/noExplicitAny: <Expect any>
+    const r = reader as any;
+
+    if (debounce) {
+      const [schedule, cancel] = microtask(debounce);
+
+      r.dispatch = (input: I) =>
+        schedule(() => {
+          r.resume();
+          start(input);
+        });
+
+      onCleanup(cancel);
+
+      return reader as WorkflowReader<O> & { dispatch: (input: I) => void };
+    }
+
+    r.dispatch = (input: I) => {
+      r.resume();
+      start(input);
+    };
     return reader as WorkflowReader<O> & { dispatch: (input: I) => void };
   };
 

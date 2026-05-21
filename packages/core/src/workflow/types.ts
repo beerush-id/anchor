@@ -285,7 +285,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    *
    * @returns A WorkflowReader tracking the deferred execution.
    */
-  later(): WorkflowReader<O> & { dispatch: (input: I) => void };
+  later(debounce?: number): WorkflowReader<O> & { dispatch: (input: I) => void };
 }
 
 /**

@@ -58,11 +58,17 @@ export class AsyncReader<T> extends Promise<T> {
 
   #closed = false;
 
-  constructor(controller: AbortController, init?: T, status: WorkflowStatus = WORKFLOW_STATUS.PENDING) {
+  constructor(
+    controller: AbortController,
+    init?: T,
+    status: WorkflowStatus = WORKFLOW_STATUS.PENDING,
+    private resumable?: boolean
+  ) {
     let acceptFn: (value: T) => void;
     let rejectFn: (error: Error) => void;
 
     super((resolve, reject) => {
+      if (resumable) resolve(init as never);
       acceptFn = resolve;
       rejectFn = reject;
     });
@@ -127,7 +133,12 @@ export class AsyncReader<T> extends Promise<T> {
     return subscribe(this.#state, handler);
   }
 
+  protected resume() {
+    this.#closed = false;
+  }
+
   protected destroy() {
+    if (this.resumable) return;
     anchor.destroy(this.#state);
   }
 
@@ -159,8 +170,13 @@ export class WorkflowReader<T> extends AsyncReader<T> {
     this.state.current = current;
   }
 
-  constructor(instance: WorkflowInstance, init?: T, status: WorkflowStatus = WORKFLOW_STATUS.PENDING) {
-    super(instance.controller, init, status);
+  constructor(
+    instance: WorkflowInstance,
+    init?: T,
+    status: WorkflowStatus = WORKFLOW_STATUS.PENDING,
+    resumable?: boolean
+  ) {
+    super(instance.controller, init, status, resumable);
     this.instance = instance;
   }
 

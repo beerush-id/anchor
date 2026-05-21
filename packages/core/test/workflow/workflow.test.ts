@@ -648,5 +648,58 @@ describe('Workflow API', () => {
       expect(reader.status).toBe('success');
       expect(reader.data).toEqual({ value: 42 });
     });
+
+    it('should return a reader that can be dispatched manually later with debounce', async () => {
+      vi.useFakeTimers();
+      
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
+
+      const reader = workflow.later(10);
+
+      expect(reader.status).toBe('idle');
+      expect(reader.data).toBeUndefined();
+
+      reader.dispatch({ value: 21 });
+      
+      // Due to debounce, it remains idle immediately after dispatch
+      expect(reader.status).toBe('idle');
+
+      await vi.runAllTimersAsync();
+      
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 42 });
+      
+      // Dispatch again to ensure resumability
+      reader.dispatch({ value: 30 });
+      expect(reader.status).toBe('success'); // Remains success initially
+
+      await vi.runAllTimersAsync();
+      
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 60 });
+    });
+
+    it('should cancel debounced dispatch when scope is destroyed', async () => {
+      vi.useFakeTimers();
+      
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
+
+      const scope = createLifecycle();
+      const reader: any = scope.run(() => workflow.later(10));
+
+      expect(reader.status).toBe('idle');
+      
+      reader.dispatch({ value: 21 });
+      expect(reader.status).toBe('idle');
+
+      // Destroy the scope before timers run
+      scope.destroy();
+      
+      await vi.runAllTimersAsync();
+      
+      // Because the schedule was canceled by onCleanup, it should never execute
+      expect(reader.status).toBe('idle');
+      expect(reader.data).toBeUndefined();
+    });
   });
 });
