@@ -24,13 +24,15 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
    * @param id - The unique identifier for this state instance.
    * @param init - An optional starting value for the data payload.
    * @param status - The initial status of the state (PENDING, SUCCESS, ERROR).
+   * @param resumable - Whether the state should be resumable after being closed.
    */
   constructor(
     public id: string,
     init?: T,
-    status: IRPCStatus = IRPC_STATUS.PENDING
+    status: IRPCStatus = IRPC_STATUS.PENDING,
+    resumable?: boolean
   ) {
-    super(init, status);
+    super(init, status, resumable);
   }
 
   /**

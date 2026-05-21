@@ -1,3 +1,4 @@
+import { anchor } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Context from '../src/context.js';
 import { IRPC_STATUS } from '../src/enum.js';
@@ -284,6 +285,26 @@ describe('RemoteState', () => {
       state.close();
       state.close();
       expect(destroySpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not destroy on resumable state', () => {
+      const state = new RemoteState('initial', undefined, true);
+      const destroySpy = vi.spyOn(anchor, 'destroy');
+
+      state.status = IRPC_STATUS.SUCCESS;
+      state.close();
+      state.close();
+
+      expect(destroySpy).not.toHaveBeenCalled();
+      expect(state.status).toBe(IRPC_STATUS.SUCCESS);
+
+      // Should allow resuming.
+      (state as any).resume();
+      state.status = IRPC_STATUS.PENDING;
+
+      expect(state.status).toBe(IRPC_STATUS.PENDING);
+
+      destroySpy.mockRestore();
     });
 
     it('should accept with implicit value (no args)', async () => {

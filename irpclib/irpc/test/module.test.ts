@@ -618,6 +618,72 @@ describe('IRPCPackage', () => {
     });
   });
 
+  describe('Manual Stubs (later)', () => {
+    it('should create reader with stub.later() without debounce', async () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloLater',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const reader = (hello as any).later();
+      expect(reader).toBeDefined();
+      expect(reader.status).toBe(IRPC_STATUS.IDLE);
+      expect(typeof reader.dispatch).toBe('function');
+
+      reader.dispatch('World');
+      expect(reader.status).toBe(IRPC_STATUS.PENDING);
+
+      // Wait for async handler to resolve
+      await Promise.resolve();
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+      expect(reader.data).toBe('Hello World');
+
+      // Dispatch again to test resumability
+      reader.dispatch('Universe');
+      expect(reader.status).toBe(IRPC_STATUS.PENDING);
+
+      await Promise.resolve();
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+      expect(reader.data).toBe('Hello Universe');
+    });
+
+    it('should create reader with stub.later() with debounce', async () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloLaterDebounce',
+        init: () => '',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const reader = (hello as any).later(10);
+      expect(reader).toBeDefined();
+      expect(reader.status).toBe(IRPC_STATUS.IDLE);
+      expect(typeof reader.dispatch).toBe('function');
+
+      reader.dispatch('World');
+      expect(reader.status).toBe(IRPC_STATUS.IDLE);
+
+      vi.advanceTimersByTime(10);
+      expect(reader.status).toBe(IRPC_STATUS.PENDING);
+
+      // Wait for async handler to resolve
+      await Promise.resolve();
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+      expect(reader.data).toBe('Hello World');
+
+      // Dispatch again to test resumability
+      reader.dispatch('Universe');
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+
+      vi.advanceTimersByTime(10);
+      expect(reader.status).toBe(IRPC_STATUS.PENDING);
+
+      await Promise.resolve();
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+      expect(reader.data).toBe('Hello Universe');
+    });
+  });
+
   describe('Spec Hooks', () => {
     it('should register a hook on a valid stub', () => {
       const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookTest' });

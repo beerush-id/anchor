@@ -111,6 +111,10 @@ export interface IRPCStub<T, A extends unknown[], R extends IRPCData> {
    * @returns An IRPCReader instance for handling the asynchronous result or stream.
    */
   when(args: () => A, debounce?: number): IRPCReader<R>;
+
+  later(debounce?: number): IRPCReader<R> & {
+    dispatch: (...args: A) => void;
+  };
 }
 
 /**

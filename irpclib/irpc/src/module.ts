@@ -141,6 +141,31 @@ export class IRPCPackage {
       return prepare(readArgs, true, debounce);
     };
 
+    /* General stub for manual execution */
+    stub.later = (debounce) => {
+      // biome-ignore lint/suspicious/noExplicitAny: <Expect any>
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.init!(), IRPC_STATUS.IDLE, true) as any;
+
+      if (debounce) {
+        const [schedule] = microtask(debounce);
+
+        reader.dispatch = (...args: unknown[]) =>
+          schedule(() => {
+            reader.resume();
+            execute(args as IRPCData[], reader);
+          });
+
+        return reader as never;
+      }
+
+      reader.dispatch = (...args: unknown[]) => {
+        reader.resume();
+        execute(args as IRPCData[], reader);
+      };
+
+      return reader as never;
+    };
+
     /**
      * A preparation utility to generate and schedule call on the browser environment.
      *

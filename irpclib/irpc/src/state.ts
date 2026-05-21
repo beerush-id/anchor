@@ -70,12 +70,18 @@ export class RemoteState<T> extends Promise<T> {
    *
    * @param init - An optional starting value for the data payload.
    * @param status - The initial status of the state (PENDING, SUCCESS, ERROR).
+   * @param resumable - Whether the state should be resumable after being closed.
    */
-  constructor(init?: T, status: IRPCStatus = IRPC_STATUS.PENDING) {
+  constructor(
+    init?: T,
+    status: IRPCStatus = IRPC_STATUS.PENDING,
+    private resumable?: boolean
+  ) {
     let acceptFn: (value: T) => void;
     let rejectFn: (error: Error) => void;
 
     super((resolve, reject) => {
+      if (resumable) resolve(init as never);
       acceptFn = resolve;
       rejectFn = reject;
     });
@@ -153,10 +159,15 @@ export class RemoteState<T> extends Promise<T> {
     this.destroy();
   }
 
+  protected resume() {
+    this.#closed = false;
+  }
+
   /**
    * Destroys the reactive state bindings.
    */
   protected destroy() {
+    if (this.resumable) return;
     anchor.destroy(this.state);
   }
 
