@@ -140,12 +140,12 @@ const reader = searchDocuments.when(() => ({
 }), 300);
 ```
 
-### `.later()`
+### `.later(debounce?)`
 
-Creates a deferred `WorkflowReader` (which you can think of as an executable task) that allows you to manually dispatch the workflow execution. This is perfect for binding workflows to imperative event handlers like `onClick` while still retaining full reactive telemetry.
+Creates a deferred `WorkflowReader` (which you can think of as an executable task) that allows you to manually dispatch the workflow execution. It accepts an optional `debounce` time (in milliseconds). This is perfect for binding workflows to imperative event handlers like `onClick` while still retaining full reactive telemetry.
 
 ```typescript
-const task = checkoutFlow.later();
+const task = checkoutFlow.later(150); // Optional 150ms debounce
 
 // Bind the manual trigger directly to the UI
 return () => <button onClick={() => task.dispatch({ cartId: '123' })}>Checkout</button>;

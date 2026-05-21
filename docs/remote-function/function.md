@@ -23,7 +23,24 @@ export const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
 
 The generic `<GetUserFn>` enforces the exact parameter and return types across both the client call site and the server handler. Misspelled arguments or wrong return shapes are caught at compile time.
 
-The return value of `irpc.declare()` is an **`IRPCStub`**. This stub acts as a smart proxy—it looks and behaves exactly like a standard async function, but calling it returns an `IRPCReader` instead of a raw `Promise`. The stub also exposes specialized lifecycle APIs (`.once()`, `.with()`, `.when()`) for use inside reactive component bodies.
+The return value of `irpc.declare()` is an **`IRPCStub`**. This stub acts as a smart proxy—it looks and behaves exactly like a standard async function, but calling it returns an `IRPCReader` instead of a raw `Promise`. The stub also exposes specialized lifecycle APIs for use inside reactive component bodies:
+
+```typescript
+interface IRPCStub<Fn extends (...args: any[]) => any> {
+  (...args: Parameters<Fn>): IRPCReader<ReturnType<Fn>>;
+  once(...args: Parameters<Fn>): IRPCReader<ReturnType<Fn>>;
+  with(factory: () => Parameters<Fn>, debounce?: number): IRPCReader<ReturnType<Fn>>;
+  when(factory: () => Parameters<Fn>, debounce?: number): IRPCReader<ReturnType<Fn>>;
+  later(debounce?: number): IRPCReader<ReturnType<Fn>> & { dispatch: (...args: Parameters<Fn>) => void };
+}
+```
+
+### Reactive Execution Bindings
+
+- **`.once()`**: Triggers the RPC exactly once. Use this for standard imperative calls.
+- **`.with()`**: Binds the function to a reactive factory. Whenever the parameters returned by the factory change, the stub re-runs automatically.
+- **`.when()`**: Similar to `.with()`, but execution is deferred until the factory returns a truthy value (or a value other than `undefined`).
+- **`.later()`**: Returns a manual trigger object. The RPC will not execute until you explicitly call `.dispatch()`. This is useful for event handlers like `onClick` that need to pass arguments from the event object.
 
 ## Naming Conventions
 
@@ -464,6 +481,46 @@ export const SearchBar = setup(() => {
           {(u) => <li>{u.name}</li>}
         </For>
       </ul>
+    </div>
+  );
+});
+```
+
+:::
+
+#### `.later(debounce?)`
+
+Creates an imperative manual execution binding. It returns an `IRPCReader` augmented with a `.dispatch()` method. You can optionally pass a `debounce` time (in milliseconds) to coalesce rapid manual invocations.
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { uploadAvatar } from './rpc/users/index.js';
+
+export const ProfileEditor = setup<{ id: string }>((props) => {
+  const uploader = uploadAvatar.later(200);
+
+  return render(() => (
+    <div>
+      <button onClick={() => uploader.dispatch(props.id, 'file')}>Upload</button>
+      {uploader.status === 'pending' && <span>Uploading...</span>}
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
+import { uploadAvatar } from './rpc/users/index.js';
+
+export const ProfileEditor = setup<{ id: string }>((props) => {
+  const uploader = uploadAvatar.later(200);
+
+  return (
+    <div>
+      <button onClick={() => uploader.dispatch(props.id, 'file')}>Upload</button>
+      {uploader.status === 'pending' && <span>Uploading...</span>}
     </div>
   );
 });
