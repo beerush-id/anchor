@@ -29,7 +29,7 @@ export class LinkingRef<T> {
   constructor(
     private read: () => T | Record<string, unknown>,
     private key: keyof T = 'value' as keyof T
-  ) { }
+  ) {}
 }
 
 /**
@@ -106,11 +106,13 @@ export function isLinkingRef(value: unknown): value is LinkingRef<unknown> {
  */
 export class BindingRef<S, V> {
   public get value(): V {
-    return (this.source as Record<string, unknown>)[this.key as never] as V;
+    const source = typeof this.source === 'function' ? (this.source as () => S)() : this.source;
+    return (source as Record<string, unknown>)[this.key as never] as V;
   }
 
   public set value(value: V) {
-    (this.source as Record<string, unknown>)[this.key as never] = value;
+    const source = typeof this.source === 'function' ? (this.source as () => S)() : this.source;
+    (source as Record<string, unknown>)[this.key as never] = value;
   }
 
   /**
@@ -121,10 +123,10 @@ export class BindingRef<S, V> {
    * @param type - The value type (optional)
    */
   constructor(
-    public source: S,
+    public source: S | (() => S),
     public key: keyof S | string = 'value',
     public type?: V
-  ) { }
+  ) {}
 }
 
 /**
@@ -169,7 +171,7 @@ export function bind<T extends MutableRef<unknown>>(source: T): Bindable<T['valu
  * @param key - The property key to bind to
  * @returns The value type at the specified key
  */
-export function bind<T, K extends keyof T>(source: T, key: K): Bindable<T[K]>;
+export function bind<T, K extends keyof T>(source: T | (() => T), key: K): Bindable<T[K]>;
 
 /**
  * Creates a binding reference for two-way data binding.

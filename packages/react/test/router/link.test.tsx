@@ -1,6 +1,7 @@
 import '../../src/client/index.js';
 import { createRouter } from '@anchorlib/router';
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { FC } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AnyRoute } from '../../src/router/index.js';
 import { Link } from '../../src/router/link.js';
@@ -38,10 +39,12 @@ describe('Anchor React - Link Component', () => {
   });
 
   it('intercepts standard clicks and calls navigate', () => {
+    const TypedLink = Link as FC<{ href: string; query: any; children: any }>;
+
     render(
-      <Link href="/contact" query={{ ref: 'test' }}>
+      <TypedLink href="/contact" query={{ ref: 'test' }}>
         Contact
-      </Link>
+      </TypedLink>
     );
     const anchor = screen.getByText('Contact');
 

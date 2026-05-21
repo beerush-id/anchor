@@ -44,6 +44,25 @@ describe('Anchor React - Binding', () => {
 
       expect(result).toBeInstanceOf(BindingRef);
     });
+
+    it('should create a binding reference using getter', () => {
+      const source = { value: 'test' };
+      const result = bind(() => source, 'value');
+
+      expect(result).toBeInstanceOf(BindingRef);
+      expect(result.value).toBe('test');
+    });
+
+    it('should handle assignment on a binding reference using getter', () => {
+      const source = { value: 'test' };
+      const result = bind(() => source, 'value');
+
+      expect(result).toBeInstanceOf(BindingRef);
+      expect(result.value).toBe('test');
+
+      result.value = 'updated';
+      expect(result.value).toBe('updated');
+    });
   });
 
   describe('isBinding', () => {
