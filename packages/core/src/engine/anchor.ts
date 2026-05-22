@@ -322,23 +322,12 @@ anchorFn.find = ((init) => {
 
 anchorFn.snapshot = ((state, recursive = true) => {
   const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
-
-  if (!target) {
-    const error = new Error('State does not exist.');
-    captureStack.error.external('Cannot create snapshot of non-existence state.', error, anchorFn.snapshot);
-  }
-
-  return softClone(target ?? state, recursive) as typeof state;
+  if (!target) return structuredClone(state);
+  return softClone(target, recursive) as typeof state;
 }) as Anchor['snapshot'];
 
 anchorFn.stringify = ((state, replacer, space) => {
   const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
-
-  if (!target) {
-    const error = new Error('State does not exist.');
-    captureStack.error.external('Cannot stringify non-existence state.', error, anchorFn.snapshot);
-  }
-
   return JSON.stringify(target ?? state, replacer as never, space);
 }) as Anchor['stringify'];
 

@@ -86,7 +86,7 @@ describe('Anchor Core - Edge Cases', () => {
     it('should handle snapshotting non-reactive objects', () => {
       const snapshot = anchor.snapshot({ name: 'John Doe' });
       expect(snapshot).toEqual({ name: 'John Doe' });
-      expect(errorSpy).toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
     });
 
     it('should handle destroying non reactive object', () => {
@@ -111,7 +111,7 @@ describe('Anchor Core - Edge Cases', () => {
       const stringified = anchor.stringify(state);
 
       expect(stringified).toBe('{"name":"John Doe"}');
-      expect(errorSpy).toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
     });
   });
 
