@@ -113,6 +113,14 @@ describe('Anchor Core - Edge Cases', () => {
       expect(stringified).toBe('{"name":"John Doe"}');
       expect(errorSpy).not.toHaveBeenCalled();
     });
+
+    it('should handle stringify non-existence state', () => {
+      const state = { name: 'John Doe' };
+      const stringified = anchor.stringify(state, (_k, v) => v);
+
+      expect(stringified).toBe('{"name":"John Doe"}');
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('Edge Cases - Trap Factory Integrity', () => {

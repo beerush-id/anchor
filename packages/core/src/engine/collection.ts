@@ -1,5 +1,5 @@
 import { plugin } from '../extension/plugin.js';
-import { COLLECTION_MUTATION_KEYS } from '../shared/constant.js';
+import { ANCHOR_SETTINGS, COLLECTION_MUTATION_KEYS } from '../shared/constant.js';
 import { MapMutations, OBSERVER_KEYS, SetMutations } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
 import type {
@@ -28,6 +28,8 @@ import {
   STATE_BUSY_LIST,
 } from './registry.js';
 import { switchable } from './switchable.js';
+
+const $$ = ANCHOR_SETTINGS;
 
 const mockReturn = {
   set(map: Map<unknown, unknown>) {
@@ -61,18 +63,20 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
   const { configs } = options ?? meta;
 
   return ((target, prop, receiver?) => {
-    const observer = switchable.getObserver();
+    if ($$.reactive) {
+      const observer = switchable.getObserver();
 
-    if (configs.observable && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
-      plugin.track?.(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
-    }
+      if (configs.observable && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
+        plugin.track?.(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+      }
 
-    if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
-      const track = observer.assign(init, observers);
-      const tracked = track(OBSERVER_KEYS.COLLECTION_MUTATIONS);
+      if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
+        const track = observer.assign(init, observers);
+        const tracked = track(OBSERVER_KEYS.COLLECTION_MUTATIONS);
 
-      if (!tracked) {
-        plugin.devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        if (!tracked) {
+          plugin.devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        }
       }
     }
 

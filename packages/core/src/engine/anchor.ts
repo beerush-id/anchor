@@ -49,6 +49,7 @@ import {
   SORTER_REGISTRY,
   STATE_REGISTRY,
 } from './registry.js';
+import { switchable } from './switchable.js';
 import { createGetter, createRemover, createSetter } from './trap.js';
 
 /**
@@ -206,7 +207,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
   };
   INIT_GATEWAY_REGISTRY.set(init, gateway as StateGateway);
 
-  const proxyHandler = createProxyHandler<T>(init, gateway, meta);
+  const proxyHandler = createProxyHandler<T>(gateway, meta);
   const state = new Proxy(init as ObjLike, proxyHandler) as State<T>;
 
   const controller: StateController<T, S> = {
@@ -321,14 +322,25 @@ anchorFn.find = ((init) => {
 }) satisfies Anchor['find'];
 
 anchorFn.snapshot = ((state, recursive = true) => {
-  const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
-  if (!target) return structuredClone(state);
-  return softClone(target, recursive) as typeof state;
+  return switchable.untrack(() => {
+    const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
+    if (!target) return structuredClone(state);
+    return softClone(target, recursive) as typeof state;
+  });
 }) as Anchor['snapshot'];
 
 anchorFn.stringify = ((state, replacer, space) => {
-  const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
-  return JSON.stringify(target ?? state, replacer as never, space);
+  return switchable.untrack(() => {
+    const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
+    return JSON.stringify(
+      target ?? state,
+      (key, value) => {
+        const next = INIT_REGISTRY.get(value) ?? value;
+        return replacer ? replacer(key, next) : next;
+      },
+      space
+    );
+  });
 }) as Anchor['stringify'];
 
 anchorFn.destroy = ((state, warn?: boolean) => {

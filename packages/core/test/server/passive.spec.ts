@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { setReactive } from '../../src/engine/config.js';
-import { anchor, createObserver, effect, getTracker, setTracker, subscribe } from '../../src/index.js';
+import { anchor, createObserver, effect, getObserver, getTracker, setTracker, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -26,6 +26,7 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
 
       expect(state.count).toBe(1);
       expect(state.user.name).toBe('Bob');
+      expect(getObserver()).toBeUndefined();
     });
 
     it('should mutate array elements correctly', () => {

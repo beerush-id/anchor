@@ -1,6 +1,6 @@
 import { plugin } from '../extension/index.js';
 import { ObjectMutations, OBSERVER_KEYS } from '../shared/enum.js';
-import { captureStack } from '../shared/index.js';
+import { ANCHOR_SETTINGS, captureStack } from '../shared/index.js';
 import type {
   AnchorInternalFn,
   Broadcaster,
@@ -32,6 +32,8 @@ import {
   STATE_REGISTRY,
 } from './registry.js';
 import { switchable } from './switchable.js';
+
+const $$ = ANCHOR_SETTINGS;
 
 /**
  * Creates a getter trap function for a reactive state object.
@@ -69,25 +71,27 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
   }
 
   const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
-    const observer = switchable.getObserver();
-
-    if (configs.observable) {
-      plugin.track?.(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
-    }
-
-    if (configs.observable && observer) {
-      const trackProp = observer.assign(init, observers);
-      const tracked = trackProp(Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
-
-      if (!tracked) {
-        plugin.devTool?.onTrack?.(meta, observer, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
-      }
-    }
-
     let value = Reflect.get(target, prop, receiver) as Linkable;
 
-    // Trigger the dev tool callback if available.
-    plugin.devTool?.onGet?.(meta, prop);
+    if ($$.reactive) {
+      const observer = switchable.getObserver();
+
+      if (configs.observable) {
+        plugin.track?.(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+      }
+
+      if (configs.observable && observer) {
+        const trackProp = observer.assign(init, observers);
+        const tracked = trackProp(Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+
+        if (!tracked) {
+          plugin.devTool?.onTrack?.(meta, observer, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+        }
+      }
+
+      // Trigger the dev tool callback if available.
+      plugin.devTool?.onGet?.(meta, prop);
+    }
 
     if (value === init) {
       captureStack.violation.circular(prop, getter);

@@ -26,22 +26,21 @@ import { createGetter } from './trap.js';
  * wraps the initial state object.
  *
  * @template T - The type of the state object
- * @param init - The initial state object to be proxied
- * @param gateway
- * @param meta
+ * @param gateway - The gateway object containing the state object and its mutator
+ * @param meta - The metadata object associated with the state object
  * @returns A ProxyHandler configured according to the immutability settings
  */
-export function createProxyHandler<T extends Linkable>(init: T, gateway: StateGateway<T>, meta: StateMetadata<T>) {
+export function createProxyHandler<T extends Linkable>(gateway: StateGateway<T>, meta: StateMetadata<T>) {
   const { immutable } = meta.configs;
 
   if (immutable) {
     const handler = {
       get: gateway.getter,
-      set: (target: Linkable, prop: KeyLike) => {
+      set: (_target: Linkable, prop: KeyLike) => {
         captureStack.violation.setter(prop, handler.set);
         return true;
       },
-      deleteProperty: (target: Linkable, prop: KeyLike) => {
+      deleteProperty: (_target: Linkable, prop: KeyLike) => {
         captureStack.violation.remover(prop, handler.deleteProperty);
         return true;
       },

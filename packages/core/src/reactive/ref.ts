@@ -3,7 +3,7 @@ import { linkable } from '../engine/config.js';
 import { switchable } from '../engine/index.js';
 import { getScope } from '../scope/context.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
-import { ANCHOR_SETTINGS } from '../shared/constant.js';
+import { ANCHOR_SETTINGS as $$ } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from '../types.js';
 import { softClone, softEqual } from '../utils/index.js';
@@ -425,7 +425,7 @@ export function isValueRef<T>(value: unknown): value is MutableRef<T> | Immutabl
  */
 function createRef<T>(fn: () => T, init: unknown) {
   const currentStack = getScope<RefStack>(STACK_SYMBOL);
-  if (!currentStack || ANCHOR_SETTINGS.production) return fn();
+  if (!currentStack || $$.production) return fn();
 
   return $do(() => {
     let current = currentStack.states.get(currentStack.index);
@@ -442,7 +442,7 @@ function createRef<T>(fn: () => T, init: unknown) {
 }
 
 let stabilityDetector = (stacks: Array<Function> = []) => {
-  if (switchable.getObserver()) {
+  if ($$.reactive && switchable.getObserver()) {
     const error = new Error('State created in an unstable boundary.');
     captureStack.violation.general(
       'Unstable state declaration detected.',
