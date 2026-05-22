@@ -13,11 +13,16 @@ import type {
   GuardBlocker,
   GuardContext,
   GuardHandler,
+  MergedProvidersOut,
   NestedParams,
   NestedQueryParams,
   None,
   ProviderMap,
   ProviderOptions,
+  ProviderResolver,
+  ProviderResolverMap,
+  ProviderResolvers,
+  ProviderResolversOut,
   RouteContext,
   RouteExceptionRenderer,
   RouteIndexRenderer,
@@ -166,6 +171,7 @@ export class Route<
   public guards = new Set<UnknownGuard>();
   /** Map of data providers for this route */
   public providers = new Map<string, ProviderMap>();
+  public resolvers = new Set<ProviderResolverMap>();
 
   public get state(): RouteState {
     return this.storage.state;
@@ -363,24 +369,80 @@ export class Route<
   }
 
   /**
+   * Adds parallel data providers to this route.
+   * The data providers are run in parallel and their data
+   * is available in the route's context.
+   *
+   * @template Name - The provider name type
+   * @template ProviderData - The provider data type
+   * @param providers - An array of provider definitions [name, resolver, options]
+   * @param options - Optional provider options
+   * @returns This route for chaining with updated data types
+   */
+  public provide<P extends ProviderResolvers<Params, QueryParams, Data>>(
+    providers: P,
+    options?: ProviderOptions
+  ): Route<Path, Params, QueryParams, Data & ProviderResolversOut<P>, Parent>;
+
+  /**
    * Adds a data provider to this route.
    *
    * Providers are run when the route is activated and their data is
    * available in the route's context.
    *
-   * @template TName - The provider name type
-   * @template TProviderData - The provider data type
+   * @template Name - The provider name type
+   * @template ProviderData - The provider data type
    * @param name - The name of the provider
    * @param provider - The provider function
    * @param options - Optional provider options
    * @returns This route for chaining
    */
-  public provide<TName extends string, TProviderData>(
-    name: TName,
-    provider: (context: RouteContext<Params, QueryParams, Data>) => Promise<TProviderData> | TProviderData,
+  public provide<Name extends string, ProviderData>(
+    name: Name,
+    provider: ProviderResolver<ProviderData, Params, QueryParams, Data>,
     options?: ProviderOptions
-  ): Route<Path, Params, QueryParams, Data & { [PK in TName]: TProviderData }, Parent> {
-    this.providers.set(name, { name, provider, options } as ProviderMap);
+  ): Route<Path, Params, QueryParams, MergedProvidersOut<Data, { [PK in Name]: ProviderData }>, Parent>;
+
+  public provide<Name extends string, ProviderData>(
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    nameOrProviders: any,
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    providerOrOptions?: any,
+    options?: ProviderOptions
+  ): Route<Path, Params, QueryParams, MergedProvidersOut<Data, { [PK in Name]: ProviderData }>, Parent> {
+    if (typeof nameOrProviders === 'object' && nameOrProviders !== null) {
+      const resolvers = {} as ProviderResolverMap;
+
+      Object.entries(nameOrProviders).forEach(([name, provider]) => {
+        resolvers[name] = {
+          handler: provider as never,
+          options,
+        };
+
+        this.providers.set(name, {
+          name,
+          provider,
+          options: providerOrOptions,
+        } as ProviderMap);
+      });
+
+      this.resolvers.add(resolvers);
+      return this as never;
+    }
+
+    this.resolvers.add({
+      [nameOrProviders]: {
+        handler: providerOrOptions,
+        options,
+      },
+    });
+
+    this.providers.set(nameOrProviders, {
+      name: nameOrProviders,
+      provider: providerOrOptions,
+      options,
+    } as ProviderMap);
+
     return this as never;
   }
 
@@ -485,71 +547,87 @@ export class Route<
     const abortController = new AbortController();
     activeResolvers.set(context, abortController);
 
+    context.signal = abortController.signal;
+
     try {
-      for (const [name, { provider, options }] of this.providers) {
-        if (!providerObservers.has(provider)) {
-          const observer = createObserver(() => {
-            this.router.start(1);
-            observer.reset();
-            resolver();
+      for (const batch of this.resolvers) {
+        const promises = [];
+
+        for (const [name, { handler, options }] of Object.entries(batch)) {
+          if (!providerObservers.has(handler)) {
+            const observer = createObserver(() => {
+              this.router.start(1);
+              observer.reset();
+              resolver();
+            });
+
+            // Run the provider inside an observer, so whenever the state it reads change,
+            // the observer will be re-run.
+            const resolver = () => {
+              return observer.run(async () => {
+                $do(() => state.resolving.add(name));
+
+                try {
+                  const providerData = await retriable(
+                    async () => {
+                      return await cache.resolve(name, handler, context, options, hydration);
+                    },
+                    { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
+                  );
+
+                  if (abortController.signal.aborted) return;
+
+                  safeRead(() => {
+                    context.data[name] = providerData;
+                  });
+
+                  return providerData;
+                } catch (error) {
+                  state.status = ROUTE_STATUS.ERROR;
+
+                  if (error instanceof Error) {
+                    state.error = error instanceof ProviderError ? error : new ProviderError(error.message, error);
+                    return state.error;
+                  } else {
+                    state.error = new ProviderError('Unknown provider error.', error as Error);
+                    return state.error;
+                  }
+                  /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
+                } finally {
+                  $do(() => state.resolving.delete(name));
+                }
+              });
+            };
+
+            providerObservers.set(handler, { observer, resolver });
+          }
+
+          const resolve = providerObservers.get(handler)!.resolver;
+          const promise = resolve().then((result) => {
+            if (result instanceof Error) {
+              state.status = ROUTE_STATUS.ERROR;
+              state.error = result instanceof ProviderError ? result : new ProviderError(result.message, result);
+
+              abortController.abort();
+              throw state.error;
+            }
           });
 
-          // Run the provider inside an observer, so whenever the state it reads change,
-          // the observer will be re-run.
-          const resolver = () => {
-            return observer.runAsync(async () => {
-              $do(() => state.resolving.add(name));
-
-              try {
-                const providerData = await retriable(
-                  async () => {
-                    return await cache.resolve(name, provider, context, options, hydration);
-                  },
-                  { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
-                );
-
-                if (abortController.signal.aborted) return;
-
-                safeRead(() => {
-                  context.data[name] = providerData;
-                });
-
-                return providerData;
-              } catch (error) {
-                state.status = ROUTE_STATUS.ERROR;
-
-                if (error instanceof Error) {
-                  state.error = error instanceof ProviderError ? error : new ProviderError(error.message, error);
-                  return state.error;
-                } else {
-                  state.error = new ProviderError('Unknown provider error.', error as Error);
-                  return state.error;
-                }
-                /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
-              } finally {
-                $do(() => state.resolving.delete(name));
-              }
-            });
-          };
-
-          providerObservers.set(provider, { observer, resolver });
+          promises.push(promise);
         }
 
-        const resolve = providerObservers.get(provider)!.resolver;
-        const result = await resolve();
-
-        if (result instanceof Error) {
-          state.status = ROUTE_STATUS.ERROR;
-          state.error = result instanceof ProviderError ? result : new ProviderError(result.message, result);
+        try {
+          await Promise.all(promises);
+        } catch (_error) {
           return;
         }
       }
 
       state.resolved = true;
-
       return context.data as Data;
     } finally {
       activeResolvers.delete(context);
+      delete context.signal;
     }
   }
 

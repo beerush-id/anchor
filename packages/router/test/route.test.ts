@@ -647,6 +647,28 @@ describe('Route class', () => {
 
       expect(route.providers.has('test')).toBe(true);
     });
+
+    it('should register parallel providers', () => {
+      const route = new Route(sharedRouter, '/test');
+
+      route
+        .provide(
+          'test',
+          vi.fn(() => 'data')
+        )
+        .provide({
+          test1: (ctx) => ctx.data.test + '1',
+          test2: (ctx) => ctx.data.test + '2',
+        })
+        .provide('base', (ctx) => {
+          return ctx.data.test1;
+        });
+
+      expect(route.providers.has('test')).toBe(true);
+      expect(route.providers.has('test1')).toBe(true);
+      expect(route.providers.has('test2')).toBe(true);
+      expect(route.providers.has('base')).toBe(true);
+    });
   });
 
   describe('authenticate method', () => {

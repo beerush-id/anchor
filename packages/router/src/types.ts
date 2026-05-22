@@ -110,7 +110,28 @@ export type ProviderMap = {
   name: string;
   provider: UnknownProvider;
   options?: ProviderOptions;
+  parallel?: boolean;
 };
+
+export type ProviderResolver<O, P, Q, D> = (context: RouteContext<P, Q, D>) => Promise<O> | O;
+export type ProviderResolvers<Params, Query, Data> = {
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  [key: string]: (context: RouteContext<Params, Query, Data>) => any;
+};
+export type ProviderResolversOut<P> = P extends ProviderResolvers<infer _P, infer _Q, infer _D>
+  ? {
+      [K in keyof P]: P[K] extends (...args: infer _A) => infer O ? (O extends Promise<infer D> ? D : O) : P[K];
+    }
+  : TRec;
+export type ProviderResolverMap = {
+  [key: string]: {
+    handler: UnknownProvider;
+    options?: ProviderOptions;
+  };
+};
+export type MergedProvidersOut<D extends TRec, O extends TRec> = D & {
+  [K in keyof O]: O[K];
+} & {};
 
 /** The type of a route (static, dynamic, wildcard, or index) */
 export type RouteType = (typeof ROUTE_TYPE)[keyof typeof ROUTE_TYPE];
@@ -161,6 +182,7 @@ export type RouteContext<Params, QueryParams, Data> = {
   data: Data;
   query: QueryParams;
   params: Params;
+  signal?: AbortSignal;
   exception?: RouteError;
 };
 
