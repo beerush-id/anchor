@@ -224,9 +224,9 @@ describe('Route class', () => {
     it('should get and set resolving state', () => {
       const route = new Route(sharedRouter, '/test');
       const state = route.state;
-      expect(state.resolving).toBe(false);
-      state.resolving = 'test';
-      expect(state.resolving).toBe('test');
+      expect(state.resolving.size > 0).toBe(false);
+      state.resolving.add('test');
+      expect(state.resolving.has('test')).toBe(true);
     });
   });
 
@@ -237,7 +237,7 @@ describe('Route class', () => {
         expect(reader.active).toBe(false);
         expect(reader.status).toBe(ROUTE_STATUS.IDLE);
         expect(reader.resolved).toBe(false);
-        expect(reader.resolving).toBe(false);
+        expect(reader.resolving.size > 0).toBe(false);
         expect(reader.authenticated).toBe(false);
         expect(reader.authenticating).toBe(false);
         expect(reader.params).toEqual({});

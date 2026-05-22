@@ -149,7 +149,7 @@ export type RouteState = {
   status: RouteStatus;
   active: boolean;
   resolved: boolean;
-  resolving: string | false;
+  resolving: Set<string>;
   authenticated: boolean;
   authenticating: boolean;
 

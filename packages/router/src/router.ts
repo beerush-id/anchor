@@ -356,7 +356,6 @@ export class Router<Output = any> {
 
       if (blocker instanceof RouteError) {
         storage.context.exception = blocker;
-        this.finish();
         segment.store.exception = blocker;
         authenticatedSegments.push(segment);
         break;

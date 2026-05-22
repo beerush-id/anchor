@@ -197,7 +197,7 @@ export class Route<
             status: ROUTE_STATUS.IDLE,
             active: false,
             resolved: false,
-            resolving: false,
+            resolving: new Set(),
             authenticated: false,
             authenticating: false,
           }),
@@ -498,7 +498,7 @@ export class Route<
           // the observer will be re-run.
           const resolver = () => {
             return observer.runAsync(async () => {
-              state.resolving = name;
+              $do(() => state.resolving.add(name));
 
               try {
                 const providerData = await retriable(
@@ -527,7 +527,7 @@ export class Route<
                 }
                 /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
               } finally {
-                state.resolving = false;
+                $do(() => state.resolving.delete(name));
               }
             });
           };
