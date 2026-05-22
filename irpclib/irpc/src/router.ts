@@ -1,5 +1,4 @@
-import { withIsolation } from '@anchorlib/core';
-import { createContextStore } from './context.js';
+import { createContextStore, withContext } from './context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import type { IRPCPackage } from './module.js';
@@ -61,17 +60,13 @@ export class IRPCRouter {
       ...context,
     ]);
 
-    return withIsolation(
-      async () => {
-        for (const hook of this.hooks) {
-          await hook();
-        }
+    return withContext(ctx, async () => {
+      for (const hook of this.hooks) {
+        await hook();
+      }
 
-        return handler();
-      },
-      true,
-      ctx
-    );
+      return handler();
+    });
   }
 
   /**
