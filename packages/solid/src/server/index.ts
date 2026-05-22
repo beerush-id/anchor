@@ -11,6 +11,7 @@ class AnchorASL<T> extends AsyncLocalStorage<T> {
 
 setAsyncScope(new AnchorASL() as AsyncLocalStorage<Map<string, unknown>>);
 
+/* v8 ignore next */
 if (!isBrowser()) {
   setReactive(false);
 }

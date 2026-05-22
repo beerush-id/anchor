@@ -33,6 +33,21 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       expect(UiRoute.route).toBe(rawRoute);
       expect(typeof UiRoute.render).toBe('function');
+      expect(typeof UiRoute.renderAsync).toBe('function');
+    });
+
+    it('exposes renderAsync method', () => {
+      const router = createRouter();
+      const rawRoute = router.route('/testing');
+      const UiRoute = page(rawRoute);
+      const loader = vi.fn();
+      const fallback = vi.fn();
+      
+      const renderAsyncSpy = vi.spyOn(rawRoute, 'renderAsync');
+      const result = UiRoute.renderAsync(loader as never, fallback as never);
+      
+      expect(renderAsyncSpy).toHaveBeenCalledWith(loader, fallback);
+      expect(result).toBe(UiRoute);
     });
   });
 
@@ -252,7 +267,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter<JSX.Element>();
       const RootUi = page(router.rootRoute).render(() => <span>OK</span>);
 
-      vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       const { unmount } = render(() => <UIRouter router={router} root={RootUi} />);
 
@@ -268,7 +283,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter<JSX.Element>();
       const rootUi = page(router.rootRoute);
 
-      const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       render(() => <UIRouter router={router} root={rootUi} resetScroll={true} />);
 
@@ -280,7 +295,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter<JSX.Element>();
       const rootUi = page(router.rootRoute);
 
-      vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       render(() => <UIRouter router={router} root={rootUi} resetScroll={'instant'} />);
 
@@ -295,7 +310,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       modalRoute.render(() => <div data-testid="stack-modal-content">Modal</div>);
       modalRoute.active = true;
 
-      vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       const { container } = render(() => <UIRouter router={router} root={rootUi} />);
 
@@ -322,7 +337,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       redirect(rawRoute, {
         params: { id: '1' },
         query: { foo: 'bar' },
-      } as never);
+      } as any);
 
       await Promise.resolve();
 

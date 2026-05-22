@@ -172,6 +172,11 @@ export function page<T>(routeNode: T): RouteComponent<T> {
 
     return UIRoute as RouteComponent<AnyRoute>;
   };
+  (UIRoute as RouteComponent<AnyRoute>).renderAsync = (loader, fallback) => {
+    (routeNode as AnyRoute).renderAsync(loader, fallback);
+
+    return UIRoute as RouteComponent<AnyRoute>;
+  };
 
   return UIRoute as RouteComponent<T>;
 }
