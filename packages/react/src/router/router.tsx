@@ -196,7 +196,10 @@ export function page<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   (UIRoute as RouteComponent<AnyRoute>).route = routeNode as AnyRoute;
   (UIRoute as RouteComponent<AnyRoute>).render = (renderer) => {
     (routeNode as AnyRoute).render(renderer);
-
+    return UIRoute as RouteComponent<AnyRoute>;
+  };
+  (UIRoute as RouteComponent<AnyRoute>).renderAsync = (loader, fallback) => {
+    (routeNode as AnyRoute).renderAsync(loader, fallback);
     return UIRoute as RouteComponent<AnyRoute>;
   };
 

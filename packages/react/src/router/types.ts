@@ -83,6 +83,39 @@ export type RouteComponent<T> = FC<{ children?: ReactNode }> & {
           renderer: RouteIndexRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
         ) => RouteComponent<T>
       : never;
+  renderAsync: T extends Route<
+    infer _TPath,
+    infer TParams,
+    infer TQueryParams,
+    infer TData,
+    infer _TParent,
+    infer TOutput,
+    infer PParams,
+    infer PQueryParams,
+    infer PData
+  >
+    ? (
+        loader: () => Promise<RouteLayoutRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>>,
+        fallback?: RouteLayoutRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+      ) => RouteComponent<T>
+    : T extends IndexRoute<
+          infer _TPath,
+          infer TParams,
+          infer TQueryParams,
+          infer TData,
+          infer _TParent,
+          infer TOutput,
+          infer PParams,
+          infer PQueryParams,
+          infer PData
+        >
+      ? (
+          loader: () => Promise<
+            RouteIndexRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+          >,
+          fallback?: RouteIndexRenderer<TParams, TQueryParams, TData, PParams, PQueryParams, PData, TOutput>
+        ) => RouteComponent<T>
+      : never;
 };
 
 export type RouteStacks = Map<UnknownRoute, FC>;

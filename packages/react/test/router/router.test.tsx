@@ -43,6 +43,21 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       expect(UiPage.route).toBe(rawRoute);
       expect(typeof UiPage.render).toBe('function');
+      expect(typeof UiPage.renderAsync).toBe('function');
+    });
+
+    it('exposes renderAsync method', () => {
+      const router = createRouter<ReactNode>();
+      const rawRoute = router.route('/page-test');
+      const UiPage = page(rawRoute);
+      const loader = vi.fn();
+      const fallback = vi.fn();
+      
+      const renderAsyncSpy = vi.spyOn(rawRoute, 'renderAsync');
+      const result = UiPage.renderAsync(loader as never, fallback as never);
+      
+      expect(renderAsyncSpy).toHaveBeenCalledWith(loader, fallback);
+      expect(result).toBe(UiPage);
     });
   });
 
