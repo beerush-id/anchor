@@ -87,6 +87,8 @@ export class Route<
   public readonly options: RouteOptions;
   public closed = false;
 
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  private loadRenderer?: () => Promise<RouteRenderer<any, any, any, any, any, any, any, any>>;
   private rendererState = createState<
     RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output> | unknown
   >(undefined);
@@ -645,6 +647,8 @@ export class Route<
 
     state.error = undefined;
     state.status = ROUTE_STATUS.PENDING;
+
+    return { state, ctx };
   }
 
   /**
@@ -663,13 +667,34 @@ export class Route<
     controlled?: boolean,
     hydration?: boolean
   ): Promise<void> {
-    const { state } = this.storage;
+    const { state } = this.preActivate(context);
 
-    this.preActivate(context);
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    let renderLoader: Promise<any> | undefined;
+
+    if (typeof this.loadRenderer === 'function') {
+      renderLoader = this.loadRenderer();
+
+      if (renderLoader instanceof Promise) {
+        renderLoader = renderLoader
+          .then((renderer) => {
+            this.render(renderer);
+            delete this.loadRenderer;
+          })
+          .catch((error) => {
+            state.status = ROUTE_STATUS.ERROR;
+            state.error = new RouteError(ERROR_TYPE.ROUTE, (error as Error).message, error as Error);
+          });
+      }
+    }
 
     // Preload data if preload is enabled.
     if (preload) {
       await this.preload(context, hydration);
+    }
+
+    if (renderLoader instanceof Promise) {
+      await renderLoader;
     }
 
     // If the route is deactivated during preload, do nothing.
@@ -737,6 +762,16 @@ export class Route<
 
   public render(renderer: RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output>): this {
     this.rendererState.value = createRenderer(this as never, renderer as never);
+    return this;
+  }
+
+  public renderAsync<R extends RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output>>(
+    loader: () => Promise<R>,
+    fallback?: RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
+  ): this {
+    this.loadRenderer = loader;
+    if (fallback) this.render(fallback);
+
     return this;
   }
 
