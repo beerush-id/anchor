@@ -1,6 +1,6 @@
 import { AsyncScope, type AsyncStore, getAsyncScope } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createContext, getContext, setContext, setContextProvider, withContext } from '../src/context.js';
+import { createContextStore, getContext, setContext, setContextProvider, withContext } from '../src/context.js';
 import type { IRPCContextProvider } from '../src/index.js';
 
 describe('Context', () => {
@@ -16,7 +16,7 @@ describe('Context', () => {
     });
 
     it('should set and get context within withContext', async () => {
-      const result = await withContext(createContext(), () => {
+      const result = await withContext(createContextStore(), () => {
         setContext('key', 'value');
         return getContext('key');
       });
@@ -25,11 +25,11 @@ describe('Context', () => {
     });
 
     it('should isolate context between withContext calls', async () => {
-      await withContext(createContext(), () => {
+      await withContext(createContextStore(), () => {
         setContext('key', 'first');
       });
 
-      const result = await withContext(createContext(), () => {
+      const result = await withContext(createContextStore(), () => {
         return getContext('key');
       });
 
@@ -37,7 +37,7 @@ describe('Context', () => {
     });
 
     it('should return fallback when key is not set', async () => {
-      const result = await withContext(createContext(), () => {
+      const result = await withContext(createContextStore(), () => {
         return getContext('missing', 'fallback');
       });
 
@@ -47,13 +47,13 @@ describe('Context', () => {
 
   describe('Creating Context', () => {
     it('should create empty context', () => {
-      const ctx = createContext();
+      const ctx = createContextStore();
       expect(ctx).toBeInstanceOf(Map);
       expect(ctx.size).toBe(0);
     });
 
     it('should create context with initial values', () => {
-      const ctx = createContext([
+      const ctx = createContextStore([
         ['key1', 'value1'],
         ['key2', 'value2'],
       ]);

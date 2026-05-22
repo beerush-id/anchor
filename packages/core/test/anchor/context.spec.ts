@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sleep } from '../../src/index.js';
 import {
   clearContextStore,
+  createContext,
   createContextStore,
   getAllScopes,
   getAsyncScope,
@@ -547,6 +548,69 @@ describe('Anchor - Async Scope', () => {
       expect(getContext('foo')).toBe('bar');
 
       setContextStore(prevStore);
+    });
+  });
+
+  describe('createContext', () => {
+    beforeEach(() => {
+      clearContextStore();
+    });
+
+    it('should create a reader that returns undefined without a fallback', () => {
+      const ctx = createContext<string>();
+
+      expect(ctx.get()).toBeUndefined();
+    });
+
+    it('should return the fallback when no value is set', () => {
+      const ctx = createContext('default');
+
+      expect(ctx.get()).toBe('default');
+    });
+
+    it('should set and get a value', () => {
+      const ctx = createContext<string>();
+
+      ctx.set('hello');
+      expect(ctx.get()).toBe('hello');
+    });
+
+    it('should override the fallback after set', () => {
+      const ctx = createContext('fallback');
+
+      ctx.set('override');
+      expect(ctx.get()).toBe('override');
+    });
+
+    it('should isolate values across withIsolation boundaries', async () => {
+      const ctx = createContext('initial');
+
+      await withIsolation(async () => {
+        expect(ctx.get()).toBe('initial');
+        ctx.set('isolated');
+        expect(ctx.get()).toBe('isolated');
+      });
+
+      expect(ctx.get()).toBe('initial');
+    });
+
+    it('should use a custom key when provided', () => {
+      const key = Symbol('custom');
+      const ctx = createContext('fb', key);
+
+      ctx.set('via-reader');
+      expect(getContext(key)).toBe('via-reader');
+    });
+
+    it('should not collide between independent instances', () => {
+      const ctxA = createContext('a');
+      const ctxB = createContext('b');
+
+      ctxA.set('A');
+      ctxB.set('B');
+
+      expect(ctxA.get()).toBe('A');
+      expect(ctxB.get()).toBe('B');
     });
   });
 });

@@ -1,7 +1,7 @@
 import '../../src/server/index.js';
 import { anchor, mutable, sleep } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createContext, getContext, setContext, withContext } from '../../src/context.js';
+import { createContextStore, getContext, setContext, withContext } from '../../src/context.js';
 
 describe('Server Module', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -17,7 +17,7 @@ describe('Server Module', () => {
   });
 
   it('should set and get context within withContext', async () => {
-    const result = await withContext(createContext(), async () => {
+    const result = await withContext(createContextStore(), async () => {
       const state = mutable(0);
 
       setContext('key', 'value');

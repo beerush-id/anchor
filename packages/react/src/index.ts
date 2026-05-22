@@ -43,6 +43,7 @@ export {
   awaited,
   CookieJar,
   cookies,
+  createContext,
   createLifecycle,
   DerivedRef,
   debouncer,

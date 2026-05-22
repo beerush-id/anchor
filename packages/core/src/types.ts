@@ -1001,3 +1001,19 @@ export interface StateInspector {
    */
   trace<T extends State>(state: T): StateUnsubscribe;
 }
+
+/**
+ * Interface for reading and writing context values.
+ * Provides a standardized way to access and update scoped data.
+ */
+export type ContextReader<T> = {
+  /**
+   * Retrieves the current value from the context.
+   */
+  get(): T;
+  /**
+   * Updates the context with a new value.
+   * @param value - The new value to set in the context.
+   */
+  set(value: T): void;
+};

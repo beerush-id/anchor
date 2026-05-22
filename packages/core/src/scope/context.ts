@@ -1,6 +1,7 @@
 import { GLOBAL_ASYNC_SCOPE, GLOBAL_THIS, hasASL } from '../server/constant.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
+import type { ContextReader } from '../types.js';
 import { isBrowser } from '../utils/index.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
 import { AsyncStore, type AsyncStoreContract, type StoreContract } from './store.js';
@@ -272,6 +273,31 @@ export function setContextStore(store: AsyncStore): void {
  */
 export function clearContextStore() {
   getContextStore()!.clear();
+}
+
+/**
+ * Creates a context reader/writer object for a specific key.
+ *
+ * @returns {ContextReader<T | undefined>}
+ */
+export function createContext<T>(): ContextReader<T | undefined>;
+/**
+ * Creates a context reader/writer object for a specific key with a fallback value.
+ *
+ * @param {T} fallback - The value to return if the context is not set.
+ * @param {symbol} [key] - Optional custom symbol key for the context.
+ * @returns {ContextReader<T>}
+ */
+export function createContext<T>(fallback: T, key?: symbol): ContextReader<T>;
+export function createContext<T>(fallback?: T, key = Symbol('anchor-context')) {
+  return {
+    get() {
+      return getContext(key, fallback);
+    },
+    set(value: T) {
+      setContext(key, value);
+    },
+  };
 }
 
 /**

@@ -1,8 +1,9 @@
 import {
-  createContext,
+  createContextStore,
   decode,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
+  IRPC_STORE,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
@@ -11,7 +12,6 @@ import {
   IRPCRouter,
   IRPCStream,
   withContext,
-  IRPC_STORE,
 } from '@irpclib/irpc';
 import { FILE_BUFFER_TTL, WS_MESSAGE_TYPE } from './enum.js';
 import { decodeFileFrame } from './frame.js';
@@ -134,7 +134,7 @@ export class WebSocketRouter extends IRPCRouter {
     await Promise.all(
       requests.map((resolver) => {
         const abortController = new AbortController();
-        const ctx = createContext<string | symbol, unknown>([
+        const ctx = createContextStore<string | symbol, unknown>([
           [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
           [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
           ...initContext,
@@ -208,7 +208,9 @@ export class WebSocketRouter extends IRPCRouter {
       const parsed = JSON.parse(message);
       return Array.isArray(parsed) ? parsed : [parsed];
     } catch (error) {
-      IRPC_STORE.error(new Error('Failed to parse WebSocket message:', { cause: error }), [{ endpoint: this.endpoint }]);
+      IRPC_STORE.error(new Error('Failed to parse WebSocket message:', { cause: error }), [
+        { endpoint: this.endpoint },
+      ]);
       return [];
     }
   }

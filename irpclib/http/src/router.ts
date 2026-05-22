@@ -1,13 +1,14 @@
 import * as crypto from 'node:crypto';
 import { replay } from '@anchorlib/core';
 import {
-  createContext,
+  createContextStore,
   decode,
   ERROR_CODE,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  IRPC_STORE,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
@@ -19,7 +20,6 @@ import {
   IRPCRouter,
   IRPCStream,
   withContext,
-  IRPC_STORE,
 } from '@irpclib/irpc';
 import { IRPC_JSON_KEY } from './enum.js';
 import type { HTTPTransport } from './transport.js';
@@ -274,7 +274,7 @@ export class HTTPRouter extends IRPCRouter {
     const readable = new ReadableStream({
       start: (controller) => {
         const promises = resolvers.map((resolver) => {
-          const ctx = createContext<string | symbol, unknown>([
+          const ctx = createContextStore<string | symbol, unknown>([
             [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
             [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
             ...initContext,

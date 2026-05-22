@@ -1,5 +1,5 @@
 import {
-  createContext,
+  createContextStore,
   decode,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
@@ -150,7 +150,7 @@ export class BroadcastRouter extends IRPCRouter {
     await Promise.all(
       resolvers.map((resolver) => {
         const abortController = new AbortController();
-        const ctx = createContext<string | symbol, unknown>([
+        const ctx = createContextStore<string | symbol, unknown>([
           [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
           [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
           ...initContext,

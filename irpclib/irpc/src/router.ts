@@ -1,5 +1,5 @@
 import { withIsolation } from '@anchorlib/core';
-import { createContext } from './context.js';
+import { createContextStore } from './context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import type { IRPCPackage } from './module.js';
@@ -55,7 +55,7 @@ export class IRPCRouter {
     controller: AbortController,
     context: Array<[string | symbol, unknown]> = []
   ) {
-    const ctx = createContext([
+    const ctx = createContextStore([
       [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
       [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller],
       ...context,

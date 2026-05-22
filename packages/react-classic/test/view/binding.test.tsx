@@ -1,4 +1,4 @@
-import { anchor, createContext } from '@anchorlib/core';
+import { anchor, createContextStore as createContext } from '@anchorlib/core';
 import { act, render } from '@testing-library/react';
 import { type ChangeEvent, useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -131,7 +131,7 @@ describe('Anchor React - View Binding', () => {
       });
 
       it('should handle usage on checkbox input', async () => {
-        const ctx = createContext<string, { value: boolean }>();
+        const ctx = createContext();
 
         const Radio = bindable(MockInput);
         const mockOnChange = vi.fn();
@@ -176,7 +176,7 @@ describe('Anchor React - View Binding', () => {
       });
 
       it('should handle usage on number input', async () => {
-        const ctx = createContext<string, { value: number }>();
+        const ctx = createContext();
         const NumberInput = bindable(MockInput);
         const mockOnChange = vi.fn();
 
@@ -218,7 +218,7 @@ describe('Anchor React - View Binding', () => {
       });
 
       it('should handle usage on date input', async () => {
-        const ctx = createContext<string, { value: Date }>();
+        const ctx = createContext();
         const NumberInput = bindable(MockInput);
         const mockOnChange = vi.fn();
 
