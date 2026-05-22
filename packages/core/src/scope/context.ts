@@ -155,7 +155,7 @@ export function withScope<R>(fn: () => R, store?: AsyncStore) {
  * @param context - Optional pre-built {@link AsyncStore} to use instead of creating a new one.
  * @returns The resolved return value of `fn`.
  */
-export async function withIsolation<R>(fn: () => R, strict = true, context?: AsyncStore) {
+export async function withIsolation<R>(fn: () => Promise<R> | R, strict = true, context?: AsyncStore) {
   const floatingLists = new Set<Future<unknown>>();
   const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, context ?? new AsyncStore()]]);
 
