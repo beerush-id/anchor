@@ -120,7 +120,7 @@ export class IRPCResolver {
       }
     } catch (error) {
       // Handle any unexpected errors during execution
-      return { id, name, error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message } };
+      return { id, name, error: { code: ERROR_CODE.HANDLER_ERROR, message: (error as Error).message } };
     }
   }
 }

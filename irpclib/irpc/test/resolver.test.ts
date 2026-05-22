@@ -270,7 +270,7 @@ describe('IRPC Resolver', () => {
         id: '1',
         name: 'testFunc',
         error: {
-          code: ERROR_CODE.UNKNOWN,
+          code: ERROR_CODE.HANDLER_ERROR,
           message: 'Function error',
         },
       });

@@ -95,7 +95,7 @@ export class IRPCStream<T extends IRPCData> {
 
         if (result.status === IRPC_STATUS.SUCCESS || result.status === IRPC_STATUS.ERROR) {
           if (result.status === IRPC_STATUS.ERROR) {
-            this.error = { code: ERROR_CODE.STREAM_ERROR, message: result.error!.message };
+            this.error = { code: ERROR_CODE.HANDLER_ERROR, message: result.error!.message };
             this.status = IRPC_STATUS.ERROR;
           } else {
             this.status = IRPC_STATUS.SUCCESS;
@@ -186,7 +186,7 @@ export class IRPCStream<T extends IRPCData> {
         this.value = result as T;
 
         if (response.error) {
-          this.error = { code: ERROR_CODE.STREAM_ERROR, message: response.error.message };
+          this.error = response.error;
           this.status = IRPC_STATUS.ERROR;
           this.errorHandlers.forEach((handler) => handler(this.error!));
         } else {
@@ -208,7 +208,7 @@ export class IRPCStream<T extends IRPCData> {
       }
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ id: this.id, name: this.name }]);
-      this.error = { code: ERROR_CODE.STREAM_ERROR, message: (error as Error).message };
+      this.error = { code: ERROR_CODE.RESOLVE_ERROR, message: (error as Error).message };
       this.status = IRPC_STATUS.ERROR;
 
       this.pipeHandlers.forEach((handler) => {

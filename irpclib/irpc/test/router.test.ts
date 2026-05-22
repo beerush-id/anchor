@@ -194,4 +194,80 @@ describe('IRPCRouter', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe('isolate', () => {
+    it('should return the handler result', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+
+      const result = await router.isolate(() => 'hello', controller);
+
+      expect(result).toBe('hello');
+    });
+
+    it('should return the async handler result', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+
+      const result = await router.isolate(async () => 42, controller);
+
+      expect(result).toBe(42);
+    });
+
+    it('should execute all hooks before the handler', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+      const order: string[] = [];
+
+      router.use(() => {
+        order.push('hook-1');
+      });
+      router.use(async () => {
+        order.push('hook-2');
+      });
+
+      await router.isolate(
+        () => {
+          order.push('handler');
+        },
+        controller
+      );
+
+      expect(order).toEqual(['hook-1', 'hook-2', 'handler']);
+    });
+
+    it('should propagate handler errors', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+
+      await expect(
+        router.isolate(() => {
+          throw new Error('handler-boom');
+        }, controller)
+      ).rejects.toThrow('handler-boom');
+    });
+
+    it('should accept custom context entries', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+      const customKey = Symbol('custom');
+
+      const result = await router.isolate(
+        () => 'ok',
+        controller,
+        [[customKey, 'custom-value']]
+      );
+
+      expect(result).toBe('ok');
+    });
+
+    it('should default context to empty array', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+
+      const result = await router.isolate(() => 'default-ctx', controller);
+
+      expect(result).toBe('default-ctx');
+    });
+  });
 });

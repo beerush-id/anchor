@@ -1,4 +1,6 @@
-import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
+import { withIsolation } from '@anchorlib/core';
+import { createContext } from './context.js';
+import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import type { IRPCPackage } from './module.js';
 import { IRPC_STORE } from './store.js';
@@ -37,6 +39,39 @@ export class IRPCRouter {
 
     this.hooks.push(hook);
     return this;
+  }
+
+  /**
+   * Run a function within an isolated IRPC Router context.
+   * This make sure any subsequent RPC calls will be seeded with the hooks added to the router.
+   *
+   * @param handler - The handler function to isolate
+   * @param controller - The AbortController to use for cancellation
+   * @param context - Additional context to pass to the handler
+   * @returns The result of the isolated handler function
+   */
+  public isolate<T>(
+    handler: () => T | Promise<T>,
+    controller: AbortController,
+    context: Array<[string | symbol, unknown]> = []
+  ) {
+    const ctx = createContext([
+      [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+      [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller],
+      ...context,
+    ]);
+
+    return withIsolation(
+      async () => {
+        for (const hook of this.hooks) {
+          await hook();
+        }
+
+        return handler();
+      },
+      true,
+      ctx
+    );
   }
 
   /**
