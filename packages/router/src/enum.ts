@@ -46,3 +46,12 @@ export const MAX_AGE = {
   MONTH: 1000 * 60 * 60 * 24 * 30,
   YEAR: 1000 * 60 * 60 * 24 * 365,
 };
+
+export const ERROR_TYPE = {
+  ROUTE: 'route',
+  GUARD: 'guard',
+  ROUTER: 'router',
+  TIMEOUT: 'timeout',
+  UNKNOWN: 'unknown',
+  PROVIDER: 'provider',
+} as const;

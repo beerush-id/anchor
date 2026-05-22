@@ -2,6 +2,7 @@ import { mutable } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { ROUTE_STATUS, ROUTE_TYPE } from '../src/enum.js';
+import { GuardError, ProviderError, RouteError } from '../src/error.js';
 import { getExceptionRendererFactory, getRenderProps, Router, setExceptionRendererFactory } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { RouteRegistry } from '../src/registry.js';
@@ -181,7 +182,7 @@ describe('Route class', () => {
 
     it('should allow setting error', () => {
       const route = new Route(sharedRouter, '/test').state;
-      const testError = { type: 'guard' as const, message: 'Test error' };
+      const testError = new GuardError('Test error');
       route.error = testError;
       // Error is wrapped in mutable(), so use toEqual instead of toBe
       expect(route.error).toEqual(testError);
@@ -189,7 +190,7 @@ describe('Route class', () => {
 
     it('should allow clearing error with undefined', () => {
       const route = new Route(sharedRouter, '/test').state;
-      route.error = { type: 'guard' as const, message: 'Test error' };
+      route.error = new GuardError('Test error');
       route.error = undefined;
       expect(route.error).toBeUndefined();
     });
@@ -224,8 +225,8 @@ describe('Route class', () => {
       const route = new Route(sharedRouter, '/test');
       const state = route.state;
       expect(state.resolving).toBe(false);
-      state.resolving = true;
-      expect(state.resolving).toBe(true);
+      state.resolving = 'test';
+      expect(state.resolving).toBe('test');
     });
   });
 
@@ -708,7 +709,7 @@ describe('Route class', () => {
       const context = { params: {}, query: {} };
       const result = await route.authenticate(context);
 
-      expect(result).toBe(error);
+      expect(result).toBeInstanceOf(RouteError);
     });
 
     it('should set error when guard throws Error', async () => {
@@ -722,11 +723,23 @@ describe('Route class', () => {
       const context = { params: {}, query: {} };
       await route.authenticate(context);
 
-      expect(route.state.error).toEqual({
-        type: 'guard',
-        cause: error,
-        message: error.message,
+      expect(route.state.error).toBeInstanceOf(GuardError);
+      expect(route.state.error?.message).toBe(error.message);
+    });
+
+    it('should set error when guard throws GuardError', async () => {
+      const route = new Route(sharedRouter, '/test');
+      const error = new GuardError('Guard failed');
+      const guard = vi.fn(() => {
+        throw error;
       });
+      route.guard(guard);
+
+      const context = { params: {}, query: {} };
+      await route.authenticate(context);
+
+      expect(route.state.error).toBeInstanceOf(GuardError);
+      expect(route.state.error?.message).toBe(error.message);
     });
 
     it('should set error when guard throws non-Error', async () => {
@@ -739,11 +752,8 @@ describe('Route class', () => {
       const context = { params: {}, query: {} };
       await route.authenticate(context);
 
-      expect(route.state.error).toEqual({
-        type: 'guard',
-        cause: expect.any(Error),
-        message: 'Unknown guard error.',
-      });
+      expect(route.state.error).toBeInstanceOf(GuardError);
+      expect(route.state.error?.message).toBe('Unknown guard error.');
     });
 
     it('should handle async guards', async () => {
@@ -914,7 +924,7 @@ describe('Route class', () => {
     it('should clear error', () => {
       const route = new Route(sharedRouter, '/test');
       const state = route.state;
-      state.error = { type: 'guard', message: 'Error' };
+      state.error = new GuardError('Error');
 
       route.deactivate();
       expect(state.error).toBeUndefined();
@@ -1146,6 +1156,21 @@ describe('Route class', () => {
       expect(result).toBeUndefined();
     });
 
+    it('should handle provider throws ProviderError', async () => {
+      const route = new Route(sharedRouter, '/test');
+      const error = new ProviderError('Provider failed');
+      const provider = vi.fn(() => {
+        throw error;
+      });
+      route.provide('test', provider);
+
+      const context = { params: {}, query: {}, data: {} };
+
+      // The resolve method catches errors and returns undefined
+      const result = await route.resolve(context);
+      expect(result).toBeUndefined();
+    });
+
     it('should handle non-Error provider errors', async () => {
       const route = new Route(sharedRouter, '/test');
       const provider = vi.fn(() => {
@@ -1156,12 +1181,10 @@ describe('Route class', () => {
       const context = { params: {}, query: {}, data: {} };
 
       const result = await route.resolve(context);
+
       expect(result).toBeUndefined();
-      expect(route.state.error).toEqual({
-        type: 'provider',
-        cause: expect.any(Error),
-        message: 'Unknown provider error.',
-      });
+      expect(route.state.error).toBeInstanceOf(ProviderError);
+      expect(route.state.error?.message).toBe('Unknown provider error.');
     });
 
     it('should handle provider returning undefined', async () => {
@@ -1174,6 +1197,34 @@ describe('Route class', () => {
 
       // Provider returned undefined, so the result is undefined
       expect(result.test).toBeUndefined();
+    });
+
+    it('should handle provider returning Error', async () => {
+      const route = new Route(sharedRouter, '/test');
+      const provider = vi.fn(() => new Error('Error.'));
+      route.provide('test', provider);
+
+      const context = { params: {}, query: {}, data: {} };
+      const result = (await route.resolve(context)) as { test: unknown };
+
+      // Provider returned undefined, so the result is undefined
+      expect(result).toBeUndefined();
+      expect(route.state.status).toBe(ROUTE_STATUS.ERROR);
+      expect(route.state.error).toBeInstanceOf(ProviderError);
+    });
+
+    it('should handle provider returning ProviderError', async () => {
+      const route = new Route(sharedRouter, '/test');
+      const provider = vi.fn(() => new ProviderError('Error.'));
+      route.provide('test', provider);
+
+      const context = { params: {}, query: {}, data: {} };
+      const result = (await route.resolve(context)) as { test: unknown };
+
+      // Provider returned undefined, so the result is undefined
+      expect(result).toBeUndefined();
+      expect(route.state.status).toBe(ROUTE_STATUS.ERROR);
+      expect(route.state.error).toBeInstanceOf(ProviderError);
     });
   });
 

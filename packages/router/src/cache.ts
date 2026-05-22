@@ -1,4 +1,5 @@
 import { anchor, isBrowser } from '@anchorlib/core';
+import { UnknownError } from './error.js';
 import type { RouteRegistry } from './registry.js';
 import type {
   CachedRouteData,
@@ -178,7 +179,7 @@ export class RouteCache extends Map<string, ProviderCache> {
         }
       }
     } catch (error) {
-      console.error('Error hydrating route cache:', error);
+      console.error(new UnknownError('Error hydrating route cache.', error as Error));
     }
   }
 }

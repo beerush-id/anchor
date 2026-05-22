@@ -1,6 +1,7 @@
 import { createLifecycle } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RENDER_MODE, ROUTE_TYPE } from '../src/enum.js';
+import { RouteError } from '../src/error.js';
 import { RouterContext, type RouterSnapshot } from '../src/index.js';
 import { Redirect } from '../src/redirect.js';
 import { createRouter, Router } from '../src/router.js';
@@ -309,10 +310,11 @@ describe('router.ts', () => {
         const guard = vi.fn(() => {
           throw error;
         });
-        usersRoute.guard(guard);
 
-        const result = await router.activate('/users');
-        expect(result).toBe(error);
+        usersRoute.guard(guard);
+        await router.activate('/users');
+
+        expect(router.context.exception).toBeInstanceOf(RouteError);
       });
 
       it('should return Redirect when guard throws Redirect', async () => {
@@ -324,8 +326,9 @@ describe('router.ts', () => {
         });
         usersRoute.guard(guard);
 
-        const result = await router.activate('/users');
-        expect(result).toBe(redirect);
+        await expect(async () => {
+          await router.activate('/users');
+        }).rejects.toThrow();
       });
 
       it('should handle providers', async () => {
@@ -594,8 +597,9 @@ describe('router.ts', () => {
         });
         dashboardRoute.guard(guard);
 
-        const result = await router.activate('/dashboard');
-        expect(result).toBe(redirect);
+        await expect(async () => {
+          await router.activate('/dashboard');
+        }).rejects.toThrow();
       });
 
       it('should handle providers with caching', async () => {
@@ -1072,8 +1076,8 @@ describe('router.ts', () => {
       });
       usersRoute.guard(guard);
 
-      const result = await router.activate('/users');
-      expect(result).toBe(error);
+      await router.activate('/users');
+      expect(router.context.exception).toBeInstanceOf(RouteError);
     });
 
     it('should handle async guard errors', async () => {
@@ -1084,8 +1088,8 @@ describe('router.ts', () => {
       });
       usersRoute.guard(guard);
 
-      const result = await router.activate('/users');
-      expect(result).toBe(error);
+      await router.activate('/users');
+      expect(router.context.exception).toBeInstanceOf(RouteError);
     });
 
     it('should handle async provider errors', async () => {
@@ -1171,6 +1175,11 @@ describe('router.ts', () => {
       // Stub window object with hydration data
       vi.stubGlobal('window', {
         [HYDRATION_KEY]: mockHydrationData,
+      });
+      vi.stubGlobal('document', {
+        querySelector: () => ({
+          remove: vi.fn(),
+        }),
       });
 
       // Create router - should pick up hydration data
@@ -1264,7 +1273,7 @@ describe('router.ts', () => {
       const script = router.createHydrationScript(snapshot as RouterSnapshot);
 
       // Verify script tag structure
-      expect(script).toContain('<script>');
+      expect(script).toContain('<script id="__ANCHOR_ROUTER_CACHE__">');
       expect(script).toContain('</script>');
       expect(script).toContain('__ANCHOR_ROUTER_CACHE__');
 
@@ -1281,7 +1290,7 @@ describe('router.ts', () => {
 
       const script = router.createHydrationScript(snapshot);
 
-      expect(script).toContain('<script>');
+      expect(script).toContain('<script id="__ANCHOR_ROUTER_CACHE__">');
       expect(script).toContain('</script>');
       expect(script).toContain('__ANCHOR_ROUTER_CACHE__');
       expect(script).toContain('[]');

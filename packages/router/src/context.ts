@@ -1,15 +1,16 @@
+import type { RouteError } from './error.js';
 import { createState } from './store.js';
 import type { RouteContext, TRec } from './types.js';
 
 export class RouterContext<TParams, TQueryParams, TData> {
   private sources: RouteContext<TRec, TRec, TRec>[] = [];
   private urlState = createState<string | undefined>(undefined);
-  private exceptionState = createState<Error | undefined>(undefined);
+  private exceptionState = createState<RouteError | undefined>(undefined);
 
   public get exception() {
     return this.exceptionState.value;
   }
-  public set exception(value: Error | undefined) {
+  public set exception(value: RouteError | undefined) {
     this.exceptionState.value = value;
   }
 

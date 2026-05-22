@@ -1,7 +1,8 @@
 import type { RetriableOptions, StateObserver } from '@anchorlib/core';
 import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
-import type { PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
+import { ERROR_TYPE, type PRELOAD_MODE, type RENDER_MODE, type ROUTE_STATUS, type ROUTE_TYPE } from './enum.js';
+import type { RouteError } from './error.js';
 import type { Redirect } from './redirect.js';
 import type { ContextReader, IndexRoute, Route } from './route.js';
 
@@ -77,7 +78,7 @@ export type NestedParams<PParams, CParams> = PParams extends None ? CParams : PP
 export type NestedQueryParams<PQuery, CQuery> = PQuery extends None ? CQuery : PQuery & CQuery;
 
 /** A blocker that can prevent route activation (Error or Redirect) */
-export type GuardBlocker = Error | UnknownRedirect;
+export type GuardBlocker = RouteError | UnknownRedirect;
 
 /** Context passed to guard functions */
 export type GuardContext<TParams, TQueryParams> = {
@@ -94,14 +95,7 @@ export type GuardHandler<TParams, TQueryParams> = (
 export type UnknownGuard = (context: GuardContext<TRec, TRec>) => Promise<void> | void;
 
 /** Possible error types for routes */
-export type RouteErrorType = 'guard' | 'provider' | 'timeout' | 'cancel';
-
-/** Error information for route failures */
-export type RouteError = {
-  type: RouteErrorType;
-  cause?: Error;
-  message: string;
-};
+export type RouteErrorType = (typeof ERROR_TYPE)[keyof typeof ERROR_TYPE];
 
 /** Options for caching provider data */
 export interface CacheOptions {
@@ -155,7 +149,7 @@ export type RouteState = {
   status: RouteStatus;
   active: boolean;
   resolved: boolean;
-  resolving: boolean;
+  resolving: string | false;
   authenticated: boolean;
   authenticating: boolean;
 
@@ -167,7 +161,7 @@ export type RouteContext<Params, QueryParams, Data> = {
   data: Data;
   query: QueryParams;
   params: Params;
-  exception?: Error;
+  exception?: RouteError;
 };
 
 /** A route path string */
@@ -206,7 +200,7 @@ export type MatchedRoute = {
   query: TRec;
   params: TRec;
   segments: MatchRouteSegment[];
-  exception?: Error;
+  exception?: RouteError;
 };
 
 /** A complete match result with URL and context */

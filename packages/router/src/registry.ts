@@ -1,5 +1,6 @@
 import { DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ROUTE_TYPE } from './enum.js';
+import { NotFoundError } from './error.js';
 import { parseQuery } from './query.js';
 import { createState, getStore, safeAssign } from './store.js';
 import type { MatchedRoute, MatchRouteSegment, RouteContext, TRec, UnknownRoute } from './types.js';
@@ -167,7 +168,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
         params,
       };
     } else {
-      const exception = new Error('Not found.');
+      const exception = new NotFoundError(`Not found: ${url.pathname}`);
       const lastSegment = segments[segments.length - 1];
 
       return { query, route: lastSegment?.route, segments, params, exception };

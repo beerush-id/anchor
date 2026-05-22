@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouteCache, URLCache } from '../src/cache.js';
+import { UnknownError } from '../src/error.js';
 import { createRouter, type RouteContext, Router, type UnknownRoute } from '../src/index.js';
 import { RouteRegistry } from '../src/registry.js';
 import { Route } from '../src/route.js';
@@ -569,7 +570,7 @@ describe('RouteCache', () => {
     });
 
     it('should handle multiple providers with different contexts', async () => {
-      const objectProvider = vi.fn(async () => ({ name: 'Test' } as never));
+      const objectProvider = vi.fn(async () => ({ name: 'Test' }) as never);
       const context1: RouteContext<TRec, TRec, TRec> = {
         params: { id: '1' },
         query: {},
@@ -587,10 +588,10 @@ describe('RouteCache', () => {
       const snapshot = cache.snapshot();
 
       expect(snapshot).toHaveLength(2);
-      
+
       const usersSnapshot = snapshot.find((s) => s.name === 'users');
       const postsSnapshot = snapshot.find((s) => s.name === 'posts');
-      
+
       expect(usersSnapshot?.cache).toHaveLength(1);
       expect(postsSnapshot?.cache).toHaveLength(1);
       expect(usersSnapshot?.cache[0].value.data).toEqual({ name: 'Test' });
@@ -741,7 +742,7 @@ describe('RouteCache', () => {
       // Should not throw, but log error
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       expect(() => cache.hydrate(invalidSnapshot as any)).not.toThrow();
-      expect(consoleSpy).toHaveBeenCalledWith('Error hydrating route cache:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(UnknownError));
       consoleSpy.mockRestore();
     });
 

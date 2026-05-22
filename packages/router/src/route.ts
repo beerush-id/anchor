@@ -1,7 +1,8 @@
 import { $do, createObserver, retriable } from '@anchorlib/core';
 import { RouteCache, type RouteCacheSnapshot } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
-import { ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
+import { ERROR_TYPE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
+import { GuardError, ProviderError, RouteError } from './error.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type { Router } from './router.js';
@@ -123,15 +124,7 @@ export class Route<
    * @param value - true if the route is active, false otherwise
    */
   public set active(value: boolean) {
-    safeRead(() => {
-      const { state } = this.storage;
-
-      if (value && !state.resolved) {
-        state.resolving = true;
-      }
-
-      state.active = value;
-    });
+    safeRead(() => (this.state.active = value));
   }
 
   /**
@@ -145,9 +138,9 @@ export class Route<
 
   /**
    * Gets the exception for this route.
-   * @returns {Error | undefined}
+   * @returns {RouteError | undefined}
    */
-  public get exception(): Error | undefined {
+  public get exception(): RouteError | undefined {
     return this.storage.context.value.exception;
   }
 
@@ -325,7 +318,7 @@ export class Route<
         NestedQueryParams<QueryParams, TChildQueryParams>,
         Data & TChildData
       > {
-    if (this.closed) throw new Error(`Index route can't have a child route.`);
+    if (this.closed) throw new RouteError(ERROR_TYPE.ROUTE, `Index route can't have a child route.`);
     const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
 
     if (path === ('/' as TChildPath)) {
@@ -338,7 +331,7 @@ export class Route<
     const parentMap = ROUTE_MAP_LINK.get(this) as RouteRegistry;
 
     if (!parentMap) {
-      throw new Error('RouteMap not found');
+      throw new RouteError(ERROR_TYPE.ROUTE, 'RouteMap not found');
     }
 
     if (child.type === ROUTE_TYPE.STATIC) {
@@ -444,23 +437,11 @@ export class Route<
       if (error instanceof Redirect) {
         return error;
       } else if (error instanceof Error) {
-        state.error = {
-          type: 'guard',
-          cause: error,
-          message: error.message,
-        };
-
-        return error;
+        state.error = error instanceof GuardError ? error : new GuardError(error.message, error);
+        return state.error;
       } else {
-        const cause = new Error('Unknown guard error.');
-
-        state.error = {
-          type: 'guard',
-          cause,
-          message: cause.message,
-        };
-
-        return cause;
+        state.error = new GuardError('Unknown guard error.', error as Error);
+        return state.error;
       }
     } finally {
       state.authenticating = false;
@@ -517,7 +498,7 @@ export class Route<
           // the observer will be re-run.
           const resolver = () => {
             return observer.runAsync(async () => {
-              state.resolving = true;
+              state.resolving = name;
 
               try {
                 const providerData = await retriable(
@@ -538,20 +519,11 @@ export class Route<
                 state.status = ROUTE_STATUS.ERROR;
 
                 if (error instanceof Error) {
-                  state.error = {
-                    type: 'provider',
-                    cause: error,
-                    message: error.message,
-                  };
-                  return error;
+                  state.error = error instanceof ProviderError ? error : new ProviderError(error.message, error);
+                  return state.error;
                 } else {
-                  const cause = new Error('Unknown provider error.');
-                  state.error = {
-                    type: 'provider',
-                    cause,
-                    message: cause.message,
-                  };
-                  return cause;
+                  state.error = new ProviderError('Unknown provider error.', error as Error);
+                  return state.error;
                 }
                 /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
               } finally {
@@ -564,9 +536,13 @@ export class Route<
         }
 
         const resolve = providerObservers.get(provider)!.resolver;
-
         const result = await resolve();
-        if (result instanceof Error) return;
+
+        if (result instanceof Error) {
+          state.status = ROUTE_STATUS.ERROR;
+          state.error = result instanceof ProviderError ? result : new ProviderError(result.message, result);
+          return;
+        }
       }
 
       state.resolved = true;

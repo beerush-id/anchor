@@ -2,7 +2,8 @@ import { isBrowser } from '@anchorlib/core';
 import { type RouteCacheSnapshot, URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
-import { RENDER_MODE, ROUTE_TYPE } from './enum.js';
+import { ERROR_TYPE, RENDER_MODE, ROUTE_TYPE } from './enum.js';
+import { RouteError } from './error.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { getExceptionRendererFactory, type IndexRoute, Route } from './route.js';
@@ -10,8 +11,8 @@ import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
   ExtractQueryParams,
-  GuardBlocker,
   MatchResult,
+  MatchRouteSegment,
   None,
   RouteContext,
   RouteExceptionRenderer,
@@ -123,6 +124,7 @@ export class Router<Output = any> {
     if (isBrowser() && Array.isArray(window[HYDRATION_KEY as keyof Window])) {
       this.hydratedSegments = window[HYDRATION_KEY as keyof Window] as RouterSnapshot;
       delete window[HYDRATION_KEY as keyof Window];
+      document.querySelector(`#${HYDRATION_KEY}`)?.remove();
     }
   }
 
@@ -223,7 +225,8 @@ export class Router<Output = any> {
   ): Path extends '/'
     ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
     : Route<Path, Params, QueryParams, Data, never, Output> {
-    if (!path || path === ('/' as never)) throw new Error('Invalid path: Path must be string "/{path}".');
+    if (!path || path === ('/' as never))
+      throw new RouteError(ERROR_TYPE.ROUTER, 'Invalid path: Path must be string' + ' "/{path}".');
 
     const route = new Route(this, path, options);
     const routeMap = new RouteRegistry(route as never as UnknownRoute, true);
@@ -259,7 +262,7 @@ export class Router<Output = any> {
    * @param withHydration - Whether to hydrate the route with cached data
    * @returns A GuardBlocker if navigation was blocked, otherwise void
    */
-  public async activate(url: string | URL, withHydration?: boolean): Promise<RouterSnapshot | GuardBlocker> {
+  public async activate(url: string | URL, withHydration?: boolean): Promise<RouterSnapshot> {
     const snapshots: RouterSnapshot = [];
     const storage = this.storage;
 
@@ -337,16 +340,29 @@ export class Router<Output = any> {
 
     this.start(activationLengths);
 
+    const authenticatedSegments: MatchRouteSegment[] = [];
+
     // Authenticate all routes before activating.
     for (const segment of toActivate) {
       const { route } = segment;
 
       const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
-      if (blocker instanceof Error || blocker instanceof Redirect) {
-        this.finish();
-        return blocker;
-      }
       if (!storage.activatingSegments.has(segment)) return snapshots;
+
+      if (blocker instanceof Redirect) {
+        this.finish();
+        throw blocker;
+      }
+
+      if (blocker instanceof RouteError) {
+        storage.context.exception = blocker;
+        this.finish();
+        segment.store.exception = blocker;
+        authenticatedSegments.push(segment);
+        break;
+      }
+
+      authenticatedSegments.push(segment);
     }
 
     // Immediately tell renderer to render when the render mode is immediate.
@@ -355,15 +371,17 @@ export class Router<Output = any> {
         for (const { route } of toDeactivate.reverse()) {
           route.deactivate();
         }
-        for (const { route } of toActivate) {
+        for (const { route } of authenticatedSegments) {
           route.active = true;
         }
       });
     }
 
     // Activate target segments.
-    for (const segment of toActivate) {
+    for (const segment of authenticatedSegments) {
       const { route, store } = segment;
+      if (store.exception) continue;
+
       await route.activate(store as RouteContext<None, None, TRec>, true, true, withHydration);
 
       if (withHydration) snapshots.push(route.snapshot());
@@ -377,7 +395,7 @@ export class Router<Output = any> {
         for (const { route } of toDeactivate.reverse()) {
           route.deactivate();
         }
-        for (const { route } of toActivate) {
+        for (const { route } of authenticatedSegments) {
           route.active = true;
         }
       });
@@ -503,7 +521,7 @@ export class Router<Output = any> {
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
 
-    return `<script>window.${HYDRATION_KEY} = ${jsonString}</script>`;
+    return `<script id="${HYDRATION_KEY}">window.${HYDRATION_KEY} = ${jsonString}</script>`;
   }
 }
 
