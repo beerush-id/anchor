@@ -2,6 +2,7 @@ export * from './cache.js';
 export * from './constant.ts';
 export * from './context.js';
 export * from './enum.js';
+export * from './error.js';
 export * from './query.js';
 export * from './redirect.js';
 export * from './registry.js';

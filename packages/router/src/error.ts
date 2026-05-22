@@ -29,12 +29,6 @@ export class ProviderError extends RouteError {
   }
 }
 
-export class TimeoutError extends RouteError {
-  public constructor(message: string, reason?: Error) {
-    super(ERROR_TYPE.TIMEOUT, message, reason);
-  }
-}
-
 export class UnknownError extends RouteError {
   constructor(message: string, reason?: Error) {
     super(ERROR_TYPE.UNKNOWN, message, reason);

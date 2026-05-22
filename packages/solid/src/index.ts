@@ -89,7 +89,18 @@ export {
   writable,
 } from '@anchorlib/core';
 
-export { createRouter, MAX_AGE, Redirect, redirectUrl } from '@anchorlib/router';
+export {
+  createRouter,
+  GuardError,
+  MAX_AGE,
+  NotFoundError,
+  ProviderError,
+  Redirect,
+  RouteError,
+  redirectUrl,
+  UnknownError,
+} from '@anchorlib/router';
+
 export { For, onCleanup, onMount } from 'solid-js';
 export * from './binding.js';
 export * from './hoc.js';

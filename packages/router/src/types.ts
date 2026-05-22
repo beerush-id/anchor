@@ -280,7 +280,7 @@ export type RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams
   : RouteLayoutRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>;
 
 export type RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = (props: {
-  error: Error;
+  error: RouteError;
   state: ContextReader<Params, QueryParams, Data>;
   context: RouterContext<PParams, PQueryParams, PData>;
 }) => Output;
