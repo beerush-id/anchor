@@ -1,7 +1,7 @@
 import '../../src/server/index.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createWorker, createFullWorker } from '../../src/ssr/worker.js';
 import type { SSROutput, SSRRenderer } from '../../src/ssr/types.js';
-import { createFullWorker, createWorker } from '../../src/ssr/worker.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
   const defaults: SSROutput = {
@@ -119,7 +119,12 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith('/', '', customContext, expect.any(AbortController));
+    expect(renderer).toHaveBeenCalledWith(
+      '/',
+      '',
+      customContext,
+      expect.any(AbortController)
+    );
   });
 
   it('defaults context to empty array', async () => {
@@ -128,20 +133,28 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith('/', '', [], expect.any(AbortController));
+    expect(renderer).toHaveBeenCalledWith(
+      '/',
+      '',
+      [],
+      expect.any(AbortController)
+    );
   });
 
   it('passes cookie from request header', async () => {
     const renderer = createMockRenderer();
     const worker = createWorker(renderer, { template: TEMPLATE });
 
-    await worker.fetch(
-      createRequest('http://localhost/', {
-        headers: { cookie: 'session=abc' },
-      })
-    );
+    await worker.fetch(createRequest('http://localhost/', {
+      headers: { cookie: 'session=abc' },
+    }));
 
-    expect(renderer).toHaveBeenCalledWith('/', 'session=abc', [], expect.any(AbortController));
+    expect(renderer).toHaveBeenCalledWith(
+      '/',
+      'session=abc',
+      [],
+      expect.any(AbortController)
+    );
   });
 
   it('applies createResponse hook', async () => {
@@ -221,7 +234,6 @@ describe('createWorker', () => {
 
     const renderer = vi.fn(async (_url: string, _cookie: string, _ctx: unknown, controller: AbortController) => {
       capturedController = controller;
-      // Wait longer than the timeout
       await new Promise((_, reject) => {
         controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
       });
@@ -253,8 +265,6 @@ describe('createWorker', () => {
     await worker.fetch(createRequest('http://localhost/', { signal: reqController.signal }));
 
     expect(capturedController).toBeDefined();
-    // After fetch completes, the abort listener is cleaned up.
-    // Verify abort propagation by aborting before the renderer returns.
   });
 
   it('uses custom headTag and bodyTag', async () => {
@@ -301,13 +311,9 @@ describe('createFullWorker', () => {
   function createMockRouter(options?: { resolveResponse?: Response }) {
     return {
       transport: { endpoint: '/irpc' },
-      resolve: vi.fn(
-        async () =>
-          options?.resolveResponse ??
-          new Response('{"ok":true}', {
-            headers: { 'Content-Type': 'application/x-ndjson' },
-          })
-      ),
+      resolve: vi.fn(async () => options?.resolveResponse ?? new Response('{"ok":true}', {
+        headers: { 'Content-Type': 'application/x-ndjson' },
+      })),
       isolate: vi.fn(async (handler: () => any, _controller?: any, _ctx?: any, preHook?: () => void) => {
         preHook?.();
         return handler();
@@ -321,12 +327,10 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    const response = await worker.fetch(
-      createRequest('http://localhost/irpc', {
-        method: 'POST',
-        body: '{}',
-      })
-    );
+    const response = await worker.fetch(createRequest('http://localhost/irpc', {
+      method: 'POST',
+      body: '{}',
+    }));
 
     expect(router.resolve).toHaveBeenCalled();
     expect(renderer).not.toHaveBeenCalled();
@@ -339,14 +343,11 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    const response = await worker.fetch(
-      createRequest('http://localhost/other', {
-        method: 'POST',
-        body: '{}',
-      })
-    );
+    const response = await worker.fetch(createRequest('http://localhost/other', {
+      method: 'POST',
+      body: '{}',
+    }));
 
-    // Should fall through to SSR since path doesn't start with /irpc
     expect(router.resolve).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
   });
@@ -379,8 +380,13 @@ describe('createFullWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    // The renderer is called with isolated=true (5th arg)
-    expect(renderer).toHaveBeenCalledWith('/', '', undefined, expect.any(AbortController), true);
+    expect(renderer).toHaveBeenCalledWith(
+      '/',
+      '',
+      undefined,
+      expect.any(AbortController),
+      true
+    );
   });
 
   it('passes controller and contextSeed to isolate', async () => {
@@ -429,14 +435,15 @@ describe('createFullWorker', () => {
       resolveContext: () => customContext,
     });
 
-    await worker.fetch(
-      createRequest('http://localhost/irpc', {
-        method: 'POST',
-        body: '{}',
-      })
-    );
+    await worker.fetch(createRequest('http://localhost/irpc', {
+      method: 'POST',
+      body: '{}',
+    }));
 
-    expect(router.resolve).toHaveBeenCalledWith(expect.any(Request), customContext);
+    expect(router.resolve).toHaveBeenCalledWith(
+      expect.any(Request),
+      customContext
+    );
   });
 
   it('resolves assets before SSR in full worker', async () => {
@@ -489,12 +496,10 @@ describe('createFullWorker', () => {
       },
     });
 
-    const response = await worker.fetch(
-      createRequest('http://localhost/irpc', {
-        method: 'POST',
-        body: '{}',
-      })
-    );
+    const response = await worker.fetch(createRequest('http://localhost/irpc', {
+      method: 'POST',
+      body: '{}',
+    }));
 
     expect(response.headers.get('X-Custom')).toBe('irpc');
   });
@@ -580,15 +585,11 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE, timeout: 5000 });
 
-    // POST should not trigger timeout
-    await worker.fetch(
-      createRequest('http://localhost/irpc', {
-        method: 'POST',
-        body: '{}',
-      })
-    );
+    await worker.fetch(createRequest('http://localhost/irpc', {
+      method: 'POST',
+      body: '{}',
+    }));
 
-    // No timer should have been created for POST path
     expect(router.resolve).toHaveBeenCalled();
 
     vi.useRealTimers();
@@ -599,18 +600,15 @@ describe('createFullWorker', () => {
     const mockJar = decodeCookies('');
     vi.spyOn(mockJar, 'encode').mockReturnValue(['session=abc; Path=/']);
 
-    await import('../../src/ssr/worker.js');
     const decodeSpy = vi.spyOn(await import('@anchorlib/core'), 'decodeCookies').mockReturnValue(mockJar);
 
     const renderer = createMockRenderer();
     const router = createMockRouter();
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    const response = await worker.fetch(
-      createRequest('http://localhost/', {
-        headers: { cookie: 'session=abc' },
-      })
-    );
+    const response = await worker.fetch(createRequest('http://localhost/', {
+      headers: { cookie: 'session=abc' },
+    }));
 
     expect(response.status).toBe(200);
     expect(response.headers.getSetCookie()).toEqual(['session=abc; Path=/']);

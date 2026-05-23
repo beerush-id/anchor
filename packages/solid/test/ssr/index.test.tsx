@@ -136,4 +136,27 @@ describe('createSSR', () => {
     const output = await ssr('http://localhost/', '', store);
     expect(output.status).toBe(200);
   });
+
+  it('renders in isolated mode without withIsolation', async () => {
+    const router = createRouter<JSX.Element>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute);
+    RootLayout.render((props) => <div>{props.children as any}</div>);
+
+    const renderer = vi.fn((fn: () => JSX.Element) => {
+      const res = fn();
+      if (Array.isArray(res)) return '<head></head>';
+      return '<html><body>Isolated</body></html>';
+    });
+
+    const ssr = createSSR(renderer, router, RootLayout);
+
+    // Call with isolated=true (5th arg) — internal path used by createFullWorker
+    const output = await (ssr as any)('http://localhost/', '', undefined, undefined, true);
+
+    expect(output.html).toBe('<html><body>Isolated</body></html>');
+    expect(output.head).toContain('<head></head>');
+    expect(output.status).toBe(200);
+    expect(output.cookies).toBeUndefined();
+  });
 });

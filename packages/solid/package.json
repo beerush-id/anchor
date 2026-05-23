@@ -103,6 +103,6 @@
     "@anchorlib/storage": "workspace:*"
   },
   "optionalDependencies": {
-    "zod": "catalog:lib"
+    "@irpclib/http": "workspace:*"
   }
 }
