@@ -1,9 +1,11 @@
 import {
   createContextStore,
+  createCredentials,
   decode,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
   IRPC_STORE,
+  type IRPCCredentials,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
@@ -94,97 +96,92 @@ export class WebSocketRouter extends IRPCRouter {
       return;
     }
 
-    const irpcRequests = this.parseRequests(message).filter(
-      (req: IRPCRequest & { type?: string; files?: IRPCFilePointer[] }) => {
-        if (req.type === WS_MESSAGE_TYPE.CANCEL) {
-          const controller = this.abortControllers.get(req.id);
-          if (controller) controller.abort();
+    const parsed = this.parseMessage(message);
 
-          this.abortControllers.delete(req.id);
-          return false;
+    if (!parsed) return;
+
+    // Handle cancel
+    const req = parsed.call as IRPCRequest & { type?: string; files?: IRPCFilePointer[] };
+
+    if (req.type === WS_MESSAGE_TYPE.CANCEL) {
+      const controller = this.abortControllers.get(req.id);
+      if (controller) controller.abort();
+      this.abortControllers.delete(req.id);
+      return;
+    }
+
+    // Decode files if present
+    if (req.files?.length) {
+      const stream = decode({ data: req.args as IRPCData, files: req.files });
+
+      for (const [id, file] of stream.files) {
+        const buffered = this.fileBuffer.get(id);
+
+        if (buffered) {
+          file.data = new Blob([buffered] as [BlobPart], { type: file.meta.type });
+          file.status = IRPC_FILE_STATUS.SUCCESS;
+          this.fileBuffer.delete(id);
         }
-
-        if (req.files?.length) {
-          const stream = decode({ data: req.args as IRPCData, files: req.files });
-
-          for (const [id, file] of stream.files) {
-            const buffered = this.fileBuffer.get(id);
-
-            if (buffered) {
-              file.data = new Blob([buffered] as [BlobPart], { type: file.meta.type });
-              file.status = IRPC_FILE_STATUS.SUCCESS;
-              this.fileBuffer.delete(id);
-            }
-          }
-
-          req.args = stream.data as unknown[];
-          delete req.files;
-        }
-
-        return true;
       }
-    );
 
-    if (!irpcRequests.length) return;
+      req.args = stream.data as unknown[];
+      delete req.files;
+    }
 
-    const requests = irpcRequests.map((irpcReq) => {
-      return this.config.resolver(irpcReq, this.module);
-    });
+    /* v8 ignore next - Transport always sends credentials, ?? is defensive only */
+    const credStore = createCredentials(parsed.credentials ?? []);
+    const resolver = this.config.resolver(req, this.module);
+    const abortController = new AbortController();
+    const ctx = createContextStore<string | symbol, unknown>([
+      [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
+      [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
+      [IRPC_BASE_CONTEXT.CREDENTIALS, credStore],
+      ...initContext,
+    ]);
 
-    await Promise.all(
-      requests.map((resolver) => {
-        const abortController = new AbortController();
-        const ctx = createContextStore<string | symbol, unknown>([
-          [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
-          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
-          ...initContext,
-        ]);
+    this.abortControllers.set(resolver.req.id, abortController);
 
-        this.abortControllers.set(resolver.req.id, abortController);
+    await withContext(ctx, async () => {
+      const error = await this.resolveHooks(resolver.req);
 
-        return withContext(ctx, async () => {
-          const error = await this.resolveHooks(resolver.req);
+      if (error) {
+        this.abortControllers.delete(resolver.req.id);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(error));
+        }
+        return;
+      }
 
-          if (error) {
-            this.abortControllers.delete(resolver.req.id);
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify(error));
-            }
-            return;
-          }
+      const stream = new IRPCStream(
+        resolver.req.id,
+        resolver.req.name,
+        () => resolver.resolve(),
+        resolver.spec,
+        this
+      );
 
-          const stream = new IRPCStream(
-            resolver.req.id,
-            resolver.req.name,
-            () => resolver.resolve(),
-            resolver.spec,
-            this
-          );
+      stream.pipe((packet) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(packet));
+        }
+      });
 
-          stream.pipe((packet) => {
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify(packet));
-            }
-          });
+      let ttlTimer: ReturnType<typeof setTimeout>;
 
-          let ttlTimer: ReturnType<typeof setTimeout>;
+      if (resolver.spec?.ttl) {
+        ttlTimer = setTimeout(() => {
+          abortController.abort();
+        }, resolver.spec.ttl);
+      }
 
-          if (resolver.spec?.ttl) {
-            ttlTimer = setTimeout(() => {
-              abortController.abort();
-            }, resolver.spec.ttl);
-          }
-
-          await new Promise<void>((resolve) => {
-            stream.close(() => {
-              clearTimeout(ttlTimer);
-              this.abortControllers.delete(resolver.req.id);
-              resolve();
-            });
-          });
+      await new Promise<void>((resolve) => {
+        stream.close(() => {
+          clearTimeout(ttlTimer);
+          this.abortControllers.delete(resolver.req.id);
+          resolve();
         });
-      })
-    );
+      });
+    });
   }
 
   /**
@@ -198,20 +195,26 @@ export class WebSocketRouter extends IRPCRouter {
   }
 
   /**
-   * Parses incoming WebSocket message and returns array of IRPC requests.
-   * Returns empty array if parsing fails (fail-safe).
+   * Parses incoming WebSocket message.
+   * Returns the call and credentials, or undefined if parsing fails.
    * @param message - The incoming WebSocket message string
-   * @returns Array of IRPC requests, or empty array on error
+   * @returns The parsed call and credentials, or undefined on error
    */
-  private parseRequests(message: string): IRPCRequest[] {
+  private parseMessage(message: string): { call: IRPCRequest; credentials?: IRPCCredentials } | undefined {
     try {
       const parsed = JSON.parse(message);
-      return Array.isArray(parsed) ? parsed : [parsed];
+
+      // { call, credentials } format
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.call) {
+        return parsed;
+      }
+
+      return undefined;
     } catch (error) {
       IRPC_STORE.error(new Error('Failed to parse WebSocket message:', { cause: error }), [
         { endpoint: this.endpoint },
       ]);
-      return [];
+      return undefined;
     }
   }
 }

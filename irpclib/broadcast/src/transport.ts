@@ -157,7 +157,7 @@ export class BroadcastTransport extends IRPCTransport {
           req.blobs = blobs;
         }
 
-        this.channel!.postMessage([req]);
+        this.channel!.postMessage({ call: req, credentials: this.credentials });
       });
     } catch (error) {
       IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
@@ -183,9 +183,12 @@ export class BroadcastTransport extends IRPCTransport {
     if (call) {
       if (this.channel) {
         this.channel.postMessage({
-          id: call.id,
-          name: call.payload.name,
-          type: BC_MESSAGE_TYPE.CANCEL,
+          call: {
+            id: call.id,
+            name: call.payload.name,
+            type: BC_MESSAGE_TYPE.CANCEL,
+          },
+          credentials: this.credentials,
         });
       }
       this.pendingCalls.delete(call.id);

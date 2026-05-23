@@ -78,7 +78,7 @@ describe('WebSocketRouter', () => {
       router.use('invalid_middleware' as any);
 
       const ws = { readyState: 1, send: vi.fn() } as any;
-      await router.resolve(JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]), ws);
+      await router.resolve(JSON.stringify({ call: { id: '1', name: 'testFunc', args: [] }, credentials: [] }), ws);
 
       expect(errSpy).toHaveBeenCalled();
     });
@@ -102,7 +102,7 @@ describe('WebSocketRouter', () => {
         }),
       } as any;
 
-      const message = JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]);
+      const message = JSON.stringify({ call: { id: '1', name: 'testFunc', args: [{ name: 'World' }] }, credentials: [] });
       await router.resolve(message, ws);
     });
 
@@ -122,7 +122,7 @@ describe('WebSocketRouter', () => {
         send: vi.fn(),
       } as any;
 
-      const message = JSON.stringify({ id: '1', name: 'testFunc', args: [] });
+      const message = JSON.stringify({ call: { id: '1', name: 'testFunc', args: [] }, credentials: [] });
 
       await router.resolve(message, ws);
 
@@ -143,7 +143,7 @@ describe('WebSocketRouter', () => {
       module.construct(testFunc, async () => `Hello!`);
 
       const ws = { readyState: 1, send: vi.fn() } as any;
-      const message = JSON.stringify([{ id: '1', name: 'testFunc', args: [] }]);
+      const message = JSON.stringify({ call: { id: '1', name: 'testFunc', args: [] }, credentials: [] });
 
       await router.resolve(message, ws);
 
@@ -161,7 +161,7 @@ describe('WebSocketRouter', () => {
         send: vi.fn(),
       } as any;
 
-      await router.resolve('[]', ws);
+      await router.resolve(JSON.stringify({ call: { id: '1', name: 'empty', args: [] }, credentials: [] }), ws);
 
       expect(ws.send).not.toHaveBeenCalled();
     });
@@ -178,7 +178,7 @@ describe('WebSocketRouter', () => {
       module.construct(testFunc, async () => new Promise(() => {}));
 
       const ws = { readyState: 1, send: vi.fn() } as any;
-      const message = JSON.stringify([{ id: '1', name: 'testTtl', args: [] }]);
+      const message = JSON.stringify({ call: { id: '1', name: 'testTtl', args: [] }, credentials: [] });
 
       router.resolve(message, ws);
 
@@ -201,7 +201,7 @@ describe('WebSocketRouter', () => {
       router['abortControllers'].set('2', { abort: abortSpy } as any);
 
       const ws = { readyState: 1, send: vi.fn() } as any;
-      const message = JSON.stringify([{ id: '2', type: 'cancel' }]); // WS_MESSAGE_TYPE.CANCEL
+      const message = JSON.stringify({ call: { id: '2', type: 'cancel' }, credentials: [] });
 
       await router.resolve(message, ws);
 
@@ -222,6 +222,18 @@ describe('WebSocketRouter', () => {
       expect(errSpy).toHaveBeenCalled();
       expect(ws.send).not.toHaveBeenCalled();
       errSpy.mockRestore();
+    });
+
+    it('should ignore valid JSON without call property', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      const router = new WebSocketRouter(module, transport);
+
+      const ws = { readyState: 1, send: vi.fn() } as any;
+
+      await router.resolve(JSON.stringify({ data: 'not a call' }), ws);
+
+      expect(ws.send).not.toHaveBeenCalled();
     });
 
     it('should buffer binary frames and automatically discard orphaned frames via TTL natively', async () => {
@@ -282,14 +294,15 @@ describe('WebSocketRouter', () => {
         encoded.json.files[0].id = fileId;
       }
 
-      const filePointerReq = [
-        {
+      const filePointerReq = {
+        call: {
           id: '1',
           name: 'testFileFunc',
           args: encoded.json.data,
           files: encoded.json.files,
         },
-      ];
+        credentials: [],
+      };
 
       await router.resolve(JSON.stringify(filePointerReq), ws);
 

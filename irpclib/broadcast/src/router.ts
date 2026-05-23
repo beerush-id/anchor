@@ -1,8 +1,10 @@
 import {
   createContextStore,
+  createCredentials,
   decode,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
+  type IRPCCredentials,
   type IRPCData,
   type IRPCFilePointer,
   type IRPCPackage,
@@ -97,110 +99,105 @@ export class BroadcastRouter extends IRPCRouter {
   private async handleMessage(event: MessageEvent): Promise<void> {
     const data = event.data;
 
+    if (!data?.call) return;
+
     // Handle cancel message
-    if (!Array.isArray(data) && data?.type === BC_MESSAGE_TYPE.CANCEL) {
-      const controller = this.abortControllers.get(data.id);
+    if (data.call.type === BC_MESSAGE_TYPE.CANCEL) {
+      const controller = this.abortControllers.get(data.call.id);
       if (controller) {
         controller.abort();
-        this.abortControllers.delete(data.id);
+        this.abortControllers.delete(data.call.id);
       }
       return;
     }
 
-    // Only handle requests (arrays of IRPCRequest)
-    if (!Array.isArray(data)) return;
-
-    await this.resolve(data);
+    await this.resolve(data.call, [], data.credentials);
   }
 
   /**
-   * Resolves incoming BroadcastChannel messages
-   * @param requests - The incoming IRPC requests
+   * Resolves an incoming BroadcastChannel request
+   * @param request - The incoming IRPC request
    * @param initContext - Optional initial context entries to inject
+   * @param credentials - Optional credentials from the caller
    * @returns void (responses are sent via BroadcastChannel)
    */
-  public async resolve(requests: IRPCRequest[], initContext: [string | symbol, unknown][] = []): Promise<void> {
-    if (!requests.length) {
-      return;
+  public async resolve(
+    request: IRPCRequest,
+    initContext: [string | symbol, unknown][] = [],
+    credentials?: IRPCCredentials
+  ): Promise<void> {
+    const req = request as IRPCRequest & { files?: IRPCFilePointer[]; blobs?: Record<string, Blob> };
+
+    if (req.files?.length) {
+      const stream = decode({ data: req.args as IRPCData, files: req.files });
+
+      for (const [id, file] of stream.files) {
+        const blob = req.blobs?.[id];
+
+        if (blob) {
+          file.data = blob;
+          file.status = IRPC_FILE_STATUS.SUCCESS;
+        }
+      }
+
+      req.args = stream.data as unknown[];
+      delete req.files;
+      delete req.blobs;
     }
 
-    const resolvers = (requests as (IRPCRequest & { files?: IRPCFilePointer[]; blobs?: Record<string, Blob> })[]).map(
-      (req) => {
-        if (req.files?.length) {
-          const stream = decode({ data: req.args as IRPCData, files: req.files });
+    const credStore = createCredentials(credentials ?? []);
+    const resolver = this.config.resolver(req, this.module);
+    const abortController = new AbortController();
+    const ctx = createContextStore<string | symbol, unknown>([
+      [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
+      [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
+      [IRPC_BASE_CONTEXT.CREDENTIALS, credStore],
+      ...initContext,
+    ]);
 
-          for (const [id, file] of stream.files) {
-            const blob = req.blobs?.[id];
+    this.abortControllers.set(resolver.req.id, abortController);
 
-            if (blob) {
-              file.data = blob;
-              file.status = IRPC_FILE_STATUS.SUCCESS;
-            }
-          }
+    await withContext(ctx, async () => {
+      const error = await this.resolveHooks(resolver.req);
 
-          req.args = stream.data as unknown[];
-          delete req.files;
-          delete req.blobs;
+      if (error) {
+        this.abortControllers.delete(resolver.req.id);
+        if (this.channel) {
+          this.channel.postMessage(error);
         }
-
-        return this.config.resolver(req, this.module);
+        return;
       }
-    );
 
-    await Promise.all(
-      resolvers.map((resolver) => {
-        const abortController = new AbortController();
-        const ctx = createContextStore<string | symbol, unknown>([
-          [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
-          [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
-          ...initContext,
-        ]);
+      const stream = new IRPCStream(
+        resolver.req.id,
+        resolver.req.name,
+        () => resolver.resolve(),
+        resolver.spec,
+        this
+      );
 
-        this.abortControllers.set(resolver.req.id, abortController);
+      stream.pipe((packet) => {
+        if (this.channel) {
+          this.channel.postMessage(packet);
+        }
+      });
 
-        return withContext(ctx, async () => {
-          const error = await this.resolveHooks(resolver.req);
+      let ttlTimer: ReturnType<typeof setTimeout>;
 
-          if (error) {
-            this.abortControllers.delete(resolver.req.id);
-            if (this.channel) {
-              this.channel.postMessage(error);
-            }
-            return;
-          }
+      if (resolver.spec?.ttl) {
+        ttlTimer = setTimeout(() => {
+          abortController.abort();
+        }, resolver.spec.ttl);
+      }
 
-          const stream = new IRPCStream(
-            resolver.req.id,
-            resolver.req.name,
-            () => resolver.resolve(),
-            resolver.spec,
-            this
-          );
-
-          stream.pipe((packet) => {
-            if (this.channel) {
-              this.channel.postMessage(packet);
-            }
-          });
-
-          let ttlTimer: ReturnType<typeof setTimeout>;
-
-          if (resolver.spec?.ttl) {
-            ttlTimer = setTimeout(() => {
-              abortController.abort();
-            }, resolver.spec.ttl);
-          }
-
-          await new Promise<void>((resolve) => {
-            stream.close(() => {
-              clearTimeout(ttlTimer);
-              this.abortControllers.delete(resolver.req.id);
-              resolve();
-            });
-          });
+      await new Promise<void>((resolve) => {
+        stream.close(() => {
+          clearTimeout(ttlTimer);
+          this.abortControllers.delete(resolver.req.id);
+          resolve();
         });
-      })
-    );
+      });
+    });
   }
 
   /**

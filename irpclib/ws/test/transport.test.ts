@@ -269,7 +269,9 @@ describe('WebSocketTransport', () => {
 
       await transport['dispatch']([call]);
 
-      expect(mockSend).toHaveBeenCalledWith(JSON.stringify([{ id: '1', name: 'test', args: [] }]));
+      const parsed = JSON.parse(mockSend.mock.calls[0][0]);
+      expect(parsed.call).toEqual({ id: '1', name: 'test', args: [] });
+      expect(parsed.credentials).toBeDefined();
       expect(transport['pendingCalls'].has('1')).toBe(true);
     });
 
@@ -318,7 +320,8 @@ describe('WebSocketTransport', () => {
       expect(typeof secondCallArg).toBe('string');
       expect(secondCallArg).toContain('"id":"file-call"');
       expect(secondCallArg).toContain('"name":"testFiles"');
-      expect(secondCallArg).toContain('"files":[');
+      expect(secondCallArg).toContain('"files"');
+      expect(secondCallArg).toContain('"credentials"');
 
       expect(transport['pendingCalls'].has('file-call')).toBe(true);
     });
@@ -410,9 +413,11 @@ describe('WebSocketTransport', () => {
       transport.close(call);
 
       const packet = (transport['ws']?.send as any).mock.calls[0][0];
-      expect(packet).toContain('"id":"call-1"');
-      expect(packet).toContain('"name":"test-func"');
-      expect(packet).toContain('"type":"cancel"'); // WS_MESSAGE_TYPE.CANCEL
+      const parsed = JSON.parse(packet);
+      expect(parsed.call.id).toBe('call-1');
+      expect(parsed.call.name).toBe('test-func');
+      expect(parsed.call.type).toBe('cancel');
+      expect(parsed.credentials).toBeDefined();
 
       expect(transport['pendingCalls'].has('call-1')).toBe(false);
     });

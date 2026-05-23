@@ -342,7 +342,7 @@ export class WebSocketTransport extends IRPCTransport {
             files: packet.queues,
           });
         } else {
-          this.ws!.send(JSON.stringify([{ id, name, args }]));
+          this.ws!.send(JSON.stringify({ call: { id, name, args }, credentials: this.credentials }));
         }
       });
 
@@ -352,7 +352,7 @@ export class WebSocketTransport extends IRPCTransport {
           this.ws!.send(encodeFileFrame(file.file.id, buffer));
         }
 
-        this.ws!.send(JSON.stringify([queue.call]));
+        this.ws!.send(JSON.stringify({ call: queue.call, credentials: this.credentials }));
       }
 
       queues.clear();
@@ -381,9 +381,12 @@ export class WebSocketTransport extends IRPCTransport {
       if (this.isOpen) {
         this.ws!.send(
           JSON.stringify({
-            id: call.id,
-            name: call.payload.name,
-            type: WS_MESSAGE_TYPE.CANCEL,
+            call: {
+              id: call.id,
+              name: call.payload.name,
+              type: WS_MESSAGE_TYPE.CANCEL,
+            },
+            credentials: this.credentials,
           })
         );
       }

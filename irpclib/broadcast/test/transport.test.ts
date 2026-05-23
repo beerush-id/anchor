@@ -71,8 +71,9 @@ describe('BroadcastTransport', () => {
 
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const sentData = mockChannel.postMessage.mock.calls[0][0];
-      expect(Array.isArray(sentData)).toBe(true);
-      expect(sentData[0].name).toBe('testFunc');
+      expect(sentData.call).toBeDefined();
+      expect(sentData.call.name).toBe('testFunc');
+      expect(sentData.credentials).toBeDefined();
     });
 
     it('should batch multiple calls', async () => {
@@ -93,8 +94,8 @@ describe('BroadcastTransport', () => {
 
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const sentData = mockChannel.postMessage.mock.calls[0][0];
-      expect(Array.isArray(sentData)).toBe(true);
-      expect(sentData.length).toBeGreaterThanOrEqual(1);
+      expect(sentData.call).toBeDefined();
+      expect(sentData.credentials).toBeDefined();
     });
 
     it('should dispatch call with files attaching blobs natively', async () => {
@@ -115,10 +116,10 @@ describe('BroadcastTransport', () => {
 
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const sentData = mockChannel.postMessage.mock.calls[0][0];
-      expect(Array.isArray(sentData)).toBe(true);
-      expect(sentData[0].name).toBe('fileUpload');
-      expect(sentData[0].blobs).toBeDefined();
-      expect(Object.keys(sentData[0].blobs).length).toBe(1);
+      expect(sentData.call).toBeDefined();
+      expect(sentData.call.name).toBe('fileUpload');
+      expect(sentData.call.blobs).toBeDefined();
+      expect(Object.keys(sentData.call.blobs).length).toBe(1);
     });
   });
 
@@ -139,7 +140,7 @@ describe('BroadcastTransport', () => {
 
       // Simulate response
       const sentData = mockChannel.postMessage.mock.calls[0][0];
-      const requestId = sentData[0].id;
+      const requestId = sentData.call.id;
 
       mockChannel.onmessage({
         data: {
@@ -171,7 +172,7 @@ describe('BroadcastTransport', () => {
 
       // Simulate error response
       const sentData = mockChannel.postMessage.mock.calls[0][0];
-      const requestId = sentData[0].id;
+      const requestId = sentData.call.id;
 
       mockChannel.onmessage({
         data: {
@@ -230,9 +231,10 @@ describe('BroadcastTransport', () => {
       expect(mockChannel.postMessage).toHaveBeenCalled();
       const packet = mockChannel.postMessage.mock.calls[0][0];
 
-      expect(packet.id).toBe('call-1');
-      expect(packet.name).toBe('test-func');
-      expect(packet.type).toBe('cancel'); // BC_MESSAGE_TYPE.CANCEL
+      expect(packet.call.id).toBe('call-1');
+      expect(packet.call.name).toBe('test-func');
+      expect(packet.call.type).toBe('cancel');
+      expect(packet.credentials).toBeDefined();
 
       expect(transport['pendingCalls'].has('call-1')).toBe(false);
     });
