@@ -1,4 +1,4 @@
-import type { StateChange } from '@anchorlib/core';
+import type { AsyncValue, StateChange } from '@anchorlib/core';
 import type {
   ZodArray,
   ZodBoolean,
@@ -12,6 +12,7 @@ import type {
 import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
 import type { IRPCFile } from './file.js';
+import type { IRPCFilePointer } from './packet.js';
 import type { IRPCReader } from './reader.js';
 import type { RemoteState } from './state.js';
 import type { IRPCTransport } from './transport.js';
@@ -327,6 +328,15 @@ export type IRPCRequest = {
   name: string;
   /** Arguments for the RPC function */
   args: unknown[];
+  files?: IRPCFilePointer[];
+};
+
+export type IRPCCredentials = Iterable<[string, AsyncValue]>;
+export type IRPCCredentialsFactory = Record<string, AsyncValue> | (() => Record<string, AsyncValue>);
+
+export type IRPCRequests = {
+  calls: IRPCRequest[];
+  credentials?: IRPCCredentials;
 };
 
 export type IRPCError = {

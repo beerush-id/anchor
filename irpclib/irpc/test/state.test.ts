@@ -326,4 +326,76 @@ describe('RemoteState', () => {
       await expect(state).rejects.toThrow('Existing error');
     });
   });
+
+  describe('pipe and unpipe', () => {
+    it('should remove .then after pipe()', () => {
+      const state = new RemoteState('value');
+      expect(state.then).toBeDefined();
+
+      const returned = state.pipe();
+      expect(returned).toBe(state);
+      expect(state.then).toBeUndefined();
+    });
+
+    it('should prevent async unwrapping when piped', async () => {
+      const state = new RemoteState('value');
+      state.accept('resolved');
+      state.pipe();
+
+      // Returning a piped RemoteState from an async function
+      // should yield the RemoteState itself, not its resolved value.
+      const result = await (async () => {
+        return state;
+      })();
+
+      expect(result).toBeInstanceOf(RemoteState);
+      expect(result).toBe(state);
+    });
+
+    it('should resolve to the instance itself when directly awaited', async () => {
+      const state = new RemoteState('value');
+      state.accept('resolved');
+      state.pipe();
+
+      // await on a non-thenable (.then is undefined) resolves to the object.
+      const result = await state;
+
+      expect(result).toBe(state);
+      expect((result as any).data).toBe('resolved');
+    });
+
+    it('should restore .then after unpipe()', async () => {
+      const state = new RemoteState('value');
+      const originalThen = state.then;
+
+      state.pipe();
+      expect(state.then).toBeUndefined();
+
+      state.unpipe();
+      expect(state.then).toBeDefined();
+      expect(state.then).toBe(originalThen);
+
+      // Should be awaitable again after unpipe.
+      state.accept('done');
+      const result = await state;
+      expect(result).toBe('done');
+    });
+
+    it('should be safe to call unpipe() without pipe()', () => {
+      const state = new RemoteState('value');
+      const originalThen = state.then;
+
+      state.unpipe();
+      expect(state.then).toBe(originalThen);
+    });
+
+    it('should preserve data and status while piped', () => {
+      const state = new RemoteState('initial');
+      state.data = 'updated';
+      state.pipe();
+
+      expect(state.data).toBe('updated');
+      expect(state.status).toBe(IRPC_STATUS.PENDING);
+    });
+  });
 });

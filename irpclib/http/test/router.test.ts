@@ -1,5 +1,5 @@
 import '@irpclib/irpc/server';
-import { createPackage, ERROR_CODE, IRPC_FILE_STATUS, IRPC_STORE } from '@irpclib/irpc';
+import { createPackage, credential, ERROR_CODE, IRPC_FILE_STATUS, IRPC_STORE, type IRPCRequests } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 import { HTTPRouter } from '../src/router.js';
@@ -59,9 +59,9 @@ describe('HTTPRouter', () => {
   });
 
   describe('resolve', () => {
-    const createMockRequest = (body: string) => {
+    const createMockRequest = (payload: IRPCRequests) => {
       const fd = new FormData();
-      fd.append(IRPC_JSON_KEY, body);
+      fd.append(IRPC_JSON_KEY, JSON.stringify(payload));
       const req = new Request('https://api.example.com/rpc', { method: 'POST', body: fd });
       vi.spyOn(req, 'formData').mockResolvedValueOnce(fd);
       return req;
@@ -72,7 +72,7 @@ describe('HTTPRouter', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const router = new HTTPRouter(module, transport);
 
-      const request = createMockRequest('[]');
+      const request = createMockRequest({ calls: [] });
 
       const response = await router.resolve(request);
 
@@ -125,7 +125,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       module.construct(testFunc, handler);
 
-      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]));
+      const request = createMockRequest({ calls: [{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }] });
 
       const response = await router.resolve(request);
 
@@ -151,7 +151,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       module.construct(testFunc, handler);
 
-      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]));
+      const request = createMockRequest({ calls: [{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }] });
 
       // Expect the middleware error to be thrown
       const result = await router.resolve(request);
@@ -166,9 +166,13 @@ describe('HTTPRouter', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const router = new HTTPRouter(module, transport);
 
-      const request = createMockRequest('invalid json');
+      const fd = new FormData();
+      fd.append(IRPC_JSON_KEY, 'invalid json');
+      const request = new Request('https://api.example.com/rpc', { method: 'POST', body: fd });
+      vi.spyOn(request, 'formData').mockResolvedValueOnce(fd);
 
-      await expect(router.resolve(request)).rejects.toThrow(SyntaxError);
+      const response = await router.resolve(request);
+      expect(response.status).toBe(400);
     });
 
     it('should use custom resolver when provided', async () => {
@@ -189,7 +193,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       module.construct(testFunc, handler);
 
-      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }]));
+      const request = createMockRequest({ calls: [{ id: '1', name: 'testFunc', args: [{ name: 'World' }] }] });
 
       await router.resolve(request);
 
@@ -209,7 +213,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async () => new Promise(() => {}); // Never fulfills natively
       module.construct(testFunc, handler);
 
-      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testTtl', args: [] }]));
+      const request = createMockRequest({ calls: [{ id: '1', name: 'testTtl', args: [] }] });
 
       const responsePromise = router.resolve(request);
 
@@ -236,7 +240,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async () => new Promise(() => {}); // never ending
       module.construct(testFunc, handler);
 
-      const request = createMockRequest(JSON.stringify([{ id: '2', name: 'testCancel', args: [] }]));
+      const request = createMockRequest({ calls: [{ id: '2', name: 'testCancel', args: [] }] });
 
       const response = await router.resolve(request);
 
@@ -261,7 +265,7 @@ describe('HTTPRouter', () => {
         });
       router.use(middleware);
 
-      const request = createMockRequest(JSON.stringify([{ id: '3', name: 'testFunc', args: [] }]));
+      const request = createMockRequest({ calls: [{ id: '3', name: 'testFunc', args: [] }] });
 
       const response = await router.resolve(request);
 
@@ -286,7 +290,7 @@ describe('HTTPRouter', () => {
       const handler: TestFunc = async () => new Promise((resolve) => (defer = resolve));
       module.construct(testFunc, handler);
 
-      const request = createMockRequest(JSON.stringify([{ id: '4', name: 'testPipeAbort', args: [] }]));
+      const request = createMockRequest({ calls: [{ id: '4', name: 'testPipeAbort', args: [] }] });
 
       const response = await router.resolve(request);
 
@@ -326,14 +330,16 @@ describe('HTTPRouter', () => {
         meta: { name: 'test.txt', size: dummyFile.size, type: 'text/plain' },
       };
 
-      const requestPayload = [
-        {
-          id: 'file-1',
-          name: 'testFile',
-          args: [{ file: pointer }],
-          files: [pointer],
-        },
-      ];
+      const requestPayload: IRPCRequests = {
+        calls: [
+          {
+            id: 'file-1',
+            name: 'testFile',
+            args: [{ file: pointer }],
+            files: [pointer as never],
+          },
+        ],
+      };
 
       const fd = new FormData();
       fd.append(IRPC_JSON_KEY, JSON.stringify(requestPayload));
@@ -357,7 +363,7 @@ describe('HTTPRouter', () => {
       const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
       const router = new HTTPRouter(module, transport);
 
-      const request = createMockRequest('[]'); // Empty request returns 400 early return
+      const request = createMockRequest({ calls: [] }); // Empty request returns 400 early return
 
       const response = await router.resolve(request, [], (body, init) => {
         const headers = new Headers(init?.headers);
@@ -378,7 +384,7 @@ describe('HTTPRouter', () => {
       const testFunc = module.declare<TestFunc>({ name: 'testBuilder' } as any);
       module.construct(testFunc, async () => 'success');
 
-      const request = createMockRequest(JSON.stringify([{ id: '1', name: 'testBuilder', args: [] }]));
+      const request = createMockRequest({ calls: [{ id: '1', name: 'testBuilder', args: [] }] });
 
       const response = await router.resolve(request, [], (body, init) => {
         const headers = new Headers(init?.headers);
@@ -388,6 +394,55 @@ describe('HTTPRouter', () => {
 
       expect(response.headers.get('x-custom-stream')).toBe('true');
       expect(response.status).toBe(200);
+    });
+
+    it('should seed credentials from payload into async context', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = () => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testCred' });
+
+      let receivedApiKey: string | undefined;
+      module.construct(testFunc, async () => {
+        receivedApiKey = credential<string>('apiKey');
+        return 'ok';
+      });
+
+      const request = createMockRequest({
+        calls: [{ id: '1', name: 'testCred', args: [] }],
+        credentials: [['apiKey', 'pk_test_123']],
+      });
+
+      const response = await router.resolve(request);
+
+      expect(response.status).toBe(200);
+      expect(receivedApiKey).toBe('pk_test_123');
+    });
+
+    it('should resolve without credentials when not provided', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+      const router = new HTTPRouter(module, transport);
+
+      type TestFunc = () => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testNoCred' });
+
+      let receivedApiKey: string | undefined;
+      module.construct(testFunc, async () => {
+        receivedApiKey = credential<string>('apiKey');
+        return 'ok';
+      });
+
+      const request = createMockRequest({
+        calls: [{ id: '1', name: 'testNoCred', args: [] }],
+      });
+
+      const response = await router.resolve(request);
+
+      expect(response.status).toBe(200);
+      expect(receivedApiKey).toBeUndefined();
     });
   });
 

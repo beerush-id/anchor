@@ -34,6 +34,7 @@ export const IRPC_STORE_EVENT = {
 export const IRPC_BASE_CONTEXT = {
   ABORT_SIGNAL: Symbol('abort-signal'),
   ABORT_CONTROLLER: Symbol('abort-controller'),
+  CREDENTIALS: Symbol('credentials'),
 } as const;
 
 export const IRPC_FILE_STATUS = {

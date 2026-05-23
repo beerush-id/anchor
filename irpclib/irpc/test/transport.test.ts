@@ -34,6 +34,57 @@ describe('IRPC Transport', () => {
     });
   });
 
+  describe('Signing', () => {
+    it('should return empty array when not signed', () => {
+      const transport = new IRPCTransport();
+      expect(transport.credentials).toEqual([]);
+    });
+
+    it('should sign with object credential', () => {
+      const transport = new IRPCTransport();
+      transport.sign({
+        username: 'test',
+        password: 'password',
+      });
+
+      expect(transport.credentials).toEqual([
+        ['username', 'test'],
+        ['password', 'password'],
+      ]);
+    });
+
+    it('should sign with factory function', () => {
+      const transport = new IRPCTransport();
+      transport.sign(() => ({
+        username: 'test',
+        password: 'password',
+      }));
+      expect(transport.credentials).toEqual([
+        ['username', 'test'],
+        ['password', 'password'],
+      ]);
+    });
+
+    it('should return empty array for sign that returns non object', () => {
+      const transport = new IRPCTransport();
+      transport.sign(() => undefined);
+      expect(transport.credentials).toEqual([]);
+    });
+
+    it('should ignore signing with non object or function', () => {
+      const transport = new IRPCTransport();
+
+      transport.sign('invalid' as never);
+      expect(transport.credentials).toEqual([]);
+
+      transport.sign(() => null);
+      expect(transport.credentials).toEqual([]);
+
+      transport.sign([]);
+      expect(transport.credentials).toEqual([]);
+    });
+  });
+
   describe('IRPC Calling', () => {
     it('should create a promise for RPC call', async () => {
       const spec = {

@@ -4,12 +4,12 @@ import {
   ERROR_MESSAGE,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  IRPC_STORE,
   type IRPCCall,
   type IRPCData,
   type IRPCPacketStream,
   IRPCTransport,
   type TransportConfig,
-  IRPC_STORE,
 } from '@irpclib/irpc';
 import { IRPC_JSON_KEY } from './enum.js';
 
@@ -119,7 +119,13 @@ export class HTTPTransport extends IRPCTransport {
         return { id, name, args: packet.json.data, files: packet.json.files.length ? packet.json.files : undefined };
       });
 
-      form.append(IRPC_JSON_KEY, JSON.stringify(requests));
+      form.append(
+        IRPC_JSON_KEY,
+        JSON.stringify({
+          calls: requests,
+          credentials: this.credentials,
+        })
+      );
 
       const maxTimeout =
         calls.reduce((acc, req) => Math.max(acc, req.options?.timeout ?? 0), 0) || this.config?.timeout;
@@ -175,7 +181,10 @@ export class HTTPTransport extends IRPCTransport {
 
       await this.resolveAll(calls, response);
     } catch (error) {
-      IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
+      IRPC_STORE.error(
+        error as Error,
+        calls.map((c) => ({ id: c.id, name: c.payload.name }))
+      );
       calls.forEach((call) => {
         this.dequeue(call);
 
@@ -325,7 +334,9 @@ export class HTTPTransport extends IRPCTransport {
                 }
               }
             } catch (error) {
-              IRPC_STORE.error(new Error(`Unable to parse response chunk: ${part}`, { cause: error }), [{ pending: Array.from(pendingCalls.keys()) }]);
+              IRPC_STORE.error(new Error(`Unable to parse response chunk: ${part}`, { cause: error }), [
+                { pending: Array.from(pendingCalls.keys()) },
+              ]);
             }
           }
         }
@@ -342,14 +353,18 @@ export class HTTPTransport extends IRPCTransport {
                 this.dequeue(call);
               }
             } catch (error) {
-              IRPC_STORE.error(new Error(`Unable to parse final response chunk: ${buffer}`, { cause: error }), [{ pending: Array.from(pendingCalls.keys()) }]);
+              IRPC_STORE.error(new Error(`Unable to parse final response chunk: ${buffer}`, { cause: error }), [
+                { pending: Array.from(pendingCalls.keys()) },
+              ]);
             }
           }
           break;
         }
       }
     } catch (error) {
-      IRPC_STORE.error(new Error(`Unable to read response stream`, { cause: error }), [{ pending: Array.from(pendingCalls.keys()) }]);
+      IRPC_STORE.error(new Error(`Unable to read response stream`, { cause: error }), [
+        { pending: Array.from(pendingCalls.keys()) },
+      ]);
 
       calls.forEach((call) => {
         if (call.resolved) return;

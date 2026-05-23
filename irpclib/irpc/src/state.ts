@@ -19,6 +19,7 @@ export class RemoteState<T> extends Promise<T> {
   readonly #reject: (error: Error) => void;
 
   #closed = false;
+  #locked?: this['then'];
 
   public get state(): IRPCReadable<T> {
     return this.#state;
@@ -161,6 +162,25 @@ export class RemoteState<T> extends Promise<T> {
 
   protected resume() {
     this.#closed = false;
+  }
+
+  public pipe() {
+    this.#locked = this.then;
+    // biome-ignore lint/suspicious/noThenProperty: expect override
+    // biome-ignore lint/suspicious/noExplicitAny: expect any
+    (this as any).then = undefined;
+    return this;
+  }
+
+  public unpipe() {
+    if (!this.#locked) return this;
+
+    // biome-ignore lint/suspicious/noThenProperty: expect override
+    // biome-ignore lint/suspicious/noExplicitAny: expect any
+    (this as any).then = this.#locked;
+    this.#locked = undefined;
+
+    return this;
   }
 
   /**

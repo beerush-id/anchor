@@ -158,7 +158,7 @@ describe('HTTPTransport', () => {
       if (typeof fetchBody.get === 'function') {
         const jsonHeader = fetchBody.get(IRPC_JSON_KEY);
         const parsedNode = JSON.parse(jsonHeader as string);
-        const uploadFileId = parsedNode?.[0]?.args?.[0]?.file?.id;
+        const uploadFileId = parsedNode?.calls?.[0]?.args?.[0]?.file?.id;
         const retrieved = fetchBody.get(uploadFileId) as Blob;
         expect(retrieved).toBeInstanceOf(Blob);
         expect(retrieved.size).toBe(dummyBlob.size);

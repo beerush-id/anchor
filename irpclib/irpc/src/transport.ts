@@ -2,10 +2,13 @@ import { onCleanup, uuid } from '@anchorlib/core';
 import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import type { IRPCPackage } from './module.js';
 import { IRPCReader } from './reader.js';
 import { IRPC_STORE } from './store.js';
 import type {
   IRPCCallConfig,
+  IRPCCredentials,
+  IRPCCredentialsFactory,
   IRPCData,
   IRPCInputs,
   IRPCOutput,
@@ -19,10 +22,23 @@ import type {
  * It handles queuing, debouncing, and timeout management for RPC requests.
  */
 export class IRPCTransport {
+  #credentialFactory?: IRPCCredentialsFactory;
+
+  public modules = new Set<IRPCPackage>();
   /**
    * A set of pending RPC calls that are queued for execution.
    */
   public queue = new Set<IRPCCall>();
+
+  public get credentials(): IRPCCredentials {
+    if (typeof this.#credentialFactory === 'function') {
+      const cred = this.#credentialFactory();
+      if (cred === null || Array.isArray(cred) || typeof cred !== 'object') return [];
+      return Object.entries(cred);
+    }
+
+    return Object.entries(this.#credentialFactory ?? {});
+  }
 
   /**
    * Creates a new IRPCTransport instance.
@@ -95,6 +111,15 @@ export class IRPCTransport {
     }
 
     this.queue.add(call);
+  }
+
+  /**
+   * Signs an RPC call with credentials.
+   * @param cred - The credentials to sign the call with.
+   */
+  public sign(cred: IRPCCredentialsFactory) {
+    if (cred === null || Array.isArray(cred) || (typeof cred !== 'object' && typeof cred !== 'function')) return;
+    this.#credentialFactory = cred;
   }
 
   /**

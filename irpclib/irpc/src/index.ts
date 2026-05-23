@@ -3,6 +3,7 @@ export { plan } from '@anchorlib/core';
 export * from './cache.js';
 export * from './call.js';
 export * from './context.js';
+export * from './credential.js';
 export * from './enum.js';
 export * from './error.js';
 export * from './file.js';

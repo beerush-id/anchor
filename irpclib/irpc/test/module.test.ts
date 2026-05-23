@@ -134,6 +134,34 @@ describe('IRPCPackage', () => {
       // @ts-expect-error - Testing invalid transport
       expect(() => rpc.use('not-transport')).toThrow(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_INVALID]);
     });
+
+    it('should share transport for multi packages', () => {
+      const pkgA = createPackage({ name: 'pkgA' });
+      const pkgB = createPackage({ name: 'pkgB' });
+      const transport = new IRPCTransport();
+
+      pkgA.use(transport);
+
+      expect(transport.modules.has(pkgA)).toBe(true);
+      expect(transport.modules.has(pkgB)).toBe(false);
+
+      pkgB.use(transport);
+      expect(transport.modules.has(pkgA)).toBe(true);
+    });
+
+    it('should replace transport', () => {
+      const transA = new IRPCTransport();
+      const transB = new IRPCTransport();
+      const pkg = createPackage({ name: 'pkg' });
+
+      pkg.use(transA);
+      expect(transA.modules.has(pkg));
+      expect(transB.modules.has(pkg)).toBe(false);
+
+      pkg.use(transB);
+      expect(transA.modules.has(pkg)).toBe(false);
+      expect(transB.modules.has(pkg)).toBe(true);
+    });
   });
 
   describe('Configuration', () => {
@@ -704,7 +732,13 @@ describe('IRPCPackage', () => {
       });
 
       let resolve: (value: string) => void;
-      rpc.construct(hello, () => new Promise<string>((r) => { resolve = r; }));
+      rpc.construct(
+        hello,
+        () =>
+          new Promise<string>((r) => {
+            resolve = r;
+          })
+      );
 
       const controller = new AbortController();
       const ctx = createContextStore([
@@ -890,7 +924,7 @@ describe('IRPCPackage', () => {
 
     it('should cancel debounced dispatch when scope is destroyed', async () => {
       vi.useFakeTimers();
-      
+
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloLaterCancel',
         init: () => '',
@@ -901,16 +935,16 @@ describe('IRPCPackage', () => {
       const reader: any = scope.run(() => (hello as any).later(10));
 
       expect(reader.status).toBe(IRPC_STATUS.IDLE);
-      
+
       reader.dispatch('World');
       expect(reader.status).toBe(IRPC_STATUS.IDLE);
 
       // Destroy the scope before timers run
       scope.destroy();
-      
+
       vi.advanceTimersByTime(10);
       await Promise.resolve();
-      
+
       // In IRPC, scope disposal transitions the reader to SUCCESS
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe(''); // The init value, not updated

@@ -105,6 +105,24 @@ export class IRPCResolver {
       }
 
       const data = await result;
+
+      if (data instanceof RemoteState) {
+        data.unpipe();
+
+        const output = parseOutput(data.data, schema);
+
+        if (!output.success) {
+          const error: IRPCError = {
+            code: ERROR_CODE.INVALID_OUTPUT,
+            message: output.error?.message,
+          };
+
+          return { id, name, error };
+        }
+
+        return { id, name, result: data };
+      }
+
       const output = parseOutput(data, schema);
 
       // Validate output against schema if provided

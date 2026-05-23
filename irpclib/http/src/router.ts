@@ -1,6 +1,7 @@
 import { replay } from '@anchorlib/core';
 import {
   createContextStore,
+  createCredentials,
   decode,
   ERROR_CODE,
   IRPC_BASE_CONTEXT,
@@ -9,12 +10,12 @@ import {
   IRPC_STATUS,
   IRPC_STORE,
   type IRPCData,
-  type IRPCFilePointer,
   type IRPCPackage,
   type IRPCPacketAnswer,
   type IRPCPacketEvent,
   type IRPCPacketStream,
   type IRPCRequest,
+  type IRPCRequests,
   IRPCResolver,
   IRPCRouter,
   IRPCStream,
@@ -89,7 +90,7 @@ export class HTTPRouter extends IRPCRouter {
     };
 
     try {
-      return this.resolveForm(await request.formData(), context, builder);
+      return await this.resolveForm(await request.formData(), context, builder);
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
       return buildResponse(
@@ -145,11 +146,9 @@ export class HTTPRouter extends IRPCRouter {
    * @returns A Response object with the resolved data
    */
   public async resolveForm(body: FormData, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder) {
-    const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as (IRPCRequest & {
-      files?: IRPCFilePointer[];
-    })[];
+    const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as IRPCRequests;
 
-    const requests = irpcRequests.map((req) => {
+    const requests = irpcRequests.calls.map((req) => {
       if (req.files?.length) {
         const stream = decode({ data: req.args as IRPCData, files: req.files });
 
@@ -165,7 +164,8 @@ export class HTTPRouter extends IRPCRouter {
       return this.config.resolver(req, this.module);
     });
 
-    return this.resolveRequests(requests, context, builder);
+    const credStore = createCredentials(irpcRequests.credentials ?? []);
+    return this.resolveRequests(requests, [...context, [IRPC_BASE_CONTEXT.CREDENTIALS, credStore]], builder);
   }
 
   /**

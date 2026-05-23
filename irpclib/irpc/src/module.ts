@@ -358,6 +358,11 @@ export class IRPCPackage {
       throw new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_INVALID]);
     }
 
+    if (this.transport) {
+      this.transport.modules.delete(this);
+    }
+
+    transport.modules.add(this);
     this.config.transport = transport;
     return this;
   }

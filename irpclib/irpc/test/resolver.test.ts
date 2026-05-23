@@ -275,6 +275,74 @@ describe('IRPC Resolver', () => {
         },
       });
     });
+
+    it('should resolve piped RemoteState from async handler', async () => {
+      const rpc = createPackage();
+      type TestFunc = (input: string) => Promise<string>;
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+
+      const handler: TestFunc = async (input) => {
+        const state = new RemoteState<string>(`Hello ${input}`);
+        state.status = IRPC_STATUS.SUCCESS;
+        return state.pipe() as any;
+      };
+      rpc.construct(testFunc, handler);
+
+      const resolver = new IRPCResolver(
+        {
+          id: '1',
+          name: 'testFunc',
+          args: ['World'],
+        },
+        rpc
+      );
+
+      const result = await resolver.resolve();
+
+      expect(result.id).toEqual('1');
+      expect(result.name).toEqual('testFunc');
+      expect(result.result).toBeInstanceOf(RemoteState);
+      expect((result.result as RemoteState<string>).data).toEqual('Hello World');
+      // Verify unpipe() was called — .then should be restored.
+      expect((result.result as RemoteState<string>).then).toBeDefined();
+    });
+
+    it('should return error for piped RemoteState with invalid output schema', async () => {
+      const rpc = createPackage();
+      type TestFunc = () => Promise<string>;
+      const testFunc = rpc.declare<TestFunc>({
+        name: 'testFunc',
+        schema: {
+          output: z.number(),
+        },
+      });
+
+      const handler: TestFunc = async () => {
+        const state = new RemoteState<string>('not-a-number');
+        state.status = IRPC_STATUS.SUCCESS;
+        return state.pipe() as any;
+      };
+      rpc.construct(testFunc, handler);
+
+      const resolver = new IRPCResolver(
+        {
+          id: '1',
+          name: 'testFunc',
+          args: [],
+        },
+        rpc
+      );
+
+      const result = await resolver.resolve();
+
+      expect(result.id).toEqual('1');
+      expect(result.name).toEqual('testFunc');
+      expect(result.error).toEqual({
+        code: ERROR_CODE.INVALID_OUTPUT,
+        message: expect.any(String),
+      });
+      expect(result.result).toBeUndefined();
+    });
   });
 
   describe('Resolve Spec', () => {
