@@ -521,16 +521,18 @@ export class Route<
    *
    * @param context - The provider context
    * @param hydration - Whether this is a hydration request
+   * @param controller - An optional abort controller
    * @returns The loaded data, or a GuardBlocker if authentication failed
    */
   public async preload(
     context: RouteContext<Params, QueryParams, Data>,
-    hydration?: boolean
+    hydration?: boolean,
+    controller?: AbortController
   ): Promise<Data | GuardBlocker> {
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
 
-    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>, hydration)) as Data;
+    return (await this.resolve(context as RouteContext<TRec, TRec, TRec>, hydration, controller)) as Data;
   }
 
   /**
@@ -541,12 +543,17 @@ export class Route<
    *
    * @param context - The provider context
    * @param hydration - Whether this is a hydration request
+   * @param controller - An optional abort controller
    * @returns The resolved data, or undefined if a provider failed
    */
-  public async resolve(context: RouteContext<TRec, TRec, TRec>, hydration?: boolean): Promise<Data | undefined> {
+  public async resolve(
+    context: RouteContext<TRec, TRec, TRec>,
+    hydration?: boolean,
+    controller?: AbortController
+  ): Promise<Data | undefined> {
     const { state, cache, activeResolvers, providerObservers } = this.storage;
 
-    const abortController = new AbortController();
+    const abortController = controller ?? new AbortController();
     activeResolvers.set(context, abortController);
 
     context.signal = abortController.signal;
@@ -660,12 +667,14 @@ export class Route<
    * @param preload - Whether to preload data (default: true)
    * @param controlled - Whether the activation is controlled.
    * @param hydration - Whether this is a hydration request
+   * @param controller - An optional abort controller
    */
   public async activate(
     context: RouteContext<Params, QueryParams, Data>,
     preload = true,
     controlled?: boolean,
-    hydration?: boolean
+    hydration?: boolean,
+    controller?: AbortController
   ): Promise<void> {
     const { state } = this.preActivate(context);
 
@@ -690,7 +699,7 @@ export class Route<
 
     // Preload data if preload is enabled.
     if (preload) {
-      await this.preload(context, hydration);
+      await this.preload(context, hydration, controller);
     }
 
     if (renderLoader instanceof Promise) {

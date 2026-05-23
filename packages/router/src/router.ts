@@ -260,9 +260,14 @@ export class Router<Output = any> {
    *
    * @param url - The URL to activate (string or URL object)
    * @param withHydration - Whether to hydrate the route with cached data
+   * @param controller - An optional AbortController
    * @returns A GuardBlocker if navigation was blocked, otherwise void
    */
-  public async activate(url: string | URL, withHydration?: boolean): Promise<RouterSnapshot> {
+  public async activate(
+    url: string | URL,
+    withHydration?: boolean,
+    controller?: AbortController
+  ): Promise<RouterSnapshot> {
     const snapshots: RouterSnapshot = [];
     const storage = this.storage;
 
@@ -344,6 +349,8 @@ export class Router<Output = any> {
 
     // Authenticate all routes before activating.
     for (const segment of toActivate) {
+      if (controller?.signal.aborted) return snapshots;
+
       const { route } = segment;
 
       const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
@@ -378,10 +385,12 @@ export class Router<Output = any> {
 
     // Activate target segments.
     for (const segment of authenticatedSegments) {
+      if (controller?.signal.aborted) return snapshots;
+
       const { route, store } = segment;
       if (store.exception) continue;
 
-      await route.activate(store as RouteContext<None, None, TRec>, true, true, withHydration);
+      await route.activate(store as RouteContext<None, None, TRec>, true, true, withHydration, controller);
 
       if (withHydration) snapshots.push(route.snapshot());
       if (!storage.activatingSegments.has(segment)) return snapshots;

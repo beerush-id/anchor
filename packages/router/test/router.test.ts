@@ -370,6 +370,51 @@ describe('router.ts', () => {
         expect(router.activeRoute).toBe(postsRoute);
       });
 
+      it('should skip remaining guard authentication when controller is aborted (line 352)', async () => {
+        const controller = new AbortController();
+
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+
+        const parentGuard = vi.fn(async () => {
+          // Abort during the first segment's guard — next segment should be skipped.
+          controller.abort();
+        });
+        const childGuard = vi.fn();
+
+        usersRoute.guard(parentGuard);
+        userRoute.guard(childGuard);
+
+        const result = await router.activate('/users/123', false, controller);
+
+        expect(parentGuard).toHaveBeenCalled();
+        expect(childGuard).not.toHaveBeenCalled();
+        expect(result).toEqual([]);
+      });
+
+      it('should skip remaining segment activation when controller is aborted (line 388)', async () => {
+        const controller = new AbortController();
+
+        const usersRoute = router.route('/users');
+        const userRoute = usersRoute.route('/:id');
+
+        const parentProvider = vi.fn(async () => {
+          // Abort during the first segment's provider — next segment should be skipped.
+          controller.abort();
+          return { users: [] };
+        });
+        const childProvider = vi.fn(async () => ({ user: {} }));
+
+        usersRoute.provide('users', parentProvider);
+        userRoute.provide('user', childProvider);
+
+        const result = await router.activate('/users/123', false, controller);
+
+        expect(parentProvider).toHaveBeenCalled();
+        expect(childProvider).not.toHaveBeenCalled();
+        expect(result).toEqual([]);
+      });
+
       it('should handle race conditions with real-world overlapping async timings', async () => {
         const usersRoute = router.route('/users');
         const userRoute = usersRoute.route('/:id');
