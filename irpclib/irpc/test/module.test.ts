@@ -1,6 +1,7 @@
 import { createLifecycle } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
+import { createContextStore, withContext } from '../src/context.js';
+import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { createPackage, IRPC_STORE, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
 import { RemoteState } from '../src/state.js';
@@ -519,6 +520,210 @@ describe('IRPCPackage', () => {
       // Advance to trigger accept (status -> SUCCESS), which unsubscribes.
       vi.advanceTimersByTime(5);
       expect(result.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should clean up abort listener on synchronous return with signal (line 452)', async () => {
+      const hello = rpc.declare<(name: string) => string>({
+        name: 'helloSyncSignal',
+      });
+      rpc.construct(hello, (name) => `Hello ${name}`);
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, () => {
+        reader = hello('World');
+      });
+
+      expect(reader.data).toBe('Hello World');
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should clean up abort listener on promise resolve with signal (line 465)', async () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloAsyncSignal',
+      });
+      rpc.construct(hello, async (name) => `Hello ${name}`);
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, async () => {
+        reader = hello('World');
+        await reader;
+      });
+
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should clean up abort listener on RemoteState success with signal (line 480-481)', async () => {
+      const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
+        name: 'helloStreamSignal',
+        init: () => ({ message: '' }),
+      });
+
+      rpc.construct(hello, (name) => {
+        const state = new RemoteState<{ message: string }>({ message: `Hello ${name}` });
+        setTimeout(() => state.accept(), 5);
+        return state;
+      });
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, () => {
+        reader = hello('World');
+      });
+
+      expect(reader.data.message).toBe('Hello World');
+
+      vi.advanceTimersByTime(5);
+      expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
+    });
+
+    it('should clean up abort listener on RemoteState error with signal (line 480)', async () => {
+      const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
+        name: 'helloStreamErrorSignal',
+        init: () => ({ message: '' }),
+      });
+
+      let source: RemoteState<{ message: string }>;
+      rpc.construct(hello, (name) => {
+        source = new RemoteState<{ message: string }>({ message: `Hello ${name}` });
+        source.catch(() => {}); // Prevent unhandled rejection on source.
+        setTimeout(() => source.reject(new Error('source failed')), 5);
+        return source;
+      });
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, () => {
+        reader = hello('World');
+        reader.catch(() => {}); // Prevent unhandled rejection on reader.
+      });
+
+      expect(reader.data.message).toBe('Hello World');
+
+      vi.advanceTimersByTime(5);
+      expect(reader.status).toBe(IRPC_STATUS.ERROR);
+    });
+
+    it('should clean up abort listener on handler throw with signal (line 501)', async () => {
+      const hello = rpc.declare<(name: string) => string>({
+        name: 'helloThrowSignal',
+      });
+      rpc.construct(hello, () => {
+        throw new Error('Boom');
+      });
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      await withContext(ctx, async () => {
+        await expect(() => hello('World')).rejects.toThrow('Boom');
+      });
+    });
+
+    it('should abort reader immediately when signal is already aborted (line 440-442)', async () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloAbortPre',
+      });
+      const handler = vi.fn(async (name: string) => `Hello ${name}`);
+      rpc.construct(hello, handler);
+
+      const controller = new AbortController();
+      controller.abort();
+
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, () => {
+        reader = hello('World');
+      });
+
+      expect(handler).not.toHaveBeenCalled();
+      expect(reader.status).toBe(IRPC_STATUS.ABORTED);
+    });
+
+    it('should unsubscribe and abort RemoteState when signal fires during subscription (line 492-495)', async () => {
+      const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
+        name: 'helloAbortStream',
+        init: () => ({ message: '' }),
+      });
+
+      const source = new RemoteState<{ message: string }>({ message: 'Hello' });
+      rpc.construct(hello, () => source);
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, () => {
+        reader = hello('World');
+
+        // Reader should have initial data from the source.
+        expect(reader.data.message).toBe('Hello');
+
+        // Abort while subscription is active.
+        controller.abort();
+
+        expect(reader.status).toBe(IRPC_STATUS.ABORTED);
+        expect(source.status).toBe(IRPC_STATUS.ABORTED);
+      });
+    });
+
+    it('should abort reader when signal fires during pending async handler (line 444)', async () => {
+      const hello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'helloAbortAsync',
+      });
+
+      let resolve: (value: string) => void;
+      rpc.construct(hello, () => new Promise<string>((r) => { resolve = r; }));
+
+      const controller = new AbortController();
+      const ctx = createContextStore([
+        [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
+        [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
+      ]);
+
+      let reader: any;
+      await withContext(ctx, () => {
+        reader = hello('World');
+
+        // Abort while the promise is still pending.
+        controller.abort();
+      });
+
+      expect(reader.status).toBe(IRPC_STATUS.ABORTED);
+
+      // Resolve the dangling promise to prevent leaks.
+      resolve!('late');
     });
   });
 

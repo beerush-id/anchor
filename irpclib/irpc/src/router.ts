@@ -47,12 +47,14 @@ export class IRPCRouter {
    * @param handler - The handler function to isolate
    * @param controller - The AbortController to use for cancellation
    * @param context - Additional context to pass to the handler
+   * @param preHook - A hook function to run before the router hooks
    * @returns The result of the isolated handler function
    */
   public isolate<T>(
     handler: () => T | Promise<T>,
     controller: AbortController,
-    context: Array<[string | symbol, unknown]> = []
+    context: Array<[string | symbol, unknown]> = [],
+    preHook?: IRPCHook
   ) {
     const ctx = createContextStore([
       [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
@@ -61,6 +63,8 @@ export class IRPCRouter {
     ]);
 
     return withContext(ctx, async () => {
+      await preHook?.();
+
       for (const hook of this.hooks) {
         await hook();
       }

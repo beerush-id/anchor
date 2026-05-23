@@ -269,5 +269,30 @@ describe('IRPCRouter', () => {
 
       expect(result).toBe('default-ctx');
     });
+
+    it('should execute preHook before router hooks (line 66)', async () => {
+      const router = createMockRouter();
+      const controller = new AbortController();
+      const order: string[] = [];
+
+      router.use(() => {
+        order.push('hook');
+      });
+
+      const preHook = () => {
+        order.push('preHook');
+      };
+
+      await router.isolate(
+        () => {
+          order.push('handler');
+        },
+        controller,
+        [],
+        preHook
+      );
+
+      expect(order).toEqual(['preHook', 'hook', 'handler']);
+    });
   });
 });

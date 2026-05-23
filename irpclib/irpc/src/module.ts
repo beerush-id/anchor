@@ -1,5 +1,6 @@
 import { anchor, createObserver, isBrowser, microtask, onCleanup, replay, uuid } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
+import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
 import { IRPCReader } from './reader.js';
@@ -433,11 +434,22 @@ export function intercept(
   args: unknown[],
   reader: IRPCReader<IRPCData>
 ): IRPCReader<IRPCData> {
+  const signal = getAbortSignal();
+
+  if (signal?.aborted) {
+    reader.abort();
+    return reader;
+  }
+
+  const abort = () => reader.abort();
+  signal?.addEventListener('abort', abort, { once: true });
+
   try {
     const result = spec.handler(...args) as RemoteState<unknown>;
 
     if (!(result instanceof Promise)) {
       reader.accept(result);
+      signal?.removeEventListener('abort', abort);
       return reader;
     }
 
@@ -448,6 +460,9 @@ export function intercept(
         })
         .catch((err) => {
           reader.reject(err);
+        })
+        .finally(() => {
+          signal?.removeEventListener('abort', abort);
         });
 
       return reader;
@@ -462,7 +477,8 @@ export function intercept(
       if (rootKey === 'status') {
         reader.status = event.value as IRPCStatus;
 
-        if (reader.status === IRPC_STATUS.SUCCESS) {
+        if (reader.status === IRPC_STATUS.SUCCESS || reader.status === IRPC_STATUS.ERROR) {
+          signal?.removeEventListener('abort', subAbort);
           unsubscribe();
         }
 
@@ -471,8 +487,18 @@ export function intercept(
 
       replay(reader.state, event);
     });
+
+    const subAbort = () => {
+      unsubscribe();
+      reader.abort();
+      result.abort();
+    };
+
+    signal?.addEventListener('abort', subAbort, { once: true });
+    signal?.removeEventListener('abort', abort);
   } catch (error) {
     reader.reject(error as Error);
+    signal?.removeEventListener('abort', abort);
   }
 
   return reader;

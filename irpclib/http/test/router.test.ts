@@ -464,7 +464,7 @@ describe('HTTPRouter', () => {
       const router = new HTTPRouter(module, transport);
 
       const response = await router.resolveJson('invalid json', 'testFunc');
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(404);
     });
   });
 
