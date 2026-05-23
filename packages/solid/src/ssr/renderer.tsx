@@ -15,7 +15,7 @@ import type { SSRContext, SSROutput, SSRRenderer } from './types.js';
 /**
  * Creates an SSR renderer function.
  *
- * @param renderer - The function to render a SolidJS node to a string (e.g., renderToString).
+ * @param renderer - The function to render a SolidJS node to a string (e.g., `renderToString`).
  * @param router - The router instance to use for navigation.
  * @param RootLayout - The root layout component of the application.
  */
@@ -46,6 +46,20 @@ export function createSSR(
   }) as never;
 }
 
+/**
+ * Renders a route to an HTML string within a managed lifecycle.
+ *
+ * Activates the router, renders the component tree and head elements,
+ * and maps route exceptions to HTTP status codes. Used internally by
+ * `createSSR`; exported for advanced use cases that need direct access
+ * to the render pipeline without cookie/isolation management.
+ *
+ * @param renderer - The SolidJS `renderToString` function.
+ * @param router - The router instance.
+ * @param RootLayout - The root layout component.
+ * @param url - The URL to render.
+ * @param controller - Optional abort controller for cancellation.
+ */
 export async function renderToString(
   renderer: (fn: () => JSX.Element) => string,
   router: Router,

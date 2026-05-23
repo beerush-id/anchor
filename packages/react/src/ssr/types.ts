@@ -16,6 +16,9 @@ export type SSROutput = {
   redirect?: string;
 };
 
+/**
+ * An array of key-value pairs used to seed the request-scoped async context store.
+ */
 export type SSRContextSeed = Array<[AsyncKey, AsyncValue]>;
 
 /**
@@ -35,3 +38,31 @@ export type SSRRenderer = (
   context?: SSRContext,
   controller?: AbortController
 ) => Promise<SSROutput>;
+
+/**
+ * Resolves static assets before SSR. Return a `Response` to serve the asset,
+ * or `undefined` to fall through to SSR rendering.
+ */
+export type AssetResolver<E> = (request: Request, url: URL, env?: E) => Promise<Response | undefined>;
+
+/**
+ * Configuration for {@link createWorker} and {@link createFullWorker}.
+ *
+ * @template E - The environment type passed to `fetch` (e.g., Cloudflare's `Env`).
+ */
+export type WorkerOptions<E> = {
+  /** The HTML template string (e.g., imported via `index.html?raw`). */
+  template: string;
+  /** Placeholder in the template to replace with the rendered head. Defaults to `<!--ssr-head-->`. */
+  headTag?: string;
+  /** Placeholder in the template to replace with the rendered body. Defaults to `<!--ssr-outlet-->`. */
+  bodyTag?: string;
+  /** Serves static assets before SSR. Return `undefined` to fall through to SSR. */
+  resolveAsset?: AssetResolver<E>;
+  /** Provides request-scoped context to the SSR renderer and IRPC handlers. Defaults to `[]`. */
+  resolveContext?: (request: Request, url: URL) => SSRContextSeed;
+  /** Hook to modify all outgoing responses (e.g., add security headers). */
+  createResponse?: (response: Response) => Response;
+  /** Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. */
+  timeout?: number;
+};

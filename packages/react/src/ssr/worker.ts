@@ -1,18 +1,18 @@
 import { decodeCookies, isBrowser, setCookieContext } from '@anchorlib/core';
 import type { HTTPRouter } from '@irpclib/http/router';
-import type { SSRContext, SSRContextSeed, SSROutput, SSRRenderer } from './types.js';
+import type { SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions } from './types.js';
 
-export type AssetResolver<E> = (request: Request, url: URL, env?: E) => Promise<Response | undefined>;
-export type WorkerOptions<E> = {
-  template: string;
-  headTag?: string;
-  bodyTag?: string;
-  resolveAsset?: AssetResolver<E>;
-  resolveContext?: (request: Request, url: URL) => SSRContextSeed;
-  createResponse?: (response: Response) => Response;
-  timeout?: number;
-};
-
+/**
+ * Creates a standalone SSR worker that handles asset resolution, rendering,
+ * cookie forwarding, and timeout management.
+ *
+ * Use this when your application does not use IRPC. For full-stack applications
+ * with IRPC, use {@link createFullWorker} instead.
+ *
+ * @param renderer - The SSR renderer created by `createSSR`.
+ * @param options - Worker configuration.
+ * @returns A worker object with a Web Standard `fetch` handler.
+ */
 export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E>) {
   const {
     template = '',
@@ -81,6 +81,18 @@ type IsolatedRenderer = (
   isolated?: boolean
 ) => Promise<SSROutput>;
 
+/**
+ * Creates a full-stack SSR worker that handles IRPC routing, asset resolution,
+ * SSR rendering with request isolation, cookie management, and timeout enforcement.
+ *
+ * This is the standard entry point for full-stack AIR applications. It routes
+ * POST requests to IRPC, serves static assets, and renders SSR for everything else.
+ *
+ * @param router - The IRPC HTTP router instance.
+ * @param renderer - The SSR renderer created by `createSSR`.
+ * @param options - Worker configuration.
+ * @returns A worker object with a Web Standard `fetch` handler.
+ */
 export function createFullWorker<E = any>(router: HTTPRouter, renderer: SSRRenderer, options: WorkerOptions<E>) {
   const {
     template = '',

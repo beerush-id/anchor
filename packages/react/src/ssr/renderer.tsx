@@ -46,6 +46,20 @@ export function createSSR(
   }) as never;
 }
 
+/**
+ * Renders a route to an HTML string within a managed lifecycle.
+ *
+ * Activates the router, renders the component tree and head elements,
+ * and maps route exceptions to HTTP status codes. Used internally by
+ * `createSSR`; exported for advanced use cases that need direct access
+ * to the render pipeline without cookie/isolation management.
+ *
+ * @param renderer - The React `renderToString` function.
+ * @param router - The router instance.
+ * @param RootLayout - The root layout component.
+ * @param url - The URL to render.
+ * @param controller - Optional abort controller for cancellation.
+ */
 export async function renderToString(
   renderer: (node: ReactNode) => string,
   router: Router,
