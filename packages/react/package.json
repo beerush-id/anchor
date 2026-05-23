@@ -72,6 +72,9 @@
     "react": "catalog:lib",
     "typescript": "catalog:lib"
   },
+  "optionalDependencies": {
+    "@irpclib/http": "workspace:*"
+  },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
