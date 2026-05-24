@@ -226,12 +226,9 @@ describe('IRPCRouter', () => {
         order.push('hook-2');
       });
 
-      await router.isolate(
-        () => {
-          order.push('handler');
-        },
-        controller
-      );
+      await router.isolate(() => {
+        order.push('handler');
+      }, controller);
 
       expect(order).toEqual(['hook-1', 'hook-2', 'handler']);
     });
@@ -252,11 +249,7 @@ describe('IRPCRouter', () => {
       const controller = new AbortController();
       const customKey = Symbol('custom');
 
-      const result = await router.isolate(
-        () => 'ok',
-        controller,
-        [[customKey, 'custom-value']]
-      );
+      const result = await router.isolate(() => 'ok', controller, [[customKey, 'custom-value']]);
 
       expect(result).toBe('ok');
     });

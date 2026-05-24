@@ -309,9 +309,9 @@ describe('Route class', () => {
       const loader = vi.fn();
       const fallback = vi.fn();
       const renderSpy = vi.spyOn(route, 'render');
-      
+
       route.renderAsync(loader as never, fallback as never);
-      
+
       expect((route as any).loadRenderer).toBe(loader);
       expect(renderSpy).toHaveBeenCalledWith(fallback);
     });
@@ -320,9 +320,9 @@ describe('Route class', () => {
       const route = new Route(sharedRouter, '/test');
       const loader = vi.fn();
       const renderSpy = vi.spyOn(route, 'render');
-      
+
       route.renderAsync(loader as never);
-      
+
       expect((route as any).loadRenderer).toBe(loader);
       expect(renderSpy).not.toHaveBeenCalled();
     });
@@ -942,12 +942,12 @@ describe('Route class', () => {
       const route = new Route(sharedRouter, '/test');
       const renderer = vi.fn();
       const loader = vi.fn(async () => renderer);
-      
+
       route.renderAsync(loader as never);
-      
+
       const context = { params: {}, query: {}, data: {} };
       await route.activate(context);
-      
+
       expect(loader).toHaveBeenCalled();
       expect((route as any).loadRenderer).toBeUndefined();
       expect(route.renderer).toBeDefined();
@@ -957,13 +957,15 @@ describe('Route class', () => {
     it('should handle async renderer load error', async () => {
       const route = new Route(sharedRouter, '/test');
       const error = new Error('Load failed');
-      const loader = vi.fn(async () => { throw error; });
-      
+      const loader = vi.fn(async () => {
+        throw error;
+      });
+
       route.renderAsync(loader as never);
-      
+
       const context = { params: {}, query: {}, data: {} };
       await route.activate(context);
-      
+
       expect(route.state.status).toBe(ROUTE_STATUS.ERROR);
       expect(route.state.error).toBeInstanceOf(RouteError);
       expect(route.state.error?.message).toBe('Load failed');

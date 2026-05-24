@@ -24,9 +24,7 @@ describe('Credentials', () => {
     });
 
     it('creates an AsyncStore from a Map', () => {
-      const seeds = new Map<string, unknown>([
-        ['key', 'value'],
-      ]);
+      const seeds = new Map<string, unknown>([['key', 'value']]);
 
       const store = createCredentials(seeds);
       expect(store.get('key')).toBe('value');
@@ -37,18 +35,26 @@ describe('Credentials', () => {
     it('returns the credentials store from async context', async () => {
       const creds = createCredentials([['token', 'abc']]);
 
-      const result = await withIsolation(() => {
-        setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
-        return getCredentials();
-      }, true, new AsyncStore());
+      const result = await withIsolation(
+        () => {
+          setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
+          return getCredentials();
+        },
+        true,
+        new AsyncStore()
+      );
 
       expect(result).toBe(creds);
     });
 
     it('returns undefined when no credentials are set', async () => {
-      const result = await withIsolation(() => {
-        return getCredentials();
-      }, true, new AsyncStore());
+      const result = await withIsolation(
+        () => {
+          return getCredentials();
+        },
+        true,
+        new AsyncStore()
+      );
 
       expect(result).toBeUndefined();
     });
@@ -61,10 +67,14 @@ describe('Credentials', () => {
         ['secret', 's3cret'],
       ]);
 
-      const result = await withIsolation(() => {
-        setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
-        return credential('apiKey');
-      }, true, new AsyncStore());
+      const result = await withIsolation(
+        () => {
+          setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
+          return credential('apiKey');
+        },
+        true,
+        new AsyncStore()
+      );
 
       expect(result).toBe('pk_xxx');
     });
@@ -72,18 +82,26 @@ describe('Credentials', () => {
     it('returns undefined for a missing credential key', async () => {
       const creds = createCredentials([['apiKey', 'pk_xxx']]);
 
-      const result = await withIsolation(() => {
-        setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
-        return credential('nonexistent');
-      }, true, new AsyncStore());
+      const result = await withIsolation(
+        () => {
+          setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
+          return credential('nonexistent');
+        },
+        true,
+        new AsyncStore()
+      );
 
       expect(result).toBeUndefined();
     });
 
     it('returns undefined when no credentials store exists', async () => {
-      const result = await withIsolation(() => {
-        return credential('anything');
-      }, true, new AsyncStore());
+      const result = await withIsolation(
+        () => {
+          return credential('anything');
+        },
+        true,
+        new AsyncStore()
+      );
 
       expect(result).toBeUndefined();
     });
@@ -95,15 +113,19 @@ describe('Credentials', () => {
         ['config', { nested: 'value' }],
       ]);
 
-      const result = await withIsolation(() => {
-        setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
+      const result = await withIsolation(
+        () => {
+          setContext(IRPC_BASE_CONTEXT.CREDENTIALS, creds);
 
-        return {
-          count: credential<number>('count'),
-          active: credential<boolean>('active'),
-          config: credential<{ nested: string }>('config'),
-        };
-      }, true, new AsyncStore());
+          return {
+            count: credential<number>('count'),
+            active: credential<boolean>('active'),
+            config: credential<{ nested: string }>('config'),
+          };
+        },
+        true,
+        new AsyncStore()
+      );
 
       expect(result.count).toBe(42);
       expect(result.active).toBe(true);
