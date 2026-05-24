@@ -1,9 +1,15 @@
 {
   "type": "module",
   "name": "@anchorlib/solid",
-  "version": "1.0.0-beta.23",
+  "version": "1.0.0-beta.24",
   "description": "Solid bindings for Anchor reactive state management",
-  "keywords": ["state", "management", "reactive", "observable", "solid"],
+  "keywords": [
+    "state",
+    "management",
+    "reactive",
+    "observable",
+    "solid"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
   "license": "MIT",
@@ -58,7 +64,10 @@
       "import": "./dist/storage/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "directories": {
     "dist": "./dist"
   },
