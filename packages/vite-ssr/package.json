@@ -1,0 +1,81 @@
+{
+  "type": "module",
+  "name": "@anchorlib/vite-ssr",
+  "version": "1.0.0-beta.23",
+  "description": "Vite plugin that handles SSR rendering and IRPC routing for AIR Stack applications",
+  "keywords": [
+    "vite",
+    "ssr",
+    "anchor",
+    "irpc"
+  ],
+  "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
+  "homepage": "https://github.com/beerush-id/anchor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beerush-id/anchor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/beerush-id/anchor/issues"
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "dist": "./dist"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "vite": ">=5",
+    "typescript": "catalog:lib",
+    "@anchorlib/core": "workspace:*",
+    "@irpclib/irpc": "workspace:*",
+    "@irpclib/http": "workspace:*",
+    "@irpclib/ws": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@anchorlib/core": {
+      "optional": true
+    },
+    "@irpclib/irpc": {
+      "optional": true
+    },
+    "@irpclib/http": {
+      "optional": true
+    },
+    "@irpclib/ws": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@anchorlib/core": "workspace:*",
+    "@biomejs/biome": "catalog:",
+    "@irpclib/http": "workspace:*",
+    "@irpclib/irpc": "workspace:*",
+    "@irpclib/ws": "workspace:*",
+    "@types/ws": "latest",
+    "publint": "catalog:",
+    "rimraf": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:",
+    "ws": "latest"
+  },
+  "scripts": {
+    "dev": "rimraf dist && tsdown --watch ./src",
+    "clean": "rimraf dist",
+    "build": "rimraf dist && tsdown && publint",
+    "prepublish": "rimraf dist && tsdown && publint",
+    "format": "biome format --write"
+  }
+}
