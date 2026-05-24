@@ -189,6 +189,7 @@ export default defineConfig({
           { text: 'Reactive UI', link: '/ui/view' },
           { text: 'Component', link: '/ui/component' },
           { text: 'Form Components', link: '/ui/form' },
+          { text: 'Optimistic UI', link: '/ui/optimistic' },
           // { text: 'Headless Components', link: '/ui/headless' },
           // { text: 'Data Components', link: '/ui/data' },
           // { text: 'Composition', link: '/ui/composition' },

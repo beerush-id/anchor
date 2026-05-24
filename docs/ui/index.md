@@ -242,3 +242,4 @@ Each `NavButton` is autonomous. It determines its own active state by comparing 
 - [Reactive UI](./view) — Presenting reactive data without owning it
 - [Component](./component) — When a concern needs its own state, behavior, and reactivity
 - [Form Components](./form) — User-driven form components with built-in validation
+- [Optimistic UI](./optimistic) — Managing optimistic updates and state rollbacks

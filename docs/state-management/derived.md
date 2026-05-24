@@ -97,9 +97,28 @@ const visibleTodos = derived(() => {
 - **Read-Only**: Derived values flow one way (Data -> View). You cannot manually assign a value to a derived property.
 - **Lazy Evaluation**: Computations are optimized to only re-run when necessary.
 
+## Reactive Sorting (`ordered`)
+
+When maintaining sorted lists in a reactive system, calling `array.sort()` on every update triggers a full `O(N log N)` re-evaluation. The `ordered()` primitive solves this by maintaining a reactive sorted view using **binary search insertion**. When the source array updates, it computes the exact index to insert the new items in `O(log N)` time, preventing expensive full array re-sorts.
+
+```typescript
+import { mutable, ordered } from '@anchorlib/core';
+
+const state = mutable({
+  movies: [{ title: 'Zoolander' }, { title: 'Alien' }]
+});
+
+// Creates a reactive, read-only sorted view
+// It automatically updates whenever the source array changes
+const sortedMovies = ordered(state.movies, (a, b) => a.title.localeCompare(b.title));
+
+console.log(sortedMovies); // [{ title: 'Alien' }, { title: 'Zoolander' }]
+```
+
 ## Choosing an Approach
 
 | Pattern | Implementation | Best For |
 | :--- | :--- | :--- |
 | **Intrinsic** | JavaScript Getter | Domain logic (`User.fullName`) and encapsulation. |
 | **Composite** | `derived()` function | Combining separate states (`Search` + `List`) or View Models. |
+| **Sorted View** | `ordered()` function | Maintaining a reactive sorted list without mutating the source. |

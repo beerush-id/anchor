@@ -65,6 +65,27 @@ irpc.construct(createUser, async (data: UserInput) => {
 
 Thrown errors propagate to the client as rejected Promises. The error `message` is preserved across the wire. Handler errors are **never retried** — only transport failures trigger retry logic.
 
+## Function Composition
+
+Because IRPC stubs extend `Promise`, you can compose them directly inside your handlers. If the called function lives in the same thread or package, IRPC executes it directly, bypassing the network transport entirely.
+
+```typescript
+import { irpc } from '@irpclib/irpc';
+import { getUser, getPermissions } from './index.js';
+
+export const verifyAccess = irpc.declare({ name: 'verifyAccess' });
+
+irpc.construct(verifyAccess, async (userId) => {
+  // Calls in the same thread bypass network overhead
+  const [user, permissions] = await Promise.all([
+    getUser(userId),
+    getPermissions(userId)
+  ]);
+
+  return { user, permissions };
+});
+```
+
 ## Returning Streams
 
 If the function returns `RemoteState<T>`, the handler uses the `stream()` factory to yield continuous data back to the client:
@@ -176,6 +197,25 @@ export const DashboardWidget = setup((props) => {
 ```
 
 :::
+
+### Stream Piping
+
+When you need to pass a stream directly to the caller instead of awaiting it, you can return `reader.pipe()`. This is useful when one handler acts as a proxy or decorator for another streaming function.
+
+```typescript
+irpc.construct(sendMessage, async (prompt) => {
+  const message = createMessage();
+  const reader = getChatResponse(prompt);
+
+  // You can still attach listeners to the reader
+  reader.then(() => {
+    message.text = reader.data;
+    saveMessage(message.id);
+  });
+
+  return reader.pipe(); // Pass the live stream through to the client
+});
+```
 
 ## Cleanup Functions
 

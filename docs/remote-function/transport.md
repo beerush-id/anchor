@@ -382,6 +382,34 @@ const watchPrices = irpc.declare<WatchPricesFn>({
 
 When a WebSocket connection closes or a BroadcastChannel router shuts down, calling `router.disconnect()` aborts **all** active streams for that connection. HTTP connections are managed per-request — when the client drops the connection, the router's `AbortController` fires.
 
+## Credentials
+
+You can attach key-value credentials directly to a transport. These credentials will be sent with every request, and handlers can read them using the `credential()` helper.
+
+### Client-Side
+Use `.sign()` to attach credentials to the transport. You can pass a static object or a factory function.
+
+```typescript
+// Attach a static token
+transport.sign({ MY_CUSTOM_KEY: '<insert-your-token-here>' });
+
+// Or use a factory function for dynamic values
+transport.sign(() => ({ MY_CUSTOM_KEY: getToken() }));
+```
+
+### Server-Side
+Inside your handlers, use the `credential()` helper to read the caller's credentials.
+
+```typescript
+import { credential } from '@irpclib/irpc';
+
+irpc.construct(getProfile, async () => {
+  const token = credential<string>('MY_CUSTOM_KEY');
+  const user = await verifyAPIKey(token);
+  return db.users.find(user.id);
+});
+```
+
 ## Context Management Across Transports
 
 The router only manages the internal `AbortController`. All application-level context is your responsibility — injected via `initContext` at the integration point.
