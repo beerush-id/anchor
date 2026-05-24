@@ -21,16 +21,11 @@ describe('createSSR', () => {
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
 
-    const renderer = vi.fn((node: ReactNode) => {
-      return Array.isArray(node) ? '<head></head>' : '<html><body>Test</body></html>';
-    });
-
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/', '');
 
-    expect(output.html).toBe('<html><body>Test</body></html>');
-    expect(output.head).toContain('<head></head>');
+    expect(output.html).toBe('<div></div>');
     expect(output.status).toBe(200);
     expect(output.cookies).toEqual([]);
     expect(output.redirect).toBeUndefined();
@@ -46,8 +41,7 @@ describe('createSSR', () => {
       return [];
     });
 
-    const renderer = vi.fn(() => '');
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/not-found', '');
     expect(output.status).toBe(404);
@@ -63,8 +57,7 @@ describe('createSSR', () => {
       return [];
     });
 
-    const renderer = vi.fn(() => '');
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/forbidden', '');
     expect(output.status).toBe(403);
@@ -80,8 +73,7 @@ describe('createSSR', () => {
       return [];
     });
 
-    const renderer = vi.fn(() => '');
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/bad-request', '');
     expect(output.status).toBe(400);
@@ -97,8 +89,7 @@ describe('createSSR', () => {
       throw new Redirect(targetRoute as never, {} as never, { ref: 'test' } as never);
     });
 
-    const renderer = vi.fn(() => '');
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/', '');
     expect(output.redirect).toBe('/target?ref=test');
@@ -114,8 +105,7 @@ describe('createSSR', () => {
       throw new Error('Internal Error');
     });
 
-    const renderer = vi.fn(() => '');
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/', '');
     expect(output.status).toBe(500);
@@ -132,8 +122,7 @@ describe('createSSR', () => {
     const RootLayout = page(rootRoute);
 
     const store = new AsyncStore();
-    const renderer = vi.fn(() => '');
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     const output = await ssr('http://localhost/', '', store);
     expect(output.status).toBe(200);
@@ -144,17 +133,12 @@ describe('createSSR', () => {
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
 
-    const renderer = vi.fn((node: ReactNode) => {
-      return Array.isArray(node) ? '<head></head>' : '<html><body>Isolated</body></html>';
-    });
-
-    const ssr = createSSR(renderer, router, RootLayout);
+    const ssr = createSSR(router, RootLayout);
 
     // Call with isolated=true (5th arg) — this is the internal path used by createFullWorker
     const output = await (ssr as any)('http://localhost/', '', undefined, undefined, true);
 
-    expect(output.html).toBe('<html><body>Isolated</body></html>');
-    expect(output.head).toContain('<head></head>');
+    expect(output.html).toBe('<div></div>');
     expect(output.status).toBe(200);
     // Isolated mode does not return cookies
     expect(output.cookies).toBeUndefined();
