@@ -6,6 +6,7 @@
   "keywords": ["state", "management", "reactive", "observable", "react"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/anchor",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/beerush-id/anchor.git"
@@ -69,6 +70,11 @@
     "vite": "catalog:",
     "vitest": "catalog:"
   },
+  "dependencies": {
+    "@anchorlib/core": "workspace:*",
+    "@anchorlib/router": "workspace:*",
+    "@anchorlib/storage": "workspace:*"
+  },
   "peerDependencies": {
     "react": "catalog:lib",
     "react-dom": "catalog:lib",
@@ -85,11 +91,5 @@
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
-  },
-  "license": "MIT",
-  "dependencies": {
-    "@anchorlib/core": "workspace:*",
-    "@anchorlib/router": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
   }
 }

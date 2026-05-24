@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { CookieJar } from '@anchorlib/core';
+import { decodeCookies, getContext, setCookieContext } from '@anchorlib/core';
 import type { HTTPRouter } from '@irpclib/http/router';
 import type { WebSocketRouter } from '@irpclib/ws/router';
 import type { Plugin, ViteDevServer } from 'vite';
@@ -99,8 +99,6 @@ export function airSSR(options: ViteSSROptions): Plugin {
 
   let router: HTTPRouter | undefined;
   let templatePath: string;
-  let decodeCookies: (cookie: string) => CookieJar;
-  let setCookieContext: (jar: CookieJar) => void;
   let rendererFactory: RendererFactory;
 
   return {
@@ -111,10 +109,6 @@ export function airSSR(options: ViteSSROptions): Plugin {
       // Initialize server-side support before handling requests.
       const ready = (async () => {
         await server.ssrLoadModule('@irpclib/irpc/server').catch(() => {});
-        // Load cookie utilities for SSR isolation.
-        const core = await server.ssrLoadModule('@anchorlib/core');
-        decodeCookies = core.decodeCookies;
-        setCookieContext = core.setCookieContext;
 
         // Load renderer factory from the framework-specific module.
         rendererFactory = (await server.ssrLoadModule(rendererPath)).createSSR;
@@ -175,6 +169,7 @@ export function airSSR(options: ViteSSROptions): Plugin {
             const cookie = req.headers.cookie ?? '';
 
             let ssrResult: SSROutput;
+
             if (router) {
               // Isolate SSR render with IRPC context (abort signal, cookie, hooks).
               const cookieJar = decodeCookies(cookie);
@@ -253,13 +248,14 @@ async function initRouter(
     const router = new HTTPRouter(irpc, transport);
 
     // Provide CookieJar to IRPC handlers (same pattern as createFullWorker)
-    const { decodeCookies, setCookieContext, getContext } = await server.ssrLoadModule('@anchorlib/core');
     router.use(() => {
       const cookieJar = decodeCookies(getContext('cookie', ''));
       setCookieContext(cookieJar);
     });
 
-    server.config.logger.info(`[air-ssr] IRPC HTTP router initialized at ${(transport as { endpoint: string }).endpoint}`);
+    server.config.logger.info(
+      `[air-ssr] IRPC HTTP router initialized at ${(transport as { endpoint: string }).endpoint}`
+    );
     return router;
   } catch (error) {
     server.config.logger.error('[air-ssr] Failed to initialize IRPC HTTP router:');
@@ -294,7 +290,6 @@ async function initWsRouter(
     const wsRouter = new WebSocketRouter(irpc, wsTransport) as WebSocketRouter;
 
     // Provide CookieJar to WS handlers
-    const { decodeCookies, setCookieContext, getContext } = await server.ssrLoadModule('@anchorlib/core');
     wsRouter.use(() => {
       const cookieJar = decodeCookies(getContext('cookie', ''));
       setCookieContext(cookieJar);

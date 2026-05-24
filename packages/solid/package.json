@@ -84,9 +84,17 @@
     "vite-plugin-solid": "catalog:",
     "vitest": "catalog:"
   },
+  "dependencies": {
+    "@anchorlib/core": "workspace:*",
+    "@anchorlib/router": "workspace:*",
+    "@anchorlib/storage": "workspace:*"
+  },
   "peerDependencies": {
     "solid-js": "catalog:lib",
     "typescript": "catalog:lib"
+  },
+  "optionalDependencies": {
+    "@irpclib/http": "workspace:*"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
@@ -96,13 +104,5 @@
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
-  },
-  "dependencies": {
-    "@anchorlib/core": "workspace:*",
-    "@anchorlib/router": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
-  },
-  "optionalDependencies": {
-    "@irpclib/http": "workspace:*"
   }
 }
