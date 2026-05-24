@@ -18,7 +18,7 @@ irpc.construct(watchPrice, (symbol) => {
       }
 
       state.data.price = state.data.price + (Math.random() * 2 - 1);
-    }, 100);
+    }, 50);
 
     signal.addEventListener('abort', () => {
       clearInterval(interval);

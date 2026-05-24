@@ -6,10 +6,7 @@ import { router } from './lib/router.js';
 import { RootLayout } from './pages/layout.js';
 
 router.activate(window.location.href).then(() => {
-  const root = document.getElementById('root');
+  const root = document.getElementById('root')!;
   root.innerHTML = '';
-  render(
-    () => <UIRouter router={router} root={RootLayout} headless={true} resetScroll />,
-    document.getElementById('root')!
-  );
+  render(() => <UIRouter router={router} root={RootLayout} headless={true} resetScroll />, root);
 });

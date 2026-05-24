@@ -1,12 +1,11 @@
 {
-  "name": "air-solid",
-  "private": false,
-  "version": "0.0.1",
+  "name": "my-air-solid",
+  "private": true,
+  "version": "1.0.0-beta.24",
   "type": "module",
   "description": "AIR Stack for Solid — Vite SSR Starter",
   "scripts": {
-    "dev": "bun server",
-    "dev:csr": "vite",
+    "dev": "vite",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --ssr src/worker.ts --outDir dist/server",
     "build": "bun run build:client && bun run build:server",
@@ -17,18 +16,18 @@
     "@anchorlib/solid": "latest",
     "@irpclib/http": "latest",
     "@irpclib/irpc": "latest",
-    "solid-js": "^1.9.9",
-    "zod": "4.1.12"
+    "@irpclib/ws": "latest",
+    "solid-js": "^1.9.9"
   },
   "devDependencies": {
+    "@anchorlib/vite-ssr": "latest",
     "@biomejs/biome": "^2.3.3",
     "@tailwindcss/vite": "^4.1.16",
-    "@types/express": "latest",
     "@types/bun": "latest",
-    "express": "latest",
     "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
     "vite": "^8.0.10",
-    "vite-plugin-solid": "^2.11.10"
+    "vite-plugin-solid": "^2.11.10",
+    "zod": "4.1.12"
   }
 }

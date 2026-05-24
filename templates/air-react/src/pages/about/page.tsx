@@ -1,10 +1,10 @@
 import { Meta, page, Title } from '@anchorlib/react';
 import { aboutRoute } from './route.js';
 
-export const AboutPage = page(aboutRoute).render(() => (
+export const AboutPage = page(aboutRoute).render(({ state }) => (
   <>
-    <Title>About — AIR Stack</Title>
-    <Meta name="description" content="Anchor for React — fine-grained reactive state, SSR routing, and zero hooks." />
+    <Title>{state.data.meta.title}</Title>
+    <Meta name="description" content={state.data.meta.description} />
 
     <h1 className="hero-heading">
       <span className="brand-dim">About&nbsp;</span>

@@ -1,17 +1,17 @@
+import { type Bindable, setup } from '@anchorlib/solid';
 import type { JSX } from 'solid-js';
 
 type FieldError = { message: string } | undefined;
 
-export function InputField(props: {
+export const InputField = setup<{
   id: string;
   type?: string;
   label: string;
-  value?: string;
+  value?: Bindable<string>;
   error?: FieldError;
-  onInput?: (value: string) => void;
-}) {
+}>((props) => {
   const handleInput: JSX.InputEventHandlerUnion<HTMLInputElement, InputEvent> = (e) => {
-    props.onInput?.(e.currentTarget.value);
+    props.value = e.currentTarget.value;
   };
 
   return (
@@ -21,6 +21,6 @@ export function InputField(props: {
       {props.error ? <span class="field-error">{props.error.message}</span> : null}
     </div>
   );
-}
+});
 
 export default InputField;
