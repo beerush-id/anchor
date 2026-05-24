@@ -452,26 +452,27 @@ export const uiState = mutable({ sidebarOpen: false });
 For Server-Side Rendered (SSR) applications, state must be isolated per-request. Inject the state at the root layout and retrieve it where needed using the Context API.
 
 ```tsx
-import { setContext, getContext, mutable } from '@anchorlib/react';
+import { createContext, mutable } from '@anchorlib/react';
 
 // Define the scope
 export function createAppState() {
   return mutable({ theme: 'dark', user: null });
 }
 
+export const appStateContext = createContext<ReturnType<typeof createAppState>>();
+
 // Inject at root
 export const RootLayout = setup(() => {
-  setContext('appState', createAppState());
+  appStateContext.set(createAppState());
   return render(() => <div>...</div>);
 });
 
 // Consume in children
 export const ThemeToggle = setup(() => {
-  const state = getContext<ReturnType<typeof createAppState>>('appState');
+  const state = appStateContext.get();
   return render(() => <button onClick={() => state.theme = 'light'}>Toggle</button>);
 });
 ```
-
 
 ### Local State (Component Scope)
 State created inside a component `setup` is automatically garbage collected when the component's scope is disposed. It is natively SSR-safe and completely isolated.

@@ -1,11 +1,13 @@
 ## 5. Universal SSR
-This guide explains the components required for SSR in Anchor. It covers the Client Entry (`entry-client.tsx`), the Server Entry (`entry-server.tsx`), and the difference between an SSR Only server and a Full Stack server (`server.ts`).
+This guide covers SSR in AIR Stack for React. An app needs three files: `App.tsx` (client hydration), `vite.config.ts` (dev server via plugin), and `worker.ts` (production worker).
 
-### Client Entry (`entry-client.tsx`)
-A client-side hydration module. It resolves the route state via `router.activate()` before using `hydrateRoot` to attach React to the pre-rendered HTML.
+### Client Entry (`App.tsx`)
+Client-side hydration module. Resolves route state via `router.activate()` before using `hydrateRoot` to attach React to the pre-rendered HTML.
 
 ```tsx
 import '@anchorlib/react/client'; // MUST be first import
+import './styles/styles.css';
+
 import { UIRouter } from '@anchorlib/react';
 import { hydrateRoot } from 'react-dom/client';
 import { router } from './lib/router.js';
@@ -19,202 +21,163 @@ router.activate(window.location.href).then(() => {
 });
 ```
 
-### Server Entry (`entry-server.tsx`)
-A server-side rendering module. It uses `withIsolation` and `createLifecycle` to create an isolated state scope for each request and renders the React tree to HTML.
+### Vite Plugin (`@anchorlib/vite-ssr`)
+Vite plugin that handles SSR rendering and IRPC routing. Loads the renderer, router, and layout from the config.
 
-```tsx
-import '@anchorlib/react/server'; // MUST be first!
-import {
-  createLifecycle, decodeCookies, headings, Redirect,
-  redirectUrl, setCookieContext, UIRouter, withIsolation
-} from '@anchorlib/react';
-import { renderToString } from 'react-dom/server';
-import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
-
-export async function render(url: string, cookie = '') {
-  let html = '';
-  let head = '';
-  let redirect: string | undefined;
-  let cookies: string[] = [];
-
-  // 1. Create an isolated state scope
-  await withIsolation(async () => {
-    // 2. Initialize Cookies
-    const jar = decodeCookies(cookie);
-    setCookieContext(jar);
-
-    // 3. Create SSR Lifecycle
-    const ssr = createLifecycle();
-    
-    await ssr.runAsync(async () => {
-      try {
-        // Activate router with hydration snapshotting enabled (`true`)
-        const blocker = await router.activate(url, true);
-
-        // Handle Route Guards and Redirects
-        if (blocker instanceof Redirect) {
-          redirect = redirectUrl(blocker);
-          return;
-        }
-
-        // Generate hydration script from snapshot
-        const script = router.createHydrationScript(blocker);
-
-        // Render HTML and Head elements (e.g. dynamic meta tags)
-        html = renderToString(<UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />);
-        // biome-ignore lint/suspicious/noArrayIndexKey: Safe to use index as key.
-        head = renderToString([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
-        
-        // Inject hydration script into head
-        head += script;
-      } catch (error) {
-        head = '';
-        html = `SSR Render Error: ${error}`;
-      } finally {
-        router.cleanup();
-      }
-    });
-
-    cookies = jar.encode();
-    ssr.destroy();
-  });
-
-  return { html, head, redirect, cookies };
-}
-```
-
-### SSR Only Dev Server (`server.ts`)
-A Node/Express development server. It runs Vite middleware and executes `entry-server.tsx` to provide Hot Module Replacement (HMR).
-
+#### SSR Only (No IRPC)
 ```ts
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import express from 'express';
-import { createServer as createViteServer } from 'vite';
+// vite.config.ts
+import { airSSR } from '@anchorlib/vite-ssr';
 
-async function createServer() {
-  const app = express();
-  const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'custom' });
-
-  app.use(vite.middlewares);
-
-  app.use(async (req, res, next) => {
-    try {
-      const url = req.originalUrl;
-      let template = await fs.readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
-      template = await vite.transformIndexHtml(url, template);
-
-      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
-      const { html, head, redirect } = await render(url, req.headers.cookie ?? '');
-
-      if (redirect) return res.redirect(302, redirect);
-
-      const page = template.replace('<!--ssr-head-->', head).replace('<!--ssr-outlet-->', html);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
-
-  app.listen(5173);
-}
-
-createServer();
-```
-
-### Full Stack Dev Server (`server.ts`)
-A combined Node/Express development server. It runs Vite middleware for the frontend and natively resolves IRPC POST requests in the same process.
-
-```ts
-import '@irpclib/irpc/server';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { Readable } from 'node:stream';
-import { HTTPRouter } from '@irpclib/http/router';
-import { decodeCookies, getContext, setCookieContext } from '@anchorlib/react';
-import express from 'express';
-import { createServer as createViteServer } from 'vite';
-
-// Your IRPC configuration and Handlers
-import { irpc, transport } from './src/lib/module.js';
-import './src/pages/constructor.js'; 
-
-const rpcRouter = new HTTPRouter(irpc, transport);
-
-// Provide CookieJar to all IRPC handlers
-rpcRouter.use(() => {
-  const cookieJar = decodeCookies(getContext('cookie', ''));
-  setCookieContext(cookieJar);
+export default defineConfig({
+  plugins: [
+    react(),
+    airSSR({
+      router: './src/lib/router.ts',
+      layout: './src/pages/layout.tsx',
+      renderer: '@anchorlib/react/ssr',
+    }),
+  ],
 });
-
-async function createServer() {
-  const app = express();
-  const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'custom' });
-
-  // 1. Handle Full Stack IRPC Backend Requests
-  app.post(transport.endpoint, express.text({ type: '*/*' }), async (req, res, next) => {
-    try {
-      const webReq = new Request(`${req.headers.origin}${req.originalUrl}`, {
-        method: 'POST',
-        headers: req.headers as Record<string, string>,
-        body: req.body || '',
-      });
-
-      const webRes = await rpcRouter.resolve(webReq, [['cookie', req.headers?.cookie]]);
-      webRes.headers.forEach((v, k) => res.setHeader(k, v));
-      
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      res.status(webRes.status);
-
-      Readable.fromWeb(webRes.body as never).pipe(res);
-    } catch (e) {
-      next(e);
-    }
-  });
-
-  app.use(vite.middlewares);
-
-  // 2. Handle Frontend SSR Requests
-  app.use(async (req, res, next) => {
-    try {
-      const url = req.originalUrl;
-      let template = await fs.readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
-      template = await vite.transformIndexHtml(url, template);
-
-      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
-      const { html, head, redirect } = await render(url, req.headers.cookie ?? '');
-
-      if (redirect) return res.redirect(302, redirect);
-
-      const page = template.replace('<!--ssr-head-->', head).replace('<!--ssr-outlet-->', html);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
-
-  app.listen(5173);
-}
-
-createServer();
 ```
 
-### Full Stack Edge Worker (`worker.ts`)
-A Web Standard Worker for production. It serves static `dist/client` assets, executes the production SSR bundle, and natively resolves IRPC POST requests.
+#### Full Stack (SSR + IRPC over HTTP)
+```ts
+// vite.config.ts
+import { airSSR } from '@anchorlib/vite-ssr';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    airSSR({
+      router: './src/lib/router.ts',
+      layout: './src/pages/layout.tsx',
+      renderer: '@anchorlib/react/ssr',
+      irpc: {
+        module: { path: './src/lib/module.ts', name: 'irpc' },
+        transport: { path: './src/lib/module.ts', name: 'transport' },
+        handlers: ['./src/pages/constructor.ts'],
+      },
+    }),
+  ],
+});
+```
+
+#### Full Stack (SSR + IRPC over HTTP + WebSocket)
+```ts
+// vite.config.ts
+import { airSSR } from '@anchorlib/vite-ssr';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    airSSR({
+      router: './src/lib/router.ts',
+      layout: './src/pages/layout.tsx',
+      renderer: '@anchorlib/react/ssr',
+      irpc: {
+        module: { path: './src/lib/module.ts', name: 'irpc' },
+        transport: { path: './src/lib/module.ts', name: 'transport' },
+        wsTransport: { path: './src/lib/module.ts', name: 'wsTransport' },
+        handlers: ['./src/pages/constructor.ts'],
+      },
+    }),
+  ],
+});
+```
+
+Each `irpc` field accepts a string (loads `export default`) or `{ path, name }` (loads a named export). The plugin intercepts HTTP POST at the transport endpoint, and WebSocket upgrade at the WS transport endpoint — both on the same Vite dev server.
+
+### Standard SSR Only Edge Worker (`worker.ts`)
+For apps that only need SSR without IRPC backend. Handles abort signals, timeouts, asset resolution, cookie propagation, and redirects.
+
+```ts
+import { createWorker, createSSR } from '@anchorlib/react/ssr';
+import template from '../dist/client/index.html?raw';
+import router from './lib/router.js';
+import RootLayout from './pages/layout.js';
+
+const render = createSSR(router, RootLayout);
+
+export default createWorker(render, {
+  template,
+  timeout: 10000, // Optional: abort SSR render after 10s
+  async resolveAsset(request, url, env) {
+    if (typeof Bun !== 'undefined') {
+      const file = Bun.file(`./dist/client${url.pathname}`);
+      if (url.pathname !== '/' && (await file.exists())) {
+        return new Response(file);
+      }
+    }
+  },
+});
+```
+
+### Standard Full Stack Edge Worker (`worker.ts`)
+For apps that run IRPC and SSR on the same thread. Routes POST requests to IRPC, GET requests to SSR. Shares hooks, context isolation, and abort signals between both.
 
 ```ts
 import '@irpclib/irpc/server';
+import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
-import { decodeCookies, getContext, setCookieContext } from '@anchorlib/react';
 import template from '../dist/client/index.html?raw';
-import { render } from './entry-server.tsx';
 import { irpc, transport } from './lib/module.js';
+import router from './lib/router.js';
+import RootLayout from './pages/layout.js';
+
 import './pages/constructor.js';
 
+const render = createSSR(router, RootLayout);
+const irpcHttpRouter = new HTTPRouter(irpc, transport);
+
+export default createFullWorker(irpcHttpRouter, render, {
+  template,
+  async resolveAsset(request, url, env) {
+    if (typeof Bun !== 'undefined') {
+      const file = Bun.file(`./dist/client${url.pathname}`);
+      if (url.pathname !== '/' && (await file.exists())) {
+        return new Response(file);
+      }
+    }
+
+    if (env?.ASSETS) {
+      try {
+        const asset = await env.ASSETS.fetch(request);
+        if (asset.status < 400) return asset;
+      } catch (_e) {}
+    }
+  },
+});
+```
+
+#### `WorkerOptions`
+Both `createWorker` and `createFullWorker` accept the same base options:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `template` | `string` | **Required.** The HTML template string (e.g., `index.html?raw`). |
+| `headTag` | `string` | The placeholder to replace with rendered head. Defaults to `<!--ssr-head-->`. |
+| `bodyTag` | `string` | The placeholder to replace with rendered body. Defaults to `<!--ssr-outlet-->`. |
+| `resolveAsset` | `(request, url, env?) => Promise<Response \| undefined>` | Serves static assets before SSR. Return `undefined` to fall through to SSR. |
+| `resolveContext` | `(request, url) => SSRContextSeed` | Custom context seed. Defaults to `[]`. |
+| `createResponse` | `(response: Response) => Response` | Hook to modify all outgoing responses (e.g., add security headers). |
+| `timeout` | `number` | Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. |
+
+### Custom Full Stack Edge Worker (Advanced)
+Full control over request routing, IRPC resolution, and SSR rendering with proper abort propagation, request isolation, and cookie management.
+
+```ts
+import '@irpclib/irpc/server';
+import { createSSR } from '@anchorlib/react/ssr';
+import { HTTPRouter } from '@irpclib/http/router';
+import { decodeCookies, setCookieContext } from '@anchorlib/core';
+import template from '../dist/client/index.html?raw';
+import { irpc, transport } from './lib/module.js';
+import pageRouter from './lib/router.js';
+import RootLayout from './pages/layout.js';
+import './pages/constructor.js';
+
+const render = createSSR(pageRouter, RootLayout);
 const router = new HTTPRouter(irpc, transport);
 
 // Provide CookieJar to the IRPC handlers
@@ -224,44 +187,61 @@ router.use(() => {
 });
 
 export default {
-  async fetch(request: Request, env: any): Promise<Response> {
-    const url = new URL(request.url);
-
-    // 1. Handle IRPC requests
-    if (url.pathname.startsWith(transport.endpoint) && request.method === 'POST') {
-      return router.resolve(request, [['cookie', request.headers.get('cookie')]]);
-    }
-
-    // 2. Attempt to serve static assets (Bun / Cloudflare Pages)
-    if (typeof Bun !== 'undefined') {
-      const file = Bun.file(`./dist/client${url.pathname}`);
-      if (url.pathname !== '/' && (await file.exists())) return new Response(file);
-    } else if (env?.ASSETS) {
-      try {
-        const asset = await env.ASSETS.fetch(request);
-        if (asset.status < 400) return asset;
-      } catch (_e) {}
-    }
-
-    const cookie = request.headers.get('cookie') ?? '';
+  async fetch(request: Request): Promise<Response> {
+    const controller = new AbortController();
+    const abort = (reason: unknown) => controller.abort(reason);
+    request.signal.addEventListener('abort', abort, { once: true });
 
     try {
-      // 3. Execute the environment-agnostic SSR render function
-      const { html, head, redirect } = await render(url.pathname, cookie);
+      const url = new URL(request.url);
+      const cookie = request.headers.get('cookie') ?? '';
 
-      // Handle server-side redirects
-      if (redirect) {
-        return Response.redirect(redirect, 302);
+      // 1. IRPC routing
+      if (request.method === 'POST' && url.pathname.startsWith(transport.endpoint)) {
+        return router.resolve(request, [['cookie', cookie]]);
       }
 
-      // Inject the rendered content into the HTML shell
-      const page = template.replace('<!--ssr-head-->', head).replace('<!--ssr-outlet-->', html);
+      // 2. Static assets
+      if (typeof Bun !== 'undefined') {
+        const file = Bun.file(`./dist/client${url.pathname}`);
+        if (url.pathname !== '/' && (await file.exists())) return new Response(file);
+      }
 
-      return new Response(page, {
-        headers: { 'Content-Type': 'text/html' },
-      });
+      // 3. SSR with IRPC isolation
+      const cookieJar = decodeCookies(cookie);
+
+      const response = await router.isolate(
+        async () => {
+          const { html, head, status, redirect } = await render(
+            url.pathname, cookie, undefined, controller, true
+          );
+
+          const body = template
+            .replace('<!--ssr-head-->', head)
+            .replace('<!--ssr-outlet-->', html);
+
+          const headers = new Headers({ 'Content-Type': 'text/html' });
+          cookieJar.encode().forEach((c) => headers.append('Set-Cookie', c));
+
+          if (redirect) {
+            headers.append('Location', redirect);
+            return new Response(null, { status: 302, headers });
+          }
+
+          return new Response(body, { status, headers });
+        },
+        controller,
+        [['cookie', cookie]],
+        () => {
+          setCookieContext(cookieJar);
+        }
+      );
+
+      return response;
     } catch (e) {
       return new Response('Internal Server Error', { status: 500 });
+    } finally {
+      request.signal.removeEventListener('abort', abort);
     }
   },
 };

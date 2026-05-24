@@ -237,6 +237,23 @@ irpc.construct(getDashboard, (userId) => {
 });
 ```
 
+### IRPC: Stream Piping
+When you need to pass the stream directly to the caller instead of awaiting it, `return reader.pipe()`.
+
+```typescript
+irpc.construct(sendMessage, async (propmt) => {
+  const message = createMessage();
+  const reader = getChatResponse(prompt);
+
+  reader.then(() => {
+    message.text = reader.data;
+    saveMessage(message.id);
+  });
+
+  return reader.pipe(); // Pass the live stream through
+});
+```
+
 ### IRPC: Hooks and Context (Handler Environment)
 Execution Order: Router Hooks -> Spec Hooks -> Handler. Request context is safely isolated via `AsyncLocalStorage`.
 ```typescript
@@ -322,6 +339,24 @@ api.use(new HTTPTransport({ endpoint: `/irpc/${api.href}` })); // Cloud Server
 
 export const compute = createPackage({ name: 'compute', version: '1.0.0' });
 compute.use(new BroadcastTransport({ channel: compute.href })); // Local Web Worker
+```
+
+### IRPC: Credentials (`.sign()` / `credential()`)
+Attach key-value credentials to a transport to send it with every request.
+
+```typescript
+// Client: attach auth token to outgoing calls
+transport.sign({ MY_CUSTOM_KEY: '<insert-your-token-here>' });
+
+// Client: or using factory function
+transport.sign(() => ({ MY_CUSTOM_KEY: '<insert-your-token-here>' }))
+
+// Server handler: read the caller's credentials
+irpc.construct(getProfile, async () => {
+  const token = credential<string>('MY_CUSTOM_KEY');
+  const user = await verifyAPIKey(token);
+  return db.users.find(user.id);
+});
 ```
 
 ### IRPC: Routers & Context Seeding

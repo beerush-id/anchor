@@ -21,7 +21,15 @@ export const router = createRouter({
 });
 
 // Global Fallback Error Boundary (Optional)
-router.catch(() => <h1>404 Not Found</h1>);
+// Catches any unhandled RouteError (NotFoundError, GuardError, ProviderError, etc.)
+import { NotFoundError, GuardError } from '@anchorlib/react';
+
+router.catch(({ error }) => {
+  if (error instanceof NotFoundError) return <h1>404 - Page Not Found</h1>;
+  if (error instanceof GuardError) return <h1>403 - Access Denied</h1>;
+  
+  return <h1>500 - Internal Server Error</h1>;
+});
 ```
 
 ### Application Mounting
@@ -72,11 +80,16 @@ export const profileRoute = usersRoute.route('/:user_id', {
 });
 
 // Route-Specific Error Boundary (Optional fallback for guard/provider rejections)
-profileRoute.catch((error) => <div>Profile failed to load: {error.message}</div>);
+profileRoute.catch(({ error }) => {
+  if (error instanceof GuardError) return <div>Access Denied: {error.message}</div>;
+  return <div>Profile failed to load: {error.message}</div>;
+});
 ```
 
 ### Route Chain (Guards & Providers)
 URL paths, access control (`guard`), and data loaders (`provide`) live in the exact same fluent chain. Guards and Providers execute *before* the component renders.
+
+Use `.provide({ ... })` to execute multiple data fetchers in parallel (preferred).
 
 ```typescript
 export const profileRoute = usersRoute
@@ -85,12 +98,24 @@ export const profileRoute = usersRoute
     // Rejects navigation out-of-band before rendering
     if (!isAuthenticated()) throw redirect(loginRoute);
   })
-  .provide('profile', ({ params }) => {
-    return getUserProfile(params.user_id);
-  })
-  .provide('notifications', ({ params }) => {
-    // Providers are chainable and run in sequence
-    return getUserNotifications(params.user_id);
+  .provide({
+    // Object syntax executes providers in PARALLEL
+    profile: ({ params }) => getUserProfile(params.user_id),
+    notifications: ({ params }) => getUserNotifications(params.user_id)
+  });
+```
+
+### Abort Signals & Network Cancellation
+The provider context includes a standard `AbortSignal`. The router automatically triggers this signal if a parallel sibling throws an error or if the user navigates away before the fetch completes. Pass it to native `fetch()` calls to prevent wasted bandwidth.
+
+```typescript
+export const searchRoute = rootRoute
+  .route('/search')
+  .provide('results', async ({ query, signal }) => {
+    // Pass the signal down to native fetch to enable auto-cancellation
+    const response = await fetch(`/api/search?q=${query.q}`, { signal });
+    if (!response.ok) throw new ProviderError('Search failed');
+    return response.json();
   });
 ```
 
@@ -119,11 +144,11 @@ export const ProtectedRoutes = Route.group({
 });
 ```
 
-### Redirects & Guard Errors
-To bounce a user, throw `redirect()`. It accepts route objects or page components. If you throw a standard `Error` instead, navigation halts and the error surfaces to `state.error` for in-place rendering.
+### Redirects & Route Errors
+To bounce a user, throw `redirect()`. It accepts route objects or page components. If you throw a standard `Error` (or specific `RouteError` like `GuardError` or `ProviderError`), navigation halts and the error surfaces to `state.error` for in-place rendering.
 
 ```tsx
-import { redirect } from '@anchorlib/react';
+import { redirect, GuardError } from '@anchorlib/react';
 
 export const settingsRoute = dashboardRoute
   .route('/settings')
@@ -134,18 +159,18 @@ export const settingsRoute = dashboardRoute
     // Redirect to a dynamic route with type-safe params
     if (!hasProfile) throw redirect(profileRoute, { user_id: '42' });
 
-    // Throwing an Error exposes it to state.error instead of redirecting
-    if (!hasBilling) throw new Error('Billing access restricted.');
+    // Throwing an Error halts navigation and exposes it to state.error
+    if (!hasBilling) throw new GuardError('Billing access restricted.');
   });
 ```
 
-When a guard throws a standard `Error`, you can render it cleanly inside the layout instead of relying on a fallback error boundary:
+When a guard or provider throws an error, you can render it cleanly inside the layout instead of relying on a fallback error boundary:
 
 ```tsx
 export const SettingsLayout = page(settingsRoute).render(({ state, children }) => render(() => {
-  // If the guard threw an Error, render the error barrier directly
+  // If the guard or provider threw an Error, render the error barrier directly
   if (state.error) {
-    return <div className="error">Access Denied: {state.error.message}</div>;
+    return <div className="error">Failed: {state.error.message}</div>;
   }
 
   // Otherwise render the authorized nested routes
@@ -153,8 +178,8 @@ export const SettingsLayout = page(settingsRoute).render(({ state, children }) =
 }));
 ```
 
-### Dependent Providers
-Providers run in sequence. Downstream providers can access the `data` resolved by upstream providers in the same chain.
+### Sequential & Dependent Providers
+Each `.provide()` call executes in sequence. Providers within the same `.provide({})` call execute in parallel. Downstream providers can access the `data` resolved by upstream `.provide()` calls in the chain.
 
 ```typescript
 export const postsRoute = usersRoute
@@ -162,7 +187,7 @@ export const postsRoute = usersRoute
   .provide('user', async ({ params }) => {
     return fetchUser(params.user_id);
   })
-  .provide('posts', async ({ params, data }) => {
+  .provide('posts', async ({ data }) => {
     // `data.user` is fully resolved and type-safe here
     return fetchUserPosts(data.user.id);
   });
@@ -190,6 +215,26 @@ export const ChartRoute = Route.define({
 });
 ```
 
+### Data-Driven Skeletons
+Instead of maintaining separate JSX markup for loading skeletons, a provider can synchronously return a local reactive `mutable` containing skeleton data. It can then safely mutate that same object in the background when the real fetch resolves. The View simply renders the data it's given and toggles CSS classes based on the skeleton flag.
+
+```typescript
+export const profileRoute = usersRoute
+  .route('/:user_id')
+  .provide('profile', (ctx) => {
+    // 1. Create a local reactive object synchronously
+    const profile = mutable({ isSkeleton: true, name: 'Loading...' });
+
+    // 2. Fetch in the background and mutate the local object
+    fetchUser(ctx.params.user_id).then(realUser => {
+      Object.assign(profile, { ...realUser, isSkeleton: false });
+    });
+
+    // 3. Return the reactive object immediately to prevent router blocking
+    return profile;
+  });
+```
+
 ### Router: View Binding & Data Consumption
 The `.render()` function binds the route to a UI component. Layouts receive `children`, while leaf pages consume the strongly-typed `state.data`.
 
@@ -214,9 +259,9 @@ import { profileRoute } from './route.js';
 
 export const ProfilePage = page(profileRoute).render(({ state }) => (
   <>
-    {/* Built-in pending status while providers fetch */}
+    {/* Global pending status (first-time load) */}
     <Show when={() => state.status === 'pending'}>
-      <div>Loading...</div>
+      <div>Loading full profile...</div>
     </Show>
 
     {/* Safely unwraps truthy data with perfect TypeScript inference */}
@@ -225,11 +270,40 @@ export const ProfilePage = page(profileRoute).render(({ state }) => (
         <div>
           <h1>{name}</h1>
           <p>{email}</p>
+
+          {/* Granular, provider-specific loading indicator for background refetches */}
+          <Show when={() => state.resolving.has('notifications')}>
+            <span className="spinner">Updating notifications...</span>
+          </Show>
         </div>
       )}
     </Show>
   </>
 ));
+```
+
+### Route-Level Code Splitting (Lazy Loading)
+Use `.renderAsync()` to lazily load the component's JavaScript bundle. The router executes `.renderAsync()` in the background in parallel with data providers during route activation.
+
+```tsx
+// routes/users/[user_id]/page.tsx
+import { page } from '@anchorlib/react';
+import { profileRoute } from './route.js';
+
+export const ProfilePage = page(profileRoute).renderAsync(
+  async () => {
+    // The router downloads this JS bundle at the exact same time
+    // it starts fetching the route's provider data!
+    const { ProfileComponent } = await import('./ProfileComponent.tsx');
+    
+    // Returns a standard renderer function, exactly like `.render()`.
+    // Use $use() to maintain reactivity so the component updates if data changes.
+    return ({ state }) => <ProfileComponent profile={$use(() => state.data.profile)} />;
+  },
+  // Optional Fallback: Displayed if `renderMode: 'immediate'` is used 
+  // while the JavaScript bundle is still downloading. It receives the exact same context as `.render()`.
+  ({ state }) => <div className="skeleton-ui">Loading profile for user {state.params.user_id}...</div>
+);
 ```
 
 ### Declarative Navigation

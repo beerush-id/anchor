@@ -86,7 +86,7 @@ export const NumberInput = setup<{
 When multiple inputs must be validated and submitted together, use a `Form` component as the State Owner, coordinating state via Context.
 
 ```tsx
-import { setup, render, setContext, getContext, form, derived, snapshot } from '@anchorlib/react';
+import { setup, render, createContext, form, derived, snapshot } from '@anchorlib/react';
 import type { ReactNode } from 'react';
 import { z, type ZodSchema } from 'zod';
 
@@ -100,9 +100,8 @@ export type FieldContext = {
   name: string;
 };
 
-// Use Symbols to prevent context key collisions
-export const FORM_KEY = Symbol('FormContext');
-export const FIELD_KEY = Symbol('FieldContext');
+export const formContext = createContext<FormContext>();
+export const fieldContext = createContext<FieldContext>();
 
 // The State Coordinator
 export const Form = setup<{ 
@@ -112,7 +111,7 @@ export const Form = setup<{
   children?: ReactNode 
 }>((props) => {
   const [state, errors] = form(props.schema, props.data);
-  setContext(FORM_KEY, { state, errors });
+  formContext.set({ state, errors });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,15 +123,15 @@ export const Form = setup<{
 ```
 
 ### Form Field Bridge
-The `FormField` acts as a structural bridge, using `getContext` to connect to the `Form` and setting a local `FieldContext` for the underlying input.
+The `FormField` acts as a structural bridge, using `formContext.get()` to connect to the `Form` and setting a local `FieldContext` for the underlying input.
 
 ```tsx
 // The Structural Bridge
 export const FormField = setup<{ name: string, label?: string, children?: ReactNode }>((props) => {
-  const formState = getContext<FormContext>(FORM_KEY);
+  const formState = formContext.get();
   const error = derived(() => formState?.errors[props.name]?.message);
   
-  setContext<FieldContext>(FIELD_KEY, { name: props.name });
+  fieldContext.set({ name: props.name });
 
   return render(() => (
     <div>
@@ -145,7 +144,7 @@ export const FormField = setup<{ name: string, label?: string, children?: ReactN
 ```
 
 ### Context-Aware Inputs
-Inputs use `getContext()` to completely bypass the need for explicit props when placed inside a `FormField`, reading and writing directly to the form's state.
+Inputs use `formContext.get()` and `fieldContext.get()` to completely bypass the need for explicit props when placed inside a `FormField`, reading and writing directly to the form's state.
 
 ```tsx
 // The Context-Aware Input
@@ -154,8 +153,8 @@ export const Input = setup<{
   value?: string, 
   onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void
 }>((props) => {
-  const formState = getContext<FormContext>(FORM_KEY);
-  const field = getContext<FieldContext>(FIELD_KEY);
+  const formState = formContext.get();
+  const field = fieldContext.get();
   const withForm = formState && field;
 
   // Derive value from Form Context if available, fallback to props
@@ -182,7 +181,7 @@ export const Input = setup<{
 To enforce type safety on field names (`name` prop matching schema keys), graduate to a Form Factory function.
 
 ```tsx
-import { setup, render, setContext, getContext, form, derived, snapshot } from '@anchorlib/react';
+import { setup, render, createContext, form, derived, snapshot } from '@anchorlib/react';
 import type { ReactNode } from 'react';
 import { z, type ZodSchema } from 'zod';
 
@@ -190,14 +189,17 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
   type FormData = z.infer<T>;
 
   // Strongly type the context for THIS specific schema
-  type FormContext = {
+  type FormContextType = {
     state: FormData;
     errors: Record<string, { message: string }>;
   };
 
+  const formContext = createContext<FormContextType>();
+  const fieldContext = createContext<{ name: string }>();
+
   const Form = setup<{ onSubmit?: (data: FormData) => void, children?: ReactNode }>((props) => {
     const [state, errors] = form(schema, init);
-    setContext<FormContext>(FORM_KEY, { state, errors });
+    formContext.set({ state, errors });
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -208,9 +210,9 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
   });
 
   const Field = setup<{ name: keyof FormData, label?: string, children?: ReactNode }>((props) => {
-    const formState = getContext<FormContext>(FORM_KEY);
+    const formState = formContext.get();
     const error = derived(() => formState?.errors[props.name as string]?.message);
-    setContext<FieldContext>(FIELD_KEY, { name: props.name as string });
+    fieldContext.set({ name: props.name as string });
 
     return render(() => (
       <div>

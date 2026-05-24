@@ -99,11 +99,12 @@ When passing state down to a custom Component or View, you **must use a binding*
 When passing state directly into native HTML elements (e.g., `<div>{state.value}</div>`), the surrounding block **must be wrapped in a reactive boundary** (like `render(() => ...)` or `<Show>`). In this scenario, the wrapper itself *is* the binding that tracks the read.
 
 ```tsx
-import { setup, render, getContext, template, $use, $bind } from '@anchorlib/react';
+import { setup, render, template, $use, $bind } from '@anchorlib/react';
+import { metricsContext, appStateContext } from './contexts.js';
 
 export const SettingsPanel = setup(() => {
-  const metrics = getContext(METRICS);
-  const state = getContext(APP_STATE);
+  const metrics = metricsContext.get();
+  const state = appStateContext.get();
 
   // Reactive Boundary: `render(() => ...)` wraps the static HTML reads
   return render(() => (
@@ -198,11 +199,12 @@ A **View** is a one-way reactive boundary that presents state as-is but never ow
 Use `snippet()` to create an inline reactive boundary. Snippets naturally inherit the parent closure, meaning you don't need to pass props to them. They isolate fast updates, preventing the parent component from re-rendering.
 
 ```tsx
-import { setup, getContext, snippet } from '@anchorlib/react';
+import { setup, snippet } from '@anchorlib/react';
+import { metricsContext, authContext } from './contexts.js';
 
 export const Dashboard = setup(() => {
-  const metrics = getContext(METRICS);
-  const user = getContext(AUTH);
+  const metrics = metricsContext.get();
+  const user = authContext.get();
 
   // The fast-updating CPU meter is isolated into a snippet.
   // When metrics.cpu changes 60 times a second, ONLY this snippet re-renders.
@@ -254,7 +256,7 @@ If it only presents data, it is a **Static UI** (standard function) or a **View*
 Use `setup` to create a Component. To track reactive state reads in JSX, use `render(() => ...)`.
 
 ```tsx
-import { setup, render, mutable, onMount, onCleanup, $use, setContext } from '@anchorlib/react';
+import { setup, render, mutable, onMount, onCleanup, $use, createContext } from '@anchorlib/react';
 import type { ReactNode } from 'react';
 
 // A component with reactive JSX
@@ -267,10 +269,12 @@ export const Counter = setup<{ initial?: number }>((props) => {
   ));
 });
 
+export const tabContext = createContext<{ active: number }>();
+
 // A component with static JSX
 export const Tabs = setup<{ default?: number, children?: ReactNode }>((props) => {
   const state = mutable({ active: props.default ?? 0 });
-  setContext('tabs', state); // Children use getContext to read/write state
+  tabContext.set(state); // Children use tabContext.get() to read/write state
 
   return () => (
     <div className="tabs-container">
