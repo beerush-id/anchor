@@ -14,9 +14,7 @@
       "import": "./dist/router.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -24,7 +22,6 @@
     "access": "public"
   },
   "devDependencies": {
-    "@anchorlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
     "@vitest/coverage-v8": "catalog:",
