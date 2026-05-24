@@ -58,6 +58,7 @@
     "@testing-library/user-event": "catalog:",
     "@types/bun": "catalog:",
     "@types/react": "catalog:lib",
+    "@types/react-dom": "catalog:lib",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "jsdom": "catalog:",
@@ -70,6 +71,7 @@
   },
   "peerDependencies": {
     "react": "catalog:lib",
+    "react-dom": "catalog:lib",
     "typescript": "catalog:lib"
   },
   "optionalDependencies": {

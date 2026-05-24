@@ -8,24 +8,19 @@ import {
   withIsolation,
 } from '@anchorlib/core';
 import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
-import type { ReactNode } from 'react';
+import { renderToString } from 'react-dom/server';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
 import type { SSRContext, SSROutput, SSRRenderer } from './types.js';
 
 /**
  * Creates an SSR renderer function.
  *
- * @param renderer - The function to render a React node to a string (e.g., renderToString).
  * @param router - The router instance to use for navigation.
  * @param RootLayout - The root layout component of the application.
  */
-export function createSSR(
-  renderer: (node: ReactNode) => string,
-  router: Router,
-  RootLayout: RouteComponent<AnyRoute>
-): SSRRenderer {
+export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>): SSRRenderer {
   return ((url: string, cookie: string, context?: SSRContext, controller?: AbortController, isolated?: boolean) => {
-    if (isolated) return renderToString(renderer, router, RootLayout, url, controller) as Promise<SSROutput>;
+    if (isolated) return ssrRenderToString(router, RootLayout, url, controller) as Promise<SSROutput>;
 
     const storage = context instanceof AsyncStore ? context : new AsyncStore(context as SSRContext);
     return withIsolation(
@@ -35,7 +30,7 @@ export function createSSR(
         const jar = getCookieJar() ?? decodeCookies(cookie);
         setCookieContext(jar);
 
-        const result = await renderToString(renderer, router, RootLayout, url, controller);
+        const result = await ssrRenderToString(router, RootLayout, url, controller);
 
         cookies = jar.encode();
         return { ...result, cookies } as SSROutput;
@@ -54,14 +49,12 @@ export function createSSR(
  * `createSSR`; exported for advanced use cases that need direct access
  * to the render pipeline without cookie/isolation management.
  *
- * @param renderer - The React `renderToString` function.
  * @param router - The router instance.
  * @param RootLayout - The root layout component.
  * @param url - The URL to render.
  * @param controller - Optional abort controller for cancellation.
  */
-export async function renderToString(
-  renderer: (node: ReactNode) => string,
+export async function ssrRenderToString(
   router: Router,
   RootLayout: RouteComponent<AnyRoute>,
   url: string,
@@ -88,8 +81,8 @@ export async function renderToString(
         status = 400;
       }
 
-      html = renderer(<UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />);
-      head = renderer([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
+      html = renderToString(<UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />);
+      head = renderToString([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
       head += script;
     } catch (error) {
       if (error instanceof Redirect) {
