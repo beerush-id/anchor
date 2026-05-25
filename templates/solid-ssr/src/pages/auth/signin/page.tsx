@@ -1,4 +1,4 @@
-import { derived, form, Meta, mutable, page, Title } from '@anchorlib/solid';
+import { $bind, derived, form, Meta, mutable, page, Title } from '@anchorlib/solid';
 import type { JSX } from 'solid-js';
 import { z } from 'zod';
 import { CheckboxField } from '../../../components/CheckboxField.js';
@@ -29,23 +29,20 @@ function SignInForm() {
         id="signin-email"
         type="email"
         label="Email"
-        value={credentials.email}
-        onInput={(v) => (credentials.email = v)}
+        value={$bind(credentials, 'email')}
         error={errors.email}
       />
       <InputField
         id="signin-password"
         type="password"
         label="Password"
-        value={credentials.password}
-        onInput={(v) => (credentials.password = v)}
+        value={$bind(credentials, 'password')}
         error={errors.password}
       />
       <CheckboxField
         id="signin-remember"
         label="Remember me"
-        checked={auth.remember}
-        onChange={(v) => (auth.remember = v)}
+        checked={$bind(auth, 'remember')}
       />
       <button type="submit" class="btn-counter" disabled={isDisabled.value}>
         Sign In

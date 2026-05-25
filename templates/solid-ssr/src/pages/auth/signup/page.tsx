@@ -1,4 +1,4 @@
-import { derived, form, Meta, mutable, page, Title } from '@anchorlib/solid';
+import { $bind, derived, form, Meta, mutable, page, Title } from '@anchorlib/solid';
 import type { JSX } from 'solid-js';
 import { z } from 'zod';
 import { CheckboxField } from '../../../components/CheckboxField.js';
@@ -36,32 +36,28 @@ function SignUpForm() {
         id="email"
         type="email"
         label="Email"
-        value={credentials.email}
-        onInput={(v) => (credentials.email = v)}
+        value={$bind(credentials, 'email')}
         error={errors.email}
       />
       <InputField
         id="password"
         type="password"
         label="Password"
-        value={credentials.password}
-        onInput={(v) => (credentials.password = v)}
+        value={$bind(credentials, 'password')}
         error={errors.password}
       />
       <InputField
         id="confirm-password"
         type="password"
         label="Confirm Password"
-        value={credentials.confirmPassword}
-        onInput={(v) => (credentials.confirmPassword = v)}
+        value={$bind(credentials, 'confirmPassword')}
         error={errors.confirmPassword}
       />
-      <CheckboxField id="remember" label="Remember me" checked={auth.remember} onChange={(v) => (auth.remember = v)} />
+      <CheckboxField id="remember" label="Remember me" checked={$bind(auth, 'remember')} />
       <CheckboxField
         id="accepted"
         label="I accept the terms and conditions"
-        checked={auth.accepted}
-        onChange={(v) => (auth.accepted = v)}
+        checked={$bind(auth, 'accepted')}
       />
       <button type="submit" class="btn-counter" disabled={!isAccepted.value}>
         Sign Up
