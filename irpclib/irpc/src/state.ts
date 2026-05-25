@@ -1,4 +1,13 @@
-import { $do, anchor, mutable, onCleanup, type StateSubscriber, subscribe } from '@anchorlib/core';
+import {
+  $do,
+  anchor,
+  mutable,
+  onCleanup,
+  replay,
+  type StateSubscriber,
+  type StateUnsubscribe,
+  subscribe,
+} from '@anchorlib/core';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
 import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
@@ -18,6 +27,7 @@ export class RemoteState<T> extends Promise<T> {
   readonly #accept: (value: T) => void;
   readonly #reject: (error: Error) => void;
 
+  #pipes = new Set<StateUnsubscribe>();
   #closed = false;
   #locked?: this['then'];
 
@@ -99,6 +109,11 @@ export class RemoteState<T> extends Promise<T> {
     onCleanup(() => this.close());
   }
 
+  /**
+   * Transitions the state to SUCCESS and resolves the underlying Promise.
+   *
+   * @param value - Optional final value to resolve with.
+   */
   public accept(value?: T): void;
   public accept(...args: [T]) {
     $do(() => {
@@ -114,6 +129,11 @@ export class RemoteState<T> extends Promise<T> {
     });
   }
 
+  /**
+   * Transitions the state to ERROR and rejects the underlying Promise.
+   *
+   * @param error - Optional error to reject with.
+   */
   public reject(error?: Error): void;
   public reject(...args: [Error]) {
     $do(() => {
@@ -130,6 +150,9 @@ export class RemoteState<T> extends Promise<T> {
     });
   }
 
+  /**
+   * Aborts the current execution, transitioning the status to ABORTED.
+   */
   public abort() {
     $do(() => {
       this.#closed = true;
@@ -146,7 +169,9 @@ export class RemoteState<T> extends Promise<T> {
    * @returns An unsubscribe function to terminate the listener.
    */
   public subscribe(handler: StateSubscriber<IRPCReadable<T>>) {
-    return subscribe(this.state, handler);
+    const unsubscribe = subscribe(this.state, handler);
+    this.#pipes.add(unsubscribe);
+    return unsubscribe;
   }
 
   /**
@@ -160,10 +185,18 @@ export class RemoteState<T> extends Promise<T> {
     this.destroy();
   }
 
+  /**
+   * Resumes a closed state if it was marked as resumable.
+   */
   protected resume() {
     this.#closed = false;
   }
 
+  /**
+   * Temporarily disables the `.then()` method to prevent automatic Promise chaining.
+   *
+   * @returns The current instance for chaining.
+   */
   public pipe() {
     this.#locked = this.then;
     // biome-ignore lint/suspicious/noThenProperty: expect override
@@ -172,6 +205,11 @@ export class RemoteState<T> extends Promise<T> {
     return this;
   }
 
+  /**
+   * Restores the `.then()` method if it was previously locked via `.pipe()`.
+   *
+   * @returns The current instance for chaining.
+   */
   public unpipe() {
     if (!this.#locked) return this;
 
@@ -184,10 +222,34 @@ export class RemoteState<T> extends Promise<T> {
   }
 
   /**
+   * Pipes all state mutations from this instance to a target RemoteState.
+   *
+   * @param target - The destination RemoteState to receive the updates.
+   * @returns The current instance for chaining.
+   */
+  public pipeTo(target: RemoteState<T>) {
+    this.subscribe((_, event) => {
+      if (event.type === 'init') {
+        anchor.assign(target.state, this.state);
+        return;
+      }
+
+      replay(target.state, event);
+    });
+
+    return this;
+  }
+
+  /**
    * Destroys the reactive state bindings.
    */
   protected destroy() {
     if (this.resumable) return;
+
+    for (const unsubscribe of this.#pipes) {
+      unsubscribe();
+    }
+
     anchor.destroy(this.state);
   }
 

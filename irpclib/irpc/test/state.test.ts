@@ -397,5 +397,28 @@ describe('RemoteState', () => {
       expect(state.data).toBe('updated');
       expect(state.status).toBe(IRPC_STATUS.PENDING);
     });
+
+    it('should pipe to target state', () => {
+      const a = new RemoteState('a');
+      const b = new RemoteState('b');
+
+      a.pipeTo(b);
+      expect(b.data).toBe('a');
+
+      a.data = 'c';
+      expect(b.data).toBe('c');
+
+      b.data = 'd';
+      expect(b.data).toBe('d');
+      expect(a.data).toBe('c');
+
+      a.data = 'e';
+      expect(b.data).toBe('e');
+
+      a.close();
+
+      a.data = 'f';
+      expect(b.data).toBe('e');
+    });
   });
 });
