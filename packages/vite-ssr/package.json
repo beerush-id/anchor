@@ -35,7 +35,8 @@
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",
     "typescript": "catalog:lib",
-    "vite": ">=5"
+    "vite": "catalog:",
+    "ws": "catalog:"
   },
   "peerDependenciesMeta": {
     "@anchorlib/core": {
@@ -58,7 +59,7 @@
     "rimraf": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
-    "ws": "latest"
+    "ws": "catalog:"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
