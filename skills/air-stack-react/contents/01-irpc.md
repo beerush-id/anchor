@@ -158,6 +158,47 @@ export const UserCard = setup<{ id: string }>((props) => {
 });
 ```
 
+### IRPC: Promise vs RemoteState
+When wrapping 3rd-party APIs that expose separate endpoints for static and streaming responses (e.g., `/chat` and `/stream`), **do not create separate IRPC functions** for them. Choose `Promise<T>` only for strictly static operations. If the underlying data has any concept of streaming or progress, expose only a single `RemoteState<T>` function.
+
+```typescript
+// index.ts (Stub)
+// DECLARE ONE function returning RemoteState, avoiding separate chat vs chatStream.
+type ChatFn = (prompt: string) => RemoteState<{ text: string }>;
+export const chat = irpc.declare<ChatFn>({
+  name: 'chat',
+  init: () => ({ text: '' })
+});
+```
+
+```typescript
+// constructor.ts (Handler)
+// IMPLEMENT using stream() by consuming ONLY the 3rd-party STREAMING API.
+// IRPC automatically fulfills both `await chat()` and `chat.once()` from this single implementation.
+irpc.construct(chat, (prompt) => {
+  return stream(async (state, resolve, reject) => {
+    const controller = new AbortController();
+    
+    try {
+      // We consume the 3rd-party stream API
+      const response = await fetch('https://api.thirdparty.com/chat/stream', {
+        signal: controller.signal,
+      });
+      
+      for await (const chunk of streamReader(response.body)) {
+        state.data.text += chunk; // Client sees live updates
+      }
+      
+      resolve(); // Client using `await chat()` resolves here with the final accumulated state
+    } catch (err) {
+      reject(err);
+    }
+    
+    return () => controller.abort();
+  });
+});
+```
+
 ### IRPC: Streaming (Handler)
 ```typescript
 import { stream } from '@irpclib/irpc';
