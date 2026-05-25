@@ -1,7 +1,7 @@
 import { anchor } from '../engine/index.js';
-import { $do, mutable, subscribe } from '../reactive/index.js';
+import { $do, mutable, replay, subscribe } from '../reactive/index.js';
 import { onCleanup } from '../scope/index.js';
-import type { StateSubscriber } from '../types.js';
+import type { StateSubscriber, StateUnsubscribe } from '../types.js';
 import { WORKFLOW_ABORT_REASON, WORKFLOW_STATUS } from './constant.js';
 import type { StepState, WorkflowInstance, WorkflowStatus } from './types.js';
 
@@ -11,18 +11,28 @@ export type AsyncReaderState<T> = {
   error?: Error;
 };
 
-export class AsyncReader<T> extends Promise<T> {
+/**
+ * A Promise-based state reader that tracks the status and data of an asynchronous operation.
+ */
+export class AsyncReader<T, D = T | undefined> extends Promise<T> {
   readonly #state: AsyncReaderState<T>;
   readonly #accept: (value: T) => void;
   readonly #reject: (error: Error) => void;
 
+  #pipes = new Set<StateUnsubscribe>();
   #abort!: (reason?: unknown) => void;
   #controller!: AbortController;
 
+  /**
+   * Returns the AbortController associated with this reader.
+   */
   public get controller() {
     return this.#controller;
   }
 
+  /**
+   * Sets the AbortController and attaches abort listeners.
+   */
   public set controller(controller: AbortController) {
     if (this.#abort as unknown) this.#abort();
 
@@ -40,18 +50,30 @@ export class AsyncReader<T> extends Promise<T> {
     };
   }
 
+  /**
+   * Returns the current reactive state of the reader.
+   */
   public get state(): AsyncReaderState<T> {
     return this.#state;
   }
 
-  public get data(): T | undefined {
-    return this.#state.data;
+  /**
+   * Returns the current data value.
+   */
+  public get data(): D {
+    return this.#state.data as D;
   }
 
+  /**
+   * Returns the error if the operation failed.
+   */
   public get error(): Error | undefined {
     return this.#state.error;
   }
 
+  /**
+   * Returns the current workflow status.
+   */
   public get status(): WorkflowStatus {
     return this.#state.status;
   }
@@ -82,6 +104,9 @@ export class AsyncReader<T> extends Promise<T> {
     onCleanup(() => this.close());
   }
 
+  /**
+   * Aborts the operation and marks the state as ABORTED.
+   */
   public abort() {
     $do(() => {
       if (this.#closed) return;
@@ -94,6 +119,9 @@ export class AsyncReader<T> extends Promise<T> {
     });
   }
 
+  /**
+   * Resolves the reader with a value and marks the state as SUCCESS.
+   */
   public accept(value?: T, force?: boolean) {
     $do(() => {
       if (this.#closed && !force) return;
@@ -107,6 +135,9 @@ export class AsyncReader<T> extends Promise<T> {
     });
   }
 
+  /**
+   * Rejects the reader with an error and marks the state as ERROR.
+   */
   public reject(error?: Error, force?: boolean) {
     $do(() => {
       if (this.#closed && !force) return;
@@ -120,6 +151,9 @@ export class AsyncReader<T> extends Promise<T> {
     });
   }
 
+  /**
+   * Closes the reader, resolving it with the current data.
+   */
   public close() {
     if (this.#closed) return;
 
@@ -129,16 +163,49 @@ export class AsyncReader<T> extends Promise<T> {
     this.destroy();
   }
 
+  /**
+   * Subscribes to state changes.
+   */
   public subscribe(handler: StateSubscriber<AsyncReaderState<T>>) {
-    return subscribe(this.#state, handler);
+    const unsubscribe = subscribe(this.#state, handler);
+    this.#pipes.add(unsubscribe);
+    return unsubscribe;
   }
 
+  /**
+   * Pipes state changes from this reader to another reader.
+   */
+  public pipeTo(target: AsyncReader<T>) {
+    this.subscribe((_, event) => {
+      if (event.type === 'init') {
+        anchor.assign(target.state, this.state);
+        return;
+      }
+
+      replay(target.state, event);
+    });
+
+    return this;
+  }
+
+  /**
+   * Re-opens the reader for further updates if it was previously closed.
+   */
   protected resume() {
     this.#closed = false;
   }
 
+  /**
+   * Destroys the reactive state unless the reader is resumable.
+   */
   protected destroy() {
     if (this.resumable) return;
+
+    for (const unsubscribe of this.#pipes) {
+      unsubscribe();
+    }
+
+    this.#pipes.clear();
     anchor.destroy(this.#state);
   }
 
@@ -155,17 +222,72 @@ export type WorkflowReaderState<T> = AsyncReaderState<T> & {
   current: StepState;
 };
 
-export class WorkflowReader<T> extends AsyncReader<T> {
+/**
+ * Creates an AsyncReader seeded with initial data.
+ *
+ * The `data` property is typed as `T`, reflecting that a value is
+ * always available from construction through resolution.
+ *
+ * @param controller - The AbortController to associate with this reader.
+ * @param init - Initial data for the reader state.
+ * @param status - The initial workflow status.
+ * @param resumable - Whether the reader can be re-opened after closing.
+ */
+export function asyncReader<T>(
+  controller: AbortController,
+  init: T,
+  status?: WorkflowStatus,
+  resumable?: boolean
+): AsyncReader<T, T>;
+/**
+ * Creates an AsyncReader without initial data.
+ *
+ * The `data` property is typed as `T | undefined` since no value
+ * exists until the operation resolves.
+ *
+ * @param controller - The AbortController to associate with this reader.
+ * @param init - Optional initial data for the reader state.
+ * @param status - The initial workflow status.
+ * @param resumable - Whether the reader can be re-opened after closing.
+ */
+export function asyncReader<T>(
+  controller: AbortController,
+  init?: T,
+  status?: WorkflowStatus,
+  resumable?: boolean
+): AsyncReader<T>;
+export function asyncReader<T>(
+  controller: AbortController,
+  init?: T,
+  status?: WorkflowStatus,
+  resumable?: boolean
+): AsyncReader<T> {
+  return new AsyncReader(controller, init, status, resumable) as AsyncReader<T>;
+}
+
+/**
+ * An AsyncReader specialized for Workflow instances, tracking the current step state.
+ */
+export class WorkflowReader<T, D = T | undefined> extends AsyncReader<T, D> {
   public instance: WorkflowInstance;
 
+  /**
+   * Returns the current workflow reader state.
+   */
   public get state(): WorkflowReaderState<T> {
     return super.state as WorkflowReaderState<T>;
   }
 
+  /**
+   * Returns the current step state.
+   */
   public get current(): StepState {
     return this.state.current;
   }
 
+  /**
+   * Updates the current step state.
+   */
   public set current(current: StepState) {
     this.state.current = current;
   }
@@ -180,6 +302,9 @@ export class WorkflowReader<T> extends AsyncReader<T> {
     this.instance = instance;
   }
 
+  /**
+   * Subscribes to workflow state changes.
+   */
   public subscribe(handler: StateSubscriber<WorkflowReaderState<T>>) {
     return super.subscribe(handler as StateSubscriber<AsyncReaderState<T>>);
   }
@@ -191,4 +316,47 @@ export class WorkflowReader<T> extends AsyncReader<T> {
   static get [Symbol.species]() {
     return Promise;
   }
+}
+
+/**
+ * Creates a WorkflowReader seeded with initial data.
+ *
+ * The `data` property is typed as `T`, reflecting that a value is
+ * always available from construction through resolution.
+ *
+ * @param instance - The running workflow instance.
+ * @param init - Initial data for the reader state.
+ * @param status - The initial workflow status.
+ * @param resumable - Whether the reader can be re-opened after closing.
+ */
+export function workflowReader<T>(
+  instance: WorkflowInstance,
+  init: T,
+  status?: WorkflowStatus,
+  resumable?: boolean
+): WorkflowReader<T, T>;
+/**
+ * Creates a WorkflowReader without initial data.
+ *
+ * The `data` property is typed as `T | undefined` since no value
+ * exists until the workflow resolves.
+ *
+ * @param instance - The running workflow instance.
+ * @param init - Optional initial data for the reader state.
+ * @param status - The initial workflow status.
+ * @param resumable - Whether the reader can be re-opened after closing.
+ */
+export function workflowReader<T>(
+  instance: WorkflowInstance,
+  init?: T,
+  status?: WorkflowStatus,
+  resumable?: boolean
+): WorkflowReader<T>;
+export function workflowReader<T>(
+  instance: WorkflowInstance,
+  init?: T,
+  status?: WorkflowStatus,
+  resumable?: boolean
+): WorkflowReader<T> {
+  return new WorkflowReader<T>(instance, init, status, resumable) as WorkflowReader<T>;
 }

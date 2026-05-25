@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createLifecycle, plan, type WorkflowSwitch } from '../../src/index.js';
 import { mutable } from '../../src/reactive/ref.js';
-import type { WorkflowReaderState } from '../../src/workflow/reader.js';
+import { asyncReader, type WorkflowReaderState } from '../../src/workflow/reader.js';
 
 describe('Workflow API', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -396,7 +396,7 @@ describe('Workflow API', () => {
 
       expect(step2).not.toHaveBeenCalled();
       expect(reader.status).toBe('aborted');
-      expect(reader.data).toEqual({ value: 1 });
+      expect(reader.data).toBeUndefined();
       expect(reader.controller).toBeDefined();
       expect(() => {
         reader.controller = new AbortController();
@@ -409,7 +409,7 @@ describe('Workflow API', () => {
       reader.close();
 
       expect(reader.status).not.toBe('aborted');
-      expect(reader.data).toEqual({ value: 1 });
+      expect(reader.data).toBeUndefined();
     });
 
     it('should expose reader methods, getters, and state subscriptions correctly', async () => {
@@ -472,7 +472,7 @@ describe('Workflow API', () => {
 
       const reader1 = workflow({ value: 1 });
       reader1.accept(); // no args, uses this.data
-      expect(reader1.data).toEqual({ value: 1 });
+      expect(reader1.data).toBeUndefined();
       expect(reader1.status).toBe('success');
 
       const reader2 = workflow({ value: 2 });
@@ -487,6 +487,26 @@ describe('Workflow API', () => {
       reader3.state.error = new Error('Pre-existing error');
       reader3.reject(); // no args, uses pre-existing error message
       expect(reader3.error?.message).toBe('Pre-existing error');
+    });
+
+    it('should pipe from one reader onto another', () => {
+      const a = asyncReader(new AbortController(), 'a');
+      const b = asyncReader(new AbortController(), 'b');
+
+      a.pipeTo(b);
+
+      expect(b.data).toBe('a');
+
+      a.state.data = 'c';
+      expect(b.data).toBe('c');
+
+      a.state.data = 'd';
+      expect(b.data).toBe('d');
+
+      a.close();
+
+      a.state.data = 'e';
+      expect(b.data).toBe('d');
     });
   });
 
@@ -564,7 +584,7 @@ describe('Workflow API', () => {
       const reader = workflow.once({ value: 5 });
 
       expect(reader.status).toBe('pending');
-      expect(reader.data).toEqual({ value: 5 });
+      expect(reader.data).toBeUndefined();
 
       vi.advanceTimersByTime(0); // flush microtasks
       await reader;
@@ -616,7 +636,7 @@ describe('Workflow API', () => {
 
       // when() defers the first execution
       expect(reader.status).toBe('idle');
-      expect(reader.data).toEqual({ value: 5 });
+      expect(reader.data).toBeUndefined();
 
       // Trigger reactive update
       inputSignal.value = 10;
@@ -651,7 +671,7 @@ describe('Workflow API', () => {
 
     it('should return a reader that can be dispatched manually later with debounce', async () => {
       vi.useFakeTimers();
-      
+
       const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
 
       const reader = workflow.later(10);
@@ -660,46 +680,99 @@ describe('Workflow API', () => {
       expect(reader.data).toBeUndefined();
 
       reader.dispatch({ value: 21 });
-      
+
       // Due to debounce, it remains idle immediately after dispatch
       expect(reader.status).toBe('idle');
 
       await vi.runAllTimersAsync();
-      
+
       expect(reader.status).toBe('success');
       expect(reader.data).toEqual({ value: 42 });
-      
+
       // Dispatch again to ensure resumability
       reader.dispatch({ value: 30 });
       expect(reader.status).toBe('success'); // Remains success initially
 
       await vi.runAllTimersAsync();
-      
+
       expect(reader.status).toBe('success');
       expect(reader.data).toEqual({ value: 60 });
     });
 
     it('should cancel debounced dispatch when scope is destroyed', async () => {
       vi.useFakeTimers();
-      
+
       const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
 
       const scope = createLifecycle();
       const reader: any = scope.run(() => workflow.later(10));
 
       expect(reader.status).toBe('idle');
-      
+
       reader.dispatch({ value: 21 });
       expect(reader.status).toBe('idle');
 
       // Destroy the scope before timers run
       scope.destroy();
-      
+
       await vi.runAllTimersAsync();
-      
+
       // Because the schedule was canceled by onCleanup, it should never execute
       expect(reader.status).toBe('idle');
       expect(reader.data).toBeUndefined();
+    });
+
+    it('should seed reader.data with init when provided to with()', async () => {
+      vi.useFakeTimers();
+
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value + 1 }));
+      const init = { value: 0 };
+
+      const reader = workflow.with(() => ({ value: 5 }), init);
+
+      expect(reader.status).toBe('pending');
+      expect(reader.data).toEqual({ value: 0 });
+
+      await vi.runAllTimersAsync();
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 6 });
+    });
+
+    it('should seed reader.data with init when provided to when()', async () => {
+      vi.useRealTimers();
+
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
+      const init = { value: -1 };
+
+      const inputSignal = mutable({ value: 5 });
+      const reader = workflow.when(() => ({ value: inputSignal.value }), init);
+
+      expect(reader.status).toBe('idle');
+      expect(reader.data).toEqual({ value: -1 });
+
+      inputSignal.value = 10;
+      await reader;
+
+      expect(reader.data).toEqual({ value: 20 });
+    });
+
+    it('should seed reader.data with init when provided to later()', async () => {
+      vi.useRealTimers();
+
+      const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
+      const init = { value: 99 };
+
+      const reader = workflow.later(init);
+
+      expect(reader.status).toBe('idle');
+      expect(reader.data).toEqual({ value: 99 });
+
+      reader.dispatch({ value: 21 });
+      await reader;
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 42 });
     });
   });
 });

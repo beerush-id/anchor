@@ -164,7 +164,20 @@ export type SwitchOutput<C> = {
  */
 export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
   /**
+   * Executes the pipeline with the given input, seeded with initial data.
+   *
+   * The reader's `data` is typed as `O`, available immediately.
+   *
+   * @param input - The input value to feed into the pipeline.
+   * @param init - Initial data for the reader state.
+   */
+  (input: I, init: O): WorkflowReader<O, O>;
+  /**
    * Executes the pipeline with the given input.
+   *
+   * The reader's `data` is typed as `O | undefined` until the pipeline resolves.
+   *
+   * @param input - The input value to feed into the pipeline.
    */
   (input: I): WorkflowReader<O>;
 
@@ -252,38 +265,85 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
   ): Workflow<I, O>;
 
   /**
-   * Browser-only: Executes the workflow once, deferring evaluation until the microtask queue flushes.
+   * Executes the workflow once with initial data, deferring evaluation
+   * until the microtask queue flushes.
+   *
+   * The reader's `data` is typed as `O`, available immediately.
    *
    * @param input - The input value.
-   * @returns A WorkflowReader tracking the execution.
+   * @param init - Initial data for the reader state.
+   */
+  once(input: I, init: O): WorkflowReader<O, O>;
+  /**
+   * Executes the workflow once, deferring evaluation until the microtask
+   * queue flushes.
+   *
+   * The reader's `data` is typed as `O | undefined` until the workflow resolves.
+   *
+   * @param input - The input value.
    */
   once(input: I): WorkflowReader<O>;
 
   /**
-   * Browser-only: Executes the workflow reactively whenever the getter dependencies change,
+   * Executes the workflow reactively with initial data whenever the getter
+   * dependencies change, starting immediately.
+   *
+   * The reader's `data` is typed as `O`, available immediately.
+   *
+   * @param getInput - A function that reactively provides the input.
+   * @param init - Initial data for the reader state.
+   * @param debounce - The debounce time in milliseconds for input changes.
+   */
+  with(getInput: () => I, init: O, debounce?: number): WorkflowReader<O, O>;
+  /**
+   * Executes the workflow reactively whenever the getter dependencies change,
    * starting immediately.
    *
-   * @param getInput - A function that reactively provides the input, or a static input.
+   * The reader's `data` is typed as `O | undefined` until the workflow resolves.
+   *
+   * @param getInput - A function that reactively provides the input.
    * @param debounce - The debounce time in milliseconds for input changes.
-   * @returns A WorkflowReader tracking the debounced execution.
    */
   with(getInput: () => I, debounce?: number): WorkflowReader<O>;
 
   /**
-   * Browser-only: Executes the workflow reactively whenever the getter dependencies change,
-   * but defers the initial execution until manually triggered or a dependency updates.
+   * Executes the workflow reactively with initial data whenever the getter
+   * dependencies change, deferring the initial execution until a dependency updates.
    *
-   * @param getInput - A function that reactively provides the input, or a static input.
+   * The reader's `data` is typed as `O`, available immediately.
+   *
+   * @param getInput - A function that reactively provides the input.
+   * @param init - Initial data for the reader state.
    * @param debounce - The debounce time in milliseconds for input changes.
-   * @returns A WorkflowReader tracking the deferred execution.
+   */
+  when(getInput: () => I, init: O, debounce?: number): WorkflowReader<O, O>;
+  /**
+   * Executes the workflow reactively whenever the getter dependencies change,
+   * deferring the initial execution until a dependency updates.
+   *
+   * The reader's `data` is typed as `O | undefined` until the workflow resolves.
+   *
+   * @param getInput - A function that reactively provides the input.
+   * @param debounce - The debounce time in milliseconds for input changes.
    */
   when(getInput: () => I, debounce?: number): WorkflowReader<O>;
 
   /**
-   * Browser-only: Creates a deferred WorkflowReader that can be manually dispatched.
-   * Useful for binding to event handlers like onClick.
+   * Creates a deferred WorkflowReader seeded with initial data that can be
+   * manually dispatched.
    *
-   * @returns A WorkflowReader tracking the deferred execution.
+   * The reader's `data` is typed as `O`, available immediately.
+   *
+   * @param init - Initial data for the reader state.
+   * @param debounce - The debounce time in milliseconds.
+   */
+  later(init: O, debounce?: number): WorkflowReader<O, O> & { dispatch: (input: I) => void };
+  /**
+   * Creates a deferred WorkflowReader that can be manually dispatched.
+   *
+   * The reader's `data` is typed as `O | undefined` until dispatched and resolved.
+   *
+   * @param debounce - The debounce time in milliseconds.
    */
   later(debounce?: number): WorkflowReader<O> & { dispatch: (input: I) => void };
 }

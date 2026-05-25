@@ -3,7 +3,7 @@ import { onCleanup } from '../scope/index.js';
 import { isBrowser, microtask } from '../utils/index.js';
 import { uuid } from '../utils/uuid.js';
 import { WORKFLOW_STATUS } from './constant.js';
-import { WorkflowReader } from './reader.js';
+import { type WorkflowReader, workflowReader } from './reader.js';
 import type {
   ResolveInput,
   ResolveOutput,
@@ -27,13 +27,38 @@ export const WORKFLOW_HOOKS = {
   onDequeue: new Set<(instance: WorkflowInstance, output?: WorkflowData, error?: Error) => void>(),
 };
 
+/**
+ * Clones an existing workflow's steps into a new independent pipeline.
+ *
+ * The new workflow shares the step definitions but has its own identity,
+ * allowing divergent chains via additional `.then()` or `.switch()` calls.
+ *
+ * @param workflow - The existing workflow to clone steps from.
+ * @param meta - Optional metadata to attach to the new workflow.
+ */
 export function plan<I extends WorkflowData, O extends WorkflowData>(
   workflow: Workflow<I, O>,
   meta?: WorkflowMeta
 ): Workflow<I, O>;
+/**
+ * Creates a new workflow pipeline with schema-validated input and output types.
+ *
+ * The input and output types are inferred from the schemas provided in the metadata.
+ *
+ * @param meta - Metadata containing `input` and/or `output` schemas.
+ */
 export function plan<M extends WorkflowMeta>(
   meta: M
 ): Workflow<ResolveInput<WorkflowData, M>, ResolveOutput<WorkflowData, M>>;
+/**
+ * Creates a new empty workflow pipeline.
+ *
+ * The input type defaults to `WorkflowData` unless explicitly provided
+ * as a type parameter. The output type mirrors the input until
+ * transformed by `.then()` steps.
+ *
+ * @param meta - Optional metadata to attach to the workflow.
+ */
 export function plan<I extends WorkflowData = WorkflowData>(meta?: WorkflowMeta): Workflow<I, I>;
 export function plan(
   arg1?: Workflow<WorkflowData, WorkflowData> | WorkflowMeta,
@@ -44,6 +69,14 @@ export function plan(
   const steps = isWorkflow ? [...arg1.steps] : [];
 
   return createWorkflow(uuid(), '', steps, meta);
+}
+
+function resolveInit<O>(initOrDebounce?: O | number, debounce?: number) {
+  const hasInit = typeof initOrDebounce === 'object';
+  return {
+    init: hasInit ? (initOrDebounce as O) : undefined,
+    debounce: hasInit ? debounce : (initOrDebounce as number | undefined),
+  };
 }
 
 /**
@@ -61,11 +94,11 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   steps: WorkflowEntry[],
   workflowMeta?: WorkflowMeta
 ): Workflow<I, O> {
-  const fn = ((input: I) => {
-    return initialize(input, true).reader;
+  const fn = ((input: I, init?: O) => {
+    return initialize(input, init, true).reader;
   }) as Workflow<I, O>;
 
-  const initialize = (input: I, run?: boolean, resumbable?: boolean) => {
+  const initialize = (input: I, init?: O, run?: boolean, resumable?: boolean) => {
     const states = new WeakMap<WorkflowEntry, StepState>();
 
     for (const step of steps) {
@@ -91,12 +124,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       controller: new AbortController(),
     };
 
-    const reader = new WorkflowReader<O>(
-      instance,
-      input as unknown as O,
-      run ? WORKFLOW_STATUS.PENDING : WORKFLOW_STATUS.IDLE,
-      resumbable
-    );
+    const reader = workflowReader(instance, init, run ? WORKFLOW_STATUS.PENDING : WORKFLOW_STATUS.IDLE, resumable);
 
     let shouldReset = false;
 
@@ -113,7 +141,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
 
         reader.state.status = WORKFLOW_STATUS.PENDING;
         reader.state.error = undefined;
-        reader.state.data = startInput as unknown as O;
+        reader.state.data = init;
         reader.controller = instance.controller = new AbortController();
       }
 
@@ -236,8 +264,8 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     return createWorkflow(id, prefix, [...steps, entry], workflowMeta);
   }) as Workflow<I, O>['finally'];
 
-  const prepare = (getInput: () => I, deferred?: boolean, debounce = 0) => {
-    const { reader, start } = initialize(getInput(), false);
+  const prepare = (getInput: () => I, init?: O, deferred?: boolean, debounce = 0) => {
+    const { reader, start } = initialize(getInput(), init, false);
 
     if (!deferred) {
       reader.state.status = WORKFLOW_STATUS.PENDING;
@@ -279,25 +307,28 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     return reader;
   };
 
-  fn.once = (input: I) => {
-    return prepare(() => input);
-  };
+  fn.once = ((input: I, init?: O) => {
+    return prepare(() => input, init);
+  }) as Workflow<I, O>['once'];
 
-  fn.with = (getInput: () => I, debounce = 0) => {
-    return prepare(getInput, false, debounce);
-  };
+  fn.with = ((getInput: () => I, initOrDebounce?: O | number, debounce?: number) => {
+    const r = resolveInit(initOrDebounce, debounce);
+    return prepare(getInput, r.init, false, r.debounce ?? 0);
+  }) as Workflow<I, O>['with'];
 
-  fn.when = (getInput: () => I, debounce = 0) => {
-    return prepare(getInput, true, debounce);
-  };
+  fn.when = ((getInput: () => I, initOrDebounce?: O | number, debounce?: number) => {
+    const r = resolveInit(initOrDebounce, debounce);
+    return prepare(getInput, r.init, true, r.debounce ?? 0);
+  }) as Workflow<I, O>['when'];
 
-  fn.later = (debounce) => {
-    const { reader, start } = initialize(undefined as unknown as I, false, true);
+  fn.later = ((initOrDebounce?: O | number, debounce?: number) => {
+    const ri = resolveInit(initOrDebounce, debounce);
+    const { reader, start } = initialize(undefined as unknown as I, ri.init, false, true);
     // biome-ignore lint/suspicious/noExplicitAny: <Expect any>
     const r = reader as any;
 
-    if (debounce) {
-      const [schedule, cancel] = microtask(debounce);
+    if (ri.debounce) {
+      const [schedule, cancel] = microtask(ri.debounce);
 
       r.dispatch = (input: I) =>
         schedule(() => {
@@ -315,7 +346,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       start(input);
     };
     return reader as WorkflowReader<O> & { dispatch: (input: I) => void };
-  };
+  }) as Workflow<I, O>['later'];
 
   return fn;
 }
@@ -382,7 +413,7 @@ async function execute(
           throw new Error(`Workflow switch "${entry.path}" has no case for "${discriminant}" and no default.`);
         }
 
-        value = await branch(value);
+        value = (await branch(value)) as WorkflowData;
       } else if (entry.type === 'catch') {
         if (currentError) {
           value = await entry.handler(currentError, value);
