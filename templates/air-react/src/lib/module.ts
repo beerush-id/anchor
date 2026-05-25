@@ -1,6 +1,5 @@
 import { HTTPTransport } from '@irpclib/http';
 import { createPackage } from '@irpclib/irpc';
-import { WebSocketTransport } from '@irpclib/ws';
 
 export const irpc = createPackage({
   name: 'irpc',
@@ -9,10 +8,6 @@ export const irpc = createPackage({
 
 export const transport = new HTTPTransport({
   endpoint: `/api/${irpc.href}`,
-});
-
-export const wsTransport = new WebSocketTransport({
-  url: `/ws/${irpc.href}`,
 });
 
 // Credential Seeder.
@@ -24,10 +19,6 @@ const credSeeder = () => ({
 
 // Sign the transport with the credential seeder.
 transport.sign(credSeeder);
-wsTransport.sign(credSeeder);
 
 // Uncomment to use HTTP transport
 irpc.use(transport);
-
-// Uncomment to use WebSocket transport
-// irpc.use(wsTransport);

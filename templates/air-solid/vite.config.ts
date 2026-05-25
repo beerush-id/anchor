@@ -15,7 +15,6 @@ export default defineConfig({
       irpc: {
         module: { path: './src/lib/module.ts', name: 'irpc' },
         transport: { path: './src/lib/module.ts', name: 'transport' },
-        wsTransport: { path: './src/lib/module.ts', name: 'wsTransport' },
         handlers: ['./src/pages/constructor.ts'],
       },
     }),
