@@ -255,7 +255,7 @@ describe('IRPCPackage', () => {
       rpc.construct(hello, (_name) => new RemoteState<string>());
 
       const lifecycle = createLifecycle();
-      let result: RemoteState<string> | undefined;
+      let result: ReturnType<typeof hello> | undefined;
 
       lifecycle.run(() => {
         result = hello('World');

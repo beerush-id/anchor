@@ -250,6 +250,7 @@ export class RemoteState<T> extends Promise<T> {
       unsubscribe();
     }
 
+    this.#pipes.clear();
     anchor.destroy(this.state);
   }
 
