@@ -700,5 +700,34 @@ describe('Workflow API', () => {
       expect(reader.status).toBe('success');
       expect(reader.data).toEqual({ value: 42 });
     });
+
+    it('should validate schemas through later() with workflowMeta', async () => {
+      const workflow = plan({
+        input: z.object({ value: z.number() }),
+        output: z.object({ value: z.number(), doubled: z.boolean() }),
+      }).then((input) => ({ value: input.value * 2, doubled: true }));
+
+      const reader = workflow.later();
+      reader.dispatch({ value: 10 });
+
+      await vi.runAllTimersAsync();
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 20, doubled: true });
+    });
+
+    it('should validate schemas through once() with workflowMeta', async () => {
+      const workflow = plan({
+        input: z.object({ value: z.number() }),
+        output: z.object({ value: z.number(), doubled: z.boolean() }),
+      }).then((input) => ({ value: input.value * 2, doubled: true }));
+
+      const reader = workflow.once({ value: 5 });
+
+      await vi.runAllTimersAsync();
+
+      expect(reader.status).toBe('success');
+      expect(reader.data).toEqual({ value: 10, doubled: true });
+    });
   });
 });

@@ -1,16 +1,14 @@
-import { createObserver, mutable } from '../reactive/index.js';
+import { createObserver } from '../reactive/index.js';
 import { onCleanup } from '../scope/index.js';
 import { isBrowser, microtask } from '../utils/index.js';
 import { uuid } from '../utils/uuid.js';
 import { WORKFLOW_STATUS } from './constant.js';
-import { type WorkflowReader, workflowReader } from './reader.js';
 import { WorkflowStepper } from './stepper.js';
 
 import type {
   ResolveInput,
   ResolveOutput,
   SchemaLike,
-  StepState,
   Workflow,
   WorkflowCatch,
   WorkflowData,
@@ -117,74 +115,6 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
     enqueue(stepper, input);
     return stepper;
   }) as Workflow<I, O>;
-
-  const initialize = (input: I, init?: O, run?: boolean, resumable?: boolean) => {
-    const states = new WeakMap<WorkflowEntry, StepState>();
-
-    for (const step of steps) {
-      states.set(
-        step,
-        mutable<StepState>(
-          {
-            id: uuid(),
-            name: step.meta?.name ?? step.path,
-            description: step.meta?.description,
-            status: 'idle',
-          },
-          { recursive: false }
-        )
-      );
-    }
-
-    const instance: WorkflowInstance = {
-      input,
-      states,
-      id: uuid(),
-      workflow: fn as Workflow<WorkflowData, WorkflowData>,
-      controller: new AbortController(),
-    };
-
-    const reader = workflowReader(instance, init, run ? WORKFLOW_STATUS.PENDING : WORKFLOW_STATUS.IDLE, resumable);
-
-    let shouldReset = false;
-
-    const start = (startInput: I) => {
-      if (shouldReset) {
-        for (const step of steps) {
-          const state = states.get(step)!;
-
-          state.id = uuid();
-          state.data = undefined;
-          state.error = undefined;
-          state.status = WORKFLOW_STATUS.IDLE;
-        }
-
-        reader.state.status = WORKFLOW_STATUS.PENDING;
-        reader.state.error = undefined;
-        reader.state.data = init;
-        reader.controller = instance.controller = new AbortController();
-      }
-
-      for (const hook of WORKFLOW_HOOKS.onQueue) hook(instance);
-
-      execute(instance, steps, startInput, reader as WorkflowReader<WorkflowData>).then(
-        (output) => {
-          reader.accept(output as O, shouldReset);
-          for (const hook of WORKFLOW_HOOKS.onDequeue) hook(instance, output);
-          shouldReset = true;
-        },
-        (error) => {
-          reader.reject(error, shouldReset);
-          for (const hook of WORKFLOW_HOOKS.onDequeue) hook(instance, undefined, error);
-          shouldReset = true;
-        }
-      );
-    };
-
-    if (run) start(input);
-
-    return { reader, start };
-  };
 
   Object.defineProperty(fn, 'id', { value: id, enumerable: true });
   Object.defineProperty(fn, 'steps', { value: steps, enumerable: true });
@@ -378,97 +308,4 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   }) as Workflow<I, O>['later'];
 
   return fn;
-}
-
-/**
- * Executes a pipeline of steps sequentially, piping each step's output
- * as the next step's input.
- *
- * @param instance - The running instance tracking step states.
- * @param steps - The ordered list of steps to execute.
- * @param input - The initial input value.
- * @param reader - The reader for reporting progress and accepting output.
- * @returns The final output after all steps have executed.
- */
-async function execute(
-  instance: WorkflowInstance,
-  steps: WorkflowEntry[],
-  input: WorkflowData,
-  reader: WorkflowReader<WorkflowData>
-): Promise<WorkflowData> {
-  let value: WorkflowData = input;
-  let currentError: Error | undefined;
-
-  if (instance.workflow.meta?.input) {
-    const schema = instance.workflow.meta.input as SchemaLike;
-    value = typeof schema === 'function' ? await schema(value) : await schema.parse(value);
-  }
-
-  for (const entry of steps) {
-    if (instance.controller.signal.aborted) {
-      break;
-    }
-
-    const state = instance.states.get(entry)!;
-    reader.current = state;
-
-    try {
-      if (currentError && entry.type !== 'catch' && entry.type !== 'finally') {
-        state.error = currentError;
-        state.status = 'skipped';
-        continue; // Skip normal steps when in error state
-      }
-
-      state.data = value;
-      state.status = 'pending';
-
-      if (entry.type === 'step') {
-        if (entry.meta?.input) {
-          const schema = entry.meta.input as SchemaLike;
-          value = typeof schema === 'function' ? await schema(value) : await schema.parse(value);
-        }
-
-        value = await entry.handler(value);
-
-        if (entry.meta?.output) {
-          const schema = entry.meta.output as SchemaLike;
-          value = typeof schema === 'function' ? await schema(value) : await schema.parse(value);
-        }
-      } else if (entry.type === 'switch') {
-        const discriminant = String(await entry.matcher(value));
-        const branch = entry.switches[discriminant] ?? entry.switches.default;
-
-        if (!branch) {
-          throw new Error(`Workflow switch "${entry.path}" has no case for "${discriminant}" and no default.`);
-        }
-
-        value = (await branch(value)) as WorkflowData;
-      } else if (entry.type === 'catch') {
-        if (currentError) {
-          value = await entry.handler(currentError, value);
-          currentError = undefined; // Recovered
-        }
-      } else if (entry.type === 'finally') {
-        await entry.handler(value, currentError);
-      }
-
-      state.data = value;
-      state.status = 'success';
-    } catch (err) {
-      currentError = err instanceof Error ? err : new Error(String(err));
-      state.error = currentError;
-      state.status = 'error';
-    }
-  }
-
-  if (instance.workflow.meta?.output && !currentError && !instance.controller.signal.aborted) {
-    const schema = instance.workflow.meta.output as SchemaLike;
-    value = typeof schema === 'function' ? await schema(value) : await schema.parse(value);
-  }
-
-  if (currentError) {
-    throw currentError;
-  }
-
-  return value;
 }
