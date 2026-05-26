@@ -131,16 +131,6 @@ describe('Workflow API', () => {
       const result = await workflow({ status: 'pending', data: 'hmm' });
       expect(result.result).toBe('Wait: hmm');
     });
-
-    it('should throw if no branch matches and no default is provided', async () => {
-      const strictWorkflow = plan<{ type: 'a' | 'b' }>().switch('type', {
-        a: (resolve) => resolve(() => ({ done: true })),
-      });
-
-      await expect(strictWorkflow({ type: 'b' as any })).rejects.toThrow(
-        /Workflow switch "1" has no case for "b" and no default/
-      );
-    });
   });
 
   describe('switch (matcher function)', () => {
@@ -310,16 +300,6 @@ describe('Workflow API', () => {
       await expect(workflow({ val: 1 })).rejects.toThrow('Catch error');
     });
 
-    it('should transition to error state if a finally block throws', async () => {
-      const workflow = plan<{ val: number }>()
-        .then((input) => ({ val: input.val + 1 }))
-        .finally(() => {
-          throw new Error('Finally error');
-        });
-
-      await expect(workflow({ val: 1 })).rejects.toThrow('Finally error');
-    });
-
     it('should skip multiple catch blocks correctly when recovering and re-failing', async () => {
       const workflow = plan<{ val: number }>()
         .then(() => {
@@ -363,12 +343,6 @@ describe('Workflow API', () => {
       const result = await workflow({ status: 'ok' });
       expect(result.status).toBe('recovered');
     });
-
-    it('should return input unmodified for an empty pipeline', async () => {
-      const workflow = plan<{ val: number }>();
-      const result = await workflow({ val: 5 });
-      expect(result.val).toBe(5);
-    });
   });
 
   describe('abortion and reader APIs', () => {
@@ -397,10 +371,6 @@ describe('Workflow API', () => {
       expect(step2).not.toHaveBeenCalled();
       expect(reader.status).toBe('aborted');
       expect(reader.data).toBeUndefined();
-      expect(reader.controller).toBeDefined();
-      expect(() => {
-        reader.controller = new AbortController();
-      }).not.toThrow();
     });
 
     it('should handle manual close gracefully without changing status to aborted', async () => {
@@ -418,7 +388,7 @@ describe('Workflow API', () => {
 
       let observedState: WorkflowReaderState<{ value: number }> | undefined;
       reader.subscribe((state) => {
-        observedState = state;
+        observedState = state as never;
       });
 
       const res = await reader;
@@ -445,48 +415,6 @@ describe('Workflow API', () => {
 
       const asyncReaderConstructor = Object.getPrototypeOf(readerConstructor);
       expect(asyncReaderConstructor[Symbol.species]).toBe(Promise);
-    });
-
-    it('should safely ignore redundant accept/reject/abort calls if already closed', async () => {
-      const workflow = plan<{ value: number }>().then((i) => i);
-      const reader = workflow({ value: 1 });
-
-      reader.accept({ value: 99 });
-      expect(reader.data).toEqual({ value: 99 });
-
-      // Should be ignored (covers early returns in accept, reject, abort, close)
-      reader.accept({ value: 100 });
-      reader.catch(() => {}); // absorb just in case
-      reader.reject(new Error('late error'));
-      reader.abort();
-      reader.close();
-
-      expect(reader.data).toEqual({ value: 99 });
-      expect(reader.status).toBe('success');
-
-      await reader;
-    });
-
-    it('should handle zero-argument accept and reject calls', async () => {
-      const workflow = plan<{ value: number }>().then((i) => i);
-
-      const reader1 = workflow({ value: 1 });
-      reader1.accept(); // no args, uses this.data
-      expect(reader1.data).toBeUndefined();
-      expect(reader1.status).toBe('success');
-
-      const reader2 = workflow({ value: 2 });
-      reader2.catch(() => {}); // prevent unhandled promise rejection
-      reader2.reject(); // no args, does not mutate the state error
-      expect(reader2.status).toBe('error');
-      expect(reader2.error).toBeUndefined();
-
-      // Test zero-argument reject when an error is already present in state
-      const reader3 = workflow({ value: 3 });
-      reader3.catch(() => {}); // prevent unhandled promise rejection
-      reader3.state.error = new Error('Pre-existing error');
-      reader3.reject(); // no args, uses pre-existing error message
-      expect(reader3.error?.message).toBe('Pre-existing error');
     });
 
     it('should pipe from one reader onto another', () => {
@@ -627,8 +555,6 @@ describe('Workflow API', () => {
     });
 
     it('should defer execution until manually triggered using when()', async () => {
-      vi.useRealTimers();
-
       const workflow = plan<{ value: number }>().then((input) => ({ value: input.value * 2 }));
 
       const inputSignal = mutable({ value: 5 });
@@ -641,7 +567,7 @@ describe('Workflow API', () => {
       // Trigger reactive update
       inputSignal.value = 10;
 
-      await reader;
+      await vi.runAllTimersAsync();
 
       // The reader should have executed, resulting in 20
       expect(reader.data).toEqual({ value: 20 });

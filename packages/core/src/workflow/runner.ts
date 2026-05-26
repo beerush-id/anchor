@@ -1,5 +1,6 @@
 import { anchor } from '../engine/index.js';
 import { mutable } from '../reactive/index.js';
+import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
 import { WorkflowStepper } from './stepper.js';
 import type { SchemaLike, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
@@ -13,6 +14,8 @@ export type RunnerState<I, O> = {
 };
 
 export class WorkflowRunner<I, O> {
+  public id = uuid();
+
   readonly #state: RunnerState<I, O> = mutable(
     {
       status: WORKFLOW_STATUS.IDLE,
@@ -50,8 +53,8 @@ export class WorkflowRunner<I, O> {
   constructor(
     private step: WorkflowEntry,
     private signal: AbortSignal,
-    input: I = {} as I,
-    output: O = {} as O
+    input?: I,
+    output?: O
   ) {
     this.#state.input = input as I;
     this.#state.output = output as O;
@@ -68,7 +71,6 @@ export class WorkflowRunner<I, O> {
           true
         );
         this.#branches?.set(key, stepper);
-        // stepper.catch((_error) => {});
       }
     }
   }
@@ -86,7 +88,7 @@ export class WorkflowRunner<I, O> {
 
     try {
       const parsedInput =
-        typeof schemaIn === 'function' ? await schemaIn(input) : schemaIn ? schemaIn.parse(input) : input;
+        typeof schemaIn === 'function' ? await schemaIn(input) : schemaIn ? await schemaIn.parse(input) : input;
 
       let output: O | undefined;
 
@@ -119,6 +121,11 @@ export class WorkflowRunner<I, O> {
             ? branch.all(parsedInput as WorkflowData)
             : branch.run(parsedInput as WorkflowData))) as O;
 
+          if (this.signal?.aborted) {
+            this.#state.status = WORKFLOW_STATUS.ABORTED;
+            return this.output as O;
+          }
+
           anchor.assign(this.#state, {
             output,
             status: branch.status,
@@ -142,14 +149,24 @@ export class WorkflowRunner<I, O> {
           return this.output as O;
       }
 
+      if (this.signal?.aborted) {
+        this.#state.status = WORKFLOW_STATUS.ABORTED;
+        return this.output as O;
+      }
+
       const parsedOutput =
-        typeof schemaOut === 'function' ? await schemaOut(output) : schemaOut ? schemaOut.parse(output) : output;
+        typeof schemaOut === 'function' ? await schemaOut(output) : schemaOut ? await schemaOut.parse(output) : output;
 
       anchor.assign(this.#state, {
         status: WORKFLOW_STATUS.SUCCESS,
         output: parsedOutput as O,
       });
     } catch (error) {
+      if (this.signal?.aborted) {
+        this.#state.status = WORKFLOW_STATUS.ABORTED;
+        return this.output as O;
+      }
+
       anchor.assign(this.#state, {
         status: WORKFLOW_STATUS.ERROR,
         error: error as Error,

@@ -486,6 +486,7 @@ describe('WorkflowStepper', () => {
       // await stepper triggers then() → all() runs if IDLE.
       const result = await stepper;
       expect(result).toEqual({ value: 0 });
+      await Promise.resolve();
 
       // After await, all() ran. Stepper is finished.
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
@@ -562,7 +563,10 @@ describe('WorkflowStepper', () => {
           await new Promise((r) => setTimeout(r, 10));
           return input;
         }),
-        step('2', (input) => { step2(); return input; }),
+        step('2', (input) => {
+          step2();
+          return input;
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps);
@@ -578,7 +582,9 @@ describe('WorkflowStepper', () => {
 
     it('should abort during recovery loop', async () => {
       const steps: WorkflowEntry[] = [
-        step('1', () => { throw new Error('fail'); }),
+        step('1', () => {
+          throw new Error('fail');
+        }),
         step('2', (input) => input),
         step('3', (input) => input),
         step('4', (input) => input),
@@ -595,9 +601,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should use this.input as fallback when output is undefined', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', (input) => ({ value: (input as any).value + 1 })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', (input) => ({ value: (input as any).value + 1 }))];
 
       // No initial output — nextInput falls back to this.input.
       const stepper = new WorkflowStepper(steps, { value: 10 } as any);
@@ -607,9 +611,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should use empty object as fallback when both output and input are undefined', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', (input) => ({ keys: Object.keys(input) })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', (input) => ({ keys: Object.keys(input) }))];
 
       // No input, no output — nextInput falls back to {}.
       const stepper = new WorkflowStepper(steps);
@@ -624,7 +626,9 @@ describe('WorkflowStepper', () => {
       const steps: WorkflowEntry[] = [
         step('1', (input) => ({ value: (input as any).value + 1 })),
         step('2', (input) => ({ value: (input as any).value * 2 })),
-        finallyStep('3', (input, error) => { finallyFn(input, error); }),
+        finallyStep('3', (input, error) => {
+          finallyFn(input, error);
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps);
@@ -642,16 +646,9 @@ describe('WorkflowStepper', () => {
 
     it('should unlink external signal on abort', async () => {
       const externalController = new AbortController();
-      const steps: WorkflowEntry[] = [
-        step('1', (input) => input),
-      ];
+      const steps: WorkflowEntry[] = [step('1', (input) => input)];
 
-      const stepper = new WorkflowStepper(
-        steps,
-        {} as any,
-        undefined,
-        externalController.signal
-      );
+      const stepper = new WorkflowStepper(steps, {} as any, undefined, externalController.signal);
 
       // Abort via external signal — triggers unlinkSignal.
       externalController.abort();
@@ -663,7 +660,9 @@ describe('WorkflowStepper', () => {
       let abortStepper: (() => void) | undefined;
 
       const steps: WorkflowEntry[] = [
-        step('1', () => { throw new Error('fail'); }),
+        step('1', () => {
+          throw new Error('fail');
+        }),
         catchStep('2', (_e) => {
           // Abort and re-throw — error persists, loop iterates, abort check fires.
           abortStepper?.();
@@ -677,6 +676,7 @@ describe('WorkflowStepper', () => {
 
       await stepper.run({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
+      await expect(stepper).rejects.toThrow('fail');
     });
 
     it('should abort during finally loop', async () => {
@@ -688,7 +688,9 @@ describe('WorkflowStepper', () => {
           abortStepper?.();
           await new Promise((r) => setTimeout(r, 10));
         }),
-        finallyStep('3', () => { /* should not run */ }),
+        finallyStep('3', () => {
+          /* should not run */
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps);
@@ -702,11 +704,19 @@ describe('WorkflowStepper', () => {
       // No input passed to constructor or run() — forces the {} fallback
       // on all ?? chains: lines 141, 169, 189, 198.
       const steps: WorkflowEntry[] = [
-        step('1', () => { throw new Error('fail'); }),
-        catchStep('2', () => { throw new Error('catch-fail'); }),
+        step('1', () => {
+          throw new Error('fail');
+        }),
+        catchStep('2', () => {
+          throw new Error('catch-fail');
+        }),
         catchStep('3', () => ({ recovered: true })),
-        finallyStep('4', () => { /* cleanup */ }),
-        finallyStep('5', () => { /* cleanup */ }),
+        finallyStep('4', () => {
+          /* cleanup */
+        }),
+        finallyStep('5', () => {
+          /* cleanup */
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps);
@@ -721,9 +731,15 @@ describe('WorkflowStepper', () => {
       const finallyFns = [vi.fn(), vi.fn()];
 
       const steps: WorkflowEntry[] = [
-        step('1', () => { throw new Error('fail'); }),
-        finallyStep('2', (input, error) => { finallyFns[0](input, error); }),
-        finallyStep('3', (input, error) => { finallyFns[1](input, error); }),
+        step('1', () => {
+          throw new Error('fail');
+        }),
+        finallyStep('2', (input, error) => {
+          finallyFns[0](input, error);
+        }),
+        finallyStep('3', (input, error) => {
+          finallyFns[1](input, error);
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps);
@@ -741,9 +757,7 @@ describe('WorkflowStepper', () => {
 
   describe('reader interface', () => {
     it('should return output via data getter', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', () => ({ value: 42 })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', () => ({ value: 42 }))];
 
       const stepper = new WorkflowStepper(steps);
       await stepper.all({});
@@ -760,9 +774,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should prefer output over seed', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', () => ({ fromStep: true })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', () => ({ fromStep: true }))];
 
       const stepper = new WorkflowStepper(steps);
       stepper.seed({ fromSeed: true } as any);
@@ -783,9 +795,7 @@ describe('WorkflowStepper', () => {
     it('should subscribe to state changes', async () => {
       const events: string[] = [];
 
-      const steps: WorkflowEntry[] = [
-        step('1', () => ({ done: true })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', () => ({ done: true }))];
 
       const stepper = new WorkflowStepper(steps);
       const unsubscribe = stepper.subscribe((_, event) => {
@@ -799,9 +809,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should pipe state to another stepper', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', () => ({ piped: true })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', () => ({ piped: true }))];
 
       const source = new WorkflowStepper(steps);
       const target = new WorkflowStepper([]);
@@ -813,9 +821,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should clean up on close', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', () => ({ done: true })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', () => ({ done: true }))];
 
       const stepper = new WorkflowStepper(steps);
       stepper.subscribe(() => {});
@@ -881,6 +887,60 @@ describe('WorkflowStepper', () => {
       stepper.close(); // Should not throw.
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
+    });
+  });
+
+  describe('consecutive catch skipping', () => {
+    it('should skip multiple consecutive catch steps when no error', async () => {
+      const catch1 = vi.fn((_err: Error, input: Record<string, unknown>) => ({ value: input.value }));
+      const catch2 = vi.fn((_err: Error, input: Record<string, unknown>) => ({ value: input.value }));
+
+      const steps: WorkflowEntry[] = [
+        step('add', (input) => ({ value: (input as { value: number }).value + 1 })),
+        catchStep('catch1', catch1),
+        catchStep('catch2', catch2),
+        step('double', (input) => ({ value: (input as { value: number }).value * 2 })),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+      const output = await stepper.all({ value: 5 });
+
+      expect(output).toEqual({ value: 12 });
+      expect(catch1).not.toHaveBeenCalled();
+      expect(catch2).not.toHaveBeenCalled();
+      expect(stepper.get('catch1')?.status).toBe(WORKFLOW_STATUS.SKIPPED);
+      expect(stepper.get('catch2')?.status).toBe(WORKFLOW_STATUS.SKIPPED);
+      expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
+    });
+  });
+
+  describe('switch abort', () => {
+    it('should abort during switch branch execution', async () => {
+      const steps: WorkflowEntry[] = [
+        switchStep(
+          'route',
+          (input) => (input as { mode: string }).mode,
+          {
+            slow: {
+              steps: [
+                step('slow-step', async (input) => {
+                  await new Promise((r) => setTimeout(r, 100));
+                  return { ...input, done: true };
+                }),
+              ],
+            },
+          }
+        ),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+      const promise = stepper.all({ mode: 'slow' });
+
+      // Abort while the branch is running.
+      setTimeout(() => stepper.abort(), 10);
+
+      await promise;
+      expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
     });
   });
 });

@@ -2,19 +2,26 @@ import { anchor } from '../engine/index.js';
 import { mutable, replay, subscribe } from '../reactive/index.js';
 import { onCleanup } from '../scope/index.js';
 import type { StateSubscriber, StateUnsubscribe } from '../types.js';
+import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
 import { type RunnerState, WorkflowRunner } from './runner.js';
-import type { WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
+import type { SchemaLike, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
 
 export type StepperState<I, O> = RunnerState<I, O> & {
   seed?: WorkflowData;
   current?: string;
 };
 
-export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
+export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D = O | undefined> extends Promise<O> {
+  public id = uuid();
+
   #locked = false;
   #closed = false;
   #controller = new AbortController();
+
+  #schemaIn?: SchemaLike;
+  #schemaOut?: SchemaLike;
+  #initialized = false;
 
   readonly #accept: (value: O | PromiseLike<O>) => void;
   readonly #reject: (reason?: unknown) => void;
@@ -92,7 +99,7 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
       signal.addEventListener('abort', selfAbort);
     }
 
-    onCleanup(() => this.close());
+    onCleanup(() => this.close(this.status));
   }
 
   // biome-ignore lint/suspicious/noThenProperty: Expect override.
@@ -129,23 +136,57 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
     if (this.#locked || this.#closed || this.#controller.signal.aborted) return this.output;
 
     this.#locked = true;
+    // Assign input if not already assigned.
+    if (input) this.#state.input = input as I;
+
+    if (!this.#initialized) {
+      this.#initialized = true;
+
+      if (this.#schemaIn) {
+        try {
+          this.#state.input = await (typeof this.#schemaIn === 'function' ? this.#schemaIn : this.#schemaIn.parse)(
+            this.input
+          );
+        } catch (error) {
+          this.#state.error = error as Error;
+          return this.finish();
+        }
+      }
+    }
 
     try {
       // Assign pending status if not already pending.
       if (this.status !== WORKFLOW_STATUS.PENDING) this.#state.status = WORKFLOW_STATUS.PENDING;
-      // Assign input if not already assigned.
-      if (input) this.#state.input = input as I;
 
       // Get the next step to run.
       let nextStep = this.nextStep;
 
       // If there are no more steps, return the output.
       if (!nextStep) {
+        await this.finalize();
         return this.finish();
       }
 
       // Set the current step.
       this.#state.current = nextStep.path;
+
+      if (nextStep.type === 'catch' && !this.error) {
+        nextStep.skip();
+        nextStep = this.nextStep;
+
+        while (nextStep?.type === 'catch') {
+          nextStep.skip();
+          this.#state.current = nextStep.path;
+          nextStep = this.nextStep;
+        }
+
+        if (!nextStep) {
+          await this.finalize();
+          return this.finish();
+        }
+
+        this.#state.current = nextStep.path;
+      }
 
       // Get the input for the next step, fallback to the current output or an empty object.
       let nextInput = this.output ?? this.input ?? {};
@@ -189,9 +230,12 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
         }
 
         if (!nextStep) {
+          await this.finalize();
           return this.finish();
         }
       }
+
+      if (this.#controller.signal.aborted) return this.output;
 
       if (nextStep.type !== 'finally' && !nextStep.error) {
         if (!output) {
@@ -202,7 +246,10 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
       }
 
       nextStep = this.nextStep;
-      if (!nextStep) return this.finish();
+      if (!nextStep) {
+        await this.finalize();
+        return this.finish();
+      }
 
       if (nextStep.type === 'finally') {
         nextInput = this.output ?? this.input ?? {};
@@ -217,7 +264,10 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
           nextInput = this.output ?? this.input ?? {};
         }
 
-        if (!nextStep) return this.finish();
+        if (!nextStep) {
+          await this.finalize();
+          return this.finish();
+        }
       }
 
       return this.output as O;
@@ -254,23 +304,42 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
     return this.output;
   }
 
+  public async finalize() {
+    if (!this.#schemaOut || !this.output) return;
+
+    try {
+      this.#state.output = await (typeof this.#schemaOut === 'function' ? this.#schemaOut : this.#schemaOut.parse)(
+        this.output
+      );
+    } catch (error) {
+      this.#state.error = error as Error;
+    }
+  }
+
   public abort(reason?: unknown) {
     if (this.#closed) return;
 
-    this.close(WORKFLOW_STATUS.ABORTED, reason);
+    this.close(WORKFLOW_STATUS.ABORTED, this.error, reason);
     this.#unlinkSignal?.();
     this.#accept(this.output);
   }
 
-  public close(status?: WorkflowStatus, reason?: unknown) {
+  public close(status: WorkflowStatus = WORKFLOW_STATUS.SUCCESS, error?: Error, reason?: unknown) {
     if (this.#closed) return;
 
     this.#closed = true;
-    this.#state.status = status ?? WORKFLOW_STATUS.SUCCESS;
+
+    anchor.assign(this.#state, { status, error });
+
     this.#controller.abort(reason);
-    this.#accept(this.output);
     this.#unlinkSignal?.();
     this.destroy();
+
+    if (error) {
+      this.#reject(this.error);
+    } else {
+      this.#accept(this.output);
+    }
   }
 
   public reset() {
@@ -288,8 +357,11 @@ export class WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
     return this;
   }
 
-  public seed(seed: D) {
+  public seed(seed: D, input?: SchemaLike, output?: SchemaLike) {
     this.#state.seed = seed as WorkflowData;
+    this.#schemaIn = input;
+    this.#schemaOut = output;
+
     return this;
   }
 

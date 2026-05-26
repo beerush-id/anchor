@@ -4,6 +4,8 @@ import { isBrowser, microtask } from '../utils/index.js';
 import { uuid } from '../utils/uuid.js';
 import { WORKFLOW_STATUS } from './constant.js';
 import { type WorkflowReader, workflowReader } from './reader.js';
+import { WorkflowStepper } from './stepper.js';
+
 import type {
   ResolveInput,
   ResolveOutput,
@@ -94,8 +96,26 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   steps: WorkflowEntry[],
   workflowMeta?: WorkflowMeta
 ): Workflow<I, O> {
+  const enqueue = (stepper: WorkflowStepper<I, O>, input: I) => {
+    for (const hook of WORKFLOW_HOOKS.onQueue) {
+      hook(stepper as never);
+    }
+
+    stepper.all(input).then(() => {
+      for (const hook of WORKFLOW_HOOKS.onDequeue) {
+        hook(stepper as never, stepper.output, stepper.error);
+      }
+    });
+  };
+
   const fn = ((input: I, init?: O) => {
-    return initialize(input, init, true).reader;
+    const stepper = new WorkflowStepper<I, O>(steps).seed(
+      init,
+      workflowMeta?.input as SchemaLike,
+      workflowMeta?.output as SchemaLike
+    );
+    enqueue(stepper, input);
+    return stepper;
   }) as Workflow<I, O>;
 
   const initialize = (input: I, init?: O, run?: boolean, resumable?: boolean) => {
@@ -265,10 +285,14 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   }) as Workflow<I, O>['finally'];
 
   const prepare = (getInput: () => I, init?: O, deferred?: boolean, debounce = 0) => {
-    const { reader, start } = initialize(getInput(), init, false);
+    const stepper = new WorkflowStepper<I, O>(steps, undefined, undefined, undefined, true).seed(
+      init,
+      workflowMeta?.input as SchemaLike,
+      workflowMeta?.output as SchemaLike
+    );
 
     if (!deferred) {
-      reader.state.status = WORKFLOW_STATUS.PENDING;
+      stepper.state.status = WORKFLOW_STATUS.PENDING;
     }
 
     if (isBrowser()) {
@@ -283,12 +307,14 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
         const input = observer.run(getInput);
 
         if (!coalesce) {
-          start(input);
+          stepper.reset();
+          enqueue(stepper, input);
           return;
         }
 
         schedule(() => {
-          start(input);
+          stepper.reset();
+          enqueue(stepper, input);
         });
       };
 
@@ -304,7 +330,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       });
     }
 
-    return reader;
+    return stepper;
   };
 
   fn.once = ((input: I, init?: O) => {
@@ -323,29 +349,32 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
 
   fn.later = ((initOrDebounce?: O | number, debounce?: number) => {
     const ri = resolveInit(initOrDebounce, debounce);
-    const { reader, start } = initialize(undefined as unknown as I, ri.init, false, true);
-    // biome-ignore lint/suspicious/noExplicitAny: <Expect any>
-    const r = reader as any;
+    const stepper = new WorkflowStepper<I, O>(steps, undefined, ri.init, undefined, true).seed(
+      ri.init,
+      workflowMeta?.input as SchemaLike,
+      workflowMeta?.output as SchemaLike
+    );
+    const s = stepper as never as WorkflowStepper<I, O> & { dispatch: (input: I) => void };
 
     if (ri.debounce) {
       const [schedule, cancel] = microtask(ri.debounce);
 
-      r.dispatch = (input: I) =>
+      s.dispatch = (input: I) =>
         schedule(() => {
-          r.resume();
-          start(input);
+          stepper.reset();
+          enqueue(stepper, input);
         });
 
       onCleanup(cancel);
 
-      return reader as WorkflowReader<O> & { dispatch: (input: I) => void };
+      return s;
     }
 
-    r.dispatch = (input: I) => {
-      r.resume();
-      start(input);
+    s.dispatch = (input: I) => {
+      stepper.reset();
+      enqueue(stepper, input);
     };
-    return reader as WorkflowReader<O> & { dispatch: (input: I) => void };
+    return s;
   }) as Workflow<I, O>['later'];
 
   return fn;

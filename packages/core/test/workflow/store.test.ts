@@ -70,6 +70,7 @@ describe('WorkflowStore', () => {
 
     const result = await promise;
     expect(result.val).toBe(2);
+    await Promise.resolve();
 
     // Should be dequeued
     expect(WORKFLOW_STORE.runningWorkflows.size).toBe(0);

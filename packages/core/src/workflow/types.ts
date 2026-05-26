@@ -1,5 +1,5 @@
 import type { WORKFLOW_STATUS } from './constant.js';
-import type { WorkflowReader } from './reader.js';
+import type { WorkflowStepper } from './stepper.js';
 
 /**
  * Base constraint for all workflow I/O — must be a record (object).
@@ -171,7 +171,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param input - The input value to feed into the pipeline.
    * @param init - Initial data for the reader state.
    */
-  (input: I, init: O): WorkflowReader<O, O>;
+  (input: I, init: O): WorkflowStepper<I, O, O>;
   /**
    * Executes the pipeline with the given input.
    *
@@ -179,7 +179,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    *
    * @param input - The input value to feed into the pipeline.
    */
-  (input: I): WorkflowReader<O>;
+  (input: I): WorkflowStepper<I, O>;
 
   /**
    * The unique identifier for this workflow chain.
@@ -273,7 +273,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param input - The input value.
    * @param init - Initial data for the reader state.
    */
-  once(input: I, init: O): WorkflowReader<O, O>;
+  once(input: I, init: O): WorkflowStepper<I, O, O>;
   /**
    * Executes the workflow once, deferring evaluation until the microtask
    * queue flushes.
@@ -282,7 +282,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    *
    * @param input - The input value.
    */
-  once(input: I): WorkflowReader<O>;
+  once(input: I): WorkflowStepper<I, O>;
 
   /**
    * Executes the workflow reactively with initial data whenever the getter
@@ -294,7 +294,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param init - Initial data for the reader state.
    * @param debounce - The debounce time in milliseconds for input changes.
    */
-  with(getInput: () => I, init: O, debounce?: number): WorkflowReader<O, O>;
+  with(getInput: () => I, init: O, debounce?: number): WorkflowStepper<I, O, O>;
   /**
    * Executes the workflow reactively whenever the getter dependencies change,
    * starting immediately.
@@ -304,7 +304,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param getInput - A function that reactively provides the input.
    * @param debounce - The debounce time in milliseconds for input changes.
    */
-  with(getInput: () => I, debounce?: number): WorkflowReader<O>;
+  with(getInput: () => I, debounce?: number): WorkflowStepper<I, O>;
 
   /**
    * Executes the workflow reactively with initial data whenever the getter
@@ -316,7 +316,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param init - Initial data for the reader state.
    * @param debounce - The debounce time in milliseconds for input changes.
    */
-  when(getInput: () => I, init: O, debounce?: number): WorkflowReader<O, O>;
+  when(getInput: () => I, init: O, debounce?: number): WorkflowStepper<I, O, O>;
   /**
    * Executes the workflow reactively whenever the getter dependencies change,
    * deferring the initial execution until a dependency updates.
@@ -326,10 +326,10 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param getInput - A function that reactively provides the input.
    * @param debounce - The debounce time in milliseconds for input changes.
    */
-  when(getInput: () => I, debounce?: number): WorkflowReader<O>;
+  when(getInput: () => I, debounce?: number): WorkflowStepper<I, O>;
 
   /**
-   * Creates a deferred WorkflowReader seeded with initial data that can be
+   * Creates a deferred WorkflowStepper seeded with initial data that can be
    * manually dispatched.
    *
    * The reader's `data` is typed as `O`, available immediately.
@@ -337,15 +337,15 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param init - Initial data for the reader state.
    * @param debounce - The debounce time in milliseconds.
    */
-  later(init: O, debounce?: number): WorkflowReader<O, O> & { dispatch: (input: I) => void };
+  later(init: O, debounce?: number): WorkflowStepper<I, O, O> & { dispatch: (input: I) => void };
   /**
-   * Creates a deferred WorkflowReader that can be manually dispatched.
+   * Creates a deferred WorkflowStepper that can be manually dispatched.
    *
    * The reader's `data` is typed as `O | undefined` until dispatched and resolved.
    *
    * @param debounce - The debounce time in milliseconds.
    */
-  later(debounce?: number): WorkflowReader<O> & { dispatch: (input: I) => void };
+  later(debounce?: number): WorkflowStepper<I, O> & { dispatch: (input: I) => void };
 }
 
 /**
