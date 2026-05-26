@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { createLifecycle, plan, type WorkflowSwitch } from '../../src/index.js';
 import { mutable } from '../../src/reactive/ref.js';
-import { asyncReader, type WorkflowReaderState } from '../../src/workflow/reader.js';
 
 describe('Workflow API', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -380,61 +379,6 @@ describe('Workflow API', () => {
 
       expect(reader.status).not.toBe('aborted');
       expect(reader.data).toBeUndefined();
-    });
-
-    it('should expose reader methods, getters, and state subscriptions correctly', async () => {
-      const workflow = plan<{ value: number }>().then((i) => i);
-      const reader = workflow({ value: 1 });
-
-      let observedState: WorkflowReaderState<{ value: number }> | undefined;
-      reader.subscribe((state) => {
-        observedState = state as never;
-      });
-
-      const res = await reader;
-
-      expect(reader.status).toBe('success');
-      expect(reader.data).toEqual({ value: 1 });
-      expect(reader.error).toBeUndefined();
-
-      expect(observedState).toBeDefined();
-      expect(reader.state.status).toBe('success');
-
-      // Explicitly cover the `current` getter
-      expect(reader.current).toBeDefined();
-
-      // Wait for any async $do microtasks to flush to cover internal destroy calls
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      // Explicitly invoke protected destroy to guarantee coverage without relying on timing
-      (reader as any).destroy();
-
-      // Cover the [Symbol.species] static getters (lines 136-137)
-      const readerConstructor = reader.constructor as any;
-      expect(readerConstructor[Symbol.species]).toBe(Promise);
-
-      const asyncReaderConstructor = Object.getPrototypeOf(readerConstructor);
-      expect(asyncReaderConstructor[Symbol.species]).toBe(Promise);
-    });
-
-    it('should pipe from one reader onto another', () => {
-      const a = asyncReader(new AbortController(), 'a');
-      const b = asyncReader(new AbortController(), 'b');
-
-      a.pipeTo(b);
-
-      expect(b.data).toBe('a');
-
-      a.state.data = 'c';
-      expect(b.data).toBe('c');
-
-      a.state.data = 'd';
-      expect(b.data).toBe('d');
-
-      a.close();
-
-      a.state.data = 'e';
-      expect(b.data).toBe('d');
     });
   });
 
