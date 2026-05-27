@@ -21,10 +21,10 @@ Combines both the frontend UI (SSR and Client Hydration) and the execution logic
 
 ::: code-group
 ```bash [Bun]
-bunx degit beerush-id/anchor/templates/air-react my-air-app
+bunx degit beerush-id/airstack/templates/air-react my-air-app
 ```
 ```bash [NPX]
-npx degit beerush-id/anchor/templates/air-react my-air-app
+npx degit beerush-id/airstack/templates/air-react my-air-app
 ```
 :::
 
@@ -33,10 +33,10 @@ A strict SSR application. Used when your UI requires server-side rendering, but 
 
 ::: code-group
 ```bash [Bun]
-bunx degit beerush-id/anchor/templates/react-ssr my-ssr-app
+bunx degit beerush-id/airstack/templates/react-ssr my-ssr-app
 ```
 ```bash [NPX]
-npx degit beerush-id/anchor/templates/react-ssr my-ssr-app
+npx degit beerush-id/airstack/templates/react-ssr my-ssr-app
 ```
 :::
 
@@ -45,10 +45,10 @@ A dedicated service providing universal IRPC endpoints for external clients to c
 
 ::: code-group
 ```bash [Bun]
-bunx degit beerush-id/anchor/templates/irpc-bun-starter my-api
+bunx degit beerush-id/airstack/templates/irpc-bun-starter my-api
 ```
 ```bash [NPX]
-npx degit beerush-id/anchor/templates/irpc-bun-starter my-api
+npx degit beerush-id/airstack/templates/irpc-bun-starter my-api
 ```
 :::
 
@@ -158,5 +158,5 @@ After installation, choose a module to begin integrating:
 If you encounter issues during installation:
 
 1. Check the [FAQ](/faq) for common issues
-2. Open an issue on [GitHub](https://github.com/beerush-id/anchor/issues)
+2. Open an issue on [GitHub](https://github.com/beerush-id/airstack/issues)
 3. Join our community Discord for real-time support

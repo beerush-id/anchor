@@ -20,7 +20,7 @@ export const Header = template(
           <Link to={SignInPage} activeClass="nav-active">
             Sign In
           </Link>
-          <a href="https://github.com/beerush-id/anchor" target="_blank" rel="noreferrer">
+          <a href="https://github.com/beerush-id/airstack" target="_blank" rel="noreferrer">
             GitHub
           </a>
           <ThemeToggle />

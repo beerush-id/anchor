@@ -58,14 +58,14 @@
     "demos/*"
   ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
-  "homepage": "https://github.com/beerush-id/anchor",
+  "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/beerush-id/anchor.git"
+    "url": "git+https://github.com/beerush-id/airstack.git"
   },
   "bugs": {
-    "url": "https://github.com/beerush-id/anchor/issues"
+    "url": "https://github.com/beerush-id/airstack/issues"
   },
   "catalogs": {
     "app": {

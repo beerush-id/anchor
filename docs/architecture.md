@@ -257,4 +257,4 @@ To learn more about Anchor's architecture and implementation:
   - [React Architecture](/react/getting-started)
   - [Vue Architecture](/vue/getting-started)
   - [Svelte Architecture](/svelte/getting-started)
-- Contribute to the project on [GitHub](https://github.com/beerush-id/anchor)
+- Contribute to the project on [GitHub](https://github.com/beerush-id/airstack)

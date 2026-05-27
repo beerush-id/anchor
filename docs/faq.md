@@ -146,4 +146,4 @@ Contributions are welcome! You can:
 - **Improve Documentation**: Help make the docs better
 - **Answer Questions**: Support other developers in the community
 
-Check out our [Contributing Guide](https://github.com/beerush-id/anchor/blob/main/CONTRIBUTING.md) for more details.
+Check out our [Contributing Guide](https://github.com/beerush-id/airstack/blob/main/CONTRIBUTING.md) for more details.

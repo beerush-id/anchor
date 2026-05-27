@@ -25,7 +25,7 @@
 **Trust your foundation.** AIR Stack is built with uncompromising quality standards, achieving **100% test coverage** across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure absolute reliability for your production applications.
 
 <p align="center">
-  <a href="https://github.com/beerush-id/anchor/actions">
+  <a href="https://github.com/beerush-id/airstack/actions">
     <img src="./docs/public/test-coverage.webp" alt="100% Test Coverage" width="100%" style="border-radius: 12px" />
   </a>
 </p>
@@ -203,7 +203,7 @@ Structured instructions for AI coding assistants to build applications, APIs, an
 - [Svelte](https://airlib.dev/svelte/getting-started)
 
 **Resources:**
-- [GitHub Repository](https://github.com/beerush-id/anchor)
+- [GitHub Repository](https://github.com/beerush-id/airstack)
 - [Contributing Guidelines](./CONTRIBUTING.md)
 - [IRPC Specification](https://airlib.dev/irpc/specification)
 

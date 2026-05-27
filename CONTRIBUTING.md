@@ -11,7 +11,7 @@ this project you agree to abide by its terms.
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/beerush-id/anchor.git`
+2. Clone your fork: `git clone https://github.com/beerush-id/airstack.git`
 3. Create a new branch: `git checkout -b my-feature-branch`
 4. Make your changes
 5. Commit your changes: `git commit -am 'Add some feature'`

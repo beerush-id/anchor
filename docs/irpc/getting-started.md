@@ -18,7 +18,7 @@ This guide will walk you through setting up IRPC in your project and creating yo
 The fastest way to get started is using the IRPC Bun starter template:
 
 ```bash
-npx degit beerush-id/anchor/templates/irpc-bun-starter my-api
+npx degit beerush-id/airstack/templates/irpc-bun-starter my-api
 cd my-api
 bun install
 bun run serve

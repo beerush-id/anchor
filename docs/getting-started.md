@@ -21,14 +21,14 @@ If you want to skip the manual setup and jump straight into coding, you can clon
 ::: code-group
 
 ```bash [React]
-npx degit beerush-id/anchor/templates/air-react my-air-app
+npx degit beerush-id/airstack/templates/air-react my-air-app
 cd my-air-app
 npm install
 npm run dev
 ```
 
 ```bash [SolidJS]
-npx degit beerush-id/anchor/templates/air-solid my-air-app
+npx degit beerush-id/airstack/templates/air-solid my-air-app
 cd my-air-app
 npm install
 npm run dev

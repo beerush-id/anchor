@@ -113,4 +113,4 @@ See the [AIR Stack documentation](https://docs.airlib.dev) for the full Anchor +
 
 - [AIR Stack](https://airlib.dev)
 - [Documentation](https://docs.airlib.dev)
-- [GitHub](https://github.com/beerush-id/anchor)
+- [GitHub](https://github.com/beerush-id/airstack)

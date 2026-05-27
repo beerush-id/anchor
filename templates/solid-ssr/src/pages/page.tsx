@@ -69,7 +69,7 @@ export const RootPage = page(indexRoute).render(() => (
         Read the docs
       </a>
       {' · '}
-      <a href="https://github.com/beerush-id/anchor" target="_blank" rel="noreferrer">
+      <a href="https://github.com/beerush-id/airstack" target="_blank" rel="noreferrer">
         GitHub
       </a>
     </p>
