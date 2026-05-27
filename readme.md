@@ -20,6 +20,16 @@
 
 **JavaScript is not bad**, it just **needs a little touch**. Modern web development forces you to choose between developer experience and performance, between type safety and productivity, between framework flexibility and infrastructure costs. **AIR Stack** eliminates these trade-offs by letting **JavaScript** handle what it's good at, and letting the **rendering engine** handle what it's good at.
 
+## Battle-Tested, 100% Test Coverage
+
+**Trust your foundation.** AIR Stack is built with uncompromising quality standards, achieving **100% test coverage** across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure absolute reliability for your production applications.
+
+<p align="center">
+  <a href="https://github.com/beerush-id/anchor/actions">
+    <img src="./docs/public/test-coverage.webp" alt="100% Test Coverage" width="100%" style="border-radius: 12px" />
+  </a>
+</p>
+
 ## Core Architecture
 
 **AIR Stack** is a revolutionary approach to **building web applications**, unifying the stack under a cohesive, **AI-Native architecture**.
@@ -138,7 +148,6 @@ const toggleTheme = () => {
   settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
 };
 ```
-
 
 ## Components
 

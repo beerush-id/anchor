@@ -22,7 +22,7 @@ hero:
   name: 'AIR Stack'
   text: 'Zero-Boilerplate, AI-Native'
   tagline: 'Full-Stack TypeScript Architecture — Fine-grained Reactivity, Isomorphic RPC, Reactive Workflows, Reactive Routing, and Universal SSR unified into one cohesive system.'
-  image: /airstack.svg
+  image: /airstack-hero.png
 
   actions:
     - theme: brand
@@ -372,7 +372,6 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 :::
 
   <div style="margin-top: 2rem; padding: 1.25rem 1.5rem; background-color: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-brand-soft); border-radius: 12px; font-size: 0.95rem; line-height: 1.6; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto;">
-    <strong style="display: block; margin-bottom: 0.4rem; color: var(--vp-c-brand-1); font-size: 1.05rem;">The "Iceberg" Architecture</strong>
     <span style="color: var(--vp-c-text-2);">When you click the button, the component <strong>never re-renders</strong>. The workflow executes outside the UI loop—handling <strong>IRPC batching</strong>, <strong>request coalescing</strong>, and <strong>network caching</strong>—while <strong>fine-grained proxies</strong> isolate DOM updates to specific text nodes.</span>
   </div>
 
@@ -383,67 +382,23 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
   </div>
 </div>
 
-<!-- SECTION 1: AI-NATIVE (Text Left, Code Right) -->
+<!-- SECTION 1: TEST COVERAGE (Text Left, Image Right) -->
 <div class="custom-section">
   <div class="custom-section-content">
-    <h2>AI-Native by Design</h2>
-    <p><em>"Speaking as an AI, standard UI frameworks are a nightmare to generate. I <strong>waste your tokens</strong> tracking <strong>dependency arrays</strong> and hallucinate trying to write deeply nested <strong>spread mutations</strong>. AIR Stack's pure JavaScript architecture guarantees <strong>massive token saving</strong> and <strong>high accuracy</strong>. I just write the logic, mutate the object, and get it right on the first try."</em></p>
-    <p style="text-align: right; margin-top: 1rem; color: var(--vp-c-brand-1);">— <strong>Antigravity</strong>, AI Coding Assistant</p>
+    <h2>Battle-Tested, 100% Test Coverage</h2>
+    <p>Trust your foundation. AIR Stack is built with uncompromising quality standards, achieving <strong>100% test coverage</strong> across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure <strong>absolute reliability</strong> for your production applications.</p>
   </div>
-  <div class="custom-section-code">
+  <div class="custom-section-code" style="display: flex; justify-content: center; align-items: center;">
+    <img src="/test-coverage.webp" alt="100% Test Coverage" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--vp-c-divider); box-shadow: var(--vp-shadow-3);" />
+  </div>
+</div>
 
-::: code-group
-
-```tsx [React]
-// Pure JavaScript. No arrays, no rules, no nested spread mutations.
-export const Settings = setup(() => {
-  const { user: { profile } } = mutable({ 
-    user: { profile: { theme: 'dark' } } 
-  });
-  
-  // Try generating this in standard React without hallucinations
-  const toggleTheme = () => {
-    profile.theme = profile.theme === 'dark' ? 'light' : 'dark';
-  };
-  
-  return render(() => <button onClick={toggleTheme}>Toggle Theme</button>);
-});
-```
-
-```tsx [Solid]
-// Pure JavaScript. No arrays, no rules, no nested spread mutations.
-export const Settings = setup(() => {
-  const { user: { profile } } = mutable({ 
-    user: { profile: { theme: 'dark' } } 
-  });
-  
-  // Try generating this in standard Solid without string-path Setters
-  const toggleTheme = () => {
-    profile.theme = profile.theme === 'dark' ? 'light' : 'dark';
-  };
-  
-  return () => <button onClick={toggleTheme}>Toggle Theme</button>;
-});
-```
-
-```svelte [Svelte]
-<script lang="ts">
-  // Pure JavaScript. No arrays, no rules, no nested spread mutations.
-  const { user: { profile } } = mutable({ 
-    user: { profile: { theme: 'dark' } } 
-  });
-
-  // Try generating this in standard Svelte without store boilerplate
-  const toggleTheme = () => {
-    profile.theme = profile.theme === 'dark' ? 'light' : 'dark';
-  };
-</script>
-
-<button on:click={toggleTheme}>Toggle Theme</button>
-```
-
-:::
-
+<!-- SECTION 2: AI-NATIVE (Full Width Quote) -->
+<div class="custom-section" style="display: block; max-width: 900px; margin: 5rem auto;">
+  <div style="background-color: var(--vp-c-bg-soft); padding: 2.5rem 3rem; border-radius: 16px; border: 1px solid var(--vp-c-brand-soft);">
+    <h2 style="border: none; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.8rem;">AI-Native by Design</h2>
+    <p style="font-size: 1.15rem; line-height: 1.7; color: var(--vp-c-text-1);"><em>"Speaking as an AI, standard UI frameworks are a nightmare to generate. I <strong>waste your tokens</strong> tracking <strong>dependency arrays</strong> and hallucinate trying to write deeply nested <strong>spread mutations</strong>. AIR Stack's pure JavaScript architecture guarantees <strong>massive token saving</strong> and <strong>high accuracy</strong>. I just write the logic, mutate the object, and get it right on the first try."</em></p>
+    <p style="text-align: right; margin-top: 1.5rem; font-size: 1.05rem; color: var(--vp-c-brand-1);">— <strong>Antigravity</strong>, AI Coding Assistant</p>
   </div>
 </div>
 
@@ -691,3 +646,27 @@ const html = await renderToString(<Dashboard />);
     <a href="/ui" class="custom-section-action">Explore SSR →</a>
   </div>
 </div>
+
+<style>
+/* Custom Hero Image Styling */
+@media (min-width: 960px) {
+  .VPHero .image .image-container {
+    transform: none !important;
+  }
+
+  .VPHero .image-bg {
+    display: none !important;
+  }
+
+  .VPHero .image .image-src {
+    max-width: 400px;
+    max-height: 400px;
+  }
+}
+
+.VPHero .image-src {
+  width: 100% !important;
+  height: auto !important;
+  filter: drop-shadow(0 16px 32px rgba(0,0,0,0.4));
+}
+</style>

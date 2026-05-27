@@ -408,7 +408,7 @@ export default defineConfig({
 
     footer: {
       message: 'Made with ❤️ by <a href="https://www.mahdaen.name" target="_blank">Nanang Mahdaen El Agung</a>',
-      copyright: 'Copyright © 2026 Anchor. All rights reserved.',
+      copyright: 'Copyright © 2026 AIR Stack. All rights reserved.',
     },
     editLink: {
       pattern: 'https://github.com/beerush-id/anchor/edit/main/docs/:path',

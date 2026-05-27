@@ -399,19 +399,22 @@ compute.use(new BroadcastTransport({ channel: compute.href })); // Local Web Wor
 ```
 
 ### IRPC: Credentials (`.sign()` / `credential()`)
-Attach key-value credentials to a transport to send it with every request.
+For cross-domain or 3rd-party IRPC communication where standard web mechanisms (like cookies or HTTP headers) are inaccessible or unsupported, use `.sign()` to attach custom key-value credentials directly to the IRPC protocol.
+
+> [!WARNING]
+> In AIR Stack, "Client" means the *caller*, not necessarily the browser. Never expose private API keys in browser bundles. Use private keys for Server-to-Server calls, and user-specific tokens for Browser-to-Server calls.
 
 ```typescript
-// Client: attach auth token to outgoing calls
-transport.sign({ MY_CUSTOM_KEY: '<insert-your-token-here>' });
+// Caller (Server): Safely attach private 3rd-party API keys
+transport.sign({ API_KEY: process.env.STRIPE_SECRET_KEY });
 
-// Client: or using factory function
-transport.sign(() => ({ MY_CUSTOM_KEY: '<insert-your-token-here>' }))
+// Caller (Browser): Attach user-specific auth tokens (Never secret keys)
+transport.sign(() => ({ AUTH_TOKEN: getSessionToken() }));
 
-// Server handler: read the caller's credentials
+// Handler: Read the credentials
 irpc.construct(getProfile, async () => {
-  const token = credential<string>('MY_CUSTOM_KEY');
-  const user = await verifyAPIKey(token);
+  const token = credential<string>('AUTH_TOKEN');
+  const user = await verifyAuthToken(token);
   return db.users.find(user.id);
 });
 ```
