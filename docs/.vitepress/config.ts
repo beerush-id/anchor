@@ -5,7 +5,6 @@ import { renderSandbox } from 'vitepress-plugin-sandpack';
 
 const BASE_URL = '';
 const PAGE_URL = process.env.VITE_WORKER_BUILD_URL ?? 'https://airlib.dev/';
-const ROOT_URL = process.env.VITE_ROOT_URL ?? 'https://airlib.dev';
 const PAGE_TITLE = 'AIR Stack';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - AI-Native, Full-Stack TypeScript Architecture`;
 const PAGE_OPEN_DESCRIPTION =
@@ -108,13 +107,6 @@ export default defineConfig({
           { text: 'Svelte', link: '/svelte/index.html' },
         ],
       },
-      // {
-      //   text: 'Coverage',
-      //   items: [
-      //     { text: 'Test Results', link: '/coverage/index.html', target: '_blank' },
-      //     { text: 'Coverage Details', link: '/coverage/details/index.html', target: '_blank' },
-      //   ],
-      // },
     ],
 
     sidebar: [
@@ -190,9 +182,6 @@ export default defineConfig({
           { text: 'Component', link: '/ui/component' },
           { text: 'Form Components', link: '/ui/form' },
           { text: 'Optimistic UI', link: '/ui/optimistic' },
-          // { text: 'Headless Components', link: '/ui/headless' },
-          // { text: 'Data Components', link: '/ui/data' },
-          // { text: 'Composition', link: '/ui/composition' },
         ],
       },
       {
@@ -262,24 +251,7 @@ export default defineConfig({
           { text: 'Comparison', link: '/react/comparison' },
           { text: 'Best Practices', link: '/react/best-practices' },
           { text: 'Migration Guide', link: '/react/migration-guide' },
-          // { text: 'AI Knowledge Base', link: '/react/ai-knowledge-base' },
-          // { text: 'AI System Prompt', link: '/react/ai-system-prompt' },
           { text: 'FAQ', link: '/react/faq' },
-          // {
-          //   text: 'Tutorials',
-          //   collapsed: true,
-          //   items: [{ text: 'Index', link: '/react/tutorials/index' }],
-          // },
-          // {
-          //   text: 'Legacy (Classic)',
-          //   collapsed: true,
-          //   items: [
-          //     { text: 'Introduction', link: '/react-classic/introduction' },
-          //     { text: 'Getting Started', link: '/react-classic/getting-started' },
-          //     { text: 'Core Concepts', link: '/react-classic/core-concepts' },
-          //     { text: 'API Reference', link: '/react-classic/api-reference' },
-          //   ],
-          // },
         ],
       },
       {
@@ -320,8 +292,6 @@ export default defineConfig({
             ],
           },
           { text: 'Server-Side Rendering', link: '/solid/ssr' },
-          // { text: 'AI Knowledge Base', link: '/solid/ai-knowledge-base' },
-          // { text: 'AI System Prompt', link: '/solid/ai-system-prompt' },
           { text: 'FAQ', link: '/solid/faq' },
         ],
       },
@@ -350,8 +320,6 @@ export default defineConfig({
               { text: 'Advanced', link: '/svelte/state/advanced' },
             ],
           },
-          // { text: 'AI Knowledge Base', link: '/svelte/ai-knowledge-base' },
-          // { text: 'AI System Prompt', link: '/svelte/ai-system-prompt' },
           { text: 'FAQ', link: '/svelte/faq' },
         ],
       },
@@ -436,128 +404,6 @@ export default defineConfig({
           },
         ],
       },
-      // {
-      //   text: 'API Reference',
-      //   collapsed: true,
-      //   items: [
-      //     {
-      //       text: 'Core',
-      //       collapsed: true,
-      //       items: [
-      //         { text: 'Reactivity', link: '/apis/core/reactivity' },
-      //         { text: 'Async', link: '/apis/core/async' },
-      //         { text: 'Fetch', link: '/apis/core/fetch' },
-      //         { text: 'Subscription', link: '/apis/core/subscription' },
-      //         { text: 'Binding', link: '/apis/core/binding' },
-      //         { text: 'Form', link: '/apis/core/form' },
-      //         { text: 'Context', link: '/apis/core/context' },
-      //         { text: 'Lifecycle', link: '/apis/core/lifecycle' },
-      //         { text: 'Dev Tools', link: '/apis/core/dev-tools' },
-      //         { text: 'History', link: '/apis/core/history' },
-      //         { text: 'Anchor', link: '/apis/core/anchor' },
-      //         { text: 'Observation (Low-Level)', link: '/apis/core/observation' },
-      //         { text: 'Types', link: '/apis/core/types' },
-      //         { text: 'Utilities', link: '/apis/core/utility' },
-      //       ],
-      //     },
-      //     {
-      //       text: 'Storage',
-      //       collapsed: true,
-      //       items: [
-      //         { text: 'Persistent', link: '/apis/storage/persistent' },
-      //         { text: 'Session', link: '/apis/storage/session' },
-      //         { text: 'Key-Value', link: '/apis/storage/kv' },
-      //         { text: 'Table', link: '/apis/storage/table' },
-      //         { text: 'Types', link: '/apis/storage/types' },
-      //       ],
-      //     },
-      //     {
-      //       text: 'React (Legacy)',
-      //       collapsed: true,
-      //       items: [
-      //         { text: 'Initialization', link: '/apis/react/initialization' },
-      //         { text: 'Observation', link: '/apis/react/observation' },
-      //         { text: 'Derivation', link: '/apis/react/derivation' },
-      //         { text: 'Data Flow & Binding', link: '/apis/react/data-flow' },
-      //         { text: 'Storage', link: '/apis/react/storage' },
-      //         // { text: 'Components', link: '/apis/react/components' },
-      //         { text: 'Error Handling', link: '/apis/react/error-handling' },
-      //         { text: 'Utilities', link: '/apis/react/utilities' },
-      //       ],
-      //     },
-      //     {
-      //       text: 'Solid',
-      //       collapsed: true,
-      //       items: [
-      //         { text: 'Initialization', link: '/apis/solid/initialization' },
-      //         { text: 'Observation', link: '/apis/solid/observation' },
-      //         { text: 'Fetch', link: '/apis/solid/fetch' },
-      //         { text: 'History', link: '/apis/solid/history' },
-      //         { text: 'Storage', link: '/apis/solid/storage' },
-      //       ],
-      //     },
-      //     {
-      //       text: 'Svelte',
-      //       collapsed: true,
-      //       items: [
-      //         { text: 'Initialization', link: '/apis/svelte/initialization' },
-      //         { text: 'Derivation', link: '/apis/svelte/derivation' },
-      //         { text: 'Observation', link: '/apis/svelte/observation' },
-      //         { text: 'Error Handling', link: '/apis/svelte/error-handling' },
-      //         { text: 'Storage', link: '/apis/svelte/storage' },
-      //         { text: 'Utilities', link: '/apis/svelte/utilities' },
-      //       ],
-      //     },
-      //     {
-      //       text: 'Vue',
-      //       collapsed: true,
-      //       items: [
-      //         { text: 'Initialization', link: '/apis/vue/initialization' },
-      //         { text: 'Derivation', link: '/apis/vue/derivation' },
-      //         { text: 'Observation', link: '/apis/vue/observation' },
-      //         { text: 'Error Handling', link: '/apis/vue/error-handling' },
-      //         { text: 'Storage', link: '/apis/vue/storage' },
-      //         { text: 'Utilities', link: '/apis/vue/utilities' },
-      //       ],
-      //     },
-      //     {
-      //       text: 'Dev Tools',
-      //       link: '/apis/devtool',
-      //     },
-      //   ],
-      // },
-      // {
-      //   text: 'Configuration',
-      //   link: '/configuration',
-      // },
-      // {
-      //   text: 'Reactivity',
-      //   link: '/reactivity',
-      // },
-      // {
-      //   text: 'Immutability',
-      //   link: '/immutability',
-      // },
-      // {
-      //   text: 'Data Integrity',
-      //   link: '/data-integrity',
-      // },
-      // {
-      //   text: 'Architecture',
-      //   link: '/architecture',
-      // },
-      // {
-      //   text: 'Performance',
-      //   link: '/performance',
-      // },
-      // {
-      //   text: 'Philosophy',
-      //   link: '/philosophy',
-      // },
-      // {
-      //   text: 'FAQ',
-      //   link: '/faq',
-      // },
     ],
 
     footer: {
