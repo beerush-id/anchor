@@ -22,7 +22,7 @@ To work effectively without polluting your context, use the `view_file` tool to 
 - **Action**: Read `contents/workflows.md`
 
 ### State Management
-- **When**: You need to handle fine-grained reactivity, mutate nested objects/arrays directly, create derived computed properties, establish read/write immutable contracts, track async queries, or manage side-effects.
+- **When**: You need to handle fine-grained reactivity, mutate nested objects/arrays directly, create derived computed properties, establish read/write immutable contracts, track async queries, manage side-effects, or use isomorphic cookies for authentication and session state.
 - **Action**: Read `contents/state-management.md`
 
 ### Router (@anchorlib/router)
@@ -42,12 +42,20 @@ To work effectively without polluting your context, use the `view_file` tool to 
 - **Action**: Read `contents/form-architecture.md`
 
 ### Headless Composition
-- **When**: You need to decouple complex logic from the UI tree, create headless state machines, abstract side-effects, or encapsulate pure domain logic for maximum reusability.
+- **When**: You need to decouple complex logic from the UI tree, create headless state machines, abstract side-effects, encapsulate pure domain logic for maximum reusability, or create framework-agnostic logic.
 - **Action**: Read `contents/headless-composition.md`
 
 ### Library Authoring
 - **When**: You need to build a reusable library, package components or APIs using the AIR Stack, or configure the build system (`tsdown`/`tsup`) for distribution.
 - **Action**: Read `contents/library-authoring.md`
+
+### Persistent State
+- **When**: You need state that persists within a browser tab (session), across browser sessions (localStorage), or exceeds localStorage limits (IndexedDB key-value or reactive tables).
+- **Action**: Read `contents/persistent-state.md`
+
+### Testing
+- **When**: You need to test IRPC functions, reactive state, route guards, providers, streams, component lifecycle cleanup, or simulate browser/server environments.
+- **Action**: Read `contents/testing.md`
 
 ---
 **CRITICAL INSTRUCTION**: Do NOT attempt to read all modules at once. Identify your exact problem domain from the list above, then use the `view_file` tool to read *only* that specific file.

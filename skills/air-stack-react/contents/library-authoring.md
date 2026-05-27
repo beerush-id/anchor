@@ -86,7 +86,7 @@ service
 // index.ts
 export const chat = irpc.declare<typeof service.chat>({
   name: 'llm.chat',
-  init: () => []
+  seed: () => []
 });
 ```
 

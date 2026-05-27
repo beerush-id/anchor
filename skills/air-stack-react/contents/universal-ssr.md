@@ -1,6 +1,20 @@
 ## 5. Universal SSR
 This guide covers SSR in AIR Stack for React. An app needs three files: `App.tsx` (client hydration), `vite.config.ts` (dev server via plugin), and `worker.ts` (production worker).
 
+### SSR: API Signatures
+```typescript
+// The render() function returns SSROutput
+type SSROutput = {
+  html: string;       // Rendered HTML body
+  head: string;       // Rendered HTML head (styles, meta, hydration scripts)
+  status: number;     // HTTP status code
+  cookies: string[];  // Set-Cookie headers from cookie mutations during render
+  redirect?: string;  // Redirect URL if triggered during rendering
+};
+
+type SSRRenderer = (url: string, cookie: string, context?: SSRContext, controller?: AbortController) => Promise<SSROutput>;
+```
+
 ### Client Entry (`App.tsx`)
 Client-side hydration module. Resolves route state via `router.activate()` before using `hydrateRoot` to attach React to the pre-rendered HTML.
 
@@ -170,7 +184,7 @@ Full control over request routing, IRPC resolution, and SSR rendering with prope
 import '@irpclib/irpc/server';
 import { createSSR } from '@anchorlib/react/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
-import { decodeCookies, setCookieContext } from '@anchorlib/core';
+import { decodeCookies, setCookieContext } from '@anchorlib/react';
 import template from '../dist/client/index.html?raw';
 import { irpc, transport } from './lib/module.js';
 import pageRouter from './lib/router.js';

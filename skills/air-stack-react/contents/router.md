@@ -1,6 +1,75 @@
 ## 4. Router (`@anchorlib/router`)
 Anchor Router provides type-safe routing, out-of-band data fetching (providers), and access control (guards) in a single unified route chain.
 
+### Router: API Signatures
+```tsx
+import { createRouter, page, modal, Show, For, redirect, MAX_AGE } from '@anchorlib/react';
+import { NotFoundError, GuardError, ProviderError } from '@anchorlib/react';
+
+// Router creation
+function createRouter(options?: RouterOptions): Router;
+interface RouterOptions {
+  maxAge?: number;           // Default provider cache duration (ms)
+  renderMode?: 'deferred' | 'immediate'; // Deferred waits for providers, immediate renders instantly
+}
+
+// Router instance
+interface Router {
+  route(path?: string): Route;               // route() to get the root route, path to create child route
+  append(path: string): Route;               // Create independent route tree (no shared layout)
+  catch(renderer: (props: { error: RouteError }) => ReactNode): void;
+  state: RouterState;
+}
+
+// Global navigation state (reactive — reads inside reactive boundaries auto-track)
+interface RouterState {
+  activating: boolean;  // True while any route is being activated
+  progress: number;     // Number of completed steps
+  steps: number;        // Total steps in current activation
+}
+
+// Route chain
+interface Route {
+  route(path: string): Route;
+  guard(fn: (ctx: { params, query }) => void | Promise<void>): Route;
+  provide(name: string, fn: (ctx: { params, query, data, signal }) => unknown, options?: ProviderOptions): Route;
+  provide(providers: Record<string, (ctx) => unknown>, options?: ProviderOptions): Route;
+  render(renderer: (props: { state, context, children }) => ReactNode): Route;
+  renderAsync(loader: () => Promise<(props: { state, context, children }) => ReactNode>, fallback?: (props: { state, context, children }) => ReactNode): Route;
+  catch(renderer: (props: { error, state, context }) => ReactNode): void;
+}
+
+// ContextReader — the `state` prop passed to page renderers (reactive)
+interface ContextReader {
+  active: boolean;
+  status: 'idle' | 'pending' | 'success' | 'error';
+  resolved: boolean;
+  resolving: Set<string>;      // Names of providers currently resolving
+  authenticated: boolean;
+  authenticating: boolean;
+  data: Record<string, unknown>;
+  error?: RouteError;
+  query: Record<string, unknown>;
+  params: Record<string, unknown>;
+}
+
+// Page and Modal component factories
+function page(route: Route): RouteComponent;   // Standard page
+function modal(route: Route): RouteComponent;  // Renders as overlay without unmounting background
+
+// Conditional rendering
+function Show<T>(props: { when: T | (() => T); children: ReactNode | ((value: T) => ReactNode); fallback?: () => ReactNode }): ReactNode;
+
+// List rendering
+function For<T>(props: { each: T[] | (() => T[]); children: (item: T, index: number) => ReactNode; fallback?: ReactNode }): ReactNode;
+
+// Navigation
+function redirect(route: Route, params?: object, query?: object): Redirect; // Throw from guards
+
+// Cache duration constants (milliseconds)
+const MAX_AGE = { SECOND: 1000, MINUTE: 60000, HOUR: 3600000, DAY: 86400000, WEEK: 604800000, MONTH: 2592000000, YEAR: 31536000000 };
+```
+
 ### Router Instantiation
 Create the router instance. The options object is entirely optional.
 
@@ -120,28 +189,25 @@ export const searchRoute = rootRoute
 ```
 
 ### Parallel & Reactive Guards
-Multiple `.guard()` calls on a single route execute in parallel. Just like providers, guards are inherently reactive. If a guard reads from any reactive state, it automatically re-evaluates when that state changes, ejecting the user immediately if access is revoked in the background.
+Multiple `.guard()` calls on a single route execute in parallel. Guards are inherently reactive. If a guard reads from any reactive state, it automatically re-evaluates when that state changes, ejecting the user immediately if access is revoked in the background.
 
 ```tsx
-import { mutable } from '@anchorlib/react';
+import { mutable, redirect } from '@anchorlib/react';
 import { checkRole } from '../services/auth.js';
 
 export const systemState = mutable({ inMaintenance: false });
 
-export const ProtectedRoutes = Route.group({
-  path: '/dashboard',
-  guards: [
-    // Reactive Guard: Auto-ejects user if maintenance mode is toggled on globally
-    () => {
-      if (globalState.maintenance) throw redirect('/maintenance');
-    },
-    // Parallel Guard: Runs concurrently with other guards
-    async () => {
-      const user = await checkRole();
-      if (user.role !== 'admin') throw redirect(loginRoute);
-    }
-  ]
-});
+export const dashboardRoute = rootRoute
+  .route('/dashboard')
+  // Reactive Guard: Auto-ejects user if maintenance mode is toggled on globally
+  .guard(() => {
+    if (systemState.inMaintenance) throw redirect(maintenanceRoute);
+  })
+  // Parallel Guard: Runs concurrently with the guard above
+  .guard(async () => {
+    const user = await checkRole();
+    if (user.role !== 'admin') throw redirect(loginRoute);
+  });
 ```
 
 ### Redirects & Route Errors
@@ -181,6 +247,8 @@ export const SettingsLayout = page(settingsRoute).render(({ state, children }) =
 ### Sequential & Dependent Providers
 Each `.provide()` call executes in sequence. Providers within the same `.provide({})` call execute in parallel. Downstream providers can access the `data` resolved by upstream `.provide()` calls in the chain.
 
+Providers are inherently reactive. If the URL `params` or `query` changes, the provider automatically re-runs. If a provider reads any reactive state (such as a `mutable` or `derived`), it automatically re-runs when that state changes.
+
 ```typescript
 export const postsRoute = usersRoute
   .route('/:user_id/posts')
@@ -191,28 +259,6 @@ export const postsRoute = usersRoute
     // `data.user` is fully resolved and type-safe here
     return fetchUserPosts(data.user.id);
   });
-```
-
-### Reactive Providers
-Providers are inherently reactive. If the URL `params` or `query` changes (e.g., navigating from `?period=day` to `?period=week`), the provider automatically re-runs. Furthermore, if a provider reads *any* reactive state (such as an Anchor `mutable` or `derived`), it automatically re-fetches when that state changes—eliminating manual cache invalidation arrays.
-
-```typescript
-import { mutable } from '@anchorlib/react';
-import { getAnalytics } from '../services/analytics.js';
-
-export const dashboardState = mutable({ showMetrics: true });
-
-export const ChartRoute = Route.define({
-  path: '/chart',
-  load: async (ctx) => {
-    // Automatically re-runs if the URL `query` changes
-    // Automatically re-runs if `dashboardState.showMetrics` mutates elsewhere
-    return getAnalytics({ 
-      period: query.period,
-      metrics: dashboardState.showMetrics 
-    });
-  }
-});
 ```
 
 ### Data-Driven Skeletons

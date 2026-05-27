@@ -1,4 +1,4 @@
-### 2. Workflows (`@anchorlib/core`)
+### 2. Workflows
 Transforms deeply nested `try/catch` and manual state handling into flat, Promise-like chains that run anywhere JavaScript runs.
 
 ### Workflow: API Signatures
@@ -16,8 +16,9 @@ type WorkflowMeta = {
 function plan<Input extends WorkflowData>(baseFlow?: Workflow<any, any>): Workflow<Input, Input>;
 
 interface Workflow<I extends WorkflowData, O extends WorkflowData> {
-  // The pipeline is natively callable and returns a reactive Promise (WorkflowReader)
-  (input: I): WorkflowReader<O>;
+  // The pipeline is natively callable and returns a reactive Promise (WorkflowStepper).
+  (input: I, seed: O): WorkflowStepper<I, O, O>;
+  (input: I): WorkflowStepper<I, O>;
 
   // Add a sequential transform step
   then<R extends WorkflowData>(fn: (input: O) => R | Promise<R>, meta?: WorkflowMeta): Workflow<I, R>;
@@ -35,27 +36,51 @@ interface Workflow<I extends WorkflowData, O extends WorkflowData> {
   finally(fn: (input: O, error?: Error) => void | Promise<void>, meta?: WorkflowMeta): Workflow<I, O>;
 
   // Reactive Execution Bindings
-  once(input: I): WorkflowReader<O>;
-  with(getInput: () => I, debounce?: number): WorkflowReader<O>;
-  when(getInput: () => I, debounce?: number): WorkflowReader<O>;
-  later(debounce?: number): WorkflowReader<O> & { dispatch: (input: I) => void };
+  once(input: I, seed: O): WorkflowStepper<I, O, O>;
+  once(input: I): WorkflowStepper<I, O>;
+
+  with(getInput: () => I, seed: O, debounce?: number): WorkflowStepper<I, O, O>;
+  with(getInput: () => I, debounce?: number): WorkflowStepper<I, O>;
+
+  when(getInput: () => I, seed: O, debounce?: number): WorkflowStepper<I, O, O>;
+  when(getInput: () => I, debounce?: number): WorkflowStepper<I, O>;
+
+  later(seed: O, debounce?: number): WorkflowStepper<I, O, O> & { dispatch: (input: I) => void };
+  later(debounce?: number): WorkflowStepper<I, O> & { dispatch: (input: I) => void };
 }
 
-// WorkflowReader extends Promise, so it can be awaited normally while also exposing reactive UI properties.
-interface WorkflowReader<T> extends Promise<T> {
-  status: 'pending' | 'success' | 'error' | 'aborted';
-  current: { name?: string; status: string; error?: Error }; // State of the currently active step
-  data?: T;      // Pipeline output
-  error?: Error; // Pipeline error
-  close(): void; // Manually abort the pipeline
+interface WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
+  status: 'idle' | 'pending' | 'success' | 'error' | 'aborted' | 'skipped';
+  data: D;           // Pipeline output (falls back to seed if not yet resolved)
+  error?: Error;
+  input: I;          // Current input
+  output: O;         // Current output
+  current?: WorkflowRunner;  // Currently active step runner
+
+  // Step introspection
+  get(name: string): WorkflowRunner | undefined;
+
+  // Execution control
+  all(input: I): Promise<O>;     // Run all remaining steps
+  run(input?: WorkflowData): Promise<O>;  // Run next step only
+  reset(): this;                 // Reset for re-execution
+  skip(error?: Error): this;     // Skip remaining steps
+
+  // Lifecycle
+  abort(reason?: unknown): void;
+  close(status?: WorkflowStatus): void;
+  subscribe(handler: StateSubscriber<O>): () => void;
+  pipeTo(target: WorkflowStepper<I, O>): this;
 }
 ```
+
+> **Reactivity Note:** Workflow state is not recursively reactive. Only top-level properties (e.g., `status`, `error`, `data`, `current`) trigger reactive updates. The `data`/`output` object itself is a plain value. If you need reactive properties inside the output, return a reactive state (e.g., `mutable()`) from your step handler.
 
 ### Workflow: Planning & Composition
 A Workflow pipeline accepts **exactly one argument** (the input state). They are built with sequential `.then()` blocks.
 
 ```typescript
-import { plan } from '@anchorlib/core';
+import { plan } from '@anchorlib/react';
 import { lockInventory, processPayment, releaseInventory, verifySession } from './functions.js'; // IRPC Stubs
 
 // Standalone Pipeline
@@ -100,7 +125,7 @@ export const secureOrderFlow = plan(authFlow)
 Workflows natively support zero-dependency duck-typed schema validation (Zod, Valibot, custom validators). You can validate the global pipeline boundaries or strictly enforce intermediate step outputs.
 
 ```typescript
-import { plan } from '@anchorlib/core';
+import { plan } from '@anchorlib/react';
 import { z } from 'zod';
 import { provisionDatabase } from './functions.js'; // IRPC Stub
 
@@ -134,7 +159,7 @@ export const deployAppFlow = plan({
 When a process has multiple potential outcomes, use `.switch()` to declaratively route the execution path instead of relying on unreadable nested `if/else` statements. Each route receives an isolated branch builder to independently chain steps for that specific outcome.
 
 ```typescript
-import { plan } from '@anchorlib/core';
+import { plan } from '@anchorlib/react';
 import { processCard, processPaypal, flagForReview, autoApprove } from './functions.js'; // IRPC Stubs
 
 // Key-Based Branching
@@ -176,9 +201,9 @@ irpc.construct(processOrder, async (token, cartId) => {
 ```
 
 ```tsx
-// UI Execution (For strictly client-safe pipelines)
+// UI Execution
 import { setup, render, mutable } from '@anchorlib/react';
-import { uploadFilesFlow } from './client-workflows.js'; // Purely browser-safe logic
+import { uploadFilesFlow } from './workflows.js';
 
 export const UploadButton = setup<{ files: File[] }>((props) => {
   const isPending = mutable(false);
@@ -202,11 +227,11 @@ export const UploadButton = setup<{ files: File[] }>((props) => {
 ```
 
 ### Workflow: Reactive Tracking & UI Bindings
-Executing a workflow returns a reactive `WorkflowReader` which tracks the precise state of the pipeline, including the currently executing step's name.
+Executing a workflow returns a reactive `WorkflowStepper` which tracks the precise state of the pipeline, including the currently executing step's name and per-step introspection.
 
 ```tsx
 import { setup, render, Show, mutable } from '@anchorlib/react';
-import { searchFlow, uploadFilesFlow } from './client-workflows.js';
+import { searchFlow, uploadFilesFlow } from './workflows.js';
 
 export const DataView = setup<{ token: string }>((props) => {
   const query = mutable('');
@@ -215,7 +240,7 @@ export const DataView = setup<{ token: string }>((props) => {
   // The factory must return exactly ONE argument (the input state object).
   const searchTask = searchFlow.when(() => ({ query: query.value }), 300); // 300ms debounce
 
-  // Manual Binding: Creates an idle task reader to dispatch imperative events.
+  // Manual Binding: Creates an idle stepper to dispatch imperative events.
   const uploadTask = uploadFilesFlow.later(150); // Optional 150ms debounce
 
   return render(() => (
@@ -236,6 +261,63 @@ export const DataView = setup<{ token: string }>((props) => {
       {/* Show the exact step name to the user natively! (e.g., "Compressing images...") */}
       <Show when={() => uploadTask.status === 'pending'}>
         {() => <span>{uploadTask.current?.name}</span>}
+      </Show>
+    </div>
+  ));
+});
+```
+
+### Workflow: State Seeding
+Passing `seed` to an execution binding seeds `stepper.data` with an initial value, making it typed as `O` instead of `O | undefined`. This avoids null guards in the UI when the data shape is known upfront.
+
+```tsx
+import { setup, render, Show, mutable } from '@anchorlib/react';
+import { searchFlow } from './workflows.js';
+
+export const SearchView = setup(() => {
+  const query = mutable('');
+
+  // Seeded: searchTask.data is typed as { results: SearchResult[] }, never undefined.
+  const searchTask = searchFlow.when(() => ({ query: query.value }), { results: [] }, 300);
+
+  return render(() => (
+    <div>
+      <input value={query.value} onInput={(e) => (query.value = e.target.value)} />
+
+      <ul>
+        {searchTask.data.results.map((item) => (
+          <li key={item.id}>{item.title}</li>
+        ))}
+      </ul>
+    </div>
+  ));
+});
+```
+
+### Workflow: State Piping
+A deferred stepper can serve as a stable UI binding target while imperative executions pipe their state into it. The UI stays bound to one stepper, each execution's status, data, and errors flow through automatically.
+
+```tsx
+import { setup, render, Show } from '@anchorlib/react';
+import { processOrderFlow } from './workflow.js';
+
+export const OrderButton = setup<{ cartId: string; userId: string }>((props) => {
+  const task = processOrderFlow.later();
+
+  const handleClick = () => {
+    processOrderFlow({ cartId: props.cartId, userId: props.userId })
+      .pipeTo(task)
+      .then(() => toast('Order complete'));
+  };
+
+  return render(() => (
+    <div>
+      <button onClick={handleClick} disabled={task.status === 'pending'}>
+        Place Order
+      </button>
+
+      <Show when={() => task.status === 'pending'}>
+        {() => <span>{task.current?.name}</span>}
       </Show>
     </div>
   ));

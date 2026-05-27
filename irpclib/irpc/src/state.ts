@@ -270,11 +270,11 @@ export class RemoteState<T> extends Promise<T> {
  *
  * @template T - The type of the streamed payload data.
  * @param construct - The isolated stream constructor callback that natively operates the pipeline.
- * @param init - An optional initial value to prime the state payload inherently.
+ * @param seed - An optional initial value to prime the state payload inherently.
  * @returns A fully active RemoteState inherently bound to the callbacks executing natively.
  */
-export function stream<T>(construct: StreamConstructor<T>, init?: T) {
-  const state = new RemoteState<T>(init);
+export function stream<T>(construct: StreamConstructor<T>, seed?: T) {
+  const state = new RemoteState<T>(seed);
   const abortSignal = getAbortSignal();
 
   const accept = ((...values: [T]) => {

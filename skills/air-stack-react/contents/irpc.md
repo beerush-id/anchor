@@ -8,47 +8,57 @@ IRPC entirely divorces *what* a function does from *where* it executes.
 ```typescript
 interface FunctionConfig<Fn> {
   name: string;          // Required. The wire identifier.
-  maxAge?: number;       // Cache result for N milliseconds
-  coalesce?: boolean;    // Deduplicate concurrent identical calls
+  maxAge?: number;       // Cache duration (ms). Subsequent identical calls return cached result until expiry.
+  coalesce?: boolean;    // Deduplicate concurrent identical calls. Multiple callers share one execution.
   timeout?: number;      // Reject if execution exceeds N milliseconds
-  init?: () => any;      // Sync factory. Guarantees UI state shape before resolution.
+  maxRetries?: number;   // Maximum retry attempts on failure
+  retryMode?: 'linear' | 'exponential'; // Backoff strategy between retries
+  retryDelay?: number;   // Base delay between retries (ms)
+  seed?: () => unknown;  // Sync factory. Guarantees reader data shape before resolution. Required when return type is always defined.
   schema?: {             // Runtime validation (Zod, Valibot, etc.)
-    input?: any[];
-    output?: any;
+    input?: unknown[];
+    output?: unknown;
   };
 }
 
-interface Irpc {
+interface IRPCPackage {
   // Declare the universal stub
-  declare<Fn>(config: FunctionConfig<Fn>): IrpcStub<Fn>;
+  declare<Fn>(config: FunctionConfig<Fn>): IRPCStub<Fn>;
   
   // Bind the environment-specific logic to the stub
-  construct<Fn>(stub: IrpcStub<Fn>, handler: Fn): void;
+  construct<Fn>(stub: IRPCStub<Fn>, handler: Fn): void;
   
   // Attach middleware guards (e.g., Auth checks)
-  hook<Fn>(stub: IrpcStub<Fn>, hook: (req: IrpcRequest) => Promise<void>): void;
+  hook<Fn>(stub: IRPCStub<Fn>, hook: (req: IRPCRequest) => Promise<void>): void;
   
   // Force cache invalidation across the system
-  invalidate(stub: IrpcStub<any>, ...args: any[]): void;
+  invalidate(stub: IRPCStub<any>, ...args: any[]): void;
 }
 
-interface IrpcStub<Fn extends (...args: any[]) => any> {
+interface IRPCStub<Fn extends (...args: any[]) => any> {
   // Acts as a standard async function anywhere JavaScript runs
   (...args: Parameters<Fn>): ReturnType<Fn>;
 
   // UI Bindings (Reactive context tracking)
-  once(...args: Parameters<Fn>): IrpcReader<ReturnType<Fn>>;
-  with(factory: () => Parameters<Fn>, debounce?: number): IrpcReader<ReturnType<Fn>>;
-  when(factory: () => Parameters<Fn>, debounce?: number): IrpcReader<ReturnType<Fn>>;
-  later(debounce?: number): IrpcReader<ReturnType<Fn>> & { dispatch: (...args: Parameters<Fn>) => void };
+  once(...args: Parameters<Fn>): IRPCReader<ReturnType<Fn>>;
+  with(factory: () => Parameters<Fn>, debounce?: number): IRPCReader<ReturnType<Fn>>;
+  when(factory: () => Parameters<Fn>, debounce?: number): IRPCReader<ReturnType<Fn>>;
+  later(debounce?: number): IRPCReader<ReturnType<Fn>> & { dispatch: (...args: Parameters<Fn>) => void };
 }
 
-interface IrpcReader<Data> {
+interface IRPCReader<Data> {
   status: 'idle' | 'pending' | 'success' | 'error';
-  data: Data;    // Immediately guaranteed by config.init()
+  data: Data;    // Immediately guaranteed by config.seed()
   error?: Error;
   close(): void; // Manually abort the call and trigger server cleanup
 }
+
+// Store: global observable for active IRPC calls (DevTools, logging, health checks).
+type IRPCStoreEvent =
+  | { type: 'queue' | 'dequeue'; data: { name: string; id: string; status: string } }
+  | { type: 'register'; data: IRPCPackage }
+  | { type: 'error'; error: Error; data?: unknown[] };
+const IRPC_STORE: { subscribe(handler: (event: IRPCStoreEvent) => void): () => void };
 ```
 
 ### IRPC: Declare and Construct
@@ -63,7 +73,7 @@ Files can mix local logic with tree composition.
 export * from './profile/index.js'; // Barrel export child stubs
 
 type UserListFn = () => Promise<User[]>;
-export const getUserList = irpc.declare<UserListFn>({ name: 'getUserList' });
+export const getUserList = irpc.declare<UserListFn>({ name: 'getUserList', seed: () => [] });
 ```
 
 ```typescript
@@ -86,7 +96,7 @@ type GetUserFn = (id: string) => Promise<User>;
 export const getUser = irpc.declare<GetUserFn>({
   name: 'getUser',
   // Guarantees `user.data` shape is immediately available for ALL consumers before resolution
-  init: () => ({ name: '', email: '' } as User)
+  seed: () => ({ name: '', email: '' } as User)
 });
 ```
 
@@ -151,7 +161,7 @@ export const UserCard = setup<{ id: string }>((props) => {
   return render(() => (
     <div>
       <Show when={() => user.status === 'pending'}>Loading...</Show>
-      {/* Safe to access directly because `init: () => {}` seeded the shape */}
+      {/* Safe to access directly because `seed: () => {}` seeded the shape */}
       <h1>{user.data.name}</h1>
     </div>
   ));
@@ -161,13 +171,15 @@ export const UserCard = setup<{ id: string }>((props) => {
 ### IRPC: Promise vs RemoteState
 When wrapping 3rd-party APIs that expose separate endpoints for static and streaming responses (e.g., `/chat` and `/stream`), **do not create separate IRPC functions** for them. Choose `Promise<T>` only for strictly static operations. If the underlying data has any concept of streaming or progress, expose only a single `RemoteState<T>` function.
 
+If the connection drops mid-stream, the `IRPCReader` status transitions to `'error'`. Retry behavior follows the `FunctionConfig` settings (`maxRetries`, `retryMode`, `retryDelay`).
+
 ```typescript
 // index.ts (Stub)
 // DECLARE ONE function returning RemoteState, avoiding separate chat vs chatStream.
 type ChatFn = (prompt: string) => RemoteState<{ text: string }>;
 export const chat = irpc.declare<ChatFn>({
   name: 'chat',
-  init: () => ({ text: '' })
+  seed: () => ({ text: '' })
 });
 ```
 
@@ -185,8 +197,12 @@ irpc.construct(chat, (prompt) => {
         signal: controller.signal,
       });
       
-      for await (const chunk of streamReader(response.body)) {
-        state.data.text += chunk; // Client sees live updates
+      const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        state.data.text += value; // Client sees live updates
       }
       
       resolve(); // Client using `await chat()` resolves here with the final accumulated state
@@ -206,7 +222,7 @@ import { stream } from '@irpclib/irpc';
 type WatchPriceFn = (symbol: string) => RemoteState<{ symbol: string, price: number }>;
 const watchPrice = irpc.declare<WatchPriceFn>({
   name: 'watchPrice',
-  init: () => ({ symbol: '', price: 0 }),
+  seed: () => ({ symbol: '', price: 0 }),
 });
 
 irpc.construct(watchPrice, (symbol) => {
@@ -453,10 +469,10 @@ import { IRPC_STORE } from '@irpclib/irpc';
 
 const unsubscribe = IRPC_STORE.subscribe((event) => {
   if (event.type === 'queue') {
-    console.log(`[IRPC] Call started: ${event.detail.payload.name}`);
+    console.log(`[IRPC] Call started: ${event.data.name}`);
   }
   if (event.type === 'dequeue') {
-    console.log(`[IRPC] Call completed: ${event.detail.payload.name}`);
+    console.log(`[IRPC] Call completed: ${event.data.name}`);
   }
 });
 ```

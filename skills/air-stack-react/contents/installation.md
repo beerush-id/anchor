@@ -33,7 +33,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/react
+bun add @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/react
 ```
 
 **Structure**
@@ -77,7 +77,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @anchorlib/react
+bun add @anchorlib/router @anchorlib/react
 ```
 
 **Structure**
@@ -116,7 +116,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @anchorlib/react
+bun add @anchorlib/router @anchorlib/react
 ```
 
 **Structure**

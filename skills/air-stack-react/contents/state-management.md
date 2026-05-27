@@ -5,8 +5,6 @@ The reactivity system uses transparent Proxies. You read and mutate properties d
 Configuration and signatures for defining mutable state.
 
 ```typescript
-import { mutable, immutable, writable } from '@anchorlib/core';
-
 // Options for configuring reactivity behavior
 export interface MutableOptions<T> {
   // Enforce runtime data integrity (e.g., Zod)
@@ -32,9 +30,7 @@ export function writable<T>(state: T, allowedKeys?: Array<keyof T>): T;
 export function derived<T>(compute: () => T): { readonly value: T };
 
 // Creates a reactive, read-only sorted view of an array without mutating the source
-export function ordered<T>(source: T[], sortFn: (a: T, b: T) => number): { readonly value: T[] } | ReadonlyArray<T>;
-
-import { form, $bind } from '@anchorlib/react';
+export function ordered<T>(source: T[], sortFn: (a: T, b: T) => number): ReadonlyArray<T>;
 
 // Creates a reactive form state and a reactive errors map from a Zod schema
 export function form<T>(
@@ -46,15 +42,20 @@ export function form<T>(
 // Creates a 2-way data binding reference for an input element
 export function $bind<T, K extends keyof T>(state: T, key: K): any;
 
+// Reactive effect that tracks dependencies automatically. Returns a cleanup function.
+export function effect(fn: () => void | (() => void)): () => void;
+effect.client = function(fn: () => void | (() => void)): () => void; // Skipped during SSR
 
-
-// Reactive effect that tracks dependencies automatically
-export function effect(fn: () => void | (() => void)): void;
-effect.client = function(fn: () => void | (() => void)): void; // Browser only
-effect.async = function(fn: () => Promise<void>): void;
-
-// Restores tracking context across await gaps inside effect.async
-export function awaited<T>(promise: Promise<T>): Promise<T>;
+// Isomorphic reactive cookie. Same API in IRPC handlers (server) and route guards (client).
+// Mutations auto-serialize to Set-Cookie on server, document.cookie on client.
+export function cookies<T>(name: string, init: T, options?: CookieOptions): T;
+interface CookieOptions {
+  path?: string;             // URL path restriction (default: '/')
+  maxAge?: number;           // Max age in seconds
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+  httpOnly?: boolean;
+}
 
 // Executes code without subscribing to reactive properties read within
 export function untrack<T>(fn: () => T): T;
@@ -112,7 +113,7 @@ cache.set('key', 'value'); // Native Map methods trigger reactive updates
 Derived logic is written natively using standard JavaScript Getters. The proxy automatically tracks dependencies and re-evaluates only when underlying data changes.
 
 ```typescript
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@anchorlib/react';
 
 export const cart = mutable({
   price: 10,
@@ -132,7 +133,7 @@ cart.price = 20; // Automatically invalidates and updates 'total'
 When a computed value depends on multiple *independent* state sources that do not share a common parent object, use `derived()`.
 
 ```typescript
-import { mutable, derived } from '@anchorlib/core';
+import { mutable, derived } from '@anchorlib/react';
 
 const todos = mutable([{ text: 'Buy milk', done: false }]);
 const filter = mutable('SHOW_COMPLETED');
@@ -151,7 +152,7 @@ console.log(visibleTodos.value);
 When maintaining sorted lists in a reactive system, calling `array.sort()` on every update triggers a full O(N log N) re-evaluation. The `ordered()` primitive solves this by maintaining a reactive sorted view using **binary search insertion**. When the source array updates, it computes the exact index to insert the new items in O(log N) time, preventing expensive full array re-sorts.
 
 ```typescript
-import { mutable, ordered } from '@anchorlib/core';
+import { mutable, ordered } from '@anchorlib/react';
 
 const state = mutable({
   movies: [{ title: 'Zoolander' }, { title: 'Alien' }]
@@ -168,7 +169,7 @@ console.log(sortedMovies); // [{ title: 'Alien' }, { title: 'Zoolander' }]
 When sharing fragile state (whether it is a global store or a parent passing state down to children), enforce a One-Way Data Flow by separating the read interface from the write interface. Use `immutable` for the public/shared state and `writable` for restricted mutations.
 
 ```typescript
-import { immutable, writable } from '@anchorlib/core';
+import { immutable, writable } from '@anchorlib/react';
 
 // Public Read-Only View
 // Can be a global store OR a local state passed down to children
@@ -188,12 +189,12 @@ statusControl.status = 'busy'; // Works natively
 ```
 
 ### State: Form Validation ($bind)
-The `form` primitive combines deeply reactive state with zero-boilerplate Zod validation. The `$bind` utility safely wires the state directly to input fields for two-way data binding.
+The `form` primitive combines deeply reactive state with zero-boilerplate Zod validation. The `$bind` utility safely wires the state directly to input fields for two-way data binding. For form coordinators, field bridges, parse buffers, and type-safe form factories, see **Form Architecture**.
 
 ```tsx
 import { setup, render, form, $use, $bind } from '@anchorlib/react';
 import { z } from 'zod';
-import { TextInput } from './ui.js'; // Reusable component accepting value/error props
+import { InputField } from './components/InputField.js';
 
 const LoginSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -201,34 +202,16 @@ const LoginSchema = z.object({
 });
 
 export const LoginForm = setup(() => {
-  // state is deeply mutable. errors map updates automatically when state mutates.
   const [state, errors] = form(LoginSchema, { email: '', password: '' });
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (LoginSchema.safeParse(state).success) console.log("Valid!", state);
-  };
-
   return render(() => (
-    <form onSubmit={submit}>
-      {/* 2-way binding automatically mutates state and triggers validation */}
-      <TextInput 
-        label="Email" 
-        value={$bind(() => state, 'email')} 
-        error={$use(() => errors.email)} 
-      />
-      <TextInput 
-        label="Password" 
-        type="password"
-        value={$bind(() => state, 'password')} 
-        error={$use(() => errors.password)} 
-      />
-      <button type="submit">Login</button>
+    <form>
+      <InputField value={$bind(() => state, 'email')} />
+      <InputField type="password" value={$bind(() => state, 'password')} />
     </form>
   ));
 });
 ```
-
 
 ### State: Side Effects (`effect`)
 Effects run immediately and automatically re-run whenever synchronously accessed state properties change. No dependency arrays are required.
@@ -286,22 +269,6 @@ if (typeof window !== 'undefined') {
 }
 ```
 
-**Async Context Preservation**
-Requires `awaited()` to preserve the reactive tracking context across asynchronous boundaries.
-```typescript
-import { mutable, effect, awaited } from '@anchorlib/react';
-
-const state = mutable({ theme: 'dark', count: 0 });
-
-effect(async () => {
-  console.log(state.theme); // Tracked properly before the gap
-  
-  await awaited(fetch('https://3rd.api.com/status')); // Boundary preserved
-  
-  console.log(state.count); // Tracked properly after the gap
-});
-```
-
 ### State: Tracking Escapes (`untrack` & `stringify`)
 Anchor tracks every property read inside an effect. Avoid over-subscribing when performing reads (like `JSON.stringify()`) that shouldn't trigger updates.
 
@@ -326,7 +293,7 @@ effect(() => {
 To monitor an entire state tree for any mutations (e.g., for global persistence or logging) without manually accessing every property, use `subscribe` instead of `effect`.
 
 ```typescript
-import { subscribe } from '@anchorlib/core';
+import { subscribe } from '@anchorlib/react';
 
 // Triggers on ANY change to 'user' or its nested children
 subscribe(userState, (val, event) => {
@@ -408,7 +375,7 @@ export const CreateUserForm = setup(() => {
 Queries expose a `.promise` property that perfectly bridges the reactive system with standard async/await flows. This is essential for Server-Side Rendering (SSR) route loaders or IRPC handlers that must wait for data before responding.
 
 ```typescript
-import { query } from '@anchorlib/core';
+import { query } from '@anchorlib/react';
 
 // E.g., inside a Route Provider or IRPC Handler
 export async function loadUserData() {
@@ -443,7 +410,7 @@ export const appConfig = { version: '1.0', apiUrl: 'https://api.example.com' };
 For strictly Client-Side Rendered (CSR) applications without SSR capabilities, module-level state acts as a safe global singleton.
 
 ```typescript
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@anchorlib/react';
 
 export const uiState = mutable({ sidebarOpen: false });
 ```
@@ -490,3 +457,45 @@ export const LocalCounter = setup(() => {
   ));
 });
 ```
+
+### State: Cookies (Isomorphic Auth)
+`cookies()` returns a reactive state object backed by a browser cookie. The same call works in IRPC handlers (server) and route guards (client). Mutations auto-serialize to `Set-Cookie` headers on the server and `document.cookie` on the client.
+
+```ts
+// Handler — setting auth token after login
+import { cookies } from '@anchorlib/react';
+
+irpc.construct(signIn, (credentials) => {
+  const auth = cookies('auth', { token: '' });
+
+  const result = await verify(credentials);
+  if (result.success) {
+    auth.token = result.token;
+  }
+});
+```
+
+```ts
+// Guard — checking auth token before navigation
+export const dashboardRoute = rootRoute
+  .route('/dashboard')
+  .guard(() => {
+    const auth = cookies('auth', { token: '' });
+    if (!auth.token) throw redirect(loginRoute);
+  });
+```
+
+#### Headless Pattern
+```ts
+// Create a factory function to declare the cookie state.
+export function getAuth() {
+  return cookies('auth', { token: '' });
+}
+
+// Use anywhere in your app.
+.guard(() => {
+  const auth = getAuth();
+  if (!auth.token) throw redirect(loginRoute);
+});
+```
+
