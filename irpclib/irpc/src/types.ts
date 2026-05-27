@@ -318,8 +318,6 @@ export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<IRPC
   stream?: boolean;
   /** The actual handler function that implements the RPC */
   handler: IRPCHandler;
-  /** Optional initialization function for a stream RPC */
-  init?: () => unknown;
 };
 
 /**

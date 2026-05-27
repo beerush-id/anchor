@@ -110,7 +110,7 @@ export class IRPCPackage {
   public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
     options: IRPCDeclareInit<F, I, O>
   ): IRPCFunction<F> {
-    // @Todo: Remove ini() once deprecated.
+    // @Todo: Remove init() once deprecated.
     const $options = options as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData> & { init?: () => unknown };
 
     if (this.specs.has($options.name)) {
@@ -231,8 +231,8 @@ export class IRPCPackage {
         return calls.get(callKey);
       }
 
-      const { timeout, maxRetries, retryDelay, retryMode, init } = { ...this.config, ...spec };
-      const config = { timeout, maxRetries, retryDelay, retryMode, init } as IRPCCallConfig;
+      const { timeout, maxRetries, retryDelay, retryMode } = { ...this.config, ...spec };
+      const config = { timeout, maxRetries, retryDelay, retryMode } as IRPCCallConfig;
 
       const hooks = this.hooks.get(spec);
       if (hooks) {
