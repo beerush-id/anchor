@@ -1,7 +1,7 @@
 import { onCleanup, uuid } from '@anchorlib/core';
 import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { TransportError } from './error.js';
 import type { IRPCPackage } from './module.js';
 import { IRPCReader } from './reader.js';
 import { IRPC_STORE } from './store.js';
@@ -145,10 +145,7 @@ export class IRPCTransport {
         name: call.payload.name,
         type: IRPC_PACKET_TYPE.CLOSE,
         status: IRPC_STATUS.ERROR,
-        error: {
-          code: ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED,
-          message: ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED],
-        },
+        error: TransportError.notImplemented().json(),
         createdAt: Date.now(),
       });
     });

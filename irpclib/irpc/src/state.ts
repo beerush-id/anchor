@@ -10,7 +10,7 @@ import {
 } from '@anchorlib/core';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { IRPC_ERROR_TYPE, IRPCError } from './error.js';
 import type { IRPCReadable, IRPCStatus, StreamConstructor } from './types.js';
 
 /**
@@ -145,7 +145,7 @@ export class RemoteState<T> extends Promise<T> {
 
       this.#closed = true;
       this.#state.status = IRPC_STATUS.ERROR;
-      this.#reject(this.error ?? new Error(ERROR_MESSAGE[ERROR_CODE.UNKNOWN]));
+      this.#reject(this.error ?? new IRPCError(IRPC_ERROR_TYPE.CALL, 'unknown', 'Unknown error.'));
       this.destroy();
     });
   }

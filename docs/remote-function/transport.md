@@ -469,7 +469,7 @@ import {
   IRPCTransport,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
-  ERROR_CODE,
+  TransportError,
   type IRPCCall,
   type IRPCData,
   type IRPCPacketStream,
@@ -507,7 +507,7 @@ class CustomTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          error: TransportError.failed(error as Error).json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });

@@ -2,7 +2,7 @@ import { anchor, createObserver, isBrowser, microtask, onCleanup, replay, uuid }
 import { IRPCCacher } from './cache.js';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { HandlerError, ResolveError, StubError, TransportError } from './error.js';
 import { IRPCReader } from './reader.js';
 import { RemoteState } from './state.js';
 import { IRPC_STORE } from './store.js';
@@ -114,7 +114,7 @@ export class IRPCPackage {
     const $options = options as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData> & { init?: () => unknown };
 
     if (this.specs.has($options.name)) {
-      throw new Error(`IRPC ${$options.name} already exists.`);
+      throw StubError.duplicate($options.name);
     }
 
     if ($options.init && !$options.seed) $options.seed = $options.init as never;
@@ -215,7 +215,7 @@ export class IRPCPackage {
 
     const execute = (args: IRPCData[], reader: IRPCReader<IRPCData>) => {
       if (!this.transport && typeof spec.handler !== 'function') {
-        return Promise.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]));
+        return Promise.reject(TransportError.missing());
       }
 
       reader.status = IRPC_STATUS.PENDING;
@@ -274,11 +274,11 @@ export class IRPCPackage {
     const spec = this.specs.get(req.name);
 
     if (!spec) {
-      return Promise.reject(new Error(`IRPC ${req.name} does not exist.`)) as never;
+      return Promise.reject(ResolveError.notFound(req.name)) as never;
     }
 
     if (typeof spec.handler !== 'function') {
-      return Promise.reject(new Error(`IRPC ${req.name} does not have an implementation.`)) as never;
+      return Promise.reject(HandlerError.missing(req.name)) as never;
     }
 
     return spec.handler(...(req.args as IRPCData[]));
@@ -293,17 +293,17 @@ export class IRPCPackage {
    */
   public construct<F, A extends unknown[], R extends IRPCData>(stub: IRPCStub<F, A, R>, handler: F): this {
     if (typeof stub !== 'function') {
-      throw new Error(ERROR_MESSAGE[ERROR_CODE.STUB_INVALID]);
+      throw StubError.invalid();
     }
 
     if (typeof handler !== 'function') {
-      throw new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_HANDLER]);
+      throw HandlerError.invalid();
     }
 
     const spec = this.stubs.get(stub);
 
     if (!spec?.name) {
-      throw new Error(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      throw StubError.notFound();
     }
 
     spec.handler = handler;
@@ -320,7 +320,7 @@ export class IRPCPackage {
    */
   public hook<F extends IRPCHandler>(stub: F, handler: IRPCSpecHook<F>): this {
     if (!this.stubs.has(stub as IRPCHandler)) {
-      const error = new Error(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      const error = StubError.notFound();
       IRPC_STORE.error(error);
       return this;
     }
@@ -340,7 +340,7 @@ export class IRPCPackage {
     const spec = this.specs.get(req.name);
 
     if (!spec || !this.hooks.has(spec)) {
-      throw new Error(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      throw StubError.notFound();
     }
 
     const hooks = this.hooks.get(spec)!;
@@ -358,7 +358,7 @@ export class IRPCPackage {
    */
   public use(transport: IRPCTransport): this {
     if (!((transport as unknown) instanceof IRPCTransport)) {
-      throw new Error(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_INVALID]);
+      throw TransportError.invalid();
     }
 
     if (this.transport) {
@@ -391,11 +391,11 @@ export class IRPCPackage {
    */
   public configure(config: Partial<IRPCPackageConfig>): this {
     if (config.name && !NAME_CONSTRAINT.test(config.name)) {
-      throw new Error(`Invalid IRPC name: ${config.name}`);
+      throw StubError.invalidName(config.name!);
     }
 
     if (config.version && !VERSION_CONSTRAINT.test(config.version)) {
-      throw new Error(`Invalid IRPC version: ${config.version}`);
+      throw StubError.invalidVersion(config.version!);
     }
 
     Object.assign(this.config, config);

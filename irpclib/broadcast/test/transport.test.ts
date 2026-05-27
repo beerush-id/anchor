@@ -217,7 +217,7 @@ describe('BroadcastTransport', () => {
       // Close transport
       transport.close();
 
-      await expect(promise).rejects.toThrow('BroadcastChannel connection closed');
+      await expect(promise).rejects.toThrow('BroadcastChannel connection closed.');
     });
 
     it('should send CANCEL message natively identifying target streams if openly connected explicitly', () => {
@@ -310,7 +310,7 @@ describe('BroadcastTransport', () => {
       const promise = testFunc();
       promise.catch(() => {}); // Silence console trace
 
-      await expect(promise).rejects.toThrow('Invalid state');
+      await expect(promise).rejects.toThrow('BroadcastChannel is not connected.');
     });
 
     it('should handle postMessage errors', async () => {

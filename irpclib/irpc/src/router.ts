@@ -1,6 +1,6 @@
 import { createContextStore, withContext } from './context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { HookError } from './error.js';
 import type { IRPCPackage } from './module.js';
 import { IRPC_STORE } from './store.js';
 import type { IRPCTransport } from './transport.js';
@@ -31,7 +31,7 @@ export class IRPCRouter {
    */
   public use(hook: IRPCHook): this {
     if (typeof hook !== 'function') {
-      const error = new Error(ERROR_MESSAGE[ERROR_CODE.INVALID_HOOK]);
+      const error = HookError.invalid();
       IRPC_STORE.error(error);
       return this;
     }
@@ -90,10 +90,7 @@ export class IRPCRouter {
           name: req.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: {
-            code: ERROR_CODE.UNKNOWN,
-            message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
-          },
+          error: HookError.failed(error as Error).json(),
           createdAt: Date.now(),
         };
       }

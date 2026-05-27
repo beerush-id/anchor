@@ -10,7 +10,6 @@ import type {
   ZodUndefined,
 } from 'zod/v4';
 import type { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
-import type { ErrorCode } from './error.js';
 import type { IRPCFile } from './file.js';
 import type { IRPCFilePointer } from './packet.js';
 import type { IRPCReader } from './reader.js';
@@ -47,7 +46,7 @@ export type IRPCPacketCall = IRPCPacketBase & {
 
 export type IRPCPacketAnswer<T extends IRPCData> = IRPCPacketBase & {
   data?: T;
-  error?: IRPCError;
+  error?: IRPCPacketError;
 };
 
 export type IRPCPacketEvent = IRPCPacketBase & {
@@ -55,7 +54,7 @@ export type IRPCPacketEvent = IRPCPacketBase & {
 };
 
 export type IRPCPacketClose = IRPCPacketBase & {
-  error?: IRPCError;
+  error?: IRPCPacketError;
 };
 
 export type IRPCPacketStream<T extends IRPCData> = IRPCPacketAnswer<T> | IRPCPacketEvent | IRPCPacketClose;
@@ -341,8 +340,9 @@ export type IRPCRequests = {
   credentials?: IRPCCredentials;
 };
 
-export type IRPCError = {
-  code: ErrorCode;
+export type IRPCPacketError = {
+  type: string;
+  code: string;
   message: string;
 };
 
@@ -355,7 +355,7 @@ export type IRPCResponse = {
   /** Name of the RPC function that was called */
   name: string;
   /** Error message if the call failed */
-  error?: IRPCError;
+  error?: IRPCPacketError;
   /** Result of the RPC call if successful */
   result?: unknown;
 };

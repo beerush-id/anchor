@@ -1,6 +1,6 @@
 import { uuid } from '@anchorlib/core';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from './error.js';
+import { CallError } from './error.js';
 import { IRPCReader } from './reader.js';
 import { IRPC_STORE } from './store.js';
 import type { IRPCTransport } from './transport.js';
@@ -74,15 +74,12 @@ export class IRPCCall {
           name: this.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: {
-            code: ERROR_CODE.TIMEOUT,
-            message: ERROR_MESSAGE[ERROR_CODE.TIMEOUT],
-          },
+          error: CallError.timeout().json(),
           createdAt: Date.now(),
         } satisfies IRPCPacketStream<IRPCData>);
 
         clearTimeout(this.retryId);
-        this.reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]), false);
+        this.reject(CallError.timeout(), false);
       }, options.timeout);
     }
 
@@ -138,11 +135,7 @@ export class IRPCCall {
 
       if (this.retries >= maxRetries) {
         IRPC_STORE.error(
-          new Error(
-            `${ERROR_MESSAGE[ERROR_CODE.CALL_MAX_RETRIES_REACHED]}: ${Array.from(this.retryReasons)
-              .map((r) => r.message)
-              .join(', ')}`
-          ),
+          CallError.maxRetries(this.retryReasons),
           [{ id: this.id, name: this.payload.name }]
         );
         this.reject(reason, false);

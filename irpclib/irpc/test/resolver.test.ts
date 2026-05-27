@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { ERROR_CODE } from '../src/error.js';
 import { IRPC_STATUS, type IRPCHandler } from '../src/index.js';
 import { createPackage } from '../src/module.js';
 import { IRPCResolver } from '../src/resolver.js';
@@ -93,7 +92,8 @@ describe('IRPC Resolver', () => {
       expect(result.id).toEqual('1');
       expect(result.name).toEqual('testFunc');
       expect(result.error).toEqual({
-        code: ERROR_CODE.INVALID_OUTPUT,
+        type: 'resolve',
+        code: 'invalid_output',
         message: expect.any(String),
       });
       expect(result.result).toBeUndefined();
@@ -115,7 +115,8 @@ describe('IRPC Resolver', () => {
         id: '1',
         name: 'nonExistent',
         error: {
-          code: ERROR_CODE.NOT_FOUND,
+          type: 'resolve',
+          code: 'not_found',
           message: 'IRPC "nonExistent" does not exist.',
         },
       });
@@ -167,7 +168,8 @@ describe('IRPC Resolver', () => {
         id: '2',
         name: 'testFunc',
         error: {
-          code: ERROR_CODE.INVALID_INPUT,
+          type: 'resolve',
+          code: 'invalid_input',
           message: expect.any(String),
         },
       });
@@ -187,7 +189,8 @@ describe('IRPC Resolver', () => {
         id: '3',
         name: 'testFunc',
         error: {
-          code: ERROR_CODE.INVALID_INPUT,
+          type: 'resolve',
+          code: 'invalid_input',
           message: expect.any(String),
         },
       });
@@ -243,7 +246,8 @@ describe('IRPC Resolver', () => {
         id: '2',
         name: 'testFunc',
         error: {
-          code: ERROR_CODE.INVALID_OUTPUT,
+          type: 'resolve',
+          code: 'invalid_output',
           message: expect.any(String),
         },
       });
@@ -273,7 +277,8 @@ describe('IRPC Resolver', () => {
         id: '1',
         name: 'testFunc',
         error: {
-          code: ERROR_CODE.HANDLER_ERROR,
+          type: 'handler',
+          code: 'error',
           message: 'Function error',
         },
       });
@@ -342,7 +347,8 @@ describe('IRPC Resolver', () => {
       expect(result.id).toEqual('1');
       expect(result.name).toEqual('testFunc');
       expect(result.error).toEqual({
-        code: ERROR_CODE.INVALID_OUTPUT,
+        type: 'resolve',
+        code: 'invalid_output',
         message: expect.any(String),
       });
       expect(result.result).toBeUndefined();

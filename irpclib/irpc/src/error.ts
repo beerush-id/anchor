@@ -1,68 +1,248 @@
-export const ERROR_CODE = {
-  UNKNOWN: 'unknown',
-  TIMEOUT: 'timeout',
+import type { IRPCPacketError } from './types.js';
+
+export const IRPC_ERROR_TYPE = {
+  STUB: 'stub',
+  HOOK: 'hook',
+  CALL: 'call',
+  HANDLER: 'handler',
+  RESOLVE: 'resolve',
+  TRANSPORT: 'transport',
+} as const;
+
+export type IRPCErrorType = (typeof IRPC_ERROR_TYPE)[keyof typeof IRPC_ERROR_TYPE];
+
+// ---------------------------------------------------------------------------
+// Error codes per domain
+// ---------------------------------------------------------------------------
+
+export const STUB_ERROR = {
+  DUPLICATE: 'duplicate',
+  INVALID: 'invalid',
   NOT_FOUND: 'not_found',
-  NOT_SUPPORTED: 'not_supported',
-  INVALID_TYPE: 'invalid_type',
-  INVALID_STATE: 'invalid_state',
-  INVALID_VALUE: 'invalid_value',
-  INVALID_INPUT: 'invalid_argument',
-  INVALID_OUTPUT: 'invalid_argument',
+  INVALID_NAME: 'invalid_name',
+  INVALID_VERSION: 'invalid_version',
+} as const;
+
+export const HANDLER_ERROR = {
+  INVALID: 'invalid',
+  MISSING: 'missing',
+  ERROR: 'error',
+} as const;
+
+export const TRANSPORT_ERROR = {
+  INVALID: 'invalid',
+  MISSING: 'missing',
   NOT_IMPLEMENTED: 'not_implemented',
-  INVALID_HANDLER: 'invalid_handler',
-  INVALID_OPERATION: 'invalid_operation',
-  INVALID_HOOK: 'invalid_middleware',
+  NOT_CONNECTED: 'not_connected',
+  CLOSED: 'closed',
+  INVALID_BODY: 'invalid_body',
+  STREAM_TERMINATED: 'stream_terminated',
+  ERROR: 'error',
+} as const;
 
-  TRANSPORT_MISSING: 'transport_missing',
-  TRANSPORT_INVALID: 'transport_invalid',
-  TRANSPORT_NOT_IMPLEMENTED: 'transport_not_implemented',
+export const RESOLVE_ERROR = {
+  NOT_FOUND: 'not_found',
+  INVALID_INPUT: 'invalid_input',
+  INVALID_OUTPUT: 'invalid_output',
+  ERROR: 'error',
+} as const;
 
-  STUB_MISSING: 'stub_missing',
-  STUB_INVALID: 'stub_invalid',
-  STUB_NOT_IMPLEMENTED: 'stub_not_implemented',
+export const HOOK_ERROR = {
+  INVALID: 'invalid',
+  ERROR: 'error',
+} as const;
 
-  RESOLVER_MISSING: 'resolver_missing',
-  RESOLVER_NOT_IMPLEMENTED: 'resolver_not_implemented',
-  RESOLVER_NOT_FOUND: 'resolver_not_found',
-  RESOLVER_NOT_SUPPORTED: 'resolver_not_supported',
-
+export const CALL_ERROR = {
+  TIMEOUT: 'timeout',
+  MAX_RETRIES: 'max_retries',
   STREAM_ERROR: 'stream_error',
-  HANDLER_ERROR: 'handler_error',
-  RESOLVE_ERROR: 'resolve_error',
+} as const;
 
-  CALL_MAX_RETRIES_REACHED: 'call_max_retries_reached',
-};
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-export type ErrorCode = (typeof ERROR_CODE)[keyof typeof ERROR_CODE];
+function unwrap(input: Error | string): { message: string; cause?: Error } {
+  if (input instanceof Error) return { message: input.message, cause: input };
+  return { message: input };
+}
 
-export const ERROR_MESSAGE = {
-  [ERROR_CODE.UNKNOWN]: 'IRPC: Unknown error',
-  [ERROR_CODE.TIMEOUT]: 'IRPC: Timeout error',
-  [ERROR_CODE.NOT_FOUND]: 'IRPC: Not found error',
-  [ERROR_CODE.NOT_SUPPORTED]: 'IRPC: Not supported error',
-  [ERROR_CODE.INVALID_TYPE]: 'IRPC: Invalid type error',
-  [ERROR_CODE.INVALID_STATE]: 'IRPC: Invalid state error',
-  [ERROR_CODE.INVALID_VALUE]: 'IRPC: Invalid value error',
-  [ERROR_CODE.INVALID_INPUT]: 'IRPC: Invalid input error',
-  [ERROR_CODE.INVALID_OUTPUT]: 'IRPC: Invalid output error',
-  [ERROR_CODE.NOT_IMPLEMENTED]: 'IRPC: Not implemented error',
-  [ERROR_CODE.INVALID_HANDLER]: 'IRPC: Invalid handler error',
-  [ERROR_CODE.INVALID_OPERATION]: 'IRPC: Invalid operation error',
-  [ERROR_CODE.INVALID_HOOK]: 'IRPC: Invalid hook error',
+// ---------------------------------------------------------------------------
+// Error classes
+// ---------------------------------------------------------------------------
 
-  [ERROR_CODE.TRANSPORT_MISSING]: 'IRPC: Transport missing error',
-  [ERROR_CODE.TRANSPORT_INVALID]: 'IRPC: Transport invalid error',
-  [ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED]: 'IRPC: Transport not implemented error',
+/**
+ * Base error class for all IRPC errors.
+ *
+ * @property type - The domain category of the error (stub, handler, transport, etc.)
+ * @property code - A stable, machine-readable code for translation or programmatic matching.
+ */
+export class IRPCError extends Error {
+  constructor(
+    public type: IRPCErrorType,
+    public code: string,
+    message: string,
+    public cause?: Error
+  ) {
+    super(message);
+  }
 
-  [ERROR_CODE.STUB_INVALID]: 'IRPC: Stub invalid error',
-  [ERROR_CODE.STREAM_ERROR]: 'IRPC: Stream error',
-  [ERROR_CODE.HANDLER_ERROR]: 'IRPC: Handler error',
-  [ERROR_CODE.RESOLVE_ERROR]: 'IRPC: Resolve error',
-  [ERROR_CODE.STUB_NOT_IMPLEMENTED]: 'IRPC: Stub not implemented error',
+  /** Serialize to the wire format used in IRPC packets. */
+  json(): IRPCPacketError {
+    return { type: this.type, code: this.code, message: this.message };
+  }
 
-  [ERROR_CODE.RESOLVER_MISSING]: 'IRPC: Resolver missing error',
-  [ERROR_CODE.RESOLVER_NOT_IMPLEMENTED]: 'IRPC: Resolver not implemented error',
-  [ERROR_CODE.RESOLVER_NOT_FOUND]: 'IRPC: Resolver not found error',
-  [ERROR_CODE.RESOLVER_NOT_SUPPORTED]: 'IRPC: Resolver not supported error',
-  [ERROR_CODE.CALL_MAX_RETRIES_REACHED]: 'IRPC: Call max retries reached error',
+  /** Reconstruct an IRPCError from a wire packet error. */
+  static from(obj: IRPCPacketError): IRPCError {
+    const ErrorClass = IRPC_ERROR_CLASS[obj.type as IRPCErrorType];
+    if (ErrorClass) return new ErrorClass(obj.code, obj.message);
+    return new IRPCError(obj.type as IRPCErrorType, obj.code, obj.message);
+  }
+}
+
+/** Errors related to stub declaration, registration, and lookup. */
+export class StubError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.STUB, code, message, cause);
+  }
+
+  static duplicate(name: string) {
+    return new StubError(STUB_ERROR.DUPLICATE, `IRPC "${name}" already exists.`);
+  }
+  static invalid() {
+    return new StubError(STUB_ERROR.INVALID, 'Invalid stub.');
+  }
+  static notFound() {
+    return new StubError(STUB_ERROR.NOT_FOUND, 'No spec found for stub.');
+  }
+  static invalidName(name: string) {
+    return new StubError(STUB_ERROR.INVALID_NAME, `Invalid name: ${name}`);
+  }
+  static invalidVersion(version: string) {
+    return new StubError(STUB_ERROR.INVALID_VERSION, `Invalid version: ${version}`);
+  }
+}
+
+/** Errors related to handler registration and execution. */
+export class HandlerError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.HANDLER, code, message, cause);
+  }
+
+  static invalid() {
+    return new HandlerError(HANDLER_ERROR.INVALID, 'Handler must be a function.');
+  }
+  static missing(name: string) {
+    return new HandlerError(HANDLER_ERROR.MISSING, `IRPC "${name}" has no implementation.`);
+  }
+  static failed(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new HandlerError(HANDLER_ERROR.ERROR, message, cause);
+  }
+}
+
+/** Errors related to the transport layer. */
+export class TransportError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.TRANSPORT, code, message, cause);
+  }
+
+  static missing() {
+    return new TransportError(TRANSPORT_ERROR.MISSING, 'No transport configured.');
+  }
+  static invalid() {
+    return new TransportError(TRANSPORT_ERROR.INVALID, 'Invalid transport.');
+  }
+  static notImplemented() {
+    return new TransportError(TRANSPORT_ERROR.NOT_IMPLEMENTED, 'Transport dispatch not implemented.');
+  }
+  static notConnected(name: string) {
+    return new TransportError(TRANSPORT_ERROR.NOT_CONNECTED, `${name} is not connected.`);
+  }
+  static closed(name: string) {
+    return new TransportError(TRANSPORT_ERROR.CLOSED, `${name} connection closed.`);
+  }
+  static invalidBody() {
+    return new TransportError(TRANSPORT_ERROR.INVALID_BODY, 'Invalid response body.');
+  }
+  static streamTerminated() {
+    return new TransportError(TRANSPORT_ERROR.STREAM_TERMINATED, 'Response stream terminated.');
+  }
+  static failed(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new TransportError(TRANSPORT_ERROR.ERROR, message, cause);
+  }
+}
+
+/** Errors related to server-side request resolution. */
+export class ResolveError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.RESOLVE, code, message, cause);
+  }
+
+  static notFound(name: string) {
+    return new ResolveError(RESOLVE_ERROR.NOT_FOUND, `IRPC "${name}" does not exist.`);
+  }
+  static invalidInput(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new ResolveError(RESOLVE_ERROR.INVALID_INPUT, message, cause);
+  }
+  static invalidOutput(input?: Error | string) {
+    if (!input) return new ResolveError(RESOLVE_ERROR.INVALID_OUTPUT, 'Invalid output.');
+    const { message, cause } = unwrap(input);
+    return new ResolveError(RESOLVE_ERROR.INVALID_OUTPUT, message, cause);
+  }
+  static failed(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new ResolveError(RESOLVE_ERROR.ERROR, message, cause);
+  }
+}
+
+/** Errors related to hook registration and execution. */
+export class HookError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.HOOK, code, message, cause);
+  }
+
+  static invalid() {
+    return new HookError(HOOK_ERROR.INVALID, 'Hook must be a function.');
+  }
+  static failed(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new HookError(HOOK_ERROR.ERROR, message, cause);
+  }
+}
+
+/** Errors related to call execution lifecycle. */
+export class CallError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.CALL, code, message, cause);
+  }
+
+  static timeout() {
+    return new CallError(CALL_ERROR.TIMEOUT, 'Call timed out.');
+  }
+  static maxRetries(reasons: Set<Error>) {
+    const detail = Array.from(reasons).map((r) => r.message).join(', ');
+    return new CallError(CALL_ERROR.MAX_RETRIES, `Max retries reached: ${detail}`);
+  }
+  static streamError(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new CallError(CALL_ERROR.STREAM_ERROR, message, cause);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Type → Class mapping for reconstruction
+// ---------------------------------------------------------------------------
+
+type IRPCErrorSubclass = new (code: string, message: string, cause?: Error) => IRPCError;
+
+const IRPC_ERROR_CLASS: Record<string, IRPCErrorSubclass> = {
+  [IRPC_ERROR_TYPE.STUB]: StubError,
+  [IRPC_ERROR_TYPE.HANDLER]: HandlerError,
+  [IRPC_ERROR_TYPE.TRANSPORT]: TransportError,
+  [IRPC_ERROR_TYPE.RESOLVE]: ResolveError,
+  [IRPC_ERROR_TYPE.HOOK]: HookError,
+  [IRPC_ERROR_TYPE.CALL]: CallError,
 };

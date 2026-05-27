@@ -1,5 +1,5 @@
 import '@irpclib/irpc/server';
-import { createPackage, credential, ERROR_CODE, IRPC_FILE_STATUS, IRPC_STORE, type IRPCRequests } from '@irpclib/irpc';
+import { createPackage, credential, IRPC_FILE_STATUS, IRPC_STORE, type IRPCRequests } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 import { HTTPRouter } from '../src/router.js';
@@ -555,7 +555,7 @@ describe('HTTPRouter', () => {
         JSON.stringify({
           type: 'answer',
           status: 'error',
-          error: { code: ERROR_CODE.NOT_FOUND, message: 'Not found' },
+          error: { type: 'resolve', code: 'not_found', message: 'Not found' },
         }),
       ];
       const mockResponse = new Response(packets.join('\n'));

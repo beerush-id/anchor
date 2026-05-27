@@ -1,4 +1,4 @@
-import { ERROR_CODE, ERROR_MESSAGE, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, IRPCFile } from '@irpclib/irpc';
+import { IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketState, WebSocketTransport } from '../src/index.js';
 
@@ -136,7 +136,7 @@ describe('WebSocketTransport', () => {
 
       vi.advanceTimersByTime(10001); // Default timeout is 10000
 
-      await expect(connectPromise).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]);
+      await expect(connectPromise).rejects.toThrow('Call timed out.');
     });
   });
 
@@ -187,7 +187,7 @@ describe('WebSocketTransport', () => {
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }),
+          error: expect.objectContaining({ message: 'WebSocket is not connected.' }),
         })
       );
     });
@@ -206,7 +206,7 @@ describe('WebSocketTransport', () => {
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: expect.objectContaining({ message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] }),
+          error: expect.objectContaining({ message: 'WebSocket is not connected.' }),
         })
       );
     });

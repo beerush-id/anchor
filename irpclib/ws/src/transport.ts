@@ -1,7 +1,6 @@
 import {
   encode,
-  ERROR_CODE,
-  ERROR_MESSAGE,
+  CallError,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   type IRPCCall,
@@ -10,6 +9,7 @@ import {
   type IRPCPacketCall,
   type IRPCPacketStream,
   IRPCTransport,
+  TransportError,
   type TransportConfig,
   IRPC_STORE,
 } from '@irpclib/irpc';
@@ -144,7 +144,7 @@ export class WebSocketTransport extends IRPCTransport {
 
         const timeout = setTimeout(() => {
           this.ws?.close();
-          reject(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]));
+          reject(CallError.timeout());
         }, this.config.connectionTimeout ?? DEFAULT_CONNECTION_TIMEOUT);
 
         this.ws.onopen = () => {
@@ -192,7 +192,7 @@ export class WebSocketTransport extends IRPCTransport {
         name: call.payload.name,
         type: IRPC_PACKET_TYPE.CLOSE,
         status: IRPC_STATUS.ERROR,
-        error: { code: ERROR_CODE.UNKNOWN, message: 'WebSocket connection closed' },
+        error: TransportError.closed('WebSocket').json(),
         createdAt: Date.now(),
       } as IRPCPacketStream<IRPCData>);
     });
@@ -276,7 +276,7 @@ export class WebSocketTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.INVALID_STATE, message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] },
+          error: TransportError.notConnected('WebSocket').json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });
@@ -296,7 +296,7 @@ export class WebSocketTransport extends IRPCTransport {
             name: call.payload.name,
             type: IRPC_PACKET_TYPE.CLOSE,
             status: IRPC_STATUS.ERROR,
-            error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+            error: TransportError.failed(error as Error).json(),
             createdAt: Date.now(),
           } as IRPCPacketStream<IRPCData>);
         });
@@ -317,7 +317,7 @@ export class WebSocketTransport extends IRPCTransport {
             name: call.payload.name,
             type: IRPC_PACKET_TYPE.CLOSE,
             status: IRPC_STATUS.ERROR,
-            error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+            error: TransportError.failed(error as Error).json(),
             createdAt: Date.now(),
           } as IRPCPacketStream<IRPCData>);
         });
@@ -366,7 +366,7 @@ export class WebSocketTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          error: TransportError.failed(error as Error).json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });

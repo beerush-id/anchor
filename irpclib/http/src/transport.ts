@@ -1,7 +1,6 @@
 import {
   encode,
-  ERROR_CODE,
-  ERROR_MESSAGE,
+  CallError,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   IRPC_STORE,
@@ -9,6 +8,7 @@ import {
   type IRPCData,
   type IRPCPacketStream,
   IRPCTransport,
+  TransportError,
   type TransportConfig,
 } from '@irpclib/irpc';
 import { IRPC_JSON_KEY } from './enum.js';
@@ -143,7 +143,7 @@ export class HTTPTransport extends IRPCTransport {
 
       if (maxTimeout) {
         breaker = setTimeout(() => {
-          controller.abort(new Error(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]));
+          controller.abort(CallError.timeout());
         }, maxTimeout) as never;
       }
 
@@ -172,7 +172,7 @@ export class HTTPTransport extends IRPCTransport {
             name: call.payload.name,
             type: IRPC_PACKET_TYPE.CLOSE,
             status: IRPC_STATUS.ERROR,
-            error: { code: ERROR_CODE.UNKNOWN, message: response?.statusText ?? 'Request failed.' },
+            error: TransportError.failed(response?.statusText ?? 'Request failed.').json(),
             createdAt: Date.now(),
           } as IRPCPacketStream<IRPCData>);
         });
@@ -193,7 +193,7 @@ export class HTTPTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          error: TransportError.failed(error as Error).json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });
@@ -298,7 +298,7 @@ export class HTTPTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Invalid response body.' },
+          error: TransportError.invalidBody().json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });
@@ -376,7 +376,7 @@ export class HTTPTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Response stream terminated.' },
+          error: TransportError.streamTerminated().json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });

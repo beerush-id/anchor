@@ -2,7 +2,7 @@ import { createLifecycle } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
+import { StubError, HandlerError, TransportError } from '../src/error.js';
 import { createPackage, IRPC_STORE, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
 import { RemoteState } from '../src/state.js';
 
@@ -87,7 +87,7 @@ describe('IRPCPackage', () => {
 
     it('should throw error when declaring duplicate function', () => {
       rpc.declare({ name: 'duplicateFunc' });
-      expect(() => rpc.declare({ name: 'duplicateFunc' })).toThrow('IRPC duplicateFunc already exists.');
+      expect(() => rpc.declare({ name: 'duplicateFunc' })).toThrow('IRPC "duplicateFunc" already exists.');
     });
 
     it('should infer types', async () => {
@@ -128,20 +128,20 @@ describe('IRPCPackage', () => {
     it('should throw error for invalid stub', () => {
       const handler = vi.fn();
       // @ts-expect-error - Testing invalid stub
-      expect(() => rpc.construct('not-a-function', handler)).toThrow(ERROR_MESSAGE[ERROR_CODE.STUB_INVALID]);
+      expect(() => rpc.construct('not-a-function', handler)).toThrow('Invalid stub.');
     });
 
     it('should throw error for invalid handler', () => {
       const testFunc = rpc.declare<() => void>({ name: 'testFunc' });
       expect(() => rpc.construct(testFunc, 'not-a-function' as never)).toThrow(
-        ERROR_MESSAGE[ERROR_CODE.INVALID_HANDLER]
+        'Handler must be a function.'
       );
     });
 
     it('should throw error for stub without spec', () => {
       const testFunc = () => {};
       const handler = () => {};
-      expect(() => rpc.construct(testFunc as never, handler)).toThrow(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      expect(() => rpc.construct(testFunc as never, handler)).toThrow('No spec found for stub.');
     });
   });
 
@@ -154,7 +154,7 @@ describe('IRPCPackage', () => {
 
     it('should throw error for invalid transport', () => {
       // @ts-expect-error - Testing invalid transport
-      expect(() => rpc.use('not-transport')).toThrow(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_INVALID]);
+      expect(() => rpc.use('not-transport')).toThrow('Invalid transport.');
     });
 
     it('should share transport for multi packages', () => {
@@ -462,7 +462,7 @@ describe('IRPCPackage', () => {
         seed: () => '',
       });
 
-      await expect(hello('World')).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]);
+      await expect(hello('World')).rejects.toThrow('No transport configured.');
     });
   });
 
@@ -490,7 +490,7 @@ describe('IRPCPackage', () => {
           name: 'nonExistent',
           args: [],
         })
-      ).rejects.toThrow('IRPC nonExistent does not exist.');
+      ).rejects.toThrow('IRPC "nonExistent" does not exist.');
     });
 
     it('should reject for function without implementation', async () => {
@@ -502,7 +502,7 @@ describe('IRPCPackage', () => {
           name: 'unimplemented',
           args: [],
         })
-      ).rejects.toThrow('IRPC unimplemented does not have an implementation.');
+      ).rejects.toThrow('IRPC "unimplemented" has no implementation.');
     });
   });
 
@@ -1067,7 +1067,7 @@ describe('IRPCPackage', () => {
     it('should throw when resolving hooks for a non-existent spec', async () => {
       const req = { id: '1', name: 'nonExistent', args: [] };
 
-      await expect(rpc.resolveHooks(req)).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.NOT_FOUND]);
+      await expect(rpc.resolveHooks(req)).rejects.toThrow('No spec found for stub.');
     });
 
     it('should propagate errors thrown by hooks', async () => {

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import type { IRPCTransport } from '../src/index.js';
 import type { IRPCPackage } from '../src/module.js';
 import { IRPCRouter } from '../src/router.js';
@@ -139,8 +138,9 @@ describe('IRPCRouter', () => {
         type: IRPC_PACKET_TYPE.CLOSE,
         status: IRPC_STATUS.ERROR,
         error: {
-          code: ERROR_CODE.UNKNOWN,
-          message: ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
+          type: 'hook',
+          code: 'error',
+          message: 'Middleware failed',
         },
         createdAt: expect.any(Number),
       });

@@ -1,4 +1,4 @@
-import { ERROR_CODE, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
+import { IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COOKIES_EVENT, COOKIES_SYNC_KEY, DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
 
@@ -191,7 +191,7 @@ describe('HTTPTransport', () => {
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Not Found' },
+          error: { type: 'transport', code: 'error', message: 'Not Found' },
         })
       );
 
@@ -221,7 +221,7 @@ describe('HTTPTransport', () => {
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Request failed.' },
+          error: { type: 'transport', code: 'error', message: 'Request failed.' },
         })
       );
 
@@ -386,7 +386,7 @@ describe('HTTPTransport', () => {
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Network error' },
+          error: { type: 'transport', code: 'error', message: 'Network error' },
         })
       );
 
@@ -414,14 +414,14 @@ describe('HTTPTransport', () => {
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Invalid response body.' },
+          error: { type: 'transport', code: 'invalid_body', message: 'Invalid response body.' },
         })
       );
       expect(call2.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: 'Invalid response body.' },
+          error: { type: 'transport', code: 'invalid_body', message: 'Invalid response body.' },
         })
       );
     });

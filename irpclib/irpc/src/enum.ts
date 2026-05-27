@@ -3,17 +3,8 @@ export const IRPC_PACKET_TYPE = {
   EVENT: 'event',
   CLOSE: 'close',
   ANSWER: 'answer',
-  REQUEST: 'request',
-  RESPONSE: 'response',
 } as const;
 
-export const IRPC_DATA_TYPE = {
-  ARRAY: 'array',
-  OBJECT: 'object',
-  READABLE: 'readable',
-  WRITABLE: 'writable',
-  PRIMITIVE: 'primitive',
-} as const;
 
 export const IRPC_STATUS = {
   IDLE: 'idle',

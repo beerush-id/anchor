@@ -1,6 +1,4 @@
 import {
-  ERROR_CODE,
-  ERROR_MESSAGE,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   type IRPCCall,
@@ -8,6 +6,7 @@ import {
   type IRPCPacketStream,
   IRPCTransport,
   type TransportConfig,
+  TransportError,
   encode,
   IRPC_STORE,
 } from '@irpclib/irpc';
@@ -130,7 +129,7 @@ export class BroadcastTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.INVALID_STATE, message: ERROR_MESSAGE[ERROR_CODE.INVALID_STATE] },
+          error: TransportError.notConnected('BroadcastChannel').json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });
@@ -169,7 +168,7 @@ export class BroadcastTransport extends IRPCTransport {
           name: call.payload.name,
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
-          error: { code: ERROR_CODE.UNKNOWN, message: (error as Error).message },
+          error: TransportError.failed(error as Error).json(),
           createdAt: Date.now(),
         } as IRPCPacketStream<IRPCData>);
       });
@@ -207,7 +206,7 @@ export class BroadcastTransport extends IRPCTransport {
         name: call.payload.name,
         type: IRPC_PACKET_TYPE.CLOSE,
         status: IRPC_STATUS.ERROR,
-        error: { code: ERROR_CODE.UNKNOWN, message: 'BroadcastChannel connection closed' },
+        error: TransportError.closed('BroadcastChannel').json(),
         createdAt: Date.now(),
       } as IRPCPacketStream<IRPCData>);
     });

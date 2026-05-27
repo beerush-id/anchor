@@ -1,9 +1,8 @@
-import { ERROR_CODE } from './error.js';
+import { HandlerError, ResolveError } from './error.js';
 import type { IRPCPackage } from './module.js';
 import { RemoteState } from './state.js';
 import type {
   IRPCData,
-  IRPCError,
   IRPCInputs,
   IRPCOutput,
   IRPCParseResult,
@@ -51,12 +50,7 @@ export class IRPCResolver {
 
     // Check if the requested method exists in the module
     if (!this.spec) {
-      const error: IRPCError = {
-        code: ERROR_CODE.NOT_FOUND,
-        message: `IRPC "${name}" does not exist.`,
-      };
-
-      return { id, name, error };
+      return { id, name, error: ResolveError.notFound(name).json() };
     }
 
     const { schema } = this.spec;
@@ -64,12 +58,7 @@ export class IRPCResolver {
 
     // Validate inputs against the schema
     if (!inputs.success) {
-      const error: IRPCError = {
-        code: ERROR_CODE.INVALID_INPUT,
-        message: inputs.error,
-      };
-
-      return { id, name, error };
+      return { id, name, error: ResolveError.invalidInput(inputs.error).json() };
     }
 
     // Forward the validated request
@@ -93,12 +82,7 @@ export class IRPCResolver {
         const output = parseOutput(result.data, schema);
 
         if (!output.success) {
-          const error: IRPCError = {
-            code: ERROR_CODE.INVALID_OUTPUT,
-            message: output.error?.message,
-          };
-
-          return { id, name, error };
+          return { id, name, error: ResolveError.invalidOutput(output.error).json() };
         }
 
         return { id, name, result };
@@ -112,12 +96,7 @@ export class IRPCResolver {
         const output = parseOutput(data.data, schema);
 
         if (!output.success) {
-          const error: IRPCError = {
-            code: ERROR_CODE.INVALID_OUTPUT,
-            message: output.error?.message,
-          };
-
-          return { id, name, error };
+          return { id, name, error: ResolveError.invalidOutput(output.error).json() };
         }
 
         return { id, name, result: data };
@@ -129,16 +108,11 @@ export class IRPCResolver {
       if (output.success) {
         return { id, name, result: output.data };
       } else {
-        const error: IRPCError = {
-          code: ERROR_CODE.INVALID_OUTPUT,
-          message: output.error?.message,
-        };
-
-        return { id, name, error };
+        return { id, name, error: ResolveError.invalidOutput(output.error).json() };
       }
     } catch (error) {
       // Handle any unexpected errors during execution
-      return { id, name, error: { code: ERROR_CODE.HANDLER_ERROR, message: (error as Error).message } };
+      return { id, name, error: HandlerError.failed(error as Error).json() };
     }
   }
 }

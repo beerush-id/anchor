@@ -3,12 +3,13 @@ import {
   createContextStore,
   createCredentials,
   decode,
-  ERROR_CODE,
   IRPC_BASE_CONTEXT,
   IRPC_FILE_STATUS,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   IRPC_STORE,
+  RESOLVE_ERROR,
+  ResolveError,
   type IRPCData,
   type IRPCPackage,
   type IRPCPacketAnswer,
@@ -94,10 +95,7 @@ export class HTTPRouter extends IRPCRouter {
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
       return buildResponse(
-        JSON.stringify({
-          code: ERROR_CODE.UNKNOWN,
-          message: (error as Error)?.message as string,
-        }),
+        JSON.stringify(ResolveError.failed(error as Error).json()),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -128,10 +126,7 @@ export class HTTPRouter extends IRPCRouter {
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ name, method: req.method, url: req.url }]);
       return buildResponse(
-        JSON.stringify({
-          code: ERROR_CODE.UNKNOWN,
-          message: (error as Error)?.message as string,
-        }),
+        JSON.stringify(ResolveError.failed(error as Error).json()),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -224,7 +219,7 @@ export class HTTPRouter extends IRPCRouter {
       if (result.status === IRPC_STATUS.ERROR) {
         const { error } = result as IRPCPacketAnswer<IRPCData>;
         return buildResponse(JSON.stringify(error), {
-          status: error?.code === ERROR_CODE.NOT_FOUND ? 404 : 500,
+          status: error?.code === RESOLVE_ERROR.NOT_FOUND ? 404 : 500,
           headers: { 'Content-Type': 'application/json' },
         });
       }
@@ -236,10 +231,7 @@ export class HTTPRouter extends IRPCRouter {
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ id: req.id, name: req.name }]);
       return buildResponse(
-        JSON.stringify({
-          code: ERROR_CODE.UNKNOWN,
-          message: (error as Error)?.message as string,
-        }),
+        JSON.stringify(ResolveError.failed(error as Error).json()),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }

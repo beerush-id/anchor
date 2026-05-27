@@ -1,7 +1,6 @@
 import type { StateChange } from '@anchorlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { ERROR_CODE } from '../src/index.js';
 import { IRPCReader } from '../src/reader.js';
 import type { IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent } from '../src/types.js';
 
@@ -83,7 +82,7 @@ describe('IRPCReader', () => {
       name: 'test',
       type: IRPC_PACKET_TYPE.CLOSE,
       status: IRPC_STATUS.ERROR,
-      error: { code: ERROR_CODE.UNKNOWN, message: 'Server explosion' },
+      error: { code: 'unknown', message: 'Server explosion' },
     };
 
     let caughtError: Error | undefined;
@@ -107,7 +106,7 @@ describe('IRPCReader', () => {
       name: 'test',
       type: IRPC_PACKET_TYPE.ANSWER,
       status: IRPC_STATUS.ERROR,
-      error: { code: ERROR_CODE.UNKNOWN, message: 'Validation fail' },
+      error: { code: 'unknown', message: 'Validation fail' },
     };
 
     let caughtError: Error | undefined;

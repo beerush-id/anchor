@@ -1,13 +1,13 @@
 import { getAbortController, getAbortSignal } from './context.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
-import { ERROR_CODE } from './error.js';
+import { CallError, HandlerError, ResolveError } from './error.js';
 import type { IRPCRouter } from './router.js';
 import { RemoteState } from './state.js';
 import { IRPC_STORE } from './store.js';
 import type {
   IRPCData,
   IRPCDataSchema,
-  IRPCError,
+  IRPCPacketError,
   IRPCInputs,
   IRPCPacketAnswer,
   IRPCPacketClose,
@@ -29,10 +29,10 @@ import type {
 export class IRPCStream<T extends IRPCData> {
   private pipeHandlers: Set<(event: IRPCPacketStream<T>) => void> = new Set();
   private closeHandlers: Set<() => void> = new Set();
-  private errorHandlers: Set<(error: IRPCError) => void> = new Set();
+  private errorHandlers: Set<(error: IRPCPacketError) => void> = new Set();
 
   public value?: T;
-  public error?: IRPCError;
+  public error?: IRPCPacketError;
   public status: IRPCStatus = IRPC_STATUS.IDLE;
   public closed = false;
 
@@ -95,7 +95,7 @@ export class IRPCStream<T extends IRPCData> {
 
         if (result.status === IRPC_STATUS.SUCCESS || result.status === IRPC_STATUS.ERROR) {
           if (result.status === IRPC_STATUS.ERROR) {
-            this.error = { code: ERROR_CODE.HANDLER_ERROR, message: result.error!.message };
+            this.error = HandlerError.failed(result.error!).json();
             this.status = IRPC_STATUS.ERROR;
           } else {
             this.status = IRPC_STATUS.SUCCESS;
@@ -154,7 +154,7 @@ export class IRPCStream<T extends IRPCData> {
             this.status = state.status;
 
             if (state.status === IRPC_STATUS.ERROR) {
-              this.error = { code: ERROR_CODE.STREAM_ERROR, message: state.error!.message };
+              this.error = CallError.streamError(state.error!).json();
               this.errorHandlers.forEach((handler) => handler(this.error!));
             }
 
@@ -208,7 +208,7 @@ export class IRPCStream<T extends IRPCData> {
       }
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ id: this.id, name: this.name }]);
-      this.error = { code: ERROR_CODE.RESOLVE_ERROR, message: (error as Error).message };
+      this.error = ResolveError.failed(error as Error).json();
       this.status = IRPC_STATUS.ERROR;
 
       this.pipeHandlers.forEach((handler) => {
@@ -217,7 +217,7 @@ export class IRPCStream<T extends IRPCData> {
           name,
           type: IRPC_PACKET_TYPE.ANSWER,
           status: IRPC_STATUS.ERROR,
-          error: error as IRPCError,
+          error: error as IRPCPacketError,
           createdAt: Date.now(),
         });
       });
@@ -260,7 +260,7 @@ export class IRPCStream<T extends IRPCData> {
    *
    * @param handler - A callback function to receive stream errors.
    */
-  public catch(handler: (error: IRPCError) => void) {
+  public catch(handler: (error: IRPCPacketError) => void) {
     if (this.status === IRPC_STATUS.ERROR) {
       handler(this.error!);
       return;

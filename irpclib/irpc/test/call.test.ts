@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPCCall } from '../src/call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import type { IRPCTransport } from '../src/index.js';
 
 describe('IRPCCall', () => {
@@ -48,7 +47,7 @@ describe('IRPCCall', () => {
           type: IRPC_PACKET_TYPE.CLOSE,
           status: IRPC_STATUS.ERROR,
           error: expect.objectContaining({
-            message: ERROR_MESSAGE[ERROR_CODE.TIMEOUT],
+            message: 'Call timed out.',
           }),
         })
       );
@@ -140,7 +139,7 @@ describe('IRPCCall', () => {
         name: 'testFunc',
         type: IRPC_PACKET_TYPE.CLOSE,
         status: IRPC_STATUS.ERROR,
-        error: { code: ERROR_CODE.UNKNOWN, message: 'Bad network pipe' },
+        error: { code: 'unknown', message: 'Bad network pipe' },
         createdAt: Date.now(),
       });
 

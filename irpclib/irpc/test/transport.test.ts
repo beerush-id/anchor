@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { ERROR_CODE, ERROR_MESSAGE } from '../src/error.js';
 import { type IRPCCall, type IRPCData, IRPCTransport } from '../src/index.js';
 
 abstract class TransportType {
@@ -116,7 +115,7 @@ describe('IRPC Transport', () => {
       // Fast-forward until timer has been executed
       vi.advanceTimersByTime(101);
 
-      await expect(promise).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.TIMEOUT]);
+      await expect(promise).rejects.toThrow('Call timed out.');
     });
 
     it('should dispatch instantly and return reader statically when stream spec flag is true', () => {
@@ -305,16 +304,18 @@ describe('IRPC Transport', () => {
       expect(call1.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
           error: {
-            code: ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED,
-            message: ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED],
+            type: 'transport',
+            code: 'not_implemented',
+            message: 'Transport dispatch not implemented.',
           },
         })
       );
       expect(call2.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
           error: {
-            code: ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED,
-            message: ERROR_MESSAGE[ERROR_CODE.TRANSPORT_NOT_IMPLEMENTED],
+            type: 'transport',
+            code: 'not_implemented',
+            message: 'Transport dispatch not implemented.',
           },
         })
       );
