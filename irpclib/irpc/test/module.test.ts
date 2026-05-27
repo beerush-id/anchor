@@ -133,9 +133,7 @@ describe('IRPCPackage', () => {
 
     it('should throw error for invalid handler', () => {
       const testFunc = rpc.declare<() => void>({ name: 'testFunc' });
-      expect(() => rpc.construct(testFunc, 'not-a-function' as never)).toThrow(
-        'Handler must be a function.'
-      );
+      expect(() => rpc.construct(testFunc, 'not-a-function' as never)).toThrow('Handler must be a function.');
     });
 
     it('should throw error for stub without spec', () => {

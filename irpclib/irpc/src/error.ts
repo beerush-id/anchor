@@ -223,7 +223,9 @@ export class CallError extends IRPCError {
     return new CallError(CALL_ERROR.TIMEOUT, 'Call timed out.');
   }
   static maxRetries(reasons: Set<Error>) {
-    const detail = Array.from(reasons).map((r) => r.message).join(', ');
+    const detail = Array.from(reasons)
+      .map((r) => r.message)
+      .join(', ');
     return new CallError(CALL_ERROR.MAX_RETRIES, `Max retries reached: ${detail}`);
   }
   static streamError(input: Error | string) {

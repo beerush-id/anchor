@@ -134,10 +134,7 @@ export class IRPCCall {
       }
 
       if (this.retries >= maxRetries) {
-        IRPC_STORE.error(
-          CallError.maxRetries(this.retryReasons),
-          [{ id: this.id, name: this.payload.name }]
-        );
+        IRPC_STORE.error(CallError.maxRetries(this.retryReasons), [{ id: this.id, name: this.payload.name }]);
         this.reject(reason, false);
         this.retryReasons.clear();
         return;

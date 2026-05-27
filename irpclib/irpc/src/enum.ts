@@ -5,7 +5,6 @@ export const IRPC_PACKET_TYPE = {
   ANSWER: 'answer',
 } as const;
 
-
 export const IRPC_STATUS = {
   IDLE: 'idle',
   ERROR: 'error',

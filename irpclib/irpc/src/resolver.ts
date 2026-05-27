@@ -1,14 +1,7 @@
 import { HandlerError, ResolveError } from './error.js';
 import type { IRPCPackage } from './module.js';
 import { RemoteState } from './state.js';
-import type {
-  IRPCData,
-  IRPCInputs,
-  IRPCOutput,
-  IRPCParseResult,
-  IRPCRequest,
-  IRPCResponse,
-} from './types.js';
+import type { IRPCData, IRPCInputs, IRPCOutput, IRPCParseResult, IRPCRequest, IRPCResponse } from './types.js';
 
 /**
  * Resolver class for handling IRPC requests
