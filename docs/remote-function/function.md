@@ -546,7 +546,7 @@ Every call returns an `IRPCReader<T>`, where `T` is the unwrapped data type:
 |----------|------|-------------|
 | `data` | `T` | The current payload — mutated by the server as data arrives |
 | `status` | `'idle' \| 'pending' \| 'success' \| 'error'` | The execution lifecycle state |
-| `error` | `{ code: number; message: string }` | Error details when `status` is `'error'` |
+| `error` | `IRPCError` | Error details when `status` is `'error'` — includes `type`, `code`, and `message` |
 
 
 ### Subscription

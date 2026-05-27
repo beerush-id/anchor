@@ -49,7 +49,7 @@ interface IRPCStub<Fn extends (...args: any[]) => any> {
 interface IRPCReader<Data> {
   status: 'idle' | 'pending' | 'success' | 'error';
   data: Data;    // Immediately guaranteed by config.seed()
-  error?: Error;
+  error?: IRPCError;
   close(): void; // Manually abort the call and trigger server cleanup
 }
 
@@ -475,6 +475,63 @@ const unsubscribe = IRPC_STORE.subscribe((event) => {
     console.log(`[IRPC] Call completed: ${event.data.name}`);
   }
 });
+```
+
+### IRPC: Error Hierarchy
+All IRPC errors extend `IRPCError` (which extends `Error`). Each domain has a dedicated subclass and companion const for codes.
+
+**Wire format** (serialized via `.json()`):
+```typescript
+interface IRPCPacketError {
+  type: string;    // Domain: 'resolve', 'transport', 'handler', 'hook', 'call', 'stub'
+  code: string;    // Machine-readable: 'not_found', 'invalid_input', 'error', etc.
+  message: string; // Human-readable
+}
+```
+
+**Error classes and factories**:
+```typescript
+import {
+  IRPCError,         // Base class
+  ResolveError,      // Server-side resolution failures
+  TransportError,    // Network/connection failures
+  HandlerError,      // Handler execution failures
+  HookError,         // Middleware/hook failures
+  CallError,         // Client-side call failures (timeout, retries)
+  StubError,         // Declaration/registration failures
+  RESOLVE_ERROR,     // { NOT_FOUND, INVALID_INPUT, INVALID_OUTPUT, ERROR }
+  TRANSPORT_ERROR,   // { NOT_CONNECTED, CLOSED, INVALID_BODY, ERROR, ... }
+  HANDLER_ERROR,     // { INVALID, MISSING, ERROR }
+  HOOK_ERROR,        // { ERROR }
+  CALL_ERROR,        // { TIMEOUT, MAX_RETRIES, STREAM_ERROR }
+  STUB_ERROR,        // { DUPLICATE, INVALID, NOT_FOUND, ... }
+} from '@irpclib/irpc';
+```
+
+**Write side** (server/transport — serialize to wire):
+```typescript
+// Factory methods create typed errors; .json() serializes to wire format
+error: ResolveError.notFound(name).json()
+error: TransportError.failed(error).json()
+error: HandlerError.failed(error).json()
+```
+
+**Read side** (client — reconstruct from wire):
+```typescript
+// IRPCReader.error is now an IRPCError instance (not plain Error)
+const reader = getUser.once('123');
+if (reader.error instanceof ResolveError) {
+  console.log(reader.error.code); // 'not_found'
+}
+
+// Programmatic matching via companion const
+if (reader.error?.code === RESOLVE_ERROR.NOT_FOUND) {
+  // Handle 404
+}
+
+// Manual reconstruction from any wire packet
+const err = IRPCError.from(packetError); // Returns correct subclass
+err instanceof TransportError; // true if type === 'transport'
 ```
 
 ### IRPC: Webhooks
