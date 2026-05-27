@@ -177,6 +177,160 @@ Both `createWorker` and `createFullWorker` accept the same base options:
 | `createResponse` | `(response: Response) => Response` | Hook to modify all outgoing responses (e.g., add security headers). |
 | `timeout` | `number` | Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. |
 
+### Incremental Static Regeneration (ISR)
+ISR is a userland pattern built on `resolveAsset`. The worker checks for a pre-generated HTML file on disk before falling through to SSR. On a cache miss, the rendered page is written to disk so subsequent requests skip SSR entirely. For stale pages, the cached file is served immediately while a background re-render refreshes it.
+
+The key insight: `resolveAsset` runs **before** SSR. If it returns a `Response`, SSR is skipped completely. This makes it the natural interception point for serving cached static pages.
+
+#### Basic ISR Worker
+Serves cached HTML when available, renders and caches on miss.
+
+```ts
+import { createWorker, createSSR } from '@anchorlib/react/ssr';
+import template from '../dist/client/index.html?raw';
+import router from './lib/router.js';
+import RootLayout from './pages/layout.js';
+
+const render = createSSR(router, RootLayout);
+
+const STATIC_DIR = './dist/static';
+const ISR_PATHS = ['/', '/about', '/blog', '/pricing'];
+
+export default createWorker(render, {
+  template,
+  async resolveAsset(request, url, env) {
+    // 1. Serve static client assets (JS, CSS, images)
+    const clientFile = Bun.file(`./dist/client${url.pathname}`);
+    if (url.pathname !== '/' && (await clientFile.exists())) {
+      return new Response(clientFile);
+    }
+
+    // 2. ISR — serve pre-generated HTML if it exists
+    if (ISR_PATHS.includes(url.pathname)) {
+      const htmlPath = `${STATIC_DIR}${url.pathname === '/' ? '/index' : url.pathname}.html`;
+      const cached = Bun.file(htmlPath);
+
+      if (await cached.exists()) {
+        return new Response(cached, {
+          headers: { 'Content-Type': 'text/html' },
+        });
+      }
+    }
+
+    // 3. Fall through to SSR
+  },
+  createResponse(response) {
+    const url = new URL(response.url || '/');
+
+    // After SSR, write the rendered HTML to disk for future ISR hits
+    if (ISR_PATHS.includes(url.pathname) && response.status === 200) {
+      const htmlPath = `${STATIC_DIR}${url.pathname === '/' ? '/index' : url.pathname}.html`;
+      response.clone().text().then((html) => Bun.write(htmlPath, html));
+    }
+
+    return response;
+  },
+});
+```
+
+#### ISR with Stale-While-Revalidate
+Serves stale pages instantly and re-renders in the background based on file age.
+
+```ts
+import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
+import { HTTPRouter } from '@irpclib/http/router';
+import template from '../dist/client/index.html?raw';
+import { irpc, transport } from './lib/module.js';
+import router from './lib/router.js';
+import RootLayout from './pages/layout.js';
+
+import './pages/constructor.js';
+
+const render = createSSR(router, RootLayout);
+const irpcHttpRouter = new HTTPRouter(irpc, transport);
+
+const STATIC_DIR = './dist/static';
+const MAX_AGE_MS = 60_000; // 1 minute
+
+// Track in-flight background renders to prevent stampede
+const revalidating = new Set<string>();
+
+async function revalidate(pathname: string, cookie: string) {
+  if (revalidating.has(pathname)) return;
+  revalidating.add(pathname);
+
+  try {
+    const { html, head, status } = await render(pathname, cookie);
+    if (status === 200) {
+      const body = template
+        .replace('<!--ssr-head-->', head)
+        .replace('<!--ssr-outlet-->', html);
+      const htmlPath = `${STATIC_DIR}${pathname === '/' ? '/index' : pathname}.html`;
+      await Bun.write(htmlPath, body);
+    }
+  } finally {
+    revalidating.delete(pathname);
+  }
+}
+
+export default createFullWorker(irpcHttpRouter, render, {
+  template,
+  async resolveAsset(request, url, env) {
+    const clientFile = Bun.file(`./dist/client${url.pathname}`);
+    if (url.pathname !== '/' && (await clientFile.exists())) {
+      return new Response(clientFile);
+    }
+
+    const htmlPath = `${STATIC_DIR}${url.pathname === '/' ? '/index' : url.pathname}.html`;
+    const cached = Bun.file(htmlPath);
+
+    if (await cached.exists()) {
+      const age = Date.now() - cached.lastModified;
+      const cookie = request.headers.get('cookie') ?? '';
+
+      // Stale — serve immediately, revalidate in background
+      if (age > MAX_AGE_MS) {
+        revalidate(url.pathname, cookie);
+      }
+
+      return new Response(cached, {
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
+  },
+});
+```
+
+#### Build-Time Pre-Generation
+Generate static HTML at build time so ISR serves cached pages from the first request. Run this script after `vite build`.
+
+```ts
+// scripts/prerender.ts
+import { createSSR } from '@anchorlib/react/ssr';
+import router from '../src/lib/router.js';
+import RootLayout from '../src/pages/layout.js';
+
+const template = await Bun.file('./dist/client/index.html').text();
+const render = createSSR(router, RootLayout);
+
+const PAGES = ['/', '/about', '/blog', '/pricing'];
+const STATIC_DIR = './dist/static';
+
+for (const pathname of PAGES) {
+  const { html, head, status } = await render(pathname, '');
+  if (status === 200) {
+    const body = template
+      .replace('<!--ssr-head-->', head)
+      .replace('<!--ssr-outlet-->', html);
+    const filePath = `${STATIC_DIR}${pathname === '/' ? '/index' : pathname}.html`;
+    await Bun.write(filePath, body);
+    console.log(`Pre-rendered: ${pathname} → ${filePath}`);
+  }
+}
+```
+
+> **Note**: ISR pages bypass `resolveContext` since they're served as static files. For pages that need per-request context (auth-gated content, user-specific data), exclude them from `ISR_PATHS` and let them fall through to SSR.
+
 ### Custom Full Stack Edge Worker (Advanced)
 Full control over request routing, IRPC resolution, and SSR rendering with proper abort propagation, request isolation, and cookie management.
 

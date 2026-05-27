@@ -30,7 +30,7 @@ To work effectively without polluting your context, use the `view_file` tool to 
 - **Action**: Read `contents/router.md`
 
 ### Universal SSR
-- **When**: You need to configure Server-Side Rendering (SSR) boundaries, handle request isolation, or inject server context across the application.
+- **When**: You need to configure Server-Side Rendering (SSR) boundaries, handle request isolation, inject server context, or implement Incremental Static Regeneration (ISR) with cached static pages.
 - **Action**: Read `contents/universal-ssr.md`
 
 ### User Interface & Components (@anchorlib/react)
