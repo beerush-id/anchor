@@ -63,7 +63,7 @@ export class IRPCCall {
   constructor(
     public transport: IRPCTransport,
     public payload: IRPCPayload,
-    public options: IRPCCallConfig,
+    public options: IRPCCallConfig & { seed?: () => IRPCData },
     reader?: IRPCReader<IRPCData>
   ) {
     if (options.timeout) {
@@ -86,7 +86,7 @@ export class IRPCCall {
       }, options.timeout);
     }
 
-    this.reader = reader ?? new IRPCReader<IRPCData>(uuid(), options?.init?.() as IRPCData);
+    this.reader = reader ?? new IRPCReader<IRPCData>(uuid(), options?.seed?.() as IRPCData);
     this.reader.onClose = () => this.close();
     this.id = this.reader.id;
   }

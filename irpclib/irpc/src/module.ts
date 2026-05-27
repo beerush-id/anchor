@@ -110,19 +110,22 @@ export class IRPCPackage {
   public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
     options: IRPCDeclareInit<F, I, O>
   ): IRPCFunction<F> {
-    const $options = options as never as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData>;
+    // @Todo: Remove ini() once deprecated.
+    const $options = options as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData> & { init?: () => unknown };
 
     if (this.specs.has($options.name)) {
       throw new Error(`IRPC ${$options.name} already exists.`);
     }
 
-    const spec = { init: () => undefined, ...$options } as IRPCSpec<IRPCInputs, IRPCOutput>;
+    if ($options.init && !$options.seed) $options.seed = $options.init as never;
+
+    const spec = { seed: () => undefined, ...$options } as IRPCSpec<IRPCInputs, IRPCOutput>;
     const calls = new Map<string, unknown>();
     const caches = new IRPCCacher();
 
     /* General stub for immediate execution */
     const stub = ((...args: IRPCData[]) => {
-      return execute(args, new IRPCReader<IRPCData>(uuid(), spec.init!()));
+      return execute(args, new IRPCReader<IRPCData>(uuid(), spec.seed!()));
     }) as IRPCStub<F, unknown[], IRPCData>;
 
     /** Browser only stub for single immediate execution **/
@@ -145,7 +148,7 @@ export class IRPCPackage {
     /* General stub for manual execution */
     stub.later = (debounce) => {
       // biome-ignore lint/suspicious/noExplicitAny: <Expect any>
-      const reader = new IRPCReader<IRPCData>(uuid(), spec.init!(), IRPC_STATUS.IDLE, true) as any;
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), IRPC_STATUS.IDLE, true) as any;
 
       if (debounce) {
         const [schedule, cancel] = microtask(debounce);
@@ -177,7 +180,7 @@ export class IRPCPackage {
      * @returns {IRPCReader<IRPCData>} - The reader for the call.
      */
     function prepare(getArgs: () => unknown[], deferred?: boolean, debounce = 0): IRPCReader<IRPCData> {
-      const reader = new IRPCReader<IRPCData>(uuid(), spec.init!(), deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING);
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING);
 
       if (isBrowser()) {
         const observer = createObserver(() => {

@@ -89,12 +89,34 @@ describe('IRPCPackage', () => {
       rpc.declare({ name: 'duplicateFunc' });
       expect(() => rpc.declare({ name: 'duplicateFunc' })).toThrow('IRPC duplicateFunc already exists.');
     });
+
+    it('should infer types', async () => {
+      type TestFn = (name: string) => string;
+      const testFn = rpc.declare<TestFn>({
+        name: 'testFunc',
+        seed: () => '',
+      });
+
+      const call = testFn('john');
+      await expect(call).rejects.toThrow();
+    });
+
+    it('should handle init backward compat', () => {
+      const call = rpc.declare({
+        name: 'testFunc',
+        description: 'A test function',
+        init: () => 'test',
+      } as any);
+
+      const reader = call.later();
+      expect(reader.data).toBe('test');
+    });
   });
 
   describe('Implement Function', () => {
     it('should associate handler with stub', () => {
       type TestFunc = (name: string) => Promise<string>;
-      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc', seed: () => '' });
 
       const handler: TestFunc = vi.fn((async (name) => `Hello ${name}`) as TestFunc);
       rpc.construct(testFunc, handler);
@@ -206,6 +228,7 @@ describe('IRPCPackage', () => {
     it('should call local implementation', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'hello',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -215,6 +238,7 @@ describe('IRPCPackage', () => {
     it('should call local synchronous implementation', async () => {
       const hello = rpc.declare<(name: string) => string>({
         name: 'hello',
+        seed: () => '',
       });
       rpc.construct(hello, (name) => `Hello ${name}`);
 
@@ -224,7 +248,8 @@ describe('IRPCPackage', () => {
     it('should call local RemoteState implementation', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
-        init: () => '',
+        stream: true,
+        seed: () => '',
       });
       rpc.construct(hello, (name) => new RemoteState<string>(`Hello ${name}`));
 
@@ -237,7 +262,8 @@ describe('IRPCPackage', () => {
     it('should call local RemoteState init implementation', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'hello',
-        init: () => 'Stub init',
+        stream: true,
+        seed: () => 'Stub init',
       });
       rpc.construct(hello, (_name) => new RemoteState<string>('Init'));
 
@@ -250,7 +276,8 @@ describe('IRPCPackage', () => {
     it('should auto-cleanup RemoteState on component unmount (lifecycle destroy)', () => {
       const hello = rpc.declare<(name: string) => RemoteState<string>>({
         name: 'helloAutoCleanup',
-        init: () => 'Init',
+        stream: true,
+        seed: () => 'Init',
       });
       rpc.construct(hello, (_name) => new RemoteState<string>());
 
@@ -276,6 +303,7 @@ describe('IRPCPackage', () => {
       });
       const hello = irpc.declare<(name: string) => Promise<{ message: string }>>({
         name: 'helloCoalesce',
+        seed: () => ({ message: '' }),
       });
       irpc.construct(hello, async (name) => ({ message: `Hello ${name}` }));
 
@@ -297,6 +325,7 @@ describe('IRPCPackage', () => {
       const hello = irpc.declare<(name: string) => Promise<{ message: string }>>({
         name: 'helloCoalesceFalse',
         coalesce: false,
+        seed: () => ({ message: '' }),
       });
       irpc.construct(hello, async (name) => ({ message: `Hello ${name}` }));
 
@@ -332,6 +361,7 @@ describe('IRPCPackage', () => {
       });
       const hello = irpc.declare<(name: string) => Promise<string>>({
         name: 'hello',
+        seed: () => '',
       });
 
       const promise = hello('World');
@@ -370,6 +400,7 @@ describe('IRPCPackage', () => {
       const hello = irpc.declare<(name: string) => Promise<string>>({
         name: 'hello',
         maxAge: 1000,
+        seed: () => '',
       });
 
       // Make sure invalidate unknown stub doesn't throw.
@@ -428,6 +459,7 @@ describe('IRPCPackage', () => {
       });
       const hello = irpc.declare<(name: string) => Promise<string>>({
         name: 'helloOptimistic',
+        seed: () => '',
       });
 
       await expect(hello('World')).rejects.toThrow(ERROR_MESSAGE[ERROR_CODE.TRANSPORT_MISSING]);
@@ -437,7 +469,7 @@ describe('IRPCPackage', () => {
   describe('Resolve Call', () => {
     it('should resolve local function call', async () => {
       type TestFunc = (input: { name: string }) => Promise<string>;
-      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc', seed: () => '' });
 
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       rpc.construct(testFunc, handler);
@@ -478,6 +510,7 @@ describe('IRPCPackage', () => {
     it('should handle non promise that throws', async () => {
       const hello = rpc.declare<(name: string) => string>({
         name: 'hello',
+        seed: () => '',
       });
       rpc.construct(hello, () => {
         throw new Error('Hello World');
@@ -500,7 +533,8 @@ describe('IRPCPackage', () => {
     it('should return an IRPCReader when handler is a local stream', () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
         name: 'helloLocalStream',
-        init: () => ({ message: '' }),
+        stream: true,
+        seed: () => ({ message: '' }),
       });
 
       rpc.construct(hello, (name) => {
@@ -519,7 +553,8 @@ describe('IRPCPackage', () => {
     it('should invoke handler and relay data mutations when start() is called', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
         name: 'helloStart',
-        init: () => ({ message: '' }),
+        stream: true,
+        seed: () => ({ message: '' }),
       });
 
       rpc.construct(hello, (name) => {
@@ -553,6 +588,7 @@ describe('IRPCPackage', () => {
     it('should clean up abort listener on synchronous return with signal (line 452)', async () => {
       const hello = rpc.declare<(name: string) => string>({
         name: 'helloSyncSignal',
+        seed: () => '',
       });
       rpc.construct(hello, (name) => `Hello ${name}`);
 
@@ -574,6 +610,7 @@ describe('IRPCPackage', () => {
     it('should clean up abort listener on promise resolve with signal (line 465)', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloAsyncSignal',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -595,7 +632,8 @@ describe('IRPCPackage', () => {
     it('should clean up abort listener on RemoteState success with signal (line 480-481)', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
         name: 'helloStreamSignal',
-        init: () => ({ message: '' }),
+        stream: true,
+        seed: () => ({ message: '' }),
       });
 
       rpc.construct(hello, (name) => {
@@ -624,7 +662,8 @@ describe('IRPCPackage', () => {
     it('should clean up abort listener on RemoteState error with signal (line 480)', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
         name: 'helloStreamErrorSignal',
-        init: () => ({ message: '' }),
+        stream: true,
+        seed: () => ({ message: '' }),
       });
 
       let source: RemoteState<{ message: string }>;
@@ -656,6 +695,7 @@ describe('IRPCPackage', () => {
     it('should clean up abort listener on handler throw with signal (line 501)', async () => {
       const hello = rpc.declare<(name: string) => string>({
         name: 'helloThrowSignal',
+        seed: () => '',
       });
       rpc.construct(hello, () => {
         throw new Error('Boom');
@@ -675,6 +715,7 @@ describe('IRPCPackage', () => {
     it('should abort reader immediately when signal is already aborted (line 440-442)', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloAbortPre',
+        seed: () => '',
       });
       const handler = vi.fn(async (name: string) => `Hello ${name}`);
       rpc.construct(hello, handler);
@@ -699,7 +740,8 @@ describe('IRPCPackage', () => {
     it('should unsubscribe and abort RemoteState when signal fires during subscription (line 492-495)', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
         name: 'helloAbortStream',
-        init: () => ({ message: '' }),
+        stream: true,
+        seed: () => ({ message: '' }),
       });
 
       const source = new RemoteState<{ message: string }>({ message: 'Hello' });
@@ -729,6 +771,7 @@ describe('IRPCPackage', () => {
     it('should abort reader when signal fires during pending async handler (line 444)', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloAbortAsync',
+        seed: () => '',
       });
 
       let resolve: (value: string) => void;
@@ -773,7 +816,7 @@ describe('IRPCPackage', () => {
     it('should create reader with stub.once()', () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloOnce',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -791,7 +834,7 @@ describe('IRPCPackage', () => {
     it('should create reader with stub.with()', () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloWith',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -811,7 +854,7 @@ describe('IRPCPackage', () => {
     it('should defer reader with stub.when()', () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloWhen',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -834,7 +877,7 @@ describe('IRPCPackage', () => {
       const state = new RemoteState<string>('World');
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloObserver',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -861,7 +904,7 @@ describe('IRPCPackage', () => {
     it('should create reader with stub.later() without debounce', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloLater',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -890,7 +933,7 @@ describe('IRPCPackage', () => {
     it('should create reader with stub.later() with debounce', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloLaterDebounce',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -927,7 +970,7 @@ describe('IRPCPackage', () => {
 
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloLaterCancel',
-        init: () => '',
+        seed: () => '',
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
@@ -953,7 +996,7 @@ describe('IRPCPackage', () => {
 
   describe('Spec Hooks', () => {
     it('should register a hook on a valid stub', () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookTest' });
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookTest', seed: () => '' });
       const hookFn = vi.fn();
 
       rpc.hook(testFunc, hookFn);
@@ -963,7 +1006,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should support chaining when registering hooks', () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookChain' });
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookChain', seed: () => '' });
       const hook1 = vi.fn();
       const hook2 = vi.fn();
 
@@ -988,7 +1031,7 @@ describe('IRPCPackage', () => {
 
   describe('Resolve Hooks', () => {
     it('should execute all hooks in order for a valid spec', async () => {
-      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookResolve' });
+      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookResolve', seed: () => '' });
       rpc.construct(testFunc, async (name) => `Hello ${name}`);
 
       const order: number[] = [];
@@ -1009,7 +1052,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should pass the request to each hook', async () => {
-      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookReq' });
+      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookReq', seed: () => '' });
       rpc.construct(testFunc, async (name) => `Hello ${name}`);
 
       const hookFn = vi.fn();
@@ -1028,7 +1071,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should propagate errors thrown by hooks', async () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookError' });
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookError', seed: () => '' });
       rpc.construct(testFunc, async () => 'ok');
 
       rpc.hook(testFunc, () => {
@@ -1040,7 +1083,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should stop execution when a hook throws', async () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookStop' });
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookStop', seed: () => '' });
       rpc.construct(testFunc, async () => 'ok');
 
       const afterThrow = vi.fn();
@@ -1056,7 +1099,7 @@ describe('IRPCPackage', () => {
     });
 
     it('should await async hooks', async () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookAsync' });
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookAsync', seed: () => '' });
       rpc.construct(testFunc, async () => 'ok');
 
       const executed = vi.fn();

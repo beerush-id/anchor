@@ -11,7 +11,7 @@ describe('IRPC Resolver', () => {
     it('should resolve valid request', async () => {
       const rpc = createPackage();
       type TestFunc = (input: { name: string }) => Promise<string>;
-      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc', seed: () => '' });
 
       const handler: TestFunc = async (input) => `Hello ${input.name}`;
       rpc.construct(testFunc, handler);
@@ -36,7 +36,7 @@ describe('IRPC Resolver', () => {
     it('should resolve valid RemoteState request', async () => {
       const rpc = createPackage();
       type TestFunc = (input: { name: string }) => Promise<string>;
-      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc', seed: () => '' });
 
       const handler: TestFunc = (input) => {
         const state = new RemoteState<string>(`Hello ${input.name}`);
@@ -66,6 +66,7 @@ describe('IRPC Resolver', () => {
       type TestFunc = (input: { name: string }) => Promise<string>;
       const testFunc = rpc.declare<TestFunc>({
         name: 'testFunc',
+        seed: () => '',
         schema: {
           output: z.number(),
         },
@@ -125,6 +126,7 @@ describe('IRPC Resolver', () => {
       type TestFunc = (name: string) => Promise<string>;
       const testFunc = rpc.declare<TestFunc>({
         name: 'testFunc',
+        seed: () => '',
         schema: {
           input: [z.string()],
         },
@@ -196,6 +198,7 @@ describe('IRPC Resolver', () => {
       type TestFunc = () => Promise<string>;
       const testFunc = rpc.declare<TestFunc>({
         name: 'testFunc',
+        seed: () => '',
         schema: {
           output: z.string(),
         },
@@ -279,7 +282,7 @@ describe('IRPC Resolver', () => {
     it('should resolve piped RemoteState from async handler', async () => {
       const rpc = createPackage();
       type TestFunc = (input: string) => Promise<string>;
-      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = rpc.declare<TestFunc>({ name: 'testFunc', seed: () => '' });
 
       const handler: TestFunc = async (input) => {
         const state = new RemoteState<string>(`Hello ${input}`);
@@ -312,6 +315,7 @@ describe('IRPC Resolver', () => {
       type TestFunc = () => Promise<string>;
       const testFunc = rpc.declare<TestFunc>({
         name: 'testFunc',
+        seed: () => '',
         schema: {
           output: z.number(),
         },

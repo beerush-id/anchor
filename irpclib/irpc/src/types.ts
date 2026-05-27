@@ -9,7 +9,7 @@ import type {
   ZodString,
   ZodUndefined,
 } from 'zod/v4';
-import type { IRPC_BASE_CONTEXT, IRPC_DATA_TYPE, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
+import type { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import type { ErrorCode } from './error.js';
 import type { IRPCFile } from './file.js';
 import type { IRPCFilePointer } from './packet.js';
@@ -30,9 +30,7 @@ export type IRPCStubStore = WeakMap<IRPCHandler, IRPCSpec<IRPCInputs, IRPCOutput
 export type IRPCSpecStore = Map<string, IRPCSpec<IRPCInputs, IRPCOutput>>;
 
 export type IRPCStatus = (typeof IRPC_STATUS)[keyof typeof IRPC_STATUS];
-export type IRPCDataType = (typeof IRPC_DATA_TYPE)[keyof typeof IRPC_DATA_TYPE];
 export type IRPCPacketType = (typeof IRPC_PACKET_TYPE)[keyof typeof IRPC_PACKET_TYPE];
-export type IRPCBaseContext = (typeof IRPC_BASE_CONTEXT)[keyof typeof IRPC_BASE_CONTEXT];
 
 export type IRPCPacketBase = {
   id: string;
@@ -157,6 +155,12 @@ export type IRPCObject = { [key: string]: IRPCData };
 export type IRPCData = IRPCPrimitive | IRPCObject | IRPCFile | IRPCData[];
 
 /**
+ * Represents all possible defined data types in IRPC, including primitives, objects, and arrays.
+ * This is a recursive type that allows nested structures.
+ */
+export type IRPCDefined = string | number | boolean | IRPCObject | IRPCFile | IRPCDefined[];
+
+/**
  * Union type of all primitive Zod schema types used for validation.
  */
 export type IRPCPrimitiveSchema = ZodString | ZodNumber | ZodBoolean | ZodNull | ZodUndefined;
@@ -261,10 +265,10 @@ export type IRPCInit<R, I extends IRPCInputs, O extends IRPCOutput> = {
    * This can help reduce the number of actual function executions.
    */
   coalesce?: boolean;
+} & IRPCCallConfig &
+  IRPCInferInit<R>;
 
-  /** Optional initialization function to seed the data */
-  init?: () => R;
-} & IRPCCallConfig;
+export type IRPCInferInit<R> = R extends IRPCDefined ? { seed: () => R } : { seed?: () => R };
 
 /**
  * Configuration options for initializing an RPC stream function.
@@ -286,18 +290,18 @@ export type IRPCStreamInit<I extends IRPCInputs, O extends IRPCOutput, R> = IRPC
  * @template I - Tuple of input validation schemas
  * @template O - Output validation schema
  */
-export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F extends (...args: IRPCData[]) => infer R
+export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F extends (...args: infer _A) => infer R
   ? R extends RemoteState<infer S>
     ? S extends IRPCData
       ? IRPCStreamInit<I, O, S>
-      : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>
+      : IRPCInit<S, IRPCInputs, IRPCOutput>
     : R extends Promise<infer D>
       ? D extends IRPCData
         ? IRPCInit<D, I, O>
-        : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>
+        : IRPCInit<D, IRPCInputs, IRPCOutput>
       : R extends IRPCData
         ? IRPCInit<R, I, O>
-        : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>
+        : IRPCInit<R, IRPCInputs, IRPCOutput>
   : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>;
 
 /**
@@ -390,8 +394,6 @@ export type IRPCCallConfig = {
   retryMode?: 'linear' | 'exponential';
   /** Base delay between retries in milliseconds */
   retryDelay?: number;
-  /** Optional initialization function for a stream RPC */
-  init?: () => unknown;
 };
 
 /**

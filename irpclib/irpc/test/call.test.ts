@@ -26,7 +26,7 @@ describe('IRPCCall', () => {
 
     it('should create call with initial data', () => {
       const payload = { name: 'testFunc', args: ['arg1'] };
-      const options = { init: () => 'Init' };
+      const options = { seed: () => 'Init' };
 
       const call = new IRPCCall(mockTransport, payload, options);
       expect(call.reader.data).toBe('Init');
