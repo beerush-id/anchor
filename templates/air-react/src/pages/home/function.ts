@@ -5,5 +5,5 @@ export type WatchPriceFn = (symbol: string) => RemoteState<{ symbol: string; pri
 export const watchPrice = irpc.declare<WatchPriceFn>({
   name: 'watchPrice',
   stream: true,
-  init: () => ({ symbol: '', price: 0 }),
+  seed: () => ({ symbol: '', price: 0 }),
 });

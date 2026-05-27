@@ -4,4 +4,7 @@ export type SignInFn = (credentials: {
   email: string;
   password: string;
 }) => Promise<{ success: boolean; email: string }>;
-export const signIn = irpc.declare<SignInFn>({ name: 'auth.signin' });
+export const signIn = irpc.declare<SignInFn>({
+  name: 'auth.signin',
+  seed: () => ({ email: '', success: false }),
+});
