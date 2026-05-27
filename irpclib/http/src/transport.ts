@@ -260,7 +260,7 @@ export class HTTPTransport extends IRPCTransport {
       };
 
       xhr.onerror = () => {
-        const err = new Error('Request failed.');
+        const err = TransportError.failed('Request failed.');
         ctrl.error(err);
         reject(err);
         init.signal?.removeEventListener('abort', abort);

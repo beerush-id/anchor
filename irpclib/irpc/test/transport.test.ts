@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
+import { TransportError, TRANSPORT_ERROR, ResolveError, RESOLVE_ERROR } from '../src/error.js';
 import { type IRPCCall, type IRPCData, IRPCTransport } from '../src/index.js';
 
 abstract class TransportType {
@@ -346,5 +347,55 @@ describe('IRPC Transport', () => {
       expect(promise1).toBeInstanceOf(Promise);
       expect(promise2).toBeInstanceOf(Promise);
     });
+  });
+});
+
+describe('TransportError factories', () => {
+  it('notConnected', () => {
+    const err = TransportError.notConnected('WebSocket');
+    expect(err).toBeInstanceOf(TransportError);
+    expect(err.code).toBe(TRANSPORT_ERROR.NOT_CONNECTED);
+    expect(err.message).toBe('WebSocket is not connected.');
+    expect(err.json()).toEqual({ type: 'transport', code: 'not_connected', message: 'WebSocket is not connected.' });
+  });
+
+  it('closed', () => {
+    const err = TransportError.closed('BroadcastChannel');
+    expect(err.code).toBe(TRANSPORT_ERROR.CLOSED);
+    expect(err.message).toBe('BroadcastChannel connection closed.');
+  });
+
+  it('invalidBody', () => {
+    const err = TransportError.invalidBody();
+    expect(err.code).toBe(TRANSPORT_ERROR.INVALID_BODY);
+  });
+
+  it('streamTerminated', () => {
+    const err = TransportError.streamTerminated();
+    expect(err.code).toBe(TRANSPORT_ERROR.STREAM_TERMINATED);
+  });
+
+  it('failed with string', () => {
+    const err = TransportError.failed('Network error');
+    expect(err.code).toBe(TRANSPORT_ERROR.ERROR);
+    expect(err.message).toBe('Network error');
+    expect(err.cause).toBeUndefined();
+  });
+
+  it('failed with Error', () => {
+    const cause = new Error('timeout');
+    const err = TransportError.failed(cause);
+    expect(err.code).toBe(TRANSPORT_ERROR.ERROR);
+    expect(err.message).toBe('timeout');
+    expect(err.cause).toBe(cause);
+  });
+});
+
+describe('ResolveError factories', () => {
+  it('invalidOutput without argument', () => {
+    const err = ResolveError.invalidOutput();
+    expect(err).toBeInstanceOf(ResolveError);
+    expect(err.code).toBe(RESOLVE_ERROR.INVALID_OUTPUT);
+    expect(err.message).toBe('Invalid output.');
   });
 });

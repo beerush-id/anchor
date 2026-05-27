@@ -164,8 +164,8 @@ export class WebSocketTransport extends IRPCTransport {
         this.ws.onerror = (event) => {
           clearTimeout(timeout);
           delete this.pendingConnection;
-          IRPC_STORE.error(new Error('WebSocket connection failed', { cause: event }), [{ url: this.config.url }]);
-          reject(new Error('WebSocket connection failed'));
+          IRPC_STORE.error(TransportError.failed('WebSocket connection failed'), [{ url: this.config.url }]);
+          reject(TransportError.failed('WebSocket connection failed'));
         };
 
         this.ws.onmessage = (event) => {
@@ -222,7 +222,7 @@ export class WebSocketTransport extends IRPCTransport {
         this.reconnectAttempts++;
         await this.connect();
       } catch (error) {
-        IRPC_STORE.error(new Error('Reconnection failed', { cause: error }), [{ url: this.config.url, attempts: this.reconnectAttempts }]);
+        IRPC_STORE.error(TransportError.failed(error as Error), [{ url: this.config.url, attempts: this.reconnectAttempts }]);
         if (
           this.config.autoReconnect !== false &&
           this.reconnectAttempts < (this.config.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS)

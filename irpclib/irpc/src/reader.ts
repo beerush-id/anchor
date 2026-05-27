@@ -1,5 +1,6 @@
 import { replay, type StateChange } from '@anchorlib/core';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
+import { IRPCError } from './error.js';
 import { RemoteState } from './state.js';
 import type {
   IRPCData,
@@ -46,7 +47,7 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
 
     if (packet.type === IRPC_PACKET_TYPE.ANSWER) {
       if (packet.status === IRPC_STATUS.ERROR) {
-        this.error = new Error((packet as IRPCPacketAnswer<T>).error!.message);
+        this.error = IRPCError.from((packet as IRPCPacketAnswer<T>).error!);
       } else {
         this.data = (packet as IRPCPacketAnswer<T>).data as T;
       }
@@ -54,7 +55,7 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
       replay(this.state, (packet as IRPCPacketEvent).data as StateChange);
     } else if (packet.type === IRPC_PACKET_TYPE.CLOSE) {
       if ((packet as IRPCPacketClose).error) {
-        this.error = new Error((packet as IRPCPacketClose).error!.message);
+        this.error = IRPCError.from((packet as IRPCPacketClose).error!);
       }
     }
 
