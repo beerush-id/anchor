@@ -329,7 +329,7 @@ describe('Workflow Scenarios', () => {
         }),
       ];
 
-      const stepper = new WorkflowStepper(steps, {} as any, undefined, parentController.signal);
+      const stepper = new WorkflowStepper(steps, { signal: parentController.signal });
 
       const promise = stepper.all({} as any);
       parentController.abort();
@@ -348,7 +348,7 @@ describe('Workflow Scenarios', () => {
         step('2', (input) => ({ value: (input as any).value + 10 })),
       ];
 
-      const stepper = new WorkflowStepper(steps, { value: 5 } as any);
+      const stepper = new WorkflowStepper(steps, { input: { value: 5 } } as any);
       const result = await stepper;
 
       expect(result).toEqual({ value: 20 });
@@ -357,7 +357,7 @@ describe('Workflow Scenarios', () => {
     it('should work with .then() chaining', async () => {
       const steps: WorkflowEntry[] = [step('1', (input) => ({ value: (input as any).value + 1 }))];
 
-      const stepper = new WorkflowStepper(steps, { value: 10 } as any);
+      const stepper = new WorkflowStepper(steps, { input: { value: 10 } } as any);
       const doubled = await stepper.then((result) => ({ value: (result as any).value * 2 }));
 
       expect(doubled).toEqual({ value: 22 });

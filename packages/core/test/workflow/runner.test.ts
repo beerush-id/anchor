@@ -35,6 +35,17 @@ function switchStep(
 }
 
 describe('WorkflowRunner', () => {
+  it('should create runner with options', () => {
+    const input = {};
+    const output = {};
+    const entry = step('1', (input) => ({ value: (input as any).value + 1 }));
+    const controller = new AbortController();
+    const runner = new WorkflowRunner(entry, controller.signal, { input, output });
+
+    expect(runner.input).toBe(input);
+    expect(runner.output).toBe(output);
+  });
+
   it('should execute a step handler', async () => {
     const entry = step('1', (input) => ({ value: (input as any).value + 1 }));
     const controller = new AbortController();
@@ -108,7 +119,7 @@ describe('WorkflowRunner', () => {
       b: { steps: [step('1.b.1', () => ({ done: true }))] },
     });
     const controller = new AbortController();
-    const runner = new WorkflowRunner(branchEntry, controller.signal, {} as any, {} as any);
+    const runner = new WorkflowRunner(branchEntry, controller.signal);
 
     runner.skip(new Error('skip-reason'));
     expect(runner.status).toBe(WORKFLOW_STATUS.SKIPPED);
@@ -158,7 +169,7 @@ describe('WorkflowRunner', () => {
       b: { steps: [step('1.b.1', (input) => ({ ...input, b: true }))] },
     });
     const controller = new AbortController();
-    const runner = new WorkflowRunner(branchEntry, controller.signal, {} as any, {} as any);
+    const runner = new WorkflowRunner(branchEntry, controller.signal);
 
     await runner.run({} as any);
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
@@ -230,4 +241,3 @@ describe('WorkflowRunner', () => {
     expect(runner.output).toEqual({ value: 1, transformed: true });
   });
 });
-

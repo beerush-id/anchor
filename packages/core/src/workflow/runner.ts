@@ -2,7 +2,7 @@ import { anchor } from '../engine/index.js';
 import { mutable } from '../reactive/index.js';
 import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
-import { WorkflowStepper } from './stepper.js';
+import { type AnyStepper, WorkflowStepper } from './stepper.js';
 import type { SchemaLike, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
 
 export type RunnerState<I, O> = {
@@ -12,6 +12,13 @@ export type RunnerState<I, O> = {
 
   status: WorkflowStatus;
 };
+
+export type RunnerOptions<I, O> = {
+  input?: I;
+  output?: O;
+};
+
+export type AnyRunner = WorkflowRunner<WorkflowData, WorkflowData>;
 
 export class WorkflowRunner<I, O> {
   public id = uuid();
@@ -48,28 +55,24 @@ export class WorkflowRunner<I, O> {
     return this.#state.output as O;
   }
 
-  #branches?: Map<string, WorkflowStepper<WorkflowData, WorkflowData>>;
+  #branches?: Map<string, AnyStepper>;
 
   constructor(
     private step: WorkflowEntry,
     private signal: AbortSignal,
-    input?: I,
-    output?: O
+    options?: RunnerOptions<I, O>
   ) {
-    this.#state.input = input as I;
-    this.#state.output = output as O;
+    this.#state.input = options?.input as I;
+    this.#state.output = options?.output as O;
 
     if (step.type === 'switch') {
       this.#branches = new Map();
 
       for (const [key, branch] of Object.entries(step.switches)) {
-        const stepper = new WorkflowStepper<WorkflowData, WorkflowData>(
-          branch.steps as WorkflowEntry[],
-          undefined as never,
-          undefined as never,
+        const stepper = new WorkflowStepper(branch.steps as WorkflowEntry[], {
           signal,
-          true
-        );
+          passive: true,
+        });
         this.#branches?.set(key, stepper);
       }
     }

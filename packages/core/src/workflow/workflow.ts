@@ -107,11 +107,13 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   };
 
   const fn = ((input: I, init?: O) => {
-    const stepper = new WorkflowStepper<I, O>(steps).seed(
-      init,
-      workflowMeta?.input as SchemaLike,
-      workflowMeta?.output as SchemaLike
-    );
+    const stepper = new WorkflowStepper<I, O>(steps, {
+      seed: init,
+      schema: {
+        input: workflowMeta?.input as SchemaLike,
+        output: workflowMeta?.output as SchemaLike,
+      },
+    });
     enqueue(stepper, input);
     return stepper;
   }) as Workflow<I, O>;
@@ -215,11 +217,14 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
   }) as Workflow<I, O>['finally'];
 
   const prepare = (getInput: () => I, init?: O, deferred?: boolean, debounce = 0) => {
-    const stepper = new WorkflowStepper<I, O>(steps, undefined, undefined, undefined, true).seed(
-      init,
-      workflowMeta?.input as SchemaLike,
-      workflowMeta?.output as SchemaLike
-    );
+    const stepper = new WorkflowStepper<I, O>(steps, {
+      seed: init,
+      passive: true,
+      schema: {
+        input: workflowMeta?.input as SchemaLike,
+        output: workflowMeta?.output as SchemaLike,
+      },
+    });
 
     if (!deferred) {
       stepper.state.status = WORKFLOW_STATUS.PENDING;
@@ -279,11 +284,14 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
 
   fn.later = ((initOrDebounce?: O | number, debounce?: number) => {
     const ri = resolveInit(initOrDebounce, debounce);
-    const stepper = new WorkflowStepper<I, O>(steps, undefined, ri.init, undefined, true).seed(
-      ri.init,
-      workflowMeta?.input as SchemaLike,
-      workflowMeta?.output as SchemaLike
-    );
+    const stepper = new WorkflowStepper<I, O>(steps, {
+      seed: ri.init,
+      passive: true,
+      schema: {
+        input: workflowMeta?.input as SchemaLike,
+        output: workflowMeta?.output as SchemaLike,
+      },
+    });
     const s = stepper as never as WorkflowStepper<I, O> & { dispatch: (input: I) => void };
 
     if (ri.debounce) {

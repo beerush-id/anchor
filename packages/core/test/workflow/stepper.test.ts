@@ -45,7 +45,7 @@ describe('WorkflowStepper', () => {
       ];
 
       // Not passive — stepper promise stays pending, then() won't interfere.
-      const stepper = new WorkflowStepper(steps, { value: 5 });
+      const stepper = new WorkflowStepper(steps, { input: { value: 5 } });
 
       await stepper.run({ value: 5 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
@@ -76,7 +76,7 @@ describe('WorkflowStepper', () => {
     it('should auto-execute via await (implicit then)', async () => {
       const steps: WorkflowEntry[] = [step('1', (input) => ({ value: (input as any).value + 1 }))];
 
-      const stepper = new WorkflowStepper(steps, { value: 10 });
+      const stepper = new WorkflowStepper(steps, { input: { value: 10 } });
       const result = await stepper;
 
       expect(result).toEqual({ value: 11 });
@@ -100,7 +100,7 @@ describe('WorkflowStepper', () => {
         step('4', (input) => ({ value: (input as any).value + 1 })),
       ];
 
-      const stepper = new WorkflowStepper(steps, { value: 1 });
+      const stepper = new WorkflowStepper(steps, { input: { value: 1 } });
 
       // Call 1: step 1 errors → recovery skips step 2, catch recovers → returns
       await stepper.run({ value: 1 });
@@ -480,7 +480,7 @@ describe('WorkflowStepper', () => {
     it('should resolve promise immediately with initial output', async () => {
       const steps: WorkflowEntry[] = [step('1', (input) => ({ value: (input as any).value + 1 }))];
 
-      const stepper = new WorkflowStepper(steps, { value: 5 }, { value: 0 } as any, undefined, true);
+      const stepper = new WorkflowStepper(steps, { input: { value: 5 }, output: { value: 0 }, passive: true });
 
       // Passive resolves the promise immediately.
       // await stepper triggers then() → all() runs if IDLE.
@@ -500,7 +500,7 @@ describe('WorkflowStepper', () => {
         step('2', (input) => ({ value: (input as any).value + 1 })),
       ];
 
-      const stepper = new WorkflowStepper(steps, { value: 0 });
+      const stepper = new WorkflowStepper(steps, { input: { value: 0 } });
 
       await stepper.run({ value: 0 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
@@ -604,7 +604,7 @@ describe('WorkflowStepper', () => {
       const steps: WorkflowEntry[] = [step('1', (input) => ({ value: (input as any).value + 1 }))];
 
       // No initial output — nextInput falls back to this.input.
-      const stepper = new WorkflowStepper(steps, { value: 10 } as any);
+      const stepper = new WorkflowStepper(steps, { input: { value: 10 } } as any);
 
       await stepper.run({ value: 10 });
       expect(stepper.output).toEqual({ value: 11 });
@@ -648,7 +648,7 @@ describe('WorkflowStepper', () => {
       const externalController = new AbortController();
       const steps: WorkflowEntry[] = [step('1', (input) => input)];
 
-      const stepper = new WorkflowStepper(steps, {} as any, undefined, externalController.signal);
+      const stepper = new WorkflowStepper(steps, { signal: externalController.signal });
 
       // Abort via external signal — triggers unlinkSignal.
       externalController.abort();
@@ -917,20 +917,16 @@ describe('WorkflowStepper', () => {
   describe('switch abort', () => {
     it('should abort during switch branch execution', async () => {
       const steps: WorkflowEntry[] = [
-        switchStep(
-          'route',
-          (input) => (input as { mode: string }).mode,
-          {
-            slow: {
-              steps: [
-                step('slow-step', async (input) => {
-                  await new Promise((r) => setTimeout(r, 100));
-                  return { ...input, done: true };
-                }),
-              ],
-            },
-          }
-        ),
+        switchStep('route', (input) => (input as { mode: string }).mode, {
+          slow: {
+            steps: [
+              step('slow-step', async (input) => {
+                await new Promise((r) => setTimeout(r, 100));
+                return { ...input, done: true };
+              }),
+            ],
+          },
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps);

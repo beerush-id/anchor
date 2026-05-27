@@ -4,13 +4,27 @@ import { onCleanup } from '../scope/index.js';
 import type { StateSubscriber, StateUnsubscribe } from '../types.js';
 import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
-import { type RunnerState, WorkflowRunner } from './runner.js';
+import { type AnyRunner, type RunnerState, WorkflowRunner } from './runner.js';
 import type { SchemaLike, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
 
 export type StepperState<I, O> = RunnerState<I, O> & {
   seed?: WorkflowData;
   current?: string;
 };
+
+export type StepperOptions<I, O> = {
+  seed?: O;
+  input?: I;
+  output?: O;
+  signal?: AbortSignal;
+  schema?: {
+    input?: SchemaLike;
+    output?: SchemaLike;
+  };
+  passive?: boolean;
+};
+
+export type AnyStepper = WorkflowStepper<WorkflowData, WorkflowData>;
 
 export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D = O | undefined> extends Promise<O> {
   public id = uuid();
@@ -28,7 +42,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
   readonly #unlinkSignal?: () => void;
 
   readonly #pipes = new Set<StateUnsubscribe>();
-  readonly #steps: Map<string, WorkflowRunner<WorkflowData, WorkflowData>> = new Map();
+  readonly #steps: Map<string, AnyRunner> = new Map();
   readonly #state: StepperState<I, O> = mutable(
     {
       status: WORKFLOW_STATUS.IDLE,
@@ -55,7 +69,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this.#state;
   }
 
-  public get current(): WorkflowRunner<WorkflowData, WorkflowData> | undefined {
+  public get current(): AnyRunner | undefined {
     return this.#steps.get(this.#state.current!);
   }
 
@@ -69,7 +83,10 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this.#steps.get(next);
   }
 
-  constructor(steps: WorkflowEntry[], input?: I, output?: O, signal?: AbortSignal, passive?: boolean) {
+  constructor(
+    steps: WorkflowEntry[],
+    public options?: StepperOptions<I, O>
+  ) {
     let acceptFn: (value: O | PromiseLike<O>) => void;
     let rejectFn: (reason?: unknown) => void;
 
@@ -77,26 +94,26 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
       acceptFn = resolve;
       rejectFn = reject;
 
-      if (passive) resolve(output!);
+      if (options?.passive) resolve(options?.output as O);
     });
 
     this.#accept = acceptFn!;
     this.#reject = rejectFn!;
 
     for (const step of steps) {
-      this.#steps.set(
-        step.path,
-        new WorkflowRunner(step, this.#controller.signal, undefined as never, undefined as never)
-      );
+      this.#steps.set(step.path, new WorkflowRunner(step, this.#controller.signal));
     }
 
-    this.#state.input = input as I;
-    this.#state.output = output as O;
+    this.#state.seed = options?.seed as I;
+    this.#state.input = options?.input as I;
+    this.#state.output = options?.output as O;
+    this.#schemaIn = options?.schema?.input;
+    this.#schemaOut = options?.schema?.output;
 
-    if (signal) {
+    if (options?.signal) {
       const selfAbort = () => this.abort();
-      this.#unlinkSignal = () => signal.removeEventListener('abort', selfAbort);
-      signal.addEventListener('abort', selfAbort);
+      this.#unlinkSignal = () => options?.signal?.removeEventListener('abort', selfAbort);
+      options?.signal.addEventListener('abort', selfAbort);
     }
 
     onCleanup(() => this.close(this.status));
