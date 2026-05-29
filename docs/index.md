@@ -22,7 +22,7 @@ hero:
   name: 'AIR Stack'
   text: 'Zero-Boilerplate, AI-Native'
   tagline: 'Full-Stack TypeScript Architecture — Fine-grained Reactivity, Isomorphic RPC, Reactive Workflows, Reactive Routing, and Universal SSR unified into one cohesive system.'
-  image: /data-flow.jpeg
+  image: /airstack.svg
 
   actions:
     - theme: brand
@@ -385,7 +385,7 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 <!-- SECTION 1: TEST COVERAGE (Text Left, Image Right) -->
 <div class="custom-section">
   <div class="custom-section-content">
-    <h2>Battle-Tested, 100% Test Coverage</h2>
+    <h2>Battle-Tested, 100% Test Coverage with over 2,700 Tests</h2>
     <p>Trust your foundation. AIR Stack is built with uncompromising quality standards, achieving <strong>100% test coverage</strong> across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure <strong>absolute reliability</strong> for your production applications.</p>
   </div>
   <div class="custom-section-code" style="display: flex; justify-content: center; align-items: center;">
@@ -410,7 +410,9 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 
 ```ts [Declare]
 // 1. Declare the stream signature
-export const watchPrice = irpc.declare<(ticker: string) => number>('watchPrice', () => 0);
+type WatchPriceFn = (ticker: string) => RemoteState<number>;
+export const watchPrice = irpc.declare<WatchPriceFn>('watchPrice', () => 0);
+
 
 // 2. Construct the stream implementation
 irpc.construct(watchPrice, (ticker) => stream((state) => {
@@ -665,7 +667,5 @@ const html = await renderToString(<Dashboard />);
 .VPHero .image-src {
   width: 100% !important;
   height: auto !important;
-  filter: drop-shadow(0 16px 32px rgba(0,0,0,0.4));
-  border-radius: 20px;
 }
 </style>

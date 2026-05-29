@@ -122,6 +122,26 @@ export const Form = setup<{
 });
 ```
 
+### Reactive Source Binding
+When the form's initial data comes from a reactive source that may change (e.g., a selected record, a route parameter lookup), pass a function as `init`. The form state will re-sync whenever the source changes.
+
+```tsx
+// Source changes → form re-syncs
+const Form = setup<{ schema: ZodSchema, data: Record<string, unknown>, children?: ReactNode }>((props) => {
+  const [state, errors] = form(props.schema, () => props.data);
+  formContext.set({ state, errors });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    props.onSubmit?.(snapshot(state));
+  };
+
+  return render(() => <form onSubmit={handleSubmit}>{props.children}</form>);
+});
+```
+
+Use a plain value when the init is static. Use a function when the init is reactive and the form should follow changes from the source.
+
 ### Form Field Bridge
 The `FormField` acts as a structural bridge, using `formContext.get()` to connect to the `Form` and setting a local `FieldContext` for the underlying input.
 

@@ -109,6 +109,23 @@
   --vp-home-hero-image-filter: none;
 }
 
+.version-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-radius: 16px;
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: color 0.25s, background-color 0.25s;
+}
+
+.version-tag:hover {
+  color: var(--vp-c-white);
+  background: var(--vp-c-brand-1);
+}
 /**
  * Component: Custom Block
  * -------------------------------------------------------------------------- */
