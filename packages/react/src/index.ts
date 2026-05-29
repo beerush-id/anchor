@@ -71,7 +71,6 @@ export {
   model,
   mutable,
   ordered,
-  plan,
   query,
   setContext,
   setCookieContext,
@@ -87,6 +86,7 @@ export {
   withScope,
   writable,
 } from '@anchorlib/core';
+export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@anchorlib/core/workflow';
 
 export {
   createRouter,

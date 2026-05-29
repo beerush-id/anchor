@@ -5,7 +5,7 @@
   const counter = mutable({ count: 0 });
   const onclick = () => counter.count++;
 
-  onCleanup(() => console.log('cleanup'));
+  onCleanup(() => {});
 </script>
 
 <span data-testid="count">Count: {counter.count}</span>

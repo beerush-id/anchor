@@ -44,7 +44,7 @@ describe('Anchor Svelte - Server', () => {
       expect(screen.getByTestId('state-value').textContent).toBe('42-test');
       expect(screen.getByTestId('count').textContent).toBe('Count: 1');
 
-      onCleanup(() => console.log('cleanup'));
+      onCleanup(() => {});
       unmount();
     });
   });
