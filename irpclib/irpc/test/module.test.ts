@@ -2,7 +2,6 @@ import { createLifecycle } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { StubError, HandlerError, TransportError } from '../src/error.js';
 import { createPackage, IRPC_STORE, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
 import { RemoteState } from '../src/state.js';
 
@@ -110,6 +109,46 @@ describe('IRPCPackage', () => {
 
       const reader = call.later();
       expect(reader.data).toBe('test');
+    });
+
+    it('should declare with (name, seed) shorthand', () => {
+      type TestFn = (id: string) => Promise<string>;
+      const stub = rpc.declare<TestFn>('shortSeed', () => '');
+
+      expect(typeof stub).toBe('function');
+
+      const spec = rpc.get('shortSeed');
+      expect(spec?.name).toBe('shortSeed');
+      expect(typeof spec?.seed).toBe('function');
+    });
+
+    it('should declare with (name, seed, config) shorthand', () => {
+      type TestFn = (id: string) => Promise<string>;
+      const stub = rpc.declare<TestFn>('shortSeedCfg', () => '', {
+        description: 'with config',
+        maxAge: 5000,
+      });
+
+      expect(typeof stub).toBe('function');
+
+      const spec = rpc.get('shortSeedCfg');
+      expect(spec?.name).toBe('shortSeedCfg');
+      expect(spec?.description).toBe('with config');
+      expect(spec?.maxAge).toBe(5000);
+    });
+
+    it('should declare with (name, config) shorthand', () => {
+      type TestFn = (id: string) => Promise<string>;
+      const stub = rpc.declare<TestFn>('shortCfg', {
+        seed: () => '',
+        description: 'config only',
+      });
+
+      expect(typeof stub).toBe('function');
+
+      const spec = rpc.get('shortCfg');
+      expect(spec?.name).toBe('shortCfg');
+      expect(spec?.description).toBe('config only');
     });
   });
 
@@ -1109,6 +1148,56 @@ describe('IRPCPackage', () => {
       await rpc.resolveHooks(req);
 
       expect(executed).toHaveBeenCalled();
+    });
+  });
+
+  describe('Group Hooks (CRUD)', () => {
+    it('should register a hook on all stubs in a group', () => {
+      const grp = rpc.crud<{ id: string; name: string }>('hookGrp', () => ({ id: '', name: '' }));
+      const hookFn = vi.fn();
+
+      rpc.hook(grp, hookFn);
+
+      for (const stub of Object.values(grp)) {
+        const spec = (rpc as any).stubs.get(stub)!;
+        expect((rpc as any).hooks.get(spec)!.has(hookFn)).toBe(true);
+      }
+    });
+
+    it('should work with excluded CRUD stubs', () => {
+      const grp = rpc.exclude(
+        rpc.crud<{ id: string; name: string }>('hookExcl', () => ({ id: '', name: '' })),
+        ['delete']
+      );
+      const hookFn = vi.fn();
+
+      rpc.hook(grp, hookFn);
+
+      for (const stub of Object.values(grp)) {
+        const spec = (rpc as any).stubs.get(stub)!;
+        expect((rpc as any).hooks.get(spec)!.has(hookFn)).toBe(true);
+      }
+    });
+
+    it('should support chaining with group hooks', () => {
+      const grp = rpc.crud<{ id: string }>('hookChainGrp', () => ({ id: '' }));
+      const hook1 = vi.fn();
+      const hook2 = vi.fn();
+
+      const result = rpc.hook(grp, hook1).hook(grp, hook2);
+
+      expect(result).toBe(rpc);
+
+      const spec = (rpc as any).stubs.get(grp.get)!;
+      expect((rpc as any).hooks.get(spec)!.size).toBe(2);
+    });
+
+    it('should skip non-function values in the group object', () => {
+      const grp = rpc.crud<{ id: string }>('hookSkip', () => ({ id: '' }));
+      const mixed = { ...grp, extra: 'not a function' } as any;
+      const hookFn = vi.fn();
+
+      expect(() => rpc.hook(mixed, hookFn)).not.toThrow();
     });
   });
 });

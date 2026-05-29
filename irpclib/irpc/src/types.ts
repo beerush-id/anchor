@@ -208,6 +208,8 @@ export type IRPCPackageInfo = {
 
 export type IRPCPackageConfig = IRPCPackageInfo &
   IRPCCallConfig & {
+    /** Primary key field name for CRUD operations. Defaults to 'id'. */
+    key?: string;
     transport?: IRPCTransport;
   };
 
@@ -270,6 +272,36 @@ export type IRPCInit<R, I extends IRPCInputs, O extends IRPCOutput> = {
 export type IRPCInferInit<R> = R extends IRPCDefined ? { seed: () => R } : { seed?: () => R };
 
 /**
+ * Extracts the data type from a function's return type by unwrapping
+ * RemoteState and Promise wrappers.
+ *
+ * @template F - The function type to extract from.
+ */
+export type IRPCReturnOf<F> = F extends (...args: infer _A) => infer R
+  ? R extends RemoteState<infer S>
+    ? S
+    : R extends Promise<infer D>
+      ? D
+      : R
+  : IRPCData;
+
+/**
+ * Configuration options for the shorthand `declare(name, seed, config?)` overload.
+ * Contains all IRPCInit fields except `name` and `seed`.
+ *
+ * @template I - Tuple of input validation schemas
+ * @template O - Output validation schema
+ */
+export type IRPCDeclareConfig<I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput> = {
+  description?: string;
+  schema?: IRPCSchema<I, O>;
+  maxAge?: number;
+  coalesce?: boolean;
+  stream?: true;
+  ttl?: number;
+} & IRPCCallConfig;
+
+/**
  * Configuration options for initializing an RPC stream function.
  * Contains metadata and constraints for the RPC stream function.
  *
@@ -302,6 +334,78 @@ export type IRPCDeclareInit<F, I extends IRPCInputs, O extends IRPCOutput> = F e
         ? IRPCInit<R, I, O>
         : IRPCInit<R, IRPCInputs, IRPCOutput>
   : IRPCInit<IRPCData, IRPCInputs, IRPCOutput>;
+
+export type IRPCCrudMethod = 'get' | 'create' | 'update' | 'delete';
+
+/**
+ * Discriminated field — shared value or per-operation values.
+ */
+export type IRPCCrudField<T> =
+  | T
+  | {
+      get?: T;
+      create?: T;
+      update?: T;
+      delete?: T;
+    };
+
+export type IRPCCrudOptions = {
+  description?: IRPCCrudField<string>;
+  schema?: {
+    get?: IRPCSchema<IRPCInputs, IRPCOutput>;
+    create?: IRPCSchema<IRPCInputs, IRPCOutput>;
+    update?: IRPCSchema<IRPCInputs, IRPCOutput>;
+    delete?: IRPCSchema<IRPCInputs, IRPCOutput>;
+  };
+  /** Cache max age — only applied to get. */
+  maxAge?: number;
+  coalesce?: boolean;
+} & IRPCCallConfig;
+
+/**
+ * ID type extracted from entity using the key field.
+ * Falls back to string if the key doesn't exist on the entity.
+ */
+export type IRPCEntityId<T, K extends string> = K extends keyof T ? T[K] : string;
+
+export type IRPCCrudStubs<
+  T extends IRPCObject,
+  K extends string,
+  I extends IRPCObject = T,
+  U extends IRPCObject = T,
+> = {
+  get: IRPCFunction<(id: IRPCEntityId<T, K>) => Promise<T> | RemoteState<T>>;
+  create: IRPCFunction<(data: I) => Promise<T> | RemoteState<T>>;
+  update: IRPCFunction<(id: IRPCEntityId<T, K>, data: U) => Promise<T> | RemoteState<T>>;
+  delete: IRPCFunction<(id: IRPCEntityId<T, K>) => Promise<T> | RemoteState<T>>;
+};
+
+/**
+ * Per-method resolved metadata — discriminated fields flattened,
+ * method-specific options applied. Passed to driver on every call.
+ */
+export type IRPCCrudMeta = {
+  /** Entity/table name. */
+  name: string;
+  /** Primary key field name. */
+  key: string;
+  /** Resolved description for this method. */
+  description?: string;
+  /** Resolved schema for this method. */
+  schema?: IRPCSchema<IRPCInputs, IRPCOutput>;
+  maxAge?: number;
+  coalesce?: boolean;
+} & IRPCCallConfig;
+
+/**
+ * Base class for CRUD drivers that receive per-method resolved metadata on every call
+ */
+export abstract class IRPCDriver {
+  get?(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData;
+  create?(meta: IRPCCrudMeta, data: IRPCData): Promise<IRPCData> | IRPCData;
+  update?(meta: IRPCCrudMeta, id: IRPCData, data: IRPCData): Promise<IRPCData> | IRPCData;
+  delete?(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData;
+}
 
 /**
  * Complete specification for an RPC function including its implementation.

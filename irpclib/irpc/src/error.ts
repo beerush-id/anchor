@@ -4,6 +4,7 @@ export const IRPC_ERROR_TYPE = {
   STUB: 'stub',
   HOOK: 'hook',
   CALL: 'call',
+  CRUD: 'crud',
   HANDLER: 'handler',
   RESOLVE: 'resolve',
   TRANSPORT: 'transport',
@@ -56,6 +57,11 @@ export const CALL_ERROR = {
   TIMEOUT: 'timeout',
   MAX_RETRIES: 'max_retries',
   STREAM_ERROR: 'stream_error',
+} as const;
+
+export const CRUD_ERROR = {
+  NOT_FOUND: 'not_found',
+  NOT_IMPLEMENTED: 'not_implemented',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -234,6 +240,20 @@ export class CallError extends IRPCError {
   }
 }
 
+/** Errors related to CRUD adapter operations. */
+export class CrudError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.CRUD, code, message, cause);
+  }
+
+  static notFound() {
+    return new CrudError(CRUD_ERROR.NOT_FOUND, 'Unknown CRUD instance — was it created with pkg.crud()?');
+  }
+  static notImplemented(method: string) {
+    return new CrudError(CRUD_ERROR.NOT_IMPLEMENTED, `CRUD method "${method}" not implemented.`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Type → Class mapping for reconstruction
 // ---------------------------------------------------------------------------
@@ -247,4 +267,5 @@ const IRPC_ERROR_CLASS: Record<string, IRPCErrorSubclass> = {
   [IRPC_ERROR_TYPE.RESOLVE]: ResolveError,
   [IRPC_ERROR_TYPE.HOOK]: HookError,
   [IRPC_ERROR_TYPE.CALL]: CallError,
+  [IRPC_ERROR_TYPE.CRUD]: CrudError,
 };

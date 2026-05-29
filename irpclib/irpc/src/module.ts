@@ -9,17 +9,25 @@ import { IRPC_STORE } from './store.js';
 import { IRPCTransport } from './transport.js';
 import type {
   IRPCCallConfig,
+  IRPCCrudMethod,
+  IRPCCrudOptions,
+  IRPCCrudStubs,
   IRPCData,
   IRPCDataSchema,
+  IRPCDeclareConfig,
   IRPCDeclareInit,
+  IRPCEntityId,
   IRPCFunction,
   IRPCHandler,
+  IRPCInferInit,
   IRPCInputs,
+  IRPCObject,
   IRPCOutput,
   IRPCPackageConfig,
   IRPCPackageInfo,
   IRPCReadable,
   IRPCRequest,
+  IRPCReturnOf,
   IRPCSpec,
   IRPCSpecStore,
   IRPCStatus,
@@ -42,7 +50,7 @@ export type IRPCSpecHook<F> = (req: IRPCHookArgs<F>) => void | Promise<void>;
  * and their corresponding stubs. It manages the configuration, transport, and execution
  * of remote procedure calls.
  */
-export class IRPCPackage {
+export class IRPCPackage<K extends string = 'id'> {
   /**
    * A map storing all IRPC specifications by their names
    */
@@ -66,6 +74,7 @@ export class IRPCPackage {
   public config: IRPCPackageConfig = {
     name: 'global',
     version: '1.0.0',
+    key: 'id',
     timeout: DEFAULT_TIMEOUT,
   };
 
@@ -102,14 +111,58 @@ export class IRPCPackage {
   }
 
   /**
-   * Declares a new IRPC specification and creates a corresponding stub function
-   * @param options - The initialization object containing the IRPC specification
-   * @returns A stub function that can be used to call the IRPC
-   * @throws Error if an IRPC with the same name already exists
+   * Declares a new IRPC specification and returns a callable stub.
+   *
+   * @param name - The unique name for the IRPC specification.
+   * @param seed - Factory function returning the initial data value.
+   * @param config - Optional configuration (description, schema, caching, etc).
+   * @returns A stub function that can be used to call the IRPC.
+   * @throws Error if an IRPC with the same name already exists.
+   */
+  public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
+    name: string,
+    seed: () => IRPCReturnOf<F>,
+    config?: IRPCDeclareConfig<I, O>
+  ): IRPCFunction<F>;
+  /**
+   * Declares a new IRPC specification and returns a callable stub.
+   *
+   * @param name - The unique name for the IRPC specification.
+   * @param config - Configuration object including seed and optional fields.
+   * @returns A stub function that can be used to call the IRPC.
+   * @throws Error if an IRPC with the same name already exists.
+   */
+  public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
+    name: string,
+    config: IRPCDeclareConfig<I, O> & IRPCInferInit<IRPCReturnOf<F>>
+  ): IRPCFunction<F>;
+  /**
+   * Declares a new IRPC specification and returns a callable stub.
+   *
+   * @param options - The initialization object containing name, seed, and configuration.
+   * @returns A stub function that can be used to call the IRPC.
+   * @throws Error if an IRPC with the same name already exists.
    */
   public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
     options: IRPCDeclareInit<F, I, O>
+  ): IRPCFunction<F>;
+
+  public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
+    nameOrOptions: string | IRPCDeclareInit<F, I, O>,
+    seedOrConfig?: (() => IRPCReturnOf<F>) | (IRPCDeclareConfig<I, O> & IRPCInferInit<IRPCReturnOf<F>>),
+    config?: IRPCDeclareConfig<I, O>
   ): IRPCFunction<F> {
+    let options: IRPCDeclareInit<F, I, O>;
+
+    if (typeof nameOrOptions === 'string') {
+      if (typeof seedOrConfig === 'function') {
+        options = { name: nameOrOptions, seed: seedOrConfig, ...config } as IRPCDeclareInit<F, I, O>;
+      } else {
+        options = { name: nameOrOptions, ...seedOrConfig } as IRPCDeclareInit<F, I, O>;
+      }
+    } else {
+      options = nameOrOptions;
+    }
     // @Todo: Remove init() once deprecated.
     const $options = options as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData> & { init?: () => unknown };
 
@@ -265,6 +318,60 @@ export class IRPCPackage {
   }
 
   /**
+   * Declares CRUD stubs (get, create, update, delete) for an entity
+   * @param name - The entity name used as prefix for stub names
+   * @param seed - Factory function returning a default entity instance
+   * @param options - Optional configuration for caching, schemas, and call behavior
+   * @returns An object containing the four CRUD stub functions
+   */
+  public crud<T extends IRPCObject, I extends IRPCObject = T, U extends IRPCObject = T, CK extends string = K>(
+    name: string,
+    seed: () => T,
+    options?: IRPCCrudOptions
+  ): IRPCCrudStubs<T, CK, I, U> {
+    const { description, schema, maxAge, coalesce, ...callConfig } = options ?? {};
+
+    const desc = (method: IRPCCrudMethod) => (typeof description === 'string' ? description : description?.[method]);
+    const init = (method: IRPCCrudMethod) =>
+      ({
+        ...callConfig,
+        name: `${name}.${method}`,
+        seed,
+        description: desc(method),
+        schema: schema?.[method],
+        ...(method === 'get' ? { maxAge } : {}),
+        coalesce,
+      }) as never;
+
+    return {
+      get: this.declare<(id: IRPCEntityId<T, CK>) => Promise<T>>(init('get')),
+      create: this.declare<(data: I) => Promise<T>>(init('create')),
+      update: this.declare<(id: IRPCEntityId<T, CK>, data: U) => Promise<T>>(init('update')),
+      delete: this.declare<(id: IRPCEntityId<T, CK>) => Promise<T>>(init('delete')),
+    } as IRPCCrudStubs<T, CK, I, U>;
+  }
+
+  /**
+   * Removes CRUD methods from a stubs object and unregisters their specs
+   * @param stubs - The CRUD stubs object to modify
+   * @param keys - The method names to remove
+   * @returns The stubs object without the excluded methods
+   */
+  public exclude<S extends object, E extends IRPCCrudMethod>(stubs: S, keys: E[]): Omit<S, E> {
+    for (const key of keys) {
+      const stub = (stubs as Record<string, unknown>)[key];
+      if (stub) {
+        const spec = this.stubs.get(stub as never);
+        if (spec) this.specs.delete(spec.name);
+        this.stubs.delete(stub as never);
+      }
+      delete (stubs as Record<string, unknown>)[key];
+    }
+
+    return stubs as Omit<S, E>;
+  }
+
+  /**
    * Resolves and executes an IRPC call based on a request object
    * @param req - The request containing the IRPC name and arguments
    * @returns The result of the IRPC execution
@@ -312,21 +419,38 @@ export class IRPCPackage {
   }
 
   /**
-   * Registers a hook function for a specific stub function
-   * @param stub - The stub function created by declare()
-   * @param handler - The hook function to register
-   * @returns This IRPCPackage instance for chaining
-   * @throws Error if the stub is invalid or if no IRPC exists for the stub
+   * Registers a hook for a specific stub.
+   * @param stub - The stub function created by declare().
+   * @param handler - The hook function to register.
    */
-  public hook<F extends IRPCHandler>(stub: F, handler: IRPCSpecHook<F>): this {
-    if (!this.stubs.has(stub as IRPCHandler)) {
-      const error = StubError.notFound();
-      IRPC_STORE.error(error);
+  public hook<F extends IRPCHandler>(stub: F, handler: IRPCSpecHook<F>): this;
+  /**
+   * Registers a hook for all stubs in a group (e.g., CRUD).
+   * @param stubs - An object whose values are stub functions.
+   * @param handler - The hook function to register.
+   */
+  public hook(stubs: Record<string, IRPCHandler>, handler: IRPCSpecHook<IRPCHandler>): this;
+
+  public hook<F extends IRPCHandler>(stubOrGroup: F | Record<string, IRPCHandler>, handler: IRPCSpecHook<F>): this {
+    if (typeof stubOrGroup === 'function') {
+      if (!this.stubs.has(stubOrGroup as IRPCHandler)) {
+        const error = StubError.notFound();
+        IRPC_STORE.error(error);
+        return this;
+      }
+
+      const spec = this.stubs.get(stubOrGroup as IRPCHandler)!;
+      this.hooks.get(spec)!.add(handler as IRPCSpecHook<IRPCHandler>);
       return this;
     }
 
-    const spec = this.stubs.get(stub as IRPCHandler)!;
-    this.hooks.get(spec)!.add(handler as IRPCSpecHook<IRPCHandler>);
+    for (const stub of Object.values(stubOrGroup)) {
+      if (typeof stub === 'function' && this.stubs.has(stub as IRPCHandler)) {
+        const spec = this.stubs.get(stub as IRPCHandler)!;
+        this.hooks.get(spec)!.add(handler as IRPCSpecHook<IRPCHandler>);
+      }
+    }
+
     return this;
   }
 
@@ -425,8 +549,10 @@ export class IRPCPackage {
  * @param config - Optional partial configuration for the package
  * @returns A new IRPCPackage instance
  */
-export function createPackage(config?: Partial<IRPCPackageConfig>): IRPCPackage {
-  return new IRPCPackage(config);
+export function createPackage<K extends string = 'id'>(
+  config?: Partial<IRPCPackageConfig> & { key?: K }
+): IRPCPackage<K> {
+  return new IRPCPackage<K>(config);
 }
 
 /**
