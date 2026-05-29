@@ -1,7 +1,7 @@
 import { anchor } from '../engine/anchor.js';
 import { isReactive } from '../engine/config.js';
 import { assign } from '../engine/helper.js';
-import { CONTROLLER_REGISTRY } from '../engine/registry.js';
+import { CONTROLLER_REGISTRY, STATE_REGISTRY } from '../engine/registry.js';
 import { onGlobalCleanup } from '../scope/index.js';
 import { captureStack } from '../shared/index.js';
 import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from '../types.js';
@@ -21,6 +21,13 @@ function subscribeFn<T extends Linkable>(
   state: State<T>,
   handler: StateSubscriber<T>,
   recursive?: boolean
+): StateUnsubscribe;
+
+function subscribeFn<T extends Linkable>(
+  state: State<T>,
+  handler: StateSubscriber<T>,
+  recursive?: boolean,
+  passive?: boolean
 ): StateUnsubscribe {
   const ctrl = CONTROLLER_REGISTRY.get(state);
 
@@ -47,6 +54,20 @@ function subscribeFn<T extends Linkable>(
     return () => {
       // No-op, as there is no subscription to unsubscribe from.
     };
+  }
+
+  if (passive && !isReactive()) {
+    try {
+      handler(STATE_REGISTRY.get(state) as T, { type: 'init', keys: [] });
+    } catch (error) {
+      captureStack.error.external(
+        'Unable to execute the subscription handler function.',
+        error as Error,
+        subscribeFn,
+        subscribeFn.pipe
+      );
+    }
+    return () => {};
   }
 
   const unsubscribe = ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);

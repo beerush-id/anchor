@@ -1017,3 +1017,10 @@ export type ContextReader<T> = {
    */
   set(value: T): void;
 };
+
+export type ControlledSubscribe = <T extends Linkable>(
+  state: State<T>,
+  handler: StateSubscriber<T>,
+  recursive?: boolean,
+  passive?: boolean
+) => StateUnsubscribe;

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod/v4';
-import { createLifecycle, form, setCleanUpHandler } from '../../src/index.js';
+import { createLifecycle, form, mutable, setCleanUpHandler } from '../../src/index.js';
 
 describe('Anchor Core - Form API', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -205,6 +205,33 @@ describe('Anchor Core - Form API', () => {
       // Errors should be cleared
       expect(errors.name).toBeUndefined();
       expect(errors.age).toBeUndefined();
+    });
+
+    it('should create form using function', () => {
+      const schema = z.object({
+        name: z.string().min(3),
+        age: z.number().min(18),
+      });
+      const source = mutable({ data: { name: 'Jo', age: 10 } });
+      const [state] = form(schema, () => source.data);
+
+      expect(state.name).toBe('Jo');
+      expect(state.age).toBe(10);
+
+      state.name = 'John';
+
+      expect(state.name).toBe('John');
+      expect(state.age).toBe(10);
+
+      source.data.name = 'Jane';
+
+      expect(state.name).toBe('Jane');
+      expect(state.age).toBe(10);
+
+      source.data = { name: 'Jim', age: 20 };
+
+      expect(state.name).toBe('Jim');
+      expect(state.age).toBe(20);
     });
   });
 });

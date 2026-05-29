@@ -1,6 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { setReactive } from '../../src/engine/config.js';
-import { anchor, createObserver, effect, getObserver, getTracker, setTracker, subscribe } from '../../src/index.js';
+import {
+  anchor,
+  type ControlledSubscribe,
+  createObserver,
+  effect,
+  getObserver,
+  getTracker,
+  setTracker,
+  subscribe,
+} from '../../src/index.js';
 
 describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -169,6 +178,39 @@ describe('Anchor Core - Passive Mode (Non-Reactive)', () => {
       const unsubscribe = subscribe(state, handler);
       expect(handler).toHaveBeenCalledTimes(1);
       unsubscribe();
+    });
+
+    it('should bypass passive subscription', () => {
+      const state = anchor({ count: 0 });
+      const handler = vi.fn();
+
+      const unsubscribe = (subscribe as ControlledSubscribe)(state, handler, true, true);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(typeof unsubscribe).toBe('function');
+
+      state.count = 10;
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle error in passive subscription', () => {
+      errorSpy.mockClear();
+
+      const state = anchor({ count: 0 });
+      const handler = vi.fn(() => {
+        throw new Error('Test error');
+      });
+
+      const unsubscribe = (subscribe as ControlledSubscribe)(state, handler, true, true);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(typeof unsubscribe).toBe('function');
+
+      state.count = 10;
+
+      expect(handler).toHaveBeenCalledTimes(1);
     });
 
     it('should bypass reactivity for subscribe.pipe', () => {
