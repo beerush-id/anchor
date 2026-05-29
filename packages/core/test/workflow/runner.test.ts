@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { WORKFLOW_STATUS } from '../../src/workflow/constant.js';
 import { WorkflowRunner } from '../../src/workflow/runner.js';
+import type { AnyStepper } from '../../src/workflow/stepper.js';
 import type {
   WorkflowCatch,
   WorkflowEntry,
@@ -8,6 +9,8 @@ import type {
   WorkflowStep,
   WorkflowSwitch,
 } from '../../src/workflow/types.js';
+
+const mockStepper = {} as AnyStepper;
 
 function step(path: string, handler: WorkflowStep['handler'], meta?: WorkflowStep['meta']): WorkflowStep {
   return { type: 'step', id: path, path, handler, meta };
@@ -51,7 +54,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 5 } as any);
+    await runner.run({ value: 5 } as any, mockStepper);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(runner.output).toEqual({ value: 6 });
@@ -64,7 +67,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({} as any);
+    await runner.run({} as any, mockStepper);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.ERROR);
     expect(runner.error?.message).toBe('handler-error');
@@ -79,7 +82,7 @@ describe('WorkflowRunner', () => {
     const runner = new WorkflowRunner(entry, controller.signal);
 
     const pipelineError = new Error('upstream-fail');
-    await runner.run({} as any, pipelineError);
+    await runner.run({} as any, mockStepper, pipelineError);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(runner.output).toEqual({ recovered: true, original: 'upstream-fail' });
@@ -94,7 +97,7 @@ describe('WorkflowRunner', () => {
     const runner = new WorkflowRunner(entry, controller.signal);
 
     const pipelineError = new Error('upstream-fail');
-    await runner.run({ data: 'test' } as any, pipelineError);
+    await runner.run({ data: 'test' } as any, mockStepper, pipelineError);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(finallyFn).toHaveBeenCalledWith(expect.objectContaining({ data: 'test' }), pipelineError);
@@ -107,7 +110,7 @@ describe('WorkflowRunner', () => {
     const runner = new WorkflowRunner(entry, controller.signal);
 
     controller.abort();
-    await runner.run({} as any);
+    await runner.run({} as any, mockStepper);
 
     expect(handler).not.toHaveBeenCalled();
     expect(runner.status).toBe(WORKFLOW_STATUS.IDLE);
@@ -131,7 +134,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 5 } as any);
+    await runner.run({ value: 5 } as any, mockStepper);
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
 
     runner.reset();
@@ -143,7 +146,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({} as any);
+    await runner.run({} as any, mockStepper);
     expect(runner.status).toBe(WORKFLOW_STATUS.ERROR);
     expect(runner.error?.message).toContain('invalid step type');
   });
@@ -156,7 +159,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 42 } as any);
+    await runner.run({ value: 42 } as any, mockStepper);
 
     expect(runner.name).toBe('test-step');
     expect(runner.description).toBe('A test step');
@@ -171,7 +174,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(branchEntry, controller.signal);
 
-    await runner.run({} as any);
+    await runner.run({} as any, mockStepper);
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
 
     runner.reset();
@@ -184,7 +187,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 1 } as any);
+    await runner.run({ value: 1 } as any, mockStepper);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(runner.output).toEqual({ value: 1, validated: true });
@@ -196,7 +199,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 1 } as any);
+    await runner.run({ value: 1 } as any, mockStepper);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(runner.output).toEqual({ value: 1, parsed: true });
@@ -207,7 +210,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 5 } as any);
+    await runner.run({ value: 5 } as any, mockStepper);
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
 
     controller.abort();
@@ -223,7 +226,7 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 1 } as any);
+    await runner.run({ value: 1 } as any, mockStepper);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(runner.output).toEqual({ value: 1, parsed: true });
@@ -235,9 +238,93 @@ describe('WorkflowRunner', () => {
     const controller = new AbortController();
     const runner = new WorkflowRunner(entry, controller.signal);
 
-    await runner.run({ value: 1 } as any);
+    await runner.run({ value: 1 } as any, mockStepper);
 
     expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
     expect(runner.output).toEqual({ value: 1, transformed: true });
+  });
+
+  it('should snapshot the current state', async () => {
+    const entry = step('1', (input) => ({ value: (input as any).value + 1 }));
+    const controller = new AbortController();
+    const runner = new WorkflowRunner(entry, controller.signal);
+
+    await runner.run({ value: 5 } as any, mockStepper);
+
+    const snap = runner.snapshot();
+    expect(snap.path).toBe('1');
+    expect(snap.status).toBe(WORKFLOW_STATUS.SUCCESS);
+    expect(snap.input).toEqual({ value: 5 });
+    expect(snap.output).toEqual({ value: 6 });
+    expect(snap.error).toBeUndefined();
+  });
+
+  it('should snapshot error as message string', async () => {
+    const entry = step('1', () => {
+      throw new Error('snapshot-error');
+    });
+    const controller = new AbortController();
+    const runner = new WorkflowRunner(entry, controller.signal);
+
+    await runner.run({} as any, mockStepper);
+
+    const snap = runner.snapshot();
+    expect(snap.error).toBe('snapshot-error');
+  });
+
+  it('should hydrate from a snapshot', async () => {
+    const entry = step('1', (input) => input);
+    const controller = new AbortController();
+    const runner = new WorkflowRunner(entry, controller.signal);
+
+    runner.hydrate({
+      path: '1',
+      status: WORKFLOW_STATUS.SUCCESS,
+      input: { restored: true },
+      output: { restored: true, done: true },
+    });
+
+    expect(runner.status).toBe(WORKFLOW_STATUS.SUCCESS);
+    expect(runner.input).toEqual({ restored: true });
+    expect(runner.output).toEqual({ restored: true, done: true });
+    expect(runner.error).toBeUndefined();
+  });
+
+  it('should hydrate error from message string', () => {
+    const entry = step('1', (input) => input);
+    const controller = new AbortController();
+    const runner = new WorkflowRunner(entry, controller.signal);
+
+    runner.hydrate({
+      path: '1',
+      status: WORKFLOW_STATUS.ERROR,
+      input: {},
+      error: 'hydrated-error',
+    });
+
+    expect(runner.status).toBe(WORKFLOW_STATUS.ERROR);
+    expect(runner.error).toBeInstanceOf(Error);
+    expect(runner.error?.message).toBe('hydrated-error');
+  });
+
+  it('should snapshot and hydrate switch branches', async () => {
+    const branchEntry = switchStep('1', () => 'a', {
+      a: { steps: [step('1.a.1', (input) => ({ ...input, a: true }))] },
+      b: { steps: [step('1.b.1', (input) => ({ ...input, b: true }))] },
+    });
+    const controller = new AbortController();
+    const runner = new WorkflowRunner(branchEntry, controller.signal);
+
+    await runner.run({} as any, mockStepper);
+
+    const snap = runner.snapshot();
+    expect(snap.branches).toBeDefined();
+    expect(snap.branches!['a']).toBeDefined();
+    expect(snap.branches!['b']).toBeDefined();
+
+    // Hydrate a fresh runner from the snapshot
+    const runner2 = new WorkflowRunner(branchEntry, controller.signal);
+    runner2.hydrate(snap);
+    expect(runner2.status).toBe(runner.status);
   });
 });

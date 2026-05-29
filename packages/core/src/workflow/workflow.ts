@@ -17,6 +17,7 @@ import type {
   WorkflowInstance,
   WorkflowMeta,
   WorkflowStep,
+  WorkflowStepContext,
   WorkflowSwitch,
 } from './types.js';
 
@@ -99,7 +100,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       hook(stepper as never);
     }
 
-    stepper.all(input).then(() => {
+    stepper.run(input).then(() => {
       for (const hook of WORKFLOW_HOOKS.onDequeue) {
         hook(stepper as never, stepper.output, stepper.error);
       }
@@ -135,7 +136,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       id: uuid(),
       path,
       type: 'step',
-      handler: handler as (input: WorkflowData) => WorkflowData | Promise<WorkflowData>,
+      handler: handler as (input: WorkflowData, ctx: WorkflowStepContext) => WorkflowData | Promise<WorkflowData>,
       meta,
     };
 
@@ -189,7 +190,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       id: uuid(),
       path,
       type: 'catch',
-      handler: handler as (error: Error, input: WorkflowData) => WorkflowData | Promise<WorkflowData>,
+      handler: handler as (error: Error, input: WorkflowData, ctx: WorkflowStepContext) => WorkflowData | Promise<WorkflowData>,
       meta,
     };
 
@@ -207,7 +208,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       id: uuid(),
       path,
       type: 'finally',
-      handler: handler as (input: WorkflowData, error?: Error) => void | Promise<void>,
+      handler: handler as (input: WorkflowData, error: Error | undefined, ctx: WorkflowStepContext) => void | Promise<void>,
       meta,
     };
 

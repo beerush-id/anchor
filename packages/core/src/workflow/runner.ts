@@ -1,9 +1,9 @@
 import { anchor } from '../engine/index.js';
-import { mutable } from '../reactive/index.js';
+import { mutable, untrack } from '../reactive/index.js';
 import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
 import { type AnyStepper, WorkflowStepper } from './stepper.js';
-import type { SchemaLike, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
+import type { SchemaLike, StepSnapshot, WorkflowData, WorkflowEntry, WorkflowStepContext, WorkflowStatus } from './types.js';
 
 export type RunnerState<I, O> = {
   error?: Error;
@@ -78,7 +78,7 @@ export class WorkflowRunner<I, O> {
     }
   }
 
-  public async run(input: I, error?: Error, all?: boolean): Promise<O> {
+  public async run(input: I, stepper: AnyStepper, error?: Error, all?: boolean): Promise<O> {
     if (this.signal.aborted) return this.output as O;
 
     const { input: schemaIn, output: schemaOut } = (this.step.meta ?? {}) as {
@@ -89,6 +89,8 @@ export class WorkflowRunner<I, O> {
     this.#state.input = input as I;
     this.#state.status = WORKFLOW_STATUS.PENDING;
 
+    const ctx: WorkflowStepContext = { stepper, step: this as AnyRunner, signal: this.signal };
+
     try {
       const parsedInput =
         typeof schemaIn === 'function' ? await schemaIn(input) : schemaIn ? await schemaIn.parse(input) : input;
@@ -97,10 +99,10 @@ export class WorkflowRunner<I, O> {
 
       switch (this.step.type) {
         case 'step':
-          output = (await this.step.handler(parsedInput as WorkflowData)) as O;
+          output = (await this.step.handler(parsedInput as WorkflowData, ctx)) as O;
           break;
         case 'catch':
-          output = (await this.step.handler(error!, parsedInput as WorkflowData)) as O;
+          output = (await this.step.handler(error!, parsedInput as WorkflowData, ctx)) as O;
           break;
         case 'switch': {
           const discriminator = String(await this.step.matcher(parsedInput as WorkflowData));
@@ -121,8 +123,8 @@ export class WorkflowRunner<I, O> {
           }
 
           output = (await (all
-            ? branch.all(parsedInput as WorkflowData)
-            : branch.run(parsedInput as WorkflowData))) as O;
+            ? branch.run(parsedInput as WorkflowData)
+            : branch.step(parsedInput as WorkflowData))) as O;
 
           if (this.signal?.aborted) {
             this.#state.status = WORKFLOW_STATUS.ABORTED;
@@ -138,7 +140,7 @@ export class WorkflowRunner<I, O> {
           return this.output as O;
         }
         case 'finally':
-          await this.step.handler(input as WorkflowData, error);
+          await this.step.handler(input as WorkflowData, error, ctx);
           break;
         default:
           {
@@ -192,6 +194,42 @@ export class WorkflowRunner<I, O> {
     });
 
     return this;
+  }
+
+  public snapshot(): StepSnapshot {
+    return untrack(() => {
+      const snap: StepSnapshot = {
+        path: this.path,
+        status: this.status,
+        input: this.input as WorkflowData,
+        output: this.output as WorkflowData,
+        error: this.error?.message,
+      };
+
+      if (this.#branches) {
+        snap.branches = {};
+        for (const [key, branch] of this.#branches) {
+          snap.branches[key] = branch.snapshot();
+        }
+      }
+
+      return snap;
+    });
+  }
+
+  public hydrate({ status, input, output, error, branches }: StepSnapshot) {
+    if (branches && this.#branches) {
+      for (const [key, branchSnap] of Object.entries(branches)) {
+        this.#branches.get(key)?.hydrate(branchSnap);
+      }
+    }
+
+    anchor.assign(this.#state, {
+      status,
+      input: input as I,
+      output: output as O,
+      error: error ? new Error(error) : undefined,
+    });
   }
 
   public reset() {

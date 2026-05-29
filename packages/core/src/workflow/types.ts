@@ -1,4 +1,5 @@
 import type { WORKFLOW_STATUS } from './constant.js';
+import type { WorkflowRunner } from './runner.js';
 import type { WorkflowStepper } from './stepper.js';
 
 /**
@@ -42,6 +43,15 @@ export type WorkflowMeta<In = unknown, Out = unknown> = {
   output?: Out;
   [key: string]: unknown;
 };
+
+/**
+ * Context passed to step handlers as the second argument.
+ */
+export type WorkflowStepContext = {
+  stepper: WorkflowStepper<WorkflowData, WorkflowData>;
+  step: WorkflowRunner<WorkflowData, WorkflowData>;
+  signal: AbortSignal;
+};
 /**
  * Shared identity fields present on every step in the pipeline.
  */
@@ -58,7 +68,7 @@ export type WorkflowBase = {
  */
 export type WorkflowStep = WorkflowBase & {
   type: 'step';
-  handler: (input: WorkflowData) => WorkflowData | Promise<WorkflowData>;
+  handler: (input: WorkflowData, ctx: WorkflowStepContext) => WorkflowData | Promise<WorkflowData>;
 };
 /**
  * A conditional branch point in the pipeline.
@@ -73,14 +83,14 @@ export type WorkflowSwitch = WorkflowBase & {
  */
 export type WorkflowCatch = WorkflowBase & {
   type: 'catch';
-  handler: (error: Error, input: WorkflowData) => WorkflowData | Promise<WorkflowData>;
+  handler: (error: Error, input: WorkflowData, ctx: WorkflowStepContext) => WorkflowData | Promise<WorkflowData>;
 };
 /**
  * A finalization step that always runs.
  */
 export type WorkflowFinally = WorkflowBase & {
   type: 'finally';
-  handler: (input: WorkflowData, error?: Error) => void | Promise<void>;
+  handler: (input: WorkflowData, error: Error | undefined, ctx: WorkflowStepContext) => void | Promise<void>;
 };
 /**
  * Discriminated union of all step types in a workflow pipeline.
@@ -204,7 +214,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @returns A new Workflow with the output type updated to match the step's return type.
    */
   then<R extends WorkflowData, In extends O = O>(
-    fn: (input: In) => R | Promise<R>,
+    fn: (input: In, ctx: WorkflowStepContext) => R | Promise<R>,
     meta?: WorkflowMeta
   ): Workflow<I, [R] extends [never] ? O : Awaited<R>>;
 
@@ -248,7 +258,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param meta - Optional metadata.
    */
   catch<R extends WorkflowData, In extends O = O>(
-    fn: (error: Error, input: In) => R | Promise<R>,
+    fn: (error: Error, input: In, ctx: WorkflowStepContext) => R | Promise<R>,
     meta?: WorkflowMeta
   ): Workflow<I, O | Awaited<R>>;
 
@@ -260,7 +270,7 @@ export interface Workflow<I extends WorkflowData, O extends WorkflowData> {
    * @param meta - Optional metadata.
    */
   finally<In extends O = O>(
-    fn: (input: In, error?: Error) => void | Promise<void>,
+    fn: (input: In, error: Error | undefined, ctx: WorkflowStepContext) => void | Promise<void>,
     meta?: WorkflowMeta
   ): Workflow<I, O>;
 
@@ -364,3 +374,28 @@ export type ResolveOutput<I, M> = M extends { input: SchemaLike }
     ? InferSchema<M['input']>
     : I
   : I;
+
+/**
+ * Serializable snapshot of a single step's state.
+ */
+export type StepSnapshot = {
+  path: string;
+  status: WorkflowStatus;
+  input?: WorkflowData;
+  output?: WorkflowData;
+  error?: string;
+  /** Branch snapshots for switch steps. */
+  branches?: Record<string, StepperSnapshot>;
+};
+
+/**
+ * Serializable snapshot of a workflow stepper's full state.
+ */
+export type StepperSnapshot = {
+  status: WorkflowStatus;
+  input?: WorkflowData;
+  output?: WorkflowData;
+  current?: string;
+  error?: string;
+  steps: StepSnapshot[];
+};

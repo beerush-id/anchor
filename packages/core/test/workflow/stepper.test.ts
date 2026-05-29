@@ -47,15 +47,15 @@ describe('WorkflowStepper', () => {
       // Not passive — stepper promise stays pending, then() won't interfere.
       const stepper = new WorkflowStepper(steps, { input: { value: 5 } });
 
-      await stepper.run({ value: 5 });
+      await stepper.step({ value: 5 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
       expect(stepper.output).toEqual({ value: 6 });
 
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
       expect(stepper.output).toEqual({ value: 12 });
 
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 22 });
     });
@@ -67,7 +67,7 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ value: 5 } as any);
+      await stepper.run({ value: 5 } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 12 });
@@ -103,14 +103,14 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps, { input: { value: 1 } });
 
       // Call 1: step 1 errors → recovery skips step 2, catch recovers → returns
-      await stepper.run({ value: 1 });
+      await stepper.step({ value: 1 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
       expect(stepper.error).toBeUndefined();
       expect(stepper.output).toEqual({ value: 999 });
       expect(skipped).not.toHaveBeenCalled();
 
       // Call 2: step 4 executes → finish
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 1000 });
     });
@@ -134,7 +134,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toBe('fail');
       expect(skipped).not.toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.error).toBeUndefined();
       expect(stepper.output).toEqual({ recovered: true });
     });
@@ -175,7 +175,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toBe('catch2-fail');
 
@@ -198,7 +198,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.output).toEqual({ fixed: true });
       expect(secondCatch).not.toHaveBeenCalled();
     });
@@ -217,7 +217,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({ value: 5 });
+      await stepper.step({ value: 5 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 6 });
       expect(finallyFn).toHaveBeenCalledTimes(1);
@@ -238,7 +238,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(finallyFn).toHaveBeenCalledTimes(1);
       expect(finallyFn).toHaveBeenCalledWith(expect.anything(), expect.any(Error));
@@ -261,7 +261,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ recovered: true });
       expect(finallyFn).toHaveBeenCalledTimes(1);
@@ -277,7 +277,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.output).toEqual({ preserved: true });
     });
   });
@@ -303,19 +303,19 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
 
       // Step 1: passthrough
-      await stepper.run({ route: 'x' });
+      await stepper.step({ route: 'x' });
       expect(stepper.output).toEqual({ route: 'x' });
 
       // Switch → branch x → x1
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
 
       // Switch → branch x → x2 → branch completes
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
 
       // Step 3 → finish
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toHaveProperty('done', true);
     });
@@ -335,7 +335,7 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ route: 'x' } as any);
+      await stepper.run({ route: 'x' } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toHaveProperty('done', true);
@@ -350,7 +350,7 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       expect(stepper.output).toEqual({ branch: 'default' });
     });
@@ -363,7 +363,7 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toContain('no case for unknown');
@@ -388,18 +388,18 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
 
       // Switch → x → x1
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.output).toEqual({ from: 'x1' });
 
       // User changes state mid-flight
       state.route = 'y';
 
       // Switch re-evaluates → y → y1
-      await stepper.run();
+      await stepper.step();
       expect(stepper.output).toEqual({ from: 'y1' });
 
       // Continue y → y2 → finish
-      await stepper.run();
+      await stepper.step();
       expect(stepper.output).toEqual({ from: 'y2' });
     });
 
@@ -418,7 +418,7 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       expect(stepper.error).toBeUndefined();
       expect(stepper.output).toEqual({ recovered: true });
@@ -444,7 +444,7 @@ describe('WorkflowStepper', () => {
       stepper.abort();
 
       // run() bails immediately when aborted
-      const output = await stepper.run({});
+      const output = await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
       expect(step2).not.toHaveBeenCalled();
     });
@@ -502,7 +502,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps, { input: { value: 0 } });
 
-      await stepper.run({ value: 0 });
+      await stepper.step({ value: 0 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
 
       stepper.reset();
@@ -517,12 +517,12 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({ value: 5 });
+      await stepper.step({ value: 5 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 6 });
 
       // run() again — no steps remain, hits the early finish().
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
     });
 
@@ -531,7 +531,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toContain('invalid output');
 
@@ -548,7 +548,7 @@ describe('WorkflowStepper', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toContain('invalid output');
 
@@ -572,7 +572,7 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
 
       // Start all(), abort immediately — step 1 is async so all() yields control.
-      const promise = stepper.all({} as any);
+      const promise = stepper.run({} as any);
       stepper.abort();
 
       await promise;
@@ -596,7 +596,7 @@ describe('WorkflowStepper', () => {
       // Abort before running — recovery loop should bail at signal check.
       stepper.abort();
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
     });
 
@@ -606,7 +606,7 @@ describe('WorkflowStepper', () => {
       // No initial output — nextInput falls back to this.input.
       const stepper = new WorkflowStepper(steps, { input: { value: 10 } } as any);
 
-      await stepper.run({ value: 10 });
+      await stepper.step({ value: 10 });
       expect(stepper.output).toEqual({ value: 11 });
     });
 
@@ -616,7 +616,7 @@ describe('WorkflowStepper', () => {
       // No input, no output — nextInput falls back to {}.
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run();
+      await stepper.step();
       expect(stepper.output).toEqual({ keys: [] });
     });
 
@@ -634,11 +634,11 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
 
       // Step 1.
-      await stepper.run({ value: 5 });
+      await stepper.step({ value: 5 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
 
       // Step 2 → detects finally next → enters finally loop → finishes.
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 12 });
       expect(finallyFn).toHaveBeenCalledTimes(1);
@@ -674,7 +674,7 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
       abortStepper = () => stepper.abort();
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
       await expect(stepper).rejects.toThrow('fail');
     });
@@ -696,7 +696,7 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
       abortStepper = () => stepper.abort();
 
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
     });
 
@@ -722,7 +722,7 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
 
       // No input → this.input = undefined, this.output = undefined.
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ recovered: true });
     });
@@ -746,7 +746,7 @@ describe('WorkflowStepper', () => {
 
       // No input → this.input = undefined, this.output = undefined.
       // Error with no catch → finally loop entered with both nullish.
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(finallyFns[0]).toHaveBeenCalledTimes(1);
       expect(finallyFns[1]).toHaveBeenCalledTimes(1);
@@ -760,7 +760,7 @@ describe('WorkflowStepper', () => {
       const steps: WorkflowEntry[] = [step('1', () => ({ value: 42 }))];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({});
+      await stepper.run({});
 
       expect(stepper.data).toEqual({ value: 42 });
       expect(stepper.data).toBe(stepper.output);
@@ -779,7 +779,7 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper(steps);
       stepper.seed({ fromSeed: true } as any);
 
-      await stepper.all({});
+      await stepper.run({});
 
       expect(stepper.data).toEqual({ fromStep: true });
     });
@@ -802,7 +802,7 @@ describe('WorkflowStepper', () => {
         events.push(event.type);
       });
 
-      await stepper.all({});
+      await stepper.run({});
 
       expect(events.length).toBeGreaterThan(0);
       unsubscribe();
@@ -815,7 +815,7 @@ describe('WorkflowStepper', () => {
       const target = new WorkflowStepper([]);
 
       source.pipeTo(target);
-      await source.all({});
+      await source.run({});
 
       expect(target.state.status).toBe(WORKFLOW_STATUS.SUCCESS);
     });
@@ -829,7 +829,7 @@ describe('WorkflowStepper', () => {
       stepper.close();
 
       // After close, run and all are no-ops.
-      await stepper.run({});
+      await stepper.step({});
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
     });
 
@@ -857,7 +857,7 @@ describe('WorkflowStepper', () => {
       const stepper = new WorkflowStepper([step('1', handler)]);
 
       stepper.close();
-      await stepper.all({});
+      await stepper.run({});
 
       expect(handler).not.toHaveBeenCalled();
     });
@@ -903,7 +903,7 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      const output = await stepper.all({ value: 5 });
+      const output = await stepper.run({ value: 5 });
 
       expect(output).toEqual({ value: 12 });
       expect(catch1).not.toHaveBeenCalled();
@@ -930,13 +930,156 @@ describe('WorkflowStepper', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      const promise = stepper.all({ mode: 'slow' });
+      const promise = stepper.run({ mode: 'slow' });
 
       // Abort while the branch is running.
       setTimeout(() => stepper.abort(), 10);
 
       await promise;
       expect(stepper.status).toBe(WORKFLOW_STATUS.ABORTED);
+    });
+  });
+
+  describe('step(path)', () => {
+    it('should jump to and execute a specific step by path', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => ({ ...input, a: true })),
+        step('2', (input) => ({ ...input, b: true })),
+        step('3', (input) => ({ ...input, c: true })),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+
+      // Run first two steps normally.
+      await stepper.step({ value: 1 });
+      await stepper.step();
+      expect(stepper.output).toEqual({ value: 1, a: true, b: true });
+
+      // Jump back to step '2' — re-executes it.
+      await stepper.step('2');
+      expect(stepper.output).toHaveProperty('b', true);
+    });
+
+    it('should return output when path does not exist', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => ({ ...input, a: true })),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+      await stepper.step({ value: 1 });
+
+      const result = await stepper.step('nonexistent');
+      expect(result).toBe(stepper.output);
+    });
+
+    it('should jump to first step when path is the first entry', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => ({ ...input, a: true })),
+        step('2', (input) => ({ ...input, b: true })),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+
+      await stepper.run({ value: 1 });
+      expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
+
+      // Jump back to step '1' — idx is 0, so current becomes undefined.
+      stepper.reset();
+      await stepper.step('1', { value: 99 });
+      expect(stepper.output).toEqual({ value: 99, a: true });
+    });
+  });
+
+  describe('snapshot / hydrate', () => {
+    it('should snapshot the full stepper state', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => ({ ...input, a: true })),
+        step('2', (input) => ({ ...input, b: true })),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+      await stepper.run({ value: 1 });
+
+      const snap = stepper.snapshot();
+      expect(snap.status).toBe(WORKFLOW_STATUS.SUCCESS);
+      expect(snap.input).toEqual({ value: 1 });
+      expect(snap.output).toEqual({ value: 1, a: true, b: true });
+      expect(snap.steps).toHaveLength(2);
+      expect(snap.steps[0].path).toBe('1');
+      expect(snap.steps[1].path).toBe('2');
+    });
+
+    it('should hydrate from a snapshot and resume', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => ({ ...input, a: true })),
+        step('2', (input) => ({ ...input, b: true })),
+        step('3', (input) => ({ ...input, c: true })),
+      ];
+
+      // Run first step, snapshot.
+      const stepper1 = new WorkflowStepper(steps);
+      await stepper1.step({ value: 1 });
+      const snap = stepper1.snapshot();
+
+      // Hydrate a new stepper from the snapshot.
+      const stepper2 = new WorkflowStepper(steps, { passive: true });
+      stepper2.hydrate(snap);
+
+      expect(stepper2.status).toBe(WORKFLOW_STATUS.PENDING);
+      expect(stepper2.output).toEqual({ value: 1, a: true });
+
+      // Resume from step 2.
+      await stepper2.step();
+      expect(stepper2.output).toEqual({ value: 1, a: true, b: true });
+    });
+
+    it('should not hydrate a closed stepper', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => ({ ...input, a: true })),
+      ];
+
+      const stepper = new WorkflowStepper(steps, { passive: true });
+      await stepper.run({ value: 1 });
+      stepper.close();
+
+      // Stepper is closed. Hydrate is a no-op.
+      const result = stepper.hydrate({
+        status: WORKFLOW_STATUS.PENDING,
+        input: { value: 99 },
+        steps: [],
+      });
+
+      expect(result).toBe(stepper);
+      expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
+    });
+
+    it('should snapshot error as message string', async () => {
+      const steps: WorkflowEntry[] = [
+        step('1', () => { throw new Error('snap-error'); }),
+      ];
+
+      const stepper = new WorkflowStepper(steps, { passive: true });
+      await stepper.step({});
+
+      const snap = stepper.snapshot();
+      expect(snap.error).toBe('snap-error');
+    });
+
+    it('should hydrate error from message string', () => {
+      const steps: WorkflowEntry[] = [
+        step('1', (input) => input),
+      ];
+
+      const stepper = new WorkflowStepper(steps, { passive: true });
+      stepper.hydrate({
+        status: WORKFLOW_STATUS.ERROR,
+        input: {},
+        error: 'hydrated-error',
+        steps: [],
+      });
+
+      expect(stepper.error).toBeInstanceOf(Error);
+      expect(stepper.error?.message).toBe('hydrated-error');
     });
   });
 });

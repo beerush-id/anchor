@@ -68,7 +68,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ email: '  John@Example.COM  ', name: ' John Doe ' } as any);
+      await stepper.run({ email: '  John@Example.COM  ', name: ' John Doe ' } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({
@@ -93,7 +93,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ email: 'not-an-email' } as any);
+      await stepper.run({ email: 'not-an-email' } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toBe('Invalid email');
@@ -123,20 +123,20 @@ describe('Workflow Scenarios', () => {
       const stepper = new WorkflowStepper(steps);
 
       // Page 1: user fills personal info.
-      await stepper.run({ name: 'Alice', age: 30 });
+      await stepper.step({ name: 'Alice', age: 30 });
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
       expect(stepper.output).toEqual({ name: 'Alice', age: 30, personalComplete: true });
       // current points to the step that just executed.
       expect(stepper.current?.path).toBe('personal');
 
       // Page 2: user fills address.
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.PENDING);
       expect(stepper.output).toHaveProperty('addressComplete', true);
       expect(stepper.output).toHaveProperty('name', 'Alice');
 
       // Page 3: review and submit.
-      await stepper.run();
+      await stepper.step();
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toHaveProperty('reviewed', true);
       expect(stepper.output).toHaveProperty('personalComplete', true);
@@ -151,7 +151,7 @@ describe('Workflow Scenarios', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      await stepper.run({});
+      await stepper.step({});
 
       // current is the step that just executed.
       const current = stepper.current!;
@@ -199,7 +199,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({
@@ -223,7 +223,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.ERROR);
       expect(stepper.error?.message).toBe('Disk full');
@@ -260,7 +260,7 @@ describe('Workflow Scenarios', () => {
 
       // Enterprise user.
       const enterprise = new WorkflowStepper(steps);
-      await enterprise.all({ plan: 'enterprise', company: 'Acme' } as any);
+      await enterprise.run({ plan: 'enterprise', company: 'Acme' } as any);
 
       expect(enterprise.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(enterprise.output).toHaveProperty('rep', 'Alice');
@@ -269,7 +269,7 @@ describe('Workflow Scenarios', () => {
 
       // Free user.
       const free = new WorkflowStepper(steps);
-      await free.all({ plan: 'free', name: 'Bob' } as any);
+      await free.run({ plan: 'free', name: 'Bob' } as any);
 
       expect(free.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(free.output).toHaveProperty('welcomed', true);
@@ -301,7 +301,7 @@ describe('Workflow Scenarios', () => {
 
       const stepper = new WorkflowStepper(steps);
 
-      const promise = stepper.all({ fileId: 'abc-123' } as any);
+      const promise = stepper.run({ fileId: 'abc-123' } as any);
 
       // Cancel after prepare runs but during upload.
       await new Promise((r) => setTimeout(r, 30));
@@ -331,7 +331,7 @@ describe('Workflow Scenarios', () => {
 
       const stepper = new WorkflowStepper(steps, { signal: parentController.signal });
 
-      const promise = stepper.all({} as any);
+      const promise = stepper.run({} as any);
       parentController.abort();
 
       await promise;
@@ -393,7 +393,7 @@ describe('Workflow Scenarios', () => {
         transitions.push(stepper.status);
       });
 
-      await stepper.all({ value: 5 } as any);
+      await stepper.run({ value: 5 } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       // Initial read (idle) + pending + success = at minimum these transitions.
@@ -421,7 +421,7 @@ describe('Workflow Scenarios', () => {
         }
       });
 
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       expect(outputs.length).toBeGreaterThanOrEqual(1);
       // Last observed output should be the final result.
@@ -443,14 +443,14 @@ describe('Workflow Scenarios', () => {
         step('process', async (input) => {
           // Run a sub-workflow as part of this step.
           const sub = new WorkflowStepper(subSteps);
-          await sub.all(input as any);
+          await sub.run(input as any);
           return sub.output as any;
         }),
         step('report', (input) => ({ ...input, reported: true })),
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ userId: '42' } as any);
+      await stepper.run({ userId: '42' } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({
@@ -491,7 +491,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ email: 'test@test.com', name: 'Test' } as any);
+      await stepper.run({ email: 'test@test.com', name: 'Test' } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toHaveProperty('id');
@@ -510,7 +510,7 @@ describe('Workflow Scenarios', () => {
       const a = new WorkflowStepper(steps);
       const b = new WorkflowStepper(steps);
 
-      const [resultA, resultB] = await Promise.all([a.all({ value: 5 } as any), b.all({ value: 50 } as any)]);
+      const [resultA, resultB] = await Promise.all([a.run({ value: 5 } as any), b.run({ value: 50 } as any)]);
 
       // Each stepper must produce its own result, no cross-contamination.
       expect(a.output).toEqual({ value: 110 }); // 5 * 2 + 100
@@ -534,9 +534,9 @@ describe('Workflow Scenarios', () => {
       const stepper = new WorkflowStepper(steps);
 
       // First run starts the slow step.
-      const first = stepper.run({ value: 1 });
+      const first = stepper.step({ value: 1 });
       // Second run fires while slow step is still awaiting.
-      const second = stepper.run();
+      const second = stepper.step();
 
       await Promise.all([first, second]);
 
@@ -553,7 +553,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ value: 1 } as any);
+      await stepper.run({ value: 1 } as any);
 
       // Pipeline succeeded — cleanup failure doesn't change the verdict.
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
@@ -567,7 +567,7 @@ describe('Workflow Scenarios', () => {
     it('should handle empty steps array gracefully', async () => {
       const stepper = new WorkflowStepper([]);
 
-      await stepper.all({} as any);
+      await stepper.run({} as any);
 
       // No steps → nothing to do → finishes immediately.
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
@@ -600,7 +600,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ type: 'risky' } as any);
+      await stepper.run({ type: 'risky' } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toHaveProperty('recovered', true);
@@ -617,7 +617,7 @@ describe('Workflow Scenarios', () => {
       const stepper = new WorkflowStepper(steps);
 
       // Run to completion.
-      await stepper.all({ value: 5 } as any);
+      await stepper.run({ value: 5 } as any);
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 12 });
 
@@ -626,7 +626,7 @@ describe('Workflow Scenarios', () => {
       expect(stepper.status).toBe(WORKFLOW_STATUS.IDLE);
 
       // Re-run with different input.
-      await stepper.all({ value: 10 } as any);
+      await stepper.run({ value: 10 } as any);
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toEqual({ value: 22 });
     });
@@ -657,7 +657,7 @@ describe('Workflow Scenarios', () => {
       ];
 
       const stepper = new WorkflowStepper(steps);
-      await stepper.all({ region: 'us', state: 'ca', price: 100 } as any);
+      await stepper.run({ region: 'us', state: 'ca', price: 100 } as any);
 
       expect(stepper.status).toBe(WORKFLOW_STATUS.SUCCESS);
       expect(stepper.output).toHaveProperty('tax', 0.0725);
@@ -685,11 +685,11 @@ describe('Workflow Scenarios', () => {
       ];
 
       const passing = new WorkflowStepper(steps);
-      await passing.all({ score: 92 } as any);
+      await passing.run({ score: 92 } as any);
       expect(passing.output).toHaveProperty('certified', true);
 
       const failing = new WorkflowStepper(steps);
-      await failing.all({ score: 55 } as any);
+      await failing.run({ score: 55 } as any);
       expect(failing.output).toHaveProperty('needsReview', true);
     });
   });

@@ -1,11 +1,11 @@
 import { anchor } from '../engine/index.js';
-import { mutable, replay, subscribe } from '../reactive/index.js';
+import { mutable, replay, subscribe, untrack } from '../reactive/index.js';
 import { onCleanup } from '../scope/index.js';
 import type { StateSubscriber, StateUnsubscribe } from '../types.js';
 import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
 import { type AnyRunner, type RunnerState, WorkflowRunner } from './runner.js';
-import type { SchemaLike, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
+import type { SchemaLike, StepperSnapshot, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
 
 export type StepperState<I, O> = RunnerState<I, O> & {
   seed?: WorkflowData;
@@ -125,7 +125,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): Promise<TResult1 | TResult2> {
     if (this.status === WORKFLOW_STATUS.IDLE && !this.#closed) {
-      this.all(this.input);
+      this.run(this.input);
     }
 
     return super.then(onfulfilled, onrejected);
@@ -135,21 +135,41 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this.#steps.get(name);
   }
 
-  public async all(input: I): Promise<O> {
+  public async run(input: I): Promise<O> {
     if (this.#closed) return this.output;
 
     this.#state.input = input as I;
     this.#state.status = WORKFLOW_STATUS.PENDING;
 
     while (this.status === WORKFLOW_STATUS.PENDING) {
-      await this.run(undefined, true);
+      await this.step(undefined, true);
       if (this.#controller.signal.aborted) break;
     }
 
     return this.output as O;
   }
 
-  public async run(input?: WorkflowData, all?: boolean): Promise<O> {
+  public async step(path: string, input?: WorkflowData): Promise<O>;
+  public async step(input?: WorkflowData, all?: boolean): Promise<O>;
+  public async step(pathOrInput?: string | WorkflowData, inputOrAll?: WorkflowData | boolean): Promise<O> {
+    if (typeof pathOrInput === 'string') {
+      const target = this.#steps.get(pathOrInput);
+      if (!target) return this.output;
+
+      // Position the cursor so nextStep resolves to the target.
+      const keys = Array.from(this.#steps.keys());
+      const idx = keys.indexOf(pathOrInput);
+      this.#state.current = idx > 0 ? keys[idx - 1] : undefined;
+
+      // Reset the target step so it can be re-executed.
+      target.reset();
+
+      return this.step(inputOrAll as WorkflowData);
+    }
+
+    const input = pathOrInput;
+    const all = inputOrAll as boolean | undefined;
+
     if (this.#locked || this.#closed || this.#controller.signal.aborted) return this.output;
 
     this.#locked = true;
@@ -209,7 +229,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
       let nextInput = this.output ?? this.input ?? {};
 
       // Run the next step.
-      let output = (await nextStep.run(nextInput, this.error, all)) as O;
+      let output = (await nextStep.run(nextInput, this as AnyStepper, this.error, all)) as O;
       this.#state.error = nextStep.error;
 
       // If there is an error, recover it and continue.
@@ -231,7 +251,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
           }
 
           this.#state.current = nextStep.path;
-          output = (await nextStep.run(nextInput, this.#state.error)) as O;
+          output = (await nextStep.run(nextInput, this as AnyStepper, this.#state.error)) as O;
           this.#state.error = nextStep.error;
 
           if (!nextStep.error) {
@@ -275,7 +295,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
           if (this.#controller.signal.aborted) return this.output;
 
           this.#state.current = nextStep.path;
-          await nextStep.run(nextInput, this.error);
+          await nextStep.run(nextInput, this as AnyStepper, this.error);
 
           nextStep = this.nextStep;
           nextInput = this.output ?? this.input ?? {};
@@ -400,6 +420,44 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
       }
 
       replay(target.state, event);
+    });
+
+    return this;
+  }
+
+  public snapshot(): StepperSnapshot {
+    return untrack(() => {
+      const steps = [];
+
+      for (const runner of this.#steps.values()) {
+        steps.push(runner.snapshot());
+      }
+
+      return {
+        status: this.status,
+        input: this.input as WorkflowData,
+        output: this.output as WorkflowData,
+        current: this.#state.current,
+        error: this.error?.message,
+        steps,
+      };
+    });
+  }
+
+  public hydrate({ status, input, output, current, error, steps }: StepperSnapshot) {
+    if (this.#closed) return this;
+
+    for (const stepSnap of steps) {
+      this.#steps.get(stepSnap.path)?.hydrate(stepSnap);
+    }
+
+    this.#initialized = true;
+    anchor.assign(this.#state, {
+      status,
+      input: input as I,
+      output: output as O,
+      current,
+      error: error ? new Error(error) : undefined,
     });
 
     return this;
