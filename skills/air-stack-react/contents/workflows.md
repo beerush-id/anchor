@@ -15,13 +15,20 @@ type WorkflowMeta = {
 // Base initialization. Accepts optional base workflow to inherit.
 function plan<Input extends WorkflowData>(baseFlow?: Workflow<any, any>): Workflow<Input, Input>;
 
+// Context passed to step handlers as the second (or last) argument.
+type WorkflowStepContext = {
+  stepper: WorkflowStepper<WorkflowData, WorkflowData>;
+  step: WorkflowRunner<WorkflowData, WorkflowData>;
+  signal: AbortSignal;
+};
+
 interface Workflow<I extends WorkflowData, O extends WorkflowData> {
   // The pipeline is natively callable and returns a reactive Promise (WorkflowStepper).
   (input: I, seed: O): WorkflowStepper<I, O, O>;
   (input: I): WorkflowStepper<I, O>;
 
   // Add a sequential transform step
-  then<R extends WorkflowData>(fn: (input: O) => R | Promise<R>, meta?: WorkflowMeta): Workflow<I, R>;
+  then<R extends WorkflowData>(fn: (input: O, ctx: WorkflowStepContext) => R | Promise<R>, meta?: WorkflowMeta): Workflow<I, R>;
   
   // Add a conditional branch point using a discriminant key
   switch<K extends keyof O & string, C extends SwitchCases<O, K>>(key: K, cases: C, meta?: WorkflowMeta): Workflow<I, SwitchOutput<C>>;
@@ -30,10 +37,10 @@ interface Workflow<I extends WorkflowData, O extends WorkflowData> {
   switch<U extends string | number | boolean, C extends SwitchCasesFn<O, U>>(matcher: (input: O) => U | Promise<U>, cases: C, meta?: WorkflowMeta): Workflow<I, SwitchOutput<C>>;
 
   // Trap errors to safely resume execution with fallback data
-  catch<R extends WorkflowData>(fn: (error: Error, input: O) => R | Promise<R>, meta?: WorkflowMeta): Workflow<I, O | R>;
+  catch<R extends WorkflowData>(fn: (error: Error, input: O, ctx: WorkflowStepContext) => R | Promise<R>, meta?: WorkflowMeta): Workflow<I, O | R>;
   
   // Guaranteed cleanup. Does not mutate output.
-  finally(fn: (input: O, error?: Error) => void | Promise<void>, meta?: WorkflowMeta): Workflow<I, O>;
+  finally(fn: (input: O, error: Error | undefined, ctx: WorkflowStepContext) => void | Promise<void>, meta?: WorkflowMeta): Workflow<I, O>;
 
   // Reactive Execution Bindings
   once(input: I, seed: O): WorkflowStepper<I, O, O>;
@@ -61,8 +68,9 @@ interface WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
   get(name: string): WorkflowRunner | undefined;
 
   // Execution control
-  all(input: I): Promise<O>;     // Run all remaining steps
-  run(input?: WorkflowData): Promise<O>;  // Run next step only
+  run(input: I): Promise<O>;      // Run all remaining steps
+  step(input?: WorkflowData): Promise<O>;  // Advance one step
+  step(path: string, input?: WorkflowData): Promise<O>;  // Jump to a specific step
   reset(): this;                 // Reset for re-execution
   skip(error?: Error): this;     // Skip remaining steps
 
@@ -71,6 +79,10 @@ interface WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
   close(status?: WorkflowStatus): void;
   subscribe(handler: StateSubscriber<O>): () => void;
   pipeTo(target: WorkflowStepper<I, O>): this;
+
+  // Persistence
+  snapshot(): StepperSnapshot;
+  hydrate(snapshot: StepperSnapshot): this;
 }
 ```
 
@@ -265,6 +277,48 @@ export const DataView = setup<{ token: string }>((props) => {
     </div>
   ));
 });
+```
+
+### Workflow: Manual Stepping
+For wizard-style UIs or approval flows, use `.step()` to advance one step at a time. Use `.run()` to execute all remaining steps.
+
+```typescript
+import { plan } from '@anchorlib/react';
+
+const onboardingFlow = plan<{ name: string }>()
+  .then((input) => ({ ...input, profile: createProfile(input.name) }), { name: 'Creating Profile...' })
+  .then((input) => ({ ...input, workspace: createWorkspace(input.profile) }), { name: 'Setting Up Workspace...' })
+  .then((input) => ({ ...input, invite: sendWelcomeEmail(input.profile) }), { name: 'Sending Welcome Email...' });
+
+const stepper = onboardingFlow({ name: 'Alice' });
+
+await stepper.step(); // Creates profile
+await stepper.step(); // Sets up workspace
+await stepper.step(); // Sends welcome email
+
+// Or run all remaining steps at once
+await stepper.run({ name: 'Alice' });
+```
+
+### Workflow: Persistence
+Use `snapshot()` and `hydrate()` to persist and restore workflow progress across page reloads or browser crashes.
+
+```typescript
+const stepper = onboardingFlow({ name: 'Alice' });
+
+// Save progress after each state change
+stepper.subscribe(() => {
+  localStorage.setItem('onboarding', JSON.stringify(stepper.snapshot()));
+});
+
+// On page reload, restore from snapshot
+const saved = localStorage.getItem('onboarding');
+
+if (saved) {
+  const stepper = onboardingFlow({ name: 'Alice' });
+  stepper.hydrate(JSON.parse(saved));
+  await stepper.step(); // Continues from the next incomplete step
+}
 ```
 
 ### Workflow: State Seeding

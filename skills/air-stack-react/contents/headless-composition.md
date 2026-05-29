@@ -83,6 +83,40 @@ export function createKeyPress(key: string, handler: () => void) {
 }
 ```
 
+### DOM Utilities
+Functions that encapsulate direct DOM operations — positioning, measurement, visibility. A component passes an element, the function handles the manipulation.
+
+```ts
+type PopX = 'before' | 'after' | 'center';
+type PopY = 'above' | 'below' | 'middle';
+
+export function popover(el: HTMLElement, x: PopX = 'center', y: PopY = 'above') {
+  const parent = el.parentElement;
+  if (!parent) return;
+
+  const rect = parent.getBoundingClientRect();
+  document.body.appendChild(el);
+  el.style.position = 'fixed';
+  el.style.display = '';
+
+  if (x === 'before') el.style.left = `${rect.left - el.offsetWidth}px`;
+  if (x === 'after') el.style.left = `${rect.right}px`;
+  if (x === 'center') el.style.left = `${rect.left + (rect.width - el.offsetWidth) / 2}px`;
+
+  if (y === 'above') el.style.top = `${rect.top - el.offsetHeight}px`;
+  if (y === 'below') el.style.top = `${rect.bottom}px`;
+  if (y === 'middle') el.style.top = `${rect.top + (rect.height - el.offsetHeight) / 2}px`;
+
+  parent.addEventListener('mouseleave', () => {
+    parent.appendChild(el);
+    el.style.position = '';
+    el.style.left = '';
+    el.style.top = '';
+    el.style.display = 'none';
+  }, { once: true });
+}
+```
+
 ### Framework Agnostic Logic
 If you want to share the same logic to non-react framework, import from `@anchorlib/core` instead of `@anchorlib/react`.
 

@@ -32,7 +32,7 @@ npm install @irpclib/ws
 import { irpc } from '../lib/module.js';
 
 export type HelloFn = (name: string) => Promise<string>;
-export const hello = irpc.declare<HelloFn>({ name: 'hello' });
+export const hello = irpc.declare<HelloFn>('hello', () => '');
 ```
 
 ### 2. Implement Handlers (Server)

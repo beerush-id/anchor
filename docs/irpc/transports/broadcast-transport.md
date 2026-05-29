@@ -33,7 +33,7 @@ npm install @irpclib/broadcast
 import { irpc } from '../lib/module.js';
 
 export type ProcessDataFn = (data: string) => Promise<string>;
-export const processData = irpc.declare<ProcessDataFn>({ name: 'processData' });
+export const processData = irpc.declare<ProcessDataFn>('processData', () => '');
 ```
 
 ### 2. Implement Handlers (Worker)
@@ -122,7 +122,7 @@ Offload heavy processing to Web Workers without blocking the UI.
 ```typescript
 // rpc/video/index.ts
 export type GenerateVideoFn = (timeline: Timeline) => Promise<Blob>;
-export const generateVideo = irpc.declare<GenerateVideoFn>({ name: 'generateVideo' });
+export const generateVideo = irpc.declare<GenerateVideoFn>('generateVideo', () => new Blob());
 ```
 
 ```typescript
@@ -161,7 +161,7 @@ Keep data synchronized across multiple tabs.
 ```typescript
 // rpc/cart/index.ts
 export type UpdateCartFn = (items: CartItem[]) => Promise<void>;
-export const updateCart = irpc.declare<UpdateCartFn>({ name: 'updateCart' });
+export const updateCart = irpc.declare<UpdateCartFn>('updateCart', () => undefined);
 ```
 
 ```typescript
@@ -196,7 +196,7 @@ Communicate between parent and child iframes.
 ```typescript
 // rpc/messaging/index.ts
 export type SendMessageFn = (msg: string) => Promise<string>;
-export const sendMessage = irpc.declare<SendMessageFn>({ name: 'sendMessage' });
+export const sendMessage = irpc.declare<SendMessageFn>('sendMessage', () => '');
 ```
 
 ```typescript
@@ -231,7 +231,7 @@ Coordinate background tasks across contexts.
 ```typescript
 // rpc/sync/index.ts
 export type StartSyncFn = () => Promise<void>;
-export const startSync = irpc.declare<StartSyncFn>({ name: 'startSync' });
+export const startSync = irpc.declare<StartSyncFn>('startSync', () => undefined);
 ```
 
 ```typescript

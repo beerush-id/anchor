@@ -66,7 +66,7 @@ Three steps. One pattern for both standard calls and streaming.
 ```typescript
 type HelloFn = (name: string) => Promise<string>;
 
-const hello = irpc.declare<HelloFn>({ name: 'hello' });
+const hello = irpc.declare<HelloFn>('hello', () => '');
 ```
 
 **2. Implement** the handler on the server:
@@ -91,10 +91,7 @@ The same pattern scales to continuous data streams. Instead of returning `Promis
 // Declare (Shared)
 type LoadDashboardFn = (userId: string) => RemoteState<DashboardData>;
 
-const loadDashboard = irpc.declare<LoadDashboardFn>({
-  name: 'loadDashboard',
-  init: () => ({} as DashboardData), // Initial client-side state before server data arrives
-});
+const loadDashboard = irpc.declare<LoadDashboardFn>('loadDashboard', () => ({}));
 ```
 
 ```typescript
@@ -123,7 +120,7 @@ call.start();
 No WebSocket configuration. No polling. No separate subscription endpoints. The same `declare` / `construct` / `call` pattern.
 
 ::: tip Deferred Streams
-Stream calls are deferred by default — calling the stub returns a `RemoteState` seeded with the `init()` value, but the handler doesn't execute until `.start()` is called. Deferring prevents wasted I/O during SSR (where the connection would be discarded once the HTML is sent) and avoids hydration mismatches caused by data arriving between the server render and client mount.
+Stream calls are deferred by default — calling the stub returns a `RemoteState` seeded with the `seed()` value, but the handler doesn't execute until `.start()` is called. Deferring prevents wasted I/O during SSR (where the connection would be discarded once the HTML is sent) and avoids hydration mismatches caused by data arriving between the server render and client mount.
 :::
 
 ## Why Not X?

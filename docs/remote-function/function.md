@@ -18,7 +18,7 @@ The [Overview](/remote-function/index.html) showed you the three-step pattern. T
 import { irpc } from '../../lib/module.js';
 
 export type GetUserFn = (id: string) => Promise<User>;
-export const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
 ```
 
 The generic `<GetUserFn>` enforces the exact parameter and return types across both the client call site and the server handler. Misspelled arguments or wrong return shapes are caught at compile time.
@@ -53,25 +53,25 @@ With a handful of functions this is trivial. With hundreds, collisions become re
 **Dotted namespacing** — Group by domain with a dot separator. Scales naturally and reads like a path:
 
 ```typescript
-export const listProducts = irpc.declare<ListProductsFn>({ name: 'product.list' });
-export const getProduct   = irpc.declare<GetProductFn>({ name: 'product.get' });
-export const listOrders   = irpc.declare<ListOrdersFn>({ name: 'order.list' });
-export const getOrder     = irpc.declare<GetOrderFn>({ name: 'order.get' });
+export const listProducts = irpc.declare<ListProductsFn>('product.list', () => []);
+export const getProduct   = irpc.declare<GetProductFn>('product.get', () => ({}));
+export const listOrders   = irpc.declare<ListOrdersFn>('order.list', () => []);
+export const getOrder     = irpc.declare<GetOrderFn>('order.get', () => ({}));
 ```
 
 **Verb-prefixed** — Prefix with the action. Simpler, works well for smaller packages:
 
 ```typescript
-export const listProducts  = irpc.declare<ListProductsFn>({ name: 'listProducts' });
-export const getProduct    = irpc.declare<GetProductFn>({ name: 'getProduct' });
-export const createProduct = irpc.declare<CreateProductFn>({ name: 'createProduct' });
+export const listProducts  = irpc.declare<ListProductsFn>('listProducts', () => []);
+export const getProduct    = irpc.declare<GetProductFn>('getProduct', () => ({}));
+export const createProduct = irpc.declare<CreateProductFn>('createProduct', () => ({}));
 ```
 
 **Kebab-case** — If you prefer a REST-like feel:
 
 ```typescript
-export const listProducts = irpc.declare<ListProductsFn>({ name: 'list-products' });
-export const getProduct   = irpc.declare<GetProductFn>({ name: 'get-product' });
+export const listProducts = irpc.declare<ListProductsFn>('list-products', () => []);
+export const getProduct   = irpc.declare<GetProductFn>('get-product', () => ({}));
 ```
 
 Pick one convention and stick with it across your package. The wire name doesn't need to match the export name — the export name is for your codebase, the wire name is for the protocol.
@@ -120,9 +120,9 @@ The simplest pattern. Each function is a named export. Works well when you have 
 
 ```typescript
 // rpc/users/index.ts
-export const getUser    = irpc.declare<GetUserFn>({ name: 'user.get' });
-export const createUser = irpc.declare<CreateUserFn>({ name: 'user.create' });
-export const listUsers  = irpc.declare<ListUsersFn>({ name: 'user.list' });
+export const getUser    = irpc.declare<GetUserFn>('user.get', () => ({}));
+export const createUser = irpc.declare<CreateUserFn>('user.create', () => ({}));
+export const listUsers  = irpc.declare<ListUsersFn>('user.list', () => []);
 ```
 
 ```typescript
@@ -136,10 +136,10 @@ Group stubs into a single object. This avoids polluting the import namespace whe
 
 ```typescript
 // rpc/users/index.ts
-const get    = irpc.declare<GetUserFn>({ name: 'user.get' });
-const create = irpc.declare<CreateUserFn>({ name: 'user.create' });
-const list   = irpc.declare<ListUsersFn>({ name: 'user.list' });
-const remove = irpc.declare<DeleteUserFn>({ name: 'user.delete' });
+const get    = irpc.declare<GetUserFn>('user.get', () => ({}));
+const create = irpc.declare<CreateUserFn>('user.create', () => ({}));
+const list   = irpc.declare<ListUsersFn>('user.list', () => []);
+const remove = irpc.declare<DeleteUserFn>('user.delete', () => ({}));
 
 export const users = { get, create, list, remove };
 ```
@@ -189,7 +189,7 @@ export type User = {
 export type UserInput = { name: string; email: string };
 
 export type GetUserFn = (id: string) => Promise<User>;
-export const getUser = irpc.declare<GetUserFn>({ name: 'user.get' });
+export const getUser = irpc.declare<GetUserFn>('user.get', () => ({}));
 ```
 
 ```typescript
@@ -206,7 +206,7 @@ The simplest pattern — one value in, one value out:
 
 ```typescript
 export type GetUserFn = (id: string) => Promise<User>;
-export const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
 
 // Client
 const user = await getUser('user-123');
@@ -218,7 +218,7 @@ Multiple positional arguments map directly to the function signature:
 
 ```typescript
 export type UpdateUserFn = (id: string, data: Partial<UserInput>) => Promise<User>;
-export const updateUser = irpc.declare<UpdateUserFn>({ name: 'updateUser' });
+export const updateUser = irpc.declare<UpdateUserFn>('updateUser', () => ({}));
 
 // Client
 const user = await updateUser('user-123', { name: 'Jane' });
@@ -236,7 +236,7 @@ export type SearchUsersFn = (query: {
   offset?: number;
 }) => Promise<User[]>;
 
-export const searchUsers = irpc.declare<SearchUsersFn>({ name: 'searchUsers' });
+export const searchUsers = irpc.declare<SearchUsersFn>('searchUsers', () => []);
 
 // Client
 const users = await searchUsers({ term: 'john', role: 'admin', limit: 10 });
@@ -248,7 +248,7 @@ Functions that take no arguments work just as well:
 
 ```typescript
 export type GetCurrentUserFn = () => Promise<User>;
-export const getCurrentUser = irpc.declare<GetCurrentUserFn>({ name: 'getCurrentUser' });
+export const getCurrentUser = irpc.declare<GetCurrentUserFn>('getCurrentUser', () => ({}));
 
 // Client
 const me = await getCurrentUser();
@@ -263,7 +263,7 @@ import type { IRPCFile } from '@irpclib/irpc';
 
 // Direct file argument
 export type UploadAvatarFn = (file: IRPCFile) => Promise<string>;
-export const uploadAvatar = irpc.declare<UploadAvatarFn>({ name: 'uploadAvatar' });
+export const uploadAvatar = irpc.declare<UploadAvatarFn>('uploadAvatar', () => '');
 
 // Nested inside an object
 export type UpdateProfileFn = (profile: {
@@ -271,7 +271,7 @@ export type UpdateProfileFn = (profile: {
   avatar: IRPCFile;
   documents: IRPCFile[];
 }) => Promise<void>;
-export const updateProfile = irpc.declare<UpdateProfileFn>({ name: 'updateProfile' });
+export const updateProfile = irpc.declare<UpdateProfileFn>('updateProfile', () => undefined);
 ```
 
 On the client, wrap browser `File` or `Blob` objects in `IRPCFile`:
@@ -316,8 +316,7 @@ import type { RemoteState } from '@irpclib/irpc';
 
 export type WatchPricesFn = (ticker: string) => RemoteState<number>;
 
-export const watchPrices = irpc.declare<WatchPricesFn>({
-  name: 'watchPrices',
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
   stream: true,
 });
 ```
@@ -328,24 +327,21 @@ Without `{ stream: true }`, the engine has no runtime signal that the call is a 
 
 ### Initial Data
 
-Provide an `init` factory to seed `reader.data` before the server responds:
+Provide a `seed` factory to seed `reader.data` before the server responds:
 
 ```typescript
-// Stream with initial data
-export const watchPrices = irpc.declare<WatchPricesFn>({
-  name: 'watchPrices',
+// Stream with initial data — seed is the second argument
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
   stream: true,
-  init: () => 0, // reader.data starts at 0 before server data arrives
 });
 
 // Standard call with initial data (useful for optimistic UI)
-export const getUser = irpc.declare<GetUserFn>({
-  name: 'getUser',
-  init: () => ({ id: '', name: 'Loading...', email: '', role: 'member' }),
-});
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({
+  id: '', name: 'Loading...', email: '', role: 'member',
+}));
 ```
 
-Without `init`, `reader.data` is `undefined` until the server responds.
+Without `seed`, `reader.data` is `undefined` until the server responds.
 
 The handler implements its logic using the declared return type — returning a value, a Promise, or a `stream()`. See the [Handlers](/remote-function/handler) page for implementation details.
 
@@ -586,8 +582,7 @@ When a component unmounts, readers bound to that component are automatically clo
 Avoid redundant calls by caching responses:
 
 ```typescript
-export const getUser = irpc.declare<GetUserFn>({
-  name: 'getUser',
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}), {
   maxAge: 60000, // Cache for 60 seconds
 });
 ```
@@ -611,8 +606,7 @@ irpc.invalidate(getUser);
 When multiple callers invoke the same function with identical arguments **simultaneously**, coalescing merges them into a single execution:
 
 ```typescript
-export const getCurrentUser = irpc.declare<GetCurrentUserFn>({
-  name: 'getCurrentUser',
+export const getCurrentUser = irpc.declare<GetCurrentUserFn>('getCurrentUser', () => ({}), {
   coalesce: true,
 });
 ```
@@ -626,8 +620,7 @@ Coalescing is distinct from caching: caching reuses past results **over time**; 
 Set a per-function timeout. If the call exceeds it, the Promise rejects:
 
 ```typescript
-export const slowQuery = irpc.declare<SlowQueryFn>({
-  name: 'slowQuery',
+export const slowQuery = irpc.declare<SlowQueryFn>('slowQuery', () => undefined, {
   timeout: 30000, // 30 seconds
 });
 ```
@@ -637,8 +630,7 @@ export const slowQuery = irpc.declare<SlowQueryFn>({
 Configure retry behavior for transient transport failures:
 
 ```typescript
-export const processPayment = irpc.declare<ProcessPaymentFn>({
-  name: 'processPayment',
+export const processPayment = irpc.declare<ProcessPaymentFn>('processPayment', () => undefined, {
   maxRetries: 5,
   retryMode: 'exponential', // delays: 1s, 2s, 4s, 8s, 16s
   retryDelay: 1000,
@@ -652,8 +644,7 @@ export const processPayment = irpc.declare<ProcessPaymentFn>({
 For streams, TTL caps the maximum lifetime. If the stream exceeds the duration, the router aborts it server-side:
 
 ```typescript
-export const watchPrices = irpc.declare<WatchPricesFn>({
-  name: 'watchPrices',
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
   stream: true,
   ttl: 300000, // 5-minute maximum
 });
@@ -681,8 +672,7 @@ const irpc = createPackage({
 });
 
 // Function-level override
-export const criticalOp = irpc.declare<CriticalOpFn>({
-  name: 'criticalOp',
+export const criticalOp = irpc.declare<CriticalOpFn>('criticalOp', () => undefined, {
   maxRetries: 10,
   retryMode: 'exponential',
 });

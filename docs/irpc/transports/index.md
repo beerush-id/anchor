@@ -319,8 +319,7 @@ const transport = new HTTPTransport({
 // Function-level override
 export type SlowQueryFn = () => Promise<void>;
 
-const slowQuery = irpc.declare<SlowQueryFn>({
-  name: 'slowQuery',
+const slowQuery = irpc.declare<SlowQueryFn>('slowQuery', () => undefined, {
   timeout: 30000, // 30 seconds for this function
 });
 ```

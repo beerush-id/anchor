@@ -51,7 +51,7 @@ const user = await response.json();
 ```typescript
 // 1. Shared (Client & Server)
 // src/shared/rpc.ts
-export const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+export const createUser = irpc.declare<CreateUserFn>('createUser', () => ({}));
 ```
 
 ```typescript
@@ -118,7 +118,7 @@ const user = await client.createUser({ name: 'John', email: 'john@example.com' }
 
 ```typescript
 // 1. Shared (Client & Server)
-export const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+export const createUser = irpc.declare<CreateUserFn>('createUser', () => ({}));
 
 // 2. Client Usage
 // No proto files, no code generation
@@ -166,8 +166,8 @@ const newUser = await trpc.createUser.mutate({
 
 ```typescript
 // Declare unified functions
-const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
-const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
+const createUser = irpc.declare<CreateUserFn>('createUser', () => ({}));
 
 // Client call (Identical invocation regardless of read/write classification)
 const user = await getUser('123');
@@ -208,7 +208,7 @@ function DashboardWidget({ userId }) {
 **IRPC** uses the same function signature for both:
 ```typescript
 // IRPC: Identical declare/construct syntax
-const getDashboard = irpc.declare<GetDashboardFn>({ name: 'getDashboard' });
+const getDashboard = irpc.declare<GetDashboardFn>('getDashboard', () => ({}));
 
 // Client: Binds to standard UI component proxies without WebSocket logic.
 // The network stream is dropped automatically on unmount.
@@ -278,7 +278,7 @@ const { data } = await client.mutate({
 
 ```typescript
 // Declare function
-const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
+const createUser = irpc.declare<CreateUserFn>('createUser', () => ({}));
 
 // Client call
 const user = await createUser({ name: 'John', email: 'john@example.com' });
@@ -313,7 +313,7 @@ function DashboardWidget({ userId }) {
 **IRPC** treats streams exactly identically to standard asynchronous functions:
 ```typescript
 // IRPC: Identical declare/construct syntax
-const getDashboard = irpc.declare<GetDashboardFn>({ name: 'getDashboard' });
+const getDashboard = irpc.declare<GetDashboardFn>('getDashboard', () => ({}));
 
 // Client: Binds to standard UI component proxies without WebSocket logic.
 // Because the proxy is framework-agnostic, the network stream is dropped automatically on unmount.

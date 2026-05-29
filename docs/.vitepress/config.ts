@@ -9,7 +9,7 @@ const PAGE_TITLE = 'AIR Stack';
 const PAGE_OPEN_TITLE = `${PAGE_TITLE} - AI-Native, Full-Stack TypeScript Architecture`;
 const PAGE_OPEN_DESCRIPTION =
   'AI-Native, Full-Stack TypeScript Architecture. Unify fine-grained reactivity, isomorphic RPC, state management, routing, reactive workflows, and universal SSR into one cohesive, zero-boilerplate system.';
-const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}social.png`;
+const PAGE_OPEN_THUMBNAIL = `${PAGE_URL}social.jpeg`;
 
 const analytics =
   process.env.NODE_ENV === 'production'
@@ -128,6 +128,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/remote-function/index.html' },
           { text: 'Functions', link: '/remote-function/function' },
+          { text: 'CRUD Functions', link: '/remote-function/crud' },
           { text: 'Handlers', link: '/remote-function/handler' },
           { text: 'Transports', link: '/remote-function/transport' },
           { text: 'Distribution', link: '/remote-function/distribution' },

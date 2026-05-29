@@ -30,7 +30,7 @@ import { irpc } from '../lib/module.js';
 export type HelloFn = (name: string) => Promise<string>;
 
 // The signature is registered, but the logic is empty.
-export const hello = irpc.declare<HelloFn>({ name: 'hello' });
+export const hello = irpc.declare<HelloFn>('hello', () => '');
 ```
 
 ## **Implementation (Handler)**
@@ -112,10 +112,8 @@ import type { RemoteState } from '@irpclib/irpc';
 
 export type GeneratePoemFn = (prompt: string) => RemoteState<string>;
 
-export const generatePoem = irpc.declare<GeneratePoemFn>({
-  name: 'generatePoem',
+export const generatePoem = irpc.declare<GeneratePoemFn>('generatePoem', () => '', {
   stream: true,
-  init: () => '', // Optional: initial empty state
 });
 ```
 
@@ -173,6 +171,100 @@ export const PoemWidget = setup(() => {
 ```
 
 :::
+
+## **Standardized CRUD**
+
+For standard entities, manually declaring and implementing `get`, `create`, `update`, and `delete` functions is repetitive. IRPC provides a `crud()` utility to batch-declare these operations, and an Adapter/Driver pattern to instantly wire them to your database.
+
+### **1. Declare the CRUD (Stub)**
+
+Batch-declare four typed stubs for an entity. Each property (`get`, `create`, `update`, `delete`) becomes a standard IRPC function supporting caching, deduplication, and schemas.
+
+```typescript
+// rpc/users/index.ts
+import { irpc } from '../lib/module.js';
+
+type User = { id: string; name: string; email: string };
+export const users = irpc.crud<User>('users', () => ({ id: '', name: '', email: '' }));
+```
+
+### **2. Wire the Drivers (Handler)**
+
+Instead of manually constructing handlers for each stub, you attach them to an `IRPCAdapter` which routes requests to generic `IRPCDriver` implementations.
+
+```typescript
+// rpc/users/constructor.ts
+import { IRPCAdapter } from '@irpclib/irpc';
+import { DatabaseDriver } from '../lib/db.js'; // Example driver
+import { irpc } from '../lib/module.js';
+import { users } from './index.js';
+
+const adapter = new IRPCAdapter(irpc);
+
+// 1. Register a generic driver to handle the operations
+adapter.use(new DatabaseDriver());
+
+// 2. Attach the entity — wires get, create, update, and delete instantly
+adapter.attach(users);
+```
+
+::: tip Chain of Responsibility
+You can register multiple drivers (e.g., caching layers). A driver can handle the call or throw `IRPCAdapter.next()` to pass execution to the next registered driver.
+:::
+
+### **3. Execute the Operations (Call)**
+
+On the client, you access the standard CRUD operations directly from the exported object. Each operation behaves exactly like a standard IRPC function.
+
+::: code-group
+
+```tsx [React]
+import { setup, render } from '@anchorlib/react';
+import { users } from './rpc/users/index.js';
+
+export const UserProfile = setup((props: { id: string }) => {
+  // Create reactive call to run on browser.
+  const user = users.get.with(() => [props.id]);
+
+  const updateEmail = async (email: string) => {
+    // Imperative call on event handler.
+    await users.update(props.id, { email });
+  };
+
+  return render(() => (
+    <div>
+      <h1>{user.data?.name}</h1>
+      <button onClick={() => updateEmail('new@email.com')}>Update</button>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@anchorlib/solid';
+import { users } from './rpc/users/index.js';
+
+export const UserProfile = setup((props: { id: string }) => {
+  // Create reactive call to run on browser.
+  const user = users.get.with(() => [props.id]);
+
+  const updateEmail = async (email: string) => {
+    // Imperative call on event handler.
+    await users.update(props.id, { email });
+  };
+
+  return (
+    <div>
+      <h1>{user.data?.name}</h1>
+      <button onClick={() => updateEmail('new@email.com')}>Update</button>
+    </div>
+  );
+});
+```
+
+:::
+
+> 💡 **Ready for more?** Read the [CRUD Deep Dive](./crud.md) for advanced topics like driver implementations, caching chains, and operation exclusions.
 
 ## **Architectural Superpowers**
 

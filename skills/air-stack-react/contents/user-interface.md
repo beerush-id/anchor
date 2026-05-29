@@ -261,11 +261,13 @@ import type { ReactNode } from 'react';
 
 // A component with reactive JSX
 export const Counter = setup<{ initial?: number }>((props) => {
-  const state = mutable({ count: props.initial ?? 0 });
-  const increment = () => { state.count++; };
+  const state = mutable({ 
+    count: props.initial ?? 0,
+    increment: () => { state.count++; }
+  });
 
   return render(() => (
-    <button onClick={increment}>Count: {state.count}</button>
+    <button onClick={state.increment}>Count: {state.count}</button>
   ));
 });
 
@@ -284,8 +286,30 @@ export const Tabs = setup<{ default?: number, children?: ReactNode }>((props) =>
 });
 ```
 
+#### Component Props
+In the AIR Stack, `props` is reactive state and the **source of truth** of your component. Read from it and write directly back to it. 
+
+Create a separate internal `mutable()` state only for data that belongs strictly to the component itself (e.g., local loading status, intermediate buffering, or internal toggles).
+
+```tsx
+import { setup, render } from '@anchorlib/react';
+
+export const Counter = setup<{ count?: number }>((props) => {
+  // Initialize missing props
+  props.count ??= 0;
+
+  const increment = () => props.count!++;
+
+  return render(() => (
+    <button onClick={increment}>
+      Count: {props.count}
+    </button>
+  ));
+});
+```
+
 #### Two-Way Binding (`Bindable`)
-When a component needs to sync internal mutations back to its parent, it should accept a `Bindable<T>` prop. The component directly mutates this prop (`props.value = ...`), and the binding automatically propagates the state change. The component must also dispatch the associated native events back to the parent to maintain full composability.
+When a component needs to sync internal mutations back to its parent, it should type the prop as `Bindable<T>`. The component directly mutates this prop (`props.value = ...`), and the binding automatically propagates the state change. The component must also dispatch the associated native events back to the parent to maintain full composability.
 
 ```tsx
 import { setup, render, type Bindable } from '@anchorlib/react';
@@ -546,6 +570,36 @@ export const GlobalShortcut = setup(() => {
 
   return render(() => <div />);
 });
+```
+
+##### Self-Governing Components
+A self-governing component discovers its own environment — parent elements, scroll containers, form contexts, intersection boundaries — and attaches its own behavior without the parent orchestrating it. The parent doesn't need to know what the component does internally; the component handles its own concerns.
+
+```tsx
+import { setup, render, mutable, effect } from '@anchorlib/react';
+import { popover } from './popover'; // Headless utility
+
+export const Tooltip = setup<{ text: string, x?: PopX, y?: PopY }>((props) => {
+  const ref = mutable({ current: null as HTMLElement | null });
+
+  effect(() => {
+    const { current } = ref;
+    const parent = current?.parentElement;
+    if (!current || !parent) return;
+
+    parent.addEventListener('mouseenter', () => popover(current, props.x, props.y));
+  });
+
+  return render(() => <span ref={ref} className="tooltip">{props.text}</span>);
+});
+```
+
+Usage — the tooltip is a child, not a wrapper:
+```tsx
+<button>
+  Hover me
+  <Tooltip text="Self-governing tooltip" />
+</button>
 ```
 
 ### Optimistic UI

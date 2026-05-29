@@ -20,7 +20,7 @@ Because the incoming webhook is a single JSON object, the IRPC function must mir
 import { irpc } from '@lib/module.js';
 
 export type StripeWebhookFn = (payload: any) => Promise<void>;
-export const stripeWebhook = irpc.declare<StripeWebhookFn>({ name: 'stripeWebhook' });
+export const stripeWebhook = irpc.declare<StripeWebhookFn>('stripeWebhook', () => undefined);
 ```
 
 The implementation handles the business logic exactly like any other function:

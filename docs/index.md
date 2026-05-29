@@ -22,7 +22,7 @@ hero:
   name: 'AIR Stack'
   text: 'Zero-Boilerplate, AI-Native'
   tagline: 'Full-Stack TypeScript Architecture — Fine-grained Reactivity, Isomorphic RPC, Reactive Workflows, Reactive Routing, and Universal SSR unified into one cohesive system.'
-  image: /airstack-hero.png
+  image: /data-flow.jpeg
 
   actions:
     - theme: brand
@@ -410,9 +410,7 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 
 ```ts [Declare]
 // 1. Declare the stream signature
-export const watchPrice = irpc.declare<(ticker: string) => number>({ 
-  name: 'watchPrice' 
-});
+export const watchPrice = irpc.declare<(ticker: string) => number>('watchPrice', () => 0);
 
 // 2. Construct the stream implementation
 irpc.construct(watchPrice, (ticker) => stream((state) => {
@@ -668,5 +666,6 @@ const html = await renderToString(<Dashboard />);
   width: 100% !important;
   height: auto !important;
   filter: drop-shadow(0 16px 32px rgba(0,0,0,0.4));
+  border-radius: 20px;
 }
 </style>

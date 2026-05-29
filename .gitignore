@@ -71,3 +71,4 @@ docs/.vitepress/cache
 yarn.lock
 bun.lock
 !/.husky/_/
+/.antigravitycli

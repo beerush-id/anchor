@@ -18,7 +18,7 @@ Because Anchor workflows are natively integrated with the reactive engine, you c
 
 ## Reactive Tracking
 
-When you execute a workflow, it returns a `WorkflowReader`. Because this reader is a reactive proxy, your UI can automatically track the exact status of the pipeline—down to the specific step currently being executed.
+When you execute a workflow, it returns a `WorkflowStepper`. Because this stepper is a reactive proxy, your UI can automatically track the exact status of the pipeline—down to the specific step currently being executed.
 
 No more generic "Loading..." spinners. You can show users exactly what the pipeline is doing by reading `reader.current`.
 
@@ -142,13 +142,78 @@ const reader = searchDocuments.when(() => ({
 
 ### `.later(debounce?)`
 
-Creates a deferred `WorkflowReader` (which you can think of as an executable task) that allows you to manually dispatch the workflow execution. It accepts an optional `debounce` time (in milliseconds). This is perfect for binding workflows to imperative event handlers like `onClick` while still retaining full reactive telemetry.
+Creates a deferred `WorkflowStepper` that can be manually dispatched. It accepts an optional `debounce` time (in milliseconds). This is perfect for binding workflows to imperative event handlers like `onClick` while still retaining full reactive telemetry.
 
 ```typescript
 const task = checkoutFlow.later(150); // Optional 150ms debounce
 
 // Bind the manual trigger directly to the UI
 return () => <button onClick={() => task.dispatch({ cartId: '123' })}>Checkout</button>;
+```
+
+## Manual Stepping
+
+For wizard-style UIs or approval workflows where each step requires user interaction before proceeding, use `.step()` and `.run()` on the `WorkflowStepper` directly.
+
+| Method | Description |
+|--------|-------------|
+| `step()` | Advance one step. Returns when that step completes. |
+| `step(path, input?)` | Jump to and execute a specific step by path. |
+| `run(input)` | Run all remaining steps to completion. |
+| `reset()` | Reset the stepper for re-execution. |
+| `skip()` | Skip remaining steps and finalize. |
+
+```typescript
+import { plan } from '@anchorlib/core';
+
+const onboardingFlow = plan<{ name: string }>()
+  .then((input) => ({ ...input, profile: createProfile(input.name) }), { name: 'Creating Profile...' })
+  .then((input) => ({ ...input, workspace: createWorkspace(input.profile) }), { name: 'Setting Up Workspace...' })
+  .then((input) => ({ ...input, invite: sendWelcomeEmail(input.profile) }), { name: 'Sending Welcome Email...' });
+
+// Create a stepper without auto-running
+const stepper = onboardingFlow({ name: 'Alice' });
+
+// Advance one step at a time
+await stepper.step(); // Creates profile
+await stepper.step(); // Sets up workspace
+await stepper.step(); // Sends welcome email
+
+// Or run all remaining steps at once
+await stepper.run({ name: 'Alice' });
+```
+
+## Persistence
+
+For wizard-style flows or long-running processes where a browser crash or page reload could lose progress, use `snapshot()` and `hydrate()` to persist and restore the stepper's state.
+
+`snapshot()` captures the full state of every step — status, output, and branch state for switches — as a plain, serializable object. `hydrate()` restores the stepper from that snapshot, skipping already-completed steps so execution resumes from where it left off.
+
+```typescript
+import { plan } from '@anchorlib/core';
+
+const onboardingFlow = plan<{ name: string }>()
+  .then((input) => ({ ...input, profile: createProfile(input.name) }), { name: 'Creating Profile...' })
+  .then((input) => ({ ...input, workspace: createWorkspace(input.profile) }), { name: 'Setting Up Workspace...' })
+  .then((input) => ({ ...input, invite: sendWelcomeEmail(input.profile) }), { name: 'Sending Welcome Email...' });
+
+// Save progress after each step
+const stepper = onboardingFlow({ name: 'Alice' });
+
+stepper.subscribe(() => {
+  localStorage.setItem('onboarding', JSON.stringify(stepper.snapshot()));
+});
+
+// On page reload, restore from the snapshot
+const saved = localStorage.getItem('onboarding');
+
+if (saved) {
+  const stepper = onboardingFlow({ name: 'Alice' });
+  stepper.hydrate(JSON.parse(saved));
+  
+  // Continues from the next incomplete step
+  await stepper.step();
+}
 ```
 
 ## Learn More

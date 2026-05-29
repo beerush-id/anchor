@@ -146,7 +146,7 @@ Declare the function signatures that both client and server will use.
 import { irpc } from '../lib/module.js';
 
 export type HelloFn = (name: string) => Promise<string>;
-export const hello = irpc.declare<HelloFn>({ name: 'hello' });
+export const hello = irpc.declare<HelloFn>('hello', () => '');
 ```
 
 You can declare reactive streams using the exact same signature syntax:
@@ -157,14 +157,11 @@ import { irpc } from '../lib/module.js';
 import type { RemoteState } from '@irpclib/irpc';
 
 export type GeneratePoemFn = (prompt: string) => RemoteState<string>;
-export const generatePoem = irpc.declare<GeneratePoemFn>({
-  name: 'generatePoem',
-  init: () => '', // Initial client-side state before server data arrives
-});
+export const generatePoem = irpc.declare<GeneratePoemFn>('generatePoem', () => '');
 ```
 
 ::: warning Important!
-When declaring a function that returns `RemoteState<T>`, `irpc.declare()` requires an `init` factory in its options. On the client, when the stub is called, a `RemoteState` is instantiated immediately — before any data arrives from the server. The `init` factory seeds the initial value of `state.data` so UI frameworks can bind to the reactive proxy right away and render as server mutations arrive.
+When declaring a function that returns `RemoteState<T>`, the `seed` factory is required. On the client, when the stub is called, a `RemoteState` is instantiated immediately — before any data arrives from the server. The `seed` factory seeds the initial value of `state.data` so UI frameworks can bind to the reactive proxy right away and render as server mutations arrive.
 :::
 
 `RemoteState<T>` is IRPC's core reactive primitive. It extends a standard native `Promise<T>`, meaning it can be standardly `await`-ed. But its massive architectural advantage is that it operates as an autonomous reactive proxy; UI frameworks can actively bind to its temporal data mutations from the server over the wire without writing a single event listener or blocking the execution thread.
@@ -233,7 +230,7 @@ export type UserProfile = {
 };
 
 export type UpdateProfileFn = (profile: UserProfile) => Promise<string>;
-export const updateProfile = irpc.declare<UpdateProfileFn>({ name: 'updateProfile' });
+export const updateProfile = irpc.declare<UpdateProfileFn>('updateProfile', () => '');
 
 // Client Usage
 import { IRPCFile } from '@irpclib/irpc';
@@ -348,10 +345,7 @@ import type { RemoteState } from '@irpclib/irpc';
 
 export type WatchPricesFn = (ticker: string) => RemoteState<number>;
 
-export const watchPrices = irpc.declare<WatchPricesFn>({ 
-  name: 'watchPrices',
-  init: () => 0
-});
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0);
 ```
 
 **2. Backend Implementation (`src/server/rpc.ts`)**
@@ -420,10 +414,9 @@ Solve the N+1 problem and avoid UI waterfalls by yielding multiple parallel data
 ```typescript
 import { irpc } from '@irpclib/irpc';
 
-export const getDashboard = irpc.declare<GetDashboardFn>({
-  name: 'getDashboard',
-  init: () => ({ user: null, sales: null, telemetry: null })
-});
+export const getDashboard = irpc.declare<GetDashboardFn>('getDashboard', () => ({
+  user: null, sales: null, telemetry: null,
+}));
 ```
 
 **2. Backend Implementation (`src/server/rpc.ts`)**
@@ -468,8 +461,7 @@ const DashboardWidget = setup(({ user }) => {
 Cache responses to reduce network calls.
 
 ```typescript
-export const getUser = irpc.declare<GetUserFn>({
-  name: 'getUser',
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}), {
   maxAge: 60000, // Cache for 60 seconds
 });
 ```
@@ -481,8 +473,7 @@ Subsequent calls with the same arguments return cached data.
 Set per-function timeouts.
 
 ```typescript
-export const slowQuery = irpc.declare<SlowQueryFn>({
-  name: 'slowQuery',
+export const slowQuery = irpc.declare<SlowQueryFn>('slowQuery', () => undefined, {
   timeout: 30000, // 30 second timeout
 });
 ```
@@ -494,9 +485,7 @@ Calls exceeding the timeout will reject with an error.
 Set a maximum lifetime for stream handlers. If a stream remains open longer than the specified TTL, the router automatically aborts its `AbortController`, shutting down the stream server-side.
 
 ```typescript
-export const watchPrices = irpc.declare<WatchPricesFn>({
-  name: 'watchPrices',
-  init: () => 0,
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
   ttl: 300000, // 5 minute maximum stream lifetime
 });
 ```
@@ -509,8 +498,7 @@ Configure retry behavior per function, package, or transport level.
 
 ```typescript
 // Function-level (highest priority)
-export const criticalFunction = irpc.declare<CriticalFn>({
-  name: 'processPayment',
+export const criticalFunction = irpc.declare<CriticalFn>('processPayment', () => undefined, {
   maxRetries: 5,        // 5 retry attempts
   retryMode: 'exponential', // 1s, 2s, 4s, 8s, 16s delays
   retryDelay: 1000,     // 1 second base delay
@@ -539,8 +527,7 @@ Network errors trigger automatic retries. Handler errors fail immediately withou
 Combine multiple calls with the same arguments to avoid duplicate executions.
 
 ```typescript
-export const expensiveQuery = irpc.declare<ExpensiveQueryFn>({
-  name: 'expensiveQuery',
+export const expensiveQuery = irpc.declare<ExpensiveQueryFn>('expensiveQuery', () => undefined, {
   coalesce: true, // Enable coalescing
 });
 ```
@@ -650,7 +637,7 @@ The hook receives a typed `req` object with `name` and `args` inferred from the 
 
 ```typescript
 type DeleteUserFn = (userId: string) => Promise<void>;
-const deleteUser = irpc.declare<DeleteUserFn>({ name: 'deleteUser' });
+const deleteUser = irpc.declare<DeleteUserFn>('deleteUser', () => undefined);
 
 irpc.hook(deleteUser, (req) => {
   req.args[0]; // typed as string (userId)
@@ -703,9 +690,9 @@ Create multiple functions in the same package.
 
 ```typescript
 // rpc/users/index.ts
-export const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
-export const createUser = irpc.declare<CreateUserFn>({ name: 'createUser' });
-export const updateUser = irpc.declare<UpdateUserFn>({ name: 'updateUser' });
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
+export const createUser = irpc.declare<CreateUserFn>('createUser', () => ({}));
+export const updateUser = irpc.declare<UpdateUserFn>('updateUser', () => ({}));
 
 // rpc/users/constructor.ts
 irpc.construct(getUser, async (id) => { /* ... */ });

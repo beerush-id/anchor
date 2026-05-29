@@ -40,10 +40,7 @@ Import your stub and your constructor. When both are loaded in the same process,
 
 ```ts
 // src/api/greeting/index.ts (your stub)
-export const greet = irpc.declare<(name: string) => Promise<{ message: string }>>({
-  name: 'greet',
-  seed: () => ({ message: '' }),
-});
+export const greet = irpc.declare<(name: string) => Promise<{ message: string }>>('greet', () => ({ message: '' }));
 
 // src/api/greeting/constructor.ts (your handler)
 irpc.construct(greet, async (name) => {
@@ -81,17 +78,14 @@ describe('greet', () => {
 
 ```ts
 // src/state/cart.ts (your state)
-import { mutable, derived } from '@anchorlib/react';
+import { mutable } from '@anchorlib/react';
 
 export function createCart() {
-  const cart = mutable({ items: [] as { name: string; price: number }[] });
-
-  const totals = derived(() => ({
-    count: cart.items.length,
-    total: cart.items.reduce((sum, item) => sum + item.price, 0),
-  }));
-
-  return { cart, totals };
+  return mutable({ 
+    items: [] as { name: string; price: number }[],
+    get count() { return this.items.length; },
+    get total() { return this.items.reduce((sum, item) => sum + item.price, 0); }
+  });
 }
 ```
 
@@ -102,15 +96,15 @@ import { createCart } from '../src/state/cart.js';
 
 describe('Cart', () => {
   it('should compute totals when items change', () => {
-    const { cart, totals } = createCart();
+    const cart = createCart();
 
     cart.items.push({ name: 'Shirt', price: 25 });
-    expect(totals.value.count).toBe(1);
-    expect(totals.value.total).toBe(25);
+    expect(cart.count).toBe(1);
+    expect(cart.total).toBe(25);
 
     cart.items.push({ name: 'Pants', price: 40 });
-    expect(totals.value.count).toBe(2);
-    expect(totals.value.total).toBe(65);
+    expect(cart.count).toBe(2);
+    expect(cart.total).toBe(65);
   });
 });
 ```

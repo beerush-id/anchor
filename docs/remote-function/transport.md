@@ -371,8 +371,7 @@ signal?.addEventListener('abort', () => {
 If a function defines a `ttl` spec, the router aborts the stream when the timeout is reached — regardless of whether the client is still connected:
 
 ```typescript
-const watchPrices = irpc.declare<WatchPricesFn>({
-  name: 'watchPrices',
+const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
   stream: true,
   ttl: 300000, // 5-minute maximum
 });

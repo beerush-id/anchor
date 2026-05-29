@@ -73,7 +73,7 @@ Because IRPC stubs extend `Promise`, you can compose them directly inside your h
 import { irpc } from '@irpclib/irpc';
 import { getUser, getPermissions } from './index.js';
 
-export const verifyAccess = irpc.declare({ name: 'verifyAccess' });
+export const verifyAccess = irpc.declare('verifyAccess', () => ({}));
 
 irpc.construct(verifyAccess, async (userId) => {
   // Calls in the same thread bypass network overhead
@@ -392,7 +392,7 @@ The `req` object contains `name` and `args`, typed from the function's signature
 
 ```typescript
 type DeleteUserFn = (userId: string) => Promise<void>;
-const deleteUser = irpc.declare<DeleteUserFn>({ name: 'deleteUser' });
+const deleteUser = irpc.declare<DeleteUserFn>('deleteUser', () => undefined);
 
 irpc.hook(deleteUser, (req) => {
   req.args[0]; // typed as string (userId)

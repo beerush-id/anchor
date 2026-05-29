@@ -84,10 +84,7 @@ service
 
 ```ts
 // index.ts
-export const chat = irpc.declare<typeof service.chat>({
-  name: 'llm.chat',
-  seed: () => []
-});
+export const chat = irpc.declare<typeof service.chat>('llm.chat', () => []);
 ```
 
 ```ts

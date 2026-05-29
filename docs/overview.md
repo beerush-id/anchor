@@ -36,7 +36,7 @@ Each with its own **mental model**, its own **lifecycle**, and its own **failure
 
 ```ts
 type GetUserFn = (id: string) => Promise<User>;
-const getUser = irpc.declare<GetUserFn>({ name: 'getUser' });
+const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
 ```
 
 ```ts
@@ -123,7 +123,7 @@ Whichever you pick, you still:
 **Declare** the function signature:
 ```ts
 type PriceFn = (ticker: string) => Promise<number>;
-const getPrice = irpc.declare<PriceFn>({ name: 'getPrice' });
+const getPrice = irpc.declare<PriceFn>('getPrice', () => 0);
 ```
 
 **Construct** the function implementation:
@@ -145,10 +145,9 @@ Now look at streaming — a completely different problem that normally needs **W
 **Declare** a streaming function:
 ```ts
 type WatchPriceFn = (symbol: string) => RemoteState<Stock>;
-const watchPrice = irpc.declare<WatchPriceFn>({
-  name: 'watchPrice',
-  init: () => ({ symbol: '', price: 0 }),
-});
+const watchPrice = irpc.declare<WatchPriceFn>('watchPrice', () => ({
+  symbol: '', price: 0,
+}));
 ```
 
 **Construct** the streaming handler:

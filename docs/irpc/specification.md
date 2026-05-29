@@ -500,8 +500,7 @@ Implementations MAY provide feature detection mechanisms to negotiate capabiliti
 // Define IRPC function
 export type ReadFileFn = (path: string, encoding?: string) => Promise<string>;
 
-export const readFile = irpc.declare<ReadFileFn>({
-  name: 'readFile',
+export const readFile = irpc.declare<ReadFileFn>('readFile', () => '', {
   schema: {
     input: [z.string(), z.string().optional()],
     output: z.string(),
