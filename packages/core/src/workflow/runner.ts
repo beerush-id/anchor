@@ -2,24 +2,24 @@ import { anchor } from '../engine/index.js';
 import { mutable, untrack } from '../reactive/index.js';
 import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
-import { type AnyStepper, WorkflowStepper } from './stepper.js';
-import type { SchemaLike, StepSnapshot, WorkflowData, WorkflowEntry, WorkflowStepContext, WorkflowStatus } from './types.js';
+import { WorkflowStepper } from './stepper.js';
+import type {
+  AnyRunner,
+  AnyStepper,
+  RunnerOptions,
+  RunnerState,
+  SchemaLike,
+  StepSnapshot,
+  WorkflowData,
+  WorkflowEntry,
+  WorkflowStatus,
+  WorkflowStepContext,
+} from './types.js';
 
-export type RunnerState<I, O> = {
-  error?: Error;
-  input?: I;
-  output?: O;
-
-  status: WorkflowStatus;
-};
-
-export type RunnerOptions<I, O> = {
-  input?: I;
-  output?: O;
-};
-
-export type AnyRunner = WorkflowRunner<WorkflowData, WorkflowData>;
-
+/**
+ * WorkflowRunner is responsible for executing a single workflow step,
+ * handling its lifecycle, state, and branching logic.
+ */
 export class WorkflowRunner<I, O> {
   public id = uuid();
 
@@ -78,6 +78,14 @@ export class WorkflowRunner<I, O> {
     }
   }
 
+  /**
+   * Runs the step with the provided input.
+   * @param input The input data for the step.
+   * @param stepper The parent stepper instance.
+   * @param error Optional error if this is a catch/finally step.
+   * @param all Whether to run all steps in a branch (for switch types).
+   * @returns The output of the step execution.
+   */
   public async run(input: I, stepper: AnyStepper, error?: Error, all?: boolean): Promise<O> {
     if (this.signal.aborted) return this.output as O;
 
@@ -181,6 +189,11 @@ export class WorkflowRunner<I, O> {
     return this.output as O;
   }
 
+  /**
+   * Marks the step as skipped.
+   * @param error Optional error that caused the skip.
+   * @returns The runner instance.
+   */
   public skip(error?: Error) {
     if (this.step.type === 'switch') {
       for (const branch of this.#branches!.values()) {
@@ -196,6 +209,10 @@ export class WorkflowRunner<I, O> {
     return this;
   }
 
+  /**
+   * Creates a serializable snapshot of the current step state.
+   * @returns A StepSnapshot object.
+   */
   public snapshot(): StepSnapshot {
     return untrack(() => {
       const snap: StepSnapshot = {
@@ -217,6 +234,10 @@ export class WorkflowRunner<I, O> {
     });
   }
 
+  /**
+   * Hydrates the step state from a snapshot.
+   * @param snapshot The snapshot to hydrate from.
+   */
   public hydrate({ status, input, output, error, branches }: StepSnapshot) {
     if (branches && this.#branches) {
       for (const [key, branchSnap] of Object.entries(branches)) {
@@ -232,6 +253,10 @@ export class WorkflowRunner<I, O> {
     });
   }
 
+  /**
+   * Resets the step state to its initial idle state.
+   * @returns The runner instance.
+   */
   public reset() {
     if (this.signal?.aborted) return this;
 

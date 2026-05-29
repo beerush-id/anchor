@@ -1,6 +1,6 @@
 import type { WORKFLOW_STATUS } from './constant.js';
-import type { WorkflowRunner } from './runner.js';
-import type { WorkflowStepper } from './stepper.js';
+import { type WorkflowRunner } from './runner.js';
+import { type WorkflowStepper } from './stepper.js';
 
 /**
  * Base constraint for all workflow I/O — must be a record (object).
@@ -399,3 +399,69 @@ export type StepperSnapshot = {
   error?: string;
   steps: StepSnapshot[];
 };
+
+/**
+ * The internal state of a workflow runner.
+ */
+export type RunnerState<I, O> = {
+  /** The error that occurred during execution, if any. */
+  error?: Error;
+  /** The input data passed to the runner. */
+  input?: I;
+  /** The output data produced by the runner. */
+  output?: O;
+
+  /** The current execution status. */
+  status: WorkflowStatus;
+};
+
+/**
+ * Configuration options for initializing a workflow runner.
+ */
+export type RunnerOptions<I, O> = {
+  /** Initial input data. */
+  input?: I;
+  /** Initial output data. */
+  output?: O;
+};
+
+/**
+ * A type alias for a workflow runner with any input and output.
+ */
+export type AnyRunner = WorkflowRunner<WorkflowData, WorkflowData>;
+
+/**
+ * The internal state of a workflow stepper.
+ */
+export type StepperState<I, O> = RunnerState<I, O> & {
+  /** Initial data used to seed the workflow output. */
+  seed?: WorkflowData;
+  /** The path of the currently executing step. */
+  current?: string;
+};
+
+/**
+ * Configuration options for initializing a workflow stepper.
+ */
+export type StepperOptions<I, O> = {
+  /** Initial data to seed the output before execution. */
+  seed?: O;
+  /** Initial input data. */
+  input?: I;
+  /** Initial output data. */
+  output?: O;
+  /** An optional abort signal to cancel execution. */
+  signal?: AbortSignal;
+  /** Optional schemas for validating input and output. */
+  schema?: {
+    input?: SchemaLike;
+    output?: SchemaLike;
+  };
+  /** Whether the stepper should avoid automatic execution. */
+  passive?: boolean;
+};
+
+/**
+ * A type alias for a workflow stepper with any input and output.
+ */
+export type AnyStepper = WorkflowStepper<WorkflowData, WorkflowData>;

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { WORKFLOW_STATUS } from '../../src/workflow/constant.js';
 import { WorkflowRunner } from '../../src/workflow/runner.js';
-import type { AnyStepper } from '../../src/workflow/stepper.js';
 import type {
+  AnyStepper,
   WorkflowCatch,
   WorkflowEntry,
   WorkflowFinally,

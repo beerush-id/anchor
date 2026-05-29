@@ -4,28 +4,26 @@ import { onCleanup } from '../scope/index.js';
 import type { StateSubscriber, StateUnsubscribe } from '../types.js';
 import { uuid } from '../utils/index.js';
 import { WORKFLOW_STATUS } from './constant.js';
-import { type AnyRunner, type RunnerState, WorkflowRunner } from './runner.js';
-import type { SchemaLike, StepperSnapshot, WorkflowData, WorkflowEntry, WorkflowStatus } from './types.js';
+import { WorkflowRunner } from './runner.js';
+import type {
+  AnyRunner,
+  AnyStepper,
+  SchemaLike,
+  StepperOptions,
+  StepperSnapshot,
+  StepperState,
+  WorkflowData,
+  WorkflowEntry,
+  WorkflowStatus,
+} from './types.js';
 
-export type StepperState<I, O> = RunnerState<I, O> & {
-  seed?: WorkflowData;
-  current?: string;
-};
-
-export type StepperOptions<I, O> = {
-  seed?: O;
-  input?: I;
-  output?: O;
-  signal?: AbortSignal;
-  schema?: {
-    input?: SchemaLike;
-    output?: SchemaLike;
-  };
-  passive?: boolean;
-};
-
-export type AnyStepper = WorkflowStepper<WorkflowData, WorkflowData>;
-
+/**
+ * WorkflowStepper is a stateful runner for a sequence of workflow steps.
+ * It extends Promise, allowing it to be awaited directly to start execution.
+ * It manages step transitions, error handling (catch/finally blocks), and state persistence.
+ * @template I The input data type.
+ * @template O The output data type.
+ */
 export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D = O | undefined> extends Promise<O> {
   public id = uuid();
 
@@ -50,25 +48,31 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     { recursive: false }
   );
 
+  /** Returns the current data (output if available, otherwise seed). */
   public get data(): D {
     return (this.#state.output ?? this.#state.seed) as D;
   }
+  /** Returns the current workflow status. */
   public get status() {
     return this.#state.status;
   }
+  /** Returns the error if the workflow failed. */
   public get error() {
     return this.#state.error;
   }
+  /** Returns the initial input data. */
   public get input(): I {
     return this.#state.input as I;
   }
+  /** Returns the final output data. */
   public get output(): O {
     return this.#state.output as O;
   }
+  /** Returns the internal reactive state. */
   public get state() {
     return this.#state;
   }
-
+  /** Returns the runner for the current step. */
   public get current(): AnyRunner | undefined {
     return this.#steps.get(this.#state.current!);
   }
@@ -119,6 +123,12 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     onCleanup(() => this.close(this.status));
   }
 
+  /**
+   * Standard Promise then implementation.
+   * Automatically triggers `run()` if the workflow is IDLE.
+   * @param onfulfilled
+   * @param onrejected
+   */
   // biome-ignore lint/suspicious/noThenProperty: Expect override.
   public then<TResult1 = O, TResult2 = never>(
     onfulfilled?: ((value: O) => TResult1 | PromiseLike<TResult1>) | undefined | null,
@@ -131,10 +141,16 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return super.then(onfulfilled, onrejected);
   }
 
+  /** Returns a step runner by its path. */
   public get(name: string) {
     return this.#steps.get(name);
   }
 
+  /**
+   * Runs the workflow from the beginning or current position until completion.
+   * @param input The input data to start with.
+   * @returns A promise that resolves with the workflow output.
+   */
   public async run(input: I): Promise<O> {
     if (this.#closed) return this.output;
 
@@ -149,6 +165,12 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this.output as O;
   }
 
+  /**
+   * Executes a single step or jumps to a specific step.
+   * @param path The path of the step to jump to.
+   * @param input Optional input for the step.
+   * @returns A promise that resolves with the current output.
+   */
   public async step(path: string, input?: WorkflowData): Promise<O>;
   public async step(input?: WorkflowData, all?: boolean): Promise<O>;
   public async step(pathOrInput?: string | WorkflowData, inputOrAll?: WorkflowData | boolean): Promise<O> {
@@ -313,6 +335,11 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     }
   }
 
+  /**
+   * Skips the remaining steps in the workflow.
+   * @param error Optional error to associate with the skip.
+   * @returns The stepper instance.
+   */
   public skip(error?: Error) {
     if (this.#closed) return this;
 
@@ -329,6 +356,10 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this;
   }
 
+  /**
+   * Finalizes the workflow status and resolves/rejects the internal promise.
+   * @returns The final output.
+   */
   public finish() {
     this.#state.status = this.#state.error ? WORKFLOW_STATUS.ERROR : WORKFLOW_STATUS.SUCCESS;
 
@@ -341,6 +372,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this.output;
   }
 
+  /** Validates the final output against the output schema if provided. */
   public async finalize() {
     if (!this.#schemaOut || !this.output) return;
 
@@ -353,6 +385,10 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     }
   }
 
+  /**
+   * Aborts the workflow execution.
+   * @param reason The reason for aborting.
+   */
   public abort(reason?: unknown) {
     if (this.#closed) return;
 
@@ -361,6 +397,12 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     this.#accept(this.output);
   }
 
+  /**
+   * Closes the stepper, cleaning up resources and subscriptions.
+   * @param status The final status.
+   * @param error Optional error.
+   * @param reason Optional abort reason.
+   */
   public close(status: WorkflowStatus = WORKFLOW_STATUS.SUCCESS, error?: Error, reason?: unknown) {
     if (this.#closed) return;
 
@@ -379,6 +421,10 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     }
   }
 
+  /**
+   * Resets the workflow to its initial IDLE state.
+   * @returns The stepper instance.
+   */
   public reset() {
     if (this.#controller.signal.aborted || this.#closed) return this;
 
@@ -394,6 +440,13 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this;
   }
 
+  /**
+   * Seeds the workflow with initial data and schemas.
+   * @param seed Initial data.
+   * @param input Input validation schema.
+   * @param output Output validation schema.
+   * @returns The stepper instance.
+   */
   public seed(seed: D, input?: SchemaLike, output?: SchemaLike) {
     this.#state.seed = seed as WorkflowData;
     this.#schemaIn = input;
@@ -402,6 +455,11 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this;
   }
 
+  /**
+   * Subscribes to state changes.
+   * @param handler The subscriber function.
+   * @returns An unsubscribe function.
+   */
   public subscribe(handler: StateSubscriber<O>) {
     if (this.#closed) return () => {};
 
@@ -410,6 +468,11 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return unsubscribe;
   }
 
+  /**
+   * Pipes state changes from this stepper to another stepper.
+   * @param target The target stepper.
+   * @returns The stepper instance.
+   */
   public pipeTo(target: WorkflowStepper<I, O>) {
     if (this.#closed) return this;
 
@@ -425,6 +488,10 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     return this;
   }
 
+  /**
+   * Creates a serializable snapshot of the current workflow state.
+   * @returns A StepperSnapshot object.
+   */
   public snapshot(): StepperSnapshot {
     return untrack(() => {
       const steps = [];
@@ -444,6 +511,11 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
     });
   }
 
+  /**
+   * Restores the workflow state from a snapshot.
+   * @param snapshot The snapshot to hydrate from.
+   * @returns The stepper instance.
+   */
   public hydrate({ status, input, output, current, error, steps }: StepperSnapshot) {
     if (this.#closed) return this;
 
