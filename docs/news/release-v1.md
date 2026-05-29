@@ -806,7 +806,9 @@ Below is what the SSR layer handles out of the box, from rendering to deployment
 - **Abort signals** — SSR renders respect `AbortController`, with configurable timeout
 - **Multi-runtime** — the same worker deploys to Bun, Node.js, Cloudflare Workers, and Deno
 - **Vite plugin** — `airSSR()` runs SSR + IRPC + WebSocket on one dev server
-- **ISR** — userland pattern via `resolveAsset` hook — cached HTML on hit, SSR on miss, stale-while-revalidate with background re-renders
+- **ISR** — implement via `resolveAsset` hook — cached HTML on hit, SSR on miss, stale-while-revalidate with background re-renders
+
+Learn more about [Universal SSR](/ssr) and [ISR](/ssr#incremental-static-regeneration-isr).
 
 ## Status
 

@@ -123,6 +123,10 @@ export default defineConfig({
         link: '/getting-started',
       },
       {
+        text: 'Universal SSR',
+        link: '/ssr',
+      },
+      {
         text: 'Remote Function',
         collapsed: true,
         items: [
