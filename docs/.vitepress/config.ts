@@ -89,6 +89,7 @@ export default defineConfig({
     nav: [
       { text: 'Overview', link: '/overview' },
       { text: 'Get Started', link: '/getting-started' },
+      { text: 'Posts', link: '/posts/index.html' },
       {
         text: 'Architecture',
         items: [

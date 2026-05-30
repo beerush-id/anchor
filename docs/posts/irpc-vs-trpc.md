@@ -1,0 +1,654 @@
+---
+title: 'IRPC vs. tRPC'
+description: 'Comparing modern type-safe remote procedure calls. See how tRPC binds routers to HTTP endpoints while IRPC decouples function signatures for true isomorphic execution.'
+sidebar: false
+prev: false
+next: false
+---
+
+# IRPC vs. tRPC
+
+[← Back to Posts](/posts/index.html) | **Technical Comparison** | **`RPC`** **`tRPC`** **`TypeScript`**
+
+When it comes to building end-to-end type-safe APIs in TypeScript, developers often look for RPC (Remote Procedure Call) solutions rather than traditional REST or GraphQL. Both tRPC and IRPC aim to solve this problem, but they do it in fundamentally different ways.
+
+[tRPC](https://trpc.io/) is built around the concept of defining routers and procedures on the backend, and exposing them over an HTTP API. It heavily leverages React Query on the frontend to provide a type-safe data fetching experience. It is tightly coupled to the request/response lifecycle.
+
+IRPC (part of the AIR Stack) treats remote execution differently. It completely decouples the function signature from its implementation and transport. Instead of building "routers" that map to endpoints, you declare "stubs" (contracts) that can be implemented and called from anywhere, automatically coalescing and batching calls under the hood.
+
+Here is an unfiltered look at how you accomplish the same tasks in both frameworks, without hiding the boilerplate.
+
+## Framework comparison
+
+While both provide end-to-end type safety, their architectural decisions affect how you organize and scale your codebase.
+
+| Aspect | tRPC | IRPC |
+|---|---|---|
+| **Paradigm** | RPC over HTTP endpoints | Isomorphic Remote Functions |
+| **Architecture** | Centralized router object | Decoupled signatures (Stubs) |
+| **Client Integration** | Wrapper around React Query (@tanstack/react-query) | Native Reactive Sub-stubs |
+| **Real-time** | WebSockets (Subscriptions via ws) | Native Reactive Streaming |
+| **Validation** | Native Zod support | Native Zod support |
+| **Modularity** | Router merging (`t.router`) | Native function imports |
+| **Transport** | Standard HTTP/WebSockets | Transport agnostic (HTTP, Worker, Memory) |
+
+## Getting started
+
+The initial setup reveals the core philosophy: tRPC builds a backend router that the frontend consumes. IRPC builds a shared contract that both ends implement and consume.
+
+### tRPC Setup
+
+tRPC requires initializing a central router, configuring a context for each request, and exposing it through an adapter (like Express, Next.js, or Fastify).
+
+**Setup Global Context**
+
+tRPC uses a context function to inject shared dependencies (like databases or caches) into every request.
+
+```typescript
+// server/context.ts
+import { DatabaseDriver } from '../lib/db.js';
+import { RedisCacheDriver } from '../lib/cache.js';
+
+// Initialize shared singletons once
+const db = new DatabaseDriver();
+const cache = new RedisCacheDriver();
+
+export function createContext(opts: any) {
+  // Context object is created on every HTTP request
+  return {
+    db,
+    cache,
+    req: opts.req,
+  };
+}
+export type Context = ReturnType<typeof createContext>;
+```
+
+**Initialize tRPC**
+```typescript
+// server/trpc.ts
+import { initTRPC } from '@trpc/server';
+import type { Context } from './context.js';
+
+// Bind the context type to the tRPC instance
+export const t = initTRPC.context<Context>().create();
+
+export const router = t.router;
+export const publicProcedure = t.procedure;
+```
+
+**Setup Server Adapter**
+```typescript
+// server/index.ts
+import { createHTTPServer } from '@trpc/server/adapters/standalone';
+import { appRouter } from './router.js';
+import { createContext } from './context.js';
+
+const server = createHTTPServer({
+  router: appRouter,
+  createContext,
+});
+
+server.listen(3000);
+```
+
+**Setup Client Providers**
+Because tRPC relies on React Query, you must also wrap your frontend application in specialized context providers.
+
+```tsx
+// client/trpc.ts
+import { createTRPCReact } from '@trpc/react-query';
+import type { AppRouter } from '../server/router';
+
+export const trpc = createTRPCReact<AppRouter>();
+```
+
+```tsx
+// client/App.tsx
+import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { httpBatchLink } from '@trpc/client';
+import { trpc } from './trpc';
+
+export function App({ children }) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: 'http://localhost:3000/trpc',
+        }),
+      ],
+    }),
+  );
+
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
+}
+```
+
+### IRPC Setup
+
+IRPC doesn't build a monolithic tree to define your API. You create a namespace (a package), define your contracts (stubs) independently, and mount a transport router to handle the network requests.
+
+**Initialize IRPC Package**
+```typescript
+// lib/module.ts
+import { createPackage } from '@irpclib/irpc';
+import { HTTPTransport } from '@irpclib/http';
+
+export const irpc = createPackage({ name: 'my-api', version: '1.0.0' });
+export const transport = new HTTPTransport({ endpoint: `/irpc/${irpc.href}` });
+
+irpc.use(transport);
+```
+
+**Setup Server Transport**
+```typescript
+// server/index.ts
+import '@irpclib/irpc/server';
+import { HTTPRouter } from '@irpclib/http/router';
+import { irpc, transport } from '../lib/module.js';
+import '../rpc/hello/constructor.js'; // Import handlers
+
+const router = new HTTPRouter(irpc, transport);
+
+Bun.serve({
+  port: 3000,
+  fetch(req) {
+    if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
+      return router.resolve(req, []);
+    }
+    return new Response('Not Found', { status: 404 });
+  },
+});
+```
+
+**Setup Global Adapter**
+
+Setup handler adapter for standard operations such as database CRUD.
+
+```typescript
+// server/adapter.ts
+import { irpc } from '../lib/module.js';
+import { IRPCAdapter } from '@irpclib/irpc';
+import { DatabaseDriver } from '../lib/db.js';
+import { RedisCacheDriver } from '../lib/cache.js';
+
+export const adapter = new IRPCAdapter(irpc);
+adapter.use(new RedisCacheDriver());
+adapter.use(new DatabaseDriver());
+```
+
+This adapter is configured once and exported for feature modules to consume.
+
+::: tip What is it for?
+We will explore how the `DatabaseDriver` powers automatic CRUD operations later in the Database section.
+:::
+
+**Setup Client Providers**
+
+Notice what is missing here? **Nothing is required**. Because the `irpc` instance in `lib/module.ts` already has the transport attached, the frontend simply imports the stubs it needs. There are no `<IRPCProvider>` components or context wrappers required anywhere in your React tree.
+
+## Defining Contracts and Implementations
+
+This is where the divergence is clearest. tRPC combines the definition and implementation into a single chained method call on the router. IRPC separates them entirely.
+
+### tRPC Procedures
+
+In tRPC, you define a procedure on a router object. The input validation and the resolver logic are chained together.
+
+**Define Router and Procedure**
+```typescript
+// server/router.ts
+import { z } from 'zod';
+import { router, publicProcedure } from './trpc';
+
+export const appRouter = router({
+  hello: publicProcedure
+    .input(z.object({ name: z.string() }))
+    .query(({ input }) => {
+      // The implementation is bound to the definition
+      return `Hello, ${input.name}!`;
+    }),
+});
+
+export type AppRouter = typeof appRouter;
+```
+
+The definition and implementation are inseparable. To get the types on the client, you must export the `typeof appRouter` and use it to configure your client.
+
+### IRPC Stubs and Constructors
+
+IRPC splits this into two steps: declaring the stub (the contract), and constructing the handler (the implementation).
+
+**Declare Stub (Shared)**
+```typescript
+// rpc/hello/index.ts
+import { irpc } from '../lib/module.js';
+import { z } from 'zod';
+
+export const hello = irpc.declare({
+  name: 'hello',
+  schema: {
+    input: [z.object({ name: z.string() })],
+    output: z.string(),
+  },
+});
+```
+
+**Implement Handler (Server)**
+```typescript
+// rpc/hello/constructor.ts
+import { irpc } from '../lib/module.js';
+import { hello } from './index.js';
+
+irpc.construct(hello, (args) => {
+  return `Hello, ${args.name}!`;
+});
+```
+
+By decoupling the signature, the client only needs to import the stub (`index.ts`). It doesn't need to know about a central router type. The implementation (`constructor.ts`) can live anywhere and be swapped out without changing the contract.
+
+## Data Fetching and Reactivity
+
+Both frameworks provide a powerful developer experience on the frontend, but they rely on different underlying engines.
+
+### Calling tRPC APIs
+
+Once your providers are configured, you use the tRPC proxy object to access your endpoints via React Query hooks.
+
+**Client-side Fetching**
+```tsx
+// client/UserProfile.tsx
+import { trpc } from './trpc';
+
+export function UserProfile() {
+  // Uses React Query under the hood
+  const hello = trpc.hello.useQuery({ name: 'World' });
+
+  if (hello.isLoading) return <div>Loading...</div>;
+  if (hello.isError) return <div>Error: {hello.error.message}</div>;
+  
+  return <div>{hello.data}</div>;
+}
+```
+
+Because tRPC relies on a single router type (`AppRouter`), you access every endpoint through the `trpc` proxy object (e.g., `trpc.users.get.useQuery()`).
+
+### Calling IRPC Stubs
+
+IRPC stubs are directly executable and provide their own reactive bindings via Sub-stubs. You don't need a global context provider or a third-party query library.
+
+**Bind UI to Sub-stub**
+```tsx
+import { setup, render } from '@anchorlib/react';
+import { hello } from './rpc/hello/index.js';
+
+export const UserProfile = setup(() => {
+  // Bind directly to the imported stub
+  const greeting = hello.with(() => [{ name: 'World' }]);
+
+  return render(() => (
+    <div>
+      {greeting.status === 'pending' ? 'Loading...' : greeting.data}
+    </div>
+  ));
+});
+```
+
+You just import the specific function you want and call `.with()`. It automatically tracks dependencies and re-fetches when they change, returning a reactive `IRPCReader`.
+
+## Validation and Error Handling
+
+Data validation is a core requirement for type-safe APIs. Both frameworks leverage Zod, but they integrate it at different levels of the architecture.
+
+### tRPC Validation
+
+In tRPC, validation is chained to the procedure definition. Input schemas parse arguments before the resolver runs.
+
+**Define Procedure Validation**
+```typescript
+// server/routers/users.ts
+import { z } from 'zod';
+import { publicProcedure } from '../trpc';
+
+export const createUser = publicProcedure
+  .input(z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+  }))
+  .output(z.object({
+    id: z.string(),
+    name: z.string(),
+  }))
+  .mutation(async ({ input }) => {
+    return await db.users.create(input);
+  });
+```
+
+The validation is tightly bound to the router object implementation. You cannot reuse this specific type-signature easily without importing the router itself.
+
+### IRPC Schema Validation
+
+IRPC attaches Zod schemas directly to the stub declaration. The validation defines the contract boundary, entirely separate from the handler.
+
+**Declare Stub with Schema**
+```typescript
+// rpc/users/index.ts
+import { irpc } from '../lib/module.js';
+import { z } from 'zod';
+
+export const createUser = irpc.declare({
+  name: 'createUser',
+  schema: {
+    input: [z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+    })],
+    output: z.object({
+      id: z.string(),
+      name: z.string(),
+    }),
+  },
+});
+```
+
+Because the schema is part of the declaration, the client and server share the exact same runtime boundary. The signature is purely decoupled from the implementation.
+
+## Context and Modularity
+
+How you share context (like user sessions or database connections) and scale the codebase differs significantly.
+
+### tRPC Context and Routers
+
+tRPC passes a `ctx` object to every resolver. If you have many files, you must merge routers together.
+
+**Middleware and Context**
+```typescript
+// server/trpc.ts
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
+  }
+  return next({
+    ctx: { user: ctx.user },
+  });
+});
+```
+
+```typescript
+// server/routers/user.ts
+export const userRouter = router({
+  me: protectedProcedure.query(({ ctx }) => {
+    return ctx.user;
+  }),
+});
+```
+
+```typescript
+// server/router.ts (Merging)
+export const appRouter = router({
+  users: userRouter,
+  posts: postRouter,
+});
+```
+
+You are building a monolithic tree of routes. Every new domain must be merged into the root `appRouter`.
+
+### IRPC Context and Composition
+
+IRPC doesn't use a monolithic router or a request context object. Functions just call other functions, and context is handled via closures or dependency injection at the module level.
+
+**Authentication and Composition**
+```typescript
+// rpc/auth/index.ts
+export const getSession = irpc.declare('getSession', () => ({ userId: '' }));
+```
+
+```typescript
+// rpc/users/constructor.ts
+import { irpc } from '../lib/module.js';
+import { getSession } from '../auth/index.js';
+import { me } from './index.js';
+
+irpc.construct(me, async () => {
+  // Call the session function directly
+  const session = await getSession();
+  
+  if (!session.userId) {
+    throw new Error('Unauthorized');
+  }
+  
+  return { id: session.userId, name: 'John' };
+});
+```
+
+Because IRPC handles the execution context globally, you don't need middleware chains to pass data down. You just compose functions exactly as you would in standard TypeScript.
+
+## Real-time and Streaming
+
+Handling continuous data streams requires complex setups in traditional RPC architectures. tRPC relies on WebSockets for subscriptions, while IRPC handles streams natively over standard HTTP using the exact same abstraction as standard calls.
+
+### tRPC Subscriptions
+
+To stream data in tRPC, you must set up a separate WebSocket server and use RxJS-style Observables.
+
+```typescript
+// server/wsServer.ts
+import { applyWSSHandler } from '@trpc/server/adapters/ws';
+import { WebSocketServer } from 'ws';
+import { appRouter } from './router';
+
+const wss = new WebSocketServer({ port: 3001 });
+applyWSSHandler({ wss, router: appRouter });
+```
+
+```typescript
+// server/router.ts
+import { observable } from '@trpc/server/observable';
+import { z } from 'zod';
+
+export const appRouter = router({
+  generatePoem: publicProcedure
+    .input(z.object({ prompt: z.string() }))
+    .subscription(({ input }) => {
+      return observable<string>((emit) => {
+        let isSubscribed = true;
+
+        const runStream = async () => {
+          try {
+            const response = await ai.generate({ prompt: input.prompt, stream: true });
+            for await (const chunk of response) {
+              if (!isSubscribed) break;
+              emit.next(chunk.text);
+            }
+            emit.complete();
+          } catch (err) {
+            emit.error(err);
+          }
+        };
+
+        runStream();
+
+        return () => {
+          isSubscribed = false; // Teardown logic
+        };
+      });
+    }),
+});
+```
+
+To use this, your frontend must configure a `wsLink` alongside the `httpBatchLink`, handle WebSocket reconnection logic, and manage the subscription lifecycle.
+
+**Client-side Subscription**
+```tsx
+// client/Poem.tsx
+import { useState, useEffect } from 'react';
+import { trpc } from './trpc';
+
+export function Poem({ prompt }: { prompt: string }) {
+  const [poem, setPoem] = useState('');
+
+  // You must manually clear state when the prop changes
+  useEffect(() => setPoem(''), [prompt]);
+
+  trpc.generatePoem.useSubscription({ prompt }, {
+    onData(data) {
+      // You must manually wire subscription events into React state
+      setPoem((prev) => prev + data);
+    },
+    onError(err) {
+      console.error('Subscription error:', err);
+    }
+  });
+
+  return <div>{poem || 'Listening for chunks...'}</div>;
+}
+```
+
+### IRPC Reactive Streaming
+
+Instead of requiring WebSockets and custom observables, IRPC can return a `RemoteState` directly over HTTP Server-Sent Events. The server yields data chunks, and the UI binds directly to the reader.
+
+```typescript
+// rpc/poem/index.ts
+export const generatePoem = irpc.declare('generatePoem', () => '', {
+  stream: true,
+});
+```
+
+```typescript
+// rpc/poem/constructor.ts
+import { stream } from '@irpclib/irpc';
+import { generatePoem } from './index.js';
+
+irpc.construct(generatePoem, (prompt: string) => {
+  return stream<string>(async (state, resolve) => {
+    const response = await ai.generate({ prompt, stream: true });
+    
+    for await (const chunk of response) {
+      state.data = (state.data || '') + chunk.text;
+    }
+    
+    resolve();
+  });
+});
+```
+
+The frontend uses the exact same `.with()` Sub-stub logic as a standard call. You don't need a separate WebSocket server, a `wsLink`, or complex event listeners.
+
+**Client-side Bind**
+```tsx
+// client/Poem.tsx
+import { setup, render } from '@anchorlib/react';
+import { generatePoem } from './rpc/poem/index.js';
+
+export const Poem = setup<{ prompt: string }>((props) => {
+  // Binds exactly like a standard query.
+  // Automatically restarts and clears data if props.prompt changes.
+  const poem = generatePoem.with(() => [props.prompt]);
+
+  return render(() => (
+    <div>{poem.data || 'Listening for chunks...'}</div>
+  ));
+});
+```
+
+## Database and CRUD
+
+Defining basic Create, Read, Update, and Delete operations often leads to immense boilerplate.
+
+### tRPC CRUD Procedures
+
+In tRPC, you must manually define input validation and resolve logic for every operation. Because shared dependencies like caching are injected via context, you must also manually handle cache invalidation inside every procedure.
+
+```typescript
+// server/routers/users.ts
+export const usersRouter = router({
+  get: publicProcedure
+    .input(z.string())
+    .query(async ({ input, ctx }) => {
+      // Manually check cache
+      const cached = await ctx.cache.get(`user:${input}`);
+      if (cached) return cached;
+
+      const user = await ctx.db.users.findById(input);
+      if (user) await ctx.cache.set(`user:${input}`, user);
+      return user;
+    }),
+  
+  create: publicProcedure
+    .input(z.object({ name: z.string(), email: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await ctx.db.users.create(input);
+      // Manually update cache on mutation
+      await ctx.cache.set(`user:${user.id}`, user);
+      return user;
+    }),
+    
+  update: publicProcedure
+    .input(z.object({ id: z.string(), data: z.object({ name: z.string().optional(), email: z.string().optional() }) }))
+    .mutation(async ({ input, ctx }) => {
+      const updated = await ctx.db.users.update(input.id, input.data);
+      // Manually update cache
+      await ctx.cache.set(`user:${input.id}`, updated);
+      return updated;
+    }),
+
+  delete: publicProcedure
+    .input(z.string())
+    .mutation(async ({ input, ctx }) => {
+      await ctx.db.users.delete(input);
+      // Manually invalidate cache
+      await ctx.cache.delete(`user:${input}`);
+      return true;
+    }),
+
+  list: publicProcedure
+    .input(z.object({ limit: z.number().optional(), offset: z.number().optional() }).optional())
+    .query(async ({ input, ctx }) => {
+      return await ctx.db.users.findMany({ take: input?.limit, skip: input?.offset });
+    }),
+});
+```
+
+While type-safe, you end up repeating this exact same routing structure for every single entity in your database.
+
+### IRPC Standardized CRUD
+
+For standard entities, manually declaring and implementing CRUD functions is repetitive. IRPC provides a `crud()` utility to batch-declare these operations, and an Adapter pattern to wire them instantly.
+
+**Declare CRUD Stubs**
+```typescript
+// rpc/users/index.ts
+import { irpc } from '../lib/module.js';
+
+type User = { id: string; name: string; email: string };
+export const users = irpc.crud<User>('users', () => ({ id: '', name: '', email: '' }));
+```
+
+**Attach Stubs to Adapter**
+```typescript
+// rpc/users/constructor.ts
+import { adapter } from '../../server/adapter.js';
+import { users } from './index.js';
+
+// The feature attaches itself to the global adapter
+adapter.attach(users);
+```
+
+Instead of manually constructing handlers for each stub, you attach them to the global `IRPCAdapter` (which we configured in the **Setup** section). The adapter routes requests to generic driver implementations. This eliminates the need to write redundant database queries, while still maintaining full type safety and caching capabilities on the client.
+
+## Final thoughts
+
+Both frameworks deliver excellent type safety, but they cater to different architectural visions.
+
+**Choose tRPC if:** You want a type-safe layer over standard HTTP APIs, you are already heavily invested in React Query, or you prefer a centralized router architecture where the entire API surface is defined in a single tree.
+
+**Choose IRPC if:** You want to break free from the mental model of HTTP requests completely. If you prefer decentralized modularity where signatures are independent contracts, and you want native reactivity without relying on external state management libraries, IRPC provides a cleaner, truly isomorphic experience.
