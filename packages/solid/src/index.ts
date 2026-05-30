@@ -10,6 +10,7 @@ export type {
   CookieOptions,
   Debouncer,
   EffectHandler,
+  ExceptionMap,
   FetchOptions,
   FetchState,
   Future,

@@ -18,6 +18,7 @@
         '@anchorlib/react': 'latest',
         '@irpclib/irpc': 'latest',
         '@tailwindcss/browser': '^4.0.0',
+        zod: '^4.1.12',
       },
     }"
     :code-options="codeOptions">

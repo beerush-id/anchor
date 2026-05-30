@@ -27,23 +27,32 @@
     "docs:preview": "vitepress preview docs --port 5611"
   },
   "devDependencies": {
+    "@anchorlib/react": "workspace:*",
     "@biomejs/biome": "catalog:",
+    "@irpclib/irpc": "workspace:*",
+    "@tailwindcss/browser": "catalog:",
     "@tailwindcss/language-server": "catalog:",
     "@types/markdown-it-container": "catalog:",
+    "@types/react": "catalog:app",
+    "@types/react-dom": "catalog:app",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "husky": "catalog:",
     "lint-staged": "catalog:",
+    "lucide-react": "catalog:app",
     "markdown-it-container": "catalog:",
     "monopkg": "catalog:",
     "prettier": "catalog:",
+    "react": "catalog:app",
+    "react-dom": "catalog:app",
     "rimraf": "catalog:",
     "vite-plugin-solid": "catalog:",
     "vitepress": "catalog:",
     "vitepress-plugin-llms": "catalog:",
     "vitepress-plugin-sandpack": "catalog:",
     "vitest": "catalog:",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "zod": "catalog:"
   },
   "engines": {
     "bun": ">=1.3.2"
@@ -114,6 +123,7 @@
     "@sveltejs/adapter-auto": "7.0.0",
     "@sveltejs/kit": "2.47.3",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@tailwindcss/browser": "4.1.16",
     "@tailwindcss/language-server": "0.14.29",
     "@tailwindcss/postcss": "4.1.16",
     "@testing-library/jest-dom": "6.9.1",

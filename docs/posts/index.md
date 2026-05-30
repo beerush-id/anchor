@@ -10,6 +10,9 @@ next: false
 
 Explore articles, architectural comparisons, and deep dives into the AIR Stack and IRPC.
 
+## Tutorials
+- [Building A Smart Form Component in AIR Stack](./building-smart-form-components.md)
+
 ## AIR Stack Posts
 Explore in-depth comparisons between the AIR Stack and popular meta-frameworks and routing libraries in the React ecosystem.
 
