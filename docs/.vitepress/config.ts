@@ -47,8 +47,8 @@ export default defineConfig({
     'ui/headless.md',
     'ui/data.md',
     'ui/composition.md',
-    'ai*.md',
-    '**/ai*.md',
+    'ai-*.md',
+    '**/ai-*.md',
   ],
   sitemap: {
     hostname: PAGE_URL,
