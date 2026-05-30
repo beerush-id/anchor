@@ -66,7 +66,7 @@ features:
       alt: 'Universal SSR Icon'
     title: Universal SSR
     details: One render function deploys to Bun, Node.js, Cloudflare Workers, and Deno. Request isolation handles concurrency natively.
-    link: /ui
+    link: /ssr
     linkText: Learn more
   - icon: 
       src: '/brain.svg'
@@ -133,7 +133,7 @@ features:
 
 ::: code-group
 
-```tsx [AIR - React] {13,17}
+```tsx :line-numbers [AIR - React] {13,17}
 // 1. Compose the pipeline once with branching and error recovery.
 const checkout = plan()
   .then(calculateTotal, { name: 'Calculating...' })
@@ -162,7 +162,7 @@ export const Checkout = setup((props: { cartId: string, method: string }) => {
 });
 ```
 
-```tsx [AIR - Solid] {13,17}
+```tsx :line-numbers [AIR - Solid] {13,17}
 // 1. Compose the pipeline once with branching and error recovery.
 const checkout = plan()
   .then(calculateTotal, { name: 'Calculating...' })
@@ -191,7 +191,7 @@ export const Checkout = setup((props: { cartId: string, method: string }) => {
 });
 ```
 
-```svelte [AIR - Svelte] {15,19}
+```svelte :line-numbers [AIR - Svelte] {15,19}
 <script lang="ts">
   // 1. Compose the pipeline once with branching and error recovery.
   const checkout = plan()
@@ -220,7 +220,7 @@ export const Checkout = setup((props: { cartId: string, method: string }) => {
 </button>
 ```
 
-```tsx [Standard React] {3-4,31,34}
+```tsx :line-numbers [Standard React] {3-4,31,34}
 // Manual state tracking, try/catch pollution, and imperative branching.
 export function Checkout({ cartId, method }: { cartId: string, method: string }) {
   const [status, setStatus] = useState('Checkout');
@@ -261,8 +261,20 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 }
 ```
 
-```tsx [Redux Toolkit] {28-30,32,35}
+```tsx :line-numbers [Redux Toolkit] {28-30,32,35}
 // Massive boilerplate just to dispatch state updates during a branching workflow.
+const checkoutSlice = createSlice({
+  name: 'checkout',
+  initialState: { status: '' as string, errorMsg: '' },
+  reducers: {
+    setStatus: (state, action: PayloadAction<string>) => { state.status = action.payload; },
+    setErrorMsg: (state, action: PayloadAction<string>) => { state.errorMsg = action.payload; },
+    clearError: (state) => { state.errorMsg = ''; },
+  },
+});
+
+const { setStatus, setErrorMsg, clearError } = checkoutSlice.actions;
+
 export const checkout = createAsyncThunk('checkout', async ({ cartId, method }, { dispatch }) => {
   try {
     dispatch(clearError());
@@ -303,7 +315,7 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 }
 ```
 
-```tsx [TanStack Query] {38,42-46,59}
+```tsx :line-numbers [TanStack Query] {38,42-46,59}
 // Fragmented mutations chained together via effects, callbacks, and manual state.
 export function Checkout({ cartId, method }: { cartId: string, method: string }) {
   const [step, setStep] = useState('idle');
@@ -344,7 +356,7 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
     calculate.mutate(cartId);
   };
 
-  // State dependencies must be passed manually between fragmented mutations
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (step === 'chargeCard') card.mutate(calculate.data);
     if (step === 'chargePaypal') paypal.mutate(calculate.data);
@@ -600,21 +612,62 @@ export const userRoute = usersRoute.route('/:user_id')
   </div>
   <div class="custom-section-code">
 
-```typescript
-// 1. Define a type-safe pipeline with isolated branching
-export const checkout = plan({
-  input: z.object({ cartId: z.string(), method: z.enum(['card', 'paypal']) })
-})
-  .then(calculateTotal)
-  .switch('method', {
-    card: (resolve) => resolve(chargeCard),
-    paypal: (resolve) => resolve(chargePaypal)
-  })
-  .then(generateReceipt);
+::: code-group
 
-// 2. Execute the pipeline like a standard async function
-const receipt = await checkout({ cartId: 'cart_123', method: 'card' });
+```typescript [Worflow]
+// Chain steps with branching and error recovery
+const chatWorkflow = plan<{ prompt: string; model: 'gpt-4' | 'claude-3' }>()
+  .then(async (input) => {
+    return { ...input, system: 'You are a helpful assistant.' };
+  }, { name: 'Preparing...' })
+  .switch('model', {
+    'gpt-4': (resolve) => resolve((input) => openai.chat(input.prompt, input.system), { name: 'Asking GPT-4...' }),
+    'claude-3': (resolve) => resolve((input) => anthropic.chat(input.prompt, input.system), { name: 'Asking Claude...' }),
+  })
+  .catch((error) => {
+    return { text: 'An error occurred.', error: true };
+  });
 ```
+
+```tsx [React]
+export const ChatButton = setup(() => {
+  const chat = chatWorkflow.later();
+
+  return render(() => (
+    <div>
+      <button
+        onClick={() => chat.dispatch({ prompt: 'Hello!', model: 'gpt-4' })}
+        disabled={chat.status === 'pending'}
+      >
+        {chat.current?.name ?? 'Ask AI'}
+      </button>
+      {chat.status === 'success' && <p>{chat.data.text}</p>}
+      {chat.status === 'error' && <p>{chat.error.message}</p>}
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+export const ChatButton = setup(() => {
+  const chat = chatWorkflow.later();
+
+  return (
+    <div>
+      <button
+        onClick={() => chat.dispatch({ prompt: 'Hello!', model: 'gpt-4' })}
+        disabled={chat.status === 'pending'}
+      >
+        {chat.current?.name ?? 'Ask AI'}
+      </button>
+      {chat.status === 'success' && <p>{chat.data.text}</p>}
+      {chat.status === 'error' && <p>{chat.error.message}</p>}
+    </div>
+  );
+});
+```
+
+:::
 
   </div>
 </div>
@@ -623,27 +676,43 @@ const receipt = await checkout({ cartId: 'cart_123', method: 'card' });
 <div class="custom-section">
   <div class="custom-section-code">
 
-```tsx
-// 1. No 'use client' directive. State runs on the server.
+::: code-group
+
+```ts [Server]
+// IRPC handler — mutates cookies on login
+irpc.construct(login, async (credentials) => {
+  const session = cookies<UserSession>('session', {});
+  const { token, user } = await validate(credentials);
+
+  if (user) {
+    session.user = { id: user.id, name: user.name };
+    session.token = token;
+  }
+
+  return user;
+});
+```
+
+```tsx [Component]
+// Same cookies() API — works during SSR and in the browser
 export const Dashboard = setup(() => {
-  const session = mutable({ user: 'Alice' });
+  const session = cookies<UserSession>('session', {});
 
   return render(() => (
     <main>
-      <h1>Welcome, {session.user}</h1>
+      <h1>Welcome, {session.user?.name}</h1>
     </main>
   ));
 });
-
-// 2. The component renders on Bun, Node.js, Deno, and Cloudflare.
-const html = await renderToString(<Dashboard />);
 ```
+
+:::
 
   </div>
   <div class="custom-section-content">
     <h2>Universal SSR</h2>
-    <p>What if <strong>server-side rendering</strong> just rendered the <strong>exact same components</strong>? No <code>'use client'</code> directives. No fragmented execution boundaries. Anchor restricts state to the <strong>request scope</strong>, handling <strong>concurrency</strong> and <strong>cookie mutations</strong> across any JS runtime without forcing architectural splits.</p>
-    <a href="/ui" class="custom-section-action">Explore SSR →</a>
+    <p>What if the <strong>server and client shared the same API</strong>? No <code>'use client'</code> directives. No fragmented execution boundaries. Cookies mutated in an IRPC handler flow to the component automatically — during SSR and in the browser — without manual <code>Set-Cookie</code> wiring.</p>
+    <a href="/ssr" class="custom-section-action">Explore SSR →</a>
   </div>
 </div>
 
