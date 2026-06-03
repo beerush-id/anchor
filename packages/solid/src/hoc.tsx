@@ -1,6 +1,6 @@
 import { type AsyncKey, AsyncStore, CONTEXT_STORE, getContextStore } from '@anchorlib/core';
 import { type Component, getOwner, type JSX, type Owner } from 'solid-js';
-import { proxyProps } from './props.js';
+import { proxyProps, setCurrentProps } from './props.js';
 import type { BindableComponentProps, BindableProps } from './types.js';
 
 export type BindableComponent<P> = (props: P) => JSX.Element;
@@ -48,6 +48,7 @@ export function setup<P extends Record<string, any>>(
 ): BindableComponent<BindableProps<P>> {
   const Setup = (props: BindableComponentProps<P>) => {
     const bindableProps = proxyProps(props);
+    setCurrentProps(bindableProps);
 
     const self = getOwner() as ContextOwner;
     const name = displayName || Component.name || 'Anonymous';

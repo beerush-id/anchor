@@ -204,5 +204,77 @@ describe('Anchor Solid - HOC API', () => {
 
       unmount();
     });
+
+    it('should isolate context between sibling and nested setup components', async () => {
+      const Tab = setup<{ name: string; children?: JSX.Element }>(function TabComp(props) {
+        setContext('tab', props.name);
+        return <div>{props.children}</div>;
+      });
+
+      const Child = setup<{ id: string }>(function ChildComp(props) {
+        return <span data-testid={props.id}>{getContext('tab')}</span>;
+      });
+
+      const { unmount, getByTestId } = render(() => (
+        <div>
+          <Tab name="A">
+            <Child id="a-child" />
+            <Tab name="A-nested">
+              <Child id="a-nested-child" />
+            </Tab>
+            <Child id="a-after" />
+          </Tab>
+          <Tab name="B">
+            <Child id="b-child" />
+          </Tab>
+        </div>
+      ));
+
+      expect(getByTestId('a-child').textContent).toBe('A');
+      expect(getByTestId('a-after').textContent).toBe('A');
+      expect(getByTestId('a-nested-child').textContent).toBe('A-nested');
+      expect(getByTestId('b-child').textContent).toBe('B');
+
+      unmount();
+    });
+
+    it('should correctly detect render prop children via typeof in component body', async () => {
+      const Wrapper = setup<{ children?: JSX.Element | ((value: string) => JSX.Element) }>(
+        function WrapperComp(props) {
+          const isRenderProp = typeof props.children === 'function';
+
+          return (
+            <div>
+              <span data-testid="type">{isRenderProp ? 'function' : 'element'}</span>
+              <div data-testid="content">
+                {isRenderProp ? (props.children as (v: string) => JSX.Element)('hello') : props.children}
+              </div>
+            </div>
+          );
+        }
+      );
+
+      // Regular JSX children — typeof should be 'element'
+      const regular = render(() => (
+        <Wrapper>
+          <span>static child</span>
+        </Wrapper>
+      ));
+
+      expect(regular.getByTestId('type').textContent).toBe('element');
+      expect(regular.getByTestId('content').textContent).toBe('static child');
+      regular.unmount();
+
+      // Render prop children — typeof should be 'function'
+      const renderProp = render(() => (
+        <Wrapper>
+          {(value: string) => <span>got: {value}</span>}
+        </Wrapper>
+      ));
+
+      expect(renderProp.getByTestId('type').textContent).toBe('function');
+      expect(renderProp.getByTestId('content').textContent).toBe('got: hello');
+      renderProp.unmount();
+    });
   });
 });

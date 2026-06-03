@@ -1,7 +1,7 @@
 import { mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
-import { omitProps, pickProps, proxyProps } from '../../src/props.js';
+import { omitProps, pickProps, proxyProps, setCurrentProps } from '../../src/props.js';
 
 describe('Anchor Solid - Props API', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -96,6 +96,44 @@ describe('Anchor Solid - Props API', () => {
 
         proxied.value = 100;
         expect(mutableRef.value).toBe(100);
+      });
+    });
+
+    describe('children handling', () => {
+      it('should return lazy thunk when accessed outside setup context', () => {
+        const childElement = { type: 'div', props: {} };
+        const props = { children: childElement, name: 'test' };
+        const proxied = proxyProps(props);
+
+        const result = proxied.children;
+        expect(typeof result).toBe('function');
+        expect((result as () => unknown)()).toBe(childElement);
+      });
+
+      it('should return raw children when accessed inside setup context', () => {
+        const childElement = { type: 'div', props: {} };
+        const props = { children: childElement, name: 'test' };
+        const proxied = proxyProps(props);
+
+        setCurrentProps(proxied as never);
+        const result = proxied.children;
+        setCurrentProps(undefined as never);
+
+        expect(result).toBe(childElement);
+        expect(typeof result).not.toBe('function');
+      });
+
+      it('should allow render prop detection when accessed inside setup context', () => {
+        const renderProp = (value: string) => ({ type: 'div', props: { children: value } });
+        const props = { children: renderProp, name: 'test' };
+        const proxied = proxyProps(props);
+
+        setCurrentProps(proxied as never);
+        const result = proxied.children;
+        setCurrentProps(undefined as never);
+
+        expect(typeof result).toBe('function');
+        expect((result as typeof renderProp)('hello')).toEqual({ type: 'div', props: { children: 'hello' } });
       });
     });
   });

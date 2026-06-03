@@ -1,6 +1,14 @@
-import { captureStack, isMutableRef, type MutableRef, untrack } from '@anchorlib/core';
+import { captureStack, getScope, isMutableRef, type MutableRef, setScope, untrack } from '@anchorlib/core';
 import { type BindingRef, isBinding } from './binding.js';
 import type { BindableComponentProps } from './types.js';
+
+const PROPS_KEY = Symbol('props');
+export function setCurrentProps(props: Record<string, unknown>) {
+  setScope(PROPS_KEY, props);
+}
+export function getCurrentProps() {
+  return getScope<Record<string, unknown>>(PROPS_KEY);
+}
 
 /**
  * Creates a proxy for props that handles binding references and read-only properties.
@@ -22,13 +30,17 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
   const pick = (keys: Array<keyof P>) => {
     return pickProps(props, newProps, keys ?? []);
   };
-  const children = () => props.children;
+  let children = () => props.children;
 
   const newProps = new Proxy(props as P, {
     get(target, key, receiver) {
       if (key === '$omit') return omit;
       if (key === '$pick') return pick;
-      if (key === 'children') return () => children;
+      if (key === 'children') {
+        if (getCurrentProps() !== newProps) return children;
+        children = props.children;
+        return children;
+      }
 
       const bindingRef = Reflect.get(target, key, receiver);
 

@@ -106,7 +106,7 @@ export {
 export { For, onCleanup, onMount } from 'solid-js';
 export * from './binding.js';
 export * from './hoc.js';
-export * from './props.js';
+export { omitProps, pickProps, proxyProps } from './props.js';
 export * from './router/head.js';
 export * from './router/link.js';
 export * from './router/navigate.js';
