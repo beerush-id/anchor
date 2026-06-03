@@ -285,7 +285,7 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
             [
               'CookieJar write-propagation is exclusive to these conditions:',
               '- Write is performed in Browser environment.',
-              '- Write is performed in server environment that supports write-back handling.'
+              '- Write is performed in server environment that supports write-back handling.',
             ]
           );
         }

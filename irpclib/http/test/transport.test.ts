@@ -1487,7 +1487,9 @@ describe('HTTPTransport', () => {
 
       type FailFunc = () => Promise<string>;
       const failFunc = module.declare<FailFunc>({ name: 'fail', seed: () => '' });
-      module.construct(failFunc, async () => { throw new Error('Server error'); });
+      module.construct(failFunc, async () => {
+        throw new Error('Server error');
+      });
 
       const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
         const request = new Request(url, init);

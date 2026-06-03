@@ -147,7 +147,12 @@ export class HTTPRouter extends IRPCRouter {
    * @param builder - Optional custom response builder function
    * @returns A Response object with the resolved data
    */
-  public async resolveForm(body: FormData, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder, jar?: ReturnType<typeof decodeCookies>) {
+  public async resolveForm(
+    body: FormData,
+    context: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder,
+    jar?: ReturnType<typeof decodeCookies>
+  ) {
     const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as IRPCRequests;
 
     const requests = irpcRequests.calls.map((req) => {
@@ -430,9 +435,12 @@ export class HTTPRouter extends IRPCRouter {
         headers.set(COOKIES_SYNC_KEY, '1');
       }
 
-      const status = result.status === IRPC_STATUS.ERROR
-        ? ((result as IRPCPacketAnswer<IRPCData>).error?.code === RESOLVE_ERROR.NOT_FOUND ? 404 : 500)
-        : 200;
+      const status =
+        result.status === IRPC_STATUS.ERROR
+          ? (result as IRPCPacketAnswer<IRPCData>).error?.code === RESOLVE_ERROR.NOT_FOUND
+            ? 404
+            : 500
+          : 200;
 
       return buildResponse(JSON.stringify(result), { status, headers });
     } catch (error) {

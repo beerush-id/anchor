@@ -170,9 +170,7 @@ export class HTTPTransport extends IRPCTransport {
         signal: controller.signal,
       };
 
-      const response = standalone
-        ? await fetch(url, init)
-        : await this.request(init, url);
+      const response = standalone ? await fetch(url, init) : await this.request(init, url);
 
       clearTimeout(breaker);
       if (typeof window !== 'undefined' && response?.headers?.has(COOKIES_SYNC_KEY)) {
