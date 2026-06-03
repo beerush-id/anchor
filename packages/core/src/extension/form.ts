@@ -1,16 +1,8 @@
 import { anchor } from '../engine/index.js';
-import { effect, replay, subscribe, untrack } from '../reactive/index.js';
+import { subscribe } from '../reactive/index.js';
 import { exception, model } from '../reactive/ref.js';
 import { onCleanup } from '../scope/index.js';
-import type {
-  ControlledSubscribe,
-  ExceptionMap,
-  ExceptionType,
-  LinkableSchema,
-  ModelInput,
-  ModelOutput,
-  StateChange,
-} from '../types.js';
+import type { ExceptionMap, ExceptionType, LinkableSchema, ModelInput, ModelOutput, StateChange } from '../types.js';
 
 export type FormOptions = {
   onChange?: (event: StateChange) => void;
@@ -34,26 +26,7 @@ export function form<S extends LinkableSchema, T extends ModelInput<S>>(
   init: T | (() => T),
   options?: FormOptions
 ): [ModelOutput<S>, ExceptionMap<ModelOutput<S>>] {
-  const state = model(schema, {} as T, { safeParse: true });
-
-  effect(() => {
-    const source = typeof init === 'function' ? init() : init;
-
-    if (anchor.has(source)) {
-      untrack(() => Object.assign(state, anchor.get(source)));
-      return (subscribe as ControlledSubscribe)(
-        source,
-        (_, event) => {
-          replay(state, event);
-        },
-        true,
-        true
-      );
-    }
-
-    Object.assign(state, source);
-  });
-
+  const state = model(schema, (typeof init === 'function' ? init() : init) as T, { safeParse: true });
   const { errors, destroy } = exception(state);
 
   if (options?.safeInit === false) {
