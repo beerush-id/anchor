@@ -459,19 +459,26 @@ export const LocalCounter = setup(() => {
 ```
 
 ### State: Cookies (Isomorphic Auth)
-`cookies()` returns a reactive state object backed by a browser cookie. The same call works in IRPC handlers (server) and route guards (client). Mutations auto-serialize to `Set-Cookie` headers on the server and `document.cookie` on the client.
+`cookies()` returns a reactive state object backed by a browser cookie. Reading cookies works everywhere — IRPC handlers, route guards, SSR renders, streaming or standalone. Writing cookies requires either a browser environment (writes to `document.cookie`) or a server call declared with `{ standalone: true }` (produces `Set-Cookie` headers via a dedicated HTTP round-trip). Server-side writes without standalone trigger a violation warning.
+
+```ts
+// Declare — standalone gives this call its own HTTP request with cookie write-back
+const signIn = irpc.declare('auth.signIn', () => ({ token: '', user: null }), { standalone: true });
+```
 
 ```ts
 // Handler — setting auth token after login
 import { cookies } from '@anchorlib/react';
 
-irpc.construct(signIn, (credentials) => {
+irpc.construct(signIn, async (credentials) => {
   const auth = cookies('auth', { token: '' });
 
   const result = await verify(credentials);
   if (result.success) {
     auth.token = result.token;
   }
+
+  return { token: auth.token, user: result.user };
 });
 ```
 

@@ -348,12 +348,6 @@ import './pages/constructor.js';
 const render = createSSR(pageRouter, RootLayout);
 const router = new HTTPRouter(irpc, transport);
 
-// Provide CookieJar to the IRPC handlers
-router.use(() => {
-  const cookieJar = decodeCookies(getContext('cookie', ''));
-  setCookieContext(cookieJar);
-});
-
 export default {
   async fetch(request: Request): Promise<Response> {
     const controller = new AbortController();
