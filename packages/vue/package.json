@@ -33,10 +33,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@anchorlib/core": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
-  },
+
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -54,6 +51,8 @@
     "vue": "catalog:lib"
   },
   "peerDependencies": {
+    "@anchorlib/core": "workspace:*",
+    "@anchorlib/storage": "workspace:*",
     "typescript": "catalog:lib",
     "vue": "catalog:lib"
   },

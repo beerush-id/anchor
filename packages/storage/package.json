@@ -33,9 +33,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@anchorlib/core": "workspace:*"
-  },
+
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
@@ -50,6 +48,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@anchorlib/core": "workspace:*",
     "typescript": "catalog:lib"
   },
   "scripts": {

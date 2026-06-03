@@ -88,12 +88,10 @@
     "vite-plugin-solid": "catalog:",
     "vitest": "catalog:"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/router": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
-  },
-  "peerDependencies": {
+    "@anchorlib/storage": "workspace:*",
     "solid-js": "catalog:lib",
     "typescript": "catalog:lib"
   },

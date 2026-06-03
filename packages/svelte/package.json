@@ -55,10 +55,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@anchorlib/core": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
-  },
+
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",
@@ -76,6 +73,8 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@anchorlib/core": "workspace:*",
+    "@anchorlib/storage": "workspace:*",
     "svelte": "catalog:lib",
     "typescript": "catalog:lib"
   },

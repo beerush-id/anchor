@@ -74,12 +74,10 @@
     "vite": "catalog:",
     "vitest": "catalog:"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/router": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
-  },
-  "peerDependencies": {
+    "@anchorlib/storage": "workspace:*",
     "react": "catalog:lib",
     "react-dom": "catalog:lib",
     "typescript": "catalog:lib"

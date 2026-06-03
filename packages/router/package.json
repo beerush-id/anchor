@@ -31,6 +31,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@anchorlib/core": "workspace:*",
     "typescript": "catalog:lib"
   },
   "scripts": {
@@ -42,8 +43,5 @@
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
     "prepublish": "bun run format && bun run build"
   },
-  "license": "MIT",
-  "dependencies": {
-    "@anchorlib/core": "workspace:*"
-  }
+  "license": "MIT"
 }
