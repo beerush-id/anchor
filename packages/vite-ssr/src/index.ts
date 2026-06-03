@@ -245,14 +245,7 @@ async function initRouter(
     }
 
     const { HTTPRouter } = await server.ssrLoadModule('@irpclib/http/router');
-    const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
     const router = new HTTPRouter(irpc, transport);
-
-    // Provide CookieJar to IRPC handlers (same pattern as createFullWorker)
-    router.use(() => {
-      const cookieJar = decodeCookies(getContext('cookie', ''));
-      setCookieContext(cookieJar);
-    });
 
     server.config.logger.info(
       `[air-ssr] IRPC HTTP router initialized at ${(transport as { endpoint: string }).endpoint}`
