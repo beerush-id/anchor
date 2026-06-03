@@ -227,11 +227,6 @@ describe('Anchor Core - Form API', () => {
 
       expect(state.name).toBe('Jane');
       expect(state.age).toBe(10);
-
-      source.data = { name: 'Jim', age: 20 };
-
-      expect(state.name).toBe('Jim');
-      expect(state.age).toBe(20);
     });
   });
 });

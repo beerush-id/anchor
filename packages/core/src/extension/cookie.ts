@@ -8,7 +8,8 @@ import { isBrowser, microtask } from '../utils/index.js';
 export const COOKIE_PREFIX = 'anchor-cookie://';
 
 /** Scope key for the cookie jar. */
-const COOKIE_JAR_KEY = Symbol('anchor-cookie-jar');
+export const COOKIE_JAR_KEY = Symbol('anchor-cookie-jar');
+export const COOKIE_JAR_WRITABLE = Symbol('anchor-cookie-jar-writable');
 
 export type CookieOptions = {
   /** The URL path the cookie is restricted to. Defaults to '/'. */
@@ -206,6 +207,7 @@ export function syncCookies() {
 }
 
 if (isBrowser()) {
+  setScope(COOKIE_JAR_WRITABLE, true);
   setCookieContext(decodeCookies(document.cookie));
   window.addEventListener('anchor:cookie-sync', syncCookies);
 }
@@ -273,6 +275,21 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
     } else if (jar) {
       const unsubscribe = controller.subscribe((_s, e) => {
         if (e.type === 'init' || syncing) return;
+
+        if (!isJarWritable()) {
+          const error = new Error('CookieJar is not writable.');
+          captureStack.violation.general(
+            'CookieJar violation detected.',
+            'Attempted to mutate cookies on a non-writable (streaming) context.',
+            error,
+            [
+              'CookieJar write-propagation is exclusive to these conditions:',
+              '- Write is performed in Browser environment.',
+              '- Write is performed in server environment that supports write-back handling.'
+            ]
+          );
+        }
+
         jar.changes.add(entry);
       });
       onGlobalCleanup(unsubscribe);
@@ -280,4 +297,8 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
   }
 
   return state;
+}
+
+function isJarWritable() {
+  return getScope<boolean>(COOKIE_JAR_WRITABLE) === true;
 }

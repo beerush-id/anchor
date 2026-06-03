@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   anchor,
+  COOKIE_JAR_WRITABLE,
   COOKIE_PREFIX,
   CookieJar,
   cookies,
@@ -8,6 +9,7 @@ import {
   encodeCookies,
   getCookieJar,
   setCookieContext,
+  setScope,
   syncCookies,
   withIsolation,
 } from '../../src/index.js';
@@ -286,8 +288,9 @@ describe('Cookie Storage', () => {
       errorSpy.mockRestore();
     });
 
-    it('should track changes on server (non-browser) environment', async () => {
+    it('should track changes on server (non-browser) environment with warning', async () => {
       vi.stubGlobal('window', undefined);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await withIsolation(async () => {
         const jar = decodeCookies('');
@@ -300,7 +303,33 @@ describe('Cookie Storage', () => {
         expect(jar.changes.size).toBe(1);
       });
 
+      expect(errorSpy).toHaveBeenCalled();
+
       vi.unstubAllGlobals();
+      errorSpy.mockRestore();
+    });
+
+    it('should track changes on server (non-browser) environment', async () => {
+      vi.stubGlobal('window', undefined);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await withIsolation(async () => {
+        setScope(COOKIE_JAR_WRITABLE, true);
+
+        const jar = decodeCookies('');
+        setCookieContext(jar);
+
+        const state = cookies('server-test', { v: 1 });
+        expect(jar.changes.size).toBe(0);
+
+        state.v = 2;
+        expect(jar.changes.size).toBe(1);
+      });
+
+      expect(errorSpy).not.toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+      errorSpy.mockRestore();
     });
   });
 
