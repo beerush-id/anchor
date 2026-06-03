@@ -168,13 +168,7 @@ export class BroadcastRouter extends IRPCRouter {
         return;
       }
 
-      const stream = new IRPCStream(
-        resolver.req.id,
-        resolver.req.name,
-        () => resolver.resolve(),
-        resolver.spec,
-        this
-      );
+      const stream = new IRPCStream(resolver.req.id, resolver.req.name, () => resolver.resolve(), resolver.spec, this);
 
       stream.pipe((packet) => {
         if (this.channel) {

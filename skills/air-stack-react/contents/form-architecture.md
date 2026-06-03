@@ -6,15 +6,16 @@ Form components scale based on coordination requirements.
 For standalone fields, the component owns its own state mutations internally and syncs with the parent via two-way binding (`$bind()`).
 
 ```tsx
+import type { EventHandler, ChangeEvent } from 'react';
 import { setup, render, type Bindable } from '@anchorlib/react';
 
 // Single-purpose autonomous wrapper
 export const InputField = setup<{ 
   type?: string, 
   value?: Bindable<string>,
-  onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onInput?: EventHandler<ChangeEvent<HTMLInputElement>>
 }>((props) => {
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
     props.value = e.currentTarget.value;
     props.onInput?.(e);
   };
@@ -33,50 +34,55 @@ export const InputField = setup<{
 For specialized inputs (e.g., number, date), use a local `mutable` state to buffer the raw text (preventing cursor jumping) while syncing the final parsed value to the `Bindable` prop.
 
 ```tsx
+import type { EventHandler, ChangeEvent, FocusEvent } from 'react';
 import { setup, render, mutable, effect, type Bindable } from '@anchorlib/react';
 
 export const NumberInput = setup<{ 
   value?: Bindable<number>, 
   min?: number,
-  onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
+  onInput?: EventHandler<ChangeEvent<HTMLInputElement>>,
+  onBlur?: EventHandler<FocusEvent<HTMLInputElement>>
 }>((props) => {
-  // Local buffer state prevents cursor jump on decimals, locked while typing
   const raw = mutable({ value: String(props.value ?? ''), locked: false });
 
-  // Sync top-down changes from parent unless actively typing
   effect(() => {
     if (raw.locked) return;
     raw.value = String(props.value ?? '');
   });
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
     raw.locked = true;
-    try {
-      const parsed = parseFloat(raw.value = e.currentTarget.value);
 
+    try {
+      raw.value = e.currentTarget.value;
+      if (!(/\d+$/.test(raw.value))) return;
+
+      const parsed = parseFloat(raw.value);
+      
       if (!isNaN(parsed)) {
         props.value = parsed;
       } else if (raw.value === '') {
         props.value = props.min ?? 0;
       }
-    } finally {
+
       raw.locked = false;
+    } finally {
+      props.onInput?.(e);
     }
-    props.onInput?.(e);
   };
 
-  const restore = (e: React.FocusEvent<HTMLInputElement>) => {
+  const restore = (e: FocusEvent<HTMLInputElement>) => {
     raw.value = String(props.value ?? '');
+    raw.locked = false;
     props.onBlur?.(e);
   };
 
   return render(() => (
     <input 
-      type="number" 
+      type="text" 
       value={raw.value} 
       onInput={handleInput} 
-      onBlur={restore}
+      onBlur={restore} 
     />
   ));
 });
@@ -86,14 +92,16 @@ export const NumberInput = setup<{
 When multiple inputs must be validated and submitted together, use a `Form` component as the State Owner, coordinating state via Context.
 
 ```tsx
-import { setup, render, createContext, form, derived, snapshot } from '@anchorlib/react';
-import type { ReactNode } from 'react';
-import { z, type ZodSchema } from 'zod';
+import { setup, render, createContext, form, snapshot, type Bindable } from '@anchorlib/react';
+import type { ReactNode, FormEvent } from 'react';
+import type { ZodType } from 'zod';
+import type { ExceptionMap } from '@anchorlib/react';
 
 // Define explicit context shapes
 export type FormContext = {
-  state: Record<string, unknown>;
-  errors: Record<string, { message: string }>;
+  state: Record<string, any>;
+  errors: ExceptionMap<any>;
+  get pending(): boolean;
 };
 
 export type FieldContext = {
@@ -104,18 +112,31 @@ export const formContext = createContext<FormContext>();
 export const fieldContext = createContext<FieldContext>();
 
 // The State Coordinator
-export const Form = setup<{ 
-  schema: ZodSchema, 
-  data: Record<string, unknown>, 
-  onSubmit?: (data: Record<string, unknown>) => void, 
+export const Form = setup<{
+  schema: ZodType, 
+  data?: Record<string, any>, 
+  pending?: Bindable<boolean>,
+  onSubmit?: (data: Record<string, unknown>, e: FormEvent) => void | Promise<void>,
   children?: ReactNode 
 }>((props) => {
-  const [state, errors] = form(props.schema, props.data);
-  formContext.set({ state, errors });
+  const [state, errors] = form(props.schema, () => props.data ?? {});
+  
+  formContext.set({ 
+    state, 
+    errors,
+    get pending() { return !!props.pending; }
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    props.onSubmit?.(snapshot(state));
+    if (props.pending) return;
+    
+    props.pending = true;
+    try {
+      await props.onSubmit?.(snapshot(state), e);
+    } finally {
+      props.pending = false;
+    }
   };
 
   return render(() => <form onSubmit={handleSubmit}>{props.children}</form>);
@@ -127,13 +148,13 @@ When the form's initial data comes from a reactive source that may change (e.g.,
 
 ```tsx
 // Source changes → form re-syncs
-const Form = setup<{ schema: ZodSchema, data: Record<string, unknown>, children?: ReactNode }>((props) => {
-  const [state, errors] = form(props.schema, () => props.data);
-  formContext.set({ state, errors });
+const Form = setup<{ schema: ZodType, data: Record<string, any>, children?: ReactNode }>((props) => {
+  const [state, errors] = form(props.schema, () => props.data ?? {});
+  formContext.set({ state, errors, get pending() { return false; } });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    props.onSubmit?.(snapshot(state));
+    // props.onSubmit?.(snapshot(state), e);
   };
 
   return render(() => <form onSubmit={handleSubmit}>{props.children}</form>);
@@ -154,10 +175,10 @@ export const FormField = setup<{ name: string, label?: string, children?: ReactN
   fieldContext.set({ name: props.name });
 
   return render(() => (
-    <div>
+    <div className="field">
       {props.label && <label>{props.label}</label>}
       {props.children}
-      {error.value && <span>{error.value}</span>}
+      {error.value && <span className="error">{error.value}</span>}
     </div>
   ));
 });
@@ -168,10 +189,10 @@ Inputs use `formContext.get()` and `fieldContext.get()` to completely bypass the
 
 ```tsx
 // The Context-Aware Input
-export const Input = setup<{ 
+export const InputField = setup<{ 
   type?: string, 
-  value?: string, 
-  onInput?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  value?: Bindable<string>,
+  onInput?: EventHandler<ChangeEvent<HTMLInputElement>> 
 }>((props) => {
   const formState = formContext.get();
   const field = fieldContext.get();
@@ -180,10 +201,15 @@ export const Input = setup<{
   // Derive value from Form Context if available, fallback to props
   const output = derived(() => withForm ? formState.state[field.name] : props.value);
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.currentTarget.value;
-    if (withForm) formState.state[field.name] = val;
-    else props.value = val;
+    
+    if (withForm) {
+      formState.state[field.name] = val;
+    } else {
+      props.value = val;
+    }
+    
     props.onInput?.(e);
   };
 
@@ -195,6 +221,16 @@ export const Input = setup<{
     />
   ));
 });
+
+export const SubmitButton = setup<{ disabled?: boolean, children?: ReactNode }>((props) => {
+  const formState = formContext.get();
+  
+  return render(() => (
+    <button type="submit" disabled={props.disabled || formState?.pending}>
+      {props.children}
+    </button>
+  ));
+});
 ```
 
 ### Strictly Typed Form Factory
@@ -202,10 +238,10 @@ To enforce type safety on field names (`name` prop matching schema keys), gradua
 
 ```tsx
 import { setup, render, createContext, form, derived, snapshot } from '@anchorlib/react';
-import type { ReactNode } from 'react';
-import { z, type ZodSchema } from 'zod';
+import type { ReactNode, FormEvent } from 'react';
+import { z, type ZodType } from 'zod';
 
-export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
+export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
   type FormData = z.infer<T>;
 
   // Strongly type the context for THIS specific schema
@@ -217,13 +253,13 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
   const formContext = createContext<FormContextType>();
   const fieldContext = createContext<{ name: string }>();
 
-  const Form = setup<{ onSubmit?: (data: FormData) => void, children?: ReactNode }>((props) => {
+  const Form = setup<{ onSubmit?: (data: FormData, e: FormEvent<HTMLFormElement>) => void, children?: ReactNode }>((props) => {
     const [state, errors] = form(schema, init);
     formContext.set({ state, errors });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      props.onSubmit?.(snapshot(state));
+      props.onSubmit?.(snapshot(state), e);
     };
 
     return render(() => <form onSubmit={handleSubmit}>{props.children}</form>);

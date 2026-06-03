@@ -3,12 +3,7 @@
   "name": "@anchorlib/core",
   "version": "1.0.0",
   "description": "Core reactive state management library for Anchor",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable"
-  ],
+  "keywords": ["state", "management", "reactive", "observable"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
@@ -35,9 +30,7 @@
       "import": "./dist/workflow/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -64,8 +57,8 @@
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsdown && publint",
-    "prepublish": "rimraf dist && tsdown && publint",
+    "build": "bun run clean && tsdown && publint",
+    "prepublish": "bun run format && bun run build",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
     "format": "biome format --write"

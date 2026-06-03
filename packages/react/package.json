@@ -3,13 +3,7 @@
   "name": "@anchorlib/react",
   "version": "1.0.0",
   "description": "React bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "react"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "react"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
@@ -56,9 +50,7 @@
       "import": "./dist/workflow/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -98,8 +90,8 @@
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsdown && publint",
-    "prepublish": "tsdown && publint",
+    "build": "bun run clean && tsdown && publint",
+    "prepublish": "bun run format && bun run build",
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"

@@ -42,10 +42,10 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const UiRoute = page(rawRoute);
       const loader = vi.fn();
       const fallback = vi.fn();
-      
+
       const renderAsyncSpy = vi.spyOn(rawRoute, 'renderAsync');
       const result = UiRoute.renderAsync(loader as never, fallback as never);
-      
+
       expect(renderAsyncSpy).toHaveBeenCalledWith(loader, fallback);
       expect(result).toBe(UiRoute);
     });

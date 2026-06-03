@@ -1,1 +1,4 @@
-{ "extends": ["../biome.json"] }
+{
+  "root": false,
+  "extends": "//"
+}

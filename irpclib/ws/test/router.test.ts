@@ -102,7 +102,10 @@ describe('WebSocketRouter', () => {
         }),
       } as any;
 
-      const message = JSON.stringify({ call: { id: '1', name: 'testFunc', args: [{ name: 'World' }] }, credentials: [] });
+      const message = JSON.stringify({
+        call: { id: '1', name: 'testFunc', args: [{ name: 'World' }] },
+        credentials: [],
+      });
       await router.resolve(message, ws);
     });
 

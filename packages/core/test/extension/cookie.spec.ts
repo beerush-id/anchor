@@ -416,9 +416,7 @@ describe('Cookie Storage', () => {
 
     it('should not touch unresolved jar entries during sync', async () => {
       await withIsolation(async () => {
-        const jar = decodeCookies(
-          `${COOKIE_PREFIX}unresolved=${encodeURIComponent(JSON.stringify({ a: 1 }))}`
-        );
+        const jar = decodeCookies(`${COOKIE_PREFIX}unresolved=${encodeURIComponent(JSON.stringify({ a: 1 }))}`);
         setCookieContext(jar);
 
         // Don't call cookies() — entry exists but value is not reactive

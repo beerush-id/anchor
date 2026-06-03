@@ -23,10 +23,8 @@ export function Show<T>(props: ShowProps<T>): JSX.Element {
     if (value) {
       const child = props.children;
       const isRenderProp = typeof child === 'function' && child.length > 0;
-      
-      return isRenderProp 
-        ? untrack(() => (child as any)(value as NonNullable<T>))
-        : child;
+
+      return isRenderProp ? untrack(() => (child as any)(value as NonNullable<T>)) : child;
     }
     return props.fallback;
   }) as unknown as JSX.Element;

@@ -82,7 +82,7 @@ describe('replay.any', () => {
     replay.any(state, { type: 'splice', keys: [], value: [0, 1] } as StateChange);
     expect(state).toEqual([2]);
   });
-  
+
   it('should handle nested paths', () => {
     const state = { nested: { map: new Map([['key', 1]]) } };
     replay.any(state, { type: 'map:set', keys: ['nested', 'map', 'key'], value: 2 } as StateChange);

@@ -119,12 +119,7 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith(
-      '/',
-      '',
-      customContext,
-      expect.any(AbortController)
-    );
+    expect(renderer).toHaveBeenCalledWith('/', '', customContext, expect.any(AbortController));
   });
 
   it('defaults context to empty array', async () => {
@@ -133,28 +128,20 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith(
-      '/',
-      '',
-      [],
-      expect.any(AbortController)
-    );
+    expect(renderer).toHaveBeenCalledWith('/', '', [], expect.any(AbortController));
   });
 
   it('passes cookie from request header', async () => {
     const renderer = createMockRenderer();
     const worker = createWorker(renderer, { template: TEMPLATE });
 
-    await worker.fetch(createRequest('http://localhost/', {
-      headers: { cookie: 'session=abc' },
-    }));
-
-    expect(renderer).toHaveBeenCalledWith(
-      '/',
-      'session=abc',
-      [],
-      expect.any(AbortController)
+    await worker.fetch(
+      createRequest('http://localhost/', {
+        headers: { cookie: 'session=abc' },
+      })
     );
+
+    expect(renderer).toHaveBeenCalledWith('/', 'session=abc', [], expect.any(AbortController));
   });
 
   it('applies createResponse hook', async () => {
@@ -311,9 +298,13 @@ describe('createFullWorker', () => {
   function createMockRouter(options?: { resolveResponse?: Response }) {
     return {
       transport: { endpoint: '/irpc' },
-      resolve: vi.fn(async () => options?.resolveResponse ?? new Response('{"ok":true}', {
-        headers: { 'Content-Type': 'application/x-ndjson' },
-      })),
+      resolve: vi.fn(
+        async () =>
+          options?.resolveResponse ??
+          new Response('{"ok":true}', {
+            headers: { 'Content-Type': 'application/x-ndjson' },
+          })
+      ),
       isolate: vi.fn(async (handler: () => any, _controller?: any, _ctx?: any, preHook?: () => void) => {
         preHook?.();
         return handler();
@@ -327,10 +318,12 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    const response = await worker.fetch(createRequest('http://localhost/irpc', {
-      method: 'POST',
-      body: '{}',
-    }));
+    const response = await worker.fetch(
+      createRequest('http://localhost/irpc', {
+        method: 'POST',
+        body: '{}',
+      })
+    );
 
     expect(router.resolve).toHaveBeenCalled();
     expect(renderer).not.toHaveBeenCalled();
@@ -343,10 +336,12 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    const response = await worker.fetch(createRequest('http://localhost/other', {
-      method: 'POST',
-      body: '{}',
-    }));
+    const response = await worker.fetch(
+      createRequest('http://localhost/other', {
+        method: 'POST',
+        body: '{}',
+      })
+    );
 
     expect(router.resolve).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
@@ -380,13 +375,7 @@ describe('createFullWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith(
-      '/',
-      '',
-      undefined,
-      expect.any(AbortController),
-      true
-    );
+    expect(renderer).toHaveBeenCalledWith('/', '', undefined, expect.any(AbortController), true);
   });
 
   it('passes controller and contextSeed to isolate', async () => {
@@ -435,15 +424,14 @@ describe('createFullWorker', () => {
       resolveContext: () => customContext,
     });
 
-    await worker.fetch(createRequest('http://localhost/irpc', {
-      method: 'POST',
-      body: '{}',
-    }));
-
-    expect(router.resolve).toHaveBeenCalledWith(
-      expect.any(Request),
-      customContext
+    await worker.fetch(
+      createRequest('http://localhost/irpc', {
+        method: 'POST',
+        body: '{}',
+      })
     );
+
+    expect(router.resolve).toHaveBeenCalledWith(expect.any(Request), customContext);
   });
 
   it('resolves assets before SSR in full worker', async () => {
@@ -496,10 +484,12 @@ describe('createFullWorker', () => {
       },
     });
 
-    const response = await worker.fetch(createRequest('http://localhost/irpc', {
-      method: 'POST',
-      body: '{}',
-    }));
+    const response = await worker.fetch(
+      createRequest('http://localhost/irpc', {
+        method: 'POST',
+        body: '{}',
+      })
+    );
 
     expect(response.headers.get('X-Custom')).toBe('irpc');
   });
@@ -585,10 +575,12 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE, timeout: 5000 });
 
-    await worker.fetch(createRequest('http://localhost/irpc', {
-      method: 'POST',
-      body: '{}',
-    }));
+    await worker.fetch(
+      createRequest('http://localhost/irpc', {
+        method: 'POST',
+        body: '{}',
+      })
+    );
 
     expect(router.resolve).toHaveBeenCalled();
 
@@ -606,9 +598,11 @@ describe('createFullWorker', () => {
     const router = createMockRouter();
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    const response = await worker.fetch(createRequest('http://localhost/', {
-      headers: { cookie: 'session=abc' },
-    }));
+    const response = await worker.fetch(
+      createRequest('http://localhost/', {
+        headers: { cookie: 'session=abc' },
+      })
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.getSetCookie()).toEqual(['session=abc; Path=/']);

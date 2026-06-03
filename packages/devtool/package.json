@@ -10,9 +10,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -39,10 +37,10 @@
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",
-    "build": "rimraf dist && tsup && publint",
+    "build": "bun run clean && tsup && publint",
     "clean": "rimraf dist",
     "format": "biome format --write",
-    "prepublish": "rimraf dist && tsup && publint"
+    "prepublish": "bun run format && bun run build"
   },
   "license": "MIT"
 }

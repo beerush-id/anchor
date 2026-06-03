@@ -104,7 +104,7 @@ describe('Anchor Core - Retriable', () => {
     const promise = retriable(fn, {
       maxRetries: 1,
       retryDelay: 10,
-      retryMode: 'linear'
+      retryMode: 'linear',
     });
 
     await expect(promise).rejects.toThrow('Failure');
@@ -116,7 +116,7 @@ describe('Anchor Core - Retriable', () => {
     const promise = retriable(fn, {
       maxRetries: 1,
       retryDelay: 10,
-      retryMode: 'exponential'
+      retryMode: 'exponential',
     });
 
     await expect(promise).rejects.toThrow('Failure');
@@ -140,7 +140,7 @@ describe('Anchor Core - Retriable', () => {
     const promise = retriable(fn, {
       controller,
       maxRetries: 2,
-      retryDelay: 10
+      retryDelay: 10,
     });
 
     // Abort during the function execution

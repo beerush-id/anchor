@@ -961,9 +961,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should return output when path does not exist', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', (input) => ({ ...input, a: true })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', (input) => ({ ...input, a: true }))];
 
       const stepper = new WorkflowStepper(steps);
       await stepper.step({ value: 1 });
@@ -1034,9 +1032,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should not hydrate a closed stepper', async () => {
-      const steps: WorkflowEntry[] = [
-        step('1', (input) => ({ ...input, a: true })),
-      ];
+      const steps: WorkflowEntry[] = [step('1', (input) => ({ ...input, a: true }))];
 
       const stepper = new WorkflowStepper(steps, { passive: true });
       await stepper.run({ value: 1 });
@@ -1055,7 +1051,9 @@ describe('WorkflowStepper', () => {
 
     it('should snapshot error as message string', async () => {
       const steps: WorkflowEntry[] = [
-        step('1', () => { throw new Error('snap-error'); }),
+        step('1', () => {
+          throw new Error('snap-error');
+        }),
       ];
 
       const stepper = new WorkflowStepper(steps, { passive: true });
@@ -1066,9 +1064,7 @@ describe('WorkflowStepper', () => {
     });
 
     it('should hydrate error from message string', () => {
-      const steps: WorkflowEntry[] = [
-        step('1', (input) => input),
-      ];
+      const steps: WorkflowEntry[] = [step('1', (input) => input)];
 
       const stepper = new WorkflowStepper(steps, { passive: true });
       stepper.hydrate({

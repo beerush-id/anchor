@@ -52,10 +52,10 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const UiPage = page(rawRoute);
       const loader = vi.fn();
       const fallback = vi.fn();
-      
+
       const renderAsyncSpy = vi.spyOn(rawRoute, 'renderAsync');
       const result = UiPage.renderAsync(loader as never, fallback as never);
-      
+
       expect(renderAsyncSpy).toHaveBeenCalledWith(loader, fallback);
       expect(result).toBe(UiPage);
     });

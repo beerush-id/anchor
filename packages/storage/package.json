@@ -3,13 +3,7 @@
   "name": "@anchorlib/storage",
   "version": "1.0.0",
   "description": "Persistent storage solutions for Anchor state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "storage"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "storage"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
@@ -32,9 +26,7 @@
       "import": "./dist/db/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -63,9 +55,9 @@
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsdown && publint",
+    "build": "bun run clean && tsdown && publint",
     "format": "biome format --write",
-    "prepublish": "rimraf dist && tsdown && publint",
+    "prepublish": "bun run format && bun run build",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   },

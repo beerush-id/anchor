@@ -149,10 +149,13 @@ describe('Anchor Helpers', () => {
       anchor.assign<ObjLike>(state, { a: 10, c: 3 }, true);
 
       expect(state).toEqual({ a: 10, c: 3 });
-      expect(handler).toHaveBeenCalledWith(state, expect.objectContaining({
-        type: 'replace',
-        changes: expect.arrayContaining(['b', 'a', 'c']),
-      }));
+      expect(handler).toHaveBeenCalledWith(
+        state,
+        expect.objectContaining({
+          type: 'replace',
+          changes: expect.arrayContaining(['b', 'a', 'c']),
+        })
+      );
 
       unsubscribe();
     });

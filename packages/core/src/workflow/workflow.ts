@@ -190,7 +190,11 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       id: uuid(),
       path,
       type: 'catch',
-      handler: handler as (error: Error, input: WorkflowData, ctx: WorkflowStepContext) => WorkflowData | Promise<WorkflowData>,
+      handler: handler as (
+        error: Error,
+        input: WorkflowData,
+        ctx: WorkflowStepContext
+      ) => WorkflowData | Promise<WorkflowData>,
       meta,
     };
 
@@ -208,7 +212,11 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       id: uuid(),
       path,
       type: 'finally',
-      handler: handler as (input: WorkflowData, error: Error | undefined, ctx: WorkflowStepContext) => void | Promise<void>,
+      handler: handler as (
+        input: WorkflowData,
+        error: Error | undefined,
+        ctx: WorkflowStepContext
+      ) => void | Promise<void>,
       meta,
     };
 

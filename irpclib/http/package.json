@@ -14,9 +14,7 @@
       "import": "./dist/router.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "directories": {
     "dist": "./dist"
   },
@@ -42,10 +40,10 @@
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsdown && publint",
+    "build": "bun run clean && tsdown && publint",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage",
-    "prepublish": "tsdown && publint",
+    "prepublish": "bun run format && bun run build",
     "format": "biome format --write"
   },
   "license": "MIT"

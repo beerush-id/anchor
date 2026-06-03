@@ -2,13 +2,7 @@
   "name": "@anchorlib/svelte",
   "version": "1.0.0",
   "description": "Svelte bindings for Anchor reactive state management",
-  "keywords": [
-    "state",
-    "management",
-    "reactive",
-    "observable",
-    "svelte"
-  ],
+  "keywords": ["state", "management", "reactive", "observable", "svelte"],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
@@ -57,9 +51,7 @@
   "directories": {
     "dist": "./dist"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -90,8 +82,8 @@
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
-    "build": "rimraf dist && tsdown && publint",
-    "prepublish": "rimraf dist && tsdown && publint",
+    "build": "bun run clean && tsdown && publint",
+    "prepublish": "bun run format && bun run build",
     "format": "biome format --write",
     "test": "rimraf coverage && vitest --run",
     "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"

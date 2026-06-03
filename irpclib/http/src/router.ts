@@ -94,10 +94,10 @@ export class HTTPRouter extends IRPCRouter {
       return await this.resolveForm(await request.formData(), context, builder);
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
-      return buildResponse(
-        JSON.stringify(ResolveError.failed(error as Error).json()),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 
@@ -125,10 +125,10 @@ export class HTTPRouter extends IRPCRouter {
       return this.resolveJson(await req.json(), name, context, builder);
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ name, method: req.method, url: req.url }]);
-      return buildResponse(
-        JSON.stringify(ResolveError.failed(error as Error).json()),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 
@@ -230,10 +230,10 @@ export class HTTPRouter extends IRPCRouter {
       });
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ id: req.id, name: req.name }]);
-      return buildResponse(
-        JSON.stringify(ResolveError.failed(error as Error).json()),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   }
 

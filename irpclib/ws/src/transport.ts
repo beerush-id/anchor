@@ -222,7 +222,9 @@ export class WebSocketTransport extends IRPCTransport {
         this.reconnectAttempts++;
         await this.connect();
       } catch (error) {
-        IRPC_STORE.error(TransportError.failed(error as Error), [{ url: this.config.url, attempts: this.reconnectAttempts }]);
+        IRPC_STORE.error(TransportError.failed(error as Error), [
+          { url: this.config.url, attempts: this.reconnectAttempts },
+        ]);
         if (
           this.config.autoReconnect !== false &&
           this.reconnectAttempts < (this.config.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS)
@@ -289,7 +291,10 @@ export class WebSocketTransport extends IRPCTransport {
       try {
         await this.pendingConnection;
       } catch (error) {
-        IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
+        IRPC_STORE.error(
+          error as Error,
+          calls.map((c) => ({ id: c.id, name: c.payload.name }))
+        );
         calls.forEach((call) => {
           call.enqueue({
             id: call.id,
@@ -310,7 +315,10 @@ export class WebSocketTransport extends IRPCTransport {
       try {
         await this.connect();
       } catch (error) {
-        IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
+        IRPC_STORE.error(
+          error as Error,
+          calls.map((c) => ({ id: c.id, name: c.payload.name }))
+        );
         calls.forEach((call) => {
           call.enqueue({
             id: call.id,
@@ -357,7 +365,10 @@ export class WebSocketTransport extends IRPCTransport {
 
       queues.clear();
     } catch (error) {
-      IRPC_STORE.error(error as Error, calls.map((c) => ({ id: c.id, name: c.payload.name })));
+      IRPC_STORE.error(
+        error as Error,
+        calls.map((c) => ({ id: c.id, name: c.payload.name }))
+      );
       calls.forEach((call) => {
         this.pendingCalls.delete(call.id);
 
