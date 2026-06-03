@@ -1,6 +1,8 @@
-import { IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
+import '@irpclib/irpc/server';
+import { createPackage, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COOKIES_EVENT, COOKIES_SYNC_KEY, DEFAULT_ENDPOINT, HTTPTransport, IRPC_JSON_KEY } from '../src/index.js';
+import { HTTPRouter } from '../src/router.js';
 
 describe('HTTPTransport', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -1187,6 +1189,356 @@ describe('HTTPTransport', () => {
 
       await transport['dispatch']([call]);
       expect(true).toBe(true);
+    });
+  });
+
+  describe('standalone dispatch', () => {
+    it('should dispatch to webPath URL with call name when standalone', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        endpoint: '/rpc',
+      });
+
+      let fetchUrl: string | URL | undefined;
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+        fetchUrl = url as URL;
+        return {
+          ok: true,
+          headers: { has: () => false },
+          json: async () => ({
+            id: '1',
+            name: 'login',
+            type: IRPC_PACKET_TYPE.ANSWER,
+            status: IRPC_STATUS.SUCCESS,
+            data: { token: 'abc' },
+            createdAt: Date.now(),
+          }),
+        } as any;
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(fetchUrl?.toString()).toBe('https://api.example.com/rpc/web/login');
+      mockFetch.mockRestore();
+    });
+
+    it('should read response as JSON and enqueue packet directly', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+      });
+
+      const packet = {
+        id: '1',
+        name: 'login',
+        type: IRPC_PACKET_TYPE.ANSWER,
+        status: IRPC_STATUS.SUCCESS,
+        data: { token: 'abc' },
+        createdAt: Date.now(),
+      };
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        return {
+          ok: true,
+          headers: { has: () => false },
+          json: async () => packet,
+        } as any;
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(call.enqueue).toHaveBeenCalledTimes(1);
+      expect(call.enqueue).toHaveBeenCalledWith(packet);
+
+      mockFetch.mockRestore();
+    });
+
+    it('should not call resolveAll when standalone', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+      });
+
+      const resolveAllSpy = vi.spyOn(transport as any, 'resolveAll');
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        return {
+          ok: true,
+          headers: { has: () => false },
+          json: async () => ({
+            id: '1',
+            name: 'login',
+            type: IRPC_PACKET_TYPE.ANSWER,
+            status: IRPC_STATUS.SUCCESS,
+            data: null,
+            createdAt: Date.now(),
+          }),
+        } as any;
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(resolveAllSpy).not.toHaveBeenCalled();
+
+      resolveAllSpy.mockRestore();
+      mockFetch.mockRestore();
+    });
+
+    it('should dispatch cookie sync event when standalone response has cookie header', async () => {
+      const isWindowDefined = typeof window !== 'undefined';
+      if (!isWindowDefined) {
+        (globalThis as any).window = { dispatchEvent: vi.fn() };
+        (globalThis as any).location = { origin: 'http://localhost' };
+      }
+      const isCustomEventDefined = typeof CustomEvent !== 'undefined';
+      if (!isCustomEventDefined) {
+        (globalThis as any).CustomEvent = class {
+          type: string;
+          constructor(type: string) {
+            this.type = type;
+          }
+        };
+      }
+
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent').mockImplementation(() => true);
+
+      const transport = new HTTPTransport({});
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        return {
+          ok: true,
+          headers: { has: (key: string) => key.toLowerCase() === COOKIES_SYNC_KEY },
+          json: async () => ({
+            id: '1',
+            name: 'login',
+            type: IRPC_PACKET_TYPE.ANSWER,
+            status: IRPC_STATUS.SUCCESS,
+            data: null,
+            createdAt: Date.now(),
+          }),
+        } as any;
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(dispatchSpy).toHaveBeenCalled();
+      expect((dispatchSpy.mock.calls[0][0] as any).type).toBe(COOKIES_EVENT);
+
+      dispatchSpy.mockRestore();
+      mockFetch.mockRestore();
+
+      if (!isWindowDefined) {
+        delete (globalThis as any).window;
+      }
+      if (!isCustomEventDefined) {
+        delete (globalThis as any).CustomEvent;
+      }
+    });
+
+    it('should reject call when standalone response is not ok', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+      });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        return {
+          ok: false,
+          statusText: 'Unauthorized',
+          headers: { has: () => false },
+        } as any;
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { type: 'transport', code: 'error', message: 'Unauthorized' },
+        })
+      );
+
+      mockFetch.mockRestore();
+    });
+
+    it('should reject call when standalone fetch throws', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+      });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network error'));
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(call.enqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: { type: 'transport', code: 'error', message: 'Network error' },
+        })
+      );
+
+      mockFetch.mockRestore();
+    });
+
+    it('should use default endpoint for non-standalone dispatch', async () => {
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        endpoint: '/rpc',
+      });
+
+      let fetchUrl: string | URL | undefined;
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+        fetchUrl = url as URL;
+        return {
+          ok: true,
+          body: { getReader: () => ({ read: async () => ({ done: true }), releaseLock: () => {} }) },
+        } as any;
+      });
+
+      await transport['dispatch']([]);
+
+      expect(fetchUrl?.toString()).toBe('https://api.example.com/rpc');
+      mockFetch.mockRestore();
+    });
+  });
+
+  describe('transport ↔ router bridge', () => {
+    it('should round-trip a standalone call through router.resolve', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        endpoint: '/rpc',
+      });
+      const router = new HTTPRouter(module, transport);
+
+      type LoginFunc = (input: { user: string }) => Promise<{ token: string }>;
+      const loginFunc = module.declare<LoginFunc>({ name: 'login', seed: () => ({ token: '' }) });
+      module.construct(loginFunc, async (input) => ({ token: `tok_${input.user}` }));
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+        const request = new Request(url, init);
+        return router.resolve(request);
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'login', args: [{ user: 'admin' }] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(call.enqueue).toHaveBeenCalledTimes(1);
+      const packet = call.enqueue.mock.calls[0][0];
+      expect(packet.data).toEqual({ token: 'tok_admin' });
+      expect(packet.status).toBe('success');
+
+      mockFetch.mockRestore();
+    });
+
+    it('should round-trip an error through the bridge', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        endpoint: '/rpc',
+      });
+      const router = new HTTPRouter(module, transport);
+
+      type FailFunc = () => Promise<string>;
+      const failFunc = module.declare<FailFunc>({ name: 'fail', seed: () => '' });
+      module.construct(failFunc, async () => { throw new Error('Server error'); });
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+        const request = new Request(url, init);
+        return router.resolve(request);
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'fail', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(call.enqueue).toHaveBeenCalledTimes(1);
+      const packet = call.enqueue.mock.calls[0][0];
+      expect(packet.type).toBe(IRPC_PACKET_TYPE.CLOSE);
+      expect(packet.status).toBe(IRPC_STATUS.ERROR);
+
+      mockFetch.mockRestore();
+    });
+
+    it('should round-trip a non-existent function through the bridge', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new HTTPTransport({
+        baseURL: 'https://api.example.com',
+        endpoint: '/rpc',
+      });
+      const router = new HTTPRouter(module, transport);
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+        const request = new Request(url, init);
+        return router.resolve(request);
+      });
+
+      const call = {
+        id: '1',
+        payload: { name: 'nonExistent', args: [] },
+        options: {},
+        enqueue: vi.fn(),
+      } as any;
+
+      await transport['dispatch']([call], true);
+
+      expect(call.enqueue).toHaveBeenCalledTimes(1);
+      const packet = call.enqueue.mock.calls[0][0];
+      expect(packet.type).toBe(IRPC_PACKET_TYPE.CLOSE);
+      expect(packet.status).toBe(IRPC_STATUS.ERROR);
+
+      mockFetch.mockRestore();
     });
   });
 });

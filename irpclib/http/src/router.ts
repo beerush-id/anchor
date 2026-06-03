@@ -1,4 +1,4 @@
-import { replay } from '@anchorlib/core';
+import { replay, COOKIE_JAR_WRITABLE, decodeCookies, setCookieContext, setScope } from '@anchorlib/core';
 import {
   createContextStore,
   createCredentials,
@@ -22,8 +22,8 @@ import {
   IRPCStream,
   withContext,
 } from '@irpclib/irpc';
-import { IRPC_JSON_KEY } from './enum.js';
-import type { HTTPTransport } from './transport.js';
+import { IRPC_JSON_KEY, IRPC_WEB_PATH } from './enum.js';
+import { COOKIES_SYNC_KEY, type HTTPTransport } from './transport.js';
 
 /**
  * Default resolver function that creates an IRPCResolver instance
@@ -90,8 +90,15 @@ export class HTTPRouter extends IRPCRouter {
       return new Response(body, init);
     };
 
+    const [, suffix] = request.url.split(this.config.endpoint);
+
     try {
-      return await this.resolveForm(await request.formData(), context, builder);
+      if (suffix?.startsWith(IRPC_WEB_PATH)) {
+        return await this.resolveBuffered(request, context, builder);
+      }
+
+      const jar = decodeCookies(request.headers.get('cookie') ?? '');
+      return await this.resolveForm(await request.formData(), context, builder, jar);
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
       return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
@@ -140,7 +147,7 @@ export class HTTPRouter extends IRPCRouter {
    * @param builder - Optional custom response builder function
    * @returns A Response object with the resolved data
    */
-  public async resolveForm(body: FormData, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder) {
+  public async resolveForm(body: FormData, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder, jar?: ReturnType<typeof decodeCookies>) {
     const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as IRPCRequests;
 
     const requests = irpcRequests.calls.map((req) => {
@@ -160,7 +167,7 @@ export class HTTPRouter extends IRPCRouter {
     });
 
     const credStore = createCredentials(irpcRequests.credentials ?? []);
-    return this.resolveRequests(requests, [...context, [IRPC_BASE_CONTEXT.CREDENTIALS, credStore]], builder);
+    return this.resolveRequests(requests, [...context, [IRPC_BASE_CONTEXT.CREDENTIALS, credStore]], builder, jar);
   }
 
   /**
@@ -248,7 +255,8 @@ export class HTTPRouter extends IRPCRouter {
   private resolveRequests(
     resolvers: IRPCResolver[],
     initContext: [string | symbol, unknown][] = [],
-    builder?: HTTPResponseBuilder
+    builder?: HTTPResponseBuilder,
+    jar?: ReturnType<typeof decodeCookies>
   ): Response {
     const buildResponse = (body: BodyInit, init: ResponseInit) => {
       if (builder) return builder(body, init);
@@ -272,6 +280,8 @@ export class HTTPRouter extends IRPCRouter {
           ]);
 
           return withContext(ctx, async () => {
+            if (jar) setCookieContext(jar);
+
             const error = await this.resolveHooks(resolver.req);
 
             if (error) {
@@ -327,5 +337,110 @@ export class HTTPRouter extends IRPCRouter {
         'Transfer-Encoding': 'chunked',
       },
     });
+  }
+
+  /**
+   * Resolves a standalone (one-shot) HTTP request.
+   *
+   * Decodes cookies from the request, resolves the call with a writable
+   * cookie context, and returns a complete JSON response with Set-Cookie headers.
+   *
+   * @param request - The incoming HTTP request
+   * @param context - Optional context to initialize the resolver with
+   * @param builder - Optional custom response builder function
+   * @returns A Response object with the resolved data and Set-Cookie headers
+   */
+  public async resolveBuffered(
+    request: Request,
+    context: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder
+  ) {
+    const buildResponse = (body: BodyInit, init: ResponseInit) => {
+      if (builder) return builder(body, init);
+      return new Response(body, init);
+    };
+
+    const jar = decodeCookies(request.headers.get('cookie') ?? '');
+    const body = await request.formData();
+    const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as IRPCRequests;
+
+    const req = irpcRequests.calls[0];
+
+    if (req.files?.length) {
+      const stream = decode({ data: req.args as IRPCData, files: req.files });
+
+      for (const [id, file] of stream.files) {
+        file.data = body.get(id) as File;
+        file.status = IRPC_FILE_STATUS.SUCCESS;
+      }
+
+      req.args = stream.data as unknown[];
+      delete req.files;
+    }
+
+    const resolver = this.config.resolver(req, this.module);
+    const credStore = createCredentials(irpcRequests.credentials ?? []);
+    const abortController = new AbortController();
+
+    const ctx = createContextStore<string | symbol, unknown>([
+      [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
+      [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, abortController],
+      [IRPC_BASE_CONTEXT.CREDENTIALS, credStore],
+      ...context,
+    ]);
+
+    try {
+      const result = await withContext(ctx, async () => {
+        setCookieContext(jar);
+        setScope(COOKIE_JAR_WRITABLE, true);
+
+        const error = await this.resolveHooks(resolver.req);
+        if (error) return { error, status: error.status };
+
+        const stream = new IRPCStream(
+          resolver.req.id,
+          resolver.req.name,
+          () => resolver.resolve(),
+          resolver.spec,
+          this
+        );
+
+        return new Promise<IRPCPacketStream<IRPCData>>((resolve) => {
+          const result = {} as IRPCPacketStream<IRPCData>;
+
+          stream.pipe((packet) => {
+            if (packet.type === IRPC_PACKET_TYPE.EVENT) {
+              replay.any(result, (packet as IRPCPacketEvent).data);
+            } else {
+              Object.assign(result, packet);
+            }
+          });
+
+          stream.close(() => resolve(result));
+        });
+      });
+
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+
+      for (const cookie of jar.encode()) {
+        headers.append('Set-Cookie', cookie);
+      }
+
+      if (jar.changes.size) {
+        headers.set(COOKIES_SYNC_KEY, '1');
+      }
+
+      const status = result.status === IRPC_STATUS.ERROR
+        ? ((result as IRPCPacketAnswer<IRPCData>).error?.code === RESOLVE_ERROR.NOT_FOUND ? 404 : 500)
+        : 200;
+
+      return buildResponse(JSON.stringify(result), { status, headers });
+    } catch (error) {
+      IRPC_STORE.error(error as Error, [{ id: req.id, name: req.name }]);
+      return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   }
 }

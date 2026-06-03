@@ -1,6 +1,6 @@
 import {
-  encode,
   CallError,
+  encode,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   IRPC_STORE,
@@ -8,10 +8,10 @@ import {
   type IRPCData,
   type IRPCPacketStream,
   IRPCTransport,
-  TransportError,
   type TransportConfig,
+  TransportError,
 } from '@irpclib/irpc';
-import { IRPC_JSON_KEY } from './enum.js';
+import { IRPC_JSON_KEY, IRPC_WEB_PATH } from './enum.js';
 
 export const COOKIES_EVENT = 'anchor:cookie-sync';
 export const DEFAULT_ORIGIN = 'http://localhost';
@@ -64,14 +64,16 @@ export class HTTPTransport extends IRPCTransport {
     return this.config.endpoint ?? DEFAULT_ENDPOINT;
   }
 
+  public get webPath() {
+    return `${this.endpoint}${IRPC_WEB_PATH}`;
+  }
+
   /**
    * Constructs the full URL for HTTP requests.
    * Combines the baseURL and endpoint to create a complete URL.
    */
   public get url() {
-    const defaultUrl =
-      typeof globalThis.location !== 'undefined' ? (globalThis.location.origin ?? DEFAULT_ORIGIN) : DEFAULT_ORIGIN;
-    return new URL(this.endpoint, this.config.baseURL ?? defaultUrl);
+    return this.createUrl();
   }
 
   /**
@@ -80,6 +82,13 @@ export class HTTPTransport extends IRPCTransport {
    */
   constructor(public config: HTTPTransportConfig) {
     super(config);
+  }
+
+  private createUrl(web?: string) {
+    const defaultUrl =
+      typeof globalThis.location !== 'undefined' ? (globalThis.location.origin ?? DEFAULT_ORIGIN) : DEFAULT_ORIGIN;
+    const endpoint = web ? `${this.webPath}/${web}` : this.endpoint;
+    return new URL(endpoint, this.config.baseURL ?? defaultUrl);
   }
 
   private dequeue(call: IRPCCall, abort?: boolean) {
@@ -104,8 +113,9 @@ export class HTTPTransport extends IRPCTransport {
    * Dispatches RPC calls over HTTP.
    * Sends all pending calls in a single HTTP POST request.
    * @param calls - Array of RPC calls to dispatch.
+   * @param standalone - When true, dispatches to the standalone web endpoint and reads a JSON response.
    */
-  protected async dispatch(calls: IRPCCall[]) {
+  protected async dispatch(calls: IRPCCall[], standalone?: boolean) {
     try {
       const form = new FormData();
 
@@ -147,7 +157,9 @@ export class HTTPTransport extends IRPCTransport {
         }, maxTimeout) as never;
       }
 
-      const response = await this.request({
+      const url = standalone ? this.createUrl(calls[0].payload.name) : this.url;
+
+      const init: RequestInit = {
         ...this.config.fetchOptions,
         method: 'POST',
         headers: {
@@ -156,7 +168,11 @@ export class HTTPTransport extends IRPCTransport {
         },
         body: form,
         signal: controller.signal,
-      });
+      };
+
+      const response = standalone
+        ? await fetch(url, init)
+        : await this.request(init, url);
 
       clearTimeout(breaker);
       if (typeof window !== 'undefined' && response?.headers?.has(COOKIES_SYNC_KEY)) {
@@ -179,7 +195,14 @@ export class HTTPTransport extends IRPCTransport {
         return;
       }
 
-      await this.resolveAll(calls, response);
+      if (standalone) {
+        const call = calls[0];
+        const packet = await response.json();
+        call.enqueue(packet);
+        this.dequeue(call);
+      } else {
+        await this.resolveAll(calls, response);
+      }
     } catch (error) {
       IRPC_STORE.error(
         error as Error,
@@ -205,14 +228,14 @@ export class HTTPTransport extends IRPCTransport {
    * buffering fetch() POST streaming responses after page load.
    * Falls back to fetch() in non-browser environments (Workers, Deno).
    */
-  private request(init: RequestInit): Promise<Response> {
+  private request(init: RequestInit, url: URL = this.url): Promise<Response> {
     if (typeof XMLHttpRequest === 'undefined') {
-      return fetch(this.url, init);
+      return fetch(url, init);
     }
 
     return new Promise<Response>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', this.url.toString());
+      xhr.open('POST', url.toString());
 
       if (init.headers) {
         const headers = new Headers(init.headers as Record<string, string>);

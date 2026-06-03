@@ -65,8 +65,8 @@ export class IRPCTransport {
 
     const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay }, reader);
 
-    if (spec.stream || config?.buffered) {
-      this.dispatch([call], config?.buffered)
+    if (spec.stream || config?.standalone) {
+      this.dispatch([call], config?.standalone)
         .finally(() => {})
         .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return call.reader;
@@ -132,13 +132,23 @@ export class IRPCTransport {
   }
 
   /**
-   * Dispatches a batch of RPC calls. This base implementation rejects all calls
-   * with a "not implemented" error. Subclasses should override this method to
-   * provide actual transport mechanism.
+   * Dispatches RPC calls over the transport. Subclasses must override this
+   * to provide the actual transport mechanism (HTTP, WebSocket, etc.).
+   *
+   * When `standalone` is true, the call requires its own dedicated HTTP
+   * round-trip with full response lifecycle (cookies, headers). This is
+   * used for operations like authentication where `Set-Cookie` headers
+   * must flow back to the client. Only one call is dispatched at a time
+   * in standalone mode.
+   *
+   * When `standalone` is false or undefined, calls may be batched and
+   * streamed together in a single request.
+   *
    * @param calls - An array of RPC calls to dispatch.
+   * @param standalone - When true, dispatch as a dedicated request with full HTTP lifecycle.
    * @returns A promise that resolves when all calls have been processed.
    */
-  protected async dispatch(calls: IRPCCall[], buffered?: boolean): Promise<void> {
+  protected async dispatch(calls: IRPCCall[], standalone?: boolean): Promise<void> {
     calls.forEach((call) => {
       call.enqueue({
         id: call.id,

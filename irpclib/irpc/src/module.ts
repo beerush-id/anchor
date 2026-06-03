@@ -272,8 +272,8 @@ export class IRPCPackage<K extends string = 'id'> {
         return calls.get(callKey);
       }
 
-      const { timeout, maxRetries, retryDelay, retryMode, buffered } = { ...this.config, ...spec };
-      const config = { timeout, maxRetries, retryDelay, retryMode, buffered } as IRPCCallConfig;
+      const { timeout, maxRetries, retryDelay, retryMode, standalone } = { ...this.config, ...spec };
+      const config = { timeout, maxRetries, retryDelay, retryMode, standalone } as IRPCCallConfig;
 
       const hooks = this.hooks.get(spec);
       if (hooks) {

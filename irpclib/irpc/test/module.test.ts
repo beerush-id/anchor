@@ -510,7 +510,7 @@ describe('IRPCPackage', () => {
       irpc.use(transport);
 
       const hello = irpc.declare<(name: string) => Promise<string | undefined>>('optimistic', {
-        buffered: true,
+        standalone: true,
       });
 
       await expect(hello('World')).rejects.toThrow();
