@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { decodeCookies, getContext, setCookieContext } from '@anchorlib/core';
 import type { HTTPRouter } from '@irpclib/http/router';
 import type { WebSocketRouter } from '@irpclib/ws/router';
 import type { Plugin, ViteDevServer } from 'vite';
@@ -172,6 +171,7 @@ export function airSSR(options: ViteSSROptions): Plugin {
 
             if (router) {
               // Isolate SSR render with IRPC context (abort signal, cookie, hooks).
+              const { decodeCookies, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
               const cookieJar = decodeCookies(cookie);
               ssrResult = await router.isolate(
                 () => render(url, cookie, undefined, controller, true),
@@ -245,6 +245,7 @@ async function initRouter(
     }
 
     const { HTTPRouter } = await server.ssrLoadModule('@irpclib/http/router');
+    const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
     const router = new HTTPRouter(irpc, transport);
 
     // Provide CookieJar to IRPC handlers (same pattern as createFullWorker)
@@ -287,6 +288,7 @@ async function initWsRouter(
     }
 
     const { WebSocketRouter } = await server.ssrLoadModule('@irpclib/ws/router');
+    const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
     const wsRouter = new WebSocketRouter(irpc, wsTransport) as WebSocketRouter;
 
     // Provide CookieJar to WS handlers
