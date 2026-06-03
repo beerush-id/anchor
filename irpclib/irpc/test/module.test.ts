@@ -501,6 +501,20 @@ describe('IRPCPackage', () => {
 
       await expect(hello('World')).rejects.toThrow('No transport configured.');
     });
+
+    it('should handle call error without transport', async () => {
+      const irpc = createPackage({
+        name: 'optimistic',
+      });
+      const transport = new IRPCTransport();
+      irpc.use(transport);
+
+      const hello = irpc.declare<(name: string) => Promise<string | undefined>>('optimistic', {
+        buffered: true,
+      });
+
+      await expect(hello('World')).rejects.toThrow();
+    });
   });
 
   describe('Resolve Call', () => {

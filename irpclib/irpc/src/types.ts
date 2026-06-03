@@ -496,6 +496,8 @@ export type IRPCCallConfig = {
   retryMode?: 'linear' | 'exponential';
   /** Base delay between retries in milliseconds */
   retryDelay?: number;
+  /** Optional flag to buffer the result of the RPC call */
+  buffered?: boolean;
 };
 
 /**

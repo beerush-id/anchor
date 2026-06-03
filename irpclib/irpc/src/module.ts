@@ -114,27 +114,15 @@ export class IRPCPackage<K extends string = 'id'> {
    * Declares a new IRPC specification and returns a callable stub.
    *
    * @param name - The unique name for the IRPC specification.
-   * @param seed - Factory function returning the initial data value.
-   * @param config - Optional configuration (description, schema, caching, etc).
+   * @param seedOrConfig - The initial data seed function, or configuration object.
+   * @param config - Optional configuration (if seed was provided).
    * @returns A stub function that can be used to call the IRPC.
    * @throws Error if an IRPC with the same name already exists.
    */
   public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
     name: string,
-    seed: () => IRPCReturnOf<F>,
+    seedOrConfig: (() => IRPCReturnOf<F>) | (IRPCDeclareConfig<I, O> & IRPCInferInit<IRPCReturnOf<F>>),
     config?: IRPCDeclareConfig<I, O>
-  ): IRPCFunction<F>;
-  /**
-   * Declares a new IRPC specification and returns a callable stub.
-   *
-   * @param name - The unique name for the IRPC specification.
-   * @param config - Configuration object including seed and optional fields.
-   * @returns A stub function that can be used to call the IRPC.
-   * @throws Error if an IRPC with the same name already exists.
-   */
-  public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
-    name: string,
-    config: IRPCDeclareConfig<I, O> & IRPCInferInit<IRPCReturnOf<F>>
   ): IRPCFunction<F>;
   /**
    * Declares a new IRPC specification and returns a callable stub.
@@ -284,8 +272,8 @@ export class IRPCPackage<K extends string = 'id'> {
         return calls.get(callKey);
       }
 
-      const { timeout, maxRetries, retryDelay, retryMode } = { ...this.config, ...spec };
-      const config = { timeout, maxRetries, retryDelay, retryMode } as IRPCCallConfig;
+      const { timeout, maxRetries, retryDelay, retryMode, buffered } = { ...this.config, ...spec };
+      const config = { timeout, maxRetries, retryDelay, retryMode, buffered } as IRPCCallConfig;
 
       const hooks = this.hooks.get(spec);
       if (hooks) {

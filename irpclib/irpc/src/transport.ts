@@ -65,8 +65,8 @@ export class IRPCTransport {
 
     const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay }, reader);
 
-    if (spec.stream) {
-      this.dispatch([call])
+    if (spec.stream || config?.buffered) {
+      this.dispatch([call], config?.buffered)
         .finally(() => {})
         .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return call.reader;
@@ -138,7 +138,7 @@ export class IRPCTransport {
    * @param calls - An array of RPC calls to dispatch.
    * @returns A promise that resolves when all calls have been processed.
    */
-  protected async dispatch(calls: IRPCCall[]): Promise<void> {
+  protected async dispatch(calls: IRPCCall[], buffered?: boolean): Promise<void> {
     calls.forEach((call) => {
       call.enqueue({
         id: call.id,
