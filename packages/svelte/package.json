@@ -1,8 +1,14 @@
 {
   "name": "@anchorlib/svelte",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Svelte bindings for Anchor reactive state management",
-  "keywords": ["state", "management", "reactive", "observable", "svelte"],
+  "keywords": [
+    "state",
+    "management",
+    "reactive",
+    "observable",
+    "svelte"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
@@ -51,11 +57,12 @@
   "directories": {
     "dist": "./dist"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
-
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@sveltejs/vite-plugin-svelte": "catalog:",

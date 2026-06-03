@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorkit/react",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "exports": {

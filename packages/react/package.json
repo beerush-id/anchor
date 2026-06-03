@@ -1,9 +1,15 @@
 {
   "type": "module",
   "name": "@anchorlib/react",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "React bindings for Anchor reactive state management",
-  "keywords": ["state", "management", "reactive", "observable", "react"],
+  "keywords": [
+    "state",
+    "management",
+    "reactive",
+    "observable",
+    "react"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
@@ -50,7 +56,9 @@
       "import": "./dist/workflow/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "directories": {
     "dist": "./dist"
   },

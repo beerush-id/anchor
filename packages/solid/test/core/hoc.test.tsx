@@ -239,20 +239,18 @@ describe('Anchor Solid - HOC API', () => {
     });
 
     it('should correctly detect render prop children via typeof in component body', async () => {
-      const Wrapper = setup<{ children?: JSX.Element | ((value: string) => JSX.Element) }>(
-        function WrapperComp(props) {
-          const isRenderProp = typeof props.children === 'function';
+      const Wrapper = setup<{ children?: JSX.Element | ((value: string) => JSX.Element) }>(function WrapperComp(props) {
+        const isRenderProp = typeof props.children === 'function';
 
-          return (
-            <div>
-              <span data-testid="type">{isRenderProp ? 'function' : 'element'}</span>
-              <div data-testid="content">
-                {isRenderProp ? (props.children as (v: string) => JSX.Element)('hello') : props.children}
-              </div>
+        return (
+          <div>
+            <span data-testid="type">{isRenderProp ? 'function' : 'element'}</span>
+            <div data-testid="content">
+              {isRenderProp ? (props.children as (v: string) => JSX.Element)('hello') : props.children}
             </div>
-          );
-        }
-      );
+          </div>
+        );
+      });
 
       // Regular JSX children — typeof should be 'element'
       const regular = render(() => (
@@ -266,11 +264,7 @@ describe('Anchor Solid - HOC API', () => {
       regular.unmount();
 
       // Render prop children — typeof should be 'function'
-      const renderProp = render(() => (
-        <Wrapper>
-          {(value: string) => <span>got: {value}</span>}
-        </Wrapper>
-      ));
+      const renderProp = render(() => <Wrapper>{(value: string) => <span>got: {value}</span>}</Wrapper>);
 
       expect(renderProp.getByTestId('type').textContent).toBe('function');
       expect(renderProp.getByTestId('content').textContent).toBe('got: hello');
