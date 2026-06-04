@@ -1,3 +1,8 @@
+---
+title: Introducing AIR Stack v1.0 — Reactive Full-Stack Framework, from DB to UI
+description: A full-stack TypeScript architecture unifying state management, isomorphic RPC, routing, reactive workflows, and universal SSR into one cohesive system.
+---
+
 # Introducing AIR Stack v1.0 — Reactive Full-Stack Framework, from DB to UI
 
 **v1.0.0** — [GitHub](https://github.com/beerush-id/airstack) | MIT Licensed
