@@ -672,8 +672,63 @@ export const ChatButton = setup(() => {
   </div>
 </div>
 
-<!-- SECTION 6: SSR (Code Left, Text Right) -->
+<!-- SECTION 6: AIR FORM (Code Left, Text Right) -->
 <div class="custom-section">
+  <div class="custom-section-code">
+
+::: code-group
+
+```tsx [React]
+<Form schema={userSchema} value={props.user}
+  onSubmit={(data, changes) => updateUser(data)}
+>
+  <Field name="name">
+    <TextInput placeholder="Full name" />
+  </Field>
+  <Field name="email">
+    <TextInput type="email" />
+  </Field>
+  <Field name="role">
+    <Select options={['admin', 'editor', 'viewer']} />
+  </Field>
+  <FormSubmit>Save Changes</FormSubmit>
+</Form>
+```
+
+```tsx [SolidJS]
+<Form schema={userSchema} value={props.user}
+  onSubmit={(data, changes) => updateUser(data)}
+>
+  <Field name="name">
+    <TextInput placeholder="Full name" />
+  </Field>
+  <Field name="email">
+    <TextInput type="email" />
+  </Field>
+  <Field name="role">
+    <Select options={['admin', 'editor', 'viewer']} />
+  </Field>
+  <FormSubmit>Save Changes</FormSubmit>
+</Form>
+```
+
+:::
+
+  </div>
+  <div class="custom-section-content">
+    <h2>AIR Form: Schema-Driven, Reactive and Declarative Forms</h2>
+    <p>The same <strong>Zod schemas</strong> you use in IRPC drive your forms automatically. The engine handles <strong>validation</strong>, <strong>dirty tracking</strong>, <strong>cross-field matching</strong>, and <strong>submission lifecycle</strong> — no <code>onChange</code> handlers, no manual error mapping. One schema, from API to UI.</p>
+    <a href="/airlib/form/" class="custom-section-action">Explore AIR Form →</a>
+  </div>
+</div>
+
+<!-- SECTION 7: SSR (Text Left, Code Right) -->
+<div class="custom-section">
+  <div class="custom-section-content">
+    <h2>Universal SSR</h2>
+    <p>What if the <strong>server and client shared the same API</strong>? No <code>'use client'</code> directives. No fragmented execution boundaries. Cookies mutated in an IRPC handler flow to the component automatically — during SSR and in the browser — without manual <code>Set-Cookie</code> wiring.</p>
+    <a href="/ssr" class="custom-section-action">Explore SSR →</a>
+  </div>
   <div class="custom-section-code">
 
 ::: code-group
@@ -708,11 +763,6 @@ export const Dashboard = setup(() => {
 
 :::
 
-  </div>
-  <div class="custom-section-content">
-    <h2>Universal SSR</h2>
-    <p>What if the <strong>server and client shared the same API</strong>? No <code>'use client'</code> directives. No fragmented execution boundaries. Cookies mutated in an IRPC handler flow to the component automatically — during SSR and in the browser — without manual <code>Set-Cookie</code> wiring.</p>
-    <a href="/ssr" class="custom-section-action">Explore SSR →</a>
   </div>
 </div>
 
