@@ -1,0 +1,129 @@
+---
+title: 'AIR Form'
+description: 'Schema-driven reactive form engine for the AIR Stack. Define the shape, and the engine handles the rest.'
+---
+
+# AIR Form
+
+Forms are coordination problems. Multiple inputs must share state, validate together, track changes, and submit as one unit. In most frameworks, solving this means wiring `onChange`, managing error state, tracking dirty fields, handling submission lifecycle, and repeating this pattern for every form.
+
+The typical escape route is a form library — but most of them trade one kind of boilerplate for another. You replace `onChange` with `register()`, swap `useState` for `useFieldArray`, and gain a new API surface to learn, debug, and maintain.
+
+AIR Form takes a different approach: the **Zod schema is the contract**. Define the shape once, and the engine derives everything — validation, error messages, change tracking, touched states, cross-field matching, and the submit lifecycle. Your job is to describe *what* the form is. The engine handles *how* it works.
+
+## What It Looks Like
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+import { z } from 'zod';
+import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/react-form';
+
+const schema = z.object({
+  name: z.string().min(3, 'Name is too short'),
+  email: z.string().email('Invalid email'),
+});
+
+const UserForm = createForm(schema);
+
+export const ProfileEditor = setup(() => {
+  const profile = mutable({ name: '', email: '' });
+
+  return render(() => (
+    <UserForm value={profile} onSubmit={(data) => saveProfile(data)}>
+      <UserForm.Field name="name" label="Name">
+        <TextInput placeholder="Enter name" />
+      </UserForm.Field>
+
+      <UserForm.Field name="email" label="Email">
+        <EmailInput placeholder="Enter email" />
+      </UserForm.Field>
+
+      <FormSubmit>Save</FormSubmit>
+    </UserForm>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+import { z } from 'zod';
+import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/solid-form';
+
+const schema = z.object({
+  name: z.string().min(3, 'Name is too short'),
+  email: z.string().email('Invalid email'),
+});
+
+const UserForm = createForm(schema);
+
+export const ProfileEditor = setup(() => {
+  const profile = mutable({ name: '', email: '' });
+
+  return (
+    <UserForm value={profile} onSubmit={(data) => saveProfile(data)}>
+      <UserForm.Field name="name" label="Name">
+        <TextInput placeholder="Enter name" />
+      </UserForm.Field>
+
+      <UserForm.Field name="email" label="Email">
+        <EmailInput placeholder="Enter email" />
+      </UserForm.Field>
+
+      <FormSubmit>Save</FormSubmit>
+    </UserForm>
+  );
+});
+```
+
+:::
+
+Every line describes *what* the form is. `name="typo"` is a compile error — the components are typed against the schema.
+
+## Architecture
+
+AIR Form is split into two layers:
+
+### Core Engine (`@airlib/form`)
+
+The core is framework-agnostic. It handles:
+
+- **Schema validation** — Zod schemas define the contract, the engine validates on every mutation
+- **Reactive store** — Each field is a granular reactive signal, only the changed field re-renders
+- **Change tracking** — Which fields differ from the initial value, and by how much
+- **Touched tracking** — Which fields were ever mutated, persists until reset
+- **Cross-field matching** — Equality checks or custom logic, tracked as a separate signal
+- **Submit lifecycle** — `idle → pending → success/error`, with automatic input locking
+
+### View Layer (`@airlib/react-form`, `@airlib/solid-form`)
+
+The view layer provides framework-specific components that compose the core signals into UI:
+
+- **Form** — Wraps children in form context, handles submit
+- **Field** — Connects a field name to its label, error display, and accessibility attributes
+- **FieldList** — Exposes reactive arrays for dynamic field lists
+- **Input components** — Pre-built inputs that auto-wire to the form context
+- **FormSubmit / FormReset** — Buttons that track form readiness
+
+The core provides raw, unopinionated truth signals. The view layer decides how to render them. This split means you can use the core engine in any framework — or no framework at all.
+
+## Installation
+
+::: code-group
+
+```sh [React]
+npm install @airlib/form @airlib/react-form
+```
+
+```sh [SolidJS]
+npm install @airlib/form @airlib/solid-form
+```
+
+:::
+
+## What's Next
+
+- [Getting Started](./getting-started) — Build your first form, step by step
+- [Composition](./composition) — Cross-field matching, arrays, headless mode, accessibility
+- [Core API](./core-api) — Use the engine without components

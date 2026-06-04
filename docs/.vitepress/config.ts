@@ -97,6 +97,7 @@ export default defineConfig({
           { text: 'Remote Function', link: '/remote-function/index.html' },
           { text: 'Workflows', link: '/workflow/index.html' },
           { text: 'User Interface', link: '/ui/index.html' },
+          { text: 'AIR Form', link: '/airlib/form/index.html' },
           { text: 'Routing', link: '/routing/index.html' },
         ],
       },
@@ -188,6 +189,18 @@ export default defineConfig({
           { text: 'Component', link: '/ui/component' },
           { text: 'Form Components', link: '/ui/form' },
           { text: 'Optimistic UI', link: '/ui/optimistic' },
+        ],
+      },
+      {
+        text: 'AIR Form',
+        collapsed: true,
+        items: [
+          { text: 'Overview', link: '/airlib/form/index.html' },
+          { text: 'Getting Started', link: '/airlib/form/getting-started' },
+          { text: 'Form Inputs', link: '/airlib/form/inputs' },
+          { text: 'Composition', link: '/airlib/form/composition' },
+          { text: 'General Form', link: '/airlib/form/general' },
+          { text: 'Core API', link: '/airlib/form/core-api' },
         ],
       },
       {
