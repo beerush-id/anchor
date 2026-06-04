@@ -1,6 +1,6 @@
 {
   "name": "@anchorlib/vue",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Vue bindings for Anchor reactive state management",
   "keywords": [
     "state",
