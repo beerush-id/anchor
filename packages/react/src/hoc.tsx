@@ -1,4 +1,13 @@
-import { $do, anchor, captureStack, createObserver, isBrowser, microtask, setContextStore } from '@anchorlib/core';
+import {
+  $do,
+  anchor,
+  captureStack,
+  createObserver,
+  getContextStore,
+  isBrowser,
+  microtask,
+  setContextStore,
+} from '@anchorlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
 import type { RenderContext } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';
@@ -217,9 +226,21 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
 
   const snippetName = `${scopeName}(${viewName})`;
 
+  const Start: FC<{ context: RenderContext }> = ({ context }) => {
+    setContextStore(context);
+    return null;
+  };
+  Start.displayName = `Setup(${viewName})`;
+
+  const Finish: FC<{ context: RenderContext }> = ({ context }) => {
+    setContextStore(context);
+    return null;
+  };
+  Finish.displayName = `Return(${viewName})`;
+
   function SnippetBody(props: P) {
     const [, setVersion] = createState(RENDERER_INIT_VERSION);
-    const [{ observer, scheduleCleanup, cancelCleanup }] = createState(() => {
+    const [{ context, observer, scheduleCleanup, cancelCleanup }] = createState(() => {
       const [scheduleCleanup, cancelCleanup] = microtask(CLEANUP_DEBOUNCE_TIME);
       const observer = createObserver(function snippetRenderer() {
         // Prevent triggering re-render when not in browser.
@@ -230,7 +251,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       });
 
       observer.name = snippetName;
-      return { observer, cancelCleanup, scheduleCleanup };
+      return { context: getContextStore(), observer, cancelCleanup, scheduleCleanup };
     });
 
     createEffect(() => {
@@ -243,20 +264,31 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       };
     }, []);
 
-    return observer.run(() => {
-      try {
-        if (inherited) return factory(parentProps as never, parentProps);
-        return factory($do(() => proxyProps({ ...props }, false)) as P, parentProps);
-      } catch (error) {
-        const newErr = new Error(`[${snippetName}] failed to render.`);
-        captureStack.error.external(
-          `Render error: uncaught render exception in ${snippetName}.`,
-          error as Error,
-          snippet
-        );
-        return newErr.message;
-      }
-    });
+    const content = () =>
+      observer.run(() => {
+        try {
+          if (inherited) return factory(parentProps as never, parentProps);
+          return factory($do(() => proxyProps({ ...props }, false)) as P, parentProps);
+        } catch (error) {
+          const newErr = new Error(`[${snippetName}] failed to render.`);
+          captureStack.error.external(
+            `Render error: uncaught render exception in ${snippetName}.`,
+            error as Error,
+            snippet
+          );
+          return newErr.message;
+        }
+      });
+
+    const prevContext = getContextStore();
+
+    return (
+      <>
+        <Start context={context} />
+        {content()}
+        <Finish context={prevContext} />
+      </>
+    );
   }
   const Snippet = optimized ? SnippetBody : memoize(SnippetBody);
   (Snippet as SnippetView<P>).displayName = snippetName;
