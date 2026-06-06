@@ -1,6 +1,6 @@
 {
   "name": "@anchorlib/svelte",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Svelte bindings for Anchor reactive state management",
   "keywords": [
     "state",
