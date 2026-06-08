@@ -180,6 +180,7 @@ SSR rendering and IRPC routing as a single Vite plugin. Deploys to Bun, Node.js,
 ### Agent Skills
 Structured instructions for AI coding assistants to build applications, APIs, and libraries using AIR Stack.
 - [air-stack-react](./skills/air-stack-react) - Modular skill for building apps, APIs, and libraries with AIR Stack and React
+- [air-form-react](./skills/air-form-react) - Modular skill for building complex, state-driven forms with AIR Form and React
 
 ## Get Started
 

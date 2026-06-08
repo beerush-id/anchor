@@ -89,44 +89,36 @@ Standard text-based inputs buffer their value as a `string`. They pair well with
 ::: code-group
 
 ```tsx [React]
-// Renders <input type="text">
 <UserForm.Field name="firstName" label="First Name">
   <TextInput placeholder="John Doe" />
 </UserForm.Field>
 
-// Renders <input type="email">
 <UserForm.Field name="email" label="Email">
   <EmailInput placeholder="john@example.com" />
 </UserForm.Field>
 
-// Renders <input type="password">
 <UserForm.Field name="password" label="Password">
   <PasswordInput placeholder="Enter secure password" />
 </UserForm.Field>
 
-// Renders <textarea>
 <UserForm.Field name="bio" label="Biography">
   <Textarea placeholder="Tell us about yourself" rows={4} />
 </UserForm.Field>
 ```
 
 ```tsx [SolidJS]
-// Renders <input type="text">
 <UserForm.Field name="firstName" label="First Name">
   <TextInput placeholder="John Doe" />
 </UserForm.Field>
 
-// Renders <input type="email">
 <UserForm.Field name="email" label="Email">
   <EmailInput placeholder="john@example.com" />
 </UserForm.Field>
 
-// Renders <input type="password">
 <UserForm.Field name="password" label="Password">
   <PasswordInput placeholder="Enter secure password" />
 </UserForm.Field>
 
-// Renders <textarea>
 <UserForm.Field name="bio" label="Biography">
   <Textarea placeholder="Tell us about yourself" rows={4} />
 </UserForm.Field>
@@ -141,24 +133,20 @@ Number inputs handle the transition between string keystrokes and parsed `number
 ::: code-group
 
 ```tsx [React]
-// Renders <input type="number">
 <UserForm.Field name="age" label="Age">
   <NumberInput min={0} max={120} />
 </UserForm.Field>
 
-// Renders <input type="range">
 <UserForm.Field name="volume" label="Volume">
   <Slider min={0} max={100} />
 </UserForm.Field>
 ```
 
 ```tsx [SolidJS]
-// Renders <input type="number">
 <UserForm.Field name="age" label="Age">
   <NumberInput min={0} max={120} />
 </UserForm.Field>
 
-// Renders <input type="range">
 <UserForm.Field name="volume" label="Volume">
   <Slider min={0} max={100} />
 </UserForm.Field>
@@ -173,34 +161,28 @@ Date and time inputs sync their values as `string` types formatted according to 
 ::: code-group
 
 ```tsx [React]
-// Renders <input type="date">
 <UserForm.Field name="birthday" label="Birthday">
   <DatePicker />
 </UserForm.Field>
 
-// Renders <input type="time">
 <UserForm.Field name="alarm" label="Alarm Time">
   <TimePicker />
 </UserForm.Field>
 
-// Renders <input type="datetime-local">
 <UserForm.Field name="meeting" label="Meeting Time">
   <DateTimePicker />
 </UserForm.Field>
 ```
 
 ```tsx [SolidJS]
-// Renders <input type="date">
 <UserForm.Field name="birthday" label="Birthday">
   <DatePicker />
 </UserForm.Field>
 
-// Renders <input type="time">
 <UserForm.Field name="alarm" label="Alarm Time">
   <TimePicker />
 </UserForm.Field>
 
-// Renders <input type="datetime-local">
 <UserForm.Field name="meeting" label="Meeting Time">
   <DateTimePicker />
 </UserForm.Field>
@@ -215,14 +197,12 @@ For boolean flags or single-choice selections from a predefined set.
 ::: code-group
 
 ```tsx [React]
-// Renders <input type="checkbox">. Pairs with z.boolean().
 <UserForm.Field name="agree" label="Terms and Conditions">
   <Checkbox />
 </UserForm.Field>
 ```
 
 ```tsx [SolidJS]
-// Renders <input type="checkbox">. Pairs with z.boolean().
 <UserForm.Field name="agree" label="Terms and Conditions">
   <Checkbox />
 </UserForm.Field>
@@ -309,24 +289,20 @@ For `Radio` inputs, the browser groups them by the `name` attribute. Since all r
 ::: code-group
 
 ```tsx [React]
-// Renders <input type="color">. Pairs with hex color string schema.
 <UserForm.Field name="theme" label="Theme Color">
   <ColorPicker />
 </UserForm.Field>
 
-// Renders <input type="file">. Pairs with z.custom<File>().
 <UserForm.Field name="avatar" label="Profile Picture">
   <FilePicker accept="image/*" />
 </UserForm.Field>
 ```
 
 ```tsx [SolidJS]
-// Renders <input type="color">. Pairs with hex color string schema.
 <UserForm.Field name="theme" label="Theme Color">
   <ColorPicker />
 </UserForm.Field>
 
-// Renders <input type="file">. Pairs with z.custom<File>().
 <UserForm.Field name="avatar" label="Profile Picture">
   <FilePicker accept="image/*" />
 </UserForm.Field>

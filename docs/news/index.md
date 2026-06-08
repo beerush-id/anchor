@@ -62,7 +62,7 @@ Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.post-card h2 {
+.post-card h3 {
   margin: 0 0 12px 0;
   font-size: 1.4rem;
   font-weight: 600;

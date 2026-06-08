@@ -37,13 +37,14 @@ Resolved a bug in the React adapter where scope context was lost when `Snippet` 
 - Modified `SnippetBody` to capture and restore context tightly around render operations.
 - Added `getContextStore` to accurately track the current context state, ensuring fine-grained reactivity survives React's re-rendering cycles.
 
-## AIR Form v1.1.1 Updates
+## AIR Form v1.2 Updates
 
-The form engine received quality-of-life updates and a significant documentation cleanup:
-
-- **Auto-Detection**: Input components used directly inside a `<Form>` (without a `<Field>` wrapper) now automatically detect the form and create their own field context dynamically. This is highly useful for standalone inputs that don't need labels or error wrappers (like hidden inputs or inline filters).
+- **Field Blocking Mechanism**: Added `form.block(key)` and `form.unblock(key)` to the form engine, allowing manual control over form submission readiness for async operations and complex state conditions.
+- **Mismatch Validation in UI**: `<Field>` now natively handles `match` and `mismatchLabel` props. When a field passes schema validation but fails the match condition, the mismatch label is displayed automatically with `role="alert"`.
+- **Match Optimization**: Wrapped field matching logic in `untrack` to prevent unnecessary re-execution of match functions during unrelated state changes.
+- **Auto-Detection**: Input components used directly inside a `<Form>` (without a `<Field>` wrapper) now automatically detect the form and create their own field context dynamically.
 - **Global Configuration**: Fully documented the `configureForm()` API, which allows setting global defaults, classes, and behavior overrides (like `errorClass` and `pendingClass`) across the entire application.
-- **Documentation Sync**: Removed non-existent ghost components from the documentation, updated the Core API docs with missing properties (`form.changes`, `name.required`, `name.matched` removal), and clarified the input context behaviors.
+- **Documentation Sync**: Removed non-existent ghost components from the documentation, updated the Core API docs with missing properties (`form.changes`, `name.required`), and clarified the input context behaviors.
 
 ## Get Started
 

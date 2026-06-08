@@ -30,18 +30,12 @@ const PasswordForm = createForm(schema);
     <PasswordInput />
   </PasswordForm.Field>
 
-  <PasswordForm.Field name="confirmPassword" match="password">
-    {(field) => (
-      <div>
-        <PasswordInput />
-        {field.touched && field.error?.map(err => (
-          <span key={err} className="error">{err}</span>
-        ))}
-        {field.valid && !field.matched && (
-          <span className="error">Passwords don't match</span>
-        )}
-      </div>
-    )}
+  <PasswordForm.Field
+    name="confirmPassword"
+    match="password"
+    mismatchLabel="Passwords don't match"
+  >
+    <PasswordInput />
   </PasswordForm.Field>
 </PasswordForm>
 ```
@@ -61,27 +55,19 @@ const PasswordForm = createForm(schema);
     <PasswordInput />
   </PasswordForm.Field>
 
-  <PasswordForm.Field name="confirmPassword" match="password">
-    {(field) => (
-      <div>
-        <PasswordInput />
-        {field.touched && (
-          <For each={field.error}>
-            {(err) => <span class="error">{err}</span>}
-          </For>
-        )}
-        {field.valid && !field.matched && (
-          <span class="error">Passwords don't match</span>
-        )}
-      </div>
-    )}
+  <PasswordForm.Field
+    name="confirmPassword"
+    match="password"
+    mismatchLabel="Passwords don't match"
+  >
+    <PasswordInput />
   </PasswordForm.Field>
 </PasswordForm>
 ```
 
 :::
 
-`valid` and `matched` are independent signals. `valid` only reflects schema validation. `matched` only reflects the match condition. The view layer composes them — "valid but not matched" is a distinct state from "invalid."
+`valid` and `matched` are independent signals. `valid` only reflects schema validation. `matched` only reflects the match condition. The default `<Field>` component composes them for you: it will display the validation error first, and only display the `mismatchLabel` if the field passes schema validation but fails the match condition.
 
 ### Custom Match
 
@@ -100,13 +86,9 @@ const RangeForm = createForm(rangeSchema);
 <RangeForm.Field
   name="endDate"
   match={(form) => form.fields['endDate'] > form.fields['startDate']}
+  mismatchLabel="End must be after start"
 >
-  {(field) => (
-    <div>
-      <DatePicker />
-      {!field.matched && <span className="error">End must be after start</span>}
-    </div>
-  )}
+  <DatePicker />
 </RangeForm.Field>
 ```
 
@@ -121,13 +103,9 @@ const RangeForm = createForm(rangeSchema);
 <RangeForm.Field
   name="endDate"
   match={(form) => form.fields['endDate'] > form.fields['startDate']}
+  mismatchLabel="End must be after start"
 >
-  {(field) => (
-    <div>
-      <DatePicker />
-      {!field.matched && <span class="error">End must be after start</span>}
-    </div>
-  )}
+  <DatePicker />
 </RangeForm.Field>
 ```
 
@@ -183,8 +161,107 @@ At the form level, `changed` aggregates all fields:
 const form = UserForm.get();
 
 form.changed;     // true if any field differs from initial
-form.changeSize;  // count of changed fields
 form.changeList;  // { email: 'new@test.com' } — changed fields and their values
+```
+
+:::
+
+## Async Validation
+
+When implementing asynchronous validation, such as checking if a username is available, isolating the logic in a custom component prevents conflicts with the global form state.
+
+::: code-group
+
+```tsx [React]
+import { setup, render, mutable } from '@anchorlib/react';
+
+export const AsyncUsernameInput = setup(() => {
+  const form = UserForm.get();
+  const field = getFormField();
+  const state = mutable({
+    taken: false,
+    checking: false,
+  });
+
+  const checkAvailability = async () => {
+    if (!field.valid || state.checking) return;
+
+    state.checking = true;
+    form.block('username');
+    
+    state.taken = await api.checkUsername(field.value);
+    
+    if (!state.taken) {
+      form.unblock('username');
+    }
+    
+    state.checking = false;
+  };
+
+  return render(() => (
+    <div>
+      <TextInput onBlur={checkAvailability} />
+      {state.checking && <span className="info">Checking availability...</span>}
+      {state.taken && <span className="error">This username is already taken</span>}
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable } from '@anchorlib/solid';
+
+export const AsyncUsernameInput = setup(() => {
+  const form = UserForm.get();
+  const field = getFormField();
+  const state = mutable({
+    taken: false,
+    checking: false,
+  });
+
+  const checkAvailability = async () => {
+    if (!field.valid || state.checking) return;
+
+    state.checking = true;
+    form.block('username');
+    
+    state.taken = await api.checkUsername(field.value);
+    
+    if (!state.taken) {
+      form.unblock('username');
+    }
+    
+    state.checking = false;
+  };
+
+  return (
+    <div>
+      <TextInput onBlur={checkAvailability} />
+      {state.checking && <span class="info">Checking availability...</span>}
+      {state.taken && <span class="error">This username is already taken</span>}
+    </div>
+  );
+});
+```
+
+:::
+
+The custom component handles its own asynchronous state and uses `form.block()` to suspend form submission until the validation is complete.
+
+To use the component, place it inside a standard field wrapper.
+
+::: code-group
+
+```tsx [React]
+<UserForm.Field name="username" label="Username">
+  <AsyncUsernameInput />
+</UserForm.Field>
+```
+
+```tsx [SolidJS]
+<UserForm.Field name="username" label="Username">
+  <AsyncUsernameInput />
+</UserForm.Field>
 ```
 
 :::
@@ -551,13 +628,30 @@ Because a form's readiness depends on validation, changes, and network state, wr
 
 ```tsx [React]
 import { setup, render } from '@anchorlib/react';
+import { getForm } from '@airlib/form';
 
-// A custom submit button built from scratch
+// Generic Button (Reusable across any form)
 export const CustomSubmit = setup(() => {
+  // Reads the nearest generic form context
+  const form = getForm();
+  
+  // Derived state function
+  const disabled = () => form.pending || !form.valid || !form.changed || form.blocked;
+
+  return render(() => (
+    <button type="submit" disabled={disabled()} className="my-custom-btn">
+      {form.pending ? 'Saving...' : 'Save'}
+    </button>
+  ));
+});
+
+// Specific Button (Strictly typed to UserForm schema)
+export const SubmitUserForm = setup(() => {
+  // Reads the specific UserForm context
   const form = UserForm.get();
   
   // Derived state function
-  const disabled = () => form.pending || !form.valid || !form.changed;
+  const disabled = () => form.pending || !form.valid || !form.changed || form.blocked;
 
   return render(() => (
     <button type="submit" disabled={disabled()} className="my-custom-btn">
@@ -565,59 +659,38 @@ export const CustomSubmit = setup(() => {
     </button>
   ));
 });
-
-// A custom reset button built from scratch
-export const CustomReset = setup(() => {
-  const form = UserForm.get();
-
-  // Derived state function
-  const disabled = () => !form.changed;
-
-  return render(() => (
-    <button 
-      type="button" 
-      disabled={disabled()} 
-      onClick={() => form.reset()}
-      className="my-custom-btn"
-    >
-      Revert Changes
-    </button>
-  ));
-});
 ```
 
 ```tsx [SolidJS]
 import { setup } from '@anchorlib/solid';
+import { getForm } from '@airlib/form';
 
-// A custom submit button built from scratch
+// Generic Button (Reusable across any form)
 export const CustomSubmit = setup(() => {
-  const form = UserForm.get();
+  // Reads the nearest generic form context
+  const form = getForm();
   
   // Derived state function
-  const disabled = () => form.pending || !form.valid || !form.changed;
+  const disabled = () => form.pending || !form.valid || !form.changed || form.blocked;
 
   return (
     <button type="submit" disabled={disabled()} class="my-custom-btn">
-      {form.pending ? 'Saving...' : 'Save Profile'}
+      {form.pending ? 'Saving...' : 'Save'}
     </button>
   );
 });
 
-// A custom reset button built from scratch
-export const CustomReset = setup(() => {
+// Specific Button (Strictly typed to UserForm schema)
+export const SubmitUserForm = setup(() => {
+  // Reads the specific UserForm context
   const form = UserForm.get();
-
+  
   // Derived state function
-  const disabled = () => !form.changed;
+  const disabled = () => form.pending || !form.valid || !form.changed || form.blocked;
 
   return (
-    <button 
-      type="button" 
-      disabled={disabled()} 
-      onClick={() => form.reset()}
-      class="my-custom-btn"
-    >
-      Revert Changes
+    <button type="submit" disabled={disabled()} class="my-custom-btn">
+      {form.pending ? 'Saving...' : 'Save Profile'}
     </button>
   );
 });

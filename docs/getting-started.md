@@ -38,6 +38,15 @@ npm run dev
 
 Prefer to understand how the architecture is wired together? Read on for the step-by-step manual setup.
 
+## **Agent Skills (AI Coding Assistants)**
+
+If you use AI coding assistants (Gemini, Claude, etc.), install the AIR Stack skills to enable accurate code generation:
+
+```bash
+npx degit beerush-id/airstack/skills/air-stack-react ~/.gemini/config/skills/air-stack-react
+npx degit beerush-id/airstack/skills/air-form-react ~/.gemini/config/skills/air-form-react
+```
+
 ## **1. Initialize the Core Modules**
 
 First, define your global Router and IRPC instance. We recommend placing these in a `lib` directory so they can be easily imported across your application.
