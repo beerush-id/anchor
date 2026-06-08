@@ -2,7 +2,12 @@
 title: AIR Stack v1.1 — Standalone HTTP Dispatch and AIR Form
 description: Standalone HTTP dispatch for IRPC, simplified declare signatures, cookie context validation, and the first release of AIR Form.
 date: 2025-06-04
+sidebar: false
+prev: false
+next: false
 ---
+
+[← Back to News](/news/)
 
 # AIR Stack v1.1 — Standalone HTTP Dispatch and AIR Form
 
@@ -90,9 +95,18 @@ Full documentation at [airlib.dev/airlib/form](https://airlib.dev/airlib/form/).
 
 ## Get Started
 
-```sh
+::: code-group
+
+```sh [React]
 bun add @anchorlib/core@^1.1.0 @anchorlib/react@^1.1.0
 bun add @airlib/form @airlib/react-form
 ```
+
+```sh [SolidJS]
+bun add @anchorlib/core@^1.1.0 @anchorlib/solid@^1.1.0
+bun add @airlib/form @airlib/solid-form
+```
+
+:::
 
 [GitHub](https://github.com/beerush-id/airstack) · [Documentation](https://airlib.dev) · [AIR Form](https://airlib.dev/airlib/form/)

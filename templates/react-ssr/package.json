@@ -13,7 +13,9 @@
     "preview": "vite preview --outDir dist/client"
   },
   "dependencies": {
+    "@anchorlib/core": "1.2.0",
     "@anchorlib/react": "1.2.0",
+    "@anchorlib/router": "1.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zod": "^4.1.12"

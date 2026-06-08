@@ -20,6 +20,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@anchorlib/core": "1.2.0",
     "@irpclib/irpc": "1.2.0",
     "@irpclib/http": "1.2.0"
   },

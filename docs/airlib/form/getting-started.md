@@ -289,7 +289,8 @@ Both components also accept a function as `children`, providing direct access to
 
 ## What's Next
 
-- [Form Inputs](./inputs) — Explore the 15 built-in input components
+- [Form Inputs](./inputs) — Explore the 14 built-in input components
 - [Composition](./composition) — Cross-field matching, arrays, headless mode
+- [Configuration](./configuration) — Global defaults, styling, and behavior overrides
 - [General Form](./general) — Using the untyped Form, Field, Submit, and Reset components
 - [Core API](./core-api) — Use the engine without components

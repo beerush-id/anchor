@@ -13,7 +13,9 @@
     "preview": "vite preview --outDir dist/client"
   },
   "dependencies": {
+    "@anchorlib/core": "1.2.0",
     "@anchorlib/react": "1.2.0",
+    "@anchorlib/router": "1.2.0",
     "@irpclib/http": "1.2.0",
     "@irpclib/irpc": "1.2.0",
     "@irpclib/ws": "1.2.0",

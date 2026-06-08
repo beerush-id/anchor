@@ -126,4 +126,6 @@ npm install @airlib/form @airlib/solid-form
 
 - [Getting Started](./getting-started) — Build your first form, step by step
 - [Composition](./composition) — Cross-field matching, arrays, headless mode, accessibility
+- [Configuration](./configuration) — Global defaults, styling, and behavior overrides
+- [General Form](./general) — Using the untyped Form, Field, Submit, and Reset components
 - [Core API](./core-api) — Use the engine without components

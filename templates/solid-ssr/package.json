@@ -13,7 +13,9 @@
     "preview": "vite preview --outDir dist/client"
   },
   "dependencies": {
+    "@anchorlib/core": "1.2.0",
     "@anchorlib/solid": "1.2.0",
+    "@anchorlib/router": "1.2.0",
     "solid-js": "^1.9.9",
     "zod": "^4.1.12"
   },

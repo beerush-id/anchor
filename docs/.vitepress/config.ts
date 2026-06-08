@@ -199,6 +199,7 @@ export default defineConfig({
           { text: 'Getting Started', link: '/airlib/form/getting-started' },
           { text: 'Form Inputs', link: '/airlib/form/inputs' },
           { text: 'Composition', link: '/airlib/form/composition' },
+          { text: 'Configuration', link: '/airlib/form/configuration' },
           { text: 'General Form', link: '/airlib/form/general' },
           { text: 'Core API', link: '/airlib/form/core-api' },
         ],

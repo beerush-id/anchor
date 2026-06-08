@@ -43,8 +43,8 @@ form.touched['name'];      // boolean — was this field ever mutated?
 // Form-level signals
 form.valid;                // boolean — all fields pass schema validation
 form.changed;              // boolean — any field differs from initial
-form.changeSize;           // number — count of changed fields
-form.changeList;           // Record<string, value> — changed fields and values
+form.changes;              // Record<string, value> — nested object of changed fields
+form.changeList;           // Record<string, value> — flat map of changed fields and values
 form.pending;              // boolean — submission in progress
 form.status;               // 'idle' | 'pending' | 'success' | 'error'
 form.canSubmit;            // valid && changed && !pending
@@ -95,12 +95,15 @@ During submission:
 - On success: `form.status` → `'success'`, change state resets
 - On error: `form.status` → `'error'`, error captured in `form.error`
 
-### Resetting
+### Resetting and Clearing
 
 ::: code-group
 
 ```ts [Core]
-form.reset();  // reverts all fields to initial values, clears touched/changed
+form.reset();            // reverts all fields to initial values, clears touched/changed
+form.clear();            // clears all fields to empty values
+form.resetField('name'); // reverts a specific field to its initial value
+form.clearField('name'); // clears a specific field
 ```
 
 :::
@@ -127,11 +130,20 @@ const name = formField('name');
 name.value;      // current value
 name.error;      // string[] of validation errors
 name.valid;      // schema validation result
+name.required;   // boolean — is field required by schema
 name.touched;    // was ever mutated
 name.changed;    // differs from initial value
 name.matched;    // cross-field match result (true if no match configured)
 name.disabled;   // form is pending
 name.name;       // field path string
+
+// Methods
+name.input(props, options); // creates a FormInput for this field
+name.reset();               // reverts this field to initial value
+name.clear();               // clears this field
+name.remove();              // if array item, removes it from the array
+name.moveUp(count?);        // if array item, moves it up
+name.moveDown(count?);      // if array item, moves it down
 ```
 
 :::
@@ -176,14 +188,15 @@ const input = formInput({ name: 'age', type: 'number' });
 
 ```ts [Core]
 input.value;       // string — buffered display value
+input.checked;     // boolean — checked state for boolean inputs
 input.name;        // string — field name
 input.type;        // string — input type
+input.required;    // boolean — is field required by schema
 input.disabled;    // boolean — form pending state
 input.error;       // string[] — validation errors
 input.valid;       // boolean — schema validation
 input.touched;     // boolean — was ever mutated
 input.changed;     // boolean — differs from initial
-input.matched;     // boolean — cross-field match result
 
 input.settled();   // signal that editing is complete (call on blur)
 ```

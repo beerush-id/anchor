@@ -5,7 +5,7 @@ description: 'Standard built-in input components for AIR Form. Zero-configuratio
 
 # Form Inputs
 
-AIR Form ships with 15 pre-built input components covering all standard HTML input types. These components are designed to be dropped directly into a `Field` component without any manual wiring.
+AIR Form ships with 14 pre-built input components covering standard HTML input types. These components are designed to be dropped directly into a `Field` component without any manual wiring.
 
 ## Context-Aware Input
 
@@ -104,21 +104,6 @@ Standard text-based inputs buffer their value as a `string`. They pair well with
   <PasswordInput placeholder="Enter secure password" />
 </UserForm.Field>
 
-// Renders <input type="url">
-<UserForm.Field name="website" label="Website">
-  <URLInput placeholder="https://..." />
-</UserForm.Field>
-
-// Renders <input type="search">
-<UserForm.Field name="query" label="Search">
-  <SearchInput placeholder="Search..." />
-</UserForm.Field>
-
-// Renders <input type="tel">
-<UserForm.Field name="phone" label="Phone Number">
-  <TelInput placeholder="+1..." />
-</UserForm.Field>
-
 // Renders <textarea>
 <UserForm.Field name="bio" label="Biography">
   <Textarea placeholder="Tell us about yourself" rows={4} />
@@ -139,21 +124,6 @@ Standard text-based inputs buffer their value as a `string`. They pair well with
 // Renders <input type="password">
 <UserForm.Field name="password" label="Password">
   <PasswordInput placeholder="Enter secure password" />
-</UserForm.Field>
-
-// Renders <input type="url">
-<UserForm.Field name="website" label="Website">
-  <URLInput placeholder="https://..." />
-</UserForm.Field>
-
-// Renders <input type="search">
-<UserForm.Field name="query" label="Search">
-  <SearchInput placeholder="Search..." />
-</UserForm.Field>
-
-// Renders <input type="tel">
-<UserForm.Field name="phone" label="Phone Number">
-  <TelInput placeholder="+1..." />
 </UserForm.Field>
 
 // Renders <textarea>
@@ -217,16 +187,6 @@ Date and time inputs sync their values as `string` types formatted according to 
 <UserForm.Field name="meeting" label="Meeting Time">
   <DateTimePicker />
 </UserForm.Field>
-
-// Renders <input type="month">
-<UserForm.Field name="expiry" label="Card Expiry">
-  <MonthPicker />
-</UserForm.Field>
-
-// Renders <input type="week">
-<UserForm.Field name="vacation" label="Vacation Week">
-  <WeekPicker />
-</UserForm.Field>
 ```
 
 ```tsx [SolidJS]
@@ -243,16 +203,6 @@ Date and time inputs sync their values as `string` types formatted according to 
 // Renders <input type="datetime-local">
 <UserForm.Field name="meeting" label="Meeting Time">
   <DateTimePicker />
-</UserForm.Field>
-
-// Renders <input type="month">
-<UserForm.Field name="expiry" label="Card Expiry">
-  <MonthPicker />
-</UserForm.Field>
-
-// Renders <input type="week">
-<UserForm.Field name="vacation" label="Vacation Week">
-  <WeekPicker />
 </UserForm.Field>
 ```
 
@@ -368,11 +318,6 @@ For `Radio` inputs, the browser groups them by the `name` attribute. Since all r
 <UserForm.Field name="avatar" label="Profile Picture">
   <FilePicker accept="image/*" />
 </UserForm.Field>
-
-// Renders <input type="hidden">. Pairs with z.string().
-<UserForm.Field name="csrfToken">
-  <HiddenInput />
-</UserForm.Field>
 ```
 
 ```tsx [SolidJS]
@@ -384,11 +329,6 @@ For `Radio` inputs, the browser groups them by the `name` attribute. Since all r
 // Renders <input type="file">. Pairs with z.custom<File>().
 <UserForm.Field name="avatar" label="Profile Picture">
   <FilePicker accept="image/*" />
-</UserForm.Field>
-
-// Renders <input type="hidden">. Pairs with z.string().
-<UserForm.Field name="csrfToken">
-  <HiddenInput />
 </UserForm.Field>
 ```
 

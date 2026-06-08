@@ -20,9 +20,9 @@ export default {
     return h(DefaultTheme.Layout, null, {
       // https://vitepress.dev/guide/extending-default-theme#layout-slots
       'home-hero-info-before': () => h('a', {
-        href: '/news/release-v1.1',
+        href: '/news/release-v1.2',
         class: 'version-tag',
-      }, 'Release v1.1'),
+      }, 'Release v1.2.0'),
     });
   },
   enhanceApp({ app, router, siteData }) {
