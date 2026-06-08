@@ -64,8 +64,10 @@ import { TextInput, EmailInput, FormSubmit } from '@airlib/react-form';
 import { setup, render } from '@anchorlib/react';
 
 export const ContactPage = setup(() => {
+  const form = mutable({ name: '', email: '' });
+
   return render(() => (
-    <ContactForm value={{ name: '', email: '' }} onSubmit={(data) => console.log(data)}>
+    <ContactForm value={form} onSubmit={(data) => console.log(data)}>
       <ContactForm.Field name="name" label="Name">
         <TextInput placeholder="Jane Doe" />
       </ContactForm.Field>
@@ -797,17 +799,7 @@ export const Registration = setup(() => {
         <p className="text-sm text-slate-500 mt-2">Every pattern from the tutorial in one place.</p>
       </div>
 
-      <RegForm
-        value={{
-          email: '', password: '', confirmPassword: '',
-          name: '', age: 18,
-          address: { street: '', city: '', zip: '' },
-          plan: '',
-          referrals: [{ email: '' }],
-          terms: false,
-        }}
-        onSubmit={async (formData) => await mockSubmit(formData)}
-      >
+      <RegForm onSubmit={async (formData) => await mockSubmit(formData)}>
         {/* ── Account ── */}
         <fieldset className="mb-6">
           <legend className="text-lg font-semibold text-slate-800 mb-3">Account</legend>
@@ -883,23 +875,21 @@ export const Registration = setup(() => {
 
           <RegForm.FieldList name="referrals">
             {(referrals) => (
-              <div className="mt-3">
+              <div className="mt-3 flex flex-col">
                 <label className="text-sm font-medium text-slate-700">Referral Emails</label>
 
                 <For each={() => referrals}>
                   {(ref, i) => (
-                    <div className="flex items-end gap-2 mt-2">
+                    <div className="flex items-start gap-2 mt-2">
                       <div className="flex-1">
                         <RegForm.Field name={`referrals.${i}.email`}>
                           <EmailInput placeholder="friend@example.com" />
                         </RegForm.Field>
                       </div>
-                      {referrals.length > 1 && (
-                        <button type="button" onClick={() => referrals.splice(i, 1)}
-                          className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
-                          Remove
-                        </button>
-                      )}
+                      <button type="button" onClick={() => referrals.splice(i, 1)}
+                        className="mt-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                        Remove
+                      </button>
                     </div>
                   )}
                 </For>

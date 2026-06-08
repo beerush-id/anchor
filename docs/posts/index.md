@@ -11,8 +11,24 @@ next: false
 Explore articles, architectural comparisons, and deep dives into the AIR Stack and IRPC.
 
 ## Tutorials
-- [Building A Smart Form Component in AIR Stack](./building-smart-form-components.md)
-- [Building Forms with AIR Form](./building-forms-with-air-form.md)
+Step-by-step guides that walk through building real features with AIR Stack libraries.
+
+<div class="posts-grid">
+  <a href="./building-forms-with-air-form.html" class="post-card">
+    <article>
+      <h2>Building Forms with AIR Form</h2>
+      <p>A progressive tutorial from a two-field form to a production registration form with dynamic arrays, cross-field matching, and headless rendering.</p>
+      <span class="read-more">Read tutorial &rarr;</span>
+    </article>
+  </a>
+  <a href="./building-smart-form-components.html" class="post-card">
+    <article>
+      <h2>Building A Smart Form Component</h2>
+      <p>Build a form engine from scratch — reactive state, Zod validation, and auto-wired inputs — to understand the architecture behind AIR Form.</p>
+      <span class="read-more">Read tutorial &rarr;</span>
+    </article>
+  </a>
+</div>
 
 ## AIR Stack Posts
 Explore in-depth comparisons between the AIR Stack and popular meta-frameworks and routing libraries in the React ecosystem.
