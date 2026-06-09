@@ -42,10 +42,35 @@ Prefer to understand how the architecture is wired together? Read on for the ste
 
 If you use AI coding assistants (Gemini, Claude, etc.), install the AIR Stack skills to enable accurate code generation:
 
-```bash
+::: code-group
+
+```bash [React]
 npx degit beerush-id/airstack/skills/air-stack-react ~/.gemini/config/skills/air-stack-react
 npx degit beerush-id/airstack/skills/air-form-react ~/.gemini/config/skills/air-form-react
 ```
+
+```bash [SolidJS]
+npx degit beerush-id/airstack/skills/air-stack-solid ~/.gemini/config/skills/air-stack-solid
+npx degit beerush-id/airstack/skills/air-form-solid ~/.gemini/config/skills/air-form-solid
+```
+
+:::
+
+## **Manual Installation**
+
+Before writing code, install the required core packages and your preferred view framework:
+
+::: code-group
+
+```bash [React]
+npm install @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/react
+```
+
+```bash [SolidJS]
+npm install @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/solid
+```
+
+:::
 
 ## **1. Initialize the Core Modules**
 

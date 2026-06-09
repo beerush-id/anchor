@@ -25,7 +25,7 @@ Combines both the frontend UI (SSR and Client Hydration) and the execution logic
 
 **Template**
 ```bash
-bunx degit beerush-id/airstack/templates/air-react my-air-app
+bunx degit beerush-id/airstack/templates/air-solid my-air-app
 cd my-air-app
 bun install
 bun run dev
@@ -33,7 +33,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/react
+bun add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/solid
 ```
 
 **Structure**
@@ -65,11 +65,11 @@ src/
 ---
 
 ### Frontend Project with Server Side Rendering (SSR)
-A strict SSR React application. Used when your UI requires server-side rendering, but your core APIs and databases are handled externally.
+A strict SSR SolidJS application. Used when your UI requires server-side rendering, but your core APIs and databases are handled externally.
 
 **Template**
 ```bash
-bunx degit beerush-id/airstack/templates/react-ssr my-ssr-app
+bunx degit beerush-id/airstack/templates/solid-ssr my-ssr-app
 cd my-ssr-app
 bun install
 bun run dev
@@ -77,7 +77,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @anchorlib/react
+bun add @anchorlib/core @anchorlib/router @anchorlib/solid
 ```
 
 **Structure**
@@ -108,7 +108,7 @@ A Single Page Application executed entirely in the client. Ideal for static host
 
 **Template**
 ```bash
-bun create vite my-spa-app --template react-ts
+bun create vite my-spa-app --template solid-ts
 cd my-spa-app
 bun install
 bun run dev
@@ -116,7 +116,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @anchorlib/react
+bun add @anchorlib/core @anchorlib/router @anchorlib/solid
 ```
 
 **Structure**

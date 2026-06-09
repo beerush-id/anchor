@@ -78,19 +78,19 @@ The core packages contain the state engine, routing engine, and network transpor
 ::: code-group
 
 ```bash [Bun]
-bun add @anchorlib/core @anchorlib/router @irpclib/irpc
+bun add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http
 ```
 
 ```bash [NPM]
-npm install @anchorlib/core @anchorlib/router @irpclib/irpc
+npm install @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http
 ```
 
 ```bash [Yarn]
-yarn add @anchorlib/core @anchorlib/router @irpclib/irpc
+yarn add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http
 ```
 
 ```bash [PNPM]
-pnpm add @anchorlib/core @anchorlib/router @irpclib/irpc
+pnpm add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http
 ```
 
 :::
@@ -104,19 +104,19 @@ To bind the reactive graph to the DOM, install the integration package for your 
 ::: code-group
 
 ```bash [Bun]
-bun add @anchorlib/react
+bun add @anchorlib/core @anchorlib/router @anchorlib/react
 ```
 
 ```bash [NPM]
-npm install @anchorlib/react
+npm install @anchorlib/core @anchorlib/router @anchorlib/react
 ```
 
 ```bash [Yarn]
-yarn add @anchorlib/react
+yarn add @anchorlib/core @anchorlib/router @anchorlib/react
 ```
 
 ```bash [PNPM]
-pnpm add @anchorlib/react
+pnpm add @anchorlib/core @anchorlib/router @anchorlib/react
 ```
 
 :::
@@ -126,19 +126,19 @@ pnpm add @anchorlib/react
 ::: code-group
 
 ```bash [Bun]
-bun add @anchorlib/solid
+bun add @anchorlib/core @anchorlib/router @anchorlib/solid
 ```
 
 ```bash [NPM]
-npm install @anchorlib/solid
+npm install @anchorlib/core @anchorlib/router @anchorlib/solid
 ```
 
 ```bash [Yarn]
-yarn add @anchorlib/solid
+yarn add @anchorlib/core @anchorlib/router @anchorlib/solid
 ```
 
 ```bash [PNPM]
-pnpm add @anchorlib/solid
+pnpm add @anchorlib/core @anchorlib/router @anchorlib/solid
 ```
 
 :::

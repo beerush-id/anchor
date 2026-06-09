@@ -3,14 +3,14 @@
 ## Installation
 
 ```bash
-bun add @anchorlib/core @airlib/form @airlib/react-form zod
+bun add @anchorlib/core @airlib/form @airlib/solid-form zod
 ```
 
 ## Defining Schema and Form Factory
 
 ```tsx
 import { z } from 'zod';
-import { createForm } from '@airlib/react-form';
+import { createForm } from '@airlib/solid-form';
 
 const signUpSchema = z.object({
   name: z.string().min(3, 'Name is too short'),
@@ -30,8 +30,8 @@ const SignUpForm = createForm(signUpSchema);
 ## New Form (e.g., Sign Up)
 
 ```tsx
-import { setup, render, navigate } from '@anchorlib/react';
-import { TextInput, EmailInput, PasswordInput, FormSubmit } from '@airlib/react-form';
+import { setup, navigate } from '@anchorlib/solid';
+import { TextInput, EmailInput, PasswordInput, FormSubmit } from '@airlib/solid-form';
 
 export const SignUp = setup(() => {
   const handleSubmit = async (data: z.infer<typeof signUpSchema>) => {
@@ -39,7 +39,7 @@ export const SignUp = setup(() => {
     navigate('/dashboard');
   };
 
-  return render(() => (
+  return (
     <SignUpForm onSubmit={handleSubmit}>
       <SignUpForm.Field name="name" label="Name">
         <TextInput placeholder="Enter name" />
@@ -64,7 +64,7 @@ export const SignUp = setup(() => {
 
       <FormSubmit>Create Account</FormSubmit>
     </SignUpForm>
-  ));
+  );
 });
 ```
 
@@ -72,9 +72,9 @@ export const SignUp = setup(() => {
 
 ```tsx
 import { z } from 'zod';
-import { createForm } from '@airlib/react-form';
-import { template } from '@anchorlib/react';
-import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/react-form';
+import { createForm } from '@airlib/solid-form';
+import { template } from '@anchorlib/solid';
+import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/solid-form';
 
 const profileSchema = z.object({
   name: z.string().min(3, 'Name is too short'),
@@ -141,11 +141,11 @@ During submission:
 `FormSubmit` and `FormReset` automatically connect to the form state.
 
 ```tsx
-import { FormSubmit, FormReset } from '@airlib/react-form';
+import { FormSubmit, FormReset } from '@airlib/solid-form';
 
 <div>
-  <FormReset className="btn-secondary">Undo Changes</FormReset>
-  <FormSubmit className="btn-primary">Save Profile</FormSubmit>
+  <FormReset class="btn-secondary">Undo Changes</FormReset>
+  <FormSubmit class="btn-primary">Save Profile</FormSubmit>
 </div>
 ```
 
@@ -154,7 +154,7 @@ import { FormSubmit, FormReset } from '@airlib/react-form';
 Both accept a function as `children` for dynamic content:
 
 ```tsx
-<FormSubmit className="btn-primary">
+<FormSubmit class="btn-primary">
   {(form) => (
     <>
       {form?.pending && <Spinner />}
