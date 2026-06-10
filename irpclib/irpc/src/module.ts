@@ -221,7 +221,12 @@ export class IRPCPackage<K extends string = 'id'> {
      * @returns {IRPCReader<IRPCData>} - The reader for the call.
      */
     function prepare(getArgs: () => unknown[], deferred?: boolean, debounce = 0): IRPCReader<IRPCData> {
-      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING);
+      const reader = new IRPCReader<IRPCData>(
+        uuid(),
+        spec.seed!(),
+        deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING,
+        true
+      );
 
       if (isBrowser()) {
         const observer = createObserver(() => {
@@ -235,6 +240,8 @@ export class IRPCPackage<K extends string = 'id'> {
           if (!coalesce) return execute(args as IRPCData[], reader);
 
           schedule(() => {
+            if (reader.status === IRPC_STATUS.PENDING) reader.close();
+            (reader as never as { resume: () => void }).resume();
             execute(args as IRPCData[], reader);
           });
         };
