@@ -105,12 +105,6 @@ export class ImmutableRef<T> {
   }
 }
 
-const cleanupRegistry = new FinalizationRegistry<() => void>((destroy) => {
-  /* v8 ignore start */
-  destroy();
-  /* v8 ignore end */
-});
-
 /**
  * A derived reference that computes its value based on other reactive dependencies.
  *
@@ -135,13 +129,9 @@ export class DerivedRef<T> {
    * @param derive - A function that computes and returns the derived value
    */
   constructor(derive: () => T) {
-    this.observer = createObserver(
-      () => {
-        this.state.value = this.observer.run(derive);
-      },
-      undefined,
-      true
-    );
+    this.observer = createObserver(() => {
+      this.state.value = this.observer.run(derive);
+    });
     this.observer.name = 'DerivedRef';
     this.state = anchor(
       {
@@ -149,9 +139,6 @@ export class DerivedRef<T> {
       },
       { recursive: false }
     );
-
-    const destroy = this.observer.destroy;
-    cleanupRegistry.register(this, destroy);
   }
 
   /**
