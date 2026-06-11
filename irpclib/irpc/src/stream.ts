@@ -1,16 +1,17 @@
 import { getAbortController, getAbortSignal } from './context.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { CallError, HandlerError, ResolveError } from './error.js';
+import { encodeBlobs } from './packet.js';
 import type { IRPCRouter } from './router.js';
 import { RemoteState } from './state.js';
 import { IRPC_STORE } from './store.js';
 import type {
   IRPCData,
   IRPCDataSchema,
-  IRPCPacketError,
   IRPCInputs,
   IRPCPacketAnswer,
   IRPCPacketClose,
+  IRPCPacketError,
   IRPCPacketEvent,
   IRPCPacketStream,
   IRPCResponse,
@@ -91,7 +92,7 @@ export class IRPCStream<T extends IRPCData> {
       const { result } = response;
 
       if (result instanceof RemoteState) {
-        this.value = result.data;
+        this.value = encodeBlobs(result.data) as T;
 
         if (result.status === IRPC_STATUS.SUCCESS || result.status === IRPC_STATUS.ERROR) {
           if (result.status === IRPC_STATUS.ERROR) {
@@ -126,7 +127,7 @@ export class IRPCStream<T extends IRPCData> {
             id,
             name,
             type: IRPC_PACKET_TYPE.ANSWER,
-            data: result.data,
+            data: encodeBlobs(result.data) as T,
             status: result.status,
             createdAt: Date.now(),
           } satisfies IRPCPacketAnswer<T>);
@@ -142,7 +143,7 @@ export class IRPCStream<T extends IRPCData> {
               handler({
                 id,
                 name,
-                data: { type, keys, value },
+                data: { type, keys, value: encodeBlobs(value) },
                 type: IRPC_PACKET_TYPE.EVENT,
                 status: state.status,
                 createdAt: Date.now(),
@@ -183,7 +184,7 @@ export class IRPCStream<T extends IRPCData> {
 
         abortSignal?.addEventListener('abort', abortStream, { once: true });
       } else {
-        this.value = result as T;
+        this.value = encodeBlobs(result) as T;
 
         if (response.error) {
           this.error = response.error;

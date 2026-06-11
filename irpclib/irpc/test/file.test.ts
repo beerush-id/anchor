@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_FILE_STATUS } from '../src/enum.js';
-import { IRPCFile, IRPCFileStream } from '../src/file.js';
+import { IRPCBlob, IRPCFile, IRPCFileStream } from '../src/file.js';
 import { IRPC_STORE } from '../src/index.js';
 
 describe('IRPCFile', () => {
@@ -165,6 +165,301 @@ describe('IRPCFileStream', () => {
     expect(stream.completed).toBe(true);
     expect(stream.success).toBe(false);
 
+    errSpy.mockRestore();
+  });
+});
+
+describe('IRPCBlob', () => {
+  it('should initialize with PENDING status and an empty Blob matching the meta type', () => {
+    const blob = new IRPCBlob('https://example.com/file.pdf', {
+      type: 'application/pdf',
+      size: 1024,
+      name: 'file.pdf',
+    });
+
+    expect(blob.url).toBe('https://example.com/file.pdf');
+    expect(blob.meta).toEqual({ type: 'application/pdf', size: 1024, name: 'file.pdf' });
+    expect(blob.status).toBe(IRPC_FILE_STATUS.PENDING);
+    expect(blob.downloaded).toBe(0);
+    expect(blob.success).toBe(false);
+    expect(blob.completed).toBe(false);
+    expect(blob.error).toBeUndefined();
+    expect(blob.data).toBeInstanceOf(Blob);
+    expect(blob.data.size).toBe(0);
+    expect(blob.data.type).toBe('application/pdf');
+  });
+
+  it('should default to empty string type when no meta is provided', () => {
+    const blob = new IRPCBlob('https://example.com/data');
+
+    expect(blob.meta).toBeUndefined();
+    expect(blob.data.type).toBe('');
+  });
+
+  it('should fetch and resolve via .load() using the blob() path when no size is provided', async () => {
+    const mockBlob = new Blob(['hello world'], { type: 'text/plain' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(mockBlob, { status: 200 }));
+
+    const blob = new IRPCBlob('https://example.com/text.txt', { type: 'text/plain' });
+
+    const result = await blob.load();
+
+    expect(result).toBeInstanceOf(Blob);
+    expect(result.size).toBe(11);
+    expect(blob.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    expect(blob.success).toBe(true);
+    expect(blob.completed).toBe(true);
+    expect(blob.data.size).toBe(11);
+    expect(blob.downloaded).toBe(11);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should stream chunks via ReadableStream when meta.size is provided', async () => {
+    const chunk1 = new Uint8Array([1, 2, 3, 4, 5]);
+    const chunk2 = new Uint8Array([6, 7, 8, 9, 10]);
+
+    let readIndex = 0;
+    const chunks = [chunk1, chunk2];
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (readIndex < chunks.length) return { done: false, value: chunks[readIndex++] };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+
+    const blob = new IRPCBlob('https://example.com/binary.bin', { type: 'application/octet-stream', size: 10 });
+
+    const result = await blob.load();
+
+    expect(blob.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    expect(blob.downloaded).toBe(10);
+    expect(result.size).toBe(10);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should stream and default to empty type when meta has no type', async () => {
+    const chunk = new Uint8Array([1, 2, 3]);
+
+    let readIndex = 0;
+    const chunks = [chunk];
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (readIndex < chunks.length) return { done: false, value: chunks[readIndex++] };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+
+    const blob = new IRPCBlob('https://example.com/no-type.bin', { size: 3 });
+
+    const result = await blob.load();
+
+    expect(blob.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    expect(result.type).toBe('');
+    expect(result.size).toBe(3);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should be idempotent — calling load() multiple times returns the same promise', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(new Blob(['data']), { status: 200 }));
+
+    const blob = new IRPCBlob('https://example.com/file', { type: 'text/plain' });
+
+    const p1 = blob.load();
+    const p2 = blob.load();
+
+    expect(p1).toBe(p2);
+    await p1;
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should reject when fetch returns a non-ok response', async () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 404 }));
+
+    const blob = new IRPCBlob('https://example.com/missing', { type: 'text/plain' });
+
+    await expect(blob.load()).rejects.toThrow('HTTP 404');
+    expect(blob.status).toBe(IRPC_FILE_STATUS.ERROR);
+    expect(blob.error).toBeInstanceOf(Error);
+    expect(blob.completed).toBe(true);
+    expect(blob.success).toBe(false);
+
+    fetchSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it('should reject on subsequent load() calls after an error', async () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 500 }));
+
+    const blob = new IRPCBlob('https://example.com/fail');
+    await expect(blob.load()).rejects.toThrow();
+
+    // Subsequent load() without a new fetch should reject with the cached error
+    await expect(blob.load()).rejects.toBeInstanceOf(Error);
+
+    fetchSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it('should deliver chunks to pipe subscribers during streaming load', async () => {
+    const chunk1 = new Uint8Array([10, 20]);
+    const chunk2 = new Uint8Array([30, 40]);
+
+    let readIndex = 0;
+    const chunks = [chunk1, chunk2];
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (readIndex < chunks.length) return { done: false, value: chunks[readIndex++] };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+
+    const blob = new IRPCBlob('https://example.com/stream.bin', { type: 'application/octet-stream', size: 4 });
+    const pipeCallback = vi.fn();
+
+    blob.pipe(pipeCallback);
+
+    await blob.load();
+
+    expect(pipeCallback).toHaveBeenCalledTimes(2);
+    expect(pipeCallback).toHaveBeenNthCalledWith(1, chunk1);
+    expect(pipeCallback).toHaveBeenNthCalledWith(2, chunk2);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should isolate pipe callback errors without crashing the stream', async () => {
+    const chunk1 = new Uint8Array([1, 2]);
+    const chunk2 = new Uint8Array([3, 4]);
+
+    let readIndex = 0;
+    const chunks = [chunk1, chunk2];
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (readIndex < chunks.length) return { done: false, value: chunks[readIndex++] };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+
+    const blob = new IRPCBlob('https://example.com/err-pipe.bin', { type: 'application/octet-stream', size: 4 });
+
+    blob.pipe(() => {
+      throw new Error('Pipe callback failure');
+    });
+
+    await blob.load();
+
+    expect(blob.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    expect(errSpy).toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it('should unsubscribe cleanly via the unpipe function', async () => {
+    const chunk = new Uint8Array([1, 2, 3]);
+
+    let readIndex = 0;
+    const chunks = [chunk];
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (readIndex < chunks.length) return { done: false, value: chunks[readIndex++] };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+
+    const blob = new IRPCBlob('https://example.com/unpipe.bin', { type: 'application/octet-stream', size: 3 });
+    const callback = vi.fn();
+
+    const unpipe = blob.pipe(callback);
+    unpipe();
+
+    await blob.load();
+
+    expect(callback).not.toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should be thenable — await resolves with the loaded Blob', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(new Blob(['content'], { type: 'text/plain' }), { status: 200 }));
+
+    const blob = new IRPCBlob('https://example.com/thenable.txt', { type: 'text/plain' });
+
+    const result = await blob;
+
+    expect(result).toBeInstanceOf(Blob);
+    expect(result.size).toBe(7);
+    expect(blob.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    expect(blob.data.size).toBe(7);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('should support .catch() for error handling', async () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(null, { status: 503 }));
+
+    const blob = new IRPCBlob('https://example.com/catch-fail', { type: 'text/plain' });
+
+    const fallback = await blob.catch((err) => {
+      expect(err).toBeInstanceOf(Error);
+      return 'recovered';
+    });
+
+    expect(fallback).toBe('recovered');
+
+    fetchSpy.mockRestore();
     errSpy.mockRestore();
   });
 });

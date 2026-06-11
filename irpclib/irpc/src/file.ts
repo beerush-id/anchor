@@ -60,6 +60,114 @@ export class IRPCFile {
   }
 }
 
+export class IRPCBlob {
+  protected state = mutable<IRPCFileState>({
+    status: IRPC_FILE_STATUS.PENDING,
+    downloaded: 0,
+  });
+
+  public data: Blob;
+
+  private fetching: Promise<Blob> | undefined;
+  private pipes = new Set<IRPCFilePipe>();
+
+  public get status() {
+    return this.state.status;
+  }
+
+  public get error() {
+    return this.state.error;
+  }
+
+  public get downloaded() {
+    return this.state.downloaded;
+  }
+
+  public get success() {
+    return this.status === IRPC_FILE_STATUS.SUCCESS;
+  }
+
+  public get completed() {
+    return ([IRPC_FILE_STATUS.SUCCESS, IRPC_FILE_STATUS.ERROR] as IRPCFileStatus[]).includes(this.status);
+  }
+
+  constructor(
+    public url: string,
+    public meta?: { type?: string; size?: number; name?: string }
+  ) {
+    this.data = new Blob([], { type: meta?.type ?? '' });
+  }
+
+  public load(): Promise<Blob> {
+    if (this.fetching) return this.fetching;
+
+    this.state.status = IRPC_FILE_STATUS.PENDING;
+
+    this.fetching = fetch(this.url)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        if (response.body && this.meta?.size) {
+          const reader = response.body.getReader();
+          const chunks: BlobPart[] = [];
+          let downloaded = 0;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              chunks.push(value);
+              downloaded += value.byteLength;
+              this.state.downloaded = downloaded;
+              this.pipes.forEach((fn) => {
+                try {
+                  fn(value);
+                } catch (error) {
+                  IRPC_STORE.error(error as Error, [{ url: this.url }]);
+                }
+              });
+            }
+          }
+
+          this.data = new Blob(chunks, { type: this.meta?.type ?? '' });
+        } else {
+          this.data = await response.blob();
+          this.state.downloaded = this.data.size;
+        }
+
+        this.state.status = IRPC_FILE_STATUS.SUCCESS;
+        return this.data;
+      })
+      .catch((error) => {
+        IRPC_STORE.error(error as Error, [{ url: this.url }]);
+        this.state.error = error as Error;
+        this.state.status = IRPC_FILE_STATUS.ERROR;
+        throw error;
+      });
+
+    return this.fetching;
+  }
+
+  public pipe(fn: IRPCFilePipe): IRPCFileUnpipe {
+    this.pipes.add(fn);
+    return () => this.pipes.delete(fn);
+  }
+
+  // biome-ignore lint/suspicious/noThenProperty: Expect thenable.
+  public then<TResult1 = Blob, TResult2 = never>(
+    onfulfilled?: ((value: Blob) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+  ): Promise<TResult1 | TResult2> {
+    return this.load().then(onfulfilled, onrejected);
+  }
+
+  public catch<TResult = never>(
+    onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null
+  ): Promise<Blob | TResult> {
+    return this.load().catch(onrejected);
+  }
+}
+
 export class IRPCFileStream extends IRPCFile {
   private pipes = new Set<IRPCFilePipe>();
   private buffer: Uint8Array | undefined;

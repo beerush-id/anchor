@@ -1,17 +1,18 @@
 import {
-  encode,
   CallError,
+  decodeBlobs,
+  encode,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  IRPC_STORE,
   type IRPCCall,
   type IRPCData,
   type IRPCFileQueue,
   type IRPCPacketCall,
   type IRPCPacketStream,
   IRPCTransport,
-  TransportError,
   type TransportConfig,
-  IRPC_STORE,
+  TransportError,
 } from '@irpclib/irpc';
 import {
   DEFAULT_CONNECTION_TIMEOUT,
@@ -252,6 +253,8 @@ export class WebSocketTransport extends IRPCTransport {
         return;
       }
 
+      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+      if ((response as any).data) (response as any).data = decodeBlobs((response as any).data);
       call.enqueue(response);
 
       if (response.status === IRPC_STATUS.SUCCESS || response.status === IRPC_STATUS.ERROR) {

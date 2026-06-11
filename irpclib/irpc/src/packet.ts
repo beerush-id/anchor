@@ -1,13 +1,20 @@
 import { isArray, isObject, uuid } from '@anchorlib/core';
-import { IRPCFile, type IRPCFileMeta, IRPCFileStream } from './file.js';
+import { IRPCBlob, IRPCFile, type IRPCFileMeta, IRPCFileStream } from './file.js';
 import type { IRPCData } from './types.js';
 
 export const IRPC_FILE_IDENTIFIER = 'IRPC_PACKET_FILE' as const;
+export const IRPC_BLOB_IDENTIFIER = 'IRPC_PACKET_BLOB' as const;
 
 export type IRPCFilePointer = {
   id: string;
   type: typeof IRPC_FILE_IDENTIFIER;
   meta: IRPCFileMeta;
+};
+
+export type IRPCBlobPointer = {
+  type: typeof IRPC_BLOB_IDENTIFIER;
+  url: string;
+  meta?: { type?: string; size?: number; name?: string };
 };
 
 export type IRPCFileQueue = {
@@ -35,11 +42,17 @@ export function isFilePointer(data: IRPCData) {
   return isObject(data) && data.type === IRPC_FILE_IDENTIFIER;
 }
 
+export function isBlobPointer(data: IRPCData) {
+  return isObject(data) && data.type === IRPC_BLOB_IDENTIFIER;
+}
+
 export function encode(data: IRPCData) {
   const json = { data, files: [] } as IRPCPacketJson;
   const packet = { json, queues: [] } as IRPCPacketQueues;
 
-  if (data instanceof IRPCFile) {
+  if (data instanceof IRPCBlob) {
+    json.data = createBlobPointer(data) as any;
+  } else if (data instanceof IRPCFile) {
     const { pointer, queue } = createPointer(data);
 
     json.data = pointer as any; // Must override the root pointer!
@@ -79,6 +92,10 @@ function createPointer(file: IRPCFile) {
   return { pointer, queue };
 }
 
+function createBlobPointer(blob: IRPCBlob): IRPCBlobPointer {
+  return { type: IRPC_BLOB_IDENTIFIER, url: blob.url, meta: blob.meta };
+}
+
 /**
  * Replace all IRPCFile inside an object with IRPCPacketFile.
  * @param {Record<string, unknown> | unknown[]} data - The object to encode.
@@ -92,7 +109,9 @@ function encodePointers(
 ) {
   if (isArray(data)) {
     data.forEach((item, i) => {
-      if (item instanceof IRPCFile) {
+      if (item instanceof IRPCBlob) {
+        data[i] = createBlobPointer(item);
+      } else if (item instanceof IRPCFile) {
         const { pointer, queue } = createPointer(item);
 
         data[i] = pointer;
@@ -104,7 +123,9 @@ function encodePointers(
     });
   } else if (isObject(data)) {
     Object.entries(data).forEach(([key, value]) => {
-      if (value instanceof IRPCFile) {
+      if (value instanceof IRPCBlob) {
+        data[key] = createBlobPointer(value);
+      } else if (value instanceof IRPCFile) {
         const { pointer, queue } = createPointer(value);
 
         data[key] = pointer;
@@ -142,4 +163,57 @@ function decodePointers(data: Record<string, unknown> | unknown[], files: Map<st
       }
     });
   }
+}
+
+/**
+ * Recursively replaces all IRPCBlobPointer objects in a data tree with IRPCBlob instances.
+ * Used by client-side transports to materialize blob references after receiving response data.
+ * Eagerly calls .load() to kick off the fetch — the caller awaits the thenable to get the loaded blob.
+ *
+ * @param data - The data tree potentially containing IRPCBlobPointer objects.
+ * @returns The data tree with blob pointers replaced by IRPCBlob instances.
+ */
+export function decodeBlobs<T>(data: unknown): T {
+  if (!data || typeof data !== 'object') return data as T;
+
+  if (isBlobPointer(data as IRPCData)) {
+    const pointer = data as never as IRPCBlobPointer;
+    const blob = new IRPCBlob(pointer.url, pointer.meta);
+    blob.load();
+    return blob as T;
+  }
+
+  if (Array.isArray(data)) {
+    for (let i = 0; i < data.length; i++) {
+      data[i] = decodeBlobs(data[i]);
+    }
+  } else {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      (data as Record<string, unknown>)[key] = decodeBlobs(value);
+    }
+  }
+
+  return data as T;
+}
+
+/**
+ * Recursively replaces all IRPCBlob instances in a data tree with IRPCBlobPointer objects.
+ * Used by IRPCStream to encode blobs before packets are JSON-serialized for transport.
+ *
+ * @param data - The data tree potentially containing IRPCBlob instances.
+ * @returns A new data tree with IRPCBlob instances replaced by IRPCBlobPointer objects.
+ */
+export function encodeBlobs(data: unknown): unknown {
+  if (data instanceof IRPCBlob) return createBlobPointer(data);
+  if (!data || typeof data !== 'object') return data;
+
+  if (Array.isArray(data)) {
+    return data.map((item) => encodeBlobs(item));
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    result[key] = encodeBlobs(value);
+  }
+  return result;
 }

@@ -1,14 +1,15 @@
 import {
+  decodeBlobs,
+  encode,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
+  IRPC_STORE,
   type IRPCCall,
   type IRPCData,
   type IRPCPacketStream,
   IRPCTransport,
   type TransportConfig,
   TransportError,
-  encode,
-  IRPC_STORE,
 } from '@irpclib/irpc';
 import { BC_MESSAGE_TYPE } from './enum.js';
 
@@ -96,6 +97,7 @@ export class BroadcastTransport extends IRPCTransport {
   /**
    * Checks if the data is an IRPC packet stream response.
    */
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   private isResponse(data: any): data is IRPCPacketStream<IRPCData> {
     return data && typeof data === 'object' && 'type' in data && 'status' in data;
   }
@@ -112,6 +114,8 @@ export class BroadcastTransport extends IRPCTransport {
       return;
     }
 
+    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+    if ((response as any).data) (response as any).data = decodeBlobs((response as any).data);
     call.enqueue(response);
 
     if (response.status === IRPC_STATUS.SUCCESS || response.status === IRPC_STATUS.ERROR) {

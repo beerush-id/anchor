@@ -1,5 +1,6 @@
 import {
   CallError,
+  decodeBlobs,
   encode,
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
@@ -196,6 +197,8 @@ export class HTTPTransport extends IRPCTransport {
       if (standalone) {
         const call = calls[0];
         const packet = await response.json();
+        // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+        if (packet.data) packet.data = decodeBlobs(packet.data) as any;
         call.enqueue(packet);
         this.dequeue(call);
       } else {
@@ -347,6 +350,8 @@ export class HTTPTransport extends IRPCTransport {
               const call = pendingCalls.get(packet.id);
 
               if (call) {
+                // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+                if ((packet as any).data) (packet as any).data = decodeBlobs((packet as any).data);
                 call.enqueue(packet);
 
                 if (packet.status !== IRPC_STATUS.PENDING) {
@@ -369,6 +374,8 @@ export class HTTPTransport extends IRPCTransport {
               const call = pendingCalls.get(packet.id);
 
               if (call) {
+                // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+                if ((packet as any).data) (packet as any).data = decodeBlobs((packet as any).data);
                 call.enqueue(packet);
                 pendingCalls.delete(packet.id);
                 this.dequeue(call);
