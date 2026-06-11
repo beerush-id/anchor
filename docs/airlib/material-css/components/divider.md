@@ -1,0 +1,47 @@
+---
+title: 'Divider'
+description: 'Material Design divider component for grouping content in lists and layouts.'
+---
+
+# Divider
+Material Design dividers are thin lines that group content in lists and layouts. They help organize content and clarify relationships.
+
+## Composed Utilities
+The following composed utilities provide ready-to-use dividers with built-in layout and coloring.
+
+```html [HTML]
+<!-- Standard Horizontal Divider -->
+<hr class="divider" />
+
+<!-- Vertical Divider -->
+<div class="flex h-24">
+  <span>Left</span>
+  <hr class="divider-vertical" />
+  <span>Right</span>
+</div>
+
+<!-- Inset Divider -->
+<hr class="divider-inset" />
+```
+
+- `divider`: The standard horizontal divider. Applies `divider-base`, `divider-horizontal-layout`, and `divider-surface`.
+- `divider-vertical`: A vertical divider. Applies `divider-base`, `divider-vertical-layout`, and `divider-surface`.
+- `divider-inset`: A horizontal divider that leaves a margin on the left side (typically used in lists with leading icons). Applies `divider-base`, `divider-horizontal-layout`, `divider-inset-layout`, and `divider-surface`.
+
+## Composing Utilities
+For custom divider behavior, you can apply the base layout and surface utilities individually.
+
+```html [HTML]
+<hr class="divider-base divider-horizontal-layout divider-primary-surface" />
+```
+
+- `divider-base`: Removes native margins and borders, leaving a clean `box-border` element ready to be styled via background colors.
+
+### Layout Utilities
+- `divider-horizontal-layout`: Sets width to 100% and height to 1px.
+- `divider-vertical-layout`: Sets height to 100% and width to 1px.
+- `divider-inset-layout`: Reduces width and adds a left margin (`var(--spacing) * 4`) to create an inset effect.
+
+### Surface Utilities
+- `divider-surface`: Applies the default `outline-variant` background color.
+- `divider-primary-surface`: Applies the `primary` background color.

@@ -752,7 +752,7 @@ export default function App() {
 }
 ```
 
-```tsx Registration.tsx {#active}
+```tsx Registration.tsx [active]
 import { z } from 'zod';
 import { setup, render, For } from '@anchorlib/react';
 import {
@@ -945,6 +945,15 @@ configureForm({
     class: 'transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500',
   },
   textInput: {
+    class: 'w-full px-3 py-2 border border-slate-300 rounded-lg',
+  },
+  email: {
+    class: 'w-full px-3 py-2 border border-slate-300 rounded-lg',
+  },
+  password: {
+    class: 'w-full px-3 py-2 border border-slate-300 rounded-lg',
+  },
+  number: {
     class: 'w-full px-3 py-2 border border-slate-300 rounded-lg',
   },
   select: {

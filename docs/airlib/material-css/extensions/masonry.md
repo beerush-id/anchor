@@ -1,0 +1,51 @@
+---
+title: 'Masonry'
+description: 'A pure CSS masonry layout extension for displaying unequal height items.'
+---
+
+# Masonry
+The masonry extension provides a pure CSS approach to displaying grids of items with unequal heights, perfectly fitting elements together vertically without JavaScript calculations.
+
+## Theme Variables
+You can customize the gap between items by overriding its CSS variable. This gap applies to both the horizontal space between columns and the vertical space between rows.
+
+```css [CSS]
+:root {
+  --air-masonry-gap: calc(var(--spacing) * 4); /* 16px default */
+}
+```
+
+## Composed Utilities
+The masonry utilities rely on the native CSS Multi-column Layout (`column-count`) module. This approach is highly performant and responsive out of the box.
+
+```html [HTML]
+<!-- Masonry Container -->
+<div class="masonry">
+  
+  <!-- Masonry Items -->
+  <div class="masonry-item">
+    <div class="card p-4">
+      <h3 class="title-medium">Short Card</h3>
+      <p>Content goes here.</p>
+    </div>
+  </div>
+
+  <div class="masonry-item">
+    <div class="card p-4">
+      <h3 class="title-medium">Tall Card</h3>
+      <p>This card has much more content.</p>
+      <img src="/sample.jpg" class="mt-4 rounded-md" />
+      <p class="mt-4">It spans vertically without breaking the grid.</p>
+    </div>
+  </div>
+
+</div>
+```
+
+### Container and Items
+- `masonry`: Applied to the outer wrapper. It leverages `column-count` and `column-gap`. It includes built-in media queries to make the layout fully responsive:
+  - Default (Mobile): 1 column
+  - `>= 640px`: 2 columns
+  - `>= 1024px`: 3 columns
+  - `>= 1920px`: 4 columns
+- `masonry-item`: Applied to the individual elements inside the masonry grid. It forces `display: block` and crucially applies `break-inside: avoid` to ensure that items are never sliced in half across two columns. It also applies a `margin-bottom` equal to the `--air-masonry-gap` to maintain consistent vertical spacing.

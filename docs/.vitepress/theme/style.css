@@ -186,3 +186,24 @@
 .dark .VPHome .VPImage {
   filter: invert(1) hue-rotate(180deg) !important;
 }
+
+.sp-wrapper.rounded-sandbox {
+  margin-top: 24px;
+  border: 1px solid var(--sp-colors-surface2);
+  border-radius: 24px;
+
+  .sp-preview-container,
+  .sp-preview,
+  .sp-stack,
+  .sp-layout {
+    background: transparent !important;
+    border: none !important;
+  }
+}
+
+.rounded-sandbox {
+  width: 100%;
+  margin-top: 24px;
+  border: 1px solid var(--vp-input-border-color);
+  border-radius: 24px;
+}

@@ -1,0 +1,65 @@
+---
+title: 'Chip'
+description: 'Material Design chip component for entering information, making selections, filtering content, or triggering actions.'
+---
+
+# Chip
+Material Design chips are compact elements that represent an input, attribute, or action. They come in outlined (default) and elevated variants.
+
+## Theme Variables
+You can customize the default chip dimensions by overriding its CSS variables.
+
+```css [CSS]
+:root {
+  --air-chip-height: calc(var(--spacing) * 8);
+  --air-chip-radius: var(--radius-sm);
+  --air-chip-padding-x: calc(var(--spacing) * 4);
+  --air-chip-icon-padding-x: calc(var(--spacing) * 2);
+  --air-chip-font-size: var(--font-label-large-size);
+  --air-chip-line-height: var(--font-label-large-line-height);
+}
+```
+These variables define the height, corner radius, internal padding, icon spacing offsets, and typography for all default medium-sized chips.
+
+## Composed Utilities
+The following composed utilities provide ready-to-use chips with built-in interaction states (hover, focus, selected, and disabled) and smart icon padding.
+
+```html [HTML]
+<!-- Outlined Chip (Default) -->
+<button class="chip">Outlined Chip</button>
+
+<!-- Elevated Chip -->
+<button class="chip-elevated">Elevated Chip</button>
+
+<!-- Selected State -->
+<button class="chip" aria-selected="true">Selected Chip</button>
+
+<!-- Disabled State -->
+<button class="chip" disabled>Disabled Chip</button>
+```
+
+- `chip`: Default outlined variant. Applies `chip-base`, `chip-outlined-surface`, and handles hover, focus, and selection states.
+- `chip-elevated`: Elevated variant. Applies `chip-base`, `chip-elevated-surface`, and handles hover, focus, and selection states.
+
+## Composing Utilities
+For custom chip components or granular state control, you can use the base and state layers directly.
+
+```html [HTML]
+<span class="chip-base chip-outlined-surface hover:chip-outlined-hover">
+  Custom Chip
+</span>
+```
+
+- `chip-base`: Sets up the `inline-flex` container, sizing, typography, resets text decoration and borders, and provides standard transitions. It also includes smart padding logic: if the chip contains an icon (`.material-symbols-outlined`, `svg`, `img`) as its first or last child, it automatically adjusts `padding-inline-start` or `padding-inline-end` to align with M3 specifications.
+- `chip-disabled`: Lowers opacity (`0.38`), sets `cursor: not-allowed`, and disables pointer events.
+
+### Sizing Utilities
+- `chip-sm`: Small chip (`height: spacing * 6`).
+- `chip-md`: Medium chip (default, `height: spacing * 8`).
+- `chip-lg`: Large chip (`height: spacing * 10`).
+
+### State Utilities
+- `chip-outlined-surface`, `chip-outlined-hover`, `chip-outlined-focus`: Default state colors and border for the outlined variant.
+- `chip-outlined-selected-surface`, `chip-outlined-selected-hover`, `chip-outlined-selected-focus`: Active state colors for the outlined variant.
+- `chip-elevated-surface`, `chip-elevated-hover`, `chip-elevated-focus`: Default state colors for the elevated variant.
+- `chip-elevated-selected-surface`, `chip-elevated-selected-hover`, `chip-elevated-selected-focus`: Active state colors for the elevated variant.

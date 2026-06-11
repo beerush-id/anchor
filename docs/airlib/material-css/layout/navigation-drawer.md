@@ -1,0 +1,57 @@
+---
+title: 'Navigation Drawer'
+description: 'Material Design navigation drawers provide access to destinations and app functionality.'
+---
+
+# Navigation Drawer
+Navigation drawers provide access to destinations and app functionality, such as switching accounts. They can either slide in temporarily (modal) or persist alongside content.
+
+## Theme Variables
+You can customize the standard width and border radius of the drawer by overriding its CSS variables.
+
+```css [CSS]
+:root {
+  --air-drawer-width: 22.5rem; /* 360px default */
+  --air-drawer-radius: var(--radius-lg);
+}
+```
+
+## Composed Utilities
+The navigation drawer utilities handle off-screen sliding animations, fixed positioning, and modal scrim overlays out of the box.
+
+### Modal Drawer
+Modal navigation drawers block interaction with the rest of an app's content with a scrim. They are typically used on mobile screens or smaller windows.
+
+```html [HTML]
+<!-- Background Scrim -->
+<!-- Toggle data-state="open" via JavaScript to show -->
+<div class="drawer-scrim" data-state="open"></div>
+
+<!-- The Drawer -->
+<nav class="drawer shadow-3" data-state="open">
+  <div class="p-4">
+    <h2 class="title-small">App Name</h2>
+  </div>
+  
+  <!-- Add List utilities here for navigation items -->
+</nav>
+```
+
+- `drawer`: Applied to the main sliding navigation container. It fixes the container to the left side of the screen (`z-index: 50`), enforces the `--air-drawer-width`, and applies a `surface-container-low` background with rounded right corners. By default, it is translated off-screen (`translateX(-100%)`). When `data-state="open"` is applied, it smoothly translates into view.
+- `drawer-scrim`: Applied to the backdrop element behind the modal drawer. It fixes to the entire viewport (`z-index: 40`), remains invisible, and ignores pointer events by default. When `data-state="open"` is applied, it fades in a dark `color-scrim` overlay and intercepts clicks.
+
+### Persistent Drawer
+Standard or persistent navigation drawers allow interaction with both the drawer and screen content simultaneously. They are typically used on wider screens (tablets and desktops).
+
+```html [HTML]
+<!-- Use the drawer-persistent modifier class -->
+<nav class="drawer drawer-persistent">
+  <div class="p-4">
+    <h2 class="title-small">App Name</h2>
+  </div>
+  
+  <!-- Navigation items -->
+</nav>
+```
+
+- `.drawer.drawer-persistent`: When the `drawer-persistent` modifier is added to the `drawer`, it resets the fixed positioning to `relative`, removes the border radius, disables the slide transformation (making it always visible), changes the background to the standard `surface` color, and adds a vertical border to the right side using `outline-variant`.

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AIR M3 Components</title>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@airlib/material@1.0.4/dist/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    :root { --seed-color: #e6611a; }
+  </style>
+</head>
+<body class="p-8 text-on-surface font-sans flex flex-col gap-12 bg-transparent max-w-5xl mx-auto">
+  
+  <section class="flex flex-col gap-6">
+    <h2 class="title-large text-primary border-b border-outline-variant pb-2">Actions</h2>
+    <div class="flex flex-wrap gap-6 items-center">
+      <button class="button">Elevated</button>
+      <button class="button-tonal">Tonal</button>
+      <button class="button-outlined">Outlined</button>
+      <button class="button-text">Text</button>
+      
+      <button class="fab">
+        <span class="material-symbols-outlined">edit</span>
+      </button>
+
+      <div class="button-group">
+        <button class="button-tonal">Group 1</button>
+        <button class="button">Group 2</button>
+        <button class="button-tonal">Group 3</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-6">
+    <h2 class="title-large text-primary border-b border-outline-variant pb-2">Inputs & Controls</h2>
+    <div class="flex flex-wrap gap-8 items-start">
+      <div class="text-field w-64">
+        <input type="text" class="text-field-input" placeholder=" " value="john@doe.com" />
+        <label class="text-field-label">Email Address</label>
+      </div>
+
+      <div class="text-field w-64">
+        <select class="select-input">
+          <option>Option 1</option>
+          <option>Option 2</option>
+        </select>
+        <label class="text-field-label">Select Category</label>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="flex items-center gap-4">
+          <button class="switch" role="switch" aria-checked="true" onclick="this.setAttribute('aria-checked', this.getAttribute('aria-checked') === 'true' ? 'false' : 'true')">
+            <span class="switch-thumb"></span>
+          </button>
+          <span class="text-body-medium">Switch</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <input type="checkbox" class="checkbox-input" checked />
+          <span class="text-body-medium">Checkbox</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" class="checkbox-input" />
+          <span class="text-body-medium">Checkbox</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button class="radio" role="radio" aria-checked="true">
+            <span class="radio-visual radio-checked">
+              <span class="radio-visual-dot radio-checked-dot"></span>
+            </span>
+          </button>
+          <span class="text-body-medium">Radio</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="radio" role="radio">
+            <span class="radio-visual">
+              <span class="radio-visual-dot"></span>
+            </span>
+          </button>
+          <span class="text-body-medium">Radio</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flex flex-col gap-6">
+    <h2 class="title-large text-primary border-b border-outline-variant pb-2">Data Display & Feedback</h2>
+    <div class="flex flex-wrap gap-8 items-start">
+      <div class="card w-64">
+        <div class="card-header">
+          <h3 class="card-title">Elevated Card</h3>
+        </div>
+        <div class="card-body">
+          <p class="body-medium">This is a standard elevated card displaying content.</p>
+        </div>
+        <div class="card-actions">
+          <button class="button">Action</button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-6">
+        <div class="flex gap-2">
+          <button class="chip" aria-selected="true">Selected</button>
+          <button class="chip">Default</button>
+        </div>
+        
+        <div class="flex gap-8 items-center mt-2">
+          <div class="badge-container">
+            <span class="material-symbols-outlined">mail</span>
+            <div class="badge">3</div>
+          </div>
+          <div class="badge-container">
+            <span class="material-symbols-outlined">notifications</span>
+            <div class="badge-dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+---
+title: 'Table'
+description: 'Material Design table utilities for formatting and structuring tabular data.'
+---
+
+# Table
+Tables display sets of data across rows and columns. The library provides a suite of utilities to apply Material Design typography, spacing, and interaction states to standard HTML table elements.
+
+## Composed Utilities
+Apply these utilities directly to semantic HTML table tags to structure the data.
+
+```html [HTML]
+<!-- Standard Table Wrapper -->
+<table class="table-view">
+  
+  <thead>
+    <tr>
+      <th class="table-header-cell">Dessert (100g serving)</th>
+      <th class="table-header-cell">Calories</th>
+      <th class="table-header-cell">Fat (g)</th>
+    </tr>
+  </thead>
+  
+  <tbody>
+    <!-- Interactive Data Row -->
+    <tr class="table-row-filled" tabindex="0">
+      <td class="table-cell">Frozen yogurt</td>
+      <td class="table-cell">159</td>
+      <td class="table-cell">6.0</td>
+    </tr>
+    
+    <!-- Selected Data Row -->
+    <tr class="table-row-filled" aria-selected="true" tabindex="0">
+      <td class="table-cell">Ice cream sandwich</td>
+      <td class="table-cell">237</td>
+      <td class="table-cell">9.0</td>
+    </tr>
+  </tbody>
+  
+</table>
+```
+
+- `table-view`: Applied to the main `<table>` tag. Sets up `width: 100%`, left-aligns text, and uses `border-collapse: separate` with vertical spacing to create a segmented row layout.
+- `table-header-cell`: Applied to `<th>` elements. Applies `title-small` typography, bold font weight, and a `surface-container-high` background to distinguish the header from the data rows. It automatically applies inner corner radii to the first and last cells.
+- `table-row`: The base utility for `<tr>` elements. It manages focus rings and transitioning logic, and elevates the row's `z-index` when focused to ensure focus outlines are not clipped by adjacent rows.
+- `table-row-filled`: An interactive variant for `<tr>` elements. Applies a `surface-container-low` background, pointer cursor, and manages hover and focus background color mixes. It automatically detects `[aria-selected='true']` to apply the `secondary-container` highlight color.
+- `table-cell`: Applied to `<td>` elements. Applies standard padding, `body-medium` typography, and the default inner segment border radii (`radius-sm`) for the first and last cells in a row.
+
+## Complex Border Radii
+The table utilities use advanced CSS descendant selectors to ensure the table looks like a cohesive container. 
+The very first cell of the top-left corner and the last cell of the bottom-right corner automatically receive a large outer radius (`radius-xl`), while internal cells maintain the segmented inner radius (`radius-sm`). You do not need to apply specific classes for this; it is handled automatically when using the `table-view` container.

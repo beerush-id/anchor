@@ -1,0 +1,41 @@
+---
+title: 'Select'
+description: 'Material Design select component for choosing an option from a dropdown menu.'
+---
+
+# Select
+Select components allow users to choose one option from a dropdown list. Visually, a Material Design select is constructed by combining a Text Field (as the trigger) with a Menu (as the dropdown).
+
+## Composed Utilities
+The following utilities augment the existing `text-field` and `menu` utilities to build a functioning select component.
+
+```html [HTML]
+<!-- The Select Trigger uses Text Field utilities -->
+<div class="text-field-base select-trigger" tabindex="0">
+  <span class="text-field-content">Selected Option</span>
+  <!-- The trailing caret icon -->
+  <span class="material-symbols-outlined select-caret select-caret-expanded">arrow_drop_down</span>
+</div>
+
+<!-- The Select Dropdown uses Menu utilities -->
+<ul class="menu" data-state="open">
+  <li>
+    <button class="select-option" aria-selected="true">Option 1</button>
+  </li>
+  <li>
+    <button class="select-option">Option 2</button>
+  </li>
+</ul>
+```
+
+- `select-option`: A composed utility that applies standard `menu-item` styling, but automatically detects the `[aria-selected='true']` attribute to apply the `secondary-container` highlight and bold font weight to the chosen option.
+
+## Composing Utilities
+Use these utilities to wire up the interactive parts of the select component.
+
+- `select-trigger`: An addon utility that applies `cursor-pointer` to an element (usually combined with `text-field-base`).
+- `select-caret`: Sets up a smooth transform transition for the dropdown indicator icon.
+- `select-caret-expanded`: Animates the `select-caret` by rotating it `180deg` when the select menu is open.
+
+### State Utilities
+- `select-option-selected-surface`: The distinct background and text color (`secondary-container`) applied when a select option is actively chosen.

@@ -1,0 +1,57 @@
+---
+title: 'Badge'
+description: 'Material Design badge component for displaying notifications or status.'
+---
+
+# Badge
+A Material Design badge is used to display notifications, counts, or status indicators. It is typically positioned at the top-right corner of an element.
+
+## Theme Variables
+You can customize the badge globally or locally by overriding its CSS variables.
+
+```css [CSS]
+:root {
+  --air-badge-size: calc(var(--spacing) * 4);
+  --air-badge-padding-x: var(--spacing);
+  --air-badge-font-size: var(--font-label-small-size);
+}
+```
+These variables define the base sizing, padding, and font size for the default standard badge.
+
+## Composed Utilities
+The following composed utilities provide out-of-the-box badge styles, automatically bundling base styles, sizing, and color.
+
+```html [HTML]
+<div class="badge-container">
+  <button class="button">Notifications</button>
+  <span class="badge">3</span>
+</div>
+
+<div class="badge-container">
+  <button class="button">Messages</button>
+  <span class="badge-dot"></span>
+</div>
+```
+- `badge`: Applies `badge-base`, `badge-lg`, and `badge-error-surface`. It displays a standard badge with a number or text.
+- `badge-dot`: Applies `badge-base`, `badge-sm`, and `badge-error-surface`. It displays a small dot without text.
+- `badge-container`: Applied to the parent element, setting `relative inline-flex` to properly position the absolute badge.
+
+## Composing Utilities
+For custom badges, you can build them using granular state and base layers.
+
+```html [HTML]
+<div class="badge-container">
+  <button class="button">Profile</button>
+  <span class="badge-base badge-lg badge-primary-surface">New</span>
+</div>
+```
+- `badge-base`: Applies absolute positioning (`top-0 right-0`), flexbox centering, a full border radius, and translates it slightly (`translate(30%, -30%)`).
+
+### Sizing Utilities
+- `badge-sm`: Sets the badge to a small dot size (`var(--spacing) * 1.5`), removes padding, and sets font size to 0.
+- `badge-lg`: Sets the standard badge size (`var(--spacing) * 4`), adds padding, and sets the label font size.
+
+### Color Utilities
+- `badge-error-surface`: Applies error background and on-error text color.
+- `badge-primary-surface`: Applies primary background and on-primary text color.
+- `badge-secondary-surface`: Applies secondary container background and on-secondary-container text color.
