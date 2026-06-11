@@ -254,7 +254,9 @@ describe('IRPCPacket Transmission Encoders/Decoders', () => {
 
       expect(result).toBeInstanceOf(IRPCBlob);
       expect(result.url).toBe('https://cdn.example.com/file.pdf');
-      expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example.com/file.pdf');
+      expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example.com/file.pdf', {
+        signal: expect.any(AbortSignal),
+      });
 
       await result;
       fetchSpy.mockRestore();

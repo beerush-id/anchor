@@ -31,5 +31,6 @@ export const IRPC_FILE_STATUS = {
   IDLE: 'idle',
   PENDING: 'pending',
   SUCCESS: 'success',
+  ABORTED: 'aborted',
   ERROR: 'error',
 } as const;

@@ -245,7 +245,7 @@ export class WebSocketTransport extends IRPCTransport {
    */
   protected resolve(event: MessageEvent): void {
     try {
-      const response: IRPCPacketStream<IRPCData> = JSON.parse(event.data);
+      const response: IRPCPacketStream<IRPCData> = decodeBlobs(JSON.parse(event.data));
       const call = this.pendingCalls.get(response.id);
 
       if (!call) {
@@ -253,8 +253,6 @@ export class WebSocketTransport extends IRPCTransport {
         return;
       }
 
-      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-      if ((response as any).data) (response as any).data = decodeBlobs((response as any).data);
       call.enqueue(response);
 
       if (response.status === IRPC_STATUS.SUCCESS || response.status === IRPC_STATUS.ERROR) {

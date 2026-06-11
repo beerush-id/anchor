@@ -1,5 +1,5 @@
-import { mutable } from '@anchorlib/core';
-import { IRPC_FILE_STATUS } from './enum.js';
+import { mutable, onCleanup } from '@anchorlib/core';
+import { IRPC_FILE_STATUS, IRPC_STATUS } from './enum.js';
 import { IRPC_STORE } from './store.js';
 
 export type IRPCFileStatus = (typeof IRPC_FILE_STATUS)[keyof typeof IRPC_FILE_STATUS];
@@ -68,8 +68,9 @@ export class IRPCBlob {
 
   public data: Blob;
 
-  private fetching: Promise<Blob> | undefined;
   private pipes = new Set<IRPCFilePipe>();
+  private promise: Promise<Blob> | undefined;
+  private controller?: AbortController;
 
   public get status() {
     return this.state.status;
@@ -99,11 +100,11 @@ export class IRPCBlob {
   }
 
   public load(): Promise<Blob> {
-    if (this.fetching) return this.fetching;
+    if (this.promise) return this.promise;
 
+    this.controller = new AbortController();
     this.state.status = IRPC_FILE_STATUS.PENDING;
-
-    this.fetching = fetch(this.url)
+    this.promise = fetch(this.url, { signal: this.controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -141,11 +142,17 @@ export class IRPCBlob {
       .catch((error) => {
         IRPC_STORE.error(error as Error, [{ url: this.url }]);
         this.state.error = error as Error;
-        this.state.status = IRPC_FILE_STATUS.ERROR;
+        /* v8 ignore next */
+        this.state.status = this.controller?.signal?.aborted ? IRPC_STATUS.ABORTED : IRPC_FILE_STATUS.ERROR;
         throw error;
       });
 
-    return this.fetching;
+    onCleanup(() => {
+      /* v8 ignore next */
+      this.controller?.abort();
+    });
+
+    return this.promise;
   }
 
   public pipe(fn: IRPCFilePipe): IRPCFileUnpipe {
