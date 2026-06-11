@@ -168,7 +168,7 @@ Explore in-depth comparisons between AIR Form and the most popular form validati
 }
 
 .post-card h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 12px 0 !important;
   font-size: 1.4rem;
   font-weight: 600;
   border: none;

@@ -13,7 +13,7 @@ Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 <div class="posts-grid">
   <a href="./release-v1.2.html" class="post-card">
     <article>
-      <h2>AIR Stack v1.2</h2>
+      <h3>AIR Stack v1.2</h3>
       <p>SSR Refactor & Form Auto-Detection. Improved Vite SSR modularization, React context loss resolution, and AIR Form auto-detection for standalone inputs.</p>
       <span class="read-more">Read release notes &rarr;</span>
     </article>
@@ -21,7 +21,7 @@ Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 
   <a href="./release-v1.1.html" class="post-card">
     <article>
-      <h2>AIR Stack v1.1</h2>
+      <h3>AIR Stack v1.1</h3>
       <p>Standalone HTTP Dispatch and AIR Form. Decoupled HTTP dispatcher, AIR Form ecosystem, and new headless utility components.</p>
       <span class="read-more">Read release notes &rarr;</span>
     </article>
@@ -29,7 +29,7 @@ Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 
   <a href="./release-v1.html" class="post-card">
     <article>
-      <h2>AIR Stack v1.0</h2>
+      <h3>AIR Stack v1.0</h3>
       <p>Introducing AIR Stack. A full-stack TypeScript architecture unifying state management, isomorphic RPC, routing, reactive workflows, and universal SSR.</p>
       <span class="read-more">Read release notes &rarr;</span>
     </article>
@@ -63,7 +63,7 @@ Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 }
 
 .post-card h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 12px 0 !important;
   font-size: 1.4rem;
   font-weight: 600;
   border: none;
