@@ -38,7 +38,7 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
         const url = new URL(request.url);
         const contextSeed: SSRContextSeed = resolveContext?.(request, url) ?? [];
 
-        if (typeof resolveAsset === 'function') {
+        if (url.pathname !== '/' && typeof resolveAsset === 'function') {
           const asset = await resolveAsset(request, url, env);
           if (asset) return asset;
         }
@@ -123,7 +123,7 @@ export function createFullWorker<E = any>(router: HTTPRouter, renderer: SSRRende
           return createResponse(response);
         }
 
-        if (typeof resolveAsset === 'function') {
+        if (url.pathname !== '/' && typeof resolveAsset === 'function') {
           const asset = await resolveAsset(request, url, env);
           if (asset) return asset;
         }

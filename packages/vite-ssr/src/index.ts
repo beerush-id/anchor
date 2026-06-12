@@ -58,6 +58,12 @@ export type ViteSSROptions = {
   headTag?: string;
   /** Placeholder for rendered body. Defaults to `<!--ssr-outlet-->`. */
   bodyTag?: string;
+
+  /**
+   * When `false` (default), deletes `dist/index.html` after build.
+   * Set to `true` to keep the generated `index.html` (e.g., for static hosting).
+   */
+  serverless?: boolean;
 };
 
 /** A module reference — string for default export, object for named export. */
@@ -71,8 +77,26 @@ type ModuleRef = string | { path: string; name: string };
  * abort signal propagation, and template transformation.
  */
 export function airSSR(options: ViteSSROptions): Plugin {
+  const { serverless = false } = options;
+  let outDir = 'dist';
+  let logger: ViteDevServer['config']['logger'] | undefined;
+  const isSSRBuild = process.argv.includes('--ssr');
+
   return {
     name: 'air-ssr',
+    configResolved(resolvedConfig) {
+      outDir = resolvedConfig.build.outDir;
+      logger = resolvedConfig.logger;
+    },
+    closeBundle() {
+      if (!isSSRBuild || serverless) return;
+
+      const distIndex = path.resolve(outDir, '../client/index.html');
+      if (fs.existsSync(distIndex)) {
+        fs.unlinkSync(distIndex);
+        logger?.info(`[air-ssr] Removed ${distIndex}`);
+      }
+    },
     config(userConfig) {
       if (!userConfig.ssr) userConfig.ssr = {};
 
