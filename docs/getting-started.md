@@ -47,11 +47,13 @@ If you use AI coding assistants (Gemini, Claude, etc.), install the AIR Stack sk
 ```bash [React]
 npx degit beerush-id/airstack/skills/air-stack-react ~/.gemini/config/skills/air-stack-react
 npx degit beerush-id/airstack/skills/air-form-react ~/.gemini/config/skills/air-form-react
+npx degit beerush-id/airstack/skills/air-material-css ~/.gemini/config/skills/air-material-css
 ```
 
 ```bash [SolidJS]
 npx degit beerush-id/airstack/skills/air-stack-solid ~/.gemini/config/skills/air-stack-solid
 npx degit beerush-id/airstack/skills/air-form-solid ~/.gemini/config/skills/air-form-solid
+npx degit beerush-id/airstack/skills/air-material-css ~/.gemini/config/skills/air-material-css
 ```
 
 :::
