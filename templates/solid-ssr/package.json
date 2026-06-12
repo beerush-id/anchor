@@ -13,14 +13,14 @@
     "preview": "vite preview --outDir dist/client"
   },
   "dependencies": {
-    "@anchorlib/core": "1.2.0",
-    "@anchorlib/solid": "1.2.0",
-    "@anchorlib/router": "1.2.0",
+    "@anchorlib/core": "1.2.3",
+    "@anchorlib/solid": "1.2.3",
+    "@anchorlib/router": "1.2.3",
     "solid-js": "^1.9.9",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@anchorlib/vite-ssr": "1.2.0",
+    "@anchorlib/vite-ssr": "1.2.3",
     "@biomejs/biome": "^2.3.3",
     "@tailwindcss/vite": "^4.1.16",
     "@types/bun": "latest",
