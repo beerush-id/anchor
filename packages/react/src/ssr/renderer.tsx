@@ -10,7 +10,7 @@ import {
 import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
 import { renderToString } from 'react-dom/server';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
-import type { SSRContext, SSROutput, SSRRenderer } from './types.js';
+import type { AppShell, SSRContext, SSROutput, SSRRenderer } from './types.js';
 
 /**
  * Creates an SSR renderer function.
@@ -19,8 +19,15 @@ import type { SSRContext, SSROutput, SSRRenderer } from './types.js';
  * @param RootLayout - The root layout component of the application.
  */
 export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>): SSRRenderer {
-  return ((url: string, cookie: string, context?: SSRContext, controller?: AbortController, isolated?: boolean) => {
-    if (isolated) return ssrRenderToString(router, RootLayout, url, controller) as Promise<SSROutput>;
+  return ((
+    url: string,
+    cookie: string,
+    context?: SSRContext,
+    controller?: AbortController,
+    Shell?: AppShell,
+    isolated?: boolean
+  ) => {
+    if (isolated) return ssrRenderToString(router, RootLayout, url, controller, Shell) as Promise<SSROutput>;
 
     const storage = context instanceof AsyncStore ? context : new AsyncStore(context as SSRContext);
     return withIsolation(
@@ -30,7 +37,7 @@ export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>):
         const jar = getCookieJar() ?? decodeCookies(cookie);
         setCookieContext(jar);
 
-        const result = await ssrRenderToString(router, RootLayout, url, controller);
+        const result = await ssrRenderToString(router, RootLayout, url, controller, Shell);
 
         cookies = jar.encode();
         return { ...result, cookies } as SSROutput;
@@ -53,12 +60,14 @@ export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>):
  * @param RootLayout - The root layout component.
  * @param url - The URL to render.
  * @param controller - Optional abort controller for cancellation.
+ * @param Shell - Optional shell component to wrap the root layout.
  */
 export async function ssrRenderToString(
   router: Router,
   RootLayout: RouteComponent<AnyRoute>,
   url: string,
-  controller?: AbortController
+  controller?: AbortController,
+  Shell?: AppShell
 ): Promise<Omit<SSROutput, 'cookies'>> {
   let html = '';
   let head = '';
@@ -81,7 +90,15 @@ export async function ssrRenderToString(
         status = 400;
       }
 
-      html = renderToString(<UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />);
+      const application = Shell ? (
+        <Shell>
+          <UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />
+        </Shell>
+      ) : (
+        <UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />
+      );
+
+      html = renderToString(application);
       head = renderToString([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
       head += script;
     } catch (error) {

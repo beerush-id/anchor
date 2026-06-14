@@ -1,6 +1,6 @@
 import { decodeCookies, isBrowser, setCookieContext } from '@anchorlib/core';
 import type { HTTPRouter } from '@irpclib/http/router';
-import type { SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions } from './types.js';
+import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions } from './types.js';
 
 /**
  * Creates a standalone SSR worker that handles asset resolution, rendering,
@@ -11,9 +11,10 @@ import type { SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions 
  *
  * @param renderer - The SSR renderer created by `createSSR`.
  * @param options - Worker configuration.
+ * @param Shell - The app shell component.
  * @returns A worker object with a Web Standard `fetch` handler.
  */
-export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E>) {
+export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E>, Shell?: AppShell) {
   const {
     template = '',
     headTag = '<!--ssr-head-->',
@@ -43,7 +44,13 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
           if (asset) return asset;
         }
 
-        const { html, head, status, cookies, redirect } = await renderer(url.pathname, cookie, contextSeed, controller);
+        const { html, head, status, cookies, redirect } = await renderer(
+          url.pathname,
+          cookie,
+          contextSeed,
+          controller,
+          Shell
+        );
         const body = template.replace(headTag, head).replace(bodyTag, html);
 
         const headers = new Headers({
@@ -78,6 +85,7 @@ type IsolatedRenderer = (
   cookie: string,
   context?: SSRContext,
   controller?: AbortController,
+  Shell?: AppShell,
   isolated?: boolean
 ) => Promise<SSROutput>;
 
@@ -91,9 +99,15 @@ type IsolatedRenderer = (
  * @param router - The IRPC HTTP router instance.
  * @param renderer - The SSR renderer created by `createSSR`.
  * @param options - Worker configuration.
+ * @param Shell - The app shell component.
  * @returns A worker object with a Web Standard `fetch` handler.
  */
-export function createFullWorker<E = any>(router: HTTPRouter, renderer: SSRRenderer, options: WorkerOptions<E>) {
+export function createFullWorker<E = any>(
+  router: HTTPRouter,
+  renderer: SSRRenderer,
+  options: WorkerOptions<E>,
+  Shell?: AppShell
+) {
   const {
     template = '',
     headTag = '<!--ssr-head-->',
@@ -140,6 +154,7 @@ export function createFullWorker<E = any>(router: HTTPRouter, renderer: SSRRende
               cookie,
               undefined,
               controller,
+              Shell,
               true
             );
 

@@ -2,8 +2,9 @@ import '../../src/server/index.js';
 import '../../src/client/index.js';
 import { AsyncStore } from '@anchorlib/core';
 import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@anchorlib/router';
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setup } from '../../src/index.js';
 import { page } from '../../src/router/index.js';
 import { createSSR } from '../../src/ssr/index.js';
 
@@ -136,7 +137,24 @@ describe('createSSR', () => {
     const ssr = createSSR(router, RootLayout);
 
     // Call with isolated=true (5th arg) — this is the internal path used by createFullWorker
-    const output = await (ssr as any)('http://localhost/', '', undefined, undefined, true);
+    const output = await (ssr as any)('http://localhost/', '', undefined, undefined, undefined, true);
+
+    expect(output.html).toBe('<div></div>');
+    expect(output.status).toBe(200);
+    // Isolated mode does not return cookies
+    expect(output.cookies).toBeUndefined();
+  });
+
+  it('renders with shell given', async () => {
+    const router = createRouter<ReactNode>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
+    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => props.children);
+
+    const ssr = createSSR(router, RootLayout);
+
+    // Call with isolated=true (5th arg) — this is the internal path used by createFullWorker
+    const output = await (ssr as any)('http://localhost/', '', undefined, undefined, Shell, true);
 
     expect(output.html).toBe('<div></div>');
     expect(output.status).toBe(200);

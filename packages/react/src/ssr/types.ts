@@ -1,4 +1,6 @@
 import type { AsyncKey, AsyncStore, AsyncValue } from '@anchorlib/core';
+import type { HTMLAttributes } from 'react';
+import type { StableComponent } from '../types.js';
 
 /**
  * The output of the SSR process.
@@ -36,7 +38,8 @@ export type SSRRenderer = (
   url: string,
   cookie: string,
   context?: SSRContext,
-  controller?: AbortController
+  controller?: AbortController,
+  Shell?: AppShell
 ) => Promise<SSROutput>;
 
 /**
@@ -66,3 +69,5 @@ export type WorkerOptions<E> = {
   /** Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. */
   timeout?: number;
 };
+
+export type AppShell = StableComponent<HTMLAttributes<HTMLElement>>;
