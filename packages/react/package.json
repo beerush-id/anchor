@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorlib/react",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "React bindings for Anchor reactive state management",
   "keywords": [
     "state",
