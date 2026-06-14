@@ -1,7 +1,7 @@
 import '../../src/server/index.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createWorker, createFullWorker } from '../../src/ssr/worker.js';
 import type { SSROutput, SSRRenderer } from '../../src/ssr/types.js';
+import { createFullWorker, createWorker } from '../../src/ssr/worker.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
   const defaults: SSROutput = {
@@ -119,7 +119,7 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith('/', '', customContext, expect.any(AbortController));
+    expect(renderer).toHaveBeenCalledWith('/', '', customContext, expect.any(AbortController), undefined);
   });
 
   it('defaults context to empty array', async () => {
@@ -128,7 +128,7 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith('/', '', [], expect.any(AbortController));
+    expect(renderer).toHaveBeenCalledWith('/', '', [], expect.any(AbortController), undefined);
   });
 
   it('passes cookie from request header', async () => {
@@ -141,7 +141,7 @@ describe('createWorker', () => {
       })
     );
 
-    expect(renderer).toHaveBeenCalledWith('/', 'session=abc', [], expect.any(AbortController));
+    expect(renderer).toHaveBeenCalledWith('/', 'session=abc', [], expect.any(AbortController), undefined);
   });
 
   it('applies createResponse hook', async () => {
@@ -375,7 +375,7 @@ describe('createFullWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith('/', '', undefined, expect.any(AbortController), true);
+    expect(renderer).toHaveBeenCalledWith('/', '', undefined, expect.any(AbortController), undefined, true);
   });
 
   it('passes controller and contextSeed to isolate', async () => {

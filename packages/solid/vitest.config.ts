@@ -6,6 +6,10 @@ export default defineConfig({
   resolve: {
     conditions: ['development', 'browser'],
   },
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'solid-js',
+  },
   test: {
     globals: true,
     environment: 'jsdom',

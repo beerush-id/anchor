@@ -149,14 +149,14 @@ describe('createSSR', () => {
     const router = createRouter<ReactNode>();
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
-    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => props.children);
+    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => <div className="shell">{props.children}</div>);
 
     const ssr = createSSR(router, RootLayout);
 
     // Call with isolated=true (5th arg) — this is the internal path used by createFullWorker
     const output = await (ssr as any)('http://localhost/', '', undefined, undefined, Shell, true);
 
-    expect(output.html).toBe('<div></div>');
+    expect(output.html).toBe('<div class="shell"><div></div></div>');
     expect(output.status).toBe(200);
     // Isolated mode does not return cookies
     expect(output.cookies).toBeUndefined();

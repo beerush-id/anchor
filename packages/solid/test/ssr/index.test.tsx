@@ -148,7 +148,7 @@ describe('createSSR', () => {
     const ssr = createSSR(router, RootLayout);
 
     // Call with isolated=true (5th arg) — internal path used by createFullWorker
-    const output = await (ssr as any)('http://localhost/', '', undefined, undefined, true);
+    const output = await (ssr as any)('http://localhost/', '', undefined, undefined, undefined, true);
 
     expect(output.html).toBe('<div></div>');
     expect(output.head).toContain('');
