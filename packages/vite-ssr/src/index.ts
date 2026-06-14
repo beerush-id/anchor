@@ -23,6 +23,7 @@ type IsolatedRenderer = (
   cookie: string,
   context?: unknown,
   controller?: AbortController,
+  Shell?: () => unknown,
   isolated?: boolean
 ) => Promise<SSROutput>;
 
@@ -38,6 +39,9 @@ export type ViteSSROptions = {
    * Must export `createSSR(router, layout) => SSRRenderer`.
    */
   renderer: string;
+
+  /** Path to the shell module. Must `export default` a `Shell` component. */
+  shell?: string;
 
   /**
    * IRPC configuration. If provided, POST requests to the transport
@@ -209,6 +213,8 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
   // Load router + layout per-request (picks up HMR changes; cached when unchanged).
   const { default: pageRouter } = await server.ssrLoadModule(options.router);
   const { default: RootLayout } = await server.ssrLoadModule(options.layout);
+  const { default: Shell } = options.shell ? await server.ssrLoadModule(options.shell) : {};
+
   const render = (await rendererFactory(pageRouter, RootLayout)) as IsolatedRenderer;
   const cookie = req.headers.cookie ?? '';
 
@@ -220,7 +226,7 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
 
     // Isolate SSR render with IRPC context (abort signal, cookie, hooks).
     ssrResult = await router.isolate(
-      () => render(urlPath, cookie, undefined, controller, true),
+      () => render(urlPath, cookie, undefined, controller, Shell, true),
       controller,
       [['cookie', cookie]],
       () => {
@@ -228,7 +234,7 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
       }
     );
   } else {
-    ssrResult = await render(urlPath, cookie, undefined, controller);
+    ssrResult = await render(urlPath, cookie, undefined, controller, Shell);
   }
 
   const { html, head, status, redirect, cookies } = ssrResult;
