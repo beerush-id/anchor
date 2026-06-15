@@ -279,7 +279,6 @@ irpc.invalidate(getUser, 'user-123');
 ```
 
 ### IRPC: Progressive Hydration (Handler)
-Eliminates UI waterfalls by yielding partial data as parallel queries resolve.
 ```typescript
 import { irpc, stream } from '@irpclib/irpc';
 
@@ -310,6 +309,62 @@ irpc.construct(sendMessage, async (propmt) => {
 
   return reader.pipe(); // Pass the live stream through
 });
+```
+
+### IRPC: File Uploading
+Wrap native file objects in `IRPCFile` to natively transmit them to the server.
+
+```typescript
+import { irpc, IRPCFile } from '@irpclib/irpc';
+
+export const uploadAvatar = irpc.declare<(file: IRPCFile) => Promise<void>>('uploadAvatar', () => undefined);
+
+// Server: Access metadata and save the raw Blob buffer
+irpc.construct(uploadAvatar, async (file) => {
+  const buffer = await file.data.arrayBuffer();
+  await saveToDisk(`/uploads/${file.meta.name}`, buffer);
+});
+
+// Client: Wrap the file and pass it as an argument
+const file = fileInput.files[0];
+const avatar = new IRPCFile({ name: file.name, size: file.size, type: file.type }, file);
+await uploadAvatar(avatar);
+```
+
+### IRPC: File Downloading & Streaming
+Use `IRPCBlob` to return secure file references (like S3 signed URLs) from the server without immediately transferring the file data.
+
+```typescript
+import { irpc, IRPCBlob } from '@irpclib/irpc';
+
+export const getReport = irpc.declare<(reportId: string) => Promise<IRPCBlob>>('getReport', () => new IRPCBlob(''));
+
+irpc.construct(getReport, async (reportId) => {
+  const report = await db.reports.find(reportId);
+  const signedUrl = await s3.getSignedUrl(report.fileKey);
+  return new IRPCBlob(signedUrl, { type: 'application/pdf' });
+});
+```
+
+#### Consumption: Imperative
+In standard async functions, `await` unwraps the `IRPCBlob` to yield the native `Blob` directly.
+```typescript
+const blob = await getReport('report-123'); 
+```
+
+#### Consumption: Reactive
+In UI components, use `.later()` to defer the call. Fetch the reference via `.dispatch()`, then trigger `.load()` manually.
+```tsx
+const report = getReport.later();
+
+<button onClick={async () => {
+  await report.dispatch(props.reportId); 
+  report.data?.load();                   
+}}>
+  Download
+</button>
+
+<span>Downloaded: {report.data?.downloaded} bytes</span>
 ```
 
 ### IRPC: Hooks and Context (Handler Environment)
@@ -471,7 +526,6 @@ Bun.serve({
 ```
 
 ### IRPC: Store Subscription
-Monitor active calls globally. Useful for DevTools, logging, or health checks.
 ```typescript
 import { IRPC_STORE } from '@irpclib/irpc';
 
@@ -518,16 +572,40 @@ export const auditLogs = irpc.exclude(
 // auditLogs.get exists, the rest are removed and unregistered
 ```
 
-### IRPC: CRUD Adapter & Drivers
-`IRPCAdapter` attaches handlers to IRPC stubs and bridges them to common operational patterns — such as database CRUD — through `IRPCDriver` implementations.
+### IRPC: Adapter & Drivers
+Extend `IRPCAdapter` and `IRPCDriver` to build custom routing pipelines.
+
 ```typescript
-// constructor.ts (Server Implementation)
+import { promises as fs } from 'node:fs';
 import { IRPCAdapter, IRPCDriver } from '@irpclib/irpc';
 import { irpc } from './module.js';
-import { users, posts } from './index.js';
 
-// Driver: extend IRPCDriver, implement the methods you handle
-class PostgresDriver extends IRPCDriver {
+export const readFile = irpc.declare<(path: string) => Promise<Buffer>>('readFile', () => Buffer.from(''));
+
+class StorageAdapter extends IRPCAdapter {
+  async read(meta, path) {
+    return this.dispatch('read', meta, path); 
+  }
+}
+
+class FsDriver implements IRPCDriver<StorageAdapter> {
+  async read(meta, path) {
+    return fs.readFile(`/storage/${meta.name}/${path}`);
+  }
+}
+
+const adapter = new StorageAdapter(irpc);
+adapter.use(new FsDriver());
+adapter.attach(readFile, 'read');
+```
+
+### IRPC: CRUD Adapter
+Use `IRPCCrudAdapter` and `IRPCCrudDriver` to route generated `irpc.crud()` stubs automatically.
+
+```typescript
+import { IRPCCrudAdapter, IRPCCrudDriver } from '@irpclib/irpc';
+
+class PostgresCrudDriver extends IRPCCrudDriver {
   async get(meta, id) {
     return db.query(`SELECT * FROM ${meta.name} WHERE ${meta.key} = $1`, [id]);
   }
@@ -542,64 +620,59 @@ class PostgresDriver extends IRPCDriver {
   }
 }
 
-// Adapter: wire stubs to drivers
-const adapter = new IRPCAdapter(irpc);
-adapter.use(new PostgresDriver());
-adapter.attach(users);  // Wire all four stubs
-adapter.attach(posts);  // Multiple entities on one adapter
+const adapter = new IRPCCrudAdapter(irpc);
+adapter.use(new PostgresCrudDriver());
+adapter.attach(users); 
 ```
 
-### IRPC: CRUD Chain of Responsibility
-Register multiple drivers. Each driver either handles the call or throws `IRPCAdapter.next()` to pass to the next driver. Real errors propagate immediately.
+### IRPC: Adapter Chain of Responsibility
+Register multiple drivers to build a chain. Throw `IRPCAdapter.next()` to cascade execution to the next driver.
+
 ```typescript
-class CacheDriver extends IRPCDriver {
+import { IRPCAdapter } from '@irpclib/irpc';
+
+class CacheDriver extends IRPCCrudDriver {
   get(meta, id) {
     const cached = cache.get(`${meta.name}:${id}`);
     if (cached) return cached;
-    throw IRPCAdapter.next(); // Pass to next driver
+    
+    throw IRPCAdapter.next();
   }
 }
 
-class DatabaseDriver extends IRPCDriver {
+class DatabaseDriver extends IRPCCrudDriver {
   async get(meta, id) {
     return db.query(`SELECT * FROM ${meta.name} WHERE ${meta.key} = $1`, [id]);
   }
-  async create(meta, data) {
-    return db.insert(meta.name, data);
-  }
 }
 
-const adapter = new IRPCAdapter(irpc);
-adapter.use(new CacheDriver());    // Tried first
-adapter.use(new DatabaseDriver()); // Fallback
+const adapter = new IRPCCrudAdapter(irpc);
+adapter.use(new CacheDriver()); 
+adapter.use(new DatabaseDriver()); 
 adapter.attach(users);
 ```
 
-### IRPC: CRUD Single-Stub Attach
-Attach individual stubs to an adapter by specifying the method name.
-```typescript
-adapter.attach(users.get, 'get');      // Wire only get
-adapter.attach({ get: users.get });    // Equivalent using partial object
-```
+### IRPC: Adapter Extension
+Extend `IRPCCrudAdapter` and `IRPCDriver` to attach custom operations to standard pipelines.
 
-### IRPC: CRUD Adapter Extension
-Add custom generic operations (e.g., `list`) to the adapter dispatch chain without manual construction.
 ```typescript
-// Add method to existing Driver
-class PostgresDriver extends IRPCDriver {
-  async list(meta, filters) {
-    return db.query(`SELECT * FROM ${meta.name} WHERE status = $1`, [filters.status]);
-  }
-}
+import { IRPCCrudAdapter, IRPCDriver } from '@irpclib/irpc';
 
-// Extend Adapter to expose the new method to the dispatch loop
-class ExtendedAdapter extends IRPCAdapter {
+class ExtendedAdapter extends IRPCCrudAdapter {
   async list(meta, filters) {
     return this.dispatch('list', meta, filters);
   }
 }
 
-// Declare custom stub and attach explicitly
+class PostgresDriver implements IRPCDriver<ExtendedAdapter> {
+  async get(meta, id) {
+    return db.query(`SELECT * FROM ${meta.name} WHERE ${meta.key} = $1`, [id]);
+  }
+  async list(meta, filters) {
+    return db.query(`SELECT * FROM ${meta.name} WHERE status = $1`, [filters.status]);
+  }
+}
+
 export const users = {
   ...irpc.crud<User>('users', () => ({})),
   list: irpc.declare<(filters: { status: string }) => Promise<User[]>>('users.list', () => [])
@@ -607,8 +680,8 @@ export const users = {
 
 const adapter = new ExtendedAdapter(irpc);
 adapter.use(new PostgresDriver());
-adapter.attach(users);              // Maps get, create, update, delete
-adapter.attach(users.list, 'list'); // Explicitly maps custom stub to 'list'
+adapter.attach(users);              // Attaches standard CRUD operations
+adapter.attach(users.list, 'list'); // Manually attaches the extension operation
 ```
 
 ### IRPC: Error Hierarchy
