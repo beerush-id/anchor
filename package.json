@@ -1,7 +1,7 @@
 {
   "name": "anchorlib",
   "type": "module",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Reactive State Management for Javascript",
   "scripts": {
     "dev": "bpkg run dev",

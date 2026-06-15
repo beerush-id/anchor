@@ -272,23 +272,45 @@ export type UpdateProfileFn = (profile: {
   documents: IRPCFile[];
 }) => Promise<void>;
 export const updateProfile = irpc.declare<UpdateProfileFn>('updateProfile', () => undefined);
+
+// Client wrapping a native File
+const file = fileInput.files[0];
+const payload = new IRPCFile({ name: file.name, size: file.size, type: file.type }, file);
+await uploadAvatar(payload);
 ```
 
-On the client, wrap browser `File` or `Blob` objects in `IRPCFile`:
+The server receives the `IRPCFile` automatically, where `file.data` contains the raw binary `Blob` and `file.meta` provides the necessary metadata (name, size, type).
+
+### Downloading Files
+
+To serve remote files securely without forcing the client to download them immediately, return an `IRPCBlob`. Because it acts as a wrapper, the client can choose to either wait for the entire file instantly, or fetch the wrapper to stream and track the download reactively.
 
 ```typescript
-import { IRPCFile } from '@irpclib/irpc';
+import { IRPCBlob } from '@irpclib/irpc';
 
-const file = fileInput.files[0];
-const avatar = new IRPCFile(
-  { name: file.name, size: file.size, type: file.type },
-  file
-);
+// Server: Dynamically resolve a secure file reference
+irpc.construct(getAvatar, async (userId) => {
+  const user = await db.users.find(userId);
+  const signedUrl = await s3.getSignedUrl(user.avatarKey);
+  return new IRPCBlob(signedUrl, { type: 'image/png' });
+});
 
-await uploadAvatar(avatar);
+// Imperative: Fetch the pointer and instantly download the native Blob
+const blob = await getAvatar('user-123');
+
+// Reactive: Bind to a UI component and download on demand
+const avatar = getAvatar.later();
+
+// Later in the UI...
+<button onClick={async () => {
+  await avatar.dispatch(props.userId); // Fetch the secure file reference
+  avatar.data?.load(); // Trigger download manually
+}}>
+  Download
+</button>
 ```
 
-On the server, `file.data` gives you the `Blob` and `file.meta` gives you the metadata (name, size, type).
+By returning an `IRPCBlob`, the server successfully defers the actual data transfer. The client gains full control over the execution context—using `await` for background scripts, or `.later()` to build interactive progress UIs—saving bandwidth and keeping the initial RPC response lightweight.
 
 ::: tip Use HTTP Transport for file uploads
 The browser offloads HTTP uploads to a background thread. WebSocket transport supports binary framing, but large transfers block the persistent socket, delaying other RPC calls.
