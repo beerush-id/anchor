@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPCCrudAdapter } from '../src/adapter.js';
 import { CrudError } from '../src/error.js';
-import { IRPCCrudDriver } from '../src/index.js';
+import type { IRPCCrudDriver } from '../src/index.js';
 import { createPackage } from '../src/module.js';
 
 type User = { id: string; name: string; email: string };

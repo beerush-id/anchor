@@ -1,7 +1,7 @@
 import type { IRPCDriver } from './driver.js';
 import { CrudError } from './error.js';
 import type { IRPCPackage } from './module.js';
-import type { IRPCCrudMeta, IRPCData, IRPCStub } from './types.js';
+import type { IRPCCrudMeta, IRPCData, IRPCMeta, IRPCStub } from './types.js';
 
 class NextDriver extends Error {
   constructor() {
@@ -27,7 +27,7 @@ export class IRPCAdapter {
    * @param args - Arguments forwarded to the driver method
    * @throws CrudError.notImplemented if no driver handles the method
    */
-  protected dispatch(method: string, meta: IRPCCrudMeta, ...args: IRPCData[]): Promise<IRPCData> | IRPCData {
+  protected dispatch<O>(method: string, meta: IRPCMeta, ...args: unknown[]): Promise<O> | O {
     for (const driver of this.drivers) {
       const fn = driver[method as never];
       if (!fn) continue;
@@ -114,7 +114,7 @@ export class IRPCCrudAdapter extends IRPCAdapter {
    * @param meta - Resolved entity metadata
    * @param id - The entity identifier
    */
-  public get(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData {
+  public get(meta: IRPCCrudMeta, id: string): Promise<IRPCData> | IRPCData {
     return this.dispatch('get', meta, id);
   }
 
@@ -123,7 +123,7 @@ export class IRPCCrudAdapter extends IRPCAdapter {
    * @param meta - Resolved entity metadata
    * @param data - The entity data to create
    */
-  public create(meta: IRPCCrudMeta, data: IRPCData): Promise<IRPCData> | IRPCData {
+  public create<D extends IRPCData>(meta: IRPCCrudMeta, data: D): Promise<IRPCData> | IRPCData {
     return this.dispatch('create', meta, data);
   }
 
@@ -133,7 +133,7 @@ export class IRPCCrudAdapter extends IRPCAdapter {
    * @param id - The entity identifier
    * @param data - The entity data to update
    */
-  public update(meta: IRPCCrudMeta, id: IRPCData, data: IRPCData): Promise<IRPCData> | IRPCData {
+  public update(meta: IRPCCrudMeta, id: string, data: IRPCData): Promise<IRPCData> | IRPCData {
     return this.dispatch('update', meta, id, data);
   }
 
@@ -142,7 +142,7 @@ export class IRPCCrudAdapter extends IRPCAdapter {
    * @param meta - Resolved entity metadata
    * @param id - The entity identifier
    */
-  public delete(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData {
+  public delete(meta: IRPCCrudMeta, id: string): Promise<IRPCData> | IRPCData {
     return this.dispatch('delete', meta, id);
   }
 }

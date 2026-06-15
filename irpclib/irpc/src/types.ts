@@ -2,9 +2,11 @@ import type { AsyncValue, StateChange } from '@anchorlib/core';
 import type {
   ZodArray,
   ZodBoolean,
+  ZodCustom,
   ZodNull,
   ZodNumber,
   ZodObject,
+  ZodOptional,
   ZodSafeParseResult,
   ZodString,
   ZodUndefined,
@@ -162,7 +164,7 @@ export type IRPCDefined = string | number | boolean | IRPCObject | IRPCFile | IR
 /**
  * Union type of all primitive Zod schema types used for validation.
  */
-export type IRPCPrimitiveSchema = ZodString | ZodNumber | ZodBoolean | ZodNull | ZodUndefined;
+export type IRPCPrimitiveSchema = ZodString | ZodNumber | ZodBoolean | ZodNull | ZodUndefined | ZodOptional | ZodCustom;
 
 /**
  * Zod object schema type used for validating structured data.

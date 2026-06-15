@@ -9,8 +9,8 @@ export type IRPCDriver<Adapter extends IRPCAdapter> = Partial<
  * Base class for CRUD drivers that receive per-method resolved metadata on every call
  */
 export abstract class IRPCCrudDriver {
-  get?(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData;
+  get?(meta: IRPCCrudMeta, id: string): Promise<IRPCData> | IRPCData;
   create?(meta: IRPCCrudMeta, data: IRPCData): Promise<IRPCData> | IRPCData;
-  update?(meta: IRPCCrudMeta, id: IRPCData, data: IRPCData): Promise<IRPCData> | IRPCData;
-  delete?(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData;
+  update?(meta: IRPCCrudMeta, id: string, data: IRPCData): Promise<IRPCData> | IRPCData;
+  delete?(meta: IRPCCrudMeta, id: string): Promise<IRPCData> | IRPCData;
 }
