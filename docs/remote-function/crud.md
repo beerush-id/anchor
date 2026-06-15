@@ -120,10 +120,10 @@ To give the driver context about which entity it is currently executing, every m
 
 ```typescript
 // drivers/postgres.ts
-import { IRPCDriver, type IRPCCrudMeta } from '@irpclib/irpc';
+import { IRPCCrudDriver, type IRPCCrudMeta } from '@irpclib/irpc';
 import { db } from '../db.js';
 
-export class PostgresDriver extends IRPCDriver {
+export class PostgresCrudDriver extends IRPCCrudDriver {
   async get(meta: IRPCCrudMeta, id: string) {
     return db.query(`SELECT * FROM ${meta.name} WHERE ${meta.key} = $1`, [id]);
   }
@@ -155,18 +155,18 @@ The `meta` object passed to every driver method contains:
 
 ## Wiring the Adapter
 
-To connect your declared stubs to your driver, use the `IRPCAdapter` in your server constructor files:
+To connect your declared stubs to your driver, use the `IRPCCrudAdapter` in your server constructor files:
 
 ```typescript
 // rpc/constructors.ts
-import { IRPCAdapter } from '@irpclib/irpc';
+import { IRPCCrudAdapter } from '@irpclib/irpc';
 import { irpc } from '../lib/module.js';
 import { users } from './users/index.js';
-import { PostgresDriver } from '../drivers/postgres.js';
+import { PostgresCrudDriver } from '../drivers/postgres.js';
 
-const adapter = new IRPCAdapter(irpc);
+const adapter = new IRPCCrudAdapter(irpc);
 
-adapter.use(new PostgresDriver());
+adapter.use(new PostgresCrudDriver());
 adapter.attach(users);
 ```
 
@@ -181,17 +181,17 @@ adapterWrite.attach({ create: users.create, update: users.update });
 
 ## Chain of Responsibility
 
-The `IRPCAdapter` allows you to register multiple drivers. When a call arrives, the adapter evaluates the drivers in order. 
+The `IRPCCrudAdapter` allows you to register multiple drivers. When a call arrives, the adapter evaluates the drivers in order. 
 
-A driver can either fulfill the request by returning data, or it can explicitly throw `IRPCAdapter.next()` to pass execution down the chain.
+A driver can either fulfill the request by returning data, or it can explicitly throw `IRPCCrudAdapter.next()` to pass execution down the chain.
 
 This is the standard pattern for building decoupled caching layers. You register the cache driver *before* the database driver:
 
 ```typescript
-const adapter = new IRPCAdapter(irpc);
+const adapter = new IRPCCrudAdapter(irpc);
 
 adapter.use(new RedisCacheDriver()); // Evaluated first
-adapter.use(new PostgresDriver());   // Fallback if CacheDriver throws next()
+adapter.use(new PostgresCrudDriver());   // Fallback if CacheDriver throws next()
 
 adapter.attach(users);
 ```
@@ -200,14 +200,14 @@ adapter.attach(users);
 
 A driver does not need to implement every CRUD operation. You can write highly focused drivers that only intercept specific methods.
 
-For example, a cache driver typically only needs to handle `get`. Instead of writing empty `create`, `update`, and `delete` boilerplate just to manually throw `IRPCAdapter.next()`, you simply omit them:
+For example, a cache driver typically only needs to handle `get`. Instead of writing empty `create`, `update`, and `delete` boilerplate just to manually throw `IRPCCrudAdapter.next()`, you simply omit them:
 
 ```typescript
 // drivers/redis.ts
-import { IRPCAdapter, IRPCDriver, type IRPCCrudMeta } from '@irpclib/irpc';
+import { IRPCCrudAdapter, IRPCCrudDriver, type IRPCCrudMeta } from '@irpclib/irpc';
 import { redis } from '../redis.js';
 
-export class RedisCacheDriver extends IRPCDriver {
+export class RedisCacheDriver extends IRPCCrudDriver {
   // Only the 'get' method is implemented.
   async get(meta: IRPCCrudMeta, id: string) {
     const cached = await redis.get(`${meta.name}:${id}`);
@@ -215,8 +215,8 @@ export class RedisCacheDriver extends IRPCDriver {
     // Cache Hit: Return data, chain stops
     if (cached) return JSON.parse(cached);
     
-    // Cache Miss: Throw next(), chain continues to PostgresDriver
-    throw IRPCAdapter.next(); 
+    // Cache Miss: Throw next(), chain continues to PostgresCrudDriver
+    throw IRPCCrudAdapter.next(); 
   }
 }
 ```
@@ -233,10 +233,10 @@ Simply add the new method directly to your existing database driver. The adapter
 
 ```typescript
 // drivers/postgres.ts
-import { IRPCDriver, type IRPCCrudMeta } from '@irpclib/irpc';
+import { IRPCCrudDriver, type IRPCCrudMeta } from '@irpclib/irpc';
 import { db } from '../db.js';
 
-export class PostgresDriver extends IRPCDriver {
+export class PostgresCrudDriver extends IRPCCrudDriver {
   async list(meta: IRPCCrudMeta, filters: { status: string }) {
     return db.query(`SELECT * FROM ${meta.name} WHERE status = $1`, [filters.status]);
   }
@@ -247,13 +247,13 @@ export class PostgresDriver extends IRPCDriver {
 
 ### Extend the Adapter
 
-Next, extend the `IRPCAdapter` to map the new method to the internal `dispatch` loop:
+Next, extend the `IRPCCrudAdapter` to map the new method to the internal `dispatch` loop:
 
 ```typescript
 // rpc/adapter.ts
-import { IRPCAdapter, type IRPCCrudMeta } from '@irpclib/irpc';
+import { IRPCCrudAdapter, type IRPCCrudMeta } from '@irpclib/irpc';
 
-export class ExtendedAdapter extends IRPCAdapter {
+export class ExtendedAdapter extends IRPCCrudAdapter {
   // Expose the list method to the chain
   async list(meta: IRPCCrudMeta, filters: any) {
     return this.dispatch('list', meta, filters);
@@ -277,7 +277,7 @@ export const users = {
 ```typescript
 // rpc/constructors.ts
 const adapter = new ExtendedAdapter(irpc);
-adapter.use(new PostgresDriver());
+adapter.use(new PostgresCrudDriver());
 
 // Attach the standard CRUD stubs (automatically maps get, create, update, delete)
 adapter.attach(users);

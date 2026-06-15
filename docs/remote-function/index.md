@@ -190,26 +190,26 @@ export const users = irpc.crud<User>('users', () => ({ id: '', name: '', email: 
 
 ### **2. Wire the Drivers (Handler)**
 
-Instead of manually constructing handlers for each stub, you attach them to an `IRPCAdapter` which routes requests to generic `IRPCDriver` implementations.
+Instead of manually constructing handlers for each stub, you attach them to an `IRPCCrudAdapter` which routes requests to generic `IRPCCrudDriver` implementations.
 
 ```typescript
 // rpc/users/constructor.ts
-import { IRPCAdapter } from '@irpclib/irpc';
-import { DatabaseDriver } from '../lib/db.js'; // Example driver
+import { IRPCCrudAdapter } from '@irpclib/irpc';
+import { DatabaseCrudDriver } from '../lib/db.js'; // Example driver
 import { irpc } from '../lib/module.js';
 import { users } from './index.js';
 
-const adapter = new IRPCAdapter(irpc);
+const adapter = new IRPCCrudAdapter(irpc);
 
 // 1. Register a generic driver to handle the operations
-adapter.use(new DatabaseDriver());
+adapter.use(new DatabaseCrudDriver());
 
 // 2. Attach the entity — wires get, create, update, and delete instantly
 adapter.attach(users);
 ```
 
 ::: tip Chain of Responsibility
-You can register multiple drivers (e.g., caching layers). A driver can handle the call or throw `IRPCAdapter.next()` to pass execution to the next registered driver.
+You can register multiple drivers (e.g., caching layers). A driver can handle the call or throw `IRPCCrudAdapter.next()` to pass execution to the next registered driver.
 :::
 
 ### **3. Execute the Operations (Call)**
