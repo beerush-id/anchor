@@ -384,7 +384,7 @@ export type IRPCCrudStubs<
  * Per-method resolved metadata — discriminated fields flattened,
  * method-specific options applied. Passed to driver on every call.
  */
-export type IRPCCrudMeta = {
+export type IRPCMeta = {
   /** Entity/table name. */
   name: string;
   /** Primary key field name. */
@@ -397,15 +397,7 @@ export type IRPCCrudMeta = {
   coalesce?: boolean;
 } & IRPCCallConfig;
 
-/**
- * Base class for CRUD drivers that receive per-method resolved metadata on every call
- */
-export abstract class IRPCDriver {
-  get?(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData;
-  create?(meta: IRPCCrudMeta, data: IRPCData): Promise<IRPCData> | IRPCData;
-  update?(meta: IRPCCrudMeta, id: IRPCData, data: IRPCData): Promise<IRPCData> | IRPCData;
-  delete?(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData;
-}
+export type IRPCCrudMeta = IRPCMeta;
 
 /**
  * Complete specification for an RPC function including its implementation.

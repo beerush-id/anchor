@@ -1,6 +1,7 @@
+import type { IRPCDriver } from './driver.js';
 import { CrudError } from './error.js';
 import type { IRPCPackage } from './module.js';
-import type { IRPCCrudMeta, IRPCData, IRPCDriver, IRPCStub } from './types.js';
+import type { IRPCCrudMeta, IRPCData, IRPCStub } from './types.js';
 
 class NextDriver extends Error {
   constructor() {
@@ -14,8 +15,8 @@ type AttachableMethod<T> = string & keyof Omit<T, 'attach' | 'use' | 'dispatch'>
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 type AnyStub = IRPCStub<any, any[], any>;
 
-export class IRPCBaseAdapter {
-  protected drivers = new Set<IRPCDriver>();
+export class IRPCAdapter {
+  protected drivers = new Set<IRPCDriver<this>>();
 
   constructor(protected module: IRPCPackage) {}
 
@@ -28,7 +29,7 @@ export class IRPCBaseAdapter {
    */
   protected dispatch(method: string, meta: IRPCCrudMeta, ...args: IRPCData[]): Promise<IRPCData> | IRPCData {
     for (const driver of this.drivers) {
-      const fn = (driver as Record<string, unknown>)[method];
+      const fn = driver[method as never];
       if (!fn) continue;
       try {
         return (fn as (...args: unknown[]) => never)(meta, ...args);
@@ -90,7 +91,7 @@ export class IRPCBaseAdapter {
    * Registers a driver to handle dispatched operations
    * @param driver - The driver implementation
    */
-  public use(driver: IRPCDriver): this {
+  public use(driver: IRPCDriver<this>): this {
     this.drivers.add(driver);
     return this;
   }
@@ -107,7 +108,7 @@ export class IRPCBaseAdapter {
  * Attaches handlers to IRPC stubs and bridges them to drivers.
  * Dispatches calls through the registered driver chain.
  */
-export class IRPCAdapter extends IRPCBaseAdapter {
+export class IRPCCrudAdapter extends IRPCAdapter {
   /**
    * Runs a get operation through the driver chain
    * @param meta - Resolved entity metadata

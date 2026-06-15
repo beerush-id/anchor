@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { IRPCAdapter } from '../src/adapter.js';
+import { IRPCCrudAdapter } from '../src/adapter.js';
 import { CrudError } from '../src/error.js';
+import { IRPCCrudDriver } from '../src/index.js';
 import { createPackage } from '../src/module.js';
-import type { IRPCDriver } from '../src/types.js';
 
 type User = { id: string; name: string; email: string };
 
@@ -158,13 +158,13 @@ describe('CRUD', () => {
   describe('IRPCAdapter', () => {
     it('should create adapter with a package', () => {
       const pkg = createPackage({ name: 'adapter_test', version: '1.0.0' });
-      const adapter = new IRPCAdapter(pkg);
-      expect(adapter).toBeInstanceOf(IRPCAdapter);
+      const adapter = new IRPCCrudAdapter(pkg);
+      expect(adapter).toBeInstanceOf(IRPCCrudAdapter);
     });
 
     it('should throw CrudError.notFound when attaching unregistered stubs', () => {
       const pkg = createPackage({ name: 'adapter_err', version: '1.0.0' });
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
 
       expect(() => adapter.attach({ get: (() => {}) as never })).toThrow(CrudError);
     });
@@ -173,7 +173,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_wire', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (_meta, id) => ({ id, name: 'John', email: 'john@test.com' }),
         create: (_meta, data) => data,
@@ -190,7 +190,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_no_impl', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.attach(users);
 
       // No driver attached — all methods throw
@@ -201,7 +201,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_partial', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (_meta, id) => ({ id }),
         // create, update, delete not provided
@@ -220,7 +220,7 @@ describe('CRUD', () => {
       const users = pkg.crud<User>('users', defaultUser, { maxAge: 5000 });
 
       const receivedMeta: any[] = [];
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (meta, id) => {
           receivedMeta.push(meta);
@@ -243,7 +243,7 @@ describe('CRUD', () => {
       delete (pkg.config as any).key;
 
       const receivedMeta: any[] = [];
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (meta, id) => {
           receivedMeta.push(meta);
@@ -264,7 +264,7 @@ describe('CRUD', () => {
       const posts = pkg.crud<Post>('posts', () => ({ id: '', title: '' }));
 
       const results: string[] = [];
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (meta, _id) => {
           results.push(meta.name);
@@ -286,22 +286,22 @@ describe('CRUD', () => {
       const cache = new Map<string, User>();
       cache.set('1', { id: '1', name: 'Cached', email: 'cached@test.com' });
 
-      const cacheDriver: IRPCDriver = {
+      const cacheDriver: IRPCCrudDriver = {
         get: (_meta, id) => {
           const cached = cache.get(id as string);
           if (cached) return cached;
-          throw IRPCAdapter.next();
+          throw IRPCCrudAdapter.next();
         },
       };
 
-      const dbDriver: IRPCDriver = {
+      const dbDriver: IRPCCrudDriver = {
         get: (_meta, id) => ({ id, name: 'FromDB', email: 'db@test.com' }),
         create: (_meta, data) => data,
         update: (_meta, _id, data) => data,
         delete: (_meta, id) => ({ id }),
       };
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use(cacheDriver).use(dbDriver);
       adapter.attach(users);
 
@@ -318,17 +318,17 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_real_err', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const failingDriver: IRPCDriver = {
+      const failingDriver: IRPCCrudDriver = {
         get: () => {
           throw new Error('DB connection failed');
         },
       };
 
-      const fallbackDriver: IRPCDriver = {
+      const fallbackDriver: IRPCCrudDriver = {
         get: () => ({ id: '1', name: 'Fallback', email: '' }),
       };
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use(failingDriver).use(fallbackDriver);
       adapter.attach(users);
 
@@ -340,16 +340,16 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_skip', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const partialDriver: IRPCDriver = {
+      const partialDriver: IRPCCrudDriver = {
         // No get method
         create: (_meta, data) => data,
       };
 
-      const fullDriver: IRPCDriver = {
+      const fullDriver: IRPCCrudDriver = {
         get: (_meta, id) => ({ id, name: 'Full', email: '' }),
       };
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use(partialDriver).use(fullDriver);
       adapter.attach(users);
 
@@ -366,14 +366,14 @@ describe('CRUD', () => {
       const users = pkg.crud<User>('users', defaultUser);
 
       const callCount = vi.fn();
-      const driver: IRPCDriver = {
+      const driver: IRPCCrudDriver = {
         get: (_meta, id) => {
           callCount();
           return { id };
         },
       };
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use(driver).use(driver).use(driver);
       adapter.attach(users);
 
@@ -385,7 +385,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_swap', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.attach(users);
 
       // Add driver after attach — delegation reads driver at call time
@@ -404,7 +404,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_override', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (_meta, id) => ({ id, name: 'Adapter', email: '' }),
         create: (_meta, data) => data,
@@ -425,7 +425,7 @@ describe('CRUD', () => {
       const users = pkg.exclude(pkg.crud<User>('users', defaultUser), ['delete']);
 
       const calls: string[] = [];
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (meta) => {
           calls.push(`get:${meta.name}`);
@@ -458,7 +458,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_chain_api', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       const result = adapter.use({}).attach(users);
 
       expect(result).toBe(adapter);
@@ -468,7 +468,7 @@ describe('CRUD', () => {
       const pkg = createPackage({ name: 'adapter_single', version: '1.0.0' });
       const users = pkg.crud<User>('users', defaultUser);
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: (_meta, id) => ({ id, name: 'Single', email: '' }),
       });
@@ -485,7 +485,7 @@ describe('CRUD', () => {
       const meta = { name: 'users', key: 'id' } as any;
       const calls: string[] = [];
 
-      const adapter = new IRPCAdapter(pkg);
+      const adapter = new IRPCCrudAdapter(pkg);
       adapter.use({
         get: () => {
           calls.push('get');
@@ -517,7 +517,7 @@ describe('CRUD', () => {
 
   describe('IRPCAdapter.next()', () => {
     it('should return an Error instance', () => {
-      const sentinel = IRPCAdapter.next();
+      const sentinel = IRPCCrudAdapter.next();
       expect(sentinel).toBeInstanceOf(Error);
       expect(sentinel.message).toBe('Next driver');
     });
