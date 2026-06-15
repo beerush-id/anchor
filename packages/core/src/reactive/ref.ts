@@ -1,7 +1,7 @@
 import { anchor } from '../engine/anchor.js';
 import { linkable } from '../engine/config.js';
 import { switchable } from '../engine/index.js';
-import { getScope } from '../scope/context.js';
+import { getScope, safeRun } from '../scope/context.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
 import { ANCHOR_SETTINGS as $$ } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
@@ -411,7 +411,7 @@ export function isValueRef<T>(value: unknown): value is MutableRef<T> | Immutabl
  * @returns The created or cached reference value
  */
 function createRef<T>(fn: () => T, init: unknown) {
-  const currentStack = getScope<RefStack>(STACK_SYMBOL);
+  const currentStack = safeRun(() => getScope<RefStack>(STACK_SYMBOL));
   if (!currentStack || $$.production) return fn();
 
   return $do(() => {

@@ -14,51 +14,10 @@ type AttachableMethod<T> = string & keyof Omit<T, 'attach' | 'use' | 'dispatch'>
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 type AnyStub = IRPCStub<any, any[], any>;
 
-/**
- * Attaches handlers to IRPC stubs and bridges them to drivers.
- * Dispatches calls through the registered driver chain.
- */
-export class IRPCAdapter {
-  private drivers = new Set<IRPCDriver>();
+export class IRPCBaseAdapter {
+  protected drivers = new Set<IRPCDriver>();
 
-  constructor(private module: IRPCPackage) {}
-
-  /**
-   * Runs a get operation through the driver chain
-   * @param meta - Resolved entity metadata
-   * @param id - The entity identifier
-   */
-  get(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData {
-    return this.dispatch('get', meta, id);
-  }
-
-  /**
-   * Runs a create operation through the driver chain
-   * @param meta - Resolved entity metadata
-   * @param data - The entity data to create
-   */
-  create(meta: IRPCCrudMeta, data: IRPCData): Promise<IRPCData> | IRPCData {
-    return this.dispatch('create', meta, data);
-  }
-
-  /**
-   * Runs an update operation through the driver chain
-   * @param meta - Resolved entity metadata
-   * @param id - The entity identifier
-   * @param data - The entity data to update
-   */
-  update(meta: IRPCCrudMeta, id: IRPCData, data: IRPCData): Promise<IRPCData> | IRPCData {
-    return this.dispatch('update', meta, id, data);
-  }
-
-  /**
-   * Runs a delete operation through the driver chain
-   * @param meta - Resolved entity metadata
-   * @param id - The entity identifier
-   */
-  delete(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData {
-    return this.dispatch('delete', meta, id);
-  }
+  constructor(protected module: IRPCPackage) {}
 
   /**
    * Dispatches a method call through each registered driver in order
@@ -87,15 +46,15 @@ export class IRPCAdapter {
    * @param method - The method name matching an adapter operation
    * @throws CrudError.notFound if the stub is not registered in the package
    */
-  attach(stub: AnyStub, method: AttachableMethod<this>): this;
+  public attach(stub: AnyStub, method: AttachableMethod<this>): this;
   /**
    * Attaches stubs to this adapter by matching object keys to adapter methods
    * @param stubs - Object mapping method names to stub functions
    * @throws CrudError.notFound if a stub is not registered in the package
    */
-  attach(stubs: Partial<Record<AttachableMethod<this>, AnyStub>>): this;
+  public attach(stubs: Partial<Record<AttachableMethod<this>, AnyStub>>): this;
 
-  attach(stubOrStubs: unknown, m?: string): this {
+  public attach(stubOrStubs: unknown, m?: string): this {
     const stubs = m ? { [m]: stubOrStubs } : (stubOrStubs as Record<string, unknown>);
     const key = this.module.config.key ?? 'id';
 
@@ -131,7 +90,7 @@ export class IRPCAdapter {
    * Registers a driver to handle dispatched operations
    * @param driver - The driver implementation
    */
-  use(driver: IRPCDriver): this {
+  public use(driver: IRPCDriver): this {
     this.drivers.add(driver);
     return this;
   }
@@ -139,7 +98,50 @@ export class IRPCAdapter {
   /**
    * Signals the current driver to pass execution to the next driver in the chain
    */
-  static next(): NextDriver {
+  public static next(): NextDriver {
     return new NextDriver();
+  }
+}
+
+/**
+ * Attaches handlers to IRPC stubs and bridges them to drivers.
+ * Dispatches calls through the registered driver chain.
+ */
+export class IRPCAdapter extends IRPCBaseAdapter {
+  /**
+   * Runs a get operation through the driver chain
+   * @param meta - Resolved entity metadata
+   * @param id - The entity identifier
+   */
+  public get(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData {
+    return this.dispatch('get', meta, id);
+  }
+
+  /**
+   * Runs a create operation through the driver chain
+   * @param meta - Resolved entity metadata
+   * @param data - The entity data to create
+   */
+  public create(meta: IRPCCrudMeta, data: IRPCData): Promise<IRPCData> | IRPCData {
+    return this.dispatch('create', meta, data);
+  }
+
+  /**
+   * Runs an update operation through the driver chain
+   * @param meta - Resolved entity metadata
+   * @param id - The entity identifier
+   * @param data - The entity data to update
+   */
+  public update(meta: IRPCCrudMeta, id: IRPCData, data: IRPCData): Promise<IRPCData> | IRPCData {
+    return this.dispatch('update', meta, id, data);
+  }
+
+  /**
+   * Runs a delete operation through the driver chain
+   * @param meta - Resolved entity metadata
+   * @param id - The entity identifier
+   */
+  public delete(meta: IRPCCrudMeta, id: IRPCData): Promise<IRPCData> | IRPCData {
+    return this.dispatch('delete', meta, id);
   }
 }
