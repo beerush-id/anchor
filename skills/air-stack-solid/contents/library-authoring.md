@@ -10,119 +10,189 @@ Libraries in the AIR Stack are typically built using standard ESM modules. They 
 - UI Views and Components
 
 ### Isolating Side Effects
-When authoring libraries, ensure side-effects (like `irpc.construct()`) are explicit and don't automatically execute just by importing a type or a stub.
+When authoring libraries, side-effects (like `irpc.construct()`) must never run accidentally when a client imports a type or a stub.
 
-- **Stubs vs Implementations**: Export your IRPC `declare` stubs in `index.ts` so clients can import them safely, but keep `irpc.construct()` handlers in a separate `server.ts` or `constructor.ts` file. This ensures the client bundler never accidentally pulls in server-only dependencies (like databases or secrets).
+- **Stubs (`index.ts`)**: Export your IRPC `declare` stubs here. Clients import this file for type-safe API boundaries.
+- **Implementations (`server.ts` or `constructor.ts`)**: Keep `irpc.construct()` handlers here. 
 
-### Architecture
-When building a reusable library, always attempt to use a **pluggable** architecture where consumers can swap the underlying logic without refactoring their application logic. A library typically focuses on a single concern and does it well.
+This ensures the client bundler never pulls in server-only dependencies (like databases or secrets).
 
-- **Adapter** - An Adapter acts as an orchestrator. It abstracts the underlying operations, manages the injected providers, and routes calls between them.
-- **Provider** - A Provider contains the actual implementation. It is autonomous and determines for itself whether it can answer a call or skip it (e.g., yielding to the next provider if it lacks the required credentials).
-- **Public Interface** - The Public Interface represents the consumable class instances or functions that will be used by the consumer.
+### Pluggable Architecture (Adapters & Drivers)
 
-```ts
-// types.ts
-export abstract class LLMProvider {
-  abstract chat(messages: Message[], options?: ChatOptions): Promise<Message[] | undefined>;
-}
-```
+When building an IRPC library, you should orchestrate operations without forcing specific vendor implementations onto the consumer. IRPC provides standard `IRPCAdapter` and `IRPCDriver` base classes for exactly this purpose.
 
-```ts
-// adapter.ts
-export class LLMService implements LLMProvider {
-  #providers = new Set<LLMProvider>();
+```typescript
+// src/adapter.ts
+import { IRPCAdapter, type IRPCDriver, type IRPCMeta } from '@irpclib/irpc';
 
-  public async chat(messages: Message[], options?: ChatOptions) {
-    for (const provider of this.#providers) {
-      try {
-        const result = await provider.chat(messages, options);
-        if (result) return result;
-      } catch (error) {
-        console.error("Provider error", error);
-      }
-    }
-
-    throw new Error("No provider available");
-  }
-
-  public use(provider: LLMProvider) {
-    this.#providers.add(provider);
-    return this;
+export class LLMAdapter extends IRPCAdapter {
+  public async chat(meta: IRPCMeta, messages: string[]): Promise<string> {
+    return this.dispatch('chat', meta, messages);
   }
 }
+
+// Provide a clean contract so consumers don't have to interact with underlying IRPC generics.
+export type LLMDriver = IRPCDriver<LLMAdapter>;
 ```
 
-```ts
-// provider.ts
-export class GeminiProvider implements LLMProvider {
-  constructor(private predicate?: (messages: Message[]) => boolean | Promise<boolean>) {}
+```typescript
+// src/index.ts (Universal API exported to clients)
+import { createPackage } from '@irpclib/irpc';
 
-  public async chat(messages: Message[], options?: ChatOptions) {
-    // 1. Check credentials (fast, self-determining capability).
-    const myApiKey = getContext('GEMINI_API_KEY');
-    if (!myApiKey) return;
+export const llmModule = createPackage({ name: 'llm', version: '1.0.0' });
 
-    // 2. Determine if this provider should handle the call based on custom routing logic.
-    if (this.predicate && !(await this.predicate(messages))) return;
-
-    // 3. Execution logic...
-  }
-}
-```
-
-```ts
-// service.ts
-// Initialize the adapter to get a callable interface to be exported.
-export const service = new LLMService();
-
-// Self plug predefined providers if your library prefers to ship ready-to-use APIs.
-service
-  .use(new GeminiProvider())
-  .use(new ClaudeProvider());
-```
-
-```ts
-// index.ts
-export const chat = irpc.declare<typeof service.chat>('llm.chat', () => []);
-```
-
-```ts
-// constructor.ts
-irpc.construct(chat, (messages, options) => {
-  return service.chat(messages, options);
-});
-
-// Re-export the service if you want to allow users to plug their own providers.
-// export { service } from './service.js';
-// export * from './provider.js';
-```
-
-**Consumer Side**
-
-```ts
-// server.ts
-import { GeminiProvider, ClaudeProvider, service } from '@myorg/llm/constructor';
-
-// Priority Routing: The .use() chain dictates the exact fallback order.
-// Conditional Routing: Providers can accept predicate functions to determine if they should execute.
-service
-  .use(
-    new GeminiProvider((messages) => {
-      const lastMessage = messages[messages.length - 1];
-      return lastMessage?.content?.includes('?') ?? false;
-    })
-  ) // 1. Fast model for simple questions
-  .use(new ClaudeProvider()); // 2. Heavy model for complex logic
-```
-
-```ts
-// client.tsx
-import { chat } from '@myorg/llm';
-
-const handleEnter = () => {
-  chat(messages).then(console.log);
+export const llm = {
+  chat: llmModule.declare<(messages: string[]) => Promise<string>>({
+    name: 'llm.chat',
+    seed: () => ''
+  })
 };
+```
+
+```typescript
+// src/constructor.ts (Server handler)
+import { LLMAdapter } from './adapter.js';
+import { llmModule, llm } from './index.js';
+
+export const llmAdapter = new LLMAdapter(llmModule);
+llmAdapter.attach(llm);
+```
+
+#### Writing Drivers
+
+You can ship official drivers within the same package by exporting them via subpaths (e.g., `./drivers/*`), or allow the community to build separate driver packages. They simply implement the driver interface generated by your adapter.
+
+```typescript
+// src/drivers/openai/index.ts
+import type { IRPCMeta } from '@irpclib/irpc';
+import type { LLMDriver } from '../../adapter.js';
+
+export class OpenAiDriver implements LLMDriver {
+  constructor(private apiKey: string) {}
+
+  async chat(meta: IRPCMeta, messages: string[]): Promise<string> {
+    return "...";
+  }
+}
+```
+
+#### Documenting Usage
+
+When authoring the library, document the consumer integration in the `README.md` to show how the user will plug an official driver into the adapter on the server, how they can implement their own custom driver, and how they call the API from the client.
+
+```typescript
+// README.md (Server Setup)
+import { llmAdapter } from '@myorg/llm/constructor';
+import { OpenAiDriver } from '@myorg/llm/drivers/openai';
+
+llmAdapter.use(new OpenAiDriver(process.env.OPENAI_KEY));
+```
+
+```typescript
+// README.md (Custom Driver Implementation)
+import type { IRPCMeta } from '@irpclib/irpc';
+import type { LLMDriver } from '@myorg/llm/adapter';
+
+export class CustomDriver implements LLMDriver {
+  async chat(meta: IRPCMeta, messages: string[]): Promise<string> {
+    return "...";
+  }
+}
+```
+
+```typescript
+// README.md (Client Usage)
+import { llm } from '@myorg/llm';
+
+const response = await llm.chat(['Hello!']);
+```
+
+### Configurable Libraries
+
+When a library requires global configuration (such as read-only modes or base paths), manage this state using Context. This allows the `Adapter` to intercept requests and enforce library-level rules before routing them to the `Driver`.
+
+```typescript
+// src/context.ts
+import { getContext, setContext } from '@irpclib/irpc';
+
+export interface FSConfig {
+  readOnly?: boolean;
+}
+
+const FS_CONFIG = Symbol('FS_CONFIG');
+
+export function setFSConfig(config: FSConfig) {
+  setContext(FS_CONFIG, config);
+}
+
+export function getFSConfig(): FSConfig {
+  return getContext<FSConfig>(FS_CONFIG) || {};
+}
+```
+
+```typescript
+// src/adapter.ts
+import { IRPCAdapter, type IRPCDriver, type IRPCMeta } from '@irpclib/irpc';
+import { getFSConfig } from './context.js';
+
+export class FSAdapter extends IRPCAdapter {
+  public async remove(meta: IRPCMeta, path: string): Promise<boolean> {
+    const config = getFSConfig();
+    if (config.readOnly) throw new Error('File system is read-only');
+    
+    return this.dispatch('remove', meta, path);
+  }
+}
+
+// Provide a clean contract so consumers don't have to interact with underlying IRPC generics.
+export type FSDriver = IRPCDriver<FSAdapter>;
+```
+
+```typescript
+// src/constructor.ts (Server handler)
+import { FSAdapter } from './adapter.js';
+import { fsModule, fs } from './index.js';
+
+export { type FSConfig, setFSConfig, getFSConfig } from './context.js';
+
+export const fsAdapter = new FSAdapter(fsModule);
+
+fsAdapter.attach(fs);
+```
+
+By exporting `setFSConfig` from the server constructor, library consumers can configure the adapter's behavior independently of the chosen driver.
+
+### Client SDKs (SaaS APIs)
+
+To build a client SDK for a remote SaaS API (e.g., Stripe, Resend), export only the Universal API stubs and pre-configure the transport to point to the remote server. The library does not include a `constructor.ts` because the server implementation is hosted by the provider.
+
+```typescript
+// src/index.ts (Published as @myorg/api)
+import { createPackage } from '@irpclib/irpc';
+import { HTTPTransport } from '@irpclib/http';
+
+export const llmModule = createPackage({ name: 'llm', version: '1.0.0' });
+
+// Hardcode the transport so consumers don't need to configure routing themselves.
+llmModule.use(new HTTPTransport({ endpoint: 'https://api.myorg.com/irpc' }));
+
+export const llm = {
+  chat: llmModule.declare<(messages: string[]) => Promise<string>>({
+    name: 'llm.chat',
+    seed: () => ''
+  })
+};
+```
+
+When authoring the library, document the consumer integration in the `README.md` to show how the user will securely call the remote server.
+
+```typescript
+// README.md example usage
+import { llmModule, llm } from '@myorg/api';
+
+llmModule.sign(() => ({ Authorization: `Bearer ${process.env.MYORG_API_KEY}` }));
+
+const response = await llm.chat(['Hello!']);
 ```
 
 ### Package Files
@@ -168,13 +238,17 @@ We typically use `tsdown` or `tsup` for bundling.
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./adapter": {
+      "types": "./dist/adapter.d.ts",
+      "import": "./dist/adapter.js"
+    },
+    "./drivers/*": {
+      "types": "./dist/drivers/*/index.d.ts",
+      "import": "./dist/drivers/*/index.js"
+    },
     "./constructor": {
       "types": "./dist/constructor.d.ts",
       "import": "./dist/constructor.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.js"
     }
   },
   "peerDependencies": {

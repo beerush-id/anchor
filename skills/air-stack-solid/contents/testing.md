@@ -74,6 +74,38 @@ describe('greet', () => {
 });
 ```
 
+### Testing with Context
+
+When you import the constructor locally, the call bypasses the IRPC router. This means the router's context seeding mechanism (which normally extracts tokens from HTTP requests) never runs. If your handler or its dependencies rely on context, you must manually inject it using `withContext()`.
+
+- **Setup Async Storage**: Import the server entry point at the **very top** of your test file (before any other imports) to initialize `AsyncLocalStorage`. Avoid putting this in a global setup file, as it will force all UI tests into a server environment.
+- **Isolate Calls**: Wrap your local stub execution inside a `withContext()` scope so tests don't leak context across each other.
+- **Context Wrappers**: Create helper functions to quickly inject required dependencies.
+
+```typescript
+// Setup async storage for this specific test file. MUST BE FIRST IMPORT.
+import '@irpclib/irpc/server';
+
+import { describe, expect, it } from 'vitest';
+import { withContext } from '@irpclib/irpc';
+import { getProfile } from '../src/api/profile/index.js';
+import '../src/api/profile/constructor.js';
+
+// Create a helper to quickly inject mock context for these specific tests
+const withMockUser = <R>(fn: () => R) => {
+  const ctx = new Map<string | symbol, unknown>([['USER_ID', 'user-123']]);
+  return withContext(ctx, fn);
+};
+
+describe('getProfile', () => {
+  it('should return profile for authenticated user', async () => {
+    // The stub call executes locally inside the mock context scope
+    const result = await withMockUser(() => getProfile());
+    expect(result.id).toBe('user-123');
+  });
+});
+```
+
 ### Testing Your State
 
 ```ts
