@@ -1,3 +1,4 @@
+import { S_MAP_TYPE, S_SET_TYPE, SerializableMap, SerializableSet, xMap, xSet } from '../extension/index.js';
 import { plugin } from '../extension/plugin.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { Linkables } from '../shared/enum.js';
@@ -323,25 +324,40 @@ anchorFn.find = ((init) => {
 
 anchorFn.snapshot = ((state, recursive = true) => {
   return switchable.untrack(() => {
-    const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
+    const target = STATE_REGISTRY.get(state);
     if (!target) return structuredClone(state);
-    return softClone(target, recursive) as typeof state;
+    return softClone(target, recursive);
   });
 }) as Anchor['snapshot'];
 
 anchorFn.stringify = ((state, replacer, space) => {
   return switchable.untrack(() => {
-    const target = META_INIT_REGISTRY.get(CONTROLLER_REGISTRY.get(state)?.meta as StateMetadata);
+    const target = STATE_REGISTRY.get(state);
     return JSON.stringify(
       target ?? state,
       (key, value) => {
-        const next = INIT_REGISTRY.get(value) ?? value;
+        let next = STATE_REGISTRY.get(value) ?? value;
+        if (next instanceof SerializableMap || next instanceof SerializableSet) {
+          next = next.snapshot();
+        }
         return replacer ? replacer(key, next) : next;
       },
       space
     );
   });
 }) as Anchor['stringify'];
+
+anchorFn.parse = ((json) => {
+  const result = JSON.parse(json, (_key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (value.entity === S_MAP_TYPE) return xMap(value);
+      if (value.entity === S_SET_TYPE) return xSet(value);
+    }
+    return value;
+  });
+  if (linkable(result)) return anchorFn(result);
+  return result;
+}) as Anchor['parse'];
 
 anchorFn.destroy = ((state, warn?: boolean) => {
   const controller = CONTROLLER_REGISTRY.get(state);

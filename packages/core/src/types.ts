@@ -531,6 +531,14 @@ export interface Anchor {
   ): string;
 
   /**
+   * Parses a stringified state.
+   *
+   * @param state - Stringified state
+   * @returns Parsed state
+   */
+  parse<T extends State>(state: string): T;
+
+  /**
    * Makes a readonly state writable.
    *
    * @param state - The readonly state

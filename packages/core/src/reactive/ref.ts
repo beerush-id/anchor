@@ -411,8 +411,9 @@ export function isValueRef<T>(value: unknown): value is MutableRef<T> | Immutabl
  * @returns The created or cached reference value
  */
 function createRef<T>(fn: () => T, init: unknown) {
+  if ($$.production) return fn();
   const currentStack = safeRun(() => getScope<RefStack>(STACK_SYMBOL));
-  if (!currentStack || $$.production) return fn();
+  if (!currentStack) return fn();
 
   return $do(() => {
     let current = currentStack.states.get(currentStack.index);
@@ -429,7 +430,7 @@ function createRef<T>(fn: () => T, init: unknown) {
 }
 
 let stabilityDetector = (stacks: Array<Function> = []) => {
-  if ($$.reactive && switchable.getObserver()) {
+  if (!$$.production && $$.reactive && switchable.getObserver()) {
     const error = new Error('State created in an unstable boundary.');
     captureStack.violation.general(
       'Unstable state declaration detected.',
