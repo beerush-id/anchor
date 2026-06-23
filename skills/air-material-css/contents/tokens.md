@@ -108,7 +108,7 @@ height: calc(var(--spacing) * 14);    /* 56px */
 
 ## State Layer Opacities
 
-Used internally by `state-layer` and component hover/focus states. Reference when building custom interactive elements:
+Used internally by `air-state-layer` and component hover/focus states. Reference when building custom interactive elements:
 
 | Token | Value |
 |---|---|

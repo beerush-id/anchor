@@ -12,13 +12,13 @@ A horizontal top bar, typically `position: sticky` or `position: fixed`.
 ```
 
 ```html
-<header class="app-bar">
-  <button class="icon-button">
-    <span class="material-symbols-outlined">menu</span>
+<header class="air-app-bar">
+  <button class="air-icon-button">
+    <span class="air-icon">menu</span>
   </button>
-  <h1 class="app-bar-title">App Name</h1>
-  <button class="icon-button">
-    <span class="material-symbols-outlined">account_circle</span>
+  <h1 class="air-app-bar-title">App Name</h1>
+  <button class="air-icon-button">
+    <span class="air-icon">account_circle</span>
   </button>
 </header>
 ```
@@ -26,7 +26,7 @@ A horizontal top bar, typically `position: sticky` or `position: fixed`.
 On scroll, add `data-scrolled="true"` to shift from `--color-surface` to `--color-surface-container-high`:
 ```js
 window.addEventListener('scroll', () => {
-  document.querySelector('.app-bar').dataset.scrolled = window.scrollY > 0 ? 'true' : 'false';
+  document.querySelector('.air-app-bar').dataset.scrolled = window.scrollY > 0 ? 'true' : 'false';
 });
 ```
 
@@ -43,37 +43,37 @@ A scrollable horizontal tab strip with an animated indicator line.
 ```
 
 ```html
-<div class="tab-list">
-  <button class="tab-item" aria-selected="true">
+<div class="air-tab-list">
+  <button class="air-tab-item" aria-selected="true">
     Overview
-    <span class="tab-indicator"></span>
+    <span class="air-tab-indicator"></span>
   </button>
-  <button class="tab-item" aria-selected="false">
+  <button class="air-tab-item" aria-selected="false">
     Details
-    <span class="tab-indicator"></span>
+    <span class="air-tab-indicator"></span>
   </button>
-  <button class="tab-item" aria-selected="false" disabled>
+  <button class="air-tab-item" aria-selected="false" disabled>
     Reviews
-    <span class="tab-indicator"></span>
+    <span class="air-tab-indicator"></span>
   </button>
 </div>
 
 <!-- Tab panel -->
-<div class="tab-content">
+<div class="air-tab-content">
   <!-- panel content -->
 </div>
 ```
 
-`tab-indicator` is absolutely positioned inside `.tab-item` and becomes visible (`opacity:1`) when `aria-selected="true"`.
+`air-tab-indicator` is absolutely positioned inside `.air-tab-item` and becomes visible (`opacity:1`) when `aria-selected="true"`.
 
-The `.tab-list` hides its scrollbar but remains scrollable for overflow scenarios.
+The `.air-tab-list` hides its scrollbar but remains scrollable for overflow scenarios.
 
-### Segmented Tab Container (`tab` utility)
+### Segmented Tab Container (`air-tab` utility)
 A card-group–style wrapper with pill outer corners and square inner corners:
 ```html
-<div class="tab">
-  <div class="tab-list">...</div>
-  <div class="tab-content">...</div>
+<div class="air-tab">
+  <div class="air-tab-list">...</div>
+  <div class="air-tab-content">...</div>
 </div>
 ```
 
@@ -84,29 +84,29 @@ A card-group–style wrapper with pill outer corners and square inner corners:
 A vertically stacked disclosure pattern. Animation uses CSS `grid-template-rows: 0fr → 1fr`.
 
 ```html
-<div class="accordion-group">
+<div class="air-accordion-group">
 
-  <div class="accordion-item">
-    <button class="accordion-header" aria-expanded="false"
+  <div class="air-accordion-item">
+    <button class="air-accordion-header" aria-expanded="false"
             onclick="toggleAccordion(this)">
       What is Air Material CSS?
-      <span class="material-symbols-outlined">expand_more</span>
+      <span class="air-icon">expand_more</span>
     </button>
-    <div class="accordion-content" data-state="closed">
-      <div class="accordion-inner">
+    <div class="air-accordion-content" data-state="closed">
+      <div class="air-accordion-inner">
         A TailwindCSS v4–based M3 design system...
       </div>
     </div>
   </div>
 
-  <div class="accordion-item">
-    <button class="accordion-header" aria-expanded="true"
+  <div class="air-accordion-item">
+    <button class="air-accordion-header" aria-expanded="true"
             onclick="toggleAccordion(this)">
       Is it accessible?
-      <span class="material-symbols-outlined">expand_more</span>
+      <span class="air-icon">expand_more</span>
     </button>
-    <div class="accordion-content" data-state="open">
-      <div class="accordion-inner">
+    <div class="air-accordion-content" data-state="open">
+      <div class="air-accordion-inner">
         Yes. It uses ARIA attributes and focus-ring utilities.
       </div>
     </div>
@@ -125,11 +125,11 @@ function toggleAccordion(btn) {
 ```
 
 Anatomy:
-- `accordion-group` — flex-col container, outer xl radius, inner sm radius
-- `accordion-item` — each disclosure unit (`--color-surface-container-low` bg)
-- `accordion-header` — trigger button, flex row, space-between, title-medium type
-- `accordion-content` — CSS grid row animator (closed: 0fr, open: 1fr)
-- `accordion-inner` — the inner content wrapper with padding animation
+- `air-accordion-group` — flex-col container, outer xl radius, inner sm radius
+- `air-accordion-item` — each disclosure unit (`--color-surface-container-low` bg)
+- `air-accordion-header` — trigger button, flex row, space-between, air-title-md type
+- `air-accordion-content` — CSS grid row animator (closed: 0fr, open: 1fr)
+- `air-accordion-inner` — the inner content wrapper with padding animation
 
 ---
 
@@ -143,28 +143,28 @@ Fixed bottom bar for mobile (≤5 destinations). Height: 80px.
 ```
 
 ```html
-<nav class="navigation-bar">
+<nav class="air-navigation-bar">
 
-  <button class="navigation-bar-item" aria-selected="true">
-    <div class="nav-icon-container">
-      <span class="material-symbols-outlined">home</span>
+  <button class="air-navigation-bar-item" aria-selected="true">
+    <div class="air-nav-icon-container">
+      <span class="air-icon">home</span>
     </div>
     Home
   </button>
 
-  <button class="navigation-bar-item" aria-selected="false">
-    <div class="nav-icon-container">
-      <span class="material-symbols-outlined">explore</span>
+  <button class="air-navigation-bar-item" aria-selected="false">
+    <div class="air-nav-icon-container">
+      <span class="air-icon">explore</span>
     </div>
     Explore
   </button>
 
-  <button class="navigation-bar-item" aria-selected="false">
-    <div class="badge-container">
-      <div class="nav-icon-container">
-        <span class="material-symbols-outlined">notifications</span>
+  <button class="air-navigation-bar-item" aria-selected="false">
+    <div class="air-badge-container">
+      <div class="air-nav-icon-container">
+        <span class="air-icon">notifications</span>
       </div>
-      <span class="badge">5</span>
+      <span class="air-badge">5</span>
     </div>
     Alerts
   </button>
@@ -172,9 +172,9 @@ Fixed bottom bar for mobile (≤5 destinations). Height: 80px.
 </nav>
 ```
 
-- `navigation-bar` — `position: fixed; bottom: 0; left: 0; width: 100%`, `--color-surface-container`
-- `navigation-bar-item` — flex-col, label-medium, manages color via `aria-selected`
-- `nav-icon-container` — 64×32px pill; selected → `--color-secondary-container`; hover/focus handled by parent context
+- `air-navigation-bar` — `position: fixed; bottom: 0; left: 0; width: 100%`, `--color-surface-container`
+- `air-navigation-bar-item` — flex-col, air-label-md, manages color via `aria-selected`
+- `air-nav-icon-container` — 64×32px pill; selected → `--color-secondary-container`; hover/focus handled by parent context
 
 ---
 
@@ -188,23 +188,23 @@ Fixed left sidebar for tablet (≥4 destinations). Width: 80px.
 ```
 
 ```html
-<nav class="navigation-rail">
+<nav class="air-navigation-rail">
 
   <!-- Optional FAB at top -->
-  <button class="fab fab-sm" style="margin-bottom: 12px;">
-    <span class="material-symbols-outlined">add</span>
+  <button class="air-fab air-fab-sm" style="margin-bottom: 12px;">
+    <span class="air-icon">add</span>
   </button>
 
-  <button class="navigation-rail-item" aria-selected="true">
-    <div class="nav-rail-icon-container">
-      <span class="material-symbols-outlined">dashboard</span>
+  <button class="air-navigation-rail-item" aria-selected="true">
+    <div class="air-nav-rail-icon-container">
+      <span class="air-icon">dashboard</span>
     </div>
     Dashboard
   </button>
 
-  <button class="navigation-rail-item" aria-selected="false">
-    <div class="nav-rail-icon-container">
-      <span class="material-symbols-outlined">analytics</span>
+  <button class="air-navigation-rail-item" aria-selected="false">
+    <div class="air-nav-rail-icon-container">
+      <span class="air-icon">analytics</span>
     </div>
     Analytics
   </button>
@@ -212,8 +212,8 @@ Fixed left sidebar for tablet (≥4 destinations). Width: 80px.
 </nav>
 ```
 
-- `navigation-rail` — `position: fixed; top: 0; left: 0; height: 100%`, `--color-surface` with `outline-variant` border
-- `nav-rail-icon-container` — 56×32px pill; selected → secondary-container
+- `air-navigation-rail` — `position: fixed; top: 0; left: 0; height: 100%`, `--color-surface` with `outline-variant` border
+- `air-nav-rail-icon-container` — 56×32px pill; selected → secondary-container
 
 ---
 
@@ -229,14 +229,14 @@ A slide-in panel from the left (modal) or always-visible (persistent).
 
 ```html
 <!-- Scrim (click to close) -->
-<div class="drawer-scrim" id="drawer-scrim" data-state="closed"
+<div class="air-drawer-scrim" id="drawer-scrim" data-state="closed"
      onclick="closeDrawer()"></div>
 
 <!-- Drawer panel -->
-<aside class="drawer" id="main-drawer" data-state="closed">
+<aside class="air-drawer" id="main-drawer" data-state="closed">
   <nav style="padding: 16px;">
-    <a class="link-nav" href="#" aria-current="page">Home</a>
-    <a class="link-nav" href="#">Settings</a>
+    <a class="air-link-nav" href="#" aria-current="page">Home</a>
+    <a class="air-link-nav" href="#">Settings</a>
   </nav>
 </aside>
 ```
@@ -252,9 +252,9 @@ function closeDrawer() {
 }
 ```
 
-**Persistent (always visible, not overlaid):** Add `.drawer-persistent` to `.drawer`:
+**Persistent (always visible, not overlaid):** Add `.air-drawer-persistent` to `.air-drawer`:
 ```html
-<aside class="drawer drawer-persistent">...</aside>
+<aside class="air-drawer air-drawer-persistent">...</aside>
 ```
 This removes the transform and uses `position: relative`, integrating it inline in the layout.
 
@@ -266,15 +266,15 @@ Slides up from the bottom of the screen. Width capped at `--air-bottom-sheet-max
 
 ```html
 <!-- Scrim -->
-<div class="bottom-sheet-scrim" id="sheet-scrim" data-state="closed"
+<div class="air-bottom-sheet-scrim" id="sheet-scrim" data-state="closed"
      onclick="closeSheet()"></div>
 
 <!-- Sheet -->
-<div class="bottom-sheet" id="my-sheet" data-state="closed">
-  <div class="bottom-sheet-handle"></div>
+<div class="air-bottom-sheet" id="my-sheet" data-state="closed">
+  <div class="air-bottom-sheet-handle"></div>
   <div style="padding: 16px 24px 32px;">
-    <h3 class="text-title-medium">Share</h3>
-    <p class="text-body-medium">Choose how you want to share this item.</p>
+    <h3 class="air-title-md">Share</h3>
+    <p class="air-body-md">Choose how you want to share this item.</p>
   </div>
 </div>
 ```
@@ -290,7 +290,7 @@ function closeSheet() {
 }
 ```
 
-`bottom-sheet-handle` — 32×4px drag indicator, centered, with `--color-outline` surface.
+`air-bottom-sheet-handle` — 32×4px drag indicator, centered, with `--color-outline` surface.
 
 ---
 
@@ -306,21 +306,21 @@ Slides in from the right (default) or left.
 
 ```html
 <!-- Scrim -->
-<div class="side-sheet-scrim" id="side-scrim" data-state="closed"
+<div class="air-side-sheet-scrim" id="side-scrim" data-state="closed"
      onclick="closeSideSheet()"></div>
 
 <!-- Right-anchored (default) -->
-<aside class="side-sheet" id="side-sheet" data-state="closed">
+<aside class="air-side-sheet" id="side-sheet" data-state="closed">
   <div style="padding: 24px;">
-    <h2 class="text-headline-small">Filters</h2>
+    <h2 class="air-headline-sm">Filters</h2>
     <!-- filter controls -->
   </div>
 </aside>
 
 <!-- Left-anchored override -->
-<aside class="side-sheet-base side-sheet-left side-sheet-surface" data-state="closed">
+<aside class="air-side-sheet-base air-side-sheet-left air-side-sheet-surface" data-state="closed">
   ...
 </aside>
 ```
 
-`side-sheet` defaults to right-anchored. For left, compose the atomic utilities manually as shown above.
+`air-side-sheet` defaults to right-anchored. For left, compose the atomic utilities manually as shown above.

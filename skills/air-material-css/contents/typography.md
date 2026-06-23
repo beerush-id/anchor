@@ -11,53 +11,53 @@ Apply any of these classes to set `font-size`, `font-weight`, `letter-spacing`, 
 ### Display (large heroes, marketing)
 | Class | Size | Weight | Line Height |
 |---|---|---|---|
-| `text-display-large` | 57px | 400 | 64px |
-| `text-display-medium` | 45px | 400 | 52px |
-| `text-display-small` | 36px | 400 | 44px |
+| `air-display-lg` | 57px | 400 | 64px |
+| `air-display-md` | 45px | 400 | 52px |
+| `air-display-sm` | 36px | 400 | 44px |
 
 ### Headline (section titles)
 | Class | Size | Weight | Line Height |
 |---|---|---|---|
-| `text-headline-large` | 32px | 400 | 40px |
-| `text-headline-medium` | 28px | 400 | 36px |
-| `text-headline-small` | 24px | 400 | 32px |
+| `air-headline-lg` | 32px | 400 | 40px |
+| `air-headline-md` | 28px | 400 | 36px |
+| `air-headline-sm` | 24px | 400 | 32px |
 
 ### Title (card titles, dialogs, app bar)
 | Class | Size | Weight | Line Height |
 |---|---|---|---|
-| `text-title-large` | 22px | 400 | 28px |
-| `text-title-medium` | 16px | 500 | 24px |
-| `text-title-small` | 14px | 500 | 20px |
+| `air-title-lg` | 22px | 400 | 28px |
+| `air-title-md` | 16px | 500 | 24px |
+| `air-title-sm` | 14px | 500 | 20px |
 
 ### Body (paragraph text)
 | Class | Size | Weight | Line Height |
 |---|---|---|---|
-| `text-body-large` | 16px | 400 | 24px |
-| `text-body-medium` | 14px | 400 | 20px — **body default** |
-| `text-body-small` | 12px | 400 | 16px |
+| `air-body-lg` | 16px | 400 | 24px |
+| `air-body-md` | 14px | 400 | 20px — **body default** |
+| `air-body-sm` | 12px | 400 | 16px |
 
 ### Label (buttons, chips, tabs, captions)
 | Class | Size | Weight | Line Height |
 |---|---|---|---|
-| `text-label-large` | 14px | 500 | 20px |
-| `text-label-medium` | 12px | 500 | 16px |
-| `text-label-small` | 11px | 500 | 16px |
+| `air-label-lg` | 14px | 500 | 20px |
+| `air-label-md` | 12px | 500 | 16px |
+| `air-label-sm` | 11px | 500 | 16px |
 
 ---
 
-## Emphasized Variants
+## Strong Variants
 
-Each scale step has an `-emphasized` variant with a bumped weight. Append `-emphasized` to any utility above:
+Each scale step has a `-strong` variant with a bumped weight. Append `-strong` to any utility above:
 
 ```
-text-display-large-emphasized   → weight 500
-text-headline-medium-emphasized → weight 500
-text-title-medium-emphasized    → weight 600
-text-title-small-emphasized     → weight 600
-text-body-large-emphasized      → weight 500
-text-label-large-emphasized     → weight 600
-text-label-medium-emphasized    → weight 600
-text-label-small-emphasized     → weight 600
+air-display-lg-strong   → weight 500
+air-headline-md-strong → weight 500
+air-title-md-strong    → weight 600
+air-title-sm-strong     → weight 600
+air-body-lg-strong      → weight 500
+air-label-lg-strong     → weight 600
+air-label-md-strong    → weight 600
+air-label-sm-strong     → weight 600
 ```
 
 ---
@@ -95,10 +95,10 @@ If you need to reference individual font properties in custom CSS:
 ## Usage Examples
 
 ```html
-<h1 class="text-headline-large">Page Title</h1>
-<p class="text-body-medium">Body copy text.</p>
-<span class="text-label-large">Button Label</span>
-<h2 class="text-title-medium-emphasized">Card Title</h2>
+<h1 class="air-headline-lg">Page Title</h1>
+<p class="air-body-md">Body copy text.</p>
+<span class="air-label-lg">Button Label</span>
+<h2 class="air-title-md-strong">Card Title</h2>
 ```
 
 ---
@@ -107,18 +107,18 @@ If you need to reference individual font properties in custom CSS:
 
 These two utilities are also defined in the utilities layer and are used internally by all interactive components.
 
-### `state-layer`
+### `air-state-layer`
 Adds a `::before` pseudo-element that transitions opacity on hover / focus / active:
 
 ```html
-<button class="state-layer">...</button>
+<button class="air-state-layer">...</button>
 ```
 
 Override the color via `--state-layer-color` (defaults to `--color-on-surface`).
 
-### `focus-ring`
+### `air-focus-ring`
 Adds a consistent focus outline using `--color-secondary` that only appears on `:focus-visible`:
 
 ```html
-<button class="focus-ring">...</button>
+<button class="air-focus-ring">...</button>
 ```

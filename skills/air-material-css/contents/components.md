@@ -25,34 +25,34 @@ Use the composed utility unless you need to override a specific layer.
 ### Composed Utilities
 | Class | M3 Variant | Emphasis |
 |---|---|---|
-| `button` | Filled | High |
-| `button-elevated` | Elevated (shadow) | High |
-| `button-tonal` | Filled Tonal | Medium |
-| `button-outlined` | Outlined | Medium |
-| `button-text` | Text | Low |
-| `toggle-button` | Toggle (selected via `aria-pressed/selected`) | — |
+| `air-button` | Filled | High |
+| `air-button-elevated` | Elevated (shadow) | High |
+| `air-button-tonal` | Filled Tonal | Medium |
+| `air-button-outlined` | Outlined | Medium |
+| `air-button-text` | Text | Low |
+| `air-toggle-button` | Toggle (selected via `aria-pressed/selected`) | — |
 
 All handle `:hover`, `:focus-visible`, and `:disabled` automatically.
 
-Smart icon padding: if the first or last child is a `.material-symbols-outlined`, `<svg>`, or `<img>`, side padding automatically adjusts to `--air-button-icon-padding-x`.
+Smart icon padding: if the first or last child is a `.air-icon`, side padding automatically adjusts to `--air-button-icon-padding-x`. Implicit `<svg>` or `<img>` targeting has been removed.
 
 ### Size Modifiers (combine with any variant)
 ```
-button-xs   h-6   (24px)
-button-sm   h-8   (32px)
-button-md   h-10  (40px) — default
-button-lg   h-12  (48px)
-button-xl   h-14  (56px)
+air-button-xs   calc(6 * var(--spacing))
+air-button-sm   calc(8 * var(--spacing))
+air-button-md   calc(10 * var(--spacing)) — default
+air-button-lg   calc(12 * var(--spacing))
+air-button-xl   calc(14 * var(--spacing))
 ```
 
 ```html
-<button class="button">Save</button>
-<button class="button-tonal button-lg">
-  <span class="material-symbols-outlined">upload</span>
+<button class="air-button">Save</button>
+<button class="air-button-tonal air-button-lg">
+  <span class="air-icon">upload</span>
   Upload
 </button>
-<button class="button-outlined" disabled>Cancel</button>
-<button class="toggle-button" aria-pressed="true">Bold</button>
+<button class="air-button-outlined" disabled>Cancel</button>
+<button class="air-toggle-button" aria-pressed="true">Bold</button>
 ```
 
 ---
@@ -62,10 +62,10 @@ button-xl   h-14  (56px)
 Wraps multiple buttons, giving outer buttons a pill radius and inner buttons a square radius with a small gap:
 
 ```html
-<div class="button-group">
-  <button class="button">Left</button>
-  <button class="button">Center</button>
-  <button class="button">Right</button>
+<div class="air-button-group">
+  <button class="air-button">Left</button>
+  <button class="air-button">Center</button>
+  <button class="air-button">Right</button>
 </div>
 ```
 
@@ -78,15 +78,15 @@ Variables: `--group-gap` (2px default).
 A two-part button: primary action + trailing dropdown trigger.
 
 ```html
-<div class="split-button-group split-button-filled">
-  <button class="split-button-primary">Save</button>
-  <button class="split-button-trailing">
-    <span class="material-symbols-outlined">arrow_drop_down</span>
+<div class="air-split-button-group air-split-button-filled">
+  <button class="air-split-button-primary">Save</button>
+  <button class="air-split-button-trailing">
+    <span class="air-icon">arrow_drop_down</span>
   </button>
 </div>
 ```
 
-Variants: `split-button-filled`, `split-button-tonal`, `split-button-elevated`, `split-button-outlined`.
+Variants: `air-split-button-filled`, `air-split-button-tonal`, `air-split-button-elevated`, `air-split-button-outlined`.
 
 ---
 
@@ -95,10 +95,10 @@ Variants: `split-button-filled`, `split-button-tonal`, `split-button-elevated`, 
 A group of toggle-style buttons with connected pill shape:
 
 ```html
-<div class="segmented-group">
-  <button class="segmented-button" aria-selected="true">Day</button>
-  <button class="segmented-button">Week</button>
-  <button class="segmented-button">Month</button>
+<div class="air-segmented-group">
+  <button class="air-segmented-button" aria-selected="true">Day</button>
+  <button class="air-segmented-button">Week</button>
+  <button class="air-segmented-button">Month</button>
 </div>
 ```
 
@@ -120,32 +120,32 @@ Square buttons sized for a single icon. 48×48px minimum touch target enforced v
 ### Composed Utilities
 | Class | M3 Variant |
 |---|---|
-| `icon-button` | Standard (transparent bg) |
-| `icon-button-filled` | Filled |
-| `icon-button-tonal` | Filled Tonal |
-| `icon-button-outlined` | Outlined |
+| `air-icon-button` | Standard (transparent bg) |
+| `air-icon-button-filled` | Filled |
+| `air-icon-button-tonal` | Filled Tonal |
+| `air-icon-button-outlined` | Outlined |
 
-Toggle support: `icon-button-filled` and `icon-button-tonal` use `aria-pressed="false"` for unselected state; `icon-button` and `icon-button-outlined` use `aria-pressed="true"` for selected state.
+Toggle support: `air-icon-button-filled` and `air-icon-button-tonal` use `aria-pressed="false"` for unselected state; `air-icon-button` and `air-icon-button-outlined` use `aria-pressed="true"` for selected state.
 
 ### Size Modifiers
 ```
-icon-button-xs   24px / icon 16px
-icon-button-sm   32px / icon 20px
-icon-button-md   40px / icon 24px (default)
-icon-button-lg   48px / icon 28px
-icon-button-xl   56px / icon 32px
+air-icon-button-xs   calc(6 * var(--spacing))
+air-icon-button-sm   calc(8 * var(--spacing))
+air-icon-button-md   calc(10 * var(--spacing)) (default)
+air-icon-button-lg   calc(12 * var(--spacing))
+air-icon-button-xl   calc(14 * var(--spacing))
 ```
 
 ```html
-<button class="icon-button">
-  <span class="material-symbols-outlined">search</span>
+<button class="air-icon-button">
+  <span class="air-icon">search</span>
 </button>
-<button class="icon-button-filled icon-button-lg">
-  <span class="material-symbols-outlined">add</span>
+<button class="air-icon-button-filled air-icon-button-lg">
+  <span class="air-icon">add</span>
 </button>
 <!-- Toggle: aria-pressed="false" = unselected surface -->
-<button class="icon-button-filled" aria-pressed="false">
-  <span class="material-symbols-outlined">favorite</span>
+<button class="air-icon-button-filled" aria-pressed="false">
+  <span class="air-icon">favorite</span>
 </button>
 ```
 
@@ -162,34 +162,34 @@ icon-button-xl   56px / icon 32px
 ### Composed Utilities
 | Class | M3 Variant | Background |
 |---|---|---|
-| `card` | Elevated | `--color-surface-container-low` |
-| `card-filled` | Filled | `--color-surface-container-highest` |
-| `card-outlined` | Outlined | `--color-surface` + 1px border |
+| `air-card` | Elevated | `--color-surface-container-low` |
+| `air-card-filled` | Filled | `--color-surface-container-highest` |
+| `air-card-outlined` | Outlined | `--color-surface` + 1px border |
 
-Add `card-interactive` for hover/focus states and pointer cursor:
+Add `air-card-interactive` for hover/focus states and pointer cursor:
 ```html
-<div class="card card-interactive" tabindex="0">...</div>
+<div class="air-card air-card-interactive" tabindex="0">...</div>
 ```
 
 ### Content Structure Utilities
 ```
-card-header   → flex-col, full padding top, half padding bottom
-card-title    → text-title-medium, on-surface
-card-subtitle → text-body-medium, on-surface-variant
-card-body     → flex-grow 1, full padding (0 top if follows card-header)
-card-actions  → flex row, justify-end, half padding top
+air-card-header   → flex-col, full padding top, half padding bottom
+air-card-title    → text-title-medium, on-surface
+air-card-subtitle → text-body-medium, on-surface-variant
+air-card-body     → flex-grow 1, full padding (0 top if follows card-header)
+air-card-actions  → flex row, justify-end, half padding top
 ```
 
 ```html
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title">Title</h3>
-    <p class="card-subtitle">Subtitle</p>
+<div class="air-card">
+  <div class="air-card-header">
+    <h3 class="air-card-title">Title</h3>
+    <p class="air-card-subtitle">Subtitle</p>
   </div>
-  <div class="card-body">Content here.</div>
-  <div class="card-actions">
-    <button class="button-text">Cancel</button>
-    <button class="button">Confirm</button>
+  <div class="air-card-body">Content here.</div>
+  <div class="air-card-actions">
+    <button class="air-button-text">Cancel</button>
+    <button class="air-button">Confirm</button>
   </div>
 </div>
 ```
@@ -198,10 +198,10 @@ card-actions  → flex row, justify-end, half padding top
 Stacks cards with `2px` gap; outer corners use `--air-card-radius`, inner use `--radius-sm`:
 
 ```html
-<div class="card-group">
-  <div class="card-filled">First</div>
-  <div class="card-filled">Middle</div>
-  <div class="card-filled">Last</div>
+<div class="air-card-group">
+  <div class="air-card-filled">First</div>
+  <div class="air-card-filled">Middle</div>
+  <div class="air-card-filled">Last</div>
 </div>
 ```
 
@@ -219,69 +219,69 @@ Stacks cards with `2px` gap; outer corners use `--air-card-radius`, inner use `-
 ### Composed Utilities
 | Class | Background |
 |---|---|
-| `chip` | Outlined (transparent + outline-variant border) |
-| `chip-elevated` | `--color-surface-container-low` |
+| `air-chip` | Outlined (transparent + outline-variant border) |
+| `air-chip-elevated` | `--color-surface-container-low` |
 
 Selected state: `aria-selected="true"` → secondary-container.
 Disabled: `:disabled` or `aria-disabled="true"` → opacity 0.38.
 
 ### Size Modifiers
 ```
-chip-sm   h-6  (24px)
-chip-md   h-8  (32px) — default
-chip-lg   h-10 (40px)
+air-chip-sm   calc(6 * var(--spacing))
+air-chip-md   calc(8 * var(--spacing)) — default
+air-chip-lg   calc(10 * var(--spacing))
 ```
 
 ```html
-<button class="chip" aria-selected="false">Filter</button>
-<button class="chip" aria-selected="true">Active</button>
+<button class="air-chip" aria-selected="false">Filter</button>
+<button class="air-chip" aria-selected="true">Active</button>
 ```
 
 ---
 
 ## Badge
 
-Absolutely positioned count/dot indicator. Wrap the target with `badge-container`:
+Absolutely positioned count/dot indicator. Wrap the target with `air-badge-container`:
 
 ```html
-<div class="badge-container">
-  <button class="icon-button">
-    <span class="material-symbols-outlined">notifications</span>
+<div class="air-badge-container">
+  <button class="air-icon-button">
+    <span class="air-icon">notifications</span>
   </button>
-  <span class="badge">3</span>
+  <span class="air-badge">3</span>
 </div>
 
 <!-- Small dot (no text) -->
-<div class="badge-container">
-  <button class="icon-button">...</button>
-  <span class="badge-dot"></span>
+<div class="air-badge-container">
+  <button class="air-icon-button">...</button>
+  <span class="air-badge-dot"></span>
 </div>
 ```
 
-`badge` = large with count. `badge-dot` = 6px dot.
-Color variants: `badge-error-surface` (default), `badge-primary-surface`, `badge-secondary-surface`.
+`air-badge` = large with count. `air-badge-dot` = 6px dot.
+Color variants: `air-badge-error-surface` (default), `air-badge-primary-surface`, `air-badge-secondary-surface`.
 
 ---
 
 ## Divider
 
 ```html
-<hr class="divider" />          <!-- horizontal full-width -->
-<hr class="divider-vertical" /> <!-- vertical (needs fixed height container) -->
-<hr class="divider-inset" />    <!-- horizontal with 16px left margin -->
+<hr class="air-divider" />          <!-- horizontal full-width -->
+<hr class="air-divider-vertical" /> <!-- vertical (needs fixed height container) -->
+<hr class="air-divider-inset" />    <!-- horizontal with 16px left margin -->
 ```
 
 ---
 
 ## Ripple
 
-Programmatic ripple effect. Add `ripple-container` inside any positioned element, then inject `ripple` spans via JS on click:
+Programmatic ripple effect. Add `air-ripple-container` inside any positioned element, then inject `air-ripple` spans via JS on click:
 
 ```html
-<button class="button" style="position:relative; overflow:hidden;">
+<button class="air-button" style="position:relative; overflow:hidden;">
   Save
-  <span class="ripple-container">
-    <!-- JS inserts: <span class="ripple" style="width:Xpx;height:Xpx;left:Xpx;top:Xpx;"></span> -->
+  <span class="air-ripple-container">
+    <!-- JS inserts: <span class="air-ripple" style="width:Xpx;height:Xpx;left:Xpx;top:Xpx;"></span> -->
   </span>
 </button>
 ```
@@ -293,14 +293,14 @@ The ripple color inherits `currentColor` at `--opacity-pressed` opacity.
 ## Link
 
 ```html
-<a class="link" href="#">Inline link</a>
-<a class="link-nav" href="#" aria-current="page">Nav link</a>
-<a class="link-standalone" href="#">Call to action →</a>
+<a class="air-link" href="#">Inline link</a>
+<a class="air-link-nav" href="#" aria-current="page">Nav link</a>
+<a class="air-link-standalone" href="#">Call to action →</a>
 ```
 
-- `link` — colored primary, underline on hover, visited uses tertiary
-- `link-nav` — on-surface-variant, turns primary on `aria-current="page"`
-- `link-standalone` — bold, animated `→` arrow on hover
+- `air-link` — colored primary, underline on hover, visited uses tertiary
+- `air-link-nav` — on-surface-variant, turns primary on `aria-current="page"`
+- `air-link-standalone` — bold, animated `→` arrow on hover
 
 ---
 
@@ -308,20 +308,20 @@ The ripple color inherits `currentColor` at `--opacity-pressed` opacity.
 
 ### Linear
 ```html
-<div class="progress-linear">
+<div class="air-progress-linear">
   <!-- Determinate -->
-  <div class="progress-linear-bar progress-linear-primary" style="width: 60%;"></div>
+  <div class="air-progress-linear-bar air-progress-linear-primary" style="width: 60%;"></div>
 
   <!-- Indeterminate -->
-  <div class="progress-linear-bar progress-linear-primary progress-linear-indeterminate"></div>
+  <div class="air-progress-linear-bar air-progress-linear-primary air-progress-linear-indeterminate"></div>
 </div>
 ```
 
 ### Circular (SVG-based)
 ```html
-<svg class="progress-circular" viewBox="0 0 48 48">
+<svg class="air-progress-circular" viewBox="0 0 48 48">
   <circle
-    class="progress-circular-circle progress-circular-primary"
+    class="air-progress-circular-circle air-progress-circular-primary"
     cx="24" cy="24" r="20"
     stroke-dasharray="90, 150"
     stroke-dashoffset="-35"
@@ -329,8 +329,8 @@ The ripple color inherits `currentColor` at `--opacity-pressed` opacity.
 </svg>
 
 <!-- Indeterminate -->
-<svg class="progress-circular progress-circular-indeterminate" viewBox="0 0 48 48">
-  <circle class="progress-circular-circle progress-circular-primary progress-circular-circle-indeterminate"
+<svg class="air-progress-circular air-progress-circular-indeterminate" viewBox="0 0 48 48">
+  <circle class="air-progress-circular-circle air-progress-circular-primary air-progress-circular-circle-indeterminate"
     cx="24" cy="24" r="20" />
 </svg>
 ```
@@ -340,27 +340,27 @@ The ripple color inherits `currentColor` at `--opacity-pressed` opacity.
 ## Table
 
 ```html
-<table class="table-view">
+<table class="air-table-view">
   <thead>
     <tr>
-      <th class="table-header-cell">Name</th>
-      <th class="table-header-cell">Status</th>
+      <th class="air-table-header-cell">Name</th>
+      <th class="air-table-header-cell">Status</th>
     </tr>
   </thead>
   <tbody>
-    <tr class="table-row-filled">
-      <td class="table-cell">Item A</td>
-      <td class="table-cell">Active</td>
+    <tr class="air-table-row-filled">
+      <td class="air-table-cell">Item A</td>
+      <td class="air-table-cell">Active</td>
     </tr>
     <!-- Selected row -->
-    <tr class="table-row-filled" aria-selected="true">
-      <td class="table-cell">Item B</td>
-      <td class="table-cell">Pending</td>
+    <tr class="air-table-row-filled" aria-selected="true">
+      <td class="air-table-cell">Item B</td>
+      <td class="air-table-cell">Pending</td>
     </tr>
   </tbody>
 </table>
 ```
 
-`table-row` — base with focus-ring, no background.
-`table-row-filled` — segmented rows with hover/select states.
+`air-table-row` — base with focus-ring, no background.
+`air-table-row-filled` — segmented rows with hover/select states.
 Outer corners auto-apply `--radius-xl` via CSS `:first-child/:last-child` selectors.

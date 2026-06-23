@@ -18,7 +18,7 @@ To work effectively without polluting your context, use the `view_file` tool to 
 - **Action**: Read `contents/tokens.md`
 
 ## Typography
-- **When**: You need to apply M3 type scale utilities (`text-display-large`, `text-headline-medium`, `text-title-small`, `text-body-medium`, `text-label-large`, etc.) or their `-emphasized` variants, or reference the raw `--font-*` tokens.
+- **When**: You need to apply M3 type scale utilities (`air-display-lg`, `air-headline-md`, `air-title-sm`, `air-body-md`, `air-label-lg`, etc.) or their `-strong` variants, or reference the raw `--font-*` tokens.
 - **Action**: Read `contents/typography.md`
 
 ## Components

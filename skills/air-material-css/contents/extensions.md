@@ -8,51 +8,51 @@ Skeleton utilities replace real content with a shimmer animation during loading 
 
 ### Single Element
 
-Add `skeleton` to any element to replace it with a shimmer:
+Add `air-skeleton` to any element to replace it with a shimmer:
 
 ```html
 <!-- Text placeholder -->
-<p class="skeleton" style="width: 80%; height: 1em; border-radius: 4px;">&nbsp;</p>
-<p class="skeleton" style="width: 60%; height: 1em; border-radius: 4px;">&nbsp;</p>
+<p class="air-skeleton" style="width: 80%; height: 1em; border-radius: 4px;">&nbsp;</p>
+<p class="air-skeleton" style="width: 60%; height: 1em; border-radius: 4px;">&nbsp;</p>
 
 <!-- Image placeholder -->
-<div class="skeleton" style="width: 200px; height: 150px; border-radius: 12px;"></div>
+<div class="air-skeleton" style="width: 200px; height: 150px; border-radius: 12px;"></div>
 
 <!-- Button placeholder -->
-<button class="button skeleton" disabled></button>
+<button class="air-button air-skeleton" disabled></button>
 
 <!-- Card placeholder -->
-<div class="card skeleton" style="height: 200px;"></div>
+<div class="air-card air-skeleton" style="height: 200px;"></div>
 ```
 
-`skeleton` forces:
+`air-skeleton` forces:
 - `color: transparent` — hides text
 - `border-color: transparent`
 - Shimmer gradient from `--color-surface-container` → `--color-surface-container-highest`
 - `pointer-events: none`, `user-select: none`
-- Hides direct `<img>`, `<svg>`, `.material-symbols-outlined` children
+- Hides direct `<img>`, `<svg>`, `.air-icon` children
 
 ### Skeleton Group
 
-Apply `skeleton-group` to a container to automatically skeleton all common content children (`p`, `h1–h6`, `li`, `a`, `button`, `img`, `span`, `.chip`, `.badge`, `.icon-button`, `.fab`):
+Apply `air-skeleton-group` to a container to automatically skeleton all common content children (`p`, `h1–h6`, `li`, `a`, `button`, `img`, `span`, `.air-chip`, `.air-badge`, `.air-icon-button`, `.air-fab`):
 
 ```html
 <!-- Loading state -->
-<div class="card skeleton-group">
-  <div class="card-header">
-    <h3 class="card-title">Product Name</h3>
-    <p class="card-subtitle">Category</p>
+<div class="air-card air-skeleton-group">
+  <div class="air-card-header">
+    <h3 class="air-card-title">Product Name</h3>
+    <p class="air-card-subtitle">Category</p>
   </div>
-  <div class="card-body">
+  <div class="air-card-body">
     <p>Description text that gets shimmer applied automatically.</p>
   </div>
-  <div class="card-actions">
-    <button class="button">Add to Cart</button>
+  <div class="air-card-actions">
+    <button class="air-button">Add to Cart</button>
   </div>
 </div>
 
-<!-- Loaded state — just remove skeleton-group -->
-<div class="card">
+<!-- Loaded state — just remove air-skeleton-group -->
+<div class="air-card">
   ...
 </div>
 ```
@@ -69,12 +69,12 @@ A responsive CSS column-based masonry layout. Columns adapt at breakpoints.
 ```
 
 ```html
-<div class="masonry">
-  <div class="masonry-item card" style="height: 200px;">Short card</div>
-  <div class="masonry-item card" style="height: 320px;">Tall card</div>
-  <div class="masonry-item card" style="height: 150px;">Short card</div>
-  <div class="masonry-item card" style="height: 400px;">Very tall card</div>
-  <div class="masonry-item card" style="height: 250px;">Medium card</div>
+<div class="air-masonry">
+  <div class="air-masonry-item air-card" style="height: 200px;">Short card</div>
+  <div class="air-masonry-item air-card" style="height: 320px;">Tall card</div>
+  <div class="air-masonry-item air-card" style="height: 150px;">Short card</div>
+  <div class="air-masonry-item air-card" style="height: 400px;">Very tall card</div>
+  <div class="air-masonry-item air-card" style="height: 250px;">Medium card</div>
 </div>
 ```
 
@@ -86,7 +86,7 @@ Column counts:
 ≥ 1920px → 4 columns
 ```
 
-`masonry-item` applies `break-inside: avoid` and `margin-bottom: var(--air-masonry-gap)`.
+`air-masonry-item` applies `break-inside: avoid` and `margin-bottom: var(--air-masonry-gap)`.
 
 ---
 
@@ -99,55 +99,55 @@ Extensions for AI chat interfaces and prompt fields.
 A multiline prompt input with optional attachments and action buttons:
 
 ```html
-<div class="ai-prompt">
+<div class="air-ai-prompt">
   <!-- Optional: attachment previews (only renders if present) -->
-  <div class="ai-prompt-attachments">
-    <div class="ai-attachment">
+  <div class="air-ai-prompt-attachments">
+    <div class="air-ai-attachment">
       <img src="attachment.jpg" alt="Attachment" />
     </div>
   </div>
 
   <!-- Textarea -->
-  <textarea class="ai-prompt-textarea" placeholder="Ask me anything..."></textarea>
+  <textarea class="air-ai-prompt-textarea" placeholder="Ask me anything..."></textarea>
 
   <!-- Actions row -->
-  <div class="ai-prompt-actions">
-    <button class="icon-button">
-      <span class="material-symbols-outlined">attach_file</span>
+  <div class="air-ai-prompt-actions">
+    <button class="air-icon-button">
+      <span class="air-icon">attach_file</span>
     </button>
-    <button class="fab fab-sm">
-      <span class="material-symbols-outlined">arrow_upward</span>
+    <button class="air-fab air-fab-sm">
+      <span class="air-icon">arrow_upward</span>
     </button>
   </div>
 </div>
 ```
 
-- `ai-prompt` — `--color-surface-container-low` bg, `border-radius: 28px`; adds `box-shadow` ring on `:focus-within`
-- `ai-prompt-attachments` — horizontal scroll strip for attachment previews
-- `ai-attachment` — 64×64px rounded image container
-- `ai-prompt-textarea` — transparent bg, resizes off, `min-height: 120px`
-- `ai-prompt-actions` — flex row, space-between, bottom padding
+- `air-ai-prompt` — `--color-surface-container-low` bg, `border-radius: 28px`; adds `box-shadow` ring on `:focus-within`
+- `air-ai-prompt-attachments` — horizontal scroll strip for attachment previews
+- `air-ai-attachment` — 64×64px rounded image container
+- `air-ai-prompt-textarea` — transparent bg, resizes off, `min-height: 120px`
+- `air-ai-prompt-actions` — flex row, space-between, bottom padding
 
 ---
 
 ### AI Chat Thread
 
 ```html
-<div class="ai-chat-thread">
+<div class="air-ai-chat-thread">
 
   <!-- User message -->
-  <div class="ai-message ai-message-user">
-    <div class="ai-message-bubble">
+  <div class="air-ai-message air-ai-message-user">
+    <div class="air-ai-message-bubble">
       How do I center a div?
     </div>
   </div>
 
   <!-- Agent message -->
-  <div class="ai-message ai-message-agent">
-    <div class="ai-avatar">
-      <span class="material-symbols-outlined">smart_toy</span>
+  <div class="air-ai-message air-ai-message-agent">
+    <div class="air-ai-avatar">
+      <span class="air-icon">smart_toy</span>
     </div>
-    <div class="ai-message-bubble">
+    <div class="air-ai-message-bubble">
       Use `display: flex; align-items: center; justify-content: center;` on the parent.
     </div>
   </div>
@@ -155,12 +155,12 @@ A multiline prompt input with optional attachments and action buttons:
 </div>
 ```
 
-- `ai-chat-thread` — flex-col, 32px gap
-- `ai-message` — flex row, full-width
-- `ai-message-user` — right-aligned, max 85% width; bubble uses `--color-surface-variant`
-- `ai-message-agent` — left-aligned, full width; bubble is transparent (reads like text)
-- `ai-avatar` — 40×40px circle, `--color-primary-container` bg
-- `ai-message-bubble` — padding, `text-body-large`
+- `air-ai-chat-thread` — flex-col, 32px gap
+- `air-ai-message` — flex row, full-width
+- `air-ai-message-user` — right-aligned, max 85% width; bubble uses `--color-surface-variant`
+- `air-ai-message-agent` — left-aligned, full width; bubble is transparent (reads like text)
+- `air-ai-avatar` — 40×40px circle, `--color-primary-container` bg
+- `air-ai-message-bubble` — padding, `air-body-lg`
 
 ---
 
@@ -168,7 +168,7 @@ A multiline prompt input with optional attachments and action buttons:
 
 **Typing indicator (three pulsing dots):**
 ```html
-<div class="ai-typing-indicator">
+<div class="air-ai-typing-indicator">
   <span class="dot"></span>
   <span class="dot"></span>
   <span class="dot"></span>
@@ -179,7 +179,7 @@ Dots animate with `pulse-dot` keyframe, each delayed by 200ms.
 
 **Sparkle / generating icon:**
 ```html
-<span class="ai-sparkle material-symbols-outlined">auto_awesome</span>
+<span class="air-ai-sparkle air-icon">auto_awesome</span>
 ```
 
 Applies a continuous 3s `sparkle-spin` rotation + scale animation in `--color-primary`.

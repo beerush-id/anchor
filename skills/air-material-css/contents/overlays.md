@@ -16,16 +16,16 @@ Uses the native `<dialog>` element for proper accessibility (focus trap, `::back
 ```
 
 ```html
-<dialog class="dialog" id="my-dialog">
-  <h2 class="dialog-title">Confirm Action</h2>
-  <p class="dialog-content">
+<dialog class="air-native-dialog" id="my-dialog">
+  <h2 class="air-dialog-title">Confirm Action</h2>
+  <p class="air-dialog-content">
     Are you sure you want to delete this item? This cannot be undone.
   </p>
-  <div class="dialog-actions">
-    <button class="button-text" onclick="document.getElementById('my-dialog').close()">
+  <div class="air-dialog-actions">
+    <button class="air-button-text" onclick="document.getElementById('my-dialog').close()">
       Cancel
     </button>
-    <button class="button">Delete</button>
+    <button class="air-button">Delete</button>
   </div>
 </dialog>
 ```
@@ -41,7 +41,7 @@ The `::backdrop` fades from transparent to `color-mix(in srgb, var(--color-scrim
 
 ### Fullscreen Variant
 ```html
-<dialog class="dialog dialog-fullscreen">...</dialog>
+<dialog class="air-native-dialog air-dialog-fullscreen">...</dialog>
 ```
 
 ---
@@ -60,14 +60,14 @@ A floating surface for dropdown menus. Shown via `data-state="open"`.
 
 ```html
 <div style="position: relative; display: inline-block;">
-  <button class="button" onclick="toggleMenu()">Options</button>
+  <button class="air-button" onclick="toggleMenu()">Options</button>
 
-  <ul class="menu" id="options-menu" data-state="closed">
-    <li><button class="menu-item">Edit</button></li>
-    <li><button class="menu-item">Duplicate</button></li>
-    <li><hr class="divider" /></li>
-    <li><button class="menu-item" disabled>Archive</button></li>
-    <li><button class="menu-item">Delete</button></li>
+  <ul class="air-menu" id="options-menu" data-state="closed">
+    <li><button class="air-menu-item">Edit</button></li>
+    <li><button class="air-menu-item">Duplicate</button></li>
+    <li><hr class="air-divider" /></li>
+    <li><button class="air-menu-item" disabled>Archive</button></li>
+    <li><button class="air-menu-item">Delete</button></li>
   </ul>
 </div>
 ```
@@ -98,9 +98,9 @@ Notification bar that slides up from the bottom. Toggle via `data-state="visible
 ```
 
 ```html
-<div class="snackbar" id="snack" data-state="hidden">
+<div class="air-snackbar" id="snack" data-state="hidden">
   File saved successfully.
-  <button class="snackbar-action" onclick="hideSnack()">Undo</button>
+  <button class="air-snackbar-action" onclick="hideSnack()">Undo</button>
 </div>
 ```
 
@@ -116,7 +116,7 @@ Surface: `--color-inverse-surface` (dark in light mode). Action color: `--color-
 Typical placement (fixed bottom center):
 ```html
 <div style="position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);">
-  <div class="snackbar" id="snack" data-state="hidden">...</div>
+  <div class="air-snackbar" id="snack" data-state="hidden">...</div>
 </div>
 ```
 
@@ -129,10 +129,10 @@ Show/hide via `data-state="visible"`. Both variants use `position: absolute` —
 ### Plain Tooltip (brief label)
 ```html
 <div style="position: relative; display: inline-block;">
-  <button class="icon-button" aria-describedby="tip-1">
-    <span class="material-symbols-outlined">info</span>
+  <button class="air-icon-button" aria-describedby="tip-1">
+    <span class="air-icon">info</span>
   </button>
-  <div class="tooltip-plain" id="tip-1" role="tooltip"
+  <div class="air-tooltip-plain" id="tip-1" role="tooltip"
        data-state="hidden"
        style="bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap;">
     More information
@@ -143,13 +143,13 @@ Show/hide via `data-state="visible"`. Both variants use `position: absolute` —
 ### Rich Tooltip (interactive, more content)
 ```html
 <div style="position: relative; display: inline-block;">
-  <button class="icon-button">
-    <span class="material-symbols-outlined">help</span>
+  <button class="air-icon-button">
+    <span class="air-icon">help</span>
   </button>
-  <div class="tooltip-rich" role="tooltip" data-state="hidden"
+  <div class="air-tooltip-rich" role="tooltip" data-state="hidden"
        style="bottom: calc(100% + 8px); left: 0; width: 240px;">
     <p>This feature allows you to customize your dashboard layout.</p>
-    <a class="link" href="#">Learn more</a>
+    <a class="air-link" href="#">Learn more</a>
   </div>
 </div>
 ```
@@ -169,36 +169,36 @@ Toggle `data-state="visible"` via JS (e.g. on hover/focus).
 ### Composed Utilities
 | Class | Background | Text/Icon color |
 |---|---|---|
-| `fab` | `--color-primary-container` | `--color-on-primary-container` |
-| `fab-surface` | `--color-surface-container-high` | `--color-primary` |
-| `fab-secondary` | `--color-secondary-container` | `--color-on-secondary-container` |
-| `fab-tertiary` | `--color-tertiary-container` | `--color-on-tertiary-container` |
+| `air-fab` | `--color-primary-container` | `--color-on-primary-container` |
+| `air-fab-surface` | `--color-surface-container-high` | `--color-primary` |
+| `air-fab-secondary` | `--color-secondary-container` | `--color-on-secondary-container` |
+| `air-fab-tertiary` | `--color-tertiary-container` | `--color-on-tertiary-container` |
 
 ### Size Modifiers
 ```
-fab-sm   40px, --radius-md
-default  56px, --radius-lg
-fab-lg   96px, --radius-xl
+air-fab-sm   calc(10 * var(--spacing)), --radius-md
+default  calc(14 * var(--spacing)), --radius-lg
+air-fab-lg   calc(24 * var(--spacing)), --radius-xl
 ```
 
 ### Extended FAB (label + icon)
-Add `fab-extended` to get auto min-width, padding, gap, and label-large typography:
+Add `air-fab-extended` to get auto min-width, padding, gap, and label-large typography:
 
 ```html
 <!-- Standard FAB -->
-<button class="fab" style="position: fixed; bottom: 24px; right: 24px;">
-  <span class="material-symbols-outlined">add</span>
+<button class="air-fab" style="position: fixed; bottom: 24px; right: 24px;">
+  <span class="air-icon">add</span>
 </button>
 
 <!-- Extended FAB -->
-<button class="fab fab-extended" style="position: fixed; bottom: 24px; right: 24px;">
-  <span class="material-symbols-outlined">edit</span>
+<button class="air-fab air-fab-extended" style="position: fixed; bottom: 24px; right: 24px;">
+  <span class="air-icon">edit</span>
   Compose
 </button>
 
 <!-- Large FAB -->
-<button class="fab fab-lg">
-  <span class="material-symbols-outlined">add</span>
+<button class="air-fab air-fab-lg">
+  <span class="air-icon">add</span>
 </button>
 ```
 
@@ -209,31 +209,31 @@ Add `fab-extended` to get auto min-width, padding, gap, and label-large typograp
 A speed-dial pattern: one trigger FAB that expands a list of mini FABs.
 
 ```html
-<div class="fab-menu" data-state="closed" style="position: fixed; bottom: 24px; right: 24px;">
+<div class="air-fab-menu" data-state="closed" style="position: fixed; bottom: 24px; right: 24px;">
 
   <!-- Mini FAB items (listed in reverse visual order due to flex-col-reverse) -->
-  <div class="fab-menu-list">
-    <button class="fab fab-sm fab-secondary fab-menu-item">
-      <span class="material-symbols-outlined">image</span>
+  <div class="air-fab-menu-list">
+    <button class="air-fab air-fab-sm air-fab-secondary air-fab-menu-item">
+      <span class="air-icon">image</span>
     </button>
-    <button class="fab fab-sm fab-tertiary fab-menu-item">
-      <span class="material-symbols-outlined">mic</span>
+    <button class="air-fab air-fab-sm air-fab-tertiary air-fab-menu-item">
+      <span class="air-icon">mic</span>
     </button>
-    <button class="fab fab-sm fab-menu-item">
-      <span class="material-symbols-outlined">description</span>
+    <button class="air-fab air-fab-sm air-fab-menu-item">
+      <span class="air-icon">description</span>
     </button>
   </div>
 
   <!-- Trigger FAB -->
-  <button class="fab fab-menu-trigger" onclick="toggleFabMenu()">
-    <span class="material-symbols-outlined">add</span>
+  <button class="air-fab air-fab-menu-trigger" onclick="toggleFabMenu()">
+    <span class="air-icon">add</span>
   </button>
 </div>
 ```
 
 ```js
 function toggleFabMenu() {
-  const menu = document.querySelector('.fab-menu');
+  const menu = document.querySelector('.air-fab-menu');
   menu.dataset.state = menu.dataset.state === 'open' ? 'closed' : 'open';
 }
 ```
