@@ -1,5 +1,6 @@
 import { createObserver, isMutableRef, mutable, type MutableRef, type StateOptions } from '@anchorlib/core';
-import type { Bindable, Linked } from './types.js';
+import type { RefObject } from 'react';
+import type { Bindable, Linked, RefToArg } from './types.js';
 
 /**
  * A reference that links to a computed value through a getter function.
@@ -192,6 +193,54 @@ export function bind<T>(source: T, key?: keyof T) {
  * @see {@link bind}
  */
 export const $bind = bind;
+
+/**
+ * Creates a reference object that synchronizes its current value with multiple targets.
+ * When the `current` property of the returned ref changes, it updates all provided targets.
+ *
+ * @template T - The type of the HTML element
+ * @template O - The type of the record object for array-style targets
+ * @param args - The target(s) to assign the current value to. Can be a callback function,
+ *               an object-property tuple `[object, key]`, or a ref-like object with a `current` property.
+ * @returns A RefObject that updates its targets when its `current` property changes
+ */
+export function refTo<T extends HTMLElement, O extends Record<string, T | null> = Record<string, T | null>>(
+  ...args: Array<RefToArg<T, O> | Bindable<O['value']>>
+): RefObject<T | null> {
+  let current: T | null = null;
+
+  function assign() {
+    for (const arg of args) {
+      if (typeof arg === 'function') {
+        arg(current);
+      } else if (Array.isArray(arg)) {
+        const [obj, key] = arg as [Record<string, T | null>, string];
+        obj[key] = current;
+      } else if (arg instanceof BindingRef) {
+        arg.value = current;
+      } else if (typeof arg === 'object' && arg !== null) {
+        (arg as RefObject<T | null>).current = current;
+      }
+    }
+  }
+
+  return {
+    get current() {
+      return current;
+    },
+    set current(value) {
+      current = value;
+      assign();
+    },
+  };
+}
+
+/**
+ * Alias for the refTo function.
+ *
+ * @see {@link refTo}
+ */
+export const $ref = refTo;
 
 const BINDABLE_REGISTRY = new WeakSet<MutableRef<unknown>>();
 

@@ -1,5 +1,5 @@
 import type { AsyncStore, RefStack } from '@anchorlib/core';
-import type { FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode } from 'react';
+import type { FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode, RefObject } from 'react';
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
@@ -234,3 +234,16 @@ export type NodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTMLAtt
   /** Destroy the observer and clean up resources */
   destroy(): void;
 };
+
+/**
+ * Represents an argument type for assigning a reference to an element.
+ * Supports multiple patterns for handling references, including React ref objects,
+ * object-key tuples for direct property assignment, and callback functions.
+ *
+ * @template T - The type of the element being referenced
+ * @template O - The type of the object used in the tuple pattern (defaults to Record<string, T | null>)
+ */
+export type RefToArg<T, O extends Record<string, T | null> = Record<string, T | null>> =
+  | RefObject<T | null>
+  | [obj: O, key: keyof O]
+  | ((ref: T | null) => void);

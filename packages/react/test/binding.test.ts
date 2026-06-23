@@ -1,6 +1,6 @@
 import { mutable, MutableRef } from '@anchorlib/core';
 import { describe, expect, it } from 'vitest';
-import { bind, bindable, BindingRef, isBindable, isBinding } from '../src/binding';
+import { $bind, bind, bindable, BindingRef, isBindable, isBinding, refTo } from '../src/binding';
 
 describe('Anchor React - Binding', () => {
   describe('BindingRef', () => {
@@ -160,6 +160,58 @@ describe('Anchor React - Binding', () => {
       expect(isBindable(null)).toBe(false);
       expect(isBindable(undefined)).toBe(false);
       expect(isBindable('string')).toBe(false);
+    });
+  });
+
+  describe('refTo', () => {
+    it('should assign value to a callback function', () => {
+      let value: unknown;
+      const callback = (val: unknown) => {
+        value = val;
+      };
+      const ref = refTo(callback);
+
+      ref.current = 'test' as never;
+      expect(value).toBe('test');
+      expect(ref.current).toBe('test');
+    });
+
+    it('should assign value to an object property tuple', () => {
+      const obj = { key: null };
+      const ref = refTo([obj, 'key']);
+
+      ref.current = 'test' as never;
+      expect(obj.key).toBe('test');
+      expect(ref.current).toBe('test');
+    });
+
+    it('should assign value to a BindingRef instance', () => {
+      const source = { x: null };
+      const binding = $bind(source, 'x');
+      const ref = refTo(binding);
+
+      ref.current = 'test' as never;
+      expect(binding.value).toBe('test');
+      expect(source.x).toBe('test');
+      expect(ref.current).toBe('test');
+    });
+
+    it('should assign value to a RefObject', () => {
+      const targetRef = { current: null };
+      const ref = refTo(targetRef);
+
+      ref.current = 'test' as never;
+      expect(targetRef.current).toBe('test');
+      expect(ref.current).toBe('test');
+    });
+
+    it('should handle null or undefined arguments gracefully', () => {
+      const ref = refTo(null as never, undefined as never);
+
+      expect(() => {
+        ref.current = 'test' as never;
+      }).not.toThrow();
+      expect(ref.current).toBe('test');
     });
   });
 });
