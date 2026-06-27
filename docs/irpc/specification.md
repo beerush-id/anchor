@@ -42,11 +42,11 @@ This specification explicitly excludes:
 
 IRPC aims to:
 
-1. **Eliminate boilerplate explicitly routing network communication**
-2. **Bind isomorphic function signatures explicitly** regardless of execution location
-3. **Execute transport-agnostic implementations**
-4. **Enforce TypeScript constraints** across boundaries
-5. **Optimize performance** through network payload batching
+- **Eliminate boilerplate explicitly routing network communication**
+- **Bind isomorphic function signatures explicitly** regardless of execution location
+- **Execute transport-agnostic implementations**
+- **Enforce type contract constraints** across boundaries
+- **Optimize performance** through network payload batching
 
 ## 2. Core Concepts
 
@@ -119,6 +119,13 @@ IRPC supports:
 
 All IRPC data MUST be serializable to a format that can be transmitted across the transport layer. Implementations SHOULD use JSON or equivalent format that preserves the data model.
 
+### 3.4 Binary Attachment Pointers
+
+To support non-blocking binary transfers without base64 encoding overhead, implementations MUST normalize binary attachments into pointer descriptors before serialization:
+
+- **File Pointer**: Replaces in-memory file objects during request framing (`type: "IRPC_PACKET_FILE"`).
+- **Blob Pointer**: References lazy remote binary resources (`type: "IRPC_PACKET_BLOB"`).
+
 ## 4. Wire Protocol
 
 ### 4.1 Request Format
@@ -127,7 +134,8 @@ All IRPC data MUST be serializable to a format that can be transmitted across th
 {
   "id": "string",
   "name": "string",
-  "args": [...]
+  "args": [...],
+  "files": [...]
 }
 ```
 
@@ -136,6 +144,7 @@ All IRPC data MUST be serializable to a format that can be transmitted across th
 - `id`: Unique identifier for the request (string)
 - `name`: Name of the IRPC function to invoke (string)
 - `args`: Array of arguments to pass to the function
+- `files`: Optional array of binary file pointer descriptors extracted during packet encoding
 
 ### 4.2 Response Format (IRPCPacketStream)
 
@@ -156,8 +165,8 @@ IRPC supports continuous data streams. Transports yield sequence packets modelin
 
 - `id`: Correlates back to the originating request (string, REQUIRED).
 - `name`: The IRPC function name (string, optional).
-- `type`: Packet type — `"answer"` (initial/final data), `"event"` (mutation delta), `"close"` (terminal).
-- `status`: Execution state — `"pending"`, `"success"`, `"error"`, `"idle"`.
+- `type`: Packet type — `"call"` (invocation), `"answer"` (initial/final data), `"event"` (mutation delta), `"close"` (terminal).
+- `status`: Execution state — `"pending"`, `"success"`, `"error"`, `"idle"`, `"aborted"`.
 - `data`: The payload — full state for `answer` packets, mutation descriptor for `event` packets (optional).
 - `error`: Error details with `code` and `message` (optional, present when `status` is `"error"`).
 - `createdAt`: Server-side Unix timestamp in milliseconds when the packet was created (optional).
@@ -166,7 +175,7 @@ IRPC supports continuous data streams. Transports yield sequence packets modelin
 **Constraints:**
 
 - `id` MUST be identical across all packets belonging to the same request.
-- Transports MUST keep the call open until a terminal packet arrives (`status: "success"` or `status: "error"`).
+- Transports MUST keep the call open until a terminal packet arrives (`status: "success"`, `status: "error"`, or `status: "aborted"`).
 
 ### 4.3 Batch Protocol
 
@@ -186,10 +195,10 @@ Transports MUST support batch aggregation, structurally packaging multiple IRPC 
 Batch responses DO NOT resolve as static monolithic arrays. Implementations MUST push individual `IRPCPacketStream` sequence packets over the wire as data buffers accumulate individually per-endpoint.
 
 ```json
-{"id": "1", "name": "generatePoem", "status": 2, "data": "Deep"}
-{"id": "2", "name": "getUser", "status": 1, "data": { ... }}
-{"id": "1", "name": "generatePoem", "status": 2, "data": "Deep in..."}
-{"id": "1", "name": "generatePoem", "status": 1, "data": "Deep in Space!"}
+{"id": "1", "name": "generatePoem", "status": "pending", "data": "Deep"}
+{"id": "2", "name": "getUser", "status": "success", "data": { ... }}
+{"id": "1", "name": "generatePoem", "status": "pending", "data": "Deep in..."}
+{"id": "1", "name": "generatePoem", "status": "success", "data": "Deep in Space!"}
 ```
 
 Reactively streaming individual sequential chunks empowers front-end client components to proxy and track long-lived server processes without blocking concurrent thread operations or requiring manual network orchestration.
@@ -198,10 +207,10 @@ Reactively streaming individual sequential chunks empowers front-end client comp
 
 ### 5.1 Function Definition
 
-An IRPC function is defined by the following structure (shown in TypeScript syntax as an example):
+An IRPC function is defined by the following abstract structure (shown in illustrative syntax as an example):
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 interface IRPCSpec {
   name: string;
   schema?: {
@@ -212,6 +221,8 @@ interface IRPCSpec {
   stream?: boolean;          // Auto-detected if init is provided
   ttl?: number;              // Maximum stream lifetime in milliseconds
   init?: () => unknown;      // Initial data factory for stream stubs
+  coalesce?: boolean;        // Request deduplication flag
+  maxAge?: number;           // Cache duration in milliseconds
 }
 ```
 
@@ -226,14 +237,23 @@ Validation schemas are OPTIONAL and MUST NOT affect function signatures. They MA
 
 Validation errors SHOULD be surfaced as transport errors.
 
+### 5.3 Reader Execution Modes
+
+Client callable stubs MUST expose standard asynchronous resolution alongside reactive execution modes:
+
+- Static unary execution (`once`)
+- Eager reactive execution tracking dependency triggers (`with`)
+- Lazy conditional execution (`when`)
+- Imperative manual dispatching (`later`)
+
 ## 6. Transport Interface
 
 ### 6.1 Transport Contract
 
-All transports MUST implement the following interface (shown in TypeScript syntax as an example):
+All transports MUST implement the following interface (shown in illustrative syntax as an example):
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 interface IRPCTransport {
   send(calls: IRPCCall[]): Promise<IRPCResponse[]>;
 }
@@ -265,21 +285,27 @@ Transports MUST expose bidirectional/continuous response pipelines. Because requ
 
 Transports and routers MUST govern streaming teardowns through three boundaries:
 
-1. **Time-To-Live (TTL)**: Routers MUST abort the active `AbortController` if the specification's `ttl` bound is exceeded.
-2. **Context Signals**: Routers MUST mount an `AbortSignal` mapped to the request under `IRPC_BASE_CONTEXT.ABORT_CONTROLLER`.
-3. **Client Cancellation**: Transports MUST dispatch `CANCEL` payloads when requested by the client. Routers receiving these payloads MUST trigger the `AbortController` and release the request mapped.
+- **Time-To-Live (TTL)**: Routers MUST abort the active controller if the specification's `ttl` bound is exceeded.
+- **Context Signals**: Routers MUST mount cancellation signals mapped to the request context.
+- **Client Cancellation**: Transports MUST dispatch cancellation payloads when requested by the client. Routers receiving these payloads MUST trigger termination and release mapped resources.
 
 ## 7. Factory Interface
 
 ### 7.1 Factory Methods
 
-Factories MUST expose the following interface (shown in TypeScript syntax as an example):
+Factories MUST expose the following interface (shown in illustrative syntax as an example):
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 interface IRPCFactory {
-  // Create IRPC function
-  <F>(spec: IRPCSpec): F;
+  // Declare callable function stub
+  declare<F>(spec: IRPCSpec): F;
+
+  // Declare entity CRUD endpoints
+  crud<T>(name: string, seed: () => T): CrudStubs<T>;
+
+  // Exclude specific methods from stub exports
+  exclude<S, E>(stubs: S, keys: E[]): Omit<S, E>;
 
   // Register handler implementation
   construct<F>(irpc: F, handler: F): void;
@@ -299,6 +325,9 @@ interface IRPCFactory {
   // Configure module settings
   configure(config: Partial<IRPCModule>): void;
 
+  // Invalidate cached responses
+  invalidate(stub: unknown, ...args: unknown[]): void;
+
   // Resolve request to handler
   resolve<R>(req: IRPCRequest): Promise<R>;
 
@@ -309,16 +338,20 @@ interface IRPCFactory {
 
 ### 7.2 Namespace Management
 
-Factories MUST support namespacing to avoid function name collisions (shown in TypeScript syntax as an example):
+Factories MUST support namespacing to avoid function name collisions (shown in illustrative syntax as an example):
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 interface IRPCNamespace {
   name: string;
   version: string;
   description?: string;
 }
 ```
+
+### 7.3 Entity CRUD Automation
+
+When provided an entity identifier and default state factory via `.crud()`, implementations MUST automate the declaration of four standard procedure endpoints: `get`, `create`, `update`, and `delete`.
 
 ## 8. Global Store (`IRPCStore`)
 
@@ -332,19 +365,19 @@ The store MUST maintain the following live tracking sets:
 
 | Property | Type | Description |
 |---|---|---|
-| `packages` | `Set<IRPCPackage>` | All registered IRPC packages. |
-| `routers` | `Set<IRPCRouter>` | All active transport routers. |
-| `calls` | `Set<IRPCCall>` | All in-flight calls (pending resolution). |
+| `packages` | `Set<Package>` | All registered IRPC packages. |
+| `routers` | `Set<Router>` | All active transport routers. |
+| `calls` | `Set<Stream>` | All running in-flight streams. |
 
 ### 8.3 Event Subscription
 
 The store MUST expose a `.subscribe()` method that emits events for lifecycle transitions:
 
 ```typescript
-// Example TypeScript syntax
+// Example illustrative syntax
 IRPC_STORE.subscribe((event) => {
-  // event.type: 'register' | 'route' | 'queue' | 'dequeue'
-  // event.detail: the affected package, router, or call
+  // event.type: 'register' | 'route' | 'queue' | 'dequeue' | 'error'
+  // event.detail: the affected package, router, call, or exception
 });
 ```
 
@@ -352,8 +385,9 @@ IRPC_STORE.subscribe((event) => {
 |---|---|
 | `register` | A new package or router is registered. |
 | `route` | A router begins resolving a request batch. |
-| `queue` | A new call is added to the in-flight set. |
-| `dequeue` | A call resolves or rejects and is removed from the in-flight set. |
+| `queue` | A new call stream is added to the in-flight set. |
+| `dequeue` | A call stream resolves or terminates and is removed from the in-flight set. |
+| `error` | A system exception or transport failure is broadcast. |
 
 ## 9. Execution Model
 
@@ -369,9 +403,17 @@ IRPC_STORE.subscribe((event) => {
 8. **Transport Return**: Response transmitted back
 9. **Promise Resolution**: Client promise resolved or rejected
 
-### 9.2 Error Handling
+### 9.2 Error Taxonomy and Semantics
 
-Errors MUST be propagated through the transport layer as error strings in the response. Implementations SHOULD preserve error context where possible.
+Errors MUST propagate across boundaries preserving error codes and diagnostic context. Implementations MUST categorize failures into standardized domains:
+
+- **Stub Error**: Invalid declarations, duplicate names, or missing specifications.
+- **Handler Error**: Missing or unconstructed server handler implementations.
+- **Resolve Error**: Procedure resolution or validation failures.
+- **Transport Error**: Malformed packets, missing transports, or network failures.
+- **Call Error**: Execution timeouts or abortion signals.
+- **Crud Error**: Invalid entity operations or primary key failures.
+- **Hook Error**: Interceptor execution rejections.
 
 ### 9.3 Timeout Management
 
@@ -404,7 +446,7 @@ Factories MAY support context propagation across request boundaries for:
 ### 11.2 Context Interface
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 interface IRPCContext<K, V> {
   get(key: K): V | undefined;
   set(key: K, value: V): void;
@@ -433,11 +475,11 @@ Transports SHOULD support secure communication channels (TLS, WSS, etc.) when op
 
 All IRPC implementations MUST:
 
-1. Implement all required interfaces
-2. Support the defined wire protocol
-3. Implement the transport interface with routing
-4. Provide the factory methods
-5. Support batching and optimization
+- Implement all required interfaces
+- Support the defined wire protocol
+- Implement the transport interface with routing
+- Provide the factory methods
+- Support batching and optimization
 
 ### 13.2 Type Preservation
 
@@ -462,11 +504,11 @@ Implementations MUST:
 
 To be IRPC-compliant, an implementation MUST:
 
-1. Implement all required interfaces
-2. Support the wire protocol exactly
-3. Maintain isomorphic function signatures
-4. Handle errors according to this specification
-5. Include routing within the transport layer
+- Implement all required interfaces
+- Support the wire protocol exactly
+- Maintain isomorphic function signatures
+- Handle errors according to this specification
+- Include routing within the transport layer
 
 ### 14.2 Optional Features
 
@@ -496,7 +538,7 @@ Implementations MAY provide feature detection mechanisms to negotiate capabiliti
 ### 16.1 Function Definition
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 // Define IRPC function
 export type ReadFileFn = (path: string, encoding?: string) => Promise<string>;
 
@@ -511,7 +553,7 @@ export const readFile = irpc.declare<ReadFileFn>('readFile', () => '', {
 ### 16.2 Handler Implementation
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 // Implement handler
 irpc.construct(readFile, async (path, encoding) => {
   return await fs.readFile(path, encoding);
@@ -521,7 +563,7 @@ irpc.construct(readFile, async (path, encoding) => {
 ### 16.3 Client Invocation
 
 ```typescript
-// Example TypeScript syntax - implementations should use language-appropriate syntax
+// Example illustrative syntax - implementations should use language-appropriate syntax
 // Invoke remotely
 const content = await readFile('file.txt', 'utf8');
 ```

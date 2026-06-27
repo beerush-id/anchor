@@ -72,3 +72,4 @@ yarn.lock
 bun.lock
 !/.husky/_/
 /.antigravitycli
+.qoder

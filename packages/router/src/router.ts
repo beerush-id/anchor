@@ -203,6 +203,7 @@ export class Router<Output = any> {
   }
 
   /**
+   * @deprecated Use `.add()` instead.
    * Creates a new top-level route that independently handles navigation.
    *
    * @template Path - The route path type
@@ -215,6 +216,32 @@ export class Router<Output = any> {
    * @returns The created route
    */
   public append<
+    Path extends RoutePath,
+    Params extends ExtractParams<Path>,
+    QueryParams extends ExtractQueryParams<Path>,
+    Data extends TRec = TRec,
+  >(
+    path?: Path,
+    options?: RouteOptions
+  ): Path extends '/'
+    ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
+    : Route<Path, Params, QueryParams, Data, never, Output> {
+    return this.add(path, options);
+  }
+
+  /**
+   * Creates a new top-level route that independently handles navigation.
+   *
+   * @template Path - The route path type
+   * @template Params - The route parameters type
+   * @template QueryParams - The query parameters type
+   * @template TOptions - The route options type
+   * @template Data - The route data type
+   * @param path - The route path
+   * @param options - Optional route options
+   * @returns The created route
+   */
+  public add<
     Path extends RoutePath,
     Params extends ExtractParams<Path>,
     QueryParams extends ExtractQueryParams<Path>,
