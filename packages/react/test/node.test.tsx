@@ -222,6 +222,29 @@ describe('Anchor React - Node', () => {
 
       expect(element.style.color).toBe('blue');
     });
+
+    it('should remove attributes for falsy values (false, null, undefined)', () => {
+      const element = document.createElement('div');
+      element.setAttribute('disabled', '');
+      element.setAttribute('aria-hidden', 'true');
+      element.setAttribute('data-test', 'active');
+
+      applyAttributes(element, {
+        disabled: false,
+        'aria-hidden': null,
+        'data-test': undefined,
+      } as Record<string, unknown>);
+
+      expect(element.hasAttribute('disabled')).toBe(false);
+      expect(element.hasAttribute('aria-hidden')).toBe(false);
+      expect(element.hasAttribute('data-test')).toBe(false);
+    });
+
+    it('should set empty string for boolean true attributes', () => {
+      const element = document.createElement('div');
+      applyAttributes(element, { disabled: true });
+      expect(element.getAttribute('disabled')).toBe('');
+    });
   });
 
   describe('flattenStyles', () => {

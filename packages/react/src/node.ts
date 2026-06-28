@@ -138,14 +138,14 @@ export function applyAttributes<E extends HTMLElement, P>(element: E, props: P, 
       if (key === 'style') {
         element.removeAttribute('style');
       } else {
-        element.removeAttribute(propsMap[key as keyof typeof propsMap] ?? key);
+        element.removeAttribute(propsMap[key as keyof typeof propsMap] ?? key.toLowerCase());
       }
     }
   }
 
   for (const [key, value] of Object.entries(next)) {
     if (key.startsWith('on')) continue;
-    if (prev[key] === value) continue;
+    if (key in prev && prev[key] === value) continue;
 
     if (key === 'style') {
       const nextStyle = value as Record<string, string | number>;
@@ -166,7 +166,12 @@ export function applyAttributes<E extends HTMLElement, P>(element: E, props: P, 
         }
       }
     } else {
-      element.setAttribute(propsMap[key as keyof typeof propsMap] ?? key, String(value));
+      const attrName = propsMap[key as keyof typeof propsMap] ?? key.toLowerCase();
+      if (value === false || value === null || value === undefined) {
+        element.removeAttribute(attrName);
+      } else {
+        element.setAttribute(attrName, value === true ? '' : String(value));
+      }
     }
   }
 }
