@@ -223,6 +223,8 @@ export type IRPCPayload = {
   name: string;
   /** The arguments to pass to the RPC function */
   args: IRPCData[];
+  /** The package information */
+  package: IRPCPackagePayload;
 };
 
 /**
@@ -413,8 +415,17 @@ export type IRPCSpec<I extends IRPCInputs, O extends IRPCOutput> = IRPCInit<IRPC
   ttl?: number;
   /** Whether to stream the result of the RPC call */
   stream?: boolean;
+  /** The package that the RPC function belongs to */
+  package: IRPCPackagePayload;
   /** The actual handler function that implements the RPC */
   handler: IRPCHandler;
+};
+
+export type IRPCPackagePayload = {
+  /** Name of the package */
+  name: string;
+  /** Version of the package */
+  version: string;
 };
 
 /**
@@ -427,6 +438,9 @@ export type IRPCRequest = {
   name: string;
   /** Arguments for the RPC function */
   args: unknown[];
+  /** The package that the RPC function belongs to */
+  package: IRPCPackagePayload;
+  /** Optional file payload for the call */
   files?: IRPCFilePointer[];
 };
 

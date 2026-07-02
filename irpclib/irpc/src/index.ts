@@ -9,7 +9,7 @@ export * from './driver.js';
 export * from './enum.js';
 export * from './error.js';
 export * from './file.js';
-export * from './module.js';
+export * from './package.js';
 export * from './packet.js';
 export * from './reader.js';
 export * from './resolver.js';

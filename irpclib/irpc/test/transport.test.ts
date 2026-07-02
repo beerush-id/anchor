@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { TransportError, TRANSPORT_ERROR, ResolveError, RESOLVE_ERROR } from '../src/error.js';
-import { type IRPCCall, type IRPCData, IRPCTransport } from '../src/index.js';
+import { RESOLVE_ERROR, ResolveError, TRANSPORT_ERROR, TransportError } from '../src/error.js';
+import { type IRPCCall, type IRPCData, type IRPCPackagePayload, IRPCTransport } from '../src/index.js';
 
 abstract class TransportType {
   abstract schedule(call: unknown): unknown;
   abstract dispatch(calls: unknown[]): Promise<void>;
 }
+
+const pkg: IRPCPackagePayload = { name: 'irpc', version: '1.0.0' };
 
 describe('IRPC Transport', () => {
   let transport: IRPCTransport;
@@ -90,6 +92,7 @@ describe('IRPC Transport', () => {
       const spec = {
         name: 'testFunc',
         handler: vi.fn(),
+        package: pkg,
       };
 
       const args: IRPCData[] = ['arg1', 'arg2'];
@@ -109,6 +112,7 @@ describe('IRPC Transport', () => {
       const spec = {
         name: 'testFunc',
         handler: vi.fn(),
+        package: pkg,
       };
 
       const promise = transportWithTimeout.call(spec, []);
@@ -126,6 +130,7 @@ describe('IRPC Transport', () => {
         name: 'testStreamFunc',
         handler: vi.fn(),
         stream: true,
+        package: pkg,
       };
 
       const result = transport.call(spec, []);
@@ -339,13 +344,35 @@ describe('IRPC Transport', () => {
       }
 
       const transport = new DispatchAll();
-      const promise1 = transport.call({ name: 'test', handler: vi.fn() }, []);
-      const promise2 = transport.call({ name: 'test', handler: vi.fn() }, []);
+      const promise1 = transport.call({ name: 'test', handler: vi.fn(), package: pkg }, []);
+      const promise2 = transport.call({ name: 'test', handler: vi.fn(), package: pkg }, []);
 
       vi.runAllTimers();
 
       expect(promise1).toBeInstanceOf(Promise);
       expect(promise2).toBeInstanceOf(Promise);
+    });
+  });
+
+  describe('Package Registration & Resolution', () => {
+    it('should register and unregister packages properly', () => {
+      const pkg1 = { config: { name: 'testPkg', version: '1.0.0' } } as any;
+      const pkg2 = { config: { name: 'testPkg', version: '2.0.0' } } as any;
+      const pkgOther = { config: { name: 'otherPkg', version: '1.0.0' } } as any;
+
+      (transport as any).register(pkg1);
+      (transport as any).register(pkg2);
+      expect(transport.registry.get('testPkg')?.size).toBe(2);
+
+      (transport as any).unregister(pkgOther);
+      expect(transport.registry.has('otherPkg')).toBe(false);
+
+      (transport as any).unregister(pkg1);
+      expect(transport.registry.get('testPkg')?.size).toBe(1);
+      expect(transport.registry.has('testPkg')).toBe(true);
+
+      (transport as any).unregister(pkg2);
+      expect(transport.registry.has('testPkg')).toBe(false);
     });
   });
 });
@@ -388,6 +415,13 @@ describe('TransportError factories', () => {
     expect(err.code).toBe(TRANSPORT_ERROR.ERROR);
     expect(err.message).toBe('timeout');
     expect(err.cause).toBe(cause);
+  });
+
+  it('notFound', () => {
+    const err = TransportError.notFound('myPackage');
+    expect(err).toBeInstanceOf(TransportError);
+    expect(err.code).toBe(TRANSPORT_ERROR.NOT_FOUND);
+    expect(err.message).toBe('Can not resolve package for "myPackage" call.');
   });
 });
 

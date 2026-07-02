@@ -39,6 +39,7 @@ export const TRANSPORT_ERROR = {
   INVALID_BODY: 'invalid_body',
   STREAM_TERMINATED: 'stream_terminated',
   ERROR: 'error',
+  NOT_FOUND: 'not_found',
 } as const;
 
 export const RESOLVE_ERROR = {
@@ -177,6 +178,9 @@ export class TransportError extends IRPCError {
   static failed(input: Error | string) {
     const { message, cause } = unwrap(input);
     return new TransportError(TRANSPORT_ERROR.ERROR, message, cause);
+  }
+  static notFound(name: string) {
+    return new TransportError(TRANSPORT_ERROR.NOT_FOUND, `Can not resolve package for "${name}" call.`);
   }
 }
 

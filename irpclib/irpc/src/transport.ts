@@ -2,7 +2,7 @@ import { onCleanup, uuid } from '@anchorlib/core';
 import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { TransportError } from './error.js';
-import type { IRPCPackage } from './module.js';
+import type { IRPCPackage } from './package.js';
 import { IRPCReader } from './reader.js';
 import { IRPC_STORE } from './store.js';
 import type {
@@ -17,6 +17,9 @@ import type {
   TransportConfig,
 } from './types.js';
 
+export type IRPCPackageMap = Map<string, IRPCPackageVersionMap>;
+export type IRPCPackageVersionMap = Map<string, IRPCPackage>;
+
 /**
  * IRPCTransport is responsible for managing and dispatching RPC calls.
  * It handles queuing, debouncing, and timeout management for RPC requests.
@@ -24,7 +27,10 @@ import type {
 export class IRPCTransport {
   #credentialFactory?: IRPCCredentialsFactory;
 
-  public modules = new Set<IRPCPackage>();
+  /** A set of packages registered with the transport. */
+  public registry: IRPCPackageMap = new Map();
+  public packages = new Set<IRPCPackage>();
+
   /**
    * A set of pending RPC calls that are queued for execution.
    */
@@ -60,7 +66,7 @@ export class IRPCTransport {
     config?: IRPCCallConfig,
     reader: IRPCReader<IRPCData> = new IRPCReader(uuid())
   ) {
-    const payload: IRPCPayload = { name: spec.name, args };
+    const payload: IRPCPayload = { name: spec.name, args, package: spec.package };
     const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
 
     const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay }, reader);
@@ -129,6 +135,39 @@ export class IRPCTransport {
    */
   public close(call: IRPCCall) {
     console.log('[irpc] Closing call', call);
+  }
+
+  /**
+   * Registers an RPC package with the transport.
+   * @param pkg - The package to register.
+   * @returns The transport instance.
+   */
+  public register(pkg: IRPCPackage): this {
+    if (!this.registry.has(pkg.config.name)) {
+      this.registry.set(pkg.config.name, new Map());
+    }
+
+    const pkgMap = this.registry.get(pkg.config.name)!;
+    pkgMap.set(pkg.config.version, pkg);
+    this.packages.add(pkg);
+
+    return this;
+  }
+
+  /**
+   * Unregisters an RPC package from the transport.
+   * @param pkg - The package to unregister.
+   * @returns The transport instance.
+   */
+  public unregister(pkg: IRPCPackage): this {
+    this.packages.delete(pkg);
+    const pkgMap = this.registry.get(pkg.config.name);
+    if (!pkgMap) return this;
+
+    pkgMap.delete(pkg.config.version);
+    if (!pkgMap.size) this.registry.delete(pkg.config.name);
+
+    return this;
   }
 
   /**

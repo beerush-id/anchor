@@ -13,6 +13,7 @@ import {
   IRPCResolver,
   IRPCRouter,
   IRPCStream,
+  IRPCTransport,
   withContext,
 } from '@irpclib/irpc';
 import { FILE_BUFFER_TTL, WS_MESSAGE_TYPE } from './enum.js';
@@ -25,7 +26,7 @@ import type { WebSocketTransport } from './transport.js';
  * @param module - The IRPC package module
  * @returns A new IRPCResolver instance
  */
-const defaultResolver = (req: IRPCRequest, module: IRPCPackage) => {
+const defaultResolver = (req: IRPCRequest, module?: IRPCPackage) => {
   return new IRPCResolver(req, module);
 };
 
@@ -57,20 +58,42 @@ export class WebSocketRouter extends IRPCRouter {
     return this.config.endpoint;
   }
 
+  public get module() {
+    return this.transport.packages.values().next().value;
+  }
+
   /**
-   * Creates a new WebSocketRouter instance
-   * @param module - The IRPC package module to resolve requests against
-   * @param transport - The WebSocket transport mechanism
-   * @param config - Optional configuration overrides
+   * Creates a new WebSocket router with the specified transport and configuration.
+   *
+   * @param transport - The WebSocketTransport instance to use.
+   * @param config - The configuration options for the WebSocket resolver.
    */
+  constructor(transport: WebSocketTransport, config?: Partial<WebSocketResolveConfig>);
+
+  /**
+   * @deprecated Only for backwards compatibility.
+   * Creates a new WebSocket router with the specified module, transport, and configuration.
+   *
+   * @param module - The IRPC package module.
+   * @param transport - The WebSocketTransport instance to use.
+   * @param config - The configuration options for the WebSocket resolver.
+   */
+  constructor(module: IRPCPackage, transport: WebSocketTransport, config?: Partial<WebSocketResolveConfig>);
+
   constructor(
-    public module: IRPCPackage,
-    public transport: WebSocketTransport,
+    module: IRPCPackage | WebSocketTransport,
+    transport: WebSocketTransport | Partial<WebSocketResolveConfig> = {},
     config: Partial<WebSocketResolveConfig> = {}
   ) {
-    super(module, transport);
+    if (module instanceof IRPCTransport) {
+      super(module);
+      config = transport;
+    } else {
+      super(module, transport as IRPCTransport);
+    }
+
     this.config = {
-      endpoint: transport.endpoint,
+      endpoint: (this.transport as WebSocketTransport).endpoint,
       resolver: defaultResolver,
       fileBufferTTL: FILE_BUFFER_TTL,
       ...config,
@@ -130,7 +153,7 @@ export class WebSocketRouter extends IRPCRouter {
 
     /* v8 ignore next - Transport always sends credentials, ?? is defensive only */
     const credStore = createCredentials(parsed.credentials ?? []);
-    const resolver = this.config.resolver(req, this.module);
+    const resolver = this.config.resolver(req, this.packageOf(req));
     const abortController = new AbortController();
     const ctx = createContextStore<string | symbol, unknown>([
       [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],

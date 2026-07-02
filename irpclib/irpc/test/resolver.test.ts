@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { IRPC_STATUS, type IRPCHandler } from '../src/index.js';
-import { createPackage } from '../src/module.js';
+import { createPackage } from '../src/package.js';
 import { IRPCResolver } from '../src/resolver.js';
 import { RemoteState } from '../src/state.js';
 

@@ -1,4 +1,4 @@
-import { replay, COOKIE_JAR_WRITABLE, decodeCookies, setCookieContext, setScope } from '@anchorlib/core';
+import { COOKIE_JAR_WRITABLE, decodeCookies, replay, setCookieContext, setScope } from '@anchorlib/core';
 import {
   createContextStore,
   createCredentials,
@@ -8,8 +8,6 @@ import {
   IRPC_PACKET_TYPE,
   IRPC_STATUS,
   IRPC_STORE,
-  RESOLVE_ERROR,
-  ResolveError,
   type IRPCData,
   type IRPCPackage,
   type IRPCPacketAnswer,
@@ -20,6 +18,9 @@ import {
   IRPCResolver,
   IRPCRouter,
   IRPCStream,
+  IRPCTransport,
+  RESOLVE_ERROR,
+  ResolveError,
   withContext,
 } from '@irpclib/irpc';
 import { IRPC_JSON_KEY, IRPC_WEB_PATH } from './enum.js';
@@ -31,7 +32,7 @@ import { COOKIES_SYNC_KEY, type HTTPTransport } from './transport.js';
  * @param module - The IRPC package module
  * @returns A new IRPCResolver instance
  */
-const defaultResolver = (req: IRPCRequest, module: IRPCPackage) => {
+const defaultResolver = (req: IRPCRequest, module?: IRPCPackage) => {
   return new IRPCResolver(req, module);
 };
 
@@ -57,20 +58,42 @@ export class HTTPRouter extends IRPCRouter {
   /** Configuration for the HTTP resolver */
   public config: HTTPResolveConfig;
 
+  public get module() {
+    return this.transport.packages.values().next().value;
+  }
+
   /**
-   * Creates a new HTTPResolver instance
-   * @param module - The IRPC package module to resolve requests against
-   * @param transport - The HTTP transport mechanism
-   * @param config - Optional configuration overrides
+   * Creates a new HTTP router with the specified transport and configuration.
+   *
+   * @param transport - The IRPCTransport instance to use.
+   * @param config - The configuration options for the HTTP resolver.
    */
+  constructor(transport: HTTPTransport, config?: Partial<HTTPResolveConfig>);
+
+  /**
+   * @deprecated Only for backwards compatibility.
+   * Creates a new HTTP router with the specified module, transport, and configuration.
+   *
+   * @param module - The IRPC package module.
+   * @param transport - The IRPCTransport instance to use.
+   * @param config - The configuration options for the HTTP resolver.
+   */
+  constructor(module: IRPCPackage, transport: HTTPTransport, config?: Partial<HTTPResolveConfig>);
+
   constructor(
-    public module: IRPCPackage,
-    public transport: HTTPTransport,
+    module: IRPCPackage | HTTPTransport,
+    transport: HTTPTransport | Partial<HTTPResolveConfig> = {},
     config: Partial<HTTPResolveConfig> = {}
   ) {
-    super(module, transport);
+    if (module instanceof IRPCTransport) {
+      super(module);
+      config = transport;
+    } else {
+      super(module, transport as IRPCTransport);
+    }
+
     this.config = {
-      endpoint: transport.endpoint,
+      endpoint: (this.transport as HTTPTransport).endpoint,
       resolver: defaultResolver,
       ...config,
     };
@@ -168,7 +191,7 @@ export class HTTPRouter extends IRPCRouter {
         delete req.files;
       }
 
-      return this.config.resolver(req, this.module);
+      return this.config.resolver(req, this.packageOf(req));
     });
 
     const credStore = createCredentials(irpcRequests.credentials ?? []);
@@ -190,7 +213,14 @@ export class HTTPRouter extends IRPCRouter {
     context: [string | symbol, unknown][] = [],
     builder?: HTTPResponseBuilder
   ) {
-    return this.resolveJsonReq({ name, id: crypto.randomUUID(), args: [req] }, context, builder);
+    const [methodName, pkgName, pkgVersion] = name.split('/');
+    const pkgPayload = pkgName && pkgVersion ? { name: pkgName, version: pkgVersion } : undefined;
+
+    return this.resolveJsonReq(
+      { name: methodName, id: crypto.randomUUID(), args: [req], package: pkgPayload as any },
+      context,
+      builder
+    );
   }
 
   /**
@@ -213,7 +243,7 @@ export class HTTPRouter extends IRPCRouter {
 
     try {
       const result = {} as IRPCPacketStream<IRPCData>;
-      const response = this.resolveRequests([this.config.resolver(req, this.module)], context, builder);
+      const response = this.resolveRequests([this.config.resolver(req, this.packageOf(req))], context, builder);
       const packets = (await response.text())
         .split('\n')
         .filter(Boolean)
@@ -383,7 +413,7 @@ export class HTTPRouter extends IRPCRouter {
       delete req.files;
     }
 
-    const resolver = this.config.resolver(req, this.module);
+    const resolver = this.config.resolver(req, this.packageOf(req));
     const credStore = createCredentials(irpcRequests.credentials ?? []);
     const abortController = new AbortController();
 

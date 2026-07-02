@@ -1,9 +1,9 @@
 import { createContextStore, withContext } from './context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { HookError } from './error.js';
-import type { IRPCPackage } from './module.js';
+import type { IRPCPackage } from './package.js';
 import { IRPC_STORE } from './store.js';
-import type { IRPCTransport } from './transport.js';
+import { IRPCTransport } from './transport.js';
 import type { IRPCRequest } from './types.js';
 
 export type IRPCHook = () => void | Promise<void>;
@@ -11,17 +11,58 @@ export type IRPCHook = () => void | Promise<void>;
 export class IRPCRouter {
   /** Array of middleware functions to be executed */
   public hooks: IRPCHook[] = [];
+  public transport: IRPCTransport;
+
+  public get packages() {
+    return this.transport.packages;
+  }
+
+  /**
+   * Creates a new Router instance
+   * @param transport - The transport mechanism to use for resolving requests.
+   */
+  constructor(transport: IRPCTransport);
+  /**
+   * Creates a new Router instance
+   * @param {IRPCPackage} module - The IRPC package module to resolve requests against.
+   * @param {IRPCTransport} transport - The transport mechanism to use for resolving requests.
+   */
+  constructor(module: IRPCPackage, transport: IRPCTransport);
 
   /**
    * Creates a new Router instance
    * @param {IRPCPackage} module - The IRPC package module to resolve requests against
    * @param {IRPCTransport} transport - The transport mechanism to use for resolving requests
    */
-  constructor(
-    public module: IRPCPackage,
-    public transport: IRPCTransport
-  ) {
+  constructor(module: IRPCPackage | IRPCTransport, transport?: IRPCTransport) {
+    if (module instanceof IRPCTransport) {
+      this.transport = module;
+    } else {
+      this.transport = transport!;
+    }
+
     IRPC_STORE.route(this);
+  }
+
+  /**
+   * Returns the IRPC package module associated with the router for a given request.
+   * @param req - The IRPC request to resolve.
+   * @returns The IRPC package module associated with the router for the given request or undefined.
+   */
+  public packageOf(req: IRPCRequest) {
+    if (req.package) {
+      for (const pkg of this.packages) {
+        if (pkg.config.name === req.package.name && pkg.config.version === req.package.version) {
+          return pkg;
+        }
+      }
+    }
+
+    for (const pkg of this.packages) {
+      if (pkg.get(req.name)) {
+        return pkg;
+      }
+    }
   }
 
   /**

@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import type { IRPCTransport } from '../src/index.js';
-import type { IRPCPackage } from '../src/module.js';
+import { IRPCTransport } from '../src/index.js';
+import { IRPCPackage } from '../src/package.js';
 import { IRPCRouter } from '../src/router.js';
 import { IRPC_STORE } from '../src/store.js';
 import type { IRPCRequest } from '../src/types.js';
 
 function createMockRouter() {
-  const module = {} as IRPCPackage;
-  const transport = {} as IRPCTransport;
+  const module = new IRPCPackage();
+  const transport = new IRPCTransport();
 
   // Prevent IRPC_STORE.route() from throwing by spying on it.
   const routeSpy = vi.spyOn(IRPC_STORE, 'route').mockImplementation(() => {});
@@ -21,22 +21,22 @@ function createMockRouter() {
 describe('IRPCRouter', () => {
   describe('constructor', () => {
     it('should store module and transport references', () => {
-      const module = {} as IRPCPackage;
-      const transport = {} as IRPCTransport;
+      const module = new IRPCPackage();
+      const transport = new IRPCTransport();
       const routeSpy = vi.spyOn(IRPC_STORE, 'route').mockImplementation(() => {});
 
       const router = new IRPCRouter(module, transport);
 
-      expect(router.module).toBe(module);
       expect(router.transport).toBe(transport);
+      expect(router.transport.packages.size).toBe(0);
       routeSpy.mockRestore();
     });
 
     it('should register itself with the IRPC_STORE', () => {
       const routeSpy = vi.spyOn(IRPC_STORE, 'route').mockImplementation(() => {});
 
-      const module = {} as IRPCPackage;
-      const transport = {} as IRPCTransport;
+      const module = new IRPCPackage();
+      const transport = new IRPCTransport();
       const router = new IRPCRouter(module, transport);
 
       expect(routeSpy).toHaveBeenCalledWith(router);
@@ -46,6 +46,38 @@ describe('IRPCRouter', () => {
     it('should initialize with an empty hooks array', () => {
       const router = createMockRouter();
       expect(router.hooks).toEqual([]);
+    });
+
+    it('should support single transport argument constructor', () => {
+      const transport = new IRPCTransport();
+      const routeSpy = vi.spyOn(IRPC_STORE, 'route').mockImplementation(() => {});
+
+      const router = new IRPCRouter(transport);
+
+      expect(router.transport).toBe(transport);
+      routeSpy.mockRestore();
+    });
+  });
+
+  describe('packages & packageOf', () => {
+    it('should return packages from transport and resolve packageOf', () => {
+      const transport = new IRPCTransport();
+      const pkg1 = new IRPCPackage({ name: 'pkgA', version: '1.0.0' }).use(transport);
+      const pkg2 = new IRPCPackage({ name: 'pkgB', version: '2.0.0' }).use(transport);
+      const routeSpy = vi.spyOn(IRPC_STORE, 'route').mockImplementation(() => {});
+
+      const router = new IRPCRouter(transport);
+
+      pkg1.declare('test', () => 'test');
+
+      expect(router.packages).toBe(transport.packages);
+      expect(router.packageOf({ package: { name: 'pkgB', version: '2.0.0' } } as any)).toBe(pkg2);
+      expect(
+        router.packageOf({ name: 'missing', package: { name: 'pkgMissing', version: '1.0.0' } } as any)
+      ).toBeUndefined();
+      expect(router.packageOf({ name: 'test', args: [] } as any)).toBe(pkg1);
+
+      routeSpy.mockRestore();
     });
   });
 

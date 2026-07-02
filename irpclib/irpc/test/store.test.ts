@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_STORE_EVENT } from '../src/enum.js';
-import { IRPCPackage } from '../src/module.js';
+import { IRPCPackage } from '../src/package.js';
 import { IRPCRouter } from '../src/router.js';
 import { IRPCStore } from '../src/store.js';
 import { IRPCStream } from '../src/stream.js';

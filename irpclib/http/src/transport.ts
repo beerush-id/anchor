@@ -120,14 +120,20 @@ export class HTTPTransport extends IRPCTransport {
     try {
       const form = new FormData();
 
-      const requests = calls.map(({ id, payload: { name, args } }) => {
+      const requests = calls.map(({ id, payload: { name, package: pkg, args } }) => {
         const packet = encode(args as IRPCData);
 
         for (const queue of packet.queues) {
           form.append(queue.file.id, queue.data, queue.file.meta.name);
         }
 
-        return { id, name, args: packet.json.data, files: packet.json.files.length ? packet.json.files : undefined };
+        return {
+          id,
+          name,
+          package: pkg,
+          args: packet.json.data,
+          files: packet.json.files.length ? packet.json.files : undefined,
+        };
       });
 
       form.append(

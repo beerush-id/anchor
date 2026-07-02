@@ -145,12 +145,18 @@ export class BroadcastTransport extends IRPCTransport {
     try {
       calls.forEach((call) => {
         const { id, payload } = call;
-        const { name, args } = payload;
+        const { name, package: pkg, args } = payload;
 
         this.pendingCalls.set(id, call);
 
         const packet = encode(args as IRPCData);
-        const req: Record<string, unknown> = { id, name, args: packet.json.data, files: packet.json.files };
+        const req: Record<string, unknown> = {
+          id,
+          name,
+          package: pkg,
+          args: packet.json.data,
+          files: packet.json.files,
+        };
 
         if (packet.queues.length > 0) {
           const blobs: Record<string, Blob> = {};

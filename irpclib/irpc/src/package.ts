@@ -160,7 +160,11 @@ export class IRPCPackage<K extends string = 'id'> {
 
     if ($options.init && !$options.seed) $options.seed = $options.init as never;
 
-    const spec = { seed: () => undefined, ...$options } as IRPCSpec<IRPCInputs, IRPCOutput>;
+    const spec = {
+      package: { name: this.config.name, version: this.config.version },
+      seed: () => undefined,
+      ...$options,
+    } as IRPCSpec<IRPCInputs, IRPCOutput>;
     const calls = new Map<string, unknown>();
     const caches = new IRPCCacher();
 
@@ -480,11 +484,7 @@ export class IRPCPackage<K extends string = 'id'> {
       throw TransportError.invalid();
     }
 
-    if (this.transport) {
-      this.transport.modules.delete(this);
-    }
-
-    transport.modules.add(this);
+    transport.register(this);
     this.config.transport = transport;
     return this;
   }

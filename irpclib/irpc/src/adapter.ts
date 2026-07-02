@@ -1,6 +1,6 @@
 import type { IRPCDriver } from './driver.js';
 import { CrudError } from './error.js';
-import type { IRPCPackage } from './module.js';
+import type { IRPCPackage } from './package.js';
 import type { IRPCCrudMeta, IRPCData, IRPCMeta, IRPCStub } from './types.js';
 
 class NextDriver extends Error {

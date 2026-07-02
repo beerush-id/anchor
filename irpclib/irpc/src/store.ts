@@ -1,5 +1,5 @@
 import { IRPC_STORE_EVENT } from './enum.js';
-import { IRPCPackage } from './module.js';
+import { IRPCPackage } from './package.js';
 import { IRPCRouter } from './router.js';
 import { IRPCStream } from './stream.js';
 import type { IRPCData } from './types.js';

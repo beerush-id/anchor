@@ -339,7 +339,7 @@ export class WebSocketTransport extends IRPCTransport {
 
       calls.forEach((call) => {
         const { id, payload } = call;
-        const { name, args } = payload;
+        const { name, package: pkg, args } = payload;
 
         this.pendingCalls.set(id, call);
 
@@ -347,11 +347,17 @@ export class WebSocketTransport extends IRPCTransport {
 
         if (packet.queues.length > 0) {
           queues.add({
-            call: { id, name, args: packet.json.data, files: packet.json.files } as never as IRPCPacketCall,
+            call: {
+              id,
+              name,
+              package: pkg,
+              args: packet.json.data,
+              files: packet.json.files,
+            } as never as IRPCPacketCall,
             files: packet.queues,
           });
         } else {
-          this.ws!.send(JSON.stringify({ call: { id, name, args }, credentials: this.credentials }));
+          this.ws!.send(JSON.stringify({ call: { id, name, package: pkg, args }, credentials: this.credentials }));
         }
       });
 

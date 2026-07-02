@@ -12,6 +12,7 @@ import {
   IRPCResolver,
   IRPCRouter,
   IRPCStream,
+  IRPCTransport,
   withContext,
 } from '@irpclib/irpc';
 import { BC_MESSAGE_TYPE } from './enum.js';
@@ -23,7 +24,7 @@ import type { BroadcastTransport } from './transport.js';
  * @param module - The IRPC package module
  * @returns A new IRPCResolver instance
  */
-const defaultResolver = (req: IRPCRequest, module: IRPCPackage) => {
+const defaultResolver = (req: IRPCRequest, module?: IRPCPackage) => {
   return new IRPCResolver(req, module);
 };
 
@@ -61,20 +62,41 @@ export class BroadcastRouter extends IRPCRouter {
     return this.config.endpoint;
   }
 
+  public get module() {
+    return this.transport.packages.values().next().value;
+  }
+
   /**
-   * Creates a new BroadcastRouter instance
-   * @param module - The IRPC package module to resolve requests against
-   * @param transport - The BroadcastChannel transport mechanism
-   * @param config - Optional configuration overrides
+   * Creates a new BroadcastChannel router with the specified transport and configuration.
+   *
+   * @param transport - The BroadcastTransport instance to use.
+   * @param config - The configuration options for the BroadcastChannel resolver.
    */
+  constructor(transport: BroadcastTransport, config?: Partial<BroadcastResolveConfig>);
+
+  /**
+   * @deprecated Only for backwards compatibility.
+   * Creates a new BroadcastChannel router with the specified module, transport, and configuration.
+   *
+   * @param module - The IRPC package module.
+   * @param transport - The BroadcastTransport instance to use.
+   * @param config - The configuration options for the BroadcastChannel resolver.
+   */
+  constructor(module: IRPCPackage, transport: BroadcastTransport, config?: Partial<BroadcastResolveConfig>);
   constructor(
-    public module: IRPCPackage,
-    public transport: BroadcastTransport,
+    module: IRPCPackage | BroadcastTransport,
+    transport: BroadcastTransport | Partial<BroadcastResolveConfig> = {},
     config: Partial<BroadcastResolveConfig> = {}
   ) {
-    super(module, transport);
+    if (module instanceof IRPCTransport) {
+      super(module);
+      config = transport;
+    } else {
+      super(module, transport as IRPCTransport);
+    }
+
     this.config = {
-      endpoint: transport.endpoint,
+      endpoint: (this.transport as BroadcastTransport).endpoint,
       resolver: defaultResolver,
       ...config,
     };
@@ -146,7 +168,7 @@ export class BroadcastRouter extends IRPCRouter {
     }
 
     const credStore = createCredentials(credentials ?? []);
-    const resolver = this.config.resolver(req, this.module);
+    const resolver = this.config.resolver(req, this.packageOf(req));
     const abortController = new AbortController();
     const ctx = createContextStore<string | symbol, unknown>([
       [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],

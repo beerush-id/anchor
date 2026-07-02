@@ -2,8 +2,17 @@ import { createLifecycle } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { createPackage, IRPC_STORE, type IRPCCall, type IRPCPackage, IRPCTransport } from '../src/index.js';
+import {
+  createPackage,
+  IRPC_STORE,
+  type IRPCCall,
+  type IRPCPackage,
+  type IRPCPackagePayload,
+  IRPCTransport,
+} from '../src/index.js';
 import { RemoteState } from '../src/state.js';
+
+const pkg: IRPCPackagePayload = { name: 'irpc', version: '1.0.0' };
 
 describe('IRPCPackage', () => {
   let rpc: IRPCPackage;
@@ -201,11 +210,11 @@ describe('IRPCPackage', () => {
 
       pkgA.use(transport);
 
-      expect(transport.modules.has(pkgA)).toBe(true);
-      expect(transport.modules.has(pkgB)).toBe(false);
+      expect(transport.registry.has(pkgA.config.name)).toBe(true);
+      expect(transport.registry.has(pkgB.config.name)).toBe(false);
 
       pkgB.use(transport);
-      expect(transport.modules.has(pkgA)).toBe(true);
+      expect(transport.registry.has(pkgA.config.name)).toBe(true);
     });
 
     it('should replace transport', () => {
@@ -214,12 +223,15 @@ describe('IRPCPackage', () => {
       const pkg = createPackage({ name: 'pkg' });
 
       pkg.use(transA);
-      expect(transA.modules.has(pkg));
-      expect(transB.modules.has(pkg)).toBe(false);
+      expect(transA.registry.has(pkg.config.name));
+      expect(transB.registry.has(pkg.config.name)).toBe(false);
 
       pkg.use(transB);
-      expect(transA.modules.has(pkg)).toBe(false);
-      expect(transB.modules.has(pkg)).toBe(true);
+      expect(transA.registry.has(pkg.config.name)).toBe(true);
+      expect(transB.registry.has(pkg.config.name)).toBe(true);
+
+      transA.unregister(pkg);
+      expect(transA.registry.has(pkg.config.name)).toBe(false);
     });
   });
 
@@ -251,7 +263,7 @@ describe('IRPCPackage', () => {
       const spec = { name: 'testFunc' };
       rpc.declare(spec);
 
-      const result = rpc.get({ name: 'testFunc', id: '1', args: [] });
+      const result = rpc.get({ name: 'testFunc', id: '1', package: pkg, args: [] });
       expect(result?.name).toBe(spec.name);
     });
 
@@ -528,6 +540,7 @@ describe('IRPCPackage', () => {
       const result = await rpc.resolve({
         id: '1',
         name: 'testFunc',
+        package: pkg,
         args: [{ name: 'World' }],
       });
 
@@ -539,6 +552,7 @@ describe('IRPCPackage', () => {
         rpc.resolve({
           id: '1',
           name: 'nonExistent',
+          package: pkg,
           args: [],
         })
       ).rejects.toThrow('IRPC "nonExistent" does not exist.');
@@ -551,6 +565,7 @@ describe('IRPCPackage', () => {
         rpc.resolve({
           id: '1',
           name: 'unimplemented',
+          package: pkg,
           args: [],
         })
       ).rejects.toThrow('IRPC "unimplemented" has no implementation.');
@@ -1096,7 +1111,7 @@ describe('IRPCPackage', () => {
         order.push(3);
       });
 
-      const req = { id: '1', name: 'hookResolve', args: ['World'] };
+      const req = { id: '1', name: 'hookResolve', package: pkg, args: ['World'] };
       await rpc.resolveHooks(req);
 
       expect(order).toEqual([1, 2, 3]);
@@ -1109,14 +1124,14 @@ describe('IRPCPackage', () => {
       const hookFn = vi.fn();
       rpc.hook(testFunc, hookFn);
 
-      const req = { id: '1', name: 'hookReq', args: ['World'] };
+      const req = { id: '1', name: 'hookReq', package: pkg, args: ['World'] };
       await rpc.resolveHooks(req);
 
       expect(hookFn).toHaveBeenCalledWith(req);
     });
 
     it('should throw when resolving hooks for a non-existent spec', async () => {
-      const req = { id: '1', name: 'nonExistent', args: [] };
+      const req = { id: '1', name: 'nonExistent', package: pkg, args: [] };
 
       await expect(rpc.resolveHooks(req)).rejects.toThrow('No spec found for stub.');
     });
@@ -1129,7 +1144,7 @@ describe('IRPCPackage', () => {
         throw new Error('Hook denied');
       });
 
-      const req = { id: '1', name: 'hookError', args: [] };
+      const req = { id: '1', name: 'hookError', package: pkg, args: [] };
       await expect(rpc.resolveHooks(req)).rejects.toThrow('Hook denied');
     });
 
@@ -1144,7 +1159,7 @@ describe('IRPCPackage', () => {
       });
       rpc.hook(testFunc, afterThrow);
 
-      const req = { id: '1', name: 'hookStop', args: [] };
+      const req = { id: '1', name: 'hookStop', package: pkg, args: [] };
       await expect(rpc.resolveHooks(req)).rejects.toThrow('Stopped');
       expect(afterThrow).not.toHaveBeenCalled();
     });
@@ -1158,7 +1173,7 @@ describe('IRPCPackage', () => {
         executed();
       });
 
-      const req = { id: '1', name: 'hookAsync', args: [] };
+      const req = { id: '1', name: 'hookAsync', package: pkg, args: [] };
       await rpc.resolveHooks(req);
 
       expect(executed).toHaveBeenCalled();

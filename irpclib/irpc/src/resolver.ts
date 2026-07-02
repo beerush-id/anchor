@@ -1,5 +1,5 @@
 import { HandlerError, ResolveError } from './error.js';
-import type { IRPCPackage } from './module.js';
+import type { IRPCPackage } from './package.js';
 import { RemoteState } from './state.js';
 import type { IRPCData, IRPCInputs, IRPCOutput, IRPCParseResult, IRPCRequest, IRPCResponse } from './types.js';
 
@@ -16,7 +16,7 @@ export class IRPCResolver {
    * Retrieves the specification of the RPC method from the module based on the request
    */
   public get spec() {
-    return this.module.get(this.req);
+    return this.module?.get(this.req);
   }
 
   /**
@@ -27,7 +27,7 @@ export class IRPCResolver {
    */
   constructor(
     public req: IRPCRequest,
-    public module: IRPCPackage
+    public module?: IRPCPackage
   ) {}
 
   /**
@@ -39,7 +39,7 @@ export class IRPCResolver {
    * @returns A promise that resolves to an IRPC response with either the result or an error
    */
   public async resolve(): Promise<IRPCResponse> {
-    const { id, name, args } = this.req;
+    const { id, name, package: pkg, args } = this.req;
 
     // Check if the requested method exists in the module
     if (!this.spec) {
@@ -55,7 +55,7 @@ export class IRPCResolver {
     }
 
     // Forward the validated request
-    return this.forward({ id, name, args: inputs.data }, schema?.output);
+    return this.forward({ id, name, package: pkg, args: inputs.data }, schema?.output);
   }
 
   /**
@@ -65,11 +65,11 @@ export class IRPCResolver {
    * @param schema - Optional output schema for result validation
    * @returns A promise that resolves to an IRPC response with the result or an error
    */
-  public async forward({ id, name, args }: IRPCRequest, schema?: IRPCOutput): Promise<IRPCResponse> {
+  public async forward({ id, name, package: pkg, args }: IRPCRequest, schema?: IRPCOutput): Promise<IRPCResponse> {
     try {
-      await this.module.resolveHooks({ id, name, args });
+      await this.module!.resolveHooks({ id, name, package: pkg, args });
 
-      const result = this.module.resolve({ id, name, args });
+      const result = this.module!.resolve({ id, name, package: pkg, args });
 
       if (result instanceof RemoteState) {
         const output = parseOutput(result.data, schema);
