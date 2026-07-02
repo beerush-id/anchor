@@ -69,12 +69,12 @@ irpc.use(transport);
 ```typescript
 import '@irpclib/irpc/server';
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 
 // Import all constructor files
 import './rpc/hello/constructor.js';
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 Bun.serve({
   port: 3000,
@@ -191,10 +191,10 @@ WebSocket authentication happens at **upgrade time**, not per-message. Extract t
 
 ```typescript
 import { WebSocketRouter } from '@irpclib/ws/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/hello/constructor.js';
 
-const router = new WebSocketRouter(irpc, transport, {
+const router = new WebSocketRouter(transport, {
   fileBufferTTL: 30000, // Cleanup orphaned binary frames after 30s
 });
 
@@ -284,10 +284,10 @@ Using the package's `href` (`name/version`) as the channel name provides automat
 ```typescript
 // worker.ts
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/data/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 That's it. The router listens on the BroadcastChannel and resolves incoming calls automatically.

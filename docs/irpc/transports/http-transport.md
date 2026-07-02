@@ -51,9 +51,9 @@ The router's `resolve` method accepts the HTTP request and an `initContext` arra
 ```typescript
 import '@irpclib/irpc/server';
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 router.use(async () => {
   const token = getContext<string>('token');
@@ -208,7 +208,7 @@ The router handles incoming HTTP requests and routes them to IRPC handlers.
 `router.resolve()` takes the HTTP request as its first argument and an `initContext` array as its second. The context entries become available to all hooks and handlers for that request.
 
 ```typescript
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 Bun.serve({
   fetch(req) {

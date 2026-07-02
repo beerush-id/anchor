@@ -279,14 +279,14 @@ import '@irpclib/irpc/server';
 import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import template from '../dist/client/index.html?raw';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import router from './lib/router.js';
 import RootLayout from './pages/layout.js';
 
 import './pages/constructor.js';
 
 const render = createSSR(router, RootLayout);
-const irpcHttpRouter = new HTTPRouter(irpc, transport);
+const irpcHttpRouter = new HTTPRouter(transport);
 
 export default createFullWorker(irpcHttpRouter, render, {
   template,
@@ -314,14 +314,14 @@ import '@irpclib/irpc/server';
 import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import template from '../dist/client/index.html?raw';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import router from './lib/router.js';
 import RootLayout from './pages/layout.js';
 
 import './pages/constructor.js';
 
 const render = createSSR(router, RootLayout);
-const irpcHttpRouter = new HTTPRouter(irpc, transport);
+const irpcHttpRouter = new HTTPRouter(transport);
 
 export default createFullWorker(irpcHttpRouter, render, {
   template,
@@ -431,14 +431,14 @@ Serves stale pages instantly and re-renders in the background based on file age.
 import { createFullWorker, createSSR } from '@anchorlib/react/ssr'; // or '@anchorlib/solid/ssr'
 import { HTTPRouter } from '@irpclib/http/router';
 import template from '../dist/client/index.html?raw';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import router from './lib/router.js';
 import RootLayout from './pages/layout.js';
 
 import './pages/constructor.js';
 
 const render = createSSR(router, RootLayout);
-const irpcHttpRouter = new HTTPRouter(irpc, transport);
+const irpcHttpRouter = new HTTPRouter(transport);
 
 const STATIC_DIR = './dist/static';
 const MAX_AGE_MS = 60_000; // 1 minute
@@ -535,13 +535,13 @@ import { createSSR } from '@anchorlib/react/ssr'; // or '@anchorlib/solid/ssr'
 import { HTTPRouter } from '@irpclib/http/router';
 import { decodeCookies, setCookieContext } from '@anchorlib/react'; // or '@anchorlib/solid'
 import template from '../dist/client/index.html?raw';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import pageRouter from './lib/router.js';
 import RootLayout from './pages/layout.js';
 import './pages/constructor.js';
 
 const render = createSSR(pageRouter, RootLayout);
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 // Provide CookieJar to the IRPC handlers
 router.use(() => {

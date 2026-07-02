@@ -53,10 +53,10 @@ irpc.construct(processData, async (data) => {
 ```typescript
 // worker.ts
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/data/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 ### 4. Client Usage (Main Thread)
@@ -141,10 +141,10 @@ irpc.construct(generateVideo, async (timeline) => {
 ```typescript
 // worker.ts
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/video/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 ```typescript
@@ -183,10 +183,10 @@ await updateCart(cartItems);
 **Tab 2 — Receive updates:**
 ```typescript
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/cart/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 ### 3. Iframe Communication
@@ -218,10 +218,10 @@ const response = await sendMessage('Hello iframe');
 **Iframe:**
 ```typescript
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/messaging/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 ### 4. Background Task Coordination
@@ -262,10 +262,10 @@ await startSync();
 **Tab 2 — Handle sync:**
 ```typescript
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import './rpc/sync/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 ## Performance Benefits
@@ -351,7 +351,7 @@ router.use(async () => {
 Provide a custom resolver for advanced request handling:
 
 ```typescript
-const router = new BroadcastRouter(irpc, transport, {
+const router = new BroadcastRouter(transport, {
   resolver: (req, module) => {
     // Custom resolution logic
     return new CustomResolver(req, module);

@@ -209,8 +209,8 @@ import { WebSocketRouter } from '@irpclib/ws/router';
 import { irpc, transport } from './lib/module.js';
 import './rpc/constructors.js'; // Import all your handlers here
 
-const httpRouter = new HTTPRouter(irpc, transport);
-const wsRouter = new WebSocketRouter(irpc, transport);
+const httpRouter = new HTTPRouter(transport);
+const wsRouter = new WebSocketRouter(transport);
 
 Bun.serve({
   port: 3000,

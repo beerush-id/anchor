@@ -97,9 +97,9 @@ irpc.use(transport);
 // server/index.ts
 import '@irpclib/irpc/server';
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from '../lib/module.js';
+import { transport } from '../lib/module.js';
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 // You can even run IRPC using Hono as the underlying server!
 import { Hono } from 'hono';

@@ -73,9 +73,9 @@ router.resolveRest(
 ```typescript
 // server.ts (Bun / Edge)
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 Bun.serve({
   async fetch(req) {
@@ -121,9 +121,9 @@ router.resolveJson(
 // server.ts (Express)
 import express from 'express';
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 const app = express();
 
 // Middleware parses the body

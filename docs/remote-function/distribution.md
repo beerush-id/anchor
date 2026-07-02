@@ -225,13 +225,13 @@ The Web Worker hosts the same handler implementations, running locally:
 ```typescript
 // worker.ts
 import { BroadcastRouter } from '@irpclib/broadcast/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 
 // Import the same constructor files
 import './rpc/reports/constructor.js';
 import './rpc/analytics/constructor.js';
 
-const router = new BroadcastRouter(irpc, transport);
+const router = new BroadcastRouter(transport);
 ```
 
 The handlers can use IndexedDB, local computation, or limited external APIs. The architecture is identical — only the transport destination changed.

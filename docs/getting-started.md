@@ -406,9 +406,9 @@ import { HTTPRouter } from '@irpclib/http/router';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 
-import { irpc, transport } from './src/lib/module.js';
+import { transport } from './src/lib/module.js';
 
-const rpcRouter = new HTTPRouter(irpc, transport);
+const rpcRouter = new HTTPRouter(transport);
 
 // Provide CookieJar to the IRPC handlers
 rpcRouter.use(() => {
@@ -478,9 +478,9 @@ import { HTTPRouter } from '@irpclib/http/router';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 
-import { irpc, transport } from './src/lib/module.js';
+import { transport } from './src/lib/module.js';
 
-const rpcRouter = new HTTPRouter(irpc, transport);
+const rpcRouter = new HTTPRouter(transport);
 
 // Provide CookieJar to the IRPC handlers
 rpcRouter.use(() => {

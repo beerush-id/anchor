@@ -52,10 +52,10 @@ The WebSocket upgrade happens at connection time, but IRPC messages arrive later
 ```typescript
 // server.ts
 import { WebSocketRouter } from '@irpclib/ws/router';
-import { irpc, transport } from './lib/module.js';
+import {  transport } from './lib/module.js';
 import './rpc/hello/constructor.js';
 
-const router = new WebSocketRouter(irpc, transport, {
+const router = new WebSocketRouter(transport, {
   fileBufferTTL: 30000, // Clean up orphaned binary frames after 30s (default)
 });
 

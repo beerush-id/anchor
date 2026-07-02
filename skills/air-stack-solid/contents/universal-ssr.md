@@ -144,7 +144,7 @@ import RootLayout from './pages/layout.js';
 import './pages/constructor.js';
 
 const render = createSSR(router, RootLayout);
-const irpcHttpRouter = new HTTPRouter(irpc, transport);
+const irpcHttpRouter = new HTTPRouter(transport);
 
 export default createFullWorker(irpcHttpRouter, render, {
   template,
@@ -249,7 +249,7 @@ import RootLayout from './pages/layout.js';
 import './pages/constructor.js';
 
 const render = createSSR(router, RootLayout);
-const irpcHttpRouter = new HTTPRouter(irpc, transport);
+const irpcHttpRouter = new HTTPRouter(transport);
 
 const STATIC_DIR = './dist/static';
 const MAX_AGE_MS = 60_000; // 1 minute
@@ -348,7 +348,7 @@ import RootLayout from './pages/layout.js';
 import './pages/constructor.js';
 
 const render = createSSR(pageRouter, RootLayout);
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 export default {
   async fetch(request: Request): Promise<Response> {

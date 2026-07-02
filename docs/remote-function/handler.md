@@ -33,12 +33,12 @@ For server runtimes like Node or Bun, import `@irpclib/irpc/server` to enable `A
 // server.ts
 import '@irpclib/irpc/server';
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 
 // Register all handlers
 import './rpc/constructors.js';
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 ```
 
 Constructor files are imported for their **side effects** — the `irpc.construct()` call registers the handler at import time. The order of imports doesn't matter.

@@ -153,10 +153,10 @@ irpc.use(transport);
 // server/index.ts
 import '@irpclib/irpc/server';
 import { HTTPRouter } from '@irpclib/http/router';
-import { irpc, transport } from '../lib/module.js';
+import { transport } from '../lib/module.js';
 import '../rpc/hello/constructor.js'; // Import handlers
 
-const router = new HTTPRouter(irpc, transport);
+const router = new HTTPRouter(transport);
 
 Bun.serve({
   port: 3000,
