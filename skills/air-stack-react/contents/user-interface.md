@@ -278,7 +278,7 @@ export const Tabs = setup<{ default?: number, children?: ReactNode }>((props) =>
   const state = mutable({ active: props.default ?? 0 });
   tabContext.set(state); // Children use tabContext.get() to read/write state
 
-  return () => (
+  return (
     <div className="tabs-container">
       {props.children}
     </div>
@@ -430,7 +430,7 @@ export const Settings = setup(() => {
   const state = mutable({ notifications: true, advanced: false, autoPlay: false });
 
   // Static JSX: We pass the proxy references down, but we do not read them here!
-  return () => (
+  return (
     <div>
       <Toggle value={$bind(() => state, 'notifications')} />
       <Accordion title="Advanced" expanded={$bind(() => state, 'advanced')}>
