@@ -10,24 +10,31 @@ import {
 import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
 import { renderToString } from 'react-dom/server';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
-import type { AppShell, SSRContext, SSROutput, SSRRenderer } from './types.js';
+import type { AppShell, SSRContext, SSROptions, SSROutput, SSRRenderer } from './types.js';
 
 /**
  * Creates an SSR renderer function.
  *
  * @param router - The router instance to use for navigation.
  * @param RootLayout - The root layout component of the application.
+ * @param defaultOptions - Optional default SSR options.
  */
-export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>): SSRRenderer {
+export function createSSR(
+  router: Router,
+  RootLayout: RouteComponent<AnyRoute>,
+  defaultOptions?: SSROptions
+): SSRRenderer {
   return ((
     url: string,
     cookie: string,
     context?: SSRContext,
     controller?: AbortController,
     Shell?: AppShell,
-    isolated?: boolean
+    isolated?: boolean,
+    options?: SSROptions
   ) => {
-    if (isolated) return ssrRenderToString(router, RootLayout, url, controller, Shell) as Promise<SSROutput>;
+    const mergedOptions = options ?? defaultOptions;
+    if (isolated) return ssrRenderToString(router, RootLayout, url, controller, Shell, mergedOptions) as Promise<SSROutput>;
 
     const storage = context instanceof AsyncStore ? context : new AsyncStore(context as SSRContext);
     return withIsolation(
@@ -37,7 +44,7 @@ export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>):
         const jar = getCookieJar() ?? decodeCookies(cookie);
         setCookieContext(jar);
 
-        const result = await ssrRenderToString(router, RootLayout, url, controller, Shell);
+        const result = await ssrRenderToString(router, RootLayout, url, controller, Shell, mergedOptions);
 
         cookies = jar.encode();
         return { ...result, cookies } as SSROutput;
@@ -61,14 +68,30 @@ export function createSSR(router: Router, RootLayout: RouteComponent<AnyRoute>):
  * @param url - The URL to render.
  * @param controller - Optional abort controller for cancellation.
  * @param Shell - Optional shell component to wrap the root layout.
+ * @param options - Optional SSR rendering options.
  */
 export async function ssrRenderToString(
   router: Router,
   RootLayout: RouteComponent<AnyRoute>,
   url: string,
   controller?: AbortController,
-  Shell?: AppShell
+  Shell?: AppShell,
+  options?: SSROptions
 ): Promise<Omit<SSROutput, 'cookies'>> {
+  if (options?.sitemap !== false && url.endsWith('sitemap.xml')) {
+    const sitemapConfig = typeof options?.sitemap === 'object' ? options.sitemap : {};
+    const fullUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `http://localhost${url.startsWith('/') ? url : `/${url}`}`;
+    const sitemapXml = await router.sitemap({ ...sitemapConfig, url: fullUrl });
+    if (sitemapXml) {
+      return {
+        html: sitemapXml,
+        head: '',
+        status: 200,
+        contentType: 'application/xml; charset=utf-8',
+      };
+    }
+  }
+
   let html = '';
   let head = '';
   let status = 200;

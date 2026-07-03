@@ -15,6 +15,7 @@ type SSROutput = {
   status: number;
   cookies: string[];
   redirect?: string;
+  contentType?: string;
 };
 
 type IsolatedRenderer = (
@@ -23,7 +24,8 @@ type IsolatedRenderer = (
   context?: unknown,
   controller?: AbortController,
   Shell?: () => unknown,
-  isolated?: boolean
+  isolated?: boolean,
+  options?: unknown
 ) => Promise<SSROutput>;
 
 type RendererFactory = (router: unknown, layout: unknown) => IsolatedRenderer | Promise<IsolatedRenderer>;
@@ -33,14 +35,15 @@ export type ViteSSROptions = {
   router: string;
   /** Path to the root layout module. Must `export default` a `RouteComponent`. */
   layout: string;
-  /**
-   * Path to the renderer module (e.g., `'@anchorlib/react/ssr'`).
-   * Must export `createSSR(router, layout) => SSRRenderer`.
-   */
+
+  /** Path to the SSR renderer factory module. Must `export function createSSR`. */
   renderer: string;
 
   /** Path to the shell module. Must `export default` a `Shell` component. */
   shell?: string;
+
+  /** Optional sitemap configuration or false to disable automatic generation. */
+  sitemap?: boolean | Record<string, unknown>;
 
   /**
    * IRPC configuration. If provided, POST requests to the transport
@@ -225,7 +228,7 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
 
     // Isolate SSR render with IRPC context (abort signal, cookie, hooks).
     ssrResult = await router.isolate(
-      () => render(urlPath, cookie, undefined, controller, Shell, true),
+      () => render(urlPath, cookie, undefined, controller, Shell, true, { sitemap: options.sitemap }),
       controller,
       [['cookie', cookie]],
       () => {
@@ -233,10 +236,10 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
       }
     );
   } else {
-    ssrResult = await render(urlPath, cookie, undefined, controller, Shell);
+    ssrResult = await render(urlPath, cookie, undefined, controller, Shell, false, { sitemap: options.sitemap });
   }
 
-  const { html, head, status, redirect, cookies } = ssrResult;
+  const { html, head, status, redirect, cookies, contentType } = ssrResult;
 
   if (redirect) {
     res.writeHead(302, { Location: redirect });
@@ -244,12 +247,12 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
     return;
   }
 
-  const headers: Record<string, string | string[]> = { 'Content-Type': 'text/html' };
+  const headers: Record<string, string | string[]> = { 'Content-Type': contentType ?? 'text/html' };
   if (cookies?.length) {
     headers['Set-Cookie'] = cookies;
   }
 
-  const page = template.replace(headTag, head).replace(bodyTag, html);
+  const page = contentType ? html : template.replace(headTag, head).replace(bodyTag, html);
   res.writeHead(status ?? 200, headers);
   res.end(page);
 }

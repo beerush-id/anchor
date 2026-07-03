@@ -1,6 +1,15 @@
 import type { AsyncKey, AsyncStore, AsyncValue } from '@anchorlib/core';
+import type { SitemapConfig } from '@anchorlib/router';
 import type { HTMLAttributes } from 'react';
 import type { StableComponent } from '../types.js';
+
+/**
+ * Options for the SSR rendering pipeline.
+ */
+export type SSROptions = {
+  /** Optional sitemap configuration or false to disable automatic generation. */
+  sitemap?: boolean | Omit<SitemapConfig, 'url'>;
+};
 
 /**
  * The output of the SSR process.
@@ -16,6 +25,8 @@ export type SSROutput = {
   cookies: string[];
   /** The redirect URL if a redirect was triggered during rendering. */
   redirect?: string;
+  /** Optional content type header override (e.g. for sitemap XML). */
+  contentType?: string;
 };
 
 /**
@@ -39,7 +50,9 @@ export type SSRRenderer = (
   cookie: string,
   context?: SSRContext,
   controller?: AbortController,
-  Shell?: AppShell
+  Shell?: AppShell,
+  isolated?: boolean,
+  options?: SSROptions
 ) => Promise<SSROutput>;
 
 /**

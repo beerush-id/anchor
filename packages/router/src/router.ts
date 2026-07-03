@@ -6,7 +6,7 @@ import { ERROR_TYPE, RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { RouteError } from './error.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
-import { getExceptionRendererFactory, type IndexRoute, Route } from './route.js';
+import { createRouteEntry, getExceptionRendererFactory, type IndexRoute, Route } from './route.js';
 import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
@@ -15,15 +15,18 @@ import type {
   MatchRouteSegment,
   None,
   RouteContext,
+  RouteEntry,
   RouteExceptionRenderer,
   RouteOptions,
   RoutePath,
   RouterOptions,
   RouterState,
   RouterStorage,
+  SitemapConfig,
   TRec,
   UnknownRoute,
 } from './types.js';
+import { generateSitemap } from './sitemap.js';
 
 /**
  * A type-safe router for managing routes and navigation.
@@ -164,7 +167,7 @@ export class Router<Output = any> {
     Data extends TRec = TRec,
   >(
     path?: Path,
-    options?: RouteOptions
+    options?: RouteOptions<Path, Params, QueryParams>
   ): Path extends '/'
     ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
     : Route<Path, Params, QueryParams, Data, never, Output>;
@@ -176,7 +179,7 @@ export class Router<Output = any> {
     Data extends TRec = TRec,
   >(
     path?: Path,
-    options?: RouteOptions
+    options?: RouteOptions<Path, Params, QueryParams>
   ): Path extends '/'
     ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
     : Route<Path, Params, QueryParams, Data, never, Output> {
@@ -222,7 +225,7 @@ export class Router<Output = any> {
     Data extends TRec = TRec,
   >(
     path?: Path,
-    options?: RouteOptions
+    options?: RouteOptions<Path, Params, QueryParams>
   ): Path extends '/'
     ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
     : Route<Path, Params, QueryParams, Data, never, Output> {
@@ -248,7 +251,7 @@ export class Router<Output = any> {
     Data extends TRec = TRec,
   >(
     path?: Path,
-    options?: RouteOptions
+    options?: RouteOptions<Path, Params, QueryParams>
   ): Path extends '/'
     ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
     : Route<Path, Params, QueryParams, Data, never, Output> {
@@ -260,6 +263,59 @@ export class Router<Output = any> {
     this.routes.add(routeMap);
 
     return route as never;
+  }
+
+  /**
+   * Gets all route entries across all registered route trees in the router.
+   *
+   * @returns An array of [path, { type, isIndex, route, toString }] tuples
+   */
+  public entries(): RouteEntry[] {
+    const results: RouteEntry[] = [];
+
+    const collect = (reg: RouteRegistry) => {
+      results.push(createRouteEntry(reg.route, false));
+      if (reg.route.index) {
+        results.push(createRouteEntry(reg.route.index as never, true));
+      }
+      for (const childReg of reg.values()) {
+        collect(childReg);
+      }
+    };
+
+    for (const reg of this.routes) {
+      collect(reg);
+    }
+
+    return results;
+  }
+
+  /**
+   * Generates an XML sitemap for all route trees registered in this router.
+   *
+   * @param config - Optional sitemap configuration
+   * @returns The generated XML sitemap string
+   */
+  public async sitemap(config?: SitemapConfig): Promise<string> {
+    if (config?.url) {
+      const urlObj =
+        typeof config.url === 'string' ? new URL(config.url, config.baseUrl ?? this.options.baseUrl) : config.url;
+      const baseUrl = config.baseUrl ?? urlObj.origin;
+      let targetPath = urlObj.pathname.replace(/\/sitemap\.xml$/, '');
+      if (targetPath === '') targetPath = '/';
+
+      const { url: _url, ...restConfig } = config;
+
+      if (targetPath !== '/') {
+        const match = this.find(targetPath);
+        if (match && !match.exception && match.route) {
+          return match.route.sitemap({ ...restConfig, baseUrl });
+        }
+        return '';
+      }
+      return generateSitemap(this.entries(), { ...restConfig, baseUrl }, this.options.baseUrl);
+    }
+    return generateSitemap(this.entries(), config, this.options.baseUrl);
   }
 
   /**

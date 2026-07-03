@@ -95,6 +95,19 @@ describe('createWorker', () => {
     expect(renderer).not.toHaveBeenCalled();
   });
 
+  it('serves raw html when contentType override is provided', async () => {
+    const renderer = createMockRenderer({
+      html: '<urlset></urlset>',
+      contentType: 'application/xml; charset=utf-8',
+    });
+    const worker = createWorker(renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/sitemap.xml'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('application/xml; charset=utf-8');
+    expect(await response.text()).toBe('<urlset></urlset>');
+  });
+
   it('falls through to SSR when resolveAsset returns undefined', async () => {
     const renderer = createMockRenderer();
 
@@ -311,6 +324,20 @@ describe('createFullWorker', () => {
       }),
     } as any;
   }
+
+  it('serves raw html when contentType override is provided in createFullWorker', async () => {
+    const renderer = createMockRenderer({
+      html: '<urlset></urlset>',
+      contentType: 'application/xml; charset=utf-8',
+    });
+    const router = createMockRouter();
+    const worker = createFullWorker(router, renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/sitemap.xml'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('application/xml; charset=utf-8');
+    expect(await response.text()).toBe('<urlset></urlset>');
+  });
 
   it('routes POST requests to IRPC resolver', async () => {
     const renderer = createMockRenderer();

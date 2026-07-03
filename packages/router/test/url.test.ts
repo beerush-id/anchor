@@ -18,4 +18,9 @@ describe('createUrl', () => {
   it('should handle URL with query params', () => {
     expect(createUrl('/users?limit=1', undefined, { page: 1 })).toBe('/users?limit=1&page=1');
   });
+
+  it('should replace wildcard parameters with or without leading asterisk', () => {
+    expect(createUrl('/files/*', { '*': 'report.pdf' })).toBe('/files/report.pdf');
+    expect(createUrl('/docs/*path', { path: 'api/index.html' })).toBe('/docs/api/index.html');
+  });
 });

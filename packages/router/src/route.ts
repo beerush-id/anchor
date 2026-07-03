@@ -24,6 +24,7 @@ import type {
   ProviderResolvers,
   ProviderResolversOut,
   RouteContext,
+  RouteEntry,
   RouteExceptionRenderer,
   RouteIndexRenderer,
   RouteName,
@@ -35,10 +36,12 @@ import type {
   RouteState,
   RouteStorage,
   RouteType,
+  SitemapConfig,
   TRec,
   UnknownGuard,
   UnknownRoute,
 } from './types.js';
+import { generateSitemap } from './sitemap.js';
 
 export type IndexRoute<
   Path extends RoutePath,
@@ -84,7 +87,7 @@ export class Route<
   public readonly name: RouteName<Path>;
   /** The type of this route (static, dynamic, or wildcard) */
   public readonly type: RouteType;
-  public readonly options: RouteOptions;
+  public readonly options: RouteOptions<Path, Params, QueryParams>;
   public closed = false;
 
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
@@ -233,7 +236,7 @@ export class Route<
   public constructor(
     public router: Router<Output>,
     name: Path,
-    options?: RouteOptions,
+    options?: RouteOptions<Path, Params, QueryParams>,
     public parent?: Parent,
     public displayName?: string
   ) {
@@ -244,7 +247,7 @@ export class Route<
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
-    this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options };
+    this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options } as RouteOptions;
   }
 
   /**
@@ -258,7 +261,13 @@ export class Route<
     let url = this.path as string;
 
     for (const [key, value] of Object.entries((params ?? {}) as TRec)) {
-      url = url.replace(`:${key}`, value as string);
+      if (key.startsWith('*')) {
+        url = url.replace(key, value as string);
+      } else if (url.includes(`*${key}`)) {
+        url = url.replace(`*${key}`, value as string);
+      } else {
+        url = url.replace(`:${key}`, value as string);
+      }
     }
 
     const queries = Object.entries((query ?? {}) as TRec);
@@ -278,6 +287,57 @@ export class Route<
     }
 
     return url;
+  }
+
+  /**
+   * Gets all route entries starting from this route and its children.
+   *
+   * @returns An array of [path, { type, isIndex, route, toString }] tuples
+   */
+  public entries(): RouteEntry[] {
+    const results: RouteEntry[] = [];
+    const registry = ROUTE_MAP_LINK.get(this as never as UnknownRoute);
+
+    const collect = (reg: RouteRegistry) => {
+      results.push(createRouteEntry(reg.route, false));
+      if (reg.route.index) {
+        results.push(createRouteEntry(reg.route.index as never as UnknownRoute, true));
+      }
+      for (const childReg of reg.values()) {
+        collect(childReg);
+      }
+    };
+
+    if (registry) {
+      collect(registry);
+    } else {
+      const isIndex = Boolean(this.parent && (this.parent as never as UnknownRoute).index === (this as unknown));
+      results.push(createRouteEntry(this as never as UnknownRoute, isIndex));
+    }
+
+    return results;
+  }
+
+  /**
+   * Generates an XML sitemap for this route and its children.
+   *
+   * @param config - Optional sitemap configuration
+   * @returns The generated XML sitemap string
+   */
+  public async sitemap(config?: SitemapConfig): Promise<string> {
+    let filteredConfig = config;
+    if (config?.exclude?.length) {
+      const exclude = config.exclude.filter((ex) => {
+        let curr: UnknownRoute | undefined = this as unknown as UnknownRoute;
+        while (curr) {
+          if (curr === ex) return false;
+          curr = curr.parent;
+        }
+        return true;
+      });
+      filteredConfig = { ...config, exclude };
+    }
+    return generateSitemap(this.entries(), filteredConfig, this.router?.options?.baseUrl);
   }
 
   /**
@@ -302,7 +362,7 @@ export class Route<
     TChildData extends TRec = TRec,
   >(
     path: TChildPath,
-    options?: RouteOptions
+    options?: RouteOptions<TChildPath, TChildParams, TChildQueryParams>
   ): TChildPath extends '/'
     ? IndexRoute<
         TChildPath,
@@ -327,7 +387,13 @@ export class Route<
         Data & TChildData
       > {
     if (this.closed) throw new RouteError(ERROR_TYPE.ROUTE, `Index route can't have a child route.`);
-    const child = new Route(this.router, path, { ...this.options, ...options }, this, path);
+    const child = new Route(
+      this.router,
+      path,
+      { ...this.options, ...options } as RouteOptions<TChildPath, TChildParams, TChildQueryParams>,
+      this,
+      path
+    );
 
     if (path === ('/' as TChildPath)) {
       child.closed = true;
@@ -905,4 +971,16 @@ export function setRendererFactory(factory: RendererFactory) {
 
 export function setExceptionRendererFactory(factory: ExceptionRendererFactory) {
   createExceptionRenderer = factory;
+}
+
+export function createRouteEntry(route: UnknownRoute, isIndex = false): RouteEntry {
+  return [
+    route.path,
+    {
+      type: route.type,
+      isIndex,
+      route,
+      toString: (params?: TRec, query?: TRec) => route.url(params as never, query as never),
+    },
+  ];
 }

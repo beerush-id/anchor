@@ -8,5 +8,6 @@ export * from './redirect.js';
 export * from './registry.js';
 export * from './route.js';
 export * from './router.js';
+export * from './sitemap.js';
 export * from './types.js';
 export * from './url.js';

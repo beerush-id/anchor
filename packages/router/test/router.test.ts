@@ -1368,4 +1368,52 @@ describe('router.ts', () => {
       expect(script).toContain('\\u2029');
     });
   });
+
+  describe('entries()', () => {
+    it('should return default root route entry on a fresh router', () => {
+      const router = new Router();
+      const entries = router.entries();
+
+      expect(entries).toHaveLength(1);
+      expect(entries[0][0]).toBe('/');
+      expect(entries[0][1].isIndex).toBe(false);
+      expect(entries[0][1].route).toBe(router.rootRoute);
+    });
+
+    it('should aggregate route entries across multiple independent appended route trees', () => {
+      const router = new Router();
+
+      // Tree 1: Root tree
+      const root = router.route();
+      root.route('/dashboard');
+      root.route('/settings');
+
+      // Tree 2: Independent Auth tree
+      const auth = router.add('/auth');
+      auth.route('/'); // auth index
+      auth.route('/login');
+      auth.route('/oauth').route('/:provider');
+
+      // Tree 3: Independent API tree
+      const api = router.add('/api').route('/v1');
+      api.route('/webhooks').route('/*');
+
+      const entries = router.entries();
+      expect(entries).toHaveLength(12);
+
+      const paths = entries.map(([path, val]) => (val.isIndex ? `${path} (index)` : path));
+      expect(paths).toContain('/');
+      expect(paths).toContain('/dashboard');
+      expect(paths).toContain('/settings');
+      expect(paths).toContain('/auth');
+      expect(paths).toContain('/auth/ (index)');
+      expect(paths).toContain('/auth/login');
+      expect(paths).toContain('/auth/oauth');
+      expect(paths).toContain('/auth/oauth/:provider');
+      expect(paths).toContain('/api');
+      expect(paths).toContain('/api/v1');
+      expect(paths).toContain('/api/v1/webhooks');
+      expect(paths).toContain('/api/v1/webhooks/*');
+    });
+  });
 });

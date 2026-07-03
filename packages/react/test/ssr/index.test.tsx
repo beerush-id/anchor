@@ -161,4 +161,30 @@ describe('createSSR', () => {
     // Isolated mode does not return cookies
     expect(output.cookies).toBeUndefined();
   });
+
+  it('handles automatic sitemap interception and options', async () => {
+    const router = createRouter<ReactNode>({ baseUrl: 'http://localhost' });
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute).render(() => <div>Root</div>);
+    rootRoute.route('/about');
+
+    const ssr = createSSR(router, RootLayout, { sitemap: { baseUrl: 'https://example.com' } });
+    const output = await ssr('http://localhost/sitemap.xml', '');
+
+    expect(output.status).toBe(200);
+    expect(output.contentType).toBe('application/xml; charset=utf-8');
+    expect(output.html).toContain('<loc>https://example.com/about</loc>');
+
+    const ssrDisabled = createSSR(router, RootLayout, { sitemap: false });
+    const disabledOutput = await ssrDisabled('http://localhost/sitemap.xml', '');
+    expect(disabledOutput.contentType).toBeUndefined();
+
+    const ssrDefault = createSSR(router, RootLayout);
+    const defaultOutput = await ssrDefault('/sitemap.xml', '');
+    expect(defaultOutput.contentType).toBe('application/xml; charset=utf-8');
+    expect(defaultOutput.html).toContain('<loc>http://localhost/about</loc>');
+
+    const noSlashOutput = await ssrDefault('sitemap.xml', '');
+    expect(noSlashOutput.contentType).toBe('application/xml; charset=utf-8');
+  });
 });

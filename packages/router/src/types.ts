@@ -136,13 +136,61 @@ export type MergedProvidersOut<D extends TRec, O extends TRec> = D & {
 /** The type of a route (static, dynamic, wildcard, or index) */
 export type RouteType = (typeof ROUTE_TYPE)[keyof typeof ROUTE_TYPE];
 
+export interface SitemapEntry {
+  /** The URL or relative path for this sitemap entry */
+  loc?: string;
+  /** Last modification date (ISO string or Date or YYYY-MM-DD string) */
+  lastmod?: string | Date;
+  /** Change frequency */
+  changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+  /** Priority between 0.0 and 1.0 */
+  priority?: number;
+  /** If true, maps this entry across all static child routes of the generating route */
+  nested?: boolean;
+}
+
+export type SitemapGeneratorResult =
+  | string
+  | SitemapEntry
+  | undefined
+  | null
+  | (string | SitemapEntry | undefined | null)[];
+
+export type SitemapGenerator<
+  Path extends RoutePath = RoutePath,
+  Params extends ExtractParams<Path> = ExtractParams<Path>,
+  QueryParams extends ExtractQueryParams<Path> = ExtractQueryParams<Path>,
+> = {
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  (route: Route<Path, Params, QueryParams, any, any>): SitemapGeneratorResult | Promise<SitemapGeneratorResult>;
+};
+
+export type SitemapOption<
+  Path extends RoutePath = RoutePath,
+  Params extends ExtractParams<Path> = ExtractParams<Path>,
+  QueryParams extends ExtractQueryParams<Path> = ExtractQueryParams<Path>,
+> = boolean | SitemapEntry | SitemapGenerator<Path, Params, QueryParams>;
+
 /** Options for configuring a route */
-export interface RouteOptions extends ProviderOptions {
+export interface RouteOptions<
+  Path extends RoutePath = RoutePath,
+  Params extends ExtractParams<Path> = ExtractParams<Path>,
+  QueryParams extends ExtractQueryParams<Path> = ExtractQueryParams<Path>,
+> extends ProviderOptions {
   /** Blocking mode for route rendering */
   preloadMode?: PreloadMode;
 
   /** Keep the route's context when de-activating */
   keepAlive?: boolean;
+
+  /**
+   * Sitemap configuration for this route.
+   * - `false`: Exclude this route from the sitemap.
+   * - `true` or undefined: Include this route with default settings (static routes only).
+   * - `SitemapEntry`: Include this route with custom attributes (changefreq, priority, etc.).
+   * - `SitemapGenerator`: Function or async function returning sitemap entries or paths.
+   */
+  sitemap?: SitemapOption<Path, Params, QueryParams>;
 }
 
 /** Unknown parameters type */
@@ -372,3 +420,34 @@ export type NavigateParams<Params, Query> = Params extends None
 export type NavigateOptions<T> = T extends Route<infer Params, infer Query, infer _Data, infer _Parent>
   ? NavigateParams<Params, Query>
   : NavigateParams<None, None>;
+
+export type RouteEntryValue = {
+  type: RouteType;
+  isIndex: boolean;
+  route: UnknownRoute;
+  toString: (params?: TRec, query?: TRec) => string;
+};
+
+export type RouteEntry = [string, RouteEntryValue];
+
+export interface SitemapConfig {
+  /** The base origin URL (e.g. 'https://example.com'). Defaults to router.options.baseUrl */
+  baseUrl?: string;
+  /**
+   * Request URL or sitemap endpoint URL (e.g., 'https://example.com/docs/sitemap.xml').
+   * If provided, strips '/sitemap.xml' to match the corresponding subtree route.
+   */
+  url?: string | URL;
+  /**
+   * Routes to exclude from this sitemap generation.
+   * Excluding a route automatically excludes all child routes beneath it.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Accept any concrete Route instance.
+  exclude?: (UnknownRoute | Route<any, any, any, any, any, any, any, any, any>)[];
+  /**
+   * The XML root element and item wrapper type.
+   * - `'urlset'` (default): Standard sitemap wrapping items in `<url>`.
+   * - `'index'` or `'sitemapindex'`: Sitemap index wrapping items in `<sitemap>`.
+   */
+  type?: 'urlset' | 'index' | 'sitemapindex';
+}

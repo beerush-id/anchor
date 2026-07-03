@@ -47,17 +47,17 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
           if (asset) return asset;
         }
 
-        const { html, head, status, cookies, redirect } = await renderer(
+        const { html, head, status, cookies, redirect, contentType } = await renderer(
           url.pathname,
           cookie,
           contextSeed,
           controller,
           Shell
         );
-        const body = template.replace(headTag, head).replace(bodyTag, html);
+        const body = contentType ? html : template.replace(headTag, head).replace(bodyTag, html);
 
         const headers = new Headers({
-          'Content-Type': 'text/html',
+          'Content-Type': contentType ?? 'text/html',
         });
         cookies.forEach((cookie) => {
           headers.append('Set-Cookie', cookie);
@@ -154,7 +154,7 @@ export function createFullWorker<E = any>(
 
         const response = await router.isolate(
           async () => {
-            const { html, head, status, redirect } = await (renderer as IsolatedRenderer)(
+            const { html, head, status, redirect, contentType } = await (renderer as IsolatedRenderer)(
               url.pathname,
               cookie,
               undefined,
@@ -163,9 +163,9 @@ export function createFullWorker<E = any>(
               true
             );
 
-            const body = template.replace(headTag, head).replace(bodyTag, html);
+            const body = contentType ? html : template.replace(headTag, head).replace(bodyTag, html);
             const headers = new Headers({
-              'Content-Type': 'text/html',
+              'Content-Type': contentType ?? 'text/html',
             });
 
             cookies = cookieJar.encode();

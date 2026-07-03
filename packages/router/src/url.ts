@@ -15,7 +15,13 @@ export function createUrl(path: string, params?: Record<string, unknown>, query?
 
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      url = url.replace(`:${key}`, String(value));
+      if (key.startsWith('*')) {
+        url = url.replace(key, String(value));
+      } else if (url.includes(`*${key}`)) {
+        url = url.replace(`*${key}`, String(value));
+      } else {
+        url = url.replace(`:${key}`, String(value));
+      }
     }
   }
 

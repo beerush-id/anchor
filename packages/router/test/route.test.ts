@@ -1349,4 +1349,100 @@ describe('Route class', () => {
       expect((result as any).data).toBe('test-data');
     });
   });
+
+  describe('entries()', () => {
+    it('should recursively map all route types (static, dynamic, wildcard, index)', () => {
+      const root = sharedRouter.route();
+      const rootIndex = root.route('/');
+
+      const users = root.route('/users');
+      const usersIndex = users.route('/');
+      const userProfile = users.route('/:userId');
+      const userPosts = userProfile.route('/posts');
+      const userPostDetail = userPosts.route('/:postId');
+
+      const files = root.route('/files');
+      const wildcardFiles = files.route('/*');
+
+      const entries = root.entries();
+      expect(entries).toHaveLength(9);
+
+      // 1. Root and Root Index
+      const rootEntry = entries.find(([path, val]) => path === '/' && !val.isIndex);
+      expect(rootEntry![1]).toMatchObject({ type: ROUTE_TYPE.STATIC, isIndex: false, route: root });
+      const rootIndexEntry = entries.find(([path, val]) => path === '/' && val.isIndex);
+      expect(rootIndexEntry![1]).toMatchObject({ type: ROUTE_TYPE.STATIC, isIndex: true, route: rootIndex });
+
+      // 2. Intermediate branch and its Index
+      const usersEntry = entries.find(([path, val]) => path === '/users' && !val.isIndex);
+      expect(usersEntry![1]).toMatchObject({ type: ROUTE_TYPE.STATIC, isIndex: false, route: users });
+      const usersIndexEntry = entries.find(([path, val]) => path === '/users/' && val.isIndex);
+      expect(usersIndexEntry![1]).toMatchObject({ type: ROUTE_TYPE.STATIC, isIndex: true, route: usersIndex });
+
+      // 3. Dynamic routes & nested dynamic routes
+      const profileEntry = entries.find(([path]) => path === '/users/:userId');
+      expect(profileEntry![1]).toMatchObject({ type: ROUTE_TYPE.DYNAMIC, isIndex: false, route: userProfile });
+      const postDetailEntry = entries.find(([path]) => path === '/users/:userId/posts/:postId');
+      expect(postDetailEntry![1]).toMatchObject({ type: ROUTE_TYPE.DYNAMIC, isIndex: false, route: userPostDetail });
+
+      // 4. Wildcard route
+      const wildcardEntry = entries.find(([path]) => path === '/files/*');
+      expect(wildcardEntry![1]).toMatchObject({ type: ROUTE_TYPE.WILDCARD, isIndex: false, route: wildcardFiles });
+    });
+
+    it('should map entries starting only from an intermediate branch', () => {
+      const root = sharedRouter.route();
+      root.route('/about');
+      const users = root.route('/users');
+      users.route('/:id');
+
+      const userEntries = users.entries();
+      const paths = userEntries.map(([path]) => path);
+
+      expect(paths).toHaveLength(2);
+      expect(paths).toContain('/users');
+      expect(paths).toContain('/users/:id');
+      expect(paths).not.toContain('/about');
+      expect(paths).not.toContain('/');
+    });
+
+    it('should correctly handle calling entries() directly on an index route', () => {
+      const root = sharedRouter.route();
+      const users = root.route('/users');
+      const usersIndex = users.route('/');
+
+      const indexEntries = usersIndex.entries();
+      expect(indexEntries).toHaveLength(1);
+      expect(indexEntries[0][0]).toBe('/users/');
+      expect(indexEntries[0][1].isIndex).toBe(true);
+      expect(indexEntries[0][1].route).toBe(usersIndex);
+    });
+
+    it('should generate accurate toString URLs with params and queries across all route types', () => {
+      const root = sharedRouter.route();
+      const users = root.route('/users');
+      users.route('/:userId').route('/posts').route('/:postId');
+      root.route('/files').route('/*');
+
+      const entriesMap = new Map(root.entries());
+
+      // Static with query
+      expect(entriesMap.get('/users')!.toString(undefined, { page: 2, sort: 'asc' })).toBe('/users?page=2&sort=asc');
+
+      // Nested dynamic with params and query
+      expect(
+        entriesMap.get('/users/:userId/posts/:postId')!.toString({ userId: '42', postId: '101' }, { ref: 'newsletter' })
+      ).toBe('/users/42/posts/101?ref=newsletter');
+
+      // Wildcard
+      expect(entriesMap.get('/files/*')!.toString({ '*': 'documents/2026/report.pdf' })).toBe(
+        '/files/documents/2026/report.pdf'
+      );
+
+      // Named wildcard without asterisk prefix in params object
+      const docRoute = root.route('/docs').route('/*filepath');
+      // @ts-ignore
+      expect(docRoute.url({ filepath: 'guide/intro.md' })).toBe('/docs/guide/intro.md');
+    });
+  });
 });
