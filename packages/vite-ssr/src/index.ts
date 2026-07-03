@@ -47,8 +47,8 @@ export type ViteSSROptions = {
    * endpoint are routed through the HTTPRouter.
    */
   irpc?: {
-    /** IRPC instance. String loads `export default`, object loads a named export. */
-    module: ModuleRef;
+    /** @deprecated: IRPC instance. String loads `export default`, object loads a named export. */
+    module?: ModuleRef;
     /** HTTP Transport instance. */
     transport: ModuleRef;
     /** WebSocket Transport instance (optional). */
