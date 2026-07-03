@@ -149,6 +149,7 @@ describe('Anchor Core - Observable Observer Management', () => {
 
     it('should run effect on browser only', () => {
       vi.stubGlobal('window', undefined);
+      vi.stubGlobal('document', undefined);
 
       const handler = vi.fn();
       const cleanup1 = effect.client(handler);

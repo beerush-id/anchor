@@ -290,6 +290,7 @@ describe('Cookie Storage', () => {
 
     it('should track changes on server (non-browser) environment with warning', async () => {
       vi.stubGlobal('window', undefined);
+      vi.stubGlobal('document', undefined);
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await withIsolation(async () => {

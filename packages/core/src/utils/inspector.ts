@@ -283,5 +283,5 @@ export function isEmpty(value: unknown): value is string | number | unknown[] | 
  * @returns {boolean}
  */
 export function isBrowser(): boolean {
-  return typeof window === 'object';
+  return typeof window !== 'undefined' && typeof document === 'object';
 }

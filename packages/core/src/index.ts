@@ -1,3 +1,10 @@
+/* v8 ignore next */
+if (typeof window === 'undefined' || typeof document === 'undefined') {
+  /* v8 ignore next */
+  await import('./server/index.js');
+  /* v8 ignore next */
+}
+
 export * from './engine/anchor.js';
 export * from './engine/broadcast.js';
 export * from './engine/config.js';

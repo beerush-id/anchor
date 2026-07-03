@@ -91,6 +91,7 @@ describe('Anchor - Async Scope', () => {
 
     it('should warn on global scope access', async () => {
       vi.stubGlobal('window', undefined);
+      vi.stubGlobal('document', undefined);
 
       expect(getScope('any')).toBeUndefined();
 

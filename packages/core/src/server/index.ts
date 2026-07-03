@@ -9,6 +9,6 @@ class AnchorASL<T> extends AsyncLocalStorage<T> {
   }
 }
 
-if (GLOBAL_THIS) {
+if (GLOBAL_THIS && !GLOBAL_THIS[GLOBAL_ASYNC_SCOPE]) {
   GLOBAL_THIS[GLOBAL_ASYNC_SCOPE] = new AnchorASL();
 }
