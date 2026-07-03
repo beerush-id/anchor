@@ -1,4 +1,5 @@
 import { decodeCookies, isBrowser, setCookieContext } from '@anchorlib/core';
+import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions } from './types.js';
 
@@ -14,6 +15,7 @@ import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, Work
  * @param Shell - The app shell component.
  * @returns A worker object with a Web Standard `fetch` handler.
  */
+// biome-ignore lint/suspicious/noExplicitAny: Expect any.
 export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E>, Shell?: AppShell) {
   const {
     template = '',
@@ -32,6 +34,7 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
       const abort = (reason: unknown) => controller.abort(reason);
       request.signal.addEventListener('abort', abort, { once: true });
 
+      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
       const timerId: any = timeout ? setTimeout(() => abort('timeout'), timeout) : null;
 
       try {
@@ -102,6 +105,7 @@ type IsolatedRenderer = (
  * @param Shell - The app shell component.
  * @returns A worker object with a Web Standard `fetch` handler.
  */
+// biome-ignore lint/suspicious/noExplicitAny: Expect any.
 export function createFullWorker<E = any>(
   router: HTTPRouter,
   renderer: SSRRenderer,
@@ -125,6 +129,7 @@ export function createFullWorker<E = any>(
       const abort = (reason: unknown) => controller.abort(reason);
       request.signal.addEventListener('abort', abort, { once: true });
 
+      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
       let timerId: any;
 
       try {
@@ -132,7 +137,7 @@ export function createFullWorker<E = any>(
         const url = new URL(request.url);
         const contextSeed: SSRContextSeed = resolveContext?.(request, url) ?? [];
 
-        if (request.method === 'POST' && url.pathname.startsWith(router.transport.endpoint)) {
+        if (request.method === 'POST' && url.pathname.startsWith((router.transport as HTTPTransport).endpoint)) {
           const response = await router.resolve(request, contextSeed);
           return createResponse(response);
         }

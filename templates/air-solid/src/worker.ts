@@ -6,7 +6,7 @@ import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import { IRPC_STORE } from '@irpclib/irpc';
 import template from '../dist/client/index.html?raw';
-import { irpc, transport } from './lib/module.js';
+import { transport } from './lib/module.js';
 import router from './lib/router.js';
 import RootLayout from './pages/layout.js';
 
@@ -14,7 +14,7 @@ import './pages/constructor.js';
 
 const render = createSSR(router, RootLayout);
 
-const irpcHttpRouter = new HTTPRouter(irpc, transport);
+const irpcHttpRouter = new HTTPRouter(transport);
 
 IRPC_STORE.subscribe(() => {
   IRPC_STORE.print();

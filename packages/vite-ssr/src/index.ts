@@ -4,7 +4,6 @@ import path from 'node:path';
 import type { CookieJar } from '@anchorlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
-import type { IRPCPackage } from '@irpclib/irpc';
 import type { WebSocketTransport } from '@irpclib/ws';
 import type { WebSocketRouter } from '@irpclib/ws/router';
 import type { Plugin, ViteDevServer } from 'vite';
@@ -134,7 +133,7 @@ export function airSSR(options: ViteSSROptions): Plugin {
             const url = req.originalUrl ?? req.url ?? '/';
 
             // IRPC routing — POST to transport endpoint
-            if (router && req.method === 'POST' && url.startsWith(router.transport.endpoint)) {
+            if (router && req.method === 'POST' && url.startsWith((router.transport as HTTPTransport).endpoint)) {
               await resolveHttpCalls({ server, router, req, res, config: options.irpc });
               return;
             }
@@ -279,8 +278,6 @@ const IRPC_MODULES = {
  */
 async function bootstrap(server: ViteDevServer, options: ViteSSROptions): Promise<SSRModules> {
   if (!bootstrapped) {
-    await server.ssrLoadModule('@irpclib/irpc/server').catch(() => {});
-
     if (options.irpc) {
       IRPC_MODULES.router = await initRouter(server, options.irpc);
       IRPC_MODULES.wsRouter = await initWsRouter(server, options.irpc);
@@ -314,16 +311,15 @@ async function initRouter(
   if (!config.transport) return;
 
   try {
-    const irpc = (await loadExport(server, config.module)) as IRPCPackage;
     const transport = (await loadExport(server, config.transport)) as HTTPTransport;
 
-    if (!irpc || !transport) {
+    if (!transport) {
       server.config.logger.warn('[air-ssr] IRPC module and transport are required.');
       return;
     }
 
     const { HTTPRouter } = await server.ssrLoadModule('@irpclib/http/router');
-    const router = new HTTPRouter(irpc, transport) as HTTPRouter;
+    const router = new HTTPRouter(transport) as HTTPRouter;
 
     server.config.logger.info(
       `[air-ssr] IRPC HTTP router initialized at ${(transport as { endpoint: string }).endpoint}`
@@ -351,17 +347,16 @@ async function initWsRouter(
   if (!config.wsTransport) return;
 
   try {
-    const irpc = (await loadExport(server, config.module)) as IRPCPackage;
     const wsTransport = (await loadExport(server, config.wsTransport)) as WebSocketTransport;
 
-    if (!irpc || !wsTransport) {
+    if (!wsTransport) {
       server.config.logger.warn('[air-ssr] IRPC module and wsTransport are required for WebSocket.');
       return;
     }
 
     const { WebSocketRouter } = await server.ssrLoadModule('@irpclib/ws/router');
     const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
-    const wsRouter = new WebSocketRouter(irpc, wsTransport) as WebSocketRouter;
+    const wsRouter = new WebSocketRouter(wsTransport) as WebSocketRouter;
 
     // Provide CookieJar to WS handlers
     wsRouter.use(() => {
