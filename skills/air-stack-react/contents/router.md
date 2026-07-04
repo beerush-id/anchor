@@ -13,11 +13,34 @@ interface RouterOptions {
   renderMode?: 'deferred' | 'immediate'; // Deferred waits for providers, immediate renders instantly
 }
 
+// Sitemap Configuration
+interface SitemapEntry {
+  loc?: string;
+  lastmod?: string | Date;
+  changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+  priority?: number;
+  nested?: boolean;
+  hreflang?: string;
+  alternates?: { hreflang: string; href: string }[];
+}
+
+interface SitemapConfig {
+  baseUrl?: string;
+  url?: string;
+  exclude?: Route[];
+}
+
+// Route Options
+interface RouteOptions {
+  sitemap?: boolean | SitemapEntry | ((route: Route) => string | SitemapEntry | (string | SitemapEntry)[] | Promise<string | SitemapEntry | (string | SitemapEntry)[]>);
+}
+
 // Router instance
 interface Router {
-  route(path?: string): Route;               // route() to get the root route, path to create child route
-  append(path: string): Route;               // Create independent route tree (no shared layout)
+  route(path?: string, options?: RouteOptions): Route;
+  append(path: string, options?: RouteOptions): Route;
   catch(renderer: (props: { error: RouteError }) => ReactNode): void;
+  sitemap(options?: SitemapConfig): Promise<string>;
   state: RouterState;
 }
 
@@ -30,7 +53,7 @@ interface RouterState {
 
 // Route chain
 interface Route {
-  route(path: string): Route;
+  route(path: string, options?: RouteOptions): Route;
   guard(fn: (ctx: { params, query }) => void | Promise<void>): Route;
   provide(name: string, fn: (ctx: { params, query, data, signal }) => unknown, options?: ProviderOptions): Route;
   provide(providers: Record<string, (ctx) => unknown>, options?: ProviderOptions): Route;
@@ -488,9 +511,37 @@ export const ProfilePage = page(profileRoute).render(({ state, context, children
       {/* context.data merges all providers from rootRoute down to profileRoute */}
       <title>{context.data.meta.title}</title>
 
-      {/* Layouts render nested child routes using children */}
       {children}
     </div>
   );
 }));
 ```
+
+### Sitemap Generation
+Anchor Router automatically intercepts `/sitemap.xml` in SSR and deeply collects all static routes.
+
+- **Exclusion**: To globally exclude a route and its children, pass `{ sitemap: false }` to its route options: `root.route('/admin', { sitemap: false })`.
+- **Custom Attributes**: Pass an object to set prioritization or change frequency: `root.route('/pricing', { sitemap: { priority: 0.9, changefreq: 'weekly' } })`.
+- **Dynamic Routes**: You MUST provide a generator function for dynamic routes.
+  - **CRITICAL**: The generator receives the route instance. You MUST use `route.url(params)` to generate the path.
+  - **NEVER** hardcode the parent path strings inside the generator.
+  ```tsx
+  const postRoute = root.route('/posts/:id', {
+    sitemap: async (route) => {
+      const posts = await fetchPosts();
+      // MUST use route.url() to generate context-aware paths
+      return posts.map(post => route.url({ id: post.id }));
+    }
+  });
+  ```
+- **Language / Alternates**: To generate multi-lingual sitemaps with `<xhtml:link>` cross-linking, pass `{ nested: true, hreflang: 'en' }` from the language prefix route. This automatically propagates the alternate tags to all children.
+  ```tsx
+  const langRoute = root.route('/:lang', {
+    sitemap: () => [
+      { loc: '/en', nested: true, hreflang: 'en' },
+      { loc: '/id', nested: true, hreflang: 'id' },
+    ]
+  });
+  // langRoute.route('/about') automatically gets /en/about and /id/about with alternates!
+  ```
+- **Configuration**: To set the global absolute `baseUrl`, pass it directly to the `createSSR` configuration block (or Vite options).

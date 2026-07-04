@@ -63,9 +63,9 @@ features:
     linkText: Learn more
   - icon: 
       src: '/ssr.svg'
-      alt: 'Universal SSR Icon'
-    title: Universal SSR
-    details: One render function deploys to Bun, Node.js, Cloudflare Workers, and Deno. Request isolation handles concurrency natively.
+      alt: 'Universal SSR & SEO Icon'
+    title: Universal SSR & SEO
+    details: One render function deploys to Bun, Node, Cloudflare, and Deno. Includes a zero-config XML sitemap generator deeply integrated into the router.
     link: /ssr
     linkText: Learn more
   - icon: 

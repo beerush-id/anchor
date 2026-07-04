@@ -370,6 +370,23 @@ export const userRoute = usersRoute.route('/:user_id')
 
 With Anchor's router, navigation is just reactive state. **Guards** and **providers** automatically re-evaluate when their **dependencies change**. If `auth.isAuthenticated` becomes false while the user is sitting on the page, the guard instantly kicks them out. **Loading**, **error**, and **authorization** states are handled centrally. Everything is fully type-safe with zero code generation, and the exact same route definition works seamlessly in both React and Solid.
 
+## Built-in SEO & Sitemaps
+
+You want your application to be discoverable by search engines.
+
+Whether you use React Router or Solid Router, client-side routers are traditionally blind to SEO. You are forced to:
+
+- Hunt for third-party sitemap generator plugins.
+- Write bespoke build scripts to crawl your own file system and generate XML files.
+- Hardcode language alternates (`hreflang`) manually across every single page.
+- Keep your sitemap script constantly in sync every time you rename or move a route.
+
+::: tip What if:
+**The routing engine generated your sitemap automatically out of the box?**
+:::
+
+With Anchor, your router *is* your sitemap. Because the route tree is strongly typed and centrally defined, the SSR engine intercepts `/sitemap.xml` automatically. It deeply collects your static routes, executes your dynamic generators, and natively cross-links multi-lingual alternates (`<xhtml:link>`) across your entire app—all with **zero configuration**.
+
 ## Server-Side Rendering
 
 You want to render your application on the server for speed and SEO.

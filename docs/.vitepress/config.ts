@@ -177,6 +177,7 @@ export default defineConfig({
           { text: 'Navigation', link: '/routing/navigation' },
           { text: 'Guards & Authentication', link: '/routing/guards' },
           { text: 'Data Loaders & Providers', link: '/routing/data-loaders' },
+          { text: 'Sitemap Generation', link: '/routing/sitemap' },
         ],
       },
       {
