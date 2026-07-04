@@ -46,6 +46,13 @@ export async function generateSitemap(
       const generated = await sitemapOpt(route);
       const items = Array.isArray(generated) ? generated : [generated];
 
+      const autoAlternates: { hreflang: string; href: string }[] = [];
+      for (const item of items) {
+        if (item && typeof item === 'object' && item.hreflang && item.loc) {
+          autoAlternates.push({ hreflang: item.hreflang, href: item.loc });
+        }
+      }
+
       for (const item of items) {
         if (!item) continue;
 
@@ -61,6 +68,17 @@ export async function generateSitemap(
           attrs = { ...item };
           delete attrs.nested;
           delete attrs.loc;
+
+          if (autoAlternates.length > 1 && item.hreflang) {
+            const existing = attrs.alternates ?? [];
+            const merged = new Map(existing.map((a) => [a.hreflang, a.href]));
+            for (const alt of autoAlternates) {
+              if (!merged.has(alt.hreflang)) {
+                merged.set(alt.hreflang, alt.href);
+              }
+            }
+            attrs.alternates = Array.from(merged, ([hreflang, href]) => ({ hreflang, href }));
+          }
         }
 
         if (nested) {
@@ -86,15 +104,28 @@ export async function generateSitemap(
             const mappedLoc = childPath.replace(parentPath, loc);
 
             if (typeof childSitemapOpt === 'object' && childSitemapOpt !== null && childSitemapOpt.loc) {
+              const childAlternates = childSitemapOpt.alternates?.map((a) => ({
+                ...a,
+                href: a.href.replace(parentPath, loc),
+              }));
+
               sitemapEntries.push({
                 ...childSitemapOpt,
                 loc: childSitemapOpt.loc.replace(parentPath, loc),
+                ...(childAlternates ? { alternates: childAlternates } : {}),
               });
             } else if (childVal.type === ROUTE_TYPE.STATIC) {
               const mergedAttrs =
                 typeof childSitemapOpt === 'object' && childSitemapOpt !== null
                   ? { ...attrs, ...childSitemapOpt }
-                  : attrs;
+                  : { ...attrs };
+
+              if (mergedAttrs.alternates) {
+                mergedAttrs.alternates = mergedAttrs.alternates.map((a) => ({
+                  ...a,
+                  href: childPath.replace(parentPath, a.href),
+                }));
+              }
 
               sitemapEntries.push({ ...mergedAttrs, loc: mappedLoc });
             }
@@ -162,6 +193,19 @@ export async function generateSitemap(
         if (entry.priority !== undefined) {
           tags.push(`<priority>${entry.priority}</priority>`);
         }
+
+        if (entry.alternates?.length) {
+          for (const alt of entry.alternates) {
+            let altHref = alt.href;
+            if (!altHref.startsWith('http://') && !altHref.startsWith('https://')) {
+              altHref = `${baseUrl}${altHref.startsWith('/') ? altHref : `/${altHref}`}`;
+            }
+            if (altHref.endsWith('/') && altHref.split('/').length > 4) {
+              altHref = altHref.slice(0, -1);
+            }
+            tags.push(`<xhtml:link rel="alternate" hreflang="${alt.hreflang}" href="${altHref}" />`);
+          }
+        }
       }
 
       return `  <${itemTag}>\n    ${tags.join('\n    ')}\n  </${itemTag}>`;
@@ -169,5 +213,9 @@ export async function generateSitemap(
     .filter(Boolean)
     .join('\n');
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<${rootTag} xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</${rootTag}>`;
+  const xmlns = isIndex
+    ? 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+    : 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml"';
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<${rootTag} ${xmlns}>\n${urlsXml}\n</${rootTag}>`;
 }

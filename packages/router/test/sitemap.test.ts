@@ -149,11 +149,12 @@ describe('sitemap.ts', () => {
     const router = new Router({ baseUrl: 'https://example.com' });
     const root = router.route();
 
-    // Dynamic lang route that returns nested: true entries
+    // Dynamic lang route that returns nested: true entries with hreflang for auto cross-linking
     const langRoute = root.route('/:lang', {
       sitemap: () => [
-        { loc: '/en', nested: true, changefreq: 'daily' },
-        { loc: '/fr', nested: true, priority: 0.8 },
+        { loc: '/en', nested: true, hreflang: 'en', changefreq: 'daily' },
+        { loc: '/fr', nested: true, hreflang: 'fr', priority: 0.8 },
+        { loc: '/es/', nested: true, hreflang: 'es' }, // Trailing slash for altHref cleanup
         { nested: true } as never, // Missing loc to cover line 59 fallback
       ],
     });
@@ -169,6 +170,14 @@ describe('sitemap.ts', () => {
 
     // Child that overrides loc
     langRoute.route('/custom', { sitemap: { loc: '/en/special-custom' } });
+
+    // Child that overrides both loc and alternates explicitly
+    langRoute.route('/custom2', {
+      sitemap: {
+        loc: '/en/special-custom2',
+        alternates: [{ hreflang: 'es', href: 'es/special-custom2' }], // No leading slash for line 201 fallback
+      },
+    });
 
     // Child that only overrides attributes (no loc)
     langRoute.route('/attrs', { sitemap: { changefreq: 'always' } });
@@ -188,6 +197,10 @@ describe('sitemap.ts', () => {
     expect(xml).toContain('<changefreq>daily</changefreq>');
     expect(xml).toContain('<priority>0.8</priority>');
 
+    // Make sure auto cross-linking generated alternate tags mapped down to child routes
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://example.com/en/about" />');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="fr" href="https://example.com/fr/about" />');
+
     // The opted out child /admin should NOT be generated
     expect(xml).not.toContain('<loc>https://example.com/en/admin</loc>');
     expect(xml).not.toContain('<loc>https://example.com/fr/admin</loc>');
@@ -195,6 +208,10 @@ describe('sitemap.ts', () => {
     // The overridden child should output its explicit loc and NOT output mapped /fr/custom
     expect(xml).toContain('<loc>https://example.com/en/special-custom</loc>');
     expect(xml).not.toContain('<loc>https://example.com/fr/custom</loc>');
+
+    // The explicit child override should contain both explicit loc and explicit alternate tag
+    expect(xml).toContain('<loc>https://example.com/en/special-custom2</loc>');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="es" href="https://example.com/es/special-custom2" />');
 
     // The child overriding only attributes should have both the mapped path and overridden attributes
     expect(xml).toContain('<loc>https://example.com/en/attrs</loc>');
@@ -272,10 +289,10 @@ describe('sitemap.ts', () => {
     const wildXml = await wild.sitemap();
 
     expect(dynXml).toBe(
-      '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n\n</urlset>'
+      '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n\n</urlset>'
     );
     expect(wildXml).toBe(
-      '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n\n</urlset>'
+      '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n\n</urlset>'
     );
   });
 

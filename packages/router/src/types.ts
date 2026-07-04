@@ -147,6 +147,10 @@ export interface SitemapEntry {
   priority?: number;
   /** If true, maps this entry across all static child routes of the generating route */
   nested?: boolean;
+  /** The language code (e.g. 'en', 'fr') for this specific entry to enable auto cross-linking */
+  hreflang?: string;
+  /** Explicit list of alternate versions of this page */
+  alternates?: { hreflang: string; href: string }[];
 }
 
 export type SitemapGeneratorResult =
