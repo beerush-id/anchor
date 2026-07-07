@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@irpclib/irpc",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "exports": {
