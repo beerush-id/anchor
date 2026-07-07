@@ -70,12 +70,6 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   const render = Component as (props: unknown) => ReactNode;
   const propsMap = new WeakMap();
 
-  const Start: FC<{ context: RenderContext }> = ({ context }) => {
-    setContextStore(context);
-    return null;
-  };
-  Start.displayName = `Setup(${componentName})`;
-
   const Finish: FC<{ context: RenderContext }> = ({ context }) => {
     setContextStore(context);
     return null;
@@ -117,7 +111,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
      */
     lifecycle.cleanup();
 
-    const Children = () => {
+    const children = () => {
       try {
         return lifecycle.render(() => render(props));
       } catch (error) {
@@ -131,12 +125,12 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
         return newErr.message;
       }
     };
-    Children.displayName = `Children(${componentName})`;
+
+    setContextStore(lifecycle.context);
 
     return (
       <>
-        <Start context={lifecycle.context} />
-        <Children />
+        {children()}
         <Finish context={lifecycle.context.parent!} />
       </>
     );
@@ -227,12 +221,6 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
 
   const snippetName = `${scopeName}(${viewName})`;
 
-  const Start: FC<{ context: RenderContext }> = ({ context }) => {
-    setContextStore(context);
-    return null;
-  };
-  Start.displayName = `Setup(${viewName})`;
-
   const Finish: FC<{ context: RenderContext }> = ({ context }) => {
     setContextStore(context);
     return null;
@@ -265,7 +253,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       };
     }, []);
 
-    const Children = () =>
+    const children = () =>
       observer.run(() => {
         try {
           if (inherited) return factory(parentProps as never, parentProps);
@@ -280,14 +268,13 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
           return newErr.message;
         }
       });
-    Children.displayName = `Children(${viewName})`;
 
     const prevContext = getContextStore();
+    setContextStore(context);
 
     return (
       <>
-        <Start context={context} />
-        <Children />
+        {children()}
         <Finish context={prevContext} />
       </>
     );
