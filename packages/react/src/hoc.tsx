@@ -117,7 +117,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
      */
     lifecycle.cleanup();
 
-    const content = () => {
+    const Children = () => {
       try {
         return lifecycle.render(() => render(props));
       } catch (error) {
@@ -131,11 +131,12 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
         return newErr.message;
       }
     };
+    Children.displayName = `Children(${componentName})`;
 
     return (
       <>
         <Start context={lifecycle.context} />
-        {content()}
+        <Children />
         <Finish context={lifecycle.context.parent!} />
       </>
     );
@@ -264,7 +265,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
       };
     }, []);
 
-    const content = () =>
+    const Children = () =>
       observer.run(() => {
         try {
           if (inherited) return factory(parentProps as never, parentProps);
@@ -279,13 +280,14 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
           return newErr.message;
         }
       });
+    Children.displayName = `Children(${viewName})`;
 
     const prevContext = getContextStore();
 
     return (
       <>
         <Start context={context} />
-        {content()}
+        <Children />
         <Finish context={prevContext} />
       </>
     );
