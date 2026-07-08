@@ -35,7 +35,7 @@ export const ANCHOR_SETTINGS = {
   safeObservationThreshold: 100,
   globalScopeWarning: true,
   safeParse: false,
-  reactive: true,
+  reactive: typeof document !== 'undefined',
 } as AnchorSettings;
 
 export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);

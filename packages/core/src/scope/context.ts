@@ -1,10 +1,16 @@
-import { GLOBAL_ASYNC_SCOPE, GLOBAL_THIS, hasASL } from '../server/constant.js';
+import { $module, isBrowser } from '../module.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import type { ContextReader } from '../types.js';
-import { isBrowser } from '../utils/index.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
 import { AsyncStore, type AsyncStoreContract, type StoreContract } from './store.js';
+
+let ScopeClass = AsyncScope;
+
+if (!isBrowser()) {
+  const { AnchorALS } = await import('../server/index.js');
+  ScopeClass = AnchorALS as never as typeof AsyncScope;
+}
 
 /** The key used to store the context store in the active scope. */
 const CONTEXT_STORE_KEY = Symbol('anchor-context');
@@ -12,15 +18,11 @@ const CONTEXT_STORE_KEY = Symbol('anchor-context');
 /** The root-level store. All {@link withScope} children ultimately chain back to this. */
 const globalStore = new AsyncStore([[CONTEXT_STORE_KEY, new AsyncStore()]]);
 
+$module.async = new ScopeClass();
+$module.async.store = globalStore;
+
 /** The singleton {@link AsyncScope} instance that powers the global scope functions. */
-let globalAsyncCtx = new AsyncScope(globalStore);
-
-if (hasASL()) {
-  const asl = GLOBAL_THIS[GLOBAL_ASYNC_SCOPE];
-  asl.store = globalStore;
-  globalAsyncCtx = asl;
-}
-
+// let globalAsyncCtx = $module[GLOBAL_ASYNC_SCOPE] as AsyncScope<AsyncStore>;
 let bypassWarning = false;
 
 // Centralized Context API that replaceable.
@@ -56,8 +58,8 @@ export function safeRun<T>(fn: () => T) {
  * @param {AsyncScope<AsyncStore>} scope
  */
 export function setAsyncScope(scope: AsyncScope<AsyncStore>) {
-  globalAsyncCtx = scope as AsyncScope<AsyncStore>;
-  globalAsyncCtx.store = globalStore;
+  $module.async = scope as AsyncScope<AsyncStore>;
+  $module.async.store = globalStore;
 }
 
 /**
@@ -65,7 +67,7 @@ export function setAsyncScope(scope: AsyncScope<AsyncStore>) {
  * @returns The global async scope.
  */
 export function getAsyncScope() {
-  return globalAsyncCtx;
+  return $module.async;
 }
 
 /**
@@ -89,7 +91,7 @@ export function asyncStoreContract<T>(
     const store = new AsyncStore([[key, value]], getScopeStore());
 
     try {
-      return await globalAsyncCtx.run<R>(store, fn);
+      return await $module.async.run<R>(store, fn);
     } finally {
       onfinally?.();
     }
@@ -134,9 +136,9 @@ export function storeContract<T>(key: AsyncKey, value: T, onstart?: () => void, 
  * @returns The return value of `fn`, or an {@link Future} Thenable if `fn` is async.
  */
 export function withScope<R>(fn: () => R, store?: AsyncStore) {
-  const parent = globalAsyncCtx.getStore()!;
+  const parent = $module.async.getStore()!;
   const childStore = store ?? new AsyncStore(parent);
-  return globalAsyncCtx.run(childStore, fn);
+  return $module.async.run(childStore, fn);
 }
 
 /**
@@ -161,7 +163,7 @@ export async function withIsolation<R>(fn: () => Promise<R> | R, strict = true, 
   const isolatedStore = new AsyncStore([[CONTEXT_STORE_KEY, context ?? new AsyncStore()]]);
 
   try {
-    const result = await (globalAsyncCtx.run(isolatedStore, fn, floatingLists) as Promise<R>);
+    const result = await ($module.async.run(isolatedStore, fn, floatingLists) as Promise<R>);
 
     if (floatingLists.size) {
       const error = new Error('Floating promise detected!');
@@ -210,7 +212,7 @@ export function getScope<R>(key: AsyncKey): R | undefined;
  */
 export function getScope<R>(key: AsyncKey, fallback: R): R;
 export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
-  const store = globalAsyncCtx.getStore();
+  const store = $module.async.getStore();
 
   if (!isBrowser() && !bypassWarning && store === globalStore && ANCHOR_SETTINGS.globalScopeWarning) {
     captureStack.warning.external(
@@ -239,7 +241,7 @@ export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
  * @param value - The value to associate with the key.
  */
 export function setScope(key: AsyncKey, value: AsyncValue) {
-  return globalAsyncCtx.getStore()?.set(key, value);
+  return $module.async.getStore()?.set(key, value);
 }
 
 /**
@@ -256,7 +258,7 @@ export function createContextStore(init?: [AsyncKey, AsyncValue][]): AsyncStore 
  * @returns {AsyncStore}
  */
 export function getContextStore(): AsyncStore {
-  return globalAsyncCtx.getStore()!.get(CONTEXT_STORE_KEY) as AsyncStore;
+  return $module.async.getStore()!.get(CONTEXT_STORE_KEY) as AsyncStore;
 }
 
 /**
@@ -265,7 +267,7 @@ export function getContextStore(): AsyncStore {
  * @returns {void}
  */
 export function setContextStore(store: AsyncStore): void {
-  globalAsyncCtx.getStore()!.set(CONTEXT_STORE_KEY, store);
+  $module.async.getStore()!.set(CONTEXT_STORE_KEY, store);
 }
 
 /**
@@ -338,7 +340,7 @@ export function setContext(key: AsyncKey, value: AsyncValue) {
  * @returns The currently active {@link AsyncStore}, or `undefined` if none is active.
  */
 export function getScopeStore() {
-  return globalAsyncCtx.getStore();
+  return $module.async.getStore();
 }
 
 /**
@@ -358,7 +360,7 @@ export function getRootStore() {
  * for later re-entry via {@link withScope}.
  */
 export function getAllScopes(list: AsyncStore[] = [], from?: AsyncStore) {
-  const store = from ?? globalAsyncCtx.getStore()!;
+  const store = from ?? $module.async.getStore()!;
 
   list.push(store);
 
@@ -375,5 +377,5 @@ export function getAllScopes(list: AsyncStore[] = [], from?: AsyncStore) {
  * @returns {boolean} - True if the currently active scope is global scope.
  */
 export function isGlobalScope(): boolean {
-  return globalAsyncCtx.getStore() === globalStore;
+  return $module.async.getStore() === globalStore;
 }

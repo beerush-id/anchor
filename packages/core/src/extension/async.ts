@@ -2,7 +2,8 @@ import { createObserver } from '../reactive/index.js';
 import { mutable, writable } from '../reactive/ref.js';
 import { ASYNC_STATUS } from '../shared/constant.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from '../types.js';
-import { isBrowser } from '../utils/index.js';
+
+import { isBrowser } from '../module.js';
 
 export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>

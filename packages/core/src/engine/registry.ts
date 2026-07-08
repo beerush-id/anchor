@@ -1,32 +1,18 @@
-import type {
-  Broadcaster,
-  Linkable,
-  State,
-  StateController,
-  StateExceptionHandlerList,
-  StateGateway,
-  StateMetadata,
-  StateRelation,
-} from '../types.js';
-import type { createArrayMutator } from './array.js';
-import type { createCollectionMutator } from './collection.js';
+import { $module } from '../module.js';
 
-export const INIT_REGISTRY = new WeakMap<Linkable, State>();
-export const META_REGISTRY = new WeakMap<Linkable, StateMetadata>();
-export const SORTER_REGISTRY = new WeakMap<Linkable, (a: unknown, b: unknown) => number>();
+export const INIT_REGISTRY = $module.INIT_REGISTRY;
+export const META_REGISTRY = $module.META_REGISTRY;
+export const SORTER_REGISTRY = $module.SORTER_REGISTRY;
 
 // GATEWAYS
-export const RELATION_REGISTRY = new WeakMap<Linkable, StateRelation>();
-export const MUTATOR_REGISTRY = new WeakMap<
-  Linkable,
-  ReturnType<typeof createArrayMutator> | ReturnType<typeof createCollectionMutator>
->();
-export const BROADCASTER_REGISTRY = new WeakMap<Linkable, Broadcaster>();
-export const INIT_GATEWAY_REGISTRY = new WeakMap<Linkable, StateGateway>();
+export const RELATION_REGISTRY = $module.RELATION_REGISTRY;
+export const MUTATOR_REGISTRY = $module.MUTATOR_REGISTRY;
+export const BROADCASTER_REGISTRY = $module.BROADCASTER_REGISTRY;
+export const INIT_GATEWAY_REGISTRY = $module.INIT_GATEWAY_REGISTRY;
 
-export const STATE_REGISTRY = new WeakMap<State, Linkable>();
-export const CONTROLLER_REGISTRY = new WeakMap<State, StateController>();
+export const STATE_REGISTRY = $module.STATE_REGISTRY;
+export const CONTROLLER_REGISTRY = $module.CONTROLLER_REGISTRY;
 
-export const STATE_BUSY_LIST = new WeakSet<State>();
-export const META_INIT_REGISTRY = new WeakMap<StateMetadata, Linkable>();
-export const EXCEPTION_HANDLER_REGISTRY = new WeakMap<State, StateExceptionHandlerList>();
+export const STATE_BUSY_LIST = $module.STATE_BUSY_LIST;
+export const META_INIT_REGISTRY = $module.META_INIT_REGISTRY;
+export const EXCEPTION_HANDLER_REGISTRY = $module.EXCEPTION_HANDLER_REGISTRY;

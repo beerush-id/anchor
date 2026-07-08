@@ -1,6 +1,7 @@
-import '../../src/server/index.js';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  type AnyType,
   AsyncStore,
   awaited,
   effect,
@@ -33,8 +34,42 @@ describe('Anchor - Server binding', () => {
     expect(getScope('test')).toBeUndefined();
   });
 
+  it('should load ALS', async () => {
+    vi.resetModules();
+    vi.stubGlobal('window', undefined);
+    vi.stubGlobal('document', undefined);
+
+    const { AnchorALS } = await import('../../src/server/index.js');
+    expect(AnchorALS).toBeDefined();
+
+    const als = new AnchorALS();
+    expect(als.getStore()).toBeUndefined();
+
+    (globalThis as AnyType)[Symbol.for('ANCHOR-NAMESPACE')].version = '1.0.0';
+
+    const { $module, $ROOT } = await import('../../src/module.js');
+    expect($module).toBeDefined();
+    expect($ROOT).toBeDefined();
+
+    const { getAsyncScope } = await import('../../src/scope/context.js');
+    expect(getAsyncScope()).toBeInstanceOf(AsyncLocalStorage);
+
+    const { switchable } = await import('../../src/engine/switchable.js');
+    expect(switchable).toBeDefined();
+
+    const { awaited } = await import('../../src/scope/scope.js');
+    const result = await awaited(Promise.resolve('ok'));
+    expect(result).toBe('ok');
+    const result2 = await awaited(() => Promise.resolve('ok'));
+    expect(result2).toBe('ok');
+
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+
+    vi.unstubAllGlobals();
+  });
+
   it('should handle async context', async () => {
-    expect(getScopeStore()).toBeInstanceOf(Map);
+    expect(getScopeStore()).toBeUndefined();
 
     await withScope(async () => {
       expect(getScopeStore()).toBeInstanceOf(Map);

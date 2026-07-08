@@ -1,4 +1,4 @@
-import { hasASL } from '../server/constant.js';
+import { $module } from '../module.js';
 
 /** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
@@ -156,6 +156,10 @@ export class AsyncScope<T> {
       restore();
     }
   }
+}
+
+export function hasALS() {
+  return $module.async && !($module.async instanceof AsyncScope);
 }
 
 let currentFuture: Future<unknown> | undefined;
@@ -319,8 +323,9 @@ export class Future<T> {
  */
 export function awaited<T>(promise: Promise<T>): Future<T>;
 export function awaited<T>(fn: () => Promise<T> | T): Future<T>;
+
 export function awaited<T>(promise: Promise<T> | (() => T | Promise<T>)): Future<T> {
-  if (hasASL()) return (typeof promise === 'function' ? promise() : promise) as Future<T>;
+  if (hasALS()) return (typeof promise === 'function' ? promise() : promise) as Future<T>;
 
   const future = new Future<T>();
 

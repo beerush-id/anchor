@@ -1,6 +1,8 @@
 import { getScope, setScope } from '../scope/index.js';
 import type { StateObserver } from '../types.js';
 
+import { isBrowser } from '../module.js';
+
 export const OBSERVER_SYMBOL = Symbol('state-observer');
 
 const switchableDefaults = {
@@ -23,6 +25,10 @@ export const switchable = { ...switchableDefaults };
 export function suspendSwitch() {
   switchable.getObserver = () => undefined;
   switchable.untrack = (fn) => fn();
+}
+
+if (!isBrowser()) {
+  suspendSwitch();
 }
 
 export function restoreSwitch() {

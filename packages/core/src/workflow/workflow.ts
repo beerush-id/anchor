@@ -1,6 +1,6 @@
 import { createObserver } from '../reactive/index.js';
 import { onCleanup } from '../scope/index.js';
-import { isBrowser, microtask } from '../utils/index.js';
+import { microtask } from '../utils/index.js';
 import { uuid } from '../utils/uuid.js';
 import { WORKFLOW_STATUS } from './constant.js';
 import { WorkflowStepper } from './stepper.js';
@@ -20,6 +20,7 @@ import type {
   WorkflowStepContext,
   WorkflowSwitch,
 } from './types.js';
+import { isBrowser } from '../module.js';
 
 export const WORKFLOW_HOOKS = {
   onRegister: new Set<(workflow: Workflow<WorkflowData, WorkflowData>) => void>(),

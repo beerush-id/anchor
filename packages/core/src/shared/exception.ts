@@ -1,5 +1,5 @@
 import type { KeyLike, StateMutation } from '../types.js';
-import { typeOf } from '../utils/index.js';
+import { typeOf } from '../utils/inspector.js';
 
 const generator = {
   init(message: string) {

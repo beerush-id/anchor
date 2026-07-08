@@ -277,11 +277,3 @@ export function isEmpty(value: unknown): value is string | number | unknown[] | 
 
   return false;
 }
-
-/**
- * Check if the current environment is a browser.
- * @returns {boolean}
- */
-export function isBrowser(): boolean {
-  return typeof window !== 'undefined' && typeof document === 'object';
-}

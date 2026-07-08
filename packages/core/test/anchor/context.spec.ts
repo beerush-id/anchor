@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sleep } from '../../src/index.js';
 import {
+  AsyncScope,
+  AsyncStore,
+  awaited,
   clearContextStore,
   createContext,
   createContextStore,
@@ -16,11 +18,10 @@ import {
   setContext,
   setContextStore,
   setScope,
+  sleep,
   withIsolation,
   withScope,
-} from '../../src/scope/context.js';
-import { AsyncScope, awaited } from '../../src/scope/scope.js';
-import { AsyncStore } from '../../src/scope/store.js';
+} from '../../src/index.js';
 
 describe('Anchor - Async Scope', () => {
   describe('AsyncScope', () => {

@@ -3,7 +3,8 @@ import { mutable, subscribe } from '../reactive/index.js';
 import { getScope, globalRun, onGlobalCleanup, setScope } from '../scope/index.js';
 import { captureStack } from '../shared/index.js';
 import type { ObjLike } from '../types.js';
-import { isBrowser, microtask } from '../utils/index.js';
+import { microtask } from '../utils/index.js';
+import { isBrowser } from '../module.js';
 
 export const COOKIE_PREFIX = 'anchor-cookie://';
 

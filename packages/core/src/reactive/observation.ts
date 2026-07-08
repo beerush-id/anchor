@@ -19,7 +19,8 @@ import type {
   StateTracker,
   StateUnsubscribe,
 } from '../types.js';
-import { isBrowser, isFunction, shortId } from '../utils/index.js';
+import { isFunction, shortId } from '../utils/index.js';
+import { isBrowser } from '../module.js';
 
 /**
  * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.

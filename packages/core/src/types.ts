@@ -11,6 +11,8 @@ import type {
 } from './shared/constant.js';
 import type { Linkables } from './shared/enum.js';
 
+// biome-ignore lint/suspicious/noExplicitAny: Expect any.
+export type AnyType = any;
 export type Enum<T> = T[keyof T];
 export type Primitive = string | number | boolean | bigint | symbol | undefined | null | MethodLike | Date | RegExp;
 
@@ -56,6 +58,9 @@ export type MapMutation = (typeof MAP_MUTATIONS)[number] | `${(typeof MAP_MUTATI
 export type ArrayMutation = (typeof ARRAY_MUTATIONS)[number] | `${(typeof ARRAY_MUTATIONS)[number]}`;
 export type ObjectMutation = (typeof OBJECT_MUTATIONS)[number] | `${(typeof OBJECT_MUTATIONS)[number]}`;
 export type StateMutation = ArrayMutation | ObjectMutation | SetMutation | MapMutation | BatchMutation;
+
+export type MapMutationMethod = 'set' | 'delete' | 'clear';
+export type SetMutationMethod = 'add' | 'delete' | 'clear';
 
 export type StateBaseOptions = {
   strict?: boolean;
@@ -265,9 +270,9 @@ export type Mutable<T> = T extends ReadonlyMap<infer K, infer V>
         };
 
 export type MutationKey<T> = T extends ReadonlyMap<unknown, unknown>
-  ? MapMutation
+  ? MapMutationMethod
   : T extends ReadonlySet<unknown>
-    ? SetMutation
+    ? SetMutationMethod
     : T extends ReadonlyArray<unknown>
       ? ArrayMutation
       : keyof T;

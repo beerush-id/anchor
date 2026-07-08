@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AsyncScope, awaited } from '../../src/scope/scope.js';
+import { AsyncScope, awaited } from '../../src/index.js';
 
 function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
