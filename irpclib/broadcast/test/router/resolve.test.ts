@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { createPackage, IRPC_STATUS, IRPC_STORE } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../../src/index.js';

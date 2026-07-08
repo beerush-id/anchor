@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { COOKIE_JAR_KEY, COOKIE_JAR_WRITABLE, cookies, getScope } from '@anchorlib/core';
 import {
   createPackage,

@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { createPackage, credential, IRPC_FILE_STATUS, IRPC_STORE, type IRPCRequests } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HTTPTransport, IRPC_JSON_KEY } from '../../src/index.js';

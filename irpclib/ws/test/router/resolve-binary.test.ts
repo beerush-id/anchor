@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { createPackage, encode, type IRPCData, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeFileFrame } from '../../src/frame.js';

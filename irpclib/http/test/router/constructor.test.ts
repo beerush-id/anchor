@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { createPackage } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ENDPOINT, HTTPTransport } from '../../src/index.js';

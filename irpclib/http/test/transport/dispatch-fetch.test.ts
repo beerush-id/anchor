@@ -1,5 +1,4 @@
-import '@irpclib/irpc/server';
-import { createPackage, IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
+import { IRPC_PACKET_TYPE, IRPC_STATUS, IRPC_STORE, type IRPCCall, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COOKIES_EVENT, COOKIES_SYNC_KEY, HTTPTransport, IRPC_JSON_KEY } from '../../src/index.js';
 

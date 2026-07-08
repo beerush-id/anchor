@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { createPackage } from '@irpclib/irpc';
 import { describe, expect, it, vi } from 'vitest';
 import { HTTPTransport } from '../../src/index.js';

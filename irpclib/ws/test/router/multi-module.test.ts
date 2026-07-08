@@ -1,4 +1,3 @@
-import '@irpclib/irpc/server';
 import { createPackage, IRPC_STATUS } from '@irpclib/irpc';
 import { describe, expect, it, vi } from 'vitest';
 import { WebSocketTransport } from '../../src/index.js';
