@@ -1,8 +1,15 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
+import type HOOK from 'node:async_hooks';
 import { $ROOT, $symbol } from '../module.js';
 import type { AsyncStore } from '../scope/index.js';
 
-class AnchorALS<T> extends AsyncLocalStorage<T> {
+if (!$ROOT.AsyncLocalStorage) {
+  const { AsyncLocalStorage } = await import('node:async_hooks');
+  $ROOT.AsyncLocalStorage = AsyncLocalStorage;
+}
+
+const AsyncHook = $ROOT.AsyncLocalStorage as typeof HOOK.AsyncLocalStorage;
+
+class AnchorALS<T> extends AsyncHook<T> {
   private store?: AsyncStore;
 
   public getStore() {

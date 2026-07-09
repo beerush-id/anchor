@@ -68,12 +68,11 @@ export function microtask<T = undefined>(delay = 10): MicroTask<T> {
       lastContext = context;
     }
 
-    if (typeof executor !== 'function') {
-      if (delay > 0) {
-        activeId = setTimeout(execute, delay) as never;
-      } else {
-        queueMicrotask(execute);
-      }
+    if (delay > 0) {
+      clearTimeout(activeId);
+      activeId = setTimeout(execute, delay) as never;
+    } else if (typeof executor !== 'function') {
+      queueMicrotask(execute);
     }
 
     executor = fn;

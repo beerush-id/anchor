@@ -68,7 +68,7 @@ describe('Anchor Utilities', () => {
       vi.advanceTimersByTime(25);
       schedule(handler, 'second');
 
-      vi.advanceTimersByTime(25); // 50ms total
+      vi.advanceTimersByTime(50); // 50ms from second schedule (75ms total)
       expect(handler).toHaveBeenCalledWith('first', 'second');
     });
 
@@ -170,8 +170,8 @@ describe('Anchor Utilities', () => {
       // Should not have executed yet (only 45ms passed, timeout is 50ms)
       expect(handler).not.toHaveBeenCalled();
 
-      // Advance to timeout
-      vi.advanceTimersByTime(10);
+      // Advance to timeout (needs 50ms from last schedule at 40ms -> 90ms total, currently 45ms passed)
+      vi.advanceTimersByTime(45);
 
       // Should only execute once with initial and final values
       expect(handler).toHaveBeenCalledTimes(1);
@@ -183,27 +183,18 @@ describe('Anchor Utilities', () => {
       const handler = vi.fn();
 
       // Simulate user dragging for 200ms with events every 5ms
-      // This should result in 4 separate task executions
       for (let i = 0; i < 40; i++) {
         // 40 iterations * 5ms = 200ms total
         schedule(handler, i + 1);
         vi.advanceTimersByTime(5);
       }
 
-      // Advance time a bit more to ensure the last batch executes
-      vi.advanceTimersByTime(10);
+      // Advance time by 50ms to allow the execution after rapid dragging completes
+      vi.advanceTimersByTime(50);
 
-      // Should have executed 4 times (at 50ms, 100ms, 150ms, and 200ms)
-      expect(handler).toHaveBeenCalledTimes(4);
-
-      // First execution: initial=1, final=10 (at ~50ms)
-      expect(handler).toHaveBeenNthCalledWith(1, 1, 10);
-      // Second execution: initial=11, final=20 (at ~100ms)
-      expect(handler).toHaveBeenNthCalledWith(2, 11, 20);
-      // Third execution: initial=21, final=30 (at ~150ms)
-      expect(handler).toHaveBeenNthCalledWith(3, 21, 30);
-      // Fourth execution: initial=31, final=40 (at ~200ms)
-      expect(handler).toHaveBeenNthCalledWith(4, 31, 40);
+      // Under clearTimeout timer resetting, continuous rapid calls debounce into 1 execution
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(1, 40);
     });
   });
 });

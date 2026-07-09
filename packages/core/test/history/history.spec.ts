@@ -711,39 +711,27 @@ describe('Anchor History', () => {
 
         timeTravel(5);
       }
-      timeTravel(5);
+      timeTravel(debounce);
 
       expect(state.text).toBe('Hello World TypeScript is awesome.');
       expect(stateHistory.canBackward).toBe(true);
       expect(stateHistory.canForward).toBe(false);
-      expect(stateHistory.backwardList.length).toBe(words.length);
+      expect(stateHistory.backwardList.length).toBe(5);
 
       expect(stateHistory.backwardList[0].prev).toBe('');
-      expect(stateHistory.backwardList[0].value).toBe('Hello');
+      expect(stateHistory.backwardList[0].value).toBe('Hello ');
 
-      expect(stateHistory.backwardList[1].prev).toBe('Hello');
-      expect(stateHistory.backwardList[1].value).toBe('Hello ');
+      expect(stateHistory.backwardList[1].prev).toBe('Hello ');
+      expect(stateHistory.backwardList[1].value).toBe('Hello World ');
 
-      expect(stateHistory.backwardList[2].prev).toBe('Hello ');
-      expect(stateHistory.backwardList[2].value).toBe('Hello World');
+      expect(stateHistory.backwardList[2].prev).toBe('Hello World ');
+      expect(stateHistory.backwardList[2].value).toBe('Hello World TypeScript ');
 
-      expect(stateHistory.backwardList[3].prev).toBe('Hello World');
-      expect(stateHistory.backwardList[3].value).toBe('Hello World ');
+      expect(stateHistory.backwardList[3].prev).toBe('Hello World TypeScript ');
+      expect(stateHistory.backwardList[3].value).toBe('Hello World TypeScript is ');
 
-      expect(stateHistory.backwardList[4].prev).toBe('Hello World ');
-      expect(stateHistory.backwardList[4].value).toBe('Hello World TypeScript');
-
-      expect(stateHistory.backwardList[5].prev).toBe('Hello World TypeScript');
-      expect(stateHistory.backwardList[5].value).toBe('Hello World TypeScript ');
-
-      expect(stateHistory.backwardList[6].prev).toBe('Hello World TypeScript ');
-      expect(stateHistory.backwardList[6].value).toBe('Hello World TypeScript is');
-
-      expect(stateHistory.backwardList[7].prev).toBe('Hello World TypeScript is');
-      expect(stateHistory.backwardList[7].value).toBe('Hello World TypeScript is ');
-
-      expect(stateHistory.backwardList[8].prev).toBe('Hello World TypeScript is ');
-      expect(stateHistory.backwardList[8].value).toBe('Hello World TypeScript is awesome.');
+      expect(stateHistory.backwardList[4].prev).toBe('Hello World TypeScript is ');
+      expect(stateHistory.backwardList[4].value).toBe('Hello World TypeScript is awesome.');
     });
   });
 });
