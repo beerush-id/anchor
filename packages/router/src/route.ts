@@ -6,6 +6,7 @@ import { GuardError, ProviderError, RouteError } from './error.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import type { Router } from './router.js';
+import { generateSitemap } from './sitemap.js';
 import { createState, getStore, safeRead } from './store.js';
 import type {
   ExtractParams,
@@ -41,7 +42,6 @@ import type {
   UnknownGuard,
   UnknownRoute,
 } from './types.js';
-import { generateSitemap } from './sitemap.js';
 
 export type IndexRoute<
   Path extends RoutePath,
@@ -639,7 +639,7 @@ export class Route<
             // Run the provider inside an observer, so whenever the state it reads change,
             // the observer will be re-run.
             const resolver = () => {
-              return observer.run(async () => {
+              return observer.runAsync(async () => {
                 $do(() => state.resolving.add(name));
 
                 try {

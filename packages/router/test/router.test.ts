@@ -1,5 +1,5 @@
-import { createLifecycle } from '@anchorlib/core';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createLifecycle, setReactive } from '@anchorlib/core';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RENDER_MODE, ROUTE_TYPE } from '../src/enum.js';
 import { RouteError } from '../src/error.js';
 import { RouterContext, type RouterSnapshot } from '../src/index.js';
@@ -8,6 +8,13 @@ import { createRouter, Router } from '../src/router.js';
 import { getStore } from '../src/store.js';
 
 describe('router.ts', () => {
+  beforeEach(() => {
+    setReactive(true);
+  });
+  afterEach(() => {
+    setReactive(false);
+  });
+
   describe('Router class', () => {
     let router: Router;
 

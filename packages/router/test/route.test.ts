@@ -1,5 +1,5 @@
-import { mutable } from '@anchorlib/core';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mutable, setReactive } from '@anchorlib/core';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { ROUTE_STATUS, ROUTE_TYPE } from '../src/enum.js';
 import { GuardError, ProviderError, RouteError } from '../src/error.js';
@@ -11,6 +11,13 @@ import { Route } from '../src/route.js';
 let sharedRouter: Router;
 
 describe('Route class', () => {
+  beforeEach(() => {
+    setReactive(true);
+  });
+  afterEach(() => {
+    setReactive(false);
+  });
+
   beforeEach(() => {
     sharedRouter = new Router();
   });

@@ -1,16 +1,18 @@
-import '../../src/server/index.js';
 import '../../src/client/index.js';
-import { AsyncStore } from '@anchorlib/core';
+import { AsyncStore, setAsyncScope } from '@anchorlib/core';
+import { ALS_INSTANCE } from '@anchorlib/core/server';
 import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@anchorlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setup } from '../../src/index.js';
-import { page } from '../../src/router/index.js';
+import { page, setup } from '../../src/index.js';
 import { createSSR } from '../../src/ssr/index.js';
+
+setAsyncScope(ALS_INSTANCE);
 
 describe('createSSR', () => {
   beforeEach(() => {
     vi.stubGlobal('window', undefined);
+    vi.stubGlobal('document', undefined);
   });
 
   afterEach(() => {

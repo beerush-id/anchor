@@ -178,7 +178,7 @@ describe('constant.ts', () => {
     });
 
     it('should have description "dynamic"', () => {
-      expect(DYNAMIC_ROUTE_KEY.description).toBe('dynamic');
+      expect(DYNAMIC_ROUTE_KEY.description).toBe('--anchor-dynamic-route');
     });
 
     it('should be unique', () => {
@@ -201,7 +201,7 @@ describe('constant.ts', () => {
     });
 
     it('should have description "wildcard"', () => {
-      expect(WILDCARD_ROUTE_KEY.description).toBe('wildcard');
+      expect(WILDCARD_ROUTE_KEY.description).toBe('--anchor-wildcard-route');
     });
 
     it('should be unique', () => {

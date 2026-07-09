@@ -1,17 +1,19 @@
 /** @jsxImportSource solid-js */
 
-import '../../src/server/index.js';
-import { AsyncStore } from '@anchorlib/core';
+import { AsyncStore, setAsyncScope } from '@anchorlib/core';
+import { ALS_INSTANCE } from '@anchorlib/core/server';
 import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@anchorlib/router';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { page } from '../../src/router/index.js';
+import { page } from '../../src/index.js';
 import { createSSR } from '../../src/ssr/index.js';
 
 vi.mock('solid-js/web', async (importOriginal) => ({
   ...(await importOriginal<typeof import('solid-js/web')>()),
   renderToString: () => '<div></div>',
 }));
+
+setAsyncScope(ALS_INSTANCE);
 
 describe('createSSR', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
