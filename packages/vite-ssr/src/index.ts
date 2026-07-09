@@ -103,7 +103,11 @@ export function airSSR(options: ViteSSROptions): Plugin {
         logger?.info(`[air-ssr] Removed ${distIndex}`);
       }
     },
-    config(userConfig) {
+    config(userConfig, env) {
+      const ssrBuild = Boolean(
+        // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+        (env as any)?.isSsrBuild || (env as any)?.ssrBuild || userConfig.build?.ssr || isSSRBuild
+      );
       if (!userConfig.ssr) userConfig.ssr = {};
 
       const noExternal = userConfig.ssr.noExternal;
@@ -121,6 +125,38 @@ export function airSSR(options: ViteSSROptions): Plugin {
       }
 
       userConfig.ssr!.noExternal = mergedNoExternal;
+
+      if (!userConfig.build) userConfig.build = {};
+      if (!userConfig.build.rollupOptions) userConfig.build.rollupOptions = {};
+      // biome-ignore lint/suspicious/noExplicitAny: rolldownOptions compatibility
+      if (!(userConfig.build as any).rolldownOptions) (userConfig.build as any).rolldownOptions = {};
+
+      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+      const addExternal = (target: any, ids: string[]) => {
+        const ext = target.external;
+        if (!ext) {
+          target.external = ids;
+        } else if (Array.isArray(ext)) {
+          for (const id of ids) {
+            if (!ext.includes(id)) ext.push(id);
+          }
+        } else if (typeof ext === 'function') {
+          target.external = (source: string, importer: string | undefined, isResolved: boolean) =>
+            ids.includes(source) || ext(source, importer, isResolved);
+        } else {
+          target.external = [ext, ...ids];
+        }
+      };
+
+      const externalIds = ['node:async_hooks', 'async_hooks'];
+      addExternal(userConfig.build.rollupOptions, externalIds);
+      // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+      addExternal((userConfig.build as any).rolldownOptions, externalIds);
+
+      if (ssrBuild) {
+        if (!userConfig.ssr.external) userConfig.ssr.external = [];
+        addExternal(userConfig.ssr, externalIds);
+      }
 
       return userConfig;
     },
