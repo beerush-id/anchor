@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { anchor, type Linkable, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - State Side-Effects & Underlying Object Preservation', () => {
@@ -21,6 +21,7 @@ describe('Anchor Core - State Side-Effects & Underlying Object Preservation', ()
       // 2. Getting pre-existing state property returns exact state reference without unwrapping on target
       expect(state.user).toBe(childState);
       expect(target.user).toBe(childState); // Must NOT be unwrapped to raw object { role: 'admin' }
+      expect(state.user).toBe(state.user);
     });
 
     it('should set reactive state and raw object values without side-effects or unwrapping on target', () => {
@@ -51,12 +52,21 @@ describe('Anchor Core - State Side-Effects & Underlying Object Preservation', ()
 
       const parentState = anchor(target); // default recursive: true
 
+      const handler = vi.fn();
+      const unsubscribe = subscribe(parentState, handler);
+
       // Getting parentState.address should short-circuit via INIT_REGISTRY and return childState
       expect(parentState.address).toBe(childState);
 
       // Verify getting address did NOT cause side-effect unwrapping on target.address
       expect(target.address).toBe(childState);
       expect(target.address).not.toBe(anchor.get(childState));
+
+      expect(handler).toHaveBeenCalled();
+      delete (parentState as { address?: unknown }).address;
+
+      console.log(parentState);
+      unsubscribe();
     });
 
     it('should preserve underlying object state reference when assigning state to recursive proxy', () => {

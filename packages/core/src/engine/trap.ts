@@ -339,6 +339,10 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
       }
     }
 
+    if (STATE_REGISTRY.has(current) && subscriptions.has(current)) {
+      unlink(current);
+    }
+
     if (!STATE_BUSY_LIST.has(target)) {
       const event: StateChange = {
         type: ObjectMutations.DELETE,
