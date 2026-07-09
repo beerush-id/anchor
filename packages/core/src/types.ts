@@ -66,6 +66,7 @@ export type StateBaseOptions = {
   strict?: boolean;
   compare?: (a: unknown, b: unknown) => number;
   ordered?: boolean;
+  /* @deprecated: state initialization always deferred */
   deferred?: boolean;
   immutable?: boolean;
   recursive?: Recursive;

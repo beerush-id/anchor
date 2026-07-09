@@ -12,6 +12,7 @@ import type {
   ModelObject,
   ObjLike,
   ParseResult,
+  State,
   StateChange,
   StateMetadata,
   StateRelation,
@@ -23,7 +24,6 @@ import { createCollectionGetter } from './collection.js';
 import { linkable } from './config.js';
 import {
   BROADCASTER_REGISTRY,
-  CONTROLLER_REGISTRY,
   INIT_REGISTRY,
   META_REGISTRY,
   MUTATOR_REGISTRY,
@@ -107,18 +107,21 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
       return mutator.get(value);
     }
 
-    if (STATE_REGISTRY.has(value)) {
-      // Unwrap the value it the init was created with Anchor's state as the value.
-      // This to make sure that state always points to the underlying object.
-      value = STATE_REGISTRY.get(value) as Linkable;
-      Reflect.set(target, prop, value);
-    }
+    if (!configs.recursive) return value;
+
+    // if (STATE_REGISTRY.has(value)) {
+    // Unwrap the value if the init was created with Anchor's state as the value.
+    // This to make sure that state always points to the underlying object.
+    // value = STATE_REGISTRY.get(value) as Linkable;
+    // Reflect.set(target, prop, value);
+    // }
 
     if (INIT_REGISTRY.has(value)) {
-      value = INIT_REGISTRY.get(value) as Linkable;
+      // State already initialized, use it. Value now a state.
+      value = INIT_REGISTRY.get(value) as State;
     }
 
-    if (configs.recursive && !CONTROLLER_REGISTRY.has(value) && linkable(value)) {
+    if (configs.recursive && !STATE_REGISTRY.has(value) && linkable(value)) {
       const childSchema = (
         isArray(init)
           ? (schema as never as ModelArray)?.unwrap?.()
@@ -131,7 +134,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     // Link if the value is a reactive state and there is an active subscription.
     // Separating this process from creation is necessary to make sure
     // reading an existing state is linked properly.
-    if (CONTROLLER_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
+    if (configs.recursive && STATE_REGISTRY.has(value) && subscribers.size && !subscriptions.has(value)) {
       if (!(configs.recursive === 'flat' && Array.isArray(target))) {
         link(prop, value);
       }
@@ -175,14 +178,12 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
   const { configs } = options ?? meta;
 
   return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
-    // Make sure to always work with the underlying object (if exist).
-    if (anchor.has(value)) value = anchor.get(value);
-
     const current = Reflect.get(target, prop, receiver) as Linkable;
+    if (current === value) return true;
 
-    if (current === value) {
-      return true;
-    }
+    // Make sure to always work with the underlying object (if exist).
+    const rawValue = anchor.get(value, true) ?? value;
+    // if (anchor.has(value)) value = anchor.get(value);
 
     let error: ModelError | undefined;
 
@@ -192,14 +193,16 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
       const childSchema = (schema as never as ModelObject)?.shape?.[prop as string];
 
       if (childSchema) {
-        validation = childSchema.safeParse(value);
+        validation = childSchema.safeParse(rawValue);
       } else {
-        validation = schema.safeParse({ ...init, [prop as string]: value });
+        validation = schema.safeParse({ ...init, [prop as string]: rawValue });
       }
 
-      if (validation.success) {
-        value = validation.data as Linkable;
-      } else {
+      // if (validation.success) {
+      //   value = validation.data as Linkable;
+      // }
+
+      if (!validation.success) {
         broadcaster.catch(validation.error as never, {
           type: ObjectMutations.SET,
           keys: [prop as string],

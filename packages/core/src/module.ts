@@ -27,34 +27,80 @@ const NAMESPACE = {
   version,
 
   /* -- RAW REGISTRIES --  */
-  /* Store for the raw value of the state */
+  /**
+   * Store for the relation map between raw value and the state.
+   * @example object -> Proxy(object).
+   */
   INIT_REGISTRY: new WeakMap<Linkable, State>(),
-  /* Store for the metadata of raw value */
+
+  /**
+   * Store for the metadata of raw value.
+   * @example object -> StateMetadata { id, type, configs, observers, ... }
+   */
   META_REGISTRY: new WeakMap<Linkable, StateMetadata>(),
-  /* Store for the sorting handler of raw value */
+
+  /**
+   * Store for the sorting handler of raw value.
+   * @example object -> (a, b) => a.id - b.id
+   */
   SORTER_REGISTRY: new WeakMap<Linkable, (a: unknown, b: unknown) => number>(),
-  /* Store for the relation of raw value */
+
+  /**
+   * Store for the relation handlers of raw value.
+   * @example object -> { link: StateLinkFn, unlink: StateUnlinkFn }
+   */
   RELATION_REGISTRY: new WeakMap<Linkable, StateRelation>(),
-  /* Store for the write handlers of raw value */
+
+  /**
+   * Store for the write handlers of raw value.
+   * @example array/map/set -> { push, pop, ... } or { set, delete, ... }
+   */
   MUTATOR_REGISTRY: new WeakMap<
     Linkable,
     ReturnType<typeof createArrayMutator> | ReturnType<typeof createCollectionMutator>
   >(),
-  /* Store for the broadcast handler of the raw value */
+
+  /**
+   * Store for the broadcast handler of the raw value.
+   * @example object -> { emit: EmitFn, catch: (error, event) => boolean }
+   */
   BROADCASTER_REGISTRY: new WeakMap<Linkable, Broadcaster>(),
-  /* Store for the initialization gateways of raw value */
+
+  /**
+   * Store for the initialization gateways of raw value.
+   * @example object -> { getter, setter, remover, broadcaster, mutator }
+   */
   INIT_GATEWAY_REGISTRY: new WeakMap<Linkable, StateGateway>(),
 
   /* -- PROCESSED REGISTRIES --  */
-  /* Store for the relation map between the state and raw value */
+  /**
+   * Store for the relation map between the state and raw value.
+   * @example Proxy(object) -> object
+   */
   STATE_REGISTRY: new WeakMap<State, Linkable>(),
-  /* Store for the controller of the state */
+
+  /**
+   * Store for the controller of the state.
+   * @example Proxy(object) -> { meta, destroy, subscribe }
+   */
   CONTROLLER_REGISTRY: new WeakMap<State, StateController>(),
-  /* Store for the busy state of the state */
+
+  /**
+   * Store for the busy state of the state.
+   * @example Proxy(object) -> boolean (present/absent in WeakSet)
+   */
   STATE_BUSY_LIST: new WeakSet<State>(),
-  /* Store for the metadata of the state */
+
+  /**
+   * Store for the metadata of the state mapped to its raw value.
+   * @example StateMetadata -> object
+   */
   META_INIT_REGISTRY: new WeakMap<StateMetadata, Linkable>(),
-  /* Store for the exception handlers of the state */
+
+  /**
+   * Store for the exception handlers of the state.
+   * @example Proxy(object) -> Set<StateExceptionHandler>
+   */
   EXCEPTION_HANDLER_REGISTRY: new WeakMap<State, StateExceptionHandlerList>(),
 };
 
