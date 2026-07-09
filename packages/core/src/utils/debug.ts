@@ -1,9 +1,10 @@
+import { $symbol } from '../module.js';
 import { getScope, setScope } from '../scope/context.js';
 import { isFunction, isString } from './inspector.js';
 
 export type DebugFn = (...args: unknown[]) => void;
 
-const LOGGER_SYMBOL = Symbol('debug-logger');
+const LOGGER_SYMBOL = $symbol('debug-logger');
 
 /**
  * Sets the current debugger function and returns a restore function.

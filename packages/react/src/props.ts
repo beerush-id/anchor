@@ -1,8 +1,17 @@
-import { captureStack, getObserver, getScope, isBrowser, isMutableRef, setScope, untrack } from '@anchorlib/core';
+import {
+  $symbol,
+  captureStack,
+  getObserver,
+  getScope,
+  isBrowser,
+  isMutableRef,
+  setScope,
+  untrack,
+} from '@anchorlib/core';
 import { isBinding, isLinkingRef } from './binding.js';
 import type { ComponentProps, ReactiveProps } from './types.js';
 
-export const PROPS_SYMBOL = Symbol('setup-props');
+export const PROPS_SYMBOL = $symbol('setup-props');
 
 /**
  * Executes a function with provided props temporarily set in the current context.

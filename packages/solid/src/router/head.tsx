@@ -1,7 +1,7 @@
-import { getScope, isBrowser, onCleanup, setScope } from '@anchorlib/core';
+import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@anchorlib/core';
 import type { Component, JSX } from 'solid-js';
 
-const HEADING_SET_CLOSURE = Symbol('head-map-closure');
+const HEADING_SET_CLOSURE = $symbol('head-map-closure');
 
 /**
  * Defines a heading reference to be injected into the document head.

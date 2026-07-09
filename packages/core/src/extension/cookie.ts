@@ -1,16 +1,16 @@
 import { anchor } from '../engine/index.js';
+import { $symbol, isBrowser } from '../module.js';
 import { mutable, subscribe } from '../reactive/index.js';
 import { getScope, globalRun, onGlobalCleanup, setScope } from '../scope/index.js';
 import { captureStack } from '../shared/index.js';
 import type { ObjLike } from '../types.js';
 import { microtask } from '../utils/index.js';
-import { isBrowser } from '../module.js';
 
 export const COOKIE_PREFIX = 'anchor-cookie://';
 
 /** Scope key for the cookie jar. */
-export const COOKIE_JAR_KEY = Symbol('anchor-cookie-jar');
-export const COOKIE_JAR_WRITABLE = Symbol('anchor-cookie-jar-writable');
+export const COOKIE_JAR_KEY = $symbol('cookie-jar');
+export const COOKIE_JAR_WRITABLE = $symbol('cookie-jar-writable');
 
 export type CookieOptions = {
   /** The URL path the cookie is restricted to. Defaults to '/'. */

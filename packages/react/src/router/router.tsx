@@ -1,4 +1,4 @@
-import { isBrowser, setContext, untrack } from '@anchorlib/core';
+import { $symbol, isBrowser, setContext, untrack } from '@anchorlib/core';
 import {
   getRenderProps,
   type MatchedRoute,
@@ -224,7 +224,7 @@ export function modal<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   return page(routeNode);
 }
 
-const ROUTE_CTX = Symbol('route-context');
+const ROUTE_CTX = $symbol('route-context');
 const ROUTE_KEY = 'status' as RouteStatus;
 
 const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(

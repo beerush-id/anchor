@@ -15,7 +15,12 @@ import type {
   StateRelation,
 } from './types.js';
 
-export const NAMESPACE_KEY = Symbol.for('ANCHOR-NAMESPACE');
+export function $symbol(name: string, suffix?: string) {
+  if (suffix) return Symbol.for(`--anchor-${name}-${suffix}`);
+  return Symbol.for(`--anchor-${name}`);
+}
+
+export const NAMESPACE_KEY = $symbol('namespace');
 export const $ROOT = globalThis as AnyType;
 
 const NAMESPACE = {
@@ -55,11 +60,19 @@ const NAMESPACE = {
 
 if ($ROOT[NAMESPACE_KEY]) {
   if ($ROOT[NAMESPACE_KEY].version !== version) {
+    const existing = $ROOT[NAMESPACE_KEY].version;
     const error = new Error(`Anchor version mismatch.`);
-    captureStack.violation.general('Version mismatch detected.', 'Anchor version mismatch detected.', error, [
-      'Anchor is already initialized with a different version.',
-      'Please check your import order and make sure you are using the same version of Anchor.',
-    ]);
+    captureStack.violation.general(
+      'Version mismatch detected.',
+      `Attempted to initialize Anchor with a different version: "${existing}" to "${version}"`,
+      error,
+      [
+        'This happens when you are using different versions of Anchor in your application.',
+        '- Use a fixed version range of Anchor in your package.json.',
+        '- Avoid using dynamic version ranges like "^" or "~".',
+        '- Clean up your package manager cache and reinstall dependencies.',
+      ]
+    );
   }
 
   const error = new Error(`Anchor namespace already initialized.`);
@@ -68,8 +81,9 @@ if ($ROOT[NAMESPACE_KEY]) {
     'Attempted to initialize Anchor namespace that already initialized.',
     error,
     [
-      'Anchor namespace is already initialized.',
-      'Please check your import order and make sure you are using the same version of Anchor.',
+      'This happens when you are importing Anchor multiple times in your application.',
+      '- Ensure that you are only importing Anchor once in your application.',
+      '- Avoid manual Anchor invalidation in your HMR application.',
     ]
   );
 } else {
@@ -86,4 +100,8 @@ export const $module = $ROOT[NAMESPACE_KEY] as typeof NAMESPACE & {
  */
 export function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+if (!isBrowser()) {
+  await import('./server/index.js');
 }

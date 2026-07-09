@@ -1,24 +1,23 @@
-import { $module, isBrowser } from '../module.js';
+import { $module, $symbol, isBrowser } from '../module.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import type { ContextReader } from '../types.js';
 import { type AsyncKey, AsyncScope, type AsyncValue, type Future } from './scope.js';
 import { AsyncStore, type AsyncStoreContract, type StoreContract } from './store.js';
 
-let ScopeClass = AsyncScope;
-
-if (!isBrowser()) {
-  const { AnchorALS } = await import('../server/index.js');
-  ScopeClass = AnchorALS as never as typeof AsyncScope;
-}
-
 /** The key used to store the context store in the active scope. */
-const CONTEXT_STORE_KEY = Symbol('anchor-context');
+const CONTEXT_STORE_KEY = $symbol('context');
 
 /** The root-level store. All {@link withScope} children ultimately chain back to this. */
 const globalStore = new AsyncStore([[CONTEXT_STORE_KEY, new AsyncStore()]]);
 
-$module.async = new ScopeClass();
+$module.async = new AsyncScope();
+
+if (!isBrowser()) {
+  const { ALS_INSTANCE } = await import('../server/index.js');
+  $module.async = ALS_INSTANCE;
+}
+
 $module.async.store = globalStore;
 
 /** The singleton {@link AsyncScope} instance that powers the global scope functions. */
@@ -291,7 +290,7 @@ export function createContext<T>(): ContextReader<T | undefined>;
  * @returns {ContextReader<T>}
  */
 export function createContext<T>(fallback: T, key?: symbol): ContextReader<T>;
-export function createContext<T>(fallback?: T, key = Symbol('anchor-context')) {
+export function createContext<T>(fallback?: T, key = Symbol('--anchor-context')) {
   return {
     get() {
       return getContext(key, fallback);

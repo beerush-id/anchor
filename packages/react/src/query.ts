@@ -1,4 +1,4 @@
-import type { AsyncStatus } from '@anchorlib/core';
+import { $symbol, type AsyncStatus } from '@anchorlib/core';
 import type { ReactNode } from 'react';
 import { createSwitch, type SlotNode, type SwitchProps } from './switch.js';
 
@@ -10,7 +10,7 @@ export type QueryNode = (<S extends QueryState>(props: SwitchProps<S>) => ReactN
   Slot: SlotNode<AsyncStatus>;
 };
 
-const QUERY_CTX = Symbol('query');
+const QUERY_CTX = $symbol('query-slot');
 const QUERY_KEY = 'status';
 
 /**

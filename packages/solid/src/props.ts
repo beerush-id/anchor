@@ -1,8 +1,8 @@
-import { captureStack, getScope, isMutableRef, type MutableRef, setScope, untrack } from '@anchorlib/core';
+import { $symbol, captureStack, getScope, isMutableRef, type MutableRef, setScope, untrack } from '@anchorlib/core';
 import { type BindingRef, isBinding } from './binding.js';
 import type { BindableComponentProps } from './types.js';
 
-const PROPS_KEY = Symbol('props');
+const PROPS_KEY = $symbol('component-props');
 export function setCurrentProps(props: Record<string, unknown>) {
   setScope(PROPS_KEY, props);
 }

@@ -1,8 +1,8 @@
-import { getScope, microtask, setScope } from '@anchorlib/core';
+import { $symbol, getScope, microtask, setScope } from '@anchorlib/core';
 import type { InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
 
-const REDIRECT_HANDLER = Symbol('redirect-handler');
+const REDIRECT_HANDLER = $symbol('redirect-handler');
 
 /**
  * Gets the handler for processing redirects.

@@ -1,4 +1,5 @@
 import {
+  $symbol,
   anchor,
   captureStack,
   createStack,
@@ -15,8 +16,8 @@ import { RenderContext } from './context.js';
 import { PROPS_SYMBOL, proxyProps } from './props.js';
 import type { CleanupHandler, Lifecycle, MountHandler } from './types.js';
 
-const MOUNT_HANDLER_SYMBOL = Symbol('mount-handler');
-const CLEANUP_HANDLER_SYMBOL = Symbol('mount-cleanup');
+const MOUNT_HANDLER_SYMBOL = $symbol('mount-handler');
+const CLEANUP_HANDLER_SYMBOL = $symbol('mount-cleanup');
 
 /**
  * Creates a new lifecycle manager for handling component mount, cleanup, and rendering operations.

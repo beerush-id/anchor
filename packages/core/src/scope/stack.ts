@@ -1,7 +1,8 @@
+import { $symbol } from '../module.js';
 import type { RefStack } from '../types.js';
 import { getScope, setScope } from './context.js';
 
-export const STACK_SYMBOL = Symbol('call-stack');
+export const STACK_SYMBOL = $symbol('call-stack');
 
 /**
  * Creates a new reference stack scope for managing reactive references.

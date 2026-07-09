@@ -1,9 +1,10 @@
+import { $symbol } from '../module.js';
 import { captureStack } from '../shared/index.js';
 import { asyncStoreContract, getScope, storeContract } from './context.js';
 
 const DEFAULT_CLEANUP_HANDLER = (_handler: () => void) => {};
 
-const CLEANUP_SYMBOL = Symbol('cleanup-store');
+const CLEANUP_SYMBOL = $symbol('cleanup-store');
 
 let selfCleanupEnabled = true;
 let localCleanupHandler: typeof DEFAULT_CLEANUP_HANDLER | null = null;

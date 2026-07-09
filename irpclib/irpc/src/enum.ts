@@ -1,3 +1,5 @@
+import { $symbol } from '@anchorlib/core';
+
 export const IRPC_PACKET_TYPE = {
   CALL: 'call',
   EVENT: 'event',
@@ -22,9 +24,9 @@ export const IRPC_STORE_EVENT = {
 } as const;
 
 export const IRPC_BASE_CONTEXT = {
-  ABORT_SIGNAL: Symbol('abort-signal'),
-  ABORT_CONTROLLER: Symbol('abort-controller'),
-  CREDENTIALS: Symbol('credentials'),
+  ABORT_SIGNAL: $symbol('abort-signal'),
+  ABORT_CONTROLLER: $symbol('abort-controller'),
+  CREDENTIALS: $symbol('credentials'),
 } as const;
 
 export const IRPC_FILE_STATUS = {

@@ -1,6 +1,7 @@
 import { anchor } from '../engine/anchor.js';
 import { linkable } from '../engine/config.js';
 import { switchable } from '../engine/index.js';
+import { $symbol } from '../module.js';
 import { getScope, safeRun } from '../scope/context.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
 import { ANCHOR_SETTINGS as $$ } from '../shared/constant.js';
@@ -202,7 +203,7 @@ export interface Signal<T> {
   set(value: T | ((current: T) => T)): T;
 }
 
-export const SIGNAL_IDENTIFIER = Symbol('anchor-signal');
+export const SIGNAL_IDENTIFIER = $symbol('signal');
 /**
  * An ImmutableSignal is a read-only function that returns its current value.
  */
@@ -232,7 +233,7 @@ export function signal<T>(init: T, immutable?: boolean): Signal<T> | ImmutableSi
   function getter() {
     return state.value;
   }
-  getter[SIGNAL_IDENTIFIER] = true;
+  getter[SIGNAL_IDENTIFIER as never] = true as never;
 
   if (!immutable) {
     getter.set = (setValue: T | ((c: T) => T)) => {

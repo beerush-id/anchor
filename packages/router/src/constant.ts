@@ -1,3 +1,4 @@
+import { $symbol } from '@anchorlib/core';
 import { PRELOAD_MODE, RENDER_MODE, RETRY_MODE, ROUTE_TYPE } from './enum.js';
 import type { RouterOptions } from './types.js';
 
@@ -39,7 +40,7 @@ export function configure(config: Partial<RouterOptions>) {
  *
  * @internal
  */
-export const DYNAMIC_ROUTE_KEY = Symbol(ROUTE_TYPE.DYNAMIC);
+export const DYNAMIC_ROUTE_KEY = $symbol(ROUTE_TYPE.DYNAMIC, 'route');
 
 /**
  * Symbol used as a key for wildcard routes in the route registry.
@@ -48,7 +49,7 @@ export const DYNAMIC_ROUTE_KEY = Symbol(ROUTE_TYPE.DYNAMIC);
  *
  * @internal
  */
-export const WILDCARD_ROUTE_KEY = Symbol(ROUTE_TYPE.WILDCARD);
+export const WILDCARD_ROUTE_KEY = $symbol(ROUTE_TYPE.WILDCARD, 'route');
 
 /**
  * WeakMap linking routes to their registries.

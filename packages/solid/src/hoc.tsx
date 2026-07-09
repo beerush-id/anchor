@@ -1,4 +1,4 @@
-import { type AsyncKey, AsyncStore, CONTEXT_STORE, getContextStore } from '@anchorlib/core';
+import { $symbol, type AsyncKey, AsyncStore, CONTEXT_STORE, getContextStore } from '@anchorlib/core';
 import { type Component, getOwner, type JSX, type Owner } from 'solid-js';
 import { proxyProps, setCurrentProps } from './props.js';
 import type { BindableComponentProps, BindableProps } from './types.js';
@@ -24,8 +24,8 @@ export function bindable<P extends Record<string, any>>(
   return Bindable as never;
 }
 
-export const SETUP_NAME = Symbol('setup');
-export const STORE_SYMBOL = Symbol('store');
+export const SETUP_NAME = $symbol('hoc-setup');
+export const STORE_SYMBOL = $symbol('hoc-store');
 
 type ContextOwner = Owner & {
   [SETUP_NAME]: string;
@@ -69,10 +69,10 @@ export function setup<P extends Record<string, any>>(
  * @param from - The starting owner to search from.
  * @returns The nearest async store.
  */
-function nearestStore(from: ContextOwner = getOwner() as ContextOwner) {
+function nearestStore(from: ContextOwner = getOwner() as ContextOwner): AsyncStore {
   if (!from) return getContextStore();
 
-  if (from[STORE_SYMBOL]) return from[STORE_SYMBOL];
+  if (from[STORE_SYMBOL]) return from[STORE_SYMBOL] as AsyncStore;
   if (from.owner) return nearestStore(from.owner);
 
   return getContextStore();

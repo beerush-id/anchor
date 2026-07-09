@@ -1,6 +1,6 @@
-import { anchor, getScope, globalRun, isBrowser, mutable, setScope, untrack } from '@anchorlib/core';
+import { $symbol, anchor, getScope, globalRun, isBrowser, mutable, setScope, untrack } from '@anchorlib/core';
 
-export const ROUTER_STORE_KEY = Symbol('router-store');
+export const ROUTER_STORE_KEY = $symbol('router-store');
 
 export function getStore() {
   let store = getScope(ROUTER_STORE_KEY);

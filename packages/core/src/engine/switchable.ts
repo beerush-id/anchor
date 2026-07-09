@@ -1,9 +1,8 @@
+import { $symbol, isBrowser } from '../module.js';
 import { getScope, setScope } from '../scope/index.js';
 import type { StateObserver } from '../types.js';
 
-import { isBrowser } from '../module.js';
-
-export const OBSERVER_SYMBOL = Symbol('state-observer');
+export const OBSERVER_SYMBOL = $symbol('state-observer');
 
 const switchableDefaults = {
   getObserver(): StateObserver | undefined {
