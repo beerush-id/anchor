@@ -107,6 +107,7 @@ export {
 
 export * from './binding.js';
 export * from './context.js';
+export * from './dynamic.js';
 export * from './hoc.js';
 export {
   createEffect,
@@ -116,6 +117,7 @@ export {
 } from './hooks.js';
 export { onCleanup, onMount } from './lifecycle.js';
 export * from './node.js';
+export * from './portal.js';
 export * from './props.js';
 export * from './query.js';
 export * from './router/head.js';

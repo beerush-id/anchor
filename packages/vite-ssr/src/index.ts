@@ -111,7 +111,7 @@ export function airSSR(options: ViteSSROptions): Plugin {
       if (!userConfig.ssr) userConfig.ssr = {};
 
       const noExternal = userConfig.ssr.noExternal;
-      const airModules = [/^@irpclib\//, /^@anchorlib\//];
+      const airModules = [/^@airlib\//, /^@anchorlib\//, /^@irpclib\//];
 
       // biome-ignore lint/suspicious/noExplicitAny: Expect any.
       let mergedNoExternal: any;

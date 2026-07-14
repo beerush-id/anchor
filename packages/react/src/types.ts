@@ -137,6 +137,12 @@ export type ComponentProps<P> = Omit<ReadonlyProps<P>, WritablePropKeys<P>> &
      * @returns A new object with only the specified keys
      */
     $pick<K extends keyof P>(keys?: Array<K>): Pick<P, K>;
+
+    /**
+     * Returns the children of the component, supporting both ReactNode and a function that returns ReactNode.
+     * If a function is provided, it is executed within the component's context and its result is returned.
+     */
+    $children: ReactNode;
   } & {};
 
 /**

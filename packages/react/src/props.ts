@@ -9,6 +9,7 @@ import {
   untrack,
 } from '@anchorlib/core';
 import { isBinding, isLinkingRef } from './binding.js';
+import { renderDynamic } from './dynamic.js';
 import type { ComponentProps, ReactiveProps } from './types.js';
 
 export const PROPS_SYMBOL = $symbol('setup-props');
@@ -90,6 +91,7 @@ export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
     get(target, key, receiver) {
       if (key === '$omit') return omit;
       if (key === '$pick') return pick;
+      if (key === '$children') return renderDynamic(Reflect.get(target, 'children' as never, receiver));
 
       const bindingRef = Reflect.get(target, key, receiver);
 

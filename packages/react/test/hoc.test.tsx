@@ -1,9 +1,10 @@
 import { getContext, mutable, setContext } from '@anchorlib/core';
-import type { ReactNode } from 'react';
 import { act, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render as renderView, setup, snippet, template } from '../src/hoc.js';
 import '../src/client/index';
+import type { DynamicProps } from '../src/index.js';
 
 describe('Anchor React - HOC', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -223,13 +224,28 @@ describe('Anchor React - HOC', () => {
     const MENU_CTX = Symbol('MENU_CTX');
 
     // Domain Models
-    interface AppConfig { theme: string }
-    interface AuthUser { id: string }
-    interface Route { path: string }
-    interface FormState { id: string }
-    interface ListState { id: string }
-    interface ItemState { id: string }
-    interface MenuState { id: string; isOpen: boolean }
+    interface AppConfig {
+      theme: string;
+    }
+    interface AuthUser {
+      id: string;
+    }
+    interface Route {
+      path: string;
+    }
+    interface FormState {
+      id: string;
+    }
+    interface ListState {
+      id: string;
+    }
+    interface ItemState {
+      id: string;
+    }
+    interface MenuState {
+      id: string;
+      isOpen: boolean;
+    }
 
     it('should flawlessly maintain context integrity across massive DOM trees combining deep lists, adjacent menus, submenus, and independent async fragment re-renders all at once', () => {
       // 1. Unified Telemetry
@@ -274,11 +290,11 @@ describe('Anchor React - HOC', () => {
       const MenuTrigger = setup<{ id: string; expectedMenuId: string }>((props) => {
         // FETCH CONTEXT IN SETUP BODY (Runs once)
         const ctx = getContext<MenuState>(MENU_CTX)!;
-        
+
         // INLINE SETUP ASSERTION
         expect(ctx).toBeDefined();
         expect(ctx.id).toBe(props.expectedMenuId);
-        
+
         refs.menuTriggers[props.id] = ctx;
 
         // REAL BEHAVIOR
@@ -299,26 +315,26 @@ describe('Anchor React - HOC', () => {
 
       const MenuItem = snippet<{ id: string; expectedMenuId: string }>((props) => {
         renders.menuItems[props.id] = (renders.menuItems[props.id] || 0) + 1;
-        getTrigger('menuItems', props.id).value; 
+        getTrigger('menuItems', props.id).value;
         const ctx = getContext<MenuState>(MENU_CTX)!;
-        
+
         // INLINE ACTIVE RENDER ASSERTION
         expect(ctx).toBeDefined();
         expect(ctx.id).toBe(props.expectedMenuId);
-        
+
         refs.menuItems[props.id] = ctx;
         return <div data-testid={`menu-item-${props.id}`}>{props.id}</div>;
       });
 
       const MenuContent = snippet<{ id: string; expectedMenuId: string; children: ReactNode }>((props) => {
         renders.menuContents[props.id] = (renders.menuContents[props.id] || 0) + 1;
-        getTrigger('menuContents', props.id).value; 
+        getTrigger('menuContents', props.id).value;
         const ctx = getContext<MenuState>(MENU_CTX)!;
-        
+
         // INLINE ACTIVE RENDER ASSERTION
         expect(ctx).toBeDefined();
         expect(ctx.id).toBe(props.expectedMenuId);
-        
+
         refs.menuContents[props.id] = ctx;
 
         // REAL CONDITIONAL RENDERING BASED ON STATE
@@ -378,11 +394,11 @@ describe('Anchor React - HOC', () => {
       // --- ENTERPRISE LIST/FORM DOMAIN ---
       const FormInput = snippet<{ id: string; field: string; expectedFormId: string }>((props) => {
         renders.inputs[props.id] = (renders.inputs[props.id] || 0) + 1;
-        getTrigger('inputs', props.id).value; 
+        getTrigger('inputs', props.id).value;
         refs.inputs[props.id] = {
           app: getContext<AppConfig>(APP_CTX)!,
           route: getContext<Route>(ROUTER_CTX)!,
-          form: getContext<FormState>(FORM_CTX)!
+          form: getContext<FormState>(FORM_CTX)!,
         };
 
         // INLINE ACTIVE RENDER ASSERTION
@@ -395,7 +411,7 @@ describe('Anchor React - HOC', () => {
 
       const ComplexForm = setup<{ id: string; fields: string[] }>((props) => {
         const formState = mutable<FormState>({ id: props.id });
-        setContext(FORM_CTX, formState); 
+        setContext(FORM_CTX, formState);
         const View = snippet(() => {
           renders.forms[props.id] = (renders.forms[props.id] || 0) + 1;
           getTrigger('forms', props.id).value;
@@ -412,7 +428,7 @@ describe('Anchor React - HOC', () => {
 
       const ListItem = setup<{ id: string; label: string; index: number; expectedListId: string }>((props) => {
         const itemState = mutable<ItemState>({ id: props.id });
-        setContext(ITEM_CTX, itemState); 
+        setContext(ITEM_CTX, itemState);
         const View = snippet(() => {
           renders.items[props.id] = (renders.items[props.id] || 0) + 1;
           getTrigger('items', props.id).value;
@@ -420,7 +436,7 @@ describe('Anchor React - HOC', () => {
             app: getContext<AppConfig>(APP_CTX)!,
             auth: getContext<AuthUser>(AUTH_CTX)!,
             list: getContext<ListState>(LIST_CTX)!,
-            item: getContext<ItemState>(ITEM_CTX)!
+            item: getContext<ItemState>(ITEM_CTX)!,
           };
 
           // INLINE ACTIVE RENDER ASSERTION
@@ -560,11 +576,11 @@ describe('Anchor React - HOC', () => {
       expect(renders.inputs['checkout-input-0']).toBe(1);
 
       // --- FINAL MEMORY INTEGRITY CHECK ---
-      // Even in a highly chaotic graph with multiple active context domains, 
+      // Even in a highly chaotic graph with multiple active context domains,
       // every node must have re-fetched exactly its own uncorrupted memory pointer.
       expect(refs.menuItems['item-sub-m1-1']).toBe(ptrSubM1);
       expect(refs.menuItems['item-m3-1']).toBe(ptrM3);
-      
+
       const postRenderFeedItem2 = refs.items['main-feed-itm-2'];
       expect(postRenderFeedItem2.app).toBe(PtrApp);
       expect(postRenderFeedItem2.list).toBe(PtrMainList);
@@ -577,7 +593,7 @@ describe('Anchor React - HOC', () => {
       act(() => {
         triggers.app.value++;
       });
-      
+
       expect(renders.app).toBe(2);
       expect(renders.layout).toBe(1); // Memoization bailout
 
@@ -621,6 +637,30 @@ describe('Anchor React - HOC', () => {
       act(() => {
         refs.menuTriggers['trig-m1'].isOpen = false;
       });
+    });
+  });
+
+  describe('Dynamic Children', () => {
+    it('should render children function via $children', () => {
+      const Test = setup<DynamicProps<'div'>>((props) => {
+        return <div>{props.$children}</div>;
+      });
+
+      const { container } = render(<Test>{() => <div>OK</div>}</Test>);
+      expect(container.textContent).includes('OK');
+    });
+
+    it('should render ReactNode via $children', () => {
+      const Test = setup<DynamicProps<'div'>>((props) => {
+        return <div>{props.$children}</div>;
+      });
+
+      const { container } = render(
+        <Test>
+          <div>OK</div>
+        </Test>
+      );
+      expect(container.textContent).includes('OK');
     });
   });
 
