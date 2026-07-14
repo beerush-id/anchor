@@ -21,7 +21,17 @@ export function $symbol(name: string, suffix?: string) {
 }
 
 export const NAMESPACE_KEY = $symbol('namespace');
+export const IS_VALUE_GETTER = $symbol('value-getter');
 export const $ROOT = globalThis as AnyType;
+
+/**
+ * Check if the given value is a value getter.
+ * @param value - The value to check.
+ * @returns {boolean} - True if the value is a value getter, false otherwise.
+ */
+export function isValueGetter<T = AnyType>(value: unknown): value is { get value(): T } {
+  return typeof value === 'object' && value !== null && (value as AnyType)[IS_VALUE_GETTER] === true;
+}
 
 const NAMESPACE = {
   version,

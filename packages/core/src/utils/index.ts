@@ -1,11 +1,12 @@
 export * from './batch.js';
+export * from './classx.js';
 export * from './clone.js';
-// export * from './context.js';
 export * from './debounce.js';
 export * from './debug.js';
 export * from './inspector.js';
 export * from './loop.js';
 export * from './push.js';
 export * from './sleep.js';
+export * from './stylex.js';
 export * from './task.js';
 export * from './uuid.js';

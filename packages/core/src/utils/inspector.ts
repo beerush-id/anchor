@@ -232,7 +232,7 @@ export function isDefined(value: unknown): value is NonNullable<unknown> {
  * @returns {boolean}
  */
 export function isNullish(value: unknown): value is null | undefined | number {
-  return value === null || value === undefined || (typeof value === 'number' && isNaN(value as number));
+  return value === null || value === undefined || (typeof value === 'number' && Number.isNaN(value as number));
 }
 
 /**
