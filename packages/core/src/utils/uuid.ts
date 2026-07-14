@@ -1,3 +1,5 @@
+import { getContext, setContext } from '../scope/index.js';
+
 let lastTimestamp = 0;
 let sequence = 0;
 
@@ -74,3 +76,22 @@ export function uuid(): string {
 export function setUUIDProvider(provider: UUIDProvider) {
   uuidProvider = provider;
 }
+
+/**
+ * Creates a unique index within the current scope.
+
+ * @param name - The name of the unique index.
+ * @returns The next unique index value.
+ */
+export const uIndex = (name: symbol) => {
+  let value = getContext<number>(name);
+
+  if (typeof value !== 'number') {
+    value = 0;
+    setContext(name, value);
+  }
+
+  value += 1;
+  setContext(name, value);
+  return value;
+};

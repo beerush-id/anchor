@@ -29,18 +29,17 @@ describe('classx', () => {
   });
 
   it('should handle function providers', () => {
-    expect(classx(() => 'foo', () => ['bar', 'baz'], () => ({ qux: true })).value).toBe('foo bar baz qux');
+    expect(
+      classx(
+        () => 'foo',
+        () => ['bar', 'baz'],
+        () => ({ qux: true })
+      ).value
+    ).toBe('foo bar baz qux');
   });
 
   it('should handle complex mixed inputs', () => {
-    expect(
-      classx(
-        'a',
-        ['b', { c: true, d: false }],
-        () => 'e',
-        null
-      ).value
-    ).toBe('a b c e');
+    expect(classx('a', ['b', { c: true, d: false }], () => 'e', null).value).toBe('a b c e');
   });
 
   it('should return empty string for no valid inputs', () => {

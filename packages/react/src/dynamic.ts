@@ -33,7 +33,7 @@ export type DynamicProps<T extends keyof JSX.IntrinsicElements | JSXElementConst
  *
  * @param children - The node or render function to evaluate.
  * @returns The evaluated React node.
- */ 
+ */
 export const renderDynamic = (children?: FineNode): ReactNode => {
   if (typeof children === 'function') return children();
   return children as ReactNode;

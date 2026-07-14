@@ -34,7 +34,8 @@ export function createSSR(
     options?: SSROptions
   ) => {
     const mergedOptions = options ?? defaultOptions;
-    if (isolated) return ssrRenderToString(router, RootLayout, url, controller, Shell, mergedOptions) as Promise<SSROutput>;
+    if (isolated)
+      return ssrRenderToString(router, RootLayout, url, controller, Shell, mergedOptions) as Promise<SSROutput>;
 
     const storage = context instanceof AsyncStore ? context : new AsyncStore(context as SSRContext);
     return withIsolation(
@@ -80,7 +81,10 @@ export async function ssrRenderToString(
 ): Promise<Omit<SSROutput, 'cookies'>> {
   if (options?.sitemap !== false && url.endsWith('sitemap.xml')) {
     const sitemapConfig = typeof options?.sitemap === 'object' ? options.sitemap : {};
-    const fullUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `http://localhost${url.startsWith('/') ? url : `/${url}`}`;
+    const fullUrl =
+      url.startsWith('http://') || url.startsWith('https://')
+        ? url
+        : `http://localhost${url.startsWith('/') ? url : `/${url}`}`;
     const sitemapXml = await router.sitemap({ ...sitemapConfig, url: fullUrl });
     if (sitemapXml) {
       return {

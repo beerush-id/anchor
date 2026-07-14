@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { setUUIDProvider, uuid } from '../../src/index.js';
+import { createLifecycle, setUUIDProvider, uIndex, uuid } from '../../src/index.js';
 
 describe('UUID', () => {
   describe('UUID Generation', () => {
@@ -53,6 +53,24 @@ describe('UUID', () => {
       expect(typeof id).toBe('string');
       expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/);
       expect(id).not.toBe('custom-uuid');
+    });
+  });
+});
+
+describe('uid', () => {
+  describe('uIndex', () => {
+    it('should initialize and increment index sequence for symbol keys within a lifecycle context', () => {
+      const scope = createLifecycle();
+      scope.run(() => {
+        const keyA = Symbol('uid-a');
+        const keyB = Symbol('uid-b');
+
+        expect(uIndex(keyA)).toBe(1);
+        expect(uIndex(keyA)).toBe(2);
+        expect(uIndex(keyB)).toBe(1);
+        expect(uIndex(keyA)).toBe(3);
+      });
+      scope.destroy();
     });
   });
 });

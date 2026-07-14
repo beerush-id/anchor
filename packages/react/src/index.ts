@@ -92,6 +92,7 @@ export {
   stringify,
   stylex,
   subscribe,
+  uIndex,
   undoable,
   untrack,
   withIsolation,
