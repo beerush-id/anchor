@@ -14,7 +14,7 @@
     "build:packages": "bpkg run build -f packages/*",
     "build:next": "bpkg run build -f apps/next --sequential",
     "build:react": "bpkg run build -f apps/react --sequential",
-    "build": "bpkg run build -f packages/* --sequential",
+    "build": "bpkg run build -f packages/* irpclib/* --sequential",
     "prepublish": "bpkg run prepublish -f packages/* irpclib/* --sequential",
     "format": "bpkg run format -f apps/* packages/* kits/* --sequential && git add --renormalize .",
     "lint": "bpkg run lint",
