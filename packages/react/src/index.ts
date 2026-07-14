@@ -4,6 +4,7 @@ if (typeof document !== 'undefined') {
 
 export type {
   AnchorSettings,
+  AnyType,
   AsyncHandler,
   AsyncOptions,
   AsyncState,
@@ -43,10 +44,13 @@ export type {
 } from '@anchorlib/core';
 
 export {
+  $module,
+  $symbol,
   ASYNC_STATUS,
   anchor,
   awaited,
   CookieJar,
+  classx,
   cookies,
   createContext,
   createLifecycle,
@@ -65,8 +69,10 @@ export {
   history,
   ImmutableRef,
   immutable,
+  isBrowser,
   isImmutableRef,
   isMutableRef,
+  isValueGetter,
   isValueRef,
   MutableRef,
   microbatch,
@@ -84,6 +90,7 @@ export {
   snapshot,
   streamState,
   stringify,
+  stylex,
   subscribe,
   undoable,
   untrack,

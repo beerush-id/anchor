@@ -29,7 +29,7 @@ export const $ROOT = globalThis as AnyType;
  * @param value - The value to check.
  * @returns {boolean} - True if the value is a value getter, false otherwise.
  */
-export function isValueGetter<T = AnyType>(value: unknown): value is { get value(): T } {
+export function isValueGetter<T = AnyType>(value: unknown): value is { value: T } {
   return typeof value === 'object' && value !== null && (value as AnyType)[IS_VALUE_GETTER] === true;
 }
 

@@ -7,7 +7,7 @@ export * from './extension/form.js';
 export * from './extension/inspector.js';
 export * from './fetch/index.js';
 export * from './history/index.js';
-export { $module, $symbol, isBrowser } from './module.js';
+export { $module, $symbol, isBrowser, isValueGetter } from './module.js';
 export * from './reactive/event.js';
 export * from './reactive/observation.js';
 export * from './reactive/ref.js';
