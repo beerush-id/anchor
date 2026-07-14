@@ -5,7 +5,7 @@ import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
 import { bindable, setup } from '../../src/hoc.js';
-import { type BindableComponentProps, getContext, setContext } from '../../src/index.js';
+import { type BindableComponentProps, classx, getContext, setContext } from '../../src/index.js';
 
 describe('Anchor Solid - HOC API', () => {
   describe('bindable', () => {
@@ -206,18 +206,18 @@ describe('Anchor Solid - HOC API', () => {
     });
 
     it('should isolate context between sibling and nested setup components', async () => {
-      const Tab = setup<{ name: string; children?: JSX.Element }>(function TabComp(props) {
+      const Tab = setup<{ name: string; children?: JSX.Element; className?: string }>(function TabComp(props) {
         setContext('tab', props.name);
-        return <div>{props.children}</div>;
+        return <div class={props.className}>{props.children}</div>;
       });
 
       const Child = setup<{ id: string }>(function ChildComp(props) {
         return <span data-testid={props.id}>{getContext('tab')}</span>;
       });
 
-      const { unmount, getByTestId } = render(() => (
+      const { unmount, getByTestId, container } = render(() => (
         <div>
-          <Tab name="A">
+          <Tab name="A" className={classx('tab')}>
             <Child id="a-child" />
             <Tab name="A-nested">
               <Child id="a-nested-child" />
@@ -230,6 +230,7 @@ describe('Anchor Solid - HOC API', () => {
         </div>
       ));
 
+      expect(container.querySelector('.tab')?.textContent).includes('A');
       expect(getByTestId('a-child').textContent).toBe('A');
       expect(getByTestId('a-after').textContent).toBe('A');
       expect(getByTestId('a-nested-child').textContent).toBe('A-nested');

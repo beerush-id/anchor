@@ -1,4 +1,14 @@
-import { $symbol, captureStack, getScope, isMutableRef, type MutableRef, setScope, untrack } from '@anchorlib/core';
+import {
+  $symbol,
+  type AnyType,
+  captureStack,
+  getScope,
+  isMutableRef,
+  isValueGetter,
+  type MutableRef,
+  setScope,
+  untrack,
+} from '@anchorlib/core';
 import { type BindingRef, isBinding } from './binding.js';
 import type { BindableComponentProps } from './types.js';
 
@@ -44,7 +54,9 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
 
       const bindingRef = Reflect.get(target, key, receiver);
 
-      if (isBinding(bindingRef)) {
+      if (isValueGetter(bindingRef)) {
+        return (bindingRef as AnyType).value;
+      } else if (isBinding(bindingRef)) {
         return (bindingRef as BindingRef<unknown, unknown>).value;
       } else if (isMutableRef(bindingRef)) {
         return (bindingRef as MutableRef<unknown>).value;

@@ -1,4 +1,4 @@
-import { getContext, mutable, setContext } from '@anchorlib/core';
+import { classx, getContext, mutable, setContext } from '@anchorlib/core';
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -643,11 +643,12 @@ describe('Anchor React - HOC', () => {
   describe('Dynamic Children', () => {
     it('should render children function via $children', () => {
       const Test = setup<DynamicProps<'div'>>((props) => {
-        return <div>{props.$children}</div>;
+        return <div className={props.className}>{props.$children}</div>;
       });
 
-      const { container } = render(<Test>{() => <div>OK</div>}</Test>);
+      const { container } = render(<Test className={classx('test')}>{() => <div>OK</div>}</Test>);
       expect(container.textContent).includes('OK');
+      expect(container.querySelector('.test')?.textContent).toBe('OK');
     });
 
     it('should render ReactNode via $children', () => {

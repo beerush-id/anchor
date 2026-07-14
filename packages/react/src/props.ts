@@ -5,6 +5,7 @@ import {
   getScope,
   isBrowser,
   isMutableRef,
+  isValueGetter,
   setScope,
   untrack,
 } from '@anchorlib/core';
@@ -95,7 +96,9 @@ export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
 
       const bindingRef = Reflect.get(target, key, receiver);
 
-      if (isBinding(bindingRef)) {
+      if (isValueGetter(bindingRef)) {
+        return bindingRef.value;
+      } else if (isBinding(bindingRef)) {
         return bindingRef.value;
       } else if (isMutableRef(bindingRef)) {
         return bindingRef.value;
