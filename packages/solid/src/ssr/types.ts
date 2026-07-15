@@ -77,7 +77,7 @@ export type WorkerOptions<E> = {
   /** Serves static assets before SSR. Return `undefined` to fall through to SSR. */
   resolveAsset?: AssetResolver<E>;
   /** Provides request-scoped context to the SSR renderer and IRPC handlers. Defaults to `[]`. */
-  resolveContext?: (request: Request, url: URL) => SSRContextSeed;
+  resolveContext?: (request: Request, url: URL, env?: E) => SSRContextSeed | Promise<SSRContextSeed>;
   /** Hook to modify all outgoing responses (e.g., add security headers). */
   createResponse?: (response: Response) => Response;
   /** Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. */

@@ -1,5 +1,8 @@
 import '../../src/server/index.js';
+import '../../src/client/index.js';
+import { safeRun, sleep } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ssrEnv } from '../../src/ssr/index.js';
 import type { SSROutput, SSRRenderer } from '../../src/ssr/types.js';
 import { createFullWorker, createWorker } from '../../src/ssr/worker.js';
 
@@ -131,6 +134,23 @@ describe('createWorker', () => {
     });
 
     await worker.fetch(createRequest('http://localhost/'));
+
+    expect(renderer).toHaveBeenCalledWith('/', '', customContext, expect.any(AbortController), undefined);
+  });
+
+  it('uses async custom resolveContext', async () => {
+    const renderer = createMockRenderer();
+    const customContext: [string | symbol, unknown][] = [['auth', 'user-123']];
+
+    const worker = createWorker(renderer, {
+      template: TEMPLATE,
+      resolveContext: async () => {
+        await sleep(5);
+        return customContext;
+      },
+    });
+
+    await worker.fetch(createRequest('http://localhost/'), { foo: 'bar' });
 
     expect(renderer).toHaveBeenCalledWith('/', '', customContext, expect.any(AbortController), undefined);
   });
@@ -404,10 +424,11 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    await worker.fetch(createRequest('http://localhost/'));
+    await worker.fetch(createRequest('http://localhost/'), { foo: 'bar' });
 
     // The renderer is called with isolated=true (5th arg)
     expect(renderer).toHaveBeenCalledWith('/', '', undefined, expect.any(AbortController), undefined, true);
+    expect(safeRun(() => ssrEnv())).toBeUndefined();
   });
 
   it('passes controller and contextSeed to isolate', async () => {

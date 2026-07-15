@@ -1,6 +1,7 @@
 import { decodeCookies, isBrowser, setCookieContext } from '@anchorlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
+import { SSR_ENV_KEY } from './context.js';
 import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions } from './types.js';
 
 /**
@@ -40,7 +41,8 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
       try {
         const cookie = request.headers.get('cookie') ?? '';
         const url = new URL(request.url);
-        const contextSeed: SSRContextSeed = resolveContext?.(request, url) ?? [];
+        const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
+        if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
         if (url.pathname !== '/' && typeof resolveAsset === 'function') {
           const asset = await resolveAsset(request, url, env);
@@ -135,7 +137,8 @@ export function createFullWorker<E = any>(
       try {
         const cookie = request.headers.get('cookie') ?? '';
         const url = new URL(request.url);
-        const contextSeed: SSRContextSeed = resolveContext?.(request, url) ?? [];
+        const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
+        if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
         if (request.method === 'POST' && url.pathname.startsWith((router.transport as HTTPTransport).endpoint)) {
           const response = await router.resolve(request, contextSeed);
