@@ -1,4 +1,4 @@
-import { anchor, createObserver, isBrowser, microtask, onCleanup, replay, uuid } from '@anchorlib/core';
+import { anchor, captureStack, createObserver, isBrowser, microtask, onCleanup, replay, uuid } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
@@ -155,7 +155,17 @@ export class IRPCPackage<K extends string = 'id'> {
     const $options = options as IRPCStreamInit<IRPCInputs, IRPCOutput, IRPCData> & { init?: () => unknown };
 
     if (this.specs.has($options.name)) {
-      throw StubError.duplicate($options.name);
+      const error = StubError.duplicate($options.name);
+      captureStack.violation.general(
+        'Duplicate function detected.',
+        `Attempted to declare function "${$options.name}" more than once.`,
+        error,
+        [
+          'Duplicated function lead to untraceable bugs.',
+          `- Avoid to declare function with the same name in the same package.`,
+          `- Feel free to ignore this if the warning is caused by HMR.`,
+        ]
+      );
     }
 
     if ($options.init && !$options.seed) $options.seed = $options.init as never;

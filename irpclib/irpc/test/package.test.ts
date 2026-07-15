@@ -93,9 +93,11 @@ describe('IRPCPackage', () => {
       expect(spec?.description).toBe('A test function');
     });
 
-    it('should throw error when declaring duplicate function', () => {
+    it('should warn when declaring duplicate function', () => {
+      const warnSpy = vi.spyOn(console, 'error');
       rpc.declare({ name: 'duplicateFunc' });
-      expect(() => rpc.declare({ name: 'duplicateFunc' })).toThrow('IRPC "duplicateFunc" already exists.');
+      rpc.declare({ name: 'duplicateFunc' });
+      expect(warnSpy).toHaveBeenCalled();
     });
 
     it('should infer types', async () => {
