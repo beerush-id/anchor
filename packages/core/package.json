@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorlib/core",
-  "version": "1.2.14",
+  "version": "1.2.15",
   "description": "Core reactive state management library for Anchor",
   "keywords": [
     "state",

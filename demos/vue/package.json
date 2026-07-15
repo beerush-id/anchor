@@ -1,7 +1,7 @@
 {
   "name": "@anchor-demo/vue",
   "private": true,
-  "version": "1.2.14",
+  "version": "1.2.15",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5276",
