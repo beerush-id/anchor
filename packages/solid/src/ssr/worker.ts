@@ -2,7 +2,7 @@ import { decodeCookies, isBrowser, setCookieContext } from '@anchorlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import { SSR_ENV_KEY } from './context.js';
-import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions } from './types.js';
+import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions, WsSender } from './types.js';
 
 /**
  * Creates a standalone SSR worker that handles asset resolution, rendering,
@@ -18,18 +18,19 @@ import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, Work
  */
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E>, Shell?: AppShell) {
-  const {
-    template = '',
-    headTag = '<!--ssr-head-->',
-    bodyTag = '<!--ssr-outlet-->',
-    timeout,
-    resolveAsset,
-    resolveContext,
-    createResponse = createDefaultResponse,
-  } = options;
-
   return {
+    options,
     async fetch(request: Request, env?: E) {
+      const {
+        template = '',
+        headTag = '<!--ssr-head-->',
+        bodyTag = '<!--ssr-outlet-->',
+        timeout,
+        resolveAsset,
+        resolveContext,
+        createResponse = createDefaultResponse,
+      } = options;
+
       const controller = new AbortController();
 
       const abort = (reason: unknown) => controller.abort(reason);
@@ -114,18 +115,19 @@ export function createFullWorker<E = any>(
   options: WorkerOptions<E>,
   Shell?: AppShell
 ) {
-  const {
-    template = '',
-    headTag = '<!--ssr-head-->',
-    bodyTag = '<!--ssr-outlet-->',
-    timeout,
-    resolveAsset,
-    resolveContext,
-    createResponse = createDefaultResponse,
-  } = options;
-
   return {
+    options,
     async fetch(request: Request, env?: E) {
+      const {
+        template = '',
+        headTag = '<!--ssr-head-->',
+        bodyTag = '<!--ssr-outlet-->',
+        timeout,
+        resolveAsset,
+        resolveContext,
+        createResponse = createDefaultResponse,
+      } = options;
+
       const controller = new AbortController();
 
       const abort = (reason: unknown) => controller.abort(reason);
@@ -201,6 +203,24 @@ export function createFullWorker<E = any>(
         request.signal.removeEventListener('abort', abort);
         clearTimeout(timerId);
       }
+    },
+    async upgrade(request: Request, env?: E) {
+      if (!options.wsRouter) {
+        throw new Error(
+          "[AIR Stack] WebSocket upgrade failed: 'wsRouter' is not defined. Please pass an instance of WebSocketRouter in the worker options to enable real-time features."
+        );
+      }
+
+      const cookie = request.headers.get('cookie') ?? '';
+      const url = new URL(request.url);
+      const contextSeed: SSRContextSeed = (await options.resolveContext?.(request, url, env)) ?? [];
+      if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
+      contextSeed.push(['cookie', cookie]);
+
+      // Return the generic message resolver function
+      return (message: string | ArrayBuffer, sender: WsSender) => {
+        return options.wsRouter!.resolve(message, sender, contextSeed);
+      };
     },
   };
 }

@@ -68,7 +68,7 @@ export type AssetResolver<E> = (request: Request, url: URL, env?: E) => Promise<
  */
 export type WorkerOptions<E> = {
   /** The HTML template string (e.g., imported via `index.html?raw`). */
-  template: string;
+  template?: string;
   /** Placeholder in the template to replace with the rendered head. Defaults to `<!--ssr-head-->`. */
   headTag?: string;
   /** Placeholder in the template to replace with the rendered body. Defaults to `<!--ssr-outlet-->`. */
@@ -81,6 +81,24 @@ export type WorkerOptions<E> = {
   createResponse?: (response: Response) => Response;
   /** Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. */
   timeout?: number;
+  /** Optional WebSocketRouter instance to handle socket connections. */
+  wsRouter?: WsRouter;
 };
+
+/**
+ * An abstraction for a WebSocket sender, ensuring cross-platform compatibility.
+ */
+export type WsSender = { send: (message: string) => void };
+
+/**
+ * A generic interface representing a WebSocket router capable of resolving messages.
+ */
+export interface WsRouter {
+  resolve(message: string | ArrayBuffer, ws: WsSender, initContext?: SSRContextSeed): Promise<void>;
+  /**
+   * Called when a socket connection closes to clean up active resources or streams.
+   */
+  disconnect?(ws?: WsSender): void;
+}
 
 export type AppShell = StableComponent<HTMLAttributes<HTMLElement>>;

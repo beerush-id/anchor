@@ -12,7 +12,9 @@ import { Readable } from 'node:stream';
  * @returns A Web Standard Request.
  */
 export function toWebRequest(req: IncomingMessage, controller: AbortController): Request {
-  const { method = 'GET', headers, url = '/' } = req;
+  const { method = 'GET', headers } = req;
+  // biome-ignore lint/suspicious/noExplicitAny: Expect any.
+  const url = (req as any).originalUrl ?? req.url ?? '/';
   const origin = `http://${headers.host ?? 'localhost'}`;
   const fullUrl = new URL(url, origin).href;
 

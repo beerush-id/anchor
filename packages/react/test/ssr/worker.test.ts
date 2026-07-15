@@ -2,6 +2,7 @@ import '../../src/server/index.js';
 import '../../src/client/index.js';
 import { safeRun, sleep } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SSR_ENV_KEY } from '../../src/ssr/context.js';
 import { ssrEnv } from '../../src/ssr/index.js';
 import type { SSROutput, SSRRenderer } from '../../src/ssr/types.js';
 import { createFullWorker, createWorker } from '../../src/ssr/worker.js';
@@ -664,5 +665,71 @@ describe('createFullWorker', () => {
     expect(response.headers.getSetCookie()).toEqual(['session=abc; Path=/']);
 
     decodeSpy.mockRestore();
+  });
+  describe('upgrade', () => {
+    it('throws error if wsRouter is not provided', async () => {
+      const renderer = createMockRenderer();
+      const router = createMockRouter();
+      const worker = createFullWorker(router, renderer, { template: TEMPLATE });
+
+      await expect(worker.upgrade(createRequest('http://localhost/'))).rejects.toThrow(
+        "[AIR Stack] WebSocket upgrade failed: 'wsRouter' is not defined"
+      );
+    });
+
+    it('returns a resolver function and passes context to wsRouter.resolve', async () => {
+      const renderer = createMockRenderer();
+      const router = createMockRouter();
+      const wsRouter = {
+        resolve: vi.fn(async () => {}),
+      };
+
+      const customContext: [string | symbol, unknown][] = [['auth', 'test-user']];
+      const worker = createFullWorker(router, renderer, {
+        template: TEMPLATE,
+        wsRouter,
+        resolveContext: () => customContext,
+      });
+
+      // Cover the getter
+      expect(worker.options.wsRouter).toBe(wsRouter);
+
+      const request = createRequest('http://localhost/', { headers: { cookie: 'session=xyz' } });
+      const env = { custom: 'env' };
+
+      const resolve = await worker.upgrade(request, env);
+
+      expect(typeof resolve).toBe('function');
+
+      const mockWs = { send: vi.fn() };
+      await resolve('hello', mockWs);
+
+      expect(wsRouter.resolve).toHaveBeenCalledWith('hello', mockWs, [
+        ['auth', 'test-user'],
+        [SSR_ENV_KEY, env],
+        ['cookie', 'session=xyz'],
+      ]);
+    });
+
+    it('returns a resolver function with default context if resolveContext is undefined and no cookie is provided', async () => {
+      const renderer = createMockRenderer();
+      const router = createMockRouter();
+      const wsRouter = {
+        resolve: vi.fn(async () => {}),
+      };
+
+      const worker = createFullWorker(router, renderer, {
+        template: TEMPLATE,
+        wsRouter,
+      });
+
+      const request = createRequest('http://localhost/');
+      const resolve = await worker.upgrade(request);
+
+      const mockWs = { send: vi.fn() };
+      await resolve('hello', mockWs);
+
+      expect(wsRouter.resolve).toHaveBeenCalledWith('hello', mockWs, [['cookie', '']]);
+    });
   });
 });
