@@ -1,5 +1,7 @@
-import type { Plugin } from 'vite';
+import type { Plugin, ResolvedConfig } from 'vite';
 import { sendWebResponse, toWebRequest } from './utils.js';
+import { resolve } from 'node:path';
+import { existsSync, unlinkSync } from 'node:fs';
 
 export type AirWorkerOptions = {
   /**
@@ -7,10 +9,18 @@ export type AirWorkerOptions = {
    * Defaults to 'src/worker.ts'.
    */
   entry?: string;
+
+  /**
+   * Whether to automatically remove the index.html file from the client build output
+   * to prevent Cloudflare from intercepting SSR routes.
+   * Defaults to true.
+   */
+  removeIndexHtml?: boolean;
 };
 
 export function airWorker(options: AirWorkerOptions = {}): Plugin {
   const entry = options.entry ?? 'src/worker.ts';
+  let resolvedConfig: ResolvedConfig;
 
   return {
     name: 'air-worker',
@@ -62,13 +72,10 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
         addExternal(userConfig.ssr, externalIds);
       }
 
-      // We should also set appType: 'custom' so Vite doesn't try to serve index.html statically!
-      // This ensures our middleware catches the request for SSR.
       if (!userConfig.appType) {
         userConfig.appType = 'custom';
       }
 
-      // In build mode, point Rollup to our virtual wrapper so it injects the template natively
       if (ssrBuild && env.command === 'build') {
         if (!userConfig.build.rolldownOptions) userConfig.build.rolldownOptions = {};
         if (!userConfig.build.rolldownOptions.input) {
@@ -85,9 +92,26 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       }
     },
 
+    configResolved(config) {
+      resolvedConfig = config;
+    },
+
+    closeBundle() {
+      if (options.removeIndexHtml === false) return;
+
+      const isSsr = Boolean(resolvedConfig.build.ssr);
+      if (isSsr) {
+        const indexPath = resolve(resolvedConfig.root, 'dist/client/index.html');
+        try {
+          if (existsSync(indexPath)) {
+            unlinkSync(indexPath);
+          }
+        } catch (_e) {}
+      }
+    },
+
     load(id) {
       if (id === 'worker') {
-        // The wrapper loads the user's actual worker entry and sets the built HTML template onto it
         return `
           import worker from '/${entry.replace('./', '')}';
           import template from '/dist/client/index.html?raw';
@@ -158,7 +182,6 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
             const urlPath = req.originalUrl ?? req.url ?? '/';
             const request = toWebRequest(req, controller);
 
-            // Load the worker entry via Vite (picks up HMR automatically)
             const workerModule = await server.ssrLoadModule(entry);
             const worker = workerModule.default;
 
@@ -166,8 +189,6 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
               return next();
             }
 
-            // In Dev Mode, inject the transformed template directly into the worker's options
-            // This prevents us from transforming the entire HTML page after it's rendered!
             if (worker.options && !worker.options.template) {
               const fs = await import('node:fs/promises');
               const path = await import('node:path');
@@ -175,10 +196,8 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
               worker.options.template = await server.transformIndexHtml(urlPath, rawHtml);
             }
 
-            // Forward the standard Web Request to the worker
             const response = await worker.fetch(request);
 
-            // Just stream the response, no post-render transform needed!
             await sendWebResponse(res, response);
           } catch (error) {
             next(error);
