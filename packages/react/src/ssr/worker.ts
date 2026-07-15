@@ -26,7 +26,7 @@ import type {
  * @returns A worker object with a Web Standard `fetch` handler.
  */
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E>, Shell?: AppShell) {
+export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOptions<E> = {}, Shell?: AppShell) {
   return {
     options,
     async fetch(request: Request, env?: E) {
@@ -121,7 +121,7 @@ type IsolatedRenderer = (
 export function createFullWorker<E = any>(
   router: HTTPRouter,
   renderer: SSRRenderer,
-  options: WorkerOptions<E>,
+  options: WorkerOptions<E> = {},
   Shell?: AppShell
 ) {
   return {
