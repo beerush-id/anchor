@@ -276,7 +276,7 @@ function getMimeType(pathname: string) {
   return MIME_TYPES[ext] || 'application/octet-stream';
 }
 
-const defaultAssetResolver: AssetResolver<AnyType> = async (request, url, env) => {
+export const defaultAssetResolver: AssetResolver<AnyType> = async (request, url, env) => {
   // If running in Cloudflare Pages:
   if (env?.ASSETS) {
     try {
