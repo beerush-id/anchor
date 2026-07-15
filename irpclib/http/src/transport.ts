@@ -116,7 +116,7 @@ export class HTTPTransport extends IRPCTransport {
    * @param calls - Array of RPC calls to dispatch.
    * @param standalone - When true, dispatches to the standalone web endpoint and reads a JSON response.
    */
-  protected async dispatch(calls: IRPCCall[], standalone?: boolean) {
+  public async dispatch(calls: IRPCCall[], standalone?: boolean) {
     try {
       const form = new FormData();
 

@@ -4,7 +4,16 @@ import { CallError } from './error.js';
 import { IRPCReader } from './reader.js';
 import { IRPC_STORE } from './store.js';
 import type { IRPCTransport } from './transport.js';
-import type { IRPCCallConfig, IRPCData, IRPCPacketStream, IRPCPayload, IRPCStatus } from './types.js';
+import type {
+  IRPCCallConfig,
+  IRPCData,
+  IRPCInputs,
+  IRPCOutput,
+  IRPCPacketStream,
+  IRPCPayload,
+  IRPCSpec,
+  IRPCStatus,
+} from './types.js';
 
 export const DEFAULT_RETRY_MODE = 'exponential';
 export const DEFAULT_RETRY_DELAY = 1000;
@@ -59,12 +68,14 @@ export class IRPCCall {
    * @param transport - The transport used for dispatching calls.
    * @param payload - The RPC payload containing method and parameters
    * @param options - Options for the call, such as timeout, maxRetries, etc.
+   * @param spec - The specification for the RPC call.
    */
   constructor(
     public transport: IRPCTransport,
     public payload: IRPCPayload,
     public options: IRPCCallConfig & { seed?: () => IRPCData },
-    reader?: IRPCReader<IRPCData>
+    reader?: IRPCReader<IRPCData>,
+    public spec?: IRPCSpec<IRPCInputs, IRPCOutput>
   ) {
     if (options.timeout) {
       this.timerId = setTimeout(() => {
@@ -144,6 +155,16 @@ export class IRPCCall {
 
       this.retryId = setTimeout(() => {
         this.retries++;
+
+        if (this.spec?.stream || this.spec?.standalone) {
+          this.reader.resume();
+          this.transport
+            .dispatch([this], this.spec.standalone)
+            .finally(() => {})
+            .catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.payload.name }]));
+          return;
+        }
+
         this.transport.schedule(this);
       }, delay);
     } else {

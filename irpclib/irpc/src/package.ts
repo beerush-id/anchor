@@ -245,7 +245,7 @@ export class IRPCPackage<K extends string = 'id'> {
 
           schedule(() => {
             if (reader.status === IRPC_STATUS.PENDING) reader.close();
-            (reader as never as { resume: () => void }).resume();
+            reader.resume();
             execute(args as IRPCData[], reader);
           });
         };

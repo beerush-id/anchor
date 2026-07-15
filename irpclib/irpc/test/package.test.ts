@@ -1,4 +1,4 @@
-import { createLifecycle } from '@anchorlib/core';
+import { createLifecycle, isReactive, setReactive } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
@@ -873,6 +873,7 @@ describe('IRPCPackage', () => {
   describe('Browser Stubs', () => {
     beforeEach(() => {
       vi.stubGlobal('window', {});
+      vi.stubGlobal('document', {});
     });
 
     afterEach(() => {
@@ -939,13 +940,15 @@ describe('IRPCPackage', () => {
       lifecycle.destroy();
     });
 
-    it('should trigger observer and schedule dispatch on state change', () => {
+    it('should trigger observer and schedule dispatch on state change', async () => {
+      const current = isReactive();
+      setReactive(true);
       const state = new RemoteState<string>('World');
       const hello = rpc.declare<(name: string) => Promise<string>>({
         name: 'helloObserver',
         seed: () => '',
       });
-      rpc.construct(hello, async (name) => `Hello ${name}`);
+      rpc.construct(hello, (name) => new Promise(() => {})); // Never resolves
 
       const lifecycle = createLifecycle();
       let result: any;
@@ -954,15 +957,18 @@ describe('IRPCPackage', () => {
         result = hello.with(() => [state.data], 10);
       });
 
-      // updating state triggers the observer callback (lines 158-159)
-      // which calls dispatch() -> coalesce=true -> schedule() (lines 167-169)
+      // updating state triggers the observer callback (lines 237-238)
+      // which calls dispatch() -> coalesce=true -> schedule() (lines 246-250)
+      // Do this BEFORE the initial promise resolves, so result.status is still PENDING!
       state.data = 'Universe';
 
-      // advance timers to flush the microtask schedule
+      // advance timers to flush the microtask schedule (debounce = 10)
       vi.advanceTimersByTime(10);
 
       expect(result).toBeDefined();
+      expect(result.status).toBe(IRPC_STATUS.PENDING); // dispatch called!
       lifecycle.destroy();
+      setReactive(current!);
     });
   });
 

@@ -127,7 +127,7 @@ export class BroadcastTransport extends IRPCTransport {
    * Dispatches RPC calls over BroadcastChannel.
    * Batches all calls into a single BroadcastChannel message.
    */
-  protected async dispatch(calls: IRPCCall[]): Promise<void> {
+  public async dispatch(calls: IRPCCall[]): Promise<void> {
     if (!this.channel) {
       calls.forEach((call) => {
         call.enqueue({

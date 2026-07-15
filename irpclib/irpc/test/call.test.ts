@@ -3,6 +3,8 @@ import { IRPCCall } from '../src/call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import type { IRPCTransport } from '../src/index.js';
 
+const pkg = { name: 'irpc', version: '1.0.0' };
+
 describe('IRPCCall', () => {
   const mockTransport = {
     schedule: vi.fn(),
@@ -10,7 +12,7 @@ describe('IRPCCall', () => {
 
   describe('constructor', () => {
     it('should create call with payload and options', () => {
-      const payload = { name: 'testFunc', args: ['arg1'] };
+      const payload = { package: pkg, name: 'testFunc', args: ['arg1'] };
       const options = { timeout: 1000 };
 
       const call = new IRPCCall(mockTransport, payload, options);
@@ -24,7 +26,7 @@ describe('IRPCCall', () => {
     });
 
     it('should create call with initial data', () => {
-      const payload = { name: 'testFunc', args: ['arg1'] };
+      const payload = { package: pkg, name: 'testFunc', args: ['arg1'] };
       const options = { seed: () => 'Init' };
 
       const call = new IRPCCall(mockTransport, payload, options);
@@ -33,7 +35,7 @@ describe('IRPCCall', () => {
 
     it('should set timeout timer if timeout option is provided and dispatch CLOSE to reader', () => {
       vi.useFakeTimers();
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const options = { timeout: 1000 };
 
       const call = new IRPCCall(mockTransport, payload, options);
@@ -58,7 +60,7 @@ describe('IRPCCall', () => {
 
   describe('resolve', () => {
     it('should statically set resolved to true', () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, {});
       const result = { data: 'test' };
 
@@ -70,7 +72,7 @@ describe('IRPCCall', () => {
     });
 
     it('should ignore multiple redundant resolves', () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, {});
       const result1 = { data: 'test1' };
       const result2 = { data: 'test2' };
@@ -85,7 +87,7 @@ describe('IRPCCall', () => {
 
   describe('reject', () => {
     it('should definitively set state error without retries map', () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, { maxRetries: 0 });
       const error = new Error('Test error');
 
@@ -97,7 +99,7 @@ describe('IRPCCall', () => {
     });
 
     it('should not mutate error iteratively', () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, { maxRetries: 0 });
       const error1 = new Error('Test error 1');
       const error2 = new Error('Test error 2');
@@ -112,7 +114,7 @@ describe('IRPCCall', () => {
 
   describe('enqueue', () => {
     it('should map ANSWER tracking to explicit successful resolve dynamically', () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, {});
 
       call.enqueue({
@@ -129,7 +131,7 @@ describe('IRPCCall', () => {
     });
 
     it('should securely trigger fallback reject if stream receives structural CLOSE ERROR securely', async () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, { maxRetries: 0 });
 
       call.reader.catch(() => {}); // Hide error message.
@@ -139,7 +141,7 @@ describe('IRPCCall', () => {
         name: 'testFunc',
         type: IRPC_PACKET_TYPE.CLOSE,
         status: IRPC_STATUS.ERROR,
-        error: { code: 'unknown', message: 'Bad network pipe' },
+        error: { code: 'unknown', message: 'Bad network pipe' } as never,
         createdAt: Date.now(),
       });
 
@@ -148,7 +150,7 @@ describe('IRPCCall', () => {
     });
 
     it('should ignore incoming enqueue payloads cleanly when already securely resolved', () => {
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockTransport, payload, {});
       call.resolved = true;
 
@@ -167,7 +169,7 @@ describe('IRPCCall', () => {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
 
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockCloseTransport, payload, {});
 
       // Inject some parsed reader data dynamically for evaluation
@@ -188,7 +190,7 @@ describe('IRPCCall', () => {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
 
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(mockCloseTransport, payload, {});
       call.resolved = true;
 
@@ -202,7 +204,7 @@ describe('IRPCCall', () => {
       const transport = {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const options = {
         maxRetries: 3,
         retryDelay: 10,
@@ -227,11 +229,55 @@ describe('IRPCCall', () => {
       vi.useRealTimers();
     });
 
+    it('should dispatch instead of schedule when call is stream', () => {
+      const transport = {
+        schedule: vi.fn(),
+        dispatch: vi.fn().mockResolvedValue(undefined),
+      } as unknown as IRPCTransport;
+      const payload = { package: pkg, name: 'testFunc', args: [] };
+      const options = { maxRetries: 3, retryDelay: 10, retryMode: 'linear' as const };
+      const spec = { stream: true } as any;
+
+      const call = new IRPCCall(transport, payload, options, undefined, spec);
+      const error = new Error('Test error');
+
+      vi.useFakeTimers();
+      call.reject(error);
+      vi.advanceTimersByTime(10);
+
+      expect(transport.dispatch).toHaveBeenCalledWith([call], undefined);
+      expect(transport.schedule).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it('should dispatch instead of schedule when call is standalone', () => {
+      const transport = {
+        schedule: vi.fn(),
+        dispatch: vi.fn().mockResolvedValue(undefined),
+      } as unknown as IRPCTransport;
+      const payload = { package: pkg, name: 'testFunc', args: [] };
+      const options = { maxRetries: 3, retryDelay: 10, retryMode: 'linear' as const };
+      const spec = { standalone: true } as any;
+
+      const call = new IRPCCall(transport, payload, options, undefined, spec);
+      const error = new Error('Test error');
+
+      vi.useFakeTimers();
+      call.reject(error);
+      vi.advanceTimersByTime(10);
+
+      expect(transport.dispatch).toHaveBeenCalledWith([call], true);
+      expect(transport.schedule).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
     it('should not retry when maxRetries is safely disabled structurally', () => {
       const transport = {
         schedule: vi.fn(),
       } as unknown as IRPCTransport;
-      const payload = { name: 'testFunc', args: [] };
+      const payload = { package: pkg, name: 'testFunc', args: [] };
       const call = new IRPCCall(transport, payload, { maxRetries: 0 });
       const error = new Error('Test error');
 
@@ -249,7 +295,7 @@ describe('IRPCCall', () => {
 
       const call = new IRPCCall(
         transport,
-        { name: 'testFunc', args: [] },
+        { name: 'testFunc', args: [], package: pkg },
         {
           maxRetries: 1,
           retryDelay: 10,
@@ -278,7 +324,7 @@ describe('IRPCCall', () => {
       const transport = { schedule: vi.fn() } as unknown as IRPCTransport;
       const call = new IRPCCall(
         transport,
-        { name: 'test', args: [] },
+        { name: 'test', args: [], package: pkg },
         {
           maxRetries: 3,
           retryDelay: 10,

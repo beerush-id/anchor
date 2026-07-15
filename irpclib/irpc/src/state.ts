@@ -188,8 +188,12 @@ export class RemoteState<T> extends Promise<T> {
   /**
    * Resumes a closed state if it was marked as resumable.
    */
-  protected resume() {
-    this.#closed = false;
+  public resume() {
+    $do(() => {
+      this.#closed = false;
+      this.error = undefined;
+      this.status = IRPC_STATUS.PENDING;
+    });
   }
 
   /**

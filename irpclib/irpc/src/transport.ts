@@ -69,10 +69,10 @@ export class IRPCTransport {
     const payload: IRPCPayload = { name: spec.name, args, package: spec.package };
     const { timeout, maxRetries, retryMode, retryDelay } = { ...this.config, ...config };
 
-    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay }, reader);
+    const call = new IRPCCall(this, payload, { timeout, maxRetries, retryMode, retryDelay }, reader, spec);
 
-    if (spec.stream || config?.standalone) {
-      this.dispatch([call], config?.standalone)
+    if (spec.stream || spec.standalone) {
+      this.dispatch([call], spec.standalone)
         .finally(() => {})
         .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return call.reader;
@@ -187,7 +187,7 @@ export class IRPCTransport {
    * @param standalone - When true, dispatch as a dedicated request with full HTTP lifecycle.
    * @returns A promise that resolves when all calls have been processed.
    */
-  protected async dispatch(calls: IRPCCall[], standalone?: boolean): Promise<void> {
+  public async dispatch(calls: IRPCCall[], standalone?: boolean): Promise<void> {
     calls.forEach((call) => {
       call.enqueue({
         id: call.id,

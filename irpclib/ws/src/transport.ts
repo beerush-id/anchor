@@ -267,7 +267,7 @@ export class WebSocketTransport extends IRPCTransport {
    * Dispatches RPC calls over WebSocket.
    * Batches all calls into a single WebSocket message.
    */
-  protected async dispatch(calls: IRPCCall[]): Promise<void> {
+  public async dispatch(calls: IRPCCall[]): Promise<void> {
     // Reject calls if connection is closing or intentionally closed
     if (
       this.state === WebSocketState.CLOSING ||
