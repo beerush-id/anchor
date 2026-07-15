@@ -1,6 +1,6 @@
 import type HOOK from 'node:async_hooks';
-import { $ROOT, $symbol } from '../module.js';
 import type { AsyncStore } from '../scope/index.js';
+import { $ROOT, $symbol } from '../shared/env.js';
 
 if (!$ROOT.AsyncLocalStorage) {
   const { AsyncLocalStorage } = await import('node:async_hooks');

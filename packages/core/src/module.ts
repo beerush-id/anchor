@@ -2,6 +2,7 @@
 import { version } from '../package.json';
 import type { createArrayMutator, createCollectionMutator } from './engine/index.js';
 import type { AsyncScope, AsyncStore } from './scope/index.js';
+import { $ROOT, $symbol, isBrowser } from './shared/env.js';
 import { captureStack } from './shared/exception.js';
 import type {
   AnyType,
@@ -15,14 +16,10 @@ import type {
   StateRelation,
 } from './types.js';
 
-export function $symbol(name: string, suffix?: string) {
-  if (suffix) return Symbol.for(`--anchor-${name}-${suffix}`);
-  return Symbol.for(`--anchor-${name}`);
-}
+export { $ROOT, $symbol, isBrowser } from './shared/env.js';
 
 export const NAMESPACE_KEY = $symbol('namespace');
 export const IS_VALUE_GETTER = $symbol('value-getter');
-export const $ROOT = globalThis as AnyType;
 
 /**
  * Check if the given value is a value getter.
@@ -149,14 +146,6 @@ if ($ROOT[NAMESPACE_KEY]) {
 export const $module = $ROOT[NAMESPACE_KEY] as typeof NAMESPACE & {
   async: AsyncScope<AsyncStore>;
 } & Record<string | symbol, AnyType>;
-
-/**
- * Check if the current environment is a browser.
- * @returns {boolean}
- */
-export function isBrowser(): boolean {
-  return typeof window !== 'undefined' && typeof document !== 'undefined';
-}
 
 if (!isBrowser()) {
   await import('./server/index.js');

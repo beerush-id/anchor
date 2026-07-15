@@ -733,3 +733,153 @@ describe('createFullWorker', () => {
     });
   });
 });
+
+describe('defaultAssetResolver', () => {
+  let worker: ReturnType<typeof createWorker>;
+  let mockRenderer: SSRRenderer;
+  const TEMPLATE = '<html><!--ssr-head--><!--ssr-outlet--></html>';
+
+  beforeEach(() => {
+    mockRenderer = vi.fn(async () => ({
+      html: '',
+      head: '',
+      status: 200,
+      cookies: [],
+      redirect: undefined,
+    })) as unknown as SSRRenderer;
+    worker = createWorker(mockRenderer, { template: TEMPLATE });
+    vi.stubGlobal('window', undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('resolves assets via Cloudflare env.ASSETS', async () => {
+    const mockEnv = {
+      ASSETS: {
+        fetch: vi.fn(async () => new Response('cf-css', { status: 200 })),
+      },
+    };
+
+    const res = await worker.fetch(new Request('http://localhost/style.css'), mockEnv);
+    expect(mockEnv.ASSETS.fetch).toHaveBeenCalled();
+    expect(await res.text()).toBe('cf-css');
+    expect(mockRenderer).not.toHaveBeenCalled();
+  });
+
+  it('falls through Cloudflare env.ASSETS if status >= 400', async () => {
+    const mockEnv = {
+      ASSETS: {
+        fetch: vi.fn(async () => new Response('not found', { status: 404 })),
+      },
+    };
+
+    const res = await worker.fetch(new Request('http://localhost/missing-cf.css'), mockEnv);
+    expect(res.status).toBe(200); // from mockRenderer
+    expect(mockRenderer).toHaveBeenCalled();
+  });
+
+  it('falls through Cloudflare env.ASSETS if fetch throws', async () => {
+    const mockEnv = {
+      ASSETS: {
+        fetch: vi.fn(async () => { throw new Error('Fetch failed') }),
+      },
+    };
+
+    const res = await worker.fetch(new Request('http://localhost/missing-cf-throw.css'), mockEnv);
+    expect(res.status).toBe(200); // from mockRenderer
+    expect(mockRenderer).toHaveBeenCalled();
+  });
+
+  it('resolves assets via Bun.file', async () => {
+    const mockFile = new ReadableStream({
+      start(c) {
+        c.enqueue(new TextEncoder().encode('bun-css'));
+        c.close();
+      }
+    });
+    // @ts-ignore
+    mockFile.exists = async () => true;
+
+    const bunMock = {
+      file: vi.fn(() => mockFile),
+    };
+    vi.stubGlobal('Bun', bunMock);
+
+    const res = await worker.fetch(new Request('http://localhost/style.css'));
+    expect(bunMock.file).toHaveBeenCalledWith('./dist/client/style.css');
+    expect(await res.text()).toBe('bun-css');
+  });
+
+  it('resolves assets via Deno', async () => {
+    const denoMock = {
+      stat: vi.fn(async () => ({ isFile: true })),
+      open: vi.fn(async () => ({
+        readable: new ReadableStream({
+          start(c) {
+            c.enqueue(new TextEncoder().encode('deno-css'));
+            c.close();
+          }
+        })
+      })),
+    };
+    vi.stubGlobal('Deno', denoMock);
+
+    const res = await worker.fetch(new Request('http://localhost/style.css'));
+    expect(denoMock.stat).toHaveBeenCalledWith('./dist/client/style.css');
+    expect(denoMock.open).toHaveBeenCalledWith('./dist/client/style.css', { read: true });
+    expect(await res.text()).toBe('deno-css');
+    expect(res.headers.get('Content-Type')).toBe('text/css');
+  });
+
+  it('falls through Deno if file not found', async () => {
+    const denoMock = {
+      stat: vi.fn(async () => { throw new Error('Not found') }),
+    };
+    vi.stubGlobal('Deno', denoMock);
+    const res = await worker.fetch(new Request('http://localhost/missing-deno.css'));
+    expect(mockRenderer).toHaveBeenCalled();
+  });
+
+  it('resolves assets via Node fs', async () => {
+    const fs = await import('node:fs/promises');
+    await fs.mkdir('./dist/client', { recursive: true });
+    await fs.writeFile('./dist/client/real-node-style.css', 'real-node-css');
+
+    const res = await worker.fetch(new Request('http://localhost/real-node-style.css'));
+    expect(await res.text()).toBe('real-node-css');
+    expect(res.headers.get('Content-Type')).toBe('text/css');
+    
+    await fs.rm('./dist/client/real-node-style.css', { force: true });
+  });
+
+  it('returns application/octet-stream for unknown extensions in Node', async () => {
+    const fs = await import('node:fs/promises');
+    await fs.mkdir('./dist/client', { recursive: true });
+    await fs.writeFile('./dist/client/unknown.xyz', 'unknown-data');
+
+    const res = await worker.fetch(new Request('http://localhost/unknown.xyz'));
+    expect(await res.text()).toBe('unknown-data');
+    expect(res.headers.get('Content-Type')).toBe('application/octet-stream');
+    
+    await fs.rm('./dist/client/unknown.xyz', { force: true });
+  });
+
+  it('returns application/octet-stream for path with no extension in Node', async () => {
+    const fs = await import('node:fs/promises');
+    await fs.mkdir('./dist/client', { recursive: true });
+    await fs.writeFile('./dist/client/noextension', 'no-ext-data');
+
+    const res = await worker.fetch(new Request('http://localhost/noextension'));
+    expect(await res.text()).toBe('no-ext-data');
+    expect(res.headers.get('Content-Type')).toBe('application/octet-stream');
+    
+    await fs.rm('./dist/client/noextension', { force: true });
+  });
+
+  it('falls through Node if file not found', async () => {
+    const res = await worker.fetch(new Request('http://localhost/missing.css'));
+    expect(mockRenderer).toHaveBeenCalled();
+  });
+});

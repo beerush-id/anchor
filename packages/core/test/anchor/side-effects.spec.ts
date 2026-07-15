@@ -65,7 +65,6 @@ describe('Anchor Core - State Side-Effects & Underlying Object Preservation', ()
       expect(handler).toHaveBeenCalled();
       delete (parentState as { address?: unknown }).address;
 
-      console.log(parentState);
       unsubscribe();
     });
 

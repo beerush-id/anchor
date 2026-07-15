@@ -67,7 +67,7 @@ describe('Anchor - Server binding', () => {
     vi.resetModules();
     await import('../../src/module.js');
 
-    expect(errorSpy).toHaveBeenCalledTimes(3);
+    expect(errorSpy).toHaveBeenCalledTimes(4);
 
     vi.unstubAllGlobals();
   });
