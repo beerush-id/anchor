@@ -774,7 +774,9 @@ describe('defaultAssetResolver', () => {
   it('falls through Cloudflare env.ASSETS if fetch throws', async () => {
     const mockEnv = {
       ASSETS: {
-        fetch: vi.fn(async () => { throw new Error('Fetch failed') }),
+        fetch: vi.fn(async () => {
+          throw new Error('Fetch failed');
+        }),
       },
     };
 
@@ -788,7 +790,7 @@ describe('defaultAssetResolver', () => {
       start(c) {
         c.enqueue(new TextEncoder().encode('bun-css'));
         c.close();
-      }
+      },
     });
     // @ts-ignore
     mockFile.exists = async () => true;
@@ -811,8 +813,8 @@ describe('defaultAssetResolver', () => {
           start(c) {
             c.enqueue(new TextEncoder().encode('deno-css'));
             c.close();
-          }
-        })
+          },
+        }),
       })),
     };
     vi.stubGlobal('Deno', denoMock);
@@ -826,7 +828,9 @@ describe('defaultAssetResolver', () => {
 
   it('falls through Deno if file not found', async () => {
     const denoMock = {
-      stat: vi.fn(async () => { throw new Error('Not found') }),
+      stat: vi.fn(async () => {
+        throw new Error('Not found');
+      }),
     };
     vi.stubGlobal('Deno', denoMock);
     const res = await worker.fetch(new Request('http://localhost/missing-deno.css'));
@@ -841,7 +845,7 @@ describe('defaultAssetResolver', () => {
     const res = await worker.fetch(new Request('http://localhost/real-node-style.css'));
     expect(await res.text()).toBe('real-node-css');
     expect(res.headers.get('Content-Type')).toBe('text/css');
-    
+
     await fs.rm('./dist/client/real-node-style.css', { force: true });
   });
 
@@ -853,7 +857,7 @@ describe('defaultAssetResolver', () => {
     const res = await worker.fetch(new Request('http://localhost/unknown.xyz'));
     expect(await res.text()).toBe('unknown-data');
     expect(res.headers.get('Content-Type')).toBe('application/octet-stream');
-    
+
     await fs.rm('./dist/client/unknown.xyz', { force: true });
   });
 
@@ -865,7 +869,7 @@ describe('defaultAssetResolver', () => {
     const res = await worker.fetch(new Request('http://localhost/noextension'));
     expect(await res.text()).toBe('no-ext-data');
     expect(res.headers.get('Content-Type')).toBe('application/octet-stream');
-    
+
     await fs.rm('./dist/client/noextension', { force: true });
   });
 
