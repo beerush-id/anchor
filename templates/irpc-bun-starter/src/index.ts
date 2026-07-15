@@ -1,6 +1,4 @@
-import '@irpclib/irpc/server';
 import { HTTPRouter } from '@irpclib/http/router';
-import { type IRPCContextProvider, setContextProvider } from '@irpclib/irpc';
 import { irpc, transport } from '@lib';
 import { Glob } from 'bun';
 
