@@ -370,7 +370,7 @@ const report = getReport.later();
 ### IRPC: Hooks and Context (Handler Environment)
 Execution Order: Router Hooks -> Spec Hooks -> Handler. Request context is safely isolated via `AsyncLocalStorage`.
 ```typescript
-import '@irpclib/irpc/server'; // MUST import to enable AsyncLocalStorage
+ // MUST import to enable AsyncLocalStorage
 import { getContext, setContext } from '@irpclib/irpc';
 
 // Global Router Hook (Optional) - Intercepts every call on the router
@@ -482,7 +482,7 @@ irpc.construct(getProfile, async () => {
 ### IRPC: Routers & Context Seeding
 The Router binds IRPC to the actual web server. You MUST manually extract auth tokens from the raw request and pass them as `initContext` tuples to `router.resolve()`.
 ```typescript
-import '@irpclib/irpc/server';
+
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
 import { irpc, transport } from './lib/module.js';

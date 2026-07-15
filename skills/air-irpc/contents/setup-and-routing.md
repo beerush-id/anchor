@@ -203,7 +203,7 @@ compute.use(new BroadcastTransport({ channel: compute.href }));
 The Router binds IRPC to your actual web server (e.g., Bun, Node). You **must** manually extract authentication tokens from the raw HTTP request/WebSocket upgrade and pass them as `initContext` tuples to `router.resolve()`.
 
 ```typescript
-import '@irpclib/irpc/server'; // MUST import for AsyncLocalStorage (Hooks/Context)
+ // MUST import for AsyncLocalStorage (Hooks/Context)
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
 import { irpc, transport } from './lib/module.js';

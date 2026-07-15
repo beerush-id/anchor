@@ -277,7 +277,7 @@ The router's `resolve` method accepts the HTTP request and an optional `initCont
 
 ```typescript
 // server.ts
-import '@irpclib/irpc/server';
+
 import { HTTPRouter } from '@irpclib/http/router';
 import { transport } from './lib/module.js';
 import './rpc/hello/constructor.js';

@@ -31,7 +31,7 @@ For server runtimes like Node or Bun, import `@irpclib/irpc/server` to enable `A
 
 ```typescript
 // server.ts
-import '@irpclib/irpc/server';
+
 import { HTTPRouter } from '@irpclib/http/router';
 import { transport } from './lib/module.js';
 

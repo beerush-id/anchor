@@ -16,22 +16,72 @@ Because AIR Stack is completely framework-agnostic at its core, the logic is ide
 
 ## **Quick Start (Templates)**
 
-If you want to skip the manual setup and jump straight into coding, you can clone our official starter templates using `degit`:
+If you want to skip the manual setup and jump straight into coding, you can clone our official starter templates using `degit`.
+
+### **1. Scaffold the Project**
 
 ::: code-group
 
 ```bash [React]
 npx degit beerush-id/airstack/templates/air-react my-air-app
 cd my-air-app
-npm install
-npm run dev
 ```
 
 ```bash [SolidJS]
 npx degit beerush-id/airstack/templates/air-solid my-air-app
 cd my-air-app
+```
+
+:::
+
+### **2. Install Dependencies**
+
+::: code-group
+
+```bash [Bun]
+bun install
+```
+
+```bash [npm]
 npm install
+```
+
+:::
+
+### **3. Start Development Server**
+
+::: code-group
+
+```bash [Bun]
+bun run dev
+```
+
+```bash [npm]
 npm run dev
+```
+
+:::
+
+### **Deployment**
+
+The starter templates come pre-configured with dedicated server entry points for the most popular JS runtimes. After running `npm run build`, you can deploy or run your production server natively on your target platform:
+
+::: code-group
+
+```bash [Bun]
+bun run start:bun
+```
+
+```bash [Node.js]
+npm run start:node
+```
+
+```bash [Deno]
+npm run start:deno
+```
+
+```bash [Cloudflare]
+npx wrangler deploy
 ```
 
 :::

@@ -49,7 +49,7 @@ irpc.use(transport);
 The router's `resolve` method accepts the HTTP request and an `initContext` array — `[key, value]` tuples that seed the request context. Hooks and handlers read these keys via `getContext()`, never touching the raw `Request` object.
 
 ```typescript
-import '@irpclib/irpc/server';
+
 import { HTTPRouter } from '@irpclib/http/router';
 import { transport } from './lib/module.js';
 

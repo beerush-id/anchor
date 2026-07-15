@@ -1,0 +1,7 @@
+name = "my-air-solid"
+main = "dist/server/worker.js"
+compatibility_date = "2024-04-05"
+
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"

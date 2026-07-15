@@ -7,20 +7,23 @@
   "scripts": {
     "dev": "vite",
     "build:client": "vite build --outDir dist/client",
-    "build:server": "vite build --ssr src/worker.ts --outDir dist/server",
+    "build:server": "vite build --ssr --outDir dist/server",
     "build": "bun run build:client && bun run build:server",
-    "start": "NODE_ENV=production bun dist/server/worker.js",
+    "start:bun": "NODE_ENV=production bun server/bun.js",
+    "start:node": "NODE_ENV=production node server/node.js",
+    "start:deno": "NODE_ENV=production deno run --allow-net --allow-read --allow-env server/deno.js",
     "preview": "vite preview --outDir dist/client"
   },
   "dependencies": {
-    "@anchorlib/core": "1.2.14",
-    "@anchorlib/solid": "1.2.14",
-    "@anchorlib/router": "1.2.14",
+    "@anchorlib/core": "1.2.15",
+    "@anchorlib/router": "1.2.15",
+    "@anchorlib/solid": "1.2.15",
+    "@hono/node-server": "^1.13.8",
     "solid-js": "^1.9.9",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@anchorlib/vite-ssr": "1.2.14",
+    "@anchorlib/vite-ssr": "1.2.15",
     "@biomejs/biome": "^2.3.3",
     "@tailwindcss/vite": "^4.1.16",
     "@types/bun": "latest",

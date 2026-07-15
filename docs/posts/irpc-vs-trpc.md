@@ -151,7 +151,7 @@ irpc.use(transport);
 **Setup Server Transport**
 ```typescript
 // server/index.ts
-import '@irpclib/irpc/server';
+
 import { HTTPRouter } from '@irpclib/http/router';
 import { transport } from '../lib/module.js';
 import '../rpc/hello/constructor.js'; // Import handlers

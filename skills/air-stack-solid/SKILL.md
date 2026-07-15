@@ -94,5 +94,15 @@ Will there any component with similiar behavior in the future?
 
 ```
 
+### Critical Rendering Rule: Avoid Gigantic `render()` Blocks
+When building UI components, **never** blindly wrap an entire massive component or page in a single `render(() => ...)` block. Doing so defeats the purpose of fine-grained reactivity, forcing the entire UI tree to re-evaluate when any nested signal changes.
+
+Before writing a component, analyze its reactivity:
+1. **Is the majority of the UI static?**
+   If most of the component is static and only small parts change frequently, **return static JSX directly**. Do not wrap the whole component in `render()`. Instead, isolate only the reactive parts into a `Snippet` (if it needs parent scope access) or a `Template` (if it is purely props-driven).
+2. **Is the entire tree heavily reactive?**
+   - **If the tree is large (multiple domains):** Break it down! Isolate each domain into smaller, independent `Snippets` or `Templates` so they update independently.
+   - **If the tree is very small (e.g., a simple toggle or button):** Only then is it acceptable to wrap it in a single `render()` block.
+
 ---
 **CRITICAL INSTRUCTION**: Do NOT attempt to read all modules at once. Identify your exact problem domain from the list above, then use the `view_file` tool to read *only* that specific file.

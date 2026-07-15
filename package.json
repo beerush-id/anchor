@@ -118,6 +118,7 @@
   },
   "catalog": {
     "@biomejs/biome": "2.3.3",
+    "@hono/node-server": "2.0.9",
     "@opennextjs/cloudflare": "1.11.0",
     "@solidjs/testing-library": "0.8.10",
     "@sveltejs/adapter-auto": "7.0.0",

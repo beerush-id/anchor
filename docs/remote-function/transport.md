@@ -67,7 +67,7 @@ irpc.use(transport);
 ### Server Setup (HTTPRouter)
 
 ```typescript
-import '@irpclib/irpc/server';
+
 import { HTTPRouter } from '@irpclib/http/router';
 import { transport } from './lib/module.js';
 

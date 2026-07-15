@@ -84,7 +84,7 @@ When you import the constructor locally, the call bypasses the IRPC router. This
 
 ```typescript
 // Setup async storage for this specific test file. MUST BE FIRST IMPORT.
-import '@irpclib/irpc/server';
+
 
 import { describe, expect, it } from 'vitest';
 import { withContext } from '@irpclib/irpc';
