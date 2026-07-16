@@ -198,6 +198,10 @@ export class Route<
     return this.storage.context.value.data as Data;
   }
 
+  public get children(): RouteRegistry {
+    return ROUTE_MAP_LINK.get(this);
+  }
+
   public get storage(): RouteStorage {
     const store = getStore();
 
@@ -562,6 +566,7 @@ export class Route<
 
       state.authenticated = true;
     } catch (error) {
+      state.status = ROUTE_STATUS.ERROR;
       state.authenticated = false;
 
       if (error instanceof Redirect) {

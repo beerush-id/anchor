@@ -1,5 +1,5 @@
 import '../../src/client/index.js';
-import { mutable } from '@anchorlib/core';
+import { type AnyType, mutable } from '@anchorlib/core';
 import type { UnknownRoute } from '@anchorlib/router';
 import { createRouter } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
@@ -201,7 +201,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       // Simulate route with an exception
       child.active = true;
       testRoute.active = true;
-      testRoute.context.exception = new Error();
+      testRoute.context.exception = new Error() as never;
       const stacks = createStacks();
 
       render(
@@ -387,7 +387,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       render(
         <RouteRendererComponent
           route={rootRoute as never}
-          registry={rootRoute.router.rootRegistry.get('root') as object as any}
+          registry={rootRoute.router.rootRegistry.get('root') as AnyType}
           stacks={stacks}
         />
       );
@@ -407,13 +407,12 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       render(<RouteRendererComponent route={emptyRoot} registry={router.rootRegistry} stacks={stacks} />);
 
       // Since emptyRoot lacks an index renderer, it drops into the explicit Index() fallback naming branch
-      expect((emptyRoot.renderer as any).displayName).toBe('Content(/)');
+      expect((emptyRoot.renderer as AnyType).displayName).toBe('Content(/)');
     });
 
     it('assigns both Layout and Index displayNames with generic fallback paths when both exist on the absolute root', () => {
       const router = createRouter<ReactNode>();
       const root = router.rootRoute;
-      root.route('/child');
       const rootIndex = root.route('/');
 
       page(root).render(({ children }) => <div>{children}</div>);
@@ -422,8 +421,39 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const stacks = createStacks();
       render(<RouteRendererComponent route={root} registry={router.rootRegistry} stacks={stacks} />);
 
-      expect((root.renderer as any).displayName).toBe('Layout(/)');
-      expect((rootIndex.renderer as any).displayName).toBe('Content(/)');
+      expect((root.renderer as AnyType).displayName).toBe('Layout(/)');
+      expect((rootIndex.renderer as AnyType).displayName).toBe('Content(/)');
+    });
+
+    it('assigns both Layout and Index displayNames with generic fallback paths when both exist on the absolute root', () => {
+      const router = createRouter<ReactNode>();
+      const root = router.rootRoute;
+      const indexRoute = root.route('/');
+
+      root.active = true;
+      indexRoute.active = true;
+
+      page(root).render(({ children }) => <div>{children}</div>);
+
+      const stacks = createStacks();
+      render(<RouteRendererComponent route={root} registry={router.rootRegistry} stacks={stacks} />);
+
+      expect((root.renderer as AnyType).displayName).toBe('Content(/)');
+    });
+
+    it('assigns both Layout and Child displayNames with generic fallback paths when both exist on the absolute root', () => {
+      const router = createRouter<ReactNode>();
+      const root = router.rootRoute;
+      const child = root.route('/child');
+
+      page(root).render(({ children }) => <div>{children}</div>);
+      child.render(() => <div>Child Page</div>);
+
+      const stacks = createStacks();
+      render(<RouteRendererComponent route={root} registry={router.rootRegistry} stacks={stacks} />);
+
+      expect((root.renderer as AnyType).displayName).toBe('Layout(/)');
+      expect((child.renderer as AnyType).displayName).toBe('Content(/child)');
     });
   });
 
@@ -432,7 +462,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const router = createRouter<ReactNode>();
       const RootUi = page(router.rootRoute).render(() => <span>OK</span>);
 
-      vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       const { unmount } = render(
         <>
@@ -452,7 +482,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const router = createRouter<ReactNode>();
       const rootUi = page(router.rootRoute);
 
-      const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       const { unmount } = render(<UIRouter router={router} root={rootUi} resetScroll={true} />);
       unmount();
@@ -478,7 +508,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       // Make the modal active so it gets registered in stacks during render
       modalRoute.active = true;
 
-      const activateSpy = vi.spyOn(router, 'activate').mockImplementation(async () => {});
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
       scrollToSpy.mockClear();
 
       render(<UIRouter router={router} root={rootUi} url={'https://localhost/modal'} resetScroll={true} />);

@@ -1,4 +1,4 @@
-import { $symbol, isBrowser, setContext, untrack } from '@anchorlib/core';
+import { $symbol, type AnyType, isBrowser, setContext, untrack } from '@anchorlib/core';
 import {
   getRenderProps,
   type MatchedRoute,
@@ -35,47 +35,52 @@ export function RouteViewer({
 }) {
   const IndexSnippet = snippet<Record<string, unknown>>(
     function IndexSnippet() {
-      if (!route.index?.active) return;
-      const Index = route.index?.renderer;
-      return Index ? <Index {...getRenderProps(route.index as never)} /> : null;
+      const Renderer = route.index?.renderer;
+      if (!route.index?.active || !Renderer) return;
+
+      return <Renderer {...getRenderProps(route.index as never)} />;
     },
     route.path,
     'Index',
     false
   );
 
-  const LayoutSnippet = snippet(
+  const ExceptionSnippet = snippet(
+    function ExceptionSnippet() {
+      const Renderer = route.exceptionRenderer as FC<AnyType>;
+      if (!route.exception || !Renderer) return;
+
+      return <Renderer error={route.exception} {...getRenderProps(route)} />;
+    },
+    route.path,
+    'RouteException',
+    false
+  );
+
+  const RouteSnippet = snippet(
     function RouteSnippet() {
       if (!route.active) return children;
 
-      const Layout = route.renderer;
+      const hasIndex = typeof route.index?.renderer !== 'undefined';
+      const hasChildren = route.children.size > 0;
       const layoutProps = getRenderProps(route);
-      const Exception = route.exceptionRenderer;
-      if (Exception) {
-        (Exception as FC).displayName = `Exception(${route.path})`;
-      }
-      const exception = route.exception && Exception ? <Exception error={route.exception} {...layoutProps} /> : null;
-      const content = (
-        <>
+
+      const Renderer = route.renderer ?? ((props) => props.children);
+
+      const routeNode = (
+        <Renderer {...layoutProps}>
           <IndexSnippet />
+          <ExceptionSnippet />
           {children}
-          {exception}
-        </>
+        </Renderer>
       );
+      const content = route.exception && !hasChildren && !hasIndex ? <ExceptionSnippet /> : routeNode;
 
       if (STACK_REGISTRY.has(route)) {
-        if (!Layout) {
-          return <div className={'route-modal'}>{content}</div>;
-        }
-
-        return (
-          <div className={'route-modal'}>
-            <Layout {...layoutProps}>{content}</Layout>
-          </div>
-        );
+        return <div className={'route-modal'}>{content}</div>;
       }
 
-      return Layout ? <Layout {...layoutProps}>{content}</Layout> : content;
+      return content;
     },
     route.path,
     STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
@@ -83,11 +88,11 @@ export function RouteViewer({
   );
 
   if (STACK_REGISTRY.has(route)) {
-    untrack(() => stacks.set(route, LayoutSnippet));
+    untrack(() => stacks.set(route, RouteSnippet));
     return null;
   }
 
-  return <LayoutSnippet />;
+  return <RouteSnippet />;
 }
 RouteViewer.displayName = 'Renderer(Route)';
 
@@ -104,7 +109,7 @@ export function RouteRendererComponent({
   stacks: RouteStacks;
 }) {
   if (route.renderer) {
-    if (registry.size) {
+    if (registry.size || route.index?.renderer) {
       (route.renderer as FC).displayName = `Layout(${route.path})`;
     } else {
       (route.renderer as FC).displayName = `Content(${route.path})`;
