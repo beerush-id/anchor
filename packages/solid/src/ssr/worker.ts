@@ -1,4 +1,11 @@
-import { type AnyType, decodeCookies, isBrowser, setCookieContext } from '@anchorlib/core';
+import {
+  type AnyType,
+  COOKIE_JAR_WRITABLE,
+  decodeCookies,
+  isBrowser,
+  setCookieContext,
+  setScope,
+} from '@anchorlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import { SSR_ENV_KEY } from './context.js';
@@ -60,7 +67,7 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
         }
 
         const { html, head, status, cookies, redirect, contentType } = await renderer(
-          url.pathname,
+          url.href,
           cookie,
           contextSeed,
           controller,
@@ -169,7 +176,7 @@ export function createFullWorker<E = any>(
         const response = await router.isolate(
           async () => {
             const { html, head, status, redirect, contentType } = await (renderer as IsolatedRenderer)(
-              url.pathname,
+              url.href,
               cookie,
               undefined,
               controller,
@@ -196,6 +203,7 @@ export function createFullWorker<E = any>(
           controller,
           contextSeed,
           () => {
+            setScope(COOKIE_JAR_WRITABLE, true);
             setCookieContext(cookieJar);
           }
         );

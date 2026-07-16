@@ -1,10 +1,12 @@
 import {
   AsyncStore,
+  COOKIE_JAR_WRITABLE,
   createLifecycle,
   decodeCookies,
   getCookieJar,
   isBrowser,
   setCookieContext,
+  setScope,
   withIsolation,
 } from '@anchorlib/core';
 import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
@@ -43,6 +45,7 @@ export function createSSR(
         let cookies: string[] = [];
 
         const jar = getCookieJar() ?? decodeCookies(cookie);
+        setScope(COOKIE_JAR_WRITABLE, true);
         setCookieContext(jar);
 
         const result = await ssrRenderToString(router, RootLayout, url, controller, Shell, mergedOptions);
