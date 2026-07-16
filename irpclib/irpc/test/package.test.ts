@@ -1,4 +1,4 @@
-import { type AnyType, createLifecycle, isReactive, setReactive } from '@anchorlib/core';
+import { type AnyType, createLifecycle, isReactive, setReactive, sleep } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
@@ -312,11 +312,9 @@ describe('IRPCPackage', () => {
       );
 
       const result = hello('World');
-
       expect(result.status).toBe(IRPC_STATUS.PENDING);
 
       await result;
-
       expect(result.data).toBe('Hello World');
     });
 
@@ -991,6 +989,13 @@ describe('IRPCPackage', () => {
       // updating state triggers the observer callback (lines 237-238)
       // which calls dispatch() -> coalesce=true -> schedule() (lines 246-250)
       // Do this BEFORE the initial promise resolves, so result.status is still PENDING!
+      state.data = 'Temp';
+      vi.advanceTimersByTime(10);
+
+      const p = sleep(10);
+      vi.advanceTimersByTime(10);
+      await p;
+
       state.data = 'Universe';
 
       // advance timers to flush the microtask schedule (debounce = 10)

@@ -482,7 +482,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
         return;
       }
 
-      replay(target.state, event);
+      if (anchor.has(target.state)) replay(target.state, event);
     });
 
     return this;

@@ -6,7 +6,7 @@ import {
   isBrowser,
   microtask,
   onCleanup,
-  replay,
+  type StateUnsubscribe,
   uuid,
 } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
@@ -35,12 +35,10 @@ import type {
   IRPCOutput,
   IRPCPackageConfig,
   IRPCPackageInfo,
-  IRPCReadable,
   IRPCRequest,
   IRPCReturnOf,
   IRPCSpec,
   IRPCSpecStore,
-  IRPCStatus,
   IRPCStreamInit,
   IRPCStub,
   IRPCStubStore,
@@ -190,7 +188,7 @@ export class IRPCPackage<K extends string = 'id'> {
 
     /* General stub for immediate execution */
     const stub = ((...args: IRPCData[]) => {
-      return resolve(args, false, false, true);
+      return resolve(args, true);
     }) as IRPCStub<F, unknown[], IRPCData>;
 
     /** Browser only stub for single immediate execution **/
@@ -254,9 +252,14 @@ export class IRPCPackage<K extends string = 'id'> {
      */
     function prepare(getArgs: () => unknown[], deferred?: boolean, debounce = 0): IRPCReader<IRPCData> {
       if (typeof getArgs !== 'function') getArgs = (() => getArgs) as never;
-      const reader = resolve(getArgs(), deferred, false);
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING);
 
       if (isBrowser()) {
+        const cleanupHandlers = new Set<StateUnsubscribe>();
+        const cleanup = () => {
+          cleanupHandlers.forEach((clean) => clean());
+        };
+
         const observer = createObserver(() => {
           observer.reset();
           dispatch();
@@ -266,14 +269,15 @@ export class IRPCPackage<K extends string = 'id'> {
           const args = observer.run(getArgs);
 
           if (!coalesce) {
-            runAsync(args as IRPCData[], reader).then(() => {});
+            cleanup();
+            cleanupHandlers.add(resolveTo(reader, args));
             return;
           }
 
           schedule(() => {
-            if (reader.status === IRPC_STATUS.PENDING) reader.close();
+            cleanup();
             reader.resume();
-            runAsync(args as IRPCData[], reader).then(() => {});
+            cleanupHandlers.add(resolveTo(reader, args));
           });
         };
 
@@ -285,9 +289,40 @@ export class IRPCPackage<K extends string = 'id'> {
 
         onCleanup(() => {
           cancel();
+          cleanup();
           observer.destroy();
         });
       }
+
+      return reader;
+    }
+
+    function resolveTo(reader: IRPCReader<IRPCData>, args: unknown[]) {
+      const source = resolve(args, true);
+      source.pipeTo(reader);
+      return () => {
+        source.close();
+      };
+    }
+
+    function resolve(args: unknown[], dispatch?: boolean) {
+      const callKey = JSON.stringify(args);
+      const cached = caches.get(callKey);
+
+      if (cached) return cached.value!;
+      if (spec.coalesce !== false && calls.has(callKey)) return calls.get(callKey)!;
+
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), IRPC_STATUS.PENDING, false);
+
+      if (spec.maxAge) caches.set(callKey, reader, spec.maxAge);
+      if (spec.coalesce !== false) {
+        calls.set(callKey, reader);
+        reader.finally(() => calls.delete(callKey)).catch((_err) => {});
+      }
+
+      onCleanup(() => reader.close());
+
+      if (dispatch) runAsync(args as IRPCData[], reader).then(() => {});
 
       return reader;
     }
@@ -330,33 +365,6 @@ export class IRPCPackage<K extends string = 'id'> {
         reader.reject(HandlerError.failed(error as Error));
       }
     };
-
-    function resolve(args: unknown[], deferred = false, resumable = false, dispatch?: boolean) {
-      const callKey = JSON.stringify(args);
-      const cached = caches.get(callKey);
-
-      if (cached) return cached.value!;
-      if (spec.coalesce !== false && calls.has(callKey)) return calls.get(callKey)!;
-
-      const reader = new IRPCReader<IRPCData>(
-        uuid(),
-        spec.seed!(),
-        deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING,
-        resumable
-      );
-
-      if (spec.maxAge) caches.set(callKey, reader, spec.maxAge);
-      if (spec.coalesce) {
-        calls.set(callKey, reader);
-        reader.finally(() => calls.delete(callKey));
-      }
-
-      onCleanup(() => reader.close());
-
-      if (dispatch) runAsync(args as IRPCData[], reader).then(() => {});
-
-      return reader;
-    }
 
     this.specs.set($options.name, spec);
     this.stubs.set(stub, spec);
@@ -624,7 +632,7 @@ export function intercept(
   signal?.addEventListener('abort', abort, { once: true });
 
   try {
-    const result = spec.handler(...args) as RemoteState<unknown>;
+    const result = spec.handler(...args) as RemoteState<IRPCData>;
 
     if (!(result instanceof Promise)) {
       reader.accept(result);
@@ -647,39 +655,28 @@ export function intercept(
       return reader;
     }
 
-    anchor.assign(reader.state as IRPCReadable<unknown>, result.state as IRPCReadable<unknown>);
+    anchor.assign(reader.state, result.state);
 
     if (result.status !== IRPC_STATUS.PENDING) {
       reader.close();
       return reader;
     }
 
-    const unsubscribe = result.subscribe((_, event) => {
-      if (event.type === 'init') return;
-
-      const [rootKey] = event.keys;
-      if (rootKey === 'status') {
-        reader.status = event.value as IRPCStatus;
-
-        if (reader.status === IRPC_STATUS.SUCCESS || reader.status === IRPC_STATUS.ERROR) {
-          signal?.removeEventListener('abort', subAbort);
-          unsubscribe();
-        }
-
-        return;
-      }
-
-      replay(reader.state, event);
-    });
-
-    const subAbort = () => {
-      unsubscribe();
+    const abortAll = () => {
       reader.abort();
       result.abort();
     };
 
-    signal?.addEventListener('abort', subAbort, { once: true });
+    signal?.addEventListener('abort', abortAll, { once: true });
     signal?.removeEventListener('abort', abort);
+
+    result
+      .pipeTo(reader)
+      .finally(() => {
+        reader.close();
+        signal?.removeEventListener('abort', abortAll);
+      })
+      .catch((_err) => {});
   } catch (error) {
     reader.reject(error as Error);
     signal?.removeEventListener('abort', abort);

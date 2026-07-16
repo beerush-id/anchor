@@ -238,7 +238,7 @@ export class RemoteState<T> extends Promise<T> {
         return;
       }
 
-      replay(target.state, event);
+      if (anchor.has(target.state)) replay(target.state, event);
     });
 
     return this;
