@@ -541,7 +541,11 @@ export class IRPCPackage<K extends string = 'id'> {
     const hooks = this.hooks.get(spec)!;
 
     for (const hook of hooks) {
-      await hook(req);
+      try {
+        await hook(req);
+      } catch (error) {
+        throw HookError.failed(error as Error);
+      }
     }
   }
 

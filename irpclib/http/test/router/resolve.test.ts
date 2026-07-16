@@ -1,7 +1,7 @@
 import { createPackage, credential, IRPC_FILE_STATUS, IRPC_STORE, type IRPCRequests } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HTTPTransport, IRPC_JSON_KEY } from '../../src/index.js';
-import { HTTPRouter } from '../../src/router.js';
+import { HTTPRouter } from '../../src/router.js'; // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 
 // biome-ignore lint/suspicious/noExplicitAny: Expect any.
 type AnyType = any;
@@ -194,7 +194,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
     const responsePromise = router.resolve(request);
     const response = await responsePromise;
 
-    const reader = response.body?.getReader();
+    response.body?.getReader();
     vi.runAllTimers();
     expect(response.status).toBe(200);
 
@@ -231,7 +231,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
 
     const router = new HTTPRouter(module, transport);
 
-    let defer: any;
+    let defer: AnyType;
     const middleware = () =>
       new Promise<void>((_resolve, reject) => {
         defer = reject;
@@ -258,7 +258,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
     type TestFunc = () => Promise<string>;
     const testFunc = module.declare<TestFunc>({ name: 'testPipeAbort', seed: () => '', stream: true } as AnyType);
 
-    let defer: any;
+    let defer: AnyType;
     const handler: TestFunc = async () => new Promise((resolve) => (defer = resolve));
     module.construct(testFunc, handler);
 
@@ -266,10 +266,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
     const response = await router.resolve(request);
 
     await response.body?.cancel();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    defer('payload dispatched natively late mapped bypass');
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(defer).toBeUndefined();
     expect(response.status).toBe(200);
   });
 
@@ -280,10 +277,10 @@ describe('HTTPRouter resolve (form/standard)', () => {
 
     const router = new HTTPRouter(module, transport);
 
-    type TestFunc = (input: { file: any }) => Promise<string>;
+    type TestFunc = (input: { file: AnyType }) => Promise<string>;
     const testFunc = module.declare<TestFunc>({ name: 'testFile', seed: () => '' });
 
-    let receivedFile: any;
+    let receivedFile: AnyType;
     const handler: TestFunc = async (input) => {
       receivedFile = input.file;
       return `File uploaded`;
@@ -369,7 +366,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
     const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
     module.use(transport);
 
-    const router = new HTTPRouter(module, transport);
+    const router = new HTTPRouter(transport);
 
     type TestFunc = () => Promise<string>;
     const testFunc = module.declare<TestFunc>({ name: 'testCred', seed: () => '' });
@@ -386,6 +383,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
     });
 
     const response = await router.resolve(request);
+    await response.text();
 
     expect(response.status).toBe(200);
     expect(receivedApiKey).toBe('pk_test_123');

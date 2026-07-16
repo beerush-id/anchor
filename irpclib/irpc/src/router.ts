@@ -4,7 +4,7 @@ import { HookError } from './error.js';
 import type { IRPCPackage } from './package.js';
 import { IRPC_STORE } from './store.js';
 import { IRPCTransport } from './transport.js';
-import type { IRPCRequest } from './types.js';
+import type { IRPCRequest, IRPCSubRequest } from './types.js';
 
 export type IRPCHook = () => void | Promise<void>;
 
@@ -115,7 +115,7 @@ export class IRPCRouter {
    * @param req - The IRPC request to process hook for
    * @returns An error response if hook fails, undefined otherwise
    */
-  protected async resolveHooks(req: IRPCRequest) {
+  protected async resolveHooks(req: IRPCSubRequest) {
     for (const hook of this.hooks) {
       try {
         await hook();
