@@ -30,10 +30,13 @@ interface IRPCPackage {
   // Bind the environment-specific logic to the stub
   construct<Fn>(stub: IRPCStub<Fn>, handler: Fn): void;
   
-  // Attach middleware guards to a single stub
-  hook<Fn>(stub: IRPCStub<Fn>, hook: (req: IRPCRequest) => Promise<void>): void;
-  // Attach middleware guards to all stubs in a group (e.g., CRUD)
-  hook(stubs: Record<string, IRPCStub>, hook: (req: IRPCRequest) => Promise<void>): void;
+  // Attach a package-level guard to protect the entire namespace
+  guard(hook: (req: { id: string; name: string; args: unknown[] }) => Promise<void> | void): void;
+
+  // Attach a call-specific isomorphic interceptor to a single stub
+  hook<Fn>(stub: IRPCStub<Fn>, hook: (req: { name: string; args: Parameters<Fn> }) => Promise<void> | void): void;
+  // Attach isomorphic interceptors to all stubs in a group (e.g., CRUD)
+  hook(stubs: Record<string, IRPCStub<any>>, hook: (req: { name: string; args: unknown[] }) => Promise<void> | void): void;
   
   // Force cache invalidation across the system
   invalidate(stub: IRPCStub<any>, ...args: any[]): void;
@@ -368,10 +371,10 @@ const report = getReport.later();
 ```
 
 ### IRPC: Hooks and Context (Handler Environment)
-Execution Order: Router Hooks -> Spec Hooks -> Handler. Request context is safely isolated via `AsyncLocalStorage`.
+Execution Order: Router Hooks -> Guards -> Spec Hooks -> Handler. Request context is safely isolated via `AsyncLocalStorage`.
 ```typescript
  // MUST import to enable AsyncLocalStorage
-import { getContext, setContext } from '@irpclib/irpc';
+import { getContext, setContext, getAbortSignal, GuardError } from '@irpclib/irpc';
 
 // Global Router Hook (Optional) - Intercepts every call on the router
 router.use(async () => {
@@ -380,23 +383,25 @@ router.use(async () => {
   setContext('user', await verifyToken(token));
 });
 
-// Spec Hook (Optional) - Inline pattern for single-use guards
+// Package Guard (Server Only) - Protects the entire package namespace
+irpc.guard(async (req) => {
+  const user = getContext<User>('user');
+  if (!user?.admin) throw GuardError.failed('Forbidden: Admin access required');
+
+  const signal = getAbortSignal();
+  signal?.addEventListener('abort', () => console.log('Client aborted'));
+});
+
+// Spec Hook (Isomorphic) - Intercepts a specific domain call
 irpc.hook(getUser, async (req) => {
   console.log(`[Audit] User ${req.args[0]} accessed.`);
 });
 
-// Spec Hook (Optional) - Re-usable pattern for shared guards
-const requireAdmin = async (req) => {
-  const user = getContext<User>('user');
-  if (!user?.admin) throw new Error('Forbidden');
-};
-
-irpc.hook(deleteUser, requireAdmin);
-irpc.hook(updateUser, requireAdmin);
-
-// Group Hook — Attach a hook to all stubs in a CRUD group at once
+// Group Hook — Attach an interceptor to all stubs in a CRUD group at once
 const users = irpc.crud<User>('users', () => ({ id: '', name: '', email: '' }));
-irpc.hook(users, requireAdmin); // Hooks get, create, update, and delete
+irpc.hook(users, async (req) => {
+  console.log(`[CRUD] Action: ${req.name}`);
+});
 
 // Handler - Fulfills the call, safely reading context seeded by hooks
 irpc.construct(deleteUser, async (userId) => {

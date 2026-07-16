@@ -202,15 +202,28 @@ compute.use(new BroadcastTransport({ channel: compute.href }));
 
 The Router binds IRPC to your actual web server (e.g., Bun, Node). You **must** manually extract authentication tokens from the raw HTTP request/WebSocket upgrade and pass them as `initContext` tuples to `router.resolve()`.
 
+To establish deep global context before routing occurs (e.g., fetching a User object from a token), use Router Hooks via `router.use()`.
+
 ```typescript
  // MUST import for AsyncLocalStorage (Hooks/Context)
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
+import { getContext, setContext } from '@irpclib/irpc';
 import { irpc, transport } from './lib/module.js';
 import './rpc/constructors.js'; // Import all your handlers here
 
 const httpRouter = new HTTPRouter(transport);
 const wsRouter = new WebSocketRouter(transport);
+
+// Router Hooks (Router Boundary)
+// Blind to the call details, but perfect for hydrating sessions.
+httpRouter.use(async () => {
+  const token = getContext<string>('token');
+  if (token) {
+    const user = await verifyToken(token);
+    setContext('user', user); // Populates context for downstream Guards/Handlers
+  }
+});
 
 Bun.serve({
   port: 3000,
@@ -288,6 +301,21 @@ The `WebSocketRouter.resolve()` returns:
 ```typescript
 /** A void promise resolving when the packet is processed. */
 Promise<void>
+```
+
+### Lifecycle Abortion
+
+Network requests are volatile. To prevent executing expensive background work for dead connections, fetch the standard `AbortSignal` deeply integrated into the IRPC lifecycle inside your Guards or Handlers:
+
+```typescript
+import { getAbortSignal } from '@irpclib/irpc';
+
+// In a Guard or Handler:
+const signal = getAbortSignal();
+
+signal?.addEventListener('abort', () => {
+  console.log('Client disconnected or aborted the request');
+});
 ```
 
 ## Webhooks

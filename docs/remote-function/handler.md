@@ -337,81 +337,11 @@ irpc.construct(getProfile, async () => {
 
 Context is scoped to the individual request. On server runtimes, `AsyncLocalStorage` ensures concurrent requests from different users never share context.
 
-## Hooks
+## Interceptors
 
-IRPC has a **two-level hook system** for guarding and intercepting calls.
+To intercept requests before they reach the handler (for authentication, validation, or logging), IRPC provides a robust system of Router Hooks, Guards, and Spec Hooks. 
 
-### Router Hooks (Global)
-
-Router hooks run **before every request** processed by that router. They read from the context keys seeded by `initContext`.
-
-```typescript
-router.use(async () => {
-  const token = getContext<string>('token');
-  if (!token) throw new Error('Unauthorized');
-  setContext('user', await verifyToken(token));
-});
-```
-
-Multiple router hooks execute in registration order. If any hook throws, the request is rejected before any handler executes:
-
-```typescript
-// 1. Authentication
-router.use(async () => {
-  const token = getContext<string>('token');
-  if (!token) throw new Error('Missing token');
-  setContext('user', await verifyToken(token));
-});
-
-// 2. Rate limiting
-router.use(async () => {
-  const user = getContext<User>('user');
-  if (await isRateLimited(user.id)) {
-    throw new Error('Rate limit exceeded');
-  }
-});
-
-// 3. Logging
-router.use(async () => {
-  console.log('Request from:', getContext<User>('user').id);
-});
-```
-
-### Spec Hooks (Per-Function)
-
-Spec hooks guard **individual functions**. They receive the typed request arguments and run at the module level — right before the handler:
-
-```typescript
-irpc.hook(deleteUser, async (req) => {
-  const user = getContext<User>('user');
-  if (!user?.admin) throw new Error('Forbidden');
-});
-```
-
-The `req` object contains `name` and `args`, typed from the function's signature:
-
-```typescript
-type DeleteUserFn = (userId: string) => Promise<void>;
-const deleteUser = irpc.declare<DeleteUserFn>('deleteUser', () => undefined);
-
-irpc.hook(deleteUser, (req) => {
-  req.args[0]; // typed as string (userId)
-});
-```
-
-### Execution Order
-
-For every incoming call, the execution sequence is:
-
-1. **Router hooks** — Global guards (auth, rate limiting, logging)
-2. **Spec hooks** — Per-function guards (authorization, validation)
-3. **Handler** — Business logic
-
-If any hook throws, execution stops immediately. The error propagates to the client as a rejected Promise.
-
-### Isomorphic Hooks
-
-Spec hooks are **module-scoped**, not environment-scoped. When client and server share a module instance (e.g., during SSR), all registered hooks run at the call site.
+> 💡 **Learn more:** Read the [Interceptors](./interceptors.md) documentation for details on execution order and implementation.
 
 ## Error Handling
 
@@ -447,6 +377,4 @@ This distinction matters for retry behavior:
 
 Retrying a handler error would be incorrect — if your server says "User not found," sending the same request again won't change the answer. Transport errors are transient and may succeed on retry.
 
-### Hook Errors
 
-Hook errors reject the call **before** its handler executes. Other calls in the same batch are unaffected — a failed auth check on one function doesn't block a different function in the same batch.

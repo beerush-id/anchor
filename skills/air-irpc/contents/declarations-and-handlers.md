@@ -208,6 +208,14 @@ class ResolveError extends IRPCError {
 }
 ```
 
+The `GuardError` returns:
+```typescript
+class GuardError extends IRPCError {
+  /** Throws a custom guard rejection error. */
+  static failed(input: string | Error): GuardError;
+}
+```
+
 ## Tree Composition & Barrel Exports
 
 Group related APIs into folders to keep the architecture modular.
@@ -245,16 +253,54 @@ irpc.construct(verifyAccess, async (userId) => {
 });
 ```
 
-## Hooking Function Stub
+## Package Guards (Handler Boundary)
 
-To execute guards or audit logs before a specific handler runs, bind a hook to the stub using `irpc.hook()`.
+To protect an entire package or namespace from unauthorized access, register a Guard on the package instance. Guards evaluate requests sequentially and make an allow or block decision before any handlers are invoked.
+
+```typescript
+import { adminPackage } from './index.js';
+import { GuardError } from '@irpclib/irpc';
+
+// Guards must strictly live in the server environment (e.g., constructor.ts)
+adminPackage.guard(async (req) => {
+  const user = getContext<User>('user');
+  
+  if (!user || user.role !== 'admin') {
+    // Throws a standardized rejection error to the client
+    throw GuardError.failed('Forbidden: Admin access required');
+  }
+});
+```
+
+The `guard()` method takes:
+```typescript
+(
+  /** The hook to execute before any handler in the package runs. */
+  hook: (req: IRPCSubRequest) => void | Promise<void>
+)
+```
+
+The `IRPCSubRequest` receives the raw context of the call:
+```typescript
+interface IRPCSubRequest {
+  id: string;      // The unique call ID
+  name: string;    // The specific stub wire name being called
+  args: unknown[]; // Untyped arguments array
+}
+```
+
+## Spec Hooks (Domain Boundary)
+
+To intercept specific, strictly-typed calls (such as firing analytics, mutating arguments, or validating data isomorphically), bind a hook directly to the declared function stub using `irpc.hook()`.
 
 ```typescript
 import { irpc } from '@irpclib/irpc';
 import { getUser } from './index.js';
 
+// Attaching to the shared declaration file guarantees it runs locally on the client 
+// (before dispatch) and again on the server (before the handler).
 irpc.hook(getUser, async (req) => {
-  console.log(`[Audit] Accessing user: ${req.args[0]}`);
+  console.log(`[Audit] Accessing user: ${req.args[0]}`); // req.args is strictly typed!
 });
 ```
 
@@ -264,12 +310,12 @@ The `irpc.hook()` takes:
   /** The specific stub to intercept. */
   stub: F, 
   
-  /** The hook to execute before the specific handler runs. */
+  /** The hook to execute. */
   handler: IRPCSpecHook<F>
 )
 ```
 
-The `IRPCSpecHook` receives `IRPCHookArgs` which provides the invocation context before it reaches the handler:
+The `IRPCSpecHook` receives `IRPCHookArgs` which provides the typed invocation context:
 ```typescript
 type IRPCSpecHook<F> = (req: IRPCHookArgs<F>) => void | Promise<void>;
 

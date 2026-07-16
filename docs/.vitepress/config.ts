@@ -137,6 +137,7 @@ export default defineConfig({
           { text: 'Functions', link: '/remote-function/function' },
           { text: 'CRUD Functions', link: '/remote-function/crud' },
           { text: 'Handlers', link: '/remote-function/handler' },
+          { text: 'Interceptors', link: '/remote-function/interceptors' },
           { text: 'Transports', link: '/remote-function/transport' },
           { text: 'Distribution', link: '/remote-function/distribution' },
           { text: 'WebHooks', link: '/remote-function/webhook' },
