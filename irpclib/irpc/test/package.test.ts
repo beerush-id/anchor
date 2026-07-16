@@ -267,7 +267,7 @@ describe('IRPCPackage', () => {
       const spec = { name: 'testFunc' };
       rpc.declare(spec);
 
-      const result = rpc.get({ name: 'testFunc', id: '1', package: pkg, args: [] });
+      const result = rpc.get({ name: 'testFunc', id: '1', args: [] });
       expect(result?.name).toBe(spec.name);
     });
 
@@ -372,9 +372,15 @@ describe('IRPCPackage', () => {
       const rpc = createPackage({ name: 'hook-api' });
       const transport = new IRPCTransport();
       rpc.use(new IRPCTransport());
-      rpc.guard(() => Promise.reject(new Error('Guard Rejected')));
+      rpc.guard(async () => {
+        await sleep(5);
+        throw new Error('Guard Rejected');
+      });
 
       const router = new IRPCRouter(transport);
+      router.use(async () => {
+        await sleep(5);
+      });
 
       const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
       const handler = vi.fn();
@@ -385,7 +391,9 @@ describe('IRPCPackage', () => {
         await expect(hello('World')).rejects.toThrow('Guard Rejected');
       }, controller);
 
+      await vi.advanceTimersByTimeAsync(5);
       controller.abort();
+      await vi.advanceTimersByTimeAsync(5);
       await promise;
 
       expect(handler).not.toHaveBeenCalled();
@@ -418,9 +426,14 @@ describe('IRPCPackage', () => {
       const rpc = createPackage({ name: 'hook-api' });
       const transport = new IRPCTransport();
       rpc.use(new IRPCTransport());
-      rpc.guard(() => Promise.resolve());
+      rpc.guard(async () => {
+        await sleep(5);
+      });
 
       const router = new IRPCRouter(transport);
+      router.use(async () => {
+        await sleep(5);
+      });
 
       const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
       const handler = vi.fn();
@@ -431,7 +444,9 @@ describe('IRPCPackage', () => {
         await expect(hello('World')).resolves.not.toThrow('Guard Rejected');
       }, controller);
 
+      await vi.advanceTimersByTimeAsync(5);
       controller.abort();
+      await vi.advanceTimersByTimeAsync(5);
       await promise;
 
       expect(handler).not.toHaveBeenCalled();
@@ -880,7 +895,6 @@ describe('IRPCPackage', () => {
       const result = await rpc.resolve({
         id: '1',
         name: 'testFunc',
-        package: pkg,
         args: [{ name: 'World' }],
       });
 
@@ -892,7 +906,6 @@ describe('IRPCPackage', () => {
         rpc.resolve({
           id: '1',
           name: 'nonExistent',
-          package: pkg,
           args: [],
         })
       ).rejects.toThrow('IRPC "nonExistent" does not exist.');
@@ -905,7 +918,6 @@ describe('IRPCPackage', () => {
         rpc.resolve({
           id: '1',
           name: 'unimplemented',
-          package: pkg,
           args: [],
         })
       ).rejects.toThrow('IRPC "unimplemented" has no implementation.');

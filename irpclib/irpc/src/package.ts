@@ -344,18 +344,18 @@ export class IRPCPackage<K extends string = 'id'> {
         reader.status = IRPC_STATUS.PENDING;
 
         if (routerHooks) {
+          await routerHooks.verify();
+          if (signal?.aborted) {
+            reader.abort();
+            return;
+          }
+
           if (this.guards.size) {
             await this.resolveGuards(req);
             if (signal?.aborted) {
               reader.abort();
               return;
             }
-          }
-
-          await routerHooks.verify();
-          if (signal?.aborted) {
-            reader.abort();
-            return;
           }
         }
 
