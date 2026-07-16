@@ -521,6 +521,8 @@ describe('Route class', () => {
       const child = parent.route('/profile', { keepAlive: true });
       expect(child.options?.maxAge).toBe(1000);
       expect(child.options?.keepAlive).toBe(true);
+      expect(parent.children).toBeDefined();
+      expect(child.children).toBeDefined();
     });
 
     it('should allow child options to override parent options', () => {
