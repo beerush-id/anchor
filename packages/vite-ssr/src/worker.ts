@@ -1,7 +1,7 @@
+import { existsSync, unlinkSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { sendWebResponse, toWebRequest } from './utils.js';
-import { resolve } from 'node:path';
-import { existsSync, unlinkSync } from 'node:fs';
 
 export type AirWorkerOptions = {
   /**
@@ -16,6 +16,12 @@ export type AirWorkerOptions = {
    * Defaults to true.
    */
   removeIndexHtml?: boolean;
+
+  /**
+   * Ignore paths starting with a dot.
+   * Defaults to true.
+   */
+  ignoreDotPath?: boolean;
 };
 
 export function airWorker(options: AirWorkerOptions = {}): Plugin {
@@ -180,6 +186,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
 
           try {
             const urlPath = req.originalUrl ?? req.url ?? '/';
+            if (options.ignoreDotPath !== false && urlPath.startsWith('/.')) return next();
             const request = toWebRequest(req, controller);
 
             const workerModule = await server.ssrLoadModule(entry);
