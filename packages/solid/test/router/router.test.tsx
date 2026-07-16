@@ -5,7 +5,7 @@ import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RouteStacks } from '../../src/index.js';
-import { redirect, RouteRendererComponent, RouteViewer, UIRouter } from '../../src/index.js';
+import { RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
 import { modal, page, route } from '../../src/router/index.js';
 
 describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
@@ -193,6 +193,52 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       ));
 
       expect(container.querySelector('[data-testid="error-view"]')).toBeNull();
+    });
+
+    it('renders Layout instead of isolated exception when route has an exception but also has children', async () => {
+      const router = createRouter();
+      const testRoute = router.route('/error');
+      testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="error-view">Error! {error.message}</div>);
+
+      // Add a child route so route.children.size > 0
+      testRoute.route('/child');
+
+      const stacks = createStacks();
+
+      // Activate a non-matching URL to trigger exception on the route
+      await router.activate('http://localhost/error/nonexistent');
+
+      const { container } = render(() => (
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div>Child Element</div>
+        </RouteViewer>
+      ));
+
+      // Because it has children, the exception is rendered inside the layout!
+      expect(container.querySelector('[data-testid="layout-wrapper"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="error-view"]')).not.toBeNull();
+    });
+
+    it('renders Layout instead of isolated exception when route has an exception but has an index renderer', async () => {
+      const router = createRouter();
+      const testRoute = router.route('/error');
+      testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="error-view">Error! {error.message}</div>);
+
+      // Add an index route with a renderer
+      const indexRoute = testRoute.route('/');
+      indexRoute.render(() => <div data-testid="index-view">Index</div>);
+
+      const stacks = createStacks();
+
+      await router.activate('http://localhost/error/nonexistent');
+
+      const { container } = render(() => <RouteViewer route={testRoute as never} stacks={stacks} />);
+
+      // Because it has an index renderer, the exception is rendered inside the layout!
+      expect(container.querySelector('[data-testid="layout-wrapper"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="error-view"]')).not.toBeNull();
     });
   });
 

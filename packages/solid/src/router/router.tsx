@@ -40,35 +40,31 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
       <Show when={route.exception}>{(() => <Renderer error={route.exception!} {...layoutProps} />) as never}</Show>
     );
   };
-  const Content = () => (
-    <>
-      <Index />
-      {props.children}
-      <Exception />
-    </>
-  );
   const Shell = () => {
-    if (STACK_REGISTRY.has(route)) {
-      const Renderer = () => (
-        <div class={'route-modal'}>
+    const Renderer = () => (
+      <Show
+        when={route.exception && route.children.size === 0 && typeof route.index?.renderer === 'undefined'}
+        fallback={
           <Layout {...layoutProps}>
-            <Content />
+            <Index />
+            {props.children}
+            <Exception />
           </Layout>
-        </div>
-      );
+        }
+      >
+        <Exception />
+      </Show>
+    );
 
+    if (STACK_REGISTRY.has(route)) {
       return (
         <Show when={route.active} fallback={props.children}>
-          <Renderer />
+          <div class={'route-modal'}>
+            <Renderer />
+          </div>
         </Show>
       );
     }
-
-    const Renderer = () => (
-      <Layout {...layoutProps}>
-        <Content />
-      </Layout>
-    );
 
     return (
       <Show when={route.active} fallback={props.children}>
