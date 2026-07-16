@@ -24,9 +24,10 @@ export const IRPC_STORE_EVENT = {
 } as const;
 
 export const IRPC_BASE_CONTEXT = {
-  ABORT_SIGNAL: $symbol('abort-signal'),
-  ABORT_CONTROLLER: $symbol('abort-controller'),
-  CREDENTIALS: $symbol('credentials'),
+  ABORT_SIGNAL: $symbol('irpc-abort-signal'),
+  ABORT_CONTROLLER: $symbol('irpc-abort-controller'),
+  CREDENTIALS: $symbol('irpc-credentials'),
+  DEFERRED_HOOK: $symbol('irpc-deferred-hook'),
 } as const;
 
 export const IRPC_FILE_STATUS = {

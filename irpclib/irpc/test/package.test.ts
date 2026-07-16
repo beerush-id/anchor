@@ -1,4 +1,4 @@
-import { createLifecycle, isReactive, setReactive } from '@anchorlib/core';
+import { type AnyType, createLifecycle, isReactive, setReactive } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
@@ -8,7 +8,9 @@ import {
   type IRPCCall,
   type IRPCPackage,
   type IRPCPackagePayload,
+  IRPCRouter,
   IRPCTransport,
+  stream,
 } from '../src/index.js';
 import { RemoteState } from '../src/state.js';
 
@@ -86,7 +88,7 @@ describe('IRPCPackage', () => {
       });
 
       expect(typeof testFunc).toBe('function');
-      expect((rpc as any).specs.has('testFunc')).toBe(true);
+      expect((rpc as AnyType).specs.has('testFunc')).toBe(true);
 
       const spec = rpc.get('testFunc');
       expect(spec?.name).toBe('testFunc');
@@ -116,7 +118,7 @@ describe('IRPCPackage', () => {
         name: 'testFunc',
         description: 'A test function',
         init: () => 'test',
-      } as any);
+      } as AnyType);
 
       const reader = call.later();
       expect(reader.data).toBe('test');
@@ -171,7 +173,7 @@ describe('IRPCPackage', () => {
       const handler: TestFunc = vi.fn((async (name) => `Hello ${name}`) as TestFunc);
       rpc.construct(testFunc, handler);
 
-      const spec = (rpc as any).stubs.get(testFunc);
+      const spec = (rpc as AnyType).stubs.get(testFunc);
       expect(spec?.handler).toBe(handler);
     });
 
@@ -302,12 +304,20 @@ describe('IRPCPackage', () => {
         stream: true,
         seed: () => '',
       });
-      rpc.construct(hello, (name) => new RemoteState<string>(`Hello ${name}`));
+      rpc.construct(hello, (name) =>
+        stream((state, resolve) => {
+          state.data = `Hello ${name}`;
+          resolve();
+        })
+      );
 
       const result = hello('World');
 
-      expect(result.data).toBe('Hello World');
       expect(result.status).toBe(IRPC_STATUS.PENDING);
+
+      await result;
+
+      expect(result.data).toBe('Hello World');
     });
 
     it('should call local RemoteState init implementation', async () => {
@@ -316,12 +326,22 @@ describe('IRPCPackage', () => {
         stream: true,
         seed: () => 'Stub init',
       });
-      rpc.construct(hello, (_name) => new RemoteState<string>('Init'));
+      rpc.construct(hello, (name) => {
+        return stream((_state, resolve) => {
+          setTimeout(() => resolve(`Hello ${name}`), 10);
+        }, 'Init');
+      });
 
       const result = hello('World');
 
+      await Promise.resolve();
       expect(result.data).toBe('Init');
       expect(result.status).toBe(IRPC_STATUS.PENDING);
+
+      await vi.runAllTimersAsync();
+      await result;
+
+      expect(result.data).toBe('Hello World');
     });
 
     it('should auto-cleanup RemoteState on component unmount (lifecycle destroy)', () => {
@@ -352,9 +372,9 @@ describe('IRPCPackage', () => {
       const irpc = createPackage({
         name: 'coalesce',
       });
-      const hello = irpc.declare<(name: string) => Promise<{ message: string }>>({
-        name: 'helloCoalesce',
+      const hello = irpc.declare<(name: string) => Promise<{ message: string }>>('helloCoalesce', {
         seed: () => ({ message: '' }),
+        coalesce: true,
       });
       irpc.construct(hello, async (name) => ({ message: `Hello ${name}` }));
 
@@ -418,7 +438,7 @@ describe('IRPCPackage', () => {
       const promise = hello('World');
 
       await Promise.resolve();
-      vi.runAllTimers();
+      await vi.runAllTimersAsync();
 
       expect(await promise).toBe('Hello World');
     });
@@ -464,7 +484,7 @@ describe('IRPCPackage', () => {
       expect(await promise2).toBe('Hello World 1');
       expect(dispatcher).toHaveBeenCalledTimes(1);
 
-      vi.runAllTimers();
+      await vi.runAllTimersAsync();
 
       const now = Date.now;
       Date.now = () => now() + 1000;
@@ -472,7 +492,7 @@ describe('IRPCPackage', () => {
       const promise3 = hello('Hello World 1');
 
       await Promise.resolve();
-      vi.runAllTimers();
+      await vi.runAllTimersAsync();
 
       expect(await promise3).toBe('Hello World 1');
       expect(dispatcher).toHaveBeenCalledTimes(2);
@@ -490,7 +510,7 @@ describe('IRPCPackage', () => {
 
       irpc.invalidate(hello, 'Hello World 2');
 
-      vi.runAllTimers();
+      await vi.runAllTimersAsync();
       await Promise.resolve();
 
       const promise5 = hello('Hello World 2');
@@ -598,7 +618,7 @@ describe('IRPCPackage', () => {
       await expect(() => hello()).rejects.toThrow('Hello World');
     });
 
-    it('should return an IRPCReader when handler is a local stream', () => {
+    it('should return an IRPCReader when handler is a local stream', async () => {
       const hello = rpc.declare<(name: string) => RemoteState<{ message: string }>>({
         name: 'helloLocalStream',
         stream: true,
@@ -614,8 +634,11 @@ describe('IRPCPackage', () => {
       const result = hello('World');
 
       // The result should have the init() value, not the handler value (not started yet).
-      expect(result.data).toEqual({ message: 'Hello World' });
+      expect(result.data).toEqual({ message: '' });
       expect(result.status).toBe(IRPC_STATUS.PENDING);
+
+      await Promise.resolve();
+      expect(result.data).toEqual({ message: 'Hello World' });
     });
 
     it('should invoke handler and relay data mutations when start() is called', async () => {
@@ -640,6 +663,8 @@ describe('IRPCPackage', () => {
       });
 
       const result = hello('World');
+
+      await Promise.resolve();
 
       // After start, the handler's initial data should be assigned.
       expect(result.data.message).toBe('Hello World');
@@ -666,7 +691,7 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
+      let reader: AnyType;
       await withContext(ctx, () => {
         reader = hello('World');
       });
@@ -688,7 +713,7 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
+      let reader: AnyType;
       await withContext(ctx, async () => {
         reader = hello('World');
         await reader;
@@ -716,7 +741,7 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
+      let reader: AnyType;
       await withContext(ctx, () => {
         reader = hello('World');
       });
@@ -748,7 +773,7 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
+      let reader: AnyType;
       await withContext(ctx, () => {
         reader = hello('World');
         reader.catch(() => {}); // Prevent unhandled rejection on reader.
@@ -796,7 +821,7 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
+      let reader: AnyType;
       await withContext(ctx, () => {
         reader = hello('World');
       });
@@ -821,9 +846,11 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
-      await withContext(ctx, () => {
+      let reader: AnyType;
+      await withContext(ctx, async () => {
         reader = hello('World');
+
+        await Promise.resolve();
 
         // Reader should have initial data from the source.
         expect(reader.data.message).toBe('Hello');
@@ -857,9 +884,11 @@ describe('IRPCPackage', () => {
         [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller as never],
       ]);
 
-      let reader: any;
-      await withContext(ctx, () => {
+      let reader: AnyType;
+      await withContext(ctx, async () => {
         reader = hello('World');
+
+        await Promise.resolve();
 
         // Abort while the promise is still pending.
         controller.abort();
@@ -890,7 +919,7 @@ describe('IRPCPackage', () => {
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
       const lifecycle = createLifecycle();
-      let result: any;
+      let result: AnyType;
       lifecycle.run(() => {
         result = hello.once('World');
       });
@@ -908,8 +937,8 @@ describe('IRPCPackage', () => {
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
       const lifecycle = createLifecycle();
-      let result1: any;
-      let result2: any;
+      let result1: AnyType;
+      let result2: AnyType;
       lifecycle.run(() => {
         result1 = hello.with(() => ['World'], 10);
         result2 = hello.with(['World'] as never, 10);
@@ -928,8 +957,8 @@ describe('IRPCPackage', () => {
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
       const lifecycle = createLifecycle();
-      let result1: any;
-      let result2: any;
+      let result1: AnyType;
+      let result2: AnyType;
       lifecycle.run(() => {
         result1 = hello.when(() => ['World'], 10);
         result2 = hello.when(['World'] as never, 10);
@@ -950,10 +979,10 @@ describe('IRPCPackage', () => {
         name: 'helloObserver',
         seed: () => '',
       });
-      rpc.construct(hello, (name) => new Promise(() => {})); // Never resolves
+      rpc.construct(hello, (_name) => new Promise(() => {})); // Never resolves
 
       const lifecycle = createLifecycle();
-      let result: any;
+      let result: AnyType;
       lifecycle.run(() => {
         // reading state.data inside the getter tracks the observer
         result = hello.with(() => [state.data], 10);
@@ -982,24 +1011,24 @@ describe('IRPCPackage', () => {
       });
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
-      const reader = (hello as any).later();
+      const reader = hello.later();
       expect(reader).toBeDefined();
       expect(reader.status).toBe(IRPC_STATUS.IDLE);
       expect(typeof reader.dispatch).toBe('function');
 
-      reader.dispatch('World');
+      let promise = reader.dispatch('World');
       expect(reader.status).toBe(IRPC_STATUS.PENDING);
 
       // Wait for async handler to resolve
-      await Promise.resolve();
+      await promise;
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe('Hello World');
 
       // Dispatch again to test resumability
-      reader.dispatch('Universe');
+      promise = reader.dispatch('Universe');
       expect(reader.status).toBe(IRPC_STATUS.PENDING);
 
-      await Promise.resolve();
+      await promise;
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe('Hello Universe');
     });
@@ -1009,32 +1038,35 @@ describe('IRPCPackage', () => {
         name: 'helloLaterDebounce',
         seed: () => '',
       });
-      rpc.construct(hello, async (name) => `Hello ${name}`);
+      rpc.construct(hello, async (name) => {
+        await Promise.resolve();
+        return `Hello ${name}`;
+      });
 
-      const reader = (hello as any).later(10);
+      const reader = hello.later(10);
       expect(reader).toBeDefined();
       expect(reader.status).toBe(IRPC_STATUS.IDLE);
       expect(typeof reader.dispatch).toBe('function');
 
-      reader.dispatch('World');
+      let promise = reader.dispatch('World');
       expect(reader.status).toBe(IRPC_STATUS.IDLE);
 
       vi.advanceTimersByTime(10);
       expect(reader.status).toBe(IRPC_STATUS.PENDING);
 
       // Wait for async handler to resolve
-      await Promise.resolve();
+      await promise;
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe('Hello World');
 
       // Dispatch again to test resumability
-      reader.dispatch('Universe');
+      promise = reader.dispatch('Universe');
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
 
       vi.advanceTimersByTime(10);
       expect(reader.status).toBe(IRPC_STATUS.PENDING);
 
-      await Promise.resolve();
+      await promise;
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe('Hello Universe');
     });
@@ -1049,7 +1081,7 @@ describe('IRPCPackage', () => {
       rpc.construct(hello, async (name) => `Hello ${name}`);
 
       const scope = createLifecycle();
-      const reader: any = scope.run(() => (hello as any).later(10));
+      const reader: AnyType = scope.run(() => (hello as AnyType).later(10));
 
       expect(reader.status).toBe(IRPC_STATUS.IDLE);
 
@@ -1075,8 +1107,8 @@ describe('IRPCPackage', () => {
 
       rpc.hook(testFunc, hookFn);
 
-      const spec = (rpc as any).stubs.get(testFunc)!;
-      expect((rpc as any).hooks.get(spec)!.has(hookFn)).toBe(true);
+      const spec = (rpc as AnyType).stubs.get(testFunc)!;
+      expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
     });
 
     it('should support chaining when registering hooks', () => {
@@ -1087,8 +1119,8 @@ describe('IRPCPackage', () => {
       const result = rpc.hook(testFunc, hook1).hook(testFunc, hook2);
 
       expect(result).toBe(rpc);
-      const spec = (rpc as any).stubs.get(testFunc)!;
-      expect((rpc as any).hooks.get(spec)!.size).toBe(2);
+      const spec = (rpc as AnyType).stubs.get(testFunc)!;
+      expect((rpc as AnyType).hooks.get(spec)!.size).toBe(2);
     });
 
     it('should log error and return self when hooking an invalid stub', () => {
@@ -1100,6 +1132,62 @@ describe('IRPCPackage', () => {
       expect(errSpy).toHaveBeenCalled();
       expect(result).toBe(rpc);
       errSpy.mockRestore();
+    });
+
+    it('should reject call when hook rejects', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      rpc.use(new IRPCTransport());
+
+      const hello = rpc.declare<(name: string) => Promise<string | undefined>>({ name: 'helloHook' });
+      rpc.hook(hello, async (_name) => Promise.reject(new Error('Hook Rejected')));
+
+      await expect(hello('World')).rejects.toThrow('Hook Rejected');
+    });
+
+    it('should reject call when router hook rejects', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      const transport = new IRPCTransport();
+      rpc.use(new IRPCTransport());
+
+      const router = new IRPCRouter(transport);
+      router.use(() => Promise.reject(new Error('Hook Rejected')));
+
+      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
+      const handler = vi.fn();
+      rpc.construct(hello, handler as AnyType);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        await expect(hello('World')).rejects.toThrow('Hook Rejected');
+      }, controller);
+
+      controller.abort();
+      await promise;
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should abort call when signal aborted during hook verification', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      const transport = new IRPCTransport();
+      rpc.use(new IRPCTransport());
+
+      const router = new IRPCRouter(transport);
+      router.use(() => Promise.resolve());
+
+      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
+      const handler = vi.fn();
+      rpc.construct(hello, handler as AnyType);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        await expect(hello('World')).resolves.not.toThrow('Hook Rejected');
+      }, controller);
+
+      controller.abort();
+      await promise;
+
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 
@@ -1196,8 +1284,8 @@ describe('IRPCPackage', () => {
       rpc.hook(grp, hookFn);
 
       for (const stub of Object.values(grp)) {
-        const spec = (rpc as any).stubs.get(stub)!;
-        expect((rpc as any).hooks.get(spec)!.has(hookFn)).toBe(true);
+        const spec = (rpc as AnyType).stubs.get(stub)!;
+        expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
       }
     });
 
@@ -1211,8 +1299,8 @@ describe('IRPCPackage', () => {
       rpc.hook(grp, hookFn);
 
       for (const stub of Object.values(grp)) {
-        const spec = (rpc as any).stubs.get(stub)!;
-        expect((rpc as any).hooks.get(spec)!.has(hookFn)).toBe(true);
+        const spec = (rpc as AnyType).stubs.get(stub)!;
+        expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
       }
     });
 
@@ -1225,13 +1313,13 @@ describe('IRPCPackage', () => {
 
       expect(result).toBe(rpc);
 
-      const spec = (rpc as any).stubs.get(grp.get)!;
-      expect((rpc as any).hooks.get(spec)!.size).toBe(2);
+      const spec = (rpc as AnyType).stubs.get(grp.get)!;
+      expect((rpc as AnyType).hooks.get(spec)!.size).toBe(2);
     });
 
     it('should skip non-function values in the group object', () => {
       const grp = rpc.crud<{ id: string }>('hookSkip', () => ({ id: '' }));
-      const mixed = { ...grp, extra: 'not a function' } as any;
+      const mixed = { ...grp, extra: 'not a function' } as AnyType;
       const hookFn = vi.fn();
 
       expect(() => rpc.hook(mixed, hookFn)).not.toThrow();

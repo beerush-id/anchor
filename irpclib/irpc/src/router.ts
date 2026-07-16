@@ -100,16 +100,12 @@ export class IRPCRouter {
     const ctx = createContextStore([
       [IRPC_BASE_CONTEXT.ABORT_SIGNAL, controller.signal],
       [IRPC_BASE_CONTEXT.ABORT_CONTROLLER, controller],
+      [IRPC_BASE_CONTEXT.DEFERRED_HOOK, new DeferredHook(this.hooks)],
       ...context,
     ]);
 
     return withContext(ctx, async () => {
       await preHook?.();
-
-      for (const hook of this.hooks) {
-        await hook();
-      }
-
       return handler();
     });
   }
@@ -136,5 +132,19 @@ export class IRPCRouter {
         };
       }
     }
+  }
+}
+
+export class DeferredHook {
+  private promise?: Promise<unknown>;
+
+  constructor(public hooks: IRPCHook[]) {}
+
+  public async verify() {
+    if (!this.promise) {
+      this.promise = Promise.all(this.hooks.map((hook) => hook()));
+    }
+
+    return this.promise;
   }
 }

@@ -1,6 +1,9 @@
+import type { IRPCReader } from './reader.js';
+import type { IRPCData } from './types.js';
+
 export type IRPCCacheEntry = {
   key: string;
-  value: unknown;
+  value: IRPCReader<IRPCData>;
   expires: number;
 };
 
@@ -37,7 +40,7 @@ export class IRPCCacher {
     return this.caches.entries();
   }
 
-  public set(key: string, value: unknown, maxAge: number) {
+  public set(key: string, value: IRPCReader<IRPCData>, maxAge: number) {
     if (!maxAge || maxAge < 0) {
       throw new Error('Max age must be a positive number.');
     }

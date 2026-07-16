@@ -112,8 +112,14 @@ export interface IRPCStub<T, A extends unknown[], R extends IRPCData> {
    */
   when(args: () => A, debounce?: number): IRPCReader<R>;
 
+  /**
+   * Creates a reactive call that expects to be manually dispatched later.
+   * @param debounce - Optional debounce time before dispatched.
+   * @returns {IRPCReader<R> & {dispatch: (...args: A) => Promise<void>}}
+   */
   later(debounce?: number): IRPCReader<R> & {
-    dispatch: (...args: A) => void;
+    /** Method to execute and dispatch the actual call */
+    dispatch: (...args: A) => Promise<void>;
   };
 }
 

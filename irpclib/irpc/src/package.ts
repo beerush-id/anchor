@@ -1,6 +1,16 @@
-import { anchor, captureStack, createObserver, isBrowser, microtask, onCleanup, replay, uuid } from '@anchorlib/core';
+import {
+  anchor,
+  type AnyType,
+  captureStack,
+  createObserver,
+  isBrowser,
+  microtask,
+  onCleanup,
+  replay,
+  uuid,
+} from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
-import { getAbortSignal } from './context.js';
+import { getAbortSignal, getRouterHooks } from './context.js';
 import { IRPC_STATUS } from './enum.js';
 import { HandlerError, ResolveError, StubError, TransportError } from './error.js';
 import { IRPCReader } from './reader.js';
@@ -175,12 +185,12 @@ export class IRPCPackage<K extends string = 'id'> {
       seed: () => undefined,
       ...$options,
     } as IRPCSpec<IRPCInputs, IRPCOutput>;
-    const calls = new Map<string, unknown>();
+    const calls = new Map<string, IRPCReader<IRPCData>>();
     const caches = new IRPCCacher();
 
     /* General stub for immediate execution */
     const stub = ((...args: IRPCData[]) => {
-      return execute(args, new IRPCReader<IRPCData>(uuid(), spec.seed!()));
+      return resolve(args, false, false, true);
     }) as IRPCStub<F, unknown[], IRPCData>;
 
     /** Browser only stub for single immediate execution **/
@@ -188,42 +198,50 @@ export class IRPCPackage<K extends string = 'id'> {
       return prepare(() => args);
     };
 
-    /* Browser only stub with immediate execution */
+    /* Browser-only stub with immediate execution */
     stub.with = (getArgs, debounce) => {
-      const readArgs = typeof getArgs === 'function' ? getArgs : () => getArgs;
-      return prepare(readArgs, false, debounce);
+      return prepare(getArgs, false, debounce);
     };
 
-    /* Browser only stub with deferred execution */
+    /* Browser-only stub with deferred execution */
     stub.when = (getArgs, debounce) => {
-      const readArgs = typeof getArgs === 'function' ? getArgs : () => getArgs;
-      return prepare(readArgs, true, debounce);
+      return prepare(getArgs, true, debounce);
     };
 
     /* General stub for manual execution */
     stub.later = (debounce) => {
-      // biome-ignore lint/suspicious/noExplicitAny: <Expect any>
-      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), IRPC_STATUS.IDLE, true) as any;
+      const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), IRPC_STATUS.IDLE, true) as AnyType;
 
       if (debounce) {
+        let resolve: ((value?: unknown) => void) | undefined;
         const [schedule, cancel] = microtask(debounce);
 
-        reader.dispatch = (...args: unknown[]) =>
-          schedule(() => {
-            reader.resume();
-            execute(args as IRPCData[], reader);
-          });
+        reader.dispatch = (...args: unknown[]) => {
+          resolve?.();
 
-        onCleanup(cancel);
-        return reader as never;
+          return new Promise((resolver) => {
+            resolve = resolver;
+
+            return schedule(() => {
+              reader.resume();
+              runAsync(args as IRPCData[], reader).then(resolver);
+            });
+          });
+        };
+
+        onCleanup(() => {
+          cancel();
+          resolve!();
+        });
+        return reader;
       }
 
       reader.dispatch = (...args: unknown[]) => {
         reader.resume();
-        execute(args as IRPCData[], reader);
+        return runAsync(args as IRPCData[], reader);
       };
 
-      return reader as never;
+      return reader;
     };
 
     /**
@@ -235,12 +253,8 @@ export class IRPCPackage<K extends string = 'id'> {
      * @returns {IRPCReader<IRPCData>} - The reader for the call.
      */
     function prepare(getArgs: () => unknown[], deferred?: boolean, debounce = 0): IRPCReader<IRPCData> {
-      const reader = new IRPCReader<IRPCData>(
-        uuid(),
-        spec.seed!(),
-        deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING,
-        true
-      );
+      if (typeof getArgs !== 'function') getArgs = (() => getArgs) as never;
+      const reader = resolve(getArgs(), deferred, false);
 
       if (isBrowser()) {
         const observer = createObserver(() => {
@@ -251,12 +265,15 @@ export class IRPCPackage<K extends string = 'id'> {
         const dispatch = (coalesce = true) => {
           const args = observer.run(getArgs);
 
-          if (!coalesce) return execute(args as IRPCData[], reader);
+          if (!coalesce) {
+            runAsync(args as IRPCData[], reader).then(() => {});
+            return;
+          }
 
           schedule(() => {
             if (reader.status === IRPC_STATUS.PENDING) reader.close();
             reader.resume();
-            execute(args as IRPCData[], reader);
+            runAsync(args as IRPCData[], reader).then(() => {});
           });
         };
 
@@ -275,48 +292,71 @@ export class IRPCPackage<K extends string = 'id'> {
       return reader;
     }
 
-    const execute = (args: IRPCData[], reader: IRPCReader<IRPCData>) => {
+    const runAsync = async (args: IRPCData[], reader: IRPCReader<IRPCData>) => {
       if (!this.transport && typeof spec.handler !== 'function') {
-        return Promise.reject(TransportError.missing());
+        reader.reject(TransportError.missing());
+        return;
       }
 
-      reader.status = IRPC_STATUS.PENDING;
+      const hooks = this.hooks.get(spec);
+      const signal = getAbortSignal();
+      const routerHooks = getRouterHooks();
 
+      try {
+        reader.status = IRPC_STATUS.PENDING;
+
+        if (routerHooks) {
+          await routerHooks.verify();
+
+          if (signal?.aborted) {
+            reader.abort();
+            return;
+          }
+        }
+
+        if (hooks) {
+          await Promise.all(Array.from(hooks).map((hook) => hook({ name: spec.name, args })));
+        }
+
+        const { timeout, maxRetries, retryDelay, retryMode, standalone } = { ...this.config, ...spec };
+        const config = { timeout, maxRetries, retryDelay, retryMode, standalone } as IRPCCallConfig;
+
+        if (typeof spec.handler === 'function') {
+          intercept(spec, args, reader);
+        } else {
+          this.transport!.call(spec, args, config, reader);
+        }
+      } catch (error) {
+        reader.reject(HandlerError.failed(error as Error));
+      }
+    };
+
+    function resolve(args: unknown[], deferred = false, resumable = false, dispatch?: boolean) {
       const callKey = JSON.stringify(args);
       const cached = caches.get(callKey);
 
-      if (cached) {
-        return cached.value;
+      if (cached) return cached.value!;
+      if (spec.coalesce !== false && calls.has(callKey)) return calls.get(callKey)!;
+
+      const reader = new IRPCReader<IRPCData>(
+        uuid(),
+        spec.seed!(),
+        deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING,
+        resumable
+      );
+
+      if (spec.maxAge) caches.set(callKey, reader, spec.maxAge);
+      if (spec.coalesce) {
+        calls.set(callKey, reader);
+        reader.finally(() => calls.delete(callKey));
       }
 
-      if (spec.coalesce !== false && calls.has(callKey)) {
-        return calls.get(callKey);
-      }
+      onCleanup(() => reader.close());
 
-      const { timeout, maxRetries, retryDelay, retryMode, standalone } = { ...this.config, ...spec };
-      const config = { timeout, maxRetries, retryDelay, retryMode, standalone } as IRPCCallConfig;
-
-      const hooks = this.hooks.get(spec);
-      if (hooks) {
-        hooks.forEach((hook) => hook({ name: spec.name, args }));
-      }
-
-      const call =
-        typeof spec.handler === 'function'
-          ? intercept(spec, args, reader)
-          : this.transport!.call(spec, args, config, reader);
-
-      calls.set(callKey, call);
-
-      if (spec.maxAge) {
-        caches.set(callKey, call, spec.maxAge);
-      }
-
-      onCleanup(() => call.close());
-      call.finally(() => calls.delete(callKey)).catch((err) => IRPC_STORE.error(err, [{ name: spec.name }]));
+      if (dispatch) runAsync(args as IRPCData[], reader).then(() => {});
 
       return reader;
-    };
+    }
 
     this.specs.set($options.name, spec);
     this.stubs.set(stub, spec);
@@ -608,6 +648,11 @@ export function intercept(
     }
 
     anchor.assign(reader.state as IRPCReadable<unknown>, result.state as IRPCReadable<unknown>);
+
+    if (result.status !== IRPC_STATUS.PENDING) {
+      reader.close();
+      return reader;
+    }
 
     const unsubscribe = result.subscribe((_, event) => {
       if (event.type === 'init') return;

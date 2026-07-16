@@ -1,6 +1,7 @@
+import type { AnyType } from '@anchorlib/core';
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import { IRPCTransport } from '../src/index.js';
+import { getRouterHooks, IRPCTransport } from '../src/index.js';
 import { IRPCPackage } from '../src/package.js';
 import { IRPCRouter } from '../src/router.js';
 import { IRPC_STORE } from '../src/store.js';
@@ -71,11 +72,11 @@ describe('IRPCRouter', () => {
       pkg1.declare('test', () => 'test');
 
       expect(router.packages).toBe(transport.packages);
-      expect(router.packageOf({ package: { name: 'pkgB', version: '2.0.0' } } as any)).toBe(pkg2);
+      expect(router.packageOf({ package: { name: 'pkgB', version: '2.0.0' } } as AnyType)).toBe(pkg2);
       expect(
-        router.packageOf({ name: 'missing', package: { name: 'pkgMissing', version: '1.0.0' } } as any)
+        router.packageOf({ name: 'missing', package: { name: 'pkgMissing', version: '1.0.0' } } as AnyType)
       ).toBeUndefined();
-      expect(router.packageOf({ name: 'test', args: [] } as any)).toBe(pkg1);
+      expect(router.packageOf({ name: 'test', args: [] } as AnyType)).toBe(pkg1);
 
       routeSpy.mockRestore();
     });
@@ -106,7 +107,7 @@ describe('IRPCRouter', () => {
       const router = createMockRouter();
       const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
 
-      const result = router.use('not-a-function' as any);
+      const result = router.use('not-a-function' as AnyType);
 
       expect(errSpy).toHaveBeenCalled();
       expect(result).toBe(router);
@@ -258,7 +259,9 @@ describe('IRPCRouter', () => {
         order.push('hook-2');
       });
 
-      await router.isolate(() => {
+      await router.isolate(async () => {
+        const hooks = getRouterHooks();
+        await hooks?.verify();
         order.push('handler');
       }, controller);
 
@@ -309,7 +312,9 @@ describe('IRPCRouter', () => {
       };
 
       await router.isolate(
-        () => {
+        async () => {
+          const hooks = getRouterHooks();
+          await hooks?.verify();
           order.push('handler');
         },
         controller,

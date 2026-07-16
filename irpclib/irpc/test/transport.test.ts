@@ -1,3 +1,4 @@
+import type { AnyType } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { RESOLVE_ERROR, ResolveError, TRANSPORT_ERROR, TransportError } from '../src/error.js';
@@ -104,7 +105,7 @@ describe('IRPC Transport', () => {
 
     it('should reject with timeout error when timeout exceeded', async () => {
       class TestTransport extends IRPCTransport {
-        protected dispatch(): Promise<void> {
+        public dispatch(): Promise<void> {
           return new Promise(() => {}); // Never resolve.
         }
       }
@@ -124,7 +125,7 @@ describe('IRPC Transport', () => {
     });
 
     it('should dispatch instantly and return reader statically when stream spec flag is true', () => {
-      const dispatchSpy = vi.spyOn(transport as any, 'dispatch').mockImplementation(() => Promise.resolve());
+      const dispatchSpy = vi.spyOn(transport as AnyType, 'dispatch').mockImplementation(() => Promise.resolve());
 
       const spec = {
         name: 'testStreamFunc',
@@ -145,9 +146,11 @@ describe('IRPC Transport', () => {
 
   describe('Transport Utilities', () => {
     it('should ignore close natively mapped statically', () => {
-      // The base class close() is an empty function. We just hit it for coverage natively mapped.
-      const call = { id: 'test' } as any;
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const call = { id: 'test' } as AnyType;
       expect(() => transport.close(call)).not.toThrow();
+      expect(logSpy).toHaveBeenCalled();
+      logSpy.mockRestore();
     });
   });
 
@@ -156,7 +159,7 @@ describe('IRPC Transport', () => {
       const transportWithDebounceFalse = new IRPCTransport({ debounce: false });
 
       const dispatchSpy = vi
-        .spyOn(transportWithDebounceFalse as any, 'dispatch')
+        .spyOn(transportWithDebounceFalse as AnyType, 'dispatch')
         .mockImplementation(() => Promise.resolve());
 
       const call: IRPCCall = {
@@ -181,7 +184,7 @@ describe('IRPC Transport', () => {
 
       const transportWithDebounceZero = new IRPCTransport({ debounce: 0 });
       const dispatchSpy = vi
-        .spyOn(transportWithDebounceZero as any, 'dispatch')
+        .spyOn(transportWithDebounceZero as AnyType, 'dispatch')
         .mockImplementation(() => Promise.resolve());
 
       const call1: IRPCCall = {
@@ -222,7 +225,7 @@ describe('IRPC Transport', () => {
 
       const transportWithDebounce = new IRPCTransport({ debounce: 100 });
       const dispatchSpy = vi
-        .spyOn(transportWithDebounce as any, 'dispatch')
+        .spyOn(transportWithDebounce as AnyType, 'dispatch')
         .mockImplementation(() => Promise.resolve());
 
       const call1: IRPCCall = {
@@ -329,7 +332,7 @@ describe('IRPC Transport', () => {
 
     it('should resolve all calls when dispatching', async () => {
       class DispatchAll extends IRPCTransport {
-        protected async dispatch(calls: IRPCCall[]): Promise<void> {
+        public async dispatch(calls: IRPCCall[]): Promise<void> {
           calls.forEach((call) =>
             call.enqueue({
               id: call.id,
@@ -356,22 +359,22 @@ describe('IRPC Transport', () => {
 
   describe('Package Registration & Resolution', () => {
     it('should register and unregister packages properly', () => {
-      const pkg1 = { config: { name: 'testPkg', version: '1.0.0' } } as any;
-      const pkg2 = { config: { name: 'testPkg', version: '2.0.0' } } as any;
-      const pkgOther = { config: { name: 'otherPkg', version: '1.0.0' } } as any;
+      const pkg1 = { config: { name: 'testPkg', version: '1.0.0' } } as AnyType;
+      const pkg2 = { config: { name: 'testPkg', version: '2.0.0' } } as AnyType;
+      const pkgOther = { config: { name: 'otherPkg', version: '1.0.0' } } as AnyType;
 
-      (transport as any).register(pkg1);
-      (transport as any).register(pkg2);
+      (transport as AnyType).register(pkg1);
+      (transport as AnyType).register(pkg2);
       expect(transport.registry.get('testPkg')?.size).toBe(2);
 
-      (transport as any).unregister(pkgOther);
+      (transport as AnyType).unregister(pkgOther);
       expect(transport.registry.has('otherPkg')).toBe(false);
 
-      (transport as any).unregister(pkg1);
+      (transport as AnyType).unregister(pkg1);
       expect(transport.registry.get('testPkg')?.size).toBe(1);
       expect(transport.registry.has('testPkg')).toBe(true);
 
-      (transport as any).unregister(pkg2);
+      (transport as AnyType).unregister(pkg2);
       expect(transport.registry.has('testPkg')).toBe(false);
     });
   });

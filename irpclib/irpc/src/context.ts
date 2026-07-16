@@ -1,5 +1,6 @@
 import { AsyncStore, createContext, getContext, setAsyncScope, setContext, withIsolation } from '@anchorlib/core';
 import { IRPC_BASE_CONTEXT } from './enum.js';
+import type { DeferredHook } from './router.ts';
 import type { IRPCContext, IRPCContextProvider } from './types.js';
 
 export { getContext, setContext, createContext };
@@ -40,4 +41,8 @@ export function getAbortSignal(): AbortSignal | undefined {
 
 export function getAbortController(): AbortController | undefined {
   return getContext(IRPC_BASE_CONTEXT.ABORT_CONTROLLER);
+}
+
+export function getRouterHooks() {
+  return getContext<DeferredHook>(IRPC_BASE_CONTEXT.DEFERRED_HOOK);
 }
