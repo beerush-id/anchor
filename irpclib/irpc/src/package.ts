@@ -12,7 +12,7 @@ import {
 import { IRPCCacher } from './cache.js';
 import { getAbortSignal, getRouterHooks } from './context.js';
 import { IRPC_STATUS } from './enum.js';
-import { HandlerError, ResolveError, StubError, TransportError } from './error.js';
+import { GuardError, HandlerError, HookError, ResolveError, StubError, TransportError } from './error.js';
 import { IRPCReader } from './reader.js';
 import { RemoteState } from './state.js';
 import { IRPC_STORE } from './store.js';
@@ -35,13 +35,13 @@ import type {
   IRPCOutput,
   IRPCPackageConfig,
   IRPCPackageInfo,
-  IRPCRequest,
   IRPCReturnOf,
   IRPCSpec,
   IRPCSpecStore,
   IRPCStreamInit,
   IRPCStub,
   IRPCStubStore,
+  IRPCSubRequest,
 } from './types.js';
 
 const DEFAULT_TIMEOUT = 20000;
@@ -52,6 +52,7 @@ export type IRPCHookArgs<F> = F extends (...args: infer A) => unknown
   ? { name: string; args: A }
   : { name: string; args: unknown[] };
 export type IRPCSpecHook<F> = (req: IRPCHookArgs<F>) => void | Promise<void>;
+export type IRPCGuard = (req: IRPCSubRequest) => void | Promise<void>;
 
 /**
  * IRPCPackage represents a package containing multiple IRPC (Isomorphic-RPC) specifications
@@ -85,6 +86,7 @@ export class IRPCPackage<K extends string = 'id'> {
     key: 'id',
     timeout: DEFAULT_TIMEOUT,
   };
+  public guards = new Set<IRPCGuard>();
 
   /**
    * Gets the href URL for this package in the format "name/version"
@@ -333,7 +335,8 @@ export class IRPCPackage<K extends string = 'id'> {
         return;
       }
 
-      const hooks = this.hooks.get(spec);
+      const req = { id: reader.id, name: spec.name, args };
+      const hooks = this.hooks.get(spec)!;
       const signal = getAbortSignal();
       const routerHooks = getRouterHooks();
 
@@ -341,16 +344,25 @@ export class IRPCPackage<K extends string = 'id'> {
         reader.status = IRPC_STATUS.PENDING;
 
         if (routerHooks) {
-          await routerHooks.verify();
+          if (this.guards.size) {
+            await this.resolveGuards(req);
+            if (signal?.aborted) {
+              reader.abort();
+              return;
+            }
+          }
 
+          await routerHooks.verify();
           if (signal?.aborted) {
             reader.abort();
             return;
           }
         }
 
-        if (hooks) {
-          await Promise.all(Array.from(hooks).map((hook) => hook({ name: spec.name, args })));
+        await Promise.all(Array.from(hooks).map((hook) => hook(req)));
+        if (signal?.aborted) {
+          reader.abort();
+          return;
         }
 
         const { timeout, maxRetries, retryDelay, retryMode, standalone } = { ...this.config, ...spec };
@@ -434,7 +446,7 @@ export class IRPCPackage<K extends string = 'id'> {
    * @returns The result of the IRPC execution
    * @throws Error if the IRPC doesn't exist or doesn't have an implementation
    */
-  public resolve(req: IRPCRequest): IRPCData | Promise<IRPCData> | RemoteState<IRPCData> {
+  public resolve(req: IRPCSubRequest): IRPCData | Promise<IRPCData> | RemoteState<IRPCData> {
     const spec = this.specs.get(req.name);
 
     if (!spec) {
@@ -489,6 +501,8 @@ export class IRPCPackage<K extends string = 'id'> {
   public hook(stubs: Record<string, IRPCHandler>, handler: IRPCSpecHook<IRPCHandler>): this;
 
   public hook<F extends IRPCHandler>(stubOrGroup: F | Record<string, IRPCHandler>, handler: IRPCSpecHook<F>): this {
+    if (typeof handler !== 'function') throw HookError.invalid();
+
     if (typeof stubOrGroup === 'function') {
       if (!this.stubs.has(stubOrGroup as IRPCHandler)) {
         const error = StubError.notFound();
@@ -517,7 +531,7 @@ export class IRPCPackage<K extends string = 'id'> {
    * @returns A promise that resolves when all hooks have been executed
    * @throws Error if no IRPC exists for the request or if the hooks are not registered
    */
-  public async resolveHooks(req: IRPCRequest): Promise<void> {
+  public async resolveHooks(req: IRPCSubRequest): Promise<void> {
     const spec = this.specs.get(req.name);
 
     if (!spec || !this.hooks.has(spec)) {
@@ -528,6 +542,34 @@ export class IRPCPackage<K extends string = 'id'> {
 
     for (const hook of hooks) {
       await hook(req);
+    }
+  }
+
+  /**
+   * Add guard to an IRPC Package that resolves before the handler is invoked.
+   *
+   * @param guard - A guard function that will handle the verification.
+   * @returns This IRPCPackage instance for chaining
+   */
+  public guard(guard: IRPCGuard): this {
+    if (typeof guard !== 'function') throw GuardError.invalid();
+    this.guards.add(guard);
+    return this;
+  }
+
+  /**
+   * Resolves and executes all registered guards for a given request.
+   * @param req - The request containing the IRPC name and arguments
+   * @returns A promise that resolves when all hooks have been executed
+   * @throws Error if no IRPC exists for the request or if the hooks are not registered
+   */
+  public async resolveGuards(req: IRPCSubRequest): Promise<void> {
+    for (const guard of this.guards) {
+      try {
+        await guard(req);
+      } catch (error) {
+        throw GuardError.failed(error as Error);
+      }
     }
   }
 
@@ -552,7 +594,7 @@ export class IRPCPackage<K extends string = 'id'> {
    * @param query - Either a string name or an IRPCRequest object
    * @returns The IRPC specification or undefined if not found
    */
-  public get(query: string | IRPCRequest): IRPCSpec<IRPCInputs, IRPCOutput> | undefined {
+  public get(query: string | IRPCSubRequest): IRPCSpec<IRPCInputs, IRPCOutput> | undefined {
     if (typeof query === 'string') {
       return this.specs.get(query);
     }
@@ -622,12 +664,6 @@ export function intercept(
   reader: IRPCReader<IRPCData>
 ): IRPCReader<IRPCData> {
   const signal = getAbortSignal();
-
-  if (signal?.aborted) {
-    reader.abort();
-    return reader;
-  }
-
   const abort = () => reader.abort();
   signal?.addEventListener('abort', abort, { once: true });
 

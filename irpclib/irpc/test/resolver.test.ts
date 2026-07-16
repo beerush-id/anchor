@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { sleep } from '@anchorlib/core';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { IRPC_STATUS, type IRPCHandler } from '../src/index.js';
+import { IRPC_STATUS, type IRPCHandler, IRPCRouter, IRPCTransport } from '../src/index.js';
 import { createPackage } from '../src/package.js';
 import { IRPCResolver } from '../src/resolver.js';
 import { RemoteState } from '../src/state.js';
@@ -390,6 +391,59 @@ describe('IRPC Resolver', () => {
       );
 
       expect(resolver.spec).toBeUndefined();
+    });
+
+    it('should quit when call aborted during guard verification', async () => {
+      const transport = new IRPCTransport();
+      const rpc = createPackage();
+
+      rpc.use(transport);
+      rpc.guard(() => Promise.resolve());
+      rpc.declare({ name: 'aborted' });
+
+      const router = new IRPCRouter(transport);
+      const resolver = new IRPCResolver({ id: '1', name: 'aborted', args: [] }, rpc);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        const result = await resolver.resolve();
+        expect(result).toEqual({ id: '1', name: 'aborted' });
+      }, controller);
+
+      controller.abort();
+      await promise;
+    });
+
+    it('should quit when call aborted during guard verification', async () => {
+      const transport = new IRPCTransport();
+      const rpc = createPackage();
+
+      rpc.use(transport);
+      rpc.guard(async () => {
+        await sleep(5);
+        return;
+      });
+
+      const fn = rpc.declare({ name: 'aborted' });
+      rpc.hook(fn, async () => {
+        await sleep(5);
+        return;
+      });
+
+      const router = new IRPCRouter(transport);
+      const resolver = new IRPCResolver({ id: '1', name: 'aborted', args: [] }, rpc);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        const result = await resolver.resolve();
+        expect(result).toEqual({ id: '1', name: 'aborted' });
+      }, controller);
+
+      await vi.advanceTimersByTimeAsync(5);
+      controller.abort();
+
+      await vi.advanceTimersByTimeAsync(5);
+      await promise;
     });
   });
 });

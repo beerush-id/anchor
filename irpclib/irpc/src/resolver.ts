@@ -1,7 +1,8 @@
+import { getAbortSignal } from './context.js';
 import { HandlerError, ResolveError } from './error.js';
 import type { IRPCPackage } from './package.js';
 import { RemoteState } from './state.js';
-import type { IRPCData, IRPCInputs, IRPCOutput, IRPCParseResult, IRPCRequest, IRPCResponse } from './types.js';
+import type { IRPCData, IRPCInputs, IRPCOutput, IRPCParseResult, IRPCResponse, IRPCSubRequest } from './types.js';
 
 /**
  * Resolver class for handling IRPC requests
@@ -26,7 +27,7 @@ export class IRPCResolver {
    * @param module - The IRPC package module that contains the method to be executed
    */
   constructor(
-    public req: IRPCRequest,
+    public req: IRPCSubRequest,
     public module?: IRPCPackage
   ) {}
 
@@ -39,7 +40,7 @@ export class IRPCResolver {
    * @returns A promise that resolves to an IRPC response with either the result or an error
    */
   public async resolve(): Promise<IRPCResponse> {
-    const { id, name, package: pkg, args } = this.req;
+    const { id, name, args } = this.req;
 
     // Check if the requested method exists in the module
     if (!this.spec) {
@@ -55,7 +56,7 @@ export class IRPCResolver {
     }
 
     // Forward the validated request
-    return this.forward({ id, name, package: pkg, args: inputs.data }, schema?.output);
+    return this.forward({ id, name, args: inputs.data }, schema?.output);
   }
 
   /**
@@ -65,11 +66,17 @@ export class IRPCResolver {
    * @param schema - Optional output schema for result validation
    * @returns A promise that resolves to an IRPC response with the result or an error
    */
-  public async forward({ id, name, package: pkg, args }: IRPCRequest, schema?: IRPCOutput): Promise<IRPCResponse> {
-    try {
-      await this.module!.resolveHooks({ id, name, package: pkg, args });
+  public async forward({ id, name, args }: IRPCSubRequest, schema?: IRPCOutput): Promise<IRPCResponse> {
+    const signal = getAbortSignal();
+    const req = { id, name, args };
 
-      const result = this.module!.resolve({ id, name, package: pkg, args });
+    try {
+      await this.module!.resolveGuards(req);
+      if (signal?.aborted) return { id, name };
+      await this.module!.resolveHooks(req);
+      if (signal?.aborted) return { id, name };
+
+      const result = this.module!.resolve(req);
 
       if (result instanceof RemoteState) {
         const output = parseOutput(result.data, schema);

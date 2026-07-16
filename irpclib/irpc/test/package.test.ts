@@ -277,6 +277,326 @@ describe('IRPCPackage', () => {
     });
   });
 
+  describe('Guards', () => {
+    it('should register a guard on a package', () => {
+      const rpc = createPackage();
+      const guard = vi.fn();
+      rpc.guard(guard);
+
+      expect(rpc.guards.has(guard)).toBe(true);
+    });
+
+    it('should not register invalid guard', () => {
+      const rpc = createPackage();
+
+      expect(() => rpc.guard('invalid' as never)).toThrow();
+      expect(rpc.guards.size).toBe(0);
+    });
+
+    it('should resolves valid guards', async () => {
+      const rpc = createPackage();
+
+      const guard1 = vi.fn();
+      const guard2 = vi.fn();
+      rpc.guard(guard1).guard(guard2);
+
+      expect(rpc.guards.size).toBe(2);
+
+      await expect(rpc.resolveGuards({} as never)).resolves.not.toThrow();
+
+      expect(guard1).toHaveBeenCalled();
+      expect(guard2).toHaveBeenCalled();
+    });
+
+    it('should reject throwing guards', async () => {
+      const rpc = createPackage();
+
+      const guard1 = vi.fn();
+      const guard2 = vi.fn().mockImplementation(() => Promise.reject());
+      rpc.guard(guard1).guard(guard2);
+
+      expect(rpc.guards.size).toBe(2);
+
+      await expect(rpc.resolveGuards({} as never)).rejects.toThrow();
+
+      expect(guard1).toHaveBeenCalled();
+      expect(guard2).toHaveBeenCalled();
+    });
+  });
+
+  describe('Spec Hooks', () => {
+    it('should register a hook on a valid stub', () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookTest', seed: () => '' });
+      const hookFn = vi.fn();
+
+      rpc.hook(testFunc, hookFn);
+
+      const spec = (rpc as AnyType).stubs.get(testFunc)!;
+      expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
+    });
+
+    it('should support chaining when registering hooks', () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookChain', seed: () => '' });
+      const hook1 = vi.fn();
+      const hook2 = vi.fn();
+
+      const result = rpc.hook(testFunc, hook1).hook(testFunc, hook2);
+
+      expect(result).toBe(rpc);
+      const spec = (rpc as AnyType).stubs.get(testFunc)!;
+      expect((rpc as AnyType).hooks.get(spec)!.size).toBe(2);
+    });
+
+    it('should log error and return self when hooking an invalid stub', () => {
+      const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+      const unknownStub = () => {};
+
+      const result = rpc.hook(unknownStub, vi.fn());
+
+      expect(errSpy).toHaveBeenCalled();
+      expect(result).toBe(rpc);
+      errSpy.mockRestore();
+    });
+
+    it('should reject call when hook rejects', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      rpc.use(new IRPCTransport());
+
+      const hello = rpc.declare<(name: string) => Promise<string | undefined>>({ name: 'helloHook' });
+      rpc.hook(hello, async (_name) => Promise.reject(new Error('Hook Rejected')));
+
+      await expect(hello('World')).rejects.toThrow('Hook Rejected');
+    });
+
+    it('should reject call when guard rejects', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      const transport = new IRPCTransport();
+      rpc.use(new IRPCTransport());
+      rpc.guard(() => Promise.reject(new Error('Guard Rejected')));
+
+      const router = new IRPCRouter(transport);
+
+      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
+      const handler = vi.fn();
+      rpc.construct(hello, handler as AnyType);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        await expect(hello('World')).rejects.toThrow('Guard Rejected');
+      }, controller);
+
+      controller.abort();
+      await promise;
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should reject call when router hook rejects', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      const transport = new IRPCTransport();
+      rpc.use(new IRPCTransport());
+
+      const router = new IRPCRouter(transport);
+      router.use(() => Promise.reject(new Error('Hook Rejected')));
+
+      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
+      const handler = vi.fn();
+      rpc.construct(hello, handler as AnyType);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        await expect(hello('World')).rejects.toThrow('Hook Rejected');
+      }, controller);
+
+      controller.abort();
+      await promise;
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should abort call when signal aborted during guard verification', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      const transport = new IRPCTransport();
+      rpc.use(new IRPCTransport());
+      rpc.guard(() => Promise.resolve());
+
+      const router = new IRPCRouter(transport);
+
+      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
+      const handler = vi.fn();
+      rpc.construct(hello, handler as AnyType);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        await expect(hello('World')).resolves.not.toThrow('Guard Rejected');
+      }, controller);
+
+      controller.abort();
+      await promise;
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should abort call when signal aborted during hook verification', async () => {
+      const rpc = createPackage({ name: 'hook-api' });
+      const transport = new IRPCTransport();
+      rpc.use(new IRPCTransport());
+
+      const router = new IRPCRouter(transport);
+      router.use(() => Promise.resolve());
+
+      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
+      const handler = vi.fn();
+      rpc.construct(hello, handler as AnyType);
+
+      const controller = new AbortController();
+      const promise = router.isolate(async () => {
+        await expect(hello('World')).resolves.not.toThrow('Hook Rejected');
+      }, controller);
+
+      controller.abort();
+      await promise;
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Resolve Hooks', () => {
+    it('should execute all hooks in order for a valid spec', async () => {
+      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookResolve', seed: () => '' });
+      rpc.construct(testFunc, async (name) => `Hello ${name}`);
+
+      const order: number[] = [];
+      rpc.hook(testFunc, () => {
+        order.push(1);
+      });
+      rpc.hook(testFunc, () => {
+        order.push(2);
+      });
+      rpc.hook(testFunc, () => {
+        order.push(3);
+      });
+
+      const req = { id: '1', name: 'hookResolve', package: pkg, args: ['World'] };
+      await rpc.resolveHooks(req);
+
+      expect(order).toEqual([1, 2, 3]);
+      expect(() => rpc.hook(testFunc, undefined as never)).toThrow();
+    });
+
+    it('should pass the request to each hook', async () => {
+      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookReq', seed: () => '' });
+      rpc.construct(testFunc, async (name) => `Hello ${name}`);
+
+      const hookFn = vi.fn();
+      rpc.hook(testFunc, hookFn);
+
+      const req = { id: '1', name: 'hookReq', package: pkg, args: ['World'] };
+      await rpc.resolveHooks(req);
+
+      expect(hookFn).toHaveBeenCalledWith(req);
+    });
+
+    it('should throw when resolving hooks for a non-existent spec', async () => {
+      const req = { id: '1', name: 'nonExistent', package: pkg, args: [] };
+
+      await expect(rpc.resolveHooks(req)).rejects.toThrow('No spec found for stub.');
+    });
+
+    it('should propagate errors thrown by hooks', async () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookError', seed: () => '' });
+      rpc.construct(testFunc, async () => 'ok');
+
+      rpc.hook(testFunc, () => {
+        throw new Error('Hook denied');
+      });
+
+      const req = { id: '1', name: 'hookError', package: pkg, args: [] };
+      await expect(rpc.resolveHooks(req)).rejects.toThrow('Hook denied');
+    });
+
+    it('should stop execution when a hook throws', async () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookStop', seed: () => '' });
+      rpc.construct(testFunc, async () => 'ok');
+
+      const afterThrow = vi.fn();
+
+      rpc.hook(testFunc, () => {
+        throw new Error('Stopped');
+      });
+      rpc.hook(testFunc, afterThrow);
+
+      const req = { id: '1', name: 'hookStop', package: pkg, args: [] };
+      await expect(rpc.resolveHooks(req)).rejects.toThrow('Stopped');
+      expect(afterThrow).not.toHaveBeenCalled();
+    });
+
+    it('should await async hooks', async () => {
+      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookAsync', seed: () => '' });
+      rpc.construct(testFunc, async () => 'ok');
+
+      const executed = vi.fn();
+      rpc.hook(testFunc, async () => {
+        executed();
+      });
+
+      const req = { id: '1', name: 'hookAsync', package: pkg, args: [] };
+      await rpc.resolveHooks(req);
+
+      expect(executed).toHaveBeenCalled();
+    });
+  });
+
+  describe('Group Hooks (CRUD)', () => {
+    it('should register a hook on all stubs in a group', () => {
+      const grp = rpc.crud<{ id: string; name: string }>('hookGrp', () => ({ id: '', name: '' }));
+      const hookFn = vi.fn();
+
+      rpc.hook(grp, hookFn);
+
+      for (const stub of Object.values(grp)) {
+        const spec = (rpc as AnyType).stubs.get(stub)!;
+        expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
+      }
+    });
+
+    it('should work with excluded CRUD stubs', () => {
+      const grp = rpc.exclude(
+        rpc.crud<{ id: string; name: string }>('hookExcl', () => ({ id: '', name: '' })),
+        ['delete']
+      );
+      const hookFn = vi.fn();
+
+      rpc.hook(grp, hookFn);
+
+      for (const stub of Object.values(grp)) {
+        const spec = (rpc as AnyType).stubs.get(stub)!;
+        expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
+      }
+    });
+
+    it('should support chaining with group hooks', () => {
+      const grp = rpc.crud<{ id: string }>('hookChainGrp', () => ({ id: '' }));
+      const hook1 = vi.fn();
+      const hook2 = vi.fn();
+
+      const result = rpc.hook(grp, hook1).hook(grp, hook2);
+
+      expect(result).toBe(rpc);
+
+      const spec = (rpc as AnyType).stubs.get(grp.get)!;
+      expect((rpc as AnyType).hooks.get(spec)!.size).toBe(2);
+    });
+
+    it('should skip non-function values in the group object', () => {
+      const grp = rpc.crud<{ id: string }>('hookSkip', () => ({ id: '' }));
+      const mixed = { ...grp, extra: 'not a function' } as AnyType;
+      const hookFn = vi.fn();
+
+      expect(() => rpc.hook(mixed, hookFn)).not.toThrow();
+    });
+  });
+
   describe('IRPC Call', () => {
     it('should call local implementation', async () => {
       const hello = rpc.declare<(name: string) => Promise<string>>({
@@ -1102,232 +1422,6 @@ describe('IRPCPackage', () => {
       // In IRPC, scope disposal transitions the reader to SUCCESS
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe(''); // The init value, not updated
-    });
-  });
-
-  describe('Spec Hooks', () => {
-    it('should register a hook on a valid stub', () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookTest', seed: () => '' });
-      const hookFn = vi.fn();
-
-      rpc.hook(testFunc, hookFn);
-
-      const spec = (rpc as AnyType).stubs.get(testFunc)!;
-      expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
-    });
-
-    it('should support chaining when registering hooks', () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookChain', seed: () => '' });
-      const hook1 = vi.fn();
-      const hook2 = vi.fn();
-
-      const result = rpc.hook(testFunc, hook1).hook(testFunc, hook2);
-
-      expect(result).toBe(rpc);
-      const spec = (rpc as AnyType).stubs.get(testFunc)!;
-      expect((rpc as AnyType).hooks.get(spec)!.size).toBe(2);
-    });
-
-    it('should log error and return self when hooking an invalid stub', () => {
-      const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
-      const unknownStub = () => {};
-
-      const result = rpc.hook(unknownStub, vi.fn());
-
-      expect(errSpy).toHaveBeenCalled();
-      expect(result).toBe(rpc);
-      errSpy.mockRestore();
-    });
-
-    it('should reject call when hook rejects', async () => {
-      const rpc = createPackage({ name: 'hook-api' });
-      rpc.use(new IRPCTransport());
-
-      const hello = rpc.declare<(name: string) => Promise<string | undefined>>({ name: 'helloHook' });
-      rpc.hook(hello, async (_name) => Promise.reject(new Error('Hook Rejected')));
-
-      await expect(hello('World')).rejects.toThrow('Hook Rejected');
-    });
-
-    it('should reject call when router hook rejects', async () => {
-      const rpc = createPackage({ name: 'hook-api' });
-      const transport = new IRPCTransport();
-      rpc.use(new IRPCTransport());
-
-      const router = new IRPCRouter(transport);
-      router.use(() => Promise.reject(new Error('Hook Rejected')));
-
-      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
-      const handler = vi.fn();
-      rpc.construct(hello, handler as AnyType);
-
-      const controller = new AbortController();
-      const promise = router.isolate(async () => {
-        await expect(hello('World')).rejects.toThrow('Hook Rejected');
-      }, controller);
-
-      controller.abort();
-      await promise;
-
-      expect(handler).not.toHaveBeenCalled();
-    });
-
-    it('should abort call when signal aborted during hook verification', async () => {
-      const rpc = createPackage({ name: 'hook-api' });
-      const transport = new IRPCTransport();
-      rpc.use(new IRPCTransport());
-
-      const router = new IRPCRouter(transport);
-      router.use(() => Promise.resolve());
-
-      const hello = rpc.declare<(name: string) => Promise<string>>({ name: 'helloHook', seed: () => '' });
-      const handler = vi.fn();
-      rpc.construct(hello, handler as AnyType);
-
-      const controller = new AbortController();
-      const promise = router.isolate(async () => {
-        await expect(hello('World')).resolves.not.toThrow('Hook Rejected');
-      }, controller);
-
-      controller.abort();
-      await promise;
-
-      expect(handler).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Resolve Hooks', () => {
-    it('should execute all hooks in order for a valid spec', async () => {
-      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookResolve', seed: () => '' });
-      rpc.construct(testFunc, async (name) => `Hello ${name}`);
-
-      const order: number[] = [];
-      rpc.hook(testFunc, () => {
-        order.push(1);
-      });
-      rpc.hook(testFunc, () => {
-        order.push(2);
-      });
-      rpc.hook(testFunc, () => {
-        order.push(3);
-      });
-
-      const req = { id: '1', name: 'hookResolve', package: pkg, args: ['World'] };
-      await rpc.resolveHooks(req);
-
-      expect(order).toEqual([1, 2, 3]);
-    });
-
-    it('should pass the request to each hook', async () => {
-      const testFunc = rpc.declare<(name: string) => Promise<string>>({ name: 'hookReq', seed: () => '' });
-      rpc.construct(testFunc, async (name) => `Hello ${name}`);
-
-      const hookFn = vi.fn();
-      rpc.hook(testFunc, hookFn);
-
-      const req = { id: '1', name: 'hookReq', package: pkg, args: ['World'] };
-      await rpc.resolveHooks(req);
-
-      expect(hookFn).toHaveBeenCalledWith(req);
-    });
-
-    it('should throw when resolving hooks for a non-existent spec', async () => {
-      const req = { id: '1', name: 'nonExistent', package: pkg, args: [] };
-
-      await expect(rpc.resolveHooks(req)).rejects.toThrow('No spec found for stub.');
-    });
-
-    it('should propagate errors thrown by hooks', async () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookError', seed: () => '' });
-      rpc.construct(testFunc, async () => 'ok');
-
-      rpc.hook(testFunc, () => {
-        throw new Error('Hook denied');
-      });
-
-      const req = { id: '1', name: 'hookError', package: pkg, args: [] };
-      await expect(rpc.resolveHooks(req)).rejects.toThrow('Hook denied');
-    });
-
-    it('should stop execution when a hook throws', async () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookStop', seed: () => '' });
-      rpc.construct(testFunc, async () => 'ok');
-
-      const afterThrow = vi.fn();
-
-      rpc.hook(testFunc, () => {
-        throw new Error('Stopped');
-      });
-      rpc.hook(testFunc, afterThrow);
-
-      const req = { id: '1', name: 'hookStop', package: pkg, args: [] };
-      await expect(rpc.resolveHooks(req)).rejects.toThrow('Stopped');
-      expect(afterThrow).not.toHaveBeenCalled();
-    });
-
-    it('should await async hooks', async () => {
-      const testFunc = rpc.declare<() => Promise<string>>({ name: 'hookAsync', seed: () => '' });
-      rpc.construct(testFunc, async () => 'ok');
-
-      const executed = vi.fn();
-      rpc.hook(testFunc, async () => {
-        executed();
-      });
-
-      const req = { id: '1', name: 'hookAsync', package: pkg, args: [] };
-      await rpc.resolveHooks(req);
-
-      expect(executed).toHaveBeenCalled();
-    });
-  });
-
-  describe('Group Hooks (CRUD)', () => {
-    it('should register a hook on all stubs in a group', () => {
-      const grp = rpc.crud<{ id: string; name: string }>('hookGrp', () => ({ id: '', name: '' }));
-      const hookFn = vi.fn();
-
-      rpc.hook(grp, hookFn);
-
-      for (const stub of Object.values(grp)) {
-        const spec = (rpc as AnyType).stubs.get(stub)!;
-        expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
-      }
-    });
-
-    it('should work with excluded CRUD stubs', () => {
-      const grp = rpc.exclude(
-        rpc.crud<{ id: string; name: string }>('hookExcl', () => ({ id: '', name: '' })),
-        ['delete']
-      );
-      const hookFn = vi.fn();
-
-      rpc.hook(grp, hookFn);
-
-      for (const stub of Object.values(grp)) {
-        const spec = (rpc as AnyType).stubs.get(stub)!;
-        expect((rpc as AnyType).hooks.get(spec)!.has(hookFn)).toBe(true);
-      }
-    });
-
-    it('should support chaining with group hooks', () => {
-      const grp = rpc.crud<{ id: string }>('hookChainGrp', () => ({ id: '' }));
-      const hook1 = vi.fn();
-      const hook2 = vi.fn();
-
-      const result = rpc.hook(grp, hook1).hook(grp, hook2);
-
-      expect(result).toBe(rpc);
-
-      const spec = (rpc as AnyType).stubs.get(grp.get)!;
-      expect((rpc as AnyType).hooks.get(spec)!.size).toBe(2);
-    });
-
-    it('should skip non-function values in the group object', () => {
-      const grp = rpc.crud<{ id: string }>('hookSkip', () => ({ id: '' }));
-      const mixed = { ...grp, extra: 'not a function' } as AnyType;
-      const hookFn = vi.fn();
-
-      expect(() => rpc.hook(mixed, hookFn)).not.toThrow();
     });
   });
 });

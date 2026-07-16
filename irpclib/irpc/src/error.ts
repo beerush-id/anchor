@@ -5,6 +5,7 @@ export const IRPC_ERROR_TYPE = {
   HOOK: 'hook',
   CALL: 'call',
   CRUD: 'crud',
+  GUARD: 'guard',
   HANDLER: 'handler',
   RESOLVE: 'resolve',
   TRANSPORT: 'transport',
@@ -53,6 +54,11 @@ export const HOOK_ERROR = {
   INVALID: 'invalid',
   ERROR: 'error',
 } as const;
+
+export const GUARD_ERROR = {
+  INVALID: 'invalid',
+  ERROR: 'error',
+};
 
 export const CALL_ERROR = {
   TIMEOUT: 'timeout',
@@ -220,6 +226,21 @@ export class HookError extends IRPCError {
   static failed(input: Error | string) {
     const { message, cause } = unwrap(input);
     return new HookError(HOOK_ERROR.ERROR, message, cause);
+  }
+}
+
+/** Errors related to guard registration and execution. */
+export class GuardError extends IRPCError {
+  constructor(code: string, message: string, cause?: Error) {
+    super(IRPC_ERROR_TYPE.GUARD, code, message, cause);
+  }
+
+  static invalid() {
+    return new GuardError(GUARD_ERROR.INVALID, 'Guard must be a function.');
+  }
+  static failed(input: Error | string) {
+    const { message, cause } = unwrap(input);
+    return new GuardError(GUARD_ERROR.ERROR, message, cause);
   }
 }
 

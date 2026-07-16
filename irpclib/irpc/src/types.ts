@@ -450,6 +450,8 @@ export type IRPCRequest = {
   files?: IRPCFilePointer[];
 };
 
+export type IRPCSubRequest = Omit<IRPCRequest, 'package' | 'files'>;
+
 export type IRPCCredentials = Iterable<[string, AsyncValue]>;
 export type IRPCCredentialsFactory = Record<string, AsyncValue> | (() => Record<string, AsyncValue>);
 
