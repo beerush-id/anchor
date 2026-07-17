@@ -46,6 +46,7 @@ export type LinkProps<R> = JSX.AnchorHTMLAttributes<HTMLAnchorElement> &
   ComposedLinkProps<R> & {
     preload?: 'hover' | 'always' | 'never';
     replace?: boolean;
+    fullMatch?: boolean;
     activeClass?: string;
   };
 

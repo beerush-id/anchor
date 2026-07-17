@@ -1,4 +1,4 @@
-import { derived } from '@anchorlib/core';
+import { type AnyType, derived } from '@anchorlib/core';
 import { createUrl } from '@anchorlib/router';
 import type { JSX } from 'solid-js';
 import { splitProps } from 'solid-js';
@@ -19,6 +19,7 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
     'to',
     'preload',
     'replace',
+    'fullMatch',
     'activeClass',
     'class',
     'children',
@@ -34,6 +35,7 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
   const query = derived(() => toProps.query);
   const params = derived(() => toProps.params);
   const href = derived(() => createUrl(allProps.href ?? props.to?.route.path ?? '/', params.value, query.value));
+  const fullMatch = derived(() => props.fullMatch ?? props.to?.route.isIndex);
   const isActive = derived(() => {
     const route = props.to?.route;
     if (!route) return false;
@@ -43,7 +45,7 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
     // If this route is an Index child route, its native .active state drops when navigating
     // into deep sibling dynamic routes (like /users/1).
     // Visually, the NavLink should still be active if its true parent is active.
-    if (route.parent && route.parent.index === route) {
+    if (route.parent && (route.parent as AnyType).index === route && !fullMatch.value) {
       return !!route.parent.active;
     }
 
@@ -58,7 +60,8 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
 
     e.preventDefault();
 
-    if (!location.href.endsWith(href.value)) {
+    const current = `${location.pathname}${location.search}`;
+    if (current !== href.value) {
       navigate(href.value, { query: query.value, params: params.value, replace: props.replace } as never);
     }
 

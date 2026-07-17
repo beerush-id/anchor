@@ -120,7 +120,7 @@ describe('Anchor Solid - Link Component', () => {
     indexCoreRoute.active = false;
 
     render(() => (
-      <Link to={IndexRouteComponent} activeClass="active-index">
+      <Link to={IndexRouteComponent} activeClass="active-index" fullMatch={false}>
         Users
       </Link>
     ));
@@ -183,5 +183,105 @@ describe('Anchor Solid - Link Component', () => {
     fireEvent.click(anchor);
 
     expect(onClickSpy).toHaveBeenCalled();
+  });
+
+  it('does not apply active stylings to Index routes if parent is active but fullMatch is true', () => {
+    const router = createRouter();
+    const parentCoreRoute = router.route('/users');
+    const indexCoreRoute = parentCoreRoute.route('/');
+    const IndexRouteComponent = page(indexCoreRoute as never as AnyRoute);
+
+    parentCoreRoute.active = true;
+    indexCoreRoute.active = false;
+
+    render(() => (
+      <Link to={IndexRouteComponent} activeClass="active-index" fullMatch={true}>
+        Users
+      </Link>
+    ));
+
+    const anchor = screen.getByText('Users');
+    expect(anchor.getAttribute('aria-current')).toBeNull();
+    expect(anchor.className).not.toContain('active-index');
+  });
+
+  it('navigates strictly when path differs (prevents false endsWith matches)', () => {
+    // Override window.location to simulate being in a nested route
+    Object.defineProperty(window, 'location', {
+      value: {
+        pathname: '/console/projects',
+        search: ''
+      },
+      writable: true,
+    });
+    
+    render(() => <Link href="/projects">Root Projects</Link>);
+    const anchor = screen.getByText('Root Projects');
+    fireEvent.click(anchor);
+
+    // Should navigate because '/console/projects' !== '/projects'
+    expect(navigateSpy).toHaveBeenCalledWith('/projects', {
+      query: undefined,
+      params: undefined,
+      replace: undefined,
+    });
+  });
+
+  it('does not apply active stylings to Index routes by default (inferred fullMatch=true)', () => {
+    const router = createRouter();
+    const parentCoreRoute = router.route('/users');
+    const indexCoreRoute = parentCoreRoute.route('/'); // Index child
+    const IndexRouteComponent = page(indexCoreRoute as never as AnyRoute);
+
+    parentCoreRoute.active = true;
+    indexCoreRoute.active = false;
+
+    render(() => (
+      <Link to={IndexRouteComponent} activeClass="active-index">
+        Users
+      </Link>
+    ));
+
+    const anchor = screen.getByText('Users');
+    expect(anchor.getAttribute('aria-current')).toBeNull();
+    expect(anchor.className).not.toContain('active-index');
+  });
+
+  it('does not apply active stylings to non-index sibling routes even if parent is active', () => {
+    const router = createRouter();
+    const parentCoreRoute = router.route('/users');
+    const siblingCoreRoute = parentCoreRoute.route('/profile'); // Non-index sibling
+    const SiblingRouteComponent = page(siblingCoreRoute as never as AnyRoute);
+
+    parentCoreRoute.active = true;
+    siblingCoreRoute.active = false;
+
+    render(() => (
+      <Link to={SiblingRouteComponent} activeClass="active-sibling" fullMatch={false}>
+        Profile
+      </Link>
+    ));
+
+    const anchor = screen.getByText('Profile');
+    expect(anchor.getAttribute('aria-current')).toBeNull();
+    expect(anchor.className).not.toContain('active-sibling');
+  });
+
+  it('swallows navigation if target path exactly matches current path', () => {
+    // Override window.location to simulate being on the target route
+    Object.defineProperty(window, 'location', {
+      value: {
+        pathname: '/projects',
+        search: ''
+      },
+      writable: true,
+    });
+    
+    render(() => <Link href="/projects">Root Projects</Link>);
+    const anchor = screen.getByText('Root Projects');
+    fireEvent.click(anchor);
+
+    // Should NOT navigate because '/projects' === '/projects'
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 });
