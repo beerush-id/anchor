@@ -202,6 +202,10 @@ export class Route<
     return ROUTE_MAP_LINK.get(this);
   }
 
+  public get authenticated() {
+    return this.state.authenticated;
+  }
+
   public get storage(): RouteStorage {
     const store = getStore();
 
