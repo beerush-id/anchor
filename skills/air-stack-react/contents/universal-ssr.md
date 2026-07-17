@@ -45,7 +45,9 @@ import { airWorker } from '@anchorlib/vite-ssr';
 export default defineConfig({
   plugins: [
     react(),
-    airWorker(), // Automatically intercepts SSR, IRPC, and WebSocket upgrades
+    // Automatically intercepts SSR, IRPC, and WebSocket upgrades. 
+    // By default ignores dot paths (e.g. .well-known). Pass { ignoreDotPath: false } to intercept them.
+    airWorker(),
   ],
 });
 ```

@@ -271,6 +271,19 @@ export const SettingsLayout = page(settingsRoute).render(({ state, children }) =
 });
 ```
 
+### Authentication State & Exceptions
+The router strictly enforces authentication state at the route level. The `Route` object exposes an `authenticated` getter (reading from `route.state.authenticated`). If a route is marked as unauthenticated (`route.authenticated === false`), the router will bypass the route's normal children and automatically render the `catch` component instead.
+
+```tsx
+export const ProtectedLayout = page(dashboardRoute)
+  .render(({ children }) => <main>{children}</main>)
+  .catch(() => (
+    <div class="error-barrier">
+      <h2>Please log in to continue</h2>
+    </div>
+  ));
+```
+
 ### Sequential & Dependent Providers
 Each `.provide()` call executes in sequence. Providers within the same `.provide({})` call execute in parallel. Downstream providers can access the `data` resolved by upstream `.provide()` calls in the chain.
 
@@ -390,7 +403,8 @@ import { ProfilePage } from './routes/users/[user_id]/page.js';
 export function Navigation() {
   return (
     <nav>
-      {/* Basic static link. Automatically gets aria-current="page" when active */}
+      {/* Basic static link. Automatically gets aria-current="page" when active. 
+          Index routes are exactly matched by default. Use fullMatch={false} to keep it active for children. */}
       <Link to={UsersPage}>All Users</Link>
 
       {/* Link with REQUIRED parameters derived from /:user_id */}
