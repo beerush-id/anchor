@@ -198,8 +198,12 @@ export class Route<
     return this.storage.context.value.data as Data;
   }
 
-  public get children(): RouteRegistry {
+  public get children(): RouteRegistry | undefined {
     return ROUTE_MAP_LINK.get(this);
+  }
+
+  public get isIndex(): boolean {
+    return this.closed;
   }
 
   public get authenticated() {

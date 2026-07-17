@@ -1,4 +1,4 @@
-import { derived } from '@anchorlib/core';
+import { type AnyType, derived } from '@anchorlib/core';
 import { createUrl } from '@anchorlib/router';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { render, setup } from '../hoc.js';
@@ -24,6 +24,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
   const query = derived(() => $props.query);
   const params = derived(() => $props.params);
   const href = derived(() => createUrl(props.href ?? $props.to?.route.path ?? '/', params.value, query.value));
+  const fullMatch = derived(() => $props.fullMatch ?? $props.to?.route.isIndex);
   const isActive = derived(() => {
     const route = $props.to?.route;
     if (!route) return false;
@@ -33,8 +34,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     // If this route is an Index child route, its native .active state drops when navigating
     // into deep sibling dynamic routes (like /users/1).
     // Visually, the NavLink should still be active if its true parent is active.
-    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-    if (route.parent && (route.parent as any).index === route) {
+    if (route.parent && (route.parent as AnyType).index === route && !fullMatch.value) {
       return (route.parent as AnyRoute).active;
     }
 
@@ -49,7 +49,8 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
     e.preventDefault();
 
-    if (!location.href.endsWith(href.value)) {
+    const current = `${location.pathname}${location.search}`;
+    if (current !== href.value) {
       navigate(href.value as never, { query: query.value, params: params.value, replace: props.replace } as never);
     }
 
@@ -85,6 +86,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
           'activeClass',
           'className',
           'children',
+          'fullMatch',
         ])}
       >
         {props.children}

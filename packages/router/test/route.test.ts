@@ -1376,6 +1376,7 @@ describe('Route class', () => {
 
       const entries = root.entries();
       expect(entries).toHaveLength(9);
+      expect(rootIndex.isIndex).toBe(true);
 
       // 1. Root and Root Index
       const rootEntry = entries.find(([path, val]) => path === '/' && !val.isIndex);
