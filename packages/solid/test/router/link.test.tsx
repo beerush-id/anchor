@@ -210,11 +210,11 @@ describe('Anchor Solid - Link Component', () => {
     Object.defineProperty(window, 'location', {
       value: {
         pathname: '/console/projects',
-        search: ''
+        search: '',
       },
       writable: true,
     });
-    
+
     render(() => <Link href="/projects">Root Projects</Link>);
     const anchor = screen.getByText('Root Projects');
     fireEvent.click(anchor);
@@ -272,11 +272,11 @@ describe('Anchor Solid - Link Component', () => {
     Object.defineProperty(window, 'location', {
       value: {
         pathname: '/projects',
-        search: ''
+        search: '',
       },
       writable: true,
     });
-    
+
     render(() => <Link href="/projects">Root Projects</Link>);
     const anchor = screen.getByText('Root Projects');
     fireEvent.click(anchor);
