@@ -116,6 +116,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
           {children}
         </div>
       ));
+      testRoute.state.authenticated = true;
       testRoute.active = true;
       const stacks = createStacks();
 
@@ -137,6 +138,8 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const indexRoute = parentRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view">Index!</div>);
 
+      parentRoute.state.authenticated = true;
+      indexRoute.state.authenticated = true;
       parentRoute.active = true;
       indexRoute.active = true;
       const stacks = createStacks();
@@ -160,6 +163,8 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const indexRoute = parentRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view-only">Index Alone!</div>);
 
+      parentRoute.state.authenticated = true;
+      indexRoute.state.authenticated = true;
       parentRoute.active = true;
       indexRoute.active = true;
       const stacks = createStacks();
@@ -178,6 +183,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const emptyRoute = router.route('/empty');
       // No layout renderer and no index renderer assigned
 
+      emptyRoute.state.authenticated = true;
       emptyRoute.active = true;
       const stacks = createStacks();
 
@@ -212,6 +218,81 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       expect(screen.getByTestId('error-view')).toBeDefined();
     });
+
+    it('renders the Exception component when the route is not authenticated', () => {
+      const router = createRouter();
+      const ExceptionComponent = () => <div data-testid="unauth-error-view">Unauthenticated!</div>;
+      const testRoute = router.route().route('/protected-route');
+      const child = testRoute.route('/');
+      testRoute.render(({ children }) => children).catch(ExceptionComponent);
+
+      // Simulate route without authentication
+      testRoute.state.authenticated = false;
+      child.active = true;
+      testRoute.active = true;
+      const stacks = createStacks();
+
+      render(
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div data-testid="bypassed-child">Child</div>
+        </RouteViewer>
+      );
+
+      expect(screen.getByTestId('unauth-error-view')).toBeDefined();
+    });
+
+    it('renders Layout instead of isolated exception when route is not authenticated but also has children', () => {
+      const router = createRouter();
+      const testRoute = router.route('/protected-route');
+      testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+      
+      // Add a child route so route.children.size > 0
+      const child = testRoute.route('/child');
+      
+      const stacks = createStacks();
+
+      // Simulate route without authentication
+      testRoute.state.authenticated = false;
+      child.active = true;
+      testRoute.active = true;
+
+      render(
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div data-testid="bypassed-child">Child</div>
+        </RouteViewer>
+      );
+
+      // Because it has children, the exception is rendered inside the layout!
+      expect(screen.getByTestId('layout-wrapper')).toBeDefined();
+      expect(screen.getByTestId('unauth-error-view')).toBeDefined();
+    });
+
+    it('renders Layout instead of isolated exception when route is not authenticated but has an index renderer', () => {
+      const router = createRouter();
+      const testRoute = router.route('/protected-route');
+      testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+      
+      // Add an index route with a renderer
+      const indexRoute = testRoute.route('/');
+      indexRoute.render(() => <div data-testid="index-view">Index</div>);
+      
+      const stacks = createStacks();
+
+      // Simulate route without authentication
+      testRoute.state.authenticated = false;
+      indexRoute.active = true;
+      testRoute.active = true;
+
+      render(
+        <RouteViewer route={testRoute as never} stacks={stacks} />
+      );
+
+      // Because it has an index renderer, the exception is rendered inside the layout!
+      expect(screen.getByTestId('layout-wrapper')).toBeDefined();
+      expect(screen.getByTestId('unauth-error-view')).toBeDefined();
+    });
   });
 
   describe('RouteViewer - modal/stack branch', () => {
@@ -235,7 +316,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       // Wait for queueMicrotask to fire
       await act(async () => {
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       expect(stacks.size).toBe(1);
@@ -251,6 +332,8 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const indexRoute = modalRoute.route('/');
       indexRoute.render(() => <div data-testid="modal-index">Modal Index</div>);
 
+      modalRoute.state.authenticated = true;
+      indexRoute.state.authenticated = true;
       modalRoute.active = true;
       indexRoute.active = true;
       const stacks = createStacks();
@@ -258,7 +341,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       render(<RouteViewer route={modalRoute as never} stacks={stacks} />);
 
       await act(async () => {
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       // Render the Stack component from the map
@@ -277,6 +360,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       modalRoute.render(({ children }) => <div data-testid="modal-layout-only">{children}</div>);
 
+      modalRoute.state.authenticated = true;
       modalRoute.active = true;
       const stacks = createStacks();
 
@@ -287,7 +371,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       );
 
       await act(async () => {
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       const Stack = stacks.get(modalRoute as never)!;
@@ -303,14 +387,16 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const indexRoute = modalRoute.route('/');
       indexRoute.render(() => <div data-testid="modal-index-alone">Index Alone</div>);
 
+      modalRoute.state.authenticated = true;
       modalRoute.active = true;
+      indexRoute.state.authenticated = true;
       indexRoute.active = true;
       const stacks = createStacks();
 
       render(<RouteViewer route={modalRoute as never} stacks={stacks} />);
 
       await act(async () => {
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       const Stack = stacks.get(modalRoute as never)!;
@@ -332,7 +418,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       );
 
       await act(async () => {
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       const Stack = stacks.get(modalRoute as never)!;
@@ -346,6 +432,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const modalRoute = router.route('/modal-empty');
       modal(modalRoute);
       // No layout renderer, no index route
+      modalRoute.state.authenticated = true;
       modalRoute.active = true;
       const stacks = createStacks();
 
@@ -356,7 +443,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       );
 
       await act(async () => {
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       const Stack = stacks.get(modalRoute as never)!;
@@ -379,6 +466,9 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       // Dynamic child inside registry
       const childRoute = rootRoute.route('/child-1');
       childRoute.render(() => <div data-testid="child-1">Child 1 Component</div>);
+
+      rootRoute.state.authenticated = true;
+      childRoute.state.authenticated = true;
 
       rootRoute.active = true;
       childRoute.active = true;
@@ -516,7 +606,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       await act(async () => {
         await activateSpy.mock.results[0]?.value;
         // Wait another microtask for RouteViewer's queueMicrotask to set the stack
-        await new Promise((r) => queueMicrotask(r));
+        await new Promise((r) => queueMicrotask(r as never));
       });
 
       expect(scrollToSpy).not.toHaveBeenCalled();

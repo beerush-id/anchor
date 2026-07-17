@@ -34,9 +34,9 @@ export function RouteViewer({
   children?: ReactNode;
 }) {
   const IndexSnippet = snippet<Record<string, unknown>>(
-    function IndexSnippet() {
+    () => {
       const Renderer = route.index?.renderer;
-      if (!route.index?.active || !Renderer) return;
+      if (route.exception || !route.authenticated || !route.index?.active || !Renderer) return;
 
       return <Renderer {...getRenderProps(route.index as never)} />;
     },
@@ -45,42 +45,63 @@ export function RouteViewer({
     false
   );
 
-  const ExceptionSnippet = snippet(
-    function ExceptionSnippet() {
-      const Renderer = route.exceptionRenderer as FC<AnyType>;
-      if (!route.exception || !Renderer) return;
+  const ChildrenSnippet = snippet(
+    () => {
+      if (route.exception || !route.authenticated) return;
+      return children;
+    },
+    route.path,
+    'Children',
+    false
+  );
 
-      return <Renderer error={route.exception} {...getRenderProps(route)} />;
+  const ExceptionSnippet = snippet(
+    () => {
+      const Renderer = route.exceptionRenderer as FC<AnyType>;
+      if ((!route.exception && route.authenticated) || !Renderer) return;
+
+      return <Renderer error={route.exception ?? !route.state.error} {...getRenderProps(route)} />;
     },
     route.path,
     'RouteException',
     false
   );
 
-  const RouteSnippet = snippet(
-    function RouteSnippet() {
-      if (!route.active) return children;
-
+  const ShellSnippet = snippet(
+    () => {
       const hasIndex = typeof route.index?.renderer !== 'undefined';
-      const hasChildren = route.children.size > 0;
+      const hasChildren = route.children.size > 0 || hasIndex;
+      const hasException = route.exception || !route.authenticated;
       const layoutProps = getRenderProps(route);
-
       const Renderer = route.renderer ?? ((props) => props.children);
 
-      const routeNode = (
+      if (hasException && !hasChildren) return <ExceptionSnippet />;
+
+      return (
         <Renderer {...layoutProps}>
           <IndexSnippet />
+          <ChildrenSnippet />
           <ExceptionSnippet />
-          {children}
         </Renderer>
       );
-      const content = route.exception && !hasChildren && !hasIndex ? <ExceptionSnippet /> : routeNode;
+    },
+    route.path,
+    'Shell',
+    false
+  );
 
+  const RouteSnippet = snippet(
+    () => {
+      if (!route.active) return children;
       if (STACK_REGISTRY.has(route)) {
-        return <div className={'route-modal'}>{content}</div>;
+        return (
+          <div className={'route-modal'}>
+            <ShellSnippet />
+          </div>
+        );
       }
 
-      return content;
+      return <ShellSnippet />;
     },
     route.path,
     STACK_REGISTRY.has(route) ? 'Modal' : 'Page',
