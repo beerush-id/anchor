@@ -523,6 +523,7 @@ describe('Route class', () => {
       expect(child.options?.keepAlive).toBe(true);
       expect(parent.children).toBeDefined();
       expect(child.children).toBeDefined();
+      expect(child.authenticated).toBe(false);
     });
 
     it('should allow child options to override parent options', () => {
