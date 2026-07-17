@@ -82,7 +82,15 @@ When a route is active, its `<Link>` gets `aria-current="page"` and an active cl
 
 The active state is hierarchical. If the user is on `/users/42`, the link to `UsersPage` (`/users`) is also active because `/users` is a parent segment of the current route.
 
-For index routes (created with `.route('/')`), the link stays active as long as the parent is active — even when a sibling child route like `/:user_id` is matched. This is the expected behavior for navigation tabs.
+For index routes (created with `.route('/')`), the link is only active when the route exactly matches the current URL.
+
+If you want the index link to stay active as long as the parent is active (for example, when a sibling child route like `/:user_id` is matched, which is common for navigation tabs), you can disable strict matching by setting `fullMatch={false}`:
+
+```tsx
+<Link to={UsersIndexPage} fullMatch={false}>
+  Users
+</Link>
+```
 
 ### Preloading
 

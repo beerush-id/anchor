@@ -20,10 +20,13 @@ import { AboutPage } from '../pages/about/index.js';
 import { RootPage } from '../pages/page.js';
 
 <Link to={RootPage}>Home</Link>
-<Link to={AboutPage} activeClass="nav-active">About</Link>
-```
-
 `activeClass` is applied when the link's target matches the current URL.
+
+For index routes, the link is only active when the route exactly matches the current URL. If you want the index link to stay active as long as the parent is active (e.g., when a sibling child route is matched, which is common for navigation tabs), you can disable strict matching by setting `fullMatch={false}`:
+
+```tsx
+<Link to={AboutPage} activeClass="nav-active" fullMatch={false}>About</Link>
+```
 
 ### Dynamic Parameters
 

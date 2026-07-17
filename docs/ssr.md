@@ -21,6 +21,8 @@ This page covers the deployment architecture: the Vite plugin for development, t
 
 The `airWorker()` Vite plugin runs SSR rendering, IRPC routing, and WebSocket streaming on a single dev server by delegating to your edge worker. Configure it in `vite.config.ts`.
 
+You can pass options to the plugin. By default, the plugin ignores paths starting with a dot (like `.well-known`) and lets Vite handle them. To intercept these paths instead, set `ignoreDotPath: false`.
+
 ::: code-group
 
 ```ts [React]

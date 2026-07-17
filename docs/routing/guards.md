@@ -225,3 +225,21 @@ export const DashboardLayout = page(dashboardRoute).render(({ state, children })
 ```
 
 :::
+
+## Authentication State
+
+The `Route` object exposes an `authenticated` getter (which reads from `route.state.authenticated`). The router strictly enforces authentication state: if a route is marked as unauthenticated (`route.authenticated` is `false`), the router will bypass the route's normal children and automatically render the Exception component (or the layout fallback) instead.
+
+```tsx
+import { page } from '@anchorlib/react'; // or '@anchorlib/solid'
+
+export const ProtectedLayout = page(dashboardRoute)
+  .render(({ children }) => <main>{children}</main>)
+  .catch(() => (
+    <div className="error-barrier">
+      <h2>Please log in to continue</h2>
+    </div>
+  ));
+```
+
+This ensures that authentication checks properly prevent unauthorized components from mounting and elegantly hand off to the fallback UI.
