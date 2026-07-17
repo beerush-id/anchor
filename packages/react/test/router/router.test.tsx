@@ -5,7 +5,7 @@ import { createRouter } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { modal, page, redirect, RouteRendererComponent, RouteViewer, UIRouter } from '../../src/index.js';
+import { modal, page, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -246,10 +246,10 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const testRoute = router.route('/protected-route');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
       testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
-      
+
       // Add a child route so route.children.size > 0
       const child = testRoute.route('/child');
-      
+
       const stacks = createStacks();
 
       // Simulate route without authentication
@@ -273,11 +273,11 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const testRoute = router.route('/protected-route');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
       testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
-      
+
       // Add an index route with a renderer
       const indexRoute = testRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view">Index</div>);
-      
+
       const stacks = createStacks();
 
       // Simulate route without authentication
@@ -285,9 +285,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       indexRoute.active = true;
       testRoute.active = true;
 
-      render(
-        <RouteViewer route={testRoute as never} stacks={stacks} />
-      );
+      render(<RouteViewer route={testRoute as never} stacks={stacks} />);
 
       // Because it has an index renderer, the exception is rendered inside the layout!
       expect(screen.getByTestId('layout-wrapper')).toBeDefined();

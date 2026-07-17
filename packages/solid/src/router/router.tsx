@@ -27,7 +27,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
     const Renderer = route.index?.renderer ?? (() => null);
 
     return (
-      <Show when={route.index?.active}>
+      <Show when={!route.exception && route.authenticated && route.index?.active}>
         <Renderer {...getRenderProps(route.index as never)} />
       </Show>
     );
@@ -37,17 +37,23 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
   const Exception = () => {
     const Renderer = route.exceptionRenderer ?? (() => null);
     return (
-      <Show when={route.exception}>{(() => <Renderer error={route.exception!} {...layoutProps} />) as never}</Show>
+      <Show when={route.exception || !route.authenticated}>
+        {(() => <Renderer error={(route.exception ?? !route.state.error) as any} {...layoutProps} />) as never}
+      </Show>
     );
   };
   const Shell = () => {
     const Renderer = () => (
       <Show
-        when={route.exception && route.children.size === 0 && typeof route.index?.renderer === 'undefined'}
+        when={
+          (route.exception || !route.authenticated) &&
+          route.children.size === 0 &&
+          typeof route.index?.renderer === 'undefined'
+        }
         fallback={
           <Layout {...layoutProps}>
             <Index />
-            {props.children}
+            <Show when={!route.exception && route.authenticated}>{props.children}</Show>
             <Exception />
           </Layout>
         }

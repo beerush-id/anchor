@@ -105,6 +105,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
           {children as any}
         </div>
       ));
+      testRoute.state.authenticated = true;
+      testRoute.index!.state.authenticated = true;
       testRoute.active = true;
       testRoute.index!.active = true;
       const stacks = createStacks();
@@ -127,6 +129,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const indexRoute = parentRoute.route('/');
       indexRoute.render(() => <div data-testid="index-view">Index!</div>);
 
+      parentRoute.state.authenticated = true;
+      indexRoute.state.authenticated = true;
       parentRoute.active = true;
       indexRoute.active = true;
       const stacks = createStacks();
@@ -145,6 +149,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
     it('renders content without Layout when active but no renderer', () => {
       const router = createRouter();
       const emptyRoute = router.route('/empty');
+      emptyRoute.state.authenticated = true;
       emptyRoute.active = true;
       const stacks = createStacks();
 
@@ -175,6 +180,29 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       ));
 
       expect(container.querySelector('[data-testid="error-view"]')).toBeDefined();
+    });
+
+    it('renders the Exception component when the route is not authenticated', () => {
+      const router = createRouter();
+      const ExceptionComponent = () => <div data-testid="unauth-error-view">Unauthenticated!</div>;
+      const testRoute = router.route().route('/protected-route');
+      const child = testRoute.route('/');
+      testRoute.render(({ children }) => children as any).catch(ExceptionComponent);
+
+      // Simulate route without authentication
+      testRoute.state.authenticated = false;
+      child.state.authenticated = false;
+      child.active = true;
+      testRoute.active = true;
+      const stacks = createStacks();
+
+      const { container } = render(() => (
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div data-testid="bypassed-child">Child</div>
+        </RouteViewer>
+      ));
+
+      expect(container.querySelector('[data-testid="unauth-error-view"]')).not.toBeNull();
     });
 
     it('renders null renderer when route has an exception', async () => {
@@ -220,6 +248,34 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       expect(container.querySelector('[data-testid="error-view"]')).not.toBeNull();
     });
 
+    it('renders Layout instead of isolated exception when route is not authenticated but also has children', () => {
+      const router = createRouter();
+      const testRoute = router.route('/protected-route');
+      testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+
+      // Add a child route so route.children.size > 0
+      const child = testRoute.route('/child');
+
+      const stacks = createStacks();
+
+      // Simulate route without authentication
+      testRoute.state.authenticated = false;
+      child.state.authenticated = false;
+      child.active = true;
+      testRoute.active = true;
+
+      const { container } = render(() => (
+        <RouteViewer route={testRoute as never} stacks={stacks}>
+          <div data-testid="bypassed-child">Child</div>
+        </RouteViewer>
+      ));
+
+      // Because it has children, the exception is rendered inside the layout!
+      expect(container.querySelector('[data-testid="layout-wrapper"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="unauth-error-view"]')).not.toBeNull();
+    });
+
     it('renders Layout instead of isolated exception when route has an exception but has an index renderer', async () => {
       const router = createRouter();
       const testRoute = router.route('/error');
@@ -240,6 +296,31 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       expect(container.querySelector('[data-testid="layout-wrapper"]')).not.toBeNull();
       expect(container.querySelector('[data-testid="error-view"]')).not.toBeNull();
     });
+
+    it('renders Layout instead of isolated exception when route is not authenticated but has an index renderer', () => {
+      const router = createRouter();
+      const testRoute = router.route('/protected-route');
+      testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
+      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+
+      // Add an index route with a renderer
+      const indexRoute = testRoute.route('/');
+      indexRoute.render(() => <div data-testid="index-view">Index</div>);
+
+      const stacks = createStacks();
+
+      // Simulate route without authentication
+      testRoute.state.authenticated = false;
+      indexRoute.state.authenticated = false;
+      indexRoute.active = true;
+      testRoute.active = true;
+
+      const { container } = render(() => <RouteViewer route={testRoute as never} stacks={stacks} />);
+
+      // Because it has an index renderer, the exception is rendered inside the layout!
+      expect(container.querySelector('[data-testid="layout-wrapper"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="unauth-error-view"]')).not.toBeNull();
+    });
   });
 
   describe('RouteViewer - modal/stack branch', () => {
@@ -249,6 +330,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const modalRoute = router.route('/modal-push');
       modal(modalRoute);
+      modalRoute.state.authenticated = true;
       modalRoute.active = true;
       const stacks = createStacks();
 
@@ -292,6 +374,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const indexRoute = modalRoute.route('/');
       indexRoute.render(() => <div data-testid="modal-index">Modal Index</div>);
 
+      modalRoute.state.authenticated = true;
+      indexRoute.state.authenticated = true;
       modalRoute.active = true;
       indexRoute.active = true;
       const stacks = createStacks();
@@ -354,6 +438,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const modalRoute = router.route('/stack-modal');
       modal(modalRoute);
       modalRoute.render(() => <div data-testid="stack-modal-content">Modal</div>);
+      modalRoute.state.authenticated = true;
       modalRoute.active = true;
 
       vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
@@ -405,6 +490,8 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const childRoute = rootRoute.route('/child-1');
       childRoute.render(() => <div data-testid="child-1">Child 1</div>);
 
+      rootRoute.state.authenticated = true;
+      childRoute.state.authenticated = true;
       rootRoute.active = true;
       childRoute.active = true;
       const stacks = createStacks();
