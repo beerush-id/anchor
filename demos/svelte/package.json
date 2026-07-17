@@ -1,6 +1,6 @@
 {
   "name": "@anchor-demo/svelte",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "dependencies": {
     "@anchorlib/svelte": "workspace:*"
   },
