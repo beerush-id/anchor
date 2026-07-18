@@ -1,4 +1,4 @@
-import { isBrowser } from '@anchorlib/core';
+import { type AnyType, isBrowser } from '@anchorlib/core';
 import {
   getRenderProps,
   type MatchedRoute,
@@ -38,7 +38,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
     const Renderer = route.exceptionRenderer ?? (() => null);
     return (
       <Show when={route.exception || !route.authenticated}>
-        {(() => <Renderer error={(route.exception ?? !route.state.error) as any} {...layoutProps} />) as never}
+        {(() => <Renderer error={(route.exception ?? route.state.error) as AnyType} {...layoutProps} />) as never}
       </Show>
     );
   };
@@ -47,7 +47,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
       <Show
         when={
           (route.exception || !route.authenticated) &&
-          route.children.size === 0 &&
+          route.children!.size === 0 &&
           typeof route.index?.renderer === 'undefined'
         }
         fallback={
@@ -160,8 +160,8 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
 
 /**
  * Create a page component.
- * @param {T} routeNode
- * @returns {RouteComponent<T>}
+ * @param routeNode - The route node to attach the renderer to.
+ * @returns A Component for use in navigation <Link>
  */
 export function page<T>(routeNode: T): RouteComponent<T> {
   const UIRoute: ParentComponent = function UIRoute(props) {
@@ -193,8 +193,8 @@ export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
 
 /**
  * Create a modal component.
- * @param {T} routeNode
- * @returns {RouteComponent<T>}
+ * @param routeNode - The route node to attach the renderer to.
+ * @returns A Component to be used in navigation <Link>
  */
 export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
   STACK_REGISTRY.add(routeNode as never);
@@ -208,8 +208,7 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    // biome-ignore lint/suspicious/noExplicitAny: expect any
-    navigate((redirect as any).route, {
+    navigate((redirect as AnyType).route, {
       query: redirect.query,
       params: redirect.params,
       redirect: location.href,

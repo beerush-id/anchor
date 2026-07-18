@@ -835,8 +835,8 @@ describe('router.ts', () => {
         // Let the reactive observer flush
         await new Promise((resolve) => setTimeout(resolve, 0));
 
-        // Ensure route.activate is NEVER called again
-        expect(activateSpy).not.toHaveBeenCalled();
+        // Ensure route.activate is called again due to param change.
+        expect(activateSpy).toHaveBeenCalled();
 
         // Parent provider didn't read param, so it's NOT re-run
         expect(usersProvider).toHaveBeenCalledTimes(1);
@@ -1012,6 +1012,46 @@ describe('router.ts', () => {
         await router.activate('/users?tab=settings');
 
         expect(router.context.query.tab).toEqual('settings');
+      });
+
+      it('should handle start with increment', async () => {
+        const router = createRouter();
+
+        router.start();
+        expect(router.state.steps).toBe(1);
+
+        router.start(2);
+        expect(router.state.steps).toBe(3);
+      });
+
+      it('should handle start fresh', async () => {
+        const router = createRouter();
+
+        router.start();
+        expect(router.state.steps).toBe(1);
+
+        router.start();
+        router.start();
+        router.progress();
+        router.progress();
+        router.progress();
+        router.progress();
+        router.progress();
+
+        router.start(1, true);
+
+        expect(router.state.steps).toBe(1);
+        expect(router.state.progress).toBe(0);
+      });
+
+      it('should listen for controller abort when activating with controller', async () => {
+        const router = createRouter();
+        const controller = new AbortController();
+        const spy = vi.spyOn(controller.signal, 'addEventListener');
+
+        await router.activate('http://localhost', true, controller);
+
+        expect(spy).toHaveBeenCalled();
       });
     });
   });

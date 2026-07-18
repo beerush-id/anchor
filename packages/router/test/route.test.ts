@@ -926,7 +926,7 @@ describe('Route class', () => {
       route.guard(guard);
 
       const context = { params: {}, query: {}, data: {} };
-      await route.activate(context);
+      await route.authenticate(context);
 
       expect(guard).toHaveBeenCalled();
     });
@@ -941,7 +941,7 @@ describe('Route class', () => {
       route.guard(guard);
 
       const context = { params: {}, query: {}, data: {} };
-      await route.activate(context);
+      await route.authenticate(context);
 
       // activate returns undefined on error, but sets the error property
       expect(state.error).toBeDefined();

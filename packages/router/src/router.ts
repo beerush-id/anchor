@@ -363,7 +363,7 @@ export class Router<Output = any> {
 
     if (storage.activeUrl === url.href) return snapshots;
 
-    const { segments, exception, route: lastSegment } = match;
+    const { segments, exception } = match;
     storage.context.exception = exception;
 
     const currentSegments = storage.activeSegments || [];
@@ -397,11 +397,7 @@ export class Router<Output = any> {
     // Activate new segments (root to leaf) without preloading
     const toActivate = targetSegments.filter((r) => {
       return !currentSegments.find((n) => {
-        if (n.route === r.route) {
-          if (![ROUTE_TYPE.STATIC, ROUTE_TYPE.INDEX].includes(r.route.type as never)) return false;
-          return n.store === r.store;
-        }
-        return false;
+        return n.route === r.route && n.store === r.store && n.store === r.route.context;
       });
     });
 
@@ -496,7 +492,6 @@ export class Router<Output = any> {
       if (aborted()) return snapshots;
 
       if (withHydration) snapshots.push(route.snapshot());
-      if (!storage.activatingSegments.has(segment)) return snapshots;
       storage.activatingSegments.delete(segment);
     }
 
@@ -539,7 +534,8 @@ export class Router<Output = any> {
 
   /**
    * Starts a progress indicator for route activation.
-   * @param {number} length
+   * @param {number} length - Number of steps to start with.
+   * @param fresh - Optional flag to reset the steps and progresses.
    */
   public start(length: number = 1, fresh?: boolean) {
     const { state } = this.storage;
