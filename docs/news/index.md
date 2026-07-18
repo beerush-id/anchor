@@ -11,6 +11,14 @@ next: false
 Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 
 <div class="posts-grid">
+  <a href="./release-v1.2.21.html" class="post-card">
+    <article>
+      <h3>AIR Stack v1.2.21</h3>
+      <p>SSR Workers, Sitemaps, and Fine-Grained Reactivity. Major enhancements to SSR worker flows, programmatic sitemaps, new React/Solid utilities, and IRPC Guards.</p>
+      <span class="read-more">Read release notes &rarr;</span>
+    </article>
+  </a>
+
   <a href="./release-v1.2.html" class="post-card">
     <article>
       <h3>AIR Stack v1.2</h3>
