@@ -264,9 +264,13 @@ const SystemMetrics = () => (
 
 In React, separating `UserProfile` and `SystemMetrics`, you solve the mixed structural and reactive domains. But because `cpu` updates at 60fps, it still creates a performance collision that demands to separate it from the slow `ram` updates. 
 
-You need **isolate the fast update** into its own **View**, passing a reactive reference so the parent doesn't track the read.
+You need to **isolate the fast update** into its own **View**, passing a reactive reference so the parent doesn't track the read.
 
-```tsx [React]
+You can achieve this in two ways depending on your concern:
+- **Semantic Boundaries (`snippet()`):** Use the factory to create a named boundary when the UI represents a distinct concept or is complex enough to be extracted (like `CpuMeter`).
+- **Inline Boundaries (`<Snippet>`):** Use the component to create a boundary exactly where the UI sits, without needing to extract it or give it a name. This is ideal for tiny fragments.
+
+```tsx [React (Semantic)]
 const SystemMetrics = snippet(() => (
   <div className="metrics-panel">
     <h3>System Status</h3>
@@ -277,6 +281,21 @@ const SystemMetrics = snippet(() => (
 
 const CpuMeter = snippet(() => (
   <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
+));
+```
+
+```tsx [React (Inline)]
+import { Snippet } from '@anchorlib/react';
+
+const SystemMetrics = snippet(() => (
+  <div className="metrics-panel">
+    <h3>System Status</h3>
+    <div>RAM: {metrics.ram}GB</div>
+    {/* Pass the object, so the read (data.cpu) happens inside the boundary */}
+    <Snippet data={metrics}>
+      {({ cpu }) => <div className="cpu-fast-update">CPU: {cpu}%</div>}
+    </Snippet>
+  </div>
 ));
 ```
 :::
@@ -509,7 +528,8 @@ Building **Reactive UIs** by extracting repetitive structures, grouping logical 
 - **Static vs View:** If it's structural and never changes, it's a Static Component. If it's **reactive**, it's a View.
 - **Views** are pure, **one-way reactive boundaries** that **render state as is**, but never own state or behavior.
 - **React:** **`template()`** creates a **standalone reactive view** that receives explicit props.
-- **React:** **`snippet()`** creates an **inline reactive boundary** that naturally inherits the parent closure.
+- **React:** **`<Snippet>`** creates an **inline reactive boundary** directly within your layout without needing to define a separate variable.
+- **React:** **`snippet()`** creates a **semantic reactive boundary** that naturally inherits the parent closure.
 - **React:** **Binding (`$use()`)** creates a **pass-by-reference** so the parent component doesn't need to **re-render to update the value**.
 - **SolidJS:** The compiler handles **fine-grained tracking natively**, so standard functional closures automatically act as **perfect boundaries** without needing utilities like `$use()` or `snippet()`.
 - **Isolation:** You extract fast-updating properties (`cpu`) into their own Views to protect slow properties (`ram`) from **expensive re-renders**.

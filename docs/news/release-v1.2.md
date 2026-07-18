@@ -31,7 +31,7 @@ The `airSSR` Vite plugin has been deeply refactored to improve maintainability a
 
 ## React Context Preservation
 
-Resolved a bug in the React adapter where scope context was lost when `Snippet` components re-rendered:
+Resolved a bug in the React adapter where scope context was lost when `SnippetNode` components re-rendered:
 
 - Introduced internal `Start` and `Finish` components to manage context setup and restoration.
 - Modified `SnippetBody` to capture and restore context tightly around render operations.

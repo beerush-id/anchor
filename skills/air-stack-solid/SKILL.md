@@ -99,7 +99,7 @@ When building UI components, **never** blindly wrap an entire massive component 
 
 Before writing a component, analyze its reactivity:
 1. **Is the majority of the UI static?**
-   If most of the component is static and only small parts change frequently, **return static JSX directly**. Do not wrap the whole component in `render()`. Instead, isolate only the reactive parts into a `Snippet` (if it needs parent scope access) or a `Template` (if it is purely props-driven).
+   If most of the component is static and only small parts change frequently, **return static JSX directly**. Do not wrap the whole component in `render()`. Instead, isolate only the reactive parts into a `SnippetNode` (if it needs parent scope access) or a `Template` (if it is purely props-driven).
 2. **Is the entire tree heavily reactive?**
    - **If the tree is large (multiple domains):** Break it down! Isolate each domain into smaller, independent `Snippets` or `Templates` so they update independently.
    - **If the tree is very small (e.g., a simple toggle or button):** Only then is it acceptable to wrap it in a single `render()` block.

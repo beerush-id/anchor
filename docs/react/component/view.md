@@ -18,9 +18,9 @@ Views are **reactive**—they track which state properties they read and re-rend
 
 A View is any reactive UI that responds to state changes. In Anchor, you create Views in three ways:
 
-1. **Template** - A standalone, reusable View that accepts props
-2. **Snippet** - A scoped View defined inside a Component with access to its state
-3. **Component View** - The primary View returned immediately via `render()`, tied to the Component's output
+- **Template** - A standalone, reusable View that accepts props
+- **Snippet** - A scoped View defined inside a Component. Can be created via the `<Snippet>` component (inline) or `snippet()` factory (semantic).
+- **Component View** - The primary View returned immediately via `render()`, tied to the Component's output
 
 ```tsx
 import { setup, template, render, mutable } from '@anchorlib/react';
@@ -77,13 +77,43 @@ const MyTemplate = template<Props>((props) => { /* ... */ }, 'MyTemplate');
 
 ## Snippet
 
-A **Snippet** is a scoped View defined **inside** a Component. Snippets can access the Component's state through closure:
+A **Snippet** is a scoped View defined **inside** a Component to isolate reactive updates. You can create Snippets in two ways:
+
+- **The `<Snippet>` Component:** Used to isolate reactive boundaries *inline* directly within your layout.
+- **The `snippet()` Factory:** Used to create *semantic* reactive boundaries (reusable Snippets) that can be named and called like regular components.
+
+### Inline Snippets (`<Snippet>`)
+
+The `<Snippet>` component is the preferred way to isolate rendering inline when you don't need to reuse the markup. It accepts `data` and a render function as children.
+
+```tsx
+import { setup, mutable, Snippet } from '@anchorlib/react';
+
+export const Profile = setup(() => {
+  const state = mutable({ name: 'Alice', bio: 'Frontend Dev', avatarSize: 64 });
+
+  return (
+    <div className="profile">
+      {/* Isolates the avatar rendering inline by passing the object */}
+      <Snippet data={state}>
+        {({ name, avatarSize }) => <img src={`/avatars/${name}.png`} width={avatarSize} />}
+      </Snippet>
+      
+      <UserCard user={state} />
+    </div>
+  );
+}, 'Profile');
+```
+
+### Semantic Snippets (`snippet()`)
+
+The `snippet()` factory creates a named, semantic boundary. This is ideal when you want to group a complex block of UI, give it a meaningful name (like `Avatar`), and potentially reuse it within the same component.
 
 ```tsx
 export const Profile = setup(() => {
   const state = mutable({ name: 'Alice', bio: 'Frontend Dev' });
 
-  // Snippet - accesses state.name from closure
+  // Semantic Snippet - accesses state.name from closure
   const Avatar = snippet<{ size: number }>(({ size }) => (
     <img src={`/avatars/${state.name}.png`} width={size} />
   ), 'Avatar');
@@ -191,7 +221,7 @@ export default Profile;
 :::
 
 ### Props
-Snippets receive `props` as their first argument and `parentProps` as their second argument:
+Semantic Snippets created via `snippet()` receive `props` as their first argument and `parentProps` as their second argument:
 
 ```tsx
 // Snippet - props + parentProps
@@ -235,7 +265,7 @@ export const App = setup<AppProps>((props) => {
 - **Co-located**: Keeps related logic together
 
 ### Cons
-- **Lower Performance**: Re-created for every Component instance
+- **Lower Performance**: Re-created for every Component instance (for Semantic Snippets)
 - **Not Reusable**: Tightly coupled to Component logic
 
 
@@ -284,8 +314,8 @@ Anchor handles props differently depending on whether you are working with a **C
 
 In `setup()` and `snippet()`'s `parentProps`, the props object is a **Reactive Proxy**. This enables fine-grained reactivity but comes with specific rules:
 
-1.  **Do NOT use `...rest` (Spread)**: Spreading props (`const { ...rest } = props`) **inside a reactive boundary** will **log an error and ignore the access**, preventing unintentional subscriptions to every property.
-2.  **Use `$omit` and `$pick`**: Use these built-in helpers to safely handle "rest props" without over-subscribing.
+- **Do NOT use `...rest` (Spread)**: Spreading props (`const { ...rest } = props`) **inside a reactive boundary** will **log an error and ignore the access**, preventing unintentional subscriptions to every property.
+- **Use `$omit` and `$pick`**: Use these built-in helpers to safely handle "rest props" without over-subscribing.
 
 **Why?** To maintain fine-grained reactivity, you should access specific properties directly (e.g., `props.variant`). Spreading `props` indiscriminately (`{...props}`) subscribes to *everything*, breaking this optimization. `$omit` creates a filtered proxy that allows you to spread only the *remaining* properties.
 

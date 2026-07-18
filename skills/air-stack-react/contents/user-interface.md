@@ -196,9 +196,22 @@ export const AnyOtherPage = page(otherRoute).render(({ state }) => render(() => 
 A **View** is a one-way reactive boundary that presents state as-is but never owns state or behavior. It isolates fast updates to prevent expensive parent re-renders.
 
 #### Snippet
-Use `snippet()` to create an inline reactive boundary. Snippets naturally inherit the parent closure, meaning you don't need to pass props to them. They isolate fast updates, preventing the parent component from re-rendering.
+Use Snippets to create scoped reactive boundaries.
 
-```tsx
+> [!WARNING] AI INSTRUCTION: WHEN TO USE SNIPPETS
+> **DO NOT** default to wrapping everything in `<Snippet>` or `snippet()`, but also **DO NOT** default to wrapping massive God components in a single `render()` block!
+> 
+> Follow the **Critical Rendering Rule** from `SKILL.md`:
+> - **Is the majority of the UI static?** Return static JSX from the component, and use Snippets/Templates ONLY to isolate the fast-updating reactive parts.
+> - **Is the entire tree heavily reactive AND large?** Do NOT wrap it all in one `render()`. Use Snippets/Templates to break it down by domain so they update independently.
+> - **Is the entire tree very small (e.g., a simple toggle button)?** ONLY then should you skip Snippets and let a single `render()` block handle the entire output natively.
+
+When isolation is necessary, choose based on your structural concern:
+
+- **Semantic Boundaries (`snippet()`):** Use the factory to create a named boundary when the UI represents a distinct concept or is complex enough to be extracted (e.g. `CpuMeter`). Snippets naturally inherit the parent closure.
+- **Inline Boundaries (`<Snippet>`):** Use the component to create a boundary exactly where the UI sits. You **MUST** pass the state object via the `data` prop and destructure/read it inside the children function to properly defer the read.
+
+```tsx [Semantic Example]
 import { setup, snippet } from '@anchorlib/react';
 import { metricsContext, authContext } from './contexts.js';
 
@@ -206,21 +219,36 @@ export const Dashboard = setup(() => {
   const metrics = metricsContext.get();
   const user = authContext.get();
 
-  // The fast-updating CPU meter is isolated into a snippet.
-  // When metrics.cpu changes 60 times a second, ONLY this snippet re-renders.
+  // Semantic Snippet: extracts a distinct concept
   const CpuMeter = snippet(() => (
     <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
   ));
 
   return render(() => (
     <div className="dashboard">
-      <div className="profile">
-        {/* Infrequently changing data */}
-        <h2>{user.firstName}</h2> 
-      </div>
-      <div className="metrics-panel">
-        <CpuMeter />
-      </div>
+      <div className="profile"><h2>{user.firstName}</h2></div>
+      <CpuMeter />
+    </div>
+  ));
+});
+```
+
+```tsx [Inline Example]
+import { setup, Snippet } from '@anchorlib/react';
+import { metricsContext, authContext } from './contexts.js';
+
+export const Dashboard = setup(() => {
+  const metrics = metricsContext.get();
+  const user = authContext.get();
+
+  return render(() => (
+    <div className="dashboard">
+      <div className="profile"><h2>{user.firstName}</h2></div>
+      
+      {/* Inline Snippet: pass object to defer the read */}
+      <Snippet data={metrics}>
+        {({ cpu }) => <div className="cpu-fast-update">CPU: {cpu}%</div>}
+      </Snippet>
     </div>
   ));
 });
