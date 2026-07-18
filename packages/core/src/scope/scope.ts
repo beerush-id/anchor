@@ -321,18 +321,21 @@ export class Future<T> {
  * const value = await awaited(() => cachedOrFetch(key));
  * ```
  */
-export function awaited<T>(promise: Promise<T>): Future<T>;
+export function awaited<T>(promise: T | Promise<T>): Future<T>;
 export function awaited<T>(fn: () => Promise<T> | T): Future<T>;
 
-export function awaited<T>(promise: Promise<T> | (() => T | Promise<T>)): Future<T> {
-  if (hasALS()) return (typeof promise === 'function' ? promise() : promise) as Future<T>;
+export function awaited<T>(promise: T | Promise<T> | (() => T | Promise<T>)): Future<T> {
+  if (typeof promise !== 'function' && !(promise instanceof Promise)) {
+    return promise as Future<T>;
+  }
+  if (hasALS()) return (typeof promise === 'function' ? (promise as () => unknown)() : promise) as Future<T>;
 
   const future = new Future<T>();
 
   let result: T | Promise<T> = promise as T;
 
   if (typeof promise === 'function') {
-    result = promise();
+    result = (promise as () => Promise<T>)();
   }
 
   if (!(result instanceof Promise)) {

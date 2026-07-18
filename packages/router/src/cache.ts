@@ -93,7 +93,9 @@ export class RouteCache extends Map<string, ProviderCache> {
         scheduler = setTimeout(() => cache.delete(key), maxAge) as never as number;
       }
 
-      cache.set(key, { data, timestamp: Date.now(), maxAge, scheduler });
+      if (!isBrowser() || maxAge) {
+        cache.set(key, { data, timestamp: Date.now(), maxAge, scheduler });
+      }
     }
 
     return data as T;

@@ -1,4 +1,4 @@
-import { $do, createObserver, retriable } from '@anchorlib/core';
+import { $do, awaited, createObserver, retriable } from '@anchorlib/core';
 import { RouteCache, type RouteCacheSnapshot } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ERROR_TYPE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -227,7 +227,7 @@ export class Route<
           cache: new RouteCache(this as never),
           context: createState({ value: { data: {}, query: {}, params: {} } }),
           guardObservers: new WeakMap(),
-          activeResolvers: new Map(),
+          activeControllers: new Map(),
           providerObservers: new WeakMap(),
         });
       });
@@ -557,9 +557,10 @@ export class Route<
             // the observer will be re-run.
             return observer.runAsync(async () => {
               try {
+                this.router.progress(0.5);
                 return await guard(context);
               } finally {
-                safeRead(() => this.router.progress());
+                this.router.progress(0.5);
               }
             });
           };
@@ -610,7 +611,6 @@ export class Route<
   ): Promise<Data | GuardBlocker> {
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
-
     return (await this.resolve(context as RouteContext<TRec, TRec, TRec>, hydration, controller)) as Data;
   }
 
@@ -630,12 +630,24 @@ export class Route<
     hydration?: boolean,
     controller?: AbortController
   ): Promise<Data | undefined> {
-    const { state, cache, activeResolvers, providerObservers } = this.storage;
+    const { state, cache, activeControllers, providerObservers } = this.storage;
 
     const abortController = controller ?? new AbortController();
-    activeResolvers.set(context, abortController);
+    activeControllers.set(context, abortController);
 
-    context.signal = abortController.signal;
+    const signal = abortController.signal;
+    context.signal = signal;
+
+    // Enjoy pronounce them :P
+    const aborted = () => signal.aborted;
+    const abortIt = () => {
+      $do(() => {
+        state.resolved = false;
+        state.resolving.clear();
+        activeControllers.delete(context);
+      });
+    };
+    signal.addEventListener('abort', abortIt, { once: true });
 
     try {
       for (const batch of this.resolvers) {
@@ -653,36 +665,43 @@ export class Route<
             // the observer will be re-run.
             const resolver = () => {
               return observer.runAsync(async () => {
+                this.router.progress(0.5);
+
                 $do(() => state.resolving.add(name));
 
                 try {
-                  const providerData = await retriable(
-                    async () => {
-                      return await cache.resolve(name, handler, context, options, hydration);
-                    },
-                    { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
+                  const providerData = await awaited(
+                    retriable(
+                      async () => {
+                        return await awaited(cache.resolve(name, handler, context, options, hydration));
+                      },
+                      { ...DEFAULT_CONFIG, ...this.options, ...options, controller: abortController }
+                    )
                   );
 
-                  if (abortController.signal.aborted) return;
-
-                  safeRead(() => {
-                    context.data[name] = providerData;
-                  });
+                  if (!aborted()) {
+                    $do(() => {
+                      context.data[name] = providerData;
+                      state.resolving.delete(name);
+                    });
+                    this.router.progress(0.5);
+                  }
 
                   return providerData;
                 } catch (error) {
-                  state.status = ROUTE_STATUS.ERROR;
+                  if (!aborted()) {
+                    $do(() => state.resolving.delete(name));
+                    this.router.progress(0.5);
+                    state.status = ROUTE_STATUS.ERROR;
 
-                  if (error instanceof Error) {
-                    state.error = error instanceof ProviderError ? error : new ProviderError(error.message, error);
-                    return state.error;
-                  } else {
-                    state.error = new ProviderError('Unknown provider error.', error as Error);
-                    return state.error;
+                    if (error instanceof Error) {
+                      state.error = error instanceof ProviderError ? error : new ProviderError(error.message, error);
+                      return state.error;
+                    } else {
+                      state.error = new ProviderError('Unknown provider error.', error as Error);
+                      return state.error;
+                    }
                   }
-                  /* v8 ignore next - V8 coverage considers finally to have a hidden branch here */
-                } finally {
-                  $do(() => state.resolving.delete(name));
                 }
               });
             };
@@ -692,7 +711,7 @@ export class Route<
 
           const resolve = providerObservers.get(handler)!.resolver;
           const promise = resolve().then((result) => {
-            if (result instanceof Error) {
+            if (result instanceof Error && !aborted()) {
               state.status = ROUTE_STATUS.ERROR;
               state.error = result instanceof ProviderError ? result : new ProviderError(result.message, result);
 
@@ -714,8 +733,7 @@ export class Route<
       state.resolved = true;
       return context.data as Data;
     } finally {
-      activeResolvers.delete(context);
-      delete context.signal;
+      signal.removeEventListener('abort', abortIt);
     }
   }
 
@@ -743,14 +761,14 @@ export class Route<
    * Optionally preloads data, then sets the route as active.
    *
    * @param context - The provider context
-   * @param preload - Whether to preload data (default: true)
+   * @param resolve - Whether to preload data (default: true)
    * @param controlled - Whether the activation is controlled.
    * @param hydration - Whether this is a hydration request
    * @param controller - An optional abort controller
    */
   public async activate(
     context: RouteContext<Params, QueryParams, Data>,
-    preload = true,
+    resolve = true,
     controlled?: boolean,
     hydration?: boolean,
     controller?: AbortController
@@ -777,8 +795,8 @@ export class Route<
     }
 
     // Preload data if preload is enabled.
-    if (preload) {
-      await this.preload(context, hydration, controller);
+    if (resolve) {
+      await this.resolve(context, hydration, controller);
     }
 
     if (renderLoader instanceof Promise) {
@@ -816,6 +834,7 @@ export class Route<
         state.error = undefined;
         state.resolved = false;
         state.authenticated = false;
+        this.cancel();
         this.cleanupObservers();
       }
     });
@@ -830,21 +849,21 @@ export class Route<
    * @param context - Optional context to cancel
    */
   public cancel(context?: RouteContext<TRec, TRec, TRec>): void {
-    const { activeResolvers } = this.storage;
+    const { activeControllers } = this.storage;
 
     if (context) {
-      const controller = activeResolvers.get(context);
+      const controller = activeControllers.get(context);
 
       if (controller) {
         controller.abort('Resolution cancelled');
-        activeResolvers.delete(context);
+        activeControllers.delete(context);
       }
     } else {
-      for (const controller of activeResolvers.values()) {
+      for (const controller of activeControllers.values()) {
         controller.abort('Resolution cancelled');
       }
 
-      activeResolvers.clear();
+      activeControllers.clear();
     }
   }
 
@@ -881,7 +900,7 @@ export class Route<
     this.storage.cache.hydrate(snapshot);
   }
 
-  private cleanupObservers() {
+  public cleanupObservers() {
     const { guardObservers, providerObservers } = this.storage;
 
     for (const guard of this.guards.values()) {
@@ -900,43 +919,46 @@ export class Route<
  * A context reader for route state.
  */
 export class ContextReader<Params, Query, Data> {
-  constructor(
-    private state: RouteState,
-    private context: { value: RouteContext<Params, Query, Data> }
-  ) {}
+  readonly #state: RouteState;
+  readonly #context: { value: RouteContext<Params, Query, Data> };
+
+  constructor(state: RouteState, context: { value: RouteContext<Params, Query, Data> }) {
+    this.#state = state;
+    this.#context = context;
+  }
 
   get active() {
-    return this.state.active;
+    return this.#state.active;
   }
   get status() {
-    return this.state.status;
+    return this.#state.status;
   }
   get resolved() {
-    return this.state.resolved;
+    return this.#state.resolved;
   }
   get resolving() {
-    return this.state.resolving;
+    return this.#state.resolving;
   }
   get authenticated() {
-    return this.state.authenticated;
+    return this.#state.authenticated;
   }
   get authenticating() {
-    return this.state.authenticating;
+    return this.#state.authenticating;
   }
   get data() {
-    return this.context.value.data;
+    return this.#context.value.data;
   }
   get error() {
-    return this.state.error;
+    return this.#state.error;
   }
   get query() {
-    return this.context.value.query;
+    return this.#context.value.query;
   }
   get params() {
-    return this.context.value.params;
+    return this.#context.value.params;
   }
   get exception() {
-    return this.context.value.exception;
+    return this.#context.value.exception;
   }
 }
 

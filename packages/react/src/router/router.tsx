@@ -58,9 +58,10 @@ export function RouteViewer({
   const ExceptionSnippet = snippet(
     () => {
       const Renderer = route.exceptionRenderer as FC<AnyType>;
-      if ((!route.exception && route.authenticated) || !Renderer) return;
-
-      return <Renderer error={route.exception ?? !route.state.error} {...getRenderProps(route)} />;
+      if (!Renderer) return;
+      if (route.exception || !route.authenticated) {
+        return <Renderer error={route.exception ?? route.state.error} {...getRenderProps(route)} />;
+      }
     },
     route.path,
     'RouteException',
@@ -70,7 +71,7 @@ export function RouteViewer({
   const ShellSnippet = snippet(
     () => {
       const hasIndex = typeof route.index?.renderer !== 'undefined';
-      const hasChildren = route.children.size > 0 || hasIndex;
+      const hasChildren = route.children!.size > 0 || hasIndex;
       const hasException = route.exception || !route.authenticated;
       const layoutProps = getRenderProps(route);
       const Renderer = route.renderer ?? ((props) => props.children);

@@ -310,7 +310,7 @@ export type RouteStorage = {
   cache: RouteCache;
   context: { value: RouteContext<TRec, TRec, TRec> };
   dataCache: WeakMap<RouteContext<TRec, TRec, TRec>, TRec>;
-  activeResolvers: Map<RouteContext<TRec, TRec, TRec>, AbortController>;
+  activeControllers: Map<RouteContext<TRec, TRec, TRec>, AbortController>;
   guardObserver: StateObserver;
   guardObservers: WeakMap<UnknownGuard, GuardObserver>;
   providerObservers: WeakMap<UnknownProvider, ProviderObserver>;
@@ -329,6 +329,7 @@ export type RouterStorage = {
   activeUrl: string | undefined;
   activeRoute: UnknownRoute | undefined;
   activeSegments: MatchRouteSegment[] | undefined;
+  activeController?: AbortController;
   activatingSegments: Set<MatchRouteSegment>;
 };
 

@@ -1,9 +1,9 @@
+import { isBrowser } from '../module.js';
 import { createObserver } from '../reactive/index.js';
 import { mutable, writable } from '../reactive/ref.js';
+import { awaited } from '../scope/index.js';
 import { ASYNC_STATUS } from '../shared/constant.js';
 import type { AsyncHandler, AsyncOptions, AsyncState, Linkable, RetriableOptions } from '../types.js';
-
-import { isBrowser } from '../module.js';
 
 export function query<T extends Linkable, E extends Error = Error>(
   fn: AsyncHandler<T>
@@ -68,7 +68,7 @@ export function query<T extends Linkable, E extends Error = Error>(
         ? observer.runAsync(() => cancelable(fn, controller!.signal))
         : cancelable(fn, controller.signal);
 
-      const data = await activePromise;
+      const data = await awaited(activePromise);
       Object.assign(writer, { status: ASYNC_STATUS.Success, data: data ? mutable(data, options) : data });
 
       return data;
@@ -213,7 +213,7 @@ export async function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T
     }
 
     try {
-      return await call(controller.signal);
+      return await awaited(call(controller.signal));
     } catch (error) {
       if (controller.signal.aborted) {
         throw new Error('Call was aborted');
@@ -224,7 +224,7 @@ export async function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T
       }
 
       const delay = retryMode === 'linear' ? retryDelay : retryDelay * 2 ** retries;
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      await awaited(new Promise((resolve) => setTimeout(resolve, delay)));
 
       return execute(retries + 1);
     }
@@ -244,12 +244,12 @@ export async function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T
     controller.signal.addEventListener('abort', () => clearTimer);
 
     try {
-      return await Promise.race([timer, execute()]);
+      return await awaited(Promise.race([timer, execute()]));
     } finally {
       clearTimer();
       controller.signal.removeEventListener('abort', () => clearTimer);
     }
   }
 
-  return execute();
+  return await awaited(execute());
 }

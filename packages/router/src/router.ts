@@ -7,6 +7,7 @@ import { RouteError } from './error.js';
 import { Redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { createRouteEntry, getExceptionRendererFactory, type IndexRoute, Route } from './route.js';
+import { generateSitemap } from './sitemap.js';
 import { createState, getStore, safeAssign, safeRead } from './store.js';
 import type {
   ExtractParams,
@@ -26,7 +27,6 @@ import type {
   TRec,
   UnknownRoute,
 } from './types.js';
-import { generateSitemap } from './sitemap.js';
 
 /**
  * A type-safe router for managing routes and navigation.
@@ -363,29 +363,46 @@ export class Router<Output = any> {
 
     if (storage.activeUrl === url.href) return snapshots;
 
-    // Cancel previous activations.
-    if (storage.activatingSegments.size) {
-      storage.activatingSegments.forEach((segment) => {
-        storage.context.detach(segment.store);
-      });
-
-      storage.activatingSegments.clear();
-    }
-
-    const { segments, exception } = match;
+    const { segments, exception, route: lastSegment } = match;
     storage.context.exception = exception;
 
     const currentSegments = storage.activeSegments || [];
     const targetSegments = segments;
 
+    // Cancel previous activations.
+    if (storage.activeController) {
+      storage.activeController.abort();
+      storage.activatingSegments.forEach(({ store }) => {
+        storage.context.detach(store);
+      });
+
+      storage.activatingSegments.clear();
+    }
+
+    storage.activeUrl = url.href;
+
+    const activeController = (storage.activeController = new AbortController());
+    const aborted = () => controller?.signal.aborted || activeController?.signal.aborted;
+    const abortIt = () => activeController.abort();
+
+    if (controller) {
+      controller.signal.addEventListener('abort', abortIt, { once: true });
+    }
+
     // Deactivate segments not in target (leaf to root)
     const toDeactivate = currentSegments.filter((r) => {
-      return !targetSegments.find((n) => n.route === r.route && n.store === r.store);
+      return !targetSegments.find((n) => n.route === r.route);
     });
 
     // Activate new segments (root to leaf) without preloading
     const toActivate = targetSegments.filter((r) => {
-      return !currentSegments.find((n) => n.route === r.route && n.store === r.store);
+      return !currentSegments.find((n) => {
+        if (n.route === r.route) {
+          if (![ROUTE_TYPE.STATIC, ROUTE_TYPE.INDEX].includes(r.route.type as never)) return false;
+          return n.store === r.store;
+        }
+        return false;
+      });
     });
 
     if (Array.isArray(this.hydratedSegments)) {
@@ -402,9 +419,9 @@ export class Router<Output = any> {
       delete this.hydratedSegments;
     }
 
-    const activationLengths = toActivate.reduce((acc, segment) => {
-      acc += segment.route.guards.size;
-      acc += segment.route.providers.size;
+    const activationLengths = toActivate.reduce((acc, { route }) => {
+      if (!route.authenticated) acc += route.guards.size;
+      acc += route.providers.size;
 
       return acc;
     }, 0);
@@ -426,18 +443,22 @@ export class Router<Output = any> {
       });
     }
 
-    this.start(activationLengths);
+    this.start(activationLengths, true);
 
     const authenticatedSegments: MatchRouteSegment[] = [];
 
+    // Cancel all pending resolvers and observers before authenticating.
+    for (const { route } of toActivate) {
+      route.cancel();
+      route.cleanupObservers();
+    }
+
     // Authenticate all routes before activating.
     for (const segment of toActivate) {
-      if (controller?.signal.aborted) return snapshots;
-
       const { route } = segment;
 
       const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
-      if (!storage.activatingSegments.has(segment)) return snapshots;
+      if (aborted()) return snapshots;
 
       if (blocker instanceof Redirect) {
         this.finish();
@@ -468,12 +489,11 @@ export class Router<Output = any> {
 
     // Activate target segments.
     for (const segment of authenticatedSegments) {
-      if (controller?.signal.aborted) return snapshots;
-
       const { route, store } = segment;
       if (store.exception) continue;
 
-      await route.activate(store as RouteContext<None, None, TRec>, true, true, withHydration, controller);
+      await route.activate(store as RouteContext<None, None, TRec>, true, true, withHydration, activeController);
+      if (aborted()) return snapshots;
 
       if (withHydration) snapshots.push(route.snapshot());
       if (!storage.activatingSegments.has(segment)) return snapshots;
@@ -497,6 +517,11 @@ export class Router<Output = any> {
     storage.context.url = url.href;
     storage.activeRoute = match.route;
     storage.activeSegments = targetSegments;
+    storage.activeController = undefined;
+
+    if (controller) {
+      controller.signal.removeEventListener('abort', abortIt);
+    }
 
     this.finish();
     return snapshots;
@@ -507,18 +532,20 @@ export class Router<Output = any> {
    * @param {number} step
    */
   public progress(step: number = 1): void {
-    this.state.progress = step;
+    safeRead(() => {
+      this.state.progress += step;
+    });
   }
 
   /**
    * Starts a progress indicator for route activation.
    * @param {number} length
    */
-  public start(length: number = 1) {
+  public start(length: number = 1, fresh?: boolean) {
     const { state } = this.storage;
     const { steps, activating } = safeRead(() => ({ activating: state.activating, steps: state.steps }));
 
-    if (activating) {
+    if (activating && !fresh) {
       safeRead(() => safeAssign(state, { steps: steps + length }));
     } else {
       safeRead(() => safeAssign(state, { activating: true, steps: length, progress: 0 }));
@@ -573,12 +600,15 @@ export class Router<Output = any> {
       storage.context.attach(segment.store);
     }
 
-    // Preload all segments without activating them
+    // Authenticate before resolving providers.
     for (const { route, store } of segments) {
-      const blocked = await route.authenticate(store as RouterContext<None, None, TRec>);
-      if (blocked instanceof Error || blocked instanceof Redirect) return;
+      const blocker = await route.authenticate(store as RouterContext<None, None, TRec>);
+      if (blocker instanceof Error || blocker instanceof Redirect) return;
+    }
 
-      await route.preload(store as RouteContext<None, None, TRec>);
+    // Resolve all providers.
+    for (const { route, store } of segments) {
+      await route.resolve(store as RouteContext<None, None, TRec>);
     }
   }
 

@@ -117,7 +117,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
         };
       }
     } else if (dynamicRoute) {
-      const store = storage.get(ROUTE_TYPE.DYNAMIC);
+      const store = storage.get(`${ROUTE_TYPE.DYNAMIC}:${segment}`);
       const name = dynamicRoute.name.replace(/^:/, '');
 
       store.params[name] = params[name] = segment;
@@ -129,7 +129,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
         safeAssign(store.query, query);
 
         if (dynamicRoute.route.index) {
-          const $store = storage.get(`${ROUTE_TYPE.DYNAMIC}:index`);
+          const $store = storage.get(`${ROUTE_TYPE.DYNAMIC}:${segment}:index`);
 
           safeAssign($store.query, store.query);
           safeAssign($store.params, store.params);
