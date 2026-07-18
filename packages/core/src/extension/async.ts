@@ -64,11 +64,13 @@ export function query<T extends Linkable, E extends Error = Error>(
     Object.assign(writer, { status: ASYNC_STATUS.Pending, error: undefined });
 
     try {
-      activePromise = !options?.deferred
-        ? observer.runAsync(() => cancelable(fn, controller!.signal))
-        : cancelable(fn, controller.signal);
+      activePromise = awaited(
+        !options?.deferred
+          ? observer.runAsync(() => cancelable(fn, controller!.signal))
+          : cancelable(fn, controller.signal)
+      ) as unknown as Promise<T | undefined>;
 
-      const data = await awaited(activePromise);
+      const data = await activePromise;
       Object.assign(writer, { status: ASYNC_STATUS.Success, data: data ? mutable(data, options) : data });
 
       return data;

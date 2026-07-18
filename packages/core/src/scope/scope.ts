@@ -1,4 +1,5 @@
 import { $module } from '../module.js';
+import { isFunction } from '../utils/index.js';
 
 /** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.
@@ -325,16 +326,13 @@ export function awaited<T>(promise: T | Promise<T>): Future<T>;
 export function awaited<T>(fn: () => Promise<T> | T): Future<T>;
 
 export function awaited<T>(promise: T | Promise<T> | (() => T | Promise<T>)): Future<T> {
-  if (typeof promise !== 'function' && !(promise instanceof Promise)) {
-    return promise as Future<T>;
-  }
-  if (hasALS()) return (typeof promise === 'function' ? (promise as () => unknown)() : promise) as Future<T>;
+  if (hasALS()) return (isFunction(promise) ? (promise as () => unknown)() : promise) as Future<T>;
 
   const future = new Future<T>();
 
   let result: T | Promise<T> = promise as T;
 
-  if (typeof promise === 'function') {
+  if (isFunction(promise)) {
     result = (promise as () => Promise<T>)();
   }
 
