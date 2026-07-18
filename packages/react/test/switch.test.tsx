@@ -200,6 +200,35 @@ describe('Switches', () => {
       expect(container.textContent).toContain('Hello, Alice!');
     });
 
+    it('should react to deferred data passing (destructuring in children)', () => {
+      const state = mutable({ name: 'Alice', age: 25 });
+      let parentRenders = 0;
+
+      const TestComponent = () => {
+        parentRenders++;
+        return (
+          <div>
+            <Snippet data={state}>
+              {({ name, age }) => <span>{name} is {age}</span>}
+            </Snippet>
+          </div>
+        );
+      };
+
+      const { container } = render(<TestComponent />);
+
+      expect(container.textContent).toContain('Alice is 25');
+      expect(parentRenders).toBe(1);
+
+      act(() => {
+        state.age = 26;
+      });
+
+      expect(container.textContent).toContain('Alice is 26');
+      // Parent should NOT re-render because `state.age` was read inside Snippet
+      expect(parentRenders).toBe(1);
+    });
+
     it('should render error message if children is not a function', () => {
       const { container } = render(
         // @ts-expect-error - Testing invalid children

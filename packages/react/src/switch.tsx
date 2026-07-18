@@ -100,7 +100,7 @@ export const Show = snippet<ShowProps<boolean>>(
 ) as ShowNode;
 
 export type SnippetProps<T> = {
-  data?: T;
+  data?: T | (() => T);
   children: (data: T) => ReactNode;
 };
 
@@ -114,11 +114,11 @@ export type SnippetType = <T>(props: SnippetProps<T>) => ReactNode;
  * @returns The rendered content or null.
  */
 export const Snippet = snippet<SnippetProps<unknown>>(
-  (props) => {
-    if (typeof props.children !== 'function') {
+  ({ children, data }) => {
+    if (typeof children !== 'function') {
       return <>[Snippet Error: Snippet must pass function as the children]</>;
     }
-    return props.children(props.data);
+    return children(typeof data === 'function' ? data() : data);
   },
   'Snippet',
   'Slot',
