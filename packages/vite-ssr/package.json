@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorlib/vite-ssr",
-  "version": "1.2.20",
+  "version": "1.2.21",
   "description": "Vite plugin that handles SSR rendering and IRPC routing for AIR Stack applications",
   "keywords": [
     "vite",

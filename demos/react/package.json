@@ -1,7 +1,7 @@
 {
   "name": "@anchor-demo/react",
   "private": true,
-  "version": "1.2.20",
+  "version": "1.2.21",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5272",
