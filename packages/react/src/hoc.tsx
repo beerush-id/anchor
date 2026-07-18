@@ -17,7 +17,7 @@ import type {
   Component,
   ComponentProps,
   GenericProps,
-  Snippet,
+  SnippetNode,
   SnippetView,
   StableComponent,
   Template,
@@ -167,7 +167,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
  *
  * @template P - The props type for the snippet
  * @template SP - The setup props type extending GenericProps
- * @param {Snippet<P, SP>} factory - A function that receives props and parent props, returning React nodes
+ * @param {SnippetNode<P, SP>} factory - A function that receives props and parent props, returning React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @param needSetup - Whether to force a strict scope for the snippet (internal use).
  * @param scopeName - The scope name for the snippet (internal use).
@@ -176,7 +176,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
  * @returns {SnippetView<P>} A memoized functional component that re-executes when dependencies change
  */
 export function snippet<P, SP extends GenericProps = GenericProps>(
-  factory: Snippet<P, SP>,
+  factory: SnippetNode<P, SP>,
   displayName?: string,
   scopeName = 'Snippet',
   needSetup = true,
@@ -323,11 +323,11 @@ export const view = template;
  * This function follows the same reactive principles as `snippet`, responding to state
  * changes and maintaining the modern component lifecycle approach.
  *
- * @param {Snippet<GenericProps>} View - A function that receives props and returns React nodes
+ * @param {SnippetNode<GenericProps>} View - A function that receives props and returns React nodes
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {ReactNode} The rendered output of the reactive component
  */
 export function render<P>(View: View<P>, displayName?: string): ReactNode {
-  const Snippet = snippet<Record<string, unknown>>(View as Snippet<unknown>, displayName, 'Render', true, true);
+  const Snippet = snippet<Record<string, unknown>>(View as SnippetNode<unknown>, displayName, 'Render', true, true);
   return <Snippet />;
 }

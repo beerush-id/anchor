@@ -201,7 +201,7 @@ export type TemplateView<P> = FunctionComponent<ReactiveProps<P>>;
  * @param parentProps - The parent component's props
  * @returns A ReactNode representing the snippet
  */
-export type Snippet<P, SP = GenericProps> = (props: P, parentProps: ViewProps<SP>) => ReactNode;
+export type SnippetNode<P, SP = GenericProps> = (props: P, parentProps: ViewProps<SP>) => ReactNode;
 
 /**
  * A function that takes view props and returns a React node.

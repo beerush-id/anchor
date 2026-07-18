@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import '../src/client/index';
 import { mutable } from '@anchorlib/core';
 import { $use } from '../src/index.js';
-import { createSwitch, For, Show } from '../src/switch.js';
+import { createSwitch, For, Show, Snippet } from '../src/switch.js';
 
 describe('Switches', () => {
   it('should render the Switch and match the correct Slot', async () => {
@@ -186,6 +186,29 @@ describe('Switches', () => {
       const { container } = render(<For each={[]}>{() => <div />}</For>);
 
       expect(container.innerHTML).toBe('');
+    });
+  });
+
+  describe('Snippet Component', () => {
+    it('should render the children function with the provided data', () => {
+      const { container } = render(
+        <Snippet data={{ name: 'Alice' }}>
+          {(data) => <div>Hello, {data.name}!</div>}
+        </Snippet>
+      );
+
+      expect(container.textContent).toContain('Hello, Alice!');
+    });
+
+    it('should render error message if children is not a function', () => {
+      const { container } = render(
+        // @ts-expect-error - Testing invalid children
+        <Snippet data={{ name: 'Alice' }}>
+          <div>Invalid child</div>
+        </Snippet>
+      );
+
+      expect(container.textContent).toContain('[Snippet Error: Snippet must pass function as the children]');
     });
   });
 });
