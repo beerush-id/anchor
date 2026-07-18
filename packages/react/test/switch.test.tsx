@@ -192,9 +192,15 @@ describe('Switches', () => {
   describe('Snippet Component', () => {
     it('should render the children function with the provided data', () => {
       const { container } = render(
-        <Snippet data={{ name: 'Alice' }}>
-          {(data) => <div>Hello, {data.name}!</div>}
-        </Snippet>
+        <Snippet data={{ name: 'Alice' }}>{(data) => <div>Hello, {data.name}!</div>}</Snippet>
+      );
+
+      expect(container.textContent).toContain('Hello, Alice!');
+    });
+
+    it('should render the children function with the provided data', () => {
+      const { container } = render(
+        <Snippet data={() => ({ name: 'Alice' })}>{(data) => <div>Hello, {data.name}!</div>}</Snippet>
       );
 
       expect(container.textContent).toContain('Hello, Alice!');
@@ -209,7 +215,11 @@ describe('Switches', () => {
         return (
           <div>
             <Snippet data={state}>
-              {({ name, age }) => <span>{name} is {age}</span>}
+              {({ name, age }) => (
+                <span>
+                  {name} is {age}
+                </span>
+              )}
             </Snippet>
           </div>
         );
@@ -230,12 +240,7 @@ describe('Switches', () => {
     });
 
     it('should render error message if children is not a function', () => {
-      const { container } = render(
-        // @ts-expect-error - Testing invalid children
-        <Snippet data={{ name: 'Alice' }}>
-          <div>Invalid child</div>
-        </Snippet>
-      );
+      const { container } = render(<Snippet data={{ name: 'Alice' }}>{'' as never}</Snippet>);
 
       expect(container.textContent).toContain('[Snippet Error: Snippet must pass function as the children]');
     });
