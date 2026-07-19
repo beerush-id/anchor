@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classx } from '../../src/index.js';
-import { isValueGetter } from '../../src/module.js';
+import { classx, isValueGetter } from '../../src/index.js';
 
 describe('classx', () => {
   it('should join multiple string classes', () => {

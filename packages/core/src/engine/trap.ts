@@ -1,5 +1,5 @@
 import { plugin } from '../extension/index.js';
-import { ObjectMutations, OBSERVER_KEYS } from '../shared/enum.js';
+import { OBSERVER_KEYS, ObjectMutations } from '../shared/enum.js';
 import { ANCHOR_SETTINGS, captureStack } from '../shared/index.js';
 import type {
   AnchorInternalFn,

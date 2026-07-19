@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { stylex } from '../../src/index.js';
-import { IS_VALUE_GETTER } from '../../src/module.js';
+
+import { IS_VALUE_GETTER } from '../../src/shared/env.js';
 
 describe('stylex', () => {
   it('should return simple string properties as is', () => {

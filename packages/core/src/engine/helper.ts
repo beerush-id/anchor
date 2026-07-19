@@ -19,15 +19,17 @@ import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } 
  * @throws {Error} If the target is not an assignable state or if the source is not an object-like value
  */
 export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P, replace?: boolean) => {
-  if (!isSafeObject(target) && !isArray(target)) {
+  const init = (STATE_REGISTRY.get(target) ?? target) as typeof target;
+  const sourceInit = (STATE_REGISTRY.get(source) ?? source) as typeof source;
+
+  if (!isSafeObject(init) && !isArray(init)) {
     throw new Error('Cannot assign to non-assignable state.');
   }
 
-  if (!isSafeObject(source) && !isArray(source)) {
+  if (!isSafeObject(sourceInit) && !isArray(sourceInit)) {
     throw new Error('Cannot assign using non-object value.');
   }
 
-  const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
@@ -36,7 +38,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   const prev: AssignablePart<T> = {};
-  const entries = softEntries(source);
+  const entries = softEntries(sourceInit);
   if (!entries.length && !replace) return;
 
   const changes: unknown[] = [];
@@ -44,42 +46,42 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
   // In replace mode, delete keys not present in source
   if (replace) {
-    const targetKeys = isMap(target) ? target.keys() : softKeys(target as ObjLike);
+    const targetKeys = isMap(init) ? init.keys() : softKeys(init as ObjLike);
 
     for (const key of targetKeys) {
       if (!sourceKeys.has(key as keyof P)) {
         changes.push(key);
 
-        if (isMap(target)) {
-          prev[key as never] = target.get(key) as never;
-          target.delete(key);
-        } else if (isSafeObject(target)) {
-          prev[key as keyof T] = target[key as keyof T];
-          delete target[key as never];
+        if (isMap(init)) {
+          prev[key as never] = init.get(key) as never;
+          init.delete(key);
+        } else if (isSafeObject(init)) {
+          prev[key as keyof T] = init[key as keyof T];
+          delete init[key as never];
         }
       }
     }
   }
 
   for (const [key, val] of entries) {
-    if (isMap(target)) {
-      prev[key as never] = target.get(key) as never;
+    if (isMap(init)) {
+      prev[key as never] = init.get(key) as never;
 
       if (prev[key as never] !== val) {
         changes.push(key);
       }
 
-      target.set(key, val);
-    } else if (isSet(target)) {
-      target.add(val);
-    } else if (isSafeObject(target) || isArray(target)) {
-      prev[key as keyof T] = target[key as keyof T];
+      init.set(key, val);
+    } else if (isSet(init)) {
+      init.add(val);
+    } else if (isSafeObject(init) || isArray(init)) {
+      prev[key as keyof T] = init[key as keyof T];
 
       if (prev[key as keyof T] !== val) {
         changes.push(key);
       }
 
-      target[key as never] = val;
+      init[key as never] = val;
     }
   }
 
@@ -88,7 +90,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     prev,
     keys: [],
     changes,
-    value: source,
+    value: sourceInit,
   } as StateChange;
 
   try {
@@ -96,7 +98,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     broadcaster?.broadcast(init, event, meta?.id);
 
     if (meta) {
-      plugin.devTool?.onAssign?.(meta, source);
+      plugin.devTool?.onAssign?.(meta, sourceInit);
     }
   } finally {
     if (isDefined(init)) {
@@ -118,16 +120,16 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
  * @throws {Error} If the target is not an assignable state
  */
 export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>) => {
-  if (!isSafeObject(target) && !isArray(target)) {
+  const init = (STATE_REGISTRY.get(target) ?? target) as typeof target;
+
+  if (!isSafeObject(init) && !isArray(init)) {
     throw new Error('Cannot remove from non-assignable state.');
   }
 
-  const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
   if (isDefined(init)) {
-    target = init as T;
     STATE_BUSY_LIST.add(init);
   }
 
@@ -135,38 +137,38 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   const changes: unknown[] = [];
 
   for (const key of keys) {
-    if (isMap(target)) {
-      if (target.has(key)) {
+    if (isMap(init)) {
+      if (init.has(key)) {
         changes.push(key);
       }
 
-      prev[key as never] = target.get(key) as never;
-      target.delete(key);
-    } else if (isSet(target)) {
-      target.delete(key);
-    } else if (isSafeObject(target) || isArray(target)) {
-      if (typeof target[key] !== 'undefined') {
+      prev[key as never] = init.get(key) as never;
+      init.delete(key);
+    } else if (isSet(init)) {
+      init.delete(key);
+    } else if (isSafeObject(init) || isArray(init)) {
+      if (typeof init[key] !== 'undefined') {
         changes.push(key);
       }
 
-      prev[key] = target[key];
+      prev[key] = init[key];
 
-      if (!isArray(target)) {
-        delete target[key];
+      if (!isArray(init)) {
+        delete init[key];
       }
     }
   }
 
-  if (isArray(target)) {
+  if (isArray(init)) {
     if (keys.length === 1) {
-      target.splice(keys[0] as never, 1);
+      init.splice(keys[0] as never, 1);
     } else {
-      const values = [...target];
-      target.length = 0;
+      const values = [...init];
+      init.length = 0;
 
       values.forEach((v, i) => {
         if (!keys.includes(String(i) as keyof T)) {
-          target.push(v);
+          init.push(v);
         }
       });
     }
@@ -206,11 +208,12 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
  * @throws {Error} If the target is not an assignable state
  */
 export const clear = <T extends Assignable>(target: T) => {
-  if (!isSafeObject(target) && !isArray(target)) {
+  const init = (STATE_REGISTRY.get(target) ?? target) as typeof target;
+
+  if (!isSafeObject(init) && !isArray(init)) {
     throw new Error('Cannot clear non-assignable state.');
   }
 
-  const init = STATE_REGISTRY.get(target) as Linkable;
   const meta = META_REGISTRY.get(init as Linkable);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
@@ -219,18 +222,18 @@ export const clear = <T extends Assignable>(target: T) => {
   }
   let changes: unknown[] = [];
 
-  if (isMap(target)) {
-    changes = [...target.keys()];
-    target.clear();
-  } else if (isSet(target)) {
-    target.clear();
-  } else if (isArray(target)) {
-    changes = Array.from(target.keys());
-    target.length = 0;
-  } else if (isSafeObject(target)) {
-    for (const key of softKeys(target)) {
+  if (isMap(init)) {
+    changes = [...init.keys()];
+    init.clear();
+  } else if (isSet(init)) {
+    init.clear();
+  } else if (isArray(init)) {
+    changes = Array.from(init.keys());
+    init.length = 0;
+  } else if (isSafeObject(init)) {
+    for (const key of softKeys(init)) {
       changes.push(key);
-      delete target[key];
+      delete init[key];
     }
   }
 

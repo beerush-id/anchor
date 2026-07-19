@@ -16,19 +16,17 @@ import type {
   StateRelation,
 } from './types.js';
 
-export { $ROOT, $symbol, isBrowser } from './shared/env.js';
+export {
+  $ROOT,
+  $symbol,
+  IS_VALUE_GETTER,
+  isBrowser,
+  isValueGetter,
+  type ValueGetterType,
+  valueGetter,
+} from './shared/env.js';
 
 export const NAMESPACE_KEY = $symbol('namespace');
-export const IS_VALUE_GETTER = $symbol('value-getter');
-
-/**
- * Check if the given value is a value getter.
- * @param value - The value to check.
- * @returns {boolean} - True if the value is a value getter, false otherwise.
- */
-export function isValueGetter<T = AnyType>(value: unknown): value is { value: T } {
-  return typeof value === 'object' && value !== null && (value as AnyType)[IS_VALUE_GETTER] === true;
-}
 
 const NAMESPACE = {
   version,
@@ -110,6 +108,15 @@ const NAMESPACE = {
    */
   EXCEPTION_HANDLER_REGISTRY: new WeakMap<State, StateExceptionHandlerList>(),
 };
+
+for (const key of Object.keys(NAMESPACE)) {
+  if (key === 'version') continue;
+  Object.defineProperty(NAMESPACE, key, {
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  });
+}
 
 if ($ROOT[NAMESPACE_KEY]) {
   if ($ROOT[NAMESPACE_KEY].version !== version) {

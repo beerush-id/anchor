@@ -1,4 +1,4 @@
-import { IS_VALUE_GETTER } from '../module.js';
+import { valueGetter } from '../shared/env.js';
 import { isFalsy, isTruthy } from './inspector.ts';
 
 /**
@@ -36,12 +36,7 @@ export type ClassProvider = () => ClassInput;
  * @returns A string of space-separated class names.
  */
 export function classx(...inputs: (ClassInput | ClassProvider)[]) {
-  return {
-    [IS_VALUE_GETTER]: true,
-    get value() {
-      return stringify(inputs);
-    },
-  } as string & { [IS_VALUE_GETTER]: boolean; value: string };
+  return valueGetter(() => stringify(inputs));
 }
 
 function stringify(input: ClassInput | ClassProvider | Array<ClassInput | ClassProvider>): string {

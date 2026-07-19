@@ -7,7 +7,7 @@ export * from './extension/form.js';
 export * from './extension/inspector.js';
 export * from './fetch/index.js';
 export * from './history/index.js';
-export { $module, $symbol, isBrowser, isValueGetter } from './module.js';
+export { $module } from './module.js';
 export * from './reactive/event.js';
 export * from './reactive/observation.js';
 export * from './reactive/ref.js';
@@ -30,6 +30,15 @@ export {
 } from './shared/constant.js';
 export * from './shared/dev.js';
 export * from './shared/enum.js';
+export {
+  $read,
+  $symbol,
+  IS_VALUE_GETTER,
+  isBrowser,
+  isValueGetter,
+  type ValueGetterType,
+  valueGetter,
+} from './shared/env.js';
 export * from './shared/exception.js';
 export * from './types.js';
 export * from './utils/index.js';

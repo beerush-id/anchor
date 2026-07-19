@@ -1,4 +1,4 @@
-import { IS_VALUE_GETTER } from '../module.js';
+import { valueGetter } from '../shared/env.js';
 
 /**
  * Represents standard CSS properties, allowing either string or number values.
@@ -26,19 +26,16 @@ export type StyleProvider = () => StyleInput;
  * @returns A new style object with properly formatted numeric values.
  */
 export function stylex(input: StyleInput | StyleProvider) {
-  return {
-    [IS_VALUE_GETTER]: true,
-    get value() {
-      const value = typeof input === 'function' ? input() : input;
-      const result: StyleInput = {};
-      for (const [k, v] of Object.entries(value)) {
-        if (v !== undefined && v !== null) {
-          (result as Record<string, string | number>)[k] = convert(k, v as string | number);
-        }
+  return valueGetter(() => {
+    const value = typeof input === 'function' ? input() : input;
+    const result: StyleInput = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (v !== undefined && v !== null) {
+        (result as Record<string, string | number>)[k] = convert(k, v as string | number);
       }
-      return result;
-    },
-  } as StyleInput & { [IS_VALUE_GETTER]: boolean; value: StyleInput };
+    }
+    return result;
+  });
 }
 
 // CSS properties that accept unitless numbers
