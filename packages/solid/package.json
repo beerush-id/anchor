@@ -53,6 +53,10 @@
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js"
     },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "import": "./dist/browser/index.js"
+    },
     "./ssr": {
       "solid": "./src/ssr/index.tsx",
       "types": "./dist/ssr/index.d.ts",
