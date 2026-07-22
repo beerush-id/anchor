@@ -24,9 +24,17 @@ const NETWORK_INIT = {
   effectiveType: 'unknown',
 };
 
+/**
+ * Interface representing the reactive network connection state.
+ */
 export type LiveNetwork = typeof NETWORK_INIT;
 
 const NETWORK_STATE = mutable(NETWORK_INIT) as LiveNetwork;
+
+/**
+ * Reactive network connection state.
+ * Used to detect online status, connection type, and speed to adapt data fetching or offline behaviors.
+ */
 export const LIVE_NETWORK = {} as LiveNetwork;
 
 let NETWORK_WATCHED = false;
@@ -34,15 +42,14 @@ let NETWORK_WATCHED = false;
 for (const key of Object.keys(NETWORK_INIT)) {
   Object.defineProperty(LIVE_NETWORK, key, {
     get() {
-      if (!NETWORK_WATCHED && isBrowser()) {
-        watchNetwork();
-      }
+      watchNetwork();
       return NETWORK_STATE[key as keyof LiveNetwork];
     },
   });
 }
 
 function watchNetwork() {
+  if (NETWORK_WATCHED || !isBrowser()) return;
   NETWORK_WATCHED = true;
 
   onInteractive(() => {
@@ -63,7 +70,7 @@ function watchNetwork() {
 
     window.addEventListener('online', updateState);
     window.addEventListener('offline', updateState);
-    
+
     if (conn) {
       conn.addEventListener('change', updateState);
     }

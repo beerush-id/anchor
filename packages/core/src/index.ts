@@ -31,7 +31,6 @@ export {
 export * from './shared/dev.js';
 export * from './shared/enum.js';
 export {
-  $read,
   $symbol,
   IS_VALUE_GETTER,
   isBrowser,

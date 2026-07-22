@@ -70,12 +70,3 @@ export function valueGetter<T>(source: (() => T) | { value: T }): ValueGetterTyp
 export function isValueGetter<T = AnyType>(value: unknown): value is ValueGetterType<T> {
   return typeof value === 'function' && (value as AnyType)[IS_VALUE_GETTER] === true;
 }
-
-/**
- * Read value from value getter.
- * @param fn - The value getter.
- * @returns {T} - The value.
- */
-export function $read<T>(fn: ValueGetterType<T>): T {
-  return fn();
-}

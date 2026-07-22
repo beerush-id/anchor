@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { anchor, createLifecycle, MapMutations, SetMutations, subscribe } from '../../src/index.js';
+import { setReactive } from '../../src/engine/config.js';
 
 describe('Anchor Core - Subscription', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -237,6 +238,46 @@ describe('Anchor Core - Subscription', () => {
 
       unsubscribe();
       childUnsubscribe();
+    });
+  });
+
+  describe('Client Subscription', () => {
+    it('should act as a passive subscription when reactivity is disabled', () => {
+      const state = anchor({ active: false });
+      const handler = vi.fn();
+
+      // Disable reactivity
+      setReactive(false);
+
+      const unsubscribe = subscribe.client(state, handler);
+
+      // Should call handler with initial state immediately
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(state, { type: 'init', keys: [] });
+
+      // Changes should not trigger the handler because it's passive
+      state.active = true;
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+
+      // Restore reactivity
+      setReactive(true);
+    });
+
+    it('should act as a normal subscription when reactivity is enabled', () => {
+      const state = anchor({ active: false });
+      const handler = vi.fn();
+
+      const unsubscribe = subscribe.client(state, handler);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      state.active = true;
+      expect(handler).toHaveBeenCalledTimes(2);
+      expect(handler).toHaveBeenLastCalledWith(state, { type: 'set', prev: false, keys: ['active'], value: true });
+
+      unsubscribe();
     });
   });
 });

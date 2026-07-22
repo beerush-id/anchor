@@ -1,4 +1,3 @@
-import { anchor } from '../engine/anchor.js';
 import { mutable } from '../reactive/ref.js';
 import { onCleanup } from '../scope/lifecycle.js';
 import { isBrowser, type ValueGetterType, valueGetter } from '../shared/env.js';
@@ -19,16 +18,29 @@ const MEDIA_SELECTORS = {
   isRetina: '(resolution >= 2dppx)',
 };
 
+/**
+ * Interface representing the reactive state of common media queries.
+ */
 export type LiveMediaQueries = {
   [K in keyof typeof MEDIA_SELECTORS]: boolean;
-} & { width: number; height: number };
+};
 
-const MEDIA_QUERY_INIT = { width: 0, height: 0 } as Record<string, boolean | number>;
+const MEDIA_QUERY_INIT = {} as Record<string, boolean>;
 const MEDIA_QUERY_STATE = mutable(MEDIA_QUERY_INIT);
-const WATCHED_MEDIA_QUERIES = new Map<string, ValueGetterType<boolean | number> | boolean>();
+const WATCHED_MEDIA_QUERIES = new Map<string, ValueGetterType<boolean> | boolean>();
 
+/**
+ * Reactive common media query states.
+ * Used to adapt UI based on device characteristics like screen size, color scheme, or orientation.
+ */
 export const LIVE_MEDIA = {} as LiveMediaQueries;
 
+/**
+ * Creates a reactive value getter for a specific CSS media query.
+ * @param query - The CSS media query string to match.
+ * @param disposable - Whether the listener should be automatically cleaned up on component unmount.
+ * @returns {ValueGetterType<boolean>} A reactive value getter returning true if the query matches.
+ */
 export function mediaQuery(query: string, disposable = true): ValueGetterType<boolean> {
   const state = mutable(false);
 
@@ -80,36 +92,5 @@ function watchMediaQuery(key: string, query: string, qQuery: string) {
 
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
-  });
-}
-
-const WINDOW_QUERY = '@window-viewport-size';
-
-for (const key of ['width', 'height']) {
-  Object.defineProperty(LIVE_MEDIA, key, {
-    get() {
-      if (!WATCHED_MEDIA_QUERIES.get(WINDOW_QUERY) && isBrowser()) {
-        watchWindowSize();
-      }
-
-      return MEDIA_QUERY_STATE[key];
-    },
-  });
-}
-
-function watchWindowSize() {
-  WATCHED_MEDIA_QUERIES.set(WINDOW_QUERY, true);
-
-  onInteractive(() => {
-    const handler = () => {
-      anchor.assign(MEDIA_QUERY_STATE, { width: window.innerWidth, height: window.innerHeight });
-    };
-
-    handler();
-    window.addEventListener('resize', handler);
-
-    return () => {
-      window.removeEventListener('resize', handler);
-    };
   });
 }

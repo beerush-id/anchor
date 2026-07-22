@@ -756,6 +756,12 @@ export interface SubscribeFn {
    * @returns The [StateController] if not found.
    */
   resolve<T extends Linkable>(state: State<T>): StateController<T> | undefined;
+
+  /**
+   * Subscribe to a state change but only subscribe on the browser.
+   * During SSR (disabled reactivity), it runs once with init event.
+   */
+  client<T extends Linkable>(state: State<T>, handler: StateSubscriber<T>, recursive?: boolean): StateUnsubscribe;
 }
 
 export type DevTool = {

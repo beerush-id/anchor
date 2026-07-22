@@ -2,9 +2,9 @@ import { anchor } from '../engine/anchor.js';
 import { isReactive } from '../engine/config.js';
 import { assign } from '../engine/helper.js';
 import { CONTROLLER_REGISTRY, STATE_REGISTRY } from '../engine/registry.js';
-import { onGlobalCleanup } from '../scope/index.js';
+import { onCleanup, onGlobalCleanup } from '../scope/index.js';
 import { captureStack } from '../shared/index.js';
-import type { Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from '../types.js';
+import type { AnyType, Linkable, ObjLike, State, StateSubscriber, StateUnsubscribe, SubscribeFn } from '../types.js';
 import { isFunction } from '../utils/index.js';
 
 /**
@@ -71,9 +71,16 @@ function subscribeFn<T extends Linkable>(
   }
 
   const unsubscribe = ctrl?.subscribe(handler as StateSubscriber<unknown>, undefined, recursive);
-  onGlobalCleanup(unsubscribe);
+
+  onCleanup(unsubscribe); // Local/component cleanup.
+  onGlobalCleanup(unsubscribe); // Delegate to global scope cleanup.
+
   return unsubscribe;
 }
+
+subscribeFn.client = ((state, handler, recursive) => {
+  return (subscribeFn as AnyType)(state, handler, recursive, true);
+}) satisfies SubscribeFn['client'];
 
 subscribeFn.log = ((state) => {
   return subscribeFn(state, console.log);

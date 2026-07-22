@@ -3,7 +3,14 @@ import { $symbol, isBrowser } from '../shared/env.js';
 import { captureStack } from '../shared/exception.js';
 import { sleep } from '../utils/sleep.js';
 
+/**
+ * Type for a function that handles interactions, optionally returning a disposer.
+ */
 export type InteractiveHandler = () => void | InteractiveDisposer | Promise<void | InteractiveDisposer>;
+
+/**
+ * Type for a function that disposes of an interactive handler.
+ */
 export type InteractiveDisposer = () => void;
 
 const DISPOSER_SYMBOL = $symbol('interactive-disposer');
@@ -17,6 +24,11 @@ const INTERACTIVE_LISTENERS = new Set<InteractiveHandler>();
 
 let INTERACTIVE_ENABLED = false;
 
+/**
+ * Registers an interactive handler to be executed when interactions are accepted.
+ * If interactions are already accepted, it runs immediately.
+ * @param handler - The handler to execute.
+ */
 export function onInteractive(handler: InteractiveHandler) {
   if (INTERACTIVE_ENABLED) {
     callHandler(handler);
@@ -25,6 +37,10 @@ export function onInteractive(handler: InteractiveHandler) {
   }
 }
 
+/**
+ * Accepts interactions and triggers all registered interactive handlers.
+ * @param deferred - Whether to defer execution using a short sleep.
+ */
 export async function acceptInteractions(deferred = true) {
   if (deferred) await sleep(0);
 

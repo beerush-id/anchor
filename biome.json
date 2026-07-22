@@ -44,7 +44,8 @@
         "useSemanticElements": "off",
         "noSvgWithoutTitle": "off",
         "useButtonType": "off",
-        "noLabelWithoutControl": "off"
+        "noLabelWithoutControl": "off",
+        "noStaticElementInteractions": "off"
       },
       "security": {
         "noBlankTarget": "off"
