@@ -192,6 +192,7 @@ export default defineConfig({
           { text: 'Component', link: '/ui/component' },
           { text: 'Form Components', link: '/ui/form' },
           { text: 'Optimistic UI', link: '/ui/optimistic' },
+          { text: 'Browser Utilities', link: '/ui/browser' },
         ],
       },
       {

@@ -1,17 +1,18 @@
 // https://vitepress.dev/guide/custom-theme
-import { h } from 'vue';
+
 import type { Theme } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
 import { Sandbox } from 'vitepress-plugin-sandpack';
+import { h } from 'vue';
 import 'vitepress-plugin-sandpack/dist/style.css';
 import './style.css';
-// @ts-ignore
+// @ts-expect-error
 import AnchorReactSandbox from './AnchorReactSandbox.vue';
-// @ts-ignore
+// @ts-expect-error
 import AnchorSolidSandbox from './AnchorSolidSandbox.vue';
-// @ts-ignore
+// @ts-expect-error
 import AnchorSvelteSandbox from './AnchorSvelteSandbox.vue';
-// @ts-ignore
+// @ts-expect-error
 import AnchorVueSandbox from './AnchorVueSandbox.vue';
 
 export default {
@@ -19,10 +20,15 @@ export default {
   Layout: () => {
     return h(DefaultTheme.Layout, null, {
       // https://vitepress.dev/guide/extending-default-theme#layout-slots
-      'home-hero-info-before': () => h('a', {
-        href: '/news/release-v1.2.21',
-        class: 'version-tag',
-      }, 'Release v1.2.21'),
+      'home-hero-info-before': () =>
+        h(
+          'a',
+          {
+            href: '/news/release-v1.2.22',
+            class: 'version-tag',
+          },
+          'Release v1.2.22'
+        ),
     });
   },
   enhanceApp({ app, router, siteData }) {

@@ -11,6 +11,14 @@ next: false
 Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 
 <div class="posts-grid">
+  <a href="./release-v1.2.22.html" class="post-card">
+    <article>
+      <h3>AIR Stack v1.2.22</h3>
+      <p>Reactive Browser Utilities. Introducing reactive primitives for tracking cursor, scroll, text selections, drag-and-drop, window lifecycle, media queries, network, and clipboard state.</p>
+      <span class="read-more">Read release notes &rarr;</span>
+    </article>
+  </a>
+
   <a href="./release-v1.2.21.html" class="post-card">
     <article>
       <h3>AIR Stack v1.2.21</h3>
