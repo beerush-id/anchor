@@ -51,6 +51,16 @@ Tracking pointer coordinates, active mouse buttons, and pressed modifier keys al
 
 The `LIVE_CURSOR` singleton exposes document-wide pointer coordinates, active mouse buttons, and modifier keys directly into your template.
 
+#### API Surface
+- **`x`, `y`**: Pointer coordinates relative to the viewport.
+- **`pageX`, `pageY`**: Pointer coordinates relative to the document.
+- **`screenX`, `screenY`**: Pointer coordinates relative to the screen.
+- **`type`**: The input device type (`'mouse'`, `'touch'`, `'pen'`, or `''`).
+- **`button`**: The active mouse button (`'left'`, `'right'`, `'middle'`, or `undefined`).
+- **`target`**: The DOM element currently under the pointer.
+- **`modifiers`**: A `Set` of active modifier keys (`'alt'`, `'ctrl'`, `'meta'`, `'shift'`).
+- **`current`**: The root element being tracked (`Document` or specific `Element`).
+
 ::: code-group
 
 ```tsx [React]
@@ -59,11 +69,11 @@ import { LIVE_CURSOR } from '@anchorlib/react/browser';
 
 // <Show> tracks LIVE_CURSOR inline and unwraps properties into the render callback
 <Show when={() => LIVE_CURSOR.x && LIVE_CURSOR}>
-  {({ x, y, button, modifiers }) => (
+  {({ x, y, type, button, modifiers }) => (
     <div>
-      <p>Pointer Position: {x}, {y}</p>
+      <p>Pointer: {x}, {y} ({type || 'none'})</p>
       <p>Active Button: {button ?? 'none'}</p>
-      <p>Shift Key Active: {modifiers.has('shift') ? 'Yes' : 'No'}</p>
+      <p>Modifiers: {Array.from(modifiers).join(', ') || 'none'}</p>
     </div>
   )}
 </Show>
@@ -75,11 +85,11 @@ import { LIVE_CURSOR } from '@anchorlib/solid/browser';
 
 // <Show> tracks LIVE_CURSOR inline and unwraps properties into the render callback
 <Show when={() => LIVE_CURSOR.x && LIVE_CURSOR}>
-  {({ x, y, button, modifiers }) => (
+  {({ x, y, type, button, modifiers }) => (
     <div>
-      <p>Pointer Position: {x}, {y}</p>
+      <p>Pointer: {x}, {y} ({type || 'none'})</p>
       <p>Active Button: {button ?? 'none'}</p>
-      <p>Shift Key Active: {modifiers.has('shift') ? 'Yes' : 'No'}</p>
+      <p>Modifiers: {Array.from(modifiers).join(', ') || 'none'}</p>
     </div>
   )}
 </Show>
@@ -140,6 +150,12 @@ Scroll-driven visual effects like hiding navigation headers on scroll down or tr
 ### Live Scroll
 
 The `LIVE_SCROLL` singleton tracks window-level scrolling status and direction reactively.
+
+#### API Surface
+- **`x`, `y`**: The horizontal and vertical scroll offsets in pixels.
+- **`direction`**: The current scrolling direction (`'up'`, `'down'`, `'left'`, `'right'`, or `'none'`).
+- **`isScrolling`**: A transient boolean that is `true` while the scroll event is firing and returns to `false` when scrolling pauses.
+- **`current`**: The root element being tracked (`Document`, `Window` or specific `Element`).
 
 ::: code-group
 
@@ -219,11 +235,19 @@ export const ScrollableList = setup(() => {
 
 Passing `ref={listScroll}` directly listens to scroll events on that specific container, providing fine-grained scroll offsets without affecting global window scroll logic.
 
-## Selection
+### Selection
 
 Highlighting selected text or rendering floating toolbars relative to text selections requires calculating DOM bounding rectangles and SVG selection paths.
 
 The `LIVE_SELECTION` primitive captures active document selections, offering helper methods to extract bounding rectangles, selected text, and SVG paths for multi-line text selection rendering.
+
+#### API Surface
+- **`rect`**: The `DOMRect` of the entire selection, or `null` if nothing is selected.
+- **`rects`**: An array of `DOMRect` objects for each line/segment of the selection.
+- **`size`**: The number of selected characters.
+- **`text`**: The raw string text of the selection.
+- **`target`**: The container element holding the selection.
+- **`paths(padding, radius)`**: A function returning an SVG `d` path string representing the selection boundaries.
 
 ::: code-group
 
@@ -232,15 +256,20 @@ import { Show } from '@anchorlib/react';
 import { LIVE_SELECTION } from '@anchorlib/react/browser';
 
 <Show when={() => LIVE_SELECTION.rect && LIVE_SELECTION}>
-  {({ rect, paths }) => (
-    <svg
-      className="fixed pointer-events-none"
-      width={rect.width + 16}
-      height={rect.height + 16}
-      style={{ top: `${rect.y - 8}px`, left: `${rect.x - 8}px`, zIndex: 999 }}
-    >
-      <path d={paths(6, 8)} fill="rgba(0, 0, 0, 0.15)" />
-    </svg>
+  {({ rect, paths, size }) => (
+    <>
+      <svg
+        className="fixed pointer-events-none"
+        width={rect.width + 16}
+        height={rect.height + 16}
+        style={{ top: `${rect.y - 8}px`, left: `${rect.x - 8}px`, zIndex: 999 }}
+      >
+        <path d={paths(6, 8)} fill="rgba(0, 0, 0, 0.15)" />
+      </svg>
+      <div className="fixed bottom-4 right-4 bg-white p-2 shadow rounded">
+        Selected {size} characters
+      </div>
+    </>
   )}
 </Show>
 ```
@@ -250,15 +279,20 @@ import { Show } from '@anchorlib/solid';
 import { LIVE_SELECTION } from '@anchorlib/solid/browser';
 
 <Show when={() => LIVE_SELECTION.rect && LIVE_SELECTION}>
-  {({ rect, paths }) => (
-    <svg
-      class="fixed pointer-events-none"
-      width={rect.width + 16}
-      height={rect.height + 16}
-      style={{ top: `${rect.y - 8}px`, left: `${rect.x - 8}px`, zIndex: 999 }}
-    >
-      <path d={paths(6, 8)} fill="rgba(0, 0, 0, 0.15)" />
-    </svg>
+  {({ rect, paths, size }) => (
+    <>
+      <svg
+        class="fixed pointer-events-none"
+        width={rect.width + 16}
+        height={rect.height + 16}
+        style={{ top: `${rect.y - 8}px`, left: `${rect.x - 8}px`, zIndex: 999 }}
+      >
+        <path d={paths(6, 8)} fill="rgba(0, 0, 0, 0.15)" />
+      </svg>
+      <div class="fixed bottom-4 right-4 bg-white p-2 shadow rounded">
+        Selected {size} characters
+      </div>
+    </>
   )}
 </Show>
 ```
@@ -272,6 +306,18 @@ import { LIVE_SELECTION } from '@anchorlib/solid/browser';
 Native HTML Drag and Drop APIs involve complex event handler sequences across `dragstart`, `dragover`, `dragleave`, and `drop` events.
 
 The `LIVE_DND` primitive provides reactive drag state alongside declarative `draggable` and `droppable` registration utilities.
+
+#### API Surface
+- **`isDragging`**: Boolean indicating if a drag operation is currently active.
+- **`isInternal`**: Boolean indicating if the drag originated from within the application (via `draggable`).
+- **`x`, `y`**: Current pointer coordinates during the drag.
+- **`startX`, `startY`**: Pointer coordinates where the drag started.
+- **`deltaX`, `deltaY`**: Distance moved since the drag started.
+- **`payload`**: The active `DragContent` being dragged (`{ type, text, data, files, count }`).
+- **`target`**: The DOM element that initiated the drag.
+- **`zone`**: The active drop zone element currently being hovered.
+- **`draggable(el, state?)`**: Registers an element as draggable.
+- **`droppable(...els)`**: Registers elements as drop zones.
 
 ::: code-group
 
@@ -359,6 +405,17 @@ Adapting UI components based on viewport dimensions, orientation, system color s
 
 The `LIVE_MEDIA` primitive provides reactive boolean flags for standard CSS media features, while `mediaQuery(query)` creates a reactive getter for custom CSS media queries.
 
+#### API Surface
+- **`isMobile`**: Matches `(max-width: 639px)`.
+- **`isTablet`**: Matches `(min-width: 640px) and (max-width: 1023px)`.
+- **`isDesktop`**: Matches `(min-width: 1024px)`.
+- **`isDark`, `isLight`**: Matches `(prefers-color-scheme)`.
+- **`isLandscape`, `isPortrait`**: Matches `(orientation)`.
+- **`isTouch`**: Matches `(pointer: coarse)`.
+- **`isHover`**: Matches `(hover: hover)`.
+- **`isReducedMotion`, `isHighContrast`**: Matches user accessibility preferences.
+- **`isRetina`**: Matches `(resolution >= 2dppx)`.
+
 ::: code-group
 
 ```tsx [React]
@@ -405,6 +462,14 @@ Applications often need to react to viewport resize events, document visibility 
 
 The `LIVE_WINDOW` primitive continuously monitors viewport dimensions, tab focus, document visibility, and user idle timeouts.
 
+#### API Surface
+- **`width`, `height`**: The current window dimensions (`window.innerWidth/innerHeight`).
+- **`isIdle`**: Boolean indicating if the user has been inactive longer than the idle timeout.
+- **`isVisible`**: Boolean indicating if the document is visible (`!document.hidden`).
+- **`isFocused`**: Boolean indicating if the document has focus (`document.hasFocus()`).
+- **`lastActive`**: The timestamp of the last registered user activity (mouse, keyboard, scroll, touch).
+- **`setIdleTimeout(minutes)`**: Configures the duration before the window is considered idle.
+
 ::: code-group
 
 ```tsx [React]
@@ -447,6 +512,13 @@ Detecting online status, connection types, and estimated network speeds helps ap
 
 The `LIVE_NETWORK` primitive tracks online connectivity and Network Information API metrics seamlessly.
 
+#### API Surface
+- **`isOnline`**: Boolean indicating if the browser is currently connected to the network (`navigator.onLine`).
+- **`effectiveType`**: The effective connection type (e.g., `'4g'`, `'3g'`, `'2g'`, `'slow-2g'`).
+- **`downlink`**: The estimated effective bandwidth in megabits per second.
+- **`rtt`**: The estimated effective round-trip time in milliseconds.
+- **`type`**: The underlying connection technology (e.g., `'wifi'`, `'cellular'`, `'ethernet'`, `'unknown'`).
+
 ::: code-group
 
 ```tsx [React]
@@ -484,6 +556,13 @@ import { LIVE_NETWORK } from '@anchorlib/solid/browser';
 Accessing real-time physical location data via the browser's Geolocation API usually requires managing `watchPosition` handles and error callbacks manually.
 
 The `LIVE_GEO` primitive streams device coordinates and tracking metadata into a reactive state.
+
+#### API Surface
+- **`lat`**, **`lng`**: Latitude and longitude coordinates.
+- **`isTracking`**: Boolean indicating if a valid location is actively being tracked.
+- **`speed`**: Device velocity in meters per second (if available/supported).
+- **`accuracy`**: The accuracy level of the latitude and longitude coordinates in meters.
+- **`error`**: String containing any Geolocation API error messages.
 
 ::: code-group
 
@@ -528,6 +607,13 @@ Managing keyboard event listeners, shortcut key combinations, and modifier keys 
 ### Live Keyboard
 
 The `LIVE_KEYBOARD` primitive monitors document key presses, allowing fluent combination checks.
+
+#### API Surface
+- **`key`**: The primary key currently pressed (e.g., `'a'`, `'Enter'`, `'Escape'`).
+- **`modifiers`**: A `Set` of currently pressed modifier keys (`'alt'`, `'ctrl'`, `'meta'`, `'shift'`).
+- **`is(...keys)`**: Helper method that returns `true` if the specified key combination is active (e.g., `is('ctrl', 's')`).
+- **`target`**: The DOM element that initiated the keydown event.
+- **`current`**: The root element being tracked (`Document` or specific `Element`).
 
 ::: code-group
 
@@ -602,6 +688,16 @@ Passing `ref={inputKeyboard}` directly tracks key presses and modifiers specific
 Reading pasted content, parsing JSON payloads, or copying text and complex objects to the system clipboard requires handling Clipboard API promises and event listeners.
 
 The `LIVE_CLIPBOARD` state manages clipboard data slots (`text`, `data`, `files`) and provides asynchronous `copy`, `paste`, `take`, and `clear` operations.
+
+#### API Surface
+- **`text`**: The most recently copied or pasted string.
+- **`data`**: Parsed JSON object from the clipboard (if the text was valid JSON).
+- **`files`**: An array of `File` objects pasted into the document.
+- **`isSupported`**: Boolean indicating if the system clipboard API is available (`navigator.clipboard`).
+- **`copy(payload)`**: Asynchronously writes text or JSON to the clipboard. Returns a `Promise<boolean>`.
+- **`take(slot, handler)`**: Registers a callback to receive specific pasted data (`'text'`, `'data'`, or `'files'`).
+- **`paste(payload)`**: Manually triggers a paste operation programmatically.
+- **`clear(slot?)`**: Clears specific clipboard state slots, or all if none provided.
 
 ::: code-group
 
