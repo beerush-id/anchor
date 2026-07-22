@@ -167,7 +167,6 @@ describe('browser/selection', () => {
   });
 
   describe('paths', () => {
-
     it('should generate valid SVG path for single and multi-rect selections', async () => {
       const div = document.createElement('div');
       const r1 = { x: 10, y: 10, width: 100, height: 20, top: 10, left: 10, right: 110, bottom: 30 } as DOMRect;
