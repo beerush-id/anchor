@@ -51,6 +51,65 @@ export default defineConfig({
 
 :::
 
+## Image Plugin
+
+The `@anchorlib/vite-ssr` package includes the `airImage()` Vite plugin. When you append the `?airimg` query to an image import, this plugin intercepts it and generates optimized WebP/AVIF variants at build-time (or dev-time). 
+
+Instead of returning a basic string URL, it returns a rich `AirImage` object containing the `src`, calculated `width`/`height`, responsive `srcset`, and all generated size variants.
+
+### Configuration
+
+Add the plugin to your `vite.config.ts`. You can configure the default breakpoints, format, and quality.
+
+To ensure TypeScript correctly infers the `?airimg` query return type, you must also add `@anchorlib/vite-ssr/ambient` to your `tsconfig.json` types array:
+
+```json
+{
+  "compilerOptions": {
+    "types": ["@anchorlib/vite-ssr/ambient"]
+  }
+}
+```
+
+::: code-group
+
+```ts [vite.config.ts]
+import { airImage, airWorker } from '@anchorlib/vite-ssr';
+
+export default defineConfig({
+  plugins: [
+    airWorker(),
+    airImage({ 
+      devEnabled: true, // Processes images on-the-fly during dev
+      sizes: [128, 256, 512, 1024],
+      format: 'webp',
+      quality: 75
+    }),
+  ],
+});
+```
+:::
+
+### Usage
+
+Import your static asset and append the `?airimg` query parameter. 
+
+```tsx
+// This triggers the Vite plugin to generate all WebP variants
+import heroImage from './assets/hero.jpg?airimg';
+
+// `heroImage` is not a string! It is a rich object:
+// {
+//   src: '/assets/hero.webp',
+//   width: 1920,
+//   height: 1080,
+//   srcset: '/assets/hero-128w.webp 128w, /assets/hero-256w.webp 256w...',
+//   sizes: { ... }
+// }
+```
+
+You can then pass this object directly to the `<Image>` UI component to handle the responsive markup for you.
+
 ## Client Entry
 
 The client entry activates the router before hydrating the pre-rendered HTML.

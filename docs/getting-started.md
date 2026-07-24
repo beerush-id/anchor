@@ -395,25 +395,37 @@ Update `vite.config.ts`:
 
 ```typescript [React]
 import react from '@vitejs/plugin-react';
-import { airWorker } from '@anchorlib/vite-ssr';
+import { airImage, airWorker } from '@anchorlib/vite-ssr';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react(), airWorker()],
+  plugins: [react(), airWorker(), airImage({ devEnabled: true })],
 });
 ```
 
 ```typescript [SolidJS]
 import solid from 'vite-plugin-solid';
-import { airWorker } from '@anchorlib/vite-ssr';
+import { airImage, airWorker } from '@anchorlib/vite-ssr';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [solid(), airWorker()],
+  plugins: [solid(), airWorker(), airImage({ devEnabled: true })],
 });
 ```
 
 :::
+
+### **TypeScript Configuration**
+
+To ensure TypeScript correctly infers the `?airimg` query return type from the image plugin, you must load the ambient type declarations. Update your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "types": ["@anchorlib/vite-ssr/ambient"]
+  }
+}
+```
 
 ### **Production Deployment**
 

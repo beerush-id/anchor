@@ -37,6 +37,10 @@ To work effectively without polluting your context, use the `view_file` tool to 
 - **When**: You need to create components with own state/behavior/side-effects, control which parts of UI re-render when state changes, pass one-way reactive props, sync two-way mutations between parent and child, isolate fast-updating views from parent re-renders, create reusable standalone reactive views, forward native HTML props while omitting managed ones, manipulate DOM directly for animations or drag-and-drop, run code on mount, clean up on unmount, apply optimistic UI with rollback, render conditionally, render lists, apply conditional CSS classes, scale styling (inline → local → global), use dynamic inline styles (scroll, canvas, tenant colors), choose between static function vs snippet vs template vs setup component, share state via scoped context, or use browser utilities (track cursor, scroll, text selections, drag-and-drop, media queries, window lifecycle, network status, geolocation, keyboard shortcuts, clipboard state, animation frame scheduling, acceptInteractions hydration).
 - **Action**: Read `contents/user-interface.md`
 
+## Image Architecture
+- **When**: You need to display images, generate responsive variants (srcset, sizes), configure WebP/AVIF compression at build time or dev time, use the Vite plugin (`airImage`), upload or process images dynamically via backend API (IRPC), access the `AirImage` metadata object, resolve the closest image size automatically via Proxy, or use the `<Image>` component.
+- **Action**: Read `contents/image-architecture.md`
+
 ## Form Architecture
 - **When**: You need to build inputs with two-way binding (text, number, date), prevent cursor-jumping in number/date inputs, coordinate multiple fields for validation and submit, build context-aware inputs (auto-connect to parent form), create typed form factories (field names enforced by Zod schema), show field-level validation errors, or format input in real time (numbers, dates).
 - **Action**: Read `contents/form-architecture.md`

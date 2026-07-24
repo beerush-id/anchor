@@ -191,6 +191,7 @@ export default defineConfig({
           { text: 'Reactive UI', link: '/ui/view' },
           { text: 'Component', link: '/ui/component' },
           { text: 'Form Components', link: '/ui/form' },
+          { text: 'Images', link: '/ui/image' },
           { text: 'Optimistic UI', link: '/ui/optimistic' },
           { text: 'Browser Utilities', link: '/ui/browser' },
         ],
