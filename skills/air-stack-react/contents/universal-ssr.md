@@ -164,6 +164,63 @@ Both `createWorker` and `createFullWorker` accept the same base options:
 | `resolveContext` | `(request, url) => SSRContextSeed` | Custom context seed. Defaults to `[]`. |
 | `createResponse` | `(response: Response) => Response` | Hook to modify all outgoing responses (e.g., add security headers). |
 | `timeout` | `number` | Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. |
+| `cache` | `{ assets?: CacheControl, pages?: CacheControl }` | Cache configuration for static assets and SSR pages. |
+
+#### `CacheControlInit`
+When configuring page caches as an object, use the `CacheControlInit` interface:
+```typescript
+type CacheControlInit = {
+  public?: boolean;
+  private?: boolean;
+  maxAge?: number;
+  sMaxAge?: number;
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
+  mustRevalidate?: boolean;
+  noCache?: boolean;
+  noStore?: boolean;
+  immutable?: boolean;
+};
+```
+
+### Caching
+Use the `cache` option in `WorkerOptions` to apply `Cache-Control` headers automatically. 
+
+#### Asset Caching
+Caches static assets. Defaults to `public, max-age=31536000, immutable` in production and `no-cache` in dev. You can override it with a string or set it to `false` to disable.
+```ts
+export default createWorker(render, {
+  cache: {
+    assets: 'public, max-age=3600', // Override default
+  }
+});
+```
+
+#### Page Caching
+Pages are **never cached by default** to prevent leaking sensitive data. Page caching is only applied on 200 OK responses (redirects/errors are ignored). Opt-in globally using a `CacheControlInit` object:
+```ts
+export default createWorker(render, {
+  cache: {
+    pages: { public: true, maxAge: 60, staleWhileRevalidate: 300 }
+  }
+});
+```
+
+Or configure cache dynamically per route using a resolver function:
+```ts
+export default createWorker(render, {
+  cache: {
+    pages: (url) => {
+      // Aggressive cache for marketing pages
+      if (['/about', '/pricing'].includes(url.pathname)) {
+        return { public: true, maxAge: 86400 };
+      }
+      // Never cache dashboards or dynamic routes
+      return false; 
+    }
+  }
+});
+```
 
 ### Incremental Static Regeneration (ISR)
 ISR is a userland pattern built on `resolveAsset`. When you define `resolveAsset`, it **completely overrides** the universal `defaultAssetResolver`. The worker checks for a pre-generated HTML file on disk before falling through to SSR. On a cache miss, the rendered page is written to disk so subsequent requests skip SSR entirely. For stale pages, the cached file is served immediately while a background re-render refreshes it.

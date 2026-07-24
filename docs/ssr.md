@@ -295,6 +295,77 @@ Both `createWorker` and `createFullWorker` accept the same base options:
 | `resolveContext` | `(request, url) => SSRContextSeed` | Custom context seed per request. Defaults to `[]`. |
 | `createResponse` | `(response: Response) => Response` | Hook to modify all outgoing responses (e.g., add security headers). |
 | `timeout` | `number` | Milliseconds before aborting the SSR render. Only applies to SSR, not IRPC. |
+| `cache` | `{ assets?: CacheControl, pages?: CacheControl }` | Cache configuration for static assets and SSR pages. |
+
+## Caching
+
+To optimize application performance and reduce server load, we need to instruct browsers and edge networks on how to cache our pages and assets. Anchor provides a zero-config default for static assets and a powerful `cache` configuration in the SSR worker to handle everything from global policies to granular, route-specific caching.
+
+### Static Asset Caching
+
+By default, Anchor intelligently caches static assets (like JS, CSS, and images) served from your `dist/client` directory or Cloudflare `ASSETS`. In production (`NODE_ENV === 'production'`), it automatically applies a 1-year immutable cache (`public, max-age=31536000, immutable`). In development, it disables caching (`no-cache`) to ensure you always see the latest changes. To override this behavior, we configure the `cache.assets` option.
+
+```typescript
+// worker.ts
+import { createWorker } from '@anchorlib/react/ssr'; // or '@anchorlib/solid/ssr'
+import { render } from './server.js';
+
+export default createWorker(render, {
+  cache: {
+    // Override the default asset cache
+    assets: 'public, max-age=3600',
+  }
+});
+```
+
+The asset cache uniformly applies the specified cache control headers to all static assets. Passing `false` completely disables asset caching.
+
+### Page Caching
+
+Unlike static assets, HTML pages are **never cached by default**. Because SSR pages often contain dynamic or user-specific data, caching them globally can lead to leaking personal information across sessions. To safely opt-in, we use the `cache.pages` configuration with a `CacheControlInit` object.
+
+```typescript
+// worker.ts
+export default createWorker(render, {
+  cache: {
+    pages: {
+      public: true,
+      maxAge: 60,
+      staleWhileRevalidate: 300,
+    }
+  }
+});
+```
+
+This configuration applies the resulting `Cache-Control` header to all successful (200 OK) page renders, while automatically preventing caching on redirects (3xx) or errors (4xx/5xx).
+
+### Route-Specific Caching
+
+Applying a single cache policy to all pages is rarely sufficient. A static marketing page might warrant an aggressive cache, while an authenticated dashboard must never be cached. To implement dynamic caching, we provide a resolver function that evaluates the requested URL.
+
+```typescript
+// worker.ts
+export default createWorker(render, {
+  cache: {
+    pages: (url) => {
+      // Aggressive cache for marketing pages
+      if (url.pathname === '/about' || url.pathname === '/pricing') {
+        return { public: true, maxAge: 86400 };
+      }
+      
+      // Short cache for blog posts
+      if (url.pathname.startsWith('/blog')) {
+        return { public: true, maxAge: 300, staleWhileRevalidate: 60 };
+      }
+
+      // Return false or undefined to disable caching for everything else (e.g. dashboards)
+      return false; 
+    }
+  }
+});
+```
+
+The resolver function gives total control over the cache boundaries of the application, ensuring that static routes are heavily optimized while dynamic routes remain fresh and secure.
 
 ## Incremental Static Regeneration (ISR)
 

@@ -134,18 +134,16 @@ First, define your global Router and IRPC instance. We recommend placing these i
 
 ```typescript [React]
 import { createRouter } from '@anchorlib/react';
-import type { ReactNode } from 'react';
 
-// Create a strongly-typed router instance
-export const router = createRouter<ReactNode>();
+// Create a reactive router instance
+export const router = createRouter();
 ```
 
 ```typescript [SolidJS]
 import { createRouter } from '@anchorlib/solid';
-import type { JSX } from 'solid-js';
 
-// Create a strongly-typed router instance
-export const router = createRouter<JSX.Element>();
+// Create a reactive router instance
+export const router = createRouter();
 ```
 
 :::
@@ -284,6 +282,18 @@ export const RootPage = page(indexRoute).render(() => (
 
 :::
 
+### **The Barrel Export**
+
+Create `src/pages/index.ts` to export your layout and automatically load all page bindings. This guarantees that neither the client nor the server will miss a route.
+
+```typescript [src/pages/index.ts]
+// 1. Export the root layout for the router
+export * from './layout.js';
+
+// 2. Export all page bindings (this auto-registers the route)
+export * from './page.js';
+```
+
 ## **4. Wire the Client Entry**
 
 Mount your router to the DOM in your client entry point:
@@ -296,8 +306,7 @@ import '@anchorlib/react/client'; // MUST be first import
 import { UIRouter } from '@anchorlib/react';
 import { hydrateRoot } from 'react-dom/client';
 import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
-import './pages/page.js'; // Ensure the page registers its route binding
+import { RootLayout } from './pages/index.js';
 
 router.activate(window.location.href).then(() => {
   hydrateRoot(
@@ -313,8 +322,7 @@ import '@anchorlib/solid/client'; // MUST be first import
 import { UIRouter } from '@anchorlib/solid';
 import { render } from 'solid-js/web';
 import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
-import './pages/page.js'; // Ensure the page registers its route binding
+import { RootLayout } from './pages/index.js';
 
 router.activate(window.location.href).then(() => {
   const root = document.getElementById('root')!;
@@ -331,264 +339,105 @@ router.activate(window.location.href).then(() => {
 
 ## **5. Wire the Server Entry**
 
-For Server-Side Rendering (SSR), the AIR Stack provides isolated reactivity boundaries to prevent cross-request state leakage.
+For Server-Side Rendering (SSR) and full-stack backend functionality, the AIR Stack provides a streamlined edge worker architecture that automatically isolates request state and intercepts IRPC routes.
 
-Create `src/entry-server.tsx`:
+Create `src/worker.ts`:
 
 ::: code-group
 
-```tsx [React]
-import '@anchorlib/react/server'; // MUST be first!
-import {
-  createLifecycle,
-  decodeCookies,
-  headings,
-  Redirect,
-  redirectUrl,
-  setCookieContext,
-  UIRouter,
-  withIsolation,
-} from '@anchorlib/react';
-import { renderToString } from 'react-dom/server';
+```typescript [React]
+import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
+import { HTTPRouter } from '@irpclib/http/router';
+
+import { irpc, transport } from './lib/module.js';
 import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
+import { RootLayout } from './pages/index.js';
 
-export async function render(url: string, cookie = '') {
-  let html = '';
-  let head = '';
-  let redirect: string | undefined;
+// 1. Create the SSR Renderer
+const render = createSSR(router, RootLayout);
 
-  await withIsolation(async () => {
-    setCookieContext(decodeCookies(cookie));
+// 2. Create the IRPC Router
+const rpcRouter = new HTTPRouter(transport);
 
-    const ssr = createLifecycle();
-    await ssr.runAsync(async () => {
-      try {
-        const blocker = await router.activate(url);
-
-        if (blocker instanceof Redirect) {
-          redirect = redirectUrl(blocker);
-          return;
-        }
-
-        html = renderToString(<UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />);
-        head = renderToString([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
-      } catch (error) {
-        html = `SSR Render Error: ${error}`;
-      } finally {
-        router.cleanup();
-      }
-    });
-
-    ssr.destroy();
-  });
-
-  return { html, head, redirect };
-}
+// 3. Export the standard Edge Worker
+export default createFullWorker(rpcRouter, render);
 ```
 
-```tsx [SolidJS]
-import '@anchorlib/solid/server'; // MUST be first!
-import {
-  createLifecycle,
-  decodeCookies,
-  headings,
-  Redirect,
-  redirectUrl,
-  setCookieContext,
-  UIRouter,
-  withIsolation,
-} from '@anchorlib/solid';
-import { renderToString } from 'solid-js/web';
+```typescript [SolidJS]
+import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
+import { HTTPRouter } from '@irpclib/http/router';
+
+import { irpc, transport } from './lib/module.js';
 import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
+import { RootLayout } from './pages/index.js';
 
-export async function render(url: string, cookie = '') {
-  let html = '';
-  let head = '';
-  let redirect: string | undefined;
+// 1. Create the SSR Renderer
+const render = createSSR(router, RootLayout);
 
-  await withIsolation(async () => {
-    setCookieContext(decodeCookies(cookie));
+// 2. Create the IRPC Router
+const rpcRouter = new HTTPRouter(transport);
 
-    const ssr = createLifecycle();
-    await ssr.runAsync(async () => {
-      try {
-        const blocker = await router.activate(url);
-
-        if (blocker instanceof Redirect) {
-          redirect = redirectUrl(blocker);
-          return;
-        }
-
-        html = renderToString(() => <UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />);
-        head = renderToString(() => [...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
-      } catch (error) {
-        html = `SSR Render Error: ${error}`;
-      } finally {
-        router.cleanup();
-      }
-    });
-
-    ssr.destroy();
-  });
-
-  return { html, head, redirect };
-}
+// 3. Export the standard Edge Worker
+export default createFullWorker(rpcRouter, render);
 ```
 
 :::
 
 ## **6. Serve the Application**
 
-To actually run your app, you need a server to handle Server-Side Rendering (SSR) and IRPC API requests. We use standard Express and Vite middleware.
+During development, the `@anchorlib/vite-ssr` plugin automatically binds your `worker.ts` to Vite, instantly handling SSR, IRPC requests, and static assets with zero configuration.
 
-Create `server.ts` at the root of your project:
+### **Vite Configuration**
+
+Update `vite.config.ts`:
 
 ::: code-group
 
-```typescript [server.ts (React)]
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { Readable } from 'node:stream';
-import { decodeCookies, getContext, setCookieContext } from '@anchorlib/react';
-import { HTTPRouter } from '@irpclib/http/router';
-import express from 'express';
-import { createServer as createViteServer } from 'vite';
+```typescript [React]
+import react from '@vitejs/plugin-react';
+import { airWorker } from '@anchorlib/vite-ssr';
+import { defineConfig } from 'vite';
 
-import { transport } from './src/lib/module.js';
-
-const rpcRouter = new HTTPRouter(transport);
-
-// Provide CookieJar to the IRPC handlers
-rpcRouter.use(() => {
-  const cookieJar = decodeCookies(getContext('cookie', ''));
-  setCookieContext(cookieJar);
+export default defineConfig({
+  plugins: [react(), airWorker()],
 });
-
-async function createServer() {
-  const app = express();
-  const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'custom' });
-
-  // 1. Handle IRPC Network Requests
-  app.post(transport.endpoint, express.text({ type: '*/*' }), async (req, res, next) => {
-    try {
-      const fullUrl = `${req.headers.origin}${req.originalUrl}`;
-      const webReq = new Request(fullUrl, {
-        method: 'POST',
-        headers: req.headers as Record<string, string>,
-        body: req.body || '',
-      });
-
-      const webRes = await rpcRouter.resolve(webReq, [['cookie', req.headers?.cookie]]);
-      webRes.headers.forEach((v, k) => res.setHeader(k, v));
-
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      res.status(webRes.status);
-      Readable.fromWeb(webRes.body as never).pipe(res);
-    } catch (e) {
-      next(e);
-    }
-  });
-
-  // 2. Handle Vite SSR
-  app.use(vite.middlewares);
-  app.use(async (req, res, next) => {
-    try {
-      const url = req.originalUrl;
-      let template = await fs.readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
-      template = await vite.transformIndexHtml(url, template);
-
-      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
-      const { html, head, redirect } = await render(url, req.headers.cookie ?? '');
-
-      if (redirect) return res.redirect(302, redirect);
-
-      const page = template.replace('<!--ssr-head-->', head).replace('<!--ssr-outlet-->', html);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
-
-  app.listen(5173, () => console.log(`AIR Stack running on http://localhost:5173`));
-}
-
-createServer();
 ```
 
-```typescript [server.ts (SolidJS)]
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { Readable } from 'node:stream';
-import { decodeCookies, getContext, setCookieContext } from '@anchorlib/solid';
-import { HTTPRouter } from '@irpclib/http/router';
-import express from 'express';
-import { createServer as createViteServer } from 'vite';
+```typescript [SolidJS]
+import solid from 'vite-plugin-solid';
+import { airWorker } from '@anchorlib/vite-ssr';
+import { defineConfig } from 'vite';
 
-import { transport } from './src/lib/module.js';
-
-const rpcRouter = new HTTPRouter(transport);
-
-// Provide CookieJar to the IRPC handlers
-rpcRouter.use(() => {
-  const cookieJar = decodeCookies(getContext('cookie', ''));
-  setCookieContext(cookieJar);
+export default defineConfig({
+  plugins: [solid(), airWorker()],
 });
+```
 
-async function createServer() {
-  const app = express();
-  const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'custom' });
+:::
 
-  // 1. Handle IRPC Network Requests
-  app.post(transport.endpoint, express.text({ type: '*/*' }), async (req, res, next) => {
-    try {
-      const fullUrl = `${req.headers.origin}${req.originalUrl}`;
-      const webReq = new Request(fullUrl, {
-        method: 'POST',
-        headers: req.headers as Record<string, string>,
-        body: req.body || '',
-      });
+### **Production Deployment**
 
-      const webRes = await rpcRouter.resolve(webReq, [['cookie', req.headers?.cookie]]);
-      webRes.headers.forEach((v, k) => res.setHeader(k, v));
+In production, your worker natively supports modern JS edge runtimes (Node, Bun, Deno, Cloudflare) using standardized Web Request/Response objects. Just build and run:
 
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      res.status(webRes.status);
-      Readable.fromWeb(webRes.body as never).pipe(res);
-    } catch (e) {
-      next(e);
-    }
-  });
+::: code-group
 
-  // 2. Handle Vite SSR
-  app.use(vite.middlewares);
-  app.use(async (req, res, next) => {
-    try {
-      const url = req.originalUrl;
-      let template = await fs.readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf-8');
-      template = await vite.transformIndexHtml(url, template);
+```javascript [Node.js]
+// server/node.js
+import { serve } from '@hono/node-server';
+import worker from '../dist/server/worker.js';
 
-      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
-      const { html, head, redirect } = await render(url, req.headers.cookie ?? '');
+serve({
+  fetch: worker.fetch,
+  port: process.env.PORT || 3000,
+});
+```
 
-      if (redirect) return res.redirect(302, redirect);
+```javascript [Bun / Cloudflare]
+// server/bun.js
+// Bun and Cloudflare natively serve files that export a default fetch handler
+import worker from '../dist/server/worker.js';
 
-      const page = template.replace('<!--ssr-head-->', head).replace('<!--ssr-outlet-->', html);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
-      next(e);
-    }
-  });
-
-  app.listen(5173, () => console.log(`AIR Stack running on http://localhost:5173`));
-}
-
-createServer();
+export default worker; 
 ```
 
 :::
@@ -597,6 +446,7 @@ createServer();
 
 You now have a fully functional AIR Stack foundation! From here, you can dive deeper into specific modules:
 
+- [Universal SSR](/ssr.md) - Learn about the unified Edge Worker architecture and asset caching.
 - [Remote Function](/remote-function/index.md) - Connect your UI to a Node.js or Bun backend.
 - [Workflows](/workflow/index.md) - Create reactive workflows to orchestrate your data.
 - [State Management](/state-management/index.md) - Master fine-grained state management, immutability, and write contracts.
