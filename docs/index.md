@@ -397,7 +397,7 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 <!-- SECTION 1: TEST COVERAGE (Text Left, Image Right) -->
 <div class="custom-section">
   <div class="custom-section-content">
-    <h2>Battle-Tested, 100% Test Coverage with over 2,700 Tests</h2>
+    <h2>Battle-Tested, 100% Test Coverage with over 3,100 Tests</h2>
     <p>Trust your foundation. AIR Stack is built with uncompromising quality standards, achieving <strong>100% test coverage</strong> across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure <strong>absolute reliability</strong> for your production applications.</p>
   </div>
   <div class="custom-section-code" style="display: flex; justify-content: center; align-items: center;">
