@@ -99,6 +99,29 @@ describe('createWorker', () => {
     expect(renderer).not.toHaveBeenCalled();
   });
 
+  it('applies page cache headers when configured', async () => {
+    const renderer = createMockRenderer({ status: 200 });
+    const worker = createWorker(renderer, {
+      template: TEMPLATE,
+      cache: { pages: 'public, max-age=3600' }
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=3600');
+  });
+
+  it('does not apply page cache headers on redirects', async () => {
+    const renderer = createMockRenderer({ status: 302, redirect: '/login' });
+    const worker = createWorker(renderer, {
+      template: TEMPLATE,
+      cache: { pages: 'public, max-age=3600' }
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/login'));
+    expect(response.headers.has('Cache-Control')).toBe(false);
+  });
+
   it('serves raw html when contentType override is provided', async () => {
     const renderer = createMockRenderer({
       html: '<urlset></urlset>',
@@ -428,6 +451,31 @@ describe('createFullWorker', () => {
     expect(router.resolve).not.toHaveBeenCalled();
     expect(router.isolate).toHaveBeenCalled();
     expect(response.status).toBe(200);
+  });
+
+  it('applies page cache headers when configured in full worker', async () => {
+    const renderer = createMockRenderer({ status: 200 });
+    const router = createMockRouter();
+    const worker = createFullWorker(router, renderer, {
+      template: TEMPLATE,
+      cache: { pages: 'public, max-age=3600' },
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=3600');
+  });
+
+  it('does not apply page cache headers on redirects in full worker', async () => {
+    const renderer = createMockRenderer({ status: 302, redirect: '/login' });
+    const router = createMockRouter();
+    const worker = createFullWorker(router, renderer, {
+      template: TEMPLATE,
+      cache: { pages: 'public, max-age=3600' },
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    expect(response.headers.has('Cache-Control')).toBe(false);
   });
 
   it('calls renderer with isolated=true inside isolate', async () => {

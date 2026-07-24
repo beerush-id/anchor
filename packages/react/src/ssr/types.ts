@@ -83,7 +83,29 @@ export type WorkerOptions<E> = {
   timeout?: number;
   /** Optional WebSocketRouter instance to handle socket connections. */
   wsRouter?: WsRouter;
+  /** Cache configuration for static assets and SSR pages. */
+  cache?: {
+    assets?: CacheControl;
+    pages?: CacheControl;
+  };
 };
+
+export type CacheControlInit = {
+  public?: boolean;
+  private?: boolean;
+  maxAge?: number;
+  sMaxAge?: number;
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
+  mustRevalidate?: boolean;
+  noCache?: boolean;
+  noStore?: boolean;
+  immutable?: boolean;
+};
+
+export type CacheControlResolver = (url: URL) => CacheControlInit | string | undefined | null;
+
+export type CacheControl = string | CacheControlInit | CacheControlResolver | false;
 
 /**
  * An abstraction for a WebSocket sender, ensuring cross-platform compatibility.

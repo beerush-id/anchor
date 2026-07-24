@@ -1,24 +1,9 @@
-import {
-  type AnyType,
-  COOKIE_JAR_WRITABLE,
-  decodeCookies,
-  isBrowser,
-  setCookieContext,
-  setScope,
-} from '@anchorlib/core';
+import { COOKIE_JAR_WRITABLE, decodeCookies, isBrowser, setCookieContext, setScope } from '@anchorlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
+import { createAssetResolver, resolveCacheControl } from './assets.js';
 import { SSR_ENV_KEY } from './context.js';
-import type {
-  AppShell,
-  AssetResolver,
-  SSRContext,
-  SSRContextSeed,
-  SSROutput,
-  SSRRenderer,
-  WorkerOptions,
-  WsSender,
-} from './types.js';
+import type { AppShell, SSRContext, SSRContextSeed, SSROutput, SSRRenderer, WorkerOptions, WsSender } from './types.js';
 
 /**
  * Creates a standalone SSR worker that handles asset resolution, rendering,
@@ -42,7 +27,7 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
         headTag = '<!--ssr-head-->',
         bodyTag = '<!--ssr-outlet-->',
         timeout,
-        resolveAsset = defaultAssetResolver,
+        resolveAsset = createAssetResolver(options),
         resolveContext,
         createResponse = createDefaultResponse,
       } = options;
@@ -84,6 +69,11 @@ export function createWorker<E = any>(renderer: SSRRenderer, options: WorkerOpti
 
         if (redirect) {
           headers.append('Location', redirect);
+        }
+
+        const pageCache = resolveCacheControl(options.cache?.pages, url);
+        if (pageCache && !redirect && status === 200) {
+          headers.set('Cache-Control', pageCache);
         }
 
         return createResponse(new Response(redirect ? null : body, { status, headers }));
@@ -139,7 +129,7 @@ export function createFullWorker<E = any>(
         headTag = '<!--ssr-head-->',
         bodyTag = '<!--ssr-outlet-->',
         timeout,
-        resolveAsset = defaultAssetResolver,
+        resolveAsset = createAssetResolver(options),
         resolveContext,
         createResponse = createDefaultResponse,
       } = options;
@@ -198,6 +188,11 @@ export function createFullWorker<E = any>(
               headers.append('Location', redirect);
             }
 
+            const pageCache = resolveCacheControl(options.cache?.pages, url);
+            if (pageCache && !redirect && status === 200) {
+              headers.set('Cache-Control', pageCache);
+            }
+
             return new Response(redirect ? null : body, { status, headers });
           },
           controller,
@@ -245,92 +240,3 @@ export function createFullWorker<E = any>(
 function createDefaultResponse(response: Response) {
   return response;
 }
-
-const MIME_TYPES: Record<string, string> = {
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.js': 'application/javascript',
-  '.mjs': 'application/javascript',
-  '.cjs': 'application/javascript',
-  '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json',
-  '.wasm': 'application/wasm',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.webp': 'image/webp',
-  '.avif': 'image/avif',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.ogg': 'audio/ogg',
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf',
-  '.otf': 'font/otf',
-  '.eot': 'application/vnd.ms-fontobject',
-  '.txt': 'text/plain',
-  '.xml': 'application/xml',
-  '.pdf': 'application/pdf',
-};
-
-function getMimeType(pathname: string) {
-  const match = pathname.match(/\.[^.]+$/);
-  const ext = match ? match[0].toLowerCase() : '';
-  return MIME_TYPES[ext] || 'application/octet-stream';
-}
-
-export const defaultAssetResolver: AssetResolver<AnyType> = async (request, url, env) => {
-  // If running in Cloudflare Pages:
-  if (env?.ASSETS) {
-    try {
-      const asset = await env.ASSETS.fetch(request);
-      if (asset.status < 400) return asset;
-    } catch (_e) {}
-  }
-
-  const filePath = `./dist/client${url.pathname}`;
-
-  // If running in Bun:
-  if (typeof Bun !== 'undefined') {
-    const file = Bun.file(filePath);
-    if (await file.exists()) {
-      return new Response(file);
-    }
-  }
-
-  // If running in Deno:
-  // @ts-expect-error - Deno global is not defined in standard TS lib
-  if (typeof Deno !== 'undefined') {
-    try {
-      // @ts-expect-error
-      const stat = await Deno.stat(filePath);
-      if (stat.isFile) {
-        // @ts-expect-error
-        const file = await Deno.open(filePath, { read: true });
-        return new Response(file.readable, {
-          headers: { 'Content-Type': getMimeType(url.pathname) },
-        });
-      }
-    } catch (_e) {}
-  }
-
-  // If running in Node.js:
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    try {
-      const fsName = 'node:fs/promises';
-      const fs = await import(/* @vite-ignore */ fsName);
-      const stat = await fs.stat(filePath);
-      if (stat.isFile()) {
-        const buffer = await fs.readFile(filePath);
-        return new Response(buffer, {
-          headers: { 'Content-Type': getMimeType(url.pathname) },
-        });
-      }
-    } catch (_e) {}
-  }
-};
