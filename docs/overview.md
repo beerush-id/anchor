@@ -35,41 +35,32 @@ Each with its own **mental model**, its own **lifecycle**, and its own **failure
 :::
 
 ```ts
-type GetUserFn = (id: string) => Promise<User>;
-const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
+type GetUserFn = (id: string) => Promise<User | undefined>;
+const getUser = irpc.declare<GetUserFn>('getUser');
 ```
 
 ```ts
 irpc.construct(getUser, async (id) => {
-  return db.users.find(id);
+  return await db.users.find(id);
 });
 ```
 
 ::: code-group
 
-```ts [Anywhere]
-const user = await getUser('1');
-console.log(user);
-```
-
-```ts [Provider]
-profileRoute.provide('user', ({ params }) => {
-  return getUser(params.id);
-});
-```
-
 ```tsx [React]
 const UserCard = setup((props) => {
   const user = getUser.once(props.id]);
 
-  return render(() => (
-    <div>
-      <Show when={() => user.status === 'pendin'}>
+  return (
+    <div className="user-card">
+      <Show when={() => user.status === 'pending'}>
         <span>Loading...</span>
       </Show>
-      <h1>{user.data?.name}</h1>
+      <Show when={() => user.status === 'success' && user.data}>
+        {({ name }) => <h1>{name}</h1>}  
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 
@@ -78,14 +69,27 @@ const UserCard = setup((props) => {
   const user = getUser.once(props.id]);
 
   return (
-    <div>
-      <Show when={user.status === 'pendin'}>
+    <div class="user-card">
+      <Show when={user.status === 'pending'}>
         <span>Loading...</span>
       </Show>
-      <h1>{user.data?.name}</h1>
+      <Show when={user.status === 'success' && user.data}>
+        {({ name }) => <h1>{name}</h1>}
+      </Show>
     </div>
   );
 });
+```
+
+```ts [Provider]
+profileRoute.provide('user', async ({ params }) => {
+  return await getUser(params.id);
+});
+```
+
+```ts [Anywhere]
+const user = await getUser('1');
+console.log(user);
 ```
 
 :::
@@ -173,11 +177,13 @@ irpc.construct(watchPrice, (symbol) => {
 const StockCard = setup((props) => {
   const stock = watchPrice.with(() => [props.symbol]);
 
-  return render(() => (
-    <div>
-      <h1>{stock.data?.symbol}: {stock.data?.price}</h1>
+  return (
+    <div className="stock-card">
+      <Show when={() => stock.data}>
+        {({ symbol, price }) => <h1>{symbol}: {price}</h1>}
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 
@@ -186,8 +192,10 @@ const StockCard = setup((props) => {
   const stock = watchPrice.with(() => [props.symbol]);
 
   return (
-    <div>
-      <h1>{stock.data?.symbol}: {stock.data?.price}</h1>
+    <div class="stock-card">
+      <Show when={stock.data}>
+        {({ symbol, price }) => <h1>{symbol}: {price}</h1>}
+      </Show>
     </div>
   );
 });
@@ -204,6 +212,14 @@ watchPrice('AAPL').subscribe((stock) => {
 ::: tip Isomorphic RPC
 Same API. Two different worlds — one pattern. **Batching**, **caching**, **retry logic**, and **call coalescing** are built into the protocol.
 :::
+
+### Guards & Middlewares
+
+Need to protect an endpoint? The IRPC pipeline supports strict **request validation (Guards)**. You can intercept requests and enforce authentication before they ever reach your main handlers.
+
+### File Transfers & WebSockets
+
+IRPC is not limited to simple JSON objects. You can seamlessly return secure file references for uploads and downloads using `IRPCBlob`, or spin up native **WebSocket** handlers side-by-side with your HTTP transports.
 
 ## Workflows: Promise-like Execution Pipelines
 
@@ -276,32 +292,76 @@ Whichever you pick, your state is still locked inside client code, and you still
 ::: code-group
 
 ```tsx [React]
-import { setup, snippet } from '@anchorlib/react';
-import { watchPrice } from './function.js';
-
-const PriceCard = setup(() => {
-  const stream = watchPrice.with(() => ['AAPL']);
-
-  return render(() => (
-    <div>
-      <h2>AAPL</h2>
-      <span>${stream.data?.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
-    </div>
-  ));
-});
-```
-
-```tsx [Solid]
-import { setup } from '@anchorlib/solid';
+import { setup, Show } from '@anchorlib/react';
 import { watchPrice } from './function.js';
 
 const PriceCard = setup(() => {
   const stream = watchPrice.with(() => ['AAPL']);
 
   return (
-    <div>
+    <div className="price-card">
       <h2>AAPL</h2>
-      <span>${stream.data?.price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>
+      <Show when={() => stream.data}>
+        {({ price }) => <span>${price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>}
+      </Show>
+    </div>
+  );
+});
+```
+
+```tsx [Solid]
+import { setup, Show } from '@anchorlib/solid';
+import { watchPrice } from './function.js';
+
+const PriceCard = setup(() => {
+  const stream = watchPrice.with(() => ['AAPL']);
+
+  return (
+    <div class="price-card">
+      <h2>AAPL</h2>
+      <Show when={stream.data}>
+        {({ price }) => <span>${price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>}
+      </Show>
+    </div>
+  );
+});
+```
+
+:::
+
+### Fine-Grained Reactivity
+
+When you want to defer state reads without extracting UI into smaller components, use the `<Snippet>` component to create an inline reactive boundary. Fast updates are isolated automatically.
+
+::: code-group
+
+```tsx [React]
+import { setup, Snippet } from '@anchorlib/react';
+
+export const UserProfile = setup(() => {
+  const state = mutable({ cpu: 45 });
+  
+  return (
+    <div className="card">
+      {/* Isolate fast updates while deferring the property read */}
+      <Snippet data={state}>
+        {({ cpu }) => <span>CPU: {cpu}%</span>}
+      </Snippet>
+    </div>
+  );
+});
+```
+
+```tsx [Solid]
+import { setup, mutable } from '@anchorlib/solid';
+
+export const UserProfile = setup(() => {
+  const state = mutable({ cpu: 45 });
+  
+  return (
+    <div class="card">
+      {/* Solid natively isolates the update to this specific text node */}
+      <span>CPU: {state.cpu}%</span>
     </div>
   );
 });
@@ -310,6 +370,95 @@ const PriceCard = setup(() => {
 :::
 
 With Anchor, you stop wiring libraries together. Whether it's a **live data stream**, a **global user session**, or a **complex form**, it's just **reactive state**. One field changes, one fragment updates. Everything else stays still. You get **fine-grained updates**, **controlled write contracts**, and **schema validation** through Zod — all for free.
+
+## Browser: Reactive DOM Primitives
+
+Listening to global DOM events like pointer tracking, scrolling, or dragging usually requires manual lifecycle management to avoid memory leaks, especially during Server-Side Rendering (SSR).
+
+::: tip What if:
+**Handling browser events is just writing `if`?**
+:::
+
+::: code-group
+
+```tsx [React]
+import { setup, mutable, effect, Show } from '@anchorlib/react';
+import { LIVE_SELECTION as selection, LIVE_KEYBOARD as key } from '@anchorlib/react/browser';
+
+export const CopyCapture = setup(() => {
+  const clip = mutable('');
+
+  // Declarative event composition without manual listeners
+  effect(() => {
+    if (selection.text && key.is('ctrl', 'c')) {
+      clip.value = selection.text;
+      console.log('Text copied to clipboard...');
+    }
+  });
+
+  return (
+    <div className="copy-capture">
+      <p>Select some text and press Ctrl+C anywhere on the page.</p>
+      
+      <Show when={() => clip.value}>
+        {(text) => (
+          <div className="clipboard-toast">
+            Copied: {text}
+          </div>
+        )}
+      </Show>
+    </div>
+  );
+});
+```
+
+```tsx [Solid]
+import { setup, mutable, effect, Show } from '@anchorlib/solid';
+import { LIVE_SELECTION as selection, LIVE_KEYBOARD as key } from '@anchorlib/solid/browser';
+
+export const CopyCapture = setup(() => {
+  const clip = mutable('');
+
+  // Declarative event composition without manual listeners
+  effect(() => {
+    if (selection.text && key.is('ctrl', 'c')) {
+      clip.value = selection.text;
+      console.log('Text copied to clipboard...');
+    }
+  });
+
+  return (
+    <div class="copy-capture">
+      <p>Select some text and press Ctrl+C anywhere on the page.</p>
+      
+      <Show when={clip.value}>
+        {(text) => (
+          <div class="clipboard-toast">
+            Copied: {text}
+          </div>
+        )}
+      </Show>
+    </div>
+  );
+});
+```
+
+:::
+
+::: tip What's happening?
+As you can see, handling multiple events is as natural as saying **If there is a text selected and the key ctrl+c is pressed**. Normally, this would require attaching `selectionchange` and `keydown` listeners to the document, manually checking `event.ctrlKey`, syncing the result to state, and crucially—remembering to call `removeEventListener` on unmount.
+:::
+
+With Anchor's browser primitives, you stop writing manual event listeners and cleanup functions. You can compose DOM events **globally**, **within a component**, or under **specific conditions**—the browser simply becomes another part of your reactive state graph.
+
+- **`LIVE_CURSOR`** & **`cursorRef()`**: Track pointer coordinates and active buttons globally or within a specific container.
+- **`LIVE_SCROLL`** & **`scrollRef()`**: Monitor scroll offsets and direction reactively without layout thrashing.
+- **`LIVE_SELECTION`**: Capture multi-line text selection boundaries and extract precise SVG selection paths.
+- **`LIVE_DND`**: Declarative drag-and-drop primitives with reactive drag coordinates and payloads.
+- **`LIVE_MEDIA`** & **`LIVE_WINDOW`**: React to device media queries (dark mode, mobile, touch) and viewport dimensions.
+- **`LIVE_KEYBOARD`** & **`LIVE_CLIPBOARD`**: Manage keyboard shortcuts and clipboard payloads asynchronously.
+
+These utilities automatically defer listener registration until client hydration is complete, keeping your application SSR-safe.
 
 ## Router: Reactive Routing Engine
 
@@ -342,8 +491,17 @@ export const userRoute = usersRoute.route('/:user_id')
   })
   .render((state) => (
     <div className="profile-view">
-      <h1>{state.data?.profile.name}</h1>
-      <span>{state.data?.profile.email}</span>
+      <Show when={() => state.status === 'pending'}>
+        <span>Loading...</span>
+      </Show>
+      <Show when={() => state.status === 'success' && state.data}>
+        {({ profile }) => (
+          <>
+            <h1>{profile.name}</h1>
+            <span>{profile.email}</span>
+          </>
+        )}
+      </Show>
     </div>
   ));
 ```
@@ -360,8 +518,17 @@ export const userRoute = usersRoute.route('/:user_id')
   })
   .render((state) => (
     <div class="profile-view">
-      <h1>{state.data?.profile.name}</h1>
-      <span>{state.data?.profile.email}</span>
+      <Show when={state.status === 'pending'}>
+        <span>Loading...</span>
+      </Show>
+      <Show when={state.status === 'success' && state.data}>
+        {({ profile }) => (
+          <>
+            <h1>{profile.name}</h1>
+            <span>{profile.email}</span>
+          </>
+        )}
+      </Show>
     </div>
   ));
 ```
@@ -385,7 +552,85 @@ Whether you use React Router or Solid Router, client-side routers are traditiona
 **The routing engine generated your sitemap automatically out of the box?**
 :::
 
-With Anchor, your router *is* your sitemap. Because the route tree is strongly typed and centrally defined, the SSR engine intercepts `/sitemap.xml` automatically. It deeply collects your static routes, executes your dynamic generators, and natively cross-links multi-lingual alternates (`<xhtml:link>`) across your entire app—all with **zero configuration**.
+::: code-group
+
+```ts [Static Route]
+// Static routes are included automatically. 
+// You can pass an object to customize properties.
+export const aboutRoute = rootRoute.route('/about', {
+  sitemap: { priority: 0.8, changefreq: 'monthly' }
+});
+```
+
+```ts [Dynamic Route]
+export const postRoute = rootRoute.route('/blog/:slug', {
+  // Dynamically generate entries using the route instance
+  sitemap: async (route) => {
+    const posts = await getPosts();
+    return posts.map(p => ({
+      loc: route.url({ slug: p.slug }), // MUST use route.url()
+      lastmod: p.updatedAt
+    }));
+  }
+});
+```
+
+:::
+
+With Anchor, your router *is* your sitemap. Because the route tree is strongly typed and centrally defined, the SSR engine intercepts `/sitemap.xml` automatically. It deeply collects your static routes, executes your dynamic generators, and natively cross-links multi-lingual alternates (`<xhtml:link>`) across your entire app—all with **zero configuration**. You can also generate sitemaps programmatically for custom server setups.
+
+## Asset Optimization & Caching
+
+Serving images efficiently across multiple screen sizes is traditionally a complex task, requiring manual variant generation and tedious `srcset` markup. 
+
+With the `airImage` Vite plugin and the universal `<Image>` component, responsive asset generation is completely automated from the build pipeline directly into your UI components.
+
+```ts [vite.config.ts]
+import { defineConfig } from 'vite';
+import { airImage } from '@anchorlib/vite-ssr';
+
+// Automatically generates responsive WebP/AVIF variants
+export default defineConfig({
+  plugins: [
+    airImage({ 
+      devEnabled: true,
+      sizes: [128, 256, 512, 1024],
+      format: 'webp',
+      quality: 75
+    })
+  ]
+});
+```
+
+Then, seamlessly consume the generated assets in your UI:
+
+::: code-group
+
+```tsx [React]
+import { Image } from '@anchorlib/react';
+import heroImage from './assets/hero.jpg?airimg';
+
+export function Hero() {
+  return (
+    <Image from={heroImage} alt="Hero Banner" />
+  );
+}
+```
+
+```tsx [Solid]
+import { Image } from '@anchorlib/solid';
+import heroImage from './assets/hero.jpg?airimg';
+
+export function Hero() {
+  return (
+    <Image from={heroImage} alt="Hero Banner" />
+  );
+}
+```
+
+:::
+
+In addition, the SSR environment provides a robust **asset resolver** with configurable **caching strategies**. You can easily define granular cache lifetimes per route or static asset directly within your universal SSR worker (`airWorker`), providing maximum performance on edge environments like Cloudflare and Node.js.
 
 ## Server-Side Rendering
 
@@ -398,66 +643,58 @@ With modern meta-frameworks, moving client-side state to the server fractures yo
 - Manually parse request cookies, track mutations during render, and manually reconstruct `Set-Cookie` headers.
 
 ::: tip What if:
-**The server just creates a scope and runs the exact same code?**
+**The server just isolates the request and runs the exact same code?**
 :::
 
 ::: code-group
 
-```tsx [React] {6,8,14,18}
-export async function render(url: string, cookie = '') {
-  let html = '';
-  let cookies: string[] = [];
+```ts [vite.config.ts]
+import { defineConfig } from 'vite';
+import { airWorker } from '@anchorlib/vite-ssr';
 
-  // 1. Create a completely isolated reactive scope for this request
-  await withIsolation(async () => {
-    const jar = decodeCookies(cookie);
-    setCookieContext(jar);
-
-    const ssr = createLifecycle();
-    
-    await ssr.runAsync(async () => {
-      await router.activate(url);
-      html = renderToString(<UIRouter router={router} root={RootLayout} url={url} />);
-      router.cleanup();
-    });
-
-    cookies = jar.encode();
-    ssr.destroy();
-  });
-
-  return { html, cookies };
-}
+// 1. Delegates SSR, IRPC, and WebSockets to your edge worker during development.
+export default defineConfig({
+  plugins: [airWorker()],
+});
 ```
 
-```tsx [Solid] {6,8,14,18}
-export async function render(url: string, cookie = '') {
-  let html = '';
-  let cookies: string[] = [];
+```tsx [React (worker.ts)]
+import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
+import { HTTPRouter } from '@irpclib/http/router';
+import { transport } from './irpc.js';
+import { router } from './router.js';
+import { RootLayout } from './layout.js';
 
-  // 1. Create a completely isolated reactive scope for this request
-  await withIsolation(async () => {
-    const jar = decodeCookies(cookie);
-    setCookieContext(jar);
+// 2. The isomorphic SSR renderer
+const render = createSSR(router, RootLayout);
 
-    const ssr = createLifecycle();
-    
-    await ssr.runAsync(async () => {
-      await router.activate(url);
-      html = renderToString(() => <UIRouter router={router} root={RootLayout} url={url} />);
-      router.cleanup();
-    });
+// 3. The backend IRPC router
+const irpcRouter = new HTTPRouter(transport);
 
-    cookies = jar.encode();
-    ssr.destroy();
-  });
+// 4. A single universal worker handles both with shared context isolation!
+export default createFullWorker(irpcRouter, render);
+```
 
-  return { html, cookies };
-}
+```tsx [Solid (worker.ts)]
+import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
+import { HTTPRouter } from '@irpclib/http/router';
+import { transport } from './irpc.js';
+import { router } from './router.js';
+import { RootLayout } from './layout.js';
+
+// 2. The isomorphic SSR renderer
+const render = createSSR(router, RootLayout);
+
+// 3. The backend IRPC router
+const irpcRouter = new HTTPRouter(transport);
+
+// 4. A single universal worker handles both with shared context isolation!
+export default createFullWorker(irpcRouter, render);
 ```
 
 :::
 
-With Anchor, state is automatically scoped to the request lifecycle. There are no **`'use client'` directives**, no **arbitrary server boundaries**, and full access to **reactive hooks** on the server. The reactive graph serializes itself, **cookie mutations are automatically tracked**, and client hydration automatically rebuilds the state by simply re-activating the router. Because it relies purely on standard Web APIs, the exact same code deploys seamlessly to **Bun**, **Node.js**, **Cloudflare Workers**, and **Deno**.
+With Anchor, state is automatically scoped to the request lifecycle. There are no **`'use client'` directives**, no **arbitrary server boundaries**, and full access to **reactive states** on the server. The reactive graph serializes itself, **cookie mutations are automatically tracked**, and client hydration automatically rebuilds the state by simply re-activating the router. Because it relies purely on standard Web APIs, the exact same code deploys seamlessly to **Bun**, **Node.js**, **Cloudflare Workers**, and **Deno**.
 
 ## Portability
 

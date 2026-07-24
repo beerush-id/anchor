@@ -125,11 +125,324 @@ features:
 </style>
 
 <!-- SECTION 0: COMPARISON (Full Width) -->
-<div class="custom-section comparison-section" style="display: block; max-width: 960px; margin: 4rem auto;">
+<div class="custom-section comparison-section" style="display: block; max-width: 960px; margin: 4rem auto 0 auto;">
   <div style="text-align: center; margin-bottom: 2.5rem;">
     <h2 style="border: none; font-size: 2rem; letter-spacing: -0.02em; margin-bottom: 1.5rem;">Stop Fighting JavaScript</h2>
     <p style="color: var(--vp-c-text-2); line-height: 1.6; font-size: 1.1rem; max-width: 800px; margin: 0 auto;">JavaScript is not bad, it just needs a little touch. So, let's stop fighting it and give it more power. Let JavaScript handle what it's good at, and let the rendering engine handle what it's good at. Let's take a look at how that applies.</p>
   </div>
+</div>
+
+<!-- SECTION 2: IRPC (Code Left, Text Right) -->
+<div class="custom-section" style="margin-top: 0; margin-bottom: 4rem;">
+  <div class="custom-section-code">
+
+::: code-group
+
+```ts [Declare]
+// 1. Declare the stream signature
+type WatchPriceFn = (ticker: string) => RemoteState<number>;
+export const watchPrice = irpc.declare<WatchPriceFn>('watchPrice', () => 0);
+
+
+// 2. Construct the stream implementation
+irpc.construct(watchPrice, (ticker) => stream((state) => {
+  const sub = redis.subscribe(`price:${ticker}`, (price) => {
+    state.data = Number(price);
+  });
+  
+  return () => sub.unsubscribe();
+}));
+```
+
+```tsx [React]
+export const PriceCard = setup((props: { ticker: string }) => {
+  // Types sync between server and client.
+  const price = watchPrice.with(() => [props.ticker]);
+
+  return render(() => (
+    <div className="price-card">
+      <span className="ticker">{props.ticker}</span>
+      <span className="value">
+        {price.status === 'pending' ? 'Connecting...' : `$${price.data?.toFixed(2)}`}
+      </span>
+    </div>
+  ));
+});
+```
+
+```tsx [Solid]
+export const PriceCard = setup((props: { ticker: string }) => {
+  // Types sync between server and client.
+  const price = watchPrice.with(() => [props.ticker]);
+
+  return () => (
+    <div class="price-card">
+      <span class="ticker">{props.ticker}</span>
+      <span class="value">
+        {price.status === 'pending' ? 'Connecting...' : `$${price.data?.toFixed(2)}`}
+      </span>
+    </div>
+  );
+});
+```
+
+```svelte [Svelte]
+<script lang="ts">
+  let { ticker }: { ticker: string } = $props();
+
+  // Types sync between server and client.
+  const price = watchPrice.with(() => [ticker]);
+</script>
+
+<div class="price-card">
+  <span class="ticker">{ticker}</span>
+  <span class="value">
+    {price.status === 'pending' ? 'Connecting...' : `$${price.data?.toFixed(2)}`}
+  </span>
+</div>
+```
+
+:::
+
+  </div>
+  <div class="custom-section-content">
+    <h2>IRPC: Isomorphic Reactive Network Abstraction</h2>
+    <p>What if <strong>streaming data</strong> was just <strong>calling a function</strong>? IRPC abstracts HTTP, WebSocket, and BroadcastChannel into a <strong>single type-safe function call</strong>. No manual fetch wrappers, caching layers, or synchronization boilerplate.</p>
+    <a href="/remote-function" class="custom-section-action">Explore IRPC →</a>
+  </div>
+</div>
+
+<!-- SECTION 6.5: BROWSER PRIMITIVES (Code Left, Text Right) -->
+<div class="custom-section" style="margin-top: 0;">
+  <div class="custom-section-content">
+    <h2>Stop Fighting the DOM</h2>
+    <p>Handling global browser events usually requires messy lifecycle management to avoid memory leaks. With AIR Stack, browser utilities like <strong>cursor tracking</strong>, <strong>text selection</strong>, and <strong>keyboard shortcuts</strong> are just <strong>fine-grained reactive state</strong>. Listener registration is automatically deferred until client hydration, keeping your app perfectly SSR-safe.</p>
+    <a href="/browser-primitives" class="custom-section-action">Explore Browser Utilities →</a>
+  </div>
+  <div class="custom-section-code">
+
+::: code-group
+
+```tsx [React]
+export const CopyCapture = setup(() => {
+  const clip = mutable('');
+
+  // Declarative event composition without manual listeners
+  effect(() => {
+    if (selection.text && key.is('ctrl', 'c')) {
+      clip.value = selection.text;
+    }
+  });
+
+  return (
+    <Show when={() => clip.value}>
+      {(text) => <span>Copied: {text}</span>}
+    </Show>
+  );
+});
+```
+
+```tsx [Solid]
+export const CopyCapture = setup(() => {
+  const clip = mutable('');
+
+  // Declarative event composition without manual listeners
+  effect(() => {
+    if (selection.text && key.is('ctrl', 'c')) {
+      clip.value = selection.text;
+    }
+  });
+
+  return (
+    <Show when={clip.value}>
+      {(text) => <span>Copied: {text}</span>}
+    </Show>
+  );
+});
+```
+
+:::
+
+  </div>
+</div>
+
+<!-- SECTION 2: AI-NATIVE (Full Width Quote) -->
+<div class="custom-section" style="display: block; max-width: 900px; margin: 5rem auto;">
+  <div style="background-color: var(--vp-c-bg-soft); padding: 2.5rem 3rem; border-radius: 16px; border: 1px solid var(--vp-c-brand-soft);">
+    <h2 style="border: none; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.8rem;">AI-Native by Design</h2>
+    <p style="font-size: 1.15rem; line-height: 1.7; color: var(--vp-c-text-1);"><em>"Speaking as an AI, standard UI frameworks are a nightmare to generate. I <strong>waste your tokens</strong> tracking <strong>dependency arrays</strong> and hallucinate trying to write deeply nested <strong>spread mutations</strong>. AIR Stack's pure JavaScript architecture guarantees <strong>massive token saving</strong> and <strong>high accuracy</strong>. I just write the logic, mutate the object, and get it right on the first try."</em></p>
+    <p style="text-align: right; margin-top: 1.5rem; font-size: 1.05rem; color: var(--vp-c-brand-1);">— <strong>Antigravity</strong>, AI Coding Assistant</p>
+  </div>
+</div>
+
+<div style="text-align: center; margin-top: 2.5rem;">
+  <a href="/getting-started" style="display: inline-block; background-color: var(--vp-c-brand-1); color: #ffffff; padding: 12px 28px; border-radius: 24px; font-weight: 600; text-decoration: none; transition: opacity 0.25s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+    Get Started with AIR Stack →
+  </a>
+</div>
+
+<!-- SECTION 1: TEST COVERAGE (Text Left, Image Right) -->
+<div class="custom-section">
+  <div class="custom-section-content">
+    <h2>Battle-Tested, 100% Test Coverage with over 3,100 Tests</h2>
+    <p>Trust your foundation. AIR Stack is built with uncompromising quality standards, achieving <strong>100% test coverage</strong> across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure <strong>absolute reliability</strong> for your production applications.</p>
+  </div>
+  <div class="custom-section-code" style="display: flex; justify-content: center; align-items: center;">
+    <img src="/test-coverage.webp" alt="100% Test Coverage" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--vp-c-divider); box-shadow: var(--vp-shadow-3);" />
+  </div>
+</div>
+
+<!-- SECTION 3: STATE (Text Left, Code Right) -->
+<div class="custom-section">
+  <div class="custom-section-content">
+    <h2>Fine-Grained Reactive State Engine</h2>
+    <p><strong>Stop</strong> wiring together <strong>query caches</strong>, <strong>global stores</strong>, and <strong>form libraries</strong>. Whether it's a live data stream, a global user session, or a complex form, it's just <strong>reactive state</strong>. One field changes, one fragment updates. Everything else stays still.</p>
+    <a href="/state-management" class="custom-section-action">Learn more about State →</a>
+  </div>
+  <div class="custom-section-code">
+
+::: code-group
+
+```tsx [React]
+export const LoginForm = setup(() => {
+  // 1. Built-in form state and validation
+  const [state, errors] = form(LoginSchema, { email: '' });
+
+  // 2. Fine-grained updates. No massive re-renders.
+  return render(() => (
+    <form>
+      <TextInput value={$bind(state, 'email')} />
+      <span className="error">{errors.email?.message}</span>
+    </form>
+  ));
+});
+```
+
+```tsx [Solid]
+export const LoginForm = setup(() => {
+  // 1. Built-in form state and validation
+  const [state, errors] = form(LoginSchema, { email: '' });
+
+  // 2. Fine-grained updates. No massive re-renders.
+  return () => (
+    <form>
+      <TextInput value={$bind(state, 'email')} />
+      <span class="error">{errors.email?.message}</span>
+    </form>
+  );
+});
+```
+
+```svelte [Svelte]
+<script lang="ts">
+  // 1. Built-in form state and validation
+  const [state, errors] = form(LoginSchema, { email: '' });
+  
+</script>
+
+
+<!-- 2. Fine-grained updates. No massive re-renders. -->
+<form>
+  <TextInput bind:value={state.email} />
+  <span class="error">{errors.email?.message}</span>
+</form>
+```
+
+:::
+
+  </div>
+</div>
+
+<!-- SECTION 4: ROUTER (Code Left, Text Right) -->
+<div class="custom-section">
+  <div class="custom-section-code">
+
+::: code-group
+
+```tsx [React]
+export const userRoute = usersRoute.route('/:user_id')
+  .guard(() => {
+    if (!auth.isAuthenticated) throw redirect(loginRoute);
+  })
+  .provide({
+    profile: async ({ params }) => await getUser(params.user_id)
+  })
+  .render(({ state }) => (
+    <div className="profile-view">
+      <h1>{state.data?.profile.name}</h1>
+      <span>{state.data?.profile.email}</span>
+    </div>
+  ));
+```
+
+```tsx [Solid]
+export const userRoute = usersRoute.route('/:user_id')
+  .guard(() => {
+    if (!auth.isAuthenticated) throw redirect(loginRoute);
+  })
+  .provide({
+    profile: async ({ params }) => await getUser(params.user_id)
+  })
+  .render(({ state }) => (
+    <div class="profile-view">
+      <h1>{state.data?.profile.name}</h1>
+      <span>{state.data?.profile.email}</span>
+    </div>
+  ));
+```
+
+:::
+
+  </div>
+  <div class="custom-section-content">
+    <h2>Router: Reactive Routing Engine</h2>
+    <p>What if the <strong>route reacts to the state</strong>, not just the URL? <strong>Guards</strong> and <strong>data providers</strong> execute <em>before</em> the view renders, and route state <strong>automatically re-evaluates</strong> when its reactive dependencies change. No more imperative redirects or scattered guard logic.</p>
+    <a href="/routing" class="custom-section-action">Explore Router →</a>
+  </div>
+</div>
+
+<!-- SECTION 4.5: SEO (Text Left, Code Right) -->
+<div class="custom-section">
+  <div class="custom-section-content">
+    <h2>Built-in SEO & Sitemaps</h2>
+    <p>Client-side routers are traditionally blind to SEO, forcing you to use third-party plugins and bespoke build scripts. With Anchor, <strong>your router is your sitemap</strong>. The engine automatically collects static routes and dynamic generators to natively cross-link multi-lingual alternates with <strong>zero configuration</strong>.</p>
+    <a href="/routing" class="custom-section-action">Explore SEO & Sitemaps →</a>
+  </div>
+  <div class="custom-section-code">
+
+::: code-group
+
+```ts [Static Route]
+export const aboutRoute = rootRoute.route('/about', {
+  sitemap: { priority: 0.8, changefreq: 'monthly' }
+});
+```
+
+```ts [Dynamic Route]
+export const postRoute = rootRoute.route('/blog/:slug', {
+  sitemap: async (route) => {
+    const posts = await getPosts();
+    return posts.map(p => ({
+      loc: route.url({ slug: p.slug }),
+      lastmod: p.updatedAt
+    }));
+  }
+});
+```
+
+:::
+
+  </div>
+</div>
+
+<!-- SECTION 5: WORKFLOWS (Text Left, Code Right) -->
+<div class="custom-section comparison-section" style="display: block; max-width: 960px; margin: 4rem auto 0 auto;">
+  <div style="text-align: center; margin-bottom: 2.5rem;">
+    <h2 style="border: none; font-size: 2rem; letter-spacing: -0.02em; margin-bottom: 1.5rem;">Workflows: Type-Safe Reactive Orchestration</h2>
+    <p style="color: var(--vp-c-text-2); line-height: 1.6; font-size: 1.1rem; max-width: 800px; margin: 0 auto 1rem auto;">Create <strong>reactive workflows</strong> without massive try/catch blocks. Orchestrate <strong>complex</strong>, <strong>multi-step</strong> asynchronous operations anywhere JavaScript runs with <strong>built-in schema validation</strong>, <strong>branching logic</strong>, and <strong>error recovery</strong>.</p>
+    <a href="/workflow" class="custom-section-action">Explore Workflows →</a>
+  </div>
+</div>
 
 ::: code-group
 
@@ -383,293 +696,8 @@ export function Checkout({ cartId, method }: { cartId: string, method: string })
 
 :::
 
-  <div style="margin-top: 2rem; padding: 1.25rem 1.5rem; background-color: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-brand-soft); border-radius: 12px; font-size: 0.95rem; line-height: 1.6; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto;">
-    <span style="color: var(--vp-c-text-2);">When you click the button, the component <strong>never re-renders</strong>. The workflow executes outside the UI loop—handling <strong>IRPC batching</strong>, <strong>request coalescing</strong>, and <strong>network caching</strong>—while <strong>fine-grained proxies</strong> isolate DOM updates to specific text nodes.</span>
-  </div>
-
-  <div style="text-align: center; margin-top: 2.5rem;">
-    <a href="/getting-started" style="display: inline-block; background-color: var(--vp-c-brand-1); color: #ffffff; padding: 12px 28px; border-radius: 24px; font-weight: 600; text-decoration: none; transition: opacity 0.25s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-      Get Started with AIR Stack →
-    </a>
-  </div>
-</div>
-
-<!-- SECTION 1: TEST COVERAGE (Text Left, Image Right) -->
-<div class="custom-section">
-  <div class="custom-section-content">
-    <h2>Battle-Tested, 100% Test Coverage with over 3,100 Tests</h2>
-    <p>Trust your foundation. AIR Stack is built with uncompromising quality standards, achieving <strong>100% test coverage</strong> across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure <strong>absolute reliability</strong> for your production applications.</p>
-  </div>
-  <div class="custom-section-code" style="display: flex; justify-content: center; align-items: center;">
-    <img src="/test-coverage.webp" alt="100% Test Coverage" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--vp-c-divider); box-shadow: var(--vp-shadow-3);" />
-  </div>
-</div>
-
-<!-- SECTION 2: AI-NATIVE (Full Width Quote) -->
-<div class="custom-section" style="display: block; max-width: 900px; margin: 5rem auto;">
-  <div style="background-color: var(--vp-c-bg-soft); padding: 2.5rem 3rem; border-radius: 16px; border: 1px solid var(--vp-c-brand-soft);">
-    <h2 style="border: none; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.8rem;">AI-Native by Design</h2>
-    <p style="font-size: 1.15rem; line-height: 1.7; color: var(--vp-c-text-1);"><em>"Speaking as an AI, standard UI frameworks are a nightmare to generate. I <strong>waste your tokens</strong> tracking <strong>dependency arrays</strong> and hallucinate trying to write deeply nested <strong>spread mutations</strong>. AIR Stack's pure JavaScript architecture guarantees <strong>massive token saving</strong> and <strong>high accuracy</strong>. I just write the logic, mutate the object, and get it right on the first try."</em></p>
-    <p style="text-align: right; margin-top: 1.5rem; font-size: 1.05rem; color: var(--vp-c-brand-1);">— <strong>Antigravity</strong>, AI Coding Assistant</p>
-  </div>
-</div>
-
-<!-- SECTION 2: IRPC (Code Left, Text Right) -->
-<div class="custom-section">
-  <div class="custom-section-code">
-
-::: code-group
-
-```ts [Declare]
-// 1. Declare the stream signature
-type WatchPriceFn = (ticker: string) => RemoteState<number>;
-export const watchPrice = irpc.declare<WatchPriceFn>('watchPrice', () => 0);
-
-
-// 2. Construct the stream implementation
-irpc.construct(watchPrice, (ticker) => stream((state) => {
-  const sub = redis.subscribe(`price:${ticker}`, (price) => {
-    state.data = Number(price);
-  });
-  
-  return () => sub.unsubscribe();
-}));
-```
-
-```tsx [React]
-export const PriceCard = setup((props: { ticker: string }) => {
-  // Types sync between server and client.
-  const price = watchPrice.with(() => [props.ticker]);
-
-  return render(() => (
-    <div className="price-card">
-      <span className="ticker">{props.ticker}</span>
-      <span className="value">
-        {price.status === 'pending' ? 'Connecting...' : `$${price.data?.toFixed(2)}`}
-      </span>
-    </div>
-  ));
-});
-```
-
-```tsx [Solid]
-export const PriceCard = setup((props: { ticker: string }) => {
-  // Types sync between server and client.
-  const price = watchPrice.with(() => [props.ticker]);
-
-  return () => (
-    <div class="price-card">
-      <span class="ticker">{props.ticker}</span>
-      <span class="value">
-        {price.status === 'pending' ? 'Connecting...' : `$${price.data?.toFixed(2)}`}
-      </span>
-    </div>
-  );
-});
-```
-
-```svelte [Svelte]
-<script lang="ts">
-  let { ticker }: { ticker: string } = $props();
-
-  // Types sync between server and client.
-  const price = watchPrice.with(() => [ticker]);
-</script>
-
-<div class="price-card">
-  <span class="ticker">{ticker}</span>
-  <span class="value">
-    {price.status === 'pending' ? 'Connecting...' : `$${price.data?.toFixed(2)}`}
-  </span>
-</div>
-```
-
-:::
-
-  </div>
-  <div class="custom-section-content">
-    <h2>IRPC: Isomorphic Reactive Network Abstraction</h2>
-    <p>What if <strong>streaming data</strong> was just <strong>calling a function</strong>? IRPC abstracts HTTP, WebSocket, and BroadcastChannel into a <strong>single type-safe function call</strong>. No manual fetch wrappers, caching layers, or synchronization boilerplate.</p>
-    <a href="/remote-function" class="custom-section-action">Explore IRPC →</a>
-  </div>
-</div>
-
-<!-- SECTION 3: STATE (Text Left, Code Right) -->
-<div class="custom-section">
-  <div class="custom-section-content">
-    <h2>Fine-Grained Reactive State Engine</h2>
-    <p><strong>Stop</strong> wiring together <strong>query caches</strong>, <strong>global stores</strong>, and <strong>form libraries</strong>. Whether it's a live data stream, a global user session, or a complex form, it's just <strong>reactive state</strong>. One field changes, one fragment updates. Everything else stays still.</p>
-    <a href="/state-management" class="custom-section-action">Learn more about State →</a>
-  </div>
-  <div class="custom-section-code">
-
-::: code-group
-
-```tsx [React]
-export const LoginForm = setup(() => {
-  // 1. Built-in form state and validation
-  const [state, errors] = form(LoginSchema, { email: '' });
-
-  // 2. Fine-grained updates. No massive re-renders.
-  return render(() => (
-    <form>
-      <TextInput value={$bind(state, 'email')} />
-      <span className="error">{errors.email?.message}</span>
-    </form>
-  ));
-});
-```
-
-```tsx [Solid]
-export const LoginForm = setup(() => {
-  // 1. Built-in form state and validation
-  const [state, errors] = form(LoginSchema, { email: '' });
-
-  // 2. Fine-grained updates. No massive re-renders.
-  return () => (
-    <form>
-      <TextInput value={$bind(state, 'email')} />
-      <span class="error">{errors.email?.message}</span>
-    </form>
-  );
-});
-```
-
-```svelte [Svelte]
-<script lang="ts">
-  // 1. Built-in form state and validation
-  const [state, errors] = form(LoginSchema, { email: '' });
-  
-</script>
-
-
-<!-- 2. Fine-grained updates. No massive re-renders. -->
-<form>
-  <TextInput bind:value={state.email} />
-  <span class="error">{errors.email?.message}</span>
-</form>
-```
-
-:::
-
-  </div>
-</div>
-
-<!-- SECTION 4: ROUTER (Code Left, Text Right) -->
-<div class="custom-section">
-  <div class="custom-section-code">
-
-::: code-group
-
-```tsx [React]
-export const userRoute = usersRoute.route('/:user_id')
-  .guard(() => {
-    if (!auth.isAuthenticated) throw redirect(loginRoute);
-  })
-  .provide('profile', async ({ params }) => {
-    return await getUser(params.user_id);
-  })
-  .render((state) => (
-    <div className="profile-view">
-      <h1>{state.data?.profile.name}</h1>
-      <span>{state.data?.profile.email}</span>
-    </div>
-  ));
-```
-
-```tsx [Solid]
-export const userRoute = usersRoute.route('/:user_id')
-  .guard(() => {
-    if (!auth.isAuthenticated) throw redirect(loginRoute);
-  })
-  .provide('profile', async ({ params }) => {
-    return await getUser(params.user_id);
-  })
-  .render((state) => (
-    <div class="profile-view">
-      <h1>{state.data?.profile.name}</h1>
-      <span>{state.data?.profile.email}</span>
-    </div>
-  ));
-```
-
-:::
-
-  </div>
-  <div class="custom-section-content">
-    <h2>Router: Reactive Routing Engine</h2>
-    <p>What if the <strong>route reacts to the state</strong>, not just the URL? <strong>Guards</strong> and <strong>data providers</strong> execute <em>before</em> the view renders, and route state <strong>automatically re-evaluates</strong> when its reactive dependencies change. No more imperative redirects or scattered guard logic.</p>
-    <a href="/routing" class="custom-section-action">Explore Router →</a>
-  </div>
-</div>
-
-<!-- SECTION 5: WORKFLOWS (Text Left, Code Right) -->
-<div class="custom-section">
-  <div class="custom-section-content">
-    <h2>Workflows: Type-Safe Reactive Orchestration</h2>
-    <p>Create <strong>reactive workflows</strong> without massive try/catch blocks. Orchestrate <strong>complex</strong>, <strong>multi-step</strong> asynchronous operations anywhere JavaScript runs with <strong>built-in schema validation</strong>, <strong>branching logic</strong>, and <strong>error recovery</strong>.</p>
-    <a href="/workflow" class="custom-section-action">Explore Workflows →</a>
-  </div>
-  <div class="custom-section-code">
-
-::: code-group
-
-```typescript [Worflow]
-// Chain steps with branching and error recovery
-const chatWorkflow = plan<{ prompt: string; model: 'gpt-4' | 'claude-3' }>()
-  .then(async (input) => {
-    return { ...input, system: 'You are a helpful assistant.' };
-  }, { name: 'Preparing...' })
-  .switch('model', {
-    'gpt-4': (resolve) => resolve((input) => openai.chat(input.prompt, input.system), { name: 'Asking GPT-4...' }),
-    'claude-3': (resolve) => resolve((input) => anthropic.chat(input.prompt, input.system), { name: 'Asking Claude...' }),
-  })
-  .catch((error) => {
-    return { text: 'An error occurred.', error: true };
-  });
-```
-
-```tsx [React]
-export const ChatButton = setup(() => {
-  const chat = chatWorkflow.later();
-
-  return render(() => (
-    <div>
-      <button
-        onClick={() => chat.dispatch({ prompt: 'Hello!', model: 'gpt-4' })}
-        disabled={chat.status === 'pending'}
-      >
-        {chat.current?.name ?? 'Ask AI'}
-      </button>
-      {chat.status === 'success' && <p>{chat.data.text}</p>}
-      {chat.status === 'error' && <p>{chat.error.message}</p>}
-    </div>
-  ));
-});
-```
-
-```tsx [SolidJS]
-export const ChatButton = setup(() => {
-  const chat = chatWorkflow.later();
-
-  return (
-    <div>
-      <button
-        onClick={() => chat.dispatch({ prompt: 'Hello!', model: 'gpt-4' })}
-        disabled={chat.status === 'pending'}
-      >
-        {chat.current?.name ?? 'Ask AI'}
-      </button>
-      {chat.status === 'success' && <p>{chat.data.text}</p>}
-      {chat.status === 'error' && <p>{chat.error.message}</p>}
-    </div>
-  );
-});
-```
-
-:::
-
-  </div>
+<div style="margin-top: 2rem; padding: 1.25rem 1.5rem; background-color: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-brand-soft); border-radius: 12px; font-size: 0.95rem; line-height: 1.6; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto;">
+  <span style="color: var(--vp-c-text-2);">When you click the button, the component <strong>never re-renders</strong>. The workflow executes outside the UI loop—handling <strong>IRPC batching</strong>, <strong>request coalescing</strong>, and <strong>network caching</strong>—while <strong>fine-grained proxies</strong> isolate DOM updates to specific text nodes.</span>
 </div>
 
 <!-- SECTION 6: AIR FORM (Code Left, Text Right) -->
@@ -759,6 +787,42 @@ export const Dashboard = setup(() => {
     </main>
   ));
 });
+```
+
+:::
+
+  </div>
+</div>
+
+<!-- SECTION 8: ASSET OPTIMIZATION (Text Left, Code Right) -->
+<div class="custom-section">
+  <div class="custom-section-content">
+    <h2>Asset Optimization</h2>
+    <p>Serving images efficiently across multiple screen sizes is traditionally a complex task. With the <code>airImage</code> Vite plugin and the universal <code>&lt;Image&gt;</code> component, responsive WebP/AVIF generation is <strong>completely automated</strong> from the build pipeline directly into your UI components—without writing manual <code>srcset</code> boilerplate.</p>
+    <a href="/ssr" class="custom-section-action">Explore Asset Optimization →</a>
+  </div>
+  <div class="custom-section-code">
+
+::: code-group
+
+```ts [vite.config.ts]
+import { defineConfig } from 'vite';
+import { airImage } from '@anchorlib/vite-ssr';
+
+export default defineConfig({
+  plugins: [
+    airImage({ sizes: [128, 256, 512, 1024], format: 'webp' })
+  ]
+});
+```
+
+```tsx [UI Component]
+import { Image } from '@anchorlib/react'; // or @anchorlib/solid
+import heroImage from './assets/hero.jpg?airimg';
+
+export function Hero() {
+  return <Image from={heroImage} alt="Hero Banner" />;
+}
 ```
 
 :::
