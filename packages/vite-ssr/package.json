@@ -25,6 +25,13 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./image": {
+      "types": "./dist/image.d.ts",
+      "import": "./dist/image.js"
+    },
+    "./ambient": {
+      "types": "./dist/ambient.d.ts"
     }
   },
   "files": [
@@ -41,6 +48,7 @@
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",
+    "@napi-rs/image": "catalog:lib",
     "typescript": "catalog:lib",
     "vite": "catalog:",
     "ws": "catalog:"
@@ -57,10 +65,14 @@
     },
     "@irpclib/ws": {
       "optional": true
+    },
+    "@napi-rs/image": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@napi-rs/image": "catalog:lib",
     "@types/ws": "latest",
     "publint": "catalog:",
     "rimraf": "catalog:",

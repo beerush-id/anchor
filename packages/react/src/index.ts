@@ -123,6 +123,7 @@ export {
   createRef,
   createState,
 } from './hooks.js';
+export * from './image.js';
 export { onCleanup, onMount } from './lifecycle.js';
 export * from './node.js';
 export * from './portal.js';
