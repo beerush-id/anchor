@@ -217,7 +217,7 @@ export const PriceCard = setup((props: { ticker: string }) => {
   <div class="custom-section-content">
     <h2>Stop Fighting the DOM</h2>
     <p>Handling global browser events usually requires messy lifecycle management to avoid memory leaks. With AIR Stack, browser utilities like <strong>cursor tracking</strong>, <strong>text selection</strong>, and <strong>keyboard shortcuts</strong> are just <strong>fine-grained reactive state</strong>. Listener registration is automatically deferred until client hydration, keeping your app perfectly SSR-safe.</p>
-    <a href="/browser-primitives" class="custom-section-action">Explore Browser Utilities →</a>
+    <a href="/ui/browser" class="custom-section-action">Explore Browser Utilities →</a>
   </div>
   <div class="custom-section-code">
 
