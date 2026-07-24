@@ -11,6 +11,14 @@ next: false
 Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 
 <div class="posts-grid">
+  <a href="./release-v1.2.23.html" class="post-card">
+    <article>
+      <h3>AIR Stack v1.2.23</h3>
+      <p>Asset Optimization & Caching. Introduces the responsive &lt;Image&gt; component, airImage Vite plugin, and SSR Asset Resolver with advanced caching strategies.</p>
+      <span class="read-more">Read release notes &rarr;</span>
+    </article>
+  </a>
+
   <a href="./release-v1.2.22.html" class="post-card">
     <article>
       <h3>AIR Stack v1.2.22</h3>

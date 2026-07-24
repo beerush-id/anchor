@@ -24,10 +24,10 @@ export default {
         h(
           'a',
           {
-            href: '/news/release-v1.2.22',
+            href: '/news/release-v1.2.23',
             class: 'version-tag',
           },
-          'Release v1.2.22'
+          'Release v1.2.23'
         ),
     });
   },

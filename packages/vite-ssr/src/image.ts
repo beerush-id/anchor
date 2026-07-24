@@ -76,11 +76,11 @@ export function airImage(options: AirImageOptions = {}): Plugin {
             } else {
               const cacheDir = path.join(process.cwd(), 'node_modules', '.cache', 'air-image');
               await fs.mkdir(cacheDir, { recursive: true });
-              
+
               const hash = Buffer.from(filePath).toString('base64url').slice(-8);
               const uniqueName = `${hash}-${name}`;
               const outPath = path.join(cacheDir, uniqueName);
-              
+
               await fs.writeFile(outPath, buf);
               return `/@fs${outPath}`;
             }
@@ -90,16 +90,19 @@ export function airImage(options: AirImageOptions = {}): Plugin {
           const optStartTime = Date.now();
           let optimizedBuffer: Buffer;
           if (format === 'webp') optimizedBuffer = quality ? await transformer.webp(quality) : await transformer.webp();
-          else if (format === 'avif') optimizedBuffer = quality ? await transformer.avif({ quality }) : await transformer.avif();
+          else if (format === 'avif')
+            optimizedBuffer = quality ? await transformer.avif({ quality }) : await transformer.avif();
           else if (format === 'png') optimizedBuffer = await transformer.png();
           else optimizedBuffer = quality ? await transformer.jpeg(quality) : await transformer.jpeg();
 
           src = await emitOrCache(`${basename}.${format}`, optimizedBuffer);
 
           const optKbOut = (optimizedBuffer.byteLength / 1024).toFixed(2);
-          const reduction = ((1 - (optimizedBuffer.byteLength / inputSize)) * 100).toFixed(1);
+          const reduction = ((1 - optimizedBuffer.byteLength / inputSize) * 100).toFixed(1);
           const optTimeTaken = Date.now() - optStartTime;
-          console.log(`[airImage] ${basename} (original) | ${kbIn}kb -> ${optKbOut}kb (-${reduction}%) | ${optTimeTaken}ms`);
+          console.log(
+            `[airImage] ${basename} (original) | ${kbIn}kb -> ${optKbOut}kb (-${reduction}%) | ${optTimeTaken}ms`
+          );
 
           // Generate srcset sizes
           const srcsetList: string[] = [];
@@ -122,12 +125,14 @@ export function airImage(options: AirImageOptions = {}): Plugin {
             const sizeSrc = await emitOrCache(`${basename}-${size}w.${format}`, resizedBuffer);
 
             const sizeKbOut = (resizedBuffer.byteLength / 1024).toFixed(2);
-            const sizeReduction = ((1 - (resizedBuffer.byteLength / inputSize)) * 100).toFixed(1);
+            const sizeReduction = ((1 - resizedBuffer.byteLength / inputSize) * 100).toFixed(1);
             const sizeTimeTaken = Date.now() - sizeStartTime;
-            console.log(`[airImage] ${basename} (${size}w) | -> ${sizeKbOut}kb (-${sizeReduction}%) | ${sizeTimeTaken}ms`);
-            
+            console.log(
+              `[airImage] ${basename} (${size}w) | -> ${sizeKbOut}kb (-${sizeReduction}%) | ${sizeTimeTaken}ms`
+            );
+
             srcsetList.push(`${sizeSrc} ${size}w`);
-            
+
             sizesMap[size] = { src: sizeSrc, width: size, height: sizeHeight, alt };
           }
 
@@ -144,7 +149,12 @@ export function airImage(options: AirImageOptions = {}): Plugin {
   alt: ${JSON.stringify(alt)},
   srcset: ${JSON.stringify(srcset)},
   sizes: {
-${Object.entries(sizesMap).map(([s, m]) => `    ${s}: { src: ${JSON.stringify(m.src)}, width: ${m.width}, height: ${m.height}, alt: ${JSON.stringify(m.alt)} }`).join(',\n')}
+${Object.entries(sizesMap)
+  .map(
+    ([s, m]) =>
+      `    ${s}: { src: ${JSON.stringify(m.src)}, width: ${m.width}, height: ${m.height}, alt: ${JSON.stringify(m.alt)} }`
+  )
+  .join(',\n')}
   }
 }`;
 

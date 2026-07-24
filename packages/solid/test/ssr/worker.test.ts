@@ -102,7 +102,7 @@ describe('createWorker', () => {
     const renderer = createMockRenderer({ status: 200 });
     const worker = createWorker(renderer, {
       template: TEMPLATE,
-      cache: { pages: 'public, max-age=3600' }
+      cache: { pages: 'public, max-age=3600' },
     });
 
     const response = await worker.fetch(createRequest('http://localhost/'));
@@ -114,7 +114,7 @@ describe('createWorker', () => {
     const renderer = createMockRenderer({ status: 302, redirect: '/login' });
     const worker = createWorker(renderer, {
       template: TEMPLATE,
-      cache: { pages: 'public, max-age=3600' }
+      cache: { pages: 'public, max-age=3600' },
     });
 
     const response = await worker.fetch(createRequest('http://localhost/login'));

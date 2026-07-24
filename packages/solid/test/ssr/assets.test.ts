@@ -46,7 +46,9 @@ describe('resolveCacheControl', () => {
       immutable: true,
     };
     const result = resolveCacheControl(config, url);
-    expect(result).toBe('public, max-age=3600, s-maxage=86400, stale-while-revalidate=60, stale-if-error=30, must-revalidate, immutable');
+    expect(result).toBe(
+      'public, max-age=3600, s-maxage=86400, stale-while-revalidate=60, stale-if-error=30, must-revalidate, immutable'
+    );
   });
 
   it('returns undefined when object has no truthy flags', () => {
