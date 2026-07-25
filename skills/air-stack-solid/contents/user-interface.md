@@ -4,7 +4,7 @@ Anchor UI components are autonomous. They own their own behaviors and mutations 
 ### Styling Patterns
 
 #### Inline Classes (Default)
-When a visual combination is used exactly once, keep the classes inline. This preserves locality and makes the markup immediately readable.
+When a visual combination is used exactly once and requires no dynamic conditions, keep the classes inline as a raw string. This is the baseline pattern; it preserves locality and makes the markup immediately readable with zero runtime overhead.
 
 ```tsx
 export const BillingHeader = () => (
@@ -15,8 +15,57 @@ export const BillingHeader = () => (
 );
 ```
 
+#### Core Styling Utilities (`classx` & `stylex`)
+Use the `@anchorlib/solid` utilities as the primary convention for **dynamic styles and classes**.
+
+**ClassX (`classx`)**: Joins class names based on strings, arrays, or object maps.
+```tsx
+import { classx } from '@anchorlib/solid';
+import { InvoiceBadge } from './InvoiceBadge.js'; // Example Anchor Component
+
+export const Badge = ({ status, isActive, isOld }) => (
+  // Mix string arguments and conditional objects directly
+  <div class={classx('p-4 border rounded-lg', {
+    'bg-gray-50': status === 'pending',
+    'bg-green-50': status === 'paid',
+    'opacity-50': isOld
+  })}>
+    {/* NATIVE HTML ELEMENTS: Pass classx() directly */}
+    <span class={classx('text-sm font-medium', { 'text-green-900': isActive })}>
+      {status}
+    </span>
+    
+    {/* ANCHOR COMPONENTS: Pass classx() directly (Solid handles reactivity natively) */}
+    <InvoiceBadge class={classx('badge', { active: isActive })} />
+  </div>
+);
+```
+
+**StyleX (`stylex`)**: Automatically handles CSS units and unitless properties. Use the inline `style` property strictly as an escape hatch for continuous, JS-calculated values that cannot be mapped to discrete utility classes. Never map dynamic variables directly to Tailwind arbitrary brackets (e.g., `bg-[${color}]`).
+```tsx
+import { stylex, $unit } from '@anchorlib/solid';
+import { ScrollView } from './ScrollView.js'; // Example Anchor Component
+
+export const VirtualList = ({ height, scrollY, tenantColor, progress }) => (
+  // NATIVE HTML ELEMENTS: Pass stylex() directly
+  <div 
+    class="relative w-full rounded-md border"
+    style={stylex({
+      height: height, // automatically appends px
+      transform: `translate3d(0, ${scrollY}px, 0)`,
+      width: $unit.percent(progress), // Explicit units
+      opacity: 0.5, // Ignores units for unitless properties
+      '--brand-color': tenantColor
+    })}
+  >
+    {/* ANCHOR COMPONENTS: Pass stylex() directly (Solid handles reactivity natively) */}
+    <ScrollView style={stylex({ height: height - 10 })} />
+  </div>
+);
+```
+
 #### Local Variables & Class Factories
-When a class combination is repeated in the *same file*, extract it to a local variable. For complex conditional logic, extract it to a local factory function to prevent bloated inline ternaries. 
+When a class combination is repeated in the *same file*, extract it to a local variable. When `classx` conditional logic becomes large and repeated, extract it to a local factory function to keep the JSX clean. 
 *Note: Define styling helpers below your components so the primary UI logic isn't buried.*
 
 ```tsx
@@ -26,65 +75,61 @@ export const InvoiceList = ({ invoices }) => (
   <div class="flex flex-col gap-4">
     <For each={invoices}>
       {(invoice) => (
-        <div class={`p-4 border rounded-lg ${getInvoiceStyle(invoice.status)}`}>
+        <div class={getInvoiceStyle(invoice.status)}>
           <span class={badgeClass}>{invoice.status}</span>
-          <span>{invoice.amount}</span>
         </div>
       )}
     </For>
   </div>
 );
 
-// Local Variable: For repeating static class combinations in the same file
+// Local Variable: For repeating static class combinations
 const badgeClass = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800";
 
-// Class Factory: For complex conditional styling logic
-const getInvoiceStyle = (status: 'paid' | 'overdue') => {
-  switch (status) {
-    case 'paid': return 'bg-green-50 border-green-200 text-green-900';
-    case 'overdue': return 'bg-red-50 border-red-200 text-red-900';
-    default: return 'bg-gray-50 border-gray-200 text-gray-900';
-  }
-};
+// Class Factory: Compose complex conditional styling logic cleanly
+const getInvoiceStyle = (status: 'paid' | 'overdue' | 'pending') => classx('p-4 border rounded-lg', {
+  'bg-green-50 border-green-200 text-green-900': status === 'paid',
+  'bg-red-50 border-red-200 text-red-900': status === 'overdue',
+  'bg-gray-50 border-gray-200 text-gray-900': status === 'pending'
+});
 ```
 
 #### Global Utilities & Native CSS
 When a combination of classes is repeated across multiple pages, graduate it to global CSS. Use native CSS selectors (`:has()`, attribute targeting) for structural state tracking, and reserve Javascript class-toggling for logic that is too complex for native CSS to handle cleanly.
 
+**CSS Guidelines**:
+- **Readability**: Break long `@apply` lists into multiple lines, grouped by relevant properties (layout, typography, visuals).
+- **Theming**: Prefer `@theme` variables over hardcoded static values.
+
 ```css
 /* Tailwind @utility (Modern custom utility) */
-@utility form-input {
-  @apply w-full rounded-md border border-gray-300 px-3 py-2 text-sm;
+@theme {
+  --spacing-input-x: calc(var(--spacing) * 3);
+  --spacing-input-y: calc(var(--spacing) * 2);
+  --color-error-input: var(--color-red-500);
 }
 
-/* Semantic Attribute Selectors (No JS needed to manually toggle classes) */
-.form-input[aria-invalid="true"] {
-  @apply border-red-500 focus:border-red-500;
+@utility form-input {
+  /* Group by Layout & Typography */
+  @apply w-full;
+  @apply text-sm;
+
+  /* Group by Visuals (Prefer theme variables over static values) */
+  @apply rounded-md border border-gray-300 bg-white;
+
+  padding-block: var(--spacing-input-y);
+  padding-inline: var(--spacing-input-x);
+
+  /* Semantic Attribute Selectors (No JS needed to manually toggle classes) */
+  &[aria-invalid="true"] {
+    border: 1px solid var(--color-error-input);
+  }
 }
 
 /* Advanced Selectors (No JS needed to track nested child states) */
 .pricing-card:has(input[type="checkbox"]:not(:checked)) {
   @apply opacity-75 grayscale;
 }
-```
-
-#### Dynamic Inline Styles
-Use the inline `style` property strictly as an escape hatch for continuous, JS-calculated values that cannot be mapped to discrete utility classes. Never map dynamic variables directly to Tailwind arbitrary brackets (e.g., `bg-[${color}]`).
-
-```tsx
-export const VirtualList = ({ height, scrollY, tenantColor }) => (
-  <div 
-    class="relative w-full rounded-md border"
-    style={{
-      // Mathematical runtime calculations
-      height: `${height}px`,
-      transform: `translate3d(0, ${scrollY}px, 0)`,
-      
-      // Dynamic database values mapped to native CSS variables
-      '--brand-color': tenantColor
-    }}
-  />
-);
 ```
 
 ### Reactive Boundaries & Prop Passing

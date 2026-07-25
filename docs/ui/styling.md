@@ -144,6 +144,44 @@ Bloated inline ternaries.
 
 :::
 
+### Using `classx`
+To seamlessly manage conditional classes without manually writing switch statements or bloated ternaries, the `@anchorlib/core` library provides the `classx` utility. It accepts strings, arrays, or objects (where keys are classes and values are conditions).
+
+::: code-group
+
+```tsx [React]
+import { classx } from '@anchorlib/react';
+import { InvoiceBadge } from './InvoiceBadge.js'; // Example Anchor Component
+
+// Static evaluation for native elements
+<div className={classx('p-4 border rounded-lg', {
+  'bg-green-50 border-green-200 text-green-900': invoice.status === 'paid',
+  'bg-red-50 border-red-200 text-red-900': invoice.status === 'overdue',
+  'bg-gray-50 border-gray-200 text-gray-900': invoice.status === 'pending'
+})}>
+  {/* Reactive binding for Anchor components */}
+  <InvoiceBadge className={classx.use(() => ['badge', { active: invoice.isActive }])} />
+</div>
+```
+
+```tsx [SolidJS]
+import { classx } from '@anchorlib/solid';
+import { InvoiceBadge } from './InvoiceBadge.js'; // Example Anchor Component
+
+// SolidJS handles reactivity natively
+<div class={classx('p-4 border rounded-lg', {
+  'bg-green-50 border-green-200 text-green-900': invoice.status === 'paid',
+  'bg-red-50 border-red-200 text-red-900': invoice.status === 'overdue',
+  'bg-gray-50 border-gray-200 text-gray-900': invoice.status === 'pending'
+})}>
+  <InvoiceBadge class={classx('badge', { active: invoice.isActive })} />
+</div>
+```
+
+:::
+
+The `classx` utility automatically resolves the conditions and joins the truthful class names into a single string. For Anchor components in React, you can also use `classx.use()` to create fine-grained reactive class bindings that re-evaluate automatically when the underlying state changes.
+
 ## Utility Classes in CSS
 
 When a combination of utility classes is repeated **across multiple pages** (e.g., **standard buttons**, **form inputs**, **cards**), graduate it to your **global CSS** by composing the utility classes.
@@ -312,6 +350,52 @@ Trying to map dynamic values to discrete classes.
 ::: tip When to use inline styles?
 If the value comes from a database, a scroll event, mouse coordinates, or mathematical calculations at runtime, it belongs in an inline style or a locally injected CSS Variable. Everything else belongs in a class.
 :::
+
+### Reactive Styles & Units
+Managing inline styles dynamically often requires tedious string concatenation for CSS units. The `@anchorlib/core` library provides the `stylex` utility to automatically format units and handle reactive style objects gracefully.
+
+::: code-group
+
+```tsx [React]
+import { stylex, $unit } from '@anchorlib/react';
+import { VirtualList } from './VirtualList.js'; // Example Anchor Component
+
+// Static evaluation for native elements
+<div 
+  className="relative w-full rounded-md border"
+  style={stylex({
+    height: virtualList.totalHeight, // Automatically becomes px
+    width: $unit.percent(100), // Explicit unit assignment
+    '--brand-color': user.tenant.primaryColor,
+    opacity: user.isActive ? 1 : 0.5 // Ignores units for unitless properties
+  })}
+>
+  {/* Reactive binding for Anchor components */}
+  <VirtualList style={stylex.use(() => ({ height: virtualList.visibleHeight }))} />
+</div>
+```
+
+```tsx [SolidJS]
+import { stylex, $unit } from '@anchorlib/solid';
+import { VirtualList } from './VirtualList.js'; // Example Anchor Component
+
+// SolidJS handles reactivity natively
+<div 
+  class="relative w-full rounded-md border"
+  style={stylex({
+    height: virtualList.totalHeight, // Automatically becomes px
+    width: $unit.percent(100), // Explicit unit assignment
+    '--brand-color': user.tenant.primaryColor,
+    opacity: user.isActive ? 1 : 0.5 // Ignores units for unitless properties
+  })}
+>
+  <VirtualList style={stylex({ height: virtualList.visibleHeight })} />
+</div>
+```
+
+:::
+
+The `stylex` utility ensures numeric values automatically receive `px` units when required (ignoring unitless properties like `opacity`). To explicitly use a different unit (like `%`, `em`, or `vh`), use the `$unit` helper. Similar to classes, `stylex.use()` is available for Anchor components in React to provide fine-grained reactive style bindings.
 
 ## Learn More
 

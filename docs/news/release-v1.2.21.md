@@ -195,16 +195,44 @@ export const UserProfile = setup(() => {
 });
 ```
 
-- **Class & Style Utilities**: Added the `classx` and `stylex` utilities to `@anchorlib/core` for seamless conditional class and inline-style management across all frameworks.
+- **Class & Style Utilities**: Added the `classx` and `stylex` utilities to `@anchorlib/core` for seamless conditional class and inline-style management. This includes `.use()` for fine-grained reactive bindings on Anchor components (React only) and `$unit()` for precise style units.
 
-```tsx [Conditional Styling]
-import { classx, stylex } from '@anchorlib/core';
+::: code-group
 
+```tsx [React (Conditional Styling)]
+import { classx, stylex, $unit } from '@anchorlib/react';
+import { Counter } from './Counter.js'; // Example Anchor Component
+
+// Static evaluation for native elements
 <div 
   className={classx('card', { 'card-active': state.active })}
-  style={stylex({ opacity: state.active ? 1 : 0.5 })}
+  style={stylex({ 
+    opacity: state.active ? 1 : 0.5,
+    width: $unit.percent(state.width)
+  })}
 >
+  {/* Reactive binding for Anchor components */}
+  <Counter className={classx.use(() => ['counter', { active: state.active }])} />
+</div>
 ```
+
+```tsx [SolidJS (Conditional Styling)]
+import { classx, stylex } from '@anchorlib/solid';
+import { Counter } from './Counter.js'; // Example Anchor Component
+
+// SolidJS handles reactivity natively
+<div 
+  class={classx('card', { 'card-active': state.active })}
+  style={stylex({ 
+    opacity: state.active ? 1 : 0.5,
+    width: stylex.unit.percent(state.width)
+  })}
+>
+  <Counter class={classx('counter', { active: state.active })} />
+</div>
+```
+
+:::
 
 - **Ref Bindings (`refTo`)**: Added the `refTo` (or `$ref`) utility for React bindings, allowing you to directly bind DOM references to state object properties.
 
