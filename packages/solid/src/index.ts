@@ -7,6 +7,7 @@ export type {
   AsyncOptions,
   AsyncState,
   BatchHandler,
+  ClassX,
   CookieEntry,
   CookieOptions,
   Debouncer,
@@ -37,13 +38,19 @@ export type {
   StateOptions,
   StateSubscriber,
   StateUnsubscribe,
+  StyleInput,
+  StyleOutput,
+  StyleX,
   TaskHandler,
+  UnitMeta,
+  UnitProvider,
   Writable,
 } from '@anchorlib/core';
 
 export {
   $module,
   $symbol,
+  $unit,
   ASYNC_STATUS,
   anchor,
   awaited,
