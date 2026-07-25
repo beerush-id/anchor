@@ -46,7 +46,7 @@ export type UnitProvider = ((value: UnitMeta['value'], unit: string) => UnitMeta
  * @returns A new style object with properly formatted numeric values.
  */
 export type StyleX = ((input: StyleInput | StyleProvider) => StyleOutput) & {
-  get: (input: StyleProvider) => ValueGetterType<StyleOutput>;
+  use: (input: StyleProvider) => ValueGetterType<StyleOutput>;
   unit: (value: UnitMeta['value'], unit: string) => UnitMeta;
 };
 
@@ -91,7 +91,7 @@ for (const un of ['px', 'em', 'vw', 'vh', 'rem', 'deg', 'vmin', 'vmax', 'percent
  * @param input - The style provider function.
  * @returns The value returned by the provider function.
  */
-stylexFn.get = (input: StyleProvider) => {
+stylexFn.use = (input: StyleProvider) => {
   return valueGetter(() => stylexFn(input));
 };
 stylexFn.unit = $unit;

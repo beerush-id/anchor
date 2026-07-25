@@ -36,7 +36,7 @@ export type ClassProvider = () => ClassInput;
  * @returns A string of space-separated class names.
  */
 export type ClassX = ((...inputs: (ClassInput | ClassProvider)[]) => string) & {
-  get: (input: ClassProvider) => ValueGetterType<string>;
+  use: (input: ClassProvider) => ValueGetterType<string>;
 };
 
 function classxFn(...inputs: (ClassInput | ClassProvider)[]) {
@@ -48,7 +48,7 @@ function classxFn(...inputs: (ClassInput | ClassProvider)[]) {
  * @param input - The class provider function.
  * @returns The value returned by the provider function.
  */
-classxFn.get = (input: ClassProvider) => {
+classxFn.use = (input: ClassProvider) => {
   return valueGetter(() => stringify(input));
 };
 
