@@ -41,6 +41,9 @@ export type UnitProvider = ((value: UnitMeta['value'], unit: string) => UnitMeta
  * Processes a style input object, automatically appending `px` units to numeric values
  * for properties that require units (ignoring unitless properties like `opacity` or `zIndex`).
  * Evaluates the input if a `StyleProvider` function is passed.
+ * 
+ * Provides a `.use()` method for reactive style bindings and a `.unit()` utility 
+ * (or `$unit`) to explicitly assign units (e.g., `px`, `percent`, `em`) to numeric values.
  *
  * @param input - The style object or a function returning a style object.
  * @returns A new style object with properly formatted numeric values.
@@ -87,9 +90,12 @@ for (const un of ['px', 'em', 'vw', 'vh', 'rem', 'deg', 'vmin', 'vmax', 'percent
 }
 
 /**
- * Retrieves the value of a style provider.
+ * Creates a reactive binding for a style provider.
+ * When the reactive state accessed within the provider changes,
+ * it triggers the UI renderer to update the styles.
+ * 
  * @param input - The style provider function.
- * @returns The value returned by the provider function.
+ * @returns A reactive value getter returning the formatted style object.
  */
 stylexFn.use = (input: StyleProvider) => {
   return valueGetter(() => stylexFn(input));
