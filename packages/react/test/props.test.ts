@@ -1,4 +1,4 @@
-import { effect, mutable } from '@anchorlib/core';
+import { classx, effect, mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $use, bind } from '../src/binding';
 import type { Bindable, ComponentProps, ReactiveProps } from '../src/index.js';
@@ -150,6 +150,13 @@ describe('Anchor React - Props', () => {
       const proxiedProps = proxyProps(testProps);
 
       expect(proxiedProps.value).toBe('test');
+    });
+
+    it('should handle ValueGetter in props', () => {
+      const testProps = { className: classx.use(() => 'test') };
+      const proxiedProps = proxyProps(testProps);
+
+      expect(proxiedProps.className).toBe('test');
     });
 
     it('should handle event handler in props as is', () => {
