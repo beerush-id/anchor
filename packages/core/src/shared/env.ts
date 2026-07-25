@@ -1,6 +1,6 @@
 import type { AnyType } from '../types.js';
 
-export const $ROOT = globalThis as any;
+export const $ROOT = globalThis as AnyType;
 
 /**
  * Create a symbol with --anchor prefix.
@@ -33,8 +33,8 @@ export type ValueGetterType<T> = (() => T) & {
 
 /**
  * Convert value or function that return value into value getter.
- * @param source - The value or function that return value.
- * @returns {ValueGetterType<T>} - The value getter.
+ * @param source - The value or function that returns value.
+ * @returns The value getter.
  */
 export function valueGetter<T>(source: (() => T) | { value: T }): ValueGetterType<T> {
   if (typeof source === 'function') {

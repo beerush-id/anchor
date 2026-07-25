@@ -1,4 +1,4 @@
-import { valueGetter } from '../shared/env.js';
+import { valueGetter, type ValueGetterType } from '../shared/env.js';
 import { isFalsy, isTruthy } from './inspector.ts';
 
 /**
@@ -35,9 +35,24 @@ export type ClassProvider = () => ClassInput;
  * @param inputs - A variable number of class inputs or providers.
  * @returns A string of space-separated class names.
  */
-export function classx(...inputs: (ClassInput | ClassProvider)[]) {
-  return valueGetter(() => stringify(inputs));
+export type ClassX = ((...inputs: (ClassInput | ClassProvider)[]) => string) & {
+  get: (input: ClassProvider) => ValueGetterType<string>;
+};
+
+function classxFn(...inputs: (ClassInput | ClassProvider)[]) {
+  return stringify(inputs);
 }
+
+/**
+ * Retrieves the value of a class provider.
+ * @param input - The class provider function.
+ * @returns The value returned by the provider function.
+ */
+classxFn.get = (input: ClassProvider) => {
+  return valueGetter(() => stringify(input));
+};
+
+export const classx = classxFn as ClassX;
 
 function stringify(input: ClassInput | ClassProvider | Array<ClassInput | ClassProvider>): string {
   if (isFalsy(input)) return '';

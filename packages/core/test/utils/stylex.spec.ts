@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { stylex } from '../../src/index.js';
+import { $unit, stylex } from '../../src/index.js';
 
 import { IS_VALUE_GETTER } from '../../src/shared/env.js';
 
 describe('stylex', () => {
   it('should return simple string properties as is', () => {
-    expect(stylex({ color: 'red', display: 'block' }).value).toEqual({
+    expect(stylex({ color: 'red', display: 'block' })).toEqual({
       color: 'red',
       display: 'block',
     });
-    expect(stylex({})[IS_VALUE_GETTER]).toBe(true);
+    expect(stylex.get(() => ({}))[IS_VALUE_GETTER]).toBe(true);
   });
 
   it('should append px to numeric values for properties that require units', () => {
-    expect(stylex({ width: 100, marginTop: 20, fontSize: 16 }).value).toEqual({
+    expect(stylex({ width: 100, marginTop: 20, fontSize: 16 })).toEqual({
       width: '100px',
       marginTop: '20px',
       fontSize: '16px',
@@ -21,7 +21,7 @@ describe('stylex', () => {
   });
 
   it('should not append px to 0', () => {
-    expect(stylex({ margin: 0, padding: 0 }).value).toEqual({
+    expect(stylex({ margin: 0, padding: 0 })).toEqual({
       margin: 0,
       padding: 0,
     });
@@ -35,7 +35,7 @@ describe('stylex', () => {
         flexGrow: 1,
         fontWeight: 600,
         lineHeight: 1.5,
-      }).value
+      })
     ).toEqual({
       opacity: 0.5,
       zIndex: 10,
@@ -46,21 +46,38 @@ describe('stylex', () => {
   });
 
   it('should handle custom CSS variables', () => {
-    expect(stylex({ '--my-var': '10px', '--my-num': 10 }).value).toEqual({
+    expect(stylex({ '--my-var': '10px', '--my-num': 10 })).toEqual({
       '--my-var': '10px',
       '--my-num': '10px',
     });
   });
 
   it('should ignore undefined and null values', () => {
-    expect(stylex({ color: 'red', margin: undefined, padding: null as any }).value).toEqual({
+    expect(stylex({ color: 'red', margin: undefined, padding: null })).toEqual({
       color: 'red',
     });
   });
 
   it('should handle a function provider', () => {
-    expect(stylex(() => ({ width: 100, opacity: 0.5 })).value).toEqual({
+    expect(stylex(() => ({ width: 100, opacity: 0.5 }))).toEqual({
       width: '100px',
+      opacity: 0.5,
+    });
+  });
+
+  it('should handle unit value', () => {
+    expect(
+      stylex({
+        width: $unit.percent(100),
+        height: stylex.unit(undefined, '%'),
+        fontSize: $unit.px(NaN),
+        lineHeight: stylex.unit(null, 'em'),
+        fontWeight: $unit(500, null as never),
+        opacity: 0.5,
+      })
+    ).toEqual({
+      width: '100%',
+      fontWeight: '500',
       opacity: 0.5,
     });
   });

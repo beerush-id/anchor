@@ -21,7 +21,6 @@
     "test": "rimraf docs/.vitepress/dist/coverage && vitest --run",
     "test:all": "rimraf docs/.vitepress/dist/coverage && vitest --run",
     "test:preview": "rimraf docs/.vitepress/dist/coverage && vitest --run && vite preview --outDir docs/.vitepress/dist/coverage",
-    "prepare": "husky",
     "docs:dev": "vitepress dev docs --port 6611",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs --port 5611"
@@ -37,7 +36,6 @@
     "@types/react-dom": "catalog:app",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "husky": "catalog:",
     "lint-staged": "catalog:",
     "lucide-react": "catalog:app",
     "markdown-it-container": "catalog:",
@@ -148,7 +146,6 @@
     "esbuild": "0.25.12",
     "esbuild-raw-plugin": "0.3.1",
     "globals": "16.4.0",
-    "husky": "9.1.7",
     "jsdom": "27.0.1",
     "lint-staged": "16.2.6",
     "markdown-it-container": "4.0.0",

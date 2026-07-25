@@ -1,4 +1,4 @@
-import type { AsyncStore, RefStack } from '@anchorlib/core';
+import type { AsyncStore, RefStack, ValueGetterType } from '@anchorlib/core';
 import type { FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode, RefObject } from 'react';
 
 export type MountHandler = () => void | CleanupHandler;
@@ -60,8 +60,8 @@ export type Linked<T> = {
  */
 export type ValueReader<T> = () => T;
 
-export type ReactiveProp<T> = T | ValueReader<T> | Linked<T>;
-export type BindableProp<T> = T | ValueReader<T> | Linked<T> | Bindable<T>;
+export type ReactiveProp<T> = T | ValueReader<T> | ValueGetterType<T> | Linked<T>;
+export type BindableProp<T> = T | ValueReader<T> | ValueGetterType<T> | Linked<T> | Bindable<T>;
 
 /**
  * Represents a reactive props that can be bound to a component.
