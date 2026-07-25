@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorkit/headless",
-  "version": "1.2.23",
+  "version": "1.2.24",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "exports": {

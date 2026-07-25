@@ -20,9 +20,9 @@
     "access": "public"
   },
   "dependencies": {
-    "@anchorlib/core": "1.2.23",
-    "@irpclib/http": "1.2.23",
-    "@irpclib/irpc": "1.2.23"
+    "@anchorlib/core": "1.2.24",
+    "@irpclib/http": "1.2.24",
+    "@irpclib/irpc": "1.2.24"
   },
   "devDependencies": {
     "@types/bun": "^1.3.1",
