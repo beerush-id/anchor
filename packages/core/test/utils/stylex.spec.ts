@@ -9,7 +9,7 @@ describe('stylex', () => {
       color: 'red',
       display: 'block',
     });
-    expect(stylex.get(() => ({}))[IS_VALUE_GETTER]).toBe(true);
+    expect(stylex.use(() => ({}))[IS_VALUE_GETTER]).toBe(true);
   });
 
   it('should append px to numeric values for properties that require units', () => {
