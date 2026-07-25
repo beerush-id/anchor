@@ -76,7 +76,7 @@ describe('Snippet Component', () => {
 
   it('should render snippet content with undefined data', () => {
     const { container } = render(() => (
-      <Snippet data={undefined as never as {text: string}}>{({ text }) => <div>{text}</div>}</Snippet>
+      <Snippet data={undefined as never as { text: string }}>{({ text }) => <div>{text}</div>}</Snippet>
     ));
 
     expect(container.textContent).not.toContain('undefined');

@@ -31,7 +31,7 @@ export type ClassProvider = () => ClassInput;
 /**
  * Utility for conditionally joining class names together.
  * Supports strings, arrays, objects (keys are classes, values are conditions), and functions.
- * 
+ *
  * Provides a `.use()` method to create reactive class bindings that can be tracked by the UI renderer.
  *
  * @param inputs - A variable number of class inputs or providers.
@@ -47,9 +47,9 @@ function classxFn(...inputs: (ClassInput | ClassProvider)[]) {
 
 /**
  * Creates a reactive binding for a class provider.
- * When the reactive state accessed within the provider changes, 
+ * When the reactive state accessed within the provider changes,
  * it triggers the UI renderer to update the class names.
- * 
+ *
  * @param input - The class provider function.
  * @returns A reactive value getter returning the class string.
  */
