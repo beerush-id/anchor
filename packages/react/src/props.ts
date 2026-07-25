@@ -97,7 +97,7 @@ export function proxyProps<P>(props: P, strict = true): ComponentProps<P> {
       const bindingRef = Reflect.get(target, key, receiver);
 
       if (isValueGetter(bindingRef)) {
-        return bindingRef.value;
+        return bindingRef();
       } else if (isBinding(bindingRef)) {
         return bindingRef.value;
       } else if (isMutableRef(bindingRef)) {

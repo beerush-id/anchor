@@ -3,7 +3,7 @@
 import { mutable } from '@anchorlib/core';
 import { render } from '@solidjs/testing-library';
 import { describe, expect, it } from 'vitest';
-import { Show } from '../src/index.js';
+import { Show, Snippet } from '../src/index.js';
 
 describe('Show Component', () => {
   it('should conditionally render static children based on truthy condition', () => {
@@ -54,5 +54,61 @@ describe('Show Component', () => {
 
     expect(container.textContent).not.toContain('Guest');
     expect(container.textContent).toContain('Hello Alice');
+  });
+});
+
+describe('Snippet Component', () => {
+  it('should render snippet content with object data', () => {
+    const { container } = render(() => (
+      <Snippet data={{ text: 'Success!' }}>{({ text }) => <div>{text}</div>}</Snippet>
+    ));
+
+    expect(container.textContent).toContain('Success!');
+  });
+
+  it('should render snippet content with array data', () => {
+    const { container } = render(() => (
+      <Snippet data={[{ text: 'Success!' }]}>{({ 0: item }) => <div>{item().text}</div>}</Snippet>
+    ));
+
+    expect(container.textContent).toContain('Success!');
+  });
+
+  it('should re-render snippet content', () => {
+    const state = mutable({ count: 0 });
+
+    const { container } = render(() => <Snippet data={state}>{({ count }) => <div>Count: {count}</div>}</Snippet>);
+    expect(container.textContent).toContain('Count: 0');
+
+    state.count = 1;
+    expect(container.textContent).toContain('Count: 1');
+  });
+
+  it('should re-render full snippet content', () => {
+    const state = mutable({
+      name: 'Alice',
+      age: 30,
+    });
+
+    const { container } = render(() => (
+      <Snippet data={state}>
+        {({ name, age }) => (
+          <div>
+            <span>Name: {name}</span>
+            <span>Age: {age}</span>
+          </div>
+        )}
+      </Snippet>
+    ));
+    expect(container.textContent).toContain('Name: Alice');
+    expect(container.textContent).toContain('Age: 30');
+
+    state.age = 31;
+    expect(container.textContent).toContain('Name: Alice');
+    expect(container.textContent).toContain('Age: 31');
+
+    state.name = 'Bob';
+    expect(container.textContent).toContain('Name: Bob');
+    expect(container.textContent).toContain('Age: 31');
   });
 });
