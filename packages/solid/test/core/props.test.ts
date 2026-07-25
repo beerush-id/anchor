@@ -1,4 +1,4 @@
-import { mutable } from '@anchorlib/core';
+import { classx, mutable } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
 import { omitProps, pickProps, proxyProps, setCurrentProps } from '../../src/props.js';
@@ -99,6 +99,20 @@ describe('Anchor Solid - Props API', () => {
       });
     });
 
+    describe('ValueGetter handling', () => {
+      it('should handle MutableRef values', () => {
+        const mutableRef = mutable(42);
+        const props = { value: mutableRef, class: classx.use(() => 'test') };
+        const proxied = proxyProps(props);
+
+        expect(proxied.value).toBe(42);
+        expect(proxied.class).toBe('test');
+
+        proxied.value = 100;
+        expect(mutableRef.value).toBe(100);
+      });
+    });
+
     describe('children handling', () => {
       it('should return lazy thunk when accessed outside setup context', () => {
         const childElement = { type: 'div', props: {} };
@@ -107,7 +121,7 @@ describe('Anchor Solid - Props API', () => {
 
         const result = proxied.children;
         expect(typeof result).toBe('function');
-        expect((result as () => unknown)()).toBe(childElement);
+        expect((result as never as () => unknown)()).toBe(childElement);
       });
 
       it('should return raw children when accessed inside setup context', () => {

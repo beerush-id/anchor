@@ -74,6 +74,14 @@ describe('Snippet Component', () => {
     expect(container.textContent).toContain('Success!');
   });
 
+  it('should render snippet content with undefined data', () => {
+    const { container } = render(() => (
+      <Snippet data={undefined as never as {text: string}}>{({ text }) => <div>{text}</div>}</Snippet>
+    ));
+
+    expect(container.textContent).not.toContain('undefined');
+  });
+
   it('should re-render snippet content', () => {
     const state = mutable({ count: 0 });
 

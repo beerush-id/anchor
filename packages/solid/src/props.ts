@@ -55,7 +55,7 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
       const bindingRef = Reflect.get(target, key, receiver);
 
       if (isValueGetter(bindingRef)) {
-        return (bindingRef as AnyType).value;
+        return (bindingRef as AnyType)();
       } else if (isBinding(bindingRef)) {
         return (bindingRef as BindingRef<unknown, unknown>).value;
       } else if (isMutableRef(bindingRef)) {
