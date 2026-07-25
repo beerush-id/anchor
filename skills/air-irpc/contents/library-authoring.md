@@ -1,5 +1,9 @@
 # IRPC: Library Authoring
 
+> **Framework-specific configuration** (bundling, config files, peer dependencies) is covered per framework:
+> - React: `skills/air-stack-react/contents/library-authoring.md`
+> - Solid: `skills/air-stack-solid/contents/library-authoring.md`
+
 Building a reusable library using IRPC requires specific configurations to ensure your library is consumable safely by both client and server applications.
 
 ## Isolating Side Effects
@@ -84,11 +88,11 @@ IRPCPackage
 The `module.declare()` object overload takes:
 ```typescript
 <F, A extends unknown[], R extends IRPCData>(
-  /** The initialization object containing the stub configuration. */
-  options: IRPCDeclareInit<R>
+  /** The configuration object containing the stub options. */
+  options: IRPCDeclareConfig<R>
 )
 
-type IRPCDeclareInit<R> = {
+type IRPCDeclareConfig<R> = {
   /** The unique wire identifier. */
   name: string;
   /** The synchronous factory guaranteeing the data shape immediately. */

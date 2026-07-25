@@ -10,56 +10,90 @@ AIR Stack is a reactive and isomorphic architecture for building web application
 To work effectively without polluting your context, use the `view_file` tool to read the specific markdown file that aligns with your current task.
 
 ## Installation & Setup
-- **When**: You need to start a full-stack project, start an SSR-only project, start a SPA, start a PWA, start a standalone API, install packages for each architecture, follow file conventions (function.ts, constructor.ts, workflow.ts, route.ts), follow folder structure (lib/views, lib/components, lib/actions, pages/), or scaffold with degit templates.
+- **When problems**: Starting a new Solid project. Not sure which architecture to use (full-stack, SSR-only, SPA, API-only). Need to know file organization and naming conventions.
+- **When tools**: Using `degit` templates, `@anchorlib/solid` packages, folder structure (`function.ts`, `constructor.ts`, `route.ts`).
 - **Action**: Read `contents/installation.md`
 
 ## Isomorphic RPC (IRPC)
-- **When**: You need to build APIs, create CRUD endpoints, call server from browser or worker, stream real-time data to UI (chat, live feeds, progressive hydration), validate inputs/outputs (Zod, Valibot), inject auth or database context into handlers, cache or deduplicate calls, handle webhooks (Stripe, payment providers), compose server functions, run functions across environments (server, browser, worker), handle server-to-server with private API keys, layer CRUD with cache fallback to database, create read-only or write-only entities, monitor active calls (DevTools, logging), handle typed errors (ResolveError, TransportError, HandlerError), or transform streamed data before it reaches the UI.
-- **Action**: Read `contents/irpc.md`
+
+> **Core IRPC documentation is in the `air-irpc` skill.** If you haven't installed it: `npx skills add beerush-id/anchor --skill air-irpc --yes`. This file covers only Solid-specific binding patterns.
+
+- **When problems**: Building APIs with type-safe client calls. Streaming real-time data (chat, live feeds, progressive hydration). Caching server responses. Handling file uploads/downloads. Accepting webhooks (Stripe, payment providers). Validating inputs/outputs with Zod/Valibot.
+- **When tools**: Using `irpc.declare()`, `irpc.construct()`, `stream()`, `IRPCFile`, `IRPCBlob`. Configuring `HTTPTransport`, `WebSocketTransport`, `BroadcastTransport`. Using `credential()` for auth, `GuardError` for access control.
+- **Action**: Read `skills/air-irpc/contents/...` (per sub-module below). For Solid-specific UI bindings (native JSX reactivity), read `contents/irpc.md`.
+
+### IRPC Sub-Modules (in `air-irpc` skill)
+- Setup & Routing → `skills/air-irpc/contents/setup-and-routing.md`
+- Declarations & Handlers → `skills/air-irpc/contents/declarations-and-handlers.md`
+- Execution & Streaming → `skills/air-irpc/contents/execution-and-streaming.md`
+- CRUD & Adapters → `skills/air-irpc/contents/crud-and-adapters.md`
+- Library Authoring → `skills/air-irpc/contents/library-authoring.md`
+- Testing → `skills/air-irpc/contents/testing.md`
 
 ## Workflows (Anchor)
-- **When**: You need to run a multi-step process (checkout, onboarding, AI pipeline, deployment), show step-by-step progress (step name, status, description), recover from errors or retry failed steps, branch on conditions (payment method, risk score, user role), validate between steps (Zod, Valibot), persist and resume across page reloads or crashes (localStorage, sessionStorage, database), compose pipelines from a base workflow, build wizard-style UIs with step-by-step approval, observe running workflows (dashboards, logging, telemetry), bind workflow progress to UI (current step, status, errors), provide default values before the workflow runs, or bind multiple workflow runs to one UI component.
+- **When problems**: Multi-step processes (checkout, onboarding, deployment). Error recovery with retry. Branching on conditions (payment method, risk score). Persisting and resuming across page reloads. Showing step-by-step progress to the user.
+- **When tools**: Using `plan()`, `.then()`, `.switch()`, `.catch()`, `.finally()`. Workflow snapshots via `snapshot()`/`hydrate()`. Observing via `WORKFLOW_STORE`.
 - **Action**: Read `contents/workflows.md`
 
 ## State Management
-- **When**: You need to make objects/arrays/Sets/Maps reactive, mutate nested properties directly, create computed/derived values, create read-only state with restricted writes, maintain sorted views without full re-sort, wrap async calls with reactive status/error/data tracking, run side-effects when state changes, run browser-only effects (skip during SSR), read state without subscribing, serialize state safely to JSON, watch all mutations on a state object (persistence, logging), manage cookies on server and client (auth tokens, session), prevent state leaking between SSR requests, create component-local state, create form state with Zod validation and two-way binding, or make primitive values (strings, numbers, booleans) reactive.
+- **When problems**: Data that needs to stay in sync across the app. Async operations with loading/error states. Side effects that run when data changes. Preventing SSR state leaks between users. Serializing state to JSON. Shared state with restricted write access.
+- **When tools**: Using `mutable()`, `immutable()`, `writable()`, `derived()`, `ordered()`, `query()`, `effect()`, `context()`, `undoable()`, `untrack()`, `snapshot()`.
 - **Action**: Read `contents/state-management.md`
 
 ## Page Routing (Router)
-- **When**: You need to navigate between pages (SPA, SSR), protect routes (auth, roles, guards with redirect), load data before render (sequential, parallel, dependent providers), redirect after auth failure, build nested layouts (shared headers/sidebars), handle dynamic params (/:user_id) and query strings (?tab=settings), show global loading/progress bar, lazy-load pages (code splitting), render modals as overlays, show skeleton loading states, handle error boundaries (404, 403, provider failures), cancel in-flight fetches on navigation, auto-revoke access when permissions change, create index routes, host in subdirectory or separate route layouts (e.g. auth vs main app), generate URLs programmatically, navigate programmatically, or configure data cache duration and whether pages wait for data or render immediately.
+- **When problems**: Navigating between pages in SPA or SSR. Protecting routes from unauthorized access. Loading data before the page renders (sequential or parallel). Showing loading progress during navigation. Deep-linking with query params. Subdirectory hosting.
+- **When tools**: Using `createRouter()`, `rootRoute.route()`, `page()`, `.guard()`, `.provide()`, `.render()`, `<Link>`, `sitemap`, lazy-loading via separate chunks.
 - **Action**: Read `contents/router.md`
 
 ## Universal SSR
-- **When**: You need to set up SSR for SolidJS, hydrate without mismatch, configure Vite SSR (with/without IRPC), build a production edge worker (Bun, Cloudflare Workers), build a full-stack worker (IRPC + SSR same thread), implement ISR (serve cached HTML, render on miss), implement stale-while-revalidate, pre-generate static pages at build time (SSG), resolve static assets before SSR, propagate cookies into Set-Cookie headers, handle SSR redirects, abort SSR with timeout, isolate request context, set up WebSocket + HTTP in same worker, or customize response headers (security headers).
+- **When problems**: Setting up server-side rendering for Solid. Hydration mismatches between server and client. Deploying to Cloudflare Workers, Bun, Node.js, or Deno. Implementing ISR or stale-while-revalidate. Generating static pages at build time. Propagating cookies into response headers.
+- **When tools**: Using `createWorker()`, `createFullWorker()`, `vite-ssr` plugin. Configuring `@anchorlib/vite-ssr`, `wrangler.toml`. Server entry points per runtime.
 - **Action**: Read `contents/universal-ssr.md`
 
 ## User Interface & Components
-- **When**: You need to create components with own state/behavior/side-effects, control which parts of UI re-render when state changes, pass one-way reactive props, sync two-way mutations between parent and child, isolate fast-updating views from parent re-renders, create reusable standalone reactive views, forward native HTML props while omitting managed ones, manipulate DOM directly for animations or drag-and-drop, run code on mount, clean up on unmount, apply optimistic UI with rollback, render conditionally, render lists, apply conditional CSS classes, scale styling (inline → local → global), use dynamic inline styles (scroll, canvas, tenant colors), choose between static function vs snippet vs template vs setup component, share state via scoped context, or use browser utilities (track cursor, scroll, text selections, drag-and-drop, media queries, window lifecycle, network status, geolocation, keyboard shortcuts, clipboard state, animation frame scheduling, acceptInteractions hydration).
+- **When problems**: Components with own state and behavior. Fast-updating views causing parent re-renders. Conditional rendering and list rendering. Forwarding native HTML props safely. Optimistic UI with rollback. Choosing between static function vs template vs setup component.
+- **When tools**: Using `setup()`, `template()`, `<Show>`, `<Snippet>`, `<For>`, `classx()`, `stylex()`, `nodeRef()`, `$bind()`, `$omit()`, `$pick()`, `undoable()`.
 - **Action**: Read `contents/user-interface.md`
 
+## Browser Utilities
+- **When problems**: Keyboard shortcuts (ctrl+c to copy selected user). Copy-paste from system clipboard. Drag files from desktop into the app. Show/hide UI based on scroll position. Respond to dark mode or reduced motion. Geolocation-based features. Detect URL hash changes.
+- **When tools**: Importing from `@anchorlib/solid/browser`. Using `LIVE_KEYBOARD`, `LIVE_CLIPBOARD`, `LIVE_DND`, `LIVE_CURSOR`, `LIVE_SCROLL`, `LIVE_SELECTION`, `LIVE_MEDIA`, `LIVE_WINDOW`, `LIVE_NETWORK`, `LIVE_GEO`, `LIVE_LOCATION`, `cursorRef()`, `scrollRef()`, `keyboardRef()`, `reframe()`, `acceptInteractions()`.
+- **Action**: Read `contents/browser-utilities.md`
+
 ## Image Architecture
-- **When**: You need to display images, generate responsive variants (srcset, sizes), configure WebP/AVIF compression at build time or dev time, use the Vite plugin (`airImage`), upload or process images dynamically via backend API (IRPC), access the `AirImage` metadata object, resolve the closest image size automatically via Proxy, or use the `<Image>` component.
+- **When problems**: Large images loading slowly on mobile connections. Hero banners looking blurry on retina displays. Manually generating multiple image sizes and formats.
+- **When tools**: Using `airImage` Vite plugin, `<Image>` component, `AirImage` Proxy object. Configuring WebP/AVIF compression. Uploading via IRPC backend.
 - **Action**: Read `contents/image-architecture.md`
 
 ## Form Architecture
-- **When**: You need to build inputs with two-way binding (text, number, date), prevent cursor-jumping in number/date inputs, coordinate multiple fields for validation and submit, build context-aware inputs (auto-connect to parent form), create typed form factories (field names enforced by Zod schema), show field-level validation errors, or format input in real time (numbers, dates).
+- **When problems**: Input fields with two-way binding. Cursor jumping in number/date inputs. Form validation with Zod. Context-aware inputs that auto-connect to parent form. Real-time input formatting.
+- **When tools**: Using `$bind()`, `Bindable<T>`, form context. `@anchorlib/solid` field components.
 - **Action**: Read `contents/form-architecture.md`
 
 ## Headless Composition
-- **When**: You need to extract logic into reusable factories, model domain logic or state machines outside UI, compose reusable DOM side-effects (keyboard shortcuts, scroll, intersection observers), share logic across frameworks (React, SolidJS), unit test logic without UI, create factories with optional or guaranteed shapes, or encapsulate side-effects in factories (logging, persistence).
+- **When problems**: Same logic duplicated across server and client. Reusable state machines or domain logic outside UI. DOM side-effects that need automatic cleanup. Logic shared between React and Solid.
+- **When tools**: Using factories from `@anchorlib/core`. Headless state/logic/action patterns. Creating composable DOM utilities (keyboard shortcuts, scroll observers).
 - **Action**: Read `contents/headless-composition.md`
 
 ## Library Authoring
-- **When**: You need to build a reusable npm library, separate client/server entry points (export maps), prevent client imports from pulling server code, design pluggable architecture (adapter/provider, chain of responsibility), configure bundling (ESM, DTS, unbundled), set up package.json exports and peerDependencies, configure tsconfig.json and vitest.config.ts, preserve JSX during compilation, or prevent bundling multiple copies of the reactivity system.
+- **When problems**: Publishing a reusable npm library. Preventing server code (database, API keys) from leaking into client bundles. Configuring export maps for ESM and DTS. Designing pluggable adapter/provider architectures.
+- **When tools**: Configuring `package.json` exports, `tsconfig.json`, `tsdown.config.ts`, `vitest.config.ts`. Using `export * from './implementation.js'` patterns. Preserving JSX during compilation.
 - **Action**: Read `contents/library-authoring.md`
 
 ## Persistent State
-- **When**: You need state that survives page refresh but clears on tab close (sessionStorage), state that survives browser restart (localStorage), store data beyond localStorage limits (IndexedDB), build offline-capable apps with auto-persisted mutations, create reactive browser database tables with auto-generated ids and timestamps, query/filter/index records, seed data on first load, stop syncing state, wait for writes to complete, or save draft content.
+- **When problems**: Data that survives page refresh (localStorage). Data that clears on tab close (sessionStorage). Large data beyond localStorage limits (IndexedDB). Offline-capable apps with auto-persisted mutations. Saving draft content.
+- **When tools**: Using `session()`, `persistent()`, `kv()`, `createTable()`. Reactive browser database tables with auto-generated ids and timestamps.
 - **Action**: Read `contents/persistent-state.md`
 
 ## Testing
-- **When**: You need to set up vitest + jsdom, test IRPC functions (stub + constructor in same process, no network), mock dependencies (not the framework), test reactive state with synchronous assertions, test effects (fire on change, stop on cleanup), test guards (redirect, error on auth failure), test providers (mock context), test streams with fake timers, test browser-only APIs, test cookies in isolation, or test components with Solid Testing Library.
+- **When problems**: Verifying code works before shipping. Testing reactive state changes synchronously. Testing IRPC functions without network (stub + constructor in same process). Testing guards and providers with mock context. Testing streams with fake timers.
+- **When tools**: Using `vitest` + `jsdom`. `withContext()` for context isolation. Solid Testing Library for component testing. Fake timers for stream testing.
 - **Action**: Read `contents/testing.md`
+
+## Troubleshooting
+- **When problems**: A component's styles don't update when reactive state changes (forgot `.use()`). Event handlers recreated on every update (inline handlers in JSX). `window is not defined` errors during SSR (module-level browser API access). Large forms feel laggy (all fields in one reactive branch). Browser utilities don't respond (`acceptInteractions()` not called). `<Show when>` never re-evaluates (forgot the getter function). `<Snippet>` crashes on null data (should use `<Show>` instead). Reactive reads outside JSX don't trigger updates.
+- **When tools**: `classx.use()`, `stylex.use()`, `acceptInteractions()`, `<Show>`, `<Snippet>`.
+- **Action**: Read `contents/troubleshooting.md`
 
 ## Decision Tree Sample
 ```
@@ -98,15 +132,17 @@ Will there any component with similiar behavior in the future?
 
 ```
 
-### Critical Rendering Rule: Avoid Gigantic `render()` Blocks
-When building UI components, **never** blindly wrap an entire massive component or page in a single `render(() => ...)` block. Doing so defeats the purpose of fine-grained reactivity, forcing the entire UI tree to re-evaluate when any nested signal changes.
+### Rendering Strategy: `<Show>` vs `<Snippet>`
 
-Before writing a component, analyze its reactivity:
-1. **Is the majority of the UI static?**
-   If most of the component is static and only small parts change frequently, **return static JSX directly**. Do not wrap the whole component in `render()`. Instead, isolate only the reactive parts into a `SnippetNode` (if it needs parent scope access) or a `Template` (if it is purely props-driven).
-2. **Is the entire tree heavily reactive?**
-   - **If the tree is large (multiple domains):** Break it down! Isolate each domain into smaller, independent `Snippets` or `Templates` so they update independently.
-   - **If the tree is very small (e.g., a simple toggle or button):** Only then is it acceptable to wrap it in a single `render()` block.
+Solid JSX is natively reactive — signal reads in the template register dependencies automatically. Choose the right explicit boundary based on **how much of the UI is reactive** × **how large/frequently it updates**:
+
+| Pattern | When to use | Why |
+|---|---|---|
+| **`<Show>`** | Need conditional gate + safe destructuring | `when` prop guarantees data exists before children render — destructuring is safe |
+| **`<Snippet>`** | Need rendering isolation only, no conditional gate | Pass data through `data` prop — user handles nullish values |
+| **No wrapper** | Output is large and mostly static | Return JSX directly from `setup()`. Each child component handles its own reactive tracking |
+
+**Anti-pattern:** Wrapping an entire massive form or page in a single `<Snippet>` or a single reactive block. Break it into components or `<Snippet>` boundaries per domain.
 
 ---
 **CRITICAL INSTRUCTION**: Do NOT attempt to read all modules at once. Identify your exact problem domain from the list above, then use the `view_file` tool to read *only* that specific file.

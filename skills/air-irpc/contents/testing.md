@@ -36,14 +36,12 @@ describe('greet', () => {
 
 When you import the constructor locally, the call bypasses the IRPC router. This means the router's context seeding mechanism (which normally extracts tokens from HTTP requests) never runs. If your handler or its dependencies rely on context, you must manually inject it using `withContext()`.
 
-- **Setup Async Storage**: Import the server entry point at the **very top** of your test file (before any other imports) to initialize `AsyncLocalStorage`. Avoid putting this in a global setup file, as it will force all UI tests into a server environment.
+> Context isolation is handled automatically. No explicit server import is needed to use `withContext()` in tests.
+
 - **Isolate Calls**: Wrap your local stub execution inside a `withContext()` scope so tests don't leak context across each other.
 - **Context Wrappers**: Create helper functions to quickly inject required dependencies.
 
 ```typescript
-// Setup async storage for this specific test file. MUST BE FIRST IMPORT.
-
-
 import { describe, expect, it } from 'vitest';
 import { withContext } from '@irpclib/irpc';
 import { getProfile } from '../src/api/profile/index.js';

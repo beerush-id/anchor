@@ -18,6 +18,13 @@ export const BillingHeader = () => (
 #### Core Styling Utilities (`classx` & `stylex`)
 Use the `@anchorlib/react` utilities as the primary convention for **dynamic styles and classes**.
 
+> **⚠️ CRITICAL: `.use()` Required for Anchor Components**
+>
+> - **Native HTML elements** (`<div>`, `<span>`, `<button>`): Pass `classx()` / `stylex()` directly — reactive updates work automatically
+> - **Anchor components** (built with `setup()` like `<InvoiceBadge>`, `<ScrollView>`): Must use `classx.use(() => ...)` / `stylex.use(() => ...)` with a **getter** — the `.use()` variant creates a reactive binding that updates when dependencies change
+>
+> Forgetting `.use()` on anchor components = styles/classes never update when the reactive state changes. The UI will show stale values silently — no error, no warning.
+
 **ClassX (`classx`)**: Joins class names based on strings, arrays, or object maps.
 ```tsx
 import { classx } from '@anchorlib/react';
@@ -42,6 +49,10 @@ export const Badge = ({ status, isActive, isOld }) => (
 ```
 
 **StyleX (`stylex`)**: Automatically handles CSS units and unitless properties. Use the inline `style` property strictly as an escape hatch for continuous, JS-calculated values that cannot be mapped to discrete utility classes. Never map dynamic variables directly to Tailwind arbitrary brackets (e.g., `bg-[${color}]`).
+
+> **⚠️ Same rule applies: `.use()` for anchor components.**
+> `stylex()` → native elements. `stylex.use(() => ...)` → anchor components.
+
 ```tsx
 import { stylex, $unit } from '@anchorlib/react';
 import { ScrollView } from './ScrollView.js'; // Example Anchor Component
@@ -151,6 +162,8 @@ export const SettingsPanel = setup(() => {
   const metrics = metricsContext.get();
   const state = appStateContext.get();
 
+  const handleSave = () => console.log('Saved!');
+
   // Reactive Boundary: `render(() => ...)` wraps the static HTML reads
   return render(() => (
     <div className="panel">
@@ -160,7 +173,7 @@ export const SettingsPanel = setup(() => {
       {/* Prop Binding: Pass reference to Components -> Child handles tracking */}
       <ProgressBar progress={$use(() => metrics.cpu)} />
       <Toggle value={$bind(() => state.settings, 'notifications')} />
-      <Button onClick={() => console.log('Saved!')}>Save</Button>
+      <Button onClick={handleSave}>Save</Button>
     </div>
   ));
 });
@@ -241,63 +254,108 @@ export const AnyOtherPage = page(otherRoute).render(({ state }) => render(() => 
 A **View** is a one-way reactive boundary that presents state as-is but never owns state or behavior. It isolates fast updates to prevent expensive parent re-renders.
 
 #### Snippet
-Use Snippets to create scoped reactive boundaries.
+Choose the right reactive boundary based on **how much of the UI is reactive** × **how large/frequently it updates**. A small reactive toggle needs less isolation than a large form with frequent updates.
 
-> [!WARNING] AI INSTRUCTION: WHEN TO USE SNIPPETS
-> **DO NOT** default to wrapping everything in `<Snippet>` or `snippet()`, but also **DO NOT** default to wrapping massive God components in a single `render()` block!
-> 
-> Follow the **Critical Rendering Rule** from `SKILL.md`:
-> - **Is the majority of the UI static?** Return static JSX from the component, and use Snippets/Templates ONLY to isolate the fast-updating reactive parts.
-> - **Is the entire tree heavily reactive AND large?** Do NOT wrap it all in one `render()`. Use Snippets/Templates to break it down by domain so they update independently.
-> - **Is the entire tree very small (e.g., a simple toggle button)?** ONLY then should you skip Snippets and let a single `render()` block handle the entire output natively.
+#### `render()` — Small, Mostly Reactive
 
-When isolation is necessary, choose based on your structural concern:
+When a component's body is predominantly reactive AND the output is small (e.g., a toggle, a badge, a counter), wrap the return in `render()`. The whole output is one reactive boundary, which is appropriate because the output is small.
 
-- **Semantic Boundaries (`snippet()`):** Use the factory to create a named boundary when the UI represents a distinct concept or is complex enough to be extracted (e.g. `CpuMeter`). Snippets naturally inherit the parent closure.
-- **Inline Boundaries (`<Snippet>`):** Use the component to create a boundary exactly where the UI sits. You **MUST** pass the state object via the `data` prop and destructure/read it inside the children function to properly defer the read.
+```tsx
+export const Toggle = setup<{ value?: Bindable<boolean> }>((props) => {
+  const toggle = () => { props.value = !props.value; };
 
-```tsx [Semantic Example]
+  return render(() => (
+    <button onClick={toggle}>
+      {props.value ? 'ON' : 'OFF'}
+    </button>
+  ));
+});
+```
+
+**When `render()` is the wrong choice:**
+- **Output is large and mostly static** → return JSX directly from `setup()`, no wrapper needed
+- **Output is large and heavily reactive** → break into smaller named snippets (`snippet()`) or extract into components (`setup()`)
+
+Example — a form with many fields should NOT use `render()` around the whole body. Each field lives in its own component (`<InputField>`) or `<Snippet>` boundary, while the form body remains static:
+
+```tsx
+import { setup, mutable, $bind } from '@anchorlib/react';
+
+export const ProfileForm = setup(() => {
+  const state = mutable({ name: '', email: '' });
+
+  // Body is static layout — return JSX directly, no render()
+  return (
+    <div className="form">
+      <InputField label="Name" value={$bind(() => state, 'name')} />
+      <InputField label="Email" value={$bind(() => state, 'email')} />
+    </div>
+  );
+});
+```
+
+#### `snippet()` — Named Semantic Boundary
+
+Use `snippet()` to create a named, reusable reactive boundary inside a component. Snippets inherit the parent closure naturally — they read the same variables the parent has access to.
+
+```tsx
 import { setup, snippet } from '@anchorlib/react';
-import { metricsContext, authContext } from './contexts.js';
+import { metricsContext } from './contexts.js';
 
 export const Dashboard = setup(() => {
   const metrics = metricsContext.get();
-  const user = authContext.get();
 
-  // Semantic Snippet: extracts a distinct concept
+  // Named snippet: represents a distinct concept
   const CpuMeter = snippet(() => (
     <div className="cpu-fast-update">CPU: {metrics.cpu}%</div>
   ));
 
   return render(() => (
     <div className="dashboard">
-      <div className="profile"><h2>{user.firstName}</h2></div>
+      <h1>Dashboard</h1>
       <CpuMeter />
     </div>
   ));
 });
 ```
 
-```tsx [Inline Example]
-import { setup, Snippet } from '@anchorlib/react';
-import { metricsContext, authContext } from './contexts.js';
+#### `<Show>` — Conditional Gate + Safe Destructuring
 
-export const Dashboard = setup(() => {
-  const metrics = metricsContext.get();
-  const user = authContext.get();
+`<Show>` is both a conditional gate and a rendering boundary. The `when` prop guarantees safety: when falsy, children never render. When truthy, destructuring inside the children function is safe — the data is guaranteed non-null.
 
-  return render(() => (
-    <div className="dashboard">
-      <div className="profile"><h2>{user.firstName}</h2></div>
-      
-      {/* Inline Snippet: pass object to defer the read */}
-      <Snippet data={metrics}>
-        {({ cpu }) => <div className="cpu-fast-update">CPU: {cpu}%</div>}
-      </Snippet>
-    </div>
-  ));
-});
+```tsx
+import { Show } from '@anchorlib/react';
+
+// Safe: Show gates on condition before destructuring
+<Show when={() => user.data}>
+  {({ name, email }) => <div>{name} — {email}</div>}
+</Show>
 ```
+
+Use `<Show>` when you need **flow control** (show/hide) AND rendering isolation together.
+
+#### `<Snippet>` — Pure Rendering Boundary (No Gate)
+
+`<Snippet>` creates an inline rendering boundary WITHOUT a conditional gate. The user is responsible for handling nullish values — the data is passed through as-is.
+
+```tsx
+import { Snippet } from '@anchorlib/react';
+
+// No gate: user handles nullish themselves
+<Snippet data={metrics}>
+  {({ cpu }) => <div className="cpu-fast-update">CPU: {cpu.toFixed(1)}%</div>}
+</Snippet>
+```
+
+Use `<Snippet>` when you need **rendering isolation only** and the element is always present in the DOM (no conditional show/hide).
+
+**Key difference:**
+
+| | `<Show>` | `<Snippet>` |
+|---|---|---|
+| Conditional gate? | Yes (`when` prop) | No |
+| Destructuring safe? | Yes — gate guarantees data | No — user handles nullish |
+| Purpose | Flow control + rendering | Rendering isolation only |
 
 #### Template
 Use `template()` to create a standalone, reusable reactive View. Unlike a snippet, a template requires explicit props and can be extracted to a different file.
@@ -422,19 +480,22 @@ export const VideoPlayer = setup<{
     props.playing ? ref.current?.play() : ref.current?.pause();
   });
 
-  // Video re-render only when props.src changes, which also re-run the effect.
+  const handlePlay = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    props.playing = true;
+    props.onPlay?.(e);
+  };
+
+  const handlePause = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    props.playing = false;
+    props.onPause?.(e);
+  };
+
   return render(() => (
     <video
       ref={ref}
       src={props.src}
-      onPlay={(e) => {
-        props.playing = true;
-        props.onPlay?.(e);
-      }}
-      onPause={(e) => {
-        props.playing = false;
-        props.onPause?.(e);
-      }}
+      onPlay={handlePlay}
+      onPause={handlePause}
     />
   ));
 });
@@ -451,13 +512,15 @@ export const Accordion = setup<{
   children?: ReactNode,
   onToggle?: (e: React.SyntheticEvent<HTMLDetailsElement>) => void
 }>((props) => {
+  const handleToggle = (e: React.SyntheticEvent<HTMLDetailsElement>) => {
+    props.expanded = e.currentTarget.open;
+    props.onToggle?.(e);
+  };
+
   return render(() => (
     <details 
       open={props.expanded} 
-      onToggle={(e) => {
-        props.expanded = e.currentTarget.open;
-        props.onToggle?.(e);
-      }}
+      onToggle={handleToggle}
     >
       <summary>{props.title}</summary>
       {props.children}
@@ -582,11 +645,13 @@ export const AnimatedBox = setup(() => {
     style: { transform: `translate(${state.x}px, ${state.y}px)` }
   }));
 
+  const toggleActive = () => { state.active = !state.active; };
+
   return render(() => (
     <div 
       ref={boxRef} 
       {...boxRef.attributes} 
-      onClick={() => state.active = !state.active}
+      onClick={toggleActive}
     >
       <HeavyContent /> {/* Changing box location/class won't re-render this */}
     </div>
@@ -765,267 +830,4 @@ export const Checkout = setup(() => {
   ));
 });
 
-### Browser Utilities (`@anchorlib/react/browser`)
-
-Reactive browser primitives convert low-level DOM events into fine-grained reactive state. All browser primitives defer internal listener registration until hydration completes via `onInteractive()`.
-
-#### Hydration & Lifecycle
-
-Invoke `acceptInteractions()` after client mount or hydration to activate deferred DOM event listeners cleanly without SSR hydration mismatches.
-
-```tsx
-import { hydrateRoot } from 'react-dom/client';
-import { acceptInteractions } from '@anchorlib/react/browser';
-import App from './App.js';
-
-hydrateRoot(document.getElementById('root')!, <App />);
-acceptInteractions();
-```
-
-#### Global Singletons Pattern
-
-> [!IMPORTANT] AI RULE: IMPORT ONLY NEEDED UTILITIES
-> **DO NOT** import multiple browser utilities together in a single mega-import block unless your active component specifically requires them all. Only import the exact singletons needed for your immediate task.
-
-Read global state singletons (`LIVE_CURSOR`, `LIVE_SCROLL`, `LIVE_SELECTION`, `LIVE_DND`, `LIVE_MEDIA`, `LIVE_WINDOW`, `LIVE_NETWORK`, `LIVE_GEO`, `LIVE_KEYBOARD`, `LIVE_CLIPBOARD`) directly inside `<Show>` templates using inline callback parameter destructuring. Do not create custom component wrappers (`setup`/`view`/`template`/`page`) just to read a global singleton.
-
-- **`x`, `y`**: Pointer coordinates relative to the viewport.
-- **`pageX`, `pageY`**: Pointer coordinates relative to the document.
-- **`screenX`, `screenY`**: Pointer coordinates relative to the screen.
-- **`type`**: The input device type (`'mouse'`, `'touch'`, `'pen'`, or `''`).
-- **`button`**: The active mouse button (`'left'`, `'right'`, `'middle'`, or `undefined`).
-- **`target`**: The DOM element currently under the pointer.
-- **`modifiers`**: A `Set` of active modifier keys (`'alt'`, `'ctrl'`, `'meta'`, `'shift'`).
-- **`current`**: The root element being tracked (`Document` or specific `Element`).
-
-```tsx [Global Cursor]
-import { Show } from '@anchorlib/react';
-import { LIVE_CURSOR } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_CURSOR.x && LIVE_CURSOR}>
-  {({ x, y, type, button, modifiers }) => (
-    <div>
-      <p>Pointer: {x}, {y} ({type || 'none'})</p>
-      <p>Active Button: {button ?? 'none'}</p>
-      <p>Modifiers: {Array.from(modifiers).join(', ') || 'none'}</p>
-    </div>
-  )}
-</Show>
-```
-
-- **`rect`**: The `DOMRect` of the entire selection, or `null` if nothing is selected.
-- **`rects`**: An array of `DOMRect` objects for each line/segment of the selection.
-- **`size`**: The number of selected characters.
-- **`text`**: The raw string text of the selection.
-- **`target`**: The container element holding the selection.
-- **`paths(padding, radius)`**: A function returning an SVG `d` path string representing the selection boundaries.
-
-```tsx [Selection Path Overlay]
-import { Show } from '@anchorlib/react';
-import { LIVE_SELECTION } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_SELECTION.rect && LIVE_SELECTION}>
-  {({ rect, paths, size }) => (
-    <>
-      <svg width={rect.width + 16} height={rect.height + 16}>
-        <path d={paths(6, 8)} fill="rgba(0, 0, 0, 0.15)" />
-      </svg>
-      <div>Selected {size} chars</div>
-    </>
-  )}
-</Show>
-```
-
-- **`isDragging`**: Boolean indicating if a drag operation is currently active.
-- **`isInternal`**: Boolean indicating if the drag originated from within the application.
-- **`x`, `y`**: Current pointer coordinates during the drag.
-- **`startX`, `startY`**: Pointer coordinates where the drag started.
-- **`deltaX`, `deltaY`**: Distance moved since the drag started.
-- **`payload`**: The active `DragContent` being dragged (`{ type, text, data, files, count }`).
-- **`target`**: The DOM element that initiated the drag.
-- **`zone`**: The active drop zone element currently being hovered.
-- **`draggable(el, state?)`**: Registers an element as draggable.
-- **`droppable(...els)`**: Registers elements as drop zones.
-
-```tsx [Drag & Drop Preview]
-import { Show } from '@anchorlib/react';
-import { LIVE_DND } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_DND.isDragging && LIVE_DND}>
-  {({ x, y, payload }) => (
-    <div style={{ top: `${y}px`, left: `${x}px` }}>{payload.data?.type}</div>
-  )}
-</Show>
-```
-
-- **`x`, `y`**: The horizontal and vertical scroll offsets in pixels.
-- **`direction`**: The current scrolling direction (`'up'`, `'down'`, `'left'`, `'right'`, or `'none'`).
-- **`isScrolling`**: A transient boolean that is `true` while the scroll event is firing and returns to `false` when scrolling pauses.
-- **`current`**: The root element being tracked.
-
-```tsx [Scroll Position]
-import { Show } from '@anchorlib/react';
-import { LIVE_SCROLL } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_SCROLL.y && LIVE_SCROLL}>
-  {({ y, direction }) => (
-    <div className={y > 100 ? 'sticky shadow' : 'relative'}>
-      Scrolling {direction} at {y}px
-    </div>
-  )}
-</Show>
-```
-
-- **`isMobile`**: Matches `(max-width: 639px)`.
-- **`isTablet`**: Matches `(min-width: 640px) and (max-width: 1023px)`.
-- **`isDesktop`**: Matches `(min-width: 1024px)`.
-- **`isDark`, `isLight`**: Matches `(prefers-color-scheme)`.
-- **`isLandscape`, `isPortrait`**: Matches `(orientation)`.
-- **`isTouch`**: Matches `(pointer: coarse)`.
-- **`isHover`**: Matches `(hover: hover)`.
-- **`isReducedMotion`, `isHighContrast`**: Matches user accessibility preferences.
-- **`isRetina`**: Matches `(resolution >= 2dppx)`.
-
-```tsx [Media Queries]
-import { Show } from '@anchorlib/react';
-import { LIVE_MEDIA, mediaQuery } from '@anchorlib/react/browser';
-
-const isWide = mediaQuery('(min-width: 1400px)');
-
-<Show when={() => LIVE_MEDIA}>
-  {({ isMobile, isDark }) => (
-    <div className={isDark ? 'dark' : 'light'}>
-      {isMobile ? 'Mobile View' : 'Desktop View'}
-      {isWide() && ' (Ultra Wide)'}
-    </div>
-  )}
-</Show>
-```
-
-- **`width`, `height`**: The current window dimensions (`window.innerWidth/innerHeight`).
-- **`isIdle`**: Boolean indicating if the user has been inactive longer than the idle timeout.
-- **`isVisible`**: Boolean indicating if the document is visible (`!document.hidden`).
-- **`isFocused`**: Boolean indicating if the document has focus (`document.hasFocus()`).
-- **`lastActive`**: The timestamp of the last registered user activity.
-- **`setIdleTimeout(minutes)`**: Configures the duration before the window is considered idle.
-
-```tsx [Window & Inactivity]
-import { Show } from '@anchorlib/react';
-import { LIVE_WINDOW } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_WINDOW.isIdle && LIVE_WINDOW}>
-  {({ lastActive }) => <div>Idle since: {lastActive}</div>}
-</Show>
-```
-
-- **`lat`**, **`lng`**: Latitude and longitude coordinates.
-- **`isTracking`**: Boolean indicating if a valid location is actively being tracked.
-- **`speed`**: Device velocity in meters per second (if available).
-- **`accuracy`**: The accuracy level of the coordinates in meters.
-- **`error`**: String containing any Geolocation API error messages.
-
-```tsx [Geolocation]
-import { Show } from '@anchorlib/react';
-import { LIVE_GEO } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_GEO.isTracking && LIVE_GEO}>
-  {({ lat, lng }) => <div>Location: {lat}, {lng}</div>}
-</Show>
-```
-
-- **`isOnline`**: Boolean indicating if the browser is currently connected to the network.
-- **`effectiveType`**: The effective connection type (e.g., `'4g'`, `'3g'`, `'2g'`).
-- **`downlink`**: Estimated effective bandwidth in Mbps.
-- **`rtt`**: Estimated effective round-trip time in ms.
-- **`type`**: The underlying connection technology (e.g., `'wifi'`, `'cellular'`).
-
-```tsx [Network Connectivity]
-import { Show } from '@anchorlib/react';
-import { LIVE_NETWORK } from '@anchorlib/react/browser';
-
-<Show when={() => !LIVE_NETWORK.isOnline && LIVE_NETWORK}>
-  {({ effectiveType, downlink }) => <div>Offline ({effectiveType}, {downlink} Mbps)</div>}
-</Show>
-```
-
-- **`key`**: The primary key currently pressed.
-- **`modifiers`**: A `Set` of currently pressed modifier keys (`'alt'`, `'ctrl'`, `'meta'`, `'shift'`).
-- **`is(...keys)`**: Helper method that returns `true` if the specified key combination is active (e.g., `is('ctrl', 's')`).
-- **`target`**: The DOM element that initiated the keydown event.
-- **`current`**: The root element being tracked (`Document` or specific `Element`).
-
-```tsx [Keyboard Shortcut]
-import { Show } from '@anchorlib/react';
-import { LIVE_KEYBOARD } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_KEYBOARD.is('ctrl', 's') && LIVE_KEYBOARD}>
-  {({ key }) => <p>Saved via {key}!</p>}
-</Show>
-```
-
-- **`text`**: The most recently copied or pasted string.
-- **`data`**: Parsed JSON object from the clipboard.
-- **`files`**: An array of `File` objects pasted into the document.
-- **`isSupported`**: Boolean indicating if the system clipboard API is available.
-- **`copy(payload)`**: Asynchronously writes text or JSON to the clipboard (`Promise<boolean>`).
-- **`take(slot, handler)`**: Registers a callback to receive specific pasted data (`'text'`, `'data'`, or `'files'`).
-- **`paste(payload)`**: Manually triggers a paste operation programmatically.
-- **`clear(slot?)`**: Clears specific clipboard state slots.
-
-```tsx [Clipboard Content]
-import { Show } from '@anchorlib/react';
-import { LIVE_CLIPBOARD } from '@anchorlib/react/browser';
-
-<Show when={() => LIVE_CLIPBOARD.text && LIVE_CLIPBOARD}>
-  {({ text }) => <p>Pasted: {text}</p>}
-</Show>
-```
-
-#### Ref-like Element Trackers Pattern
-
-Element-scoped factories (`cursorRef()`, `scrollRef()`, `keyboardRef()`) return Ref-like reactive objects containing `.current`. Pass them **directly** as `ref={tracker}` props without writing redundant `ref={(el) => (tracker.current = el)}` callback wrappers.
-
-```tsx
-import { setup, render } from '@anchorlib/react';
-import { cursorRef, scrollRef, keyboardRef } from '@anchorlib/react/browser';
-
-export const ElementTrackers = setup(() => {
-  const boxCursor = cursorRef();
-  const listScroll = scrollRef();
-  const inputKeyboard = keyboardRef();
-
-  return render(() => (
-    <div>
-      {/* Pass Ref-like objects directly to ref prop */}
-      <div ref={boxCursor}>Cursor inside: {boxCursor.x}, {boxCursor.y}</div>
-      <div ref={listScroll} style={{ overflowY: 'auto', height: '200px' }}>
-        Scroll Y: {listScroll.y}px
-      </div>
-      <input ref={inputKeyboard} placeholder="Type here..." />
-    </div>
-  ));
-});
-```
-
-#### Animation Frame Scheduling
-
-Use `reframe()` to schedule high-frequency visual updates via `requestAnimationFrame`. Calling `scheduleFrame(callback)` automatically cancels any pending frame request to prevent frame backlog.
-
-```tsx
-import { setup, render } from '@anchorlib/react';
-import { reframe } from '@anchorlib/react/browser';
-
-export const CanvasRenderer = setup(() => {
-  const [scheduleFrame, cancelFrame] = reframe();
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    scheduleFrame(() => {
-      console.log('Rendering frame:', e.clientX, e.clientY);
-    });
-  };
-
-  return render(() => (
-    <div onPointerMove={handlePointerMove}>Canvas Surface</div>
-  ));
-});
 ```

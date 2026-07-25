@@ -204,8 +204,9 @@ The Router binds IRPC to your actual web server (e.g., Bun, Node). You **must** 
 
 To establish deep global context before routing occurs (e.g., fetching a User object from a token), use Router Hooks via `router.use()`.
 
+> Context isolation is handled automatically — no explicit server import is required.
+
 ```typescript
- // MUST import for AsyncLocalStorage (Hooks/Context)
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
 import { getContext, setContext } from '@irpclib/irpc';

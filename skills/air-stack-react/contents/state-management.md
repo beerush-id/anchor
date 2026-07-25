@@ -74,7 +74,7 @@ export function query<T>(
   options?: { deferred?: boolean }
 ): {
   data: T;
-  status: 'idle' | 'pending' | 'success' | 'error';
+  status: 'idle' | 'pending' | 'success' | 'error' | 'aborted';
   error: Error | undefined;
   readonly promise: Promise<T>;
   start(initialDataOverride?: Partial<T>): void;
