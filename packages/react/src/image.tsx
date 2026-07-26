@@ -1,4 +1,4 @@
-import type { ImgHTMLAttributes, ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { snippet } from './hoc.js';
 
 export interface AirImageMeta {
@@ -14,8 +14,8 @@ export interface AirImage extends AirImageMeta {
   [size: number]: AirImageMeta;
 }
 
-export interface ImageProps extends ImgHTMLAttributes<HTMLImageElement> {
-  from: AirImage;
+export interface ImageProps extends ComponentProps<'img'> {
+  from?: AirImage;
   size?: number;
 }
 

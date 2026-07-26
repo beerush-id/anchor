@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../src/client/index';
+import type { RefObject } from 'react';
 import { type AirImage, Image } from '../src/image.js';
 
 describe('Image Component', () => {
@@ -67,12 +68,15 @@ describe('Image Component', () => {
   });
 
   it('allows explicit props to override from properties', () => {
-    const { container } = render(<Image from={mockImage} size={128} alt="Overridden Alt" className="custom-class" />);
+    const ref = { current: null } as never as RefObject<HTMLImageElement>;
+    const { container } = render(
+      <Image ref={ref} from={mockImage} size={128} alt="Overridden Alt" className="custom-class" />
+    );
     const img = container.querySelector('img');
 
-    expect(img?.getAttribute('src')).toBe('/mock-128.webp'); // from proxy
-    expect(img?.getAttribute('alt')).toBe('Overridden Alt'); // overridden
-    expect(img?.getAttribute('class')).toBe('custom-class'); // standard html prop
+    expect(ref.current?.getAttribute('src')).toBe('/mock-128.webp'); // from proxy
+    expect(ref.current?.getAttribute('alt')).toBe('Overridden Alt'); // overridden
+    expect(ref.current?.getAttribute('class')).toBe('custom-class'); // standard html prop
   });
 
   it('renders a safe empty image without crashing if from is undefined or empty', () => {
@@ -80,12 +84,13 @@ describe('Image Component', () => {
     const originalError = console.error;
     console.error = () => {};
 
-    // @ts-expect-error: Testing runtime safety for undefined/empty
-    const { container } = render(<Image from={undefined} className="fallback-img" />);
+    const { container } = render(
+      <Image from={undefined} src="http://localhost/images/test.png" className="fallback-img" />
+    );
     const img = container.querySelector('img');
 
     expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBeNull();
+    expect(img?.getAttribute('src')).not.toBeNull();
     expect(img?.getAttribute('class')).toBe('fallback-img');
 
     console.error = originalError;

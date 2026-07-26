@@ -8,7 +8,7 @@ import type {
   Router,
   UnknownRoute,
 } from '@anchorlib/router';
-import type { AnchorHTMLAttributes, FC, ReactNode } from 'react';
+import type { ComponentProps as ReactProps, FC, ReactNode } from 'react';
 
 /**
  * Represents any generic Route definition from the core router.
@@ -42,7 +42,7 @@ export type ComposedLinkProps<T> = T extends IndexRoute<
 /**
  * Props for the Anchor Link component.
  */
-export type LinkProps<R> = AnchorHTMLAttributes<HTMLAnchorElement> &
+export type LinkProps<R> = ReactProps<'a'> &
   ComposedLinkProps<R> & {
     preload?: 'hover' | 'always' | 'never';
     replace?: boolean;
