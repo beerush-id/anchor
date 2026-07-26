@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorlib/storage",
-  "version": "1.2.24",
+  "version": "1.2.25",
   "description": "Persistent storage solutions for Anchor state management",
   "keywords": [
     "state",

@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@anchorlib/solid",
-  "version": "1.2.24",
+  "version": "1.2.25",
   "description": "Solid bindings for Anchor reactive state management",
   "keywords": [
     "state",
