@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Transformer } from '@napi-rs/image';
 import type { Plugin } from 'vite';
 
 export interface AirImageOptions {
@@ -44,8 +45,6 @@ export function airImage(options: AirImageOptions = {}): Plugin {
       const [filePath] = id.split('?');
 
       try {
-        const { Transformer } = await import('@napi-rs/image');
-
         const buffer = await fs.readFile(filePath);
 
         // Wait, @napi-rs/image uses Transformer API. Let me check its API if possible.
