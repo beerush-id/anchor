@@ -1,5 +1,5 @@
 import { $module } from '../module.js';
-import { isFunction } from '../utils/index.js';
+import { isFunction } from '../utils/typeof.js';
 
 /** Key type for {@link AsyncStore} entries. Accepts any value, including Symbols. */
 // biome-ignore lint/suspicious/noExplicitAny: Expected.

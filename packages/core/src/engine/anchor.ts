@@ -1,4 +1,5 @@
-import { S_MAP_TYPE, S_SET_TYPE, SerializableMap, SerializableSet, xMap, xSet } from '../common/index.js';
+import { S_MAP_TYPE, SerializableMap, xMap } from '../common/map.js';
+import { S_SET_TYPE, SerializableSet, xSet } from '../common/set.js';
 import { ANCHOR_SETTINGS, POISONED_KEYS } from '../shared/constant.js';
 import { Linkables } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';

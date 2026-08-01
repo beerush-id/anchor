@@ -1,6 +1,6 @@
 import { ANCHOR_SETTINGS, POISONED_KEYS } from '../shared/constant.js';
 import type { Linkable, ObjLike, Recursive } from '../types.js';
-import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from './inspector.js';
+import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from './typeof.js';
 
 /**
  * Deep clone an object with proper handling of circular references

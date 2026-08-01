@@ -1,5 +1,5 @@
 import { valueGetter, type ValueGetterType } from '../shared/env.js';
-import { isFalsy, isTruthy } from './inspector.ts';
+import { isFalsy, isTruthy } from './typeof.js';
 
 /**
  * Represents a single class name, which can also be a boolean, number, or null/undefined (falsy values are ignored).

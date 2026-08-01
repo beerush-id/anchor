@@ -1,5 +1,5 @@
 export * from './async.js';
-export * from './cookie.ts';
+export * from './cookie.js';
 export * from './fetch.js';
 export * from './form.js';
 export * from './history.js';

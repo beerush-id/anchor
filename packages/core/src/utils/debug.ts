@@ -1,6 +1,6 @@
 import { $symbol } from '../module.js';
 import { getScope, setScope } from '../scope/context.js';
-import { isFunction, isString } from './inspector.js';
+import { isFunction, isString } from './typeof.js';
 
 export type DebugFn = (...args: unknown[]) => void;
 

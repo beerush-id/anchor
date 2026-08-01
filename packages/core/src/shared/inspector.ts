@@ -1,7 +1,7 @@
-import { anchor } from '../engine/anchor.ts';
+import { anchor } from '../engine/anchor.js';
 import { subscribe } from '../reactive/index.js';
 import { onCleanup } from '../scope/index.js';
-import type { StateInspector } from '../types.ts';
+import type { StateInspector } from '../types.js';
 import { ANCHOR_SETTINGS } from './constant.js';
 import { captureStack } from './index.js';
 

@@ -1,5 +1,5 @@
-import { mutable } from '../reactive/index.ts';
-import type { AnyType } from '../types.ts';
+import { mutable } from '../reactive/index.js';
+import type { AnyType } from '../types.js';
 
 export const LIST_OPTIONS = {
   size: 1000,
