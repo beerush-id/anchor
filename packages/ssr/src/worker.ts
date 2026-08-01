@@ -10,9 +10,9 @@ import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import { createAssetResolver, resolveCacheControl } from './assets.js';
 import { SSR_ENV_KEY } from './context.js';
-import type { SSRContextSeed, SSRRenderer, WorkerOptions, WsSender } from './types.js';
+import type { AppWorkerOptions, SSRContextSeed, SSRRenderer, WsSender } from './types.js';
 
-export function createWorker<E = AnyType>(renderer: SSRRenderer, options: WorkerOptions<E> = {}) {
+export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWorkerOptions<E> = {}) {
   return {
     options,
     async fetch(request: Request, env?: E) {
@@ -88,7 +88,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: Worker
 export function createFullWorker<E = AnyType>(
   router: HTTPRouter,
   renderer: SSRRenderer,
-  options: WorkerOptions<E> = {}
+  options: AppWorkerOptions<E> = {}
 ) {
   return {
     options,

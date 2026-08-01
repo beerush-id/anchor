@@ -2,7 +2,8 @@ import type { AsyncKey, AsyncStore, AsyncValue } from '@anchorlib/core';
 import type { Router, SitemapConfig } from '@anchorlib/router';
 import type { HTTPRouter } from '@irpclib/http/router';
 
-export type SSROptions = {
+export type RouterOptions = {
+  router: Router;
   sitemap?: boolean | Omit<SitemapConfig, 'url'>;
 };
 
@@ -24,7 +25,7 @@ export type SSRRenderOptions = {
   context?: SSRContext;
   controller?: AbortController;
   isolated?: boolean;
-  options?: SSROptions;
+  options?: SSROptions & Omit<RouterOptions, 'router'>;
 };
 
 export type SSRRenderView = (options: {
@@ -58,23 +59,28 @@ export interface WsRouter {
   disconnect?(ws?: WsSender): void;
 }
 
-export type WorkerOptions<E> = {
+export type IRPCOptions = {
+  httpRouter?: HTTPRouter;
+  wsRouter?: WsRouter;
+};
+
+export type SSROptions = {
   template?: string;
   headTag?: string;
   bodyTag?: string;
-  resolveAsset?: AssetResolver<E>;
-  resolveContext?: (request: Request, url: URL, env?: E) => SSRContextSeed | Promise<SSRContextSeed>;
-  createResponse?: (response: Response) => Response;
   timeout?: number;
-  wsRouter?: WsRouter;
   cache?: {
     assets?: CacheControl;
     pages?: CacheControl;
   };
 };
 
-export type CoreAppOptions<E> = WorkerOptions<E> &
-  SSROptions & {
-    router: Router;
-    httpRouter?: HTTPRouter;
-  };
+export type WorkerOptions<E> = {
+  resolveAsset?: AssetResolver<E>;
+  resolveContext?: (request: Request, url: URL, env?: E) => SSRContextSeed | Promise<SSRContextSeed>;
+  createResponse?: (response: Response) => Response;
+};
+
+export type AppWorkerOptions<E> = WorkerOptions<E> & SSROptions & IRPCOptions;
+
+export type CoreAppOptions<E> = RouterOptions & AppWorkerOptions<E>;

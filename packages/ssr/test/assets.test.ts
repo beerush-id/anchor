@@ -1,5 +1,5 @@
-import { type CacheControlInit, createAssetResolver, getMimeType, resolveCacheControl } from '@anchorlib/ssr';
 import { describe, expect, it, vi } from 'vitest';
+import { type CacheControlInit, createAssetResolver, getMimeType, resolveCacheControl } from '../src/index.js';
 
 describe('getMimeType', () => {
   it('returns correct mime type for known extensions', () => {

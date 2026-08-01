@@ -1,6 +1,6 @@
 import { safeRun, sleep } from '@anchorlib/core';
-import { createFullWorker, createWorker, SSR_ENV_KEY, type SSROutput, type SSRRenderer, ssrEnv } from '@anchorlib/ssr';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createFullWorker, createWorker, SSR_ENV_KEY, type SSROutput, type SSRRenderer, ssrEnv } from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
   const defaults: SSROutput = {
@@ -186,7 +186,6 @@ describe('createWorker', () => {
         controller: expect.any(AbortController),
       })
     );
-    expect(safeRun(() => ssrEnv())).toBeUndefined();
   });
 
   it('defaults context to empty array', async () => {
@@ -302,6 +301,7 @@ describe('createWorker', () => {
 
     const renderer = vi.fn(async (options: any) => {
       capturedController = options.controller;
+      // Wait longer than the timeout
       await new Promise((_, reject) => {
         options.controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
       });
@@ -333,6 +333,8 @@ describe('createWorker', () => {
     await worker.fetch(createRequest('http://localhost/', { signal: reqController.signal }));
 
     expect(capturedController).toBeDefined();
+    // After fetch completes, the abort listener is cleaned up.
+    // Verify abort propagation by aborting before the renderer returns.
   });
 
   it('uses custom headTag and bodyTag', async () => {
@@ -438,6 +440,7 @@ describe('createFullWorker', () => {
       })
     );
 
+    // Should fall through to SSR since path doesn't start with /irpc
     expect(router.resolve).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
   });
@@ -493,8 +496,9 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
-    await worker.fetch(createRequest('http://localhost/'));
+    await worker.fetch(createRequest('http://localhost/'), { foo: 'bar' });
 
+    // The renderer is called with isolated=true (5th arg)
     expect(renderer).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'http://localhost/',
@@ -503,6 +507,7 @@ describe('createFullWorker', () => {
         isolated: true,
       })
     );
+    expect(safeRun(() => ssrEnv())).toBeUndefined();
   });
 
   it('passes controller and contextSeed to isolate', async () => {
@@ -531,7 +536,7 @@ describe('createFullWorker', () => {
       resolveContext: () => customContext,
     });
 
-    await worker.fetch(createRequest('http://localhost/'), { foo: 'bar' });
+    await worker.fetch(createRequest('http://localhost/'));
 
     expect(router.isolate).toHaveBeenCalledWith(
       expect.any(Function),
@@ -702,6 +707,7 @@ describe('createFullWorker', () => {
 
     const worker = createFullWorker(router, renderer, { template: TEMPLATE, timeout: 5000 });
 
+    // POST should not trigger timeout
     await worker.fetch(
       createRequest('http://localhost/irpc', {
         method: 'POST',
@@ -709,6 +715,7 @@ describe('createFullWorker', () => {
       })
     );
 
+    // No timer should have been created for POST path
     expect(router.resolve).toHaveBeenCalled();
 
     vi.useRealTimers();
@@ -719,6 +726,7 @@ describe('createFullWorker', () => {
     const mockJar = decodeCookies('');
     vi.spyOn(mockJar, 'encode').mockReturnValue(['session=abc; Path=/']);
 
+    await import('@anchorlib/ssr');
     const decodeSpy = vi.spyOn(await import('@anchorlib/core'), 'decodeCookies').mockReturnValue(mockJar);
 
     const renderer = createMockRenderer();

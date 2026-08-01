@@ -1,6 +1,7 @@
 import type { Router } from '@anchorlib/router';
 import {
   createRenderer as createBaseRenderer,
+  type RouterOptions,
   type SSRContext,
   type SSROptions,
   type SSRRenderOptions,
@@ -12,7 +13,7 @@ import type { AppShell, LegacySSRRenderer } from './types.js';
 export function createSSR(
   router: Router,
   RootLayout: RouteComponent<AnyRoute>,
-  defaultOptions?: SSROptions
+  defaultOptions?: SSROptions & Omit<RouterOptions, 'router'>
 ): LegacySSRRenderer {
   return ((
     urlOrOptions: string | SSRRenderOptions,
@@ -21,7 +22,7 @@ export function createSSR(
     controller?: AbortController,
     Shell?: AppShell,
     isolated?: boolean,
-    options?: SSROptions
+    options?: SSROptions & Omit<RouterOptions, 'router'>
   ) => {
     let renderOptions: SSRRenderOptions;
 

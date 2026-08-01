@@ -10,9 +10,21 @@ import {
   withIsolation,
 } from '@anchorlib/core';
 import { GuardError, NotFoundError, ProviderError, Redirect, type Router, redirectUrl } from '@anchorlib/router';
-import type { SSRContext, SSROptions, SSROutput, SSRRenderer, SSRRenderOptions, SSRRenderView } from './types.js';
+import type {
+  RouterOptions,
+  SSRContext,
+  SSROptions,
+  SSROutput,
+  SSRRenderer,
+  SSRRenderOptions,
+  SSRRenderView,
+} from './types.js';
 
-export function createRenderer(router: Router, renderView: SSRRenderView, defaultOptions?: SSROptions): SSRRenderer {
+export function createRenderer(
+  router: Router,
+  renderView: SSRRenderView,
+  defaultOptions?: SSROptions & Omit<RouterOptions, 'router'>
+): SSRRenderer {
   return ((options: SSRRenderOptions) => {
     const mergedOptions = options.options ?? defaultOptions;
 
@@ -53,7 +65,7 @@ export async function ssrRenderToString(
   renderView: SSRRenderView,
   url: string,
   controller?: AbortController,
-  options?: SSROptions
+  options?: SSROptions & Omit<RouterOptions, 'router'>
 ): Promise<Omit<SSROutput, 'cookies'>> {
   if (options?.sitemap !== false && url.endsWith('sitemap.xml')) {
     const sitemapConfig = typeof options?.sitemap === 'object' ? options.sitemap : {};
