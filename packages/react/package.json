@@ -98,6 +98,7 @@
   "peerDependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/router": "workspace:*",
+    "@anchorlib/ssr": "workspace:*",
     "@anchorlib/storage": "workspace:*",
     "react": "catalog:lib",
     "react-dom": "catalog:lib",

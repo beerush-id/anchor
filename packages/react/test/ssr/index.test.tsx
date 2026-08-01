@@ -5,7 +5,7 @@ import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from
 import type { HTMLAttributes, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page, setup } from '../../src/index.js';
-import { createSSR } from '../../src/ssr/index.js';
+import { createApp, createSSR } from '../../src/ssr/index.js';
 
 setAsyncScope(ALS_INSTANCE);
 
@@ -188,5 +188,46 @@ describe('createSSR', () => {
 
     const noSlashOutput = await ssrDefault('sitemap.xml', '');
     expect(noSlashOutput.contentType).toBe('application/xml; charset=utf-8');
+  });
+
+  it('supports passing SSRRenderOptions object', async () => {
+    const router = createRouter<ReactNode>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
+
+    const ssr = createSSR(router, RootLayout);
+    const output = await ssr({ url: 'http://localhost/', cookie: '' });
+
+    expect(output.html).toBe('<div></div>');
+    expect(output.status).toBe(200);
+  });
+});
+
+describe('createApp', () => {
+  it('creates an app with root layout', async () => {
+    const router = createRouter<ReactNode>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
+
+    const app = createApp(router, RootLayout, { worker: { template: '<!--ssr-outlet-->' } });
+    expect(app.fetch).toBeTypeOf('function');
+
+    const res = await app.fetch(new Request('http://localhost/'));
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('<div></div>');
+  });
+
+  it('creates an app with shell', async () => {
+    const router = createRouter<ReactNode>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
+    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => <div className="shell">{props.children}</div>);
+
+    const app = createApp(router, RootLayout, { shell: Shell, worker: { template: '<!--ssr-outlet-->' } });
+    const res = await app.fetch(new Request('http://localhost/'));
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('<div class="shell"><div></div></div>');
   });
 });

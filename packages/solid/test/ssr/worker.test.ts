@@ -1,10 +1,6 @@
-import '../../src/server/index.js';
 import { safeRun, sleep } from '@anchorlib/core';
+import { createFullWorker, createWorker, SSR_ENV_KEY, type SSROutput, type SSRRenderer, ssrEnv } from '@anchorlib/ssr';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SSR_ENV_KEY } from '../../src/ssr/context.js';
-import { ssrEnv } from '../../src/ssr/index.js';
-import type { SSROutput, SSRRenderer } from '../../src/ssr/types.js';
-import { createFullWorker, createWorker } from '../../src/ssr/worker.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
   const defaults: SSROutput = {
@@ -159,11 +155,12 @@ describe('createWorker', () => {
     await worker.fetch(createRequest('http://localhost/'));
 
     expect(renderer).toHaveBeenCalledWith(
-      'http://localhost/',
-      '',
-      customContext,
-      expect.any(AbortController),
-      undefined
+      expect.objectContaining({
+        url: 'http://localhost/',
+        cookie: '',
+        context: customContext,
+        controller: expect.any(AbortController),
+      })
     );
   });
 
@@ -182,11 +179,12 @@ describe('createWorker', () => {
     await worker.fetch(createRequest('http://localhost/'), { foo: 'bar' });
 
     expect(renderer).toHaveBeenCalledWith(
-      'http://localhost/',
-      '',
-      customContext,
-      expect.any(AbortController),
-      undefined
+      expect.objectContaining({
+        url: 'http://localhost/',
+        cookie: '',
+        context: customContext,
+        controller: expect.any(AbortController),
+      })
     );
     expect(safeRun(() => ssrEnv())).toBeUndefined();
   });
@@ -197,7 +195,14 @@ describe('createWorker', () => {
 
     await worker.fetch(createRequest('http://localhost/'));
 
-    expect(renderer).toHaveBeenCalledWith('http://localhost/', '', [], expect.any(AbortController), undefined);
+    expect(renderer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'http://localhost/',
+        cookie: '',
+        context: [],
+        controller: expect.any(AbortController),
+      })
+    );
   });
 
   it('passes cookie from request header', async () => {
@@ -211,11 +216,12 @@ describe('createWorker', () => {
     );
 
     expect(renderer).toHaveBeenCalledWith(
-      'http://localhost/',
-      'session=abc',
-      [],
-      expect.any(AbortController),
-      undefined
+      expect.objectContaining({
+        url: 'http://localhost/',
+        cookie: 'session=abc',
+        context: [],
+        controller: expect.any(AbortController),
+      })
     );
   });
 
@@ -294,10 +300,10 @@ describe('createWorker', () => {
   it('aborts on timeout', async () => {
     let capturedController: AbortController | undefined;
 
-    const renderer = vi.fn(async (_url: string, _cookie: string, _ctx: unknown, controller: AbortController) => {
-      capturedController = controller;
+    const renderer = vi.fn(async (options: any) => {
+      capturedController = options.controller;
       await new Promise((_, reject) => {
-        controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+        options.controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
       });
       return { html: '', head: '', status: 200, cookies: [], redirect: undefined };
     }) as unknown as SSRRenderer;
@@ -316,8 +322,8 @@ describe('createWorker', () => {
   it('aborts when request is aborted', async () => {
     let capturedController: AbortController | undefined;
 
-    const renderer = vi.fn(async (_url: string, _cookie: string, _ctx: unknown, controller: AbortController) => {
-      capturedController = controller;
+    const renderer = vi.fn(async (options: any) => {
+      capturedController = options.controller;
       return { html: '', head: '', status: 200, cookies: [], redirect: undefined };
     }) as unknown as SSRRenderer;
 
@@ -490,12 +496,12 @@ describe('createFullWorker', () => {
     await worker.fetch(createRequest('http://localhost/'));
 
     expect(renderer).toHaveBeenCalledWith(
-      'http://localhost/',
-      '',
-      undefined,
-      expect.any(AbortController),
-      undefined,
-      true
+      expect.objectContaining({
+        url: 'http://localhost/',
+        cookie: '',
+        controller: expect.any(AbortController),
+        isolated: true,
+      })
     );
   });
 
@@ -671,9 +677,9 @@ describe('createFullWorker', () => {
   });
 
   it('aborts on timeout in SSR render path', async () => {
-    const renderer = vi.fn(async (_url: string, _cookie: string, _ctx: unknown, controller: AbortController) => {
+    const renderer = vi.fn(async (options: any) => {
       await new Promise((_, reject) => {
-        controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+        options.controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
       });
       return { html: '', head: '', status: 200, cookies: [], redirect: undefined };
     }) as unknown as SSRRenderer;
@@ -865,7 +871,7 @@ describe('defaultAssetResolver', () => {
         c.close();
       },
     });
-    // @ts-ignore
+    // @ts-expect-error
     mockFile.exists = async () => true;
 
     const bunMock = {
