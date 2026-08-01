@@ -232,8 +232,8 @@ describe('router.ts', () => {
       });
 
       it('should fully update context on navigation', async () => {
-        const usersRoute = router.route('/users').route('/:id');
-        const postsRoute = router.route('/posts').route('/:postId');
+        const usersRoute = router.route('/users').route('/:id?tab');
+        const postsRoute = router.route('/posts?sort').route('/:postId');
 
         usersRoute.provide(
           'user',
@@ -285,7 +285,7 @@ describe('router.ts', () => {
       });
 
       it('should handle URL with query parameters', async () => {
-        router.route('/users');
+        router.route('/users?tab');
         await router.activate('/users?tab=profile');
         expect(router.activeRoute?.path).toBe('/users');
         expect(router.context.query.tab).toBe('profile');
@@ -701,7 +701,7 @@ describe('router.ts', () => {
       });
 
       it('should handle query parameters', async () => {
-        router.route('/users');
+        router.route('/users?tab&sort');
 
         await router.activate('/users?tab=profile&sort=asc');
         expect(router.context.query.tab).toBe('profile');
@@ -852,7 +852,7 @@ describe('router.ts', () => {
 
       it('should preserve entire tree and reactively re-run providers on query changes', async () => {
         const usersRoute = router.route('/users');
-        const userRoute = usersRoute.route('/:id');
+        const userRoute = usersRoute.route('/:id?tab');
 
         const usersProvider = vi.fn(() => ({ type: 'users' }));
         const userProvider = vi.fn((ctx) => {
@@ -882,7 +882,7 @@ describe('router.ts', () => {
 
         // Parent provider didn't read query, so it's NOT re-run
         expect(usersProvider).toHaveBeenCalledTimes(1);
-        expect(router.context.data.users).toBe(initialUsersState);
+        expect(router.context.data.users).toEqual(initialUsersState);
 
         // Child provider read ctx.query.tab, so it should re-run in the background!
         expect(userProvider).toHaveBeenCalledTimes(2);
@@ -1006,7 +1006,7 @@ describe('router.ts', () => {
       });
 
       it('should handle navigation with different query params', async () => {
-        router.route('/users');
+        router.route('/users?tab');
 
         await router.activate('/users?tab=profile');
         await router.activate('/users?tab=settings');

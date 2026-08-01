@@ -3,7 +3,7 @@ import { ROUTE_TYPE } from './enum.js';
 import { NotFoundError } from './error.js';
 import { parseQuery } from './query.js';
 import { createState, getStore, safeAssign } from './store.js';
-import type { MatchedRoute, MatchRouteSegment, RouteContext, TRec, UnknownRoute } from './types.js';
+import type { AnyRoute, MatchedRoute, MatchRouteSegment, RouteContext, TRec, UnknownRoute } from './types.js';
 
 export class ContextStore extends Map {
   public get(key: string | symbol) {
@@ -94,17 +94,17 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
     const wildcardRoute = this.get(WILDCARD_ROUTE_KEY) as RouteRegistry;
 
     if (staticRoute) {
-      const store = storage.get(segment);
+      const store = storage.get(storeKey(this.route, segment, url));
       segments.push({ route: staticRoute.route, store });
 
       if (recursive) {
         return staticRoute.match(url, urlSegments, segments, params, query, index + 1);
       } else {
-        safeAssign(store.query, query);
+        // safeAssign(store.query, query);
 
         if (staticRoute.route.index) {
-          const $store = storage.get(`${segment}:index`);
-          safeAssign($store.query, store.query);
+          const $store = storage.get(`${storeKey(this.route.index as AnyRoute, segment, url)}:index`);
+          // safeAssign($store.query, store.query);
 
           segments.push({ route: staticRoute.route.index as never, store: $store });
         }
@@ -117,7 +117,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
         };
       }
     } else if (dynamicRoute) {
-      const store = storage.get(`${ROUTE_TYPE.DYNAMIC}:${segment}`);
+      const store = storage.get(`${ROUTE_TYPE.DYNAMIC}:${storeKey(this.route, segment, url)}`);
       const name = dynamicRoute.name.replace(/^:/, '');
 
       store.params[name] = params[name] = segment;
@@ -126,12 +126,14 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
       if (recursive) {
         return dynamicRoute.match(url, urlSegments, segments, params, query, index + 1);
       } else {
-        safeAssign(store.query, query);
+        // safeAssign(store.query, query);
 
         if (dynamicRoute.route.index) {
-          const $store = storage.get(`${ROUTE_TYPE.DYNAMIC}:${segment}:index`);
+          const $store = storage.get(
+            `${ROUTE_TYPE.DYNAMIC}:${storeKey(this.route.index as AnyRoute, segment, url)}:index`
+          );
 
-          safeAssign($store.query, store.query);
+          // safeAssign($store.query, store.query);
           safeAssign($store.params, store.params);
 
           segments.push({ route: dynamicRoute.route.index as never, store: $store });
@@ -145,17 +147,19 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
         };
       }
     } else if (wildcardRoute) {
-      const store = storage.get(ROUTE_TYPE.WILDCARD);
+      const store = storage.get(`${ROUTE_TYPE.WILDCARD}:${storeKey(this.route, segment, url)}`);
 
       store.params['*'] = params['*'] = urlSegments.slice(index);
-      safeAssign(store.query, query);
+      // safeAssign(store.query, query);
 
       segments.push({ route: wildcardRoute.route, store });
 
       if (wildcardRoute.route.index) {
-        const $store = storage.get(`${ROUTE_TYPE.WILDCARD}:index`);
+        const $store = storage.get(
+          `${ROUTE_TYPE.WILDCARD}:${storeKey(this.route.index as AnyRoute, segment, url)}:index`
+        );
 
-        safeAssign($store.query, store.query);
+        // safeAssign($store.query, store.query);
         safeAssign($store.params, store.params);
 
         segments.push({ route: wildcardRoute.route.index as never, store: $store });
@@ -192,4 +196,14 @@ function cleanPath(path: string, leading = '/') {
     .replace(/^[\/]+/, leading)
     .replace(/[\/]+/g, '/')
     .replace(/[\/]+$/, '');
+}
+
+function storeKey(route: AnyRoute, segment: string, url: URL) {
+  const query = new URLSearchParams();
+  for (const [key, value] of url.searchParams) {
+    if (route.queryKeys.has(key)) {
+      query.append(key, value);
+    }
+  }
+  return `${segment}?${query.toString()}`;
 }

@@ -186,7 +186,8 @@ export class Router<Output = any> {
     if (!path) return this.rootRoute as never;
     const route = new Route(this, path, options);
 
-    if (path === ('/' as Path)) {
+    const [pathname] = path.split(/\?/);
+    if (pathname === ('/' as Path)) {
       route.closed = true;
       this.rootRoute.index = route as never;
       return route as never;

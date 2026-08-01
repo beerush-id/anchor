@@ -170,6 +170,8 @@ export class Route<
     return `/${this.name}` as never;
   }
 
+  public queryKeys = new Set<string>();
+
   /** Optional index route for this route */
   public index?: IndexRoute<Path, Params, QueryParams, Data, this, Output>;
   /** Set of guards for this route */
@@ -260,6 +262,11 @@ export class Route<
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
     this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options } as RouteOptions;
+
+    const url = new URL(name, DEFAULT_CONFIG.baseUrl);
+    for (const [key] of url.searchParams) {
+      this.queryKeys.add(key);
+    }
   }
 
   /**
@@ -407,7 +414,8 @@ export class Route<
       path
     );
 
-    if (path === ('/' as TChildPath)) {
+    const [pathname] = path.split(/\?/);
+    if (pathname === ('/' as TChildPath)) {
       child.closed = true;
       this.index = child as never as IndexRoute<Path, Params, QueryParams, Data, this, Output>;
       return child as never;

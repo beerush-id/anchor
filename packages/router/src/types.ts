@@ -203,6 +203,10 @@ export type UnknownParams = ExtractParams<''>;
 export type UnknownQueryParams = ExtractQueryParams<''>;
 /** Unknown route type */
 export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams>;
+/** Any Route type */
+export type AnyRoute =
+  | Route<RoutePath, UnknownParams, UnknownQueryParams>
+  | IndexRoute<RoutePath, UnknownParams, UnknownQueryParams>;
 /** Unknown provider type */
 export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */

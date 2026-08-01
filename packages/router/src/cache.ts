@@ -251,6 +251,10 @@ export class URLCache {
     if (match) {
       match.url = url;
 
+      for (const segment of match.segments) {
+        assignQuery(segment.route, segment.store, match.query);
+      }
+
       // Don't cache exceptions.
       if (match.exception) {
         const lastSegment = match.segments[match.segments.length - 1];
@@ -274,5 +278,13 @@ export class URLCache {
     }
 
     return match;
+  }
+}
+
+function assignQuery(route: UnknownRoute, store: RouteContext<any, any, any>, query: any) {
+  for (const [key, value] of Object.entries(query)) {
+    if (route.queryKeys.has(key)) {
+      store.query[key] = value;
+    }
   }
 }
