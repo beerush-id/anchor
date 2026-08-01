@@ -1,5 +1,6 @@
 import type { AsyncKey, AsyncStore, AsyncValue } from '@anchorlib/core';
 import type { Router, SitemapConfig } from '@anchorlib/router';
+import type { HTTPRouter } from '@irpclib/http/router';
 
 export type SSROptions = {
   sitemap?: boolean | Omit<SitemapConfig, 'url'>;
@@ -57,17 +58,6 @@ export interface WsRouter {
   disconnect?(ws?: WsSender): void;
 }
 
-export interface IRPCHandler {
-  transport: { endpoint: string };
-  resolve(request: Request, contextSeed?: SSRContextSeed): Promise<Response>;
-  isolate(
-    callback: () => Promise<Response>,
-    controller: AbortController,
-    contextSeed: SSRContextSeed,
-    init: () => void
-  ): Promise<Response>;
-}
-
 export type WorkerOptions<E> = {
   template?: string;
   headTag?: string;
@@ -83,10 +73,8 @@ export type WorkerOptions<E> = {
   };
 };
 
-export type CoreAppOptions<E> = {
-  router: Router;
-  renderView: SSRRenderView;
-  ssr?: SSROptions;
-  worker?: WorkerOptions<E>;
-  httpRouter?: IRPCHandler;
-};
+export type CoreAppOptions<E> = WorkerOptions<E> &
+  SSROptions & {
+    router: Router;
+    httpRouter?: HTTPRouter;
+  };

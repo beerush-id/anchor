@@ -5,7 +5,7 @@ import type { StableComponent } from '../types.js';
 
 export type AppShell = StableComponent<HTMLAttributes<HTMLElement>>;
 
-export type AppOptions<E = AnyType> = Omit<CoreAppOptions<E>, 'renderView' | 'router'> & {
+export type AppOptions<E = AnyType> = Omit<CoreAppOptions<E>, 'router'> & {
   shell?: AppShell;
 };
 

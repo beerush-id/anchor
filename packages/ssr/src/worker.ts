@@ -6,9 +6,11 @@ import {
   setCookieContext,
   setScope,
 } from '@anchorlib/core';
+import type { HTTPTransport } from '@irpclib/http';
+import type { HTTPRouter } from '@irpclib/http/router';
 import { createAssetResolver, resolveCacheControl } from './assets.js';
 import { SSR_ENV_KEY } from './context.js';
-import type { IRPCHandler, SSRContextSeed, SSRRenderer, WorkerOptions, WsSender } from './types.js';
+import type { SSRContextSeed, SSRRenderer, WorkerOptions, WsSender } from './types.js';
 
 export function createWorker<E = AnyType>(renderer: SSRRenderer, options: WorkerOptions<E> = {}) {
   return {
@@ -84,7 +86,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: Worker
 }
 
 export function createFullWorker<E = AnyType>(
-  router: IRPCHandler,
+  router: HTTPRouter,
   renderer: SSRRenderer,
   options: WorkerOptions<E> = {}
 ) {
@@ -114,7 +116,7 @@ export function createFullWorker<E = AnyType>(
         const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
         if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
-        if (request.method === 'POST' && url.pathname.startsWith(router.transport.endpoint)) {
+        if (request.method === 'POST' && url.pathname.startsWith((router.transport as HTTPTransport).endpoint!)) {
           const response = await router.resolve(request, contextSeed);
           return createResponse(response);
         }

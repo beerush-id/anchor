@@ -11,10 +11,8 @@ export function createApp<E = AnyType>(
   options: AppOptions<E> = {}
 ) {
   const Shell = options.shell;
-  return createCoreApp({
-    ...options,
-    router,
-    renderView: ({ url }) => {
+  return createCoreApp(
+    ({ url }) => {
       const application = Shell ? (
         <Shell>
           <UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />
@@ -24,9 +22,10 @@ export function createApp<E = AnyType>(
       );
 
       const html = renderToString(() => application);
-      const head = renderToString(() => [...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
+      const head = renderToString(() => [...headings().values()].map(({ Renderer }) => <Renderer />));
 
       return { html, head };
     },
-  });
+    { ...options, router }
+  );
 }

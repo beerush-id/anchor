@@ -6,7 +6,7 @@ import type { BindableProps } from '../types.js';
 
 export type AppShell = BindableComponent<BindableProps<JSX.HTMLAttributes<HTMLElement>>>;
 
-export type AppOptions<E = AnyType> = Omit<CoreAppOptions<E>, 'renderView' | 'router'> & {
+export type AppOptions<E = AnyType> = Omit<CoreAppOptions<E>, 'router'> & {
   shell?: AppShell;
 };
 

@@ -206,7 +206,7 @@ describe('createApp', () => {
     const RootLayout = page(rootRoute);
     RootLayout.render((props) => <div>{props.children as any}</div>);
 
-    const app = createApp(router, RootLayout, { worker: { template: '<!--ssr-outlet-->' } });
+    const app = createApp(router, RootLayout, { template: '<!--ssr-outlet-->' });
     expect(app.fetch).toBeTypeOf('function');
 
     const res = await app.fetch(new Request('http://localhost/'));
@@ -222,7 +222,7 @@ describe('createApp', () => {
     RootLayout.render((props) => <div>{props.children as any}</div>);
     const Shell = ((props: any) => <div>{props.children}</div>) as any;
 
-    const app = createApp(router, RootLayout, { shell: Shell, worker: { template: '<!--ssr-outlet-->' } });
+    const app = createApp(router, RootLayout, { shell: Shell, template: '<!--ssr-outlet-->' });
     const res = await app.fetch(new Request('http://localhost/'));
     expect(res.status).toBe(200);
     const html = await res.text();
