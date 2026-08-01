@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SerializableMap, SerializableSet } from '../../src/extension/index.js';
+import { SerializableMap, SerializableSet } from '../../src/common/index.js';
 import { anchor, subscribe } from '../../src/index.js';
 
 describe('anchor.stringify and anchor.fromJson', () => {

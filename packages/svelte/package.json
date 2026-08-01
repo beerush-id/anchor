@@ -29,6 +29,20 @@
       "svelte": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "import": "./dist/browser/index.js"
+    },
+    "./common": {
+      "types": "./dist/common/index.d.ts",
+      "svelte": "./dist/common/index.js",
+      "import": "./dist/common/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "svelte": "./dist/core/index.js",
+      "import": "./dist/core/index.js"
+    },
     "./client": {
       "types": "./dist/client/index.d.ts",
       "svelte": "./dist/client/index.js",
@@ -39,19 +53,15 @@
       "svelte": "./dist/client/index.js",
       "import": "./dist/client/index.js"
     },
-    "./core": {
-      "types": "./dist/core/index.d.ts",
-      "svelte": "./dist/core/index.js",
-      "import": "./dist/core/index.js"
-    },
-    "./browser": {
-      "types": "./dist/browser/index.d.ts",
-      "import": "./dist/browser/index.js"
-    },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
       "svelte": "./dist/storage/index.js",
       "import": "./dist/storage/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "svelte": "./dist/utils/index.js",
+      "import": "./dist/utils/index.js"
     },
     "./workflow": {
       "types": "./dist/workflow/index.d.ts",

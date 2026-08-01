@@ -1,7 +1,7 @@
-import { plugin } from '../extension/plugin.js';
 import { ANCHOR_SETTINGS, COLLECTION_MUTATION_KEYS } from '../shared/constant.js';
 import { MapMutations, OBSERVER_KEYS, SetMutations } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
+import { plugin } from '../shared/plugin.js';
 import type {
   AnchorInternalFn,
   Broadcaster,

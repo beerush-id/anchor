@@ -1,8 +1,8 @@
-import { plugin } from '../extension/plugin.js';
 import { $do } from '../reactive/index.js';
 import { BATCH_MUTATION_KEYS } from '../shared/constant.js';
 import { type BatchMutations, OBSERVER_KEYS } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
+import { plugin } from '../shared/plugin.js';
 import type {
   BatchChange,
   Broadcaster,

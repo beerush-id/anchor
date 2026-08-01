@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { S_SET_TYPE, xSet } from '../../src/extension/set';
+import { S_SET_TYPE, xSet } from '../../src/common/set';
 
 describe('SerializableSet', () => {
   it('should create an empty set when no init is provided', () => {

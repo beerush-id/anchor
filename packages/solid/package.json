@@ -28,20 +28,29 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "import": "./dist/browser/index.js"
+    },
     "./client": {
       "solid": "./src/client/index.ts",
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.js"
     },
-    "./reactive": {
-      "solid": "./src/client/index.ts",
-      "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js"
+    "./common": {
+      "solid": "./src/common/index.ts",
+      "types": "./dist/common/index.d.ts",
+      "import": "./dist/common/index.js"
     },
     "./core": {
       "solid": "./src/core/index.ts",
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
+    },
+    "./reactive": {
+      "solid": "./src/client/index.ts",
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
     },
     "./router": {
       "solid": "./src/router/index.ts",
@@ -53,10 +62,6 @@
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js"
     },
-    "./browser": {
-      "types": "./dist/browser/index.d.ts",
-      "import": "./dist/browser/index.js"
-    },
     "./ssr": {
       "solid": "./src/ssr/index.tsx",
       "types": "./dist/ssr/index.d.ts",
@@ -66,6 +71,11 @@
       "solid": "./src/storage/index.ts",
       "types": "./dist/storage/index.d.ts",
       "import": "./dist/storage/index.js"
+    },
+    "./utils": {
+      "solid": "./src/utils/index.ts",
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js"
     },
     "./workflow": {
       "types": "./dist/workflow/index.d.ts",

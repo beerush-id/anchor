@@ -1,11 +1,12 @@
 import { isReactive } from '../engine/config.js';
 import { OBSERVER_SYMBOL, switchable } from '../engine/index.js';
 import { META_REGISTRY } from '../engine/registry.js';
-import { plugin } from '../extension/plugin.js';
+import { isBrowser } from '../module.js';
 import { asyncStoreContract, storeContract } from '../scope/context.js';
 import { onCleanup } from '../scope/index.js';
 import { ANCHOR_SETTINGS } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
+import { plugin } from '../shared/plugin.js';
 import type {
   AsyncEffectHandler,
   Effect,
@@ -20,7 +21,6 @@ import type {
   StateUnsubscribe,
 } from '../types.js';
 import { isFunction, shortId } from '../utils/index.js';
-import { isBrowser } from '../module.js';
 
 /**
  * Creates a reactive effect that automatically tracks dependencies and re-runs when those dependencies change.

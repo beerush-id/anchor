@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { S_MAP_TYPE, xMap } from '../../src/extension/map';
+import { S_MAP_TYPE, xMap } from '../../src/common/map';
 
 describe('SerializableMap', () => {
   it('should create an empty map when no init is provided', () => {

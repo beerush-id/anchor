@@ -1,5 +1,5 @@
-import { plugin } from '../extension/plugin.js';
 import { BatchMutations } from '../shared/enum.js';
+import { plugin } from '../shared/plugin.js';
 import type { AnyType, Assignable, AssignablePart, Broadcaster, Linkable, ObjLike, StateChange } from '../types.js';
 import { softEntries, softKeys } from '../utils/clone.js';
 import { isArray, isDefined, isMap, isSet } from '../utils/index.js';

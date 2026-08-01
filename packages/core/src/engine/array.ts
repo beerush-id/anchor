@@ -1,6 +1,6 @@
-import { plugin } from '../extension/plugin.js';
 import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
+import { plugin } from '../shared/plugin.js';
 import type {
   ArrayMutation,
   ArrayMutator,

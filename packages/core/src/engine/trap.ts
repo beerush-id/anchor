@@ -1,6 +1,6 @@
-import { plugin } from '../extension/index.js';
-import { OBSERVER_KEYS, ObjectMutations } from '../shared/enum.js';
+import { ObjectMutations, OBSERVER_KEYS } from '../shared/enum.js';
 import { ANCHOR_SETTINGS, captureStack, POISONED_KEYS } from '../shared/index.js';
+import { plugin } from '../shared/plugin.js';
 import type {
   AnchorInternalFn,
   Broadcaster,

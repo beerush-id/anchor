@@ -1,8 +1,8 @@
-import { plugin } from '../extension/plugin.js';
 import type { DevTool } from '../types.js';
 import { isFunction, isObjectLike } from '../utils/index.js';
 import { DEV_TOOL_KEYS } from './constant.js';
 import { captureStack } from './exception.js';
+import { plugin } from './plugin.js';
 
 /**
  * Sets the active development tool. This tool will receive callbacks for various state-related events.

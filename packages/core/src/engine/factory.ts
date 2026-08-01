@@ -1,5 +1,5 @@
-import { plugin } from '../extension/plugin.js';
 import { captureStack } from '../shared/index.js';
+import { plugin } from '../shared/plugin.js';
 import type {
   Broadcaster,
   KeyLike,

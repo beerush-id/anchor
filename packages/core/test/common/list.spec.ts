@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIST_OPTIONS, SuperList, superList } from '../../src/data/index.js';
+import { LIST_OPTIONS, SuperList, superList } from '../../src/common/index.js';
 
 describe('SuperList', () => {
   describe('constructor & options', () => {
