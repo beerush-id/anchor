@@ -60,7 +60,7 @@ describe('Anchor - Write Contract', () => {
       anchor.assign(writable as typeof readonly, { c: 6 });
 
       expect(errorSpy).toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy).toHaveBeenCalledTimes(3);
       expect(readonly).toEqual({ a: 4, b: 5, c: 3 });
       expect(writable).toEqual({ a: 4, b: 5, c: 3 });
     });

@@ -80,6 +80,7 @@ export type StateOptions<S extends LinkableSchema = LinkableSchema> = StateBaseO
 export type AnchorSettings = StateBaseOptions & {
   reactive?: boolean;
   production: boolean;
+  secureWrite: boolean;
   safeObservation: boolean;
   safeObservationThreshold: number;
   globalScopeWarning?: boolean;

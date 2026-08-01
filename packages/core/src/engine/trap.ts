@@ -1,6 +1,6 @@
 import { plugin } from '../extension/index.js';
 import { OBSERVER_KEYS, ObjectMutations } from '../shared/enum.js';
-import { ANCHOR_SETTINGS, captureStack } from '../shared/index.js';
+import { ANCHOR_SETTINGS, captureStack, POISONED_KEYS } from '../shared/index.js';
 import type {
   AnchorInternalFn,
   Broadcaster,
@@ -178,6 +178,8 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
   const { configs } = options ?? meta;
 
   return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
+    if ($$.secureWrite && typeof prop === 'string' && POISONED_KEYS.has(prop)) return true;
+
     const current = Reflect.get(target, prop, receiver) as Linkable;
     if (current === value) return true;
 

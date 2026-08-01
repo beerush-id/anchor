@@ -1,3 +1,4 @@
+import { ANCHOR_SETTINGS, POISONED_KEYS } from '../shared/constant.js';
 import type { Linkable, ObjLike, Recursive } from '../types.js';
 import { isArray, isDate, isMap, isRegExp, isSet, typeOf } from './inspector.js';
 
@@ -107,7 +108,12 @@ export function softEntries<T extends ObjLike>(obj: T): Array<[keyof T, T[keyof 
     return [...(obj as never as Map<string, unknown>).entries()] as never;
   }
 
-  const entries = Object.entries(obj) as Array<[keyof T, T[keyof T]]>;
+  const raw = Object.entries(obj);
+  let entries = raw as Array<[keyof T, T[keyof T]]>;
+
+  if (ANCHOR_SETTINGS.secureWrite) {
+    entries = raw.filter(([key]) => !POISONED_KEYS.has(key)) as Array<[keyof T, T[keyof T]]>;
+  }
 
   for (const sym of Object.getOwnPropertySymbols(obj)) {
     entries.push([sym, obj[sym as never]] as never);
@@ -136,7 +142,13 @@ export function softKeys<T extends ObjLike>(obj: T): Array<keyof T> {
     return [...obj.keys()] as Array<keyof T>;
   }
 
-  return [...Object.keys(obj), ...Object.getOwnPropertySymbols(obj)] as Array<keyof T>;
+  const keys = Object.keys(obj);
+  let safe = keys;
+
+  if (ANCHOR_SETTINGS.secureWrite) {
+    safe = keys.filter((key) => !POISONED_KEYS.has(key));
+  }
+  return [...safe, ...Object.getOwnPropertySymbols(obj)] as Array<keyof T>;
 }
 
 /**

@@ -31,12 +31,15 @@ export const ANCHOR_SETTINGS = {
   immutable: false,
   observable: true,
   production: true,
+  secureWrite: true,
   safeObservation: true,
   safeObservationThreshold: 100,
   globalScopeWarning: true,
   safeParse: false,
   reactive: typeof document !== 'undefined',
 } as AnchorSettings;
+
+export const POISONED_KEYS = new Set(['__proto__', '__defineGetter__', '__defineSetter__', '__lookupGetter__', '__lookupSetter__']);
 
 export const BATCH_MUTATION_KEYS = new Set(BATCH_MUTATIONS);
 export const ARRAY_MUTATION_KEYS = new Set(ARRAY_MUTATIONS);

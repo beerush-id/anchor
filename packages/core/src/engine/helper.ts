@@ -1,6 +1,6 @@
 import { plugin } from '../extension/plugin.js';
 import { BatchMutations } from '../shared/enum.js';
-import type { Assignable, AssignablePart, Broadcaster, Linkable, ObjLike, StateChange } from '../types.js';
+import type { AnyType, Assignable, AssignablePart, Broadcaster, Linkable, ObjLike, StateChange } from '../types.js';
 import { softEntries, softKeys } from '../utils/clone.js';
 import { isArray, isDefined, isMap, isSet } from '../utils/index.js';
 import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } from './registry.js';
@@ -33,13 +33,13 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   const meta = META_REGISTRY.get(init as Linkable);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
-  if (isDefined(init)) {
-    STATE_BUSY_LIST.add(init);
-  }
-
   const prev: AssignablePart<T> = {};
   const entries = softEntries(sourceInit);
   if (!entries.length && !replace) return;
+
+  if (isDefined(init)) {
+    STATE_BUSY_LIST.add(init);
+  }
 
   const changes: unknown[] = [];
   const sourceKeys = new Set(entries.map(([k]) => k));
@@ -54,10 +54,10 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
 
         if (isMap(init)) {
           prev[key as never] = init.get(key) as never;
-          init.delete(key);
+          (target as unknown as Map<unknown, unknown>).delete(key);
         } else if (isSafeObject(init)) {
           prev[key as keyof T] = init[key as keyof T];
-          delete init[key as never];
+          delete target[key as never];
         }
       }
     }
@@ -71,9 +71,9 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
         changes.push(key);
       }
 
-      init.set(key, val);
+      (target as unknown as Map<unknown, unknown>).set(key, val);
     } else if (isSet(init)) {
-      init.add(val);
+      (target as unknown as Set<unknown>).add(val);
     } else if (isSafeObject(init) || isArray(init)) {
       prev[key as keyof T] = init[key as keyof T];
 
@@ -81,7 +81,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
         changes.push(key);
       }
 
-      init[key as never] = val;
+      (target as unknown as AnyType)[key] = val;
     }
   }
 
@@ -143,9 +143,9 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
       }
 
       prev[key as never] = init.get(key) as never;
-      init.delete(key);
+      (target as unknown as Map<unknown, unknown>).delete(key);
     } else if (isSet(init)) {
-      init.delete(key);
+      (target as unknown as Set<unknown>).delete(key);
     } else if (isSafeObject(init) || isArray(init)) {
       if (typeof init[key] !== 'undefined') {
         changes.push(key);
@@ -154,21 +154,21 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
       prev[key] = init[key];
 
       if (!isArray(init)) {
-        delete init[key];
+        delete target[key];
       }
     }
   }
 
   if (isArray(init)) {
     if (keys.length === 1) {
-      init.splice(keys[0] as never, 1);
+      (target as unknown as unknown[]).splice(keys[0] as never, 1);
     } else {
       const values = [...init];
-      init.length = 0;
+      (target as unknown as unknown[]).length = 0;
 
       values.forEach((v, i) => {
         if (!keys.includes(String(i) as keyof T)) {
-          init.push(v);
+          (target as unknown as unknown[]).push(v);
         }
       });
     }
@@ -224,16 +224,16 @@ export const clear = <T extends Assignable>(target: T) => {
 
   if (isMap(init)) {
     changes = [...init.keys()];
-    init.clear();
+    (target as unknown as Map<unknown, unknown>).clear();
   } else if (isSet(init)) {
-    init.clear();
+    (target as unknown as Set<unknown>).clear();
   } else if (isArray(init)) {
     changes = Array.from(init.keys());
-    init.length = 0;
+    (target as unknown as unknown[]).length = 0;
   } else if (isSafeObject(init)) {
     for (const key of softKeys(init)) {
       changes.push(key);
-      delete init[key];
+      delete target[key as never];
     }
   }
 

@@ -1,6 +1,6 @@
 import { S_MAP_TYPE, S_SET_TYPE, SerializableMap, SerializableSet, xMap, xSet } from '../extension/index.js';
 import { plugin } from '../extension/plugin.js';
-import { ANCHOR_SETTINGS } from '../shared/constant.js';
+import { ANCHOR_SETTINGS, POISONED_KEYS } from '../shared/constant.js';
 import { Linkables } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
 import type {
@@ -348,7 +348,9 @@ anchorFn.stringify = ((state, replacer, space) => {
 }) as Anchor['stringify'];
 
 anchorFn.parse = ((json) => {
-  const result = JSON.parse(json, (_key, value) => {
+  const result = JSON.parse(json, (key, value) => {
+    if (ANCHOR_SETTINGS.secureWrite && POISONED_KEYS.has(key)) return undefined;
+
     if (typeof value === 'object' && value !== null) {
       if (value.entity === S_MAP_TYPE) return xMap(value);
       if (value.entity === S_SET_TYPE) return xSet(value);
