@@ -62,7 +62,11 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
 
     const current = `${location.pathname}${location.search}`;
     if (current !== href.value) {
-      navigate(href.value, { query: query.value, params: params.value, replace: props.replace } as never);
+      navigate(props.to?.route.path ?? href.value, {
+        query: query.value,
+        params: params.value,
+        replace: props.replace,
+      } as never);
     }
 
     if (typeof props.onClick === 'function') {
