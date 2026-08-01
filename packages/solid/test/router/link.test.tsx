@@ -56,6 +56,23 @@ describe('Anchor Solid - Link Component', () => {
     });
   });
 
+  it('intercepts standard clicks and calls navigate', () => {
+    const router = createRouter();
+    const coreRoute = router.route('/contact');
+    const ContactPage = page(coreRoute);
+
+    render(() => <Link to={ContactPage}>Contact</Link>);
+    const anchor = screen.getByText('Contact');
+
+    fireEvent.click(anchor);
+
+    expect(navigateSpy).toHaveBeenCalledWith('/contact', {
+      query: undefined,
+      params: undefined,
+      replace: undefined,
+    });
+  });
+
   it('respects replace prop during navigation', () => {
     render(() => (
       <Link href="/login" replace>

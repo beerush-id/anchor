@@ -3,7 +3,7 @@ import { createRouter } from '@anchorlib/router';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { FC } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AnyRoute } from '../../src/router/index.js';
+import { type AnyRoute, page } from '../../src/router/index.js';
 import { Link } from '../../src/router/link.js';
 import * as NavigateModule from '../../src/router/navigate.js';
 import { route } from '../../src/router/router.js';
@@ -52,6 +52,22 @@ describe('Anchor React - Link Component', () => {
 
     expect(navigateSpy).toHaveBeenCalledWith('/contact?ref=test', {
       query: { ref: 'test' },
+      params: undefined,
+      replace: undefined,
+    });
+  });
+
+  it('intercepts standard clicks and calls navigate', () => {
+    const router = createRouter();
+    const coreRoute = page(router.route('/contact'));
+
+    render(<Link to={coreRoute}>Contact</Link>);
+    const anchor = screen.getByText('Contact');
+
+    fireEvent.click(anchor);
+
+    expect(navigateSpy).toHaveBeenCalledWith('/contact', {
+      query: undefined,
       params: undefined,
       replace: undefined,
     });
