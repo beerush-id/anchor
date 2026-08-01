@@ -5,19 +5,42 @@ export const LIST_OPTIONS = {
   size: 1000,
 };
 
+/**
+ * Defines the sort order direction.
+ */
 export type SortOrder = 'asc' | 'desc';
 
+/**
+ * Configuration options for the SuperList.
+ * @template T - The type of items stored in the list.
+ */
 export type SuperListOptions<T> = Partial<typeof LIST_OPTIONS> & {
+  /** Custom sorting function to order the items. */
   sort?: (a: T, b: T) => number;
+  /** Property key to order by, and an optional sort direction (default is 'asc'). */
   orderBy?: [keyof T, SortOrder?] | keyof T;
 };
 
+/**
+ * Represents a reactive wrapper around a single item in the SuperList.
+ * It tracks the item's visibility and selection state.
+ * @template T - The underlying data type.
+ */
 export type SuperListItem<T> = {
+  /** The actual data value. Undefined if this slot is empty. */
   value?: T;
+  /** True if the item is currently selected/checked. */
   checked?: boolean;
+  /** True if the item is visible. Can be used for filtering without removing data. */
   visible: boolean;
 };
 
+/**
+ * A highly performant, reactive list designed for virtualization, sorting, and large datasets.
+ * It manages a fixed-size reactive array of wrapping items (`SuperListItem`) to minimize
+ * object reallocation and provides robust state tracking for visibility and selection.
+ * @template T - The type of data stored in the list.
+ */
 export class SuperList<T> {
   readonly #size: number;
   readonly #options: SuperListOptions<T>;
@@ -26,28 +49,50 @@ export class SuperList<T> {
   readonly #indexes = mutable(new Map<number, T>(), { recursive: false });
   readonly #selection = mutable(new Set<T>(), { recursive: false });
 
+  /**
+   * The current number of populated items in the list.
+   */
   public get size() {
     return this.#indexes.size;
   }
 
+  /**
+   * The configuration options assigned to this list.
+   */
   public get options() {
     return this.#options;
   }
 
+  /**
+   * The fixed-size array of wrapped items.
+   * Access this property to render items. The length of this array is always `options.size`.
+   */
   public get values() {
     return this.#values;
   }
 
+  /**
+   * A reactive Set containing all currently selected (checked) data values.
+   */
   public get selection() {
     return this.#selection;
   }
 
+  /**
+   * A Map of the active indices to their corresponding data values.
+   */
   public get indexes() {
     return this.#indexes;
   }
 
+  /**
+   * Creates a new SuperList instance.
+   * @param values - Optional initial array of values to populate the list.
+   * @param options - Configuration options, including the max size and sorting rules.
+   */
   constructor(values?: T[], options: SuperListOptions<T> = {}) {
     this.#options = { ...LIST_OPTIONS, ...options };
+
     if (typeof this.#options.sort !== 'function') {
       delete this.#options.sort;
     }
@@ -73,6 +118,12 @@ export class SuperList<T> {
     }
   }
 
+  /**
+   * Appends new values to the end of the list (or redistributes them if sorting is enabled).
+   * @param values - An array of items to add.
+   * @throws Will throw if the total size exceeds the configured maximum capacity.
+   * @returns The current instance for chaining.
+   */
   public add(values: T[]) {
     if (!Array.isArray(values) || !values.length) return this;
 
@@ -104,6 +155,13 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Replaces the entire list content with the new values.
+   * Cleans up excess items and updates selections if they are no longer present.
+   * @param values - The new array of items to populate the list.
+   * @throws Will throw if the new size exceeds the configured maximum capacity.
+   * @returns The current instance for chaining.
+   */
   public assign(values?: T[]) {
     if (!Array.isArray(values) || !values.length) return this;
 
@@ -147,6 +205,14 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Updates an item at a specific index.
+   * If sorting is enabled, this will trigger a redistribution of the entire list.
+   * @param index - The index of the item to update.
+   * @param value - The new value to set.
+   * @throws Will throw if the index is out of bounds.
+   * @returns The current instance for chaining.
+   */
   public set(index: number, value: T) {
     if (!Number.isInteger(index) || index < 0 || index >= this.#cursors.size) {
       throw new Error(`Out of bounds: index ${index} is outside of the allocated list size (${this.#cursors.size}).`);
@@ -171,6 +237,14 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Removes one or more items starting from the specified index.
+   * Any removed item that was selected will also be removed from the selection Set.
+   * @param start - The starting index.
+   * @param size - The number of items to remove (default is 1).
+   * @throws Will throw if the start index or size is out of bounds.
+   * @returns The current instance for chaining.
+   */
   public delete(start: number, size = 1) {
     if (!Number.isInteger(start) || start < 0 || start >= this.#cursors.size || !Number.isInteger(size) || size < 0) {
       throw new Error(
@@ -193,6 +267,13 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Makes one or more items visible.
+   * Used primarily for reactive filtering.
+   * @param start - The starting index.
+   * @param size - The number of items to show (default is 1).
+   * @returns The current instance for chaining.
+   */
   public show(start: number, size = 1) {
     if (!Number.isInteger(start) || start < 0 || start >= this.#cursors.size || !Number.isInteger(size) || size <= 0) {
       return this;
@@ -205,6 +286,13 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Hides one or more items.
+   * Used primarily for reactive filtering without removing the item from data.
+   * @param start - The starting index.
+   * @param size - The number of items to hide (default is 1).
+   * @returns The current instance for chaining.
+   */
   public hide(start: number, size = 1) {
     if (!Number.isInteger(start) || start < 0 || start >= this.#cursors.size || !Number.isInteger(size) || size <= 0) {
       return this;
@@ -217,6 +305,12 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Toggles the selection state (checked) of an item at the given index.
+   * @param index - The index of the item.
+   * @param checked - Optional forced boolean state. If omitted, toggles the current state.
+   * @returns The current instance for chaining.
+   */
   public toggle(index: number, checked?: boolean) {
     if (!Number.isInteger(index) || index < 0 || index >= this.#cursors.size) return this;
 
@@ -236,14 +330,28 @@ export class SuperList<T> {
     return this;
   }
 
+  /**
+   * Forces the selection of the item at the given index.
+   * @param index - The index to select.
+   * @returns The current instance for chaining.
+   */
   public select(index: number) {
     return this.toggle(index, true);
   }
 
+  /**
+   * Deselects the item at the given index.
+   * @param index - The index to deselect.
+   * @returns The current instance for chaining.
+   */
   public deselect(index: number) {
     return this.toggle(index, false);
   }
 
+  /**
+   * Clears the entire list, dropping all values, selections, and cursors.
+   * @returns The current instance for chaining.
+   */
   public clear() {
     for (const index of this.#indexes.keys()) {
       const row = this.#values[index];
@@ -319,6 +427,14 @@ export class SuperList<T> {
   }
 }
 
+/**
+ * Creates a new reactive SuperList instance.
+ * 
+ * @template T - The type of data stored in the list.
+ * @param values - Optional initial array of values to populate the list.
+ * @param options - Configuration options, including the max size and sorting rules.
+ * @returns A newly instantiated `SuperList`.
+ */
 export function superList<T>(values?: T[], options?: SuperListOptions<T>) {
   return new SuperList<T>(values, options);
 }
