@@ -36,7 +36,9 @@
     "@anchorlib/router": "workspace:*"
   },
   "optionalDependencies": {
-    "@irpclib/http": "workspace:*"
+    "@irpclib/http": "workspace:*",
+    "@irpclib/irpc": "workspace:*",
+    "@irpclib/ws": "workspace:*"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
