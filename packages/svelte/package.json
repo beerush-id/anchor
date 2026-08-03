@@ -90,14 +90,16 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@anchorlib/core": "workspace:*",
-    "@anchorlib/storage": "workspace:*",
-    "svelte": "catalog:lib",
-    "typescript": "catalog:lib"
+    "@anchorlib/storage": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",

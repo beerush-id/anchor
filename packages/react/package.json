@@ -92,20 +92,19 @@
     "react": "catalog:lib",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/router": "workspace:*",
     "@anchorlib/ssr": "workspace:*",
-    "@anchorlib/storage": "workspace:*",
-    "react": "catalog:lib",
-    "react-dom": "catalog:lib",
-    "typescript": "catalog:lib"
+    "@anchorlib/storage": "workspace:*"
   },
-  "optionalDependencies": {
-    "@irpclib/http": "workspace:*"
+  "peerDependencies": {
+    "react": "catalog:lib",
+    "react-dom": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",

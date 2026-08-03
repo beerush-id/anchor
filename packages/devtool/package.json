@@ -29,13 +29,15 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsup": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
+  "dependencies": {
+    "@anchorlib/core": "workspace:*"
+  },
   "peerDependencies": {
-    "@anchorlib/core": "workspace:*",
-    "react": "catalog:lib",
-    "typescript": "catalog:lib"
+    "react": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsup --watch",

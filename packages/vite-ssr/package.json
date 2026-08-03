@@ -43,42 +43,22 @@
   "publishConfig": {
     "access": "public"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@anchorlib/core": "workspace:*",
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",
     "@napi-rs/image": "catalog:lib",
-    "typescript": "catalog:lib",
-    "vite": "catalog:",
-    "ws": "catalog:"
-  },
-  "peerDependenciesMeta": {
-    "@anchorlib/core": {
-      "optional": true
-    },
-    "@irpclib/irpc": {
-      "optional": true
-    },
-    "@irpclib/http": {
-      "optional": true
-    },
-    "@irpclib/ws": {
-      "optional": true
-    },
-    "@napi-rs/image": {
-      "optional": true
-    }
+    "vite": "catalog:lib",
+    "ws": "catalog:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@napi-rs/image": "catalog:lib",
     "@types/ws": "latest",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
-    "vite": "catalog:",
-    "ws": "catalog:"
+    "typescript": "catalog:"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",

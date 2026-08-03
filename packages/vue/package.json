@@ -53,14 +53,16 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:lib"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@anchorlib/core": "workspace:*",
-    "@anchorlib/storage": "workspace:*",
-    "typescript": "catalog:lib",
+    "@anchorlib/storage": "workspace:*"
+  },
+  "peerDependencies": {
     "vue": "catalog:lib"
   },
   "scripts": {

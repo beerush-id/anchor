@@ -22,15 +22,16 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@irpclib/http": "workspace:*",
     "@types/bun": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
-    "typescript": "catalog:lib",
+    "typescript": "catalog:",
     "vitest": "catalog:",
     "vite": "catalog:"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/router": "workspace:*"
   },

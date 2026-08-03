@@ -58,6 +58,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "@zod/core": "catalog:",
@@ -66,12 +67,9 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
-  },
-  "peerDependencies": {
-    "@types/node": "catalog:lib",
-    "typescript": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",

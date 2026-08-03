@@ -23,6 +23,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "@anchorlib/core": "workspace:*",
+    "@irpclib/irpc": "workspace:*"
+  },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
@@ -31,13 +35,9 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
-  },
-  "peerDependencies": {
-    "@anchorlib/core": "workspace:*",
-    "@irpclib/irpc": "workspace:*",
-    "typescript": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",

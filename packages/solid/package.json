@@ -107,21 +107,20 @@
     "rimraf": "catalog:",
     "solid-js": "catalog:lib",
     "tsdown": "catalog:",
+    "typescript": "catalog:",
     "unplugin-solid": "catalog:lib",
     "vite": "catalog:",
     "vite-plugin-solid": "catalog:",
     "vitest": "catalog:"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@anchorlib/core": "workspace:*",
     "@anchorlib/router": "workspace:*",
     "@anchorlib/ssr": "workspace:*",
-    "@anchorlib/storage": "workspace:*",
-    "solid-js": "catalog:lib",
-    "typescript": "catalog:lib"
+    "@anchorlib/storage": "workspace:*"
   },
-  "optionalDependencies": {
-    "@irpclib/http": "workspace:*"
+  "peerDependencies": {
+    "solid-js": "catalog:lib"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
