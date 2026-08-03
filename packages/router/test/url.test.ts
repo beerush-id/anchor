@@ -15,6 +15,10 @@ describe('createUrl', () => {
     expect(createUrl('/users/', undefined, { page: 1 })).toBe('/users?page=1');
   });
 
+  it('should handle URL with invalid params', () => {
+    expect(createUrl('/users/:user_id', { ':user_id': null }, { page: 1 })).toBe('/users/:user_id?page=1');
+  });
+
   it('should handle URL with query params', () => {
     expect(createUrl('/users?limit=1', undefined, { page: 1 })).toBe('/users?limit=1&page=1');
   });

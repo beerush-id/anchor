@@ -277,3 +277,17 @@ export function isEmpty(value: unknown): value is string | number | unknown[] | 
 
   return false;
 }
+
+/**
+ * Check if the given value is a valid value. This excludes null, undefined, NaN, and empty string.
+ * @param value
+ * @returns {boolean}
+ */
+export function isValid<T>(value: T): value is T {
+  if (isBoolean(value)) return true;
+  if (isNullish(value)) return false;
+  if (isString(value)) return !!value.trim();
+  if (typeof value === 'number') return !Number.isNaN(value as number);
+
+  return !!value;
+}

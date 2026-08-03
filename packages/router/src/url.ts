@@ -1,3 +1,5 @@
+import { isValid } from '@anchorlib/core';
+
 /**
  * Constructs a URL string from a route path, parameters, and query parameters.
  *
@@ -15,6 +17,7 @@ export function createUrl(path: string, params?: Record<string, unknown>, query?
 
   if (params) {
     for (const [key, value] of Object.entries(params)) {
+      if (!isValid(value)) continue;
       if (key.startsWith('*')) {
         url = url.replace(key, String(value));
       } else if (url.includes(`*${key}`)) {
@@ -33,6 +36,7 @@ export function createUrl(path: string, params?: Record<string, unknown>, query?
     const searchParams = new URLSearchParams();
 
     for (const [key, value] of Object.entries(query)) {
+      if (!isValid(value)) continue;
       if (Array.isArray(value)) {
         (value as string[]).forEach((item) => searchParams.append(key, String(item)));
       } else {
@@ -41,7 +45,7 @@ export function createUrl(path: string, params?: Record<string, unknown>, query?
     }
 
     const queryString = searchParams.toString();
-    url += (url.includes('?') ? '&' : '?') + queryString;
+    if (queryString) url += (url.includes('?') ? '&' : '?') + queryString;
   }
 
   return url.startsWith('/') ? url : `/${url}`;

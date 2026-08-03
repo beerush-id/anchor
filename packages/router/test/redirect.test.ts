@@ -455,21 +455,21 @@ describe('redirect.ts', () => {
       const query = { value: null };
       const redirect = new Redirect(testRoute as never, undefined as never, query as never);
       const url = redirectUrl(redirect as never);
-      expect(url).toBe('/users/:id?value=null');
+      expect(url).toBe('/users/:id');
     });
 
     it('should handle undefined query values', () => {
       const query = { value: undefined };
       const redirect = new Redirect(testRoute as never, undefined as never, query as never);
       const url = redirectUrl(redirect as never);
-      expect(url).toBe('/users/:id?value=undefined');
+      expect(url).toBe('/users/:id');
     });
 
     it('should handle empty string query values', () => {
       const query = { value: '' };
       const redirect = new Redirect(testRoute as never, undefined as never, query as never);
       const url = redirectUrl(redirect as never);
-      expect(url).toBe('/users/:id?value=');
+      expect(url).toBe('/users/:id');
     });
 
     it('should handle zero query values', () => {

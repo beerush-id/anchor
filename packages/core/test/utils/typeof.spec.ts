@@ -26,10 +26,11 @@ import {
   isString,
   isTruthy,
   isUnitString,
+  isValid,
   typeOf,
 } from '../../src/index.js';
 
-describe('Inspector Utilities', () => {
+describe('Type Checking Utilities', () => {
   describe('Type Checking', () => {
     it('should identify types correctly', () => {
       expect(typeOf('')).toBe('string');
@@ -399,6 +400,57 @@ describe('Inspector Utilities', () => {
       expect(isEmpty(() => {})).toBe(false);
       expect(isEmpty(new Set([1]))).toBe(false);
       expect(isEmpty(new Map([['key', 'value']]))).toBe(false);
+    });
+  });
+
+  describe('Validity Checks', () => {
+    it('handles boolean values', () => {
+      expect(isValid(true)).toBe(true);
+      expect(isValid(false)).toBe(true);
+    });
+
+    it('handles nullish values', () => {
+      expect(isValid(null)).toBe(false);
+      expect(isValid(undefined)).toBe(false);
+    });
+
+    it('handles string values', () => {
+      expect(isValid('hello')).toBe(true);
+      expect(isValid(' ')).toBe(false);
+      expect(isValid('')).toBe(false);
+    });
+
+    it('handles array values', () => {
+      expect(isValid([1, 2, 3])).toBe(true);
+      expect(isValid([])).toBe(true);
+    });
+
+    it('handles object values', () => {
+      expect(isValid({ key: 'value' })).toBe(true);
+      expect(isValid({})).toBe(true);
+    });
+
+    it('handles Set values', () => {
+      expect(isValid(new Set([1]))).toBe(true);
+      expect(isValid(new Set())).toBe(true);
+    });
+
+    it('handles Map values', () => {
+      expect(isValid(new Map([['key', 'value']]))).toBe(true);
+      expect(isValid(new Map())).toBe(true);
+    });
+
+    it('handles number values', () => {
+      expect(isValid(10)).toBe(true);
+      expect(isValid(0)).toBe(true);
+      expect(isValid(-10)).toBe(true);
+      expect(isValid(NaN)).toBe(false);
+    });
+
+    it('handles fallback values', () => {
+      expect(isValid(new Date())).toBe(true);
+      expect(isValid(Symbol('test'))).toBe(true);
+      expect(isValid(() => {})).toBe(true);
     });
   });
 });
