@@ -6,7 +6,16 @@ import { getScope, safeRun } from '../scope/context.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
 import { ANCHOR_SETTINGS as $$ } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
-import type { Anchor, Immutable, Linkable, Primitive, RefStack, StateObserver, StateOptions } from '../types.js';
+import type {
+  Anchor,
+  AnyType,
+  Immutable,
+  Linkable,
+  Primitive,
+  RefStack,
+  StateObserver,
+  StateOptions,
+} from '../types.js';
 import { softClone, softEqual } from '../utils/index.js';
 import { $do, createObserver } from './observation.js';
 
@@ -326,18 +335,44 @@ export const exception = ((state, handler) => {
   return anchor.catch(state, handler);
 }) as Anchor['catch'];
 
-/**
- * Creates a derived reference that computes its value based on other reactive dependencies.
- *
- * @template T - The type of the derived value
- * @param derive - A function that computes and returns the derived value
- * @returns A derived reference that automatically updates when its dependencies change
- */
-export function derived<T>(derive: () => T): DerivedRef<T> {
-  detectStability(derived);
+export interface DeriveFactory {
+  /**
+   * Creates a derived reference that computes its value based on other reactive dependencies.
+   *
+   * @template T - The type of the derived value
+   * @param derive - A function that computes and returns the derived value
+   * @returns A derived reference that automatically updates when its dependencies change
+   */
+  <T>(derive: () => T): DerivedRef<T>;
 
+  /**
+   * Creates a derived reference that computes its value based on other reactive dependencies,
+   * returned as proxy of the shape.
+   *
+   * @template T - The type of the derived value
+   * @param factory - A function that computes and returns the derived value
+   * @param args - Arguments to be passed to the factory function
+   * @returns A proxy of derived reference that automatically updates when its dependencies change
+   */
+  as<T extends object, A extends AnyType[]>(factory: (...args: A) => T, ...args: A): T;
+}
+
+function derivedFn<T>(derive: () => T): DerivedRef<T> {
+  detectStability(derivedFn);
   return new DerivedRef(derive);
 }
+
+derivedFn.as = <T extends object, A extends AnyType[]>(factory: (...args: A) => T, ...args: A) => {
+  const ref = derived(() => factory(...args));
+
+  return new Proxy(ref, {
+    get: (_target, property) => {
+      return ref.value[property as keyof T];
+    },
+  }) as T;
+};
+
+export const derived = derivedFn as DeriveFactory;
 
 /**
  * Destroys a reference and cleans up associated resources.
