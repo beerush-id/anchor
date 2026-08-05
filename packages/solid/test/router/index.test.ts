@@ -8,6 +8,8 @@ describe('Anchor Solid - Router Index Barrel', () => {
     expect(routerIndex.createRouter).toBeDefined();
 
     // Head components
+    expect(routerIndex.Head).toBeDefined();
+    expect(routerIndex.JsonLd).toBeDefined();
     expect(routerIndex.Title).toBeDefined();
     expect(routerIndex.Meta).toBeDefined();
     expect(routerIndex.HeadLink).toBeDefined();

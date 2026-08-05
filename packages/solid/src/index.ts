@@ -106,14 +106,30 @@ export {
 } from '@anchorlib/core';
 export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@anchorlib/core/workflow';
 
+export type {
+  ManifestRoute,
+  NavigateOptions,
+  RedirectOptions,
+  RouteManifestEntry,
+  RouteMeta,
+  RouteOptions,
+  RouterOptions,
+  RouteStatus,
+  RouteTarget,
+} from '@anchorlib/router';
+
 export {
-  createRouter,
+  createRouteManifest,
+  createUrl,
   GuardError,
   MAX_AGE,
   NotFoundError,
   ProviderError,
   Redirect,
+  ROUTE_STATUS,
+  Route,
   RouteError,
+  RouteManifest,
   redirectUrl,
   UnknownError,
 } from '@anchorlib/router';

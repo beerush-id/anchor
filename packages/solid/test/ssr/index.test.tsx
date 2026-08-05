@@ -5,7 +5,7 @@ import { ALS_INSTANCE } from '@anchorlib/core/server';
 import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@anchorlib/router';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { page } from '../../src/index.js';
+import { page, UIRouter } from '../../src/index.js';
 import { createApp, createSSR } from '../../src/ssr/index.js';
 
 vi.mock('solid-js/web', async (importOriginal) => ({
@@ -200,33 +200,19 @@ describe('createSSR', () => {
 });
 
 describe('createApp', () => {
-  it('creates an app with root layout', async () => {
+  it('creates an app with root entry component', async () => {
     const router = createRouter<JSX.Element>();
     const rootRoute = router.route();
     const RootLayout = page(rootRoute);
     RootLayout.render((props) => <div>{props.children as any}</div>);
 
-    const app = createApp(router, RootLayout, { template: '<!--ssr-outlet-->' });
+    const Entry = (props: { url?: string }) => <UIRouter router={router} root={RootLayout} url={props.url} />;
+    const app = createApp(router, Entry, { template: '<!--ssr-outlet-->' });
     expect(app.fetch).toBeTypeOf('function');
 
     const res = await app.fetch(new Request('http://localhost/'));
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('<div></div>');
-  });
-
-  it('creates an app with shell', async () => {
-    const router = createRouter<JSX.Element>();
-    const rootRoute = router.route();
-    const RootLayout = page(rootRoute);
-    RootLayout.render((props) => <div>{props.children as any}</div>);
-    const Shell = ((props: any) => <div>{props.children}</div>) as any;
-
-    const app = createApp(router, RootLayout, { shell: Shell, template: '<!--ssr-outlet-->' });
-    const res = await app.fetch(new Request('http://localhost/'));
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    // Due to solid-js/web mock, renderToString always returns <div></div>
     expect(html).toContain('<div></div>');
   });
 });

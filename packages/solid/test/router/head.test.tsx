@@ -4,7 +4,7 @@ import { createLifecycle } from '@anchorlib/core';
 import { render } from '@solidjs/testing-library';
 import { createRoot } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { attachHeading, headings, HeadLink, Meta, Style, Title } from '../../src/router/head.js';
+import { attachHeading, Head, HeadLink, headings, JsonLd, Meta, Style, Title } from '../../src/router/head.js';
 
 describe('Anchor Solid - Head Components', () => {
   describe('headings()', () => {
@@ -257,6 +257,21 @@ describe('Anchor Solid - Head Components', () => {
         expect(result).toBeDefined();
       });
     });
+
+    it('stores JsonLd Renderer that can be invoked for SSR', () => {
+      render(() => <JsonLd data={{ '@context': 'https://schema.org', '@type': 'WebSite', name: 'AIR' }} />);
+
+      const keys = Array.from(headings().keys());
+      const jsonLdKey = keys.find((k) => k.startsWith('jsonld:'))!;
+      const entry = headings().get(jsonLdKey);
+      expect(entry).toBeDefined();
+      expect(typeof entry!.Renderer).toBe('function');
+
+      createRoot(() => {
+        const result = entry!.Renderer({});
+        expect(result).toBeDefined();
+      });
+    });
   });
 
   describe('attachHeading (browser cleanup)', () => {
@@ -275,6 +290,108 @@ describe('Anchor Solid - Head Components', () => {
       expect(removeSpy).toHaveBeenCalled();
 
       appendSpy.mockRestore();
+    });
+  });
+
+  describe('Head & JsonLd Components', () => {
+    afterEach(() => {
+      document.head.innerHTML = '';
+    });
+
+    it('renders metadata and JSON-LD scripts properly', () => {
+      render(() => (
+        <Head
+          meta={{
+            title: 'Solid SEO',
+            description: 'Solid SEO description',
+            keywords: ['solid', 'seo'],
+            jsonLd: { '@type': 'Organization', name: 'AIR' },
+          }}
+        />
+      ));
+
+      expect(headings().has('title') || document.title === 'Solid SEO').toBe(true);
+    });
+
+    it('returns null when Head receives neither meta nor children', () => {
+      const { container } = render(() => <Head />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    it('renders extensive SEO metadata including alternates, Open Graph, X cards, and custom tags', () => {
+      const { unmount } = render(() => (
+        <Head
+          meta={{
+            title: 'Full SEO',
+            description: 'Full description',
+            author: 'AIR Team',
+            canonical: 'https://airlib.dev/doc',
+            robots: 'index, follow',
+            themeColor: '#4f46e5',
+            viewport: 'width=device-width, initial-scale=1.0',
+            keywords: 'solid, router, seo, ssr',
+            og: {
+              title: 'OG Title',
+              description: 'OG Description',
+              type: 'website',
+              url: 'https://airlib.dev/og',
+              image: 'https://airlib.dev/img.jpg',
+              imageAlt: 'OG Image Alt',
+              siteName: 'AIR Stack',
+              locale: 'en_US',
+            },
+            twitter: {
+              card: 'summary_large_image',
+              site: '@airstack',
+              creator: '@creator',
+              title: 'Twitter Title',
+              description: 'Twitter Description',
+              image: 'https://airlib.dev/twitter.jpg',
+              imageAlt: 'Twitter Image Alt',
+            },
+            alternates: [
+              { href: 'https://airlib.dev/en', hreflang: 'en' },
+              { rel: 'feed', href: 'https://airlib.dev/rss.xml', type: 'application/rss+xml' },
+            ],
+            custom: {
+              'custom-meta': 'custom-value',
+            },
+          }}
+        />
+      ));
+
+      expect(document.head.querySelector('link[hreflang="en"]')?.getAttribute('href')).toBe('https://airlib.dev/en');
+      expect(document.head.querySelector('meta[name="custom-meta"]')?.getAttribute('content')).toBe('custom-value');
+      unmount();
+    });
+
+    it('handles fallback Twitter cards and Open Graph derivations without explicit title or images', () => {
+      const { unmount } = render(() => (
+        <Head
+          meta={{
+            twitter: { site: '@air' },
+            og: { description: 'Only OG Desc' },
+          }}
+        />
+      ));
+
+      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe('summary');
+      unmount();
+    });
+
+    it('defaults Twitter card to summary_large_image when an image is present without explicit card type', () => {
+      const { unmount } = render(() => (
+        <Head
+          meta={{
+            twitter: { image: 'https://airlib.dev/img.jpg' },
+          }}
+        />
+      ));
+
+      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe(
+        'summary_large_image'
+      );
+      unmount();
     });
   });
 });

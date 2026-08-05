@@ -1,10 +1,12 @@
 import { type AnyType, isBrowser } from '@anchorlib/core';
 import {
+  createRouter as createAppRouter,
   getRenderProps,
   type MatchedRoute,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
+  type RouterOptions,
   setExceptionRendererFactory,
   setRedirectHandler,
   setRendererFactory,
@@ -250,3 +252,15 @@ const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, 
 
 setRendererFactory(createRenderer);
 setExceptionRendererFactory(createExceptionRenderer);
+
+/**
+ * Creates a new Router instance.
+ *
+ * Convenience function for creating a router with optional options.
+ *
+ * @param options - Optional router configuration
+ * @returns A new Router instance
+ */
+export function createRouter<V = JSX.Element>(options?: RouterOptions) {
+  return createAppRouter<V>(options);
+}

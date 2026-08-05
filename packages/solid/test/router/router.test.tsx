@@ -1,11 +1,10 @@
 /** @jsxImportSource solid-js */
 
-import { createRouter } from '@anchorlib/router';
 import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RouteStacks } from '../../src/index.js';
-import { RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
+import { createRouter, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
 import { modal, page, route } from '../../src/router/index.js';
 
 describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
