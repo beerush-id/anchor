@@ -107,15 +107,29 @@ export {
   writable,
 } from '@anchorlib/core';
 export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@anchorlib/core/workflow';
-export type { ManifestRoute, RouteManifestEntry, RouteMeta } from '@anchorlib/router';
+
+export type {
+  ManifestRoute,
+  NavigateOptions,
+  RedirectOptions,
+  RouteManifestEntry,
+  RouteMeta,
+  RouteOptions,
+  RouterOptions,
+  RouteStatus,
+  RouteTarget,
+} from '@anchorlib/router';
+
 export {
   createRouteManifest,
-  createRouter,
+  createUrl,
   GuardError,
   MAX_AGE,
   NotFoundError,
   ProviderError,
   Redirect,
+  ROUTE_STATUS,
+  Route,
   RouteError,
   RouteManifest,
   redirectUrl,
@@ -138,10 +152,6 @@ export * from './node.js';
 export * from './portal.js';
 export * from './props.js';
 export * from './query.js';
-export * from './router/head.js';
-export * from './router/link.js';
-export * from './router/navigate.js';
-export * from './router/router.js';
-export * from './router/types.js';
+export * from './router/index.js';
 export * from './switch.js';
 export * from './types.js';

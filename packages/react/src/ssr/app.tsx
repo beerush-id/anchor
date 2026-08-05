@@ -20,8 +20,8 @@ import type { AppEntry, AppOptions } from './types.js';
 export function createApp<E = AnyType>(router: Router, Entry: AppEntry, options: AppOptions<E> = {}) {
   return createReactApp<E>(
     ({ url }) => {
-      const head = renderToString([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
       const html = renderToString(<Entry url={url} />);
+      const head = renderToString([...headings().values()].map(({ Renderer }, i) => <Renderer key={i} />));
 
       return { html, head };
     },

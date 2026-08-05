@@ -3,7 +3,7 @@ import { createLifecycle, withIsolation } from '@anchorlib/core';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { template } from '../../src/hoc.js';
-import { headings, HeadLink, Meta, Style, Title } from '../../src/router/head';
+import { Head, HeadLink, headings, Meta, Style, Title } from '../../src/router/head';
 
 const ssr = createLifecycle();
 
@@ -73,6 +73,85 @@ describe('Anchor React - Head APIs', () => {
       const remainingStyles = document.head.querySelectorAll('style');
       const removedStyle = Array.from(remainingStyles).find((s) => s.textContent === 'body { color: red; }');
       expect(removedStyle).toBeUndefined();
+    });
+
+    it('renders Head component with SEO metadata, fallbacks, alternates, and JsonLd into document.head', async () => {
+      const TestHead = template(() => (
+        <Head
+          meta={{
+            title: 'SEO Title',
+            description: 'SEO description',
+            keywords: ['react', 'seo', 'anchor'],
+            author: 'AIR Stack',
+            canonical: 'https://airlib.dev',
+            robots: 'index, follow',
+            themeColor: '#000000',
+            viewport: 'width=device-width',
+            og: {
+              type: 'website',
+              image: 'https://airlib.dev/og.png',
+              imageAlt: 'AIR Stack Banner',
+              siteName: 'AIR Stack Docs',
+              locale: 'en_US',
+            },
+            twitter: {
+              card: 'summary_large_image',
+              site: '@airlib',
+              creator: '@beerush',
+              imageAlt: 'AIR Stack Twitter Banner',
+            },
+            alternates: [{ href: 'https://airlib.dev/es', hreflang: 'es' }],
+            jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'AIR Stack' },
+            custom: { 'custom-tag': 'custom-value' },
+          }}
+        >
+          <HeadLink rel="author" href="/author" />
+        </Head>
+      ));
+
+      const { unmount } = render(<TestHead />);
+
+      expect(document.title).toBe('SEO Title');
+      expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('SEO description');
+      expect(document.head.querySelector('meta[name="keywords"]')?.getAttribute('content')).toBe('react, seo, anchor');
+      expect(document.head.querySelector('meta[name="author"]')?.getAttribute('content')).toBe('AIR Stack');
+      expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://airlib.dev');
+      expect(document.head.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe('SEO Title');
+      expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
+        'https://airlib.dev'
+      );
+      expect(document.head.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe(
+        'AIR Stack Docs'
+      );
+      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe(
+        'summary_large_image'
+      );
+      expect(document.head.querySelector('meta[name="twitter:title"]')?.getAttribute('content')).toBe('SEO Title');
+      expect(document.head.querySelector('meta[name="custom-tag"]')?.getAttribute('content')).toBe('custom-value');
+      expect(document.head.querySelector('link[hreflang="es"]')?.getAttribute('href')).toBe('https://airlib.dev/es');
+
+      const jsonLdScript = document.head.querySelector('script[type="application/ld+json"]');
+      expect(jsonLdScript).not.toBeNull();
+      expect(JSON.parse(jsonLdScript?.textContent || '{}')).toEqual({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'AIR Stack',
+      });
+
+      expect(document.head.querySelector('link[rel="author"]')?.getAttribute('href')).toBe('/author');
+
+      unmount();
+      await Promise.resolve();
+
+      expect(document.head.querySelector('meta[name="description"]')).toBeNull();
+      expect(document.head.querySelector('script[type="application/ld+json"]')).toBeNull();
+    });
+
+    it('returns null when Head receives neither meta nor children', async () => {
+      const TestEmptyHead = template(() => <Head />);
+      const { container, unmount } = render(<TestEmptyHead />);
+      expect(container.innerHTML).toBe('');
+      unmount();
     });
   });
 
@@ -178,6 +257,35 @@ describe('Anchor React - Head APIs', () => {
         const map = headings();
         const heads = [...map.values()].map(({ Renderer }, index) => <Renderer key={index} />);
         const { unmount } = render(heads);
+
+        ssr.destroy();
+      });
+    });
+
+    it('collects Head and JsonLd tags in SSR closure map', async () => {
+      vi.stubGlobal('window', undefined);
+
+      await withIsolation(async () => {
+        await ssr.runAsync(async () => {
+          Head({
+            meta: {
+              title: 'SSR Head Title',
+              description: 'SSR Head description',
+              jsonLd: { '@type': 'Organization', name: 'AIR' },
+            },
+          });
+
+          const map = headings();
+          expect(map.has('title')).toBe(true);
+          expect(map.get('title')?.props.children).toBe('SSR Head Title');
+          expect(map.has('meta:description')).toBe(true);
+
+          const jsonLdKey = Array.from(map.keys()).find((key) => key.startsWith('jsonld:'));
+          expect(jsonLdKey).toBeDefined();
+          if (jsonLdKey) {
+            expect(map.get(jsonLdKey)?.props.type).toBe('application/ld+json');
+          }
+        });
 
         ssr.destroy();
       });

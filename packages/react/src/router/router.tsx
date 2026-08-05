@@ -1,10 +1,12 @@
 import { $symbol, type AnyType, isBrowser, setContext, untrack } from '@anchorlib/core';
 import {
+  createRouter as createAppRouter,
   getRenderProps,
   type MatchedRoute,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
+  type RouterOptions,
   type RouteStatus,
   type RouteTarget,
   setExceptionRendererFactory,
@@ -296,11 +298,23 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    navigate((redirect as any).route, {
+    navigate((redirect as AnyType).route, {
       query: redirect.query,
       params: redirect.params,
       redirect: location.href,
       replace: true,
     } as never);
   });
+}
+
+/**
+ * Creates a new Router instance.
+ *
+ * Convenience function for creating a router with optional options.
+ *
+ * @param options - Optional router configuration
+ * @returns A new Router instance
+ */
+export function createRouter(options?: RouterOptions) {
+  return createAppRouter<ReactNode>(options);
 }
