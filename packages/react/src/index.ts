@@ -1,7 +1,3 @@
-if (typeof document !== 'undefined') {
-  await import('./client/index.js');
-}
-
 export type {
   AnchorSettings,
   AnyType,
