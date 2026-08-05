@@ -48,23 +48,31 @@
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",
+    "@mdx-js/rollup": "catalog:lib",
     "@napi-rs/image": "catalog:lib",
+    "remark-frontmatter": "catalog:lib",
+    "remark-mdx-frontmatter": "catalog:lib",
     "vite": "catalog:lib",
     "ws": "catalog:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@types/ws": "latest",
+    "@vitest/coverage-v8": "catalog:",
+    "acorn": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "scripts": {
     "dev": "rimraf dist && tsdown --watch ./src",
     "clean": "rimraf dist",
     "build": "bun run clean && tsdown && publint",
     "prepublish": "bun run format && bun run build",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "test": "rimraf coverage && vitest --run",
+    "test:preview": "rimraf coverage && vitest --run && vite preview --outDir coverage"
   }
 }

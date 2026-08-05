@@ -15,3 +15,9 @@ declare module '*?airimg' {
   const image: ImageTransform;
   export default image;
 }
+
+declare module 'virtual:air/routes' {
+  /** Eagerly evaluated map of all page/layout modules (importing it registers every route). */
+  const modules: Record<string, unknown>;
+  export default modules;
+}
