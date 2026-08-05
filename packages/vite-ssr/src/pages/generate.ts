@@ -6,8 +6,8 @@ import {
   deriveRouteName,
   deriveSegment,
   type FileMap,
-  flattenTree,
   type FolderNode,
+  flattenTree,
   GENERATED_MARKER,
   humanizeSegment,
   importSpecifier,
@@ -222,16 +222,14 @@ export function scaffoldClientTsx(opts: { framework: Framework }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
 
   if (opts.framework === 'solid') {
-    return `import { render } from 'solid-js/web';
+    return `import { hydrate } from 'solid-js/web';
 import App from './app.js';
 import router from './router.js';
 
 router
   .activate(window.location.href)
   .then(() => {
-    const root = document.getElementById('root')!
-    root.innerHTML = '';
-    render(() => <App />, root);
+    hydrate(() => <App />, document.getElementById('root')!);
   });
 `;
   }

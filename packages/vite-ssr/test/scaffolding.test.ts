@@ -143,7 +143,7 @@ describe('scaffolding — empty files become working pages', () => {
     const { sync } = makeSync(dir, { framework: 'solid' });
     sync.refresh();
 
-    expect(readFixture(dir, 'client.tsx')).toContain("import { render } from 'solid-js/web';");
+    expect(readFixture(dir, 'client.tsx')).toContain("import { hydrate } from 'solid-js/web';");
   });
 
   it('returns undefined from scaffoldForFile when folder is missing for page files', () => {
