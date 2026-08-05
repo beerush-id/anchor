@@ -1,5 +1,5 @@
 import { anchor, createLifecycle } from '@anchorlib/core';
-import { sleep } from '@beerush/utils';
+import { sleep } from '@anchorlib/core/utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { createKVStore, type KVState } from '../../src/db/index.js';
