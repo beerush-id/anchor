@@ -1,6 +1,6 @@
 import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@anchorlib/core';
 import type { FC, HTMLAttributes } from 'react';
-import { createEffect } from '../hooks.js';
+import { createPortal } from 'react-dom';
 
 const HEADING_SET_CLOSURE = $symbol('head-map-closure');
 
@@ -35,47 +35,11 @@ export function headings() {
 }
 
 /**
- * Attaches a heading element to the document head or collects it for SSR.
- *
- * @param name The tag name (e.g., 'title', 'meta').
- * @param props The attributes to apply to the tag.
- * @param Renderer The React component used to render the tag during SSR.
+ * Collects a heading element for SSR.
  */
-export function attachHeading(name: string, props: Record<string, string>, Renderer: FC) {
-  if (!isBrowser()) {
-    if (name === 'meta') name = `${name}:${props.name || props.property}`;
-    if (name === 'link') name = `${name}:${props.href}`;
-    if (name === 'style') name = `${name}:${performance.now()}`;
-
-    headings().set(name, { name, props, Renderer });
-
-    onCleanup(() => {
-      headings().delete(name);
-    });
-
-    return;
-  }
-
-  if (name === 'title') {
-    document.title = props.children;
-    return;
-  }
-
-  const element = document.createElement(name);
-
-  for (const [key, value] of Object.entries(props)) {
-    if (key === 'children') {
-      element.textContent = value;
-    } else {
-      element.setAttribute(key, value);
-    }
-  }
-
-  document.head.appendChild(element);
-
-  createEffect(() => () => {
-    element.remove();
-  });
+function ssrHeading(name: string, props: Record<string, string>, Renderer: FC) {
+  headings().set(name, { name, props, Renderer });
+  onCleanup(() => headings().delete(name));
 }
 
 /**
@@ -83,8 +47,13 @@ export function attachHeading(name: string, props: Record<string, string>, Rende
  */
 export const Title: FC<HTMLAttributes<HTMLTimeElement> & { children: string }> = ({ children }) => {
   const Renderer = () => <title>{children}</title>;
-  attachHeading('title', { children }, Renderer);
-  return null;
+
+  if (!isBrowser()) {
+    ssrHeading('title', { children }, Renderer);
+    return null;
+  }
+
+  return createPortal(<Renderer />, document.head);
 };
 
 /**
@@ -94,8 +63,14 @@ export const Meta: FC<HTMLAttributes<HTMLMetaElement> & { name?: string; propert
   props
 ) => {
   const Renderer = () => <meta {...props} />;
-  attachHeading('meta', props as Record<string, string>, Renderer);
-  return null;
+
+  if (!isBrowser()) {
+    const key = `meta:${props.name || props.property}`;
+    ssrHeading(key, props as Record<string, string>, Renderer);
+    return null;
+  }
+
+  return createPortal(<Renderer />, document.head);
 };
 
 /**
@@ -103,8 +78,14 @@ export const Meta: FC<HTMLAttributes<HTMLMetaElement> & { name?: string; propert
  */
 export const HeadLink: FC<HTMLAttributes<HTMLLinkElement> & { href?: string; rel?: string; as?: string }> = (props) => {
   const Renderer = () => <link {...props} />;
-  attachHeading('link', props as Record<string, string>, Renderer);
-  return null;
+
+  if (!isBrowser()) {
+    const key = `link:${props.href}`;
+    ssrHeading(key, props as Record<string, string>, Renderer);
+    return null;
+  }
+
+  return createPortal(<Renderer />, document.head);
 };
 
 /**
@@ -112,6 +93,12 @@ export const HeadLink: FC<HTMLAttributes<HTMLLinkElement> & { href?: string; rel
  */
 export const Style: FC<HTMLAttributes<HTMLStyleElement> & { children?: string }> = (props) => {
   const Renderer = () => <style {...props} />;
-  attachHeading('style', props as Record<string, string>, Renderer);
-  return null;
+
+  if (!isBrowser()) {
+    const key = `style:${performance.now()}`;
+    ssrHeading(key, props as Record<string, string>, Renderer);
+    return null;
+  }
+
+  return createPortal(<Renderer />, document.head);
 };

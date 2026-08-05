@@ -38,6 +38,94 @@ describe('Anchor React - Link Component', () => {
     expect(anchor.getAttribute('href')).toBe('/settings');
   });
 
+  it('renders correctly with a bare Route object in `to`', () => {
+    const router = createRouter();
+    const settingsRoute = router.route('/settings');
+
+    render(<Link to={settingsRoute}>Settings</Link>);
+    const anchor = screen.getByText('Settings');
+    expect(anchor.getAttribute('href')).toBe('/settings');
+  });
+
+  it('renders a bare dynamic Route object with params', () => {
+    const router = createRouter();
+    const usersRoute = router.route('/users');
+    const profileRoute = usersRoute.route('/:id');
+
+    render(
+      <Link to={profileRoute} params={{ id: '42' } as never}>
+        Profile
+      </Link>
+    );
+    const anchor = screen.getByText('Profile');
+    expect(anchor.getAttribute('href')).toBe('/users/42');
+  });
+
+  it('intercepts clicks and calls navigate with a bare Route object', () => {
+    const router = createRouter();
+    const contactRoute = router.route('/contact');
+
+    render(<Link to={contactRoute}>Contact</Link>);
+    const anchor = screen.getByText('Contact');
+
+    fireEvent.click(anchor);
+
+    expect(navigateSpy).toHaveBeenCalledWith('/contact', {
+      query: undefined,
+      params: undefined,
+      replace: undefined,
+    });
+  });
+
+  it('applies aria-current and activeClass when a bare Route object is active', () => {
+    const router = createRouter();
+    const dashboardRoute = router.route('/dashboard');
+
+    dashboardRoute.active = true;
+
+    render(
+      <Link to={dashboardRoute} className="btn" activeClass="btn-active">
+        Dashboard
+      </Link>
+    );
+
+    const anchor = screen.getByText('Dashboard');
+    expect(anchor.getAttribute('aria-current')).toBe('page');
+    expect(anchor.className).toContain('btn btn-active');
+  });
+
+  it('applies active stylings for bare Index Route objects when parent is active', () => {
+    const router = createRouter();
+    const parentRoute = router.route('/users');
+    const indexRoute = parentRoute.route('/');
+
+    parentRoute.active = true;
+    indexRoute.active = false;
+
+    render(
+      <Link to={indexRoute} activeClass="active-index" fullMatch={false}>
+        Users
+      </Link>
+    );
+
+    const anchor = screen.getByText('Users');
+    expect(anchor.getAttribute('aria-current')).toBe('page');
+    expect(anchor.className).toContain('active-index');
+  });
+
+  it('calls router.preload when hovering a bare Route object with preloadMode hover', () => {
+    const router = createRouter();
+    const heavyRoute = router.route('/heavy', { preloadMode: 'hover' });
+
+    preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
+
+    render(<Link to={heavyRoute}>Heavy</Link>);
+    const anchor = screen.getByText('Heavy');
+
+    fireEvent.mouseEnter(anchor);
+    expect(preloadSpy).toHaveBeenCalledWith('/heavy');
+  });
+
   it('intercepts standard clicks and calls navigate', () => {
     const TypedLink = Link as FC<{ href: string; query: any; children: any }>;
 

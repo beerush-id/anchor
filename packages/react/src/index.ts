@@ -107,8 +107,9 @@ export {
   writable,
 } from '@anchorlib/core';
 export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@anchorlib/core/workflow';
-
+export type { ManifestRoute, RouteManifestEntry, RouteMeta } from '@anchorlib/router';
 export {
+  createRouteManifest,
   createRouter,
   GuardError,
   MAX_AGE,
@@ -116,6 +117,7 @@ export {
   ProviderError,
   Redirect,
   RouteError,
+  RouteManifest,
   redirectUrl,
   UnknownError,
 } from '@anchorlib/router';
