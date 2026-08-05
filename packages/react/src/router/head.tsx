@@ -112,7 +112,7 @@ export const Head: FC<HeadProps> = ({ meta, children }) => {
       {meta?.twitter?.creator && <Meta name="twitter:creator" content={meta.twitter.creator} />}
       {twitterTitle && (meta?.twitter || meta?.og) && <Meta name="twitter:title" content={twitterTitle} />}
       {twitterDesc && (meta?.twitter || meta?.og) && <Meta name="twitter:description" content={twitterDesc} />}
-      {twitterImage && (meta?.twitter || meta?.og) && <Meta name="twitter:image" content={twitterImage} />}
+      {twitterImage && <Meta name="twitter:image" content={twitterImage} />}
       {meta?.twitter?.imageAlt && <Meta name="twitter:image:alt" content={meta.twitter.imageAlt} />}
 
       {meta?.alternates?.map((alt, index) => (
@@ -170,13 +170,22 @@ export const Meta: FC<HTMLAttributes<HTMLMetaElement> & { name?: string; propert
  * Sets a link tag in the document head.
  */
 export const HeadLink: FC<
-  HTMLAttributes<HTMLLinkElement> & { href?: string; rel?: string; as?: string; hreflang?: string; type?: string }
+  HTMLAttributes<HTMLLinkElement> & {
+    href?: string;
+    rel?: string;
+    as?: string;
+    hreflang?: string;
+    hrefLang?: string;
+    type?: string;
+  }
 > = (props) => {
-  const Renderer = () => <link {...props} />;
+  const { hreflang, hrefLang, ...rest } = props;
+  const linkProps = { ...rest, ...((hreflang ?? hrefLang) ? { hrefLang: hreflang ?? hrefLang } : {}) };
+  const Renderer = () => <link {...linkProps} />;
 
   if (!isBrowser()) {
     const key = `link:${props.href}`;
-    ssrHeading(key, props as Record<string, string>, Renderer);
+    ssrHeading(key, linkProps as Record<string, string>, Renderer);
     return null;
   }
 

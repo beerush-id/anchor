@@ -315,6 +315,6 @@ if (isBrowser()) {
  * @param options - Optional router configuration
  * @returns A new Router instance
  */
-export function createRouter(options?: RouterOptions) {
-  return createAppRouter<ReactNode>(options);
+export function createRouter<V = ReactNode>(options?: RouterOptions) {
+  return createAppRouter<V>(options);
 }

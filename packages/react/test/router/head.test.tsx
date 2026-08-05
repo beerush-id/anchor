@@ -1,6 +1,7 @@
 import '../../src/client/index';
 import { createLifecycle, withIsolation } from '@anchorlib/core';
 import { render } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { template } from '../../src/hoc.js';
 import { Head, HeadLink, headings, Meta, Style, Title } from '../../src/router/head';
@@ -153,6 +154,23 @@ describe('Anchor React - Head APIs', () => {
       expect(container.innerHTML).toBe('');
       unmount();
     });
+
+    it('handles hrefLang prop in HeadLink and different twitter fallback card modes', async () => {
+      const TestHeadLink = template(() => <HeadLink href="https://airlib.dev/fr" hrefLang="fr" />);
+      const { unmount: unmountLink } = render(<TestHeadLink />);
+      expect(document.head.querySelector('link[hreflang="fr"]')?.getAttribute('href')).toBe('https://airlib.dev/fr');
+      unmountLink();
+
+      const TestTwitterNoImg = template(() => <Head meta={{ twitter: { site: '@air' } }} />);
+      const { unmount: unmountNoImg } = render(<TestTwitterNoImg />);
+      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe('summary');
+      unmountNoImg();
+
+      const TestTwitterWithImg = template(() => <Head meta={{ twitter: { image: 'test.png' } }} />);
+      const { unmount: unmountImg } = render(<TestTwitterWithImg />);
+      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe('summary_large_image');
+      unmountImg();
+    });
   });
 
   describe('SSR Mode', async () => {
@@ -267,13 +285,15 @@ describe('Anchor React - Head APIs', () => {
 
       await withIsolation(async () => {
         await ssr.runAsync(async () => {
-          Head({
-            meta: {
-              title: 'SSR Head Title',
-              description: 'SSR Head description',
-              jsonLd: { '@type': 'Organization', name: 'AIR' },
-            },
-          });
+          renderToString(
+            <Head
+              meta={{
+                title: 'SSR Head Title',
+                description: 'SSR Head description',
+                jsonLd: { '@type': 'Organization', name: 'AIR' },
+              }}
+            />
+          );
 
           const map = headings();
           expect(map.has('title')).toBe(true);

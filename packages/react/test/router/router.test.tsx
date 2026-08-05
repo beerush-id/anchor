@@ -1,11 +1,10 @@
 import '../../src/client/index.js';
 import { type AnyType, mutable } from '@anchorlib/core';
 import type { UnknownRoute } from '@anchorlib/router';
-import { createRouter } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { modal, page, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
+import { createRouter, modal, page, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;

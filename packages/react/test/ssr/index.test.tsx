@@ -4,7 +4,7 @@ import { ALS_INSTANCE } from '@anchorlib/core/server';
 import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@anchorlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { page, setup } from '../../src/index.js';
+import { page, setup, UIRouter } from '../../src/index.js';
 import { createApp, createSSR } from '../../src/ssr/index.js';
 
 setAsyncScope(ALS_INSTANCE);
@@ -208,8 +208,9 @@ describe('createApp', () => {
     const router = createRouter<ReactNode>();
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
+    const Entry = ({ url }: { url?: string }) => <UIRouter router={router} root={RootLayout} url={url} headless={true} />;
 
-    const app = createApp(router, RootLayout, { template: '<!--ssr-outlet-->' });
+    const app = createApp(router, Entry, { template: '<!--ssr-outlet-->' });
     expect(app.fetch).toBeTypeOf('function');
 
     const res = await app.fetch(new Request('http://localhost/'));
@@ -223,8 +224,13 @@ describe('createApp', () => {
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
     const Shell = setup<HTMLAttributes<HTMLElement>>((props) => <div className="shell">{props.children}</div>);
+    const Entry = ({ url }: { url?: string }) => (
+      <Shell>
+        <UIRouter router={router} root={RootLayout} url={url} headless={true} />
+      </Shell>
+    );
 
-    const app = createApp(router, RootLayout, { shell: Shell, template: '<!--ssr-outlet-->' });
+    const app = createApp(router, Entry, { template: '<!--ssr-outlet-->' });
     const res = await app.fetch(new Request('http://localhost/'));
     expect(res.status).toBe(200);
     const html = await res.text();
