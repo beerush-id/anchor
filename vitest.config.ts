@@ -17,6 +17,7 @@ export default defineConfig({
       'packages/solid',
       'packages/svelte',
       'packages/vue',
+      'packages/vite-ssr',
 
       'irpclib/irpc',
       'irpclib/http',
@@ -37,6 +38,7 @@ export default defineConfig({
         'packages/solid/src/**/*.{ts,tsx}',
         'packages/svelte/src/**/*.{ts}',
         'packages/vue/src/**/*.{ts}',
+        'packages/vite-ssr/src/pages/**/*.ts',
 
         'irpclib/irpc/src/**/*.{ts}',
         'irpclib/http/src/**/*.{ts}',
