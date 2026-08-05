@@ -155,6 +155,12 @@ describe('manifest.ts', () => {
           }
         }
       });
+
+      it('should return the underlying entries tuple via entries getter', () => {
+        const { manifest } = setup();
+        expect(manifest.entries).toBeInstanceOf(Array);
+        expect(manifest.entries.length).toBeGreaterThan(0);
+      });
     });
   });
 

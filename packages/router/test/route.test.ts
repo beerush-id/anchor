@@ -1452,8 +1452,23 @@ describe('Route class', () => {
 
       // Named wildcard without asterisk prefix in params object
       const docRoute = root.route('/docs').route('/*filepath');
-      // @ts-ignore
+      // @ts-expect-error
       expect(docRoute.url({ filepath: 'guide/intro.md' })).toBe('/docs/guide/intro.md');
+    });
+
+    it('should expose live meta object via metadata getter (route.ts:139-140)', () => {
+      const root = sharedRouter.route();
+      const userRoute = root.route('/user').meta({ name: 'User profile' });
+      expect(userRoute.metadata).toEqual({ name: 'User profile' });
+      expect(userRoute.metadata).toBe(userRoute.meta());
+    });
+
+    it('should update route options via config method (route.ts:291-293)', () => {
+      const root = sharedRouter.route();
+      const dashboard = root.route('/dashboard');
+      const result = dashboard.config({ keepAlive: true });
+      expect(result).toBe(dashboard);
+      expect(dashboard.options.keepAlive).toBe(true);
     });
   });
 });
