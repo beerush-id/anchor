@@ -3,7 +3,8 @@ import type { Router } from '@anchorlib/router';
 import { createApp as createReactApp } from '@anchorlib/ssr';
 import { renderToString } from 'react-dom/server';
 import { headings } from '../router/index.js';
-import type { AppEntry, AppOptions } from './types.js';
+import type { AppEntry } from '../types.js';
+import type { AppOptions } from './types.js';
 
 /**
  * Creates a React SSR execution handler.

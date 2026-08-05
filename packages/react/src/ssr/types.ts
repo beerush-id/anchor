@@ -1,11 +1,9 @@
 import type { AnyType } from '@anchorlib/core';
 import type { CoreAppOptions, SSRContext, SSROptions, SSROutput, SSRRenderOptions } from '@anchorlib/ssr';
-import type { FC, HTMLAttributes } from 'react';
+import type { HTMLAttributes } from 'react';
 import type { StableComponent } from '../types.js';
 
 export type AppShell = StableComponent<HTMLAttributes<HTMLElement>>;
-
-export type AppEntry = FC<{ url?: string }>;
 export type AppOptions<E = AnyType> = Omit<CoreAppOptions<E>, 'router'>;
 
 export type LegacySSRRenderer = (

@@ -1,5 +1,5 @@
 import type { AsyncStore, RefStack, ValueGetterType } from '@anchorlib/core';
-import type { FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode, RefObject } from 'react';
+import type { FC, FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode, RefObject } from 'react';
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
@@ -253,3 +253,5 @@ export type RefToArg<T, O extends Record<string, T | null> = Record<string, T | 
   | RefObject<T | null>
   | [obj: O, key: keyof O]
   | ((ref: T | null) => void);
+
+export type AppEntry = FC<{ url?: string }>;
