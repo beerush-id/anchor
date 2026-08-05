@@ -158,6 +158,111 @@ export function generateManifest(opts: {
 }
 
 /**
+ * Decides the scaffold content for a newly created application or page file, or `undefined`
+ * when the file should not be scaffolded (unknown file type).
+ *
+ * The caller is responsible for the empty-file checks — this is a pure decision function.
+ */
+export function scaffoldForFile(opts: {
+  /** File base name (`app.tsx`, `client.tsx`, `worker.ts`, `page.tsx`, `layout.tsx`, `page.mdx`). */
+  base: string;
+  folder?: FolderNode;
+  framework: Framework;
+  files?: FileMap;
+}): string | undefined {
+  const { base, folder, framework, files = DEFAULT_FILE_MAP } = opts;
+
+  if (base === 'app.tsx') {
+    return scaffoldAppTsx({ framework });
+  }
+
+  if (base === 'client.tsx') {
+    return scaffoldClientTsx({ framework });
+  }
+
+  if (base === 'worker.ts') {
+    return scaffoldWorkerTs({ framework });
+  }
+
+  if (!folder) return undefined;
+
+  if (base === files.pageMdx || base === files.layoutMdx) {
+    return scaffoldPageMdx({ segment: folder.segment });
+  }
+
+  if (base === files.layout) {
+    if (!folder.rel) return scaffoldLayoutTsx({ framework });
+    return scaffoldLayoutTsx({ framework, rel: folder.rel, routeExport: deriveRouteName(folder.rel) });
+  }
+
+  if (base === files.page) {
+    return scaffoldPageTsx({ framework, rel: folder.rel, routeExport: routeExportForFolder(folder) });
+  }
+
+  return undefined;
+}
+
+/**
+ * Scaffolds an `app.tsx` entry module.
+ */
+export function scaffoldAppTsx(opts: { framework: Framework }): string {
+  const pkg = FRAMEWORK_PACKAGE[opts.framework];
+  return `import { UIRouter } from '${pkg}';
+import type { AppEntry } from '${pkg}/ssr';
+import RootLayout from './pages/layout.tsx';
+import router from './router.ts';
+
+export default (({ url }) => <UIRouter router={router} root={RootLayout} url={url} />) satisfies AppEntry;
+`;
+}
+
+/**
+ * Scaffolds a `client.tsx` client hydration module.
+ */
+export function scaffoldClientTsx(opts: { framework: Framework }): string {
+  const pkg = FRAMEWORK_PACKAGE[opts.framework];
+
+  if (opts.framework === 'solid') {
+    return `import { hydrate } from 'solid-js/web';
+import App from './app.js';
+import router from './router.js';
+
+router
+  .activate(window.location.href)
+  .then(() => {
+    hydrate(() => <App />, document.getElementById('root')!);
+  });
+`;
+  }
+
+  return `import '${pkg}/client'; // MUST be first import
+
+import { hydrateRoot } from 'react-dom/client';
+import App from './app.js';
+import router from './router.js';
+
+router
+  .activate(window.location.href)
+  .then(() => {
+    hydrateRoot(document.getElementById('root')!, <App />);
+  });
+`;
+}
+
+/**
+ * Scaffolds a `worker.ts` server rendering entry module.
+ */
+export function scaffoldWorkerTs(opts: { framework: Framework }): string {
+  const pkg = FRAMEWORK_PACKAGE[opts.framework];
+  return `import { createApp } from '${pkg}/ssr';
+import App from './app.js';
+import router from './router.js';
+
+export default createApp(router, App);
+`;
+}
+
+/**
  * Scaffolds a `page.tsx` module.
  */
 export function scaffoldPageTsx(opts: { framework: Framework; rel: string; routeExport: string }): string {
@@ -208,36 +313,4 @@ title: ${title}
 
 # ${title}
 `;
-}
-
-/**
- * Decides the scaffold content for a newly created page file, or `undefined`
- * when the file should not be scaffolded (unknown file type).
- *
- * The caller is responsible for the empty-file checks — this is a pure
- * decision function.
- */
-export function scaffoldForFile(opts: {
-  /** Page file base name (`page.tsx`, `layout.tsx`, `page.mdx`). */
-  base: string;
-  folder: FolderNode;
-  framework: Framework;
-  files?: FileMap;
-}): string | undefined {
-  const { base, folder, framework, files = DEFAULT_FILE_MAP } = opts;
-
-  if (base === files.pageMdx || base === files.layoutMdx) {
-    return scaffoldPageMdx({ segment: folder.segment });
-  }
-
-  if (base === files.layout) {
-    if (!folder.rel) return scaffoldLayoutTsx({ framework });
-    return scaffoldLayoutTsx({ framework, rel: folder.rel, routeExport: deriveRouteName(folder.rel) });
-  }
-
-  if (base === files.page) {
-    return scaffoldPageTsx({ framework, rel: folder.rel, routeExport: routeExportForFolder(folder) });
-  }
-
-  return undefined;
 }

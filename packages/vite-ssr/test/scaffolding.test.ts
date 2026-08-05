@@ -125,4 +125,28 @@ describe('scaffolding — empty files become working pages', () => {
 
     expect(readFixture(dir, 'pages/blogs/page.tsx')).toBe('');
   });
+
+  it('scaffolds app.tsx, client.tsx, and worker.ts when present as empty files in app dir', () => {
+    dir = makeFixture({ 'router.ts': '', 'app.tsx': '', 'client.tsx': '', 'worker.ts': '' });
+
+    const { sync } = makeSync(dir);
+    sync.refresh();
+
+    expect(readFixture(dir, 'app.tsx')).toContain('export default (({ url }) =>');
+    expect(readFixture(dir, 'client.tsx')).toContain("import '@anchorlib/react/client';");
+    expect(readFixture(dir, 'worker.ts')).toContain("import { createApp } from '@anchorlib/react/ssr';");
+  });
+
+  it('scaffolds client.tsx with solid hydration when framework is solid', () => {
+    dir = makeFixture({ 'router.ts': '', 'client.tsx': '' });
+
+    const { sync } = makeSync(dir, { framework: 'solid' });
+    sync.refresh();
+
+    expect(readFixture(dir, 'client.tsx')).toContain("import { hydrate } from 'solid-js/web';");
+  });
+
+  it('returns undefined from scaffoldForFile when folder is missing for page files', () => {
+    expect(scaffoldForFile({ base: 'page.tsx', framework: 'react' })).toBeUndefined();
+  });
 });

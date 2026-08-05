@@ -94,6 +94,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
   let config: ResolvedConfig;
   let absPagesDir = '';
+  let absAppDir = '';
   let absAirStackDir = '';
   let sync: PagesSync;
   let files: FileMap;
@@ -113,10 +114,16 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   };
 
   const isWatched = (file: string) => {
-    if (!file.startsWith(absPagesDir)) return false;
-    const base = path.basename(file);
-    if (pageFileNames?.has(base)) return true;
-    if (irpcEnabled && irpcFileNames?.has(base)) return true;
+    if (file.startsWith(absPagesDir)) {
+      const base = path.basename(file);
+      if (pageFileNames?.has(base)) return true;
+      if (irpcEnabled && irpcFileNames?.has(base)) return true;
+      return false;
+    }
+    if (absAppDir && path.dirname(file) === absAppDir) {
+      const base = path.basename(file);
+      return base === 'app.tsx' || base === 'client.tsx' || base === 'worker.ts';
+    }
     return false;
   };
 
@@ -148,6 +155,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       absPagesDir = path.resolve(config.root, pagesDir);
       const absRouterFile = path.resolve(config.root, routerFile);
       const absWorkerFile = path.resolve(config.root, workerFile);
+      absAppDir = path.dirname(absRouterFile);
 
       if (irpcEnabled === undefined && fs.existsSync(absWorkerFile)) {
         const workerContent = fs.readFileSync(absWorkerFile, 'utf-8');
@@ -159,7 +167,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         fs.writeFileSync(
           absRouterFile,
           [
-            `"import { createRouter } from '@anchorlib/${framework}';"`,
+            `import { createRouter } from '@anchorlib/${framework}';`,
             '',
             'const router = createRouter();',
             'export default router;',
@@ -172,12 +180,12 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         fs.mkdirSync(absPagesDir, { recursive: true });
         fs.writeFileSync(
           path.join(absPagesDir, files.layout),
-          "import { page } from '@anchorlib/react';\nimport { rootRoute } from './route.js';\n\nexport default page(rootRoute).render(({ children }) => children);\n",
+          `import { page } from '@anchorlib/${framework}';\nimport { rootRoute } from './route.js';\n\nexport default page(rootRoute).render(({ children }) => children);\n`,
           'utf-8'
         );
         fs.writeFileSync(
           path.join(absPagesDir, files.page),
-          "import { page } from '@anchorlib/react';\nimport { indexRoute } from './route.js';\n\nexport default page(indexRoute).render(() => (\n  <>\n    <h1>Welcome to AIR Stack</h1>\n    <p>This is your generated home page.</p>\n  </>\n));\n",
+          `import { page } from '@anchorlib/${framework}';\nimport { indexRoute } from './route.js';\n\nexport default page(indexRoute).render(() => (\n  <>\n    <h1>Welcome to AIR Stack</h1>\n    <p>This is your generated home page.</p>\n  </>\n));\n`,
           'utf-8'
         );
       }
@@ -314,6 +322,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
     configureServer(server) {
       server.watcher.add(absPagesDir);
+      if (absAppDir) server.watcher.add(absAppDir);
 
       server.watcher.on('add', (file) => {
         if (!isWatched(file)) return;

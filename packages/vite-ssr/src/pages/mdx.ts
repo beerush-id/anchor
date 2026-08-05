@@ -168,7 +168,7 @@ export async function mdxTransformModule(opts: {
 
   return [
     `import { ${routeExport} as __airRoute } from '${routeImport}';`,
-    `import { Meta as __airMetaTag, Title as __airTitleTag } from '${pkg}';`,
+    `import { Head as __airHeadTag } from '${pkg}';`,
     `import { Fragment as __airFragment, jsx as __airJsx, jsxs as __airJsxs } from '${runtime}';`,
     reactRenderImport,
     moduleStatements.join('\n\n'),
@@ -180,12 +180,10 @@ export async function mdxTransformModule(opts: {
       .join('\n'),
     '',
     '  const __airFm = typeof frontmatter !== "undefined" ? frontmatter : {};',
-    '  const { title: __airTitle, description: __airDescription, ...__airMeta } = __airFm;',
     '',
     `  return ${renderWrapperStart}__airJsxs(__airFragment, {`,
     '    children: [',
-    '      __airTitle ? __airJsx(__airTitleTag, { children: __airTitle }) : null,',
-    '      __airDescription ? __airJsx(__airMetaTag, { name: "description", content: __airDescription }) : null,',
+    '      __airJsx(__airHeadTag, { meta: __airFm }),',
     '      __airJsx(MDXContent, {}),',
     '    ],',
     `  })${renderWrapperEnd};`,

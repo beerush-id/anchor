@@ -28,7 +28,7 @@ export interface AirImageOptions {
 }
 
 export function airImage(options: AirImageOptions = {}): Plugin {
-  const { sizes = [128, 256, 512, 1024], format = 'webp', quality = 75, devEnabled = false } = options;
+  const { sizes = [128, 256, 512, 1024], format = 'webp', quality = 75, devEnabled } = options;
 
   let isBuild = false;
 
@@ -64,7 +64,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
         let srcset = '';
         const sizesMap: Record<number, { src: string; width: number; height: number; alt: string }> = {};
 
-        if (isBuild || devEnabled) {
+        if (isBuild || devEnabled !== false) {
           const inputSize = buffer.byteLength;
           const kbIn = (inputSize / 1024).toFixed(2);
 

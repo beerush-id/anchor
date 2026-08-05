@@ -46,15 +46,15 @@ describe('mdx pages — MDX files are pages', () => {
     expect(content).toContain("['/docs/getting-started', docsGettingStartedRoute],");
   });
 
-  it('attaches the mdx component to the folder route with head tags and meta', async () => {
+  it('attaches the mdx component to the folder route with head tag and frontmatter meta', async () => {
     dir = makeFixture({ 'pages/docs/getting-started/page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/getting-started/page.mdx');
 
     expect(snippet).toContain("import { docsGettingStartedRoute as __airRoute } from './route.js';");
-    expect(snippet).toContain("import { Meta as __airMetaTag, Title as __airTitleTag } from '@anchorlib/react';");
+    expect(snippet).toContain("import { Head as __airHeadTag } from '@anchorlib/react';");
     expect(snippet).toContain("from 'react/jsx-runtime';");
     expect(snippet).toContain('__airRoute.render(');
-    expect(snippet).toContain('const { title: __airTitle, description: __airDescription, ...__airMeta } = __airFm;');
+    expect(snippet).toContain('__airJsx(__airHeadTag, { meta: __airFm })');
   });
 
   it('transforms full mdx module code by partitioning module side-effects and setup declarations', async () => {
