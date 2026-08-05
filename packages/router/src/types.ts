@@ -1,7 +1,7 @@
 import type { RetriableOptions, StateObserver } from '@anchorlib/core';
 import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
-import { ERROR_TYPE, type PRELOAD_MODE, type RENDER_MODE, type ROUTE_STATUS, type ROUTE_TYPE } from './enum.js';
+import type { ERROR_TYPE, PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
 import type { RouteError } from './error.js';
 import type { Redirect } from './redirect.js';
 import type { ContextReader, IndexRoute, Route } from './route.js';
@@ -10,6 +10,16 @@ import type { ContextReader, IndexRoute, Route } from './route.js';
 export type TRec = Record<string, unknown>;
 /** An empty record type */
 export type None = Record<string, never>;
+
+/**
+ * Metadata attached to route nodes (page title, menu section, icon, etc.).
+ * Empty by default — apps declare their keys via module augmentation:
+ *
+ * Meta is set at runtime with `route.meta(partial)` and read back with `route.meta()`.
+ * File-routing MDX pages receive their meta from frontmatter keys automatically.
+ */
+// biome-ignore lint/suspicious/noEmptyInterface: Expect overrides.
+export interface RouteMeta {}
 
 /** Maps parameter type strings to their TypeScript types */
 export type ParamTypeMap = {
@@ -118,11 +128,12 @@ export type ProviderResolvers<Params, Query, Data> = {
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   [key: string]: (context: RouteContext<Params, Query, Data>) => any;
 };
-export type ProviderResolversOut<P> = P extends ProviderResolvers<infer _P, infer _Q, infer _D>
-  ? {
-      [K in keyof P]: P[K] extends (...args: infer _A) => infer O ? (O extends Promise<infer D> ? D : O) : P[K];
-    }
-  : TRec;
+export type ProviderResolversOut<P> =
+  P extends ProviderResolvers<infer _P, infer _Q, infer _D>
+    ? {
+        [K in keyof P]: P[K] extends (...args: infer _A) => infer O ? (O extends Promise<infer D> ? D : O) : P[K];
+      }
+    : TRec;
 export type ProviderResolverMap = {
   [key: string]: {
     handler: UnknownProvider;
@@ -255,17 +266,12 @@ export type RouteName<TPath extends RoutePath> = TPath extends `/${infer TParam}
   : never;
 
 /** Computes the full path output including parent paths */
-export type RoutePathOutput<TParent, TPath extends RoutePath> = TParent extends Route<
-  infer _PPath,
-  infer _PParams,
-  infer _PQueryParams,
-  infer _PData,
-  infer _Parent
->
-  ? TParent['path'] extends '/'
-    ? TPath
-    : `${TParent['path']}${TPath}`
-  : TPath;
+export type RoutePathOutput<TParent, TPath extends RoutePath> =
+  TParent extends Route<infer _PPath, infer _PParams, infer _PQueryParams, infer _PData, infer _Parent>
+    ? TParent['path'] extends '/'
+      ? TPath
+      : `${TParent['path']}${TPath}`
+    : TPath;
 
 export type MatchRouteSegment = {
   route: UnknownRoute;
@@ -370,28 +376,28 @@ export type RouteTarget<T> = T extends
   ? T
   : never;
 
-export type InferState<T> = T extends Route<infer _Path, infer Params, infer Query, infer Data, infer _TParent>
-  ? ContextReader<Params, Query, Data>
-  : None;
-export type InferContext<T> = T extends Route<
-  infer _Path,
-  infer _Params,
-  infer _Query,
-  infer _TData,
-  infer _TParent,
-  infer PParams,
-  infer PQuery,
-  infer PData
->
-  ? RouterContext<PParams, PQuery, PData>
-  : None;
+export type InferState<T> =
+  T extends Route<infer _Path, infer Params, infer Query, infer Data, infer _TParent>
+    ? ContextReader<Params, Query, Data>
+    : None;
+export type InferContext<T> =
+  T extends Route<
+    infer _Path,
+    infer _Params,
+    infer _Query,
+    infer _TData,
+    infer _TParent,
+    infer PParams,
+    infer PQuery,
+    infer PData
+  >
+    ? RouterContext<PParams, PQuery, PData>
+    : None;
 
-export type InferParams<T> = T extends Route<infer _Path, infer Params, infer _Query, infer _TData, infer _TParent>
-  ? Params
-  : None;
-export type InferQuery<T> = T extends Route<infer _Path, infer _Params, infer Query, infer _TData, infer _TParent>
-  ? Query
-  : None;
+export type InferParams<T> =
+  T extends Route<infer _Path, infer Params, infer _Query, infer _TData, infer _TParent> ? Params : None;
+export type InferQuery<T> =
+  T extends Route<infer _Path, infer _Params, infer Query, infer _TData, infer _TParent> ? Query : None;
 
 export type ExtractOptions<Params, Query> = Params extends None
   ? Query extends None
@@ -401,19 +407,20 @@ export type ExtractOptions<Params, Query> = Params extends None
     ? { params: Params }
     : { query: Query; params: Params };
 
-export type RedirectOptions<T> = T extends Route<
-  infer _Path,
-  infer Params,
-  infer Query,
-  infer _Data,
-  infer _Parent,
-  infer _Output,
-  infer _PParams,
-  infer _PQuery,
-  infer _PData
->
-  ? ExtractOptions<Params, Query>
-  : never;
+export type RedirectOptions<T> =
+  T extends Route<
+    infer _Path,
+    infer Params,
+    infer Query,
+    infer _Data,
+    infer _Parent,
+    infer _Output,
+    infer _PParams,
+    infer _PQuery,
+    infer _PData
+  >
+    ? ExtractOptions<Params, Query>
+    : never;
 
 export type NavigateParams<Params, Query> = Params extends None
   ? Query extends None
@@ -426,9 +433,10 @@ export type NavigateParams<Params, Query> = Params extends None
 /**
  * Navigation options for programmatic routing.
  */
-export type NavigateOptions<T> = T extends Route<infer Params, infer Query, infer _Data, infer _Parent>
-  ? NavigateParams<Params, Query>
-  : NavigateParams<None, None>;
+export type NavigateOptions<T> =
+  T extends Route<infer Params, infer Query, infer _Data, infer _Parent>
+    ? NavigateParams<Params, Query>
+    : NavigateParams<None, None>;
 
 export type RouteEntryValue = {
   type: RouteType;

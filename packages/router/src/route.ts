@@ -28,6 +28,7 @@ import type {
   RouteEntry,
   RouteExceptionRenderer,
   RouteIndexRenderer,
+  RouteMeta,
   RouteName,
   RouteOptions,
   RoutePath,
@@ -83,6 +84,8 @@ export class Route<
   PQueryParams = QueryParams,
   PData = Data,
 > {
+  #meta: RouteMeta = {};
+
   /** The name of this route */
   public readonly name: RouteName<Path>;
   /** The type of this route (static, dynamic, or wildcard) */
@@ -126,6 +129,14 @@ export class Route<
       PData,
       Output
     >;
+  }
+
+  /**
+   * Gets the metadata for this route.
+   * @returns {RouteMeta}
+   */
+  public get metadata(): RouteMeta {
+    return this.#meta;
   }
 
   /**
@@ -267,6 +278,44 @@ export class Route<
     for (const [key] of url.searchParams) {
       this.queryKeys.add(key);
     }
+  }
+
+  /**
+   * Updates the configuration options for this route.
+   * Useful for configuring generated routes (e.g. meta, cache).
+   *
+   * @param options - Partial route options to merge
+   * @returns This route instance for chaining
+   */
+  public config(options: Partial<RouteOptions<Path, Params, QueryParams>>): this {
+    Object.assign(this.options, { ...options });
+    return this;
+  }
+
+  /**
+   * Reads the live metadata object attached to this route.
+   *
+   * The returned object is the route's own meta storage — it reflects
+   * later merges (no snapshot), so manifests and menus always read current values.
+   *
+   * @returns The current metadata object.
+   */
+  public meta(): RouteMeta;
+
+  /**
+   * Merges partial metadata into this route's meta storage.
+   *
+   * Keys are typed via the app-augmented {@link RouteMeta} interface.
+   * Overwriting an existing key logs a warning during development.
+   *
+   * @param partial - The metadata keys to merge.
+   * @returns This route for chaining.
+   */
+  public meta(partial: RouteMeta): this;
+  public meta(partial?: RouteMeta): RouteMeta | this {
+    if (typeof partial === 'undefined') return this.#meta;
+    Object.assign(this.#meta, partial);
+    return this;
   }
 
   /**
