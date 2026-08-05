@@ -6,8 +6,8 @@ import {
   deriveRouteName,
   deriveSegment,
   type FileMap,
-  type FolderNode,
   flattenTree,
+  type FolderNode,
   GENERATED_MARKER,
   humanizeSegment,
   importSpecifier,
@@ -207,10 +207,9 @@ export function scaffoldForFile(opts: {
  */
 export function scaffoldAppTsx(opts: { framework: Framework }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  return `import { UIRouter } from '${pkg}';
-import type { AppEntry } from '${pkg}/ssr';
-import RootLayout from './pages/layout.tsx';
-import router from './router.ts';
+  return `import { type AppEntry, UIRouter } from '${pkg}';
+import RootLayout from './pages/layout.js';
+import router from './router.js';
 
 export default (({ url }) => <UIRouter router={router} root={RootLayout} url={url} />) satisfies AppEntry;
 `;
@@ -223,14 +222,16 @@ export function scaffoldClientTsx(opts: { framework: Framework }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
 
   if (opts.framework === 'solid') {
-    return `import { hydrate } from 'solid-js/web';
+    return `import { render } from 'solid-js/web';
 import App from './app.js';
 import router from './router.js';
 
 router
   .activate(window.location.href)
   .then(() => {
-    hydrate(() => <App />, document.getElementById('root')!);
+    const root = document.getElementById('root')!
+    root.innerHTML = '';
+    render(() => <App />, root);
   });
 `;
   }

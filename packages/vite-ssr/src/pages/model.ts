@@ -11,6 +11,9 @@ export type FileMap = {
   layoutMdx: string;
   route: string;
   constructor: string;
+  entry: string;
+  client: string;
+  workerEntry: string;
 };
 
 export const DEFAULT_FILE_MAP: FileMap = {
@@ -20,6 +23,9 @@ export const DEFAULT_FILE_MAP: FileMap = {
   layoutMdx: 'layout.mdx',
   route: 'route.ts',
   constructor: 'constructor.ts',
+  entry: 'app.tsx',
+  client: 'client.tsx',
+  workerEntry: 'worker.ts',
 };
 
 export type PageKind = 'tsx' | 'mdx';

@@ -5,8 +5,8 @@ import mdx from '@mdx-js/rollup';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import type { Plugin, PluginOption, ResolvedConfig, ViteDevServer } from 'vite';
-import { type AirImageOptions, airImage } from '../image.js';
-import { type AirWorkerOptions, airWorker } from '../worker.js';
+import { airImage, type AirImageOptions } from '../image.js';
+import { airWorker, type AirWorkerOptions } from '../worker.js';
 import type { Framework } from './generate.js';
 import { mdxAttachForFile } from './mdx.js';
 import { DEFAULT_FILE_MAP, type FileMap } from './model.js';
@@ -282,15 +282,14 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     },
 
     async transform(code, id) {
-      const normalizedId = id.split('?')[0];
-      const isAppEntry =
-        normalizedId.endsWith('.tsx') && (code.includes('hydrateRoot(') || code.includes('createRoot('));
-      const absWorkerFile = path.resolve(
-        config.root,
-        options.worker ? (options.worker.entry ?? 'src/worker.ts') : 'src/worker.ts'
-      );
+      const { client = DEFAULT_FILE_MAP.client, workerEntry = DEFAULT_FILE_MAP.workerEntry } = options.files ?? {};
+      const { entry: worker = `src/${workerEntry}` } = options.worker || {};
 
-      if (isAppEntry || normalizedId === absWorkerFile) {
+      const normalizedId = id.split('?')[0];
+      const absClientFile = path.resolve(config.root, 'src', client);
+      const absWorkerFile = path.resolve(config.root, worker);
+
+      if (normalizedId === absClientFile || normalizedId === absWorkerFile) {
         if (!code.includes(VIRTUAL_ROUTES)) {
           code += `\nimport '${VIRTUAL_ROUTES}';\n`;
         }
