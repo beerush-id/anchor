@@ -10,6 +10,17 @@ import { renderToString } from 'react-dom/server';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
 import type { AppShell, LegacySSRRenderer } from './types.js';
 
+/**
+ * Creates a legacy React SSR renderer function.
+ *
+ * Wraps route evaluation and server-side rendering of the application layout into an HTML string,
+ * supporting custom shell components and per-request rendering options.
+ *
+ * @param router - The application router instance
+ * @param RootLayout - The root route component layout rendered by the UI router
+ * @param defaultOptions - Default routing and server rendering options applied across invocations
+ * @returns A renderer function accepting request URLs or structured render options
+ */
 export function createSSR(
   router: Router,
   RootLayout: RouteComponent<AnyRoute>,
