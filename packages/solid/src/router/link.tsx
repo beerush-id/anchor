@@ -1,9 +1,9 @@
 import { type AnyType, derived } from '@anchorlib/core';
-import { createUrl } from '@anchorlib/router';
+import { createUrl, Route } from '@anchorlib/router';
 import type { JSX } from 'solid-js';
 import { splitProps } from 'solid-js';
 import { navigate } from './navigate.js';
-import type { AnyRoute, LinkProps } from './types.js';
+import type { AnyRoute, LinkProps, RouteComponent } from './types.js';
 
 type LinkComponent = <T>(props: LinkProps<T>) => JSX.Element;
 
@@ -34,10 +34,15 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
 
   const query = derived(() => toProps.query);
   const params = derived(() => toProps.params);
-  const href = derived(() => createUrl(allProps.href ?? props.to?.route.path ?? '/', params.value, query.value));
-  const fullMatch = derived(() => props.fullMatch ?? props.to?.route.isIndex);
+  const target = derived(() => {
+    const to = props.to;
+    if (!to) return undefined;
+    return to instanceof Route ? to : (to as RouteComponent<AnyRoute>).route;
+  });
+  const href = derived(() => createUrl(allProps.href ?? target.value?.path ?? '/', params.value, query.value));
+  const fullMatch = derived(() => props.fullMatch ?? target.value?.isIndex);
   const isActive = derived(() => {
-    const route = props.to?.route;
+    const route = target.value;
     if (!route) return false;
 
     if (route.active) return true;
@@ -62,7 +67,7 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
 
     const current = `${location.pathname}${location.search}`;
     if (current !== href.value) {
-      navigate(props.to?.route.path ?? href.value, {
+      navigate(target.value?.path ?? href.value, {
         query: query.value,
         params: params.value,
         replace: props.replace,
@@ -75,10 +80,10 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
   };
 
   const handleHover: JSX.EventHandler<HTMLAnchorElement, MouseEvent> = (e) => {
-    const { to } = props;
+    const route = target.value;
 
-    if (to && (props.preload === 'hover' || to.route.options.preloadMode === 'hover')) {
-      to.route.router.preload(href.value);
+    if (route && (props.preload === 'hover' || route.options.preloadMode === 'hover')) {
+      route.router.preload(href.value);
     }
 
     if (typeof props.onMouseEnter === 'function') {

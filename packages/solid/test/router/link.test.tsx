@@ -38,6 +38,15 @@ describe('Anchor Solid - Link Component', () => {
     expect(anchor.getAttribute('href')).toBe('/settings');
   });
 
+  it('renders correctly with a route object in `to`', () => {
+    const router = createRouter();
+    const coreRoute = router.route('/settings');
+
+    render(() => <Link to={coreRoute}>Settings</Link>);
+    const anchor = screen.getByText('Settings');
+    expect(anchor.getAttribute('href')).toBe('/settings');
+  });
+
   it('intercepts standard clicks and calls navigate', () => {
     const TypedLink = Link as Component<{ href: string; query: any; children: any }>;
     render(() => (

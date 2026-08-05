@@ -1,4 +1,4 @@
-import type { JSX } from 'solid-js';
+import type { Component, JSX } from 'solid-js';
 
 export type StateRef<T> = {
   value: T;
@@ -105,3 +105,4 @@ export type InputHTMLAttributes<E extends HTMLElement> = Omit<JSX.InputHTMLAttri
   onInput?: EventHandler<E, InputEvent>;
   oninput?: EventHandler<E, InputEvent>;
 };
+export type AppEntry = Component<{ url?: string }>;

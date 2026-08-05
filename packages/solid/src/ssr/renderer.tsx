@@ -6,7 +6,7 @@ import {
   type SSROptions,
   type SSRRenderOptions,
 } from '@anchorlib/ssr';
-import { renderToString } from 'solid-js/web';
+import { generateHydrationScript, renderToString } from 'solid-js/web';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
 import type { AppShell, LegacySSRRenderer } from './types.js';
 
@@ -54,8 +54,9 @@ export function createSSR(
         );
         /* v8 ignore end */
         const head = renderToString(() => [...headings().values()].map(({ Renderer }) => <Renderer />));
+        const hydration = generateHydrationScript();
 
-        return { html, head };
+        return { html, head: [hydration, head].join('\n') };
       },
       defaultOptions
     );

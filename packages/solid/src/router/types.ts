@@ -18,26 +18,21 @@ export type AnyRoute = Route<RoutePath, any, any, any, any>;
 
 export type LinkDynamicProps<T, Params, Query> = Params extends None
   ? Query extends None
-    ? { to?: RouteComponent<T> }
-    : { to: RouteComponent<T>; query?: Query }
+    ? { to?: T | RouteComponent<T> }
+    : { to: T | RouteComponent<T>; query?: Query }
   : Query extends None
-    ? { to: RouteComponent<T>; params: Params }
-    : { to: RouteComponent<T>; params: Params; query?: Query };
+    ? { to: T | RouteComponent<T>; params: Params }
+    : { to: T | RouteComponent<T>; params: Params; query?: Query };
 
 /**
  * Derives the required props for a Link component based on the target Route's params and query requirements.
  */
-export type ComposedLinkProps<T> = T extends IndexRoute<
-  infer _Path,
-  infer Params,
-  infer Query,
-  infer _Data,
-  infer _Parent
->
-  ? LinkDynamicProps<T, Params, Query>
-  : T extends Route<infer _Path, infer Params, infer Query, infer _Data, infer _Parent>
+export type ComposedLinkProps<T> =
+  T extends IndexRoute<infer _Path, infer Params, infer Query, infer _Data, infer _Parent>
     ? LinkDynamicProps<T, Params, Query>
-    : { to?: RouteComponent<T> };
+    : T extends Route<infer _Path, infer Params, infer Query, infer _Data, infer _Parent>
+      ? LinkDynamicProps<T, Params, Query>
+      : { to?: T | RouteComponent<T> };
 
 /**
  * Props for the Anchor Link component.
