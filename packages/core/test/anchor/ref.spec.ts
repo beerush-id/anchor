@@ -9,18 +9,18 @@ import {
   setStabilityDetector,
 } from '../../src/index.js';
 import {
-  derived,
   DerivedRef,
+  derived,
   destroyRef,
-  immutable,
   ImmutableRef,
+  immutable,
   isDerivedRef,
   isImmutableRef,
   isMutableRef,
   isSignal,
   isValueRef,
-  mutable,
   MutableRef,
+  mutable,
   signal,
 } from '../../src/reactive/ref.js';
 import { createStack, withStack } from '../../src/scope/stack.js';
@@ -205,6 +205,17 @@ describe('Anchor Core - Ref', () => {
       source.value = 15;
       expect(ref.value).toBe(30);
     });
+
+    it('should create a proxied derived reference using derived.as', () => {
+      const source = mutable(10);
+      const factory = (multiplier: number) => ({ total: source.value * multiplier });
+      const proxied = derived.as(factory, 5);
+
+      expect(proxied.total).toBe(50);
+
+      source.value = 20;
+      expect(proxied.total).toBe(100);
+    });
   });
 
   describe('signal function', () => {
@@ -230,7 +241,7 @@ describe('Anchor Core - Ref', () => {
       const sig = signal(42, true);
       expect(typeof sig).toBe('function');
       expect(sig()).toBe(42);
-      // @ts-ignore
+      // @ts-expect-error
       expect(sig.set).toBeUndefined();
     });
 
