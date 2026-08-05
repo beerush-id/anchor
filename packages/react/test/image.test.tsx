@@ -1,7 +1,7 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 import '../src/client/index';
+import { render } from '@testing-library/react';
 import type { RefObject } from 'react';
+import { describe, expect, it } from 'vitest';
 import { type AirImage, Image } from '../src/image.js';
 
 describe('Image Component', () => {
