@@ -55,6 +55,11 @@ export type AirPagesOptions = {
   markdown?: boolean | AirMdxOptions;
 
   /**
+   * Enable true static SSR by shipping zero JavaScript to the client.
+   */
+  noscript?: boolean;
+
+  /**
    * Worker configuration.
    * `false` to disable, omit for defaults.
    */
@@ -365,7 +370,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   }
 
   if (options.worker !== false) {
-    plugins.push(airWorker(options.worker));
+    plugins.push(airWorker({ noscript: options.noscript, ...options.worker }));
   }
 
   if (options.image !== false) {

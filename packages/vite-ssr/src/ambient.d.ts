@@ -7,6 +7,26 @@ declare module '*?airimg' {
   }
 
   export interface ImageTransform extends ImageMeta {
+    default: ImageMeta;
+    srcset: string;
+    sizes: Record<number, ImageMeta>;
+    [size: number]: ImageMeta;
+  }
+
+  const image: ImageTransform;
+  export default image;
+}
+
+declare module '*?asset' {
+  export interface ImageMeta {
+    src: string;
+    width: number;
+    height: number;
+    alt: string;
+  }
+
+  export interface ImageTransform extends ImageMeta {
+    default: ImageMeta;
     srcset: string;
     sizes: Record<number, ImageMeta>;
     [size: number]: ImageMeta;

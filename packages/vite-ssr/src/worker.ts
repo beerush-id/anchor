@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import { resolve } from 'node:path';
+import path, { resolve } from 'node:path';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
@@ -9,6 +9,11 @@ export type AirWorkerOptions = {
    * Defaults to 'src/worker.ts'.
    */
   entry?: string;
+
+  /**
+   * Enable true static SSR by shipping zero JavaScript to the client.
+   */
+  noscript?: boolean;
 
   /**
    * Whether to automatically remove the index.html file from the client build output
@@ -102,8 +107,26 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       resolvedConfig = config;
     },
 
+    transformIndexHtml(html, ctx) {
+      if (!options.noscript || !ctx.bundle) return;
+
+      const lines = html.split('\n');
+
+      // Remove js file from bundle if noscript option is true.
+      for (const file of Object.keys(ctx.bundle)) {
+        if (!file.endsWith('.js')) continue;
+        const i = lines.findIndex((l) => l.includes(file));
+        if (i > -1) {
+          lines.splice(i, 1);
+        }
+        delete ctx.bundle[file];
+      }
+
+      return lines.join('\n');
+    },
+
     closeBundle() {
-      if (options.removeIndexHtml === false) return;
+      if (!options.removeIndexHtml) return;
 
       const isSsr = Boolean(resolvedConfig.build.ssr);
       if (isSsr) {

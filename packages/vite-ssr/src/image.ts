@@ -28,7 +28,7 @@ export interface AirImageOptions {
 }
 
 export function airImage(options: AirImageOptions = {}): Plugin {
-  const { sizes = [128, 256, 512, 1024], format = 'webp', quality = 75, devEnabled } = options;
+  const { devEnabled } = options;
 
   let isBuild = false;
 
@@ -38,18 +38,22 @@ export function airImage(options: AirImageOptions = {}): Plugin {
     configResolved(config) {
       isBuild = config.command === 'build';
     },
-    async load(id) {
-      if (!id.includes('?airimg')) return null;
+    transform(code) {
+      if (!isImageAsset(code)) return null;
 
-      // Extract raw file path by removing all query parameters
-      const [filePath] = id.split('?');
+      const transformed = stripAndEncodeImportAttributes(code);
+      if (transformed === code) return null;
+
+      return { code: transformed, map: null };
+    },
+    async load(id) {
+      if (!isImageAsset(id)) return null;
+
+      const { filePath, sizes, format, quality, hasCustomSizes } = resolveImageConfig(id, options);
 
       try {
         const buffer = await fs.readFile(filePath);
 
-        // Wait, @napi-rs/image uses Transformer API. Let me check its API if possible.
-        // Usually it's: const transformer = new Transformer(buffer);
-        // const meta = await transformer.metadata();
         const transformer = new Transformer(buffer);
         const meta = await transformer.metadata();
 
@@ -63,6 +67,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
         let src = '';
         let srcset = '';
         const sizesMap: Record<number, { src: string; width: number; height: number; alt: string }> = {};
+        let defaultMeta: { src: string; width: number; height: number; alt: string } | null = null;
 
         if (isBuild || devEnabled !== false) {
           const inputSize = buffer.byteLength;
@@ -85,28 +90,33 @@ export function airImage(options: AirImageOptions = {}): Plugin {
             }
           };
 
-          // Generate optimized original buffer
-          const optStartTime = Date.now();
-          let optimizedBuffer: Buffer;
-          if (format === 'webp') optimizedBuffer = quality ? await transformer.webp(quality) : await transformer.webp();
-          else if (format === 'avif')
-            optimizedBuffer = quality ? await transformer.avif({ quality }) : await transformer.avif();
-          else if (format === 'png') optimizedBuffer = await transformer.png();
-          else optimizedBuffer = quality ? await transformer.jpeg(quality) : await transformer.jpeg();
+          // Generate optimized original buffer only when custom sizes are not explicitly supplied
+          if (!hasCustomSizes) {
+            const optStartTime = Date.now();
+            let optimizedBuffer: Buffer;
+            if (format === 'webp')
+              optimizedBuffer = quality ? await transformer.webp(quality) : await transformer.webp();
+            else if (format === 'avif')
+              optimizedBuffer = quality ? await transformer.avif({ quality }) : await transformer.avif();
+            else if (format === 'png') optimizedBuffer = await transformer.png();
+            else optimizedBuffer = quality ? await transformer.jpeg(quality) : await transformer.jpeg();
 
-          src = await emitOrCache(`${basename}.${format}`, optimizedBuffer);
+            src = await emitOrCache(`${basename}.${format}`, optimizedBuffer);
 
-          const optKbOut = (optimizedBuffer.byteLength / 1024).toFixed(2);
-          const reduction = ((1 - optimizedBuffer.byteLength / inputSize) * 100).toFixed(1);
-          const optTimeTaken = Date.now() - optStartTime;
-          console.log(
-            `[airImage] ${basename} (original) | ${kbIn}kb -> ${optKbOut}kb (-${reduction}%) | ${optTimeTaken}ms`
-          );
+            const optKbOut = (optimizedBuffer.byteLength / 1024).toFixed(2);
+            const reduction = ((1 - optimizedBuffer.byteLength / inputSize) * 100).toFixed(1);
+            const optTimeTaken = Date.now() - optStartTime;
+            console.log(
+              `[airImage] ${basename} (original) | ${kbIn}kb -> ${optKbOut}kb (-${reduction}%) | ${optTimeTaken}ms`
+            );
+
+            defaultMeta = { src, width, height, alt };
+          }
 
           // Generate srcset sizes
           const srcsetList: string[] = [];
           for (const size of sizes) {
-            if (size >= width) continue;
+            if (!hasCustomSizes && size >= width) continue;
 
             const ratio = size / width;
             const sizeHeight = Math.round(height * ratio);
@@ -135,17 +145,32 @@ export function airImage(options: AirImageOptions = {}): Plugin {
             sizesMap[size] = { src: sizeSrc, width: size, height: sizeHeight, alt };
           }
 
+          if (!defaultMeta) {
+            const generatedSizes = Object.keys(sizesMap)
+              .map(Number)
+              .sort((a, b) => a - b);
+            const lastSize = generatedSizes[generatedSizes.length - 1];
+            if (lastSize !== undefined && sizesMap[lastSize]) {
+              defaultMeta = sizesMap[lastSize];
+            } else {
+              defaultMeta = { src: `/@fs${filePath}`, width, height, alt };
+            }
+          }
+
+          src = defaultMeta.src;
           srcset = srcsetList.join(', ');
         } else {
           src = `/@fs${filePath}`;
           srcset = '';
+          defaultMeta = { src, width, height, alt };
         }
 
         const objStr = `{
   src: ${JSON.stringify(src)},
-  width: ${width},
-  height: ${height},
-  alt: ${JSON.stringify(alt)},
+  width: ${defaultMeta.width},
+  height: ${defaultMeta.height},
+  alt: ${JSON.stringify(defaultMeta.alt)},
+  default: { src: ${JSON.stringify(defaultMeta.src)}, width: ${defaultMeta.width}, height: ${defaultMeta.height}, alt: ${JSON.stringify(defaultMeta.alt)} },
   srcset: ${JSON.stringify(srcset)},
   sizes: {
 ${Object.entries(sizesMap)
@@ -167,7 +192,7 @@ export default new Proxy(img, {
       const req = parseInt(prop, 10);
       const available = Object.keys(target.sizes).map(Number).sort((a, b) => a - b);
       const match = available.find(s => s >= req);
-      const best = match ? target.sizes[match] : target;
+      const best = match ? target.sizes[match] : (target.default || target);
       
       return { 
         src: best.src, 
@@ -187,4 +212,77 @@ export default new Proxy(img, {
       }
     },
   };
+}
+
+function isImageAsset(str: string): boolean {
+  return str.includes('?airimg') || str.includes('?asset') || str.includes('&airimg') || str.includes('&asset');
+}
+
+function stripAndEncodeImportAttributes(code: string): string {
+  const attrRegex = /(['"])([^'"]*(?:\?|&)(?:airimg|asset)[^'"]*)\1\s*(?:with|assert)\s*\{([^}]+)\}/g;
+
+  return code.replace(attrRegex, (_match, quote, source: string, attributes: string) => {
+    const queryParams: string[] = [];
+    const pairRegex = /(?:['"]?([a-zA-Z0-9_-]+)['"]?)\s*:\s*(?:['"]([^'"]*)['"]|([0-9]+|true|false))/g;
+
+    let pairMatch: RegExpExecArray | null;
+    while ((pairMatch = pairRegex.exec(attributes)) !== null) {
+      const key = pairMatch[1];
+      const value = pairMatch[2] ?? pairMatch[3];
+      if (key && value !== undefined) {
+        queryParams.push(`${key}=${value}`);
+      }
+    }
+
+    if (queryParams.length === 0) {
+      return `${quote}${source}${quote}`;
+    }
+
+    const separator = source.includes('?') ? '&' : '?';
+    const rewrittenSource = `${source}${separator}${queryParams.join('&')}`;
+
+    return `${quote}${rewrittenSource}${quote}`;
+  });
+}
+
+function resolveImageConfig(id: string, options: AirImageOptions) {
+  const defaultSizes = options.sizes || [128, 256, 512, 1024];
+  const defaultFormat = options.format || 'webp';
+  const defaultQuality = options.quality ?? 75;
+
+  const questionIndex = id.indexOf('?');
+  const filePath = questionIndex !== -1 ? id.slice(0, questionIndex) : id;
+  const queryString = questionIndex !== -1 ? id.slice(questionIndex + 1) : '';
+  const params = new URLSearchParams(queryString);
+
+  let sizes = defaultSizes;
+  let hasCustomSizes = false;
+  const sizeParam = params.get('sizes');
+  if (sizeParam) {
+    const parsedSizes = sizeParam
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((s) => !Number.isNaN(s) && s > 0);
+    if (parsedSizes.length > 0) {
+      sizes = parsedSizes;
+      hasCustomSizes = true;
+    }
+  }
+
+  let format = defaultFormat;
+  const formatParam = params.get('format') as AirImageOptions['format'] | null;
+  if (formatParam && ['webp', 'png', 'jpeg', 'avif'].includes(formatParam)) {
+    format = formatParam;
+  }
+
+  let quality = defaultQuality;
+  const qualityParam = params.get('quality');
+  if (qualityParam) {
+    const parsedQuality = parseInt(qualityParam, 10);
+    if (!Number.isNaN(parsedQuality) && parsedQuality > 0 && parsedQuality <= 100) {
+      quality = parsedQuality;
+    }
+  }
+
+  return { filePath, sizes, format, quality, hasCustomSizes };
 }
