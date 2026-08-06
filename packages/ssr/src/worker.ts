@@ -10,9 +10,13 @@ import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import { createAssetResolver, resolveCacheControl } from './assets.js';
 import { SSR_ENV_KEY } from './context.js';
+import { createStatic } from './static.js';
 import type { AppWorkerOptions, SSRContextSeed, SSRRenderer, WsSender } from './types.js';
 
 export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWorkerOptions<E> = {}) {
+  const staticRes = createStatic(renderer.router, { ...options, adapter: options.cacheAdapter });
+  const defaultAssetResolver = createAssetResolver(options);
+
   return {
     options,
     async fetch(request: Request, env?: E) {
@@ -21,7 +25,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
         headTag = '<!--ssr-head-->',
         bodyTag = '<!--ssr-outlet-->',
         timeout,
-        resolveAsset = createAssetResolver(options),
+        resolveAsset = defaultAssetResolver,
         resolveContext,
         createResponse = createDefaultResponse,
       } = options;
@@ -36,6 +40,12 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
       try {
         const cookie = request.headers.get('cookie') ?? '';
         const url = new URL(request.url);
+
+        const cached = await staticRes.get(url, env);
+        if (cached) {
+          return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
+        }
+
         const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
         if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
@@ -69,6 +79,10 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           headers.set('Cache-Control', pageCache);
         }
 
+        if (!redirect && status === 200 && (!contentType || contentType === 'text/html')) {
+          await staticRes.set(url, body, env);
+        }
+
         return createResponse(new Response(redirect ? null : body, { status, headers }));
       } catch (error) {
         if (!isBrowser()) {
@@ -90,6 +104,9 @@ export function createFullWorker<E = AnyType>(
   renderer: SSRRenderer,
   options: AppWorkerOptions<E> = {}
 ) {
+  const staticRes = createStatic(renderer.router, { ...options, adapter: options.cacheAdapter });
+  const defaultAssetResolver = createAssetResolver(options);
+
   return {
     options,
     async fetch(request: Request, env?: E) {
@@ -98,7 +115,7 @@ export function createFullWorker<E = AnyType>(
         headTag = '<!--ssr-head-->',
         bodyTag = '<!--ssr-outlet-->',
         timeout,
-        resolveAsset = createAssetResolver(options),
+        resolveAsset = defaultAssetResolver,
         resolveContext,
         createResponse = createDefaultResponse,
       } = options;
@@ -113,6 +130,12 @@ export function createFullWorker<E = AnyType>(
       try {
         const cookie = request.headers.get('cookie') ?? '';
         const url = new URL(request.url);
+
+        const cached = await staticRes.get(url, env);
+        if (cached) {
+          return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
+        }
+
         const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
         if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
@@ -157,6 +180,10 @@ export function createFullWorker<E = AnyType>(
             const pageCache = resolveCacheControl(options.cache?.pages, url);
             if (pageCache && !redirect && status === 200) {
               headers.set('Cache-Control', pageCache);
+            }
+
+            if (!redirect && status === 200 && (!contentType || contentType === 'text/html')) {
+              await staticRes.set(url, body, env);
             }
 
             return new Response(redirect ? null : body, { status, headers });

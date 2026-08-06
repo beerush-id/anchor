@@ -965,3 +965,116 @@ describe('defaultAssetResolver', () => {
     expect(mockRenderer).toHaveBeenCalled();
   });
 });
+
+describe('worker static generation (SSG/ISG)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', undefined);
+    vi.stubGlobal('Bun', createMockBun());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('serves cached static page immediately without executing renderer on hit', async () => {
+    const bun = createMockBun();
+    vi.stubGlobal('Bun', bun);
+    await bun.write('/pages/about.html', '<html>cached page</html>');
+
+    const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
+    const renderer = Object.assign(vi.fn(), { router }) as unknown as SSRRenderer;
+
+    const worker = createWorker(renderer, { cacheDir: '/pages' });
+    const response = await worker.fetch(createRequest('http://localhost/about'));
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe('<html>cached page</html>');
+    expect(renderer).not.toHaveBeenCalled();
+  });
+
+  it('generates html and saves to static disk storage on ISG miss', async () => {
+    const bun = createMockBun();
+    vi.stubGlobal('Bun', bun);
+
+    const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
+    const renderer = Object.assign(
+      vi.fn(async () => ({
+        html: '<div>generated ISG content</div>',
+        head: '<title>ISG</title>',
+        status: 200,
+        cookies: [],
+      })),
+      { router }
+    ) as unknown as SSRRenderer;
+
+    const worker = createWorker(renderer, {
+      template: '<html><!--ssr-head--><!--ssr-outlet--></html>',
+      cacheDir: '/pages',
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/blog'));
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toBe('<html><title>ISG</title><div>generated ISG content</div></html>');
+    expect(renderer).toHaveBeenCalledTimes(1);
+
+    const savedFile = bun.file('/pages/blog.html');
+    expect(await savedFile.exists()).toBe(true);
+    expect(await savedFile.text()).toBe('<html><title>ISG</title><div>generated ISG content</div></html>');
+  });
+
+  it('applies worker page cache control header when serving cached static hits in createWorker', async () => {
+    const bun = createMockBun();
+    vi.stubGlobal('Bun', bun);
+    await bun.write('/pages/cache-test.html', '<html>cached html</html>');
+
+    const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
+    const renderer = Object.assign(vi.fn(), { router }) as unknown as SSRRenderer;
+
+    const worker = createWorker(renderer, {
+      cacheDir: '/pages',
+      cache: { pages: 'public, max-age=3600' },
+    });
+    const response = await worker.fetch(createRequest('http://localhost/cache-test'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=3600');
+    expect(await response.text()).toBe('<html>cached html</html>');
+  });
+
+  it('serves cached static hits with cache control headers in createFullWorker', async () => {
+    const bun = createMockBun();
+    vi.stubGlobal('Bun', bun);
+    await bun.write('/pages/full-test.html', '<html>full worker hit</html>');
+
+    const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
+    const renderer = Object.assign(vi.fn(), { router }) as unknown as SSRRenderer;
+
+    const httpRouter = { transport: { endpoint: '/irpc' } } as never;
+    const worker = createFullWorker(httpRouter, renderer, {
+      cacheDir: '/pages',
+      cache: { pages: 'public, max-age=7200' },
+    });
+    const response = await worker.fetch(createRequest('http://localhost/full-test'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=7200');
+    expect(await response.text()).toBe('<html>full worker hit</html>');
+    expect(renderer).not.toHaveBeenCalled();
+  });
+});
+
+function createMockBun() {
+  const store = new Map<string, string>();
+
+  return {
+    file: (path: string) => ({
+      exists: vi.fn(async () => store.has(path)),
+      text: vi.fn(async () => store.get(path)),
+    }),
+    write: vi.fn(async (path: string, content: string) => {
+      store.set(path, content);
+    }),
+  };
+}

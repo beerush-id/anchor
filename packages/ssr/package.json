@@ -24,6 +24,7 @@
     "@biomejs/biome": "catalog:",
     "@irpclib/http": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/node": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",

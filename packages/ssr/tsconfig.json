@@ -19,7 +19,8 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "types": ["@types/node", "@types/bun"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["tsdown.config.ts"]

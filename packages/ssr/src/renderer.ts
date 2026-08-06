@@ -25,7 +25,7 @@ export function createRenderer(
   renderView: SSRRenderView,
   defaultOptions?: SSROptions & Omit<RouterOptions, 'router'>
 ): SSRRenderer {
-  return ((options: SSRRenderOptions) => {
+  const renderer = ((options: SSRRenderOptions) => {
     const mergedOptions = options.options ?? defaultOptions;
 
     if (options.isolated) {
@@ -58,6 +58,10 @@ export function createRenderer(
       storage
     );
   }) as never;
+
+  Object.assign(renderer, { router, options: defaultOptions });
+
+  return renderer;
 }
 
 export async function ssrRenderToString(

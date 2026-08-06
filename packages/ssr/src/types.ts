@@ -1,6 +1,7 @@
 import type { AsyncKey, AsyncStore, AsyncValue } from '@anchorlib/core';
 import type { Router, SitemapConfig } from '@anchorlib/router';
 import type { HTTPRouter } from '@irpclib/http/router';
+import type { StaticAdapter } from './static.js';
 
 export type RouterOptions = {
   router: Router;
@@ -32,7 +33,10 @@ export type SSRRenderView = (options: {
   url: string;
 }) => { html: string; head: string } | Promise<{ html: string; head: string }>;
 
-export type SSRRenderer = (options: SSRRenderOptions) => Promise<SSROutput>;
+export type SSRRenderer = ((options: SSRRenderOptions) => Promise<SSROutput>) & {
+  router: Router;
+  options: SSRRenderOptions;
+};
 
 export type AssetResolver<E> = (request: Request, url: URL, env?: E) => Promise<Response | undefined>;
 
@@ -76,6 +80,8 @@ export type SSROptions = {
 };
 
 export type WorkerOptions<E> = {
+  cacheDir?: string;
+  cacheAdapter?: StaticAdapter<E>;
   resolveAsset?: AssetResolver<E>;
   resolveContext?: (request: Request, url: URL, env?: E) => SSRContextSeed | Promise<SSRContextSeed>;
   createResponse?: (response: Response) => Response;

@@ -1,7 +1,7 @@
 import type { AnyType } from '@anchorlib/core';
-import type { AssetResolver, CacheControl, CacheControlInit, WorkerOptions } from './types.js';
+import type { AppWorkerOptions, AssetResolver, CacheControl, CacheControlInit } from './types.js';
 
-export function createAssetResolver<E = AnyType>(options: WorkerOptions<E>): AssetResolver<E> {
+export function createAssetResolver<E = AnyType>(options: AppWorkerOptions<E>): AssetResolver<E> {
   const isProd = typeof process !== 'undefined' && process.env.NODE_ENV === 'production';
   const defaultAssetCache = isProd ? 'public, max-age=31536000, immutable' : 'no-cache';
 
