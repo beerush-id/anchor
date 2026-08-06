@@ -18,8 +18,11 @@ export type None = Record<string, never>;
  * Meta is set at runtime with `route.meta(partial)` and read back with `route.meta()`.
  * File-routing MDX pages receive their meta from frontmatter keys automatically.
  */
-// biome-ignore lint/suspicious/noEmptyInterface: Expect overrides.
-export interface RouteMeta {}
+declare global {
+  interface AirRouteMeta {}
+}
+
+export interface RouteMeta extends AirRouteMeta {}
 
 /** Maps parameter type strings to their TypeScript types */
 export type ParamTypeMap = {
