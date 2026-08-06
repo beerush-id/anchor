@@ -60,6 +60,12 @@ export type AirPagesOptions = {
   noscript?: boolean;
 
   /**
+   * Whether to enable automatic static site generation (SSG) during server build.
+   * Defaults to true (`false` to disable).
+   */
+  ssg?: boolean;
+
+  /**
    * Worker configuration.
    * `false` to disable, omit for defaults.
    */
@@ -415,7 +421,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   }
 
   if (options.worker !== false) {
-    plugins.push(airWorker({ noscript: options.noscript, ...options.worker }));
+    plugins.push(airWorker({ noscript: options.noscript, ssg: options.ssg, ...options.worker }));
   }
 
   if (options.image !== false) {

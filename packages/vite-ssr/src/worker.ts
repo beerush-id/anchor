@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import path, { resolve } from 'node:path';
+import { resolve } from 'node:path';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
@@ -27,6 +27,12 @@ export type AirWorkerOptions = {
    * Defaults to true.
    */
   ignoreDotPath?: boolean;
+
+  /**
+   * Whether to automatically run SSG during build for routes with static generation enabled.
+   * Defaults to true (set to false to disable).
+   */
+  ssg?: boolean;
 };
 
 export function airWorker(options: AirWorkerOptions = {}): Plugin {
@@ -125,17 +131,21 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       return lines.join('\n');
     },
 
-    closeBundle() {
-      if (!options.removeIndexHtml) return;
-
+    async closeBundle() {
       const isSsr = Boolean(resolvedConfig.build.ssr);
       if (isSsr) {
-        const indexPath = resolve(resolvedConfig.root, 'dist/client/index.html');
-        try {
-          if (existsSync(indexPath)) {
-            unlinkSync(indexPath);
-          }
-        } catch (_e) {}
+        if (options.removeIndexHtml !== false) {
+          const indexPath = resolve(resolvedConfig.root, 'dist/client/index.html');
+          try {
+            if (existsSync(indexPath)) {
+              unlinkSync(indexPath);
+            }
+          } catch (_e) {}
+        }
+
+        if (options.ssg !== false) {
+          await runSsrWorkerSsg(resolvedConfig);
+        }
       }
     },
 
@@ -219,11 +229,14 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
               return next();
             }
 
-            if (worker.options && !worker.options.template) {
-              const fs = await import('node:fs/promises');
-              const path = await import('node:path');
-              const rawHtml = await fs.readFile(path.resolve(process.cwd(), 'index.html'), 'utf-8');
-              worker.options.template = await server.transformIndexHtml(urlPath, rawHtml);
+            if (worker.options) {
+              worker.options.devMode = true;
+              if (!worker.options.template) {
+                const fs = await import('node:fs/promises');
+                const path = await import('node:path');
+                const rawHtml = await fs.readFile(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+                worker.options.template = await server.transformIndexHtml(urlPath, rawHtml);
+              }
             }
 
             const response = await worker.fetch(request);
@@ -236,4 +249,26 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       };
     },
   };
+}
+
+async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
+  const workerPath = resolve(config.root, config.build.outDir, 'worker.js');
+  if (!existsSync(workerPath)) return;
+
+  try {
+    const { pathToFileURL } = await import('node:url');
+    const workerModule = await import(pathToFileURL(workerPath).href);
+    const worker = workerModule.default ?? workerModule;
+
+    if (!worker?.router || typeof worker.fetch !== 'function') return;
+
+    for (const [path, info] of worker.router.entries()) {
+      if (info.route?.options?.static) {
+        const request = new Request(`http://localhost${path}`);
+        await worker.fetch(request);
+      }
+    }
+  } catch (e) {
+    config.logger.warn(`[air-worker] SSG generation failed during build: ${e}`);
+  }
 }
