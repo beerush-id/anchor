@@ -15,7 +15,6 @@ export type MetadataCacheEntry = {
   content: string;
   itemPath: string;
   varName: string;
-  fromPath: string;
 };
 
 export type MetadataCache = Map<string, MetadataCacheEntry>;
@@ -33,9 +32,8 @@ export function generateMetadata(opts: {
   const { root, metadataDir, cache } = opts;
   const pagesDir = opts.pagesDir ?? root.dir;
   const files: GeneratedFile[] = [];
-  const indexFile = path.join(metadataDir, 'index.ts');
 
-  const entries: { path: string; varName: string; fromPath: string }[] = [];
+  const entries: { path: string; varName: string; filePath: string }[] = [];
 
   for (const node of flattenTree(root)) {
     for (const mdxFile of node.mdxFiles) {
@@ -57,11 +55,10 @@ export function generateMetadata(opts: {
             const isPageOrLayout = fileName === 'page' || fileName === 'layout';
             const itemPath = isPageOrLayout ? canonicalPath(nodeRel) : canonicalPath(relPath);
             const varName = `${derivePrefix(relPath) || 'root'}Meta`;
-            const fromPath = importSpecifier(indexFile, generated.filePath);
             entries.push({
               path: itemPath.replace(/\(|\)/g, ''),
               varName,
-              fromPath,
+              filePath: generated.filePath,
             });
           }
           continue;
@@ -72,25 +69,49 @@ export function generateMetadata(opts: {
       entries.push({
         path: entry.itemPath,
         varName: entry.varName,
-        fromPath: entry.fromPath,
+        filePath: entry.filePath,
       });
     }
   }
 
-  entries.sort((a, b) => a.fromPath.localeCompare(b.fromPath));
+  const indexDirs = new Set<string>();
+  indexDirs.add(metadataDir);
 
-  const imports = entries.map((entry) => `import ${entry.varName} from '${entry.fromPath}';`);
-  const lines = [
-    GENERATED_MARKER,
-    ...imports,
-    '',
-    'export default [',
-    ...entries.map((entry) => `  { path: '${entry.path}', meta: ${entry.varName} },`),
-    '];',
-    '',
-  ];
+  for (const node of flattenTree(root)) {
+    const relDir = path.relative(pagesDir, node.dir);
+    if (relDir && relDir !== '.') {
+      indexDirs.add(path.join(metadataDir, relDir));
+    }
+  }
 
-  files.push({ filePath: indexFile, content: lines.join('\n') });
+  for (const targetDir of indexDirs) {
+    const indexPath = path.join(targetDir, 'index.ts');
+    const targetNormalized = targetDir.replace(/\\/g, '/');
+    const dirPrefix = targetNormalized.endsWith('/') ? targetNormalized : `${targetNormalized}/`;
+
+    const items = entries
+      .filter((e) => targetDir === metadataDir || e.filePath.replace(/\\/g, '/').startsWith(dirPrefix))
+      .map((entry) => ({
+        ...entry,
+        fromPath: importSpecifier(indexPath, entry.filePath),
+      }))
+      .sort((a, b) => a.fromPath.localeCompare(b.fromPath));
+
+    if (items.length === 0 && targetDir !== metadataDir) continue;
+
+    const imports = items.map((item) => `import ${item.varName} from '${item.fromPath}';`);
+    const lines = [
+      GENERATED_MARKER,
+      ...imports,
+      '',
+      'export default [',
+      ...items.map((item) => `  { path: '${item.path}', meta: ${item.varName} },`),
+      '];',
+      '',
+    ];
+
+    files.push({ filePath: indexPath, content: lines.join('\n') });
+  }
 
   return files;
 }
@@ -132,7 +153,6 @@ export function generateSingleMetadata(opts: {
   const isPageOrLayout = fileName === 'page' || fileName === 'layout';
   const itemPath = isPageOrLayout ? canonicalPath(nodeRel) : canonicalPath(relPath);
   const varName = `${derivePrefix(relPath) || 'root'}Meta`;
-  const fromPath = importSpecifier(indexFile, targetFile);
 
   if (cache) {
     cache.set(absPath, {
@@ -140,7 +160,6 @@ export function generateSingleMetadata(opts: {
       content: moduleContent,
       itemPath: itemPath.replace(/\(|\)/g, ''),
       varName,
-      fromPath,
     });
   }
 

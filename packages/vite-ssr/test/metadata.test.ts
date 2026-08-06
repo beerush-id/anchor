@@ -58,6 +58,8 @@ describe('mdx metadata generator', () => {
     expect(paths).toContain(fixturePath(dir, 'metadata/page.ts'));
     expect(paths).toContain(fixturePath(dir, 'metadata/_.ts'));
     expect(paths).toContain(fixturePath(dir, 'metadata/index.ts'));
+    expect(paths).toContain(fixturePath(dir, 'metadata/blogs/index.ts'));
+    expect(paths).toContain(fixturePath(dir, 'metadata/docs/index.ts'));
 
     const testPostFile = generated.find((f) => f.filePath === fixturePath(dir, 'metadata/blogs/[slug]/test.ts'));
     expect(testPostFile?.content).toContain('export const meta = {');
@@ -73,6 +75,10 @@ describe('mdx metadata generator', () => {
     expect(indexFile?.content).toContain("{ path: '/docs', meta: docsPageMeta }");
     expect(indexFile?.content).toContain("{ path: '/', meta: pageMeta }");
     expect(indexFile?.content).toContain("{ path: '/_', meta: rootMeta }");
+
+    const blogsIndexFile = generated.find((f) => f.filePath === fixturePath(dir, 'metadata/blogs/index.ts'));
+    expect(blogsIndexFile?.content).toContain("import blogsDynamicTestMeta from './[slug]/test.js';");
+    expect(blogsIndexFile?.content).toContain("{ path: '/blogs/:slug/test', meta: blogsDynamicTestMeta }");
   });
 
   it('handles single file generation, read failures, and cache utilization', () => {
