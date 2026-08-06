@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import * as acorn from 'acorn';
 import { afterEach, describe, expect, it } from 'vitest';
-import { generateManifest, generateRouteFiles, scaffoldForFile, scaffoldPageTsx } from '../src/pages/generate.js';
+import { generateRouteFiles } from '../src/pages/generate.js';
+import { generateManifest } from '../src/pages/manifest.js';
 import { mdxAttachForFile } from '../src/pages/mdx.js';
 import { derivePrefix, humanizeSegment, importSpecifier, isPageFile, scanPages } from '../src/pages/model.js';
+import { scaffoldForFile, scaffoldPageTsx } from '../src/pages/scaffold.js';
 import { cleanFixture, fixturePath, makeFixture, removeFixture } from './fixture.js';
 import { makeSync } from './make-sync.js';
 

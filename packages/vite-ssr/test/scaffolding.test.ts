@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Framework, scaffoldForFile } from '../src/pages/generate.js';
+import type { Framework } from '../src/pages/generate.js';
 import { findFolder, scanPages } from '../src/pages/model.js';
+import { scaffoldForFile } from '../src/pages/scaffold.js';
 import { cleanFixture, fixtureExists, fixturePath, makeFixture, readFixture } from './fixture.js';
 import { makeSync } from './make-sync.js';
 

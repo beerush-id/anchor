@@ -48,6 +48,8 @@ export type FolderNode = {
   route: boolean;
   /** `constructor.ts` present (if irpc is enabled). */
   irpc: boolean;
+  /** All `.mdx` files discovered inside this directory. */
+  mdxFiles: string[];
   /** Child folders kept in the routable tree (empty branches are pruned). */
   children: FolderNode[];
 };
@@ -55,7 +57,8 @@ export type FolderNode = {
 /**
  * Tells whether a file is a page file relevant to the file router.
  */
-export function isPageFile(file: string, files: FileMap = DEFAULT_FILE_MAP): boolean {
+export function isPageFile(file: string, optsFiles: Partial<FileMap> = DEFAULT_FILE_MAP): boolean {
+  const files = { ...DEFAULT_FILE_MAP, ...optsFiles };
   const PAGE_FILES = new Set([files.page, files.pageMdx, files.layout, files.layoutMdx]);
   return PAGE_FILES.has(path.basename(file));
 }
@@ -68,12 +71,17 @@ export function isPageFile(file: string, files: FileMap = DEFAULT_FILE_MAP): boo
  *
  * @param pagesDir - Absolute path of the pages directory.
  * @param irpc - Whether to track `function.ts` and `constructor.ts`.
- * @param files - The file name mapping.
+ * @param optsFiles - The file name mapping.
  * @returns The root folder node.
  */
-export function scanPages(pagesDir: string, irpc?: boolean, files: FileMap = DEFAULT_FILE_MAP): FolderNode {
+export function scanPages(
+  pagesDir: string,
+  irpc?: boolean,
+  optsFiles: Partial<FileMap> = DEFAULT_FILE_MAP
+): FolderNode {
+  const files = { ...DEFAULT_FILE_MAP, ...optsFiles };
   const isRoutable = (node: FolderNode): boolean => {
-    return Boolean(node.page || node.layout || node.irpc || node.children.length);
+    return Boolean(node.page || node.layout || node.irpc || node.mdxFiles.length || node.children.length);
   };
 
   const build = (dir: string, rel: string, segment: string): FolderNode => {
@@ -84,6 +92,7 @@ export function scanPages(pagesDir: string, irpc?: boolean, files: FileMap = DEF
       layout: false,
       route: false,
       irpc: false,
+      mdxFiles: [],
       children: [],
     };
 
@@ -102,6 +111,9 @@ export function scanPages(pagesDir: string, irpc?: boolean, files: FileMap = DEF
       if (entry.isDirectory()) {
         node.children.push(build(abs, rel ? `${rel}/${entry.name}` : entry.name, entry.name));
       } else if (entry.isFile()) {
+        if (entry.name.endsWith('.mdx')) {
+          node.mdxFiles.push(entry.name);
+        }
         if (entry.name === files.page) {
           node.page = 'tsx';
         } else if (entry.name === files.pageMdx) {
@@ -118,6 +130,7 @@ export function scanPages(pagesDir: string, irpc?: boolean, files: FileMap = DEF
       }
     }
 
+    node.mdxFiles.sort();
     node.children = node.children.filter(isRoutable);
 
     return node;

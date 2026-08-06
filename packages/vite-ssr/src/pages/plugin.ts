@@ -76,6 +76,18 @@ export type AirPagesOptions = {
    * `false` to disable, auto-detected from worker file by default.
    */
   irpc?: boolean;
+
+  /**
+   * Whether to generate route manifest in `.airstack/manifest`.
+   * Defaults to true (`false` to disable).
+   */
+  manifest?: boolean;
+
+  /**
+   * Whether to generate MDX metadata in `.airstack/metadata`.
+   * Defaults to true (`false` to disable).
+   */
+  metadata?: boolean;
 };
 
 const VIRTUAL_ROUTES = 'virtual:air/routes';
@@ -102,7 +114,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   let absAppDir = '';
   let absAirStackDir = '';
   let sync: PagesSync;
-  let files: FileMap;
+  let files: FileMap = { ...DEFAULT_FILE_MAP, ...options.files };
   let pageFileNames: Set<string>;
   let irpcFileNames: Set<string>;
 
@@ -123,11 +135,12 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       const base = path.basename(file);
       if (pageFileNames?.has(base)) return true;
       if (irpcEnabled && irpcFileNames?.has(base)) return true;
+      if (options.metadata !== false && file.endsWith('.mdx')) return true;
       return false;
     }
     if (absAppDir && path.dirname(file) === absAppDir) {
       const base = path.basename(file);
-      return base === 'app.tsx' || base === 'client.tsx' || base === 'worker.ts';
+      return base === files.entry || base === files.client || base === files.workerEntry;
     }
     return false;
   };
@@ -138,10 +151,10 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     config() {
       return {
         optimizeDeps: {
-          exclude: ['@airstack/manifest'],
+          exclude: ['@airstack/manifest', '@airstack/metadata'],
         },
         ssr: {
-          noExternal: ['@airstack/manifest'],
+          noExternal: ['@airstack/manifest', '@airstack/metadata'],
         },
       };
     },
@@ -155,7 +168,9 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
       const pagesDir = options.pagesDir ?? 'src/pages';
       const routerFile = options.routerFile ?? 'src/router.ts';
-      const workerFile = options.worker ? (options.worker.entry ?? 'src/worker.ts') : 'src/worker.ts';
+      const workerFile = options.worker
+        ? (options.worker.entry ?? `src/${files.workerEntry}`)
+        : `src/${files.workerEntry}`;
 
       absPagesDir = path.resolve(config.root, pagesDir);
       const absRouterFile = path.resolve(config.root, routerFile);
@@ -183,37 +198,61 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
       if (!fs.existsSync(absPagesDir)) {
         fs.mkdirSync(absPagesDir, { recursive: true });
+        const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
         fs.writeFileSync(
           path.join(absPagesDir, files.layout),
-          `import { page } from '@anchorlib/${framework}';\nimport { rootRoute } from './route.js';\n\nexport default page(rootRoute).render(({ children }) => children);\n`,
+          `import { page } from '@anchorlib/${framework}';\nimport { rootRoute } from '${routeMod}';\n\nexport default page(rootRoute).render(({ children }) => children);\n`,
           'utf-8'
         );
         fs.writeFileSync(
           path.join(absPagesDir, files.page),
-          `import { page } from '@anchorlib/${framework}';\nimport { indexRoute } from './route.js';\n\nexport default page(indexRoute).render(() => (\n  <>\n    <h1>Welcome to AIR Stack</h1>\n    <p>This is your generated home page.</p>\n  </>\n));\n`,
+          `import { page } from '@anchorlib/${framework}';\nimport { indexRoute } from '${routeMod}';\n\nexport default page(indexRoute).render(() => (\n  <>\n    <h1>Welcome to AIR Stack</h1>\n    <p>This is your generated home page.</p>\n  </>\n));\n`,
           'utf-8'
         );
       }
 
       absAirStackDir = path.resolve(config.root, '.airstack');
       const manifestDir = path.join(absAirStackDir, 'manifest');
+      const metadataDir = path.join(absAirStackDir, 'metadata');
 
-      fs.mkdirSync(manifestDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(manifestDir, 'package.json'),
-        JSON.stringify(
-          {
-            name: '@airstack/manifest',
-            type: 'module',
-            exports: {
-              '.': './index.ts',
+      if (options.manifest !== false) {
+        fs.mkdirSync(manifestDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(manifestDir, 'package.json'),
+          JSON.stringify(
+            {
+              name: '@airstack/manifest',
+              type: 'module',
+              exports: {
+                '.': './index.ts',
+              },
             },
-          },
-          null,
-          2
-        ),
-        'utf-8'
-      );
+            null,
+            2
+          ),
+          'utf-8'
+        );
+      }
+
+      if (options.metadata !== false) {
+        fs.mkdirSync(metadataDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(metadataDir, 'package.json'),
+          JSON.stringify(
+            {
+              name: '@airstack/metadata',
+              type: 'module',
+              exports: {
+                '.': './index.ts',
+                './*': './*.ts',
+              },
+            },
+            null,
+            2
+          ),
+          'utf-8'
+        );
+      }
 
       const nodeModulesDir = path.resolve(config.root, 'node_modules');
       const nodeModulesAirStack = path.join(nodeModulesDir, '@airstack');
@@ -255,6 +294,9 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         pagesDir: absPagesDir,
         routerFile: absRouterFile,
         manifestDir,
+        manifest: options.manifest,
+        metadataDir,
+        metadata: options.metadata,
         framework,
         scaffold: options.scaffold,
         irpc: irpcEnabled,
@@ -330,14 +372,17 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
       server.watcher.on('add', (file) => {
         if (!isWatched(file)) return;
-        const changed = sync.refresh();
-        sync.scaffoldFile(file);
-        if (changed) invalidateVirtual(server);
+        if (sync.onAdd(file)) invalidateVirtual(server);
+      });
+
+      server.watcher.on('change', (file) => {
+        if (!isWatched(file)) return;
+        if (sync.onChange(file)) invalidateVirtual(server);
       });
 
       server.watcher.on('unlink', (file) => {
         if (!isWatched(file)) return;
-        if (sync.refresh()) invalidateVirtual(server);
+        if (sync.onUnlink(file)) invalidateVirtual(server);
       });
 
       const onDir = (dir: string) => {

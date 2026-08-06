@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { type Framework, generateManifest, generateRouteFiles, scaffoldForFile } from './generate.js';
+import { type Framework, generateRouteFiles } from './generate.js';
+import { generateManifest } from './manifest.js';
+import { generateMetadata, generateSingleMetadata, type MetadataCache } from './metadata.js';
 import { DEFAULT_FILE_MAP, type FileMap, type FolderNode, findFolder, GENERATED_MARKER, scanPages } from './model.js';
+import { scaffoldForFile } from './scaffold.js';
 
 export type PagesSyncOptions = {
   /** Absolute pages directory. */
@@ -10,7 +13,14 @@ export type PagesSyncOptions = {
   routerFile: string;
 
   /** Absolute output directory for generated manifest (.airstack/manifest). */
-  manifestDir: string;
+  manifestDir?: string;
+  /** Whether manifest generation is enabled. Defaults to true. */
+  manifest?: boolean;
+  /** Absolute output directory for generated metadata (.airstack/metadata). */
+  metadataDir?: string;
+  /** Whether metadata generation is enabled. Defaults to true. */
+  metadata?: boolean;
+  /** Framework to use (react/solid) */
   framework: Framework;
   /** Whether to scaffold empty page files. Defaults to true. */
   scaffold?: boolean;
@@ -19,7 +29,7 @@ export type PagesSyncOptions = {
   /** Called during a refresh when the router file does not exist. */
   onRouterMissing?: () => void;
   /** Configurable file names. */
-  files?: FileMap;
+  files?: Partial<FileMap>;
 };
 
 /**
@@ -29,7 +39,8 @@ export type PagesSyncOptions = {
  */
 export function createPagesSync(opts: PagesSyncOptions) {
   const scaffoldEnabled = opts.scaffold !== false;
-  const files = opts.files || DEFAULT_FILE_MAP;
+  const files: FileMap = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const metadataCache: MetadataCache = new Map();
   let tree = scanPages(opts.pagesDir, opts.irpc, files);
 
   /** Rescans the tree and applies all generation diffs. Returns true if files changed. */
@@ -40,7 +51,7 @@ export function createPagesSync(opts: PagesSyncOptions) {
     if (scaffoldEnabled) {
       scaffoldAll0ByteFiles(tree);
       const appDir = path.dirname(opts.routerFile);
-      for (const file of ['app.tsx', 'client.tsx', 'worker.ts']) {
+      for (const file of [files.entry, files.client, files.workerEntry]) {
         scaffoldFile(path.join(appDir, file));
       }
     }
@@ -52,6 +63,7 @@ export function createPagesSync(opts: PagesSyncOptions) {
     const routeFiles = generateRouteFiles({
       root: tree,
       routerFile: opts.routerFile,
+      files,
     });
 
     for (const file of routeFiles) {
@@ -71,17 +83,71 @@ export function createPagesSync(opts: PagesSyncOptions) {
       }
     }
 
-    const manifestFiles = generateManifest({
-      root: tree,
-      manifestDir: opts.manifestDir,
-      framework: opts.framework,
-    });
+    if (opts.manifest !== false && opts.manifestDir) {
+      const manifestFiles = generateManifest({
+        root: tree,
+        manifestDir: opts.manifestDir,
+        framework: opts.framework,
+        files,
+      });
 
-    for (const file of manifestFiles) {
-      if (writeIfChanged(file.filePath, file.content)) changed = true;
+      for (const file of manifestFiles) {
+        if (writeIfChanged(file.filePath, file.content)) changed = true;
+      }
+    }
+
+    if (opts.metadata !== false && opts.metadataDir) {
+      const metadataFiles = generateMetadata({
+        root: tree,
+        metadataDir: opts.metadataDir,
+        pagesDir: opts.pagesDir,
+        cache: metadataCache,
+      });
+
+      const validPaths = new Set(metadataFiles.map((f) => f.filePath));
+      for (const file of metadataFiles) {
+        if (writeIfChanged(file.filePath, file.content)) changed = true;
+      }
+      if (cleanupObsoleteFiles(opts.metadataDir, validPaths)) changed = true;
     }
 
     return changed;
+  }
+
+  /** Handles localized content modification without rescanning the directory or touching unrelated files. */
+  function onChange(file: string): boolean {
+    if (opts.metadata !== false && opts.metadataDir && file.endsWith('.mdx') && file.startsWith(opts.pagesDir)) {
+      const generated = generateSingleMetadata({
+        absPath: file,
+        pagesDir: opts.pagesDir,
+        metadataDir: opts.metadataDir,
+        cache: metadataCache,
+      });
+      if (generated && writeIfChanged(generated.filePath, generated.content)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Handles new file creation with localized scaffolding and cache-assisted directory synchronization. */
+  function onAdd(file: string): boolean {
+    scaffoldFile(file);
+    return refresh();
+  }
+
+  /** Handles localized file deletion, cleaning cached metadata before updating index manifests. */
+  function onUnlink(file: string): boolean {
+    if (opts.metadata !== false && opts.metadataDir && file.endsWith('.mdx') && file.startsWith(opts.pagesDir)) {
+      const cached = metadataCache.get(file);
+      if (cached) {
+        try {
+          fs.unlinkSync(cached.filePath);
+        } catch {}
+        metadataCache.delete(file);
+      }
+    }
+    return refresh();
   }
 
   /**
@@ -93,7 +159,7 @@ export function createPagesSync(opts: PagesSyncOptions) {
     if (!scaffoldEnabled) return;
 
     const base = path.basename(file);
-    const isAppEntry = base === 'app.tsx' || base === 'client.tsx' || base === 'worker.ts';
+    const isAppEntry = base === files.entry || base === files.client || base === files.workerEntry;
 
     let shouldWrite = false;
     try {
@@ -141,6 +207,9 @@ export function createPagesSync(opts: PagesSyncOptions) {
 
   return {
     refresh,
+    onChange,
+    onAdd,
+    onUnlink,
     scaffoldFile,
     get tree() {
       return tree;
@@ -149,3 +218,29 @@ export function createPagesSync(opts: PagesSyncOptions) {
 }
 
 export type PagesSync = ReturnType<typeof createPagesSync>;
+
+function cleanupObsoleteFiles(dir: string, keepPaths: Set<string>): boolean {
+  let changed = false;
+  if (!fs.existsSync(dir)) return changed;
+
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === 'package.json') continue;
+    const absPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (cleanupObsoleteFiles(absPath, keepPaths)) changed = true;
+      try {
+        if (fs.readdirSync(absPath).length === 0) {
+          fs.rmdirSync(absPath);
+        }
+      } catch {}
+    } else if (entry.isFile() && !keepPaths.has(absPath)) {
+      try {
+        fs.unlinkSync(absPath);
+        changed = true;
+      } catch {}
+    }
+  }
+
+  return changed;
+}

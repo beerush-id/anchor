@@ -43,13 +43,14 @@ export async function mdxAttachForFile(opts: {
   /** The current scanned folder tree. */
   tree: FolderNode;
   framework: Framework;
-  files?: FileMap;
+  files?: Partial<FileMap>;
   /** Complete compiled MDX code string from @mdx-js/rollup to unwrap and transform. */
   code: string;
   /** ESTree parser callback, typically `this.parse` from Rollup plugin context. */
   parse: (code: string) => AnyType | Promise<AnyType>;
 }): Promise<string | undefined> {
-  const { file, pagesDir, tree, framework, files = DEFAULT_FILE_MAP, code, parse } = opts;
+  const { file, pagesDir, tree, framework, code, parse } = opts;
+  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
 
   if (!file.endsWith('.mdx')) return undefined;
 
@@ -65,7 +66,7 @@ export async function mdxAttachForFile(opts: {
   // nothing in that folder if this is a page.mdx.
   if (base === files.pageMdx && folder.page !== 'mdx') return undefined;
 
-  const routeImport = './route.js';
+  const routeImport = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
 
   // For layout.mdx, it attaches to the folder's main route.
   // For page.mdx, it attaches to the routeExportForFolder (which may be indexRoute).

@@ -1,6 +1,7 @@
 import * as acorn from 'acorn';
 import { afterEach, describe, expect, it } from 'vitest';
-import { generateManifest, generateRouteFiles } from '../src/pages/generate.js';
+import { generateRouteFiles } from '../src/pages/generate.js';
+import { generateManifest } from '../src/pages/manifest.js';
 import { mdxAttachForFile } from '../src/pages/mdx.js';
 import { scanPages } from '../src/pages/model.js';
 import { cleanFixture, fixturePath, makeFixture } from './fixture.js';

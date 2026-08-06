@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { generateManifest } from '../src/pages/generate.js';
+import { generateManifest } from '../src/pages/manifest.js';
 import { scanPages } from '../src/pages/model.js';
 import { cleanFixture, fixturePath, makeFixture, readFixture } from './fixture.js';
 import { makeSync } from './make-sync.js';
