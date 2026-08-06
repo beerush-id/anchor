@@ -14,10 +14,11 @@ import { createStatic } from './static.js';
 import type { AppWorkerOptions, SSRContextSeed, SSRRenderer, WsSender } from './types.js';
 
 export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWorkerOptions<E> = {}) {
-  const staticRes = createStatic(renderer.router, { ...options, adapter: options.cacheAdapter });
+  const staticRes = createStatic(renderer.router, options);
   const defaultAssetResolver = createAssetResolver(options);
 
   return {
+    router: renderer.router,
     options,
     async fetch(request: Request, env?: E) {
       const {
@@ -104,10 +105,11 @@ export function createFullWorker<E = AnyType>(
   renderer: SSRRenderer,
   options: AppWorkerOptions<E> = {}
 ) {
-  const staticRes = createStatic(renderer.router, { ...options, adapter: options.cacheAdapter });
+  const staticRes = createStatic(renderer.router, options);
   const defaultAssetResolver = createAssetResolver(options);
 
   return {
+    router: renderer.router,
     options,
     async fetch(request: Request, env?: E) {
       const {

@@ -10,10 +10,12 @@ export type StaticAdapter<E = unknown> = {
 };
 
 export type StaticResolverOptions<E = unknown> = {
+  devMode?: boolean;
   cache?: {
     pages?: CacheControl;
   };
   adapter?: StaticAdapter<E>;
+  cacheAdapter?: StaticAdapter<E>;
   cacheDir?: string;
 };
 
@@ -22,7 +24,7 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
 
   return {
     async get(url: URL, env?: E): Promise<{ html: string; headers: Headers } | void> {
-      if (!router) return;
+      if (!router || options?.devMode) return;
       const match = router.find(url, true);
       if (!match?.route.options?.static) return;
 
@@ -32,8 +34,9 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
         options?.cache?.pages
       );
 
-      if (options?.adapter) {
-        const res = await options.adapter.get(url, ctx, env);
+      const adapter = options?.cacheAdapter ?? options?.adapter;
+      if (adapter) {
+        const res = await adapter.get(url, ctx, env);
         if (res && res.status === 200) {
           const html = await res.text();
           const resHeaders = new Headers(res.headers);
@@ -53,13 +56,14 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
       }
     },
     async set(url: URL, content: string, env?: E): Promise<void> {
-      if (!router) return;
+      if (!router || options?.devMode) return;
       const match = router.find(url, true);
       if (!match?.route.options?.static) return;
 
-      if (options?.adapter) {
-        const { ctx } = resolveStaticMetadata(match.route.options.static, url, options.cache?.pages);
-        await options.adapter.set(url, content, ctx, env);
+      const adapter = options?.cacheAdapter ?? options?.adapter;
+      if (adapter) {
+        const { ctx } = resolveStaticMetadata(match.route.options.static, url, options?.cache?.pages);
+        await adapter.set(url, content, ctx, env);
         return;
       }
 

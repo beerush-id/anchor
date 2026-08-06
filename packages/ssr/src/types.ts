@@ -80,6 +80,7 @@ export type SSROptions = {
 };
 
 export type WorkerOptions<E> = {
+  devMode?: boolean;
   cacheDir?: string;
   cacheAdapter?: StaticAdapter<E>;
   resolveAsset?: AssetResolver<E>;

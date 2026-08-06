@@ -234,11 +234,31 @@ describe('createStatic', () => {
 
     expect(result).toBeUndefined();
     expect(fallbackFn).toHaveBeenCalledWith(url);
-    expect(mockGet).toHaveBeenCalledWith(
-      url,
-      expect.objectContaining({ maxAge: 600, public: true }),
-      undefined
-    );
+    expect(mockGet).toHaveBeenCalledWith(url, expect.objectContaining({ maxAge: 600, public: true }), undefined);
+  });
+
+  it('bypasses static caching when devMode is true and supports cacheAdapter property', async () => {
+    const mockGet = vi.fn(async () => new Response('<h1>Not used</h1>', { status: 200 }));
+    const mockSet = vi.fn();
+    const router = createMockRouter({ static: true });
+
+    const options = {
+      devMode: true,
+      cacheAdapter: { get: mockGet, set: mockSet },
+    };
+    const staticRes = createStatic(router as never, options);
+
+    const url = new URL('http://localhost/dev-test');
+    expect(await staticRes.get(url)).toBeUndefined();
+    await staticRes.set(url, '<h1>New HTML</h1>');
+
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(mockSet).not.toHaveBeenCalled();
+
+    options.devMode = false;
+    const cached = await staticRes.get(url);
+    expect(cached?.html).toBe('<h1>Not used</h1>');
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 });
 
