@@ -20,11 +20,11 @@ export type StaticResolverOptions<E = unknown> = {
 };
 
 export function createStatic<E = unknown>(router: Router, options?: StaticResolverOptions<E>) {
-  const cacheDir = options?.cacheDir ?? '../pages';
-
   return {
     async get(url: URL, env?: E): Promise<{ html: string; headers: Headers } | void> {
       if (!router || options?.devMode) return;
+
+      const cacheDir = options?.cacheDir ?? '../pages';
       const match = router.find(url, true);
       if (!match?.route.options?.static) return;
 
@@ -57,6 +57,8 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
     },
     async set(url: URL, content: string, env?: E): Promise<void> {
       if (!router || options?.devMode) return;
+
+      const cacheDir = options?.cacheDir ?? '../pages';
       const match = router.find(url, true);
       if (!match?.route.options?.static) return;
 

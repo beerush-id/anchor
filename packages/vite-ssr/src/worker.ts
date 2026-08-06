@@ -262,6 +262,10 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
 
     if (!worker?.router || typeof worker.fetch !== 'function') return;
 
+    if (worker.options && !worker.options.cacheDir) {
+      worker.options.cacheDir = resolve(config.root, 'dist/pages');
+    }
+
     for (const [path, info] of worker.router.entries()) {
       if (info.route?.options?.static) {
         const request = new Request(`http://localhost${path}`);
