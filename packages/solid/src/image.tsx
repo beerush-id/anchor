@@ -10,6 +10,7 @@ export interface AirImageMeta {
 export interface AirImage extends AirImageMeta {
   srcset: string;
   sizes: Record<number, AirImageMeta>;
+  default: AirImageMeta;
   [size: number]: AirImageMeta;
 }
 
