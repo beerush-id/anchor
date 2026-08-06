@@ -1,12 +1,6 @@
+import type { FolderNode } from './folder-node.js';
 import { FRAMEWORK_PACKAGE, type Framework } from './generate.js';
-import {
-  DEFAULT_FILE_MAP,
-  deriveRouteName,
-  type FileMap,
-  type FolderNode,
-  humanizeSegment,
-  routeExportForFolder,
-} from './model.js';
+import { DEFAULT_FILE_MAP, deriveIndexName, deriveRouteName, type FileMap, humanizeSegment } from './model.js';
 
 /**
  * Decides the scaffold content for a newly created application or page file, or `undefined`
@@ -48,7 +42,16 @@ export function scaffoldForFile(opts: {
   }
 
   if (base === files.page) {
-    return scaffoldPageTsx({ framework, rel: folder.rel, routeExport: routeExportForFolder(folder), files });
+    const hasPage = folder.files.has(files.page) || folder.files.has(files.pageMdx);
+    const hasLayout = folder.files.has(files.layout) || folder.files.has(files.layoutMdx);
+    const needsIndexRoute = hasPage && (hasLayout || folder.children.size > 0);
+    const routeExport = !folder.rel
+      ? 'indexRoute'
+      : needsIndexRoute
+        ? deriveIndexName(folder.rel)
+        : deriveRouteName(folder.rel);
+
+    return scaffoldPageTsx({ framework, rel: folder.rel, routeExport, files });
   }
 
   return undefined;

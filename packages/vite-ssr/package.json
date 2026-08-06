@@ -50,6 +50,7 @@
     "@irpclib/ws": "workspace:*",
     "@mdx-js/rollup": "catalog:lib",
     "@napi-rs/image": "catalog:lib",
+    "chokidar": "catalog:lib",
     "remark-frontmatter": "catalog:lib",
     "remark-mdx-frontmatter": "catalog:lib",
     "vite": "catalog:lib",

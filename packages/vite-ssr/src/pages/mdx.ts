@@ -1,14 +1,8 @@
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
+import type { FolderNode } from './folder-node.js';
 import { FRAMEWORK_PACKAGE, type Framework } from './generate.js';
-import {
-  DEFAULT_FILE_MAP,
-  deriveRouteName,
-  type FileMap,
-  type FolderNode,
-  findFolder,
-  routeExportForFolder,
-} from './model.js';
+import { DEFAULT_FILE_MAP, deriveIndexName, deriveRouteName, type FileMap } from './model.js';
 
 const FRAMEWORK_JSX_RUNTIME: Record<Framework, string> = {
   react: 'react/jsx-runtime',
@@ -59,19 +53,31 @@ export async function mdxAttachForFile(opts: {
 
   if (!file.startsWith(pagesDir)) return undefined;
 
-  const folder = findFolder(tree, path.dirname(file));
+  const folder = tree.findNode(path.dirname(file));
   if (!folder) return undefined;
+
+  const hasPageTsx = folder.files.has(files.page);
+  const hasPageMdx = folder.files.has(files.pageMdx);
+  const hasLayout = folder.files.has(files.layout) || folder.files.has(files.layoutMdx);
 
   // `page.tsx` wins when both page kinds exist — the mdx file attaches
   // nothing in that folder if this is a page.mdx.
-  if (base === files.pageMdx && folder.page !== 'mdx') return undefined;
+  if (base === files.pageMdx && hasPageTsx) return undefined;
 
   const routeImport = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
 
-  // For layout.mdx, it attaches to the folder's main route.
-  // For page.mdx, it attaches to the routeExportForFolder (which may be indexRoute).
-  const routeExport =
-    base === files.layoutMdx ? (!folder.rel ? 'rootRoute' : deriveRouteName(folder.rel)) : routeExportForFolder(folder);
+  const needsIndexRoute = (hasPageTsx || hasPageMdx) && (hasLayout || folder.children.size > 0);
+
+  let routeExport: string;
+  if (base === files.layoutMdx) {
+    routeExport = !folder.rel ? 'rootRoute' : deriveRouteName(folder.rel);
+  } else {
+    routeExport = !folder.rel
+      ? 'indexRoute'
+      : needsIndexRoute
+        ? deriveIndexName(folder.rel)
+        : deriveRouteName(folder.rel);
+  }
 
   return await mdxTransformModule({
     code,

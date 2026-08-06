@@ -1,73 +1,179 @@
+import { EventEmitter } from 'node:events';
+import fs from 'node:fs';
 import path from 'node:path';
-import { FRAMEWORK_PACKAGE, type Framework, type GeneratedFile } from './generate.js';
-import {
-  canonicalPath,
-  DEFAULT_FILE_MAP,
-  deriveIndexName,
-  deriveRouteName,
-  type FileMap,
-  type FolderNode,
-  flattenTree,
-  GENERATED_MARKER,
-  importSpecifier,
-  isContentNode,
-  needsIndexRoute,
-} from './model.js';
+import type { FolderNode } from './folder-node.js';
+import { canonicalPath, deriveIndexName, deriveRouteName, GENERATED_MARKER, importSpecifier } from './model.js';
+import type { RouteNode } from './route-node.js';
 
-/**
- * Generates the route manifest for sidebars/menus/breadcrumbs.
- * Lists the content routes (pages, layouts, and irpc handoffs), giving each its route name
- * and importing it directly from the colocated `route.ts` module.
- */
-export function generateManifest(opts: {
-  root: FolderNode;
-  manifestDir: string;
-  framework: Framework;
-  files?: Partial<FileMap>;
-}): GeneratedFile[] {
-  const { root, manifestDir, framework } = opts;
-  const filesMap = { ...DEFAULT_FILE_MAP, ...opts.files };
-  const routeFile = filesMap.route;
-  const files: GeneratedFile[] = [];
-  const manifestFile = path.join(manifestDir, 'index.ts');
+export class ManifestNode extends EventEmitter {
+  public children = new Map<string, ManifestNode>();
+  private entries = new Map<string, { path: string; name: string; from: string }>();
 
-  const entries: { path: string; name: string; from: string }[] = [];
+  constructor(
+    public readonly routeNode: RouteNode,
+    public readonly folderNode: FolderNode,
+    public readonly parent: ManifestNode | undefined,
+    private readonly manifestDir: string,
+    private readonly routeFile: string // e.g. route.ts
+  ) {
+    super();
 
-  for (const node of flattenTree(root)) {
-    if (!isContentNode(node)) continue;
+    // Listen for child additions from FolderNode
+    folderNode.on('childAdded', this.handleChildAdded);
+    folderNode.on('childRemoved', this.handleChildRemoved);
 
-    const name = !node.rel
+    // Listen for content changes on our RouteNode
+    routeNode.on('change', this.handleRouteChange);
+  }
+
+  public boot() {
+    for (const childFolder of this.folderNode.children.values()) {
+      this.handleChildAdded(childFolder);
+    }
+    this.updateEntries();
+    for (const child of this.children.values()) {
+      child.boot();
+    }
+  }
+
+  private handleChildAdded = (childFolder: FolderNode) => {
+    // RouteNode creates its children synchronously when FolderNode emits,
+    // so we can reliably get the child RouteNode from our RouteNode
+    const childRoute = this.routeNode.children.get(childFolder.segment);
+    if (!childRoute) return;
+
+    const child = new ManifestNode(childRoute, childFolder, this, this.manifestDir, this.routeFile);
+    this.children.set(childFolder.segment, child);
+
+    // Bubble child changes
+    child.on('change', (file, kind) => this.emit('change', file, kind));
+
+    this.updateEntries();
+  };
+
+  private handleChildRemoved = (childFolder: FolderNode) => {
+    const child = this.children.get(childFolder.segment);
+    if (!child) return;
+    this.children.delete(childFolder.segment);
+    child.destroy();
+
+    this.updateEntries();
+  };
+
+  private handleRouteChange = (_file: string, kind: 'update' | 'reload') => {
+    this.updateEntries();
+    // Manifest changes are just data updates, Vite HMR handles it
+    this.emitChange('update');
+  };
+
+  private updateEntries() {
+    this.entries.clear();
+
+    // If this level has a content route, add it
+    if (this.routeNode.isContent) {
+      this.addEntryForRoute(this.routeNode);
+    }
+
+    // Add immediate children's content routes (or their children if they group)
+    // Actually, should manifest be a flat list or per-level?
+    // Plan: "I list content routes at my level."
+    // Wait, the original manifest was a flat list of ALL routes in the app.
+    // Let's make this ManifestNode write a per-directory index.ts that lists its content routes
+    // and its children's content routes? Or should it just export its immediate children?
+    // Let's mimic the plan's output:
+    // export default [ { path: '/', route: indexRoute }, { path: '/blog', route: blogRoute } ]
+
+    for (const childRoute of this.routeNode.children.values()) {
+      if (childRoute.isContent) {
+        this.addEntryForRoute(childRoute);
+      }
+    }
+
+    this.generate();
+  }
+
+  private addEntryForRoute(route: RouteNode) {
+    const name = !route.rel
       ? 'indexRoute'
-      : needsIndexRoute(node)
-        ? deriveIndexName(node.rel)
-        : deriveRouteName(node.rel);
-    const fromPath = importSpecifier(manifestFile, path.join(node.dir, routeFile));
+      : route.page && (route.layout || route.children.size > 0) // needsIndexRoute
+        ? deriveIndexName(route.rel)
+        : deriveRouteName(route.rel);
 
-    entries.push({
-      path: canonicalPath(node.rel),
+    const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
+    const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
+    const fromPath = importSpecifier(manifestFilePath, routeFilePath);
+
+    this.entries.set(route.rel, {
+      path: canonicalPath(route.rel).replace(/\(|\)/g, ''),
       name,
       from: fromPath,
     });
   }
 
-  const imports = [...entries]
-    .sort((a, b) => a.from.localeCompare(b.from))
-    .map((entry) => `import { ${entry.name} } from '${entry.from}';`);
+  public generate() {
+    const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
+    const lines: string[] = [GENERATED_MARKER];
 
-  const lines = [
-    GENERATED_MARKER,
-    `import { createRouteManifest } from '${FRAMEWORK_PACKAGE[framework]}';`,
-    ...imports,
-  ];
+    const sorted = Array.from(this.entries.values()).sort((a, b) => a.from.localeCompare(b.from));
 
-  if (entries.length) {
-    const body = entries.map((entry) => `  ['${entry.path.replace(/\(|\)/g, '')}', ${entry.name}],`).join('\n');
-    lines.push('export const routes = createRouteManifest([', body, ']);', '');
-  } else {
-    lines.push('export const routes = createRouteManifest([]);', '');
+    for (const entry of sorted) {
+      lines.push(`import { ${entry.name} } from '${entry.from}';`);
+    }
+
+    lines.push('');
+    lines.push('export default [');
+    for (const entry of sorted) {
+      lines.push(`  { path: '${entry.path}', route: ${entry.name} },`);
+    }
+    lines.push('];');
+
+    const content = `${lines.join('\n')}\n`;
+
+    let changed = false;
+    try {
+      if (fs.readFileSync(manifestFilePath, 'utf-8') !== content) {
+        changed = true;
+      }
+    } catch {
+      changed = true;
+    }
+
+    if (changed) {
+      fs.mkdirSync(path.dirname(manifestFilePath), { recursive: true });
+      fs.writeFileSync(manifestFilePath, content);
+      this.emitChange('update'); // Data update
+    }
   }
 
-  files.push({ filePath: manifestFile, content: lines.join('\n') });
+  public destroy() {
+    this.folderNode.removeListener('childAdded', this.handleChildAdded);
+    this.folderNode.removeListener('childRemoved', this.handleChildRemoved);
+    this.routeNode.removeListener('change', this.handleRouteChange);
 
-  return files;
+    for (const child of this.children.values()) {
+      child.destroy();
+    }
+    this.children.clear();
+    this.entries.clear();
+
+    const dirPath = path.join(this.manifestDir, this.folderNode.rel);
+    const manifestFilePath = path.join(dirPath, 'index.ts');
+    try {
+      if (fs.existsSync(manifestFilePath)) {
+        fs.unlinkSync(manifestFilePath);
+        this.emitChange('update'); // Notify deletion
+      }
+      if (this.folderNode.rel && fs.existsSync(dirPath)) {
+        fs.rmSync(dirPath, { recursive: true, force: true });
+      }
+    } catch {}
+
+    this.emit('destroy');
+    this.removeAllListeners();
+  }
+
+  private emitChange(kind: 'update' | 'reload') {
+    const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
+    this.emit('change', manifestFilePath, kind);
+  }
 }

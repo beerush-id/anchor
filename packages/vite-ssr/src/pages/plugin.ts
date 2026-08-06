@@ -7,10 +7,10 @@ import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import type { Plugin, PluginOption, ResolvedConfig, ViteDevServer } from 'vite';
 import { type AirImageOptions, airImage } from '../image.js';
 import { type AirWorkerOptions, airWorker } from '../worker.js';
+import { AppNode } from './app-node.js';
 import type { Framework } from './generate.js';
 import { mdxAttachForFile } from './mdx.js';
 import { DEFAULT_FILE_MAP, type FileMap } from './model.js';
-import { createPagesSync, type PagesSync } from './sync.js';
 
 export type AirMdxOptions = MdxOptions;
 
@@ -119,37 +119,11 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   let absPagesDir = '';
   let absAppDir = '';
   let absAirStackDir = '';
-  let sync: PagesSync;
+  let app: AppNode;
   let files: FileMap = { ...DEFAULT_FILE_MAP, ...options.files };
   let pageFileNames: Set<string>;
   let irpcFileNames: Set<string>;
-
-  const invalidateVirtual = (server: ViteDevServer) => {
-    const mod = server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ROUTES);
-    if (mod) server.moduleGraph.invalidateModule(mod);
-
-    for (const [, m] of server.moduleGraph.idToModuleMap) {
-      if (m.file?.includes('.airstack') || m.id?.includes('@airstack') || m.id?.includes('.airstack')) {
-        server.moduleGraph.invalidateModule(m);
-      }
-    }
-    server.ws.send({ type: 'full-reload', path: '*' });
-  };
-
-  const isWatched = (file: string) => {
-    if (file.startsWith(absPagesDir)) {
-      const base = path.basename(file);
-      if (pageFileNames?.has(base)) return true;
-      if (irpcEnabled && irpcFileNames?.has(base)) return true;
-      if (options.metadata !== false && file.endsWith('.mdx')) return true;
-      return false;
-    }
-    if (absAppDir && path.dirname(file) === absAppDir) {
-      const base = path.basename(file);
-      return base === files.entry || base === files.client || base === files.workerEntry;
-    }
-    return false;
-  };
+  let shouldReload = false;
 
   const corePlugin: Plugin = {
     name: 'air-pages',
@@ -296,20 +270,18 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         config.logger.error(`[air-pages] Failed to symlink .airstack to node_modules/@airstack: ${String(err)}`);
       }
 
-      sync = createPagesSync({
+      app = new AppNode({
         pagesDir: absPagesDir,
+        appDir: absAppDir,
         routerFile: absRouterFile,
         manifestDir,
-        manifest: options.manifest,
+        manifestEnabled: options.manifest,
         metadataDir,
-        metadata: options.metadata,
+        metadataEnabled: options.metadata,
         framework,
-        scaffold: options.scaffold,
-        irpc: irpcEnabled,
-        files,
+        scaffoldEnabled: options.scaffold,
+        fileMap: files,
       });
-
-      sync.refresh();
     },
 
     resolveId(id) {
@@ -354,7 +326,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         const transformed = await mdxAttachForFile({
           file: normalizedId,
           pagesDir: absPagesDir,
-          tree: sync.tree,
+          tree: app.rootFolder,
           framework,
           files,
           code,
@@ -373,31 +345,38 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     },
 
     configureServer(server) {
-      server.watcher.add(absPagesDir);
-      if (absAppDir) server.watcher.add(absAppDir);
+      let reloadTimer: ReturnType<typeof setTimeout>;
 
-      server.watcher.on('add', (file) => {
-        if (!isWatched(file)) return;
-        if (sync.onAdd(file)) invalidateVirtual(server);
+      app.on('change', (file: string, kind: 'update' | 'reload') => {
+        console.log('Invalidate:', file);
+
+        const mods = server.moduleGraph.getModulesByFile(file);
+        if (mods) {
+          for (const m of mods) server.moduleGraph.invalidateModule(m);
+        }
+
+        if (kind === 'reload') shouldReload = true;
+
+        clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => {
+          if (shouldReload) {
+            const virtualMod = server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ROUTES);
+            if (virtualMod) server.moduleGraph.invalidateModule(virtualMod);
+            server.ws.send({ type: 'full-reload', path: '*' });
+          }
+
+          shouldReload = false;
+        }, 100);
       });
 
-      server.watcher.on('change', (file) => {
-        if (!isWatched(file)) return;
-        if (sync.onChange(file)) invalidateVirtual(server);
-      });
+      app.rootFolder.watch();
+    },
 
-      server.watcher.on('unlink', (file) => {
-        if (!isWatched(file)) return;
-        if (sync.onUnlink(file)) invalidateVirtual(server);
-      });
-
-      const onDir = (dir: string) => {
-        if (!dir.startsWith(absPagesDir) || dir === absPagesDir) return;
-        if (sync.refresh()) invalidateVirtual(server);
-      };
-
-      server.watcher.on('addDir', onDir);
-      server.watcher.on('unlinkDir', onDir);
+    handleHotUpdate() {
+      // If a full reload is pending (e.g. route structure changed),
+      // suppress all HMR updates so the browser doesn't try to apply them
+      // using a stale module cache before the reload happens.
+      if (shouldReload) return [];
     },
   };
 
