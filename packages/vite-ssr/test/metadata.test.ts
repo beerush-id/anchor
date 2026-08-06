@@ -195,4 +195,16 @@ describe('mdx metadata generator', () => {
     recursiveYaml += '---';
     expect(extractFrontmatter(recursiveYaml)).toEqual({});
   });
+
+  it('handles metadataDir ending with a trailing slash during prefix normalization', () => {
+    dir = makeFixture({
+      'pages/page.mdx': '---\ntitle: "Root"\n---\n',
+    });
+    const pagesDir = fixturePath(dir, 'pages');
+    const metadataDir = `${fixturePath(dir, 'metadata')}/`;
+    const tree = scanPages(pagesDir);
+
+    const generated = generateMetadata({ root: tree, pagesDir, metadataDir });
+    expect(generated.length).toBeGreaterThan(0);
+  });
 });
