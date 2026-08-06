@@ -215,7 +215,7 @@ export function getScope<R>(key: AsyncKey, fallback?: R): R | undefined {
 
   if (!isBrowser() && !bypassWarning && store === globalStore && ANCHOR_SETTINGS.globalScopeWarning) {
     captureStack.warning.external(
-      'Attempted to access global scope.',
+      `'Attempted to access global scope: ${key.toString()}.'`,
       [
         'Accessing global scope is highly discouraged.',
         'This could lead to race condition.',
