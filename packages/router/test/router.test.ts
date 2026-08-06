@@ -119,6 +119,7 @@ describe('router.ts', () => {
       it('should register dynamic route with DYNAMIC_ROUTE_KEY', () => {
         const route = router.rootRoute.route('/:id');
         expect(router.find('/123')?.route).toBe(route);
+        expect(router.find('/123', true)?.route).toBe(route);
       });
 
       it('should register wildcard route with WILDCARD_ROUTE_KEY', () => {

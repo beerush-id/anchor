@@ -86,6 +86,8 @@ export class Router<Output = any> {
   public readonly rootRegistry: RouteRegistry;
   public readonly routes = new Set<RouteRegistry>();
 
+  private passiveCache = new URLCache(this.routes);
+
   private exceptionRendererState = createState<
     RouteExceptionRenderer<None, None, TRec, None, None, TRec, Output> | undefined
   >(undefined);
@@ -325,14 +327,15 @@ export class Router<Output = any> {
    * Uses the URL cache for performance.
    *
    * @param url - The URL to match (string or URL object)
+   * @param passive - Passive lookup without context creation.
    * @returns The match result, or undefined if no match
    */
-  public find(url: string | URL): MatchResult | undefined {
+  public find(url: string | URL, passive?: boolean): MatchResult | undefined {
     if (typeof url === 'string') {
       url = new URL(url, this.options.baseUrl);
     }
 
-    return this.cache.get(url);
+    return passive ? this.passiveCache.get(url, true) : this.cache.get(url, passive);
   }
 
   /**

@@ -186,6 +186,14 @@ export type SitemapOption<
   QueryParams extends ExtractQueryParams<Path> = ExtractQueryParams<Path>,
 > = boolean | SitemapEntry | SitemapGenerator<Path, Params, QueryParams>;
 
+export type StaticOptions = {
+  maxAge?: number;
+  staleWhileRevalidate?: number;
+  [key: string]: unknown;
+};
+
+export type StaticOption = boolean | StaticOptions;
+
 /** Options for configuring a route */
 export interface RouteOptions<
   Path extends RoutePath = RoutePath,
@@ -197,6 +205,9 @@ export interface RouteOptions<
 
   /** Keep the route's context when de-activating */
   keepAlive?: boolean;
+
+  /** Static generation and caching configuration for this route */
+  static?: StaticOption;
 
   /**
    * Sitemap configuration for this route.

@@ -6,14 +6,23 @@ import { createState, getStore, safeAssign } from './store.js';
 import type { AnyRoute, MatchedRoute, MatchRouteSegment, RouteContext, TRec, UnknownRoute } from './types.js';
 
 export class ContextStore extends Map {
+  constructor(private passive = false) {
+    super();
+  }
+
   public get(key: string | symbol) {
     if (!this.has(key)) {
-      this.set(key, createState({ params: {}, query: {}, data: {} }));
+      this.set(
+        key,
+        this.passive ? { params: {}, query: {}, data: {} } : createState({ params: {}, query: {}, data: {} })
+      );
     }
 
     return super.get(key) as RouteContext<TRec, TRec, TRec>;
   }
 }
+
+const passiveStore = new ContextStore(true);
 
 /**
  * A registry for organizing and matching routes.
@@ -63,8 +72,9 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
    * @param urlSegments - The URL path to match, as a string or array of segments
    * @param segments - Accumulator for matched route segments (internal use)
    * @param params - Accumulator for extracted parameters (internal use)
-   * @param query
+   * @param query - Accumulator for extracted query params
    * @param index - Current segment index (internal use)
+   * @param passive - Passive lookup without context creation.
    * @returns A matched route with segments and params, or undefined if no match
    */
   public match(
@@ -73,7 +83,8 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
     segments: MatchRouteSegment[] = [],
     params: TRec = {},
     query?: TRec,
-    index = 0
+    index = 0,
+    passive = false
   ): MatchedRoute | void {
     if (!url || !url.pathname) return;
 
@@ -85,7 +96,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
       query = parseQuery(url.search);
     }
 
-    const storage = this.store;
+    const storage = passive ? passiveStore : this.store;
     const segment = urlSegments[index];
     const recursive = urlSegments.length > index + 1;
 
@@ -98,7 +109,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
       segments.push({ route: staticRoute.route, store });
 
       if (recursive) {
-        return staticRoute.match(url, urlSegments, segments, params, query, index + 1);
+        return staticRoute.match(url, urlSegments, segments, params, query, index + 1, passive);
       } else {
         // safeAssign(store.query, query);
 
@@ -124,7 +135,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
       segments.push({ route: dynamicRoute.route, store });
 
       if (recursive) {
-        return dynamicRoute.match(url, urlSegments, segments, params, query, index + 1);
+        return dynamicRoute.match(url, urlSegments, segments, params, query, index + 1, passive);
       } else {
         // safeAssign(store.query, query);
 
@@ -192,10 +203,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
  * @internal
  */
 function cleanPath(path: string, leading = '/') {
-  return path
-    .replace(/^[\/]+/, leading)
-    .replace(/[\/]+/g, '/')
-    .replace(/[\/]+$/, '');
+  return path.replace(/^[/]+/, leading).replace(/[/]+/g, '/').replace(/[/]+$/, '');
 }
 
 function storeKey(route: AnyRoute, segment: string, url: URL) {

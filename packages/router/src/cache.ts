@@ -215,9 +215,10 @@ export class URLCache {
    * Evicts the oldest entry if the cache is at capacity.
    *
    * @param url - The URL to match
+   * @param passive - Passive lookup without context creation.
    * @returns The match result, or undefined if no match is found
    */
-  public get(url: URL): MatchResult | undefined {
+  public get(url: URL, passive?: boolean): MatchResult | undefined {
     if (!url) return;
     const cacheKey = url.href;
 
@@ -235,7 +236,15 @@ export class URLCache {
     let match: MatchResult | undefined;
 
     for (const registry of this.registries) {
-      const nextMatch = registry.match(url) as MatchResult;
+      const nextMatch = registry.match(
+        url,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        passive
+      ) as MatchResult;
 
       if (nextMatch) {
         if (nextMatch.exception && (!match || nextMatch.segments.length >= match.segments.length)) {
