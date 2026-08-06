@@ -1464,4 +1464,29 @@ describe('router.ts', () => {
       expect(paths).toContain('/api/v1/webhooks/*');
     });
   });
+
+  describe('passive routing and static configuration', () => {
+    it('inherits static option from router root and allows override on child routes', () => {
+      const router = createRouter({ static: true });
+      const root = router.route();
+      const about = root.route('/about');
+      const dynamic = root.route('/dynamic', { static: false });
+
+      expect(root.options?.static).toBe(true);
+      expect(about.options?.static).toBe(true);
+      expect(dynamic.options?.static).toBe(false);
+    });
+
+    it('resolves routes passively via find(url, true) using passive cache', () => {
+      const router = createRouter({ static: true });
+      router.route('/page').route('/:id');
+
+      const match = router.find('/page/123', true);
+      expect(match).toBeDefined();
+      expect(match?.route.options?.static).toBe(true);
+
+      const cachedMatch = router.find('/page/123', true);
+      expect(cachedMatch).toBe(match);
+    });
+  });
 });
