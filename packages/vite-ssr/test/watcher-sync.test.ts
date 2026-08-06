@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanFixture,
   fixtureExists,
@@ -108,5 +108,87 @@ describe('watcher sync — folder edits stay in sync', () => {
     const updatedRoute = readFixture(dir, 'pages/projects/route.ts');
     expect(updatedRoute).toContain("export const projectsIndexRoute = projectsRoute.route('/');");
     expect(updatedRoute).toMatch(/export const projectsIndexRoute = projectsRoute\.route\('\/'\);\n+\/\/ @generated/);
+  });
+
+  it('handles metadata generation, localized onChange/onAdd/onUnlink events, and cleans up obsolete metadata files', () => {
+    dir = makeFixture({
+      'router.ts': '',
+      'pages/guide/page.mdx': '---\ntitle: "Guide"\n---\n# Guide',
+    });
+
+    const metadataDir = fixturePath(dir, 'metadata');
+    const { sync } = makeSync(dir, { metadataDir });
+
+    sync.refresh();
+    expect(fixtureExists(dir, 'metadata/guide/page.ts')).toBe(true);
+
+    const absPath = fixturePath(dir, 'pages/guide/page.mdx');
+    writeFixture(dir, { 'pages/guide/page.mdx': '---\ntitle: "Updated Guide"\n---\n# Guide' });
+    const changed = sync.onChange(absPath);
+    expect(changed).toBe(true);
+    expect(readFixture(dir, 'metadata/guide/page.ts')).toContain('Updated Guide');
+
+    expect(sync.onChange(fixturePath(dir, 'pages/guide/unrelated.txt'))).toBe(false);
+
+    writeFixture(dir, { 'pages/new/page.mdx': '' });
+    sync.onAdd(fixturePath(dir, 'pages/new/page.mdx'));
+    expect(fixtureExists(dir, 'pages/new/route.ts')).toBe(true);
+
+    removeFixture(dir, 'pages/guide/page.mdx');
+    sync.onUnlink(absPath);
+    expect(fixtureExists(dir, 'metadata/guide/page.ts')).toBe(false);
+
+    writeFixture(dir, {
+      'metadata/obsolete/stale.ts': 'export default {};',
+      'metadata/package.json': '{"name": "metadata"}',
+    });
+    sync.refresh();
+    expect(fixtureExists(dir, 'metadata/obsolete/stale.ts')).toBe(false);
+    expect(fixtureExists(dir, 'metadata/package.json')).toBe(true);
+  });
+
+  it('handles missing metadata directories and file system deletion errors during cleanup or unlinking', () => {
+    dir = makeFixture({ 'router.ts': '', 'pages/test/page.mdx': '---\ntitle: "Test"\n---\n# Test' });
+    const metadataDir = fixturePath(dir, 'metadata');
+    const { sync } = makeSync(dir, { metadataDir });
+
+    sync.refresh();
+
+    const mdxPath = fixturePath(dir, 'pages/test/page.mdx');
+    removeFixture(dir, 'metadata/test/page.ts');
+    removeFixture(dir, 'pages/test/page.mdx');
+    sync.onUnlink(mdxPath);
+    expect(fixtureExists(dir, 'metadata/test/page.ts')).toBe(false);
+
+    const emptyDir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
+    const { sync: noMdxSync } = makeSync(emptyDir, { metadataDir: fixturePath(emptyDir, 'non-existent-metadata') });
+    expect(() => noMdxSync.refresh()).not.toThrow();
+    cleanFixture(emptyDir);
+
+    dir = makeFixture({ 'router.ts': '', 'pages/valid/page.mdx': '---\ntitle: "Valid"\n---\n# Valid' });
+    const errSync = makeSync(dir, { metadataDir: fixturePath(dir, 'metadata') }).sync;
+    errSync.refresh();
+
+    writeFixture(dir, { 'metadata/stale-folder/stale.ts': 'export {};' });
+    fs.mkdirSync(fixturePath(dir, 'metadata/stale-empty'), { recursive: true });
+
+    const unlinkSpy = vi.spyOn(fs, 'unlinkSync').mockImplementation(() => {
+      throw new Error('mock unlink error');
+    });
+    const rmdirSpy = vi.spyOn(fs, 'rmdirSync').mockImplementation(() => {
+      throw new Error('mock rmdir error');
+    });
+
+    expect(() => errSync.refresh()).not.toThrow();
+    unlinkSpy.mockRestore();
+    rmdirSpy.mockRestore();
+
+    const origExists = fs.existsSync;
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockImplementation((p) => {
+      if (typeof p === 'string' && p.endsWith('metadata')) return false;
+      return origExists(p);
+    });
+    expect(() => errSync.refresh()).not.toThrow();
+    existsSpy.mockRestore();
   });
 });

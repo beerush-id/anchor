@@ -169,14 +169,15 @@ function parseYaml(text: string): unknown {
     const firstLine = lines[idx];
     const firstTrimmed = firstLine.trim();
 
-    if (firstTrimmed.startsWith('- ')) {
+    if (firstTrimmed === '-' || firstTrimmed.startsWith('- ')) {
       const list: unknown[] = [];
       while (idx < lines.length) {
         const line = lines[idx];
         const indent = line.length - line.trimStart().length;
         if (indent < currentIndent) break;
-        if (indent === currentIndent && line.trim().startsWith('- ')) {
-          const valStr = line.trim().slice(2).trim();
+        const trimmed = line.trim();
+        if (indent === currentIndent && (trimmed === '-' || trimmed.startsWith('- '))) {
+          const valStr = trimmed === '-' ? '' : trimmed.slice(2).trim();
           idx++;
           if (!valStr && idx < lines.length && lines[idx].length - lines[idx].trimStart().length > currentIndent) {
             list.push(parseBlock(lines[idx].length - lines[idx].trimStart().length));
