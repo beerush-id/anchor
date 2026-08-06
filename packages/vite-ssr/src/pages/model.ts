@@ -13,6 +13,7 @@ export type FileMap = {
   entry: string;
   client: string;
   workerEntry: string;
+  ambient: string;
 };
 
 export const DEFAULT_FILE_MAP: FileMap = {
@@ -25,6 +26,7 @@ export const DEFAULT_FILE_MAP: FileMap = {
   entry: 'app.tsx',
   client: 'client.tsx',
   workerEntry: 'worker.ts',
+  ambient: 'global.d.ts',
 };
 
 export type PageKind = 'tsx' | 'mdx';

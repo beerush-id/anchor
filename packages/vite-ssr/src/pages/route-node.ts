@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { AnyType } from '@anchorlib/core';
 import type { FolderNode } from './folder-node.js';
 import type { Framework } from './generate.js';
 import {
@@ -56,6 +57,9 @@ export class RouteNode extends EventEmitter {
     folderNode.on('fileRemoved', this.handleFileRemoved);
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
+    folderNode.on('fileChanged', (e) => {
+      console.log(e);
+    });
   }
 
   public boot() {
@@ -214,7 +218,7 @@ export class RouteNode extends EventEmitter {
 
     const content = scaffoldForFile({
       base: name,
-      folder: this.folderNode as any, // Temporary cast until scaffold.ts is updated
+      folder: this.folderNode as AnyType, // Temporary cast until scaffold.ts is updated
       framework: this.framework,
       files: this.fileMap,
     });

@@ -30,6 +30,10 @@ export function scaffoldForFile(opts: {
     return scaffoldWorkerTs({ framework, files });
   }
 
+  if (base === files.ambient) {
+    return scaffoldGlobalDts();
+  }
+
   if (!folder) return undefined;
 
   if (base === files.pageMdx || base === files.layoutMdx) {
@@ -119,6 +123,19 @@ import App from '${appMod}';
 import router from './router.js';
 
 export default createApp(router, App);
+`;
+}
+
+/**
+ * Scaffolds an ambient `global.d.ts` declarations file.
+ */
+export function scaffoldGlobalDts(): string {
+  return `/// <reference types="@anchorlib/vite-ssr/ambient" />
+
+interface AirRouteMeta {
+  name?: string;
+  label?: string;
+}
 `;
 }
 

@@ -9,13 +9,16 @@ export class MetadataNode extends EventEmitter {
   public children = new Map<string, MetadataNode>();
   private markdownNodes = new Map<string, MarkdownNode>(); // absPath -> MarkdownNode
 
+  private readonly metadataDir: string;
+
   constructor(
     public readonly folderNode: FolderNode,
     public readonly parent: MetadataNode | undefined,
-    private readonly metadataDir: string,
+    private readonly rootDir: string,
     private readonly pagesDir: string
   ) {
     super();
+    this.metadataDir = path.join(rootDir, '.airstack', 'metadata');
 
     // Listen to FolderNode for child additions
     folderNode.on('childAdded', this.handleChildAdded);
@@ -28,6 +31,27 @@ export class MetadataNode extends EventEmitter {
   }
 
   public boot() {
+    if (!this.parent) {
+      fs.mkdirSync(this.metadataDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(this.metadataDir, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@airstack/metadata',
+            type: 'module',
+            exports: {
+              '.': './index.ts',
+              './*': './*.ts',
+            },
+          },
+          null,
+          2
+        ),
+        'utf-8'
+      );
+      this.setupSymlink();
+    }
+
     // Process existing MDX files
     for (const file of this.folderNode.files) {
       if (file.endsWith('.mdx')) {
@@ -48,7 +72,7 @@ export class MetadataNode extends EventEmitter {
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
-    const child = new MetadataNode(childFolder, this, this.metadataDir, this.pagesDir);
+    const child = new MetadataNode(childFolder, this, this.rootDir, this.pagesDir);
     this.children.set(childFolder.segment, child);
 
     // Bubble child changes
@@ -191,5 +215,25 @@ export class MetadataNode extends EventEmitter {
   private emitChange(kind: 'update' | 'reload') {
     const indexPath = path.join(this.metadataDir, this.folderNode.rel, 'index.ts');
     this.emit('change', indexPath, kind);
+  }
+
+  private setupSymlink() {
+    const absAirStackDir = path.join(this.rootDir, '.airstack');
+    const nodeModulesDir = path.join(this.rootDir, 'node_modules');
+    const target = path.join(nodeModulesDir, '@airstack');
+    fs.mkdirSync(nodeModulesDir, { recursive: true });
+
+    const isWin32 = process.platform === 'win32';
+    const expectedTarget = isWin32 ? absAirStackDir : path.relative(nodeModulesDir, absAirStackDir);
+
+    try {
+      const stat = fs.lstatSync(target);
+      if (!stat.isSymbolicLink() || fs.readlinkSync(target) !== expectedTarget) {
+        fs.rmSync(target, { recursive: true, force: true });
+        fs.symlinkSync(expectedTarget, target, isWin32 ? 'junction' : 'dir');
+      }
+    } catch {
+      fs.symlinkSync(expectedTarget, target, isWin32 ? 'junction' : 'dir');
+    }
   }
 }

@@ -9,14 +9,17 @@ export class ManifestNode extends EventEmitter {
   public children = new Map<string, ManifestNode>();
   private entries = new Map<string, { path: string; name: string; from: string }>();
 
+  private readonly manifestDir: string;
+
   constructor(
     public readonly routeNode: RouteNode,
     public readonly folderNode: FolderNode,
     public readonly parent: ManifestNode | undefined,
-    private readonly manifestDir: string,
+    private readonly rootDir: string,
     private readonly routeFile: string // e.g. route.ts
   ) {
     super();
+    this.manifestDir = path.join(rootDir, '.airstack', 'manifest');
 
     // Listen for child additions from FolderNode
     folderNode.on('childAdded', this.handleChildAdded);
@@ -27,6 +30,24 @@ export class ManifestNode extends EventEmitter {
   }
 
   public boot() {
+    if (!this.parent) {
+      fs.mkdirSync(this.manifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(this.manifestDir, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@airstack/manifest',
+            type: 'module',
+            exports: { '.': './index.ts' },
+          },
+          null,
+          2
+        ),
+        'utf-8'
+      );
+      this.setupSymlink();
+    }
+
     for (const childFolder of this.folderNode.children.values()) {
       this.handleChildAdded(childFolder);
     }
@@ -42,7 +63,7 @@ export class ManifestNode extends EventEmitter {
     const childRoute = this.routeNode.children.get(childFolder.segment);
     if (!childRoute) return;
 
-    const child = new ManifestNode(childRoute, childFolder, this, this.manifestDir, this.routeFile);
+    const child = new ManifestNode(childRoute, childFolder, this, this.rootDir, this.routeFile);
     this.children.set(childFolder.segment, child);
 
     // Bubble child changes
@@ -175,5 +196,25 @@ export class ManifestNode extends EventEmitter {
   private emitChange(kind: 'update' | 'reload') {
     const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
     this.emit('change', manifestFilePath, kind);
+  }
+
+  private setupSymlink() {
+    const absAirStackDir = path.join(this.rootDir, '.airstack');
+    const nodeModulesDir = path.join(this.rootDir, 'node_modules');
+    const target = path.join(nodeModulesDir, '@airstack');
+    fs.mkdirSync(nodeModulesDir, { recursive: true });
+
+    const isWin32 = process.platform === 'win32';
+    const expectedTarget = isWin32 ? absAirStackDir : path.relative(nodeModulesDir, absAirStackDir);
+
+    try {
+      const stat = fs.lstatSync(target);
+      if (!stat.isSymbolicLink() || fs.readlinkSync(target) !== expectedTarget) {
+        fs.rmSync(target, { recursive: true, force: true });
+        fs.symlinkSync(expectedTarget, target, isWin32 ? 'junction' : 'dir');
+      }
+    } catch {
+      fs.symlinkSync(expectedTarget, target, isWin32 ? 'junction' : 'dir');
+    }
   }
 }

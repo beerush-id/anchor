@@ -4,7 +4,7 @@ import type { Options as MdxOptions } from '@mdx-js/rollup';
 import mdx from '@mdx-js/rollup';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
-import type { Plugin, PluginOption, ResolvedConfig, ViteDevServer } from 'vite';
+import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
 import { type AirImageOptions, airImage } from '../image.js';
 import { type AirWorkerOptions, airWorker } from '../worker.js';
 import { AppNode } from './app-node.js';
@@ -118,11 +118,8 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   let config: ResolvedConfig;
   let absPagesDir = '';
   let absAppDir = '';
-  let absAirStackDir = '';
   let app: AppNode;
   let files: FileMap = { ...DEFAULT_FILE_MAP, ...options.files };
-  let pageFileNames: Set<string>;
-  let irpcFileNames: Set<string>;
   let shouldReload = false;
 
   const corePlugin: Plugin = {
@@ -143,8 +140,6 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       config = resolved;
       if (!options.framework) framework = detectFramework(config.root);
       files = { ...DEFAULT_FILE_MAP, ...options.files };
-      pageFileNames = new Set([files.page, files.pageMdx, files.layout, files.layoutMdx, files.route]);
-      irpcFileNames = new Set([files.constructor]);
 
       const pagesDir = options.pagesDir ?? 'src/pages';
       const routerFile = options.routerFile ?? 'src/router.ts';
@@ -162,121 +157,12 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         irpcEnabled = workerContent.includes('httpRouter') || workerContent.includes('wsRouter');
       }
 
-      if (!fs.existsSync(absRouterFile)) {
-        fs.mkdirSync(path.dirname(absRouterFile), { recursive: true });
-        fs.writeFileSync(
-          absRouterFile,
-          [
-            `import { createRouter } from '@anchorlib/${framework}';`,
-            '',
-            'const router = createRouter();',
-            'export default router;',
-          ].join('\n'),
-          'utf-8'
-        );
-      }
-
-      if (!fs.existsSync(absPagesDir)) {
-        fs.mkdirSync(absPagesDir, { recursive: true });
-        const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
-        fs.writeFileSync(
-          path.join(absPagesDir, files.layout),
-          `import { page } from '@anchorlib/${framework}';\nimport { rootRoute } from '${routeMod}';\n\nexport default page(rootRoute).render(({ children }) => children);\n`,
-          'utf-8'
-        );
-        fs.writeFileSync(
-          path.join(absPagesDir, files.page),
-          `import { page } from '@anchorlib/${framework}';\nimport { indexRoute } from '${routeMod}';\n\nexport default page(indexRoute).render(() => (\n  <>\n    <h1>Welcome to AIR Stack</h1>\n    <p>This is your generated home page.</p>\n  </>\n));\n`,
-          'utf-8'
-        );
-      }
-
-      absAirStackDir = path.resolve(config.root, '.airstack');
-      const manifestDir = path.join(absAirStackDir, 'manifest');
-      const metadataDir = path.join(absAirStackDir, 'metadata');
-
-      if (options.manifest !== false) {
-        fs.mkdirSync(manifestDir, { recursive: true });
-        fs.writeFileSync(
-          path.join(manifestDir, 'package.json'),
-          JSON.stringify(
-            {
-              name: '@airstack/manifest',
-              type: 'module',
-              exports: {
-                '.': './index.ts',
-              },
-            },
-            null,
-            2
-          ),
-          'utf-8'
-        );
-      }
-
-      if (options.metadata !== false) {
-        fs.mkdirSync(metadataDir, { recursive: true });
-        fs.writeFileSync(
-          path.join(metadataDir, 'package.json'),
-          JSON.stringify(
-            {
-              name: '@airstack/metadata',
-              type: 'module',
-              exports: {
-                '.': './index.ts',
-                './*': './*.ts',
-              },
-            },
-            null,
-            2
-          ),
-          'utf-8'
-        );
-      }
-
-      const nodeModulesDir = path.resolve(config.root, 'node_modules');
-      const nodeModulesAirStack = path.join(nodeModulesDir, '@airstack');
-
-      try {
-        fs.mkdirSync(nodeModulesDir, { recursive: true });
-
-        try {
-          const oldAirSsr = path.join(nodeModulesDir, '@airssr');
-          fs.rmSync(oldAirSsr, { recursive: true, force: true });
-        } catch {}
-
-        let createSymlink = true;
-        const isWin32 = process.platform === 'win32';
-        const expectedTarget = isWin32 ? absAirStackDir : path.relative(nodeModulesDir, absAirStackDir);
-
-        try {
-          const stat = fs.lstatSync(nodeModulesAirStack);
-          if (stat.isSymbolicLink()) {
-            const currentTarget = fs.readlinkSync(nodeModulesAirStack);
-            if (currentTarget === expectedTarget) {
-              createSymlink = false;
-            } else {
-              fs.unlinkSync(nodeModulesAirStack);
-            }
-          } else {
-            fs.rmSync(nodeModulesAirStack, { recursive: true, force: true });
-          }
-        } catch {}
-
-        if (createSymlink) {
-          fs.symlinkSync(expectedTarget, nodeModulesAirStack, isWin32 ? 'junction' : 'dir');
-        }
-      } catch (err) {
-        config.logger.error(`[air-pages] Failed to symlink .airstack to node_modules/@airstack: ${String(err)}`);
-      }
-
       app = new AppNode({
+        root: config.root,
         pagesDir: absPagesDir,
         appDir: absAppDir,
         routerFile: absRouterFile,
-        manifestDir,
         manifestEnabled: options.manifest,
-        metadataDir,
         metadataEnabled: options.metadata,
         framework,
         scaffoldEnabled: options.scaffold,
