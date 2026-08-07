@@ -123,7 +123,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
     transformIndexHtml(html, ctx) {
       if (!options.noscript || !ctx.bundle) return;
 
-      const lines = html.split('\n');
+      const lines = html.replace('<html', '<html dehydrated').split('\n');
 
       for (const file of Object.keys(ctx.bundle)) {
         if (!file.endsWith('.js')) continue;
@@ -267,14 +267,10 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
 
     if (!worker?.router || typeof worker.fetch !== 'function') return;
 
-    if (worker.options && !worker.options.cacheDir) {
-      worker.options.cacheDir = resolve(config.root, 'dist/pages');
-    }
-
     for (const [path, info] of worker.router.entries()) {
       if (info.route?.options?.static) {
         const request = new Request(`http://localhost${path}`);
-        await worker.fetch(request);
+        await worker.fetch(request, undefined, true);
       }
     }
   } catch (e) {

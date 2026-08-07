@@ -115,7 +115,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
             const reduction = ((1 - optimizedBuffer.byteLength / inputSize) * 100).toFixed(1);
             const optTimeTaken = Date.now() - optStartTime;
             console.log(
-              `[airImage] ${basename} (original) | ${kbIn}kb -> ${optKbOut}kb (-${reduction}%) | ${optTimeTaken}ms`
+              `[air:image] ${basename} (original) | ${kbIn}kb -> ${optKbOut}kb (-${reduction}%) | ${optTimeTaken}ms`
             );
 
             defaultMeta = { src, width, height, alt };
@@ -145,7 +145,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
             const sizeReduction = ((1 - resizedBuffer.byteLength / inputSize) * 100).toFixed(1);
             const sizeTimeTaken = Date.now() - sizeStartTime;
             console.log(
-              `[airImage] ${basename} (${size}w) | -> ${sizeKbOut}kb (-${sizeReduction}%) | ${sizeTimeTaken}ms`
+              `[air:image] ${basename} (${size}w) | -> ${sizeKbOut}kb (-${sizeReduction}%) | ${sizeTimeTaken}ms`
             );
 
             srcsetList.push(`${sizeSrc} ${size}w`);
@@ -215,7 +215,7 @@ export default new Proxy(img, {
 
         return { code, map: null };
       } catch (err) {
-        console.error(`[airImage] Failed to process image ${filePath}:`, err);
+        console.error(`[air:image] Failed to process image ${filePath}:`, err);
         return null;
       }
     },
