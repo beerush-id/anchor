@@ -95,10 +95,26 @@ describe('ssrRenderToString', () => {
       router,
       renderView: mockRenderView,
       url: 'http://localhost/',
+      hydrated: true,
     });
 
     expect(result.html).toBe('<div></div>');
     expect(result.head).toBe('<title>Test</title><script>hydrate()</script>');
+    expect(result.status).toBe(200);
+    expect(router.cleanup).toHaveBeenCalled();
+  });
+
+  it('renders successfully without hydration script when hydrated is false', async () => {
+    const router = createMockRouter();
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/',
+      hydrated: false,
+    });
+
+    expect(result.html).toBe('<div></div>');
+    expect(result.head).toBe('<title>Test</title>');
     expect(result.status).toBe(200);
     expect(router.cleanup).toHaveBeenCalled();
   });

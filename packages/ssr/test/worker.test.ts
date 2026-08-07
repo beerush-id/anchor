@@ -370,6 +370,23 @@ describe('createWorker', () => {
     await worker.fetch(createRequest('http://localhost/'), mockEnv);
     expect(renderer).toHaveBeenCalled();
   });
+
+  it('bypasses resolveAsset and cache when ssg is true', async () => {
+    const renderer = createMockRenderer();
+    const assetResponse = new Response('body', { headers: { 'Content-Type': 'text/css' } });
+
+    const worker = createWorker(renderer, {
+      template: TEMPLATE,
+      resolveAsset: async (_req, url) => {
+        if (url.pathname === '/style.css') return assetResponse;
+      },
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, true);
+    
+    expect(response.status).toBe(200);
+    expect(renderer).toHaveBeenCalled();
+  });
 });
 
 describe('createFullWorker', () => {
@@ -746,6 +763,24 @@ describe('createFullWorker', () => {
     expect(response.headers.getSetCookie()).toEqual(['session=abc; Path=/']);
 
     decodeSpy.mockRestore();
+  });
+
+  it('bypasses resolveAsset and cache when ssg is true in full worker', async () => {
+    const renderer = createMockRenderer();
+    const router = createMockRouter();
+    const assetResponse = new Response('css', { headers: { 'Content-Type': 'text/css' } });
+
+    const worker = createFullWorker(router, renderer, {
+      template: TEMPLATE,
+      resolveAsset: async (_req, url) => {
+        if (url.pathname === '/style.css') return assetResponse;
+      },
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, true);
+    expect(response.status).toBe(200);
+    expect(renderer).toHaveBeenCalled();
+    expect(router.isolate).toHaveBeenCalled();
   });
   describe('upgrade', () => {
     it('throws error if wsRouter is not provided', async () => {
