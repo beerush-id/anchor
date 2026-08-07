@@ -62,17 +62,18 @@ export class MetadataNode extends EventEmitter {
     }
 
     this.generate();
-
-    for (const child of this.children.values()) {
-      child.boot();
-    }
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
     const child = new MetadataNode(childFolder, this, this.rootDir, this.pagesDir);
     this.children.set(childFolder.segment, child);
 
-    child.on('change', (file, kind) => this.emit('change', file, kind));
+    child.on('change', (file, kind) => {
+      this.emit('change', file, kind);
+      this.generate();
+    });
+
+    child.boot();
   };
 
   private handleChildRemoved = (childFolder: FolderNode) => {

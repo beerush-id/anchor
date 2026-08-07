@@ -1,13 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanFixture, fixtureExists, makeFixture, readFixture, removeFixture, writeFixture } from './fixture.js';
-import { makeSync } from './make-sync.js';
+import { makeApp } from './make-sync.js';
 
 describe('no-clobber — existing route.ts is never overwritten', () => {
   let dir = '';
+  let app: ReturnType<typeof makeApp> | undefined;
 
-  afterEach(() => cleanFixture(dir));
+  afterEach(() => {
+    app?.destroy();
+    cleanFixture(dir);
+  });
 
-  it('leaves a hand-written route file byte-identical after refresh', () => {
+  it('leaves a hand-written route file byte-identical after boot', () => {
     const custom = "import router from '../router.js';\n\nexport const blogsRoute = router.route('/blogs');\n";
 
     dir = makeFixture({
@@ -18,11 +22,10 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
       'pages/about/page.tsx': '',
     });
 
-    const { sync } = makeSync(dir);
-    sync.refresh();
+    app = makeApp(dir);
 
     expect(readFixture(dir, 'pages/blogs/route.ts')).toBe(custom);
-    // Child route.ts is generated since it didn't exist
+    // The child route.ts is generated since it didn't exist.
     expect(fixtureExists(dir, 'pages/blogs/[slug]/route.ts')).toBe(true);
     expect(fixtureExists(dir, 'pages/about/route.ts')).toBe(true);
   });
@@ -30,14 +33,14 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
   it('keeps a route file the user replaced with custom content', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '' });
 
-    const { sync } = makeSync(dir);
-    sync.refresh();
+    app = makeApp(dir);
     expect(fixtureExists(dir, 'pages/blogs/route.ts')).toBe(true);
 
     // The user overwrites the generated route.ts with custom content.
-    // On next refresh, it must not be touched.
+    // A later structural event must not touch it.
     writeFixture(dir, { 'pages/blogs/route.ts': '// custom\n' });
-    sync.refresh();
+    writeFixture(dir, { 'pages/blogs/layout.tsx': '' });
+    app.rootFolder.children.get('blogs')?.handleFileAdded('layout.tsx');
 
     expect(readFixture(dir, 'pages/blogs/route.ts')).toBe('// custom\n');
   });
@@ -45,14 +48,13 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
   it('does not delete route files when pages are removed', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '' });
 
-    const { sync } = makeSync(dir);
-    sync.refresh();
+    app = makeApp(dir);
     expect(fixtureExists(dir, 'pages/blogs/route.ts')).toBe(true);
 
     removeFixture(dir, 'pages/blogs/page.tsx');
-    sync.refresh();
+    app.rootFolder.children.get('blogs')?.handleFileRemoved('page.tsx');
 
-    // Route file stays — it's user-owned
+    // The route file stays — it is user-owned now.
     expect(fixtureExists(dir, 'pages/blogs/route.ts')).toBe(true);
   });
 });

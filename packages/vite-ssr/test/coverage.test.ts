@@ -1,226 +1,116 @@
 import fs from 'node:fs';
 import * as acorn from 'acorn';
 import { afterEach, describe, expect, it } from 'vitest';
-import { generateRouteFiles } from '../src/pages/generate.js';
-import { generateManifest } from '../src/pages/manifest.js';
 import { mdxAttachForFile } from '../src/pages/mdx.js';
-import { derivePrefix, humanizeSegment, importSpecifier, isPageFile, scanPages } from '../src/pages/model.js';
-import { scaffoldForFile, scaffoldPageTsx } from '../src/pages/scaffold.js';
-import { cleanFixture, fixturePath, makeFixture, removeFixture } from './fixture.js';
-import { makeSync } from './make-sync.js';
+import {
+  canonicalPath,
+  derivePrefix,
+  deriveRouteName,
+  deriveSegment,
+  humanizeSegment,
+  importSpecifier,
+} from '../src/pages/model.js';
+import { scaffoldForFile } from '../src/pages/scaffold.js';
+import { bootPackage, ensureSymlink, writeIfChanged } from '../src/pages/sync.js';
+import {
+  cleanFixture,
+  fixtureExists,
+  fixturePath,
+  makeFixture,
+  readFixture,
+  removeFixture,
+  writeFixture,
+} from './fixture.js';
+import { makeApp, readManifest, readMetadata } from './make-sync.js';
 
 const parse = (code: string) => acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
 
 describe('coverage tests for unreached branches', () => {
   let dir = '';
+  let app: ReturnType<typeof makeApp> | undefined;
 
-  afterEach(() => cleanFixture(dir));
-
-  describe('generate.ts edge cases', () => {
-    it('scaffoldPageTsx handles indexRoute (line 218)', () => {
-      const result = scaffoldPageTsx({ framework: 'react', rel: '', routeExport: 'indexRoute' });
-      expect(result).toContain('<h1>Home</h1>');
-    });
-
-    it('scaffoldPageTsx hits the || empty string fallback (line 218)', () => {
-      // routeExport is not indexRoute, rel is empty string so split('/').pop() is ''
-      const result = scaffoldPageTsx({ framework: 'react', rel: '', routeExport: 'customRoute' });
-      expect(result).toContain('<h1>Home</h1>'); // humanizeSegment('') -> 'Home'
-    });
-
-    it('mdxAttachForFile returns undefined for non-mdx files (line 348)', async () => {
-      dir = makeFixture({ 'pages/page.tsx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/page.tsx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree,
-        framework: 'react',
-        code: '',
-        parse,
-      });
-      expect(result).toBeUndefined();
-    });
-
-    it('mdxAttachForFile attaches layout.mdx to rootRoute for root folder (line 367)', async () => {
-      dir = makeFixture({ 'pages/layout.mdx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/layout.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree,
-        framework: 'react',
-        code: '',
-        parse,
-      });
-      expect(result).toContain('import { rootRoute as __airRoute }');
-    });
-
-    it('mdxAttachForFile attaches layout.mdx to derived route for subfolder (line 367)', async () => {
-      dir = makeFixture({ 'pages/docs/layout.mdx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/docs/layout.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree,
-        framework: 'react',
-        code: '',
-        parse,
-      });
-      expect(result).toContain('import { docsRoute as __airRoute }');
-    });
-
-    it('manifest includes root page correctly', () => {
-      dir = makeFixture({ 'pages/page.tsx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const files = generateManifest({
-        root: tree,
-        manifestDir: fixturePath(dir, 'manifest'),
-        framework: 'react',
-      });
-      const content = files.find((f) => f.filePath === fixturePath(dir, 'manifest/index.ts'))?.content ?? '';
-      expect(content).toContain("['/', indexRoute],");
-    });
-
-    it('scaffoldForFile returns undefined for unknown files', () => {
-      dir = makeFixture({ 'pages/page.tsx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      expect(scaffoldForFile({ base: 'random.ts', folder: tree, framework: 'react' })).toBeUndefined();
-    });
-
-    it('generates fallback routes when root folder has only layout (line 84)', () => {
-      dir = makeFixture({ 'pages/layout.tsx': '' });
-      const { sync } = makeSync(dir);
-      sync.refresh();
-      const routeContent = fs.readFileSync(fixturePath(dir, 'pages/route.ts'), 'utf-8');
-      expect(routeContent).toContain('export const rootRoute = router.route();');
-      expect(routeContent).not.toContain('indexRoute');
-    });
-
-    it('does not generate index route when root folder has only irpc', () => {
-      dir = makeFixture({ 'pages/constructor.ts': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'), true);
-      const files = generateRouteFiles({
-        root: tree,
-        routerFile: fixturePath(dir, 'router.ts'),
-      });
-      const routeContent = files.find((f) => f.filePath.endsWith('pages/route.ts'))?.content ?? '';
-      expect(routeContent).not.toContain('indexRoute');
-    });
+  afterEach(() => {
+    app?.destroy();
+    cleanFixture(dir);
   });
 
-  describe('model.ts edge cases', () => {
-    it('isPageFile accurately identifies files', () => {
-      expect(isPageFile('page.tsx')).toBe(true);
-      expect(isPageFile('random.ts')).toBe(false);
-    });
-
-    it('scanPages identifies layout.mdx and irpc files (constructor.ts) (line 128)', () => {
-      dir = makeFixture({ 'pages/docs/layout.mdx': '', 'pages/api/constructor.ts': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'), true);
-      const docs = tree.children.find((c) => c.rel === 'docs')!;
-      const api = tree.children.find((c) => c.rel === 'api')!;
-      expect(docs.layout).toBe(true);
-      expect(api.irpc).toBe(true);
-    });
-
-    it('scanPages skips .hidden and node_modules folders', () => {
-      dir = makeFixture({ 'pages/.hidden/page.tsx': '', 'pages/node_modules/page.tsx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      expect(tree.children).toHaveLength(0);
-    });
-
-    it('derivePrefix returns empty string for empty rel', () => {
-      expect(derivePrefix('')).toBe('');
-    });
-
-    it('derivePrefix skips non-alphanumeric segments', () => {
-      expect(derivePrefix('___/blogs')).toBe('blogs');
-    });
-
-    it('humanizeSegment returns Home if no valid words', () => {
-      expect(humanizeSegment('___')).toBe('Home');
-    });
-
-    it('importSpecifier prefixes with ./ when files are in same dir', () => {
-      const spec = importSpecifier('/app/foo.ts', '/app/bar.ts');
-      expect(spec).toBe('./bar.js');
-    });
-  });
-
-  describe('sync.ts edge cases', () => {
-    it('exposes the current scanned tree', () => {
-      dir = makeFixture({ 'pages/page.tsx': '' });
-      const { sync } = makeSync(dir);
-      sync.refresh();
-      expect(sync.tree.page).toBe('tsx');
-    });
-
-    it('scaffoldFile ignores non-page base files', () => {
-      dir = makeFixture({ 'pages/unknown.ts': '' });
-      const { sync } = makeSync(dir);
-      sync.scaffoldFile(fixturePath(dir, 'pages/unknown.ts'));
-    });
-
-    it('scaffoldFile ignores files not in the tree', () => {
-      dir = makeFixture({ 'elsewhere/page.tsx': '' });
-      const { sync } = makeSync(dir);
-      sync.scaffoldFile(fixturePath(dir, 'elsewhere/page.tsx'));
-    });
-
-    it('scaffoldFile swallows exceptions on write (line 84)', () => {
-      dir = makeFixture({ 'pages/page.tsx': '' });
-      // Make it strictly readonly so fs.writeFileSync throws EACCES
-      fs.chmodSync(fixturePath(dir, 'pages/page.tsx'), 0o444);
-      const { sync } = makeSync(dir);
-      // Fails to write 0 bytes file because it is readonly, triggering catch block
-      sync.scaffoldFile(fixturePath(dir, 'pages/page.tsx'));
-    });
-
-    it('refresh does not delete route files when pages are removed', () => {
-      dir = makeFixture({ 'pages/blogs/page.tsx': '' });
-      const { sync } = makeSync(dir);
-      sync.refresh();
-
-      removeFixture(dir, 'pages/blogs/page.tsx');
-      sync.refresh();
-
-      // Route file stays — it's user-owned now
-      expect(fs.existsSync(fixturePath(dir, 'pages/blogs/route.ts'))).toBe(true);
-    });
-  });
-
-  describe('generate.ts and mdx.ts complete branch coverage', () => {
-    it('generates routes for top-level parenthesized route segments (generate.ts:59-63)', () => {
+  describe('route-node branches', () => {
+    it('generates router.add routes for top-level parenthesized route groups', () => {
       dir = makeFixture({ 'pages/(dashboard)/page.tsx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const files = generateRouteFiles({
-        root: tree,
-        routerFile: fixturePath(dir, 'router.ts'),
-      });
-      const routeContent =
-        files.find((f) => f.filePath === fixturePath(dir, 'pages/(dashboard)/route.ts'))?.content ?? '';
-      expect(routeContent).toContain("router.add('/dashboard')");
+
+      app = makeApp(dir);
+
+      const route = readFixture(dir, 'pages/(dashboard)/route.ts');
+      expect(route).toContain("import router from '../../router.js';");
+      expect(route).toContain("export const dashboardRoute = router.add('/dashboard');");
     });
 
-    it('handles custom export default declaration that is not MDXContent (mdx.ts:123-127)', async () => {
+    it('generates a root route without an index when the root has only a layout', () => {
+      dir = makeFixture({ 'pages/layout.tsx': '' });
+
+      app = makeApp(dir);
+
+      const route = readFixture(dir, 'pages/route.ts');
+      expect(route).toContain('export const rootRoute = router.route();');
+      expect(route).not.toContain('indexRoute');
+    });
+
+    it('surfaces route file changes as reload change events', () => {
+      dir = makeFixture({ 'pages/blogs/route.ts': '// hand-written\n', 'pages/blogs/page.tsx': '' });
+
+      app = makeApp(dir);
+      const events: Array<[string, string]> = [];
+      app.on('change', (file, kind) => events.push([file, kind]));
+
+      app.rootFolder.children.get('blogs')?.handleFileChanged('route.ts');
+
+      // The route reload bubbles once, and each manifest level on the chain
+      // also re-generates (blogs + root) — so one reload plus updates.
+      const reload = events.find(([file, kind]) => kind === 'reload' && file.includes('route.ts'));
+      expect(reload).toBeDefined();
+      expect(events.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('scaffold variants', () => {
+    it('scaffolds the ambient global.d.ts with AirRouteMeta', () => {
+      expect(scaffoldForFile({ base: 'global.d.ts', framework: 'react' })).toContain(
+        'interface AirRouteMeta'
+      );
+    });
+
+    it('scaffolds the solid worker entry against the solid ssr package', () => {
+      const content = scaffoldForFile({ base: 'worker.ts', framework: 'solid' });
+      expect(content).toContain("import { createApp } from '@anchorlib/solid/ssr';");
+    });
+
+    it('returns undefined for unknown file bases', () => {
+      expect(scaffoldForFile({ base: 'random.txt', framework: 'react' })).toBeUndefined();
+    });
+  });
+
+  describe('mdx transform branches', () => {
+    it('keeps a custom export default declaration that is not MDXContent', async () => {
       dir = makeFixture({ 'pages/page.mdx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const code = 'export default function CustomDefault() { return null; }\n';
+
+      app = makeApp(dir);
       const result = await mdxAttachForFile({
         file: fixturePath(dir, 'pages/page.mdx'),
         pagesDir: fixturePath(dir, 'pages'),
-        tree,
+        tree: app.rootFolder,
         framework: 'react',
-        code,
+        code: 'export default function CustomDefault() { return null; }\n',
         parse,
       });
+      app.destroy();
+
       expect(result).toContain('function CustomDefault');
     });
 
-    it('handles ordinary named exports, function declarations, and class declarations (mdx.ts:150-152, 161-162, 219-220)', async () => {
+    it('keeps ordinary named exports and invokes $install side-effects', async () => {
       dir = makeFixture({ 'pages/page.mdx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
+
+      app = makeApp(dir);
       const code = [
         'export const helperConst = 42;',
         'export class CustomClass {}',
@@ -230,68 +120,307 @@ describe('coverage tests for unreached branches', () => {
       const result = await mdxAttachForFile({
         file: fixturePath(dir, 'pages/page.mdx'),
         pagesDir: fixturePath(dir, 'pages'),
-        tree,
+        tree: app.rootFolder,
         framework: 'react',
         code,
         parse,
       });
+      app.destroy();
+
       expect(result).toContain("if (typeof $install === 'function') $install();");
       expect(result).toContain("if (typeof $module === 'function') $module();");
       expect(result).toContain('export const helperConst = 42;');
       expect(result).toContain('export class CustomClass {}');
     });
 
-    it('handles specifier exports without declarations and local AST fallback (mdx.ts:202-209)', async () => {
+    it('handles specifier exports without declarations', async () => {
       dir = makeFixture({ 'pages/page.mdx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
-      const code =
-        'const $install = () => {}; const myVar = 100;\nexport { $install };\nexport { myVar as customVar };\n';
+
+      app = makeApp(dir);
+      const code = 'const $install = () => {}; const myVar = 100;\nexport { $install };\nexport { myVar as customVar };\n';
       const result = await mdxAttachForFile({
         file: fixturePath(dir, 'pages/page.mdx'),
         pagesDir: fixturePath(dir, 'pages'),
-        tree,
+        tree: app.rootFolder,
         framework: 'react',
         code,
         parse,
       });
+      app.destroy();
+
       expect(result).toContain("if (typeof $install === 'function') $install();");
       expect(result).toContain('export { myVar as customVar };');
-
-      const customParse = () => ({
-        type: 'Program',
-        body: [
-          {
-            type: 'ExportNamedDeclaration',
-            declaration: null,
-            specifiers: [{ type: 'ExportSpecifier', local: { type: 'Identifier', name: '$install' }, exported: null }],
-            start: 0,
-            end: 20,
-          },
-        ],
-      });
-      const fallbackResult = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/page.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree,
-        framework: 'react',
-        code: '/* test code */',
-        parse: customParse as any,
-      });
-      expect(fallbackResult).toContain("if (typeof $install === 'function') $install();");
     });
 
-    it('returns undefined when mdx file directory is not found in scanned tree (mdx.ts:62)', async () => {
+    it('returns undefined when the mdx file directory is not found in the tree', async () => {
       dir = makeFixture({ 'pages/page.mdx': '' });
-      const tree = scanPages(fixturePath(dir, 'pages'));
+
+      app = makeApp(dir);
       const result = await mdxAttachForFile({
         file: fixturePath(dir, 'pages/untracked/page.mdx'),
         pagesDir: fixturePath(dir, 'pages'),
-        tree,
+        tree: app.rootFolder,
         framework: 'react',
         code: '',
         parse,
       });
+      app.destroy();
+
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('model helpers', () => {
+    it('leaves static segments untouched and maps bracket segments', () => {
+      expect(deriveSegment('blog')).toBe('blog');
+      expect(deriveSegment('[slug]')).toBe(':slug');
+      expect(deriveSegment('[...rest]')).toBe('*rest');
+    });
+
+    it('derives export names from folder paths', () => {
+      expect(derivePrefix('admin/users')).toBe('adminUsers');
+      expect(derivePrefix('___/blogs')).toBe('blogs');
+      expect(derivePrefix('')).toBe('');
+      expect(deriveRouteName('blogs/[slug]')).toBe('blogsDynamicRoute');
+    });
+
+    it('humanizes segments and falls back to Home', () => {
+      expect(humanizeSegment('getting-started')).toBe('Getting Started');
+      expect(humanizeSegment('[slug]')).toBe('Slug');
+      expect(humanizeSegment('___')).toBe('Home');
+    });
+
+    it('computes canonical paths and import specifiers', () => {
+      expect(canonicalPath('blogs/[slug]')).toBe('/blogs/:slug');
+      expect(canonicalPath('')).toBe('/');
+      expect(importSpecifier('/app/foo.ts', '/app/bar.ts')).toBe('./bar.js');
+    });
+  });
+
+  describe('sync helpers', () => {
+    it('skips writes when content is identical and writes when changed', () => {
+      dir = makeFixture({ 'file.txt': 'a' });
+
+      const file = fixturePath(dir, 'file.txt');
+      expect(writeIfChanged(file, 'a')).toBe(false);
+      expect(writeIfChanged(file, 'b')).toBe(true);
+      expect(readFixture(dir, 'file.txt')).toBe('b');
+    });
+
+    it('boots a scoped package with its exports map', () => {
+      dir = makeFixture({});
+      bootPackage(fixturePath(dir, 'pkg'), '@airstack/test', { '.': './index.ts' });
+
+      const { name, exports: exportsMap } = JSON.parse(readFixture(dir, 'pkg/package.json'));
+      expect(name).toBe('@airstack/test');
+      expect(exportsMap).toEqual({ '.': './index.ts' });
+    });
+
+    it('is idempotent when creating the @airstack symlink', () => {
+      dir = makeFixture({});
+
+      expect(() => ensureSymlink(dir)).not.toThrow();
+      expect(() => ensureSymlink(dir)).not.toThrow();
+    });
+  });
+
+  describe('app bootstrap', () => {
+    it('creates a router file and starter pages when the project is empty', () => {
+      dir = makeFixture({});
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'router.ts')).toContain('export default router;');
+      expect(readFixture(dir, 'pages/layout.tsx')).toContain('page(rootRoute).render(');
+      expect(readFixture(dir, 'pages/page.tsx')).toContain('Welcome to AIR Stack');
+      expect(readFixture(dir, 'pages/route.ts')).toContain("export const indexRoute = rootRoute.route('/');");
+    });
+  });
+
+  describe('live watcher — folder edits are picked up while running', () => {
+    async function waitFor(cond: () => boolean, timeout = 3000): Promise<void> {
+      const start = Date.now();
+      while (!cond()) {
+        if (Date.now() - start > timeout) throw new Error('condition not met in time');
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    }
+
+    it('generates routes when a page folder appears', async () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
+      app = makeApp(dir);
+      app.rootFolder.watch();
+
+      // Let chokidar establish its watch before mutating the tree.
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      fs.mkdirSync(fixturePath(dir, 'pages/blogs'), { recursive: true });
+      fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '');
+
+      await waitFor(() => fixtureExists(dir, 'pages/blogs/route.ts'));
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+    });
+
+    it('reacts to a file added to an existing folder', async () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/projects/page.tsx': '' });
+      app = makeApp(dir);
+      app.rootFolder.watch();
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      writeFixture(dir, { 'pages/projects/layout.tsx': '' });
+
+      await waitFor(() => readFixture(dir, 'pages/projects/route.ts').includes('projectsIndexRoute'));
+    });
+
+    it('watching twice is idempotent and destroy shuts the watcher down', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
+      app = makeApp(dir);
+
+      expect(() => app.rootFolder.watch()).not.toThrow();
+      expect(() => app.rootFolder.watch()).not.toThrow();
+
+      const root = app.rootFolder;
+      expect(() => app.destroy()).not.toThrow();
+      app = undefined;
+
+      expect(root.children.size).toBe(0);
+    });
+  });
+
+  describe('symlink & write helpers', () => {
+    it('creates the @airstack symlink when node_modules is missing', () => {
+      dir = makeFixture({});
+
+      expect(fs.existsSync(fixturePath(dir, 'node_modules'))).toBe(false);
+      ensureSymlink(dir);
+
+      expect(fs.lstatSync(fixturePath(dir, 'node_modules/@airstack')).isSymbolicLink()).toBe(true);
+    });
+
+    it('repairs a stale @airstack symlink target', () => {
+      dir = makeFixture({});
+      fs.mkdirSync(fixturePath(dir, 'node_modules/@airstack'), { recursive: true });
+      fs.writeFileSync(fixturePath(dir, 'node_modules/@airstack/stale.txt'), 'x');
+
+      ensureSymlink(dir);
+
+      const stat = fs.lstatSync(fixturePath(dir, 'node_modules/@airstack'));
+      expect(stat.isSymbolicLink()).toBe(true);
+      expect(fs.readlinkSync(fixturePath(dir, 'node_modules/@airstack'))).toBe('../.airstack');
+    });
+
+    it('writeIfChanged creates missing parent directories', () => {
+      dir = makeFixture({});
+
+      const file = fixturePath(dir, 'a/b/c.txt');
+      expect(writeIfChanged(file, 'x')).toBe(true);
+      expect(readFixture(dir, 'a/b/c.txt')).toBe('x');
+    });
+  });
+
+  describe('index route lifecycle', () => {
+    it('injects an index route when a layout is added after a page', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/projects/page.tsx': '' });
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/projects/route.ts')).not.toContain('projectsIndexRoute');
+
+      writeFixture(dir, { 'pages/projects/layout.tsx': '' });
+      app.rootFolder.children.get('projects')?.handleFileAdded('layout.tsx');
+
+      const route = readFixture(dir, 'pages/projects/route.ts');
+      expect(route).toContain("export const projectsIndexRoute = projectsRoute.route('/');");
+    });
+
+    it('removes the index route when the page is removed from a page+layout folder', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/projects/page.tsx': '', 'pages/projects/layout.tsx': '' });
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/projects/route.ts')).toContain('projectsIndexRoute');
+
+      removeFixture(dir, 'pages/projects/page.tsx');
+      app.rootFolder.children.get('projects')?.handleFileRemoved('page.tsx');
+
+      expect(readFixture(dir, 'pages/projects/route.ts')).not.toContain('projectsIndexRoute');
+    });
+
+    it('re-injects the index route without duplicates after a layout is removed and re-added', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/projects/page.tsx': '', 'pages/projects/layout.tsx': '' });
+      app = makeApp(dir);
+
+      removeFixture(dir, 'pages/projects/layout.tsx');
+      app.rootFolder.children.get('projects')?.handleFileRemoved('layout.tsx');
+      expect(readFixture(dir, 'pages/projects/route.ts')).not.toContain('projectsIndexRoute');
+
+      writeFixture(dir, { 'pages/projects/layout.tsx': '' });
+      app.rootFolder.children.get('projects')?.handleFileAdded('layout.tsx');
+
+      const route = readFixture(dir, 'pages/projects/route.ts');
+      expect(route.split('export const projectsIndexRoute').length - 1).toBe(1);
+    });
+  });
+
+  describe('metadata & manifest sync', () => {
+    it('removes a metadata entry when its mdx file is removed', () => {
+      dir = makeFixture({ 'pages/guide/page.mdx': '---\ntitle: "Guide"\n---\n' });
+      app = makeApp(dir);
+
+      expect(fixtureExists(dir, '.airstack/metadata/guide/page.ts')).toBe(true);
+
+      removeFixture(dir, 'pages/guide/page.mdx');
+      app.rootFolder.children.get('guide')?.handleFileRemoved('page.mdx');
+
+      expect(fixtureExists(dir, '.airstack/metadata/guide/page.ts')).toBe(false);
+      expect(readMetadata(dir, 'index.ts')).not.toContain('guideMeta');
+    });
+
+    it('drops the parent spread when an mdx folder is removed', () => {
+      dir = makeFixture({ 'pages/blogs/[slug]/test.mdx': '---\ntitle: "Post"\n---\n' });
+      app = makeApp(dir);
+
+      expect(readMetadata(dir, 'index.ts')).toContain('blogsMeta');
+
+      removeFixture(dir, 'pages/blogs');
+      app.rootFolder.handleChildRemoved('blogs');
+
+      expect(readMetadata(dir, 'index.ts')).not.toContain('blogsMeta');
+    });
+
+    it('removes manifest entries when a folder is removed', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '', 'pages/about/page.tsx': '' });
+      app = makeApp(dir);
+
+      expect(readManifest(dir)).toContain("'/blogs'");
+
+      removeFixture(dir, 'pages/blogs');
+      app.rootFolder.handleChildRemoved('blogs');
+
+      expect(readManifest(dir)).not.toContain("'/blogs'");
+      expect(readManifest(dir)).toContain("'/about'");
+    });
+
+    it('removes generated manifest files on destroy', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '' });
+      app = makeApp(dir);
+
+      expect(fixtureExists(dir, '.airstack/manifest/index.ts')).toBe(true);
+
+      app.destroy();
+      app = undefined;
+
+      expect(fixtureExists(dir, '.airstack/manifest/index.ts')).toBe(false);
+    });
+  });
+
+  describe('resilient boot', () => {
+    it('boots even when an app entry file cannot be scaffolded', () => {
+      dir = makeFixture({ 'router.ts': '', 'src/app.tsx': '' });
+      fs.chmodSync(fixturePath(dir, 'src/app.tsx'), 0o444);
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'src/app.tsx')).toBe('');
     });
   });
 });

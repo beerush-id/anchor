@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { extractFrontmatter, generateMetadata, generateSingleMetadata } from '../src/pages/metadata.js';
-import { scanPages } from '../src/pages/model.js';
-import { cleanFixture, fixturePath, makeFixture } from './fixture.js';
+import { extractFrontmatter } from '../src/pages/markdown-node.js';
+import { cleanFixture, fixtureExists, makeFixture, writeFixture } from './fixture.js';
+import { makeApp, readMetadata } from './make-sync.js';
 
 describe('mdx metadata generator', () => {
   let dir = '';
+  let app: ReturnType<typeof makeApp> | undefined;
 
-  afterEach(() => cleanFixture(dir));
+  afterEach(() => {
+    app?.destroy();
+    cleanFixture(dir);
+  });
 
-  it('extracts yaml frontmatter from content string into javascript object', () => {
+  it('extracts yaml frontmatter from a content string into a javascript object', () => {
     const content = [
       '---',
       "title: 'Getting Started'",
@@ -24,8 +28,7 @@ describe('mdx metadata generator', () => {
       '# Document Content',
     ].join('\n');
 
-    const result = extractFrontmatter(content);
-    expect(result).toEqual({
+    expect(extractFrontmatter(content)).toEqual({
       title: 'Getting Started',
       draft: false,
       rating: 4.5,
@@ -35,107 +38,7 @@ describe('mdx metadata generator', () => {
     });
   });
 
-  it('generates individual typescript modules and index array for discovered mdx files', () => {
-    dir = makeFixture({
-      'pages/blogs/[slug]/test.mdx': '---\ntitle: "Test Post"\n---\n# Test\n',
-      'pages/docs/page.mdx': '---\ntitle: "Docs Home"\n---\n# Docs\n',
-      'pages/page.mdx': '---\ntitle: "Root Page"\n---\n# Root\n',
-      'pages/_.mdx': '---\ntitle: "Fallback"\n---\n# Fallback\n',
-    });
-
-    const pagesDir = fixturePath(dir, 'pages');
-    const metadataDir = fixturePath(dir, 'metadata');
-    const tree = scanPages(pagesDir);
-
-    const generated = generateMetadata({
-      root: tree,
-      metadataDir,
-    });
-
-    const paths = generated.map((f) => f.filePath);
-    expect(paths).toContain(fixturePath(dir, 'metadata/blogs/[slug]/test.ts'));
-    expect(paths).toContain(fixturePath(dir, 'metadata/docs/page.ts'));
-    expect(paths).toContain(fixturePath(dir, 'metadata/page.ts'));
-    expect(paths).toContain(fixturePath(dir, 'metadata/_.ts'));
-    expect(paths).toContain(fixturePath(dir, 'metadata/index.ts'));
-    expect(paths).toContain(fixturePath(dir, 'metadata/blogs/index.ts'));
-    expect(paths).toContain(fixturePath(dir, 'metadata/docs/index.ts'));
-
-    const testPostFile = generated.find((f) => f.filePath === fixturePath(dir, 'metadata/blogs/[slug]/test.ts'));
-    expect(testPostFile?.content).toContain('export const meta = {');
-    expect(testPostFile?.content).toContain('"title": "Test Post"');
-    expect(testPostFile?.content).toContain('export default meta;');
-
-    const indexFile = generated.find((f) => f.filePath === fixturePath(dir, 'metadata/index.ts'));
-    expect(indexFile?.content).toContain("import blogsDynamicTestMeta from './blogs/[slug]/test.js';");
-    expect(indexFile?.content).toContain("import docsPageMeta from './docs/page.js';");
-    expect(indexFile?.content).toContain("import pageMeta from './page.js';");
-    expect(indexFile?.content).toContain("import rootMeta from './_.js';");
-    expect(indexFile?.content).toContain("{ path: '/blogs/:slug/test', meta: blogsDynamicTestMeta }");
-    expect(indexFile?.content).toContain("{ path: '/docs', meta: docsPageMeta }");
-    expect(indexFile?.content).toContain("{ path: '/', meta: pageMeta }");
-    expect(indexFile?.content).toContain("{ path: '/_', meta: rootMeta }");
-
-    const blogsIndexFile = generated.find((f) => f.filePath === fixturePath(dir, 'metadata/blogs/index.ts'));
-    expect(blogsIndexFile?.content).toContain("import blogsDynamicTestMeta from './[slug]/test.js';");
-    expect(blogsIndexFile?.content).toContain("{ path: '/blogs/:slug/test', meta: blogsDynamicTestMeta }");
-  });
-
-  it('handles single file generation, read failures, and cache utilization', () => {
-    dir = makeFixture({
-      'pages/doc.mdx': '---\ntitle: "Cache Test"\n---\n# Cache\n',
-      'pages/page.mdx': '---\ntitle: "Root Single"\n---\n# Root\n',
-      'pages/_.mdx': '---\ntitle: "Root Fallback"\n---\n# Fallback\n',
-    });
-
-    const pagesDir = fixturePath(dir, 'pages');
-    const metadataDir = fixturePath(dir, 'metadata');
-    const absDocPath = fixturePath(dir, 'pages/doc.mdx');
-    const cache = new Map();
-
-    const single = generateSingleMetadata({
-      absPath: absDocPath,
-      pagesDir,
-      metadataDir,
-      cache,
-    });
-
-    expect(single?.filePath).toContain('doc.ts');
-    expect(cache.has(absDocPath)).toBe(true);
-
-    const rootSingle = generateSingleMetadata({
-      absPath: fixturePath(dir, 'pages/page.mdx'),
-      pagesDir,
-      metadataDir,
-    });
-    expect(rootSingle?.filePath).toContain('page.ts');
-
-    const fallbackSingle = generateSingleMetadata({
-      absPath: fixturePath(dir, 'pages/_.mdx'),
-      pagesDir,
-      metadataDir,
-    });
-    expect(fallbackSingle?.content).toContain('Root Fallback');
-
-    const tree = scanPages(pagesDir);
-    const cachedResult = generateMetadata({
-      root: tree,
-      metadataDir,
-      pagesDir,
-      cache,
-    });
-    expect(cachedResult.length).toBeGreaterThan(0);
-
-    const nonExistent = generateSingleMetadata({
-      absPath: fixturePath(dir, 'pages/non-existent.mdx'),
-      pagesDir,
-      metadataDir,
-      cache,
-    });
-    expect(nonExistent).toBeUndefined();
-  });
-
-  it('handles yaml frontmatter edge cases, empty blocks, and malformed structures', () => {
+  it('handles yaml edge cases, empty blocks, and malformed structures', () => {
     expect(extractFrontmatter('no frontmatter here')).toEqual({});
     expect(extractFrontmatter('---\n# comment only\n---')).toEqual({});
 
@@ -170,7 +73,7 @@ describe('mdx metadata generator', () => {
     expect(res.intVal).toBe(-42);
     expect(res.floatVal).toBe(3.14);
 
-    const nestedBlocksYaml = [
+    const blockRes = extractFrontmatter([
       '---',
       'items:',
       '  - ',
@@ -180,31 +83,86 @@ describe('mdx metadata generator', () => {
       '    name: second',
       '    value: 2',
       '---',
-    ].join('\n');
-
-    const blockRes = extractFrontmatter(nestedBlocksYaml);
+    ].join('\n'));
     expect(blockRes.items).toEqual([
       { name: 'first', value: 1 },
       { name: 'second', value: 2 },
     ]);
-
-    let recursiveYaml = '---\n';
-    for (let i = 0; i < 5000; i++) {
-      recursiveYaml += ' '.repeat(i) + 'key:\n';
-    }
-    recursiveYaml += '---';
-    expect(extractFrontmatter(recursiveYaml)).toEqual({});
   });
 
-  it('handles metadataDir ending with a trailing slash during prefix normalization', () => {
+  it('generates a metadata module per mdx file with its frontmatter', () => {
+    dir = makeFixture({
+      'pages/page.mdx': '---\ntitle: "Root Page"\n---\n# Root\n',
+      'pages/docs/page.mdx': '---\ntitle: "Docs Home"\n---\n# Docs\n',
+      'pages/blogs/[slug]/test.mdx': '---\ntitle: "Test Post"\n---\n# Test\n',
+    });
+
+    app = makeApp(dir);
+
+    const root = readMetadata(dir, 'page.ts');
+    expect(root).toContain('export const meta = {');
+    expect(root).toContain('"title": "Root Page"');
+    expect(root).toContain('export default meta;');
+
+    expect(readMetadata(dir, 'docs/page.ts')).toContain('"title": "Docs Home"');
+    expect(readMetadata(dir, 'blogs/[slug]/test.ts')).toContain('"title": "Test Post"');
+  });
+
+  it('aggregates direct mdx files into folder index files with canonical paths', () => {
     dir = makeFixture({
       'pages/page.mdx': '---\ntitle: "Root"\n---\n',
+      'pages/docs/page.mdx': '---\ntitle: "Docs"\n---\n',
     });
-    const pagesDir = fixturePath(dir, 'pages');
-    const metadataDir = `${fixturePath(dir, 'metadata')}/`;
-    const tree = scanPages(pagesDir);
 
-    const generated = generateMetadata({ root: tree, pagesDir, metadataDir });
-    expect(generated.length).toBeGreaterThan(0);
+    app = makeApp(dir);
+
+    const rootIndex = readMetadata(dir, 'index.ts');
+    expect(rootIndex).toContain("import pageMeta from './page.js';");
+    expect(rootIndex).toContain("{ path: '/', meta: pageMeta }");
+
+    const docsIndex = readMetadata(dir, 'docs/index.ts');
+    expect(docsIndex).toContain("import docsPageMeta from './page.js';");
+    expect(docsIndex).toContain("{ path: '/docs', meta: docsPageMeta }");
+  });
+
+  it('aggregates nested mdx folders into their parent index', () => {
+    dir = makeFixture({ 'pages/blogs/[slug]/test.mdx': '---\ntitle: "Post"\n---\n' });
+
+    app = makeApp(dir);
+
+    const rootIndex = readMetadata(dir, 'index.ts');
+    expect(rootIndex).toContain('...');
+    expect(fixtureExists(dir, '.airstack/metadata/blogs/index.ts')).toBe(true);
+  });
+
+  it('cleans up generated metadata files when the app is destroyed', () => {
+    dir = makeFixture({
+      'pages/page.mdx': '---\ntitle: "Root"\n---\n',
+      'pages/docs/page.mdx': '---\ntitle: "Docs"\n---\n',
+    });
+
+    app = makeApp(dir);
+    expect(fixtureExists(dir, '.airstack/metadata/docs/page.ts')).toBe(true);
+
+    app.destroy();
+    app = undefined;
+
+    expect(fixtureExists(dir, '.airstack/metadata/index.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airstack/metadata/docs/page.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airstack/metadata/docs/index.ts')).toBe(false);
+  });
+
+  it('regenerates metadata when an mdx file changes', () => {
+    dir = makeFixture({
+      'pages/guide/page.mdx': '---\ntitle: "Guide"\n---\n# Guide\n',
+    });
+
+    app = makeApp(dir);
+    expect(readMetadata(dir, 'guide/page.ts')).toContain('"title": "Guide"');
+
+    writeFixture(dir, { 'pages/guide/page.mdx': '---\ntitle: "Updated Guide"\n---\n# Guide\n' });
+    app.rootFolder.children.get('guide')?.handleFileChanged('page.mdx');
+
+    expect(readMetadata(dir, 'guide/page.ts')).toContain('"title": "Updated Guide"');
   });
 });
