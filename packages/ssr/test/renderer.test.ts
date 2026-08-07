@@ -19,8 +19,13 @@ describe('ssrRenderToString', () => {
 
   it('handles sitemap request when configured with object', async () => {
     const router = createMockRouter();
-    const result = await ssrRenderToString(router, mockRenderView, 'http://localhost/sitemap.xml', undefined, {
-      sitemap: {},
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/sitemap.xml',
+      options: {
+        sitemap: {},
+      },
     });
 
     expect(result.html).toBe('<urlset></urlset>');
@@ -30,8 +35,13 @@ describe('ssrRenderToString', () => {
 
   it('handles sitemap request when configured with true', async () => {
     const router = createMockRouter();
-    const result = await ssrRenderToString(router, mockRenderView, 'http://localhost/sitemap.xml', undefined, {
-      sitemap: true,
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/sitemap.xml',
+      options: {
+        sitemap: true,
+      },
     });
 
     expect(result.html).toBe('<urlset></urlset>');
@@ -41,7 +51,12 @@ describe('ssrRenderToString', () => {
 
   it('handles sitemap request with relative url', async () => {
     const router = createMockRouter();
-    const result = await ssrRenderToString(router, mockRenderView, '/sitemap.xml', undefined, { sitemap: {} });
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: '/sitemap.xml',
+      options: { sitemap: {} },
+    });
 
     expect(result.html).toBe('<urlset></urlset>');
     expect(result.contentType).toBe('application/xml; charset=utf-8');
@@ -50,7 +65,12 @@ describe('ssrRenderToString', () => {
 
   it('handles sitemap request with relative url without leading slash', async () => {
     const router = createMockRouter();
-    const result = await ssrRenderToString(router, mockRenderView, 'sitemap.xml', undefined, { sitemap: {} });
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'sitemap.xml',
+      options: { sitemap: {} },
+    });
 
     expect(result.html).toBe('<urlset></urlset>');
     expect(result.contentType).toBe('application/xml; charset=utf-8');
@@ -59,14 +79,23 @@ describe('ssrRenderToString', () => {
 
   it('ignores sitemap request when sitemap is false', async () => {
     const router = createMockRouter();
-    await ssrRenderToString(router, mockRenderView, 'http://localhost/sitemap.xml', undefined, { sitemap: false });
+    await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/sitemap.xml',
+      options: { sitemap: false },
+    });
 
     expect(router.sitemap).not.toHaveBeenCalled();
   });
 
   it('renders successfully', async () => {
     const router = createMockRouter();
-    const result = await ssrRenderToString(router, mockRenderView, 'http://localhost/');
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/',
+    });
 
     expect(result.html).toBe('<div></div>');
     expect(result.head).toBe('<title>Test</title><script>hydrate()</script>');
@@ -76,21 +105,33 @@ describe('ssrRenderToString', () => {
 
   it('handles NotFoundError exception from router', async () => {
     const router = createMockRouter({ context: { exception: new NotFoundError('Not found') } });
-    const result = await ssrRenderToString(router, mockRenderView, 'http://localhost/');
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/',
+    });
 
     expect(result.status).toBe(404);
   });
 
   it('handles GuardError exception from router', async () => {
     const router = createMockRouter({ context: { exception: new GuardError('Forbidden') } });
-    const result = await ssrRenderToString(router, mockRenderView, 'http://localhost/');
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/',
+    });
 
     expect(result.status).toBe(403);
   });
 
   it('handles ProviderError exception from router', async () => {
     const router = createMockRouter({ context: { exception: new ProviderError('Bad Request') } });
-    const result = await ssrRenderToString(router, mockRenderView, 'http://localhost/');
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/',
+    });
 
     expect(result.status).toBe(400);
   });
@@ -101,7 +142,11 @@ describe('ssrRenderToString', () => {
       throw new Redirect({ path: '/login' } as any);
     });
 
-    const result = await ssrRenderToString(router, redirectRenderView, 'http://localhost/');
+    const result = await ssrRenderToString({
+      router,
+      renderView: redirectRenderView,
+      url: 'http://localhost/',
+    });
 
     expect(result.status).toBe(302);
     expect(result.redirect).toBe('/login');
@@ -114,7 +159,11 @@ describe('ssrRenderToString', () => {
       throw new Error('Boom');
     });
 
-    const result = await ssrRenderToString(router, errorRenderView, 'http://localhost/');
+    const result = await ssrRenderToString({
+      router,
+      renderView: errorRenderView,
+      url: 'http://localhost/',
+    });
 
     expect(result.status).toBe(500);
     expect(result.html).toContain('Internal SSR Render Error');

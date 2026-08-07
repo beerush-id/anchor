@@ -2,11 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStatic } from '../src/index.js';
 
 describe('createStatic', () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
     vi.stubGlobal('Bun', createMockBun());
   });
 
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
   afterEach(() => {
+    logSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 

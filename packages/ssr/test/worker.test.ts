@@ -1,6 +1,6 @@
 import { safeRun, sleep } from '@anchorlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createFullWorker, createWorker, SSR_ENV_KEY, type SSROutput, type SSRRenderer, ssrEnv } from '../src/index.js';
+import { createFullWorker, createWorker, SSR_ENV_KEY, ssrEnv, type SSROutput, type SSRRenderer } from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
   const defaults: SSROutput = {
@@ -22,11 +22,14 @@ function createRequest(url: string, options?: RequestInit) {
 const TEMPLATE = '<html><!--ssr-head--><!--ssr-outlet--></html>';
 
 describe('createWorker', () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.stubGlobal('window', undefined);
   });
 
   afterEach(() => {
+    logSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 
@@ -817,7 +820,9 @@ describe('defaultAssetResolver', () => {
   let mockRenderer: SSRRenderer;
   const TEMPLATE = '<html><!--ssr-head--><!--ssr-outlet--></html>';
 
+  let logSpy: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     mockRenderer = vi.fn(async () => ({
       html: '',
       head: '',
@@ -830,6 +835,7 @@ describe('defaultAssetResolver', () => {
   });
 
   afterEach(() => {
+    logSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 
@@ -967,12 +973,15 @@ describe('defaultAssetResolver', () => {
 });
 
 describe('worker static generation (SSG/ISG)', () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.stubGlobal('window', undefined);
     vi.stubGlobal('Bun', createMockBun());
   });
 
   afterEach(() => {
+    logSpy.mockRestore();
     vi.unstubAllGlobals();
   });
 

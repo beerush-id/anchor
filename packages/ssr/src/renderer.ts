@@ -9,7 +9,7 @@ import {
   setScope,
   withIsolation,
 } from '@anchorlib/core';
-import { GuardError, NotFoundError, ProviderError, Redirect, type Router, redirectUrl } from '@anchorlib/router';
+import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
 import type {
   RouterOptions,
   SSRContext,
@@ -74,7 +74,7 @@ export function createRenderer(
 }
 
 export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): Promise<Omit<SSROutput, 'cookies'>> {
-  const { router, renderView, url, controller, options, hydrated } = renderOptions;
+  const { router, renderView, url, controller, options, hydrated = true } = renderOptions;
 
   if (options?.sitemap !== false && url.endsWith('sitemap.xml')) {
     const sitemapConfig = typeof options?.sitemap === 'object' ? options.sitemap : {};
