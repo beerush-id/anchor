@@ -17,6 +17,7 @@ import type {
   SSROutput,
   SSRRenderer,
   SSRRenderOptions,
+  SSRRenderStringOptions,
   SSRRenderView,
 } from './types.js';
 
@@ -29,13 +30,14 @@ export function createRenderer(
     const mergedOptions = options.options ?? defaultOptions;
 
     if (options.isolated) {
-      return ssrRenderToString(
+      return ssrRenderToString({
         router,
         renderView,
-        options.url,
-        options.controller,
-        mergedOptions
-      ) as Promise<SSROutput>;
+        url: options.url,
+        controller: options.controller,
+        options: mergedOptions,
+        hydrated: options.hydrated,
+      }) as Promise<SSROutput>;
     }
 
     const storage =
@@ -49,7 +51,14 @@ export function createRenderer(
         setScope(COOKIE_JAR_WRITABLE, true);
         setCookieContext(jar);
 
-        const result = await ssrRenderToString(router, renderView, options.url, options.controller, mergedOptions);
+        const result = await ssrRenderToString({
+          router,
+          renderView,
+          url: options.url,
+          controller: options.controller,
+          options: mergedOptions,
+          hydrated: options.hydrated,
+        });
 
         cookies = jar.encode();
         return { ...result, cookies } as SSROutput;
@@ -64,13 +73,9 @@ export function createRenderer(
   return renderer;
 }
 
-export async function ssrRenderToString(
-  router: Router,
-  renderView: SSRRenderView,
-  url: string,
-  controller?: AbortController,
-  options?: SSROptions & Omit<RouterOptions, 'router'>
-): Promise<Omit<SSROutput, 'cookies'>> {
+export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): Promise<Omit<SSROutput, 'cookies'>> {
+  const { router, renderView, url, controller, options, hydrated } = renderOptions;
+
   if (options?.sitemap !== false && url.endsWith('sitemap.xml')) {
     const sitemapConfig = typeof options?.sitemap === 'object' ? options.sitemap : {};
     const fullUrl =
@@ -97,7 +102,7 @@ export async function ssrRenderToString(
   await ssr.runAsync(async () => {
     try {
       const snapshot = await router.activate(url, true, controller);
-      const script = router.createHydrationScript(snapshot);
+      const script = hydrated ? router.createHydrationScript(snapshot) : '';
 
       const { exception } = router.context;
 

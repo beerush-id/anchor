@@ -26,6 +26,16 @@ export type SSRRenderOptions = {
   context?: SSRContext;
   controller?: AbortController;
   isolated?: boolean;
+  hydrated?: boolean;
+  options?: SSROptions & Omit<RouterOptions, 'router'>;
+};
+
+export type SSRRenderStringOptions = {
+  router: Router;
+  renderView: SSRRenderView;
+  url: string;
+  controller?: AbortController;
+  hydrated?: boolean;
   options?: SSROptions & Omit<RouterOptions, 'router'>;
 };
 

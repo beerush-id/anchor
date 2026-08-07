@@ -24,7 +24,7 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
     async get(url: URL, env?: E): Promise<{ html: string; headers: Headers } | void> {
       if (!router || options?.devMode) return;
 
-      const cacheDir = options?.cacheDir ?? '../pages';
+      const cacheDir = options?.cacheDir ?? './dist/client';
       const match = router.find(url, true);
       if (!match?.route.options?.static) return;
 
@@ -52,13 +52,14 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
       const content = await readStaticFile(filePath, maxAge);
 
       if (content) {
+        console.log('[air:static]', filePath);
         return { html: content, headers };
       }
     },
     async set(url: URL, content: string, env?: E): Promise<void> {
       if (!router || options?.devMode) return;
 
-      const cacheDir = options?.cacheDir ?? '../pages';
+      const cacheDir = options?.cacheDir ?? './dist/client';
       const match = router.find(url, true);
       if (!match?.route.options?.static) return;
 
@@ -71,6 +72,7 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
 
       const filePath = resolveStaticPath(cacheDir, url.pathname);
       await writeStaticFile(filePath, content);
+      console.log('[air:static]', filePath);
     },
   };
 }

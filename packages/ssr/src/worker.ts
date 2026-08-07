@@ -20,7 +20,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
   return {
     router: renderer.router,
     options,
-    async fetch(request: Request, env?: E) {
+    async fetch(request: Request, env?: E, ssg?: boolean) {
       const {
         template = '',
         headTag = '<!--ssr-head-->',
@@ -42,17 +42,17 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
         const cookie = request.headers.get('cookie') ?? '';
         const url = new URL(request.url);
 
-        const cached = await staticRes.get(url, env);
-        if (cached) {
-          return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
-        }
-
         const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
         if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
-        if (url.pathname !== '/' && typeof resolveAsset === 'function') {
+        if (!ssg && url.pathname !== '/' && typeof resolveAsset === 'function') {
           const asset = await resolveAsset(request, url, env);
           if (asset) return asset;
+        }
+
+        const cached = !ssg ? await staticRes.get(url, env) : undefined;
+        if (cached) {
+          return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
         }
 
         const { html, head, status, cookies, redirect, contentType } = await renderer({
@@ -60,9 +60,12 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           cookie,
           context: contextSeed,
           controller,
+          hydrated: !template.includes('<html dehydrated'),
         });
 
-        const body = contentType ? html : template.replace(headTag, head).replace(bodyTag, html);
+        const body = contentType
+          ? html
+          : template.replace('<html dehydrated', '<html').replace(headTag, head).replace(bodyTag, html);
 
         const headers = new Headers({
           'Content-Type': contentType ?? 'text/html',
@@ -111,7 +114,7 @@ export function createFullWorker<E = AnyType>(
   return {
     router: renderer.router,
     options,
-    async fetch(request: Request, env?: E) {
+    async fetch(request: Request, env?: E, ssg?: boolean) {
       const {
         template = '',
         headTag = '<!--ssr-head-->',
@@ -133,22 +136,26 @@ export function createFullWorker<E = AnyType>(
         const cookie = request.headers.get('cookie') ?? '';
         const url = new URL(request.url);
 
-        const cached = await staticRes.get(url, env);
-        if (cached) {
-          return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
-        }
-
         const contextSeed: SSRContextSeed = (await resolveContext?.(request, url, env)) ?? [];
         if (env) contextSeed.push([SSR_ENV_KEY, env as E]);
 
-        if (request.method === 'POST' && url.pathname.startsWith((router.transport as HTTPTransport).endpoint!)) {
+        if (
+          !ssg &&
+          request.method === 'POST' &&
+          url.pathname.startsWith((router.transport as HTTPTransport).endpoint!)
+        ) {
           const response = await router.resolve(request, contextSeed);
           return createResponse(response);
         }
 
-        if (url.pathname !== '/' && typeof resolveAsset === 'function') {
+        if (!ssg && url.pathname !== '/' && typeof resolveAsset === 'function') {
           const asset = await resolveAsset(request, url, env);
           if (asset) return asset;
+        }
+
+        const cached = !ssg ? await staticRes.get(url, env) : undefined;
+        if (cached) {
+          return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
         }
 
         timerId = timeout ? setTimeout(() => abort('timeout'), timeout) : null;
@@ -163,9 +170,12 @@ export function createFullWorker<E = AnyType>(
               cookie,
               controller,
               isolated: true,
+              hydrated: !template.includes('<html dehydrated'),
             });
 
-            const body = contentType ? html : template.replace(headTag, head).replace(bodyTag, html);
+            const body = contentType
+              ? html
+              : template.replace('<html dehydrated', '<html').replace(headTag, head).replace(bodyTag, html);
             const headers = new Headers({
               'Content-Type': contentType ?? 'text/html',
             });
