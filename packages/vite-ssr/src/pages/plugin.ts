@@ -109,6 +109,9 @@ const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
  * emits the `src/routes.ts` route manifest for sidebars/menus/breadcrumbs.
  *
  * Works in CSR + SSR (same glob and transforms in both environments).
+ *
+ * @param options Plugin configuration options.
+ * @returns Vite plugin array.
  */
 export function airPages(options: AirPagesOptions = {}): PluginOption {
   const mdxEnabled = options.markdown !== false;
@@ -234,8 +237,6 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       let reloadTimer: ReturnType<typeof setTimeout>;
 
       app.on('change', (file: string, kind: 'update' | 'reload') => {
-        console.log('Invalidate:', file);
-
         const mods = server.moduleGraph.getModulesByFile(file);
         if (mods) {
           for (const m of mods) server.moduleGraph.invalidateModule(m);

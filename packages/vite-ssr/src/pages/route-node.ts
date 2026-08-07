@@ -9,7 +9,6 @@ import {
   deriveRouteName,
   deriveSegment,
   type FileMap,
-  GENERATED_MARKER,
   importSpecifier,
   type PageKind,
 } from './model.js';
@@ -29,7 +28,7 @@ export class RouteNode extends EventEmitter {
     public readonly parent: RouteNode | undefined,
     private readonly fileMap: FileMap,
     private readonly framework: Framework,
-    private readonly routerFile: string // Absolute path to the router file
+    private readonly routerFile: string
   ) {
     super();
 
@@ -37,7 +36,6 @@ export class RouteNode extends EventEmitter {
     this.routePath = deriveSegment(folderNode.segment);
     this.routeName = !this.rel ? 'rootRoute' : deriveRouteName(this.rel);
 
-    // Initial state based on current files
     if (folderNode.files.has(fileMap.page)) {
       this.page = 'tsx';
     } else if (folderNode.files.has(fileMap.pageMdx)) {
@@ -52,20 +50,18 @@ export class RouteNode extends EventEmitter {
       this.route = true;
     }
 
-    // Attach listeners to folder node
     folderNode.on('fileAdded', this.handleFileAdded);
     folderNode.on('fileRemoved', this.handleFileRemoved);
+    folderNode.on('fileChanged', this.handleFileChanged);
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
-    folderNode.on('fileChanged', (e) => {
-      console.log(e);
-    });
   }
 
   public boot() {
-    this.generate();
+    if (this.page || this.layout) {
+      this.ensureRouteFile();
+    }
 
-    // Scaffold any 0-byte page/layout files that existed before boot
     for (const file of this.folderNode.files) {
       if (
         file === this.fileMap.page ||
@@ -78,11 +74,57 @@ export class RouteNode extends EventEmitter {
     }
 
     for (const childFolder of this.folderNode.children.values()) {
-      this.handleChildAdded(childFolder);
+      const child = this.addChild(childFolder);
+      child.boot();
     }
+  }
+
+  public destroy() {
+    this.folderNode.removeListener('fileAdded', this.handleFileAdded);
+    this.folderNode.removeListener('fileRemoved', this.handleFileRemoved);
+    this.folderNode.removeListener('fileChanged', this.handleFileChanged);
+    this.folderNode.removeListener('childAdded', this.handleChildAdded);
+    this.folderNode.removeListener('childRemoved', this.handleChildRemoved);
 
     for (const child of this.children.values()) {
-      child.boot();
+      child.destroy();
+    }
+    this.children.clear();
+    this.emit('destroy');
+    this.removeAllListeners();
+  }
+
+  public get isContent(): boolean {
+    if (!(this.page || this.layout)) return false;
+    return !this.rel.split('/').some((segment) => segment.startsWith('[...'));
+  }
+
+  public scaffoldFile(name: string) {
+    if (this.framework === undefined) return;
+    const file = path.join(this.folderNode.dir, name);
+
+    let shouldWrite = false;
+    try {
+      if (fs.statSync(file).size === 0) shouldWrite = true;
+    } catch {
+      return;
+    }
+
+    if (!shouldWrite) return;
+
+    const content = scaffoldForFile({
+      base: name,
+      folder: this.folderNode as AnyType,
+      framework: this.framework,
+      files: this.fileMap,
+    });
+
+    if (content) {
+      setTimeout(() => {
+        try {
+          fs.writeFileSync(file, content);
+        } catch {}
+      }, 50);
     }
   }
 
@@ -105,7 +147,12 @@ export class RouteNode extends EventEmitter {
     }
 
     if (changed) {
-      this.generate();
+      this.ensureRouteFile();
+
+      if (this.page && this.layout) {
+        this.ensureIndexRoute();
+      }
+
       this.emitChange('reload');
     }
 
@@ -121,6 +168,7 @@ export class RouteNode extends EventEmitter {
 
   private handleFileRemoved = (name: string) => {
     let changed = false;
+
     if (name === this.fileMap.page) {
       if (this.folderNode.files.has(this.fileMap.pageMdx)) {
         this.page = 'mdx';
@@ -141,109 +189,50 @@ export class RouteNode extends EventEmitter {
     }
 
     if (changed) {
-      this.generate();
-      this.emitChange('reload'); // Route or layout removed -> structure change
+      if (!this.page || !this.layout) {
+        this.removeIndexRoute();
+      }
+      this.emitChange('reload');
     }
   };
 
-  private handleChildAdded = (childFolder: FolderNode) => {
-    const child = new RouteNode(childFolder, this, this.fileMap, this.framework, this.routerFile);
-    this.children.set(childFolder.segment, child);
-
-    // Bubble child changes
-    child.on('change', (file, kind) => this.emit('change', file, kind));
-
-    const changed = this.generate();
-    if (changed || child.isRoutable) {
+  private handleFileChanged = (name: string) => {
+    if (name === this.fileMap.route) {
       this.emitChange('reload');
     }
+  };
+
+  private addChild(childFolder: FolderNode): RouteNode {
+    const child = new RouteNode(childFolder, this, this.fileMap, this.framework, this.routerFile);
+    this.children.set(childFolder.segment, child);
+    child.on('change', (file, kind) => this.emit('change', file, kind));
+    return child;
+  }
+
+  private handleChildAdded = (childFolder: FolderNode) => {
+    const child = this.addChild(childFolder);
+    child.boot();
   };
 
   private handleChildRemoved = (childFolder: FolderNode) => {
     const child = this.children.get(childFolder.segment);
     if (!child) return;
-
-    const wasRoutable = child.isRoutable;
     this.children.delete(childFolder.segment);
     child.destroy();
-
-    const changed = this.generate();
-    if (changed || wasRoutable) {
-      this.emitChange('reload');
-    }
+    this.emitChange('reload');
   };
 
-  public destroy() {
-    this.folderNode.removeListener('fileAdded', this.handleFileAdded);
-    this.folderNode.removeListener('fileRemoved', this.handleFileRemoved);
-    this.folderNode.removeListener('childAdded', this.handleChildAdded);
-    this.folderNode.removeListener('childRemoved', this.handleChildRemoved);
+  /** Creates route.ts if it doesn't exist. */
+  private ensureRouteFile(): boolean {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
 
-    for (const child of this.children.values()) {
-      child.destroy();
-    }
-    this.children.clear();
-    this.emit('destroy');
-    this.removeAllListeners();
-  }
-
-  public get isContent(): boolean {
-    if (!(this.page || this.layout)) return false;
-    return !this.rel.split('/').some((segment) => segment.startsWith('[...'));
-  }
-
-  public get isRoutable(): boolean {
-    return Boolean(this.page || this.layout || this.children.size > 0);
-  }
-
-  private get needsIndexRoute(): boolean {
-    return Boolean(this.page && (this.layout || this.children.size > 0));
-  }
-
-  /**
-   * Scaffolds starter content if page/layout file is 0-byte.
-   */
-  public scaffoldFile(name: string) {
-    if (this.framework === undefined) return;
-    const file = path.join(this.folderNode.dir, name);
-
-    let shouldWrite = false;
-    try {
-      if (fs.statSync(file).size === 0) shouldWrite = true;
-    } catch {
-      return; // Do nothing if it doesn't exist
-    }
-
-    if (!shouldWrite) return;
-
-    const content = scaffoldForFile({
-      base: name,
-      folder: this.folderNode as AnyType, // Temporary cast until scaffold.ts is updated
-      framework: this.framework,
-      files: this.fileMap,
-    });
-
-    if (content) {
-      // Defer the scaffold write slightly so Vite's watcher processes the route.ts
-      // structural change (and issues a full reload) BEFORE seeing the page.tsx content.
-      // This prevents Vite from sending an HMR update for a page that relies on a
-      // route.ts module that hasn't been invalidated in the browser yet.
-      setTimeout(() => {
-        try {
-          fs.writeFileSync(file, content);
-        } catch {}
-      }, 50);
-    }
-  }
-
-  public generate(): boolean {
-    // Only generate route.ts if this node or any child is routable
-    if (!this.isRoutable) return false;
-
-    // Prevent recreating the folder if it was just deleted by the user
+    if (fs.existsSync(routeFilePath)) return false;
     if (!fs.existsSync(this.folderNode.dir)) return false;
 
-    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+    if (this.parent) {
+      this.parent.ensureRouteFile();
+    }
+
     const lines: string[] = [];
 
     if (this.parent) {
@@ -253,47 +242,85 @@ export class RouteNode extends EventEmitter {
       if (isTopLevel) {
         segment = segment.replace(/\(|\)/g, '');
         const routerImport = importSpecifier(routeFilePath, this.routerFile);
-        const importLine = `import router from '${routerImport}';`;
-        lines.push(importLine, '');
+        lines.push(`import router from '${routerImport}';`);
+        lines.push('');
         lines.push(`export const ${this.routeName} = router.add('/${segment}');`);
       } else {
         const parentName = this.parent.routeName;
         const parentRouteFile = path.join(this.parent.folderNode.dir, this.fileMap.route);
-        const importLine = `import ${parentName} from '${importSpecifier(routeFilePath, parentRouteFile)}';`;
-        lines.push(importLine, '');
+        lines.push(`import ${parentName} from '${importSpecifier(routeFilePath, parentRouteFile)}';`);
+        lines.push('');
         lines.push(`export const ${this.routeName} = ${parentName}.route('/${segment}');`);
       }
 
-      if (this.needsIndexRoute) {
-        const indexRouteName = deriveIndexName(this.rel);
-        lines.push(`export const ${indexRouteName} = ${this.routeName}.route('/');`);
+      if (this.page && this.layout) {
+        lines.push(`export const ${deriveIndexName(this.rel)} = ${this.routeName}.route('/');`);
       }
 
-      lines.push('', GENERATED_MARKER);
+      lines.push('');
       lines.push(`export default ${this.routeName};`);
     } else {
       const routerImport = importSpecifier(routeFilePath, this.routerFile);
-      lines.push(`import router from '${routerImport}';`, '', `export const rootRoute = router.route();`);
+      lines.push(`import router from '${routerImport}';`);
+      lines.push('');
+      lines.push(`export const rootRoute = router.route();`);
 
-      if (this.page) {
+      if (this.page && this.layout) {
         lines.push(`export const indexRoute = rootRoute.route('/');`);
       }
 
-      lines.push('', GENERATED_MARKER);
+      lines.push('');
       lines.push(`export default rootRoute;`);
     }
 
-    const content = `${lines.join('\n')}\n`;
-    return this.writeIfChanged(routeFilePath, content);
+    fs.mkdirSync(path.dirname(routeFilePath), { recursive: true });
+    fs.writeFileSync(routeFilePath, `${lines.join('\n')}\n`);
+    this.route = true;
+    this.emitChange('reload');
+    return true;
   }
 
-  private writeIfChanged(filePath: string, content: string): boolean {
-    try {
-      if (fs.readFileSync(filePath, 'utf-8') === content) return false;
-    } catch {}
+  /** Inserts the index route export if absent. */
+  private ensureIndexRoute(): boolean {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+    const indexRouteName = !this.rel ? 'indexRoute' : deriveIndexName(this.rel);
 
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, content);
+    let content: string;
+    try {
+      content = fs.readFileSync(routeFilePath, 'utf-8');
+    } catch {
+      return false;
+    }
+
+    if (content.includes(`export const ${indexRouteName}`)) return false;
+
+    const lines = content.split('\n');
+    const baseIdx = lines.findIndex((line) => line.startsWith(`export const ${this.routeName}`));
+    if (baseIdx === -1) return false;
+
+    lines.splice(baseIdx + 1, 0, `export const ${indexRouteName} = ${this.routeName}.route('/');`);
+    fs.writeFileSync(routeFilePath, lines.join('\n'));
+    return true;
+  }
+
+  /** Removes the index route export if present. */
+  private removeIndexRoute(): boolean {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+    const indexRouteName = !this.rel ? 'indexRoute' : deriveIndexName(this.rel);
+
+    let content: string;
+    try {
+      content = fs.readFileSync(routeFilePath, 'utf-8');
+    } catch {
+      return false;
+    }
+
+    const lines = content.split('\n');
+    const idx = lines.findIndex((line) => line.startsWith(`export const ${indexRouteName}`));
+    if (idx === -1) return false;
+
+    lines.splice(idx, 1);
+    fs.writeFileSync(routeFilePath, lines.join('\n'));
     return true;
   }
 

@@ -1,4 +1,9 @@
+/**
+ * Ambient declaration for images imported with `?airimg` suffix.
+ * Used by the AIR Stack image plugin to provide image metadata.
+ */
 declare module '*?airimg' {
+  /** Basic image metadata structure. */
   export interface ImageMeta {
     src: string;
     width: number;
@@ -6,6 +11,7 @@ declare module '*?airimg' {
     alt: string;
   }
 
+  /** Extended image metadata including srcset and sizes for responsive rendering. */
   export interface ImageTransform extends ImageMeta {
     default: ImageMeta;
     srcset: string;
@@ -17,7 +23,11 @@ declare module '*?airimg' {
   export default image;
 }
 
+/**
+ * Ambient declaration for static assets imported with `?asset` suffix.
+ */
 declare module '*?asset' {
+  /** Basic image metadata structure. */
   export interface ImageMeta {
     src: string;
     width: number;
@@ -25,6 +35,7 @@ declare module '*?asset' {
     alt: string;
   }
 
+  /** Extended image metadata including srcset and sizes for responsive rendering. */
   export interface ImageTransform extends ImageMeta {
     default: ImageMeta;
     srcset: string;

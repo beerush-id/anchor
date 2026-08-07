@@ -82,6 +82,9 @@ type ModuleRef = string | { path: string; name: string };
  * Replaces manual `server.ts` and `entry-server.tsx` with a single plugin call.
  * Handles SSR renderer construction, IRPC routing, request isolation,
  * abort signal propagation, and template transformation.
+ *
+ * @param options SSR configuration options.
+ * @returns Vite plugin.
  */
 export function airSSR(options: ViteSSROptions): Plugin {
   const { serverless = false } = options;
@@ -162,7 +165,6 @@ export function airSSR(options: ViteSSROptions): Plugin {
       return userConfig;
     },
     async configureServer(server: ViteDevServer) {
-      // Return a function to install as post-middleware (after Vite's static/HMR handlers).
       return () => {
         server.middlewares.use(async (req, res, next) => {
           const { router } = await bootstrap(server, options);
@@ -172,13 +174,11 @@ export function airSSR(options: ViteSSROptions): Plugin {
           try {
             const url = req.originalUrl ?? req.url ?? '/';
 
-            // IRPC routing — POST to transport endpoint
             if (router && req.method === 'POST' && url.startsWith((router.transport as HTTPTransport).endpoint)) {
               await resolveHttpCalls({ server, router, req, res, config: options.irpc });
               return;
             }
 
-            // Skip non-page requests
             if (url.startsWith('/.')) {
               return next();
             }
@@ -212,7 +212,6 @@ type HTTPCallOptions = {
  * @returns {Promise<void>}
  */
 async function resolveHttpCalls({ server, router, req, res, config }: HTTPCallOptions): Promise<void> {
-  // Re-load handlers to pick up HMR changes (cached when unchanged).
   if (config?.handlers) await bootstrapHandlers(server, config.handlers);
 
   const cookie = req.headers.cookie ?? '';
@@ -249,7 +248,6 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
   const htmlFile = fs.readFileSync(templatePath, 'utf-8');
   const template = await server.transformIndexHtml(urlPath, htmlFile);
 
-  // Load router + layout per-request (picks up HMR changes; cached when unchanged).
   const { default: pageRouter } = await server.ssrLoadModule(options.router);
   const { default: RootLayout } = await server.ssrLoadModule(options.layout);
   const { default: Shell } = options.shell ? await server.ssrLoadModule(options.shell) : {};
@@ -263,7 +261,6 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
     const { decodeCookies, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
     const cookieJar = decodeCookies(cookie);
 
-    // Isolate SSR render with IRPC context (abort signal, cookie, hooks).
     ssrResult = await router.isolate(
       () => render(urlPath, cookie, undefined, controller, Shell, true, { sitemap: options.sitemap }),
       controller,
@@ -398,7 +395,6 @@ async function initWsRouter(
     const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
     const wsRouter = new WebSocketRouter(wsTransport) as WebSocketRouter;
 
-    // Provide CookieJar to WS handlers
     wsRouter.use(() => {
       const cookieJar = decodeCookies(getContext('cookie', '')) as CookieJar;
       setCookieContext(cookieJar);
@@ -406,7 +402,6 @@ async function initWsRouter(
 
     const endpoint = (wsTransport as { endpoint: string }).endpoint;
 
-    // Create a WebSocketServer in noServer mode — shares Vite's HTTP server.
     const { WebSocketServer } = await import('ws');
     const wss = new WebSocketServer({ noServer: true });
 
@@ -422,7 +417,6 @@ async function initWsRouter(
       const cookie = req.headers.cookie ?? '';
 
       ws.on('message', async (data) => {
-        // Re-load handlers to pick up HMR changes.
         if (config.handlers) await bootstrapHandlers(server, config.handlers);
 
         const message = data instanceof ArrayBuffer ? data : data.toString();

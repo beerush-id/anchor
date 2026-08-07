@@ -9,6 +9,7 @@ import { DEFAULT_FILE_MAP, type FileMap } from './model.js';
 import { RouteNode } from './route-node.js';
 import { scaffoldForFile } from './scaffold.js';
 
+/** Configuration options for the AppNode foundation. */
 export type AppNodeOptions = {
   root: string;
   pagesDir: string;
@@ -21,6 +22,10 @@ export type AppNodeOptions = {
   scaffoldEnabled?: boolean;
 };
 
+/**
+ * Central state orchestrator for the file-system router.
+ * Scans the filesystem and constructs parallel domain trees (Routes, Metadata, Manifest).
+ */
 export class AppNode extends EventEmitter {
   public readonly rootFolder: FolderNode;
   public readonly rootRoute?: RouteNode;
@@ -29,17 +34,21 @@ export class AppNode extends EventEmitter {
 
   private readonly fileMap: FileMap;
 
+  /**
+   * Initializes the application node, scaffolds missing required files,
+   * and builds the initial filesystem trees.
+   *
+   * @param opts Application node configuration options.
+   */
   constructor(private readonly opts: AppNodeOptions) {
     super();
     this.fileMap = { ...DEFAULT_FILE_MAP, ...opts.fileMap };
 
     this.scaffoldProject();
 
-    // 1. Filesystem foundation
     this.rootFolder = new FolderNode(opts.pagesDir);
-    this.rootFolder.scan(); // Initial synchronous scan
+    this.rootFolder.scan();
 
-    // 2. Domain trees attached to the foundation
     this.rootRoute = new RouteNode(this.rootFolder, undefined, this.fileMap, opts.framework, opts.routerFile);
     this.rootRoute.on('change', this.handleChange);
     this.rootRoute.boot();
@@ -61,6 +70,9 @@ export class AppNode extends EventEmitter {
     this.emit('change', file, kind);
   };
 
+  /**
+   * Cleans up watchers and event listeners across all domain trees.
+   */
   public destroy() {
     this.rootManifest?.destroy();
     this.rootMetadata?.destroy();
@@ -85,7 +97,7 @@ export class AppNode extends EventEmitter {
       base,
       framework: this.opts.framework,
       files: this.fileMap,
-      folder: undefined, // Entry files don't need folder context
+      folder: undefined,
     });
 
     if (content) {
@@ -97,7 +109,6 @@ export class AppNode extends EventEmitter {
   }
 
   private scaffoldProject() {
-    // Scaffold router
     if (!fs.existsSync(this.opts.routerFile)) {
       fs.mkdirSync(path.dirname(this.opts.routerFile), { recursive: true });
       fs.writeFileSync(
@@ -112,7 +123,6 @@ export class AppNode extends EventEmitter {
       );
     }
 
-    // Scaffold pages dir and index/layout
     if (!fs.existsSync(this.opts.pagesDir)) {
       fs.mkdirSync(this.opts.pagesDir, { recursive: true });
       const routeMod = `./${this.fileMap.route.replace(/\\.[^.]+$/, '.js')}`;
@@ -128,7 +138,6 @@ export class AppNode extends EventEmitter {
       );
     }
 
-    // Scaffold entry files
     if (this.opts.scaffoldEnabled !== false) {
       for (const file of [this.fileMap.entry, this.fileMap.client, this.fileMap.workerEntry, this.fileMap.ambient]) {
         this.scaffoldEntryFile(path.join(this.opts.appDir, file));

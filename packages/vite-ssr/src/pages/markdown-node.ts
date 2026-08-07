@@ -2,16 +2,28 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { canonicalPath, derivePrefix, GENERATED_MARKER } from './model.js';
+import { writeIfChanged } from './sync.js';
 
+/**
+ * Represents a compiled MDX file and its extracted frontmatter metadata.
+ * Generates an isolated TypeScript file containing the extracted frontmatter.
+ */
 export class MarkdownNode extends EventEmitter {
   public generatedFilePath: string;
   public itemPath: string;
   public varName: string;
 
+  /**
+   * Initializes a new markdown node.
+   *
+   * @param absPath Absolute path to the source MDX file.
+   * @param pagesDir Absolute path to the pages root directory.
+   * @param metadataDir Absolute path to the metadata generation directory.
+   */
   constructor(
     public readonly absPath: string,
-    private readonly pagesDir: string,
-    private readonly metadataDir: string
+    pagesDir: string,
+    metadataDir: string
   ) {
     super();
 
@@ -28,6 +40,10 @@ export class MarkdownNode extends EventEmitter {
     this.varName = `${derivePrefix(relPath) || 'root'}Meta`;
   }
 
+  /**
+   * Reads the source MDX file, extracts its frontmatter, and generates
+   * a TypeScript file exporting the metadata.
+   */
   public update() {
     let content = '';
     try {
@@ -46,22 +62,14 @@ export class MarkdownNode extends EventEmitter {
       '',
     ].join('\n');
 
-    let changed = false;
-    try {
-      if (fs.readFileSync(this.generatedFilePath, 'utf-8') !== moduleContent) {
-        changed = true;
-      }
-    } catch {
-      changed = true;
-    }
-
-    if (changed) {
-      fs.mkdirSync(path.dirname(this.generatedFilePath), { recursive: true });
-      fs.writeFileSync(this.generatedFilePath, moduleContent);
+    if (writeIfChanged(this.generatedFilePath, moduleContent)) {
       this.emitChange('update');
     }
   }
 
+  /**
+   * Removes the generated metadata file and cleans up the node.
+   */
   public destroy() {
     try {
       fs.unlinkSync(this.generatedFilePath);

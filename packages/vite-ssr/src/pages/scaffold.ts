@@ -48,10 +48,11 @@ export function scaffoldForFile(opts: {
   if (base === files.page) {
     const hasPage = folder.files.has(files.page) || folder.files.has(files.pageMdx);
     const hasLayout = folder.files.has(files.layout) || folder.files.has(files.layoutMdx);
-    const needsIndexRoute = hasPage && (hasLayout || folder.children.size > 0);
     const routeExport = !folder.rel
-      ? 'indexRoute'
-      : needsIndexRoute
+      ? hasPage && hasLayout
+        ? 'indexRoute'
+        : 'rootRoute'
+      : hasPage && hasLayout
         ? deriveIndexName(folder.rel)
         : deriveRouteName(folder.rel);
 

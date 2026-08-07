@@ -60,21 +60,21 @@ export async function mdxAttachForFile(opts: {
   const hasPageMdx = folder.files.has(files.pageMdx);
   const hasLayout = folder.files.has(files.layout) || folder.files.has(files.layoutMdx);
 
-  // `page.tsx` wins when both page kinds exist — the mdx file attaches
-  // nothing in that folder if this is a page.mdx.
   if (base === files.pageMdx && hasPageTsx) return undefined;
 
   const routeImport = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
 
-  const needsIndexRoute = (hasPageTsx || hasPageMdx) && (hasLayout || folder.children.size > 0);
+  const hasPage = hasPageTsx || hasPageMdx;
 
   let routeExport: string;
   if (base === files.layoutMdx) {
     routeExport = !folder.rel ? 'rootRoute' : deriveRouteName(folder.rel);
   } else {
     routeExport = !folder.rel
-      ? 'indexRoute'
-      : needsIndexRoute
+      ? hasPage && hasLayout
+        ? 'indexRoute'
+        : 'rootRoute'
+      : hasPage && hasLayout
         ? deriveIndexName(folder.rel)
         : deriveRouteName(folder.rel);
   }
@@ -124,7 +124,6 @@ export async function mdxTransformModule(opts: {
     if (node.type === 'ExportDefaultDeclaration') {
       const decl = node.declaration;
       if (decl && decl.type === 'Identifier' && decl.name === 'MDXContent') {
-        // MDXContent is typically defined via function MDXContent() in the setup scope; omit redundant export
         continue;
       }
       if (decl) {

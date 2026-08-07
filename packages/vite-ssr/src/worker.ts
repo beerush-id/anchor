@@ -35,6 +35,13 @@ export type AirWorkerOptions = {
   ssg?: boolean;
 };
 
+/**
+ * Vite plugin for AIR Worker integration.
+ * Enables SSR, Static Site Generation (SSG), and worker injection.
+ *
+ * @param options Worker configuration options.
+ * @returns Vite plugin.
+ */
 export function airWorker(options: AirWorkerOptions = {}): Plugin {
   const entry = options.entry ?? 'src/worker.ts';
   let resolvedConfig: ResolvedConfig;
@@ -118,7 +125,6 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
 
       const lines = html.split('\n');
 
-      // Remove js file from bundle if noscript option is true.
       for (const file of Object.keys(ctx.bundle)) {
         if (!file.endsWith('.js')) continue;
         const i = lines.findIndex((l) => l.includes(file));
@@ -211,7 +217,6 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
         }
       });
 
-      // Install as a post-middleware so Vite's internal handlers run first
       return () => {
         server.middlewares.use(async (req, res, next) => {
           const controller = new AbortController();

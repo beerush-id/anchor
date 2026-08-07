@@ -27,6 +27,14 @@ export interface AirImageOptions {
   devEnabled?: boolean;
 }
 
+/**
+ * Vite plugin for AIR Image generation and optimization.
+ * Processes imported images with `?airimg` or `?asset` suffixes, generating
+ * optimized formats and responsive sizes at build time or lazily in dev mode.
+ *
+ * @param options Image configuration options.
+ * @returns Vite plugin.
+ */
 export function airImage(options: AirImageOptions = {}): Plugin {
   const { devEnabled } = options;
 

@@ -4,13 +4,27 @@ import path from 'node:path';
 import type { FolderNode } from './folder-node.js';
 import { MarkdownNode } from './markdown-node.js';
 import { GENERATED_MARKER, importSpecifier } from './model.js';
+import { bootPackage, ensureSymlink, writeIfChanged } from './sync.js';
 
+/**
+ * Represents a node in the metadata tree.
+ * Responsible for tracking MDX files within its directory scope and generating
+ * an index.ts file that aggregates their metadata exports.
+ */
 export class MetadataNode extends EventEmitter {
   public children = new Map<string, MetadataNode>();
-  private markdownNodes = new Map<string, MarkdownNode>(); // absPath -> MarkdownNode
+  private markdownNodes = new Map<string, MarkdownNode>();
 
   private readonly metadataDir: string;
 
+  /**
+   * Initializes a new metadata node.
+   *
+   * @param folderNode The corresponding folder node.
+   * @param parent Optional parent metadata node.
+   * @param rootDir Absolute path to the Vite root.
+   * @param pagesDir Absolute path to the pages directory.
+   */
   constructor(
     public readonly folderNode: FolderNode,
     public readonly parent: MetadataNode | undefined,
@@ -20,46 +34,29 @@ export class MetadataNode extends EventEmitter {
     super();
     this.metadataDir = path.join(rootDir, '.airstack', 'metadata');
 
-    // Listen to FolderNode for child additions
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
 
-    // Listen to FolderNode for MDX files
     folderNode.on('fileAdded', this.handleFileAdded);
     folderNode.on('fileRemoved', this.handleFileRemoved);
     folderNode.on('fileChanged', this.handleFileChanged);
   }
 
+  /**
+   * Boots the metadata node by processing existing MDX files and booting child nodes.
+   */
   public boot() {
     if (!this.parent) {
-      fs.mkdirSync(this.metadataDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(this.metadataDir, 'package.json'),
-        JSON.stringify(
-          {
-            name: '@airstack/metadata',
-            type: 'module',
-            exports: {
-              '.': './index.ts',
-              './*': './*.ts',
-            },
-          },
-          null,
-          2
-        ),
-        'utf-8'
-      );
-      this.setupSymlink();
+      bootPackage(this.metadataDir, '@airstack/metadata', { '.': './index.ts', './*': './*.ts' });
+      ensureSymlink(this.rootDir);
     }
 
-    // Process existing MDX files
     for (const file of this.folderNode.files) {
       if (file.endsWith('.mdx')) {
         this.addMarkdownNode(file);
       }
     }
 
-    // Boot children
     for (const childFolder of this.folderNode.children.values()) {
       this.handleChildAdded(childFolder);
     }
@@ -75,7 +72,6 @@ export class MetadataNode extends EventEmitter {
     const child = new MetadataNode(childFolder, this, this.rootDir, this.pagesDir);
     this.children.set(childFolder.segment, child);
 
-    // Bubble child changes
     child.on('change', (file, kind) => this.emit('change', file, kind));
   };
 
@@ -109,8 +105,6 @@ export class MetadataNode extends EventEmitter {
     const mdxNode = this.markdownNodes.get(absPath);
     if (mdxNode) {
       mdxNode.update();
-      // We don't need to regenerate index.ts unless the structure (varName/itemPath) changes,
-      // but to be safe we can call generate(). It no-ops if content is same.
       this.generate();
     }
   };
@@ -122,12 +116,15 @@ export class MetadataNode extends EventEmitter {
     const mdxNode = new MarkdownNode(absPath, this.pagesDir, this.metadataDir);
     this.markdownNodes.set(absPath, mdxNode);
 
-    // Bubble MarkdownNode changes
     mdxNode.on('change', (file, kind) => this.emit('change', file, kind));
 
     mdxNode.update();
   }
 
+  /**
+   * Generates the index.ts file for this metadata directory,
+   * aggregating imports from all MDX files and child metadata nodes.
+   */
   public generate() {
     const indexPath = path.join(this.metadataDir, this.folderNode.rel, 'index.ts');
 
@@ -139,9 +136,19 @@ export class MetadataNode extends EventEmitter {
       }))
       .sort((a, b) => a.fromPath.localeCompare(b.fromPath));
 
-    // If there are no MDX files at this level and this isn't the root, we shouldn't emit an index.ts
-    // Wait, what if it previously had MDX files and they were all deleted? We should remove the index.ts.
-    if (items.length === 0 && this.parent !== undefined) {
+    const childImports: { varName: string; fromPath: string }[] = [];
+    for (const [segment] of this.children) {
+      const childIndexPath = path.join(this.metadataDir, this.folderNode.rel, segment, 'index.ts');
+      if (fs.existsSync(childIndexPath)) {
+        const varName = `${segment}Meta`;
+        childImports.push({
+          varName,
+          fromPath: importSpecifier(indexPath, childIndexPath),
+        });
+      }
+    }
+
+    if (items.length === 0 && childImports.length === 0 && this.parent !== undefined) {
       try {
         if (fs.existsSync(indexPath)) {
           fs.unlinkSync(indexPath);
@@ -151,34 +158,31 @@ export class MetadataNode extends EventEmitter {
       return;
     }
 
-    const imports = items.map((item) => `import ${item.varName} from '${item.fromPath}';`);
+    const imports = [
+      ...items.map((item) => `import ${item.varName} from '${item.fromPath}';`),
+      ...childImports.map((c) => `import ${c.varName} from '${c.fromPath}';`),
+    ];
     const lines = [
       GENERATED_MARKER,
       ...imports,
       '',
       'export default [',
       ...items.map((item) => `  { path: '${item.path}', meta: ${item.varName} },`),
+      ...childImports.map((c) => `  ...${c.varName},`),
       '];',
       '',
     ];
 
     const content = lines.join('\n');
-    let changed = false;
-    try {
-      if (fs.readFileSync(indexPath, 'utf-8') !== content) {
-        changed = true;
-      }
-    } catch {
-      changed = true;
-    }
 
-    if (changed) {
-      fs.mkdirSync(path.dirname(indexPath), { recursive: true });
-      fs.writeFileSync(indexPath, content);
+    if (writeIfChanged(indexPath, content)) {
       this.emitChange('update');
     }
   }
 
+  /**
+   * Closes listeners and recursively destroys child metadata and markdown nodes.
+   */
   public destroy() {
     this.folderNode.removeListener('childAdded', this.handleChildAdded);
     this.folderNode.removeListener('childRemoved', this.handleChildRemoved);
@@ -215,25 +219,5 @@ export class MetadataNode extends EventEmitter {
   private emitChange(kind: 'update' | 'reload') {
     const indexPath = path.join(this.metadataDir, this.folderNode.rel, 'index.ts');
     this.emit('change', indexPath, kind);
-  }
-
-  private setupSymlink() {
-    const absAirStackDir = path.join(this.rootDir, '.airstack');
-    const nodeModulesDir = path.join(this.rootDir, 'node_modules');
-    const target = path.join(nodeModulesDir, '@airstack');
-    fs.mkdirSync(nodeModulesDir, { recursive: true });
-
-    const isWin32 = process.platform === 'win32';
-    const expectedTarget = isWin32 ? absAirStackDir : path.relative(nodeModulesDir, absAirStackDir);
-
-    try {
-      const stat = fs.lstatSync(target);
-      if (!stat.isSymbolicLink() || fs.readlinkSync(target) !== expectedTarget) {
-        fs.rmSync(target, { recursive: true, force: true });
-        fs.symlinkSync(expectedTarget, target, isWin32 ? 'junction' : 'dir');
-      }
-    } catch {
-      fs.symlinkSync(expectedTarget, target, isWin32 ? 'junction' : 'dir');
-    }
   }
 }

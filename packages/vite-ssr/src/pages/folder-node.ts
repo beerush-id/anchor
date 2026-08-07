@@ -3,6 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 
+/**
+ * Represents a directory in the filesystem, acting as the foundational node
+ * for file watching and structure scanning. Emits events for file and child
+ * folder additions, removals, and changes.
+ */
 export class FolderNode extends EventEmitter {
   public files = new Set<string>();
   public children = new Map<string, FolderNode>();
@@ -10,6 +15,12 @@ export class FolderNode extends EventEmitter {
   public readonly rel: string;
   private watcher?: FSWatcher;
 
+  /**
+   * Initializes a new folder node.
+   *
+   * @param dir Absolute path to the directory.
+   * @param parent Optional parent folder node.
+   */
   constructor(
     public readonly dir: string,
     public readonly parent?: FolderNode
@@ -19,6 +30,9 @@ export class FolderNode extends EventEmitter {
     this.rel = parent ? (parent.rel ? `${parent.rel}/${this.segment}` : this.segment) : '';
   }
 
+  /**
+   * Synchronously scans the directory to populate files and child folder nodes.
+   */
   public scan() {
     let entries: fs.Dirent[];
     try {
@@ -42,14 +56,15 @@ export class FolderNode extends EventEmitter {
     }
   }
 
+  /**
+   * Starts a non-recursive watcher for this directory, dispatching events on changes.
+   */
   public watch() {
     if (this.watcher) return;
-
-    // Own its lifecycle: watch only this directory, no recursion
     this.watcher = chokidar.watch(this.dir, {
       depth: 0,
       ignoreInitial: true,
-      ignored: /(^|[/\\])\../, // ignore dotfiles
+      ignored: /(^|[/\\])\../,
     });
 
     this.watcher.on('add', (file) => {
@@ -115,6 +130,9 @@ export class FolderNode extends EventEmitter {
     this.emit('childRemoved', child);
   }
 
+  /**
+   * Closes the filesystem watcher and recursively destroys child nodes.
+   */
   public destroy() {
     this.watcher?.close();
     for (const child of this.children.values()) {
