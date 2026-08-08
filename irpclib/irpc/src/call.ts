@@ -88,6 +88,7 @@ export class IRPCCall {
           error: CallError.timeout().json(),
           createdAt: Date.now(),
         } satisfies IRPCPacketStream<IRPCData>);
+        this.reader.close();
 
         clearTimeout(this.retryId);
         this.reject(CallError.timeout(), false);

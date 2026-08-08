@@ -8,8 +8,11 @@ import type {
   IRPCPacketClose,
   IRPCPacketEvent,
   IRPCPacketStream,
+  IRPCPacketType,
   IRPCStatus,
 } from './types.js';
+
+export type PacketListener<T extends IRPCData> = (packet: IRPCPacketStream<T>) => void;
 
 /**
  * A client-side consumer that hydrates `RemoteState` instances from network stream packets.
@@ -17,6 +20,8 @@ import type {
  * @template T - The type of data yielded by the stream.
  */
 export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
+  #packetListeners = new Set<PacketListener<T>>();
+
   public onClose?: () => void;
 
   /**
@@ -60,11 +65,46 @@ export class IRPCReader<T extends IRPCData> extends RemoteState<T> {
     }
 
     this.status = packet.status;
+
+    for (const listener of this.#packetListeners) {
+      if (typeof listener === 'function') {
+        listener(packet);
+      }
+    }
+  }
+
+  /**
+   * Subscribe to incoming packets.
+   *
+   * @param handler - The handler function to be called when a packet is received.
+   * @returns A function to unsubscribe from packet updates.
+   */
+  public packetSubscribe(handler: PacketListener<T>) {
+    this.#packetListeners.add(handler);
+
+    return () => {
+      this.#packetListeners.delete(handler);
+    };
+  }
+
+  /**
+   * Checks if the packet is of a specific type.
+   *
+   * @param packet - The packet to check.
+   * @param type - The type to check against.
+   * @returns True if the packet is of the specified type, false otherwise.
+   */
+  public is<E>(packet: IRPCPacketStream<T>, type: E): packet is IRPCPacketAnswer<T>;
+  public is<E>(packet: IRPCPacketStream<T>, type: E): packet is IRPCPacketEvent;
+  public is<E>(packet: IRPCPacketStream<T>, type: E): packet is IRPCPacketClose;
+  public is(packet: IRPCPacketStream<T>, type: IRPCPacketType) {
+    return packet.type === type;
   }
 
   public close() {
     this.status = IRPC_STATUS.SUCCESS;
     super.close();
+    this.#packetListeners.clear();
     this.onClose?.();
   }
 

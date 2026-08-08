@@ -1,6 +1,6 @@
 import {
-  anchor,
   type AnyType,
+  anchor,
   captureStack,
   createObserver,
   isBrowser,
@@ -11,7 +11,7 @@ import {
 } from '@anchorlib/core';
 import { IRPCCacher } from './cache.js';
 import { getAbortSignal, getRouterHooks } from './context.js';
-import { IRPC_STATUS } from './enum.js';
+import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { GuardError, HandlerError, HookError, ResolveError, StubError, TransportError } from './error.js';
 import { IRPCReader } from './reader.js';
 import { RemoteState } from './state.js';
@@ -185,6 +185,12 @@ export class IRPCPackage<K extends string = 'id'> {
       seed: () => undefined,
       ...$options,
     } as IRPCSpec<IRPCInputs, IRPCOutput>;
+
+    if ($options.keepAlive) {
+      spec.stream = true;
+      spec.timeout = 0;
+    }
+
     const calls = new Map<string, IRPCReader<IRPCData>>();
     const caches = new IRPCCacher();
 
@@ -319,7 +325,18 @@ export class IRPCPackage<K extends string = 'id'> {
       if (spec.maxAge) caches.set(callKey, reader, spec.maxAge);
       if (spec.coalesce !== false) {
         calls.set(callKey, reader);
-        reader.finally(() => calls.delete(callKey)).catch((_err) => {});
+        const unsubscribe = reader.packetSubscribe((p) => {
+          if (reader.is(p, IRPC_PACKET_TYPE.ANSWER)) {
+            calls.delete(callKey);
+            unsubscribe();
+          }
+        });
+        reader
+          .finally(() => {
+            calls.delete(callKey);
+            unsubscribe();
+          })
+          .catch((_err) => {});
       }
 
       onCleanup(() => reader.close());

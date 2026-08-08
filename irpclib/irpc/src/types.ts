@@ -268,6 +268,8 @@ export type IRPCInit<R, I extends IRPCInputs, O extends IRPCOutput> = {
   schema?: IRPCSchema<I, O>;
   /** Optional maximum age of a call in milliseconds */
   maxAge?: number;
+  /** Mark the spec as continues stream with no timeout */
+  keepAlive?: boolean;
 
   /**
    * Whether to coalesce multiple calls to the same RPC function within a short time period.
@@ -306,6 +308,7 @@ export type IRPCDeclareConfig<I extends IRPCInputs = IRPCInputs, O extends IRPCO
   description?: string;
   schema?: IRPCSchema<I, O>;
   maxAge?: number;
+  keepAlive?: boolean;
   coalesce?: boolean;
   stream?: true;
   ttl?: number;
