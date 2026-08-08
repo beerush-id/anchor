@@ -28,7 +28,10 @@ export class MarkdownNode extends EventEmitter {
     super();
 
     const rel = path.relative(pagesDir, absPath).replace(/\\/g, '/');
-    const fileName = path.basename(absPath, '.mdx');
+    let fileName = path.basename(absPath, '.mdx');
+    if (fileName !== 'page') {
+      fileName = fileName.replace(/\.page$/, '');
+    }
     const relDir = path.dirname(rel);
     const nodeRel = relDir === '.' ? '' : relDir;
     const relPath = nodeRel ? `${nodeRel}/${fileName}` : fileName;

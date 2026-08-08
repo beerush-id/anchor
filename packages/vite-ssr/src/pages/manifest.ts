@@ -104,23 +104,43 @@ export class ManifestNode extends EventEmitter {
   }
 
   private addEntryForRoute(route: RouteNode) {
-    const name = !route.rel
-      ? route.page && route.layout
-        ? 'indexRoute'
-        : 'rootRoute'
-      : route.page && route.layout
-        ? deriveIndexName(route.rel)
-        : deriveRouteName(route.rel);
+    if (route.page || route.layout) {
+      const name = !route.rel
+        ? route.page && route.layout
+          ? 'indexRoute'
+          : 'rootRoute'
+        : route.page && route.layout
+          ? deriveIndexName(route.rel)
+          : deriveRouteName(route.rel);
 
-    const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
-    const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
-    const fromPath = importSpecifier(manifestFilePath, routeFilePath);
+      const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
+      const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
+      const fromPath = importSpecifier(manifestFilePath, routeFilePath);
 
-    this.entries.set(route.rel, {
-      path: canonicalPath(route.rel).replace(/\(|\)/g, ''),
-      name,
-      from: fromPath,
-    });
+      this.entries.set(route.rel, {
+        path: canonicalPath(route.rel).replace(/\(|\)/g, ''),
+        name,
+        from: fromPath,
+      });
+    }
+
+    if (route === this.routeNode && route.namedPages.size) {
+      for (const namedPage of route.namedPages) {
+        const pageName = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+        const namedRel = route.rel ? `${route.rel}/${pageName}` : pageName;
+        const name = deriveRouteName(namedRel);
+
+        const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
+        const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
+        const fromPath = importSpecifier(manifestFilePath, routeFilePath);
+
+        this.entries.set(namedRel, {
+          path: canonicalPath(namedRel).replace(/\(|\)/g, ''),
+          name,
+          from: fromPath,
+        });
+      }
+    }
   }
 
   /**

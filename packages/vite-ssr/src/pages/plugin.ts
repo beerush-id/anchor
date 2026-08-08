@@ -188,7 +188,9 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       const layoutFile = files.layout.split('.')[0];
       const pageFile = files.page.split('.')[0];
       const consFile = files.constructor.split('.')[0];
-      const fileNames = includeIrpc ? `{${pageFile},${layoutFile},${consFile}}` : `{${pageFile},${layoutFile}}`;
+      const fileNames = includeIrpc
+        ? `{${pageFile},${layoutFile},${consFile},*.${pageFile}}`
+        : `{${pageFile},${layoutFile},*.${pageFile}}`;
 
       const glob = `/${pagesDir}/**/${fileNames}.${extensions}`;
 

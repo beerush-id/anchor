@@ -16,6 +16,7 @@ import { scaffoldForFile } from './scaffold.js';
 
 export class RouteNode extends EventEmitter {
   public page: PageKind | undefined;
+  public namedPages = new Set<string>();
   public layout = false;
   public route = false;
   public children = new Map<string, RouteNode>();
@@ -42,6 +43,16 @@ export class RouteNode extends EventEmitter {
       this.page = 'mdx';
     }
 
+    for (const file of folderNode.files) {
+      if (
+        file !== fileMap.page &&
+        file !== fileMap.pageMdx &&
+        (file.endsWith('.page.tsx') || file.endsWith('.page.mdx') || file.endsWith('.page.ts'))
+      ) {
+        this.namedPages.add(file);
+      }
+    }
+
     if (folderNode.files.has(fileMap.layout) || folderNode.files.has(fileMap.layoutMdx)) {
       this.layout = true;
     }
@@ -58,7 +69,7 @@ export class RouteNode extends EventEmitter {
   }
 
   public boot() {
-    if (this.page || this.layout) {
+    if (this.page || this.layout || this.namedPages.size) {
       this.ensureRouteFile();
     }
 
@@ -95,7 +106,7 @@ export class RouteNode extends EventEmitter {
   }
 
   public get isContent(): boolean {
-    if (!(this.page || this.layout)) return false;
+    if (!(this.page || this.layout || this.namedPages.size > 0)) return false;
     return !this.rel.split('/').some((segment) => segment.startsWith('[...'));
   }
 
@@ -144,6 +155,15 @@ export class RouteNode extends EventEmitter {
         this.layout = true;
         changed = true;
       }
+    } else if (
+      name !== this.fileMap.page &&
+      name !== this.fileMap.pageMdx &&
+      (name.endsWith('.page.tsx') || name.endsWith('.page.mdx') || name.endsWith('.page.ts'))
+    ) {
+      if (!this.namedPages.has(name)) {
+        this.namedPages.add(name);
+        changed = true;
+      }
     }
 
     if (changed) {
@@ -151,6 +171,10 @@ export class RouteNode extends EventEmitter {
 
       if (this.page && this.layout) {
         this.ensureIndexRoute();
+      }
+
+      if (this.namedPages.has(name)) {
+        this.ensureNamedRoute(name);
       }
 
       this.emitChange('reload');
@@ -186,12 +210,20 @@ export class RouteNode extends EventEmitter {
         this.layout = false;
         changed = true;
       }
+    } else if (this.namedPages.has(name)) {
+      this.namedPages.delete(name);
+      changed = true;
     }
 
     if (changed) {
       if (!this.page || !this.layout) {
         this.removeIndexRoute();
       }
+
+      if (name.endsWith('.page.tsx') || name.endsWith('.page.mdx') || name.endsWith('.page.ts')) {
+        this.removeNamedRoute(name);
+      }
+
       this.emitChange('reload');
     }
   };
@@ -257,6 +289,13 @@ export class RouteNode extends EventEmitter {
         lines.push(`export const ${deriveIndexName(this.rel)} = ${this.routeName}.route('/');`);
       }
 
+      for (const namedPage of this.namedPages) {
+        const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+        const namedSegment = deriveSegment(name);
+        const namedRouteName = deriveRouteName(this.rel ? `${this.rel}/${name}` : name);
+        lines.push(`export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
+      }
+
       lines.push('');
       lines.push(`export default ${this.routeName};`);
     } else {
@@ -267,6 +306,13 @@ export class RouteNode extends EventEmitter {
 
       if (this.page && this.layout) {
         lines.push(`export const indexRoute = rootRoute.route('/');`);
+      }
+
+      for (const namedPage of this.namedPages) {
+        const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+        const namedSegment = deriveSegment(name);
+        const namedRouteName = deriveRouteName(name);
+        lines.push(`export const ${namedRouteName} = rootRoute.route('/${namedSegment}');`);
       }
 
       lines.push('');
@@ -303,7 +349,6 @@ export class RouteNode extends EventEmitter {
     return true;
   }
 
-  /** Removes the index route export if present. */
   private removeIndexRoute(): boolean {
     const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
     const indexRouteName = !this.rel ? 'indexRoute' : deriveIndexName(this.rel);
@@ -317,6 +362,51 @@ export class RouteNode extends EventEmitter {
 
     const lines = content.split('\n');
     const idx = lines.findIndex((line) => line.startsWith(`export const ${indexRouteName}`));
+    if (idx === -1) return false;
+
+    lines.splice(idx, 1);
+    fs.writeFileSync(routeFilePath, lines.join('\n'));
+    return true;
+  }
+
+  private ensureNamedRoute(fileName: string): boolean {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+    const name = fileName.replace(/\.page\.(tsx|mdx|ts)$/, '');
+    const namedSegment = deriveSegment(name);
+    const namedRouteName = deriveRouteName(this.rel ? `${this.rel}/${name}` : name);
+
+    let content: string;
+    try {
+      content = fs.readFileSync(routeFilePath, 'utf-8');
+    } catch {
+      return false;
+    }
+
+    if (content.includes(`export const ${namedRouteName}`)) return false;
+
+    const lines = content.split('\n');
+    const baseIdx = lines.findIndex((line) => line.startsWith(`export const ${this.routeName}`));
+    if (baseIdx === -1) return false;
+
+    lines.splice(baseIdx + 1, 0, `export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
+    fs.writeFileSync(routeFilePath, lines.join('\n'));
+    return true;
+  }
+
+  private removeNamedRoute(fileName: string): boolean {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+    const name = fileName.replace(/\.page\.(tsx|mdx|ts)$/, '');
+    const namedRouteName = deriveRouteName(this.rel ? `${this.rel}/${name}` : name);
+
+    let content: string;
+    try {
+      content = fs.readFileSync(routeFilePath, 'utf-8');
+    } catch {
+      return false;
+    }
+
+    const lines = content.split('\n');
+    const idx = lines.findIndex((line) => line.startsWith(`export const ${namedRouteName}`));
     if (idx === -1) return false;
 
     lines.splice(idx, 1);

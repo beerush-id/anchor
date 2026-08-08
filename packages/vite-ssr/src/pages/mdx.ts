@@ -49,7 +49,11 @@ export async function mdxAttachForFile(opts: {
   if (!file.endsWith('.mdx')) return undefined;
 
   const base = path.basename(file);
-  if (base !== files.pageMdx && base !== files.layoutMdx) return undefined;
+  const isPageMdx = base === files.pageMdx;
+  const isLayoutMdx = base === files.layoutMdx;
+  const isNamedPageMdx = base.endsWith('.page.mdx') && !isPageMdx;
+
+  if (!isPageMdx && !isLayoutMdx && !isNamedPageMdx) return undefined;
 
   if (!file.startsWith(pagesDir)) return undefined;
 
@@ -60,15 +64,18 @@ export async function mdxAttachForFile(opts: {
   const hasPageMdx = folder.files.has(files.pageMdx);
   const hasLayout = folder.files.has(files.layout) || folder.files.has(files.layoutMdx);
 
-  if (base === files.pageMdx && hasPageTsx) return undefined;
+  if (isPageMdx && hasPageTsx) return undefined;
 
   const routeImport = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
 
   const hasPage = hasPageTsx || hasPageMdx;
 
   let routeExport: string;
-  if (base === files.layoutMdx) {
+  if (isLayoutMdx) {
     routeExport = !folder.rel ? 'rootRoute' : deriveRouteName(folder.rel);
+  } else if (isNamedPageMdx) {
+    const name = base.replace(/\.page\.mdx$/, '');
+    routeExport = deriveRouteName(folder.rel ? `${folder.rel}/${name}` : name);
   } else {
     routeExport = !folder.rel
       ? hasPage && hasLayout
