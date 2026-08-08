@@ -76,6 +76,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
     if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
 
     let value = Reflect.get(target, prop, receiver) as Linkable;
+    const valueRef = STATE_REGISTRY.has(value) ? STATE_REGISTRY.get(value) : value;
 
     if ($$.reactive) {
       const observer = switchable.getObserver();
@@ -97,7 +98,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
       plugin.devTool?.onGet?.(meta, prop);
     }
 
-    if (value === init) {
+    if (valueRef === init) {
       captureStack.violation.circular(prop, getter);
       return INIT_REGISTRY.get(init) as T;
     }
@@ -288,9 +289,8 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
 
     Reflect.set(target, prop, value, receiver);
 
-    if (INIT_REGISTRY.has(current)) {
-      const state = INIT_REGISTRY.get(current) as Linkable;
-
+    if (INIT_REGISTRY.has(current) || STATE_REGISTRY.has(current)) {
+      const state = (INIT_REGISTRY.get(current) ?? current) as Linkable;
       if (subscriptions.has(state)) {
         unlink(state);
       }

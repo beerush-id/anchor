@@ -180,8 +180,8 @@ export function createSubscribeFactory<T extends Linkable>(
     subscribers.add(handler);
 
     if (recursive && !(Array.isArray(init) && meta.configs.recursive === 'flat')) {
-      for (const [key, value] of softEntries(init as ObjLike)) {
-        const childState = INIT_REGISTRY.get(value as Linkable) as State;
+      for (const [key, value] of softEntries(init as ObjLike) as [[KeyLike, Linkable]]) {
+        const childState = (STATE_REGISTRY.has(value) ? value : INIT_REGISTRY.get(value)) as State;
 
         if (childState && !subscriptions.has(childState) && childState !== receiver) {
           helper.link(key, childState, (receiver ?? state) as State);
@@ -259,6 +259,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
         const childController = CONTROLLER_REGISTRY.get(childState);
 
         if (!childController?.meta.subscribers.size) {
+          // biome-ignore lint/correctness/noUnsafeOptionalChaining: Expect unsafe.
           (childController?.destroy as (prop: boolean) => void)(true);
         }
       }
