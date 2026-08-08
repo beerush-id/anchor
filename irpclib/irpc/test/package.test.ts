@@ -163,6 +163,17 @@ describe('IRPCPackage', () => {
       expect(spec?.name).toBe('shortCfg');
       expect(spec?.description).toBe('config only');
     });
+
+    it('should declare with keepAlive', () => {
+      const stub = rpc.declare('keepAlive', {
+        keepAlive: true,
+      });
+
+      const spec = rpc.get('keepAlive')!;
+      expect(typeof stub).toBe('function');
+      expect(spec.stream).toBe(true);
+      expect(spec.timeout).toBe(0);
+    });
   });
 
   describe('Implement Function', () => {
