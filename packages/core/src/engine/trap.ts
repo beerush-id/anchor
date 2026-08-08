@@ -151,6 +151,53 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
 }
 
 /**
+ * Creates an ownKeys trap function for a reactive state object.
+ *
+ * This function generates a Proxy handler that intercepts ownKeys trap.
+ * This is useful for objects that are created with `observable: true` or as
+ * a result of `link` on an existing reactive object.
+ *
+ * @template T - The type of the reactive state object
+ * @param init - The initial state object to create an ownKeys trap for
+ * @param options - Optional state references containing configuration and metadata
+ * @returns An ownKeys trap function that handles property enumeration with reactive behavior
+ * @throws {Error} When called on a non-reactive state object
+ */
+export function createOwnKeys<T extends Linkable>(init: T, options?: TrapOverrides) {
+  const meta = META_REGISTRY.get(init) as StateMetadata;
+
+  const { observers } = meta;
+  const { configs } = options ?? meta;
+
+  return (target: object) => {
+    // Make sure target is the underlying object.
+    /* v8 ignore next */
+    if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
+
+    if ($$.reactive) {
+      const observer = switchable.getObserver();
+
+      if (configs.observable) {
+        /* v8 ignore next */
+        plugin.track?.(init, observers, OBSERVER_KEYS.OWN_KEYS);
+      }
+
+      if (configs.observable && observer) {
+        const trackProp = observer.assign(init, observers);
+        const tracked = trackProp(OBSERVER_KEYS.OWN_KEYS);
+
+        if (!tracked) {
+          /* v8 ignore next */
+          plugin.devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.OWN_KEYS);
+        }
+      }
+    }
+
+    return Reflect.ownKeys(target);
+  };
+}
+
+/**
  * Creates a setter trap function for a reactive state object.
  *
  * This function generates a Proxy handler that intercepts property assignment operations
@@ -207,9 +254,9 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
         validation = schema.safeParse({ ...init, [prop as string]: rawValue });
       }
 
-      // if (validation.success) {
-      //   value = validation.data as Linkable;
-      // }
+      if (validation.success) {
+        value = validation.data as Linkable;
+      }
 
       if (!validation.success) {
         broadcaster.catch(validation.error as never, {

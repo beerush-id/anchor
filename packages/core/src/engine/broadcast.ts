@@ -69,7 +69,10 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
 
           for (const observer of observerList) {
             const keys = observer.states.get(init) as Set<KeyLike>;
-            const needUpdate = changes.some((change) => keys.has(change));
+            const needUpdate = changes.some((change) => {
+              /* v8 ignore next 1 */
+              return keys.has(change) || keys.has(OBSERVER_KEYS.OWN_KEYS);
+            });
 
             if (needUpdate) {
               observer.onChange(event);
@@ -96,7 +99,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
         for (const observer of observerList) {
           const keys = observer.states.get(init) as Set<KeyLike>;
 
-          if (keys?.has(prop as KeyLike)) {
+          if (keys?.has(prop as KeyLike) || keys?.has(OBSERVER_KEYS.OWN_KEYS)) {
             observer.onChange(event);
           }
         }

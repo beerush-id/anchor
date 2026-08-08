@@ -334,7 +334,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           const event: StateChange = {
             type: self instanceof Map ? MapMutations.CLEAR : SetMutations.CLEAR,
             prev: self instanceof Map ? entries : values,
-            keys: [(self instanceof Map ? entries.map(([key]) => key as KeyLike) : []) as KeyLike[]] as never,
+            keys: [],
           };
 
           // Make sure to broadcast to subscribers first because observers might depend on a derived state.

@@ -34,13 +34,12 @@ export function debouncer(delay = 10): Debouncer {
     if (typeof fn !== 'function') {
       const error = new Error('Invalid argument.');
       captureStack.error.argument('The given argument is not a function.', error, schedule);
+      return;
     }
-
-    clearTimeout(activeId);
 
     handler = fn;
 
-    if (typeof fn === 'function') {
+    if (!activeId) {
       activeId = setTimeout(() => {
         try {
           handler?.();

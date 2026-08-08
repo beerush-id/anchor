@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, ObjectMutations, SetMutations } from '../../src/index.js';
+import { anchor, createObserver, ObjectMutations, OBSERVER_KEYS, SetMutations } from '../../src/index.js';
 
 describe('Anchor Core - Observable Set', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -24,7 +24,7 @@ describe('Anchor Core - Observable Set', () => {
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
-      expect(trackedProps?.has('collection_mutations')).toBe(true);
+      expect(trackedProps?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)).toBe(true);
     });
 
     it('should trigger observer onChange when set is mutated', () => {
@@ -80,7 +80,7 @@ describe('Anchor Core - Observable Set', () => {
       state.clear();
       expect(onChange).toHaveBeenLastCalledWith({
         type: SetMutations.CLEAR,
-        keys: [[]],
+        keys: [],
         prev: [2, 3, 4],
       });
     });
@@ -140,7 +140,7 @@ describe('Anchor Core - Observable Set', () => {
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
-      expect(trackedProps?.has('collection_mutations')).toBe(true);
+      expect(trackedProps?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)).toBe(true);
     });
 
     it('should track set access with complex nested structures', () => {
@@ -175,7 +175,7 @@ describe('Anchor Core - Observable Set', () => {
       expect(trackedObjProps?.has('a')).toBe(true);
 
       expect(trackedArrProps).toBeDefined();
-      expect(trackedArrProps?.has('array_mutations')).toBe(true);
+      expect(trackedArrProps?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)).toBe(true);
     });
   });
 });

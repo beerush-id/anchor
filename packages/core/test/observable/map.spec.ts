@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver, MapMutations } from '../../src/index.js';
+import { anchor, createObserver, MapMutations, OBSERVER_KEYS } from '../../src/index.js';
 
 describe('Anchor Core - Observable Map', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -31,7 +31,7 @@ describe('Anchor Core - Observable Map', () => {
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
-      expect(trackedProps?.has('collection_mutations')).toBe(true);
+      expect(trackedProps?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)).toBe(true);
       expect(onTrack).toHaveBeenCalledTimes(1);
     });
 
@@ -119,7 +119,7 @@ describe('Anchor Core - Observable Map', () => {
       state.clear();
       expect(onChange).toHaveBeenLastCalledWith({
         type: MapMutations.CLEAR,
-        keys: [['b', 'c']],
+        keys: [],
         prev: [
           ['b', 2],
           ['c', 3],
@@ -145,7 +145,7 @@ describe('Anchor Core - Observable Map', () => {
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
-      expect(trackedProps?.has('collection_mutations')).toBe(true);
+      expect(trackedProps?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)).toBe(true);
     });
 
     it('should track map access with complex nested structures', () => {
@@ -183,7 +183,7 @@ describe('Anchor Core - Observable Map', () => {
       expect(trackedObjProps?.has('a')).toBe(true);
 
       expect(trackedArrProps).toBeDefined();
-      expect(trackedArrProps?.has('array_mutations')).toBe(true);
+      expect(trackedArrProps?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)).toBe(true);
     });
   });
 });

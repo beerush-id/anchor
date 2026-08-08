@@ -56,8 +56,9 @@ export const Linkables = {
 export type Linkables = Enum<typeof Linkables>;
 
 export const OBSERVER_KEYS = {
-  ARRAY_MUTATIONS: 'array_mutations',
-  COLLECTION_MUTATIONS: 'collection_mutations',
+  OWN_KEYS: '--anchor_own_keys--',
+  ARRAY_MUTATIONS: '--anchor_array_mutations--',
+  COLLECTION_MUTATIONS: '--anchor_collection_mutations--',
 } as const;
 
 export type OBSERVER_KEYS = Enum<typeof OBSERVER_KEYS>;

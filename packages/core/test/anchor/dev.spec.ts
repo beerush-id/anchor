@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDevTool } from '../../mocks/devtool.js';
-import { anchor, createObserver, getDevTool, setDevTool, subscribe } from '../../src/index.js';
+import { anchor, createObserver, getDevTool, OBSERVER_KEYS, setDevTool, subscribe } from '../../src/index.js';
 
 describe('Anchor Dev Tool', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -541,7 +541,7 @@ describe('Anchor Dev Tool', () => {
           id: expect.any(String),
         }),
         observer,
-        'array_mutations'
+        OBSERVER_KEYS.ARRAY_MUTATIONS
       );
     });
 
@@ -562,7 +562,7 @@ describe('Anchor Dev Tool', () => {
           id: expect.any(String),
         }),
         observer,
-        'collection_mutations'
+        OBSERVER_KEYS.COLLECTION_MUTATIONS
       );
     });
 
@@ -583,7 +583,7 @@ describe('Anchor Dev Tool', () => {
           id: expect.any(String),
         }),
         observer,
-        'collection_mutations'
+        OBSERVER_KEYS.COLLECTION_MUTATIONS
       );
     });
   });

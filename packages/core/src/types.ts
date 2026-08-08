@@ -148,13 +148,14 @@ export type ArrayMutator<T> = {
   copyWithin(target: number, start: number, end?: number): T[];
 };
 
-export type StateMutator<T extends Linkable> = T extends Set<infer U>
-  ? SetMutator<U>
-  : T extends Map<infer K, infer V>
-    ? MapMutator<K, V>
-    : T extends Array<infer U>
-      ? ArrayMutator<U>
-      : never;
+export type StateMutator<T extends Linkable> =
+  T extends Set<infer U>
+    ? SetMutator<U>
+    : T extends Map<infer K, infer V>
+      ? MapMutator<K, V>
+      : T extends Array<infer U>
+        ? ArrayMutator<U>
+        : never;
 
 export type StateGetter<T extends Linkable> = (target: T, prop: keyof T | KeyLike, receiver?: unknown) => unknown;
 export type StateSetter<T extends Linkable> = (
@@ -174,6 +175,7 @@ export type StateGateway<T extends Linkable = Linkable> = {
   getter: StateGetter<T>;
   setter: StateSetter<T>;
   remover: StateRemover<T>;
+  ownKeys: (target: T) => KeyLike[];
   broadcaster: Broadcaster;
   mutator?: StateMutator<T>;
 };
@@ -222,15 +224,16 @@ export type SubscribeFactoryInit = {
   unlink: StateUnlinkFn;
 };
 
-export type NestedPath<T> = T extends Array<infer U>
-  ? `${number}` | (NestedPath<U> extends infer P ? (P extends string ? `${number}.${P}` : never) : never)
-  : T extends object
-    ? {
-        [K in keyof T]: K extends string
-          ? `${K}` | (NestedPath<T[K]> extends infer P ? (P extends string ? `${K}.${P}` : never) : never)
-          : never;
-      }[keyof T]
-    : never;
+export type NestedPath<T> =
+  T extends Array<infer U>
+    ? `${number}` | (NestedPath<U> extends infer P ? (P extends string ? `${number}.${P}` : never) : never)
+    : T extends object
+      ? {
+          [K in keyof T]: K extends string
+            ? `${K}` | (NestedPath<T[K]> extends infer P ? (P extends string ? `${K}.${P}` : never) : never)
+            : never;
+        }[keyof T]
+      : never;
 
 export type ExceptionType = {
   error?: ModelError | Error;
@@ -259,45 +262,48 @@ export type Immutable<T> = T extends Primitive
           ? ReadonlyArray<Immutable<U>>
           : T;
 
-export type Mutable<T> = T extends ReadonlyMap<infer K, infer V>
-  ? Map<K, V>
-  : T extends ReadonlySet<infer U>
-    ? Set<U>
-    : T extends ReadonlyArray<infer U>
-      ? {
-          -readonly [P in keyof T]: P extends keyof Array<U> ? Array<U>[P] : never;
-        }
-      : {
-          -readonly [P in keyof T]: T[P];
-        };
+export type Mutable<T> =
+  T extends ReadonlyMap<infer K, infer V>
+    ? Map<K, V>
+    : T extends ReadonlySet<infer U>
+      ? Set<U>
+      : T extends ReadonlyArray<infer U>
+        ? {
+            -readonly [P in keyof T]: P extends keyof Array<U> ? Array<U>[P] : never;
+          }
+        : {
+            -readonly [P in keyof T]: T[P];
+          };
 
-export type MutationKey<T> = T extends ReadonlyMap<unknown, unknown>
-  ? MapMutationMethod
-  : T extends ReadonlySet<unknown>
-    ? SetMutationMethod
-    : T extends ReadonlyArray<unknown>
-      ? ArrayMutation
-      : keyof T;
+export type MutationKey<T> =
+  T extends ReadonlyMap<unknown, unknown>
+    ? MapMutationMethod
+    : T extends ReadonlySet<unknown>
+      ? SetMutationMethod
+      : T extends ReadonlyArray<unknown>
+        ? ArrayMutation
+        : keyof T;
 
 export type MergedType<T> = { [P in keyof T]: T[P] } & {};
 
-export type MutablePart<T, K extends MutationKey<T>[]> = T extends ReadonlyMap<infer M, infer V>
-  ? T & {
-      -readonly [P in K[number]]: P extends keyof Map<M, V> ? Map<M, V>[P] : never;
-    }
-  : T extends ReadonlySet<infer U>
+export type MutablePart<T, K extends MutationKey<T>[]> =
+  T extends ReadonlyMap<infer M, infer V>
     ? T & {
-        -readonly [P in K[number]]: P extends keyof Set<U> ? Set<U>[P] : never;
+        -readonly [P in K[number]]: P extends keyof Map<M, V> ? Map<M, V>[P] : never;
       }
-    : T extends ReadonlyArray<infer U>
+    : T extends ReadonlySet<infer U>
       ? T & {
-          -readonly [P in K[number]]: P extends keyof Array<U> ? Array<U>[P] : never;
+          -readonly [P in K[number]]: P extends keyof Set<U> ? Set<U>[P] : never;
         }
-      : MergedType<
-          Omit<T, K[number]> & {
-            -readonly [P in K[number]]: P extends keyof T ? T[P] : never;
+      : T extends ReadonlyArray<infer U>
+        ? T & {
+            -readonly [P in K[number]]: P extends keyof Array<U> ? Array<U>[P] : never;
           }
-        >;
+        : MergedType<
+            Omit<T, K[number]> & {
+              -readonly [P in K[number]]: P extends keyof T ? T[P] : never;
+            }
+          >;
 
 /**
  * Extracts the keys of an object that are not readonly.
@@ -896,11 +902,8 @@ export type DevTool = {
 
 export type Assignable = ObjLike | Map<unknown, unknown> | Array<unknown>;
 export type AssignablePart<T> = Partial<Record<keyof T, T[keyof T]>>;
-export type StateBinding<T, B> = B extends StateBindingRef<T>
-  ? StateBindingRef<T>
-  : B extends ObjLike
-    ? BindingProp<T, B>
-    : never;
+export type StateBinding<T, B> =
+  B extends StateBindingRef<T> ? StateBindingRef<T> : B extends ObjLike ? BindingProp<T, B> : never;
 export type StateBindingRef<T> = {
   get value(): T;
   set value(value: T);

@@ -52,7 +52,7 @@ import {
   STATE_REGISTRY,
 } from './registry.js';
 import { switchable } from './switchable.js';
-import { createGetter, createRemover, createSetter } from './trap.js';
+import { createGetter, createOwnKeys, createRemover, createSetter } from './trap.js';
 
 /**
  * Anchors a given value, making it reactive and observable.
@@ -204,6 +204,7 @@ function anchorFn<T extends Linkable, S extends LinkableSchema>(
     getter: createGetter(init) as StateGetter<T>,
     setter: createSetter(init) as StateSetter<T>,
     remover: createRemover(init) as StateRemover<T>,
+    ownKeys: createOwnKeys(init),
     mutator: mutators?.mutator as StateMutator<T>,
     broadcaster,
   };

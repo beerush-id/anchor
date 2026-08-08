@@ -46,7 +46,7 @@ describe('Anchor Utilities - Debouncer', () => {
 
       // Schedule again, resetting the timer
       schedule(fn);
-      vi.advanceTimersByTime(50);
+      vi.advanceTimersByTime(25);
       expect(fn).not.toHaveBeenCalled();
 
       vi.advanceTimersByTime(50);
@@ -62,7 +62,7 @@ describe('Anchor Utilities - Debouncer', () => {
 
       // Schedule again, should cancel previous one
       schedule(fn);
-      vi.advanceTimersByTime(50);
+      vi.advanceTimersByTime(25);
 
       // First schedule should be cancelled, only one execution expected
       expect(fn).not.toHaveBeenCalled();

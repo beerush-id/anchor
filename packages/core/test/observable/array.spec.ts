@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createObserver } from '../../src/index.js';
+import { anchor, createObserver, OBSERVER_KEYS } from '../../src/index.js';
 
 describe('Anchor Core - Observable Array', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -26,7 +26,7 @@ describe('Anchor Core - Observable Array', () => {
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
-      expect(trackedProps?.has('array_mutations')).toBe(true);
+      expect(trackedProps?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)).toBe(true);
       expect(onTrack).toHaveBeenCalledTimes(1);
     });
 
@@ -166,7 +166,7 @@ describe('Anchor Core - Observable Array', () => {
       const trackedProps = observer.states.get(anchor.get(state));
 
       expect(trackedProps).toBeDefined();
-      expect(trackedProps?.has('array_mutations')).toBe(true);
+      expect(trackedProps?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)).toBe(true);
     });
   });
 });

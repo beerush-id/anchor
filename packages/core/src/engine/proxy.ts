@@ -40,6 +40,7 @@ export function createProxyHandler<T extends Linkable>(gateway: StateGateway<T>,
         captureStack.violation.setter(prop, handler.set);
         return true;
       },
+      ownKeys: gateway.ownKeys,
       deleteProperty: (_target: Linkable, prop: KeyLike) => {
         captureStack.violation.remover(prop, handler.deleteProperty);
         return true;
@@ -52,6 +53,7 @@ export function createProxyHandler<T extends Linkable>(gateway: StateGateway<T>,
   return {
     get: gateway.getter,
     set: gateway.setter,
+    ownKeys: gateway.ownKeys,
     deleteProperty: gateway.remover,
   } as ProxyHandler<Linkable>;
 }

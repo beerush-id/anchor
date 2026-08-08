@@ -241,27 +241,24 @@ export function getEventTarget<T>(state: T, event: StateChange) {
     return { key: '', target: state as Linkable };
   }
 
-  const parentKeys = [...event.keys];
-  const key = parentKeys.pop() as KeyLike;
+  const keys = [...event.keys];
+  const key = isBatchMutation(event) ? '' : (keys.pop() as KeyLike);
 
-  if (!parentKeys.length) {
-    if (
-      (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutations) ||
-        COLLECTION_MUTATION_KEYS.has(event.type as SetMutations)) &&
-      event.type !== MapMutations.SET &&
-      event.type !== MapMutations.DELETE
-    ) {
-      return { key: '', target: getValue(state, key) as Linkable };
-    }
-
-    return { key, target: state as Linkable };
-  }
-
-  const target = parentKeys.reduce((parent, key) => {
-    return getValue(parent, key) as T;
-  }, state) as Linkable;
+  const target =
+    keys.reduce((parent, key) => {
+      return getValue(parent, key) as T;
+    }, state) as Linkable;
 
   return { key, target };
+}
+
+function isBatchMutation(event: StateChange) {
+  return (
+    (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutations) ||
+      COLLECTION_MUTATION_KEYS.has(event.type as SetMutations)) &&
+    event.type !== MapMutations.SET &&
+    event.type !== MapMutations.DELETE
+  );
 }
 
 /**
