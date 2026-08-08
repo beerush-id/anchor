@@ -14,14 +14,17 @@ const pkg: IRPCPackagePayload = { name: 'irpc', version: '1.0.0' };
 describe('IRPC Transport', () => {
   let transport: IRPCTransport;
   let errorSpy: ReturnType<typeof vi.spyOn>;
+  let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     transport = new IRPCTransport();
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     errorSpy.mockRestore();
+    logSpy.mockRestore();
   });
 
   describe('Initialization', () => {

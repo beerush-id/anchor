@@ -182,7 +182,7 @@ export class IRPCCall {
   public close() {
     if (this.resolved) return;
 
-    this.transport.close(this);
+    this.transport.close?.(this);
     this.resolve(this.reader.data);
   }
 }
