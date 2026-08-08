@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createLifecycle, MapMutations, SetMutations, subscribe } from '../../src/index.js';
 import { setReactive } from '../../src/engine/config.js';
+import { anchor, type AnyType, createLifecycle, MapMutations, SetMutations, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Subscription', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -238,6 +238,32 @@ describe('Anchor Core - Subscription', () => {
 
       unsubscribe();
       childUnsubscribe();
+    });
+
+    it('should properly link multiple states', () => {
+      const a = anchor({ a: 1 }) as AnyType;
+      const b = anchor({ b: 2 }) as AnyType;
+
+      const handler = vi.fn();
+      const unsubscribe = subscribe(a, handler);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      b.b = 1;
+
+      a.a = 2;
+      expect(handler).toHaveBeenCalledTimes(2);
+
+      a.b = b;
+      expect(handler).toHaveBeenCalledTimes(3);
+
+      b.c = 3;
+      expect(handler).toHaveBeenCalledTimes(4);
+
+      unsubscribe();
+
+      b.d = 4;
+      expect(handler).toHaveBeenCalledTimes(4);
     });
   });
 

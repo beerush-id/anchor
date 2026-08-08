@@ -225,8 +225,8 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
 
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
-  const { unlink } = RELATION_REGISTRY.get(init) as StateRelation;
-  const { schema, subscriptions } = meta;
+  const { unlink, link } = RELATION_REGISTRY.get(init) as StateRelation;
+  const { schema, subscriptions, subscribers } = meta;
   const { configs } = options ?? meta;
 
   return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
@@ -294,6 +294,10 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
       if (subscriptions.has(state)) {
         unlink(state);
       }
+    }
+
+    if (STATE_REGISTRY.has(value) && configs.recursive && subscribers.size && configs.recursive !== 'flat') {
+      link(prop, value);
     }
 
     if (!STATE_BUSY_LIST.has(target)) {
