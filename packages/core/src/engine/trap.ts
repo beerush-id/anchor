@@ -71,6 +71,10 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
   }
 
   const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+    // Make sure target is the underlying object.
+    /* v8 ignore next */
+    if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
+
     let value = Reflect.get(target, prop, receiver) as Linkable;
 
     if ($$.reactive) {
@@ -178,6 +182,9 @@ export function createSetter<T extends Linkable>(init: T, options?: TrapOverride
   const { configs } = options ?? meta;
 
   return (target: ObjLike, prop: KeyLike, value: Linkable, receiver?: unknown) => {
+    // Make sure target is the underlying object.
+    if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
+
     if ($$.secureWrite && typeof prop === 'string' && POISONED_KEYS.has(prop)) return true;
 
     const current = Reflect.get(target, prop, receiver) as Linkable;
@@ -294,6 +301,9 @@ export function createRemover<T extends Linkable>(init: T, options?: TrapOverrid
   const { configs } = options ?? meta;
 
   return (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
+    // Make sure target is the underlying object.
+    if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
+
     // Escape directly if the property doesn't exist to prevent unnecessary work.
     if (!Object.getOwnPropertyDescriptor(target, prop)) return true;
 

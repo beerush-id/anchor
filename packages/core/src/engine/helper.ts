@@ -85,6 +85,11 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     }
   }
 
+  if (!changes.length) {
+    STATE_BUSY_LIST.delete(init);
+    return;
+  }
+
   const event = {
     type: replace ? BatchMutations.REPLACE : BatchMutations.ASSIGN,
     prev,

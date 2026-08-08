@@ -176,7 +176,7 @@ describe('Anchor Helpers', () => {
       anchor.assign<ObjLike>(state, { a: 1 }, true);
 
       // init + replace (no actual changes, but still emits replace event)
-      expect(handler).toHaveBeenCalledTimes(2);
+      expect(handler).toHaveBeenCalledTimes(1);
 
       unsubscribe();
     });

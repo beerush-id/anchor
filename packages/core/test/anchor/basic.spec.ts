@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { anchor, createLifecycle, setCleanUpHandler, subscribe } from '../../src/index.js';
+import { anchor, type AnyType, createLifecycle, setCleanUpHandler, subscribe } from '../../src/index.js';
 import { onCleanup, onGlobalCleanup } from '../../src/scope/lifecycle.js';
 
 describe('Anchor Core - Basic Operations', () => {
@@ -146,6 +146,15 @@ describe('Anchor Core - Basic Operations', () => {
 
       expect(anchor.has(state)).toBe(true);
       expect(anchor.has({ name: 'Non Existence' })).toBe(false);
+    });
+
+    it('should handle nested proxy', () => {
+      const a = anchor({ a: 1 }) as AnyType;
+      const b = anchor({ b: 2 }) as AnyType;
+
+      a.b = b;
+
+      expect(a.b).toBe(b);
     });
   });
 
