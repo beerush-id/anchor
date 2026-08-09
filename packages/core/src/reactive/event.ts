@@ -1,7 +1,12 @@
 import { anchor } from '../engine/anchor.js';
 import { assign } from '../engine/helper.js';
 import { INIT_GATEWAY_REGISTRY, STATE_REGISTRY } from '../engine/registry.js';
-import { ARRAY_MUTATION_KEYS, ARRAY_MUTATIONS, COLLECTION_MUTATION_KEYS } from '../shared/constant.js';
+import {
+  ARRAY_MUTATION_KEYS,
+  ARRAY_MUTATIONS,
+  BATCH_MUTATION_KEYS,
+  COLLECTION_MUTATION_KEYS,
+} from '../shared/constant.js';
 import { type ArrayMutations, BatchMutations, MapMutations, ObjectMutations, SetMutations } from '../shared/enum.js';
 import type {
   ArrayMutation,
@@ -244,10 +249,9 @@ export function getEventTarget<T>(state: T, event: StateChange) {
   const keys = [...event.keys];
   const key = isBatchMutation(event) ? '' : (keys.pop() as KeyLike);
 
-  const target =
-    keys.reduce((parent, key) => {
-      return getValue(parent, key) as T;
-    }, state) as Linkable;
+  const target = keys.reduce((parent, key) => {
+    return getValue(parent, key) as T;
+  }, state) as Linkable;
 
   return { key, target };
 }
@@ -255,7 +259,8 @@ export function getEventTarget<T>(state: T, event: StateChange) {
 function isBatchMutation(event: StateChange) {
   return (
     (ARRAY_MUTATION_KEYS.has(event.type as ArrayMutations) ||
-      COLLECTION_MUTATION_KEYS.has(event.type as SetMutations)) &&
+      COLLECTION_MUTATION_KEYS.has(event.type as SetMutations) ||
+      BATCH_MUTATION_KEYS.has(event.type as BatchMutations)) &&
     event.type !== MapMutations.SET &&
     event.type !== MapMutations.DELETE
   );
