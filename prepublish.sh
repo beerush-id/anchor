@@ -48,8 +48,6 @@ bpkg info set dependencies.@irpclib/ws="$VERSION" -f \
   packages/vite-ssr
 
 bpkg info set optionalDependencies.@irpclib/http="$VERSION" -f \
-  packages/react \
-  packages/solid \
   packages/ssr
 
 bpkg info set optionalDependencies.@irpclib/irpc="$VERSION" -f \
