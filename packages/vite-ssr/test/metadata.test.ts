@@ -73,17 +73,19 @@ describe('mdx metadata generator', () => {
     expect(res.intVal).toBe(-42);
     expect(res.floatVal).toBe(3.14);
 
-    const blockRes = extractFrontmatter([
-      '---',
-      'items:',
-      '  - ',
-      '    name: first',
-      '    value: 1',
-      '  - ',
-      '    name: second',
-      '    value: 2',
-      '---',
-    ].join('\n'));
+    const blockRes = extractFrontmatter(
+      [
+        '---',
+        'items:',
+        '  - ',
+        '    name: first',
+        '    value: 1',
+        '  - ',
+        '    name: second',
+        '    value: 2',
+        '---',
+      ].join('\n')
+    );
     expect(blockRes.items).toEqual([
       { name: 'first', value: 1 },
       { name: 'second', value: 2 },

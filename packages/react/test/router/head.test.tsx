@@ -168,7 +168,9 @@ describe('Anchor React - Head APIs', () => {
 
       const TestTwitterWithImg = template(() => <Head meta={{ twitter: { image: 'test.png' } }} />);
       const { unmount: unmountImg } = render(<TestTwitterWithImg />);
-      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe('summary_large_image');
+      expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe(
+        'summary_large_image'
+      );
       unmountImg();
     });
   });

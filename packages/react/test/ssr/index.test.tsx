@@ -208,7 +208,9 @@ describe('createApp', () => {
     const router = createRouter<ReactNode>();
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
-    const Entry = ({ url }: { url?: string }) => <UIRouter router={router} root={RootLayout} url={url} headless={true} />;
+    const Entry = ({ url }: { url?: string }) => (
+      <UIRouter router={router} root={RootLayout} url={url} headless={true} />
+    );
 
     const app = createApp(router, Entry, { template: '<!--ssr-outlet-->' });
     expect(app.fetch).toBeTypeOf('function');

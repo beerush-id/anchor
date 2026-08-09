@@ -22,7 +22,7 @@ describe('route manifest — manifests are generated', () => {
     app = makeApp(dir);
     const content = readManifest(dir);
 
-    expect(content).toContain("// @generated");
+    expect(content).toContain('// @generated');
     expect(content).toContain("{ path: '/blogs', route: blogsRoute },");
     expect(content).toContain("{ path: '/about', route: aboutRoute },");
     // The structural `admin` folder itself is not a content node.

@@ -74,9 +74,7 @@ describe('coverage tests for unreached branches', () => {
 
   describe('scaffold variants', () => {
     it('scaffolds the ambient global.d.ts with AirRouteMeta', () => {
-      expect(scaffoldForFile({ base: 'global.d.ts', framework: 'react' })).toContain(
-        'interface AirRouteMeta'
-      );
+      expect(scaffoldForFile({ base: 'global.d.ts', framework: 'react' })).toContain('interface AirRouteMeta');
     });
 
     it('scaffolds the solid worker entry against the solid ssr package', () => {
@@ -137,7 +135,8 @@ describe('coverage tests for unreached branches', () => {
       dir = makeFixture({ 'pages/page.mdx': '' });
 
       app = makeApp(dir);
-      const code = 'const $install = () => {}; const myVar = 100;\nexport { $install };\nexport { myVar as customVar };\n';
+      const code =
+        'const $install = () => {}; const myVar = 100;\nexport { $install };\nexport { myVar as customVar };\n';
       const result = await mdxAttachForFile({
         file: fixturePath(dir, 'pages/page.mdx'),
         pagesDir: fixturePath(dir, 'pages'),
@@ -258,7 +257,9 @@ describe('coverage tests for unreached branches', () => {
       fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '');
 
       await waitFor(() => fixtureExists(dir, 'pages/blogs/route.ts'));
-      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain(
+        "export const blogsRoute = rootRoute.route('/blogs');"
+      );
     });
 
     it('reacts to a file added to an existing folder', async () => {

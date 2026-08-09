@@ -1,6 +1,14 @@
 import fs from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanFixture, fixtureExists, fixturePath, makeFixture, readFixture, removeFixture, writeFixture } from './fixture.js';
+import {
+  cleanFixture,
+  fixtureExists,
+  fixturePath,
+  makeFixture,
+  readFixture,
+  removeFixture,
+  writeFixture,
+} from './fixture.js';
 import { makeApp, readManifest } from './make-sync.js';
 
 describe('watcher sync — folder edits stay in sync', () => {
@@ -70,8 +78,8 @@ describe('watcher sync — folder edits stay in sync', () => {
     const updatedRoute = readFixture(dir, 'pages/projects/route.ts');
     expect(updatedRoute).toContain("export const projectsIndexRoute = projectsRoute.route('/');");
     // The injected export sits right after the base route export.
-    expect(updatedRoute.indexOf("export const projectsRoute")).toBeLessThan(
-      updatedRoute.indexOf("export const projectsIndexRoute")
+    expect(updatedRoute.indexOf('export const projectsRoute')).toBeLessThan(
+      updatedRoute.indexOf('export const projectsIndexRoute')
     );
   });
 

@@ -383,7 +383,7 @@ describe('createWorker', () => {
     });
 
     const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, true);
-    
+
     expect(response.status).toBe(200);
     expect(renderer).toHaveBeenCalled();
   });

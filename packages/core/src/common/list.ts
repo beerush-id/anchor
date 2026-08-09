@@ -429,7 +429,7 @@ export class SuperList<T> {
 
 /**
  * Creates a new reactive SuperList instance.
- * 
+ *
  * @template T - The type of data stored in the list.
  * @param values - Optional initial array of values to populate the list.
  * @param options - Configuration options, including the max size and sorting rules.

@@ -186,7 +186,7 @@ describe('Temporal Lounge', () => {
     expectSynced(lounge, [...clients.values()]);
   });
 
-  it("should assert john moves and everyone sees his new spot", async () => {
+  it('should assert john moves and everyone sees his new spot', async () => {
     await passTime(9500);
 
     const john = clients.get('john')!;

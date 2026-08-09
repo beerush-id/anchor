@@ -219,9 +219,11 @@ describe('route generation — resilience', () => {
     removeFixture(dir, 'pages/projects/layout.tsx');
     app.rootFolder.children.get('projects')?.handleFileRemoved('layout.tsx');
 
-    const spy = vi.spyOn(fs, 'readFileSync').mockReturnValue(
-      `export const projectsRoute = rootRoute.route('/projects');\nexport const projectsIndexRoute = projectsRoute.route('/');\n` as never
-    );
+    const spy = vi
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValue(
+        `export const projectsRoute = rootRoute.route('/projects');\nexport const projectsIndexRoute = projectsRoute.route('/');\n` as never
+      );
 
     writeFixture(dir, { 'pages/projects/layout.tsx': '' });
     expect(() => app?.rootFolder.children.get('projects')?.handleFileAdded('layout.tsx')).not.toThrow();
@@ -300,7 +302,11 @@ describe('mdx & metadata — resilience', () => {
   it('tolerates a missing mdx file during metadata generation', () => {
     dir = makeFixture({});
 
-    const node = new MarkdownNode(fixturePath(dir, 'pages/missing.mdx'), fixturePath(dir, 'pages'), fixturePath(dir, 'meta'));
+    const node = new MarkdownNode(
+      fixturePath(dir, 'pages/missing.mdx'),
+      fixturePath(dir, 'pages'),
+      fixturePath(dir, 'meta')
+    );
     expect(() => node.update()).not.toThrow();
     expect(fixtureExists(dir, 'meta/missing.ts')).toBe(false);
   });
@@ -319,7 +325,11 @@ describe('mdx & metadata — resilience', () => {
     dir = makeFixture({ 'pages/docs/layout.mdx': '' });
     app = makeApp(dir);
 
-    const content = scaffoldForFile({ base: 'layout.mdx', folder: app.rootFolder.children.get('docs')!, framework: 'react' });
+    const content = scaffoldForFile({
+      base: 'layout.mdx',
+      folder: app.rootFolder.children.get('docs')!,
+      framework: 'react',
+    });
     expect(content).toContain('title: Docs');
     expect(content).toContain('# Docs');
   });
@@ -369,7 +379,11 @@ describe('symlink — windows platforms', () => {
 
     try {
       expect(() => ensureSymlink(dir)).not.toThrow();
-      expect(symlinkSpy).toHaveBeenCalledWith(fixturePath(dir, '.airstack'), fixturePath(dir, 'node_modules/@airstack'), 'junction');
+      expect(symlinkSpy).toHaveBeenCalledWith(
+        fixturePath(dir, '.airstack'),
+        fixturePath(dir, 'node_modules/@airstack'),
+        'junction'
+      );
     } finally {
       symlinkSpy.mockRestore();
       if (originalPlatform) Object.defineProperty(process, 'platform', originalPlatform);
@@ -514,7 +528,11 @@ describe('scaffold — unknown files and folder-shape edge cases', () => {
     dir = makeFixture({ 'pages/guide/page.mdx': '' });
     app = makeApp(dir);
 
-    const content = scaffoldForFile({ base: 'page.tsx', folder: app.rootFolder.children.get('guide')!, framework: 'react' });
+    const content = scaffoldForFile({
+      base: 'page.tsx',
+      folder: app.rootFolder.children.get('guide')!,
+      framework: 'react',
+    });
     expect(content).toContain('guideRoute');
   });
 
@@ -522,7 +540,11 @@ describe('scaffold — unknown files and folder-shape edge cases', () => {
     dir = makeFixture({ 'pages/guide/layout.mdx': '' });
     app = makeApp(dir);
 
-    const content = scaffoldForFile({ base: 'page.tsx', folder: app.rootFolder.children.get('guide')!, framework: 'react' });
+    const content = scaffoldForFile({
+      base: 'page.tsx',
+      folder: app.rootFolder.children.get('guide')!,
+      framework: 'react',
+    });
     expect(content).toContain('guideRoute');
   });
 
@@ -703,7 +725,11 @@ describe('mdx attach & metadata names — edge cases', () => {
   it('names symbol-only metadata modules with the root prefix', () => {
     dir = makeFixture({});
 
-    const node = new MarkdownNode(fixturePath(dir, 'pages/--.mdx'), fixturePath(dir, 'pages'), fixturePath(dir, 'meta'));
+    const node = new MarkdownNode(
+      fixturePath(dir, 'pages/--.mdx'),
+      fixturePath(dir, 'pages'),
+      fixturePath(dir, 'meta')
+    );
     expect(node.varName).toBe('rootMeta');
   });
 });
