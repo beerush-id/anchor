@@ -1,9 +1,15 @@
 #!/bin/bash
 set -e
 
-bun run prepublish
+if [ "$1" == "--revert" ]; then
+  VERSION="workspace:*"
+else
+  if [ "$1" != "--skip-build" ]; then
+    bun run prepublish
+  fi
 
-read -p "Enter version (e.g., 1.0.1): " VERSION
+  read -p "Enter version (e.g., 1.0.1): " VERSION
+fi
 
 if [ -z "$VERSION" ]; then
   echo "Error: Version cannot be empty."
@@ -34,6 +40,10 @@ bpkg info set dependencies.@anchorlib/storage="$VERSION" -f \
   packages/solid \
   packages/svelte \
   packages/vue
+
+bpkg info set dependencies.@anchorlib/ssr="$VERSION" -f \
+  packages/react \
+  packages/solid
 
 bpkg info set dependencies.@irpclib/http="$VERSION" -f \
   packages/vite-ssr

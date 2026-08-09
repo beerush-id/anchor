@@ -1,8 +1,19 @@
 @echo off
+
+if "%1"=="--revert" (
+  set VERSION=workspace:*
+  goto skip_build
+)
+
+if "%1"=="--skip-build" goto skip_build
+
 bun run prepublish
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-set /p VERSION="Enter version (e.g., 1.0.1): "
+:skip_build
+if not "%VERSION%"=="workspace:*" (
+  set /p VERSION="Enter version (e.g., 1.0.1): "
+)
 
 if "%VERSION%"=="" (
   echo Error: Version cannot be empty.
@@ -33,6 +44,10 @@ bpkg info set dependencies.@anchorlib/storage="%VERSION%" -f ^
   packages/solid ^
   packages/svelte ^
   packages/vue
+
+bpkg info set dependencies.@anchorlib/ssr="%VERSION%" -f ^
+  packages/react ^
+  packages/solid
 
 bpkg info set dependencies.@irpclib/http="%VERSION%" -f ^
   packages/vite-ssr
