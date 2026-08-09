@@ -173,9 +173,27 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       // biome-ignore lint/suspicious/noExplicitAny: Generic socket type for ws.
       const activeSockets = new Set<any>();
 
-      server.watcher.on('change', () => {
+      server.watcher.on('change', (file) => {
+        const mods = server.moduleGraph.getModulesByFile(file);
+
+        if (mods && mods.size > 0) {
+          let isBackend = false;
+
+          for (const mod of mods) {
+            if (mod.url.match(/\.(css|scss|sass|less|styl|pcss|postcss)($|\?)/)) {
+              continue;
+            }
+            if (mod.ssrModule || mod.ssrTransformResult || mod.ssrError) {
+              isBackend = true;
+              break;
+            }
+          }
+
+          if (!isBackend) return;
+        }
+
         for (const ws of activeSockets) {
-          ws.close(1012, 'Vite HMR Restart');
+          ws.close(1001, 'Vite HMR Restart');
         }
         activeSockets.clear();
       });
@@ -207,6 +225,10 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
                 if (typeof worker.options?.wsRouter?.disconnect === 'function') {
                   worker.options.wsRouter.disconnect(ws);
                 }
+              });
+
+              ws.on('error', (err) => {
+                server.config.logger.error(`[air-worker] WebSocket error: ${err.message}`);
               });
             });
           }

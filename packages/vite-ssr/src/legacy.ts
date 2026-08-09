@@ -424,7 +424,11 @@ async function initWsRouter(
       });
 
       ws.on('close', () => {
-        wsRouter.disconnect();
+        wsRouter.disconnect(ws as unknown as WebSocket);
+      });
+
+      ws.on('error', (err) => {
+        server.config.logger.error(`[air-ssr] WebSocket error: ${err.message}`);
       });
     });
 
