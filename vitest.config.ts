@@ -47,6 +47,7 @@ export default defineConfig({
         'irpclib/ws/src/**/*.{ts}',
         'irpclib/broadcast/src/**/*.{ts}',
       ],
+      exclude: ['packages/vite-ssr/src/pages/plugin.ts'],
       reportsDirectory: 'docs/.vitepress/dist/coverage/details',
     },
   },
