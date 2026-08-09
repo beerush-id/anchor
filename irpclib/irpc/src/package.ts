@@ -129,11 +129,31 @@ export class IRPCPackage<K extends string = 'id'> {
    * @returns A stub function that can be used to call the IRPC.
    * @throws Error if an IRPC with the same name already exists.
    */
+  public declare<
+    F extends (...args: AnyType[]) => Promise<void> | RemoteState<void>,
+    I extends IRPCInputs = IRPCInputs,
+    O extends IRPCOutput = IRPCOutput,
+  >(
+    name: string,
+    seedOrConfig?: (() => IRPCReturnOf<F>) | (IRPCDeclareConfig<I, O> & IRPCInferInit<IRPCReturnOf<F>>),
+    config?: IRPCDeclareConfig<I, O>
+  ): IRPCFunction<F>;
+
+  /**
+   * Declares a new IRPC specification and returns a callable stub.
+   *
+   * @param name - The unique name for the IRPC specification.
+   * @param seedOrConfig - The initial data seed function, or configuration object.
+   * @param config - Optional configuration (if seed was provided).
+   * @returns A stub function that can be used to call the IRPC.
+   * @throws Error if an IRPC with the same name already exists.
+   */
   public declare<F, I extends IRPCInputs = IRPCInputs, O extends IRPCOutput = IRPCOutput>(
     name: string,
     seedOrConfig: (() => IRPCReturnOf<F>) | (IRPCDeclareConfig<I, O> & IRPCInferInit<IRPCReturnOf<F>>),
     config?: IRPCDeclareConfig<I, O>
   ): IRPCFunction<F>;
+
   /**
    * Declares a new IRPC specification and returns a callable stub.
    *
