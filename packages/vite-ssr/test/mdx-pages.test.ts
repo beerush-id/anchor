@@ -136,4 +136,18 @@ describe('mdx pages — MDX files are pages', () => {
 
     expect(snippet).toContain("import { docsRoute as __airRoute } from './route.js';");
   });
+
+  it('attaches named mdx page to its derived route', async () => {
+    dir = makeFixture({ 'pages/docs/v1.page.mdx': '' });
+    const snippet = await attach(dir, 'pages/docs/v1.page.mdx');
+
+    expect(snippet).toContain("import { docsV1Route as __airRoute } from './route.js';");
+  });
+
+  it('attaches named mdx page in root folder', async () => {
+    dir = makeFixture({ 'pages/v1.page.mdx': '' });
+    const snippet = await attach(dir, 'pages/v1.page.mdx');
+
+    expect(snippet).toContain("import { v1Route as __airRoute } from './route.js';");
+  });
 });

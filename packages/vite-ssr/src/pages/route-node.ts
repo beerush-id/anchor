@@ -292,7 +292,7 @@ export class RouteNode extends EventEmitter {
       for (const namedPage of this.namedPages) {
         const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedSegment = deriveSegment(name);
-        const namedRouteName = deriveRouteName(this.rel ? `${this.rel}/${name}` : name);
+        const namedRouteName = deriveRouteName(`${this.rel}/${name}`);
         lines.push(`export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
       }
 

@@ -119,4 +119,22 @@ describe('route manifest — manifests are generated', () => {
 
     expect(readManifest(dir)).toContain("{ path: '/about', route: aboutRoute },");
   });
+
+  it('adds named pages to the manifest', () => {
+    dir = makeFixture({
+      'pages/v1.page.tsx': '',
+      'pages/release/v1.page.mdx': '',
+    });
+
+    app = makeApp(dir);
+
+    // root manifest
+    const rootContent = readManifest(dir);
+    expect(rootContent).toContain("{ path: '/v1', route: v1Route },");
+    expect(rootContent).not.toContain('releaseV1Route');
+
+    // release manifest
+    const releaseContent = readManifest(dir, 'release/index.ts');
+    expect(releaseContent).toContain("{ path: '/release/v1', route: releaseV1Route },");
+  });
 });

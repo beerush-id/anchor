@@ -4,7 +4,15 @@ import { withIsolation } from '@anchorlib/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Route } from '../../router/src/index.js';
 import { importSpecifier } from '../src/pages/model.js';
-import { cleanFixture, fixtureExists, fixturePath, makeFixture, PACKAGE_TMP, readFixture, writeFixture } from './fixture.js';
+import {
+  cleanFixture,
+  fixtureExists,
+  fixturePath,
+  makeFixture,
+  PACKAGE_TMP,
+  readFixture,
+  writeFixture,
+} from './fixture.js';
 import { makeApp } from './make-sync.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -139,6 +147,101 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/docs/page.tsx': '', 'pages/docs/page.mdx': '' });
 
     expect(route('docs')).toContain('docsRoute');
+  });
+
+  it('generates named routes for named pages', () => {
+    boot({
+      'pages/v1.page.tsx': '',
+      'pages/v2.page.mdx': '',
+      'pages/api/v1.page.ts': '',
+      'pages/api/v2.page.mdx': '',
+    });
+
+    const root = route('');
+    expect(root).toContain("export const v1Route = rootRoute.route('/v1');");
+    expect(root).toContain("export const v2Route = rootRoute.route('/v2');");
+
+    const api = route('api');
+    expect(api).toContain("export const apiV1Route = apiRoute.route('/v1');");
+    expect(api).toContain("export const apiV2Route = apiRoute.route('/v2');");
+  });
+
+  it('removes named routes when named pages are removed', () => {
+    boot({
+      'pages/v1.page.tsx': '',
+    });
+
+    const root = route('');
+    expect(root).toContain("export const v1Route = rootRoute.route('/v1');");
+
+    app?.rootFolder.handleFileRemoved('v1.page.tsx');
+
+    const newRoot = route('');
+    expect(newRoot).not.toContain("export const v1Route = rootRoute.route('/v1');");
+  });
+
+  it('adds named routes when named pages are dynamically added', () => {
+    boot({
+      'pages/page.tsx': '',
+    });
+
+    const root = route('');
+    expect(root).not.toContain("export const v1Route = rootRoute.route('/v1');");
+
+    app?.rootFolder.handleFileAdded('v1.page.tsx');
+
+    const newRoot = route('');
+    expect(newRoot).toContain("export const v1Route = rootRoute.route('/v1');");
+  });
+
+  it('fails gracefully when adding or removing a named page without a route file', async () => {
+    boot({
+      'pages/page.tsx': '',
+      'pages/v1.page.tsx': '',
+    });
+
+    const routeFilePath = fixturePath(dir, 'pages/route.ts');
+    const fs = await import('node:fs');
+    fs.unlinkSync(routeFilePath);
+
+    const routeNode = app?.rootRoute as any;
+    expect(() => {
+      routeNode.ensureNamedRoute('v2.page.tsx');
+      routeNode.removeNamedRoute('v1.page.tsx');
+    }).not.toThrow();
+  });
+
+  it('handles nested named pages edge cases correctly', async () => {
+    boot({
+      'pages/api/page.tsx': '',
+    });
+
+    const apiFolder = app?.rootFolder.children.get('api');
+    const apiRoute = app?.rootRoute?.children.get('api') as any;
+
+    const fs = await import('node:fs');
+    const routeFilePath = fixturePath(dir, 'pages/api/route.ts');
+
+    // 1. Add named route successfully
+    apiFolder?.handleFileAdded('v1.page.tsx');
+    let content = fs.readFileSync(routeFilePath, 'utf-8');
+    expect(content).toContain("export const apiV1Route = apiRoute.route('/v1');");
+
+    // 2. Add same named route again (hits return false if includes)
+    expect(apiRoute.ensureNamedRoute('v1.page.tsx')).toBe(false);
+
+    // 3. Remove named route that does not exist (hits return false if idx === -1)
+    expect(apiRoute.removeNamedRoute('v2.page.tsx')).toBe(false);
+
+    // 4. Corrupt the file so the base route is missing (hits baseIdx === -1)
+    fs.writeFileSync(routeFilePath, 'export const somethingElse = {};');
+    expect(apiRoute.ensureNamedRoute('v2.page.tsx')).toBe(false);
+
+    // 5. Normal remove
+    apiFolder?.handleFileAdded('v3.page.tsx'); // This will recreate the file cleanly
+    apiFolder?.handleFileRemoved('v3.page.tsx');
+    content = fs.readFileSync(routeFilePath, 'utf-8');
+    expect(content).not.toContain('export const apiV3Route');
   });
 
   it('executes the generated tree against a real router', async () => {
