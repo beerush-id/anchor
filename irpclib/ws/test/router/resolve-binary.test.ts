@@ -103,14 +103,41 @@ describe('WebSocketRouter Binary Resolution & Disconnect', () => {
       const abortSpy1 = vi.fn();
       const abortSpy2 = vi.fn();
 
-      router['abortControllers'].set('1', { abort: abortSpy1 } as AnyType);
-      router['abortControllers'].set('2', { abort: abortSpy2 } as AnyType);
+      router['abortControllers'].set('1', { controller: { abort: abortSpy1 } } as AnyType);
+      router['abortControllers'].set('2', { controller: { abort: abortSpy2 } } as AnyType);
 
       router.disconnect();
 
       expect(abortSpy1).toHaveBeenCalled();
       expect(abortSpy2).toHaveBeenCalled();
       expect(router['abortControllers'].size).toBe(0);
+    });
+
+    it('should cleanly abort only streams attached to a specific websocket', () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+      module.use(transport);
+
+      const router = new WebSocketRouter(module, transport);
+
+      const abortSpy1 = vi.fn();
+      const abortSpy2 = vi.fn();
+      const abortSpy3 = vi.fn();
+
+      const wsA = {} as WebSocket;
+      const wsB = {} as WebSocket;
+
+      router['abortControllers'].set('1', { controller: { abort: abortSpy1 }, ws: wsA } as AnyType);
+      router['abortControllers'].set('2', { controller: { abort: abortSpy2 }, ws: wsB } as AnyType);
+      router['abortControllers'].set('3', { controller: { abort: abortSpy3 }, ws: wsA } as AnyType);
+
+      router.disconnect(wsA);
+
+      expect(abortSpy1).toHaveBeenCalled();
+      expect(abortSpy2).not.toHaveBeenCalled();
+      expect(abortSpy3).toHaveBeenCalled();
+      expect(router['abortControllers'].size).toBe(1);
+      expect(router['abortControllers'].has('2')).toBe(true);
     });
   });
 });

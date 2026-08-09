@@ -202,7 +202,6 @@ export class WebSocketTransport extends IRPCTransport {
     // Attempt reconnection if enabled and connection wasn't closed intentionally
     if (
       this.config.autoReconnect !== false &&
-      !event.wasClean &&
       this.reconnectAttempts < (this.config.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS)
     ) {
       this.scheduleReconnect();

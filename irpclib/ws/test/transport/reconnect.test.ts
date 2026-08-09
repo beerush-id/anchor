@@ -200,22 +200,13 @@ describe('WebSocketTransport Close & Reconnect', () => {
       expect(transport['pendingCalls'].size).toBe(0);
     });
 
-    it('should schedule reconnect if autoReconnect is true and not clean close', () => {
-      transport.config.autoReconnect = true;
-      const scheduleSpy = vi.spyOn(transport as AnyType, 'scheduleReconnect');
-
-      transport['handleClose']({ wasClean: false } as CloseEvent);
-
-      expect(scheduleSpy).toHaveBeenCalled();
-    });
-
-    it('should not schedule reconnect if was clean close', () => {
+    it('should schedule reconnect if autoReconnect is true', () => {
       transport.config.autoReconnect = true;
       const scheduleSpy = vi.spyOn(transport as AnyType, 'scheduleReconnect');
 
       transport['handleClose']({ wasClean: true } as CloseEvent);
 
-      expect(scheduleSpy).not.toHaveBeenCalled();
+      expect(scheduleSpy).toHaveBeenCalled();
     });
   });
 });

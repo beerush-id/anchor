@@ -46,7 +46,7 @@ export class WebSocketRouter extends IRPCRouter {
   /** Configuration for WebSocket resolver */
   public config: WebSocketResolveConfig;
   /** AbortControllers for active stream requests */
-  private abortControllers = new Map<string, AbortController>();
+  private abortControllers = new Map<string, { controller: AbortController; ws?: WebSocket }>();
   /** Buffered binary data waiting for JSON requests, keyed by file pointer ID */
   private fileBuffer = new Map<string, Uint8Array>();
 
@@ -127,8 +127,8 @@ export class WebSocketRouter extends IRPCRouter {
     const req = parsed.call as IRPCRequest & { type?: string; files?: IRPCFilePointer[] };
 
     if (req.type === WS_MESSAGE_TYPE.CANCEL) {
-      const controller = this.abortControllers.get(req.id);
-      if (controller) controller.abort();
+      const entry = this.abortControllers.get(req.id);
+      if (entry) entry.controller.abort();
       this.abortControllers.delete(req.id);
       return;
     }
@@ -162,7 +162,7 @@ export class WebSocketRouter extends IRPCRouter {
       ...initContext,
     ]);
 
-    this.abortControllers.set(resolver.req.id, abortController);
+    this.abortControllers.set(resolver.req.id, { controller: abortController, ws });
 
     await withContext(ctx, async () => {
       const error = await this.resolveHooks(resolver.req);
@@ -204,11 +204,21 @@ export class WebSocketRouter extends IRPCRouter {
   /**
    * Aborts all active stream controllers.
    * Call this on WebSocket disconnect to clean up all active streams.
+   * @param ws - Optional WebSocket instance to clean up specific streams.
    */
-  public disconnect() {
-    this.abortControllers.forEach((controller) => controller.abort());
-    this.abortControllers.clear();
-    this.fileBuffer.clear();
+  public disconnect(ws?: WebSocket) {
+    if (ws) {
+      this.abortControllers.forEach((entry, id) => {
+        if (entry.ws === ws) {
+          entry.controller.abort();
+          this.abortControllers.delete(id);
+        }
+      });
+    } else {
+      this.abortControllers.forEach((entry) => entry.controller.abort());
+      this.abortControllers.clear();
+      this.fileBuffer.clear();
+    }
   }
 
   /**

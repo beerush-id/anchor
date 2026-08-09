@@ -130,8 +130,8 @@ describe('WebSocketRouter Resolve & Middleware', () => {
 
     await vi.advanceTimersByTimeAsync(60);
 
-    const controller = router['abortControllers'].get('1');
-    expect(controller?.signal.aborted).toBe(true);
+    const entry = router['abortControllers'].get('1');
+    expect(entry?.controller.signal.aborted).toBe(true);
 
     vi.useRealTimers();
   });
@@ -144,7 +144,7 @@ describe('WebSocketRouter Resolve & Middleware', () => {
     const router = new WebSocketRouter(module, transport);
 
     const abortSpy = vi.fn();
-    router['abortControllers'].set('2', { abort: abortSpy } as AnyType);
+    router['abortControllers'].set('2', { controller: { abort: abortSpy } } as AnyType);
 
     const ws = { readyState: 1, send: vi.fn() } as AnyType;
     const message = JSON.stringify({ call: { id: '2', type: 'cancel' }, credentials: [] });
