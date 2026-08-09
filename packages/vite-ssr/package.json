@@ -53,8 +53,10 @@
     "chokidar": "catalog:lib",
     "remark-frontmatter": "catalog:lib",
     "remark-mdx-frontmatter": "catalog:lib",
-    "vite": "catalog:lib",
     "ws": "catalog:lib"
+  },
+  "peerDependencies": {
+    "vite": "catalog:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
