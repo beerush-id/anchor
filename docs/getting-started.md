@@ -303,6 +303,10 @@ export default page(saleRoute).render(() => <h1>Sale</h1>);
 
 Sometimes a page is a static document — a docs page, an FAQ, a policy. In that case, use MDX instead of JSX. Create a `page.mdx`; the `title` and `description` at the top of the file are what the browser tab and search results show:
 
+::: warning SolidJS Support
+MDX pages are currently only supported when using React. The integration with SolidJS is temporarily unavailable due to differences in how JSX is compiled to native DOM instructions. Support for SolidJS MDX pages will be restored in an upcoming patch.
+:::
+
 ```mdx
 ---
 title: FAQ

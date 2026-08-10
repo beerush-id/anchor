@@ -53,6 +53,10 @@ The plugin scaffolds starter content into newly created empty files, so dropping
 
 Markdown files become first-class pages with zero extra configuration. Frontmatter flows straight into the document: `title` and `description` render as the page title and meta description, and any additional keys are carried through as route metadata.
 
+::: warning SolidJS Limitation
+Please note: MDX pages are currently only supported for React applications. The underlying parser driving the MDX integration expects standard Virtual DOM function calls, which conflicts with SolidJS's native DOM compilation strategy. We are actively rebuilding the MDX pipeline to fully support SolidJS natively in an upcoming patch.
+:::
+
 ```mdx
 ---
 title: Getting Started with AIR Stack
