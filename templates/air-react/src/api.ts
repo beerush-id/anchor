@@ -16,4 +16,4 @@ export const wsTransport = new WebSocketTransport({
 });
 
 // Switch to `wsTransport` to experience near-0 latency.
-irpc.use(wsTransport);
+irpc.use(httpTransport);
