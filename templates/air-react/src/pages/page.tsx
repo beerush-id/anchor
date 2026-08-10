@@ -1,78 +1,223 @@
-import { Meta, page, Title } from '@anchorlib/react';
-import airstackLogo from '../assets/airstack.svg';
+import {
+  $bind,
+  debouncer,
+  derived,
+  effect,
+  For,
+  Head,
+  Image,
+  mutable,
+  onCleanup,
+  page,
+  Show,
+  Snippet,
+} from '@anchorlib/react';
+import { LIVE_CURSOR, LIVE_KEYBOARD } from '@anchorlib/react/browser';
+import { $do } from '@anchorlib/react/core';
+import { uuid } from '@anchorlib/react/utils';
+import airLogo from '../assets/airstack.svg';
+import mouse from '../assets/cursor.svg';
+import mouseDown from '../assets/cursor-down.svg';
+import heroImg from '../assets/hero.png?asset' with { sizes: '170' };
 import reactLogo from '../assets/react.svg';
 import viteLogo from '../assets/vite.svg';
-import { Counter } from '../components/Counter.js';
-import { indexRoute } from './route.js';
+import { TextInput } from '../components/TextInput.tsx';
+import { type Visitor, visitor } from './function.ts';
+import { indexRoute } from './route.ts';
 
-export const RootPage = page(indexRoute).render(() => (
-  <>
-    <Title>AIR Stack</Title>
-    <Meta
-      name="description"
-      content="Build high-performance, scalable, and highly maintainable React applications powered by Anchor — fine-grained reactivity, zero hooks, SSR-ready."
-    />
+export default page(indexRoute).render(() => {
+  const user = mutable({ id: uuid(), cursor: { x: 0, y: 0 }, message: '' });
+  const count = mutable(0);
 
-    <div className="logo-row">
-      <a href="https://airlib.dev" className="logo-link logo-anchor" target="_blank" rel="noreferrer">
-        <img src={airstackLogo} alt="AIR Stack logo" />
-      </a>
-      <span className="logo-separator">+</span>
-      <a href="https://vite.dev" className="logo-link logo-vite" target="_blank" rel="noreferrer">
-        <img src={viteLogo} alt="Vite logo" />
-      </a>
-      <span className="logo-separator">+</span>
-      <a href="https://react.dev" className="logo-link logo-react" target="_blank" rel="noreferrer">
-        <img src={reactLogo} alt="React logo" />
-      </a>
-    </div>
+  const visitors = visitor.join.once(user);
+  const users = derived(() => Object.values(visitors.data));
 
-    <h1 className="hero-heading">
-      <span className="brand-anchor">AIR Stack</span>
-    </h1>
+  const [schedule, unschedule] = debouncer(1000 / 30);
+  effect.client(() => {
+    const { x, y, button } = LIVE_CURSOR;
+    schedule(() => {
+      const target = LIVE_CURSOR.target ? getUniqueSelector(LIVE_CURSOR.target) : '';
+      Object.assign(user.cursor, { x, y, down: button === 'left', target });
+      visitor.move(user);
+    });
+  });
 
-    <p className="hero-subtitle">Zero Boilerplate, AI Native Stack</p>
+  effect.client(() => {
+    if (user.message && LIVE_KEYBOARD.is('Enter')) {
+      visitor.chat(user).then(() => (user.message = ''));
+    }
+  });
 
-    <div className="card">
-      <Counter />
-    </div>
+  onCleanup(() => {
+    unschedule();
+  });
 
-    <div className="features">
-      <div className="feature-card">
-        <div className="feature-icon">⚡</div>
-        <h3 className="feature-title">Write Logic, Not Glue</h3>
-        <p className="feature-desc">
-          Define your data, mutate it directly, and the UI updates itself. No hooks, no dependency arrays, no re-render
-          optimization.
-        </p>
-      </div>
-      <div className="feature-card">
-        <div className="feature-icon">🎯</div>
-        <h3 className="feature-title">Surgical Updates</h3>
-        <p className="feature-desc">
-          Only the exact DOM fragment reading changed state re-renders. Everything else stays still. No full-tree
-          reconciliation.
-        </p>
-      </div>
-      <div className="feature-card">
-        <div className="feature-icon">🤖</div>
-        <h3 className="feature-title">AI Native</h3>
-        <p className="feature-desc">
-          Logic-first architecture means AI agents reason about your app the same way you do — data in, state out. Fewer
-          tokens, fewer hallucinations.
-        </p>
-      </div>
-    </div>
+  const cursors = {} as Record<string, Visitor['cursor']>;
 
-    <p className="docs-hint">
-      <a href="https://docs.airlib.dev" target="_blank" rel="noreferrer">
-        Read the docs
-      </a>
-      {' · '}
-      <a href="https://github.com/beerush-id/airstack" target="_blank" rel="noreferrer">
-        GitHub
-      </a>
-    </p>
-  </>
-));
-export default RootPage;
+  function emit(id: string, cursor: Visitor['cursor']) {
+    $do(() => {
+      if (!cursors[id]) cursors[id] = { ...cursor };
+      const current = cursors[id];
+
+      if (current.down !== cursor.down) {
+        Object.assign(current, cursor);
+
+        if (current.down && current.target) {
+          const node = document.querySelector(current.target);
+
+          if (node) {
+            node.dispatchEvent(
+              new MouseEvent('click', {
+                button: 0,
+                clientX: current.x,
+                clientY: current.y,
+                bubbles: true,
+                cancelable: true,
+                view: window,
+              })
+            );
+          }
+        }
+      }
+    });
+  }
+
+  return (
+    <>
+      <Head meta={{ title: 'AIR Stack', description: 'AIR Stack starter template.' }} />
+      <For each={() => users.value}>
+        {({ id, cursor, message }) => (
+          <Show when={() => id !== user.id}>
+            {() => {
+              emit(id, cursor);
+              return (
+                <div
+                  className="user-cursor"
+                  style={{ transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`, left: '-12px', top: '-12px' }}
+                >
+                  {message && <div className="chat-bubble">{message}</div>}
+                  <img src={cursor.down ? mouseDown : mouse} alt="cursor" width="24" height="24" />
+                </div>
+              );
+            }}
+          </Show>
+        )}
+      </For>
+      <section id="center">
+        <div className="hero-list">
+          <img src={airLogo} className="airstack" width="179" height="179" alt="AIR Stack logo" />
+          <div className="hero">
+            <Image from={heroImg} size={170} className="base" />
+            <img src={reactLogo} className="framework" alt="React logo" />
+            <img src={viteLogo} className="vite" alt="Vite logo" />
+          </div>
+        </div>
+        <div>
+          <h1>Get started</h1>
+          <p>
+            Edit <code>src/pages/page.tsx</code> and save to test <code>HMR</code>
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Snippet>
+            {() => (
+              <button type="button" className="counter" onClick={() => count.value++}>
+                Count is {count.value}
+              </button>
+            )}
+          </Snippet>
+          <TextInput value={$bind(user, 'message')} className="message-input" placeholder="Type message..." />
+        </div>
+      </section>
+
+      <div className="ticks"></div>
+
+      <section id="next-steps">
+        <div id="docs">
+          <svg className="icon" role="presentation" aria-hidden="true">
+            <use href="/icons.svg#documentation-icon"></use>
+          </svg>
+          <h2>Documentation</h2>
+          <p>Your questions, answered</p>
+          <ul>
+            <li>
+              <a href="https://airlib.dev/" target="_blank">
+                <img className="logo" src={airLogo} alt="AIR Stack Logo" />
+                Explore AIR Stack
+              </a>
+            </li>
+            <li>
+              <a href="https://vite.dev/" target="_blank">
+                <img className="logo" src={viteLogo} height={18} alt="Vite Logo" />
+                Explore Vite
+              </a>
+            </li>
+            <li>
+              <a href="https://react.dev/" target="_blank">
+                <img className="button-icon" src={reactLogo} alt="React Logo" />
+                Learn React
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div id="social">
+          <svg className="icon" role="presentation" aria-hidden="true">
+            <use href="/icons.svg#social-icon"></use>
+          </svg>
+          <h2>Connect with us</h2>
+          <p>Join the Vite community</p>
+          <ul>
+            <li>
+              <a href="https://github.com/beerush-id/airstack" target="_blank">
+                <svg className="button-icon" role="presentation" aria-hidden="true">
+                  <use href="/icons.svg#github-icon"></use>
+                </svg>
+                GitHub
+              </a>
+            </li>
+            <li>
+              <a href="https://discord.gg/GJSXpKjxFR" target="_blank">
+                <svg className="button-icon" role="presentation" aria-hidden="true">
+                  <use href="/icons.svg#discord-icon"></use>
+                </svg>
+                Discord
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <div className="ticks"></div>
+      <section id="spacer"></section>
+    </>
+  );
+});
+
+function getUniqueSelector(element: Element) {
+  if (!(element instanceof Element)) return '';
+
+  const selectors = [];
+  let current = element;
+
+  while (current) {
+    if (current === document.body) {
+      selectors.unshift('body');
+      break;
+    }
+
+    let selector = current.id ? `#${current.id}` : current.tagName.toLowerCase();
+
+    if (!current.id && current.parentElement) {
+      const siblings = Array.from(current.parentElement.children);
+      const index = siblings.indexOf(current);
+      if (index !== 0) {
+        selector += `:nth-child(${index + 1})`;
+      }
+    }
+
+    selectors.unshift(selector);
+    current = current.parentElement;
+  }
+
+  return selectors.join(' > ');
+}

@@ -1,9 +1,7 @@
-import { airWorker } from '@anchorlib/vite-ssr';
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
+import { airPages } from '@anchorlib/vite-ssr';
 import { defineConfig } from 'vite';
+import solid from 'vite-plugin-solid';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), airWorker()],
+  plugins: [solid({ ssr: true }), airPages({ framework: 'solid' })],
 });

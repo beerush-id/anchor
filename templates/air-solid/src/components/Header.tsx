@@ -1,32 +1,49 @@
-import { Link } from '@anchorlib/solid';
-import airstackLogo from '../assets/airstack.svg';
-import { AboutPage } from '../pages/about/index.js';
-import { SignInPage } from '../pages/auth/index.js';
-import { RootPage } from '../pages/page.js';
-import { ThemeToggle } from './ThemeToggle.js';
+import routes from '@airstack/manifest';
+import { type AnyRoute, For, Link } from '@anchorlib/solid';
+import type { JSX } from 'solid-js';
+import airLogo from '../assets/airstack.svg';
+import { rootRoute } from '../pages/route.ts';
 
-export function Header() {
+const navRoutes = routes.filter((r) => r.path !== '/') as unknown as Array<{
+  path: string;
+  route: AnyRoute;
+}>;
+
+export default function Header(props: { children?: JSX.Element }) {
   return (
-    <header class="app-header">
-      <div class="header-inner">
-        <Link to={RootPage} class="header-brand">
-          <img src={airstackLogo} alt="AIR Stack" class="header-logo" />
-          <span class="header-title">AIR Stack</span>
-        </Link>
-        <nav class="header-nav">
-          <Link to={AboutPage} activeClass="nav-active">
-            About
-          </Link>
-          <Link to={SignInPage} activeClass="nav-active">
-            Sign In
-          </Link>
-          <a href="https://github.com/beerush-id/airstack" target="_blank" rel="noreferrer">
-            GitHub
+    <header>
+      <Link to={rootRoute} class="header-logo">
+        <img src={airLogo} width="20" alt="AIR Stack Logo" />
+        <span>AIR Stack</span>
+      </Link>
+      <nav class="header-nav">
+        <For each={navRoutes}>
+          {({ route, path }) => (
+            <Link to={route} class="head-link">
+              {route.metadata.label ?? path}
+            </Link>
+          )}
+        </For>
+      </nav>
+      {props.children}
+      <ul class="header-socials">
+        <li>
+          <a href="https://github.com/beerush-id/airstack" target="_blank">
+            <svg class="button-icon" role="presentation" aria-hidden="true">
+              <use href="/icons.svg#github-icon"></use>
+            </svg>
+            <span>GitHub</span>
           </a>
-          <ThemeToggle />
-        </nav>
-      </div>
+        </li>
+        <li>
+          <a href="https://discord.gg/GJSXpKjxFR" target="_blank">
+            <svg class="button-icon" role="presentation" aria-hidden="true">
+              <use href="/icons.svg#discord-icon"></use>
+            </svg>
+            <span>Discord</span>
+          </a>
+        </li>
+      </ul>
     </header>
   );
 }
-export default Header;

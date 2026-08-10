@@ -1,15 +1,7 @@
-import './styles/styles.css';
+import { type AppEntry, UIRouter } from '@anchorlib/solid';
+import RootLayout from './pages/layout.js';
+import router from './router.js';
 
-import { UIRouter } from '@anchorlib/solid';
-import { render } from 'solid-js/web';
-import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
-
-router.activate(window.location.href).then(() => {
-  const root = document.getElementById('root');
-  root.innerHTML = '';
-  render(
-    () => <UIRouter router={router} root={RootLayout} headless={true} resetScroll />,
-    document.getElementById('root')!
-  );
-});
+export default (({ url }) => {
+  return <UIRouter router={router} root={RootLayout} url={url} />;
+}) satisfies AppEntry;

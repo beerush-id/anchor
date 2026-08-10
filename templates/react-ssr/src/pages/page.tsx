@@ -1,78 +1,104 @@
-import { Meta, page, Title } from '@anchorlib/react';
-import airstackLogo from '../assets/airstack.svg';
+import { $bind, Head, mutable, page, Snippet } from '@anchorlib/react';
+import airLogo from '../assets/airstack.svg';
+import heroImg from '../assets/hero.png?asset' with { sizes: '170' };
 import reactLogo from '../assets/react.svg';
 import viteLogo from '../assets/vite.svg';
-import { Counter } from '../components/Counter.js';
-import { indexRoute } from './route.js';
+import { TextInput } from '../components/TextInput.tsx';
+import { indexRoute } from './route.ts';
 
-export const RootPage = page(indexRoute).render(() => (
-  <>
-    <Title>AIR Stack</Title>
-    <Meta
-      name="description"
-      content="Build high-performance, scalable, and highly maintainable React applications powered by Anchor — fine-grained reactivity, zero hooks, SSR-ready."
-    />
+export default page(indexRoute).render(() => {
+  const count = mutable(0);
+  const message = mutable('');
 
-    <div className="logo-row">
-      <a href="https://airlib.dev" className="logo-link logo-anchor" target="_blank" rel="noreferrer">
-        <img src={airstackLogo} alt="AIR Stack logo" />
-      </a>
-      <span className="logo-separator">+</span>
-      <a href="https://vite.dev" className="logo-link logo-vite" target="_blank" rel="noreferrer">
-        <img src={viteLogo} alt="Vite logo" />
-      </a>
-      <span className="logo-separator">+</span>
-      <a href="https://react.dev" className="logo-link logo-react" target="_blank" rel="noreferrer">
-        <img src={reactLogo} alt="React logo" />
-      </a>
-    </div>
+  return (
+    <>
+      <Head meta={{ title: 'AIR Stack', description: 'AIR Stack starter template.' }} />
+      <section id="center">
+        <div className="hero-list">
+          <img src={airLogo} className="airstack" width="179" height="179" alt="AIR Stack logo" />
+          <div className="hero">
+            <img src={heroImg.src} className="base" width="170" height="179" alt="Hero" />
+            <img src={reactLogo} className="framework" alt="React logo" />
+            <img src={viteLogo} className="vite" alt="Vite logo" />
+          </div>
+        </div>
+        <div>
+          <h1>Get started</h1>
+          <p>
+            Edit <code>src/pages/page.tsx</code> and save to test <code>HMR</code>
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Snippet>
+            {() => (
+              <button type="button" className="counter" onClick={() => count.value++}>
+                Count is {count.value}
+              </button>
+            )}
+          </Snippet>
+          <TextInput value={$bind(message, 'value')} className="message-input" placeholder="Type message..." />
+        </div>
+      </section>
 
-    <h1 className="hero-heading">
-      <span className="brand-anchor">AIR Stack</span>
-    </h1>
+      <div className="ticks"></div>
 
-    <p className="hero-subtitle">Zero Boilerplate, AI Native Stack</p>
+      <section id="next-steps">
+        <div id="docs">
+          <svg className="icon" role="presentation" aria-hidden="true">
+            <use href="/icons.svg#documentation-icon"></use>
+          </svg>
+          <h2>Documentation</h2>
+          <p>Your questions, answered</p>
+          <ul>
+            <li>
+              <a href="https://airlib.dev/" target="_blank">
+                <img className="logo" src={airLogo} alt="AIR Stack Logo" />
+                Explore AIR Stack
+              </a>
+            </li>
+            <li>
+              <a href="https://vite.dev/" target="_blank">
+                <img className="logo" src={viteLogo} height={18} alt="Vite Logo" />
+                Explore Vite
+              </a>
+            </li>
+            <li>
+              <a href="https://react.dev/" target="_blank">
+                <img className="button-icon" src={reactLogo} alt="React Logo" />
+                Learn React
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div id="social">
+          <svg className="icon" role="presentation" aria-hidden="true">
+            <use href="/icons.svg#social-icon"></use>
+          </svg>
+          <h2>Connect with us</h2>
+          <p>Join the Vite community</p>
+          <ul>
+            <li>
+              <a href="https://github.com/beerush-id/airstack" target="_blank">
+                <svg className="button-icon" role="presentation" aria-hidden="true">
+                  <use href="/icons.svg#github-icon"></use>
+                </svg>
+                GitHub
+              </a>
+            </li>
+            <li>
+              <a href="https://discord.gg/GJSXpKjxFR" target="_blank">
+                <svg className="button-icon" role="presentation" aria-hidden="true">
+                  <use href="/icons.svg#discord-icon"></use>
+                </svg>
+                Discord
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
 
-    <div className="card">
-      <Counter />
-    </div>
-
-    <div className="features">
-      <div className="feature-card">
-        <div className="feature-icon">⚡</div>
-        <h3 className="feature-title">Write Logic, Not Glue</h3>
-        <p className="feature-desc">
-          Define your data, mutate it directly, and the UI updates itself. No hooks, no dependency arrays, no re-render
-          optimization.
-        </p>
-      </div>
-      <div className="feature-card">
-        <div className="feature-icon">🎯</div>
-        <h3 className="feature-title">Surgical Updates</h3>
-        <p className="feature-desc">
-          Only the exact DOM fragment reading changed state re-renders. Everything else stays still. No full-tree
-          reconciliation.
-        </p>
-      </div>
-      <div className="feature-card">
-        <div className="feature-icon">🤖</div>
-        <h3 className="feature-title">AI Native</h3>
-        <p className="feature-desc">
-          Logic-first architecture means AI agents reason about your app the same way you do — data in, state out. Fewer
-          tokens, fewer hallucinations.
-        </p>
-      </div>
-    </div>
-
-    <p className="docs-hint">
-      <a href="https://docs.airlib.dev" target="_blank" rel="noreferrer">
-        Read the docs
-      </a>
-      {' · '}
-      <a href="https://github.com/beerush-id/airstack" target="_blank" rel="noreferrer">
-        GitHub
-      </a>
-    </p>
-  </>
-));
-export default RootPage;
+      <div className="ticks"></div>
+      <section id="spacer"></section>
+    </>
+  );
+});

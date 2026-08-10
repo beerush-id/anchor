@@ -1,14 +1,7 @@
-import '@anchorlib/react/client'; // MUST be first import
-import './styles/styles.css';
+import { type AppEntry, UIRouter } from '@anchorlib/react';
+import RootLayout from './pages/layout.tsx';
+import router from './router.ts';
 
-import { UIRouter } from '@anchorlib/react';
-import { hydrateRoot } from 'react-dom/client';
-import { router } from './lib/router.js';
-import { RootLayout } from './pages/layout.js';
-
-router.activate(window.location.href).then(() => {
-  hydrateRoot(
-    document.getElementById('root')!,
-    <UIRouter router={router} root={RootLayout} headless={true} resetScroll />
-  );
-});
+export default (({ url }) => {
+  return <UIRouter router={router} root={RootLayout} url={url} />;
+}) satisfies AppEntry;
