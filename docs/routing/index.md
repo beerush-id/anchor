@@ -199,7 +199,7 @@ createRoot(document.body).render(
 ```
 
 ```tsx [SolidJS]
-// entry-client.tsx
+// client.tsx
 import { UIRouter } from '@anchorlib/solid';
 import { render } from 'solid-js/web';
 import { router } from './lib/router.js';

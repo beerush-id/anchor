@@ -583,22 +583,14 @@ With Anchor, your router *is* your sitemap. Because the route tree is strongly t
 
 Serving images efficiently across multiple screen sizes is traditionally a complex task, requiring manual variant generation and tedious `srcset` markup. 
 
-With the `airImage` Vite plugin and the universal `<Image>` component, responsive asset generation is completely automated from the build pipeline directly into your UI components.
+With the `airPages()` plugin and the universal `<Image>` component, responsive asset generation is completely automated from the build pipeline directly into your UI components.
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite';
-import { airImage } from '@anchorlib/vite-ssr';
+import { airPages } from '@anchorlib/vite-ssr';
 
-// Automatically generates responsive WebP/AVIF variants
 export default defineConfig({
-  plugins: [
-    airImage({ 
-      devEnabled: true,
-      sizes: [128, 256, 512, 1024],
-      format: 'webp',
-      quality: 75
-    })
-  ]
+  plugins: [airPages()],
 });
 ```
 
@@ -608,7 +600,7 @@ Then, seamlessly consume the generated assets in your UI:
 
 ```tsx [React]
 import { Image } from '@anchorlib/react';
-import heroImage from './assets/hero.jpg?airimg';
+import heroImage from './assets/hero.jpg?asset' with { sizes: '350' };
 
 export function Hero() {
   return (
@@ -619,7 +611,7 @@ export function Hero() {
 
 ```tsx [Solid]
 import { Image } from '@anchorlib/solid';
-import heroImage from './assets/hero.jpg?airimg';
+import heroImage from './assets/hero.jpg?asset' with { sizes: '350' };
 
 export function Hero() {
   return (
@@ -630,7 +622,7 @@ export function Hero() {
 
 :::
 
-In addition, the SSR environment provides a robust **asset resolver** with configurable **caching strategies**. You can easily define granular cache lifetimes per route or static asset directly within your universal SSR worker (`airWorker`), providing maximum performance on edge environments like Cloudflare and Node.js.
+In addition, the SSR environment provides a robust **asset resolver** with configurable **caching strategies**. You can easily define granular cache lifetimes per route or static asset directly within your `createApp` worker, providing maximum performance on edge environments like Cloudflare and Node.js.
 
 ## Server-Side Rendering
 
@@ -650,46 +642,39 @@ With modern meta-frameworks, moving client-side state to the server fractures yo
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite';
-import { airWorker } from '@anchorlib/vite-ssr';
+import { airPages } from '@anchorlib/vite-ssr';
 
-// 1. Delegates SSR, IRPC, and WebSockets to your edge worker during development.
 export default defineConfig({
-  plugins: [airWorker()],
+  plugins: [airPages()],
 });
 ```
 
 ```tsx [React (worker.ts)]
-import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
+import { createApp } from '@anchorlib/react/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
-import { transport } from './irpc.js';
-import { router } from './router.js';
-import { RootLayout } from './layout.js';
+import { httpTransport } from './irpc.js';
+import App from './app.js';
+import router from './router.js';
 
-// 2. The isomorphic SSR renderer
-const render = createSSR(router, RootLayout);
+// The backend IRPC router
+const irpcRouter = new HTTPRouter(httpTransport);
 
-// 3. The backend IRPC router
-const irpcRouter = new HTTPRouter(transport);
-
-// 4. A single universal worker handles both with shared context isolation!
-export default createFullWorker(irpcRouter, render);
+// A single universal worker handles SSR and IRPC with shared context isolation!
+export default createApp(router, App, { httpRouter: irpcRouter });
 ```
 
 ```tsx [Solid (worker.ts)]
-import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
+import { createApp } from '@anchorlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
-import { transport } from './irpc.js';
-import { router } from './router.js';
-import { RootLayout } from './layout.js';
+import { httpTransport } from './irpc.js';
+import App from './app.js';
+import router from './router.js';
 
-// 2. The isomorphic SSR renderer
-const render = createSSR(router, RootLayout);
+// The backend IRPC router
+const irpcRouter = new HTTPRouter(httpTransport);
 
-// 3. The backend IRPC router
-const irpcRouter = new HTTPRouter(transport);
-
-// 4. A single universal worker handles both with shared context isolation!
-export default createFullWorker(irpcRouter, render);
+// A single universal worker handles SSR and IRPC with shared context isolation!
+export default createApp(router, App, { httpRouter: irpcRouter });
 ```
 
 :::

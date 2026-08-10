@@ -798,27 +798,25 @@ export const Dashboard = setup(() => {
 <div class="custom-section">
   <div class="custom-section-content">
     <h2>Asset Optimization</h2>
-    <p>Serving images efficiently across multiple screen sizes is traditionally a complex task. With the <code>airImage</code> Vite plugin and the universal <code>&lt;Image&gt;</code> component, responsive WebP/AVIF generation is <strong>completely automated</strong> from the build pipeline directly into your UI components—without writing manual <code>srcset</code> boilerplate.</p>
+    <p>Serving images efficiently across multiple screen sizes is traditionally a complex task. With the <code>airPages()</code> plugin and the universal <code>&lt;Image&gt;</code> component, responsive WebP generation is <strong>completely automated</strong> from the build pipeline directly into your UI components—without writing manual <code>srcset</code> boilerplate.</p>
     <a href="/ssr" class="custom-section-action">Explore Asset Optimization →</a>
   </div>
   <div class="custom-section-code">
 
 ::: code-group
 
-```ts [vite.config.ts]
-import { defineConfig } from 'vite';
-import { airImage } from '@anchorlib/vite-ssr';
+```tsx [React]
+import { Image } from '@anchorlib/react';
+import heroImage from './assets/hero.jpg?asset' with { sizes: '350' };
 
-export default defineConfig({
-  plugins: [
-    airImage({ sizes: [128, 256, 512, 1024], format: 'webp' })
-  ]
-});
+export function Hero() {
+  return <Image from={heroImage} alt="Hero Banner" />;
+}
 ```
 
-```tsx [UI Component]
-import { Image } from '@anchorlib/react'; // or @anchorlib/solid
-import heroImage from './assets/hero.jpg?airimg';
+```tsx [Solid]
+import { Image } from '@anchorlib/solid';
+import heroImage from './assets/hero.jpg?asset' with { sizes: '350' };
 
 export function Hero() {
   return <Image from={heroImage} alt="Hero Banner" />;

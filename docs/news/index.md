@@ -11,6 +11,14 @@ next: false
 Stay up to date with the latest releases and updates to the AIR Stack ecosystem.
 
 <div class="posts-grid">
+  <a href="./release-v1.3.0.html" class="post-card">
+    <article>
+      <h3>AIR Stack v1.3.0</h3>
+      <p>File Routing, Static Generation &amp; Realtime Sync. File-based routing with MDX, automatic static site generation on a unified SSR core, and IRPC Durable realtime state sync — plus route metadata, typed Links, and SEO Head.</p>
+      <span class="read-more">Read release notes &rarr;</span>
+    </article>
+  </a>
+
   <a href="./release-v1.2.23.html" class="post-card">
     <article>
       <h3>AIR Stack v1.2.23</h3>

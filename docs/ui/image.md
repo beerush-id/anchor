@@ -1,81 +1,58 @@
 ---
 title: "Image"
-description: "A universal UI component that handles AirImage metadata objects and automatically resolves responsive sizes."
+description: "The universal <Image> component — responsive images from ?asset imports, without manual srcset."
 ---
 
 # Image
 
-Images are typically the heaviest assets on a webpage. Serving them efficiently across different screen sizes—which involves generating multiple format variants, calculating dimensions, and writing complex responsive `srcset` tags—is a difficult domain. The `<Image>` component connects the UI directly to your asset optimization pipeline, completely abstracting away the complexity of responsive asset management.
+Images are the heaviest assets on a page. Serving them well means generating multiple sizes, converting formats, and writing `srcset` — per image. The `<Image>` component takes an `?asset` import and handles all of it: variants, format, and the responsive markup.
 
 ## Usage
 
-When you load an asset via the `@anchorlib/vite-ssr` image plugin (using the `?airimg` query), the plugin resolves the image into a comprehensive metadata object containing the optimal source and all responsive variants.
+Import an image with the `?asset` query and tell the plugin which widths to generate. The import resolves to an image object with the generated variants:
 
-You pass this metadata object directly into the `<Image>` component via the `from` prop. 
+```ts
+import hero from './assets/hero.jpg?asset' with { sizes: '350' };
+```
+
+::: tip What we learn
+- `sizes` lists the widths to generate, in pixels — `'350'` creates one 350px variant plus the original. Multiple sizes are comma-separated: `with { sizes: '256,512,1024' }`.
+- The plugin generates the variants during build (and in dev), converting to WebP by default.
+- The `with { ... }` attribute is part of the import — TypeScript understands it through `@anchorlib/vite-ssr/ambient` in your `tsconfig.json` types.
+:::
+
+Pass the object to `<Image>` — the component picks the right variant for the viewport and renders the responsive markup:
 
 ::: code-group
 
 ```tsx [React]
 import { Image } from '@anchorlib/react';
-import heroImage from './assets/hero.jpg?airimg'; 
+import hero from './assets/hero.jpg?asset' with { sizes: '350' };
 
-export function ProfileCard() {
-  return (
-    <div className="card">
-      <Image 
-        from={heroImage} 
-        alt="User Profile" 
-        loading="lazy"
-      />
-    </div>
-  );
+export function Hero() {
+  return <Image from={hero} size={170} alt="Product shot" loading="lazy" />;
 }
 ```
 
 ```tsx [SolidJS]
 import { Image } from '@anchorlib/solid';
-import heroImage from './assets/hero.jpg?airimg';
+import hero from './assets/hero.jpg?asset' with { sizes: '350' };
 
-export function ProfileCard() {
-  return (
-    <div class="card">
-      <Image 
-        from={heroImage} 
-        alt="User Profile" 
-        loading="lazy"
-      />
-    </div>
-  );
+export function Hero() {
+  return <Image from={hero} size={170} alt="Product shot" loading="lazy" />;
 }
 ```
 
 :::
 
-By taking the raw metadata object, the `<Image>` component automatically maps and renders a fully responsive HTML `<img>` tag with the correct `srcset`, `width`, and `height`. 
-
-## Automatic Size Resolution
-
-The `AirImage` object is not just static data; it is an intelligent Proxy. 
-
-When you request a specific `size`, the object automatically resolves to the closest available size variant that is greater than or equal to the requested size. If a larger variant is not available, it safely falls back to the original image.
-
-The `<Image>` component exposes this via the `size` prop:
-
-```tsx
-// Automatically finds the best variant >= 300px width
-<Image from={heroImage} size={300} />
-```
-
-This ensures you always serve the optimal asset size without manually managing URL strings or writing custom selection logic.
+`size` selects the closest generated variant (>= requested); omit it to render the full responsive `srcset`. The component accepts every standard `<img>` attribute.
 
 ## Props
 
-The `<Image>` component accepts all standard HTML `<img>` attributes (`alt`, `loading`, `decoding`, etc.) in addition to the following specialized props:
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `from` | `AirImage` | **Required** | The metadata object returned by the Vite plugin or IRPC endpoint. |
-| `size` | `number` | - | Explicitly selects the closest available size variant (e.g., `size={256}`). If omitted, it renders the full responsive `srcset`. |
-| `src` | `string` | - | Overrides the resolved source URL. |
-| `width` | `number` | - | Overrides the resolved width. |
-| `height` | `number` | - | Overrides the resolved height. |
+| Prop | Type | Description |
+|------|------|-------------|
+| `from` | `ImageTransform` | The object returned by the `?asset` import. |
+| `size` | `number` | Select the closest generated variant at or above this width (e.g. `size={256}`). Omit for the full responsive `srcset`. |
+| `src` | `string` | Override the resolved source URL. |
+| `width` | `number` | Override the resolved width. |
+| `height` | `number` | Override the resolved height. |

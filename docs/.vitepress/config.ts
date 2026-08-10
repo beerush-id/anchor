@@ -139,6 +139,7 @@ export default defineConfig({
           { text: 'Handlers', link: '/remote-function/handler' },
           { text: 'Interceptors', link: '/remote-function/interceptors' },
           { text: 'Transports', link: '/remote-function/transport' },
+          { text: 'Durable State', link: '/remote-function/durable' },
           { text: 'Distribution', link: '/remote-function/distribution' },
           { text: 'WebHooks', link: '/remote-function/webhook' },
         ],

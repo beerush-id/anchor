@@ -93,7 +93,11 @@ You can also generate specialized sitemaps for specific sections of your applica
 
 ```typescript
 // worker.ts
-export default createFullWorker(irpcHttpRouter, render, {
+import { createApp } from '@anchorlib/react/ssr';
+import App from './app.js';
+import router from './router.js';
+
+export default createApp(router, App, {
   async resolveAsset(request, url, env) {
     // Intercept the custom sitemap request
     if (url.pathname === '/blog/sitemap.xml') {
@@ -112,22 +116,20 @@ export default createFullWorker(irpcHttpRouter, render, {
 While the sitemap works out of the box with zero configuration, you may need to force a specific absolute `baseUrl` or globally exclude certain routes.
 
 ### Worker Configuration
-Because the SSR engine handles the live interceptions, you can optionally pass the sitemap configuration directly into `createSSR`. You can also import specific `Route` instances from your application if you need to globally exclude them.
+Because the SSR engine handles the live interceptions, you can optionally pass the sitemap configuration directly to `createApp`. You can also import specific `Route` instances from your application if you need to globally exclude them.
 
 ```typescript
 // worker.ts
-import { createFullWorker, createSSR } from '@anchorlib/react/ssr';
+import { createApp } from '@anchorlib/react/ssr';
 import { router, adminRoute } from './router';
-import RootLayout from './pages/layout';
+import App from './app';
 
-const render = createSSR(router, RootLayout, {
+export default createApp(router, App, {
   sitemap: {
     baseUrl: 'https://example.com',
     exclude: [adminRoute] // Globally exclude a route and its children
   }
 });
-
-export default createFullWorker(irpcHttpRouter, render, { /* ... */ });
 ```
 
 ## Interfaces
