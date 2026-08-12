@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
 import type { FolderNode } from './folder-node.js';
-import { FRAMEWORK_PACKAGE, type Framework } from './generate.js';
+import { type Framework, FRAMEWORK_PACKAGE } from './generate.js';
 import { DEFAULT_FILE_MAP, deriveIndexName, deriveRouteName, type FileMap } from './model.js';
 
 const FRAMEWORK_JSX_RUNTIME: Record<Framework, string> = {
@@ -30,6 +30,8 @@ type AstNode = {
  * `page.mdx` case, which attaches to the root's `indexRoute`.
  */
 export async function mdxAttachForFile(opts: {
+  /** The full module ID including query parameters. */
+  id?: string;
   /** Absolute module path (query suffix already stripped). */
   file: string;
   /** Absolute pages directory. */
@@ -43,7 +45,7 @@ export async function mdxAttachForFile(opts: {
   /** ESTree parser callback, typically `this.parse` from Rollup plugin context. */
   parse: (code: string) => AnyType | Promise<AnyType>;
 }): Promise<string | undefined> {
-  const { file, pagesDir, tree, framework, code, parse } = opts;
+  const { id, file, pagesDir, tree, framework, code, parse } = opts;
   const files = { ...DEFAULT_FILE_MAP, ...opts.files };
 
   if (!file.endsWith('.mdx')) return undefined;
@@ -85,8 +87,19 @@ export async function mdxAttachForFile(opts: {
         ? deriveIndexName(folder.rel)
         : deriveRouteName(folder.rel);
   }
+  if (!id?.includes('?chunk')) return;
+  //
+  // if (!id?.includes('?chunk')) {
+  //   return [
+  //     `import { ${routeExport} as __airRoute } from '${routeImport}';`,
+  //     `if (import.meta.hot) import.meta.hot.accept();`,
+  //     `export default __airRoute.renderAsync(async () => (await import('./${base}?chunk')).default);`,
+  //   ].join('\n');
+  // }
 
   return await mdxTransformModule({
+    id,
+    base,
     code,
     framework,
     routeExport,
@@ -101,13 +114,16 @@ export async function mdxAttachForFile(opts: {
  * variables ($local, frontmatter), and executing module side-effects ($module, $install) immediately.
  */
 export async function mdxTransformModule(opts: {
+  id?: string;
+  base: string;
   code: string;
   framework: Framework;
   routeExport: string;
   routeImport: string;
   parse: (code: string) => AnyType | Promise<AnyType>;
 }): Promise<string> {
-  const { code, framework, routeExport, routeImport, parse } = opts;
+  const { code, framework, parse } = opts;
+
   const pkg = FRAMEWORK_PACKAGE[framework];
   const runtime = FRAMEWORK_JSX_RUNTIME[framework];
 
@@ -180,12 +196,11 @@ export async function mdxTransformModule(opts: {
   const renderWrapperEnd = framework === 'react' ? '\n  )' : '';
 
   return [
-    `import { ${routeExport} as __airRoute } from '${routeImport}';`,
-    `import { Head as __airHeadTag } from '${pkg}';`,
+    `import { Head as __airHeadTag, getContext as __airCtx } from '${pkg}';`,
     `import { Fragment as __airFragment, jsx as __airJsx, jsxs as __airJsxs } from '${runtime}';`,
     reactRenderImport,
     moduleStatements.join('\n\n'),
-    '__airRoute.render(({ state: $state, context: $context, children: $children }) => {',
+    'export default function MdxComponent({ state: $state, context: $context, children: $children }) {',
     setupStatements
       .join('\n\n')
       .split('\n')
@@ -193,6 +208,8 @@ export async function mdxTransformModule(opts: {
       .join('\n'),
     '',
     '  const __airFm = typeof frontmatter !== "undefined" ? frontmatter : {};',
+    `  const __airHead = __airCtx('air-headings');`,
+    `  if (typeof __airHead === 'object') __airHead.value = typeof __airHeadings !== "undefined" ? __airHeadings : [];`,
     '',
     `  return ${renderWrapperStart}__airJsxs(__airFragment, {`,
     '    children: [',
@@ -200,7 +217,7 @@ export async function mdxTransformModule(opts: {
     '      __airJsx(MDXContent, {}),',
     '    ],',
     `  })${renderWrapperEnd};`,
-    '});',
+    '};',
     '',
   ]
     .filter(Boolean)

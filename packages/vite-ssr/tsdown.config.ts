@@ -10,4 +10,14 @@ export default defineConfig({
   format: ['esm'],
   unbundle: true,
   platform: 'node',
+  external: [
+    '@mdx-js/rollup',
+    'remark-frontmatter',
+    'remark-mdx-frontmatter',
+    'rehype-autolink-headings',
+    'rehype-pretty-code',
+    'rehype-slug',
+    'remark-directive',
+    'remark-gfm',
+  ],
 });

@@ -56,7 +56,8 @@
     "ws": "catalog:lib"
   },
   "peerDependencies": {
-    "vite": "catalog:lib"
+    "vite": "catalog:lib",
+    "magic-string":"catalog:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
@@ -64,6 +65,11 @@
     "@vitest/coverage-v8": "catalog:",
     "acorn": "catalog:",
     "publint": "catalog:",
+    "rehype-autolink-headings": "catalog:lib",
+    "rehype-pretty-code": "catalog:lib",
+    "rehype-slug": "catalog:lib",
+    "remark-directive": "catalog:lib",
+    "remark-gfm": "catalog:lib",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

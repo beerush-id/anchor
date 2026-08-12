@@ -6,8 +6,11 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
 import { type AirImageOptions, airImage } from '../image.js';
+import { airChunk } from '../plugins/chunk.js';
+import { airPreprocess } from '../plugins/preprocess.js';
 import { type AirWorkerOptions, airWorker } from '../worker.js';
 import { AppNode } from './app-node.js';
+import { type DocsPluginOptions, setupDocs } from './docs.js';
 import type { Framework } from './generate.js';
 import { mdxAttachForFile } from './mdx.js';
 import { DEFAULT_FILE_MAP, type FileMap } from './model.js';
@@ -55,9 +58,19 @@ export type AirPagesOptions = {
   markdown?: boolean | AirMdxOptions;
 
   /**
+   * Documentation configuration (Vitepress-like features).
+   */
+  docs?: boolean | DocsPluginOptions;
+
+  /**
    * Enable true static SSR by shipping zero JavaScript to the client.
    */
   noscript?: boolean;
+
+  /**
+   * Defer the Javascript to load after full load to improve FCP.
+   */
+  deferred?: boolean | number;
 
   /**
    * Whether to enable automatic static site generation (SSG) during server build.
@@ -113,7 +126,7 @@ const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
  * @param options Plugin configuration options.
  * @returns Vite plugin array.
  */
-export function airPages(options: AirPagesOptions = {}): PluginOption {
+export async function airPages(options: AirPagesOptions = {}): Promise<PluginOption> {
   const mdxEnabled = options.markdown !== false;
   let framework: Framework = options.framework ?? detectFramework(process.cwd());
   let irpcEnabled = options.irpc;
@@ -215,6 +228,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
       if (normalizedId.endsWith('.mdx')) {
         const transformed = await mdxAttachForFile({
+          id,
           file: normalizedId,
           pagesDir: absPagesDir,
           tree: app.rootFolder,
@@ -279,14 +293,22 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       remarkPlugins!.push(...mdxOpts.remarkPlugins);
     }
 
+    mdxOpts.remarkPlugins = remarkPlugins;
+
+    if (options.docs) {
+      await setupDocs(options.docs, mdxOpts, plugins, options.pagesDir);
+      plugins.push(...airPreprocess());
+    }
+
     plugins.push(
       mdx({
         jsxImportSource: framework === 'solid' ? 'solid-js' : 'react',
         ...mdxOpts,
-        remarkPlugins,
       }) as Plugin
     );
   }
+
+  plugins.push(airChunk());
 
   if (options.worker !== false) {
     plugins.push(airWorker({ noscript: options.noscript, ssg: options.ssg, ...options.worker }));
