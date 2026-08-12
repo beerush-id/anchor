@@ -66,7 +66,16 @@
     "./workflow": {
       "types": "./dist/workflow/index.d.ts",
       "import": "./dist/workflow/index.js"
-    }
+    },
+    "./docs": {
+      "types": "./dist/docs/index.d.ts",
+      "import": "./dist/docs/index.js"
+    },
+    "./docs/*": {
+      "types": "./dist/docs/*.d.ts",
+      "import": "./dist/docs/*.js"
+    },
+    "./docs/*.css": "./src/docs/*.css"
   },
   "files": [
     "dist"

@@ -1,3 +1,5 @@
+export const AIR_REACT_CLIENT_INIT = 'preprocessed';
+
 export type {
   AnchorSettings,
   AnyType,

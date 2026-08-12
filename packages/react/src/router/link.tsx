@@ -54,6 +54,16 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
     e.preventDefault();
 
+    if (href.value.startsWith('/#')) {
+      e.stopPropagation();
+      const elem = document.getElementById(href.value.slice(2));
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+        history.replaceState(null, '', `${location.pathname}#${elem.id}`);
+      }
+      return;
+    }
+
     const current = `${location.pathname}${location.search}`;
     if (current !== href.value) {
       navigate(target.value?.path ?? href.value, {

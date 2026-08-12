@@ -165,7 +165,7 @@ export function UIRouter({ router, resetScroll, url, headless }: UIRouterProps) 
   const activate = async () => {
     const match = router.find(url ?? location.href);
 
-    if (resetScroll && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
+    if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
       window.scrollTo({
         top: 0,
         left: 0,
