@@ -203,6 +203,17 @@ export interface RouteOptions<
   Params extends ExtractParams<Path> = ExtractParams<Path>,
   QueryParams extends ExtractQueryParams<Path> = ExtractQueryParams<Path>,
 > extends ProviderOptions {
+  /**
+   * Enable true static SSR by shipping zero JavaScript to the client.
+   */
+  noscript?: boolean;
+
+  /**
+   * Defer the Javascript to load after full load to improve FCP.
+   * @default 50 (50ms)
+   */
+  deferred?: boolean | number;
+
   /** Blocking mode for route rendering */
   preloadMode?: PreloadMode;
 

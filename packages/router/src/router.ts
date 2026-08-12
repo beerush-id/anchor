@@ -634,13 +634,22 @@ export class Router<Output = any> {
     this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute, renderer);
   }
 
-  public createHydrationScript(snapshot: RouterSnapshot) {
+  public createHydrationScript(snapshot: RouterSnapshot, deferred?: boolean | number) {
     const jsonString = JSON.stringify(snapshot)
       .replace(/</g, '\\u003C')
       .replace(/>/g, '\\u003E')
       .replace(/\//g, '\\u002F')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
+
+    const deferral = typeof deferred === 'number' ? deferred : deferred !== false ? 50 : 0;
+
+    if (deferral) {
+      return [
+        `<script id="${HYDRATION_KEY}_JSON" type="application/json">${jsonString}</script>`,
+        `<script id="${HYDRATION_KEY}">setTimeout(() => {window.${HYDRATION_KEY} = JSON.parse(document.getElementById('${HYDRATION_KEY}_JSON').textContent)}, ${deferral})</script>`,
+      ].join('\n');
+    }
 
     return `<script id="${HYDRATION_KEY}">window.${HYDRATION_KEY} = ${jsonString}</script>`;
   }
