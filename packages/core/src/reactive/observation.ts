@@ -206,6 +206,7 @@ export function createObserver(
     return {
       id: shortId(),
       states,
+      active: false,
       onChange() {},
       destroy() {},
       reset() {},
@@ -346,6 +347,9 @@ export function createObserver(
 
   const observer = {
     id: shortId(),
+    get active() {
+      return !isDestroyed;
+    },
     states,
     destroy,
     reset,

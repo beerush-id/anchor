@@ -60,6 +60,7 @@ describe('Anchor Core - Observable Observer Management', () => {
 
       observer.destroy();
 
+      expect(observer.active).toBe(false);
       expect(() => (observer as any).track(state, 'value')).not.toThrow();
       expect(() => observer.destroy()).not.toThrow();
     });
@@ -78,6 +79,7 @@ describe('Anchor Core - Observable Observer Management', () => {
       const states = Array.from({ length: 6 }, (_, i) => anchor({ value: i }, { observable: true }));
 
       observer.run(() => {
+        expect(observer.active).toBe(true);
         states.forEach((state, i) => {
           const value = state.value;
           expect(value).toBe(i);

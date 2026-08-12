@@ -42,6 +42,7 @@ export type StateKeyTracker = (key: KeyLike) => boolean;
 export type StatePublicTracker = (init: Linkable, observers: StateObserverList, key: KeyLike) => void;
 export type StateObserver = {
   readonly id: string;
+  readonly active: boolean;
   readonly states: WeakMap<State, Set<KeyLike>>;
   readonly assign: (init: Linkable, observers: StateObserverList) => StateKeyTracker;
   readonly onChange: (event: StateChange) => void;
