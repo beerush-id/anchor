@@ -1,4 +1,4 @@
-import { $do, awaited, createObserver, retriable } from '@anchorlib/core';
+import { $do, type AnyType, awaited, createObserver, retriable, safeRun } from '@anchorlib/core';
 import { RouteCache, type RouteCacheSnapshot } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ERROR_TYPE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -832,32 +832,11 @@ export class Route<
   ): Promise<void> {
     const { state } = this.preActivate(context);
 
-    // biome-ignore lint/suspicious/noExplicitAny: Expect any.
-    let renderLoader: Promise<any> | undefined;
-
-    if (typeof this.loadRenderer === 'function') {
-      renderLoader = this.loadRenderer();
-
-      if (renderLoader instanceof Promise) {
-        renderLoader = renderLoader
-          .then((renderer) => {
-            this.render(renderer);
-            delete this.loadRenderer;
-          })
-          .catch((error) => {
-            state.status = ROUTE_STATUS.ERROR;
-            state.error = new RouteError(ERROR_TYPE.ROUTE, (error as Error).message, error as Error);
-          });
-      }
-    }
+    await this.ensureRenderer();
 
     // Preload data if preload is enabled.
     if (resolve) {
       await this.resolve(context, hydration, controller);
-    }
-
-    if (renderLoader instanceof Promise) {
-      await renderLoader;
     }
 
     // If the route is deactivated during preload, do nothing.
@@ -936,6 +915,11 @@ export class Route<
     this.loadRenderer = loader;
     if (fallback) this.render(fallback);
 
+    safeRun(() => {
+      if (!this.rendererState.value) return;
+      this.ensureRenderer(true);
+    });
+
     return this;
   }
 
@@ -968,6 +952,21 @@ export class Route<
     for (const { provider } of this.providers.values()) {
       providerObservers.get(provider)?.observer.destroy();
       providerObservers.delete(provider);
+    }
+  }
+
+  private async ensureRenderer(force?: boolean) {
+    if (typeof this.loadRenderer !== 'function') return;
+    if (this.rendererState.value && !force) return;
+
+    try {
+      const renderer = await this.loadRenderer();
+      this.render(renderer as AnyType);
+      delete this.loadRenderer;
+    } catch (error) {
+      const { state } = this.storage;
+      state.status = ROUTE_STATUS.ERROR;
+      state.error = new RouteError(ERROR_TYPE.ROUTE, (error as Error).message, error as Error);
     }
   }
 }
