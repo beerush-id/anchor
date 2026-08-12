@@ -9,7 +9,7 @@ import {
   setScope,
   withIsolation,
 } from '@anchorlib/core';
-import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
+import { GuardError, NotFoundError, ProviderError, Redirect, type Router, redirectUrl } from '@anchorlib/router';
 import type {
   RouterOptions,
   SSRContext,
@@ -101,8 +101,11 @@ export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): 
   const ssr = createLifecycle();
   await ssr.runAsync(async () => {
     try {
+      const match = router.find(url, true);
+      const { deferred, noscript } = match?.route.options ?? {};
+
       const snapshot = await router.activate(url, true, controller);
-      const script = hydrated ? router.createHydrationScript(snapshot) : '';
+      const script = hydrated ? router.createHydrationScript(snapshot, deferred) : '';
 
       const { exception } = router.context;
 
@@ -116,7 +119,9 @@ export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): 
 
       const result = await renderView({ url });
       html = result.html;
-      head = result.head + script;
+      head = result.head;
+
+      if (!noscript) head += `\n${script}`;
     } catch (error) {
       if (error instanceof Redirect) {
         status = 302;

@@ -55,6 +55,9 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
         }
 
+        const match = renderer.router.find(url, true);
+        const { deferred, noscript } = match?.route.options ?? {};
+
         const { html, head, status, cookies, redirect, contentType } = await renderer({
           url: url.href,
           cookie,
@@ -63,9 +66,13 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           hydrated: !template.includes('<html dehydrated'),
         });
 
-        const body = contentType
+        let body = contentType
           ? html
           : template.replace('<html dehydrated', '<html').replace(headTag, head).replace(bodyTag, html);
+
+        if (deferred !== false || noscript) {
+          body = deferScript(body, typeof deferred === 'number' ? deferred : undefined, !options.devMode && noscript);
+        }
 
         const headers = new Headers({
           'Content-Type': contentType ?? 'text/html',
@@ -163,6 +170,9 @@ export function createFullWorker<E = AnyType>(
         let cookies: string[] = [];
         const cookieJar = decodeCookies(cookie);
 
+        const match = renderer.router.find(url, true);
+        const { deferred, noscript } = match?.route.options ?? {};
+
         const response = await router.isolate(
           async () => {
             const { html, head, status, redirect, contentType } = await renderer({
@@ -173,12 +183,20 @@ export function createFullWorker<E = AnyType>(
               hydrated: !template.includes('<html dehydrated'),
             });
 
-            const body = contentType
+            let body = contentType
               ? html
               : template.replace('<html dehydrated', '<html').replace(headTag, head).replace(bodyTag, html);
             const headers = new Headers({
               'Content-Type': contentType ?? 'text/html',
             });
+
+            if (deferred !== false || noscript) {
+              body = deferScript(
+                body,
+                typeof deferred === 'number' ? deferred : undefined,
+                !options.devMode && noscript
+              );
+            }
 
             cookies = cookieJar.encode();
             cookies.forEach((cookie) => {
@@ -244,4 +262,70 @@ export function createFullWorker<E = AnyType>(
 
 function createDefaultResponse(response: Response) {
   return response;
+}
+
+export function deferScript(html: string, delay: number = 50, strip = false) {
+  const scripts: {
+    type: string;
+    src?: string;
+    href?: string;
+    rel?: string;
+    scriptType?: string;
+    crossOrigin?: string;
+  }[] = [];
+
+  let newHtml = html.replace(/<script[^>]*src="([^"]+)"[^>]*>[\s\S]*?<\/script>\n?/gi, (_match, src) => {
+    const typeMatch = _match.match(/type="([^"]+)"/i);
+    const crossMatch = _match.match(/crossorigin(?:="([^"]+)")?/i);
+    scripts.push({
+      type: 'script',
+      src,
+      scriptType: typeMatch ? typeMatch[1] : 'text/javascript',
+      ...(crossMatch ? { crossOrigin: crossMatch[1] || 'anonymous' } : {}),
+    });
+    return '';
+  });
+
+  newHtml = newHtml.replace(/<link[^>]*href="([^"]+\.js)"[^>]*>\n?/gi, (_match, href) => {
+    const relMatch = _match.match(/rel="([^"]+)"/i);
+    const crossMatch = _match.match(/crossorigin(?:="([^"]+)")?/i);
+    scripts.push({
+      type: 'link',
+      href,
+      rel: relMatch ? relMatch[1] : 'modulepreload',
+      ...(crossMatch ? { crossOrigin: crossMatch[1] || 'anonymous' } : {}),
+    });
+    return '';
+  });
+
+  if (!strip && scripts.length > 0) {
+    const deferSnippet = `<script type="module">
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const scripts = ${JSON.stringify(scripts)};
+          scripts.forEach(item => {
+            const el = document.createElement(item.type);
+            if (item.type === 'script') {
+              el.type = item.scriptType;
+              el.src = item.src;
+            } else {
+              el.rel = item.rel;
+              el.href = item.href;
+            }
+            if (item.crossOrigin) el.crossOrigin = item.crossOrigin;
+            document.body.appendChild(el);
+          });
+        }, ${delay});
+      });
+    </script>`;
+
+    const bodyEnd = newHtml.lastIndexOf('</body>');
+    if (bodyEnd > -1) {
+      newHtml = newHtml.slice(0, bodyEnd) + deferSnippet + newHtml.slice(bodyEnd);
+    } else {
+      newHtml += deferSnippet;
+    }
+  }
+
+  return newHtml;
 }
