@@ -9,18 +9,18 @@ import {
   setStabilityDetector,
 } from '../../src/index.js';
 import {
-  DerivedRef,
   derived,
+  DerivedRef,
   destroyRef,
-  ImmutableRef,
   immutable,
+  ImmutableRef,
   isDerivedRef,
   isImmutableRef,
   isMutableRef,
   isSignal,
   isValueRef,
-  MutableRef,
   mutable,
+  MutableRef,
   signal,
 } from '../../src/reactive/ref.js';
 import { createStack, withStack } from '../../src/scope/stack.js';
@@ -550,6 +550,33 @@ describe('Anchor Core - Ref', () => {
 
       expect(state.value).toBe('test');
       expect(detector).toHaveBeenCalled();
+    });
+
+    it('declare named states', () => {
+      const foo = mutable.for('foo', 1);
+      const foo2 = mutable.for('foo', 2);
+
+      const bar = immutable.for('bar', 3);
+      const bar2 = immutable.for('bar', 5);
+
+      expect(foo).toBe(foo2);
+      expect(bar).toBe(bar2);
+    });
+
+    it('declare named states on server', () => {
+      vi.stubGlobal('window', undefined);
+      vi.stubGlobal('document', undefined);
+
+      const foo = mutable.for('foo', 1);
+      const foo2 = mutable.for('foo', 2);
+
+      const bar = immutable.for('bar', 3);
+      const bar2 = immutable.for('bar', 5);
+
+      expect(foo).not.toBe(foo2);
+      expect(bar).not.toBe(bar2);
+
+      vi.unstubAllGlobals();
     });
   });
 });

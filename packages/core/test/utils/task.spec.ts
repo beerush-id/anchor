@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { microtask, sleep } from '../../src/index.js';
+import { afterTask, microtask, sleep } from '../../src/index.js';
 
 describe('Anchor Utilities', () => {
   beforeEach(() => {
@@ -19,6 +19,7 @@ describe('Anchor Utilities', () => {
 
       expect(handler).not.toHaveBeenCalled();
       sleep(50).then(() => {});
+      afterTask().then(() => {});
 
       vi.advanceTimersByTime(100);
 

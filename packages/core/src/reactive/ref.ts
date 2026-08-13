@@ -5,6 +5,7 @@ import { $symbol } from '../module.js';
 import { getScope, safeRun } from '../scope/context.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
 import { ANCHOR_SETTINGS as $$ } from '../shared/constant.js';
+import { isBrowser } from '../shared/env.js';
 import { captureStack } from '../shared/index.js';
 import type {
   Anchor,
@@ -160,24 +161,52 @@ export class DerivedRef<T> {
   }
 }
 
-/**
- * Creates a mutable reactive state for linkable objects.
- *
- * @template T - The linkable type (object, array, Map, Set)
- * @param init - The initial linkable value
- * @param options - Optional state configuration
- * @returns A reactive state that tracks mutations
- */
-export function mutable<T extends Linkable>(init: T, options?: StateOptions): T;
+interface MutableFactory {
+  /**
+   * Creates a mutable reactive state for linkable objects.
+   *
+   * @template T - The linkable type (object, array, Map, Set)
+   * @param init - The initial linkable value
+   * @param options - Optional state configuration
+   * @returns A reactive state that tracks mutations
+   */
+  <T extends Linkable>(init: T, options?: StateOptions): T;
 
-/**
- * Creates a mutable reference for primitive values.
- *
- * @template T - The primitive type (string, number, boolean, etc.)
- * @param init - The initial primitive value
- * @returns A mutable reference with getter and setter for the value
- */
-export function mutable<T>(init: T): MutableRef<T>;
+  /**
+   * Creates a mutable reactive state for primitive values.
+   *
+   * @template T - The linkable type (object, array, Map, Set)
+   * @param init - The initial linkable value
+   * @returns A reactive state that tracks mutations
+   */
+  <T>(init: T): MutableRef<T>;
+
+  /**
+   * Creates a named mutable reactive state for linkable objects.
+   * State is memoized in the browser, relative to the current URL.
+   *
+   * @template T - The linkable type (object, array, Map, Set)
+   * @param name - The name of the state
+   * @param init - The initial linkable value
+   * @param options - Optional state configuration
+   * @returns A reactive state that tracks mutations
+   */
+  for<T extends Linkable>(name: string, init: T, options?: StateOptions): T;
+
+  /**
+   * Creates a named mutable reactive state for primitive values.
+   * State is memoized in the browser, relative to the current URL.
+   *
+   * @template T - The linkable type (object, array, Map, Set)
+   * @param name - The name of the state
+   * @param init - The initial linkable value
+   * @returns A reactive state that tracks mutations
+   */
+  for<T>(name: string, init: T): MutableRef<T>;
+}
+
+export function mutableFn<T extends Linkable>(init: T, options?: StateOptions): T;
+export function mutableFn<T>(init: T): MutableRef<T>;
 
 /**
  * Implementation of mutable function that handles both primitive and linkable values.
@@ -187,8 +216,8 @@ export function mutable<T>(init: T): MutableRef<T>;
  * @param options - Optional state configuration or boolean flag
  * @returns Either a mutable reference or reactive state depending on the input type
  */
-export function mutable<T>(init: T, options?: StateOptions | boolean) {
-  detectStability(mutable);
+export function mutableFn<T>(init: T, options?: StateOptions | boolean) {
+  detectStability(mutableFn);
 
   if (linkable(init)) {
     return createRef(() => anchor(init, options as StateOptions), { init, options });
@@ -198,6 +227,24 @@ export function mutable<T>(init: T, options?: StateOptions | boolean) {
   return createRef(() => new MutableRef(init), init);
   // return new MutableRef(init);
 }
+
+const MUTABLE_STORAGE = new Map<string, { [key: string]: unknown }>();
+
+export const mutable = mutableFn as MutableFactory;
+
+mutable.for = (<T>(name: string, init: T, options?: StateOptions) => {
+  if (!isBrowser()) return mutable(init as Linkable, options) as T;
+  if (!MUTABLE_STORAGE.has(location.href)) {
+    MUTABLE_STORAGE.set(location.href, {});
+  }
+
+  const memo = MUTABLE_STORAGE.get(location.href) as { [key: string]: unknown };
+  if (!(name in memo)) {
+    memo[name] = mutable(init as Linkable, options);
+  }
+
+  return memo[name] as T;
+}) as MutableFactory['for'];
 
 /**
  * A Signal is a function that returns its current value when called,
@@ -237,7 +284,7 @@ export function signal<T>(init: T): Signal<T>;
 export function signal<T>(init: T, immutable: true): ImmutableSignal<T>;
 export function signal<T>(init: T, immutable?: boolean): Signal<T> | ImmutableSignal<T> {
   const base = { value: init };
-  const state = anchor(base);
+  const state = anchor(base, { immutable });
 
   function getter() {
     return state.value;
@@ -268,6 +315,50 @@ export function isSignal<T>(value: unknown): value is Signal<T> | ImmutableSigna
   return typeof value === 'function' && value[SIGNAL_IDENTIFIER as never] === true;
 }
 
+interface ImmutableFactory {
+  /**
+   * Creates an immutable reference for primitive values.
+   *
+   * @template T - The primitive type (string, number, boolean, etc.)
+   * @param init - The initial primitive value
+   * @returns An immutable reference with a getter for the value
+   */
+  <T extends Primitive>(init: T): ImmutableRef<T>;
+
+  /**
+   * Creates an immutable reactive state for linkable objects.
+   *
+   * @template T - The linkable type (object, array, Map, Set)
+   * @param init - The initial linkable value
+   * @param options - Optional state configuration
+   * @returns An immutable reactive state that prevents mutations
+   */
+  <T extends Linkable>(init: T, options?: StateOptions): Immutable<T>;
+
+  /**
+   * Creates a named immutable reference for primitive values.
+   * State is memoized in the browser, relative to the current URL.
+   *
+   * @template T - The primitive type (string, number, boolean, etc.)
+   * @param name - The name of the state
+   * @param init - The initial primitive value
+   * @returns An immutable reference with a getter for the value
+   */
+  for<T extends Primitive>(name: string, init: T): ImmutableRef<T>;
+
+  /**
+   * Creates a named immutable reactive state for linkable objects.
+   * State is memoized in the browser, relative to the current URL.
+   *
+   * @template T - The linkable type (object, array, Map, Set)
+   * @param name - The name of the state
+   * @param init - The initial linkable value
+   * @param options - Optional state configuration
+   * @returns An immutable reactive state that prevents mutations
+   */
+  for<T extends Linkable>(name: string, init: T, options?: StateOptions): Immutable<T>;
+}
+
 /**
  * Creates an immutable reference for primitive values.
  *
@@ -275,7 +366,7 @@ export function isSignal<T>(value: unknown): value is Signal<T> | ImmutableSigna
  * @param init - The initial primitive value
  * @returns An immutable reference with a getter for the value
  */
-export function immutable<T extends Primitive>(init: T): ImmutableRef<T>;
+export function immutableFn<T extends Primitive>(init: T): ImmutableRef<T>;
 
 /**
  * Creates an immutable reactive state for linkable objects.
@@ -285,7 +376,7 @@ export function immutable<T extends Primitive>(init: T): ImmutableRef<T>;
  * @param options - Optional state configuration
  * @returns An immutable reactive state that prevents mutations
  */
-export function immutable<T extends Linkable>(init: T, options?: StateOptions): Immutable<T>;
+export function immutableFn<T extends Linkable>(init: T, options?: StateOptions): Immutable<T>;
 
 /**
  * Implementation of immutable function that handles both primitive and linkable values.
@@ -295,8 +386,8 @@ export function immutable<T extends Linkable>(init: T, options?: StateOptions): 
  * @param options - Optional state configuration
  * @returns Either an immutable reference or immutable reactive state depending on the input type
  */
-export function immutable<T>(init: T, options?: StateOptions) {
-  detectStability(immutable);
+export function immutableFn<T>(init: T, options?: StateOptions) {
+  detectStability(immutableFn);
 
   if (linkable(init)) {
     return createRef(() => anchor.immutable(init, options), { init, options });
@@ -306,6 +397,23 @@ export function immutable<T>(init: T, options?: StateOptions) {
   return createRef(() => new ImmutableRef(init), init);
   // return new ImmutableRef(init);
 }
+
+const IMMUTABLE_STORAGE = new Map<string, { [key: string]: unknown }>();
+export const immutable = immutableFn as ImmutableFactory;
+
+immutable.for = (<T>(name: string, init: T, options: StateOptions) => {
+  if (!isBrowser()) return immutable(init as Linkable, options) as Immutable<T>;
+  if (!IMMUTABLE_STORAGE.has(location.href)) {
+    IMMUTABLE_STORAGE.set(location.href, {});
+  }
+
+  const memo = IMMUTABLE_STORAGE.get(location.href)!;
+  if (!(name in memo)) {
+    memo[name] = immutable(init as Linkable, options);
+  }
+
+  return memo[name] as Immutable<T>;
+}) as ImmutableFactory['for'];
 
 export const model = ((schema, init, options) => {
   detectStability(model);

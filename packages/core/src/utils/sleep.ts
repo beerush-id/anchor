@@ -6,3 +6,11 @@
 export function sleep(delay: number) {
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
+
+/**
+ * Create a promise that resolves after queueMicroTask.
+ * @returns A promise that resolves with `undefined`.
+ */
+export function afterTask() {
+  return sleep(0);
+}
