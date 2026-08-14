@@ -99,32 +99,6 @@ export const Show = snippet<ShowProps<boolean>>(
   false
 ) as ShowNode;
 
-export type SnippetProps<T> = {
-  data?: T | (() => T);
-  children: (data: T) => ReactNode;
-};
-
-export type SnippetType = <T>(props: SnippetProps<T>) => ReactNode;
-
-/**
- * Isolate the rendering of a component fragment to get a fine-grained rendering control.
- * Particularly useful for rendering a reactive part of a mostly static UI.
- *
- * @param props.children - The content to render.
- * @returns The rendered content or null.
- */
-export const Snippet = snippet<SnippetProps<unknown>>(
-  ({ children, data }) => {
-    if (typeof children !== 'function') {
-      return <>[Snippet Error: Snippet must pass function as the children]</>;
-    }
-    return children(typeof data === 'function' ? data() : data);
-  },
-  'Snippet',
-  'Slot',
-  false
-) as SnippetType;
-
 export type ForProps<T> = {
   each: T[] | (() => T[]) | undefined | null;
   children: (item: T, index: number) => ReactNode;
@@ -147,7 +121,7 @@ function getItemKey(item: unknown, index: number) {
   if (typeof item === 'object' && item !== null) {
     let key = objectKeys.get(item);
     if (!key) {
-      key = `ok_${++nextKeyId}`;
+      key = `item-${++nextKeyId}`;
       objectKeys.set(item, key);
     }
     return key;

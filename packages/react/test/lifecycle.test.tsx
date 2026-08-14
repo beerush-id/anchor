@@ -1,8 +1,8 @@
+import '../src/client/index';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setup } from '../src/hoc.js';
 import { createLifecycle, onCleanup, onMount } from '../src/lifecycle';
-import '../src/client/index';
 
 describe('Anchor React - Lifecycle', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;

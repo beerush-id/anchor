@@ -1,10 +1,12 @@
+import '../src/client/index';
 import { classx, getContext, mutable, setContext } from '@anchorlib/core';
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render as renderView, setup, snippet, template } from '../src/hoc.js';
-import '../src/client/index';
+import { $inline, render as renderView, setup, snippet, stubScheduler, template } from '../src/hoc.js';
 import type { DynamicProps } from '../src/index.js';
+
+stubScheduler();
 
 describe('Anchor React - HOC', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -713,6 +715,17 @@ describe('Anchor React - HOC', () => {
 
       // Should update to Count: 1
       expect(screen.getByText('Count: 1')).toBeDefined();
+    });
+
+    it('should render with $inline', () => {
+      expect($inline(() => <span>Test</span>)).toBeDefined();
+      expect(
+        $inline(
+          () => <span>Test</span>,
+          () => ({})
+        )
+      ).toBeDefined();
+      expect($inline((d) => <span>{d.a}</span>, { a: 1 })).toBeDefined();
     });
   });
 });

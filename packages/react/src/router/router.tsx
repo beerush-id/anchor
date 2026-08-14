@@ -160,7 +160,7 @@ RouteRendererComponent.displayName = 'Definition(Route)';
 /**
  * The root router component that mounts the application route tree to React.
  */
-export function UIRouter({ router, resetScroll, url, headless }: UIRouterProps) {
+export function UIRouter({ router, resetScroll, url, headless = true }: UIRouterProps) {
   const stacks = createRef(new Map()).current;
   const activate = async () => {
     const match = router.find(url ?? location.href);

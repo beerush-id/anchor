@@ -4,7 +4,7 @@ import type { UnknownRoute } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRouter, modal, page, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
+import { createRouter, modal, page, redirect, RouteRendererComponent, RouteViewer, UIRouter } from '../../src/index.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -571,7 +571,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
-      const { unmount } = render(<UIRouter router={router} root={rootUi} resetScroll={true} />);
+      const { unmount } = render(<UIRouter router={router} root={rootUi} headless={false} resetScroll={true} />);
       unmount();
 
       // Because activation fires twice initially via direct invoke and effects loop, verify scrollTo also fires properly
@@ -583,7 +583,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       expect(activateSpy).toHaveBeenCalled();
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
 
-      render(<UIRouter router={router} root={rootUi} resetScroll={'instant'} />);
+      render(<UIRouter router={router} root={rootUi} headless={false} resetScroll={'instant'} />);
     });
 
     it('skips scrolling to top if a modal stack is active', async () => {

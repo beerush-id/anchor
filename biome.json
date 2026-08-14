@@ -40,6 +40,8 @@
         "noConfusingVoidType": "off"
       },
       "a11y": {
+        "useKeyWithClickEvents": "off",
+        "useValidAnchor": "off",
         "useSemanticElements": "off",
         "noSvgWithoutTitle": "off",
         "useButtonType": "off",

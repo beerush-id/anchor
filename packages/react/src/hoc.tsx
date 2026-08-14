@@ -1,3 +1,4 @@
+import type { AnyType } from '@anchorlib/core';
 import {
   $do,
   anchor,
@@ -152,6 +153,33 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   return Setup as StableComponent<P>;
 }
 
+let scheduleUpdate = queueMicrotask;
+
+/**
+ * Set the re-render scheduler.
+ * The default scheduler is queueMicrotask() on browser and no-op function on server.
+ *
+ * @param scheduler - The function to handle the scheduling.
+ */
+export function setUpdateScheduler(scheduler: (fn: () => unknown) => void) {
+  scheduleUpdate = scheduler;
+}
+
+/**
+ * Stub the re-render scheduler for the test environment.
+ * @returns Function to un-stub the scheduler.
+ */
+export function stubScheduler() {
+  const current = scheduleUpdate;
+  setUpdateScheduler((fn) => fn());
+
+  /* v8 ignore start */
+  return () => {
+    setUpdateScheduler(current);
+  };
+  /* v8 ignore end */
+}
+
 /**
  * Creates a reactive snippet that has access to parent component's props and context.
  *
@@ -236,7 +264,11 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
         observer.reset();
 
         if (!isBrowser()) return;
-        setVersion((c) => c + 1);
+
+        scheduleUpdate(() => {
+          if (!observer.active) return;
+          setVersion((c) => c + 1);
+        });
       });
 
       observer.name = snippetName;
@@ -283,6 +315,52 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
   (Snippet as SnippetView<P>).displayName = snippetName;
 
   return Snippet as SnippetView<P>;
+}
+
+export type SnippetProps<T> = {
+  data?: T | (() => T);
+  children: (data: T) => ReactNode;
+};
+
+export type SnippetType = <T>(props: SnippetProps<T>) => ReactNode;
+
+/**
+ * Isolate the rendering of a component fragment to get a fine-grained rendering control.
+ * Particularly useful for rendering a reactive part of a mostly static UI.
+ *
+ * @param props.children - The content to render.
+ * @returns The rendered content or null.
+ */
+export const Snippet = snippet<SnippetProps<unknown>>(
+  ({ children, data }) => {
+    if (typeof children !== 'function') {
+      return <>[Snippet Error: Snippet must pass function as the children]</>;
+    }
+    return children(typeof data === 'function' ? data() : data);
+  },
+  'Snippet',
+  'Slot',
+  false
+) as SnippetType;
+
+/**
+ * Create an inline reactive boundary to isolate re-render.
+ * @param renderer - The renderer function to wrap.
+ * @param provider - Optional function returning data to forward to the renderer for destructuring.
+ * @returns JSX Element.
+ */
+export function $inline<T>(renderer: (data: T) => ReactNode, provider: () => T): ReactNode;
+/**
+ * Create an inline reactive boundary to isolate re-render.
+ * @param renderer - The renderer function to wrap.
+ * @param args - Optional arguments to forward to the renderer for destructuring.
+ * @returns JSX Element.
+ */
+export function $inline<A extends AnyType[]>(renderer: (...args: A) => ReactNode, ...args: A): ReactNode;
+
+export function $inline<A extends AnyType[]>(renderer: (...args: A) => ReactNode, ...args: A) {
+  const [fn] = args;
+  return <Snippet>{() => renderer(...(typeof fn === 'function' ? ([fn()] as A) : args))}</Snippet>;
 }
 
 /**

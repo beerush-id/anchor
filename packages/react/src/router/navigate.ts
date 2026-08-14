@@ -1,4 +1,3 @@
-// biome-ignore assist/source/organizeImports: false
 import type { NavigateOptions, Redirect, RedirectOptions, RouteTarget } from '@anchorlib/router';
 import { createUrl, redirect as redirectTo, Route } from '@anchorlib/router';
 import type { AnyRoute, RouteComponent } from './types.js';
