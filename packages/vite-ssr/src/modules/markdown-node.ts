@@ -4,7 +4,6 @@ import path from 'node:path';
 import { getFrontmatter } from '../utils/frontmatter.js';
 import { canonicalPath, derivePrefix, GENERATED_MARKER } from '../utils/mapper.js';
 import { writeIfChanged } from '../utils/sync.js';
-import type { PipeGraph } from './graph.js';
 
 /**
  * Represents a compiled MDX file and its extracted frontmatter metadata.
@@ -25,8 +24,7 @@ export class MarkdownNode extends EventEmitter {
   constructor(
     public readonly absPath: string,
     pagesDir: string,
-    metadataDir: string,
-    private readonly graph?: PipeGraph
+    metadataDir: string
   ) {
     super();
 
@@ -49,26 +47,17 @@ export class MarkdownNode extends EventEmitter {
   /**
    * Reads the source MDX file, extracts its frontmatter, and generates
    * a TypeScript file exporting the metadata.
-   *
-   * When the shared artifact graph provides a `frontmatter` pipe, the
-   * frontmatter comes from the graph (single parse shared with the MDX
-   * compile pipe) instead of a private re-read and re-parse.
    */
   public update() {
-    let meta: Record<string, unknown>;
+    let content = '';
 
-    if (this.graph?.has('frontmatter')) {
-      this.graph.invalidate(this.absPath);
-      meta = this.graph.get(this.absPath, 'frontmatter');
-    } else {
-      let content = '';
-      try {
-        content = fs.readFileSync(this.absPath, 'utf-8');
-      } catch {
-        return; // File probably deleted, handled by destroy()
-      }
-      meta = getFrontmatter(content);
+    try {
+      content = fs.readFileSync(this.absPath, 'utf-8');
+    } catch {
+      return; // File probably deleted, handled by destroy()
     }
+
+    const meta = getFrontmatter(content);
 
     const moduleContent = [
       GENERATED_MARKER,

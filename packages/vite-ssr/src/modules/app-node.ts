@@ -4,7 +4,6 @@ import path from 'node:path';
 import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
 import { FolderNode } from './folder-node.js';
-import type { PipeGraph } from './graph.js';
 import { ManifestNode } from './manifest.js';
 import { MetadataNode } from './metadata.js';
 import { RouteNode } from './route-node.js';
@@ -20,8 +19,6 @@ export type AppNodeOptions = {
   manifestEnabled?: boolean;
   metadataEnabled?: boolean;
   scaffoldEnabled?: boolean;
-  /** Shared artifact graph; handed to the metadata tree for the `frontmatter` pipe. */
-  graph?: PipeGraph;
 };
 
 /**
@@ -56,7 +53,7 @@ export class AppNode extends EventEmitter {
     this.rootRoute.boot();
 
     if (opts.metadataEnabled !== false) {
-      this.rootMetadata = new MetadataNode(this.rootFolder, undefined, opts.root, opts.pagesDir, opts.graph);
+      this.rootMetadata = new MetadataNode(this.rootFolder, undefined, opts.root, opts.pagesDir);
       this.rootMetadata.on('change', this.handleChange);
       this.rootMetadata.boot();
     }

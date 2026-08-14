@@ -3,7 +3,8 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import { MDX_DEFAULT_OPTIONS, mdxFile, type MdxModuleOptions } from '../modules/markdown.js';
 import { EntryResolver } from '../utils/resolver.js';
-import { AIR_ENV } from './env.js';
+
+import { AIR_ENV } from '../modules/env.js';
 
 export type AirMarkdownOptions = MdxModuleOptions & {
   rootDir: string;
@@ -15,7 +16,7 @@ const DEFAULT_OPTIONS: AirMarkdownOptions = {
   ...MDX_DEFAULT_OPTIONS,
 };
 
-export type AirChunkEntry = {
+type AirChunkEntry = {
   id: string;
   code: string;
   body?: string;
@@ -23,9 +24,9 @@ export type AirChunkEntry = {
   chunk?: string;
 };
 
-export const CHUNK_ALIAS = '?chunk';
-export const CHUNK_ENTRIES = new Map<string, AirChunkEntry>();
-export const CHUNK_SUFFIX = '.tsx?chunk';
+const CHUNK_ALIAS = '?chunk';
+const CHUNK_SUFFIX = '.tsx?chunk';
+const CHUNK_ENTRIES = new Map<string, AirChunkEntry>();
 
 export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
   const $options = { ...DEFAULT_OPTIONS, ...options };

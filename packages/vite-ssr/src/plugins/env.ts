@@ -1,22 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
-import type { Framework } from '../utils/mapper.js';
+import { AIR_ENV, type AirEnv, type Framework } from '../modules/env.js';
 
-export type AirEnv = {
-  framework: Framework;
-  currentUrl?: string;
-};
+export type AirEnvOptions = Partial<Pick<AirEnv, 'framework'>>;
 
-export const AIR_ENV: AirEnv = {
-  framework: 'react',
-};
+export function airEnv(options: AirEnvOptions = {}) {
+  const { framework } = { ...options };
 
-export function airEnv() {
   return {
     name: 'air-pages:env',
+    enforce: 'pre',
     configResolved(config) {
-      AIR_ENV.framework = detectFramework(config.root);
+      AIR_ENV.rootDir = config.root;
+      AIR_ENV.framework = framework ?? detectFramework(config.root);
     },
   } as Plugin;
 }

@@ -1,7 +1,7 @@
 import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
+import { AIR_ENV } from '../modules/env.js';
 import { mdxMatcher } from '../modules/markdown.js';
-import { AIR_ENV } from './env.js';
 import type { AirMarkdownOptions } from './markdown.js';
 
 export type CodeGroupOptions = {

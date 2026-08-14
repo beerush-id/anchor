@@ -1,7 +1,7 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Plugin, ResolvedConfig } from 'vite';
-import { AIR_ENV } from './plugins/env.js';
+import { AIR_ENV } from './modules/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
 export type AirWorkerOptions = {

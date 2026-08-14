@@ -7,8 +7,10 @@ import type { Options as RemarkGfmOptions } from 'remark-gfm';
 import type { PluggableList } from 'unified';
 import { visit } from 'unist-util-visit';
 import { parse } from 'yaml';
-import { mdxOut } from '../utils/jsx.js';
+import { wrapJsx } from '../utils/jsx.js';
 import { createMatcher } from '../utils/matcher.js';
+
+import { AIR_ENV } from './env.js';
 
 export type MdxHeading = {
   id: string;
@@ -26,7 +28,6 @@ export type MdxExtendedOptions = {
 export type MdxModuleOptions = Omit<MdxOptions, 'remarkPlugins' | 'rehypePlugins' | 'mdxExtensions'> & {
   include: string[];
   extended: boolean | MdxExtendedOptions;
-  framework?: string;
   headingDepth: number;
   remarkPlugins: PluggableList;
   rehypePlugins: PluggableList;
@@ -52,7 +53,6 @@ export interface HTMLNode extends MarkdownNode {
 export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
   include: ['.md', '.mdx'],
   extended: true,
-  framework: 'react',
   headingDepth: 3,
   remarkPlugins: [],
   rehypePlugins: [],
@@ -123,15 +123,11 @@ export class MdxModule {
     }
   }
 
-  public toString(route?: string) {
-    const { framework } = this.options;
+  public toString() {
     const head = this.globals.join('\n');
     const body = this.locals.join('\n');
 
-    const key = framework as keyof typeof mdxOut;
-    if (typeof mdxOut[key] === 'function') {
-      this.output = mdxOut[key](head, body, route)!;
-    }
+    this.output = wrapJsx(AIR_ENV.framework, head, body);
 
     return this.output;
   }

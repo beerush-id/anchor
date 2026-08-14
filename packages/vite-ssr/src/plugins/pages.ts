@@ -2,15 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
 import { AppNode } from '../modules/app-node.js';
-import { PipeGraph } from '../modules/graph.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
-import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../utils/mapper.js';
+import { DEFAULT_FILE_MAP, type FileMap } from '../utils/mapper.js';
 import { airWorker, type AirWorkerOptions } from '../worker.js';
 import { airEnv } from './env.js';
 import { airImage, type AirImageOptions } from './image.js';
 import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
+import { AIR_ENV, type Framework } from '../modules/env.js';
 
 export type AirPagesOptions = {
   /**
@@ -119,15 +119,7 @@ const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
  * @returns Vite plugin array.
  */
 export function airPages(options: AirPagesOptions = {}): PluginOption {
-  let framework: Framework = options.framework ?? detectFramework(process.cwd());
   let irpcEnabled = options.irpc;
-
-  // Shared artifact graph bridging the single-domain plugins below:
-  // the MDX compile pipe registers `frontmatter`, the route-attach pipe
-  // registers `partition`, and the metadata tree consumes them — no domain
-  // re-parses what another domain already parsed.
-  const graph = new PipeGraph();
-
   let config: ResolvedConfig;
   let absPagesDir = '';
   let absAppDir = '';
@@ -152,7 +144,6 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
     configResolved(resolved) {
       config = resolved;
-      if (!options.framework) framework = detectFramework(config.root);
       files = { ...DEFAULT_FILE_MAP, ...options.files };
 
       pagesDir = options.pagesDir ?? 'src/pages';
@@ -179,10 +170,9 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         routerFile: absRouterFile,
         manifestEnabled: options.manifest,
         metadataEnabled: options.metadata,
-        framework,
+        framework: AIR_ENV.framework,
         scaffoldEnabled: options.scaffold,
         fileMap: files,
-        graph,
       });
     },
 
@@ -263,7 +253,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     },
   };
 
-  const plugins: Plugin[] = [airEnv()];
+  const plugins: Plugin[] = [airEnv(options)];
   const mdOptions = {
     rootDir: pagesDir,
     extended: options.extended,
@@ -291,16 +281,4 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   plugins.push(corePlugin);
 
   return plugins;
-}
-
-function detectFramework(root: string): Framework {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8'));
-    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-
-    if (deps['@anchorlib/solid']) return 'solid';
-    if (deps['@anchorlib/react']) return 'react';
-  } catch {}
-
-  return 'react';
 }
