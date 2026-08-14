@@ -1,6 +1,13 @@
-import type { FolderNode } from './folder-node.js';
-import { FRAMEWORK_PACKAGE, type Framework } from './generate.js';
-import { DEFAULT_FILE_MAP, deriveIndexName, deriveRouteName, type FileMap, humanizeSegment } from './model.js';
+import type { FolderNode } from '../modules/folder-node.js';
+import {
+  DEFAULT_FILE_MAP,
+  deriveIndexName,
+  deriveRouteName,
+  type FileMap,
+  type Framework,
+  FRAMEWORK_PACKAGE,
+  humanizeSegment,
+} from './mapper.js';
 
 /**
  * Decides the scaffold content for a newly created application or page file, or `undefined`

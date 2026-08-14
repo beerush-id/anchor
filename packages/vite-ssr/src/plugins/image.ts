@@ -41,7 +41,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
   let isBuild = false;
 
   return {
-    name: 'anchorlib:vite-image',
+    name: 'air-pages:image',
     enforce: 'pre',
     configResolved(config) {
       isBuild = config.command === 'build';

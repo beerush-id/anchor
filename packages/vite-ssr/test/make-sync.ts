@@ -1,7 +1,7 @@
 import path from 'node:path';
-import { AppNode } from '../src/pages/app-node.js';
-import type { FolderNode } from '../src/pages/folder-node.js';
-import type { Framework } from '../src/pages/generate.js';
+import { AppNode } from '../src/modules/app-node.js';
+import type { FolderNode } from '../src/modules/folder-node.js';
+import type { Framework } from '../src/utils/mapper.js';
 import { fixturePath, readFixture } from './fixture.js';
 
 export type MakeAppOptions = {

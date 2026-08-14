@@ -48,19 +48,25 @@
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",
+    "@mdx-js/mdx": "catalog:lib",
     "@mdx-js/rollup": "catalog:lib",
     "@napi-rs/image": "catalog:lib",
     "chokidar": "catalog:lib",
     "remark-frontmatter": "catalog:lib",
     "remark-mdx-frontmatter": "catalog:lib",
-    "ws": "catalog:lib"
+    "ws": "catalog:lib",
+    "yaml": "catalog:lib"
   },
   "peerDependencies": {
-    "vite": "catalog:lib",
-    "magic-string":"catalog:lib"
+    "magic-string": "catalog:lib",
+    "vite": "catalog:lib"
+  },
+  "optionalDependencies": {
+    "@vitejs/plugin-react": "catalog:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@types/mdast": "catalog:lib",
     "@types/ws": "latest",
     "@vitest/coverage-v8": "catalog:",
     "acorn": "catalog:",
@@ -70,9 +76,14 @@
     "rehype-slug": "catalog:lib",
     "remark-directive": "catalog:lib",
     "remark-gfm": "catalog:lib",
+    "remark-mdx": "catalog:lib",
+    "remark-parse": "catalog:lib",
+    "remark-rehype": "catalog:lib",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
+    "unified": "catalog:lib",
+    "vfile": "catalog:lib",
     "vitest": "catalog:"
   },
   "scripts": {

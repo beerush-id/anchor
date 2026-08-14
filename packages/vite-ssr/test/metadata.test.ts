@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { extractFrontmatter } from '../src/pages/markdown-node.js';
+import { getFrontmatter } from '../src/utils/frontmatter.js';
 import { cleanFixture, fixtureExists, makeFixture, writeFixture } from './fixture.js';
 import { makeApp, readMetadata } from './make-sync.js';
 
@@ -28,7 +28,7 @@ describe('mdx metadata generator', () => {
       '# Document Content',
     ].join('\n');
 
-    expect(extractFrontmatter(content)).toEqual({
+    expect(getFrontmatter(content)).toEqual({
       title: 'Getting Started',
       draft: false,
       rating: 4.5,
@@ -39,8 +39,8 @@ describe('mdx metadata generator', () => {
   });
 
   it('handles yaml edge cases, empty blocks, and malformed structures', () => {
-    expect(extractFrontmatter('no frontmatter here')).toEqual({});
-    expect(extractFrontmatter('---\n# comment only\n---')).toEqual({});
+    expect(getFrontmatter('no frontmatter here')).toEqual({});
+    expect(getFrontmatter('---\n# comment only\n---')).toEqual({});
 
     const complexYaml = [
       '---',
@@ -62,7 +62,7 @@ describe('mdx metadata generator', () => {
       'content',
     ].join('\n');
 
-    const res = extractFrontmatter(complexYaml);
+    const res = getFrontmatter(complexYaml);
     expect(res.emptyVal).toBe('');
     expect(res.jsonObj).toEqual({ active: true, count: 10 });
     expect(res.nullVal).toBe(null);
@@ -73,7 +73,7 @@ describe('mdx metadata generator', () => {
     expect(res.intVal).toBe(-42);
     expect(res.floatVal).toBe(3.14);
 
-    const blockRes = extractFrontmatter(
+    const blockRes = getFrontmatter(
       [
         '---',
         'items:',

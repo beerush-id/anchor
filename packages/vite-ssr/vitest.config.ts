@@ -8,8 +8,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       enabled: true,
-      include: ['src/pages/**/*.ts'],
-      exclude: ['src/pages/plugin.ts'],
+      include: ['src/modules/**/*.ts', 'src/plugins/**/*.ts'],
+      exclude: ['src/plugins/main.ts'],
       reportsDirectory: './coverage/coverage',
     },
   },

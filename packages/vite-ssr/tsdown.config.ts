@@ -11,7 +11,10 @@ export default defineConfig({
   unbundle: true,
   platform: 'node',
   external: [
+    'vfile',
+    '@mdx-js/mdx',
     '@mdx-js/rollup',
+    'unist-util-visit',
     'remark-frontmatter',
     'remark-mdx-frontmatter',
     'rehype-autolink-headings',

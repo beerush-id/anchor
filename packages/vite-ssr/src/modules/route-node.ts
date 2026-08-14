@@ -2,17 +2,17 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
-import type { FolderNode } from './folder-node.js';
-import type { Framework } from './generate.js';
 import {
   deriveIndexName,
   deriveRouteName,
   deriveSegment,
   type FileMap,
+  type Framework,
   importSpecifier,
   type PageKind,
-} from './model.js';
-import { scaffoldForFile } from './scaffold.js';
+} from '../utils/mapper.js';
+import { scaffoldForFile } from '../utils/scaffold.js';
+import type { FolderNode } from './folder-node.js';
 
 export class RouteNode extends EventEmitter {
   public page: PageKind | undefined;

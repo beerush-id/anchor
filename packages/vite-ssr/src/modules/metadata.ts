@@ -1,10 +1,11 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
+import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
+import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
+import type { PipeGraph } from './graph.js';
 import { MarkdownNode } from './markdown-node.js';
-import { GENERATED_MARKER, importSpecifier } from './model.js';
-import { bootPackage, ensureSymlink, writeIfChanged } from './sync.js';
 
 /**
  * Represents a node in the metadata tree.
@@ -24,12 +25,14 @@ export class MetadataNode extends EventEmitter {
    * @param parent Optional parent metadata node.
    * @param rootDir Absolute path to the Vite root.
    * @param pagesDir Absolute path to the pages directory.
+   * @param graph Optional shared artifact graph providing the `frontmatter` pipe.
    */
   constructor(
     public readonly folderNode: FolderNode,
     public readonly parent: MetadataNode | undefined,
     private readonly rootDir: string,
-    private readonly pagesDir: string
+    private readonly pagesDir: string,
+    private readonly graph?: PipeGraph
   ) {
     super();
     this.metadataDir = path.join(rootDir, '.airstack', 'metadata');
@@ -65,7 +68,7 @@ export class MetadataNode extends EventEmitter {
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
-    const child = new MetadataNode(childFolder, this, this.rootDir, this.pagesDir);
+    const child = new MetadataNode(childFolder, this, this.rootDir, this.pagesDir, this.graph);
     this.children.set(childFolder.segment, child);
 
     child.on('change', (file, kind) => {
@@ -114,7 +117,7 @@ export class MetadataNode extends EventEmitter {
     const absPath = path.join(this.folderNode.dir, name);
     if (this.markdownNodes.has(absPath)) return;
 
-    const mdxNode = new MarkdownNode(absPath, this.pagesDir, this.metadataDir);
+    const mdxNode = new MarkdownNode(absPath, this.pagesDir, this.metadataDir, this.graph);
     this.markdownNodes.set(absPath, mdxNode);
 
     mdxNode.on('change', (file, kind) => this.emit('change', file, kind));

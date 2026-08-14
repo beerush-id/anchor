@@ -1,6 +1,6 @@
 import * as acorn from 'acorn';
 import { afterEach, describe, expect, it } from 'vitest';
-import { mdxAttachForFile } from '../src/pages/mdx.js';
+import { mdxAttachForFile } from '../src/plugins/mdx-route.js';
 import { cleanFixture, fixtureExists, fixturePath, makeFixture } from './fixture.js';
 import { makeApp } from './make-sync.js';
 

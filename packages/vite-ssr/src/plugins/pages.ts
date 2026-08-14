@@ -1,21 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Options as MdxOptions } from '@mdx-js/rollup';
-import mdx from '@mdx-js/rollup';
-import remarkFrontmatter from 'remark-frontmatter';
-import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
-import { type AirImageOptions, airImage } from '../image.js';
-import { airChunk } from '../plugins/chunk.js';
-import { airPreprocess } from '../plugins/preprocess.js';
-import { type AirWorkerOptions, airWorker } from '../worker.js';
-import { AppNode } from './app-node.js';
-import { type DocsPluginOptions, setupDocs } from './docs.js';
-import type { Framework } from './generate.js';
-import { mdxAttachForFile } from './mdx.js';
-import { DEFAULT_FILE_MAP, type FileMap } from './model.js';
-
-export type AirMdxOptions = MdxOptions;
+import { AppNode } from '../modules/app-node.js';
+import { PipeGraph } from '../modules/graph.js';
+import type { MdxExtendedOptions } from '../modules/markdown.js';
+import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../utils/mapper.js';
+import { airWorker, type AirWorkerOptions } from '../worker.js';
+import { airEnv } from './env.js';
+import { airImage, type AirImageOptions } from './image.js';
+import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
+import { airPreprocess } from './preprocess.js';
+import { airSearch, type MdxSearchOptions } from './search.js';
 
 export type AirPagesOptions = {
   /**
@@ -55,12 +50,9 @@ export type AirPagesOptions = {
    * MDX configuration.
    * `false` to disable, `true`/omit for defaults, object to configure.
    */
-  markdown?: boolean | AirMdxOptions;
-
-  /**
-   * Documentation configuration (Vitepress-like features).
-   */
-  docs?: boolean | DocsPluginOptions;
+  markdown?: boolean | Partial<AirMarkdownOptions>;
+  extended?: boolean | Partial<MdxExtendedOptions>;
+  searchIndex?: boolean | Partial<MdxSearchOptions>;
 
   /**
    * Enable true static SSR by shipping zero JavaScript to the client.
@@ -126,10 +118,15 @@ const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
  * @param options Plugin configuration options.
  * @returns Vite plugin array.
  */
-export async function airPages(options: AirPagesOptions = {}): Promise<PluginOption> {
-  const mdxEnabled = options.markdown !== false;
+export function airPages(options: AirPagesOptions = {}): PluginOption {
   let framework: Framework = options.framework ?? detectFramework(process.cwd());
   let irpcEnabled = options.irpc;
+
+  // Shared artifact graph bridging the single-domain plugins below:
+  // the MDX compile pipe registers `frontmatter`, the route-attach pipe
+  // registers `partition`, and the metadata tree consumes them — no domain
+  // re-parses what another domain already parsed.
+  const graph = new PipeGraph();
 
   let config: ResolvedConfig;
   let absPagesDir = '';
@@ -137,6 +134,7 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
   let app: AppNode;
   let files: FileMap = { ...DEFAULT_FILE_MAP, ...options.files };
   let shouldReload = false;
+  let pagesDir = options.pagesDir ?? 'src/pages';
 
   const corePlugin: Plugin = {
     name: 'air-pages',
@@ -157,7 +155,8 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
       if (!options.framework) framework = detectFramework(config.root);
       files = { ...DEFAULT_FILE_MAP, ...options.files };
 
-      const pagesDir = options.pagesDir ?? 'src/pages';
+      pagesDir = options.pagesDir ?? 'src/pages';
+
       const routerFile = options.routerFile ?? 'src/router.ts';
       const workerFile = options.worker
         ? (options.worker.entry ?? `src/${files.workerEntry}`)
@@ -183,6 +182,7 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
         framework,
         scaffoldEnabled: options.scaffold,
         fileMap: files,
+        graph,
       });
     },
 
@@ -210,7 +210,7 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
       return [`const modules = import.meta.glob('${glob}', { eager: true });`, `export default modules;`].join('\n');
     },
 
-    async transform(code, id) {
+    transform(code, id) {
       const { client = DEFAULT_FILE_MAP.client, workerEntry = DEFAULT_FILE_MAP.workerEntry } = options.files ?? {};
       const { entry: worker = `src/${workerEntry}` } = options.worker || {};
 
@@ -224,28 +224,6 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
         }
       }
 
-      if (!mdxEnabled) return { code, map: null };
-
-      if (normalizedId.endsWith('.mdx')) {
-        const transformed = await mdxAttachForFile({
-          id,
-          file: normalizedId,
-          pagesDir: absPagesDir,
-          tree: app.rootFolder,
-          framework,
-          files,
-          code,
-          parse: (c) => this.parse(c),
-        });
-
-        if (!transformed) return { code, map: null };
-
-        return {
-          code: transformed,
-          map: null,
-        };
-      }
-
       return { code, map: null };
     },
 
@@ -255,7 +233,9 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
       app.on('change', (file: string, kind: 'update' | 'reload') => {
         const mods = server.moduleGraph.getModulesByFile(file);
         if (mods) {
-          for (const m of mods) server.moduleGraph.invalidateModule(m);
+          for (const m of mods) {
+            server.moduleGraph.invalidateModule(m);
+          }
         }
 
         if (kind === 'reload') shouldReload = true;
@@ -283,32 +263,22 @@ export async function airPages(options: AirPagesOptions = {}): Promise<PluginOpt
     },
   };
 
-  const plugins: Plugin[] = [];
+  const plugins: Plugin[] = [airEnv()];
+  const mdOptions = {
+    rootDir: pagesDir,
+    extended: options.extended,
+    ...(typeof options.markdown === 'object' ? options.markdown : {}),
+  } as AirMarkdownOptions;
 
-  if (mdxEnabled) {
-    const mdxOpts = typeof options.markdown === 'object' ? options.markdown : {};
-    const remarkPlugins = [remarkFrontmatter, remarkMdxFrontmatter] as MdxOptions['remarkPlugins'];
+  plugins.push(...airPreprocess({ ...mdOptions, markdown: options.markdown !== false }));
 
-    if (mdxOpts.remarkPlugins) {
-      remarkPlugins!.push(...mdxOpts.remarkPlugins);
-    }
-
-    mdxOpts.remarkPlugins = remarkPlugins;
-
-    if (options.docs) {
-      await setupDocs(options.docs, mdxOpts, plugins, options.pagesDir);
-      plugins.push(...airPreprocess());
-    }
-
-    plugins.push(
-      mdx({
-        jsxImportSource: framework === 'solid' ? 'solid-js' : 'react',
-        ...mdxOpts,
-      }) as Plugin
-    );
+  if (options.markdown !== false) {
+    plugins.push(...airMarkdown(mdOptions));
   }
 
-  plugins.push(airChunk());
+  if (options.searchIndex) {
+    plugins.push(airSearch(typeof options.searchIndex === 'object' ? options.searchIndex : {}));
+  }
 
   if (options.worker !== false) {
     plugins.push(airWorker({ noscript: options.noscript, ssg: options.ssg, ...options.worker }));

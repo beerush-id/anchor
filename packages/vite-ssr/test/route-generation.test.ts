@@ -3,7 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { withIsolation } from '@anchorlib/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Route } from '../../router/src/index.js';
-import { importSpecifier } from '../src/pages/model.js';
+import { importSpecifier } from '../src/utils/mapper.js';
 import {
   cleanFixture,
   fixtureExists,

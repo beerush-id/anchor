@@ -1,17 +1,17 @@
-import type { AnyType } from '@anchorlib/core';
-import * as acorn from 'acorn';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { AnyType } from '@anchorlib/core';
+import * as acorn from 'acorn';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FolderNode } from '../src/pages/folder-node.js';
-import { ManifestNode } from '../src/pages/manifest.js';
-import { extractFrontmatter, MarkdownNode } from '../src/pages/markdown-node.js';
-import { mdxAttachForFile } from '../src/pages/mdx.js';
-import { MetadataNode } from '../src/pages/metadata.js';
-import { DEFAULT_FILE_MAP } from '../src/pages/model.js';
-import { RouteNode } from '../src/pages/route-node.js';
-import { scaffoldForFile } from '../src/pages/scaffold.js';
-import { ensureSymlink } from '../src/pages/sync.js';
+import { FolderNode } from '../src/modules/folder-node.js';
+import { ManifestNode } from '../src/modules/manifest.js';
+import { MarkdownNode } from '../src/modules/markdown-node.js';
+import { RouteNode } from '../src/modules/route-node.js';
+import { mdxAttachForFile } from '../src/plugins/mdx-route.js';
+import { getFrontmatter } from '../src/utils/frontmatter.js';
+import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
+import { scaffoldForFile } from '../src/utils/scaffold.js';
+import { ensureSymlink } from '../src/utils/sync.js';
 import {
   cleanFixture,
   fixtureExists,
@@ -318,7 +318,7 @@ describe('mdx & metadata — resilience', () => {
     }
     recursiveYaml += '---';
 
-    expect(extractFrontmatter(recursiveYaml)).toEqual({});
+    expect(getFrontmatter(recursiveYaml)).toEqual({});
   });
 
   it('scaffolds layout.mdx with frontmatter', () => {

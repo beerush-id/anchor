@@ -1,19 +1,29 @@
 import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
+import { mdxMatcher } from '../modules/markdown.js';
+import { AIR_ENV } from './env.js';
+import type { AirMarkdownOptions } from './markdown.js';
 
-export type AirPreprocessOptions = {
-  heading?: boolean | number;
-  codeGroup?: boolean | string;
+export type CodeGroupOptions = {
+  name: string;
+  source: string;
 };
 
-export function airPreprocess(options: AirPreprocessOptions = {}) {
-  const { heading = 6, codeGroup = '@anchorlib/react/docs' } = { ...options };
+export type AirPreprocessOptions = AirMarkdownOptions & {
+  markdown?: boolean;
+  codeGroup?: boolean | CodeGroupOptions;
+};
+
+export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
+  const { codeGroup = true, markdown } = { ...options };
+  const isMdx = mdxMatcher(options.include);
 
   return [
     {
-      name: 'vite-plugin-air-preprocess:react-effect',
+      name: 'air-pages:preprocess:react-side-effect',
       enforce: 'pre',
       transform(code) {
+        if (AIR_ENV.framework !== 'react') return;
         if (this.environment?.name !== 'client') return;
         if (!code.includes('AIR_REACT_CLIENT_INIT')) return;
 
@@ -25,49 +35,22 @@ export function airPreprocess(options: AirPreprocessOptions = {}) {
       },
     } as Plugin,
     {
-      name: 'vite-plugin-air-preprocess:mdx-toc',
+      name: 'air-pages:preprocess:mdx-code-group',
       enforce: 'pre',
       transform(code, id) {
-        if (heading === false || !id.split('?')[0].endsWith('.mdx')) return;
-
-        const headings: { id: string; text: string; depth: number }[] = [];
-
-        code.split('\n').forEach((line) => {
-          if (line.startsWith('#')) {
-            const head = transformHeading(line);
-            if (head.depth <= (heading as number)) {
-              headings.push(head);
-            }
-          }
-        });
-
-        return [code, `export const __airHeadings = ${JSON.stringify(headings)};`].join('\n');
-      },
-    } as Plugin,
-    {
-      name: 'vite-plugin-air-preprocess:mdx-code',
-      enforce: 'pre',
-      transform(code, id) {
-        if (!codeGroup || !id.split('?')[0].endsWith('.mdx')) return;
-
-        if (code.includes('code-group')) {
-          return [code, `import { CodeGroup as AirCodeGroup } from '${codeGroup}';`].join('\n');
+        if (!markdown || !codeGroup || !isMdx(id)) return;
+        if (code.includes(':::code-group')) {
+          const options =
+            typeof codeGroup === 'object'
+              ? codeGroup
+              : {
+                  name: 'CodeGroup',
+                  source: `@anchorlib/${AIR_ENV.framework}/docs`,
+                };
+          const { name, source } = options;
+          return [code, `import { ${name} as AirCodeGroup } from '${source}';`].join('\n');
         }
       },
     } as Plugin,
   ];
-}
-
-export function transformHeading(line: string) {
-  const text = line.replace(/^#+/, '').trim().replace(/[*]+/g, '');
-  const depth = line.match(/^#+/g)?.[0].length || 1;
-
-  return {
-    id: text
-      .toLowerCase()
-      .replace(/[:&()]+/g, '')
-      .replace(/[\s.]+/g, '-'),
-    text,
-    depth,
-  };
 }

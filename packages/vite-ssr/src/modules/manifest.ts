@@ -2,9 +2,9 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { FolderNode } from './folder-node.js';
-import { canonicalPath, deriveIndexName, deriveRouteName, GENERATED_MARKER, importSpecifier } from './model.js';
+import { canonicalPath, deriveIndexName, deriveRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import type { RouteNode } from './route-node.js';
-import { bootPackage, ensureSymlink, writeIfChanged } from './sync.js';
+import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 
 /**
  * Represents a node in the route manifest tree.

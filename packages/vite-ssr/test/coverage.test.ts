@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import * as acorn from 'acorn';
 import { afterEach, describe, expect, it } from 'vitest';
-import { mdxAttachForFile } from '../src/pages/mdx.js';
+import { mdxAttachForFile } from '../src/plugins/mdx-route.js';
 import {
   canonicalPath,
   derivePrefix,
@@ -9,9 +9,9 @@ import {
   deriveSegment,
   humanizeSegment,
   importSpecifier,
-} from '../src/pages/model.js';
-import { scaffoldForFile } from '../src/pages/scaffold.js';
-import { bootPackage, ensureSymlink, writeIfChanged } from '../src/pages/sync.js';
+} from '../src/utils/mapper.js';
+import { scaffoldForFile } from '../src/utils/scaffold.js';
+import { bootPackage, ensureSymlink, writeIfChanged } from '../src/utils/sync.js';
 import {
   cleanFixture,
   fixtureExists,

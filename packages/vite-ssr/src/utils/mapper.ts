@@ -1,7 +1,14 @@
 import path from 'node:path';
 
+export type Framework = 'react' | 'solid';
+
 /** Header marker written on top of every generated file. */
 export const GENERATED_MARKER = '// @generated — do not edit';
+
+export const FRAMEWORK_PACKAGE: Record<Framework, string> = {
+  react: '@anchorlib/react',
+  solid: '@anchorlib/solid',
+};
 
 export type FileMap = {
   page: string;

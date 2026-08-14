@@ -1,6 +1,7 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Plugin, ResolvedConfig } from 'vite';
+import { AIR_ENV } from './plugins/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
 export type AirWorkerOptions = {
@@ -267,6 +268,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
             }
 
             const response = await worker.fetch(request);
+            AIR_ENV.currentUrl = request.url;
 
             await sendWebResponse(res, response);
           } catch (error) {
