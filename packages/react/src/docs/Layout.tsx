@@ -1,7 +1,7 @@
 import type { RouterContext, TRec } from '@anchorlib/router';
 import type { ReactNode } from 'react';
-import { setContext, setup, Show, Snippet } from '../index.js';
-import { docsCtx } from './context.js';
+import { setup, Show, Snippet } from '../index.js';
+import { mdxCtx } from './context.js';
 import { Pagination } from './Pagination.js';
 import { type NavItem, Sidebar } from './Sidebar.js';
 import { TableOfContent } from './TableOfContent.js';
@@ -15,8 +15,7 @@ export interface LayoutProps {
 }
 
 export const Layout = setup<LayoutProps>((props) => {
-  docsCtx.set(props.context);
-  setContext('air-headings', {});
+  mdxCtx.set();
 
   return (
     <main className="air-docs">

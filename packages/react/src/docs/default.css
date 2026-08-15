@@ -86,7 +86,7 @@
   position: sticky;
   top: var(--spacing-header, 0);
   align-self: flex-start;
-  height: 100vh;
+  height: calc(100vh - var(--spacing-header));
   overflow-y: auto;
   padding-block: 1.25rem;
   padding-inline: 1.25rem;
@@ -202,10 +202,16 @@
 
 .air-docs-layout .air-docs-main ul,
 .air-docs-layout .air-docs-main ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   padding-left: 1.25rem;
 }
-.air-docs-layout .air-docs-main li + li {
-  margin-top: 0.5rem;
+.air-docs-layout .air-docs-main ul li {
+  list-style: disc;
+}
+.air-docs-layout .air-docs-main ol li {
+  list-style: decimal;
 }
 .air-docs-layout .air-docs-main li > ul,
 .air-docs-layout .air-docs-main li > ol {
@@ -297,6 +303,7 @@
   gap: 2px;
 }
 .air-docs-layout .air-docs-sidebar-link {
+  cursor: pointer;
   display: block;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
@@ -334,6 +341,7 @@
   padding-left: 1rem;
 }
 .air-docs-layout .air-docs-toc-link {
+  cursor: pointer;
   display: block;
   padding: 0.25rem 0;
   color: var(--air-docs-text-2);

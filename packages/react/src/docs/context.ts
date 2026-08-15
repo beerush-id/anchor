@@ -1,4 +1,17 @@
-import { createContext } from '@anchorlib/core';
-import type { RouterContext, TRec } from '@anchorlib/router';
+import { getContext, mutable, setContext } from '@anchorlib/core';
+import type { TocHeading } from './TableOfContent.js';
 
-export const docsCtx = createContext<RouterContext<TRec, TRec, TRec>>();
+export type MdxContext = {
+  url: string;
+  meta: Record<string, unknown>;
+  headings: TocHeading[];
+};
+
+export const mdxCtx = {
+  get() {
+    return getContext<MdxContext>('mdx-context');
+  },
+  set(ctx?: MdxContext) {
+    setContext('mdx-context', mutable({ ...ctx }));
+  },
+};

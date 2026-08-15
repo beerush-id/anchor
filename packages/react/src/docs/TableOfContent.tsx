@@ -1,5 +1,5 @@
-import { getContext, Link, mutable, onMount, setup, Show } from '../index.js';
-import { docsCtx } from './context.js';
+import { $inline, classx, derived, For, isBrowser, mutable, onCleanup, setup } from '../index.js';
+import { mdxCtx } from './context.js';
 
 export interface TocHeading {
   id: string;
@@ -8,37 +8,68 @@ export interface TocHeading {
 }
 
 export const TableOfContent = setup(() => {
-  const state = mutable({
-    headings: [] as TocHeading[],
-    activeId: '',
-    mounted: false,
-  });
+  const ctx = mdxCtx.get();
+  const activeId = mutable('');
 
-  onMount(() => {
-    state.mounted = true;
-  });
+  let observer: IntersectionObserver | undefined;
+  if (isBrowser()) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            activeId.value = entry.target.id;
+          }
+        });
+      },
+      { rootMargin: '-10% 0px -90% 0px' }
+    );
+    onCleanup(() => {
+      observer!.disconnect();
+    });
+  }
+  const observe = (el: HTMLAnchorElement | null, id: string) => {
+    if (el) {
+      const target = document.getElementById(id);
+      if (target) {
+        observer?.observe(target);
+        return () => observer?.unobserve(target);
+      }
+    }
+  };
 
-  const ctx = docsCtx.get();
-  const headings = getContext<{ value: TocHeading[] }>('air-headings');
+  const scrollTo = (e: MouseEvent, id: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', [location.pathname, `#${id}`].join('/'));
+    }
+  };
 
   return (
     <div className="air-docs-toc">
       <div className="air-docs-toc-title">On this page</div>
-      <nav>
-        <Show when={() => (ctx?.url && headings?.value) as TocHeading[]}>
-          {(heads) =>
-            heads.map((h) => (
-              <Link
-                key={h.id}
-                href={`#${h.id}`}
-                className={`air-docs-toc-link ${state.activeId === h.id ? 'active' : ''}`}
+      <nav className="air-docs-toc-navs">
+        <For each={() => ctx?.headings as TocHeading[]}>
+          {(h) => {
+            const active = derived(() => activeId.value === h.id);
+            return $inline(() => (
+              <a
+                id={`#${h.id}`}
+                ref={(el) => observe(el, h.id)}
                 style={{ paddingLeft: `${h.depth - 2}rem` }}
+                className={classx(`air-docs-toc-link`, { active: active.value })}
+                onClick={(e) => {
+                  scrollTo(e as never, h.id);
+                }}
               >
                 {h.text}
-              </Link>
-            ))
-          }
-        </Show>
+              </a>
+            ));
+          }}
+        </For>
       </nav>
     </div>
   );
