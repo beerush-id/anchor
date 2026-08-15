@@ -1,91 +1,145 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
-import { getFrontmatter } from '../utils/frontmatter.js';
+import { AIR_ENV } from '../modules/env.js';
+import { META_STORE } from '../modules/metadata.js';
 
 export type MdxSearchOptions = {
-  rootDir: string;
+  rootDir?: string;
   include?: string[];
   exclude?: string[];
 };
 
-const DEFAULT_OPTIONS: MdxSearchOptions = {
-  rootDir: 'src/pages',
-  include: ['.md', '.mdx'],
-  exclude: [],
-};
+export interface SearchDocument {
+  id: string;
+  title: string;
+  content: string;
+  url: string;
+}
 
+/**
+ * Builds a search index over markdown pages — frontmatter title, text content,
+ * and URL — emitted as `index.json` at build and served at `/index.json` in dev.
+ * The tree is walked once at boot; watcher events update only the affected
+ * entry. `rootDir` is the pages directory; `include`/`exclude` filter which
+ * files are indexed.
+ */
 export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
-  const { include = [], exclude = [], rootDir = 'src/pages' } = { ...DEFAULT_OPTIONS, ...options } as MdxSearchOptions;
-
-  let root = '';
-  let absPagesDir = '';
+  const { include = [], exclude = [] } = { ...DEFAULT_OPTIONS, ...options };
 
   const buildIndex = () => {
-    const kb: Array<{ id: string; title: string; description: string; content: string }> = [];
+    searchCache.clear();
 
-    const processDir = (dir: string) => {
-      if (!fs.existsSync(dir)) return;
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
+    if (!searchPagesDir) return;
+
+    const walk = (dir: string) => {
+      let entries: fs.Dirent[];
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
 
       for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        const relPath = path.relative(root, fullPath).replace(/\\/g, '/');
-
-        if (exclude.some((e) => relPath.startsWith(e) || relPath.match(e))) continue;
-        if (include.length > 0 && !include.some((i) => relPath.startsWith(i) || relPath.match(i))) {
-          if (entry.isDirectory()) processDir(fullPath);
-          continue;
-        }
-
+        const abs = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          processDir(fullPath);
-        } else if (entry.name.endsWith('.mdx')) {
-          const content = fs.readFileSync(fullPath, 'utf-8');
-          const meta = getFrontmatter(content);
-          const title = (meta.title as string) || '';
-          const description = (meta.description as string) || '';
-
-          const cleanContent = content
-            .replace(/^\s*---\r?\n[\s\S]*?\r?\n---/, '')
-            .replace(/<[^>]*>?/gm, '')
-            .replace(/:::.*?:::/gs, '')
-            .slice(0, 10000);
-
-          let id = path
-            .relative(absPagesDir, fullPath)
-            .replace(/\\/g, '/')
-            .replace(/\.mdx$/, '');
-          if (id.endsWith('/page') || id === 'page') id = id.replace(/\/?page$/, '') || '/';
-          else id = `/${id}`;
-
-          kb.push({ id, title, description, content: cleanContent });
+          walk(abs);
+        } else {
+          void invalidateSearchCache(abs, include);
         }
       }
     };
 
-    processDir(absPagesDir);
-    return JSON.stringify(kb);
+    walk(searchPagesDir);
   };
 
   return {
     name: 'air-pages:search',
     configResolved(config) {
-      root = config.root;
-      absPagesDir = path.resolve(root, rootDir);
+      searchRoot = config.root;
+      searchPagesDir = path.resolve(config.root, options.rootDir ?? AIR_ENV.pagesDir);
+      searchExclude = exclude;
+      buildIndex();
     },
     generateBundle() {
       this.emitFile({
         type: 'asset',
         fileName: 'index.json',
-        source: buildIndex(),
+        source: serveSearchIndex(),
       });
     },
     configureServer(server) {
+      server.watcher.on('add', (file) => void invalidateSearchCache(file, include));
+      server.watcher.on('change', (file) => void invalidateSearchCache(file, include));
+      server.watcher.on('unlink', (file) => {
+        searchCache.delete(file);
+        META_STORE.delete(file);
+      });
+
       server.middlewares.use('/index.json', (_req, res) => {
         res.setHeader('Content-Type', 'application/json');
-        res.end(buildIndex());
+        res.end(serveSearchIndex());
       });
     },
   } as Plugin;
+}
+
+const DEFAULT_OPTIONS: { include: string[]; exclude: string[] } = {
+  include: ['.md', '.mdx'],
+  exclude: [],
+};
+
+/**
+ * Granular search index keyed by absolute file path. The tree is walked once
+ * at boot; afterwards watcher events update only the affected entry.
+ */
+export const searchCache: Map<string, SearchDocument> = new Map();
+
+let searchRoot = '';
+let searchPagesDir = '';
+let searchExclude: string[] = [];
+
+export async function invalidateSearchCache(file: string, include: string[]): Promise<void> {
+  if (!isIndexedFile(file, include)) return Promise.resolve();
+
+  const content = fs.readFileSync(file, 'utf-8');
+  const meta = META_STORE.invalidate(file, content);
+  searchCache.set(file, toSearchDocument(file, meta, content));
+
+  return Promise.resolve();
+}
+
+export function serveSearchIndex(): string {
+  return JSON.stringify(Array.from(searchCache.values()));
+}
+
+function isIndexedFile(file: string, include: string[]): boolean {
+  const rel = path.relative(searchRoot, file).replace(/\\/g, '/');
+  if (searchExclude.some((p) => rel.startsWith(p) || rel.match(p))) return false;
+
+  return include.some((p) => {
+    if (p.startsWith('.')) return file.endsWith(p);
+    return rel.startsWith(p) || rel.match(p);
+  });
+}
+
+function toSearchDocument(file: string, meta: Record<string, unknown>, content: string): SearchDocument {
+  const rel = path.relative(searchPagesDir, file).replace(/\\/g, '/');
+
+  let id = rel.replace(/\.(mdx|md)$/, '');
+  if (id.endsWith('/page') || id === 'page') id = id.replace(/\/?page$/, '') || '/';
+  else id = `/${id}`;
+
+  const clean = content
+    .replace(/^\s*---\r?\n[\s\S]*?\r?\n---/, '')
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/:::.*?:::/gs, '')
+    .slice(0, 10000);
+
+  return {
+    id: file,
+    title: (meta.title as string) || '',
+    content: clean,
+    url: id,
+  };
 }

@@ -1,10 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
-import { MDX_DEFAULT_OPTIONS, mdxFile, type MdxModuleOptions } from '../modules/markdown.js';
-import { EntryResolver } from '../utils/resolver.js';
-
 import { AIR_ENV } from '../modules/env.js';
+import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxFile } from '../modules/markdown.js';
 
 export type AirMarkdownOptions = MdxModuleOptions & {
   rootDir: string;
@@ -16,27 +14,32 @@ const DEFAULT_OPTIONS: AirMarkdownOptions = {
   ...MDX_DEFAULT_OPTIONS,
 };
 
-type AirChunkEntry = {
-  id: string;
-  code: string;
-  body?: string;
-  entry?: string;
-  chunk?: string;
-};
-
-const CHUNK_ALIAS = '?chunk';
-const CHUNK_SUFFIX = '.tsx?chunk';
-const CHUNK_ENTRIES = new Map<string, AirChunkEntry>();
-
+/**
+ * Vite plugin pipeline for markdown pages. Each entry is split into a compiled
+ * chunk module and a routed entry module — the page wrapper bound to the route
+ * resolved from the central route tree — with HMR refresh wired on change.
+ *
+ * @param options Compilation options. `rootDir` is the pages directory relative
+ *   to the Vite root; `include` lists the markdown extensions treated as pages.
+ */
 export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
   const $options = { ...DEFAULT_OPTIONS, ...options };
+
+  const isEntryFile = (id: string) => {
+    const [file] = id.split('?');
+    const { files } = AIR_ENV;
+
+    return [files.page, files.pageMdx, files.layout, files.layoutMdx].some(
+      (f) => file.endsWith(f) && $options.include.some((ext) => f.endsWith(ext))
+    );
+  };
 
   return [
     {
       name: 'air-pages:mdx:init',
       enforce: 'pre',
       transform(code, id) {
-        if (!isEntryFile(id, $options.include)) return;
+        if (!isEntryFile(id)) return;
         if (!CHUNK_ENTRIES.has(id)) CHUNK_ENTRIES.set(id, { id, code });
       },
     } as Plugin,
@@ -71,17 +74,20 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       enforce: 'pre',
       transform(code, id) {
         if (isChunkFile(id)) return;
-        if (!isEntryFile(id, $options.include)) return;
+        if (!isEntryFile(id)) return;
         if (!isChunkable(id, code)) return;
 
-        const type = chunkType(id) as keyof EntryResolver;
-        const isRoot = path.dirname(id).endsWith($options.rootDir);
-        const resolver = new EntryResolver(id, isRoot);
-        const routeName = resolver[type];
-        const routePath = `./route.ts`;
+        // Structural identity comes from the central route tree — no
+        // filesystem probes, no naming guesswork.
+        const resolution = AIR_ENV.routes.resolve(id);
+        if (!resolution) return;
 
-        const chunkName = `./${resolver.baseName}${CHUNK_ALIAS}`;
-        const chunkFile = path.join(path.dirname(id), `./${resolver.baseName}${CHUNK_SUFFIX}`);
+        const baseName = path.basename(id);
+        const routeName = resolution.exportName;
+        const routePath = `./${AIR_ENV.files.route}`;
+
+        const chunkName = `./${baseName}${CHUNK_ALIAS}`;
+        const chunkFile = path.join(path.dirname(id), `./${baseName}${CHUNK_SUFFIX}`);
 
         const chunk = CHUNK_ENTRIES.get(id)!;
         chunk.entry = [
@@ -89,8 +95,8 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
           `import { ${routeName} as __airRoute } from '${routePath}';`,
           `if (import.meta.hot) import.meta.hot.accept();`,
           `export default __airPage(__airRoute).renderAsync(async () => {`,
-          `  const m = await import('${chunkName}')`,
-          `  return m.default;`,
+          `  const chunkModule = await import('${chunkName}')`,
+          `  return chunkModule.default;`,
           `});`,
         ].join('\n');
 
@@ -103,7 +109,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       enforce: 'pre',
       async transform(_code, id) {
         if (isChunkFile(id)) return;
-        if (!isEntryFile(id, $options.include)) return;
+        if (!isEntryFile(id)) return;
 
         const chunk = CHUNK_ENTRIES.get(id)!;
         const { code } = await mdxFile(id, chunk.code, $options);
@@ -114,7 +120,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
     {
       name: 'air-pages:mdx:compose',
       transform(_code, id) {
-        if (!isEntryFile(id, $options.include)) return;
+        if (!isEntryFile(id)) return;
 
         const chunk = CHUNK_ENTRIES.get(id)!;
 
@@ -125,7 +131,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         return chunk.entry ?? chunk.body;
       },
       handleHotUpdate({ file, server, modules }) {
-        if (!isEntryFile(file, $options.include)) return;
+        if (!isEntryFile(file)) return;
 
         const entry = CHUNK_ENTRIES.get(file);
         const updates = [...modules];
@@ -154,29 +160,17 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
   ];
 }
 
-function chunkType(id: string) {
-  const [file] = id.split('?');
-  const dir = path.dirname(file);
+type AirChunkEntry = {
+  id: string;
+  code: string;
+  body?: string;
+  entry?: string;
+  chunk?: string;
+};
 
-  if (file.endsWith('layout.tsx') || file.endsWith('layout.mdx')) return 'route';
-  if (file.endsWith('.page.tsx') || file.endsWith('.page.mdx')) return 'named';
-
-  const hasLayout = ['layout.tsx', 'layout.mdx'].find((f) => fs.statSync(path.join(dir, f)).isFile());
-  return hasLayout ? 'index' : 'route';
-}
-
-const ENTRY_NAMES = ['layout', 'page'];
-function isEntryFile(id: string, include: string[]) {
-  const [file] = id.split('?');
-
-  for (const name of ENTRY_NAMES) {
-    for (const ext of include) {
-      if (file.endsWith(`${name}${ext}`)) return true;
-    }
-  }
-
-  return false;
-}
+const CHUNK_ALIAS = '?chunk';
+const CHUNK_SUFFIX = '.tsx?chunk';
+const CHUNK_ENTRIES = new Map<string, AirChunkEntry>();
 
 function isChunkFile(id: string) {
   return id.endsWith(CHUNK_SUFFIX);

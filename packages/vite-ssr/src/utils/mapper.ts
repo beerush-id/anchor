@@ -1,6 +1,7 @@
 import path from 'node:path';
+import type { Framework } from '../modules/env.js';
 
-export type Framework = 'react' | 'solid';
+export type { Framework };
 
 /** Header marker written on top of every generated file. */
 export const GENERATED_MARKER = '// @generated — do not edit';
@@ -48,11 +49,9 @@ export function deriveSegment(segment: string): string {
 }
 
 /**
- * Derives the export-name prefix for a folder path.
- *
- * - Static folders join in camelCase: `admin/users` → `adminUsers`, `docs/getting-started` → `docsGettingStarted`.
- * - Dynamic folders take the parent prefix + `Dynamic`: `blogs/[slug]` → `blogsDynamic`.
- * - Nested dynamics recurse: `blogs/[slug]/[tab]` → `blogsDynamicDynamic`.
+ * Derives the export-name prefix for a full folder path (camelCase):
+ * `admin/users` → `adminUsers`, `docs/getting-started` → `docsGettingStarted`.
+ * Used for metadata variable names, which must stay unique across nesting.
  */
 export function derivePrefix(rel: string): string {
   if (!rel) return '';
@@ -60,31 +59,38 @@ export function derivePrefix(rel: string): string {
   let prefix = '';
 
   for (const segment of rel.split('/')) {
-    if (segment.startsWith('[')) {
-      prefix = `${prefix}Dynamic`;
-      continue;
-    }
-
-    const camel = segment
-      .replace(/[^a-zA-Z0-9]+(.)/g, (_, c: string) => c.toUpperCase())
-      .replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
-
-    if (!camel) continue;
-
-    prefix += prefix ? camel.charAt(0).toUpperCase() + camel.slice(1) : camel.charAt(0).toLowerCase() + camel.slice(1);
+    prefix += camelizeSegment(segment, prefix);
   }
 
   return prefix;
 }
 
-/** The route export name for a folder (`blogs/[slug]` → `blogsDynamicRoute`). */
-export function deriveRouteName(rel: string): string {
-  return `${derivePrefix(rel)}Route`;
+/**
+ * The route export name for a leaf segment (`members` → `membersRoute`,
+ * `[slug]` → `DynamicRoute`). Generated names are short and local, never
+ * accumulated from the full folder path.
+ */
+export function deriveRouteName(segment: string): string {
+  return `${camelizeSegment(segment)}Route`;
 }
 
-/** The index route export name for a folder (`blogs` → `blogsIndexRoute`). */
-export function deriveIndexName(rel: string): string {
-  return `${derivePrefix(rel)}IndexRoute`;
+/** The index route export name for a leaf segment (`members` → `membersIndexRoute`). */
+export function deriveIndexName(segment: string): string {
+  return `${camelizeSegment(segment)}IndexRoute`;
+}
+
+/** Camel-cases a single folder segment into an identifier prefix. */
+function camelizeSegment(segment: string, prefix = ''): string {
+  if (segment.startsWith('[')) return 'Dynamic';
+
+  const camel = segment
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, c: string) => c.toUpperCase())
+    .replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+
+  if (!camel) return '';
+
+  const word = camel.charAt(0).toLowerCase() + camel.slice(1);
+  return prefix ? word.charAt(0).toUpperCase() + word.slice(1) : word;
 }
 
 /** The canonical URL path for a folder (`blogs/[slug]` → `/blogs/:slug`, root → `/`). */

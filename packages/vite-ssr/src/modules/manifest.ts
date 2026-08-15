@@ -1,10 +1,10 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { FolderNode } from './folder-node.js';
-import { canonicalPath, deriveIndexName, deriveRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
-import type { RouteNode } from './route-node.js';
+import { canonicalPath, deriveRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
+import type { FolderNode } from './folder-node.js';
+import type { RouteNode } from './route-node.js';
 
 /**
  * Represents a node in the route manifest tree.
@@ -17,15 +17,6 @@ export class ManifestNode extends EventEmitter {
 
   private readonly manifestDir: string;
 
-  /**
-   * Initializes a new manifest node.
-   *
-   * @param routeNode The corresponding route node for this directory.
-   * @param folderNode The corresponding folder node.
-   * @param parent Optional parent manifest node.
-   * @param rootDir Absolute path to the Vite root.
-   * @param routeFile The name of the route file (e.g., 'route.ts').
-   */
   constructor(
     public readonly routeNode: RouteNode,
     public readonly folderNode: FolderNode,
@@ -42,10 +33,6 @@ export class ManifestNode extends EventEmitter {
     routeNode.on('change', this.handleRouteChange);
   }
 
-  /**
-   * Boots the manifest node by ensuring the output directory exists,
-   * handling existing children, and generating the initial index file.
-   */
   public boot() {
     if (!this.parent) {
       bootPackage(this.manifestDir, '@airstack/manifest', { '.': './index.ts' });
@@ -105,13 +92,9 @@ export class ManifestNode extends EventEmitter {
 
   private addEntryForRoute(route: RouteNode) {
     if (route.page || route.layout) {
-      const name = !route.rel
-        ? route.page && route.layout
-          ? 'indexRoute'
-          : 'rootRoute'
-        : route.page && route.layout
-          ? deriveIndexName(route.rel)
-          : deriveRouteName(route.rel);
+      // Use the node's actual export names (adopted from route.ts when the
+      // user wrote them) rather than deriving from the folder path.
+      const name = route.page && route.layout ? route.indexName : route.routeName;
 
       const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
       const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
@@ -128,7 +111,7 @@ export class ManifestNode extends EventEmitter {
       for (const namedPage of route.namedPages) {
         const pageName = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedRel = route.rel ? `${route.rel}/${pageName}` : pageName;
-        const name = deriveRouteName(namedRel);
+        const name = deriveRouteName(pageName);
 
         const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
         const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
@@ -143,10 +126,6 @@ export class ManifestNode extends EventEmitter {
     }
   }
 
-  /**
-   * Generates the index.ts file for this level of the manifest,
-   * containing route imports and a default export array of routes.
-   */
   public generate() {
     const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
     const lines: string[] = [GENERATED_MARKER];
@@ -171,9 +150,6 @@ export class ManifestNode extends EventEmitter {
     }
   }
 
-  /**
-   * Closes listeners and cleans up the generated manifest index file.
-   */
   public destroy() {
     this.folderNode.removeListener('childAdded', this.handleChildAdded);
     this.folderNode.removeListener('childRemoved', this.handleChildRemoved);

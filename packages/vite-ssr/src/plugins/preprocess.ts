@@ -14,6 +14,12 @@ export type AirPreprocessOptions = AirMarkdownOptions & {
   codeGroup?: boolean | CodeGroupOptions;
 };
 
+/**
+ * Pre-compilation transforms for markdown sources: injects the code-group
+ * component import for `:::code-group` directives and replaces the React
+ * client-init marker with the client import. React-only, client-only
+ * transforms, disabled when `markdown` is false.
+ */
 export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
   const { codeGroup = true, markdown } = { ...options };
   const isMdx = mdxMatcher(options.include);
@@ -27,11 +33,11 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
         if (this.environment?.name !== 'client') return;
         if (!code.includes('AIR_REACT_CLIENT_INIT')) return;
 
-        const s = new MagicString(code);
-        s.replace(/export const AIR_REACT_CLIENT_INIT = 'preprocessed';/, '');
-        s.prepend('import "@anchorlib/react/client";\n');
+        const magic = new MagicString(code);
+        magic.replace(/export const AIR_REACT_CLIENT_INIT = 'preprocessed';/, '');
+        magic.prepend('import "@anchorlib/react/client";\n');
 
-        return { code: s.toString(), map: s.generateMap({ hires: true }) };
+        return { code: magic.toString(), map: magic.generateMap({ hires: true }) };
       },
     } as Plugin,
     {
@@ -39,17 +45,17 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
       enforce: 'pre',
       transform(code, id) {
         if (!markdown || !codeGroup || !isMdx(id)) return;
-        if (code.includes(':::code-group')) {
-          const options =
-            typeof codeGroup === 'object'
-              ? codeGroup
-              : {
-                  name: 'CodeGroup',
-                  source: `@anchorlib/${AIR_ENV.framework}/docs`,
-                };
-          const { name, source } = options;
-          return [code, `import { ${name} as AirCodeGroup } from '${source}';`].join('\n');
-        }
+        if (!code.includes(':::code-group')) return;
+
+        const resolved =
+          typeof codeGroup === 'object'
+            ? codeGroup
+            : {
+                name: 'CodeGroup',
+                source: `@anchorlib/${AIR_ENV.framework}/docs`,
+              };
+
+        return [code, `import { ${resolved.name} as AirCodeGroup } from '${resolved.source}';`].join('\n');
       },
     } as Plugin,
   ];

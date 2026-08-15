@@ -4,13 +4,13 @@ import type { Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-h
 import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
 import remarkFrontmatter from 'remark-frontmatter';
 import type { Options as RemarkGfmOptions } from 'remark-gfm';
-import type { PluggableList } from 'unified';
+import type { PluggableList, Plugin } from 'unified';
 import { visit } from 'unist-util-visit';
-import { parse } from 'yaml';
 import { wrapJsx } from '../utils/jsx.js';
 import { createMatcher } from '../utils/matcher.js';
 
 import { AIR_ENV } from './env.js';
+import { parseFrontmatter } from './metadata.js';
 
 export type MdxHeading = {
   id: string;
@@ -18,6 +18,11 @@ export type MdxHeading = {
   depth: number;
 };
 
+/**
+ * Configuration for the optional remark/rehype plugins (GFM, directives,
+ * heading ids, code highlighting). Passed via `MdxModuleOptions.extended`;
+ * `false` disables the plugins entirely.
+ */
 export type MdxExtendedOptions = {
   search?: boolean | { include?: string[]; exclude?: string[] };
   remarkGfm?: RemarkGfmOptions;
@@ -25,6 +30,11 @@ export type MdxExtendedOptions = {
   rehypePrettyCode?: RehypePrettyCodeOptions;
 };
 
+/**
+ * Compilation options for MdxModule: MDX compile options (minus the plugin
+ * arrays, which are extended by the framework) plus the markdown extensions
+ * treated as pages, the heading depth to record, and post-compile hooks.
+ */
 export type MdxModuleOptions = Omit<MdxOptions, 'remarkPlugins' | 'rehypePlugins' | 'mdxExtensions'> & {
   include: string[];
   extended: boolean | MdxExtendedOptions;
@@ -58,6 +68,12 @@ export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
   rehypePlugins: [],
 };
 
+/**
+ * Compiles one MDX source into framework JSX. Compilation is deferred until
+ * the optional remark/rehype plugins are loaded; the compiled output is split
+ * into a module head and an MDX content function, assembled by `toString()`.
+ * Metadata and headings are captured on the instance during compilation.
+ */
 export class MdxModule {
   public options: MdxModuleOptions;
   public headings: MdxHeading[] = [];
@@ -92,34 +108,31 @@ export class MdxModule {
     const { id, options } = this;
     const { include, remarkPlugins, rehypePlugins, postProcesses = [] } = options;
 
-    try {
-      const file = await compile(
-        { path: id, value: code },
-        { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins }
-      );
+    // Compilation errors propagate to the bundler: a broken MDX file must fail
+    // the build instead of silently compiling to a blank module.
+    const file = await compile(
+      { path: id, value: code },
+      { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins }
+    );
 
-      const postProcessors = [...postProcesses];
+    const postProcessors = [...postProcesses];
 
-      const [source] = file.toString().split('export default function MDXContent');
-      let [module, content] = source.split('function _createMdxContent');
+    const [source] = file.toString().split('export default function MDXContent');
+    let [head, content] = source.split('function _createMdxContent');
 
-      // Content post-processes.
-      content = `function AirMdxContent${content}`;
+    content = `function AirMdxContent${content}`;
 
-      this.locals.push(content);
-      this.globals.push(module);
-      this.globals.push(`const airMdxMeta = ${JSON.stringify(this.metadata)};\n`);
-      this.globals.push(`const airMdxHeadings = ${JSON.stringify(this.headings)};\n`);
+    this.locals.push(content);
+    this.globals.push(head);
+    this.globals.push(`const airMdxMeta = ${JSON.stringify(this.metadata)};\n`);
+    this.globals.push(`const airMdxHeadings = ${JSON.stringify(this.headings)};\n`);
 
-      for (const handler of postProcessors) {
-        try {
-          await handler(this);
-        } catch (e) {
-          console.error(e);
-        }
+    for (const handler of postProcessors) {
+      try {
+        await handler(this);
+      } catch (e) {
+        console.error(e);
       }
-    } catch (err) {
-      console.error(err);
     }
   }
 
@@ -151,72 +164,94 @@ export class MdxModule {
   }
 }
 
+/**
+ * Compiles an MDX file and returns the compiled module code plus the
+ * MdxModule instance.
+ */
 export async function mdxFile(id: string, code: string, options: Partial<MdxModuleOptions> = {}) {
   const file = new MdxModule(id, options);
   await file.compile(code);
   return { id, file, code: file.toString() };
 }
 
-export async function loadExtendedPlugins(module: MdxModule) {
-  const { extended } = module.options;
-  const options = (typeof extended === 'boolean' ? extended : {}) as MdxExtendedOptions;
-  const remarkPlugins = [] as PluggableList;
-  const rehypePlugins = [] as PluggableList;
+export type ExtendedPlugins = Array<{ default: unknown }>;
 
-  try {
-    const [
-      { default: remarkGfm },
-      { default: remarkDirective },
-      { default: rehypeSlug },
-      { default: rehypeAutolinkHeadings },
-      { default: rehypePrettyCode },
-    ] = await Promise.all([
+// Hoisted singleton: the heavy optional AST plugins are resolved into memory
+// exactly once per process instead of being dynamically imported inside the
+// per-file compilation pipeline.
+let extendedImportPromise: Promise<ExtendedPlugins> | undefined;
+
+export const importExtended = (): Promise<ExtendedPlugins> => {
+  if (!extendedImportPromise) {
+    extendedImportPromise = Promise.all([
       import('remark-gfm'),
       import('remark-directive'),
       import('rehype-slug'),
       import('rehype-autolink-headings'),
       import('rehype-pretty-code'),
-    ]);
-
-    // Remark Plugins.
-    remarkPlugins.push([remarkGfm, { ...options.remarkGfm }]);
-    remarkPlugins.push([remarkDirective, {}]);
-    remarkPlugins.push([airMdxRemark, module]);
-
-    // Rehype plugins.
-    rehypePlugins.push([rehypeSlug, {}]);
-    rehypePlugins.push([rehypeAutolinkHeadings, { ...options.rehypeAutolinkHeadings, behavior: 'wrap' }]);
-    rehypePlugins.push([airMdxRehype, module]);
-
-    const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
-    const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
-    rehypePlugins.push([rehypePrettyCode, shikiOptions]);
-  } catch {
-    throw new Error(
-      `\n\n[AIR Stack] Docs mode is enabled, but required plugins are missing.\n` +
-        `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
-        `  - remark-gfm\n` +
-        `  - remark-directive\n` +
-        `  - rehype-slug\n` +
-        `  - rehype-autolink-headings\n` +
-        `  - rehype-pretty-code\n\n`
-    );
+    ]).catch(() => {
+      throw new Error(
+        `\n\n[AIR Stack] Docs mode is enabled, but required plugins are missing.\n` +
+          `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
+          `  - remark-gfm\n` +
+          `  - remark-directive\n` +
+          `  - rehype-slug\n` +
+          `  - rehype-autolink-headings\n` +
+          `  - rehype-pretty-code\n\n`
+      );
+    });
   }
+
+  return extendedImportPromise;
+};
+
+/**
+ * Resolves the remark/rehype plugin list for an MdxModule from its `extended`
+ * option, configured per-plugin. The plugins themselves come from the hoisted
+ * `importExtended()` singleton.
+ */
+export async function loadExtendedPlugins(module: MdxModule) {
+  const { extended } = module.options;
+  const options = (typeof extended === 'object' && extended ? extended : {}) as MdxExtendedOptions;
+
+  const [gfm, directive, slug, autolink, prettyCode] = await importExtended();
+
+  // Remark Plugins.
+  const remarkPlugins: PluggableList = [
+    [gfm.default as Plugin, { ...options.remarkGfm }],
+    [directive.default as Plugin, {}],
+    [airMdxRemark, module],
+  ];
+
+  // Rehype plugins.
+  const rehypePlugins: PluggableList = [
+    [slug.default as Plugin, {}],
+    [autolink.default as Plugin, { ...options.rehypeAutolinkHeadings, behavior: 'wrap' }],
+    [airMdxRehype, module],
+  ];
+
+  const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
+  const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
+  rehypePlugins.push([prettyCode.default as Plugin, shikiOptions]);
 
   return { remarkPlugins, rehypePlugins };
 }
 
+/**
+ * Remark plugin for an MdxModule: captures frontmatter (bare YAML, fences
+ * already stripped) into `module.metadata`, tags directives as admonitions,
+ * maps `code-group` directives to `AirCodeGroup`, and moves `script`
+ * directive bodies into the module's globals or locals.
+ */
 export function airMdxRemark(module?: MdxModule) {
   return (tree: MarkdownNode) => {
     visit(tree, (node) => {
       const data = node.data || (node.data = {});
 
       if (module && node.type === 'yaml' && node.value) {
-        try {
-          module.metadata = parse(node.value);
-        } catch (e) {
-          console.error(e);
-        }
+        // The AST plugin hands us the bare YAML string (fences already stripped);
+        // the shared parser handles both fenced and bare inputs.
+        module.metadata = parseFrontmatter(node.value);
       }
 
       if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
@@ -233,14 +268,12 @@ export function airMdxRemark(module?: MdxModule) {
 
         if (node.name === 'script') {
           for (const code of node.children ?? []) {
-            // Remove unsupported lang.
             if (code.lang !== 'js' && code.lang !== 'ts') {
               code.type = 'paragraph';
               code.value = '';
               continue;
             }
 
-            // Register scripts in the correct places.
             if (code.value && module) {
               if (code.meta?.includes('module')) {
                 module.globals.push(code.value);
@@ -259,6 +292,10 @@ export function airMdxRemark(module?: MdxModule) {
   };
 }
 
+/**
+ * Rehype plugin for an MdxModule: normalizes heading ids and records the
+ * module's headings, filtered by `headingDepth`.
+ */
 export function airMdxRehype(module?: MdxModule) {
   return (tree: HTMLNode) => {
     const headings = [] as MdxHeading[];
@@ -266,7 +303,7 @@ export function airMdxRehype(module?: MdxModule) {
     visit(tree, (node) => {
       if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName)) {
         const props = node.properties || (node.properties = {});
-        props.id = (props.id ?? '').replace(/[\-]+/g, '-');
+        props.id = (props.id ?? '').replace(/[-]+/g, '-');
 
         const text = getLeafNode(node);
         if (text?.value) {
@@ -287,10 +324,15 @@ export function airMdxRehype(module?: MdxModule) {
   };
 }
 
+/**
+ * Returns a predicate matching a file id against the given markdown
+ * extensions (defaults to `['.md', '.mdx']`).
+ */
 export function mdxMatcher(include: string[] = MDX_DEFAULT_OPTIONS.include) {
   return createMatcher(include);
 }
 
+/** Depth-first search for the first descendant of the given node type (default `'text'`). */
 export function getLeafNode(node: MarkdownNode, type = 'text'): MarkdownNode | undefined {
   if (node.type === type) return node;
 

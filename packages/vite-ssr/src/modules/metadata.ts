@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
+import { parse } from 'yaml';
 import { getFrontmatter } from '../utils/frontmatter.js';
 import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
@@ -19,14 +20,6 @@ export class MetadataNode extends EventEmitter {
 
   private readonly metadataDir: string;
 
-  /**
-   * Initializes a new metadata node.
-   *
-   * @param folderNode The corresponding folder node.
-   * @param parent Optional parent metadata node.
-   * @param rootDir Absolute path to the Vite root.
-   * @param pagesDir Absolute path to the pages directory.
-   */
   constructor(
     public readonly folderNode: FolderNode,
     public readonly parent: MetadataNode | undefined,
@@ -44,9 +37,6 @@ export class MetadataNode extends EventEmitter {
     folderNode.on('fileChanged', this.handleFileChanged);
   }
 
-  /**
-   * Boots the metadata node by processing existing MDX files and booting child nodes.
-   */
   public boot() {
     if (!this.parent) {
       bootPackage(this.metadataDir, '@airstack/metadata', { '.': './index.ts', './*': './*.ts' });
@@ -124,10 +114,6 @@ export class MetadataNode extends EventEmitter {
     mdxNode.update();
   }
 
-  /**
-   * Generates the index.ts file for this metadata directory,
-   * aggregating imports from all MDX files and child metadata nodes.
-   */
   public generate() {
     const indexPath = path.join(this.metadataDir, this.folderNode.rel, 'index.ts');
 
@@ -183,9 +169,6 @@ export class MetadataNode extends EventEmitter {
     }
   }
 
-  /**
-   * Closes listeners and recursively destroys child metadata and markdown nodes.
-   */
   public destroy() {
     this.folderNode.removeListener('childAdded', this.handleChildAdded);
     this.folderNode.removeListener('childRemoved', this.handleChildRemoved);
@@ -225,22 +208,42 @@ export class MetadataNode extends EventEmitter {
   }
 }
 
+/**
+ * Frontmatter cache keyed by absolute file path. `resolve` parses on first
+ * access; `invalidate` re-parses immediately. Every frontmatter consumer
+ * funnels through this store so parsing happens once and is always
+ * consistent.
+ */
 export class MetadataStore extends Map<string, Record<string, AnyType>> {
-  public resolve<T = Record<string, AnyType>>(id: string, fallback: string): T {
-    if (!this.has(id)) {
-      this.set(id, getFrontmatter(fallback));
+  public resolve(absPath: string, content: string): Record<string, AnyType> {
+    if (!this.has(absPath)) {
+      this.set(absPath, parseFrontmatter(content));
     }
 
-    return this.get(id) as T;
+    return this.get(absPath) as Record<string, AnyType>;
   }
 
-  public invalidate(id: string, content?: string) {
-    if (!content) {
-      content = fs.readFileSync(id, 'utf-8');
-    }
-
-    this.set(id, getFrontmatter(content));
+  public invalidate(absPath: string, content: string): Record<string, AnyType> {
+    const meta = parseFrontmatter(content);
+    this.set(absPath, meta);
+    return meta;
   }
 }
 
 export const META_STORE = new MetadataStore();
+
+/**
+ * Parses YAML frontmatter into a JavaScript object. Detects whether the input
+ * is a full file containing `---` fenced frontmatter (extracting only the block)
+ * or a bare YAML string (as produced by the MDX AST plugins), so every consumer
+ * funnels through a single parser and always receives the same object shape.
+ */
+export function parseFrontmatter(content: string): Record<string, unknown> {
+  if (/^\s*---\r?\n/.test(content)) return getFrontmatter(content);
+
+  try {
+    return parse(content) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}

@@ -1,6 +1,6 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Plugin, ResolvedConfig } from 'vite';
+import type { HtmlTagDescriptor, IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
 import { AIR_ENV } from './modules/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
@@ -121,21 +121,20 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       resolvedConfig = config;
     },
 
-    transformIndexHtml(html, ctx) {
+    transformIndexHtml(_html: string, ctx: IndexHtmlTransformContext): HtmlTagDescriptor[] | undefined {
       if (!options.noscript || !ctx.bundle) return;
 
-      const lines = html.replace('<html', '<html dehydrated').split('\n');
-
+      // Remove every JavaScript entry from the bundle: Vite generates the
+      // final script tags from the bundle, so stripping the JS entries here
+      // excludes them from the HTML AST gracefully and no client JavaScript
+      // is ever emitted for the static site.
       for (const file of Object.keys(ctx.bundle)) {
-        if (!file.endsWith('.js')) continue;
-        const i = lines.findIndex((l) => l.includes(file));
-        if (i > -1) {
-          lines.splice(i, 1);
+        if (file.endsWith('.js')) {
+          delete ctx.bundle[file];
         }
-        delete ctx.bundle[file];
       }
 
-      return lines.join('\n');
+      return [{ tag: 'html', attrs: { dehydrated: '' } }];
     },
 
     async closeBundle() {

@@ -2,18 +2,35 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
+import { type CallExpression, type Identifier, type ImportSpecifier, Parser, type Program, parse } from 'acorn';
+import jsx from 'acorn-jsx';
+import MagicString from 'magic-string';
 import {
   deriveIndexName,
   deriveRouteName,
   deriveSegment,
   type FileMap,
   type Framework,
+  GENERATED_MARKER,
   importSpecifier,
   type PageKind,
 } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
 import type { FolderNode } from './folder-node.js';
 
+/** Acorn parser extended with JSX support, used to locate route bindings in UI files. */
+const JsxParser = Parser.extend(jsx());
+
+export type UIFileType = 'page' | 'layout';
+
+/**
+ * Represents a folder in the route tree. Owns the folder's `route.ts`
+ * gap-filling (append missing exports via AST + magic-string) and the wiring
+ * of its UI files (`page.tsx` / `layout.tsx`) to the export their physical
+ * state requires. UI files bind via `page()` (tree child) or `modal()`
+ * (top-level stack entry); both are rewired. Existing user code is never
+ * deleted or rewritten.
+ */
 export class RouteNode extends EventEmitter {
   public page: PageKind | undefined;
   public namedPages = new Set<string>();
@@ -22,12 +39,13 @@ export class RouteNode extends EventEmitter {
   public children = new Map<string, RouteNode>();
   public readonly rel: string;
   public readonly routePath: string;
-  public readonly routeName: string;
+  public routeName: string;
+  public indexName: string;
 
   constructor(
     public readonly folderNode: FolderNode,
     public readonly parent: RouteNode | undefined,
-    private readonly fileMap: FileMap,
+    public readonly fileMap: FileMap,
     private readonly framework: Framework,
     private readonly routerFile: string
   ) {
@@ -35,7 +53,8 @@ export class RouteNode extends EventEmitter {
 
     this.rel = folderNode.rel;
     this.routePath = deriveSegment(folderNode.segment);
-    this.routeName = !this.rel ? 'rootRoute' : deriveRouteName(this.rel);
+    this.routeName = !this.rel ? 'rootRoute' : deriveRouteName(folderNode.segment);
+    this.indexName = !this.rel ? 'indexRoute' : deriveIndexName(folderNode.segment);
 
     if (folderNode.files.has(fileMap.page)) {
       this.page = 'tsx';
@@ -69,9 +88,13 @@ export class RouteNode extends EventEmitter {
   }
 
   public boot() {
+    void this.resolveExportNames();
+
     if (this.page || this.layout || this.namedPages.size) {
       this.ensureRouteFile();
     }
+
+    void this.fillMissingExports();
 
     for (const file of this.folderNode.files) {
       if (
@@ -108,6 +131,36 @@ export class RouteNode extends EventEmitter {
   public get isContent(): boolean {
     if (!(this.page || this.layout || this.namedPages.size > 0)) return false;
     return !this.rel.split('/').some((segment) => segment.startsWith('[...'));
+  }
+
+  /**
+   * Discovers the actual exported route names from the existing `route.ts`
+   * (if any) via its AST, so hand-written names are adopted and never broken
+   * by the framework's fallback derivation. Falls back to leaf-derived names
+   * only when the file is missing or has no route exports yet.
+   */
+  public async resolveExportNames(): Promise<void> {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+
+    let content: string;
+    try {
+      content = fs.readFileSync(routeFilePath, 'utf-8');
+    } catch {
+      return;
+    }
+
+    const exports = parseRouteExports(content);
+    if (!exports) return;
+
+    const { names, defaultName } = exports;
+    const routeName =
+      defaultName?.endsWith('Route') && !defaultName.endsWith('IndexRoute')
+        ? defaultName
+        : names.find((n) => n.endsWith('Route') && !n.endsWith('IndexRoute'));
+    const indexName = names.find((n) => n.endsWith('IndexRoute'));
+
+    if (routeName) this.routeName = routeName;
+    if (indexName) this.indexName = indexName;
   }
 
   public scaffoldFile(name: string) {
@@ -167,16 +220,12 @@ export class RouteNode extends EventEmitter {
     }
 
     if (changed) {
-      this.ensureRouteFile();
-
-      if (this.page && this.layout) {
-        this.ensureIndexRoute();
+      if (this.page || this.layout || this.namedPages.size) {
+        this.ensureRouteFile();
       }
 
-      if (this.namedPages.has(name)) {
-        this.ensureNamedRoute(name);
-      }
-
+      void this.fillMissingExports();
+      this.syncUIFiles();
       this.emitChange('reload');
     }
 
@@ -216,20 +265,16 @@ export class RouteNode extends EventEmitter {
     }
 
     if (changed) {
-      if (!this.page || !this.layout) {
-        this.removeIndexRoute();
-      }
-
-      if (name.endsWith('.page.tsx') || name.endsWith('.page.mdx') || name.endsWith('.page.ts')) {
-        this.removeNamedRoute(name);
-      }
-
+      void this.fillMissingExports();
+      this.syncUIFiles();
       this.emitChange('reload');
     }
   };
 
   private handleFileChanged = (name: string) => {
     if (name === this.fileMap.route) {
+      void this.resolveExportNames();
+      void this.fillMissingExports();
       this.emitChange('reload');
     }
   };
@@ -254,7 +299,116 @@ export class RouteNode extends EventEmitter {
     this.emitChange('reload');
   };
 
-  /** Creates route.ts if it doesn't exist. */
+  /** Rewires the folder's UI files to the export their physical state requires. */
+  private syncUIFiles() {
+    void this.wireUIFile('layout', this.routeName);
+    void this.wireUIFile('page', this.layout ? this.indexName : this.routeName);
+  }
+
+  /**
+   * Fixes a UI file that points at the wrong route export: layouts always bind
+   * to `routeName`, pages bind to `indexName` when a layout exists and to
+   * `routeName` otherwise. The file is parsed with acorn + acorn-jsx so the
+   * binding is located structurally — no string patterns, which could match
+   * text inside code blocks or JSX. Only mismatches are edited — everything
+   * else is left untouched. Files acorn cannot parse (e.g. TypeScript
+   * annotations) are skipped, never guessed at.
+   */
+  private async wireUIFile(fileType: UIFileType, targetRouteName: string): Promise<void> {
+    const name = fileType === 'page' ? this.fileMap.page : this.fileMap.layout;
+    const filePath = path.join(this.folderNode.dir, name);
+
+    let content: string;
+    try {
+      content = fs.readFileSync(filePath, 'utf-8');
+    } catch {
+      return;
+    }
+
+    let program: Program;
+    try {
+      program = JsxParser.parse(content, { ecmaVersion: 'latest', sourceType: 'module' });
+    } catch {
+      return;
+    }
+
+    const routeBase = this.fileMap.route.split('.')[0];
+
+    let importedName: string | undefined;
+    let specifier: ImportSpecifier | undefined;
+
+    for (const statement of program.body) {
+      if (statement.type !== 'ImportDeclaration') continue;
+      if (typeof statement.source.value !== 'string') continue;
+      if (path.basename(statement.source.value).split('.')[0] !== routeBase) continue;
+
+      specifier = statement.specifiers.find((s): s is ImportSpecifier => s.type === 'ImportSpecifier');
+      if (!specifier) continue;
+
+      importedName = specifier.local.name;
+      break;
+    }
+
+    if (!importedName || !specifier || importedName === targetRouteName) return;
+
+    // Both `page(...)` and `modal(...)` bind a route: `page()` renders the
+    // route as a tree child, `modal()` as a top-level stack entry.
+    const call = findBindingCall(program, importedName);
+    if (!call) return;
+
+    const magic = new MagicString(content);
+    magic.overwrite(specifier.start, specifier.end, targetRouteName);
+
+    const argument = call.arguments[0] as Identifier;
+    magic.overwrite(argument.start, argument.end, targetRouteName);
+
+    const output = magic.toString();
+    if (output !== content) {
+      fs.writeFileSync(filePath, output);
+      this.emitChange('reload');
+    }
+  }
+
+  /**
+   * Cross-references the folder's physical state against the parsed exports
+   * of `route.ts` and appends any missing export via magic-string. Existing
+   * code is never deleted or altered.
+   */
+  private async fillMissingExports(): Promise<void> {
+    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
+
+    let content: string;
+    try {
+      content = fs.readFileSync(routeFilePath, 'utf-8');
+    } catch {
+      return;
+    }
+
+    const exports = parseRouteExports(content);
+    if (!exports) return;
+
+    const additions: string[] = [];
+
+    if (this.page && this.layout && !exports.names.includes(this.indexName)) {
+      additions.push(`export const ${this.indexName} = ${this.routeName}.route('/');`);
+    }
+
+    for (const namedPage of this.namedPages) {
+      const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+      const namedRouteName = deriveRouteName(name);
+
+      if (!exports.names.includes(namedRouteName)) {
+        additions.push(`export const ${namedRouteName} = ${this.routeName}.route('/${deriveSegment(name)}');`);
+      }
+    }
+
+    if (!additions.length) return;
+
+    const magic = new MagicString(content);
+    magic.appendRight(content.length, `\n${additions.join('\n')}\n`);
+    fs.writeFileSync(routeFilePath, magic.toString());
+  }
+
   private ensureRouteFile(): boolean {
     const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
 
@@ -265,7 +419,7 @@ export class RouteNode extends EventEmitter {
       this.parent.ensureRouteFile();
     }
 
-    const lines: string[] = [];
+    const lines: string[] = [GENERATED_MARKER];
 
     if (this.parent) {
       let segment = this.routePath;
@@ -286,13 +440,13 @@ export class RouteNode extends EventEmitter {
       }
 
       if (this.page && this.layout) {
-        lines.push(`export const ${deriveIndexName(this.rel)} = ${this.routeName}.route('/');`);
+        lines.push(`export const ${this.indexName} = ${this.routeName}.route('/');`);
       }
 
       for (const namedPage of this.namedPages) {
         const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedSegment = deriveSegment(name);
-        const namedRouteName = deriveRouteName(`${this.rel}/${name}`);
+        const namedRouteName = deriveRouteName(name);
         lines.push(`export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
       }
 
@@ -326,96 +480,100 @@ export class RouteNode extends EventEmitter {
     return true;
   }
 
-  /** Inserts the index route export if absent. */
-  private ensureIndexRoute(): boolean {
-    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
-    const indexRouteName = !this.rel ? 'indexRoute' : deriveIndexName(this.rel);
-
-    let content: string;
-    try {
-      content = fs.readFileSync(routeFilePath, 'utf-8');
-    } catch {
-      return false;
-    }
-
-    if (content.includes(`export const ${indexRouteName}`)) return false;
-
-    const lines = content.split('\n');
-    const baseIdx = lines.findIndex((line) => line.startsWith(`export const ${this.routeName}`));
-    if (baseIdx === -1) return false;
-
-    lines.splice(baseIdx + 1, 0, `export const ${indexRouteName} = ${this.routeName}.route('/');`);
-    fs.writeFileSync(routeFilePath, lines.join('\n'));
-    return true;
-  }
-
-  private removeIndexRoute(): boolean {
-    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
-    const indexRouteName = !this.rel ? 'indexRoute' : deriveIndexName(this.rel);
-
-    let content: string;
-    try {
-      content = fs.readFileSync(routeFilePath, 'utf-8');
-    } catch {
-      return false;
-    }
-
-    const lines = content.split('\n');
-    const idx = lines.findIndex((line) => line.startsWith(`export const ${indexRouteName}`));
-    if (idx === -1) return false;
-
-    lines.splice(idx, 1);
-    fs.writeFileSync(routeFilePath, lines.join('\n'));
-    return true;
-  }
-
-  private ensureNamedRoute(fileName: string): boolean {
-    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
-    const name = fileName.replace(/\.page\.(tsx|mdx|ts)$/, '');
-    const namedSegment = deriveSegment(name);
-    const namedRouteName = deriveRouteName(this.rel ? `${this.rel}/${name}` : name);
-
-    let content: string;
-    try {
-      content = fs.readFileSync(routeFilePath, 'utf-8');
-    } catch {
-      return false;
-    }
-
-    if (content.includes(`export const ${namedRouteName}`)) return false;
-
-    const lines = content.split('\n');
-    const baseIdx = lines.findIndex((line) => line.startsWith(`export const ${this.routeName}`));
-    if (baseIdx === -1) return false;
-
-    lines.splice(baseIdx + 1, 0, `export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
-    fs.writeFileSync(routeFilePath, lines.join('\n'));
-    return true;
-  }
-
-  private removeNamedRoute(fileName: string): boolean {
-    const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
-    const name = fileName.replace(/\.page\.(tsx|mdx|ts)$/, '');
-    const namedRouteName = deriveRouteName(this.rel ? `${this.rel}/${name}` : name);
-
-    let content: string;
-    try {
-      content = fs.readFileSync(routeFilePath, 'utf-8');
-    } catch {
-      return false;
-    }
-
-    const lines = content.split('\n');
-    const idx = lines.findIndex((line) => line.startsWith(`export const ${namedRouteName}`));
-    if (idx === -1) return false;
-
-    lines.splice(idx, 1);
-    fs.writeFileSync(routeFilePath, lines.join('\n'));
-    return true;
-  }
-
   private emitChange(kind: 'update' | 'reload') {
     const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
     this.emit('change', routeFilePath, kind);
   }
+}
+
+type AcornNode = {
+  type: string;
+  name?: string;
+  declaration?: AcornNode;
+  declarations?: AcornNode[];
+  id?: AcornNode;
+  body?: AcornNode[];
+};
+
+type RouteExports = {
+  names: string[];
+  defaultName?: string;
+};
+
+/**
+ * Parses the exported variable names of a route.ts file with acorn.
+ * Returns `undefined` when the file is not parseable as plain JavaScript
+ * (e.g. TypeScript annotations), in which case discovery is skipped entirely.
+ */
+function parseRouteExports(content: string): RouteExports | undefined {
+  let ast: AcornNode;
+  try {
+    ast = parse(content, { ecmaVersion: 'latest', sourceType: 'module' }) as unknown as AcornNode;
+  } catch {
+    return undefined;
+  }
+
+  const names: string[] = [];
+  let defaultName: string | undefined;
+
+  for (const node of ast.body ?? []) {
+    if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration') {
+      for (const decl of node.declaration.declarations ?? []) {
+        if (decl.id?.type === 'Identifier' && decl.id.name) {
+          names.push(decl.id.name);
+        }
+      }
+    } else if (
+      node.type === 'ExportDefaultDeclaration' &&
+      node.declaration?.type === 'Identifier' &&
+      node.declaration.name
+    ) {
+      defaultName = node.declaration.name;
+    }
+  }
+
+  return { names, defaultName };
+}
+
+/**
+ * Walks an acorn AST for the first `page(...)` / `modal(...)` call whose first
+ * argument is the given binding — the route-binding call of a UI file. The
+ * generic walk finds the binding wherever it sits in the module (export
+ * default, a named const, etc.) without ever matching string content.
+ */
+function findBindingCall(node: unknown, name: string): CallExpression | undefined {
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findBindingCall(item, name);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  if (!node || typeof node !== 'object') return undefined;
+
+  const record = node as Record<string, unknown> & { type?: string };
+
+  if (record.type === 'CallExpression') {
+    const call = node as CallExpression;
+    const callee = call.callee as { type?: string; name?: string };
+    const argument = call.arguments[0] as { type?: string; name?: string };
+
+    if (
+      callee.type === 'Identifier' &&
+      (callee.name === 'page' || callee.name === 'modal') &&
+      argument.type === 'Identifier' &&
+      argument.name === name
+    ) {
+      return call;
+    }
+  }
+
+  for (const [key, value] of Object.entries(record)) {
+    if (key === 'start' || key === 'end' || key === 'loc' || key === 'range') continue;
+    const found = findBindingCall(value, name);
+    if (found) return found;
+  }
+
+  return undefined;
 }

@@ -1,21 +1,22 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../utils/mapper.js';
+import type { AnyType } from '@anchorlib/core';
+import type { FileMap, Framework } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
+import { AIR_ENV } from './env.js';
 import { FolderNode } from './folder-node.js';
 import { ManifestNode } from './manifest.js';
 import { MetadataNode } from './metadata.js';
 import { RouteNode } from './route-node.js';
 
-/** Configuration options for the AppNode foundation. */
 export type AppNodeOptions = {
   root: string;
   pagesDir: string;
   appDir: string;
   routerFile: string;
   framework: Framework;
-  fileMap?: Partial<FileMap>;
+  fileMap: FileMap;
   manifestEnabled?: boolean;
   metadataEnabled?: boolean;
   scaffoldEnabled?: boolean;
@@ -33,24 +34,19 @@ export class AppNode extends EventEmitter {
 
   private readonly fileMap: FileMap;
 
-  /**
-   * Initializes the application node, scaffolds missing required files,
-   * and builds the initial filesystem trees.
-   *
-   * @param opts Application node configuration options.
-   */
   constructor(private readonly opts: AppNodeOptions) {
     super();
-    this.fileMap = { ...DEFAULT_FILE_MAP, ...opts.fileMap };
-
-    this.scaffoldProject();
+    this.fileMap = opts.fileMap;
 
     this.rootFolder = new FolderNode(opts.pagesDir);
+    this.scaffoldProject();
     this.rootFolder.scan();
 
     this.rootRoute = new RouteNode(this.rootFolder, undefined, this.fileMap, opts.framework, opts.routerFile);
     this.rootRoute.on('change', this.handleChange);
     this.rootRoute.boot();
+
+    AIR_ENV.routes.attach(this.rootRoute);
 
     if (opts.metadataEnabled !== false) {
       this.rootMetadata = new MetadataNode(this.rootFolder, undefined, opts.root, opts.pagesDir);
@@ -69,9 +65,6 @@ export class AppNode extends EventEmitter {
     this.emit('change', file, kind);
   };
 
-  /**
-   * Cleans up watchers and event listeners across all domain trees.
-   */
   public destroy() {
     this.rootManifest?.destroy();
     this.rootMetadata?.destroy();
@@ -124,17 +117,24 @@ export class AppNode extends EventEmitter {
 
     if (!fs.existsSync(this.opts.pagesDir)) {
       fs.mkdirSync(this.opts.pagesDir, { recursive: true });
-      const routeMod = `./${this.fileMap.route.replace(/\\.[^.]+$/, '.js')}`;
-      fs.writeFileSync(
-        path.join(this.opts.pagesDir, this.fileMap.layout),
-        `import { page } from '@anchorlib/${this.opts.framework}';\nimport { rootRoute } from '${routeMod}';\n\nfunction LayoutView({ children }: { children?: React.ReactNode }) {\n  return children;\n}\n\nexport default page(rootRoute).render(LayoutView);\n`,
-        'utf-8'
-      );
-      fs.writeFileSync(
-        path.join(this.opts.pagesDir, this.fileMap.page),
-        `import { page } from '@anchorlib/${this.opts.framework}';\nimport { indexRoute } from '${routeMod}';\n\nfunction PageView() {\n  return (\n    <>\n      <h1>Welcome to AIR Stack</h1>\n      <p>This is your generated home page.</p>\n    </>\n  );\n}\n\nexport default page(indexRoute).render(PageView);\n`,
-        'utf-8'
-      );
+
+      // The root layout and page are generated through the shared scaffold
+      // utility so the output is framework-agnostic (no hardcoded React types).
+      this.rootFolder.files.add(this.fileMap.layout);
+      this.rootFolder.files.add(this.fileMap.page);
+
+      for (const base of [this.fileMap.layout, this.fileMap.page]) {
+        const content = scaffoldForFile({
+          base,
+          folder: this.rootFolder as AnyType,
+          framework: this.opts.framework,
+          files: this.fileMap,
+        });
+
+        if (content) {
+          fs.writeFileSync(path.join(this.opts.pagesDir, base), content, 'utf-8');
+        }
+      }
     }
 
     if (this.opts.scaffoldEnabled !== false) {

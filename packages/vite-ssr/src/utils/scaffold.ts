@@ -1,11 +1,10 @@
 import type { FolderNode } from '../modules/folder-node.js';
 import {
-  DEFAULT_FILE_MAP,
   deriveIndexName,
   deriveRouteName,
   type FileMap,
-  type Framework,
   FRAMEWORK_PACKAGE,
+  type Framework,
   humanizeSegment,
 } from './mapper.js';
 
@@ -14,16 +13,16 @@ import {
  * when the file should not be scaffolded (unknown file type).
  *
  * The caller is responsible for the empty-file checks — this is a pure decision function.
+ * The `files` map is the fully resolved configuration (defaults merged with user overrides);
+ * this module never merges or guesses.
  */
 export function scaffoldForFile(opts: {
-  /** File base name (`app.tsx`, `client.tsx`, `worker.ts`, `page.tsx`, `layout.tsx`, `page.mdx`). */
   base: string;
   folder?: FolderNode;
   framework: Framework;
-  files?: Partial<FileMap>;
+  files: FileMap;
 }): string | undefined {
-  const { base, folder, framework } = opts;
-  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const { base, folder, framework, files } = opts;
 
   if (base === files.entry) {
     return scaffoldAppTsx({ framework, files });
@@ -49,7 +48,7 @@ export function scaffoldForFile(opts: {
 
   if (base === files.layout) {
     if (!folder.rel) return scaffoldLayoutTsx({ framework, files });
-    return scaffoldLayoutTsx({ framework, rel: folder.rel, routeExport: deriveRouteName(folder.rel), files });
+    return scaffoldLayoutTsx({ framework, rel: folder.rel, routeExport: deriveRouteName(folder.segment), files });
   }
 
   if (base === files.page) {
@@ -60,8 +59,8 @@ export function scaffoldForFile(opts: {
         ? 'indexRoute'
         : 'rootRoute'
       : hasPage && hasLayout
-        ? deriveIndexName(folder.rel)
-        : deriveRouteName(folder.rel);
+        ? deriveIndexName(folder.segment)
+        : deriveRouteName(folder.segment);
 
     return scaffoldPageTsx({ framework, rel: folder.rel, routeExport, files });
   }
@@ -69,12 +68,9 @@ export function scaffoldForFile(opts: {
   return undefined;
 }
 
-/**
- * Scaffolds an `app.tsx` entry module.
- */
-export function scaffoldAppTsx(opts: { framework: Framework; files?: Partial<FileMap> }): string {
+export function scaffoldAppTsx(opts: { framework: Framework; files: FileMap }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const files = opts.files;
   const layoutMod = `./pages/${files.layout.replace(/\.[^.]+$/, '.js')}`;
   return `import { type AppEntry, UIRouter } from '${pkg}';
 import RootLayout from '${layoutMod}';
@@ -84,12 +80,9 @@ export default (({ url }) => <UIRouter router={router} root={RootLayout} url={ur
 `;
 }
 
-/**
- * Scaffolds a `client.tsx` client hydration module.
- */
-export function scaffoldClientTsx(opts: { framework: Framework; files?: Partial<FileMap> }): string {
+export function scaffoldClientTsx(opts: { framework: Framework; files: FileMap }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const files = opts.files;
   const appMod = `./${files.entry.replace(/\.[^.]+$/, '.js')}`;
 
   if (opts.framework === 'solid') {
@@ -119,12 +112,9 @@ router
 `;
 }
 
-/**
- * Scaffolds a `worker.ts` server rendering entry module.
- */
-export function scaffoldWorkerTs(opts: { framework: Framework; files?: Partial<FileMap> }): string {
+export function scaffoldWorkerTs(opts: { framework: Framework; files: FileMap }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const files = opts.files;
   const appMod = `./${files.entry.replace(/\.[^.]+$/, '.js')}`;
   return `import { createApp } from '${pkg}/ssr';
 import App from '${appMod}';
@@ -134,9 +124,6 @@ export default createApp(router, App);
 `;
 }
 
-/**
- * Scaffolds an ambient `global.d.ts` declarations file.
- */
 export function scaffoldGlobalDts(): string {
   return `/// <reference types="@anchorlib/vite-ssr/ambient" />
 
@@ -147,17 +134,14 @@ interface AirRouteMeta {
 `;
 }
 
-/**
- * Scaffolds a `page.tsx` module.
- */
 export function scaffoldPageTsx(opts: {
   framework: Framework;
   rel: string;
   routeExport: string;
-  files?: Partial<FileMap>;
+  files: FileMap;
 }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const files = opts.files;
   const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
   const name = opts.routeExport === 'indexRoute' ? 'Home' : humanizeSegment(opts.rel.split('/').pop() || '');
 
@@ -172,17 +156,14 @@ export default page(${opts.routeExport}).render(() => (
 `;
 }
 
-/**
- * Scaffolds a `layout.tsx` module.
- */
 export function scaffoldLayoutTsx(opts: {
   framework: Framework;
   rel?: string;
   routeExport?: string;
-  files?: Partial<FileMap>;
+  files: FileMap;
 }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = { ...DEFAULT_FILE_MAP, ...opts.files };
+  const files = opts.files;
   const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
 
   if (!opts.rel) {
@@ -200,9 +181,6 @@ export default page(${opts.routeExport}).render(({ children }) => children);
 `;
 }
 
-/**
- * Scaffolds a `page.mdx` module with a frontmatter block.
- */
 export function scaffoldPageMdx(opts: { segment: string }): string {
   const title = humanizeSegment(opts.segment);
 

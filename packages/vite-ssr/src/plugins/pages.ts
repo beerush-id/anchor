@@ -2,15 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
 import { AppNode } from '../modules/app-node.js';
+import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
-import { DEFAULT_FILE_MAP, type FileMap } from '../utils/mapper.js';
-import { airWorker, type AirWorkerOptions } from '../worker.js';
+import type { FileMap } from '../utils/mapper.js';
+import { type AirWorkerOptions, airWorker } from '../worker.js';
 import { airEnv } from './env.js';
-import { airImage, type AirImageOptions } from './image.js';
-import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
+import { type AirImageOptions, airImage } from './image.js';
+import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
-import { AIR_ENV, type Framework } from '../modules/env.js';
 
 export type AirPagesOptions = {
   /**
@@ -58,11 +58,6 @@ export type AirPagesOptions = {
    * Enable true static SSR by shipping zero JavaScript to the client.
    */
   noscript?: boolean;
-
-  /**
-   * Defer the Javascript to load after full load to improve FCP.
-   */
-  deferred?: boolean | number;
 
   /**
    * Whether to enable automatic static site generation (SSG) during server build.
@@ -123,10 +118,10 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   let config: ResolvedConfig;
   let absPagesDir = '';
   let absAppDir = '';
+  let absClientFile = '';
+  let absWorkerFile = '';
   let app: AppNode;
-  let files: FileMap = { ...DEFAULT_FILE_MAP, ...options.files };
   let shouldReload = false;
-  let pagesDir = options.pagesDir ?? 'src/pages';
 
   const corePlugin: Plugin = {
     name: 'air-pages',
@@ -144,19 +139,17 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
     configResolved(resolved) {
       config = resolved;
-      files = { ...DEFAULT_FILE_MAP, ...options.files };
-
-      pagesDir = options.pagesDir ?? 'src/pages';
 
       const routerFile = options.routerFile ?? 'src/router.ts';
       const workerFile = options.worker
-        ? (options.worker.entry ?? `src/${files.workerEntry}`)
-        : `src/${files.workerEntry}`;
+        ? (options.worker.entry ?? `src/${AIR_ENV.files.workerEntry}`)
+        : `src/${AIR_ENV.files.workerEntry}`;
 
-      absPagesDir = path.resolve(config.root, pagesDir);
-      const absRouterFile = path.resolve(config.root, routerFile);
-      const absWorkerFile = path.resolve(config.root, workerFile);
-      absAppDir = path.dirname(absRouterFile);
+      absPagesDir = path.resolve(config.root, AIR_ENV.pagesDir);
+      absAppDir = path.dirname(path.resolve(config.root, routerFile));
+
+      absClientFile = path.resolve(config.root, AIR_ENV.rootDir, AIR_ENV.files.client);
+      absWorkerFile = path.resolve(config.root, workerFile);
 
       if (irpcEnabled === undefined && fs.existsSync(absWorkerFile)) {
         const workerContent = fs.readFileSync(absWorkerFile, 'utf-8');
@@ -167,12 +160,12 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         root: config.root,
         pagesDir: absPagesDir,
         appDir: absAppDir,
-        routerFile: absRouterFile,
+        routerFile: path.resolve(config.root, routerFile),
         manifestEnabled: options.manifest,
         metadataEnabled: options.metadata,
         framework: AIR_ENV.framework,
         scaffoldEnabled: options.scaffold,
-        fileMap: files,
+        fileMap: AIR_ENV.files,
       });
     },
 
@@ -183,30 +176,30 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     load(id, loadOpts) {
       if (id !== RESOLVED_VIRTUAL_ROUTES) return;
 
-      const pagesDir = options.pagesDir ?? 'src/pages';
+      const { files } = AIR_ENV;
       const isSsr = Boolean(loadOpts?.ssr);
       const includeIrpc = irpcEnabled && isSsr;
 
-      const extensions = includeIrpc ? '{tsx,mdx,ts}' : '{tsx,mdx}';
-      const layoutFile = files.layout.split('.')[0];
-      const pageFile = files.page.split('.')[0];
-      const consFile = files.constructor.split('.')[0];
-      const fileNames = includeIrpc
-        ? `{${pageFile},${layoutFile},${consFile},*.${pageFile}}`
-        : `{${pageFile},${layoutFile},*.${pageFile}}`;
+      const uiFiles = [files.page, files.pageMdx, files.layout, files.layoutMdx];
+      const uiExts = Array.from(new Set(uiFiles.map((f) => f.split('.').pop()!))).join(',');
+      const uiBases = Array.from(new Set(uiFiles.map((f) => f.split('.')[0]))).join(',');
+      const pageBase = files.page.split('.')[0];
 
-      const glob = `/${pagesDir}/**/${fileNames}.${extensions}`;
+      const uiGlob = `/${AIR_ENV.pagesDir}/**/{${uiBases},*.${pageBase}}.{${uiExts}}`;
+      const globs = [uiGlob];
 
-      return [`const modules = import.meta.glob('${glob}', { eager: true });`, `export default modules;`].join('\n');
+      if (includeIrpc) {
+        globs.push(`/${AIR_ENV.pagesDir}/**/${files.constructor}`);
+      }
+
+      return [
+        `const modules = import.meta.glob(${JSON.stringify(globs)}, { eager: true });`,
+        `export default modules;`,
+      ].join('\n');
     },
 
     transform(code, id) {
-      const { client = DEFAULT_FILE_MAP.client, workerEntry = DEFAULT_FILE_MAP.workerEntry } = options.files ?? {};
-      const { entry: worker = `src/${workerEntry}` } = options.worker || {};
-
       const normalizedId = id.split('?')[0];
-      const absClientFile = path.resolve(config.root, 'src', client);
-      const absWorkerFile = path.resolve(config.root, worker);
 
       if (normalizedId === absClientFile || normalizedId === absWorkerFile) {
         if (!code.includes(VIRTUAL_ROUTES)) {
@@ -255,7 +248,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
   const plugins: Plugin[] = [airEnv(options)];
   const mdOptions = {
-    rootDir: pagesDir,
+    rootDir: options.pagesDir ?? 'src/pages',
     extended: options.extended,
     ...(typeof options.markdown === 'object' ? options.markdown : {}),
   } as AirMarkdownOptions;
