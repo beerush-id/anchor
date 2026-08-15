@@ -227,12 +227,19 @@ export class MetadataNode extends EventEmitter {
 
 export class MetadataStore extends Map<string, Record<string, AnyType>> {
   public resolve<T = Record<string, AnyType>>(id: string, fallback: string): T {
-    if (this.has(id)) {
-      const meta = getFrontmatter(fallback);
-      this.set(id, meta);
+    if (!this.has(id)) {
+      this.set(id, getFrontmatter(fallback));
     }
 
     return this.get(id) as T;
+  }
+
+  public invalidate(id: string, content?: string) {
+    if (!content) {
+      content = fs.readFileSync(id, 'utf-8');
+    }
+
+    this.set(id, getFrontmatter(content));
   }
 }
 
