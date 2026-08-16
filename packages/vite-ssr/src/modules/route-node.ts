@@ -7,11 +7,11 @@ import jsx from 'acorn-jsx';
 import MagicString from 'magic-string';
 import {
   deriveIndexName,
+  deriveNamedRouteName,
   deriveRouteName,
   deriveSegment,
   type FileMap,
   type Framework,
-  GENERATED_MARKER,
   importSpecifier,
   type PageKind,
 } from '../utils/mapper.js';
@@ -20,6 +20,9 @@ import type { FolderNode } from './folder-node.js';
 
 /** Acorn parser extended with JSX support, used to locate route bindings in UI files. */
 const JsxParser = Parser.extend(jsx());
+
+/** Trailing marker on the generated `export default` line — the one part users must never touch. */
+const DEFAULT_EXPORT_MARKER = ' // @generated — do not edit';
 
 export type UIFileType = 'page' | 'layout';
 
@@ -395,25 +398,32 @@ export class RouteNode extends EventEmitter {
     const exports = parseRouteExports(content);
     if (!exports) return;
 
+    const boundPaths = new Set(
+      exports.bindings
+        .filter((binding) => binding.object === this.routeName && binding.method === 'route')
+        .map((binding) => binding.path)
+    );
+
     const additions: string[] = [];
 
-    if (this.page && this.layout && !exports.names.includes(this.indexName)) {
+    if (this.page && this.layout && !exports.names.includes(this.indexName) && !boundPaths.has('/')) {
       additions.push(`export const ${this.indexName} = ${this.routeName}.route('/');`);
     }
 
     for (const namedPage of this.namedPages) {
       const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
-      const namedRouteName = deriveRouteName(name);
+      const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
+      const segment = deriveSegment(name);
 
-      if (!exports.names.includes(namedRouteName)) {
-        additions.push(`export const ${namedRouteName} = ${this.routeName}.route('/${deriveSegment(name)}');`);
+      if (!exports.names.includes(namedRouteName) && !boundPaths.has(`/${segment}`)) {
+        additions.push(`export const ${namedRouteName} = ${this.routeName}.route('/${segment}');`);
       }
     }
 
     if (!additions.length) return;
 
     const magic = new MagicString(content);
-    magic.appendRight(content.length, `\n${additions.join('\n')}\n`);
+    magic.appendLeft(exports.defaultStart ?? content.length, `${additions.join('\n')}\n\n`);
     fs.writeFileSync(routeFilePath, magic.toString());
   }
 
@@ -428,7 +438,7 @@ export class RouteNode extends EventEmitter {
       this.parent.ensureRouteFile();
     }
 
-    const lines: string[] = [GENERATED_MARKER];
+    const lines: string[] = [];
 
     if (this.parent) {
       let segment = this.routePath;
@@ -455,12 +465,12 @@ export class RouteNode extends EventEmitter {
       for (const namedPage of this.namedPages) {
         const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedSegment = deriveSegment(name);
-        const namedRouteName = deriveRouteName(name);
+        const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
         lines.push(`export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
       }
 
       lines.push('');
-      lines.push(`export default ${this.routeName};`);
+      lines.push(`export default ${this.routeName};${DEFAULT_EXPORT_MARKER}`);
     } else {
       const routerImport = importSpecifier(routeFilePath, this.routerFile);
       lines.push(`import router from '${routerImport}';`);
@@ -474,12 +484,12 @@ export class RouteNode extends EventEmitter {
       for (const namedPage of this.namedPages) {
         const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedSegment = deriveSegment(name);
-        const namedRouteName = deriveRouteName(name);
+        const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
         lines.push(`export const ${namedRouteName} = rootRoute.route('/${namedSegment}');`);
       }
 
       lines.push('');
-      lines.push(`export default rootRoute;`);
+      lines.push(`export default rootRoute;${DEFAULT_EXPORT_MARKER}`);
     }
 
     fs.mkdirSync(path.dirname(routeFilePath), { recursive: true });
@@ -498,16 +508,35 @@ export class RouteNode extends EventEmitter {
 /** A structural view of an `acorn` AST node. */
 type AcornNode = {
   type: string;
+  start?: number;
   name?: string;
   declaration?: AcornNode;
   declarations?: AcornNode[];
   id?: AcornNode;
+  init?: AcornNode;
+  callee?: AcornNode;
+  object?: AcornNode;
+  property?: AcornNode;
+  computed?: boolean;
+  arguments?: AcornNode[];
+  value?: unknown;
   body?: AcornNode[];
+};
+
+/** A route registration found in `route.ts`: `object.route('/path')` or `object.add('/path')`. */
+type RouteBinding = {
+  object: string;
+  method: string;
+  path: string;
 };
 
 type RouteExports = {
   names: string[];
   defaultName?: string;
+  /** Position of the `export default` statement, for inserting before it. */
+  defaultStart?: number;
+  /** Route registrations found in the file, for path-based dedup. */
+  bindings: RouteBinding[];
 };
 
 /**
@@ -524,7 +553,9 @@ function parseRouteExports(content: string): RouteExports | undefined {
   }
 
   const names: string[] = [];
+  const bindings: RouteBinding[] = [];
   let defaultName: string | undefined;
+  let defaultStart: number | undefined;
 
   for (const node of ast.body ?? []) {
     if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration') {
@@ -532,6 +563,13 @@ function parseRouteExports(content: string): RouteExports | undefined {
         if (decl.id?.type === 'Identifier' && decl.id.name) {
           names.push(decl.id.name);
         }
+        const binding = routeBinding(decl.init);
+        if (binding) bindings.push(binding);
+      }
+    } else if (node.type === 'VariableDeclaration') {
+      for (const decl of node.declarations ?? []) {
+        const binding = routeBinding(decl.init);
+        if (binding) bindings.push(binding);
       }
     } else if (
       node.type === 'ExportDefaultDeclaration' &&
@@ -539,10 +577,34 @@ function parseRouteExports(content: string): RouteExports | undefined {
       node.declaration.name
     ) {
       defaultName = node.declaration.name;
+      defaultStart = node.start;
     }
   }
 
-  return { names, defaultName };
+  return { names, defaultName, defaultStart, bindings };
+}
+
+/**
+ * Extracts a route registration from an initializer expression — only the
+ * `object.route('/path')` / `object.add('/path')` shapes, with a string path.
+ */
+function routeBinding(init: AcornNode | undefined): RouteBinding | undefined {
+  if (init?.type !== 'CallExpression') return undefined;
+  const callee = init.callee;
+  if (callee?.type !== 'MemberExpression' || callee.computed) return undefined;
+
+  const object = callee.object;
+  const property = callee.property;
+  if (object?.type !== 'Identifier' || !object.name) return undefined;
+  if (property?.type !== 'Identifier' || !property.name) return undefined;
+
+  const method = property.name;
+  if (method !== 'route' && method !== 'add') return undefined;
+
+  const argument = init.arguments?.[0];
+  if (argument?.type !== 'Literal' || typeof argument.value !== 'string') return undefined;
+
+  return { object: object.name, method, path: argument.value };
 }
 
 /**

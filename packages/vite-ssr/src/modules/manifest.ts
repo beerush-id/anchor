@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import { canonicalPath, deriveRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
+import { canonicalPath, deriveNamedRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
 import type { RouteNode } from './route-node.js';
@@ -124,7 +124,7 @@ export class ManifestNode extends EventEmitter {
       for (const namedPage of route.namedPages) {
         const pageName = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedRel = route.rel ? `${route.rel}/${pageName}` : pageName;
-        const name = deriveRouteName(pageName);
+        const name = deriveNamedRouteName(route.folderNode.segment, pageName);
 
         const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
         const routeFilePath = path.join(route.folderNode.dir, this.routeFile);

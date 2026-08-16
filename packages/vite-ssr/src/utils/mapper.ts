@@ -4,7 +4,7 @@ import type { Framework } from '../modules/env.js';
 export type { Framework };
 
 /** Header marker written on top of every generated file. */
-export const GENERATED_MARKER = '// @generated — do not edit';
+export const GENERATED_MARKER = '// @generated';
 
 export const FRAMEWORK_PACKAGE: Record<Framework, string> = {
   react: '@anchorlib/react',
@@ -77,6 +77,17 @@ export function deriveRouteName(segment: string): string {
 /** The index route export name for a leaf segment (`members` → `membersIndexRoute`). */
 export function deriveIndexName(segment: string): string {
   return `${camelizeSegment(segment)}IndexRoute`;
+}
+
+/**
+ * The route export name for a named page (`teams.page.tsx` inside
+ * `about/company` → `companyTeamsRoute`). A named page has no folder of its
+ * own, so the name chains the parent folder's leaf segment with the page name
+ * — the same leaf-derived style as the folder's own route name.
+ */
+export function deriveNamedRouteName(folderSegment: string, pageName: string): string {
+  const rel = folderSegment ? `${folderSegment}/${pageName}` : pageName;
+  return `${derivePrefix(rel)}Route`;
 }
 
 /** Camel-cases a single folder segment into an identifier prefix. */

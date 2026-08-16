@@ -3,15 +3,15 @@ import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
 import type { Node } from 'mdast';
 import type { Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
 import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
-import remarkFrontmatter from 'remark-frontmatter';
 import type { Options as RemarkGfmOptions } from 'remark-gfm';
 import type { PluggableList, Plugin } from 'unified';
 import { visit } from 'unist-util-visit';
+import { stripFrontmatter } from '../utils/frontmatter.js';
 import { wrapJsx } from '../utils/jsx.js';
 import { createMatcher } from '../utils/matcher.js';
 
 import { AIR_ENV } from './env.js';
-import { parseFrontmatter } from './metadata.js';
+import { META_STORE } from './metadata.js';
 
 export type MdxHeading = {
   id: string;
@@ -113,10 +113,13 @@ export class MdxModule {
     const { id, options } = this;
     const { include, remarkPlugins, rehypePlugins, postProcesses = [] } = options;
 
+    this.metadata = META_STORE.resolve(id, code);
+    const body = stripFrontmatter(code);
+
     // Compilation errors propagate to the bundler: a broken MDX file must fail
     // the build instead of silently compiling to a blank module.
     const file = await compile(
-      { path: id, value: code },
+      { path: id, value: body },
       { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins }
     );
 
@@ -155,17 +158,11 @@ export class MdxModule {
 
     const { extended, remarkPlugins, rehypePlugins } = this.options as MdxModuleOptions;
 
-    const remarkPrePlugins = [remarkFrontmatter] as PluggableList;
-    const rehypePrePlugins = [] as PluggableList;
+    if (extended === false) return;
 
-    if (extended !== false) {
-      const { remarkPlugins: remark, rehypePlugins: rehype } = await loadExtendedPlugins(this);
-      remarkPrePlugins.push(...remark);
-      rehypePrePlugins.push(...rehype);
-    }
-
-    remarkPlugins.unshift(...remarkPrePlugins);
-    rehypePlugins.unshift(...rehypePrePlugins);
+    const { remarkPlugins: remark, rehypePlugins: rehype } = await loadExtendedPlugins(this);
+    remarkPlugins.unshift(...remark);
+    rehypePlugins.unshift(...rehype);
   }
 }
 
@@ -250,24 +247,17 @@ export async function loadExtendedPlugins(module: MdxModule) {
 }
 
 /**
- * Remark plugin for an MdxModule: captures frontmatter (bare YAML, fences
- * already stripped) into `module.metadata`, tags directives as admonitions,
- * maps `code-group` directives to `AirCodeGroup`, and moves `script`
- * directive bodies into the module's globals or locals.
+ * Remark plugin for an MdxModule: tags directives as admonitions, maps
+ * `code-group` directives to `AirCodeGroup`, and moves `script` directive
+ * bodies into the module's globals or locals.
  *
- * @param module The MdxModule to capture metadata/scripts into; omit for a
- *   standalone transform.
+ * @param module The MdxModule to capture scripts into; omit for a standalone
+ *   transform.
  */
 export function airMdxRemark(module?: MdxModule) {
   return (tree: MarkdownNode) => {
     visit(tree, (node) => {
       const data = node.data || (node.data = {});
-
-      if (module && node.type === 'yaml' && node.value) {
-        // The AST plugin hands us the bare YAML string (fences already stripped);
-        // the shared parser handles both fenced and bare inputs.
-        module.metadata = parseFrontmatter(node.value);
-      }
 
       if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
         data.hProperties = {

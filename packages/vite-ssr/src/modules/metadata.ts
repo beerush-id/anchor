@@ -1,9 +1,9 @@
+import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
-import { parse } from 'yaml';
-import { getFrontmatter } from '../utils/frontmatter.js';
+import { matchFrontmatter, parseFrontmatterBlock } from '../utils/frontmatter.js';
 import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
@@ -226,53 +226,50 @@ export class MetadataNode extends EventEmitter {
   }
 }
 
+type MetadataEntry = {
+  /** Frontmatter block hash — the freshness signal the resolver compares against. */
+  key: string;
+  meta: Record<string, AnyType>;
+};
+
+const hashBlock = (block: string) => createHash('sha1').update(block).digest('hex');
+
 /**
- * Frontmatter cache keyed by absolute file path. `resolve` parses on first
- * access; `invalidate` re-parses immediately. Every frontmatter consumer
- * funnels through this store so parsing happens once and is always
- * consistent.
+ * Frontmatter store keyed by absolute file path. `resolve` serves unpredictable
+ * consumers — deciding hit-vs-re-parse from the frontmatter block hash — while
+ * `invalidate` and `delete` are the authoritative push from nodes that know a
+ * file changed or was removed. Every consumer funnels through this store so
+ * parsing happens once and is always consistent.
  */
-export class MetadataStore extends Map<string, Record<string, AnyType>> {
+export class MetadataStore extends Map<string, MetadataEntry> {
   /**
-   * Returns the frontmatter for `absPath`, parsing `content` (the file's source
-   * text) only on first access.
+   * Serves the frontmatter for `absPath`. Returns the cached entry when its
+   * frontmatter block hash matches `content` (the file's source text) — body
+   * edits never invalidate, only frontmatter changes do — and re-parses
+   * otherwise.
    */
   public resolve(absPath: string, content: string): Record<string, AnyType> {
-    if (!this.has(absPath)) {
-      this.set(absPath, parseFrontmatter(content));
-    }
+    const block = matchFrontmatter(content) ?? '';
+    const key = hashBlock(block);
+    const entry = this.get(absPath);
+    if (entry?.key === key) return entry.meta;
 
-    return this.get(absPath) as Record<string, AnyType>;
+    const meta = parseFrontmatterBlock(block);
+    this.set(absPath, { key, meta });
+    return meta;
   }
 
   /**
-   * Synchronously re-parses `content` (the file's source text), replaces the
-   * cached entry, and returns the fresh frontmatter.
+   * Re-parses `content` (the file's source text) immediately and replaces the
+   * entry. Callers are nodes that know the file changed — the push counterpart
+   * to `resolve`'s pull.
    */
   public invalidate(absPath: string, content: string): Record<string, AnyType> {
-    const meta = parseFrontmatter(content);
-    this.set(absPath, meta);
+    const block = matchFrontmatter(content) ?? '';
+    const meta = parseFrontmatterBlock(block);
+    this.set(absPath, { key: hashBlock(block), meta });
     return meta;
   }
 }
 
 export const META_STORE = new MetadataStore();
-
-/**
- * Parses YAML frontmatter into a JavaScript object. Detects whether the input
- * is a full file containing `---` fenced frontmatter (extracting only the block)
- * or a bare YAML string (as produced by the MDX AST plugins), so every consumer
- * funnels through a single parser and always receives the same object shape.
- *
- * @param content Source text — a full file with fenced frontmatter, or a bare
- *   YAML string.
- */
-export function parseFrontmatter(content: string): Record<string, unknown> {
-  if (/^\s*---\r?\n/.test(content)) return getFrontmatter(content);
-
-  try {
-    return parse(content) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { deriveRouteName } from '../utils/mapper.js';
+import { deriveNamedRouteName } from '../utils/mapper.js';
 import type { RouteNode } from './route-node.js';
 
 export type RouteResolution = {
@@ -77,7 +77,12 @@ export class RouteStore extends Map<string, RouteNode> {
     for (const namedPage of node.namedPages) {
       if (base === namedPage) {
         const pageName = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
-        return { node, exportName: deriveRouteName(pageName), isIndex: false, isLayout: false };
+        return {
+          node,
+          exportName: deriveNamedRouteName(node.folderNode.segment, pageName),
+          isIndex: false,
+          isLayout: false,
+        };
       }
     }
 
