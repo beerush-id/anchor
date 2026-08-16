@@ -3,6 +3,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { Transformer } from '@napi-rs/image';
+import { color, taggedLogger } from '../logger.js';
+
+const log = taggedLogger('air-image');
 
 export type ImageFormat = 'webp' | 'png' | 'jpeg' | 'avif';
 
@@ -62,10 +65,12 @@ export class ImageStore {
    * @param cacheDir Absolute path where encoded artifacts are cached (keyed by
    *   source path + format + quality + size).
    * @param options Encoding options — see `AirImageOptions`.
+   * @param root Absolute Vite root, for log identifiers relative to the project.
    */
   constructor(
     private readonly cacheDir: string,
-    private readonly options: AirImageOptions = {}
+    private readonly options: AirImageOptions = {},
+    private readonly root: string = ''
   ) {}
 
   /**
@@ -78,9 +83,11 @@ export class ImageStore {
     const { filePath, sizes, format, quality, hasCustomSizes } = this.parseQuery(id);
     const { width, height, buffer } = await readImageMeta(filePath);
     const { size: originalSize } = await fs.stat(filePath);
+    log.verbose(color.event('Read'), 'image metadata');
 
     const basename = path.basename(filePath, path.extname(filePath));
     const alt = basename.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    const relFile = this.root ? path.relative(this.root, filePath) : path.basename(filePath);
 
     const pathHash = Buffer.from(filePath).toString('base64url').slice(-8);
     const contentHash = createHash('sha1').update(buffer).digest('hex').slice(0, 8);
@@ -95,12 +102,19 @@ export class ImageStore {
       } catch {}
 
       allCached = false;
+      log.info(color.event('Encoding'), color.file(relFile), '→', color.file(name));
       const buf = await this.encodeImage(filePath, format, quality, size);
       await fs.writeFile(abs, buf);
 
       const reduction = originalSize > 0 ? Math.round((1 - buf.length / originalSize) * 100) : 0;
-      console.log(
-        `[air-image] ${path.basename(filePath)} → ${name}: ${formatBytes(originalSize)} → ${formatBytes(buf.length)} (-${reduction}%) in ${Math.round(performance.now() - started)}ms`
+      log.info(
+        color.file(relFile),
+        '→',
+        color.file(name),
+        ':',
+        `${formatBytes(originalSize)} → ${formatBytes(buf.length)} (-${reduction}%)`,
+        'in',
+        color.timing(`${Math.round(performance.now() - started)}ms`)
       );
       return abs;
     };
@@ -141,7 +155,7 @@ export class ImageStore {
     }
 
     if (allCached) {
-      console.log(`[air-image] ${path.basename(filePath)}: served from cache`);
+      log.debug(color.file(relFile), 'served from cache');
     }
 
     return {

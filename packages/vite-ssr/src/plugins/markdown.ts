@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
+import { color, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxFile } from '../modules/markdown.js';
+
+const log = taggedLogger('air-markdown');
 
 export type AirMarkdownOptions = MdxModuleOptions;
 
@@ -37,7 +40,10 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       },
       transform(code, id) {
         if (!isEntryFile(id)) return;
-        if (!CHUNK_ENTRIES.has(id)) CHUNK_ENTRIES.set(id, { id, code });
+        if (!CHUNK_ENTRIES.has(id)) {
+          CHUNK_ENTRIES.set(id, { id, code });
+          log.verbose(color.event('Registered'), color.file(relFile(id)), 'entry');
+        }
       },
     } as Plugin,
     {
@@ -48,21 +54,26 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
 
         const [file] = id.split('?');
         const resolution = await this.resolve(file, importer, { skipSelf: true });
-        if (resolution) return `${resolution.id}${CHUNK_SUFFIX}`;
+        if (resolution) {
+          log.verbose(color.event('Resolved'), 'chunk alias for', color.file(relFile(resolution.id)));
+          return `${resolution.id}${CHUNK_SUFFIX}`;
+        }
 
         return id;
       },
       async load(id) {
         if (!isChunkFile(id)) return;
-        const chunk = CHUNK_ENTRIES.get(id)!;
+        const chunk = CHUNK_ENTRIES.get(id);
 
         if (!chunk) {
           const src = id.replace(CHUNK_SUFFIX, '');
+          log.debug(color.event('Missed chunk'), color.file(relFile(src)), '— compiling directly');
           const text = fs.readFileSync(src, 'utf-8');
           const { code } = await mdxFile(src, text, $options);
           return [code, 'export default AirMdxPage;'].join('\n');
         }
 
+        log.verbose(color.event('Served'), 'compiled chunk for', color.file(relFile(chunk.id)));
         return chunk?.body;
       },
     } as Plugin,
@@ -84,6 +95,9 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const routeName = resolution.exportName;
         const routePath = `./${AIR_ENV.files.route}`;
 
+        log.verbose(color.event('Resolved'), 'route for', color.file(relFile(id)));
+        log.debug(color.event('Wired'), color.file(relFile(id)), 'to', routeName);
+
         const chunkName = `./${baseName}${CHUNK_ALIAS}`;
         const chunkFile = path.join(path.dirname(id), `./${baseName}${CHUNK_SUFFIX}`);
 
@@ -100,6 +114,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
 
         chunk.chunk = chunkFile;
         CHUNK_ENTRIES.set(chunkFile, chunk);
+        log.verbose(color.event('Created'), 'chunk for', color.file(relFile(id)));
       },
     } as Plugin,
     {
@@ -131,6 +146,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       handleHotUpdate({ file, server, modules }) {
         if (!isEntryFile(file)) return;
 
+        log.debug(color.event('HMR:'), color.file(relFile(file)), 'changed — recompiling');
         const entry = CHUNK_ENTRIES.get(file);
         const updates = [...modules];
 
@@ -174,6 +190,11 @@ let pagesRoot = '';
 
 function isChunkFile(id: string) {
   return id.endsWith(CHUNK_SUFFIX);
+}
+
+/** The id relative to the pages directory, for log identifiers. */
+function relFile(id: string) {
+  return path.relative(pagesRoot, id.split('?')[0]);
 }
 
 function isChunkAlias(id: string) {

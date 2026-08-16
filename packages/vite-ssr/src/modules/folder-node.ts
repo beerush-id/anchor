@@ -2,6 +2,9 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
+import { color, taggedLogger } from '../logger.js';
+
+const log = taggedLogger('air-pages');
 
 /**
  * Represents a directory in the filesystem, acting as the foundational node
@@ -54,6 +57,15 @@ export class FolderNode extends EventEmitter {
         this.files.add(entry.name);
       }
     }
+
+    log.verbose(
+      color.event('Scanned'),
+      color.file(this.rel || 'root'),
+      this.files.size,
+      'files,',
+      this.children.size,
+      'folders'
+    );
   }
 
   /**
@@ -97,17 +109,20 @@ export class FolderNode extends EventEmitter {
   public handleFileAdded(name: string) {
     if (this.files.has(name)) return;
     this.files.add(name);
+    log.debug(color.event('File added:'), color.file(this.rel ? `${this.rel}/${name}` : name));
     this.emit('fileAdded', name);
   }
 
   public handleFileRemoved(name: string) {
     if (!this.files.has(name)) return;
     this.files.delete(name);
+    log.debug(color.event('File removed:'), color.file(this.rel ? `${this.rel}/${name}` : name));
     this.emit('fileRemoved', name);
   }
 
   public handleFileChanged(name: string) {
     if (!this.files.has(name)) return;
+    log.debug(color.event('File changed:'), color.file(this.rel ? `${this.rel}/${name}` : name));
     this.emit('fileChanged', name);
   }
 
@@ -115,6 +130,7 @@ export class FolderNode extends EventEmitter {
     if (this.children.has(name)) return;
     const child = new FolderNode(abs, this);
     this.children.set(name, child);
+    log.debug(color.event('Folder added:'), color.file(child.rel));
     child.scan();
     if (this.watcher) {
       child.watch();
@@ -126,6 +142,7 @@ export class FolderNode extends EventEmitter {
     const child = this.children.get(name);
     if (!child) return;
     this.children.delete(name);
+    log.debug(color.event('Folder removed:'), color.file(child.rel));
     child.destroy();
     this.emit('childRemoved', child);
   }

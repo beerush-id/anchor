@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
 import MagicString from 'magic-string';
 import { type CallExpression, type ImportDeclaration, type ParseResult, type Program, parseSync } from 'oxc-parser';
+import { color, taggedLogger } from '../logger.js';
 import {
   deriveIndexName,
   deriveNamedRouteName,
@@ -20,6 +21,8 @@ import {
 } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
 import type { FolderNode } from './folder-node.js';
+
+const log = taggedLogger('air-route');
 
 export type UIFileType = 'page' | 'layout';
 
@@ -175,8 +178,13 @@ export class RouteNode extends EventEmitter {
         : names.find((n) => n.endsWith('Route') && !n.endsWith('IndexRoute'));
     const indexName = names.find((n) => n.endsWith('IndexRoute'));
 
+    const routeChanged = routeName !== undefined && routeName !== this.routeName;
+    const indexChanged = indexName !== undefined && indexName !== this.indexName;
     if (routeName) this.routeName = routeName;
     if (indexName) this.indexName = indexName;
+    if (routeChanged || indexChanged) {
+      log.verbose(color.event('Adopted'), 'export names from', color.file(`${this.displayPath}route.ts`));
+    }
   }
 
   /** Writes starter content into `name` when it is a 0-byte file; non-empty files are never touched. */
@@ -204,6 +212,7 @@ export class RouteNode extends EventEmitter {
       setTimeout(() => {
         try {
           fs.writeFileSync(file, content);
+          log.debug(color.event('Scaffolded'), color.file(`${this.displayPath}${name}`));
         } catch {}
       }, 50);
     }
@@ -302,13 +311,12 @@ export class RouteNode extends EventEmitter {
     const child = new RouteNode(childFolder, this, this.fileMap, this.framework, this.routerFile);
     this.children.set(childFolder.segment, child);
     child.on('change', (file, kind) => this.emit('change', file, kind));
-    child.on('warn', (message) => this.emit('warn', message));
     return child;
   }
 
-  /** Surfaces a constructive warning about contract maintenance. */
+  /** Logs a constructive warning about contract maintenance. */
   private warn(message: string): void {
-    this.emit('warn', message);
+    log.warn(message);
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
@@ -387,6 +395,11 @@ export class RouteNode extends EventEmitter {
     if (!call) return;
 
     const argument = call.arguments[0] as Identifier;
+    log.verbose(
+      color.event('Found route binding'),
+      color.file(`${this.displayPath}${name}`),
+      color.event(argument.name)
+    );
     const needsBindingRewrite = argument.name !== targetRouteName;
 
     // The binding must be imported with its contract kind — default for the
@@ -473,6 +486,8 @@ export class RouteNode extends EventEmitter {
     if (!exports) return;
 
     this.validateRouteWiring(exports);
+
+    log.verbose(color.event('Validated route exports'), color.file(`${this.displayPath}route.ts`));
 
     const magic = new MagicString(content);
     let changed = false;
@@ -566,6 +581,7 @@ export class RouteNode extends EventEmitter {
     const output = magic.toString();
     if (output !== content) {
       fs.writeFileSync(routeFilePath, output);
+      log.debug(color.event('Regenerated'), color.file(`${this.displayPath}route.ts`));
       this.emitChange('reload');
     }
   }
@@ -709,6 +725,7 @@ export class RouteNode extends EventEmitter {
 
     fs.mkdirSync(path.dirname(routeFilePath), { recursive: true });
     fs.writeFileSync(routeFilePath, `${lines.join('\n')}\n`);
+    log.debug(color.event('Generated'), color.file(`${this.displayPath}route.ts`));
     this.route = true;
     this.emitChange('reload');
     return true;
@@ -890,26 +907,39 @@ function isDefaultMarkerComment(value: string): boolean {
 }
 
 /**
- * Extracts a route registration from an initializer expression — only the
+ * Extracts a route registration from an initializer expression — the
  * `object.route('/path')` / `object.add('/path')` shapes, with a string path.
+ * Chained modifiers on top of the registration (`x.route('/').meta({...})`,
+ * `.guard(...)`, `.provide(...)`) are unwrapped before reading it.
  */
 function routeBinding(init: AstNode | undefined): RouteBinding | undefined {
-  if (init?.type !== 'CallExpression') return undefined;
-  const callee = init.callee;
-  if (callee?.type !== 'MemberExpression' || callee.computed) return undefined;
+  let call = init;
 
-  const object = callee.object;
-  const property = callee.property;
-  if (object?.type !== 'Identifier' || !object.name) return undefined;
-  if (property?.type !== 'Identifier' || !property.name) return undefined;
+  for (;;) {
+    if (call?.type !== 'CallExpression') return undefined;
+    const callee = call.callee;
+    if (callee?.type !== 'MemberExpression' || callee.computed) return undefined;
 
-  const method = property.name;
-  if (method !== 'route' && method !== 'add') return undefined;
+    const object = callee.object;
+    const property = callee.property;
 
-  const argument = init.arguments?.[0];
-  if (argument?.type !== 'Literal' || typeof argument.value !== 'string') return undefined;
+    // A modifier chain: `x.route('/').meta(...)` — descend to the wrapped call.
+    if (object?.type === 'CallExpression') {
+      call = object;
+      continue;
+    }
 
-  return { object: object.name, method, path: argument.value };
+    if (object?.type !== 'Identifier' || !object.name) return undefined;
+    if (property?.type !== 'Identifier' || !property.name) return undefined;
+
+    const method = property.name;
+    if (method !== 'route' && method !== 'add') return undefined;
+
+    const argument = call.arguments?.[0];
+    if (argument?.type !== 'Literal' || typeof argument.value !== 'string') return undefined;
+
+    return { object: object.name, method, path: argument.value };
+  }
 }
 
 /**  * Walks an AST for the first `page(...)` / `modal(...)` call whose first

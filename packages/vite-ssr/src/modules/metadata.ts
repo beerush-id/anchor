@@ -3,7 +3,11 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
+import { color, taggedLogger } from '../logger.js';
 import { matchFrontmatter, parseFrontmatterBlock } from '../utils/frontmatter.js';
+
+const log = taggedLogger('air-metadata');
+
 import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
@@ -152,10 +156,20 @@ export class MetadataNode extends EventEmitter {
       }
     }
 
+    log.verbose(
+      color.event('Collected metadata entries'),
+      color.file(this.folderNode.rel || 'root'),
+      items.length,
+      'files,',
+      childImports.length,
+      'children'
+    );
+
     if (items.length === 0 && childImports.length === 0 && this.parent !== undefined) {
       try {
         if (fs.existsSync(indexPath)) {
           fs.unlinkSync(indexPath);
+          log.debug(color.event('Removed metadata index'), color.file(this.folderNode.rel || 'root'));
           this.emitChange('update');
         }
       } catch {}
@@ -180,6 +194,7 @@ export class MetadataNode extends EventEmitter {
     const content = lines.join('\n');
 
     if (writeIfChanged(indexPath, content)) {
+      log.debug(color.event('Regenerated metadata index'), color.file(this.folderNode.rel || 'root'));
       this.emitChange('update');
     }
   }

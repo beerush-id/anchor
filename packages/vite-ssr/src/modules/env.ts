@@ -13,6 +13,11 @@ export type AirEnv = {
   /** Image encoding and caching store. */
   images: ImageStore;
   /**
+   * Vite root (`config.root`) — the absolute project root. Base for every
+   * relative identifier in logs and for resolving `rootDir`/`pagesDir`.
+   */
+  viteRoot: string;
+  /**
    * Source root — where entry/client/worker files live — relative to the Vite
    * root. Not the pages directory; see `pagesDir`.
    * @default 'src'
@@ -41,7 +46,8 @@ export type AirEnv = {
 export const AIR_ENV: AirEnv = {
   meta: META_STORE,
   routes: new RouteStore(),
-  images: new ImageStore('', {}),
+  images: new ImageStore('', {}, ''),
+  viteRoot: '',
   rootDir: 'src',
   pagesDir: 'src/pages',
   framework: 'react',

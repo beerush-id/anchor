@@ -2,8 +2,12 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
+import { color, taggedLogger } from '../logger.js';
 import type { FileMap, Framework } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
+
+const log = taggedLogger('air-pages');
+
 import { AIR_ENV } from './env.js';
 import { FolderNode } from './folder-node.js';
 import { ManifestNode } from './manifest.js';
@@ -58,32 +62,32 @@ export class AppNode extends EventEmitter {
     this.scaffoldProject();
     this.rootFolder.scan();
 
+    log.verbose(color.event('Booting route tree'));
     this.rootRoute = new RouteNode(this.rootFolder, undefined, this.fileMap, opts.framework, opts.routerFile);
     this.rootRoute.on('change', this.handleChange);
-    this.rootRoute.on('warn', this.handleWarn);
     this.rootRoute.boot();
 
     AIR_ENV.routes.attach(this.rootRoute);
 
     if (opts.metadataEnabled !== false) {
+      log.verbose(color.event('Booting metadata tree'));
       this.rootMetadata = new MetadataNode(this.rootFolder, undefined, opts.root, opts.pagesDir);
       this.rootMetadata.on('change', this.handleChange);
       this.rootMetadata.boot();
     }
 
     if (opts.manifestEnabled !== false) {
+      log.verbose(color.event('Booting manifest tree'));
       this.rootManifest = new ManifestNode(this.rootRoute, this.rootFolder, undefined, opts.root, this.fileMap.route);
       this.rootManifest.on('change', this.handleChange);
       this.rootManifest.boot();
     }
+
+    log.debug(color.event('app tree booted'));
   }
 
   private handleChange = (file: string, kind: 'update' | 'reload') => {
     this.emit('change', file, kind);
-  };
-
-  private handleWarn = (message: string) => {
-    this.emit('warn', message);
   };
 
   /**
@@ -120,6 +124,7 @@ export class AppNode extends EventEmitter {
       try {
         fs.mkdirSync(path.dirname(file), { recursive: true });
         fs.writeFileSync(file, content);
+        log.debug(color.event('Scaffolded'), color.file(path.relative(this.opts.root, file)));
       } catch {}
     }
   }
@@ -137,6 +142,7 @@ export class AppNode extends EventEmitter {
         ].join('\n'),
         'utf-8'
       );
+      log.info(color.event('Scaffolded'), color.file(path.relative(this.opts.root, this.opts.routerFile)));
     }
 
     if (!fs.existsSync(this.opts.pagesDir)) {
@@ -159,6 +165,8 @@ export class AppNode extends EventEmitter {
           fs.writeFileSync(path.join(this.opts.pagesDir, base), content, 'utf-8');
         }
       }
+
+      log.info(color.event('Scaffolded initial pages'), '(layout + page)');
     }
 
     if (this.opts.scaffoldEnabled !== false) {

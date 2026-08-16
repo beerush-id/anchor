@@ -1,9 +1,13 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
+import { color, taggedLogger } from '../logger.js';
 import { canonicalPath, deriveNamedRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
+
+const log = taggedLogger('air-manifest');
+
 import type { RouteNode } from './route-node.js';
 
 /**
@@ -100,6 +104,12 @@ export class ManifestNode extends EventEmitter {
       }
     }
 
+    log.verbose(
+      color.event('Collected manifest entries'),
+      color.file(this.folderNode.rel || 'root'),
+      this.entries.size
+    );
+
     this.generate();
   }
 
@@ -163,6 +173,7 @@ export class ManifestNode extends EventEmitter {
     const content = `${lines.join('\n')}\n`;
 
     if (writeIfChanged(manifestFilePath, content)) {
+      log.debug(color.event('Regenerated route manifest'), color.file(this.folderNode.rel || 'root'));
       this.emitChange('update');
     }
   }

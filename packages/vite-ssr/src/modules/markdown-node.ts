@@ -1,8 +1,12 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
+import { color, taggedLogger } from '../logger.js';
 import { canonicalPath, derivePrefix, GENERATED_MARKER } from '../utils/mapper.js';
 import { writeIfChanged } from '../utils/sync.js';
+
+const log = taggedLogger('air-metadata');
+
 import { META_STORE } from './metadata.js';
 
 /**
@@ -59,6 +63,8 @@ export class MarkdownNode extends EventEmitter {
 
     const meta = META_STORE.invalidate(this.absPath, content);
 
+    log.verbose(color.event('Parsed frontmatter metadata'), 'for', color.file(this.itemPath));
+
     const moduleContent = [
       GENERATED_MARKER,
       `export const meta = ${JSON.stringify(meta, null, 2)};`,
@@ -68,6 +74,7 @@ export class MarkdownNode extends EventEmitter {
     ].join('\n');
 
     if (writeIfChanged(this.generatedFilePath, moduleContent)) {
+      log.debug(color.event('Generated metadata'), 'for', color.file(this.itemPath));
       this.emitChange('update');
     }
   }

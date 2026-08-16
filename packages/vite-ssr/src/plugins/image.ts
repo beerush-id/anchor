@@ -1,8 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
+import { color, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { type AirImageOptions, type ImageMeta, type ImageResolution, readImageMeta } from '../modules/image-store.js';
+
+const log = taggedLogger('air-image');
 
 export type { AirImageOptions } from '../modules/image-store.js';
 
@@ -27,12 +30,17 @@ export function airImage(options: AirImageOptions = {}): Plugin {
     configResolved(config) {
       isBuild = config.command === 'build';
     },
-    transform(code) {
+    transform(code, id) {
       if (!isImageAsset(code)) return null;
 
       const transformed = stripAndEncodeImportAttributes(code);
       if (transformed === code) return null;
 
+      log.verbose(
+        color.event('Rewrote'),
+        'image import attributes for',
+        color.file(path.relative(AIR_ENV.viteRoot, id.split('?')[0]))
+      );
       return { code: transformed, map: null };
     },
     async load(id) {
@@ -41,6 +49,11 @@ export function airImage(options: AirImageOptions = {}): Plugin {
       const filePath = id.split('?')[0];
 
       if (!isBuild && devEnabled === false) {
+        log.debug(
+          color.event('Serving'),
+          color.file(path.relative(AIR_ENV.viteRoot, filePath)),
+          'raw (devEnabled: false)'
+        );
         const { width, height } = await readImageMeta(filePath);
         const basename = path.basename(filePath, path.extname(filePath));
         const alt = basename.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -78,6 +91,8 @@ export function airImage(options: AirImageOptions = {}): Plugin {
       ...resolution.srcset!.split(',').map((s) => s.trim().split(' ')[0]),
     ];
     const fsUrls = [...new Set(urls.filter((u) => u.startsWith('/@fs')))];
+
+    log.verbose(color.event('Re-emitting'), `${fsUrls.length} build assets`);
 
     const replacements = new Map<string, string>();
     for (const fsUrl of fsUrls) {

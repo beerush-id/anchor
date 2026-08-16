@@ -1,8 +1,15 @@
+import path from 'node:path';
 import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
+import { color, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { mdxMatcher } from '../modules/markdown.js';
 import type { AirMarkdownOptions } from './markdown.js';
+
+const log = taggedLogger('air-markdown');
+
+/** The id relative to the pages directory, for log identifiers. */
+const relToPages = (id: string) => path.relative(path.resolve(AIR_ENV.viteRoot, AIR_ENV.pagesDir), id.split('?')[0]);
 
 export type CodeGroupOptions = {
   name: string;
@@ -33,8 +40,8 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
         if (this.environment?.name !== 'client') return;
         if (!code.includes('AIR_REACT_CLIENT_INIT')) return;
 
+        log.debug(color.event('Injected client import'));
         const magic = new MagicString(code);
-        magic.replace(/export const AIR_REACT_CLIENT_INIT = 'preprocessed';/, '');
         magic.prepend('import "@anchorlib/react/client";\n');
 
         return { code: magic.toString(), map: magic.generateMap({ hires: true }) };
@@ -47,6 +54,7 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
         if (!markdown || !codeGroup || !isMdx(id)) return;
         if (!code.includes(':::code-group')) return;
 
+        log.debug(color.event('Injected code-group component'), 'into', color.file(relToPages(id)));
         const resolved =
           typeof codeGroup === 'object'
             ? codeGroup

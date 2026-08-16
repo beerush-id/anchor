@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
+import { color, taggedLogger } from '../logger.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import { ImageStore } from '../modules/image-store.js';
+
+const log = taggedLogger('air-pages');
+
 import { DEFAULT_FILE_MAP } from '../utils/mapper.js';
 import type { AirPagesOptions } from './pages.js';
 
@@ -19,13 +23,18 @@ export function airEnv(options: AirPagesOptions = {}): Plugin {
     name: 'air-pages:env',
     enforce: 'pre',
     configResolved(config) {
+      AIR_ENV.viteRoot = config.root;
       AIR_ENV.pagesDir = options.pagesDir ?? AIR_ENV.pagesDir;
       AIR_ENV.framework = options.framework ?? detectFramework(config.root);
+      log.debug(color.event('Framework:'), AIR_ENV.framework);
       AIR_ENV.files = { ...DEFAULT_FILE_MAP, ...options.files };
+      log.verbose(color.event('Merged file map'), Object.keys(AIR_ENV.files).length, 'entries');
       AIR_ENV.images = new ImageStore(
         path.join(config.root, 'node_modules', '.cache', 'air-image'),
-        typeof options.image === 'object' ? options.image : {}
+        typeof options.image === 'object' ? options.image : {},
+        config.root
       );
+      log.verbose(color.event('Initialized image store'));
     },
   } as Plugin;
 }

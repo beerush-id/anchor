@@ -1,8 +1,12 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import type { HtmlTagDescriptor, IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
+import { color, taggedLogger } from './logger.js';
 import { AIR_ENV } from './modules/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
+
+const log = taggedLogger('air-worker');
 
 export type AirWorkerOptions = {
   /**
@@ -128,11 +132,14 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       // final script tags from the bundle, so stripping the JS entries here
       // excludes them from the HTML AST gracefully and no client JavaScript
       // is ever emitted for the static site.
+      let stripped = 0;
       for (const file of Object.keys(ctx.bundle)) {
         if (file.endsWith('.js')) {
           delete ctx.bundle[file];
+          stripped++;
         }
       }
+      log.verbose(color.event('Stripped'), `${stripped} JS entries`, '(noscript)');
 
       return [{ tag: 'html', attrs: { dehydrated: '' } }];
     },
@@ -145,6 +152,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
           try {
             if (existsSync(indexPath)) {
               unlinkSync(indexPath);
+              log.verbose(color.event('Removed'), 'dist/client/index.html');
             }
           } catch (_e) {}
         }
@@ -157,6 +165,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
 
     load(id) {
       if (id === 'worker') {
+        log.verbose(color.event('Built'), 'worker module wrapper');
         return `
           import worker from '/${resolveEntry().replace('./', '')}';
           import template from '/dist/client/index.html?raw';
@@ -211,6 +220,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
 
             const { WebSocketServer } = await import('ws');
             const wss = new WebSocketServer({ noServer: true });
+            log.debug(color.event('WebSocket'), 'connection upgraded');
 
             wss.handleUpgrade(req, socket, head, (ws) => {
               activeSockets.add(ws);
@@ -228,13 +238,12 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
               });
 
               ws.on('error', (err) => {
-                server.config.logger.error(`[air-worker] WebSocket error: ${err.message}`);
+                log.error(`WebSocket error: ${err.message}`);
               });
             });
           }
         } catch (error) {
-          server.config.logger.error('[air-worker] WebSocket upgrade error:');
-          server.config.logger.error(String(error));
+          log.error('WebSocket upgrade error:', error as Error);
           socket.destroy();
         }
       });
@@ -245,9 +254,12 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
           req.on('close', () => controller.abort());
 
           try {
+            const started = performance.now();
             const urlPath = req.originalUrl ?? req.url ?? '/';
             if (options.ignoreDotPath !== false && urlPath.startsWith('/.')) return next();
             const request = toWebRequest(req, controller);
+
+            log.debug(color.event('Request'), color.request(req.method ?? 'GET'), color.request(urlPath));
 
             const workerModule = await server.ssrLoadModule(resolveEntry());
             const worker = workerModule.default;
@@ -255,6 +267,8 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
             if (!worker || typeof worker.fetch !== 'function') {
               return next();
             }
+
+            log.verbose(color.event('Resolved'), 'worker module');
 
             if (worker.options) {
               worker.options.devMode = true;
@@ -268,8 +282,18 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
 
             const response = await worker.fetch(request);
             AIR_ENV.currentUrl = request.url;
+            log.verbose(color.event('Worker fetch'), 'completed');
 
             await sendWebResponse(res, response);
+            log.verbose(color.event('Response'), 'sent');
+            log.debug(
+              color.request(req.method ?? 'GET'),
+              color.request(urlPath),
+              '→',
+              response.status,
+              'in',
+              color.timing(`${Math.round(performance.now() - started)}ms`)
+            );
           } catch (error) {
             next(error);
           }
@@ -298,13 +322,16 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
 
     if (!worker?.router || typeof worker.fetch !== 'function') return;
 
+    let staticPages = 0;
     for (const [path, info] of worker.router.entries()) {
       if (info.route?.options?.static) {
         const request = new Request(`http://localhost${path}`);
         await worker.fetch(request, undefined, true);
+        staticPages++;
       }
     }
+    log.debug(color.event('SSG'), `generated ${staticPages} static pages`);
   } catch (e) {
-    config.logger.warn(`[air-worker] SSG generation failed during build: ${e}`);
+    log.warn(`SSG generation failed during build: ${e}`);
   }
 }

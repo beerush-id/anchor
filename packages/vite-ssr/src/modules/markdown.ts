@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
 import type { Node } from 'mdast';
 import type { Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
@@ -6,12 +7,18 @@ import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
 import type { Options as RemarkGfmOptions } from 'remark-gfm';
 import type { PluggableList, Plugin } from 'unified';
 import { visit } from 'unist-util-visit';
+import { color, taggedLogger } from '../logger.js';
 import { stripFrontmatter } from '../utils/frontmatter.js';
 import { wrapJsx } from '../utils/jsx.js';
 import { createMatcher } from '../utils/matcher.js';
 
 import { AIR_ENV } from './env.js';
 import { META_STORE } from './metadata.js';
+
+const log = taggedLogger('air-markdown');
+
+/** The id relative to the pages directory, for log identifiers. */
+const relToPages = (id: string) => path.relative(path.resolve(AIR_ENV.viteRoot, AIR_ENV.pagesDir), id.split('?')[0]);
 
 export type MdxHeading = {
   id: string;
@@ -105,7 +112,13 @@ export class MdxModule {
   }
 
   public async compile(code: string) {
-    if (!this.initialized) await this.loadPlugins();
+    const started = performance.now();
+    log.debug(color.event('Compiling'), color.file(relToPages(this.id)));
+
+    if (!this.initialized) {
+      await this.loadPlugins();
+      log.verbose(color.event('Applied'), 'remark/rehype plugins');
+    }
 
     this.locals = [];
     this.globals = [];
@@ -115,6 +128,7 @@ export class MdxModule {
 
     this.metadata = META_STORE.resolve(id, code);
     const body = stripFrontmatter(code);
+    log.verbose(color.event('Resolved'), 'frontmatter metadata');
 
     // Compilation errors propagate to the bundler: a broken MDX file must fail
     // the build instead of silently compiling to a blank module.
@@ -122,6 +136,7 @@ export class MdxModule {
       { path: id, value: body },
       { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins }
     );
+    log.verbose(color.event('Compiled'), 'MDX source');
 
     const postProcessors = [...postProcesses];
 
@@ -134,14 +149,22 @@ export class MdxModule {
     this.globals.push(head);
     this.globals.push(`const airMdxMeta = ${JSON.stringify(this.metadata)};\n`);
     this.globals.push(`const airMdxHeadings = ${JSON.stringify(this.headings)};\n`);
+    log.verbose(color.event('Split'), 'MDX content into head and body');
 
+    if (postProcessors.length) log.verbose(color.event('Ran'), `${postProcessors.length} post-processors`);
     for (const handler of postProcessors) {
       try {
         await handler(this);
       } catch (error) {
-        console.error(`[air-pages] Post-processing failed for ${path.basename(this.id)}:`, error);
+        log.error(`Post-processing failed for ${relToPages(this.id)}`, error as Error);
       }
     }
+    log.debug(
+      color.event('Compiled'),
+      color.file(relToPages(this.id)),
+      'in',
+      color.timing(`${Math.round(performance.now() - started)}ms`)
+    );
   }
 
   public toString() {
@@ -149,6 +172,7 @@ export class MdxModule {
     const body = this.locals.join('\n');
 
     this.output = wrapJsx(AIR_ENV.framework, head, body);
+    log.verbose(color.event('Wrapped'), 'JSX output');
 
     return this.output;
   }
@@ -187,26 +211,36 @@ export type ExtendedPlugins = Array<{ default: unknown }>;
 // exactly once per process instead of being dynamically imported inside the
 // per-file compilation pipeline.
 let extendedImportPromise: Promise<ExtendedPlugins> | undefined;
-
 export const importExtended = (): Promise<ExtendedPlugins> => {
   if (!extendedImportPromise) {
+    const started = performance.now();
+    log.debug(color.event('Loading remark/rehype plugins'));
     extendedImportPromise = Promise.all([
       import('remark-gfm'),
       import('remark-directive'),
       import('rehype-slug'),
       import('rehype-autolink-headings'),
       import('rehype-pretty-code'),
-    ]).catch(() => {
-      throw new Error(
-        `\n\n[AIR Stack] Docs mode is enabled, but required plugins are missing.\n` +
-          `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
-          `  - remark-gfm\n` +
-          `  - remark-directive\n` +
-          `  - rehype-slug\n` +
-          `  - rehype-autolink-headings\n` +
-          `  - rehype-pretty-code\n\n`
-      );
-    });
+    ])
+      .then((plugins) => {
+        log.debug(
+          color.event('Loaded remark/rehype plugins'),
+          'in',
+          color.timing(`${Math.round(performance.now() - started)}ms`)
+        );
+        return plugins;
+      })
+      .catch(() => {
+        throw new Error(
+          `\n\n[AIR Stack] Docs mode is enabled, but required plugins are missing.\n` +
+            `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
+            `  - remark-gfm\n` +
+            `  - remark-directive\n` +
+            `  - rehype-slug\n` +
+            `  - rehype-autolink-headings\n` +
+            `  - rehype-pretty-code\n\n`
+        );
+      });
   }
 
   return extendedImportPromise;

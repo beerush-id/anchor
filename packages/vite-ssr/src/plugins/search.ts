@@ -2,8 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import type { Plugin } from 'vite';
+import { color, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { META_STORE } from '../modules/metadata.js';
+
+const log = taggedLogger('air-search');
 
 export type MdxSearchOptions = {
   pagesDir?: string;
@@ -35,6 +38,9 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
 
     const started = performance.now();
 
+    log.info(color.event('Indexing documents'));
+    log.verbose(color.event('Walking'), 'pages directory');
+
     const walk = (dir: string) => {
       let entries: fs.Dirent[];
       try {
@@ -55,7 +61,12 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
 
     walk(searchPagesDir);
 
-    console.log(`[air-pages] Indexed ${searchCache.size} documents in ${Math.round(performance.now() - started)}ms`);
+    log.info(
+      color.event('Indexed'),
+      `${searchCache.size} documents`,
+      'in',
+      color.timing(`${Math.round(performance.now() - started)}ms`)
+    );
   };
 
   return {
@@ -72,6 +83,7 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
         fileName: 'index.json',
         source: serveSearchIndex(),
       });
+      log.verbose(color.event('Emitted'), 'search index', `(${searchCache.size} documents)`);
     },
     configureServer(server) {
       server.watcher.on('add', (file) => void invalidateSearchCache(file, include));
@@ -79,9 +91,11 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
       server.watcher.on('unlink', (file) => {
         searchCache.delete(file);
         META_STORE.delete(file);
+        log.debug(color.event('Removed'), color.file(path.relative(searchRoot, file)), 'from the search index');
       });
 
       server.middlewares.use('/index.json', (_req, res) => {
+        log.verbose(color.event('Served'), 'search index');
         res.setHeader('Content-Type', 'application/json');
         res.end(serveSearchIndex());
       });
@@ -117,6 +131,7 @@ export async function invalidateSearchCache(file: string, include: string[]): Pr
   const content = fs.readFileSync(file, 'utf-8');
   const meta = META_STORE.invalidate(file, content);
   searchCache.set(file, toSearchDocument(file, meta, content));
+  log.debug(color.event('Re-indexed'), color.file(path.relative(searchRoot, file)));
 
   return Promise.resolve();
 }

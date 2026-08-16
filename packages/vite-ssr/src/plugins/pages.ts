@@ -1,11 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
+import { color, taggedLogger } from '../logger.js';
 import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
 import type { FileMap } from '../utils/mapper.js';
 import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
+
+const log = taggedLogger('air-pages');
+
 import { airEnv } from './env.js';
 import { type AirImageOptions, airImage } from './image.js';
 import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
@@ -114,7 +118,6 @@ const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
  * @returns Vite plugin array.
  */
 export function airPages(options: AirPagesOptions = {}): PluginOption {
-  const warnedMessages = new Set<string>();
   let irpcEnabled = options.irpc;
   let config: ResolvedConfig;
   let absPagesDir = '';
@@ -155,6 +158,9 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         irpcEnabled = workerContent.includes('httpRouter') || workerContent.includes('wsRouter');
       }
 
+      log.verbose(color.event('Resolved pages dir'), color.file(path.relative(config.root, absPagesDir)));
+      log.verbose(color.event('IRPC discovery:'), irpcEnabled === true ? 'enabled' : 'disabled');
+
       app = new AppNode({
         root: config.root,
         pagesDir: absPagesDir,
@@ -167,11 +173,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         fileMap: AIR_ENV.files,
       });
 
-      app.on('warn', (message) => {
-        if (warnedMessages.has(message)) return;
-        warnedMessages.add(message);
-        config.logger.warn(`[air-pages] ${message}`);
-      });
+      log.debug(color.event('air-pages initialized'));
     },
 
     resolveId(id) {
@@ -197,6 +199,8 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         globs.push(`/${AIR_ENV.pagesDir}/**/${files.constructor}`);
       }
 
+      log.verbose(color.event('Built'), 'routes glob', `(${isSsr ? 'ssr' : 'client'}, ${globs.length} patterns)`);
+
       return [
         `const modules = import.meta.glob(${JSON.stringify(globs)}, { eager: true });`,
         `export default modules;`,
@@ -209,6 +213,11 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       if (normalizedId === absClientFile || normalizedId === absWorkerFile) {
         if (!code.includes(VIRTUAL_ROUTES)) {
           code += `\nimport '${VIRTUAL_ROUTES}';\n`;
+          log.debug(
+            color.event('Injected routes import'),
+            'into',
+            color.file(path.relative(config.root, normalizedId))
+          );
         }
       }
 
@@ -234,6 +243,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
             const virtualMod = server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ROUTES);
             if (virtualMod) server.moduleGraph.invalidateModule(virtualMod);
             server.ws.send({ type: 'full-reload', path: '*' });
+            log.debug(color.event('Full reload'), '— route structure changed');
           }
 
           shouldReload = false;
