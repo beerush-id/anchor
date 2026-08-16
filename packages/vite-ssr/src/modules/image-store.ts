@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { Transformer } from '@napi-rs/image';
 
 export type ImageFormat = 'webp' | 'png' | 'jpeg' | 'avif';
@@ -56,6 +57,11 @@ export interface ImageResolution {
  * dev restarts never pay the CPU cost twice.
  */
 export class ImageStore {
+  /**
+   * @param cacheDir Absolute path where encoded artifacts are cached (keyed by
+   *   source path + format + quality + size).
+   * @param options Encoding options — see `AirImageOptions`.
+   */
   constructor(
     private readonly cacheDir: string,
     private readonly options: AirImageOptions = {}
@@ -67,8 +73,10 @@ export class ImageStore {
    * back to the options internalized at construction time.
    */
   public async resolve(id: string): Promise<ImageResolution> {
+    const started = performance.now();
     const { filePath, sizes, format, quality, hasCustomSizes } = this.parseQuery(id);
     const { width, height } = await readImageMeta(filePath);
+    const { size: originalSize } = await fs.stat(filePath);
 
     const basename = path.basename(filePath, path.extname(filePath));
     const alt = basename.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -86,13 +94,17 @@ export class ImageStore {
 
       const buf = await this.encodeImage(filePath, format, quality, size);
       await fs.writeFile(abs, buf);
+
+      const reduction = originalSize > 0 ? Math.round((1 - buf.length / originalSize) * 100) : 0;
+      console.log(
+        `[air-image] ${path.basename(filePath)} → ${name}: ${formatBytes(originalSize)} → ${formatBytes(buf.length)} (-${reduction}%) in ${Math.round(performance.now() - started)}ms`
+      );
       return abs;
     };
 
     const sizesMap: Record<number, ImageMeta> = {};
     let defaultMeta: ImageMeta | null = null;
 
-    // The optimized original is only produced when no custom sizes were requested.
     if (!hasCustomSizes) {
       const abs = await getOrEncode(`${basename}.${format}`);
       defaultMeta = { src: url(abs), width, height, alt };
@@ -135,6 +147,15 @@ export class ImageStore {
     };
   }
 
+  /**
+   * Encodes the source image (optionally resized to a target width) and returns
+   * the encoded buffer.
+   *
+   * @param filePath Absolute path of the source image.
+   * @param format One of `'webp' | 'png' | 'jpeg' | 'avif'`.
+   * @param quality Compression quality (1–100).
+   * @param size Target width in pixels; height is derived from the aspect ratio.
+   */
   private async encodeImage(filePath: string, format: string, quality?: number, size?: number): Promise<Buffer> {
     const buffer = await fs.readFile(filePath);
     const transformer = new Transformer(buffer);
@@ -194,9 +215,22 @@ export class ImageStore {
   }
 }
 
+/**
+ * Reads the intrinsic dimensions of an image file.
+ *
+ * @param filePath Absolute path of the image.
+ * @returns The image's `{ width, height }` in pixels.
+ */
 export async function readImageMeta(filePath: string): Promise<{ width: number; height: number }> {
   const buffer = await fs.readFile(filePath);
   const transformer = new Transformer(buffer);
   const meta = await transformer.metadata();
   return { width: meta.width, height: meta.height };
+}
+
+/** Formats a byte count for log output (`1536` → `1.5KB`). */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }

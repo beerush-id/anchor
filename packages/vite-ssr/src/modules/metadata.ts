@@ -20,14 +20,22 @@ export class MetadataNode extends EventEmitter {
 
   private readonly metadataDir: string;
 
+  /**
+   * Initializes a new metadata node.
+   *
+   * @param folderNode The folder this node tracks — its MDX files and child folders.
+   * @param parent Optional parent metadata node.
+   * @param viteRoot Absolute path to the Vite root (`config.root`).
+   * @param pagesDir Absolute path to the pages directory.
+   */
   constructor(
     public readonly folderNode: FolderNode,
     public readonly parent: MetadataNode | undefined,
-    private readonly rootDir: string,
+    private readonly viteRoot: string,
     private readonly pagesDir: string
   ) {
     super();
-    this.metadataDir = path.join(rootDir, '.airstack', 'metadata');
+    this.metadataDir = path.join(viteRoot, '.airstack', 'metadata');
 
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
@@ -37,10 +45,13 @@ export class MetadataNode extends EventEmitter {
     folderNode.on('fileChanged', this.handleFileChanged);
   }
 
+  /**
+   * Boots the metadata node by processing existing MDX files and booting child nodes.
+   */
   public boot() {
     if (!this.parent) {
       bootPackage(this.metadataDir, '@airstack/metadata', { '.': './index.ts', './*': './*.ts' });
-      ensureSymlink(this.rootDir);
+      ensureSymlink(this.viteRoot);
     }
 
     for (const file of this.folderNode.files) {
@@ -57,7 +68,7 @@ export class MetadataNode extends EventEmitter {
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
-    const child = new MetadataNode(childFolder, this, this.rootDir, this.pagesDir);
+    const child = new MetadataNode(childFolder, this, this.viteRoot, this.pagesDir);
     this.children.set(childFolder.segment, child);
 
     child.on('change', (file, kind) => {
@@ -114,6 +125,10 @@ export class MetadataNode extends EventEmitter {
     mdxNode.update();
   }
 
+  /**
+   * Generates the index.ts file for this metadata directory,
+   * aggregating imports from all MDX files and child metadata nodes.
+   */
   public generate() {
     const indexPath = path.join(this.metadataDir, this.folderNode.rel, 'index.ts');
 
@@ -169,6 +184,9 @@ export class MetadataNode extends EventEmitter {
     }
   }
 
+  /**
+   * Closes listeners and recursively destroys child metadata and markdown nodes.
+   */
   public destroy() {
     this.folderNode.removeListener('childAdded', this.handleChildAdded);
     this.folderNode.removeListener('childRemoved', this.handleChildRemoved);
@@ -215,6 +233,10 @@ export class MetadataNode extends EventEmitter {
  * consistent.
  */
 export class MetadataStore extends Map<string, Record<string, AnyType>> {
+  /**
+   * Returns the frontmatter for `absPath`, parsing `content` (the file's source
+   * text) only on first access.
+   */
   public resolve(absPath: string, content: string): Record<string, AnyType> {
     if (!this.has(absPath)) {
       this.set(absPath, parseFrontmatter(content));
@@ -223,6 +245,10 @@ export class MetadataStore extends Map<string, Record<string, AnyType>> {
     return this.get(absPath) as Record<string, AnyType>;
   }
 
+  /**
+   * Synchronously re-parses `content` (the file's source text), replaces the
+   * cached entry, and returns the fresh frontmatter.
+   */
   public invalidate(absPath: string, content: string): Record<string, AnyType> {
     const meta = parseFrontmatter(content);
     this.set(absPath, meta);
@@ -237,6 +263,9 @@ export const META_STORE = new MetadataStore();
  * is a full file containing `---` fenced frontmatter (extracting only the block)
  * or a bare YAML string (as produced by the MDX AST plugins), so every consumer
  * funnels through a single parser and always receives the same object shape.
+ *
+ * @param content Source text — a full file with fenced frontmatter, or a bare
+ *   YAML string.
  */
 export function parseFrontmatter(content: string): Record<string, unknown> {
   if (/^\s*---\r?\n/.test(content)) return getFrontmatter(content);

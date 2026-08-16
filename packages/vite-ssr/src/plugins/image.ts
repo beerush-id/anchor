@@ -66,6 +66,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
     },
   };
 
+  /** Re-emits the cached artifacts through the bundler as build assets. */
   async function emitAssets(
     ctx: { emitFile: (asset: { type: 'asset'; name?: string; source: string | Uint8Array }) => string },
     resolution: ImageResolution

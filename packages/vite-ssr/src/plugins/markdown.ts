@@ -4,30 +4,24 @@ import type { Plugin } from 'vite';
 import { AIR_ENV } from '../modules/env.js';
 import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxFile } from '../modules/markdown.js';
 
-export type AirMarkdownOptions = MdxModuleOptions & {
-  rootDir: string;
-  include: string[];
-};
-
-const DEFAULT_OPTIONS: AirMarkdownOptions = {
-  rootDir: 'src/pages',
-  ...MDX_DEFAULT_OPTIONS,
-};
+export type AirMarkdownOptions = MdxModuleOptions;
 
 /**
  * Vite plugin pipeline for markdown pages. Each entry is split into a compiled
  * chunk module and a routed entry module — the page wrapper bound to the route
  * resolved from the central route tree — with HMR refresh wired on change.
  *
- * @param options Compilation options. `rootDir` is the pages directory relative
- *   to the Vite root; `include` lists the markdown extensions treated as pages.
+ * @param options Compilation options; `include` lists the markdown extensions
+ *   treated as pages.
  */
 export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
-  const $options = { ...DEFAULT_OPTIONS, ...options };
+  const $options = { ...MDX_DEFAULT_OPTIONS, ...options };
 
   const isEntryFile = (id: string) => {
     const [file] = id.split('?');
     const { files } = AIR_ENV;
+
+    if (!file.startsWith(pagesRoot + path.sep)) return false;
 
     return [files.page, files.pageMdx, files.layout, files.layoutMdx].some(
       (f) => file.endsWith(f) && $options.include.some((ext) => f.endsWith(ext))
@@ -38,6 +32,9 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
     {
       name: 'air-pages:mdx:init',
       enforce: 'pre',
+      configResolved(config) {
+        pagesRoot = path.resolve(config.root, AIR_ENV.pagesDir);
+      },
       transform(code, id) {
         if (!isEntryFile(id)) return;
         if (!CHUNK_ENTRIES.has(id)) CHUNK_ENTRIES.set(id, { id, code });
@@ -77,10 +74,11 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         if (!isEntryFile(id)) return;
         if (!isChunkable(id, code)) return;
 
-        // Structural identity comes from the central route tree — no
-        // filesystem probes, no naming guesswork.
         const resolution = AIR_ENV.routes.resolve(id);
-        if (!resolution) return;
+        if (!resolution) {
+          const entry = path.relative(pagesRoot, id.split('?')[0]);
+          throw new Error(`[air-pages] No route resolution for markdown entry: ${entry}`);
+        }
 
         const baseName = path.basename(id);
         const routeName = resolution.exportName;
@@ -171,6 +169,8 @@ type AirChunkEntry = {
 const CHUNK_ALIAS = '?chunk';
 const CHUNK_SUFFIX = '.tsx?chunk';
 const CHUNK_ENTRIES = new Map<string, AirChunkEntry>();
+
+let pagesRoot = '';
 
 function isChunkFile(id: string) {
   return id.endsWith(CHUNK_SUFFIX);

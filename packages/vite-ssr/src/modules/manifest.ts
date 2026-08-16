@@ -17,15 +17,24 @@ export class ManifestNode extends EventEmitter {
 
   private readonly manifestDir: string;
 
+  /**
+   * Initializes a new manifest node.
+   *
+   * @param routeNode The route node whose content routes this manifest level lists.
+   * @param folderNode The folder this manifest level mirrors.
+   * @param parent Optional parent manifest node.
+   * @param viteRoot Absolute path to the Vite root (`config.root`).
+   * @param routeFile The name of the route file (e.g., 'route.ts').
+   */
   constructor(
     public readonly routeNode: RouteNode,
     public readonly folderNode: FolderNode,
     public readonly parent: ManifestNode | undefined,
-    private readonly rootDir: string,
+    private readonly viteRoot: string,
     private readonly routeFile: string
   ) {
     super();
-    this.manifestDir = path.join(rootDir, '.airstack', 'manifest');
+    this.manifestDir = path.join(viteRoot, '.airstack', 'manifest');
 
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
@@ -33,10 +42,14 @@ export class ManifestNode extends EventEmitter {
     routeNode.on('change', this.handleRouteChange);
   }
 
+  /**
+   * Boots the manifest node by ensuring the output directory exists,
+   * handling existing children, and generating the initial index file.
+   */
   public boot() {
     if (!this.parent) {
       bootPackage(this.manifestDir, '@airstack/manifest', { '.': './index.ts' });
-      ensureSymlink(this.rootDir);
+      ensureSymlink(this.viteRoot);
     }
 
     for (const childFolder of this.folderNode.children.values()) {
@@ -52,7 +65,7 @@ export class ManifestNode extends EventEmitter {
     const childRoute = this.routeNode.children.get(childFolder.segment);
     if (!childRoute) return;
 
-    const child = new ManifestNode(childRoute, childFolder, this, this.rootDir, this.routeFile);
+    const child = new ManifestNode(childRoute, childFolder, this, this.viteRoot, this.routeFile);
     this.children.set(childFolder.segment, child);
 
     child.on('change', (file, kind) => this.emit('change', file, kind));
@@ -126,6 +139,10 @@ export class ManifestNode extends EventEmitter {
     }
   }
 
+  /**
+   * Generates the index.ts file for this level of the manifest,
+   * containing route imports and a default export array of routes.
+   */
   public generate() {
     const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
     const lines: string[] = [GENERATED_MARKER];
@@ -150,6 +167,9 @@ export class ManifestNode extends EventEmitter {
     }
   }
 
+  /**
+   * Closes listeners and cleans up the generated manifest index file.
+   */
   public destroy() {
     this.folderNode.removeListener('childAdded', this.handleChildAdded);
     this.folderNode.removeListener('childRemoved', this.handleChildRemoved);

@@ -10,15 +10,25 @@ import { ManifestNode } from './manifest.js';
 import { MetadataNode } from './metadata.js';
 import { RouteNode } from './route-node.js';
 
+/** Configuration options for the AppNode foundation. */
 export type AppNodeOptions = {
+  /** Absolute path to the project root (`config.root`). */
   root: string;
+  /** Absolute path to the pages directory. */
   pagesDir: string;
+  /** Absolute path to the app source directory where entry files are scaffolded. */
   appDir: string;
+  /** Absolute path to the router file. */
   routerFile: string;
+  /** UI framework for scaffolds and generated code. */
   framework: Framework;
+  /** Resolved file name map (defaults merged with user overrides). */
   fileMap: FileMap;
+  /** Whether to generate the route manifest. Defaults to true. */
   manifestEnabled?: boolean;
+  /** Whether to generate MDX metadata. Defaults to true. */
   metadataEnabled?: boolean;
+  /** Whether to scaffold entry files. Defaults to true. */
   scaffoldEnabled?: boolean;
 };
 
@@ -34,6 +44,12 @@ export class AppNode extends EventEmitter {
 
   private readonly fileMap: FileMap;
 
+  /**
+   * Initializes the application node, scaffolds missing required files,
+   * and builds the initial filesystem trees.
+   *
+   * @param opts Application node configuration options.
+   */
   constructor(private readonly opts: AppNodeOptions) {
     super();
     this.fileMap = opts.fileMap;
@@ -65,6 +81,9 @@ export class AppNode extends EventEmitter {
     this.emit('change', file, kind);
   };
 
+  /**
+   * Cleans up watchers and event listeners across all domain trees.
+   */
   public destroy() {
     this.rootManifest?.destroy();
     this.rootMetadata?.destroy();

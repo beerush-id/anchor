@@ -5,7 +5,7 @@ import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
 import type { FileMap } from '../utils/mapper.js';
-import { type AirWorkerOptions, airWorker } from '../worker.js';
+import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
 import { airEnv } from './env.js';
 import { type AirImageOptions, airImage } from './image.js';
 import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
@@ -141,9 +141,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       config = resolved;
 
       const routerFile = options.routerFile ?? 'src/router.ts';
-      const workerFile = options.worker
-        ? (options.worker.entry ?? `src/${AIR_ENV.files.workerEntry}`)
-        : `src/${AIR_ENV.files.workerEntry}`;
+      const workerFile = resolveWorkerEntry(options.worker ? options.worker : {});
 
       absPagesDir = path.resolve(config.root, AIR_ENV.pagesDir);
       absAppDir = path.dirname(path.resolve(config.root, routerFile));
@@ -248,7 +246,6 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
   const plugins: Plugin[] = [airEnv(options)];
   const mdOptions = {
-    rootDir: options.pagesDir ?? 'src/pages',
     extended: options.extended,
     ...(typeof options.markdown === 'object' ? options.markdown : {}),
   } as AirMarkdownOptions;

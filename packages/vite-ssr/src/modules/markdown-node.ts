@@ -14,6 +14,13 @@ export class MarkdownNode extends EventEmitter {
   public itemPath: string;
   public varName: string;
 
+  /**
+   * Initializes a new markdown node.
+   *
+   * @param absPath Absolute path to the source MDX file.
+   * @param pagesDir Absolute path to the pages root directory.
+   * @param metadataDir Absolute path to the metadata generation directory.
+   */
   constructor(
     public readonly absPath: string,
     pagesDir: string,
@@ -37,6 +44,10 @@ export class MarkdownNode extends EventEmitter {
     this.varName = `${derivePrefix(relPath) || 'root'}Meta`;
   }
 
+  /**
+   * Reads the source MDX file, extracts its frontmatter, and generates
+   * a TypeScript file exporting the metadata.
+   */
   public update() {
     let content = '';
 
@@ -61,6 +72,9 @@ export class MarkdownNode extends EventEmitter {
     }
   }
 
+  /**
+   * Removes the generated metadata file and cleans up the node.
+   */
   public destroy() {
     try {
       fs.unlinkSync(this.generatedFilePath);

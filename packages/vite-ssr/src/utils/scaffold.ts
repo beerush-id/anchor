@@ -15,6 +15,11 @@ import {
  * The caller is responsible for the empty-file checks — this is a pure decision function.
  * The `files` map is the fully resolved configuration (defaults merged with user overrides);
  * this module never merges or guesses.
+ *
+ * @param opts.base File base name (`app.tsx`, `client.tsx`, `worker.ts`, `page.tsx`, `layout.tsx`, `page.mdx`).
+ * @param opts.folder The folder the file belongs to; required for page/layout/mdx files.
+ * @param opts.framework Target UI framework for the scaffolded imports.
+ * @param opts.files Resolved file name map (defaults merged with user overrides).
  */
 export function scaffoldForFile(opts: {
   base: string;
@@ -68,6 +73,9 @@ export function scaffoldForFile(opts: {
   return undefined;
 }
 
+/**
+ * Scaffolds an `app.tsx` entry module.
+ */
 export function scaffoldAppTsx(opts: { framework: Framework; files: FileMap }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
@@ -80,6 +88,9 @@ export default (({ url }) => <UIRouter router={router} root={RootLayout} url={ur
 `;
 }
 
+/**
+ * Scaffolds a `client.tsx` client hydration module.
+ */
 export function scaffoldClientTsx(opts: { framework: Framework; files: FileMap }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
@@ -112,6 +123,9 @@ router
 `;
 }
 
+/**
+ * Scaffolds a `worker.ts` server rendering entry module.
+ */
 export function scaffoldWorkerTs(opts: { framework: Framework; files: FileMap }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
@@ -124,6 +138,9 @@ export default createApp(router, App);
 `;
 }
 
+/**
+ * Scaffolds an ambient `global.d.ts` declarations file.
+ */
 export function scaffoldGlobalDts(): string {
   return `/// <reference types="@anchorlib/vite-ssr/ambient" />
 
@@ -134,6 +151,9 @@ interface AirRouteMeta {
 `;
 }
 
+/**
+ * Scaffolds a `page.tsx` module.
+ */
 export function scaffoldPageTsx(opts: {
   framework: Framework;
   rel: string;
@@ -156,6 +176,9 @@ export default page(${opts.routeExport}).render(() => (
 `;
 }
 
+/**
+ * Scaffolds a `layout.tsx` module.
+ */
 export function scaffoldLayoutTsx(opts: {
   framework: Framework;
   rel?: string;
@@ -181,6 +204,9 @@ export default page(${opts.routeExport}).render(({ children }) => children);
 `;
 }
 
+/**
+ * Scaffolds a `page.mdx` module with a frontmatter block.
+ */
 export function scaffoldPageMdx(opts: { segment: string }): string {
   const title = humanizeSegment(opts.segment);
 

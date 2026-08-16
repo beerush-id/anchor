@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import type { Plugin } from 'vite';
 import { AIR_ENV } from '../modules/env.js';
 import { META_STORE } from '../modules/metadata.js';
 
 export type MdxSearchOptions = {
-  rootDir?: string;
+  pagesDir?: string;
   include?: string[];
   exclude?: string[];
 };
@@ -21,7 +22,7 @@ export interface SearchDocument {
  * Builds a search index over markdown pages — frontmatter title, text content,
  * and URL — emitted as `index.json` at build and served at `/index.json` in dev.
  * The tree is walked once at boot; watcher events update only the affected
- * entry. `rootDir` is the pages directory; `include`/`exclude` filter which
+ * entry. `pagesDir` is the pages directory; `include`/`exclude` filter which
  * files are indexed.
  */
 export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
@@ -31,6 +32,8 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
     searchCache.clear();
 
     if (!searchPagesDir) return;
+
+    const started = performance.now();
 
     const walk = (dir: string) => {
       let entries: fs.Dirent[];
@@ -51,13 +54,15 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
     };
 
     walk(searchPagesDir);
+
+    console.log(`[air-pages] Indexed ${searchCache.size} documents in ${Math.round(performance.now() - started)}ms`);
   };
 
   return {
     name: 'air-pages:search',
     configResolved(config) {
       searchRoot = config.root;
-      searchPagesDir = path.resolve(config.root, options.rootDir ?? AIR_ENV.pagesDir);
+      searchPagesDir = path.resolve(config.root, options.pagesDir ?? AIR_ENV.pagesDir);
       searchExclude = exclude;
       buildIndex();
     },
@@ -99,6 +104,13 @@ let searchRoot = '';
 let searchPagesDir = '';
 let searchExclude: string[] = [];
 
+/**
+ * Surgically updates the index entry for a single file: re-parses only that
+ * file (through the shared metadata store) and replaces its entry.
+ *
+ * @param file Absolute path of the markdown file to re-index.
+ * @param include Extensions that qualify a file for indexing.
+ */
 export async function invalidateSearchCache(file: string, include: string[]): Promise<void> {
   if (!isIndexedFile(file, include)) return Promise.resolve();
 
@@ -109,6 +121,7 @@ export async function invalidateSearchCache(file: string, include: string[]): Pr
   return Promise.resolve();
 }
 
+/** Serializes the index for the client. */
 export function serveSearchIndex(): string {
   return JSON.stringify(Array.from(searchCache.values()));
 }

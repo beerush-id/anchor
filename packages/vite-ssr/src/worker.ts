@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { HtmlTagDescriptor, IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
 import { AIR_ENV } from './modules/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
@@ -44,7 +44,7 @@ export type AirWorkerOptions = {
  * @returns Vite plugin.
  */
 export function airWorker(options: AirWorkerOptions = {}): Plugin {
-  const entry = options.entry ?? 'src/worker.ts';
+  const resolveEntry = () => resolveWorkerEntry(options);
   let resolvedConfig: ResolvedConfig;
 
   return {
@@ -158,7 +158,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
     load(id) {
       if (id === 'worker') {
         return `
-          import worker from '/${entry.replace('./', '')}';
+          import worker from '/${resolveEntry().replace('./', '')}';
           import template from '/dist/client/index.html?raw';
 
           if (worker && worker.options) {
@@ -202,7 +202,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
         if (req.headers['sec-websocket-protocol'] === 'vite-hmr') return;
 
         try {
-          const workerModule = await server.ssrLoadModule(entry);
+          const workerModule = await server.ssrLoadModule(resolveEntry());
           const worker = workerModule.default;
 
           if (worker && typeof worker.upgrade === 'function' && worker.options?.wsRouter) {
@@ -249,7 +249,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
             if (options.ignoreDotPath !== false && urlPath.startsWith('/.')) return next();
             const request = toWebRequest(req, controller);
 
-            const workerModule = await server.ssrLoadModule(entry);
+            const workerModule = await server.ssrLoadModule(resolveEntry());
             const worker = workerModule.default;
 
             if (!worker || typeof worker.fetch !== 'function') {
@@ -277,6 +277,14 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       };
     },
   };
+}
+
+/**
+ * Resolves the worker entry path (relative to the Vite root): the explicit
+ * `entry` option, or the configured worker entry under the source root.
+ */
+export function resolveWorkerEntry(options: AirWorkerOptions): string {
+  return options.entry ?? join(AIR_ENV.rootDir, AIR_ENV.files.workerEntry);
 }
 
 async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {

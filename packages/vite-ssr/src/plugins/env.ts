@@ -19,8 +19,7 @@ export function airEnv(options: AirPagesOptions = {}): Plugin {
     name: 'air-pages:env',
     enforce: 'pre',
     configResolved(config) {
-      AIR_ENV.rootDir = 'src';
-      AIR_ENV.pagesDir = options.pagesDir ?? 'src/pages';
+      AIR_ENV.pagesDir = options.pagesDir ?? AIR_ENV.pagesDir;
       AIR_ENV.framework = options.framework ?? detectFramework(config.root);
       AIR_ENV.files = { ...DEFAULT_FILE_MAP, ...options.files };
       AIR_ENV.images = new ImageStore(

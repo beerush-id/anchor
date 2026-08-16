@@ -11,9 +11,9 @@ export function writeIfChanged(filePath: string, content: string): boolean {
   return true;
 }
 
-export function ensureSymlink(rootDir: string): void {
-  const absAirStackDir = path.join(rootDir, '.airstack');
-  const nodeModulesDir = path.join(rootDir, 'node_modules');
+export function ensureSymlink(viteRoot: string): void {
+  const absAirStackDir = path.join(viteRoot, '.airstack');
+  const nodeModulesDir = path.join(viteRoot, 'node_modules');
   const target = path.join(nodeModulesDir, '@airstack');
   fs.mkdirSync(nodeModulesDir, { recursive: true });
 

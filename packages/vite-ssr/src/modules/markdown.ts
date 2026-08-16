@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
 import type { Node } from 'mdast';
 import type { Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
@@ -86,6 +87,10 @@ export class MdxModule {
 
   public tree?: HTMLNode;
 
+  /**
+   * @param id Module id — the absolute path of the MDX source.
+   * @param options Compilation options (see `MdxModuleOptions`); defaults applied.
+   */
   constructor(
     public id: string,
     options?: Partial<MdxModuleOptions>
@@ -130,8 +135,8 @@ export class MdxModule {
     for (const handler of postProcessors) {
       try {
         await handler(this);
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error(`[air-pages] Post-processing failed for ${path.basename(this.id)}:`, error);
       }
     }
   }
@@ -165,8 +170,13 @@ export class MdxModule {
 }
 
 /**
- * Compiles an MDX file and returns the compiled module code plus the
+ * Compiles an MDX source and returns the compiled module code plus the
  * MdxModule instance.
+ *
+ * @param id Module id — the absolute path of the MDX source.
+ * @param code Raw MDX source text.
+ * @param options Compilation options (see `MdxModuleOptions`).
+ * @returns `{ id, file, code }` — the instance and its compiled module code.
  */
 export async function mdxFile(id: string, code: string, options: Partial<MdxModuleOptions> = {}) {
   const file = new MdxModule(id, options);
@@ -209,6 +219,8 @@ export const importExtended = (): Promise<ExtendedPlugins> => {
  * Resolves the remark/rehype plugin list for an MdxModule from its `extended`
  * option, configured per-plugin. The plugins themselves come from the hoisted
  * `importExtended()` singleton.
+ *
+ * @param module The MdxModule whose `extended` option configures the plugins.
  */
 export async function loadExtendedPlugins(module: MdxModule) {
   const { extended } = module.options;
@@ -242,6 +254,9 @@ export async function loadExtendedPlugins(module: MdxModule) {
  * already stripped) into `module.metadata`, tags directives as admonitions,
  * maps `code-group` directives to `AirCodeGroup`, and moves `script`
  * directive bodies into the module's globals or locals.
+ *
+ * @param module The MdxModule to capture metadata/scripts into; omit for a
+ *   standalone transform.
  */
 export function airMdxRemark(module?: MdxModule) {
   return (tree: MarkdownNode) => {
@@ -295,6 +310,9 @@ export function airMdxRemark(module?: MdxModule) {
 /**
  * Rehype plugin for an MdxModule: normalizes heading ids and records the
  * module's headings, filtered by `headingDepth`.
+ *
+ * @param module The MdxModule to record headings on; omit for a standalone
+ *   transform.
  */
 export function airMdxRehype(module?: MdxModule) {
   return (tree: HTMLNode) => {
@@ -325,14 +343,20 @@ export function airMdxRehype(module?: MdxModule) {
 }
 
 /**
- * Returns a predicate matching a file id against the given markdown
- * extensions (defaults to `['.md', '.mdx']`).
+ * Returns a predicate matching a file id against the given markdown extensions.
+ *
+ * @param include Markdown extensions to match (defaults to `['.md', '.mdx']`).
  */
 export function mdxMatcher(include: string[] = MDX_DEFAULT_OPTIONS.include) {
   return createMatcher(include);
 }
 
-/** Depth-first search for the first descendant of the given node type (default `'text'`). */
+/**
+ * Depth-first search for the first descendant of the given node type.
+ *
+ * @param node Root of the search.
+ * @param type Node type to find (default `'text'`).
+ */
 export function getLeafNode(node: MarkdownNode, type = 'text'): MarkdownNode | undefined {
   if (node.type === type) return node;
 

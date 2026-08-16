@@ -10,20 +10,25 @@ export type AirEnv = {
   meta: MetadataStore;
   /** Central route registry over the parsed filesystem tree. */
   routes: RouteStore;
+  /** Image encoding and caching store. */
   images: ImageStore;
   /**
-   * Source root, relative to the Vite root.
+   * Source root — where entry/client/worker files live — relative to the Vite
+   * root. Not the pages directory; see `pagesDir`.
    * @default 'src'
    */
   rootDir: string;
   /**
-   * Pages directory, relative to the Vite root.
+   * Pages directory — the routing root where the file-tree scan starts —
+   * relative to the Vite root. Not the source root; see `rootDir`.
    * @default 'src/pages'
    */
   pagesDir: string;
+  /** UI framework for scaffolds, MDX pages, and generated code. */
   framework: Framework;
   /** Resolved file name map (defaults merged with user overrides). */
   files: FileMap;
+  /** Last served URL in dev, used to force SSR module refresh on MDX changes. */
   currentUrl?: string;
 };
 

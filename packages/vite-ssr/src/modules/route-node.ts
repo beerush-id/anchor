@@ -87,6 +87,11 @@ export class RouteNode extends EventEmitter {
     folderNode.on('childRemoved', this.handleChildRemoved);
   }
 
+  /**
+   * Boots the node: adopts existing route export names, ensures the route file
+   * exists, gap-fills missing exports, scaffolds empty UI files, and recursively
+   * boots child nodes.
+   */
   public boot() {
     void this.resolveExportNames();
 
@@ -113,6 +118,7 @@ export class RouteNode extends EventEmitter {
     }
   }
 
+  /** Removes event listeners and recursively destroys child nodes. */
   public destroy() {
     this.folderNode.removeListener('fileAdded', this.handleFileAdded);
     this.folderNode.removeListener('fileRemoved', this.handleFileRemoved);
@@ -128,6 +134,7 @@ export class RouteNode extends EventEmitter {
     this.removeAllListeners();
   }
 
+  /** Whether this folder is a content node (page/layout/named page) and not a wildcard route. */
   public get isContent(): boolean {
     if (!(this.page || this.layout || this.namedPages.size > 0)) return false;
     return !this.rel.split('/').some((segment) => segment.startsWith('[...'));
@@ -163,6 +170,7 @@ export class RouteNode extends EventEmitter {
     if (indexName) this.indexName = indexName;
   }
 
+  /** Writes starter content into `name` when it is a 0-byte file; non-empty files are never touched. */
   public scaffoldFile(name: string) {
     if (this.framework === undefined) return;
     const file = path.join(this.folderNode.dir, name);
@@ -409,6 +417,7 @@ export class RouteNode extends EventEmitter {
     fs.writeFileSync(routeFilePath, magic.toString());
   }
 
+  /** Creates route.ts from scratch when it doesn't exist. */
   private ensureRouteFile(): boolean {
     const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
 
@@ -486,6 +495,7 @@ export class RouteNode extends EventEmitter {
   }
 }
 
+/** A structural view of an `acorn` AST node. */
 type AcornNode = {
   type: string;
   name?: string;
