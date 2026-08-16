@@ -63,7 +63,7 @@ describe('mdx pages — MDX files are pages', () => {
 
     expect(file.metadata.title).toBe('Docs');
     expect(file.metadata.description).toBe('AIR docs');
-    expect(code).toContain('<AirHead meta={airMdxMeta} />');
+    expect(code).toContain('<AirHtmlHead meta={airMdxMeta} />');
     expect(code).toContain('export function AirMdxPage');
   });
 
