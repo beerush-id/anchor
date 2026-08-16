@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -22,9 +23,9 @@ export interface AirImageOptions {
    */
   quality?: number;
   /**
-   * Enable image generation and resizing in dev mode.
-   * If false, falls back to original raw file path for faster HMR.
-   * @default false
+   * Image generation and resizing in dev mode. Set to false to serve raw file
+   * paths for faster HMR.
+   * @default true
    */
   devEnabled?: boolean;
 }
@@ -75,14 +76,15 @@ export class ImageStore {
   public async resolve(id: string): Promise<ImageResolution> {
     const started = performance.now();
     const { filePath, sizes, format, quality, hasCustomSizes } = this.parseQuery(id);
-    const { width, height } = await readImageMeta(filePath);
+    const { width, height, buffer } = await readImageMeta(filePath);
     const { size: originalSize } = await fs.stat(filePath);
 
     const basename = path.basename(filePath, path.extname(filePath));
     const alt = basename.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
-    const hash = Buffer.from(filePath).toString('base64url').slice(-8);
-    const outPath = (name: string) => path.join(this.cacheDir, `${hash}-${name}`);
+    const pathHash = Buffer.from(filePath).toString('base64url').slice(-8);
+    const contentHash = createHash('sha1').update(buffer).digest('hex').slice(0, 8);
+    const outPath = (name: string) => path.join(this.cacheDir, `${pathHash}-${contentHash}-${name}`);
     const url = (abs: string) => `/@fs${abs}`;
 
     const getOrEncode = async (name: string, size?: number): Promise<string> => {
@@ -92,6 +94,7 @@ export class ImageStore {
         return abs;
       } catch {}
 
+      allCached = false;
       const buf = await this.encodeImage(filePath, format, quality, size);
       await fs.writeFile(abs, buf);
 
@@ -104,6 +107,7 @@ export class ImageStore {
 
     const sizesMap: Record<number, ImageMeta> = {};
     let defaultMeta: ImageMeta | null = null;
+    let allCached = true;
 
     if (!hasCustomSizes) {
       const abs = await getOrEncode(`${basename}.${format}`);
@@ -134,6 +138,10 @@ export class ImageStore {
         lastSize !== undefined && sizesMap[lastSize]
           ? sizesMap[lastSize]
           : { src: `/@fs${filePath}`, width, height, alt };
+    }
+
+    if (allCached) {
+      console.log(`[air-image] ${path.basename(filePath)}: served from cache`);
     }
 
     return {
@@ -219,13 +227,14 @@ export class ImageStore {
  * Reads the intrinsic dimensions of an image file.
  *
  * @param filePath Absolute path of the image.
- * @returns The image's `{ width, height }` in pixels.
+ * @returns The image's `{ width, height }` in pixels plus the raw file buffer
+ *   (reused by callers to avoid a second read).
  */
-export async function readImageMeta(filePath: string): Promise<{ width: number; height: number }> {
+export async function readImageMeta(filePath: string): Promise<{ width: number; height: number; buffer: Buffer }> {
   const buffer = await fs.readFile(filePath);
   const transformer = new Transformer(buffer);
   const meta = await transformer.metadata();
-  return { width: meta.width, height: meta.height };
+  return { width: meta.width, height: meta.height, buffer };
 }
 
 /** Formats a byte count for log output (`1536` → `1.5KB`). */

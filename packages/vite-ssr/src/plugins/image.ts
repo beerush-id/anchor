@@ -11,8 +11,8 @@ export type { AirImageOptions } from '../modules/image-store.js';
  * Processes imported images with `?airimg` or `?asset` suffixes, generating
  * optimized formats and responsive sizes at build time or lazily in dev mode.
  *
- * Encoding is opt-in during development: `devEnabled` must be explicitly
- * `true`, otherwise the raw file path is served for fast HMR.
+ * In dev, images are encoded by default; set `devEnabled: false` to serve the
+ * raw file path for faster HMR.
  *
  * @param options Image configuration options.
  * @returns Vite plugin.
@@ -40,7 +40,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
 
       const filePath = id.split('?')[0];
 
-      if (!isBuild && devEnabled !== true) {
+      if (!isBuild && devEnabled === false) {
         const { width, height } = await readImageMeta(filePath);
         const basename = path.basename(filePath, path.extname(filePath));
         const alt = basename.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
