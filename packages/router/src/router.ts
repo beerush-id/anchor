@@ -1,4 +1,4 @@
-import { isBrowser } from '@anchorlib/core';
+import { captureStack, isBrowser } from '@anchorlib/core';
 import { type RouteCacheSnapshot, URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
@@ -126,10 +126,17 @@ export class Router<Output = any> {
     this.rootRegistry = new RouteRegistry(this.rootRoute);
     this.routes.add(this.rootRegistry);
 
-    if (isBrowser() && Array.isArray(window[HYDRATION_KEY as keyof Window])) {
-      this.hydratedSegments = window[HYDRATION_KEY as keyof Window] as RouterSnapshot;
-      delete window[HYDRATION_KEY as keyof Window];
-      document.querySelector(`#${HYDRATION_KEY}`)?.remove();
+    if (isBrowser()) {
+      const hydration = document.querySelector(`#${HYDRATION_KEY}`);
+      if (hydration) {
+        try {
+          this.hydratedSegments = JSON.parse(hydration.textContent || '');
+        } catch (error) {
+          captureStack.error.internal('Malformed router hydration cache.', error as Error);
+        }
+
+        hydration.remove();
+      }
     }
   }
 
@@ -634,7 +641,7 @@ export class Router<Output = any> {
     this.exceptionRendererState.value = getExceptionRendererFactory()(this.rootRoute, renderer);
   }
 
-  public createHydrationScript(snapshot: RouterSnapshot, deferred?: boolean | number) {
+  public createHydrationScript(snapshot: RouterSnapshot) {
     const jsonString = JSON.stringify(snapshot)
       .replace(/</g, '\\u003C')
       .replace(/>/g, '\\u003E')
@@ -642,16 +649,7 @@ export class Router<Output = any> {
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
 
-    const deferral = typeof deferred === 'number' ? deferred : deferred !== false ? 50 : 0;
-
-    if (deferral) {
-      return [
-        `<script id="${HYDRATION_KEY}_JSON" type="application/json">${jsonString}</script>`,
-        `<script id="${HYDRATION_KEY}">setTimeout(() => {window.${HYDRATION_KEY} = JSON.parse(document.getElementById('${HYDRATION_KEY}_JSON').textContent)}, ${deferral})</script>`,
-      ].join('\n');
-    }
-
-    return `<script id="${HYDRATION_KEY}">window.${HYDRATION_KEY} = ${jsonString}</script>`;
+    return `<script id="${HYDRATION_KEY}" type="application/json">${jsonString}</script>`;
   }
 }
 
