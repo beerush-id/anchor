@@ -3,7 +3,7 @@ import type { Framework } from '../modules/env.js';
 export function wrapJsx(framework: Framework, head: string, body: string): string {
   if (framework === 'react') {
     return `
-import { render as __airRender, Head as AirHead, getContext as __airGetCtx } from '@anchorlib/react';
+import { getContext as __airGetCtx, Head as AirHtmlHead, render as __airRender } from '@anchorlib/react';
 
 ${head}
 
@@ -21,7 +21,7 @@ ${body}
 
   return __airRender(() => (
     <>
-      <AirHead meta={airMdxMeta} />
+      <AirHtmlHead meta={airMdxMeta} />
       <AirMdxContent />
     </>
   ), 'AirMdxPage');
@@ -31,7 +31,7 @@ ${body}
 
   if (framework === 'solid') {
     return `
-import { AirHead, getContext as __airGetCtx } from '@anchorlib/solid';
+import { getContext as __airGetCtx, Head as AirHtmlHead } from '@anchorlib/solid';
 
 ${head}
 
@@ -49,7 +49,7 @@ ${body}
 
   return (
     <>
-      <AirHead meta={airMdxMeta} />
+      <AirHtmlHead meta={airMdxMeta} />
       <AirMdxContent />
     </>
   );

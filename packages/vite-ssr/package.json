@@ -60,6 +60,7 @@
     "magic-string": "catalog:lib",
     "oxc-parser": "catalog:lib",
     "unified": "catalog:lib",
+    "unist-util-visit": "catalog:lib",
     "ws": "catalog:lib",
     "yaml": "catalog:lib"
   },

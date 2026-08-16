@@ -4,7 +4,7 @@ import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
-import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxEntryWrapper, mdxFile } from '../modules/markdown.js';
+import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile, type MdxModuleOptions } from '../modules/markdown.js';
 
 const log = taggedLogger('air-markdown');
 
@@ -106,17 +106,18 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const chunkName = `./${baseName}${CHUNK_ALIAS}`;
         const chunkFile = path.join(path.dirname(id), `./${baseName}${CHUNK_SUFFIX}`);
 
-        const entry = mdxEntryWrapper({
+        const wrapped = mdxEntryWrapper({
           file: id,
           resolution,
           framework: AIR_ENV.framework,
           files: AIR_ENV.files,
           chunkName,
         });
-        if (!entry) return;
+
+        if (!wrapped) return;
 
         const chunk = CHUNK_ENTRIES.get(id)!;
-        chunk.entry = entry;
+        chunk.entry = wrapped;
         chunk.chunk = chunkFile;
         CHUNK_ENTRIES.set(chunkFile, chunk);
         log.verbose(color.event('Created'), 'chunk for', color.file(relFile(id)));

@@ -5,6 +5,7 @@ import type { Node } from 'mdast';
 import type { Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
 import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
 import type { Options as RemarkGfmOptions } from 'remark-gfm';
+import type { AnyType } from 'src/types.ts';
 import type { PluggableList, Plugin } from 'unified';
 import { visit } from 'unist-util-visit';
 import { color, taggedLogger } from '../logger.js';
@@ -12,7 +13,6 @@ import { stripFrontmatter } from '../utils/frontmatter.js';
 import { wrapJsx } from '../utils/jsx.js';
 import type { FileMap } from '../utils/mapper.js';
 import { createMatcher } from '../utils/matcher.js';
-
 import { AIR_ENV, type Framework } from './env.js';
 import { META_STORE } from './metadata.js';
 import type { RouteResolution } from './route-store.js';
@@ -144,7 +144,7 @@ export class MdxModule {
     // the build instead of silently compiling to a blank module.
     const file = await compile(
       { path: id, value: body },
-      { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins }
+      { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins, recmaPlugins: [airRecmaPlugin] }
     );
     log.verbose(color.event('Compiled'), 'MDX source');
 
@@ -198,6 +198,42 @@ export class MdxModule {
     remarkPlugins.unshift(...remark);
     rehypePlugins.unshift(...rehype);
   }
+}
+
+export function airRecmaPlugin() {
+  const visit = (node: AnyType) => {
+    if (!node || typeof node !== 'object') return;
+
+    if (node.type === 'JSXElement') {
+      if (node.openingElement) visit(node.openingElement);
+      if (node.closingElement) visit(node.closingElement);
+    }
+
+    // Unwrap `_components.XXX` to `XXX`.
+    if (node.type === 'JSXOpeningElement' || node.type === 'JSXClosingElement') {
+      if (node.name.type === 'JSXMemberExpression' && node.name.object.name === '_components') {
+        const tagName = node.name.property.name;
+
+        node.name = {
+          type: 'JSXIdentifier',
+          name: tagName,
+        };
+      }
+    }
+
+    for (const key in node) {
+      const child = node[key];
+      if (Array.isArray(child)) {
+        child.forEach(visit);
+      } else {
+        visit(child);
+      }
+    }
+  };
+
+  return (tree: AnyType) => {
+    visit(tree);
+  };
 }
 
 /**

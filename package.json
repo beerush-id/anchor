@@ -137,6 +137,7 @@
       "tailwindcss": "^4.1.0",
       "typescript": "^5.9.3",
       "unified": "11.0.5",
+      "unist-util-visit": "5.1.0",
       "unplugin-solid": "1.0.0",
       "vfile": "6.0.3",
       "vite": "^8.0.10",

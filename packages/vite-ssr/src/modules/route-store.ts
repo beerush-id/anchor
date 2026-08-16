@@ -4,11 +4,6 @@ import type { RouteNode } from './route-node.js';
 
 export type RouteResolution = {
   node: RouteNode;
-  /**
-   * The exact generated route export to import for this file:
-   * `indexName` for pages in a folder with a layout, `routeName` for layouts
-   * and for pages in a folder without a layout, the named route for named pages.
-   */
   exportName: string;
   isIndex: boolean;
   isLayout: boolean;
