@@ -13,7 +13,6 @@ import { airImage, type AirImageOptions } from './image.js';
 import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
-import { isObject } from '@anchorlib/core';
 
 const log = taggedLogger('air-pages');
 
@@ -154,7 +153,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       setLogLevel(options.logLevel);
 
       const routerFile = options.routerFile ?? 'src/router.ts';
-      const workerFile = resolveWorkerEntry(isObject(options.worker) ? options.worker : {});
+      const workerFile = resolveWorkerEntry(typeof options.worker === 'object' ? options.worker : {});
 
       absPagesDir = path.resolve(config.root, AIR_ENV.pagesDir);
       absAppDir = path.dirname(path.resolve(config.root, routerFile));

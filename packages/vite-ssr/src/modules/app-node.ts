@@ -1,18 +1,17 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnyType } from '@anchorlib/core';
 import { color, taggedLogger } from '../logger.js';
+import type { AnyType } from '../types.js';
 import type { FileMap, Framework } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
-
-const log = taggedLogger('air-pages');
-
 import { AIR_ENV } from './env.js';
 import { FolderNode } from './folder-node.js';
 import { ManifestNode } from './manifest.js';
 import { MetadataNode } from './metadata.js';
 import { RouteNode } from './route-node.js';
+
+const log = taggedLogger('air-pages');
 
 /** Configuration options for the AppNode foundation. */
 export type AppNodeOptions = {

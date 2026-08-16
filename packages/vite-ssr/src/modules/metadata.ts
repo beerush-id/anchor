@@ -2,16 +2,15 @@ import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnyType } from '@anchorlib/core';
 import { color, taggedLogger } from '../logger.js';
+import type { AnyType } from '../types.js';
 import { matchFrontmatter, parseFrontmatterBlock } from '../utils/frontmatter.js';
-
-const log = taggedLogger('air-metadata');
-
 import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
 import { MarkdownNode } from './markdown-node.js';
+
+const log = taggedLogger('air-metadata');
 
 /**
  * Represents a node in the metadata tree.

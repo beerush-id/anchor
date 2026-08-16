@@ -1,10 +1,10 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnyType } from '@anchorlib/core';
 import MagicString from 'magic-string';
-import { type CallExpression, type ImportDeclaration, type ParseResult, type Program, parseSync } from 'oxc-parser';
+import { type CallExpression, type ImportDeclaration, type ParseResult, parseSync, type Program } from 'oxc-parser';
 import { color, taggedLogger } from '../logger.js';
+import type { AnyType } from '../types.js';
 import {
   deriveIndexName,
   deriveNamedRouteName,
