@@ -10,34 +10,42 @@ const log = taggedLogger('air-image');
 
 export type ImageFormat = 'webp' | 'png' | 'jpeg' | 'avif';
 
-export interface AirImageOptions {
+interface ImageOptions {
   /**
    * Default sizes to generate (e.g. [128, 256, 512, 1024])
    * @default [128, 256, 512, 1024]
    */
-  sizes?: number[];
+  sizes: number[];
   /**
    * Default format to convert to
    * @default 'webp'
    */
-  format?: ImageFormat;
+  format: ImageFormat;
   /**
    * Compression quality (1-100)
    * @default 75
    */
-  quality?: number;
+  quality: number;
+  /*
+   * Directory where encoded artifacts are cached (keyed by source path + format +
+   * quality + size).
+   * @default 'node_modules/.cache/air-image'
+   */
+  cacheDir: string;
   /**
    * Image generation and resizing in dev mode. Set to false to serve raw file
    * paths for faster HMR.
    * @default true
    */
-  devEnabled?: boolean;
+  devEnabled: boolean;
   /**
    * Console log level, applied to every `air-*` tag (shared sink).
    * @default LogLevel.INFO
    */
   logLevel?: LogLevel;
 }
+
+export type AirImageOptions = Partial<ImageOptions>;
 
 export type ImageMeta = {
   src: string;
@@ -60,6 +68,14 @@ export interface ImageResolution {
   sizes: Record<number, ImageMeta>;
 }
 
+const IMAGE_DEFAULT_OPTIONS: ImageOptions = {
+  sizes: [128, 256, 512, 1024],
+  format: 'webp',
+  quality: 75,
+  cacheDir: 'node_modules/.cache/air-image',
+  devEnabled: true,
+};
+
 /**
  * Centralizes the image encoding and caching lifecycle. Encoded artifacts are
  * written to a deterministic cache directory (keyed by source path + format +
@@ -67,18 +83,19 @@ export interface ImageResolution {
  * dev restarts never pay the CPU cost twice.
  */
 export class ImageStore {
+  public options: ImageOptions;
+  public rootDir: string;
+  public cacheDir: string;
+
   /**
-   * @param cacheDir Absolute path where encoded artifacts are cached (keyed by
-   *   source path + format + quality + size).
    * @param options Encoding options — see `AirImageOptions`.
    * @param root Absolute Vite root, for log identifiers relative to the project.
    */
-  constructor(
-    private readonly cacheDir: string,
-    private readonly options: AirImageOptions = {},
-    private readonly root: string = ''
-  ) {
-    this.ensureDir = fs.mkdir(cacheDir, { recursive: true }).catch(() => undefined);
+  constructor(options: AirImageOptions = {}, root: string = process.cwd()) {
+    this.options = { ...IMAGE_DEFAULT_OPTIONS, ...options };
+    this.rootDir = root || process.cwd();
+    this.cacheDir = path.join(this.rootDir, this.options.cacheDir);
+    this.ensureDir = fs.mkdir(this.cacheDir, { recursive: true }).catch(() => undefined);
   }
 
   private ensureDir: Promise<string | undefined>;
@@ -97,7 +114,7 @@ export class ImageStore {
 
     const basename = path.basename(filePath, path.extname(filePath));
     const alt = basename.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-    const relFile = this.root ? path.relative(this.root, filePath) : path.basename(filePath);
+    const relFile = path.relative(this.rootDir, filePath);
 
     const pathHash = Buffer.from(filePath).toString('base64url').slice(-8);
     const contentHash = createHash('sha1').update(buffer).digest('hex').slice(0, 8);
@@ -118,9 +135,8 @@ export class ImageStore {
       await fs.writeFile(abs, buf);
 
       const reduction = originalSize > 0 ? Math.round((1 - buf.length / originalSize) * 100) : 0;
+      log.info('Encoded', color.file(relFile));
       log.info(
-        color.file(relFile),
-        '→',
         color.file(name),
         ':',
         `${formatBytes(originalSize)} → ${formatBytes(buf.length)} (-${reduction}%)`,
@@ -206,9 +222,9 @@ export class ImageStore {
   }
 
   private parseQuery(id: string) {
-    const defaultSizes = this.options.sizes ?? [128, 256, 512, 1024];
-    const defaultFormat = this.options.format ?? 'webp';
-    const defaultQuality = this.options.quality ?? 75;
+    const defaultSizes = this.options.sizes;
+    const defaultFormat = this.options.format;
+    const defaultQuality = this.options.quality;
 
     const questionIndex = id.indexOf('?');
     const filePath = questionIndex !== -1 ? id.slice(0, questionIndex) : id;

@@ -46,7 +46,7 @@ export type AirEnv = {
 export const AIR_ENV: AirEnv = {
   meta: META_STORE,
   routes: new RouteStore(),
-  images: new ImageStore('', {}, ''),
+  images: new ImageStore(),
   viteRoot: '',
   rootDir: 'src',
   pagesDir: 'src/pages',

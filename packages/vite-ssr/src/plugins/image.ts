@@ -3,7 +3,13 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
-import { type AirImageOptions, type ImageMeta, type ImageResolution, readImageMeta } from '../modules/image-store.js';
+import {
+  type AirImageOptions,
+  type ImageMeta,
+  type ImageResolution,
+  ImageStore,
+  readImageMeta,
+} from '../modules/image-store.js';
 
 const log = taggedLogger('air-image');
 
@@ -21,7 +27,7 @@ export type { AirImageOptions } from '../modules/image-store.js';
  * @returns Vite plugin.
  */
 export function airImage(options: AirImageOptions = {}): Plugin {
-  const { devEnabled } = options;
+  const { devEnabled } = { ...options };
   let isBuild = false;
 
   return {
@@ -30,6 +36,8 @@ export function airImage(options: AirImageOptions = {}): Plugin {
     configResolved(config) {
       setLogLevel(options.logLevel);
       isBuild = config.command === 'build';
+      AIR_ENV.images = new ImageStore({ ...options }, config.root);
+      log.verbose(color.event('Initialized image store'));
     },
     transform(code, id) {
       if (!isImageAsset(code)) return null;
