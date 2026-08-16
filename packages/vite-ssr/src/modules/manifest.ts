@@ -57,7 +57,7 @@ export class ManifestNode extends EventEmitter {
     }
 
     for (const childFolder of this.folderNode.children.values()) {
-      this.handleChildAdded(childFolder);
+      this.addChild(childFolder);
     }
     this.updateEntries();
     for (const child of this.children.values()) {
@@ -65,16 +65,27 @@ export class ManifestNode extends EventEmitter {
     }
   }
 
-  private handleChildAdded = (childFolder: FolderNode) => {
+  /**
+   * Constructs a child manifest node for a folder. Regeneration is the
+   * caller's job — boot adds all children and regenerates once, while the
+   * watcher path regenerates per addition.
+   */
+  private addChild(childFolder: FolderNode): ManifestNode | undefined {
     const childRoute = this.routeNode.children.get(childFolder.segment);
-    if (!childRoute) return;
+    if (!childRoute) return undefined;
 
     const child = new ManifestNode(childRoute, childFolder, this, this.viteRoot, this.routeFile);
     this.children.set(childFolder.segment, child);
 
     child.on('change', (file, kind) => this.emit('change', file, kind));
 
-    this.updateEntries();
+    return child;
+  }
+
+  private handleChildAdded = (childFolder: FolderNode) => {
+    if (this.addChild(childFolder)) {
+      this.updateEntries();
+    }
   };
 
   private handleChildRemoved = (childFolder: FolderNode) => {
