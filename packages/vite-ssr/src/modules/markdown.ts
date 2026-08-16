@@ -200,7 +200,9 @@ export class MdxModule {
   }
 }
 
-export function airRecmaPlugin() {
+export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
+  let hasLink = false;
+
   const visit = (node: AnyType) => {
     if (!node || typeof node !== 'object') return;
 
@@ -212,7 +214,12 @@ export function airRecmaPlugin() {
     // Unwrap `_components.XXX` to `XXX`.
     if (node.type === 'JSXOpeningElement' || node.type === 'JSXClosingElement') {
       if (node.name.type === 'JSXMemberExpression' && node.name.object.name === '_components') {
-        const tagName = node.name.property.name;
+        let tagName = node.name.property.name;
+
+        if (tagName === 'a') {
+          hasLink = true;
+          tagName = 'AirLink';
+        }
 
         node.name = {
           type: 'JSXIdentifier',
@@ -233,6 +240,7 @@ export function airRecmaPlugin() {
 
   return (tree: AnyType) => {
     visit(tree);
+    cb?.({ hasLink });
   };
 }
 
@@ -353,15 +361,17 @@ export async function loadExtendedPlugins(module: MdxModule) {
   ];
 
   // Rehype plugins.
+  const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
+  const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
+
   const rehypePlugins: PluggableList = [
     [slug.default as Plugin, {}],
     [autolink.default as Plugin, { ...options.rehypeAutolinkHeadings, behavior: 'wrap' }],
+    [prettyCode.default as Plugin, shikiOptions],
     [airMdxRehype, module],
   ];
 
-  const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
-  const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
-  rehypePlugins.push([prettyCode.default as Plugin, shikiOptions]);
+  // rehypePlugins.push([prettyCode.default as Plugin, shikiOptions]);
 
   return { remarkPlugins, rehypePlugins };
 }
@@ -413,6 +423,10 @@ export function airMdxRemark(module?: MdxModule) {
           node.children = [];
         }
       }
+
+      if (node.type === 'code' && node.meta) {
+        data.meta = node.meta;
+      }
     });
   };
 }
@@ -429,8 +443,10 @@ export function airMdxRehype(module?: MdxModule) {
     const headings = [] as MdxHeading[];
 
     visit(tree, (node) => {
+      const data = (node.data || (node.data = {})) as AnyType;
+      const props = node.properties || (node.properties = {});
+
       if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName)) {
-        const props = node.properties || (node.properties = {});
         props.id = (props.id ?? '').replace(/[-]+/g, '-');
 
         const text = getLeafNode(node);
@@ -441,6 +457,11 @@ export function airMdxRehype(module?: MdxModule) {
             depth: Number(node.tagName.charAt(1)),
           });
         }
+      }
+
+      if (node.tagName === 'code' && data.meta) {
+        const [meta] = data.meta.match(/[\w\d\s\-_]+/gi) ?? [];
+        props['data-title'] = meta;
       }
     });
 
