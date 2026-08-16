@@ -60,6 +60,7 @@ export class AppNode extends EventEmitter {
 
     this.rootRoute = new RouteNode(this.rootFolder, undefined, this.fileMap, opts.framework, opts.routerFile);
     this.rootRoute.on('change', this.handleChange);
+    this.rootRoute.on('warn', this.handleWarn);
     this.rootRoute.boot();
 
     AIR_ENV.routes.attach(this.rootRoute);
@@ -79,6 +80,10 @@ export class AppNode extends EventEmitter {
 
   private handleChange = (file: string, kind: 'update' | 'reload') => {
     this.emit('change', file, kind);
+  };
+
+  private handleWarn = (message: string) => {
+    this.emit('warn', message);
   };
 
   /**

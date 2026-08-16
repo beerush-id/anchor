@@ -2,9 +2,8 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
-import { type CallExpression, type Identifier, type ImportSpecifier, Parser, type Program, parse } from 'acorn';
-import jsx from 'acorn-jsx';
 import MagicString from 'magic-string';
+import { type CallExpression, type ImportDeclaration, type ParseResult, type Program, parseSync } from 'oxc-parser';
 import {
   deriveIndexName,
   deriveNamedRouteName,
@@ -13,18 +12,24 @@ import {
   type FileMap,
   type Framework,
   importSpecifier,
+  LEGACY_DEFAULT_MARKER,
+  MARKER_DEFAULT,
+  MARKER_IMPORT_NAME,
+  MARKER_VARIABLE_NAME,
   type PageKind,
 } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
 import type { FolderNode } from './folder-node.js';
 
-/** Acorn parser extended with JSX support, used to locate route bindings in UI files. */
-const JsxParser = Parser.extend(jsx());
-
-/** Trailing marker on the generated `export default` line — the one part users must never touch. */
-const DEFAULT_EXPORT_MARKER = ' // @generated — do not edit';
-
 export type UIFileType = 'page' | 'layout';
+
+/** Loose structural identifier shared by all Oxc identifier node kinds. */
+interface Identifier {
+  type: string;
+  name: string;
+  start: number;
+  end: number;
+}
 
 /**
  * Represents a folder in the route tree. Owns the folder's `route.ts`
@@ -103,6 +108,7 @@ export class RouteNode extends EventEmitter {
     }
 
     void this.fillMissingExports();
+    this.syncUIFiles();
 
     for (const file of this.folderNode.files) {
       if (
@@ -287,6 +293,8 @@ export class RouteNode extends EventEmitter {
       void this.resolveExportNames();
       void this.fillMissingExports();
       this.emitChange('reload');
+    } else if (name === this.fileMap.page || name === this.fileMap.layout) {
+      this.syncUIFiles();
     }
   };
 
@@ -294,7 +302,13 @@ export class RouteNode extends EventEmitter {
     const child = new RouteNode(childFolder, this, this.fileMap, this.framework, this.routerFile);
     this.children.set(childFolder.segment, child);
     child.on('change', (file, kind) => this.emit('change', file, kind));
+    child.on('warn', (message) => this.emit('warn', message));
     return child;
+  }
+
+  /** Surfaces a constructive warning about contract maintenance. */
+  private warn(message: string): void {
+    this.emit('warn', message);
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
@@ -317,13 +331,12 @@ export class RouteNode extends EventEmitter {
   }
 
   /**
-   * Fixes a UI file that points at the wrong route export: layouts always bind
-   * to `routeName`, pages bind to `indexName` when a layout exists and to
-   * `routeName` otherwise. The file is parsed with acorn + acorn-jsx so the
-   * binding is located structurally — no string patterns, which could match
-   * text inside code blocks or JSX. Only mismatches are edited — everything
-   * else is left untouched. Files acorn cannot parse (e.g. TypeScript
-   * annotations) are skipped, never guessed at.
+   * Maintains a UI file's route wiring against the contract: the import form
+   * (default for the folder route, named for index/leaf routes) and the
+   * binding of `page(...)` / `modal(...)`. Files are parsed with oxc-parser
+   * (TSX) so the binding is located structurally — no string patterns, which
+   * could match text inside code blocks or JSX. Only mismatches are edited;
+   * files with syntax errors (e.g. mid-edit) are skipped, never guessed at.
    */
   private async wireUIFile(fileType: UIFileType, targetRouteName: string): Promise<void> {
     const name = fileType === 'page' ? this.fileMap.page : this.fileMap.layout;
@@ -338,40 +351,100 @@ export class RouteNode extends EventEmitter {
 
     let program: Program;
     try {
-      program = JsxParser.parse(content, { ecmaVersion: 'latest', sourceType: 'module' });
+      const parsed = parseSync(filePath, content, { lang: 'tsx', sourceType: 'module', preserveParens: false });
+      if (parsed.errors.length) return;
+      program = parsed.program;
     } catch {
       return;
     }
 
     const routeBase = this.fileMap.route.split('.')[0];
+    const expectDefault = targetRouteName === this.routeName;
 
-    let importedName: string | undefined;
-    let specifier: ImportSpecifier | undefined;
+    // All imports from the route module — formatters may split or merge them,
+    // so the contract reads across the whole set, never one statement.
+    const routeImports = program.body.filter(
+      (statement): statement is ImportDeclaration =>
+        statement.type === 'ImportDeclaration' &&
+        typeof statement.source.value === 'string' &&
+        path.basename(statement.source.value).split('.')[0] === routeBase
+    );
+    if (!routeImports.length) return;
+    const source = routeImports[0].source.value;
+    if (typeof source !== 'string') return;
 
-    for (const statement of program.body) {
-      if (statement.type !== 'ImportDeclaration') continue;
-      if (typeof statement.source.value !== 'string') continue;
-      if (path.basename(statement.source.value).split('.')[0] !== routeBase) continue;
+    const specifiers = routeImports.flatMap((imp) => imp.specifiers);
+    if (specifiers.some((s) => s.type === 'ImportNamespaceSpecifier')) return;
 
-      specifier = statement.specifiers.find((s): s is ImportSpecifier => s.type === 'ImportSpecifier');
-      if (!specifier) continue;
-
-      importedName = specifier.local.name;
-      break;
+    // The binding call is the `page(...)` / `modal(...)` whose first argument
+    // is one of the imported names: `page()` renders the route as a tree
+    // child, `modal()` as a top-level stack entry.
+    let call: CallExpression | undefined;
+    for (const specifier of specifiers) {
+      call = findBindingCall(program, specifier.local.name);
+      if (call) break;
     }
-
-    if (!importedName || !specifier || importedName === targetRouteName) return;
-
-    // Both `page(...)` and `modal(...)` bind a route: `page()` renders the
-    // route as a tree child, `modal()` as a top-level stack entry.
-    const call = findBindingCall(program, importedName);
     if (!call) return;
 
-    const magic = new MagicString(content);
-    magic.overwrite(specifier.start, specifier.end, targetRouteName);
-
     const argument = call.arguments[0] as Identifier;
-    magic.overwrite(argument.start, argument.end, targetRouteName);
+    const needsBindingRewrite = argument.name !== targetRouteName;
+
+    // The binding must be imported with its contract kind — default for the
+    // folder route, named for index/leaf routes. Any other shape (wrong kind,
+    // missing binding) is rewritten into one combined statement; everything
+    // else is user code, preserved verbatim. No markers: formatters own the
+    // import line, so the contract only checks the binding kind.
+    const bindingKindOk = specifiers.some((s) =>
+      expectDefault
+        ? s.type === 'ImportDefaultSpecifier' && s.local.name === targetRouteName
+        : s.type === 'ImportSpecifier' && s.local.name === targetRouteName
+    );
+
+    let importBlock: string | undefined;
+    if (!bindingKindOk) {
+      if (expectDefault) {
+        const rest = specifiers
+          .filter((s) => !(s.type === 'ImportSpecifier' && s.local.name === targetRouteName))
+          .map((s) => content.slice(s.start, s.end))
+          .join(', ');
+        importBlock = rest
+          ? `import ${targetRouteName}, { ${rest} } from '${source}';`
+          : `import ${targetRouteName} from '${source}';`;
+      } else {
+        const defaultSpec = specifiers.find((s) => s.type === 'ImportDefaultSpecifier');
+        const named = specifiers
+          .filter((s) => s.type === 'ImportSpecifier' && s.local.name !== targetRouteName)
+          .map((s) => content.slice(s.start, s.end));
+        const defaultPart = defaultSpec ? `${content.slice(defaultSpec.start, defaultSpec.end)}, ` : '';
+        importBlock = `import ${defaultPart}{ ${[targetRouteName, ...named].join(', ')} } from '${source}';`;
+      }
+    }
+
+    if (!importBlock && !needsBindingRewrite) return;
+
+    const magic = new MagicString(content);
+    const changes: string[] = [];
+
+    if (importBlock) {
+      magic.overwrite(routeImports[0].start, routeImports[0].end, importBlock);
+      for (const statement of routeImports.slice(1)) {
+        const lineStart = content.lastIndexOf('\n', statement.start - 1) + 1;
+        const lineEnd = content.indexOf('\n', statement.end);
+        magic.remove(lineStart, lineEnd === -1 ? content.length : lineEnd + 1);
+      }
+      changes.push(`normalized the import to \`${importBlock}\``);
+    }
+
+    if (needsBindingRewrite) {
+      magic.overwrite(argument.start, argument.end, targetRouteName);
+      changes.push(`re-wired the binding to \`${targetRouteName}\``);
+    }
+
+    if (changes.length) {
+      this.warn(
+        `${this.displayPath}${name}: ${changes.join(' and ')} — ${expectDefault ? 'the folder route is a default import' : 'the index/leaf route is a named import'} so the route chain stays predictable.`
+      );
+    }
 
     const output = magic.toString();
     if (output !== content) {
@@ -381,9 +454,10 @@ export class RouteNode extends EventEmitter {
   }
 
   /**
-   * Cross-references the folder's physical state against the parsed exports
-   * of `route.ts` and appends any missing export via magic-string. Existing
-   * code is never deleted or altered.
+   * Maintains the folder's `route.ts` against its physical state: normalizes
+   * the parent import to its default form, validates existing wiring, and
+   * appends any missing export (index, leaf, default) via magic-string.
+   * Existing user code is never deleted or altered.
    */
   private async fillMissingExports(): Promise<void> {
     const routeFilePath = path.join(this.folderNode.dir, this.fileMap.route);
@@ -398,8 +472,50 @@ export class RouteNode extends EventEmitter {
     const exports = parseRouteExports(content);
     if (!exports) return;
 
+    this.validateRouteWiring(exports);
+
+    const magic = new MagicString(content);
+    let changed = false;
+
+    const isTopLevel = this.routePath.startsWith('(') && this.routePath.endsWith(')');
+    const expectedImportSource = this.parent
+      ? isTopLevel
+        ? importSpecifier(routeFilePath, this.routerFile)
+        : importSpecifier(routeFilePath, path.join(this.parent.folderNode.dir, this.fileMap.route))
+      : importSpecifier(routeFilePath, this.routerFile);
+    const routeImport = exports.imports.find((i) => i.source === expectedImportSource);
+
+    if (routeImport) {
+      if (this.parent && !isTopLevel && routeImport.kind === 'named' && routeImport.count === 1) {
+        const found = content.slice(routeImport.start, routeImport.end);
+        const replacement = `import ${this.parent.routeName} from '${routeImport.source}';`;
+        if (found !== replacement) {
+          magic.overwrite(routeImport.start, routeImport.end, replacement);
+          changed = true;
+          this.warn(
+            `${this.displayPath}route.ts: normalized \`${found}\` to \`${replacement}\` — child folders import the parent's default export so the route chain stays predictable.`
+          );
+        }
+      }
+
+      if (!hasMarkerAbove(content, routeImport.start, MARKER_IMPORT_NAME)) {
+        magic.prependLeft(routeImport.start, `${MARKER_IMPORT_NAME}\n`);
+        changed = true;
+      }
+    }
+
+    for (const contractName of this.contractExportNames()) {
+      const declaration = exports.declarations.find((d) => d.name === contractName);
+      if (declaration?.start !== undefined && !hasMarkerAbove(content, declaration.start, MARKER_VARIABLE_NAME)) {
+        magic.prependLeft(declaration.start, `${MARKER_VARIABLE_NAME}\n`);
+        changed = true;
+      }
+    }
+
     const boundPaths = new Set(
-      exports.bindings
+      exports.declarations
+        .map((d) => d.binding)
+        .filter((binding): binding is RouteBinding => binding !== undefined)
         .filter((binding) => binding.object === this.routeName && binding.method === 'route')
         .map((binding) => binding.path)
     );
@@ -407,7 +523,7 @@ export class RouteNode extends EventEmitter {
     const additions: string[] = [];
 
     if (this.page && this.layout && !exports.names.includes(this.indexName) && !boundPaths.has('/')) {
-      additions.push(`export const ${this.indexName} = ${this.routeName}.route('/');`);
+      additions.push(`${MARKER_VARIABLE_NAME}\nexport const ${this.indexName} = ${this.routeName}.route('/');`);
     }
 
     for (const namedPage of this.namedPages) {
@@ -416,15 +532,98 @@ export class RouteNode extends EventEmitter {
       const segment = deriveSegment(name);
 
       if (!exports.names.includes(namedRouteName) && !boundPaths.has(`/${segment}`)) {
-        additions.push(`export const ${namedRouteName} = ${this.routeName}.route('/${segment}');`);
+        additions.push(
+          `${MARKER_VARIABLE_NAME}\nexport const ${namedRouteName} = ${this.routeName}.route('/${segment}');`
+        );
       }
     }
 
-    if (!additions.length) return;
+    const defaultMarkerMissing =
+      exports.defaultName !== undefined &&
+      exports.defaultStart !== undefined &&
+      !hasMarkerAbove(content, exports.defaultStart, MARKER_DEFAULT) &&
+      !hasMarkerAbove(content, exports.defaultStart, LEGACY_DEFAULT_MARKER);
 
-    const magic = new MagicString(content);
-    magic.appendLeft(exports.defaultStart ?? content.length, `${additions.join('\n')}\n\n`);
-    fs.writeFileSync(routeFilePath, magic.toString());
+    if (!exports.defaultName && exports.names.includes(this.routeName)) {
+      additions.push(`${MARKER_DEFAULT}\nexport default ${this.routeName};`);
+    }
+
+    if (additions.length || defaultMarkerMissing) {
+      const block = defaultMarkerMissing ? [...additions, MARKER_DEFAULT].join('\n\n') : additions.join('\n\n');
+      const insertStart = defaultMarkerMissing
+        ? exports.defaultStart!
+        : (exports.defaultInsertStart ?? exports.defaultStart ?? content.length);
+      if (defaultMarkerMissing || insertStart >= content.length) {
+        magic.appendLeft(insertStart, `${block}\n`);
+      } else {
+        magic.appendLeft(insertStart, `${block}\n\n`);
+      }
+      changed = true;
+    }
+
+    if (!changed) return;
+
+    const output = magic.toString();
+    if (output !== content) {
+      fs.writeFileSync(routeFilePath, output);
+      this.emitChange('reload');
+    }
+  }
+
+  /**
+   * Warns about existing exports whose wiring contradicts the contract: the
+   * default must reference the folder route, index/leaf exports must chain it
+   * with their exact path. Missing exports are not warned — they are filled.
+   */
+  private validateRouteWiring(exports: RouteExports): void {
+    if (exports.defaultName && exports.defaultName !== this.routeName) {
+      this.warn(
+        `${this.displayPath}route.ts: the default export should reference the folder route \`${this.routeName}\` — found \`${exports.defaultName}\`. Adjust the wiring, or remove the export and the generator will re-create it.`
+      );
+    }
+
+    const check = (exportName: string, expected: RouteBinding): void => {
+      if (!exports.names.includes(exportName)) return;
+      const declaration = exports.declarations.find((d) => d.name === exportName);
+      const binding = declaration?.binding;
+      const found = declaration?.initText ? `\`${declaration.initText}\`` : 'no route wiring';
+      const wired =
+        binding?.object === expected.object && binding.method === expected.method && binding.path === expected.path;
+
+      if (!wired) {
+        this.warn(
+          `${this.displayPath}route.ts: ${exportName} is wired as ${found} — it should chain the folder route: \`${expected.object}.${expected.method}('${expected.path}')\`. Adjust the wiring, or remove the export and the generator will re-create it.`
+        );
+      }
+    };
+
+    if (this.page && this.layout) {
+      check(this.indexName, { object: this.routeName, method: 'route', path: '/' });
+    }
+
+    for (const namedPage of this.namedPages) {
+      const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+      check(deriveNamedRouteName(this.folderNode.segment, name), {
+        object: this.routeName,
+        method: 'route',
+        path: `/${deriveSegment(name)}`,
+      });
+    }
+  }
+
+  /** The export names this folder's contract owns: the folder route, index, and leaf routes. */
+  private contractExportNames(): string[] {
+    const names = [this.routeName];
+    if (this.page && this.layout) names.push(this.indexName);
+    for (const namedPage of this.namedPages) {
+      names.push(deriveNamedRouteName(this.folderNode.segment, namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '')));
+    }
+    return names;
+  }
+
+  /** The folder's path relative to the pages directory, for warning messages. */
+  private get displayPath(): string {
+    return this.folderNode.rel ? `${this.folderNode.rel}/` : '';
   }
 
   /** Creates route.ts from scratch when it doesn't exist. */
@@ -447,18 +646,24 @@ export class RouteNode extends EventEmitter {
       if (isTopLevel) {
         segment = segment.replace(/\(|\)/g, '');
         const routerImport = importSpecifier(routeFilePath, this.routerFile);
+        lines.push(MARKER_IMPORT_NAME);
         lines.push(`import router from '${routerImport}';`);
         lines.push('');
+        lines.push(MARKER_VARIABLE_NAME);
         lines.push(`export const ${this.routeName} = router.add('/${segment}');`);
       } else {
         const parentName = this.parent.routeName;
         const parentRouteFile = path.join(this.parent.folderNode.dir, this.fileMap.route);
+        lines.push(MARKER_IMPORT_NAME);
         lines.push(`import ${parentName} from '${importSpecifier(routeFilePath, parentRouteFile)}';`);
         lines.push('');
+        lines.push(MARKER_VARIABLE_NAME);
         lines.push(`export const ${this.routeName} = ${parentName}.route('/${segment}');`);
       }
 
       if (this.page && this.layout) {
+        lines.push('');
+        lines.push(MARKER_VARIABLE_NAME);
         lines.push(`export const ${this.indexName} = ${this.routeName}.route('/');`);
       }
 
@@ -466,18 +671,25 @@ export class RouteNode extends EventEmitter {
         const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedSegment = deriveSegment(name);
         const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
+        lines.push('');
+        lines.push(MARKER_VARIABLE_NAME);
         lines.push(`export const ${namedRouteName} = ${this.routeName}.route('/${namedSegment}');`);
       }
 
       lines.push('');
-      lines.push(`export default ${this.routeName};${DEFAULT_EXPORT_MARKER}`);
+      lines.push(MARKER_DEFAULT);
+      lines.push(`export default ${this.routeName};`);
     } else {
       const routerImport = importSpecifier(routeFilePath, this.routerFile);
+      lines.push(MARKER_IMPORT_NAME);
       lines.push(`import router from '${routerImport}';`);
       lines.push('');
+      lines.push(MARKER_VARIABLE_NAME);
       lines.push(`export const rootRoute = router.route();`);
 
       if (this.page && this.layout) {
+        lines.push('');
+        lines.push(MARKER_VARIABLE_NAME);
         lines.push(`export const indexRoute = rootRoute.route('/');`);
       }
 
@@ -485,11 +697,14 @@ export class RouteNode extends EventEmitter {
         const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
         const namedSegment = deriveSegment(name);
         const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
+        lines.push('');
+        lines.push(MARKER_VARIABLE_NAME);
         lines.push(`export const ${namedRouteName} = rootRoute.route('/${namedSegment}');`);
       }
 
       lines.push('');
-      lines.push(`export default rootRoute;${DEFAULT_EXPORT_MARKER}`);
+      lines.push(MARKER_DEFAULT);
+      lines.push(`export default rootRoute;`);
     }
 
     fs.mkdirSync(path.dirname(routeFilePath), { recursive: true });
@@ -505,22 +720,26 @@ export class RouteNode extends EventEmitter {
   }
 }
 
-/** A structural view of an `acorn` AST node. */
-type AcornNode = {
+/** A structural view of an `oxc-parser` ESTree node. */
+type AstNode = {
   type: string;
   start?: number;
+  end?: number;
   name?: string;
-  declaration?: AcornNode;
-  declarations?: AcornNode[];
-  id?: AcornNode;
-  init?: AcornNode;
-  callee?: AcornNode;
-  object?: AcornNode;
-  property?: AcornNode;
+  declaration?: AstNode;
+  declarations?: AstNode[];
+  id?: AstNode;
+  init?: AstNode;
+  callee?: AstNode;
+  object?: AstNode;
+  property?: AstNode;
   computed?: boolean;
-  arguments?: AcornNode[];
+  arguments?: AstNode[];
   value?: unknown;
-  body?: AcornNode[];
+  source?: AstNode & { value?: unknown };
+  specifiers?: AstNode[];
+  local?: AstNode;
+  body?: AstNode[];
 };
 
 /** A route registration found in `route.ts`: `object.route('/path')` or `object.add('/path')`. */
@@ -530,46 +749,111 @@ type RouteBinding = {
   path: string;
 };
 
+/** A variable declaration in `route.ts`, with its statement position and extracted registration. */
+type RouteDeclaration = {
+  name: string;
+  start?: number;
+  initText?: string;
+  binding?: RouteBinding;
+};
+
+/** An import statement in `route.ts`. */
+type RouteImport = {
+  source: string;
+  kind: 'default' | 'named' | 'namespace';
+  localName: string;
+  count: number;
+  start: number;
+  end: number;
+};
+
 type RouteExports = {
   names: string[];
   defaultName?: string;
-  /** Position of the `export default` statement, for inserting before it. */
   defaultStart?: number;
-  /** Route registrations found in the file, for path-based dedup. */
-  bindings: RouteBinding[];
+  /** Insertion point before the default export (before its marker comment when present). */
+  defaultInsertStart?: number;
+  declarations: RouteDeclaration[];
+  imports: RouteImport[];
 };
 
 /**
- * Parses the exported variable names of a route.ts file with acorn.
- * Returns `undefined` when the file is not parseable as plain JavaScript
- * (e.g. TypeScript annotations), in which case discovery is skipped entirely.
+ * Parses a route.ts file with oxc-parser: exported names, declarations with
+ * their registrations, import statements, and the default export position.
+ * Returns `undefined` when the file has syntax errors, in which case
+ * maintenance is skipped entirely.
  */
 function parseRouteExports(content: string): RouteExports | undefined {
-  let ast: AcornNode;
+  let parsed: ParseResult;
   try {
-    ast = parse(content, { ecmaVersion: 'latest', sourceType: 'module' }) as unknown as AcornNode;
+    parsed = parseSync('route.ts', content, { lang: 'ts', sourceType: 'module', preserveParens: false });
   } catch {
     return undefined;
   }
 
+  if (parsed.errors.length) return undefined;
+
+  const ast = parsed.program as unknown as AstNode;
+  const comments = parsed.comments;
+
   const names: string[] = [];
-  const bindings: RouteBinding[] = [];
+  const declarations: RouteDeclaration[] = [];
+  const imports: RouteImport[] = [];
   let defaultName: string | undefined;
   let defaultStart: number | undefined;
 
   for (const node of ast.body ?? []) {
-    if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration') {
+    if (node.type === 'ImportDeclaration') {
+      const source = node.source?.value;
+      if (typeof source === 'string') {
+        let kind: RouteImport['kind'] = 'named';
+        let localName = '';
+        for (const spec of node.specifiers ?? []) {
+          const name = spec.local?.name;
+          if (spec.type === 'ImportDefaultSpecifier') {
+            kind = 'default';
+            localName = name ?? '';
+            break;
+          }
+          if (spec.type === 'ImportNamespaceSpecifier') {
+            kind = 'namespace';
+            localName = name ?? '';
+            break;
+          }
+          kind = 'named';
+          localName = name ?? '';
+        }
+        imports.push({
+          source,
+          kind,
+          localName,
+          count: (node.specifiers ?? []).length,
+          start: node.start ?? 0,
+          end: node.end ?? 0,
+        });
+      }
+    } else if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration') {
       for (const decl of node.declaration.declarations ?? []) {
         if (decl.id?.type === 'Identifier' && decl.id.name) {
           names.push(decl.id.name);
         }
-        const binding = routeBinding(decl.init);
-        if (binding) bindings.push(binding);
+        const name = decl.id?.type === 'Identifier' && decl.id.name ? decl.id.name : '';
+        declarations.push({
+          name,
+          start: node.start,
+          initText: decl.init ? content.slice(decl.init.start ?? 0, decl.init.end ?? 0) : undefined,
+          binding: routeBinding(decl.init),
+        });
       }
     } else if (node.type === 'VariableDeclaration') {
       for (const decl of node.declarations ?? []) {
-        const binding = routeBinding(decl.init);
-        if (binding) bindings.push(binding);
+        const name = decl.id?.type === 'Identifier' && decl.id.name ? decl.id.name : '';
+        declarations.push({
+          name,
+          start: node.start,
+          initText: decl.init ? content.slice(decl.init.start ?? 0, decl.init.end ?? 0) : undefined,
+          binding: routeBinding(decl.init),
+        });
       }
     } else if (
       node.type === 'ExportDefaultDeclaration' &&
@@ -581,14 +865,35 @@ function parseRouteExports(content: string): RouteExports | undefined {
     }
   }
 
-  return { names, defaultName, defaultStart, bindings };
+  let defaultInsertStart = defaultStart;
+  if (defaultStart !== undefined) {
+    const adjacent = comments
+      .filter((c) => c.end <= defaultStart && content.slice(c.end, defaultStart).trim() === '')
+      .sort((a, b) => b.end - a.end)[0];
+    if (adjacent && isDefaultMarkerComment(adjacent.value)) {
+      defaultInsertStart = adjacent.start;
+    }
+  }
+
+  return { names, defaultName, defaultStart, defaultInsertStart, declarations, imports };
+}
+
+/** Whether the given marker comment sits directly above position `at`. */
+function hasMarkerAbove(content: string, at: number, marker: string): boolean {
+  return content.slice(0, at).trimEnd().endsWith(marker);
+}
+
+/** Whether a comment is the default-export marker, current or legacy form. */
+function isDefaultMarkerComment(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed === MARKER_DEFAULT.slice(2).trim() || trimmed === LEGACY_DEFAULT_MARKER.slice(2).trim();
 }
 
 /**
  * Extracts a route registration from an initializer expression — only the
  * `object.route('/path')` / `object.add('/path')` shapes, with a string path.
  */
-function routeBinding(init: AcornNode | undefined): RouteBinding | undefined {
+function routeBinding(init: AstNode | undefined): RouteBinding | undefined {
   if (init?.type !== 'CallExpression') return undefined;
   const callee = init.callee;
   if (callee?.type !== 'MemberExpression' || callee.computed) return undefined;
@@ -607,8 +912,7 @@ function routeBinding(init: AcornNode | undefined): RouteBinding | undefined {
   return { object: object.name, method, path: argument.value };
 }
 
-/**
- * Walks an acorn AST for the first `page(...)` / `modal(...)` call whose first
+/**  * Walks an AST for the first `page(...)` / `modal(...)` call whose first
  * argument is the given binding — the route-binding call of a UI file. The
  * generic walk finds the binding wherever it sits in the module (export
  * default, a named const, etc.) without ever matching string content.

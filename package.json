@@ -96,6 +96,7 @@
       "zod": "4.1.12"
     },
     "lib": {
+      "@beerush/logger": "0.0.8",
       "@mdx-js/mdx": "3.1.1",
       "@mdx-js/rollup": "3.1.1",
       "@napi-rs/image": "^1.9.2",
@@ -114,6 +115,7 @@
       "hastscript": "9.0.1",
       "lucide-react": "^0.546.0",
       "magic-string": "1.1.0",
+      "oxc-parser": "0.144.0",
       "react": "^19.2.0",
       "react-dom": "^19.2.0",
       "rehype-autolink-headings": "7.1.0",

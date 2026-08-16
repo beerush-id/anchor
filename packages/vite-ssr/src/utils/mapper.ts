@@ -6,6 +6,14 @@ export type { Framework };
 /** Header marker written on top of every generated file. */
 export const GENERATED_MARKER = '// @generated';
 
+/** Line markers written above generator-owned lines, naming what is protected. */
+export const MARKER_IMPORT_NAME = '// @generated - do not edit the import name';
+export const MARKER_VARIABLE_NAME = '// @generated - do not edit the variable name';
+export const MARKER_DEFAULT = '// @generated - do not edit';
+
+/** Pre-marker redesign form of `MARKER_DEFAULT`, still found in older files. */
+export const LEGACY_DEFAULT_MARKER = '// @generated — do not edit';
+
 export const FRAMEWORK_PACKAGE: Record<Framework, string> = {
   react: '@anchorlib/react',
   solid: '@anchorlib/solid',

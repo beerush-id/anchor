@@ -164,9 +164,14 @@ export function scaffoldPageTsx(opts: {
   const files = opts.files;
   const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
   const name = opts.routeExport === 'indexRoute' ? 'Home' : humanizeSegment(opts.rel.split('/').pop() || '');
+  const isFolderRoute =
+    opts.routeExport === 'rootRoute' || opts.routeExport === deriveRouteName(opts.rel.split('/').pop() || '');
+  const importLine = isFolderRoute
+    ? `import ${opts.routeExport} from '${routeMod}';`
+    : `import { ${opts.routeExport} } from '${routeMod}';`;
 
   return `import { page } from '${pkg}';
-import { ${opts.routeExport} } from '${routeMod}';
+${importLine}
 
 export default page(${opts.routeExport}).render(() => (
   <>
@@ -191,14 +196,14 @@ export function scaffoldLayoutTsx(opts: {
 
   if (!opts.rel) {
     return `import { page } from '${pkg}';
-import { rootRoute } from '${routeMod}';
+import rootRoute from '${routeMod}';
 
 export default page(rootRoute).render(({ children }) => children);
 `;
   }
 
   return `import { page } from '${pkg}';
-import { ${opts.routeExport} } from '${routeMod}';
+import ${opts.routeExport} from '${routeMod}';
 
 export default page(${opts.routeExport}).render(({ children }) => children);
 `;

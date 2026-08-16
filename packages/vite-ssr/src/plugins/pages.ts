@@ -114,6 +114,7 @@ const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
  * @returns Vite plugin array.
  */
 export function airPages(options: AirPagesOptions = {}): PluginOption {
+  const warnedMessages = new Set<string>();
   let irpcEnabled = options.irpc;
   let config: ResolvedConfig;
   let absPagesDir = '';
@@ -164,6 +165,12 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         framework: AIR_ENV.framework,
         scaffoldEnabled: options.scaffold,
         fileMap: AIR_ENV.files,
+      });
+
+      app.on('warn', (message) => {
+        if (warnedMessages.has(message)) return;
+        warnedMessages.add(message);
+        config.logger.warn(`[air-pages] ${message}`);
       });
     },
 

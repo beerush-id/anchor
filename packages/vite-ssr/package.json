@@ -45,16 +45,16 @@
   },
   "dependencies": {
     "@anchorlib/core": "workspace:*",
+    "@beerush/logger": "catalog:lib",
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",
     "@mdx-js/mdx": "catalog:lib",
     "@napi-rs/image": "catalog:lib",
     "@types/mdast": "catalog:lib",
-    "acorn": "catalog:lib",
-    "acorn-jsx": "catalog:lib",
     "chokidar": "catalog:lib",
     "magic-string": "catalog:lib",
+    "oxc-parser": "catalog:lib",
     "unified": "catalog:lib",
     "ws": "catalog:lib",
     "yaml": "catalog:lib"
