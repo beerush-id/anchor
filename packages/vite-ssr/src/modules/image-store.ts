@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
+import type { LogLevel } from '@beerush/logger';
 import { Transformer } from '@napi-rs/image';
 import { color, taggedLogger } from '../logger.js';
 
@@ -31,6 +32,11 @@ export interface AirImageOptions {
    * @default true
    */
   devEnabled?: boolean;
+  /**
+   * Console log level, applied to every `air-*` tag (shared sink).
+   * @default LogLevel.INFO
+   */
+  logLevel?: LogLevel;
 }
 
 export type ImageMeta = {
@@ -71,7 +77,11 @@ export class ImageStore {
     private readonly cacheDir: string,
     private readonly options: AirImageOptions = {},
     private readonly root: string = ''
-  ) {}
+  ) {
+    this.ensureDir = fs.mkdir(cacheDir, { recursive: true }).catch(() => undefined);
+  }
+
+  private ensureDir: Promise<string | undefined>;
 
   /**
    * Resolves a raw Vite module id (e.g. `/image.png?format=webp&sizes=400,800`)
@@ -102,8 +112,9 @@ export class ImageStore {
       } catch {}
 
       allCached = false;
-      log.info(color.event('Encoding'), color.file(relFile), '→', color.file(name));
+      log.debug(color.event('Encoding'), color.file(relFile), '→', color.file(name));
       const buf = await this.encodeImage(filePath, format, quality, size);
+      await this.ensureDir;
       await fs.writeFile(abs, buf);
 
       const reduction = originalSize > 0 ? Math.round((1 - buf.length / originalSize) * 100) : 0;

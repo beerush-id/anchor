@@ -5,10 +5,9 @@ import { color, taggedLogger } from '../logger.js';
 import { canonicalPath, deriveNamedRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
+import type { RouteNode } from './route-node.js';
 
 const log = taggedLogger('air-manifest');
-
-import type { RouteNode } from './route-node.js';
 
 /**
  * Represents a node in the route manifest tree.
@@ -51,10 +50,7 @@ export class ManifestNode extends EventEmitter {
    * handling existing children, and generating the initial index file.
    */
   public boot() {
-    if (!this.parent) {
-      bootPackage(this.manifestDir, '@airstack/manifest', { '.': './index.ts' });
-      ensureSymlink(this.viteRoot);
-    }
+    this.ensureInstalled();
 
     for (const childFolder of this.folderNode.children.values()) {
       this.addChild(childFolder);
@@ -97,10 +93,21 @@ export class ManifestNode extends EventEmitter {
     this.updateEntries();
   };
 
-  private handleRouteChange = (_file: string, kind: 'update' | 'reload') => {
+  private handleRouteChange = (_file: string) => {
     this.updateEntries();
     this.emitChange('update');
   };
+
+  /**
+   * Re-creates the `.airstack` package and symlink when missing — boot-only
+   * originally, but a deleted `.airstack` mid-run must self-heal on the next
+   * generate instead of leaving imports broken until restart.
+   */
+  private ensureInstalled() {
+    if (this.parent) return;
+    bootPackage(this.manifestDir, '@airstack/manifest', { '.': './index.ts' });
+    ensureSymlink(this.viteRoot);
+  }
 
   private updateEntries() {
     this.entries.clear();
@@ -165,6 +172,7 @@ export class ManifestNode extends EventEmitter {
    * containing route imports and a default export array of routes.
    */
   public generate() {
+    this.ensureInstalled();
     const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
     const lines: string[] = [GENERATED_MARKER];
 
@@ -184,7 +192,7 @@ export class ManifestNode extends EventEmitter {
     const content = `${lines.join('\n')}\n`;
 
     if (writeIfChanged(manifestFilePath, content)) {
-      log.debug(color.event('Regenerated route manifest'), color.file(this.folderNode.rel || 'root'));
+      log.debug(color.event('Generated route manifest'), color.file(this.folderNode.rel || 'root'));
       this.emitChange('update');
     }
   }

@@ -4,7 +4,20 @@ import { consoleAdapter } from '@beerush/logger/adapters/console';
 // Default sink for the whole package: visible in dev. The app can re-level or
 // silence it by registering its own console adapter — adapters with the same
 // name overwrite the previous one.
-logger.use(consoleAdapter({ level: LogLevel.VERBOSE, timestamp: false }));
+logger.use(consoleAdapter({ level: LogLevel.INFO, timestamp: false }));
+
+/**
+ * Re-applies the shared console sink level. The level is global to every
+ * `air-*` tag (adapters are shared across all loggers), so plugin surfaces
+ * set it here — last-applied wins when several plugins configure it.
+ */
+export function setLogLevel(level?: LogLevel): void {
+  if (level === undefined) return;
+  logger.use(consoleAdapter({ level, timestamp: false }));
+}
+
+export type { Log } from '@beerush/logger';
+export { LogLevel };
 
 /** A logger scoped to a domain tag, e.g. `air-pages`, `air-image`. */
 export function taggedLogger(tag: string): Logger<unknown> {
@@ -14,11 +27,6 @@ export function taggedLogger(tag: string): Logger<unknown> {
 /** Paints a value with an ANSI color code. */
 const paint = (code: number) => (value: string | number) => `\x1B[${code}m${value}\x1B[0m`;
 
-// Accent palette for message parts — pass the result as a SEPARATE argument
-// (e.g. `log.debug('Compiled', color.file(name), 'in', color.timing(ms))`),
-// never inside the message template: the adapter colors the message body by
-// level, while extra arguments keep their own color. Bright variants (90s)
-// stay readable against every level color.
 export const color = {
   /** Operation/event names. */
   event: paint(96),

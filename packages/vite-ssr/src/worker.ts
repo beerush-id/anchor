@@ -1,8 +1,9 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
+import type { LogLevel } from '@beerush/logger';
 import type { HtmlTagDescriptor, IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
-import { color, taggedLogger } from './logger.js';
+import { color, setLogLevel, taggedLogger } from './logger.js';
 import { AIR_ENV } from './modules/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
@@ -38,6 +39,12 @@ export type AirWorkerOptions = {
    * Defaults to true (set to false to disable).
    */
   ssg?: boolean;
+
+  /**
+   * Console log level, applied to every `air-*` tag (shared sink).
+   * @default LogLevel.INFO
+   */
+  logLevel?: LogLevel;
 };
 
 /**
@@ -122,6 +129,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
     },
 
     configResolved(config) {
+      setLogLevel(options.logLevel);
       resolvedConfig = config;
     },
 
@@ -286,7 +294,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
 
             await sendWebResponse(res, response);
             log.verbose(color.event('Response'), 'sent');
-            log.debug(
+            log.info(
               color.request(req.method ?? 'GET'),
               color.request(urlPath),
               '→',

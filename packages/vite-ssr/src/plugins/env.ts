@@ -26,7 +26,7 @@ export function airEnv(options: AirPagesOptions = {}): Plugin {
       AIR_ENV.viteRoot = config.root;
       AIR_ENV.pagesDir = options.pagesDir ?? AIR_ENV.pagesDir;
       AIR_ENV.framework = options.framework ?? detectFramework(config.root);
-      log.debug(color.event('Framework:'), AIR_ENV.framework);
+      log.verbose(color.event('Framework:'), AIR_ENV.framework);
       AIR_ENV.files = { ...DEFAULT_FILE_MAP, ...options.files };
       log.verbose(color.event('Merged file map'), Object.keys(AIR_ENV.files).length, 'entries');
       AIR_ENV.images = new ImageStore(

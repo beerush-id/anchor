@@ -1,13 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
-import { color, taggedLogger } from '../logger.js';
+import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxFile } from '../modules/markdown.js';
 
 const log = taggedLogger('air-markdown');
 
-export type AirMarkdownOptions = MdxModuleOptions;
+export type AirMarkdownOptions = MdxModuleOptions & { logLevel?: LogLevel };
 
 /**
  * Vite plugin pipeline for markdown pages. Each entry is split into a compiled
@@ -36,6 +37,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       name: 'air-pages:mdx:init',
       enforce: 'pre',
       configResolved(config) {
+        setLogLevel(options.logLevel);
         pagesRoot = path.resolve(config.root, AIR_ENV.pagesDir);
       },
       transform(code, id) {
@@ -65,16 +67,20 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         if (!isChunkFile(id)) return;
         const chunk = CHUNK_ENTRIES.get(id);
 
-        if (!chunk) {
-          const src = id.replace(CHUNK_SUFFIX, '');
-          log.debug(color.event('Missed chunk'), color.file(relFile(src)), '— compiling directly');
-          const text = fs.readFileSync(src, 'utf-8');
-          const { code } = await mdxFile(src, text, $options);
-          return [code, 'export default AirMdxPage;'].join('\n');
+        if (chunk?.body) {
+          log.verbose(color.event('Served'), 'compiled chunk for', color.file(relFile(chunk.id)));
+          return chunk.body;
         }
 
-        log.verbose(color.event('Served'), 'compiled chunk for', color.file(relFile(chunk.id)));
-        return chunk?.body;
+        // First visit (or post-HMR): compile the chunk on demand. The compiled
+        // body is cached on the entry so the next load is served from memory.
+        const src = id.replace(CHUNK_SUFFIX, '');
+        const entry = CHUNK_ENTRIES.get(src);
+        const text = entry?.code ?? fs.readFileSync(src, 'utf-8');
+        const { code } = await mdxFile(src, text, $options);
+        const body = entry?.entry ? [code, 'export default AirMdxPage;'].join('\n') : code;
+        if (entry) entry.body = body;
+        return body;
       },
     } as Plugin,
     {
@@ -96,7 +102,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const routePath = `./${AIR_ENV.files.route}`;
 
         log.verbose(color.event('Resolved'), 'route for', color.file(relFile(id)));
-        log.debug(color.event('Wired'), color.file(relFile(id)), 'to', routeName);
+        log.verbose(color.event('Wired'), color.file(relFile(id)), 'to', routeName);
 
         const chunkName = `./${baseName}${CHUNK_ALIAS}`;
         const chunkFile = path.join(path.dirname(id), `./${baseName}${CHUNK_SUFFIX}`);
@@ -115,19 +121,6 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         chunk.chunk = chunkFile;
         CHUNK_ENTRIES.set(chunkFile, chunk);
         log.verbose(color.event('Created'), 'chunk for', color.file(relFile(id)));
-      },
-    } as Plugin,
-    {
-      name: 'air-pages:mdx:compile',
-      enforce: 'pre',
-      async transform(_code, id) {
-        if (isChunkFile(id)) return;
-        if (!isEntryFile(id)) return;
-
-        const chunk = CHUNK_ENTRIES.get(id)!;
-        const { code } = await mdxFile(id, chunk.code, $options);
-
-        chunk.body = chunk.entry ? [code, 'export default AirMdxPage;'].join('\n') : code;
       },
     } as Plugin,
     {

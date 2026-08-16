@@ -159,7 +159,7 @@ export class MdxModule {
         log.error(`Post-processing failed for ${relToPages(this.id)}`, error as Error);
       }
     }
-    log.debug(
+    log.info(
       color.event('Compiled'),
       color.file(relToPages(this.id)),
       'in',

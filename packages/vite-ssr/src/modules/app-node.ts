@@ -83,7 +83,7 @@ export class AppNode extends EventEmitter {
       this.rootManifest.boot();
     }
 
-    log.debug(color.event('app tree booted'));
+    log.verbose(color.event('app tree booted'));
   }
 
   private handleChange = (file: string, kind: 'update' | 'reload') => {

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { LogLevel } from '@beerush/logger';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
-import { color, taggedLogger } from '../logger.js';
+import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
@@ -98,6 +99,13 @@ export type AirPagesOptions = {
    * Defaults to true (`false` to disable).
    */
   metadata?: boolean;
+
+  /**
+   * Console log level, applied to every `air-*` tag (shared sink).
+   * Authoritative over sub-plugin levels when composing via `airPages`.
+   * @default LogLevel.INFO
+   */
+  logLevel?: LogLevel;
 };
 
 const VIRTUAL_ROUTES = 'virtual:air/routes';
@@ -143,6 +151,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
 
     configResolved(resolved) {
       config = resolved;
+      setLogLevel(options.logLevel);
 
       const routerFile = options.routerFile ?? 'src/router.ts';
       const workerFile = resolveWorkerEntry(options.worker ? options.worker : {});
@@ -173,7 +182,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         fileMap: AIR_ENV.files,
       });
 
-      log.debug(color.event('air-pages initialized'));
+      log.verbose(color.event('air-pages initialized'));
     },
 
     resolveId(id) {
@@ -213,7 +222,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       if (normalizedId === absClientFile || normalizedId === absWorkerFile) {
         if (!code.includes(VIRTUAL_ROUTES)) {
           code += `\nimport '${VIRTUAL_ROUTES}';\n`;
-          log.debug(
+          log.verbose(
             color.event('Injected routes import'),
             'into',
             color.file(path.relative(config.root, normalizedId))

@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
+import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
-import { color, taggedLogger } from '../logger.js';
+import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { META_STORE } from '../modules/metadata.js';
 
@@ -12,6 +13,7 @@ export type MdxSearchOptions = {
   pagesDir?: string;
   include?: string[];
   exclude?: string[];
+  logLevel?: LogLevel;
 };
 
 export interface SearchDocument {
@@ -72,6 +74,7 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
   return {
     name: 'air-pages:search',
     configResolved(config) {
+      setLogLevel(options.logLevel);
       searchRoot = config.root;
       searchPagesDir = path.resolve(config.root, options.pagesDir ?? AIR_ENV.pagesDir);
       searchExclude = exclude;

@@ -27,8 +27,12 @@
       "import": "./dist/index.js"
     },
     "./image": {
-      "types": "./dist/image.d.ts",
-      "import": "./dist/image.js"
+      "types": "./dist/plugins/image.d.ts",
+      "import": "./dist/plugins/image.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "import": "./dist/logger.js"
     },
     "./ambient": {
       "types": "./dist/ambient.d.ts"

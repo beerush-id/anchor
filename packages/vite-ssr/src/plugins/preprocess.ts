@@ -1,7 +1,8 @@
 import path from 'node:path';
+import type { LogLevel } from '@beerush/logger';
 import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
-import { color, taggedLogger } from '../logger.js';
+import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
 import { mdxMatcher } from '../modules/markdown.js';
 import type { AirMarkdownOptions } from './markdown.js';
@@ -19,6 +20,7 @@ export type CodeGroupOptions = {
 export type AirPreprocessOptions = AirMarkdownOptions & {
   markdown?: boolean;
   codeGroup?: boolean | CodeGroupOptions;
+  logLevel?: LogLevel;
 };
 
 /**
@@ -35,12 +37,15 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
     {
       name: 'air-pages:preprocess:react-side-effect',
       enforce: 'pre',
+      configResolved() {
+        setLogLevel(options.logLevel);
+      },
       transform(code) {
         if (AIR_ENV.framework !== 'react') return;
         if (this.environment?.name !== 'client') return;
         if (!code.includes('AIR_REACT_CLIENT_INIT')) return;
 
-        log.debug(color.event('Injected client import'));
+        log.verbose(color.event('Injected client import'));
         const magic = new MagicString(code);
         magic.prepend('import "@anchorlib/react/client";\n');
 
@@ -54,7 +59,7 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
         if (!markdown || !codeGroup || !isMdx(id)) return;
         if (!code.includes(':::code-group')) return;
 
-        log.debug(color.event('Injected code-group component'), 'into', color.file(relToPages(id)));
+        log.verbose(color.event('Injected code-group component'), 'into', color.file(relToPages(id)));
         const resolved =
           typeof codeGroup === 'object'
             ? codeGroup

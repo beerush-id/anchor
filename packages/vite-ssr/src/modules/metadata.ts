@@ -51,24 +51,42 @@ export class MetadataNode extends EventEmitter {
 
   /**
    * Boots the metadata node by processing existing MDX files and booting child nodes.
+   * While booting, child change events are not regenerated — every fresh write
+   * would cascade a full index rebuild; the single `generate()` at the end is
+   * the only one needed.
    */
   public boot() {
-    if (!this.parent) {
-      bootPackage(this.metadataDir, '@airstack/metadata', { '.': './index.ts', './*': './*.ts' });
-      ensureSymlink(this.viteRoot);
-    }
+    this.booting = true;
+    try {
+      this.ensureInstalled();
 
-    for (const file of this.folderNode.files) {
-      if (file.endsWith('.mdx')) {
-        this.addMarkdownNode(file);
+      for (const file of this.folderNode.files) {
+        if (file.endsWith('.mdx')) {
+          this.addMarkdownNode(file);
+        }
       }
-    }
 
-    for (const childFolder of this.folderNode.children.values()) {
-      this.handleChildAdded(childFolder);
+      for (const childFolder of this.folderNode.children.values()) {
+        this.handleChildAdded(childFolder);
+      }
+    } finally {
+      this.booting = false;
     }
 
     this.generate();
+  }
+
+  private booting = false;
+
+  /**
+   * Re-creates the `.airstack` package and symlink when missing — boot-only
+   * originally, but a deleted `.airstack` mid-run must self-heal on the next
+   * generate instead of leaving imports broken until restart.
+   */
+  private ensureInstalled() {
+    if (this.parent) return;
+    bootPackage(this.metadataDir, '@airstack/metadata', { '.': './index.ts', './*': './*.ts' });
+    ensureSymlink(this.viteRoot);
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
@@ -77,7 +95,7 @@ export class MetadataNode extends EventEmitter {
 
     child.on('change', (file, kind) => {
       this.emit('change', file, kind);
-      this.generate();
+      if (!this.booting) this.generate();
     });
 
     child.boot();
@@ -134,6 +152,7 @@ export class MetadataNode extends EventEmitter {
    * aggregating imports from all MDX files and child metadata nodes.
    */
   public generate() {
+    this.ensureInstalled();
     const indexPath = path.join(this.metadataDir, this.folderNode.rel, 'index.ts');
 
     const items = Array.from(this.markdownNodes.values())
@@ -194,7 +213,7 @@ export class MetadataNode extends EventEmitter {
     const content = lines.join('\n');
 
     if (writeIfChanged(indexPath, content)) {
-      log.debug(color.event('Regenerated metadata index'), color.file(this.folderNode.rel || 'root'));
+      log.debug(color.event('Generated metadata index'), color.file(this.folderNode.rel || 'root'));
       this.emitChange('update');
     }
   }
