@@ -136,10 +136,6 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
     transformIndexHtml(_html: string, ctx: IndexHtmlTransformContext): HtmlTagDescriptor[] | undefined {
       if (!options.noscript || !ctx.bundle) return;
 
-      // Remove every JavaScript entry from the bundle: Vite generates the
-      // final script tags from the bundle, so stripping the JS entries here
-      // excludes them from the HTML AST gracefully and no client JavaScript
-      // is ever emitted for the static site.
       let stripped = 0;
       for (const file of Object.keys(ctx.bundle)) {
         if (file.endsWith('.js')) {
@@ -175,7 +171,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       if (id === 'worker') {
         log.verbose(color.event('Built'), 'worker module wrapper');
         return `
-          import worker from '/${resolveEntry().replace('./', '')}';
+          import worker from '/${resolveEntry()}';
           import template from '/dist/client/index.html?raw';
 
           if (worker && worker.options) {
@@ -279,13 +275,12 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
             log.verbose(color.event('Resolved'), 'worker module');
 
             if (worker.options) {
+              const fs = await import('node:fs/promises');
+              const path = await import('node:path');
+              const rawHtml = await fs.readFile(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+
               worker.options.devMode = true;
-              if (!worker.options.template) {
-                const fs = await import('node:fs/promises');
-                const path = await import('node:path');
-                const rawHtml = await fs.readFile(path.resolve(process.cwd(), 'index.html'), 'utf-8');
-                worker.options.template = await server.transformIndexHtml(urlPath, rawHtml);
-              }
+              worker.options.template = await server.transformIndexHtml(urlPath, rawHtml);
             }
 
             const response = await worker.fetch(request);
@@ -316,7 +311,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
  * `entry` option, or the configured worker entry under the source root.
  */
 export function resolveWorkerEntry(options: AirWorkerOptions): string {
-  return options.entry ?? join(AIR_ENV.rootDir, AIR_ENV.files.workerEntry);
+  return (options.entry ?? join(AIR_ENV.rootDir, AIR_ENV.files.workerEntry)).replace(/^\.\//, '');
 }
 
 async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {

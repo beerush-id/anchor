@@ -4,18 +4,19 @@ import {
   type RouterOptions,
   type SSRContext,
   type SSROptions,
+  type SSRRenderer,
   type SSRRenderOptions,
 } from '@anchorlib/ssr';
 import { generateHydrationScript, renderToString } from 'solid-js/web';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
-import type { AppShell, LegacySSRRenderer } from './types.js';
+import type { AppShell } from './types.js';
 
 export function createSSR(
   router: Router,
   RootLayout: RouteComponent<AnyRoute>,
   defaultOptions?: SSROptions & Omit<RouterOptions, 'router'>
-): LegacySSRRenderer {
-  return ((
+): SSRRenderer {
+  const renderer = ((
     urlOrOptions: string | SSRRenderOptions,
     cookie?: string,
     context?: SSRContext,
@@ -63,4 +64,7 @@ export function createSSR(
 
     return baseRenderer(renderOptions);
   }) as never;
+
+  Object.assign(renderer, { router, options: defaultOptions });
+  return renderer;
 }

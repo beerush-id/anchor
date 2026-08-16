@@ -7,15 +7,15 @@ import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
 import type { FileMap } from '../utils/mapper.js';
-import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
-
-const log = taggedLogger('air-pages');
-
+import { airWorker, type AirWorkerOptions, resolveWorkerEntry } from '../worker.js';
 import { airEnv } from './env.js';
-import { type AirImageOptions, airImage } from './image.js';
-import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
+import { airImage, type AirImageOptions } from './image.js';
+import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
+import { isObject } from '@anchorlib/core';
+
+const log = taggedLogger('air-pages');
 
 export type AirPagesOptions = {
   /**
@@ -154,7 +154,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       setLogLevel(options.logLevel);
 
       const routerFile = options.routerFile ?? 'src/router.ts';
-      const workerFile = resolveWorkerEntry(options.worker ? options.worker : {});
+      const workerFile = resolveWorkerEntry(isObject(options.worker) ? options.worker : {});
 
       absPagesDir = path.resolve(config.root, AIR_ENV.pagesDir);
       absAppDir = path.dirname(path.resolve(config.root, routerFile));

@@ -53,8 +53,10 @@ export function setup<P extends Record<string, any>>(
     const self = getOwner() as ContextOwner;
     const name = displayName || Component.name || 'Anonymous';
 
-    self[STORE_SYMBOL] = new AsyncStore([[SETUP_NAME, name]], nearestStore());
-    self[SETUP_NAME] = name;
+    if (self) {
+      self[STORE_SYMBOL] = new AsyncStore([[SETUP_NAME, name]], nearestStore());
+      self[SETUP_NAME] = name;
+    }
 
     return Component(bindableProps as never);
   };
