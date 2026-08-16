@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { AppNode } from '../src/modules/app-node.js';
 import type { FolderNode } from '../src/modules/folder-node.js';
-import type { Framework } from '../src/utils/mapper.js';
+import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../src/utils/mapper.js';
 import { fixturePath, readFixture } from './fixture.js';
 
 export type MakeAppOptions = {
@@ -12,6 +12,8 @@ export type MakeAppOptions = {
   metadata?: boolean;
   /** Scaffolding of empty page files. Defaults to true (matches airPages defaults). */
   scaffold?: boolean;
+  /** Custom file map. Defaults to DEFAULT_FILE_MAP. */
+  fileMap?: FileMap;
 };
 
 /**
@@ -25,19 +27,11 @@ export function makeApp(dir: string, extra: MakeAppOptions = {}) {
     appDir: fixturePath(dir, 'src'),
     routerFile: fixturePath(dir, 'router.ts'),
     framework: extra.framework ?? 'react',
+    fileMap: extra.fileMap ?? DEFAULT_FILE_MAP,
     manifestEnabled: extra.manifest ?? true,
     metadataEnabled: extra.metadata ?? true,
     scaffoldEnabled: extra.scaffold ?? true,
   });
-}
-
-/**
- * Small delay that lets the deferred (50 ms) scaffold writer flush.
- * Route and manifest files are written synchronously; only page/layout
- * scaffolds are deferred via setTimeout inside RouteNode.
- */
-export function flushScaffold(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 80));
 }
 
 /** The folder node for a pages-relative path (`''` = the pages root). */

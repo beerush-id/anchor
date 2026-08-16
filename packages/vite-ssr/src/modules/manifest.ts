@@ -2,7 +2,13 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { color, taggedLogger } from '../logger.js';
-import { canonicalPath, deriveNamedRouteName, GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
+import {
+  canonicalPath,
+  deriveNamedRouteName,
+  GENERATED_MARKER,
+  importSpecifier,
+  namedPageName,
+} from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
 import type { RouteNode } from './route-node.js';
@@ -150,7 +156,7 @@ export class ManifestNode extends EventEmitter {
 
     if (route === this.routeNode && route.namedPages.size) {
       for (const namedPage of route.namedPages) {
-        const pageName = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+        const pageName = namedPageName(namedPage, route.fileMap);
         const namedRel = route.rel ? `${route.rel}/${pageName}` : pageName;
         const name = deriveNamedRouteName(route.folderNode.segment, pageName);
 

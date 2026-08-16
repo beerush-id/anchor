@@ -1,9 +1,11 @@
 import fs from 'node:fs';
-import * as acorn from 'acorn';
+import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { mdxAttachForFile } from '../src/plugins/mdx-route.js';
+import { AIR_ENV } from '../src/modules/env.js';
+import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile } from '../src/modules/markdown.js';
 import {
   canonicalPath,
+  DEFAULT_FILE_MAP,
   derivePrefix,
   deriveRouteName,
   deriveSegment,
@@ -12,6 +14,7 @@ import {
 } from '../src/utils/mapper.js';
 import { scaffoldForFile } from '../src/utils/scaffold.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../src/utils/sync.js';
+import { chokidarState } from './chokidar.js';
 import {
   cleanFixture,
   fixtureExists,
@@ -22,8 +25,6 @@ import {
   writeFixture,
 } from './fixture.js';
 import { makeApp, readManifest, readMetadata } from './make-sync.js';
-
-const parse = (code: string) => acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
 
 describe('coverage tests for unreached branches', () => {
   let dir = '';
@@ -74,98 +75,60 @@ describe('coverage tests for unreached branches', () => {
 
   describe('scaffold variants', () => {
     it('scaffolds the ambient global.d.ts with AirRouteMeta', () => {
-      expect(scaffoldForFile({ base: 'global.d.ts', framework: 'react' })).toContain('interface AirRouteMeta');
+      expect(scaffoldForFile({ base: 'global.d.ts', framework: 'react', files: DEFAULT_FILE_MAP })).toContain(
+        'interface AirRouteMeta'
+      );
     });
 
     it('scaffolds the solid worker entry against the solid ssr package', () => {
-      const content = scaffoldForFile({ base: 'worker.ts', framework: 'solid' });
+      const content = scaffoldForFile({ base: 'worker.ts', framework: 'solid', files: DEFAULT_FILE_MAP });
       expect(content).toContain("import { createApp } from '@anchorlib/solid/ssr';");
     });
 
     it('returns undefined for unknown file bases', () => {
-      expect(scaffoldForFile({ base: 'random.txt', framework: 'react' })).toBeUndefined();
+      expect(scaffoldForFile({ base: 'random.txt', framework: 'react', files: DEFAULT_FILE_MAP })).toBeUndefined();
     });
   });
 
   describe('mdx transform branches', () => {
-    it('keeps a custom export default declaration that is not MDXContent', async () => {
-      dir = makeFixture({ 'pages/page.mdx': '' });
-
-      app = makeApp(dir);
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/page.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree: app.rootFolder,
-        framework: 'react',
-        code: 'export default function CustomDefault() { return null; }\n',
-        parse,
-      });
-      app.destroy();
-
-      expect(result).toContain('function CustomDefault');
-    });
-
-    it('keeps ordinary named exports and invokes $install side-effects', async () => {
-      dir = makeFixture({ 'pages/page.mdx': '' });
-
-      app = makeApp(dir);
-      const code = [
-        'export const helperConst = 42;',
-        'export class CustomClass {}',
-        'export function $install() { console.log("installing"); }',
-        'export function $module() { console.log("mod"); }',
-      ].join('\n');
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/page.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree: app.rootFolder,
-        framework: 'react',
-        code,
-        parse,
-      });
-      app.destroy();
-
-      expect(result).toContain("if (typeof $install === 'function') $install();");
-      expect(result).toContain("if (typeof $module === 'function') $module();");
-      expect(result).toContain('export const helperConst = 42;');
-      expect(result).toContain('export class CustomClass {}');
-    });
-
-    it('handles specifier exports without declarations', async () => {
-      dir = makeFixture({ 'pages/page.mdx': '' });
-
-      app = makeApp(dir);
-      const code =
-        'const $install = () => {}; const myVar = 100;\nexport { $install };\nexport { myVar as customVar };\n';
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/page.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree: app.rootFolder,
-        framework: 'react',
-        code,
-        parse,
-      });
-      app.destroy();
-
-      expect(result).toContain("if (typeof $install === 'function') $install();");
-      expect(result).toContain('export { myVar as customVar };');
-    });
-
     it('returns undefined when the mdx file directory is not found in the tree', async () => {
       dir = makeFixture({ 'pages/page.mdx': '' });
 
       app = makeApp(dir);
-      const result = await mdxAttachForFile({
-        file: fixturePath(dir, 'pages/untracked/page.mdx'),
-        pagesDir: fixturePath(dir, 'pages'),
-        tree: app.rootFolder,
+      const resolution = AIR_ENV.routes.resolve(fixturePath(dir, 'pages/untracked/page.mdx'));
+      app.destroy();
+
+      expect(resolution).toBeUndefined();
+    });
+
+    it('attaches nothing when page.mdx loses to page.tsx (tsx wins branch)', async () => {
+      dir = makeFixture({ 'pages/docs/page.tsx': '', 'pages/docs/page.mdx': '' });
+
+      app = makeApp(dir);
+      const resolution = AIR_ENV.routes.resolve(fixturePath(dir, 'pages/docs/page.mdx'))!;
+      const wrapper = mdxEntryWrapper({
+        file: fixturePath(dir, 'pages/docs/page.mdx'),
+        resolution,
         framework: 'react',
-        code: '',
-        parse,
+        files: DEFAULT_FILE_MAP,
+        chunkName: './page.mdx?chunk',
       });
       app.destroy();
 
-      expect(result).toBeUndefined();
+      expect(wrapper).toBeUndefined();
+    });
+
+    it('compiles without extended plugins when extended is false', async () => {
+      dir = makeFixture({ 'pages/page.mdx': '' });
+
+      const { file, code } = await mdxFile(fixturePath(dir, 'pages/page.mdx'), '# Hi\n', {
+        include: MDX_DEFAULT_OPTIONS.include,
+        extended: false,
+        headingDepth: MDX_DEFAULT_OPTIONS.headingDepth,
+      });
+
+      expect(file.metadata).toEqual({});
+      expect(code).toContain('export function AirMdxPage');
     });
   });
 
@@ -180,7 +143,8 @@ describe('coverage tests for unreached branches', () => {
       expect(derivePrefix('admin/users')).toBe('adminUsers');
       expect(derivePrefix('___/blogs')).toBe('blogs');
       expect(derivePrefix('')).toBe('');
-      expect(deriveRouteName('blogs/[slug]')).toBe('blogsDynamicRoute');
+      expect(deriveRouteName('[slug]')).toBe('DynamicRoute');
+      expect(deriveRouteName('members')).toBe('membersRoute');
     });
 
     it('humanizes segments and falls back to Home', () => {
@@ -231,58 +195,59 @@ describe('coverage tests for unreached branches', () => {
 
       expect(readFixture(dir, 'router.ts')).toContain('export default router;');
       expect(readFixture(dir, 'pages/layout.tsx')).toContain('page(rootRoute).render(');
-      expect(readFixture(dir, 'pages/page.tsx')).toContain('Welcome to AIR Stack');
+      expect(readFixture(dir, 'pages/page.tsx')).toContain('<h1>Home</h1>');
       expect(readFixture(dir, 'pages/route.ts')).toContain("export const indexRoute = rootRoute.route('/');");
     });
   });
 
-  describe('live watcher — folder edits are picked up while running', () => {
-    async function waitFor(cond: () => boolean, timeout = 3000): Promise<void> {
-      const start = Date.now();
-      while (!cond()) {
-        if (Date.now() - start > timeout) throw new Error('condition not met in time');
-        await new Promise((resolve) => setTimeout(resolve, 25));
-      }
-    }
+  describe('watcher events — folder edits are picked up while running', () => {
+    const emit = (ev: string, rel: string) => {
+      const abs = fixturePath(dir, rel);
+      const watcherDir = path.dirname(abs);
+      const watcher = chokidarState.watchers.get(watcherDir) ?? chokidarState.watchers.get(fixturePath(dir, 'pages'));
+      watcher?.emit(ev, abs);
+    };
 
-    it('generates routes when a page folder appears', async () => {
+    afterEach(() => {
+      chokidarState.watchers.clear();
+    });
+
+    it('generates routes when a page folder appears', () => {
       dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
       app = makeApp(dir);
       app.rootFolder.watch();
+      emit('ready', '');
 
-      // Let chokidar establish its watch before mutating the tree.
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      writeFixture(dir, { 'pages/blogs/page.tsx': '' });
+      emit('addDir', 'pages/blogs');
+      emit('add', 'pages/blogs/page.tsx');
 
-      fs.mkdirSync(fixturePath(dir, 'pages/blogs'), { recursive: true });
-      fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '');
-
-      await waitFor(() => fixtureExists(dir, 'pages/blogs/route.ts'));
       expect(readFixture(dir, 'pages/blogs/route.ts')).toContain(
         "export const blogsRoute = rootRoute.route('/blogs');"
       );
     });
 
-    it('reacts to a file added to an existing folder', async () => {
+    it('reacts to a file added to an existing folder', () => {
       dir = makeFixture({ 'router.ts': '', 'pages/projects/page.tsx': '' });
       app = makeApp(dir);
       app.rootFolder.watch();
-
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      emit('ready', '');
 
       writeFixture(dir, { 'pages/projects/layout.tsx': '' });
+      emit('add', 'pages/projects/layout.tsx');
 
-      await waitFor(() => readFixture(dir, 'pages/projects/route.ts').includes('projectsIndexRoute'));
+      expect(readFixture(dir, 'pages/projects/route.ts')).toContain('projectsIndexRoute');
     });
 
     it('watching twice is idempotent and destroy shuts the watcher down', () => {
       dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
       app = makeApp(dir);
 
-      expect(() => app.rootFolder.watch()).not.toThrow();
-      expect(() => app.rootFolder.watch()).not.toThrow();
+      expect(() => app!.rootFolder.watch()).not.toThrow();
+      expect(() => app!.rootFolder.watch()).not.toThrow();
 
       const root = app.rootFolder;
-      expect(() => app.destroy()).not.toThrow();
+      expect(() => app!.destroy()).not.toThrow();
       app = undefined;
 
       expect(root.children.size).toBe(0);

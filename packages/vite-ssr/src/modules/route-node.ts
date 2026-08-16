@@ -13,10 +13,12 @@ import {
   type FileMap,
   type Framework,
   importSpecifier,
+  isNamedPage,
   LEGACY_DEFAULT_MARKER,
   MARKER_DEFAULT,
   MARKER_IMPORT_NAME,
   MARKER_VARIABLE_NAME,
+  namedPageName,
   type PageKind,
 } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
@@ -74,11 +76,7 @@ export class RouteNode extends EventEmitter {
     }
 
     for (const file of folderNode.files) {
-      if (
-        file !== fileMap.page &&
-        file !== fileMap.pageMdx &&
-        (file.endsWith('.page.tsx') || file.endsWith('.page.mdx') || file.endsWith('.page.ts'))
-      ) {
+      if (isNamedPage(file, fileMap)) {
         this.namedPages.add(file);
       }
     }
@@ -234,11 +232,7 @@ export class RouteNode extends EventEmitter {
         this.layout = true;
         changed = true;
       }
-    } else if (
-      name !== this.fileMap.page &&
-      name !== this.fileMap.pageMdx &&
-      (name.endsWith('.page.tsx') || name.endsWith('.page.mdx') || name.endsWith('.page.ts'))
-    ) {
+    } else if (isNamedPage(name, this.fileMap)) {
       if (!this.namedPages.has(name)) {
         this.namedPages.add(name);
         changed = true;
@@ -542,7 +536,7 @@ export class RouteNode extends EventEmitter {
     }
 
     for (const namedPage of this.namedPages) {
-      const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+      const name = namedPageName(namedPage, this.fileMap);
       const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
       const segment = deriveSegment(name);
 
@@ -561,6 +555,31 @@ export class RouteNode extends EventEmitter {
 
     if (!exports.defaultName && exports.names.includes(this.routeName)) {
       additions.push(`${MARKER_DEFAULT}\nexport default ${this.routeName};`);
+    }
+
+    const activeNamed = new Set(
+      [...this.namedPages].map((page) =>
+        deriveNamedRouteName(this.folderNode.segment, namedPageName(page, this.fileMap))
+      )
+    );
+    const stale = exports.declarations.filter((declaration) => {
+      if (declaration.start === undefined) return false;
+      if (markerLineStart(content, declaration.start) === undefined) return false;
+      const plain = declaration.binding?.object === this.routeName && declaration.binding.method === 'route';
+      if (!plain) return false;
+      if (declaration.name === this.indexName) return !(this.page && this.layout);
+      return (
+        declaration.name !== this.routeName && declaration.name.endsWith('Route') && !activeNamed.has(declaration.name)
+      );
+    });
+
+    if (stale.length) {
+      for (const declaration of stale) {
+        const markerStart = markerLineStart(content, declaration.start!)!;
+        const lineEnd = content.indexOf('\n', declaration.end ?? declaration.start!);
+        magic.remove(markerStart, lineEnd === -1 ? content.length : lineEnd + 1);
+      }
+      changed = true;
     }
 
     if (additions.length || defaultMarkerMissing) {
@@ -618,7 +637,7 @@ export class RouteNode extends EventEmitter {
     }
 
     for (const namedPage of this.namedPages) {
-      const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+      const name = namedPageName(namedPage, this.fileMap);
       check(deriveNamedRouteName(this.folderNode.segment, name), {
         object: this.routeName,
         method: 'route',
@@ -632,7 +651,7 @@ export class RouteNode extends EventEmitter {
     const names = [this.routeName];
     if (this.page && this.layout) names.push(this.indexName);
     for (const namedPage of this.namedPages) {
-      names.push(deriveNamedRouteName(this.folderNode.segment, namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '')));
+      names.push(deriveNamedRouteName(this.folderNode.segment, namedPageName(namedPage, this.fileMap)));
     }
     return names;
   }
@@ -684,7 +703,7 @@ export class RouteNode extends EventEmitter {
       }
 
       for (const namedPage of this.namedPages) {
-        const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+        const name = namedPageName(namedPage, this.fileMap);
         const namedSegment = deriveSegment(name);
         const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
         lines.push('');
@@ -710,7 +729,7 @@ export class RouteNode extends EventEmitter {
       }
 
       for (const namedPage of this.namedPages) {
-        const name = namedPage.replace(/\.page\.(tsx|mdx|ts)$/, '');
+        const name = namedPageName(namedPage, this.fileMap);
         const namedSegment = deriveSegment(name);
         const namedRouteName = deriveNamedRouteName(this.folderNode.segment, name);
         lines.push('');
@@ -770,6 +789,7 @@ type RouteBinding = {
 type RouteDeclaration = {
   name: string;
   start?: number;
+  end?: number;
   initText?: string;
   binding?: RouteBinding;
 };
@@ -858,6 +878,7 @@ function parseRouteExports(content: string): RouteExports | undefined {
         declarations.push({
           name,
           start: node.start,
+          end: node.end,
           initText: decl.init ? content.slice(decl.init.start ?? 0, decl.init.end ?? 0) : undefined,
           binding: routeBinding(decl.init),
         });
@@ -868,6 +889,7 @@ function parseRouteExports(content: string): RouteExports | undefined {
         declarations.push({
           name,
           start: node.start,
+          end: node.end,
           initText: decl.init ? content.slice(decl.init.start ?? 0, decl.init.end ?? 0) : undefined,
           binding: routeBinding(decl.init),
         });
@@ -898,6 +920,22 @@ function parseRouteExports(content: string): RouteExports | undefined {
 /** Whether the given marker comment sits directly above position `at`. */
 function hasMarkerAbove(content: string, at: number, marker: string): boolean {
   return content.slice(0, at).trimEnd().endsWith(marker);
+}
+
+/** Start offset of the generator marker line directly above `at`, if any. */
+function markerLineStart(content: string, at: number): number | undefined {
+  // `at` sits right after the marker line's own newline — step past it so the
+  // slice starts at the marker line, not at the declaration it precedes.
+  const lineStart = content.lastIndexOf('\n', at - 2) + 1;
+  const line = content.slice(lineStart, at);
+  if (!line.includes('@generated')) return undefined;
+  return lineStart;
+}
+
+/** Whether an initializer is exactly `x.route('<path>')` / `x.add('<path>')` — no user modifiers. */
+function isPlainRouteChain(initText: string | undefined): boolean {
+  if (initText === undefined) return false;
+  return /^[A-Za-z_$][\w$]*\.(route|add)\('([^'\\]|\\.)*'\)$/.test(initText);
 }
 
 /** Whether a comment is the default-export marker, current or legacy form. */

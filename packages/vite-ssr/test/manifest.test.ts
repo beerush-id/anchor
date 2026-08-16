@@ -51,7 +51,7 @@ describe('route manifest — manifests are generated', () => {
     // The dynamic route lives in the `blogs` level manifest, not the root one.
     const nested = readManifest(dir, 'blogs/index.ts');
 
-    expect(nested).toContain("{ path: '/blogs/:slug', route: blogsDynamicRoute },");
+    expect(nested).toContain("{ path: '/blogs/:slug', route: DynamicRoute },");
   });
 
   it('excludes wildcard folders', () => {

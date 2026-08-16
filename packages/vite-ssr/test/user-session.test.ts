@@ -52,7 +52,7 @@ describe('one dev session — start, work, stop', () => {
 
     await waitFor(() => fixtureExists(dir, 'pages/blogs/[slug]/route.ts'));
     expect(readFixture(dir, 'pages/blogs/[slug]/route.ts')).toContain(
-      "export const blogsDynamicRoute = blogsRoute.route('/:slug');"
+      "export const DynamicRoute = blogsRoute.route('/:slug');"
     );
     await waitFor(() => fixtureExists(dir, '.airstack/manifest/blogs/index.ts'));
     await waitFor(() => readManifest(dir, 'blogs/index.ts').includes('/blogs/:slug'));

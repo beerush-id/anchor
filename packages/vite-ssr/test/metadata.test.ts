@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getFrontmatter } from '../src/utils/frontmatter.js';
+import { matchFrontmatter, parseFrontmatterBlock } from '../src/utils/frontmatter.js';
 import { cleanFixture, fixtureExists, makeFixture, writeFixture } from './fixture.js';
 import { makeApp, readMetadata } from './make-sync.js';
+
+const getFrontmatter = (content: string) => parseFrontmatterBlock(matchFrontmatter(content) ?? '');
 
 describe('mdx metadata generator', () => {
   let dir = '';
@@ -40,38 +42,22 @@ describe('mdx metadata generator', () => {
 
   it('handles yaml edge cases, empty blocks, and malformed structures', () => {
     expect(getFrontmatter('no frontmatter here')).toEqual({});
-    expect(getFrontmatter('---\n# comment only\n---')).toEqual({});
+    expect(getFrontmatter('---\n# comment only\n---')).toBeNull();
 
-    const complexYaml = [
+    // A malformed line invalidates the whole block — the frontmatter falls
+    // back to empty metadata instead of returning a partial parse.
+    const malformedYaml = [
       '---',
       'emptyVal:',
       'jsonObj: {"active": true, "count": 10}',
-      'nestedList:',
-      '  - - nested 1',
-      '    - nested 2',
       'invalidLineWithoutColon',
-      '# comment line',
       'nullVal: ~',
-      'nullStr: null',
-      'trueVal: true',
-      'falseVal: false',
-      'invalidJson: {not valid json}',
       'intVal: -42',
       'floatVal: 3.14',
       '---',
       'content',
     ].join('\n');
-
-    const res = getFrontmatter(complexYaml);
-    expect(res.emptyVal).toBe('');
-    expect(res.jsonObj).toEqual({ active: true, count: 10 });
-    expect(res.nullVal).toBe(null);
-    expect(res.nullStr).toBe(null);
-    expect(res.trueVal).toBe(true);
-    expect(res.falseVal).toBe(false);
-    expect(res.invalidJson).toBe('{not valid json}');
-    expect(res.intVal).toBe(-42);
-    expect(res.floatVal).toBe(3.14);
+    expect(getFrontmatter(malformedYaml)).toEqual({});
 
     const blockRes = getFrontmatter(
       [

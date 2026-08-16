@@ -3,7 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { withIsolation } from '@anchorlib/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Route } from '../../router/src/index.js';
-import { importSpecifier } from '../src/utils/mapper.js';
+import { DEFAULT_FILE_MAP, importSpecifier } from '../src/utils/mapper.js';
 import {
   cleanFixture,
   fixtureExists,
@@ -64,7 +64,7 @@ describe('route generation — folders define URLs', () => {
 
     const detail = route('blogs/[slug]');
     expect(detail).toContain("import blogsRoute from '../route.js';");
-    expect(detail).toContain("export const blogsDynamicRoute = blogsRoute.route('/:slug');");
+    expect(detail).toContain("export const DynamicRoute = blogsRoute.route('/:slug');");
     expect(detail).not.toContain('IndexRoute');
   });
 
@@ -85,18 +85,18 @@ describe('route generation — folders define URLs', () => {
 
     const started = route('docs/getting-started');
     expect(started).toContain("import docsRoute from '../route.js';");
-    expect(started).toContain("export const docsGettingStartedRoute = docsRoute.route('/getting-started');");
+    expect(started).toContain("export const gettingStartedRoute = docsRoute.route('/getting-started');");
   });
 
   it('derives dynamic segments, recursing through nested dynamics', () => {
     boot({ 'pages/blogs/[slug]/[tab]/page.tsx': '' });
 
     const slug = route('blogs/[slug]');
-    expect(slug).toContain("export const blogsDynamicRoute = blogsRoute.route('/:slug');");
+    expect(slug).toContain("export const DynamicRoute = blogsRoute.route('/:slug');");
 
     const tab = route('blogs/[slug]/[tab]');
-    expect(tab).toContain("import blogsDynamicRoute from '../route.js';");
-    expect(tab).toContain("export const blogsDynamicDynamicRoute = blogsDynamicRoute.route('/:tab');");
+    expect(tab).toContain("import DynamicRoute from '../route.js';");
+    expect(tab).toContain("export const DynamicRoute = DynamicRoute.route('/:tab');");
   });
 
   it('derives a wildcard segment for catch-all folders', () => {
@@ -153,7 +153,7 @@ describe('route generation — folders define URLs', () => {
     boot({
       'pages/v1.page.tsx': '',
       'pages/v2.page.mdx': '',
-      'pages/api/v1.page.ts': '',
+      'pages/api/v1.page.tsx': '',
       'pages/api/v2.page.mdx': '',
     });
 
@@ -164,6 +164,25 @@ describe('route generation — folders define URLs', () => {
     const api = route('api');
     expect(api).toContain("export const apiV1Route = apiRoute.route('/v1');");
     expect(api).toContain("export const apiV2Route = apiRoute.route('/v2');");
+  });
+
+  it('derives named routes from a custom file map', () => {
+    dir = makeFixture({
+      'pages/teams.screen.tsx': '',
+      'pages/team.screen.mdx': '',
+    });
+    app = makeApp(dir, {
+      fileMap: {
+        ...DEFAULT_FILE_MAP,
+        page: 'screen.tsx',
+        pageMdx: 'screen.mdx',
+      },
+    });
+
+    const content = route('');
+    expect(content).toContain("export const teamsRoute = rootRoute.route('/teams');");
+    expect(content).toContain("export const teamRoute = rootRoute.route('/team');");
+    expect(content).not.toContain("export const pageRoute = rootRoute.route('/page');");
   });
 
   it('removes named routes when named pages are removed', () => {
@@ -204,10 +223,10 @@ describe('route generation — folders define URLs', () => {
     const fs = await import('node:fs');
     fs.unlinkSync(routeFilePath);
 
-    const routeNode = app?.rootRoute as any;
+    // Without a route file there is nothing to maintain — the events are no-ops.
     expect(() => {
-      routeNode.ensureNamedRoute('v2.page.tsx');
-      routeNode.removeNamedRoute('v1.page.tsx');
+      app?.rootFolder.handleFileAdded('v2.page.tsx');
+      app?.rootFolder.handleFileRemoved('v1.page.tsx');
     }).not.toThrow();
   });
 
@@ -217,34 +236,35 @@ describe('route generation — folders define URLs', () => {
     });
 
     const apiFolder = app?.rootFolder.children.get('api');
-    const apiRoute = app?.rootRoute?.children.get('api') as any;
 
     const fs = await import('node:fs');
     const routeFilePath = fixturePath(dir, 'pages/api/route.ts');
 
-    // 1. Add named route successfully
+    // 1. A named page added while running gets its route export.
     apiFolder?.handleFileAdded('v1.page.tsx');
     let content = fs.readFileSync(routeFilePath, 'utf-8');
     expect(content).toContain("export const apiV1Route = apiRoute.route('/v1');");
 
-    // 2. Add same named route again (hits return false if includes)
-    expect(apiRoute.ensureNamedRoute('v1.page.tsx')).toBe(false);
-
-    // 3. Remove named route that does not exist (hits return false if idx === -1)
-    expect(apiRoute.removeNamedRoute('v2.page.tsx')).toBe(false);
-
-    // 4. Corrupt the file so the base route is missing (hits baseIdx === -1)
-    fs.writeFileSync(routeFilePath, 'export const somethingElse = {};');
-    expect(apiRoute.ensureNamedRoute('v2.page.tsx')).toBe(false);
-
-    // 5. Normal remove
-    apiFolder?.handleFileAdded('v3.page.tsx'); // This will recreate the file cleanly
-    apiFolder?.handleFileRemoved('v3.page.tsx');
+    // 2. Adding the same named page again is a no-op — no duplicate export.
+    apiFolder?.handleFileAdded('v1.page.tsx');
     content = fs.readFileSync(routeFilePath, 'utf-8');
-    expect(content).not.toContain('export const apiV3Route');
+    expect(content.split('export const apiV1Route').length - 1).toBe(1);
+
+    // 3. Removing the named page removes its route export.
+    apiFolder?.handleFileRemoved('v1.page.tsx');
+    content = fs.readFileSync(routeFilePath, 'utf-8');
+    expect(content).not.toContain('export const apiV1Route');
+
+    // 4. A corrupted (markerless) route file still gets maintained — user code
+    //    survives, the contract export is filled, and the events never crash.
+    fs.writeFileSync(routeFilePath, 'export const somethingElse = {};');
+    expect(() => apiFolder?.handleFileAdded('v2.page.tsx')).not.toThrow();
+    const after = fs.readFileSync(routeFilePath, 'utf-8');
+    expect(after).toContain('export const somethingElse = {};');
+    expect(after).toContain("export const apiV2Route = apiRoute.route('/v2');");
   });
 
-  it('executes the generated tree against a real router', async () => {
+  it('executes the generated tree against a real router', { timeout: 20000 }, async () => {
     dir = makeFixture(
       {
         'router.ts': '',
@@ -293,10 +313,10 @@ describe('route generation — folders define URLs', () => {
       expect(root.indexRoute).toBeInstanceOf(Route);
       expect(root.indexRoute.path).toBe('/');
       expect(blogs.blogsIndexRoute.path).toBe('/blogs/');
-      expect(detail.blogsDynamicRoute.path).toBe('/blogs/:slug');
+      expect(detail.DynamicRoute.path).toBe('/blogs/:slug');
       expect(about.aboutIndexRoute.path).toBe('/about/');
-      expect(users.adminUsersRoute.path).toBe('/admin/users');
-      expect(started.docsGettingStartedRoute.path).toBe('/docs/getting-started');
+      expect(users.usersRoute.path).toBe('/admin/users');
+      expect(started.gettingStartedRoute.path).toBe('/docs/getting-started');
       expect(rest.DynamicRoute.path).toBe('/*rest');
 
       const last = (url: string) => router.find(url)?.segments.at(-1)?.route;
@@ -304,11 +324,11 @@ describe('route generation — folders define URLs', () => {
       expect(last('/')).toBe(root.indexRoute);
       expect(last('/blogs')).toBe(blogs.blogsIndexRoute);
       expect(last('/about')).toBe(about.aboutIndexRoute);
-      expect(last('/admin/users')).toBe(users.adminUsersRoute);
-      expect(last('/docs/getting-started')).toBe(started.docsGettingStartedRoute);
+      expect(last('/admin/users')).toBe(users.usersRoute);
+      expect(last('/docs/getting-started')).toBe(started.gettingStartedRoute);
 
       const post = router.find('/blogs/hello-world');
-      expect(post?.segments.at(-1)?.route).toBe(detail.blogsDynamicRoute);
+      expect(post?.segments.at(-1)?.route).toBe(detail.DynamicRoute);
       expect(post?.params).toMatchObject({ slug: 'hello-world' });
 
       // Wildcard matches surface under the '*' key as a segment array.

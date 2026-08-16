@@ -93,6 +93,25 @@ export function deriveIndexName(segment: string): string {
  * own, so the name chains the parent folder's leaf segment with the page name
  * — the same leaf-derived style as the folder's own route name.
  */
+/**
+ * Whether a file is a named page: a custom name before the configured page
+ * base (`teams.page.tsx` when pages are `page.tsx`). The plain page base
+ * itself is not a named page.
+ */
+export function isNamedPage(file: string, fileMap: FileMap): boolean {
+  return (
+    (file !== fileMap.page && file.endsWith(`.${fileMap.page}`)) ||
+    (file !== fileMap.pageMdx && file.endsWith(`.${fileMap.pageMdx}`))
+  );
+}
+
+/** Strips the configured page base (`teams.page.tsx` → `teams`). */
+export function namedPageName(file: string, fileMap: FileMap): string {
+  if (file.endsWith(`.${fileMap.page}`)) return file.slice(0, -(fileMap.page.length + 1));
+  if (file.endsWith(`.${fileMap.pageMdx}`)) return file.slice(0, -(fileMap.pageMdx.length + 1));
+  return file;
+}
+
 export function deriveNamedRouteName(folderSegment: string, pageName: string): string {
   const rel = folderSegment ? `${folderSegment}/${pageName}` : pageName;
   return `${derivePrefix(rel)}Route`;

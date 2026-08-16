@@ -11,7 +11,7 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
     cleanFixture(dir);
   });
 
-  it('leaves a hand-written route file byte-identical after boot', () => {
+  it('preserves user wiring in a hand-written route file after boot', () => {
     const custom = "import router from '../router.js';\n\nexport const blogsRoute = router.route('/blogs');\n";
 
     dir = makeFixture({
@@ -24,25 +24,34 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
 
     app = makeApp(dir);
 
-    expect(readFixture(dir, 'pages/blogs/route.ts')).toBe(custom);
+    const content = readFixture(dir, 'pages/blogs/route.ts');
+    // The user's lines survive — the assistant only fills the contract.
+    expect(content).toContain("import router from '../router.js';");
+    expect(content).toContain("export const blogsRoute = router.route('/blogs');");
+    // The maintenance contract adds markers + the default export.
+    expect(content).toContain('// @generated - do not edit the variable name');
+    expect(content).toContain('export default blogsRoute;');
     // The child route.ts is generated since it didn't exist.
     expect(fixtureExists(dir, 'pages/blogs/[slug]/route.ts')).toBe(true);
     expect(fixtureExists(dir, 'pages/about/route.ts')).toBe(true);
   });
 
-  it('keeps a route file the user replaced with custom content', () => {
+  it('keeps custom content the user wrote and fills the contract around it', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '' });
 
     app = makeApp(dir);
     expect(fixtureExists(dir, 'pages/blogs/route.ts')).toBe(true);
 
     // The user overwrites the generated route.ts with custom content.
-    // A later structural event must not touch it.
+    // A later structural event fills the contract but never deletes user code.
     writeFixture(dir, { 'pages/blogs/route.ts': '// custom\n' });
     writeFixture(dir, { 'pages/blogs/layout.tsx': '' });
     app.rootFolder.children.get('blogs')?.handleFileAdded('layout.tsx');
 
-    expect(readFixture(dir, 'pages/blogs/route.ts')).toBe('// custom\n');
+    const content = readFixture(dir, 'pages/blogs/route.ts');
+    expect(content).toContain('// custom');
+    expect(content).toContain('// @generated - do not edit the variable name');
+    expect(content).toContain("export const blogsIndexRoute = blogsRoute.route('/');");
   });
 
   it('does not delete route files when pages are removed', () => {

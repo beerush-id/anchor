@@ -1,14 +1,16 @@
+// biome-ignore assist/source/organizeImports: must register the chokidar mock before any module imports chokidar.
+import { chokidarState } from './chokidar.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
-import * as acorn from 'acorn';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AIR_ENV } from '../src/modules/env.js';
 import { FolderNode } from '../src/modules/folder-node.js';
 import { ManifestNode } from '../src/modules/manifest.js';
+import { mdxEntryWrapper } from '../src/modules/markdown.js';
 import { MarkdownNode } from '../src/modules/markdown-node.js';
 import { RouteNode } from '../src/modules/route-node.js';
-import { mdxAttachForFile } from '../src/plugins/mdx-route.js';
-import { getFrontmatter } from '../src/utils/frontmatter.js';
+import { matchFrontmatter, parseFrontmatterBlock } from '../src/utils/frontmatter.js';
 import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
 import { scaffoldForFile } from '../src/utils/scaffold.js';
 import { ensureSymlink } from '../src/utils/sync.js';
@@ -21,9 +23,9 @@ import {
   removeFixture,
   writeFixture,
 } from './fixture.js';
-import { flushScaffold, makeApp, readMetadata } from './make-sync.js';
+import { makeApp, readMetadata } from './make-sync.js';
 
-const parse = (code: string) => acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
+const getFrontmatter = (content: string) => parseFrontmatterBlock(matchFrontmatter(content) ?? '');
 
 describe('folder tree — guards and scan resilience', () => {
   let dir = '';
@@ -98,63 +100,60 @@ describe('folder tree — guards and scan resilience', () => {
   });
 });
 
-describe('live watcher — removals and changes', () => {
+describe('watcher events — removals and changes', () => {
   let dir = '';
   let app: ReturnType<typeof makeApp> | undefined;
+
+  const emit = (ev: string, rel: string) => {
+    const abs = fixturePath(dir, rel);
+    const watcherDir = path.dirname(abs);
+    const watcher = chokidarState.watchers.get(watcherDir) ?? chokidarState.watchers.get(fixturePath(dir, 'pages'));
+    watcher?.emit(ev, abs);
+  };
 
   afterEach(() => {
     app?.destroy();
     cleanFixture(dir);
+    chokidarState.watchers.clear();
   });
 
-  async function waitFor(cond: () => boolean, timeout = 3000): Promise<void> {
-    const start = Date.now();
-    while (!cond()) {
-      if (Date.now() - start > timeout) throw new Error('condition not met in time');
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-  }
-
-  it('updates the tree when a watched file is removed', async () => {
+  it('updates the tree when a watched file is removed', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
     app = makeApp(dir);
     app.rootFolder.watch();
+    emit('ready', '');
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    const notesDir = fixturePath(dir, 'pages/notes');
-    fs.mkdirSync(notesDir, { recursive: true });
-    fs.writeFileSync(fixturePath(dir, 'pages/notes/Card.tsx'), '// component\n');
-
-    await waitFor(() => app?.rootFolder.children.get('notes')?.files.has('Card.tsx') ?? false);
+    writeFixture(dir, { 'pages/notes/Card.tsx': '// component\n' });
+    emit('addDir', 'pages/notes');
+    emit('add', 'pages/notes/Card.tsx');
+    expect(app?.rootFolder.children.get('notes')?.files.has('Card.tsx')).toBe(true);
 
     removeFixture(dir, 'pages/notes/Card.tsx');
-
-    await waitFor(() => !(app?.rootFolder.children.get('notes')?.files.has('Card.tsx') ?? true));
+    emit('unlink', 'pages/notes/Card.tsx');
+    expect(app?.rootFolder.children.get('notes')?.files.has('Card.tsx')).toBe(false);
   });
 
-  it('reflects a watched folder removal', async () => {
+  it('reflects a watched folder removal', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
     app = makeApp(dir);
     app.rootFolder.watch();
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    emit('ready', '');
 
     removeFixture(dir, 'pages/about');
-
-    await waitFor(() => !(app?.rootFolder.children.has('about') ?? true));
+    emit('unlinkDir', 'pages/about');
+    expect(app?.rootFolder.children.has('about')).toBe(false);
   });
 
-  it('refreshes generated metadata when a watched mdx file changes', async () => {
+  it('refreshes generated metadata when a watched mdx file changes', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/guide/page.mdx': '---\ntitle: "Guide"\n---\n# Guide\n' });
     app = makeApp(dir);
     app.rootFolder.watch();
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    emit('ready', '');
 
     writeFixture(dir, { 'pages/guide/page.mdx': '---\ntitle: "Updated Guide"\n---\n# Guide\n' });
+    emit('change', 'pages/guide/page.mdx');
 
-    await waitFor(() => readMetadata(dir, 'guide/page.ts').includes('Updated Guide'));
+    expect(readMetadata(dir, 'guide/page.ts')).toContain('Updated Guide');
   });
 });
 
@@ -173,7 +172,7 @@ describe('route generation — resilience', () => {
 
     removeFixture(dir, 'pages/blogs');
 
-    expect(() => app?.rootRoute.children.get('blogs')?.boot()).not.toThrow();
+    expect(() => app!.rootRoute!.children.get('blogs')?.boot()).not.toThrow();
   });
 
   it('keeps tsx as the page kind when page.mdx is reported after page.tsx', () => {
@@ -184,7 +183,7 @@ describe('route generation — resilience', () => {
     app.rootFolder.children.get('docs')?.handleFileAdded('page.mdx');
 
     expect(readFixture(dir, 'pages/docs/route.ts')).toBe(route);
-    expect(app.rootRoute.children.get('docs')?.page).toBe('tsx');
+    expect(app.rootRoute!.children.get('docs')?.page).toBe('tsx');
   });
 
   it('falls back to page.mdx when page.tsx is removed', () => {
@@ -194,7 +193,7 @@ describe('route generation — resilience', () => {
     removeFixture(dir, 'pages/docs/page.tsx');
     app.rootFolder.children.get('docs')?.handleFileRemoved('page.tsx');
 
-    expect(app.rootRoute.children.get('docs')?.page).toBe('mdx');
+    expect(app.rootRoute!.children.get('docs')?.page).toBe('mdx');
   });
 
   it('tolerates an unreadable route file during index injection', () => {
@@ -329,39 +328,10 @@ describe('mdx & metadata — resilience', () => {
       base: 'layout.mdx',
       folder: app.rootFolder.children.get('docs')!,
       framework: 'react',
+      files: DEFAULT_FILE_MAP,
     });
     expect(content).toContain('title: Docs');
     expect(content).toContain('# Docs');
-  });
-
-  it('treats specifier exports without exported names as setup side-effects', async () => {
-    dir = makeFixture({ 'pages/page.mdx': '' });
-    app = makeApp(dir);
-
-    const customParse = () => ({
-      type: 'Program',
-      body: [
-        {
-          type: 'ExportNamedDeclaration',
-          declaration: null,
-          specifiers: [{ type: 'ExportSpecifier', local: { type: 'Identifier', name: '$install' }, exported: null }],
-          start: 0,
-          end: 20,
-        },
-      ],
-    });
-
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'pages/page.mdx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code: '/* test code */',
-      parse: customParse as never,
-    });
-    app.destroy();
-
-    expect(result).toContain("if (typeof $install === 'function') $install();");
   });
 });
 
@@ -456,28 +426,39 @@ describe('route node — mdx-first adoption and root index lifecycle', () => {
     app = makeApp(dir);
 
     const blogs = app.rootFolder.children.get('blogs')!;
-    expect(app.rootRoute.children.get('blogs')?.page).toBeUndefined();
+    expect(app.rootRoute!.children.get('blogs')?.page).toBeUndefined();
 
     const events: string[] = [];
-    app.rootRoute.children.get('blogs')?.on('change', (_file, kind) => events.push(kind));
+    app.rootRoute!.children.get('blogs')?.on('change', (_file, kind) => events.push(kind));
 
     writeFixture(dir, { 'pages/blogs/page.mdx': '' });
     blogs.handleFileAdded('page.mdx');
 
-    expect(app.rootRoute.children.get('blogs')?.page).toBe('mdx');
+    expect(app.rootRoute!.children.get('blogs')?.page).toBe('mdx');
     expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
     expect(events).toContain('reload');
   });
 
-  it('scaffolds nothing when the framework is unknown', async () => {
-    dir = makeFixture({ 'pages/page.tsx': '' });
-    const folder = new FolderNode(fixturePath(dir, 'pages'));
-    folder.scan();
-    const route = new RouteNode(folder, undefined, DEFAULT_FILE_MAP, undefined as never, fixturePath(dir, 'router.ts'));
-    route.boot();
-    await flushScaffold();
-    expect(readFixture(dir, 'pages/page.tsx')).toBe('');
-    route.destroy();
+  it('scaffolds nothing when the framework is unknown', () => {
+    vi.useFakeTimers();
+    try {
+      dir = makeFixture({ 'pages/page.tsx': '' });
+      const folder = new FolderNode(fixturePath(dir, 'pages'));
+      folder.scan();
+      const route = new RouteNode(
+        folder,
+        undefined,
+        DEFAULT_FILE_MAP,
+        undefined as never,
+        fixturePath(dir, 'router.ts')
+      );
+      route.boot();
+      vi.advanceTimersByTime(100);
+      expect(readFixture(dir, 'pages/page.tsx')).toBe('');
+      route.destroy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('injects the index export when a page lands on a root with a layout', () => {
@@ -520,6 +501,7 @@ describe('scaffold — unknown files and folder-shape edge cases', () => {
       base: 'notes.tsx',
       folder: app.rootFolder.children.get('about')!,
       framework: 'react',
+      files: DEFAULT_FILE_MAP,
     });
     expect(content).toBeUndefined();
   });
@@ -532,6 +514,7 @@ describe('scaffold — unknown files and folder-shape edge cases', () => {
       base: 'page.tsx',
       folder: app.rootFolder.children.get('guide')!,
       framework: 'react',
+      files: DEFAULT_FILE_MAP,
     });
     expect(content).toContain('guideRoute');
   });
@@ -544,6 +527,7 @@ describe('scaffold — unknown files and folder-shape edge cases', () => {
       base: 'page.tsx',
       folder: app.rootFolder.children.get('guide')!,
       framework: 'react',
+      files: DEFAULT_FILE_MAP,
     });
     expect(content).toContain('guideRoute');
   });
@@ -552,7 +536,12 @@ describe('scaffold — unknown files and folder-shape edge cases', () => {
     dir = makeFixture({ 'pages/page.mdx': '' });
     app = makeApp(dir);
 
-    const content = scaffoldForFile({ base: 'page.tsx', folder: app.rootFolder, framework: 'react' });
+    const content = scaffoldForFile({
+      base: 'page.tsx',
+      folder: app.rootFolder,
+      framework: 'react',
+      files: DEFAULT_FILE_MAP,
+    });
     expect(content).toContain('rootRoute');
   });
 });
@@ -647,79 +636,51 @@ describe('mdx attach & metadata names — edge cases', () => {
     cleanFixture(dir);
   });
 
-  it('declines non-mdx files', async () => {
+  function wrap(file: string, framework: 'react' | 'solid' = 'react') {
+    const resolution = AIR_ENV.routes.resolve(fixturePath(dir, file));
+    if (!resolution) return undefined;
+    return mdxEntryWrapper({
+      file: fixturePath(dir, file),
+      resolution,
+      framework,
+      files: DEFAULT_FILE_MAP,
+      chunkName: './page.mdx?chunk',
+    });
+  }
+
+  it('declines non-mdx files', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/page.tsx': '' });
     app = makeApp(dir);
 
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'pages/page.tsx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code: '',
-      parse,
-    });
-    expect(result).toBeUndefined();
+    expect(wrap('pages/page.tsx')).toBeUndefined();
   });
 
-  it('declines mdx files outside the pages directory', async () => {
+  it('declines mdx files outside the pages directory', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/page.mdx': '' });
     app = makeApp(dir);
 
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'assets/page.mdx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code: '',
-      parse,
-    });
-    expect(result).toBeUndefined();
+    expect(wrap('assets/page.mdx')).toBeUndefined();
   });
 
-  it('declines page.mdx when page.tsx already owns the folder', async () => {
+  it('declines page.mdx when page.tsx already owns the folder', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/docs/page.tsx': '', 'pages/docs/page.mdx': '' });
     app = makeApp(dir);
 
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'pages/docs/page.mdx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code: '',
-      parse,
-    });
-    expect(result).toBeUndefined();
+    expect(wrap('pages/docs/page.mdx')).toBeUndefined();
   });
 
-  it('attaches a root layout.mdx to rootRoute', async () => {
+  it('attaches a root layout.mdx to rootRoute', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/layout.mdx': '' });
     app = makeApp(dir);
 
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'pages/layout.mdx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code: '',
-      parse,
-    });
-    expect(result).toContain("import { rootRoute as __airRoute } from './route.js';");
+    expect(wrap('pages/layout.mdx')).toContain("import { rootRoute as __airRoute } from './route.ts';");
   });
 
-  it('attaches a nested layout.mdx to its folder route', async () => {
+  it('attaches a nested layout.mdx to its folder route', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/docs/layout.mdx': '' });
     app = makeApp(dir);
 
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'pages/docs/layout.mdx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code: '',
-      parse,
-    });
-    expect(result).toContain("import { docsRoute as __airRoute } from './route.js';");
+    expect(wrap('pages/docs/layout.mdx')).toContain("import { docsRoute as __airRoute } from './route.ts';");
   });
 
   it('names symbol-only metadata modules with the root prefix', () => {

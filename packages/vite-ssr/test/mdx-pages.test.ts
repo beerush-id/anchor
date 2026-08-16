@@ -1,23 +1,24 @@
-import * as acorn from 'acorn';
 import { afterEach, describe, expect, it } from 'vitest';
-import { mdxAttachForFile } from '../src/plugins/mdx-route.js';
+import { AIR_ENV } from '../src/modules/env.js';
+import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile } from '../src/modules/markdown.js';
+import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
 import { cleanFixture, fixtureExists, fixturePath, makeFixture } from './fixture.js';
 import { makeApp } from './make-sync.js';
 
-const parse = (code: string) => acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
-
-async function attach(dir: string, file: string, framework: 'react' | 'solid' = 'react', code = '') {
+async function attach(dir: string, file: string, framework: 'react' | 'solid' = 'react') {
   const app = makeApp(dir);
-  const result = await mdxAttachForFile({
-    file: fixturePath(dir, file),
-    pagesDir: fixturePath(dir, 'pages'),
-    tree: app.rootFolder,
-    framework,
-    code,
-    parse,
-  });
+  const resolution = AIR_ENV.routes.resolve(fixturePath(dir, file));
+  const wrapper = resolution
+    ? mdxEntryWrapper({
+        file: fixturePath(dir, file),
+        resolution,
+        framework,
+        files: DEFAULT_FILE_MAP,
+        chunkName: './page.mdx?chunk',
+      })
+    : undefined;
   app.destroy();
-  return result;
+  return wrapper;
 }
 
 describe('mdx pages — MDX files are pages', () => {
@@ -38,68 +39,53 @@ describe('mdx pages — MDX files are pages', () => {
     expect(fixtureExists(dir, 'pages/docs/getting-started/route.ts')).toBe(true);
   });
 
-  it('attaches the mdx component to the folder route with head tag and frontmatter meta', async () => {
+  it('binds the compiled chunk to the derived route export with a lazy render wrapper', async () => {
     dir = makeFixture({ 'pages/docs/getting-started/page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/getting-started/page.mdx');
 
-    expect(snippet).toContain("import { docsGettingStartedRoute as __airRoute } from './route.js';");
-    expect(snippet).toContain("import { Head as __airHeadTag } from '@anchorlib/react';");
-    expect(snippet).toContain("from 'react/jsx-runtime';");
-    expect(snippet).toContain('__airRoute.render(');
-    expect(snippet).toContain('__airJsx(__airHeadTag, { meta: __airFm })');
+    expect(snippet).toContain("import { page as __airPage } from '@anchorlib/react';");
+    expect(snippet).toContain("import { gettingStartedRoute as __airRoute } from './route.ts';");
+    expect(snippet).toContain('export default __airPage(__airRoute).renderAsync(async () => {');
+    expect(snippet).toContain("await import('./page.mdx?chunk')");
   });
 
-  it('transforms full mdx module code by partitioning module side-effects and setup declarations', async () => {
+  it('captures frontmatter metadata and renders the head tag from the compiled module', async () => {
     dir = makeFixture({ 'pages/docs/getting-started/page.mdx': '' });
-    const code = [
-      "import { derived } from '@anchorlib/react';",
-      "export const frontmatter = { title: 'Docs', route: { meta: { name: 'docs' } } };",
-      "export const $module = () => { console.log('init'); };",
-      "export const $local = derived.as(() => ({ label: 'test' }));",
-      'function MDXContent(props = {}) { return null; }',
-      'export default MDXContent;',
-    ].join('\n');
+    const { file, code } = await mdxFile(
+      fixturePath(dir, 'pages/docs/getting-started/page.mdx'),
+      ['---', 'title: Docs', 'description: AIR docs', '---', '# Getting Started'].join('\n'),
+      {
+        include: MDX_DEFAULT_OPTIONS.include,
+        extended: false,
+        headingDepth: MDX_DEFAULT_OPTIONS.headingDepth,
+      }
+    );
 
-    const app = makeApp(dir);
-    const result = await mdxAttachForFile({
-      file: fixturePath(dir, 'pages/docs/getting-started/page.mdx'),
-      pagesDir: fixturePath(dir, 'pages'),
-      tree: app.rootFolder,
-      framework: 'react',
-      code,
-      parse,
-    });
-    app.destroy();
-
-    expect(result).toBeDefined();
-    expect(result).toContain("import { derived } from '@anchorlib/react';");
-    expect(result).toContain("if (typeof $module === 'function') $module();");
-    expect(result).not.toContain('export const $local');
-    expect(result).toContain("const $local = derived.as(() => ({ label: 'test' }));");
-    expect(result).toContain("const frontmatter = { title: 'Docs', route: { meta: { name: 'docs' } } };");
-    expect(result).toContain('__airComponentRender(() =>');
+    expect(file.metadata.title).toBe('Docs');
+    expect(file.metadata.description).toBe('AIR docs');
+    expect(code).toContain('<AirHead meta={airMdxMeta} />');
+    expect(code).toContain('export function AirMdxPage');
   });
 
   it('attaches a root mdx page with a root layout to indexRoute', async () => {
     dir = makeFixture({ 'pages/page.mdx': '', 'pages/layout.tsx': '', 'pages/about/page.tsx': '' });
     const snippet = await attach(dir, 'pages/page.mdx');
 
-    expect(snippet).toContain("import { indexRoute as __airRoute } from './route.js';");
+    expect(snippet).toContain("import { indexRoute as __airRoute } from './route.ts';");
   });
 
   it('attaches an index-case mdx page to the index route', async () => {
     dir = makeFixture({ 'pages/docs/page.mdx': '', 'pages/docs/layout.tsx': '' });
     const snippet = await attach(dir, 'pages/docs/page.mdx');
 
-    expect(snippet).toContain("import { docsIndexRoute as __airRoute } from './route.js';");
+    expect(snippet).toContain("import { docsIndexRoute as __airRoute } from './route.ts';");
   });
 
   it('uses the solid runtime for solid framework mdx pages', async () => {
     dir = makeFixture({ 'pages/docs/getting-started/page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/getting-started/page.mdx', 'solid');
 
-    expect(snippet).toContain("from 'solid-js/jsx-runtime';");
-    expect(snippet).toContain("from '@anchorlib/solid';");
+    expect(snippet).toContain("import { page as __airPage } from '@anchorlib/solid';");
   });
 
   it('attaches nothing outside the pages directory', async () => {
@@ -113,7 +99,7 @@ describe('mdx pages — MDX files are pages', () => {
     dir = makeFixture({ 'pages/docs/route.ts': '// hand-written\n', 'pages/docs/page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/page.mdx');
 
-    expect(snippet).toContain("import { docsRoute as __airRoute } from './route.js';");
+    expect(snippet).toContain("import { docsRoute as __airRoute } from './route.ts';");
   });
 
   it('attaches nothing to mdx files that are not pages', async () => {
@@ -134,20 +120,20 @@ describe('mdx pages — MDX files are pages', () => {
     dir = makeFixture({ 'pages/docs/layout.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/layout.mdx');
 
-    expect(snippet).toContain("import { docsRoute as __airRoute } from './route.js';");
+    expect(snippet).toContain("import { docsRoute as __airRoute } from './route.ts';");
   });
 
   it('attaches named mdx page to its derived route', async () => {
     dir = makeFixture({ 'pages/docs/v1.page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/v1.page.mdx');
 
-    expect(snippet).toContain("import { docsV1Route as __airRoute } from './route.js';");
+    expect(snippet).toContain("import { docsV1Route as __airRoute } from './route.ts';");
   });
 
   it('attaches named mdx page in root folder', async () => {
     dir = makeFixture({ 'pages/v1.page.mdx': '' });
     const snippet = await attach(dir, 'pages/v1.page.mdx');
 
-    expect(snippet).toContain("import { v1Route as __airRoute } from './route.js';");
+    expect(snippet).toContain("import { v1Route as __airRoute } from './route.ts';");
   });
 });

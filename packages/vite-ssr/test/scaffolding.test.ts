@@ -1,13 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import type { Framework } from '../src/utils/mapper.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_FILE_MAP, type Framework } from '../src/utils/mapper.js';
 import { scaffoldForFile } from '../src/utils/scaffold.js';
 import { cleanFixture, fixtureExists, makeFixture, readFixture } from './fixture.js';
-import { flushScaffold, folderAt, makeApp } from './make-sync.js';
+import { folderAt, makeApp } from './make-sync.js';
 
 function scaffold(dir: string, folderRel: string, base: string, framework: Framework = 'react') {
   const app = makeApp(dir);
   const folder = folderAt(app, folderRel);
-  const content = folder ? scaffoldForFile({ base, folder, framework }) : undefined;
+  const content = folder ? scaffoldForFile({ base, folder, framework, files: DEFAULT_FILE_MAP }) : undefined;
   app.destroy();
   return content;
 }
@@ -26,7 +26,7 @@ describe('scaffolding — empty files become working pages', () => {
     const content = scaffold(dir, 'blogs', 'page.tsx');
 
     expect(content).toContain("import { page } from '@anchorlib/react';");
-    expect(content).toContain("import { blogsRoute } from './route.js';");
+    expect(content).toContain("import blogsRoute from './route.js';");
     expect(content).toContain('page(blogsRoute).render(');
     expect(content).toContain('<h1>Blogs</h1>');
   });
@@ -43,7 +43,7 @@ describe('scaffolding — empty files become working pages', () => {
     dir = makeFixture({ 'pages/about/layout.tsx': '' });
     const content = scaffold(dir, 'about', 'layout.tsx');
 
-    expect(content).toContain("import { aboutRoute } from './route.js';");
+    expect(content).toContain("import aboutRoute from './route.js';");
     expect(content).toContain('page(aboutRoute).render(({ children })');
     expect(content).toContain('children');
   });
@@ -52,7 +52,7 @@ describe('scaffolding — empty files become working pages', () => {
     dir = makeFixture({ 'pages/layout.tsx': '' });
     const content = scaffold(dir, '', 'layout.tsx');
 
-    expect(content).toContain("import { rootRoute } from './route.js';");
+    expect(content).toContain("import rootRoute from './route.js';");
     expect(content).toContain('page(rootRoute).render(({ children })');
   });
 
@@ -60,7 +60,7 @@ describe('scaffolding — empty files become working pages', () => {
     dir = makeFixture({ 'pages/page.tsx': '' });
     const content = scaffold(dir, '', 'page.tsx');
 
-    expect(content).toContain("import { rootRoute } from './route.js';");
+    expect(content).toContain("import rootRoute from './route.js';");
     expect(content).toContain('<h1>Home</h1>');
   });
 
@@ -83,7 +83,7 @@ describe('scaffolding — empty files become working pages', () => {
     dir = makeFixture({ 'pages/blogs/route.ts': '// hand-written\n', 'pages/blogs/page.tsx': '' });
 
     const content = scaffold(dir, 'blogs', 'page.tsx');
-    expect(content).toContain("import { blogsRoute } from './route.js';");
+    expect(content).toContain("import blogsRoute from './route.js';");
   });
 
   it('keeps scaffolds free of route configuration', () => {
@@ -96,37 +96,52 @@ describe('scaffolding — empty files become working pages', () => {
     }
   });
 
-  it('fills an empty page file only after its route file exists', async () => {
-    dir = makeFixture({ 'router.ts': '', 'pages/contact/page.tsx': '' });
+  it('fills an empty page file only after its route file exists', () => {
+    vi.useFakeTimers();
+    try {
+      dir = makeFixture({ 'router.ts': '', 'pages/contact/page.tsx': '' });
 
-    app = makeApp(dir);
-    expect(fixtureExists(dir, 'pages/contact/route.ts')).toBe(true);
+      app = makeApp(dir);
+      expect(fixtureExists(dir, 'pages/contact/route.ts')).toBe(true);
 
-    await flushScaffold();
+      vi.advanceTimersByTime(100);
 
-    expect(readFixture(dir, 'pages/contact/route.ts')).toContain('export const contactRoute');
-    expect(readFixture(dir, 'pages/contact/page.tsx')).toContain("import { contactRoute } from './route.js';");
+      expect(readFixture(dir, 'pages/contact/route.ts')).toContain('export const contactRoute');
+      expect(readFixture(dir, 'pages/contact/page.tsx')).toContain("import contactRoute from './route.js';");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it('never rewrites a file that already has content', async () => {
-    dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '// user content\n' });
+  it('never rewrites a file that already has content', () => {
+    vi.useFakeTimers();
+    try {
+      dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '// user content\n' });
 
-    app = makeApp(dir);
-    await flushScaffold();
+      app = makeApp(dir);
+      vi.advanceTimersByTime(100);
 
-    expect(readFixture(dir, 'pages/blogs/page.tsx')).toBe('// user content\n');
+      expect(readFixture(dir, 'pages/blogs/page.tsx')).toBe('// user content\n');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it('gates app-domain scaffolding only, not route-domain pages', async () => {
+  it('gates app-domain scaffolding only, not route-domain pages', () => {
     // The scaffold option belongs to AppNode's own domain (app entry files).
     // page.tsx is route domain — RouteNode scaffolds it regardless.
-    dir = makeFixture({ 'router.ts': '', 'src/app.tsx': '', 'pages/blogs/page.tsx': '' });
+    vi.useFakeTimers();
+    try {
+      dir = makeFixture({ 'router.ts': '', 'src/app.tsx': '', 'pages/blogs/page.tsx': '' });
 
-    app = makeApp(dir, { scaffold: false });
-    await flushScaffold();
+      app = makeApp(dir, { scaffold: false });
+      vi.advanceTimersByTime(100);
 
-    expect(readFixture(dir, 'src/app.tsx')).toBe('');
-    expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain("import { blogsRoute } from './route.js';");
+      expect(readFixture(dir, 'src/app.tsx')).toBe('');
+      expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain("import blogsRoute from './route.js';");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('scaffolds app.tsx, client.tsx, and worker.ts when present as empty files in app dir', () => {
@@ -149,7 +164,7 @@ describe('scaffolding — empty files become working pages', () => {
   });
 
   it('returns undefined from scaffoldForFile when folder is missing for page files', () => {
-    expect(scaffoldForFile({ base: 'page.tsx', framework: 'react' })).toBeUndefined();
-    expect(scaffoldForFile({ base: 'random.ts', framework: 'react' })).toBeUndefined();
+    expect(scaffoldForFile({ base: 'page.tsx', framework: 'react', files: DEFAULT_FILE_MAP })).toBeUndefined();
+    expect(scaffoldForFile({ base: 'random.ts', framework: 'react', files: DEFAULT_FILE_MAP })).toBeUndefined();
   });
 });

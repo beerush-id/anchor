@@ -10,15 +10,25 @@ import { visit } from 'unist-util-visit';
 import { color, taggedLogger } from '../logger.js';
 import { stripFrontmatter } from '../utils/frontmatter.js';
 import { wrapJsx } from '../utils/jsx.js';
+import type { FileMap } from '../utils/mapper.js';
 import { createMatcher } from '../utils/matcher.js';
 
-import { AIR_ENV } from './env.js';
+import { AIR_ENV, type Framework } from './env.js';
 import { META_STORE } from './metadata.js';
+import type { RouteResolution } from './route-store.js';
 
 const log = taggedLogger('air-markdown');
 
-/** The id relative to the pages directory, for log identifiers. */
-const relToPages = (id: string) => path.relative(path.resolve(AIR_ENV.viteRoot, AIR_ENV.pagesDir), id.split('?')[0]);
+/**
+ * The id relative to the pages directory, for log identifiers. Files outside
+ * the pages directory (temp fixtures, build artifacts) fall back to their
+ * basename — a relative walk outside the project leaks the absolute path.
+ */
+export const relToPages = (id: string) => {
+  const file = id.split('?')[0];
+  const rel = path.relative(path.resolve(AIR_ENV.viteRoot, AIR_ENV.pagesDir), file);
+  return rel.startsWith('..') ? path.basename(file) : rel;
+};
 
 export type MdxHeading = {
   id: string;
@@ -188,6 +198,46 @@ export class MdxModule {
     remarkPlugins.unshift(...remark);
     rehypePlugins.unshift(...rehype);
   }
+}
+
+/**
+ * Builds the routed entry module for an MDX page: binds the compiled chunk
+ * to its derived route export via a lazy `renderAsync` wrapper.
+ *
+ * Returns `undefined` when the file should not become an entry — a `page.mdx`
+ * in a folder whose page kind is `tsx` attaches nothing (tsx wins).
+ *
+ * @param opts.file Absolute path of the MDX file.
+ * @param opts.resolution The route identity resolved for the file.
+ * @param opts.framework Target UI framework for the entry import.
+ * @param opts.files Resolved file name map.
+ * @param opts.chunkName Import specifier of the compiled chunk (e.g. `./page.mdx?chunk`).
+ */
+export function mdxEntryWrapper(opts: {
+  file: string;
+  resolution: RouteResolution;
+  framework: Framework;
+  files: FileMap;
+  chunkName: string;
+}): string | undefined {
+  const { file, resolution, framework, files, chunkName } = opts;
+  const base = path.basename(file);
+
+  if (!base.endsWith('.mdx')) return undefined;
+  if (base === files.pageMdx && resolution.node.page === 'tsx') return undefined;
+
+  const routeName = resolution.exportName;
+  const routePath = `./${files.route}`;
+
+  return [
+    `import { page as __airPage } from '@anchorlib/${framework}';`,
+    `import { ${routeName} as __airRoute } from '${routePath}';`,
+    `if (import.meta.hot) import.meta.hot.accept();`,
+    `export default __airPage(__airRoute).renderAsync(async () => {`,
+    `  const chunkModule = await import('${chunkName}')`,
+    `  return chunkModule.default;`,
+    `});`,
+  ].join('\n');
 }
 
 /**

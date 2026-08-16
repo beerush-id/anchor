@@ -4,13 +4,10 @@ import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
-import { mdxMatcher } from '../modules/markdown.js';
+import { mdxMatcher, relToPages } from '../modules/markdown.js';
 import type { AirMarkdownOptions } from './markdown.js';
 
 const log = taggedLogger('air-markdown');
-
-/** The id relative to the pages directory, for log identifiers. */
-const relToPages = (id: string) => path.relative(path.resolve(AIR_ENV.viteRoot, AIR_ENV.pagesDir), id.split('?')[0]);
 
 export type CodeGroupOptions = {
   name: string;
