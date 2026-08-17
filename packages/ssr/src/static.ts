@@ -52,7 +52,6 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
       const content = await readStaticFile(filePath, maxAge);
 
       if (content) {
-        console.log('[air:static]', filePath);
         return { html: content, headers };
       }
     },
@@ -72,7 +71,6 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
 
       const filePath = resolveStaticPath(cacheDir, url.pathname);
       await writeStaticFile(filePath, content);
-      console.log('[air:static]', filePath);
     },
   };
 }
