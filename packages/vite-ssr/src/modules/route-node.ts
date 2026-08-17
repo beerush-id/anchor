@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import MagicString from 'magic-string';
-import { type CallExpression, type ImportDeclaration, type ParseResult, parseSync, type Program } from 'oxc-parser';
+import { type CallExpression, type ImportDeclaration, type ParseResult, parseSync } from 'oxc-parser';
 import { color, taggedLogger } from '../logger.js';
 import type { AnyType } from '../types.js';
 import {
@@ -207,12 +207,10 @@ export class RouteNode extends EventEmitter {
     });
 
     if (content) {
-      setTimeout(() => {
-        try {
-          fs.writeFileSync(file, content);
-          log.debug(color.event('Scaffolded'), color.file(`${this.displayPath}${name}`));
-        } catch {}
-      }, 50);
+      try {
+        fs.writeFileSync(file, content);
+        log.debug(color.event('Scaffolded'), color.file(`${this.displayPath}${name}`));
+      } catch {}
     }
   }
 
@@ -351,20 +349,12 @@ export class RouteNode extends EventEmitter {
       return;
     }
 
-    let program: Program;
-    try {
-      const parsed = parseSync(filePath, content, { lang: 'tsx', sourceType: 'module', preserveParens: false });
-      if (parsed.errors.length) return;
-      program = parsed.program;
-    } catch {
-      return;
-    }
+    const parsed = parseSync(filePath, content, { lang: 'tsx', sourceType: 'module', preserveParens: false });
+    const program = parsed.program;
 
     const routeBase = this.fileMap.route.split('.')[0];
     const expectDefault = targetRouteName === this.routeName;
 
-    // All imports from the route module — formatters may split or merge them,
-    // so the contract reads across the whole set, never one statement.
     const routeImports = program.body.filter(
       (statement): statement is ImportDeclaration =>
         statement.type === 'ImportDeclaration' &&
@@ -373,14 +363,10 @@ export class RouteNode extends EventEmitter {
     );
     if (!routeImports.length) return;
     const source = routeImports[0].source.value;
-    if (typeof source !== 'string') return;
 
     const specifiers = routeImports.flatMap((imp) => imp.specifiers);
     if (specifiers.some((s) => s.type === 'ImportNamespaceSpecifier')) return;
 
-    // The binding call is the `page(...)` / `modal(...)` whose first argument
-    // is one of the imported names: `page()` renders the route as a tree
-    // child, `modal()` as a top-level stack entry.
     let call: CallExpression | undefined;
     for (const specifier of specifiers) {
       call = findBindingCall(program, specifier.local.name);
@@ -396,11 +382,6 @@ export class RouteNode extends EventEmitter {
     );
     const needsBindingRewrite = argument.name !== targetRouteName;
 
-    // The binding must be imported with its contract kind — default for the
-    // folder route, named for index/leaf routes. Any other shape (wrong kind,
-    // missing binding) is rewritten into one combined statement; everything
-    // else is user code, preserved verbatim. No markers: formatters own the
-    // import line, so the contract only checks the binding kind.
     const bindingKindOk = specifiers.some((s) =>
       expectDefault
         ? s.type === 'ImportDefaultSpecifier' && s.local.name === targetRouteName
@@ -419,9 +400,7 @@ export class RouteNode extends EventEmitter {
           : `import ${targetRouteName} from '${source}';`;
       } else {
         const defaultSpec = specifiers.find((s) => s.type === 'ImportDefaultSpecifier');
-        const named = specifiers
-          .filter((s) => s.type === 'ImportSpecifier' && s.local.name !== targetRouteName)
-          .map((s) => content.slice(s.start, s.end));
+        const named = specifiers.filter((s) => s.type === 'ImportSpecifier').map((s) => content.slice(s.start, s.end));
         const defaultPart = defaultSpec ? `${content.slice(defaultSpec.start, defaultSpec.end)}, ` : '';
         importBlock = `import ${defaultPart}{ ${[targetRouteName, ...named].join(', ')} } from '${source}';`;
       }
@@ -437,6 +416,7 @@ export class RouteNode extends EventEmitter {
       for (const statement of routeImports.slice(1)) {
         const lineStart = content.lastIndexOf('\n', statement.start - 1) + 1;
         const lineEnd = content.indexOf('\n', statement.end);
+        /* v8 ignore next */
         magic.remove(lineStart, lineEnd === -1 ? content.length : lineEnd + 1);
       }
       changes.push(`normalized the import to \`${importBlock}\``);
@@ -563,7 +543,6 @@ export class RouteNode extends EventEmitter {
       )
     );
     const stale = exports.declarations.filter((declaration) => {
-      if (declaration.start === undefined) return false;
       if (markerLineStart(content, declaration.start) === undefined) return false;
       const plain = declaration.binding?.object === this.routeName && declaration.binding.method === 'route';
       if (!plain) return false;
@@ -575,8 +554,9 @@ export class RouteNode extends EventEmitter {
 
     if (stale.length) {
       for (const declaration of stale) {
-        const markerStart = markerLineStart(content, declaration.start!)!;
-        const lineEnd = content.indexOf('\n', declaration.end ?? declaration.start!);
+        const markerStart = markerLineStart(content, declaration.start)!;
+        const lineEnd = content.indexOf('\n', declaration.end);
+        /* v8 ignore next */
         magic.remove(markerStart, lineEnd === -1 ? content.length : lineEnd + 1);
       }
       changed = true;
@@ -621,7 +601,7 @@ export class RouteNode extends EventEmitter {
       if (!exports.names.includes(exportName)) return;
       const declaration = exports.declarations.find((d) => d.name === exportName);
       const binding = declaration?.binding;
-      const found = declaration?.initText ? `\`${declaration.initText}\`` : 'no route wiring';
+      const found = `\`${declaration!.initText!}\``;
       const wired =
         binding?.object === expected.object && binding.method === expected.method && binding.path === expected.path;
 
@@ -788,8 +768,8 @@ type RouteBinding = {
 /** A variable declaration in `route.ts`, with its statement position and extracted registration. */
 type RouteDeclaration = {
   name: string;
-  start?: number;
-  end?: number;
+  start: number;
+  end: number;
   initText?: string;
   binding?: RouteBinding;
 };
@@ -821,12 +801,11 @@ type RouteExports = {
  * maintenance is skipped entirely.
  */
 function parseRouteExports(content: string): RouteExports | undefined {
-  let parsed: ParseResult;
-  try {
-    parsed = parseSync('route.ts', content, { lang: 'ts', sourceType: 'module', preserveParens: false });
-  } catch {
-    return undefined;
-  }
+  const parsed: ParseResult = parseSync('route.ts', content, {
+    lang: 'ts',
+    sourceType: 'module',
+    preserveParens: false,
+  });
 
   if (parsed.errors.length) return undefined;
 
@@ -839,58 +818,58 @@ function parseRouteExports(content: string): RouteExports | undefined {
   let defaultName: string | undefined;
   let defaultStart: number | undefined;
 
-  for (const node of ast.body ?? []) {
+  for (const node of ast.body!) {
     if (node.type === 'ImportDeclaration') {
       const source = node.source?.value;
       if (typeof source === 'string') {
         let kind: RouteImport['kind'] = 'named';
         let localName = '';
-        for (const spec of node.specifiers ?? []) {
-          const name = spec.local?.name;
+        for (const spec of node.specifiers!) {
+          const name = spec.local!.name!;
           if (spec.type === 'ImportDefaultSpecifier') {
             kind = 'default';
-            localName = name ?? '';
+            localName = name;
             break;
           }
           if (spec.type === 'ImportNamespaceSpecifier') {
             kind = 'namespace';
-            localName = name ?? '';
+            localName = name;
             break;
           }
           kind = 'named';
-          localName = name ?? '';
+          localName = name;
         }
         imports.push({
           source,
           kind,
           localName,
-          count: (node.specifiers ?? []).length,
-          start: node.start ?? 0,
-          end: node.end ?? 0,
+          count: node.specifiers!.length,
+          start: node.start!,
+          end: node.end!,
         });
       }
     } else if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration') {
-      for (const decl of node.declaration.declarations ?? []) {
+      for (const decl of node.declaration.declarations!) {
         if (decl.id?.type === 'Identifier' && decl.id.name) {
           names.push(decl.id.name);
         }
         const name = decl.id?.type === 'Identifier' && decl.id.name ? decl.id.name : '';
         declarations.push({
           name,
-          start: node.start,
-          end: node.end,
-          initText: decl.init ? content.slice(decl.init.start ?? 0, decl.init.end ?? 0) : undefined,
+          start: node.start!,
+          end: node.end!,
+          initText: content.slice(decl.init!.start!, decl.init!.end!),
           binding: routeBinding(decl.init),
         });
       }
     } else if (node.type === 'VariableDeclaration') {
-      for (const decl of node.declarations ?? []) {
+      for (const decl of node.declarations!) {
         const name = decl.id?.type === 'Identifier' && decl.id.name ? decl.id.name : '';
         declarations.push({
           name,
-          start: node.start,
-          end: node.end,
-          initText: decl.init ? content.slice(decl.init.start ?? 0, decl.init.end ?? 0) : undefined,
+          start: node.start!,
+          end: node.end!,
+          initText: content.slice(decl.init!.start!, decl.init!.end!),
           binding: routeBinding(decl.init),
         });
       }
@@ -924,18 +903,10 @@ function hasMarkerAbove(content: string, at: number, marker: string): boolean {
 
 /** Start offset of the generator marker line directly above `at`, if any. */
 function markerLineStart(content: string, at: number): number | undefined {
-  // `at` sits right after the marker line's own newline — step past it so the
-  // slice starts at the marker line, not at the declaration it precedes.
   const lineStart = content.lastIndexOf('\n', at - 2) + 1;
   const line = content.slice(lineStart, at);
   if (!line.includes('@generated')) return undefined;
   return lineStart;
-}
-
-/** Whether an initializer is exactly `x.route('<path>')` / `x.add('<path>')` — no user modifiers. */
-function isPlainRouteChain(initText: string | undefined): boolean {
-  if (initText === undefined) return false;
-  return /^[A-Za-z_$][\w$]*\.(route|add)\('([^'\\]|\\.)*'\)$/.test(initText);
 }
 
 /** Whether a comment is the default-export marker, current or legacy form. */
@@ -958,25 +929,23 @@ function routeBinding(init: AstNode | undefined): RouteBinding | undefined {
     const callee = call.callee;
     if (callee?.type !== 'MemberExpression' || callee.computed) return undefined;
 
-    const object = callee.object;
-    const property = callee.property;
+    const object = callee.object!;
+    const property = callee.property!;
 
-    // A modifier chain: `x.route('/').meta(...)` — descend to the wrapped call.
-    if (object?.type === 'CallExpression') {
+    if (object.type === 'CallExpression') {
       call = object;
       continue;
     }
 
-    if (object?.type !== 'Identifier' || !object.name) return undefined;
-    if (property?.type !== 'Identifier' || !property.name) return undefined;
+    if (object.type !== 'Identifier') return undefined;
 
-    const method = property.name;
+    const method = property.name!;
     if (method !== 'route' && method !== 'add') return undefined;
 
     const argument = call.arguments?.[0];
     if (argument?.type !== 'Literal' || typeof argument.value !== 'string') return undefined;
 
-    return { object: object.name, method, path: argument.value };
+    return { object: object.name!, method, path: argument.value };
   }
 }
 

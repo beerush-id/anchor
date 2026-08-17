@@ -139,8 +139,6 @@ export class ManifestNode extends EventEmitter {
 
   private addEntryForRoute(route: RouteNode) {
     if (route.page || route.layout) {
-      // Use the node's actual export names (adopted from route.ts when the
-      // user wrote them) rather than deriving from the folder path.
       const name = route.page && route.layout ? route.indexName : route.routeName;
 
       const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');

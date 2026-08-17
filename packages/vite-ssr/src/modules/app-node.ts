@@ -147,8 +147,6 @@ export class AppNode extends EventEmitter {
     if (!fs.existsSync(this.opts.pagesDir)) {
       fs.mkdirSync(this.opts.pagesDir, { recursive: true });
 
-      // The root layout and page are generated through the shared scaffold
-      // utility so the output is framework-agnostic (no hardcoded React types).
       this.rootFolder.files.add(this.fileMap.layout);
       this.rootFolder.files.add(this.fileMap.page);
 

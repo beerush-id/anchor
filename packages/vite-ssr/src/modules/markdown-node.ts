@@ -58,7 +58,7 @@ export class MarkdownNode extends EventEmitter {
     try {
       content = fs.readFileSync(this.absPath, 'utf-8');
     } catch {
-      return; // File probably deleted, handled by destroy()
+      return;
     }
 
     const meta = META_STORE.invalidate(this.absPath, content);

@@ -40,7 +40,6 @@ export function toWebRequest(req: IncomingMessage, controller: AbortController):
  */
 export async function sendWebResponse(res: ServerResponse, response: Response): Promise<void> {
   response.headers.forEach((value, key) => {
-    // Don't set content-encoding — Vite/Node handles this
     if (key.toLowerCase() !== 'content-encoding') {
       res.setHeader(key, value);
     }
@@ -52,7 +51,6 @@ export async function sendWebResponse(res: ServerResponse, response: Response): 
     const readable = Readable.fromWeb(response.body as any);
     readable.pipe(res);
 
-    // If the client disconnects, destroy the readable to signal upstream abort
     res.on('close', () => {
       if (!readable.destroyed) {
         readable.destroy();

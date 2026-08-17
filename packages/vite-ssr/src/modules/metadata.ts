@@ -187,7 +187,7 @@ export class MetadataNode extends EventEmitter {
       try {
         if (fs.existsSync(indexPath)) {
           fs.unlinkSync(indexPath);
-          log.debug(color.event('Removed metadata index'), color.file(this.folderNode.rel || 'root'));
+          log.debug(color.event('Removed metadata index'), color.file(this.folderNode.rel));
           this.emitChange('update');
         }
       } catch {}

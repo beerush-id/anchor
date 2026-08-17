@@ -262,9 +262,6 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     },
 
     handleHotUpdate() {
-      // If a full reload is pending (e.g. route structure changed),
-      // suppress all HMR updates so the browser doesn't try to apply them
-      // using a stale module cache before the reload happens.
       if (shouldReload) return [];
     },
   };

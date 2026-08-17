@@ -1,9 +1,6 @@
 import { type Logger, LogLevel, logger } from '@beerush/logger';
 import { consoleAdapter } from '@beerush/logger/adapters/console';
 
-// Default sink for the whole package: visible in dev. The app can re-level or
-// silence it by registering its own console adapter — adapters with the same
-// name overwrite the previous one.
 logger.use(consoleAdapter({ level: LogLevel.INFO, timestamp: false }));
 
 /**

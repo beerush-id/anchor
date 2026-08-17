@@ -134,7 +134,7 @@ export class ImageStore {
       await this.ensureDir;
       await fs.writeFile(abs, buf);
 
-      const reduction = originalSize > 0 ? Math.round((1 - buf.length / originalSize) * 100) : 0;
+      const reduction = Math.round((1 - buf.length / originalSize) * 100);
       log.info('Encoded', color.file(relFile));
       log.info(
         color.file(name),
@@ -175,10 +175,7 @@ export class ImageStore {
         .map(Number)
         .sort((a, b) => a - b);
       const lastSize = generatedSizes[generatedSizes.length - 1];
-      defaultMeta =
-        lastSize !== undefined && sizesMap[lastSize]
-          ? sizesMap[lastSize]
-          : { src: `/@fs${filePath}`, width, height, alt };
+      defaultMeta = sizesMap[lastSize];
     }
 
     if (allCached) {

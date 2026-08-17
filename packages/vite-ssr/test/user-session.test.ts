@@ -58,6 +58,10 @@ describe('one dev session — start, work, stop', () => {
     await waitFor(() => readManifest(dir, 'blogs/index.ts').includes('/blogs/:slug'));
   });
 
+  // The suite runs many chokidar watchers in parallel; under load the file
+  // change event can be delayed well past the ~350ms this takes in isolation.
+  // The waitFors below govern delivery — this just keeps vitest's own timeout
+  // from preempting them.
   it('the user adds a docs page and changes its metadata', async () => {
     fs.mkdirSync(fixturePath(dir, 'pages/docs'), { recursive: true });
     fs.writeFileSync(fixturePath(dir, 'pages/docs/page.mdx'), '---\ntitle: "Docs"\n---\n# Docs\n');
@@ -69,7 +73,7 @@ describe('one dev session — start, work, stop', () => {
     await settle(300);
     fs.writeFileSync(fixturePath(dir, 'pages/docs/page.mdx'), '---\ntitle: "Updated Docs"\n---\n# Docs\n');
     await waitFor(() => readMetadata(dir, 'docs/page.ts').includes('Updated Docs'));
-  });
+  }, 30_000);
 
   it('the user updates the blogs page content — the write is preserved', async () => {
     fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '// final draft\n');

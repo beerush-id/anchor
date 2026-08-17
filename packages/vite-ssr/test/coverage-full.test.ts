@@ -155,6 +155,34 @@ describe('watcher events — removals and changes', () => {
 
     expect(readMetadata(dir, 'guide/page.ts')).toContain('Updated Guide');
   });
+
+  it('notifies listeners when a watched file changes', () => {
+    dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
+    app = makeApp(dir);
+    app.rootFolder.watch();
+    emit('ready', '');
+
+    const events: string[] = [];
+    app.rootFolder.children.get('about')?.on('fileChanged', (name) => events.push(name));
+
+    emit('change', 'pages/about/page.tsx');
+
+    expect(events).toContain('page.tsx');
+  });
+
+  it('notifies listeners when a root-level watched file changes', () => {
+    dir = makeFixture({ 'router.ts': '', 'pages/page.tsx': '' });
+    app = makeApp(dir);
+    app.rootFolder.watch();
+    emit('ready', '');
+
+    const events: string[] = [];
+    app.rootFolder.on('fileChanged', (name) => events.push(name));
+
+    emit('change', 'pages/page.tsx');
+
+    expect(events).toContain('page.tsx');
+  });
 });
 
 describe('route generation — resilience', () => {
@@ -403,6 +431,17 @@ describe('folder tree — self-dir events and self-path lookups', () => {
     expect(app.rootFolder.children.size).toBe(1);
   });
 
+  it('ignores unlinkDir events for its own directory', () => {
+    dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '' });
+    app = makeApp(dir);
+    app.rootFolder.watch();
+
+    const watcher = (app.rootFolder as AnyType).watcher as { emit: (event: string, path: string) => void };
+    watcher.emit('unlinkDir', app.rootFolder.dir);
+
+    expect(app.rootFolder.children.size).toBe(1);
+  });
+
   it('findNode resolves a trailing-separator path to the folder itself', () => {
     dir = makeFixture({ 'pages/about/page.tsx': '' });
     app = makeApp(dir);
@@ -594,6 +633,18 @@ describe('metadata — event and cleanup edge cases', () => {
     fs.mkdirSync(fixturePath(dir, '.airstack/metadata/guide/index.ts'), { recursive: true });
 
     expect(() => app?.destroy()).not.toThrow();
+  });
+
+  it('prunes the metadata index when the last markdown file is removed', () => {
+    dir = makeFixture({ 'router.ts': '', 'pages/guide/page.mdx': '---\ntitle: Guide\n---\n' });
+    app = makeApp(dir);
+
+    expect(fixtureExists(dir, '.airstack/metadata/guide/index.ts')).toBe(true);
+
+    removeFixture(dir, 'pages/guide/page.mdx');
+    app.rootFolder.children.get('guide')?.handleFileRemoved('page.mdx');
+
+    expect(fixtureExists(dir, '.airstack/metadata/guide/index.ts')).toBe(false);
   });
 });
 

@@ -176,8 +176,6 @@ export class MdxModule {
       [airMdxHeadings, this]
     );
 
-    // Compilation errors propagate to the bundler: a broken MDX file must fail
-    // the build instead of silently compiling to a blank module.
     const file = await compile(
       { path: id, value: body },
       { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins, recmaPlugins: [airRecmaPlugin] }
@@ -249,7 +247,6 @@ export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
       if (node.closingElement) visit(node.closingElement);
     }
 
-    // Unwrap `_components.XXX` to `XXX`.
     if (node.type === 'JSXOpeningElement' || node.type === 'JSXClosingElement') {
       if (node.name.type === 'JSXMemberExpression' && node.name.object.name === '_components') {
         let tagName = node.name.property.name;
@@ -339,9 +336,6 @@ export async function mdxFile(id: string, code: string, options: Partial<MdxModu
 
 export type ExtendedPlugins = Array<{ default: unknown }>;
 
-// Hoisted singleton: the heavy optional AST plugins are resolved into memory
-// exactly once per process instead of being dynamically imported inside the
-// per-file compilation pipeline.
 let extendedImportPromise: Promise<ExtendedPlugins> | undefined;
 export const importExtended = (): Promise<ExtendedPlugins> => {
   if (!extendedImportPromise) {
@@ -387,14 +381,12 @@ export async function loadExtendedPlugins(module: MdxModule) {
 
   const [gfm, directive, prettyCode] = await importExtended();
 
-  // Remark Plugins.
   const remarkPlugins: PluggableList = [
     [gfm.default as Plugin, { ...options.remarkGfm }],
     [directive.default as Plugin, {}],
     [airMdxRemark, module],
   ];
 
-  // Rehype plugins.
   const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
   const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
 
@@ -402,8 +394,6 @@ export async function loadExtendedPlugins(module: MdxModule) {
     [prettyCode.default as Plugin, shikiOptions],
     [airMdxRehype, module],
   ];
-
-  // rehypePlugins.push([prettyCode.default as Plugin, shikiOptions]);
 
   return { remarkPlugins, rehypePlugins };
 }
@@ -434,7 +424,7 @@ export function airMdxRemark(module?: MdxModule) {
         }
 
         if (node.name === 'script') {
-          for (const code of node.children ?? []) {
+          for (const code of node.children!) {
             if (code.lang !== 'js' && code.lang !== 'ts') {
               code.type = 'paragraph';
               code.value = '';
@@ -471,7 +461,7 @@ export function airMdxHeadings(module?: MdxModule) {
       const props = node.properties || (node.properties = {});
 
       if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName)) {
-        props.id = (props.id ?? '').replace(/[-]+/g, '-');
+        props.id = props.id!.replace(/[-]+/g, '-');
 
         const text = getLeafNode(node);
         if (text?.value) {

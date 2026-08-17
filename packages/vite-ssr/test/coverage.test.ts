@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIR_ENV } from '../src/modules/env.js';
 import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile } from '../src/modules/markdown.js';
 import {
@@ -11,6 +11,7 @@ import {
   deriveSegment,
   humanizeSegment,
   importSpecifier,
+  namedPageName,
 } from '../src/utils/mapper.js';
 import { scaffoldForFile } from '../src/utils/scaffold.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../src/utils/sync.js';
@@ -70,6 +71,273 @@ describe('coverage tests for unreached branches', () => {
       const reload = events.find(([file, kind]) => kind === 'reload' && file.includes('route.ts'));
       expect(reload).toBeDefined();
       expect(events.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('warns but never rewrites a default export that does not reference the folder route', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': '',
+        'pages/blogs/route.ts': [
+          "export const blogsRoute = rootRoute.route('/blogs');",
+          'export default somethingElse;',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export default somethingElse;');
+    });
+
+    it('normalizes a child route file that imports its parent by name', () => {
+      dir = makeFixture({
+        'pages/blogs/[slug]/page.tsx': '',
+        'pages/blogs/[slug]/route.ts': [
+          "import { blogsRoute } from '../route.js';",
+          "export const DynamicRoute = blogsRoute.route('/:slug');",
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/[slug]/route.ts');
+      expect(content).toContain("import blogsRoute from '../route.js';");
+      expect(content).not.toContain('{ blogsRoute }');
+    });
+
+    it('warns but keeps an index export that chains the wrong path', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': '',
+        'pages/blogs/layout.tsx': '',
+        'pages/blogs/route.ts': [
+          "export const blogsRoute = rootRoute.route('/blogs');",
+          "export const blogsIndexRoute = blogsRoute.route('/wrong');",
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/route.ts');
+      expect(content).toContain("blogsIndexRoute = blogsRoute.route('/wrong')");
+    });
+
+    it('tolerates non-route declarations in a hand-written route file', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': '',
+        'pages/blogs/route.ts': [
+          "import * as helpers from './helpers.js';",
+          "import './styles.css';",
+          "export const blogsRoute = rootRoute.route('/blogs');",
+          "export const computed = rootRoute['route']('/weird');",
+          "export const wrongMethod = rootRoute.publish('/weird');",
+          "export const notACall = 'plain string';",
+          "export const chained = blogsRoute.route('/chained').meta({ title: 'Chained' });",
+          "export const nested = rootRoute.child.route('/nested');",
+          'export const { thing } = helpers;',
+          'const internal = 1;',
+          'const { value } = helpers;',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/route.ts');
+      expect(content).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+      expect(content).toContain("export const notACall = 'plain string';");
+    });
+
+    it('adopts a hand-written default export that references the folder route', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': '',
+        'pages/blogs/route.ts': [
+          "export const blogsRoute = rootRoute.route('/blogs');",
+          'export default blogsRoute;',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export default blogsRoute;');
+    });
+
+    it('leaves a route file with syntax errors untouched', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': '',
+        'pages/blogs/route.ts': ['export const blogsRoute = ;', ''].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export const blogsRoute = ;');
+    });
+
+    it('rewires a page file that imports the route by name to a default import', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import { blogsRoute } from './route.ts';",
+          'export default page(blogsRoute).render(() => <h1>Blogs</h1>);',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/page.tsx');
+      expect(content).toContain("import blogsRoute from './route.ts';");
+      expect(content).not.toContain('{ blogsRoute }');
+    });
+
+    it('re-wires a page binding to the index route when a layout appears', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import blogsRoute from './route.ts';",
+          'export default page(blogsRoute).render(() => <h1>Blogs</h1>);',
+          '',
+        ].join('\n'),
+        'pages/blogs/layout.tsx': '',
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/page.tsx');
+      expect(content).toContain("import blogsRoute, { blogsIndexRoute } from './route.ts';");
+      expect(content).toContain('page(blogsIndexRoute)');
+    });
+
+    it('drops the index export when the layout is removed', () => {
+      dir = makeFixture({ 'pages/blogs/page.tsx': '', 'pages/blogs/layout.tsx': '' });
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('blogsIndexRoute');
+
+      removeFixture(dir, 'pages/blogs/layout.tsx');
+      app.rootFolder.children.get('blogs')?.handleFileRemoved('layout.tsx');
+
+      expect(readFixture(dir, 'pages/blogs/route.ts')).not.toContain('blogsIndexRoute');
+    });
+
+    it('adds named page routes to a named-pages-only folder at runtime', () => {
+      dir = makeFixture({ 'pages/docs/v1.page.tsx': '' });
+      app = makeApp(dir);
+
+      writeFixture(dir, { 'pages/docs/v2.page.tsx': '' });
+      app.rootFolder.children.get('docs')?.handleFileAdded('v2.page.tsx');
+
+      expect(readFixture(dir, 'pages/docs/route.ts')).toContain('docsV2Route');
+    });
+
+    it('keeps extra named imports when normalizing a split route import', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import { blogsRoute } from './route.ts';",
+          "import { helper } from './route.ts';",
+          'export default page(blogsRoute).render(() => <h1>Blogs</h1>);',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/page.tsx');
+      expect(content).toContain("import blogsRoute, { helper } from './route.ts';");
+      expect(content).not.toContain('import { helper }');
+    });
+
+    it('leaves a page file alone when it imports the route namespace', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import * as ns from './route.ts';",
+          'export default page(ns.blogsRoute).render(() => <h1>Blogs</h1>);',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain("import * as ns from './route.ts';");
+    });
+
+    it('leaves a page file alone when its binding is not a plain route reference', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import blogsRoute from './route.ts';",
+          "export default page(blogsRoute.route('/nested')).render(() => <h1>Blogs</h1>);",
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain("page(blogsRoute.route('/nested'))");
+    });
+
+    it('re-wires an index page whose route import has no default specifier', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import { helper } from './route.ts';",
+          'export default page(helper).render(() => <h1>Blogs</h1>);',
+          '',
+        ].join('\n'),
+        'pages/blogs/layout.tsx': '',
+      });
+
+      app = makeApp(dir);
+
+      const content = readFixture(dir, 'pages/blogs/page.tsx');
+      expect(content).toContain("import { blogsIndexRoute, helper } from './route.ts';");
+      expect(content).toContain('page(blogsIndexRoute)');
+    });
+
+    it('recognizes the legacy default-export marker', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': '',
+        'pages/blogs/route.ts': [
+          "export const blogsRoute = rootRoute.route('/blogs');",
+          '// @generated — do not edit',
+          'export default blogsRoute;',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('// @generated — do not edit');
+    });
+
+    it('recognizes modal bindings when wiring page files', () => {
+      dir = makeFixture({
+        'pages/blogs/page.tsx': [
+          "import blogsRoute from './route.ts';",
+          'export default modal(blogsRoute).render(() => <h1>Blogs</h1>);',
+          '',
+        ].join('\n'),
+      });
+
+      app = makeApp(dir);
+
+      expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain('modal(blogsRoute)');
+    });
+
+    it('survives a failed scaffold write without crashing', () => {
+      dir = makeFixture({ 'pages/docs/layout.tsx': '' });
+      const original = fs.writeFileSync.bind(fs) as (...args: unknown[]) => void;
+      const spy = vi.spyOn(fs, 'writeFileSync').mockImplementation(((...args: unknown[]) => {
+        if (typeof args[0] === 'string' && args[0].endsWith('layout.tsx')) {
+          throw new Error('disk full');
+        }
+        return original(...args);
+      }) as typeof fs.writeFileSync);
+
+      try {
+        expect(() => makeApp(dir)).not.toThrow();
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(readFixture(dir, 'pages/docs/layout.tsx')).toBe('');
     });
   });
 
@@ -158,6 +426,11 @@ describe('coverage tests for unreached branches', () => {
       expect(canonicalPath('')).toBe('/');
       expect(importSpecifier('/app/foo.ts', '/app/bar.ts')).toBe('./bar.js');
     });
+
+    it('strips the page base from named pages and passes other files through', () => {
+      expect(namedPageName('teams.page.tsx', DEFAULT_FILE_MAP)).toBe('teams');
+      expect(namedPageName('readme.md', DEFAULT_FILE_MAP)).toBe('readme.md');
+    });
   });
 
   describe('sync helpers', () => {
@@ -168,6 +441,18 @@ describe('coverage tests for unreached branches', () => {
       expect(writeIfChanged(file, 'a')).toBe(false);
       expect(writeIfChanged(file, 'b')).toBe(true);
       expect(readFixture(dir, 'file.txt')).toBe('b');
+    });
+
+    it('resolves routes for folders created after boot', () => {
+      dir = makeFixture({ 'router.ts': '', 'pages/page.tsx': '' });
+      app = makeApp(dir);
+
+      writeFixture(dir, { 'pages/docs/page.tsx': '' });
+      app.rootFolder.handleChildAdded('docs', fixturePath(dir, 'pages/docs'));
+      app.rootFolder.children.get('docs')?.handleFileAdded('page.tsx');
+
+      const resolution = AIR_ENV.routes.resolve(fixturePath(dir, 'pages/docs/page.tsx'));
+      expect(resolution?.node.routeName).toBe('docsRoute');
     });
 
     it('boots a scoped package with its exports map', () => {

@@ -72,8 +72,6 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
           return chunk.body;
         }
 
-        // First visit (or post-HMR): compile the chunk on demand. The compiled
-        // body is cached on the entry so the next load is served from memory.
         const src = id.replace(CHUNK_SUFFIX, '');
         const entry = CHUNK_ENTRIES.get(src);
         const text = entry?.code ?? fs.readFileSync(src, 'utf-8');
@@ -157,7 +155,6 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         CHUNK_ENTRIES.delete(file);
 
         if (AIR_ENV.currentUrl) {
-          // Force refresh SSR modules.
           fetch(AIR_ENV.currentUrl).then(() => {});
         }
 
