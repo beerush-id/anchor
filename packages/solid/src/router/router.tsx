@@ -28,7 +28,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
 
   const Index = () => {
     return (
-      <Show when={!route.exception && route.authenticated && route.index?.active && route.index?.active}>
+      <Show when={!route.exception && route.authenticated && route.index?.active && route.index?.renderer}>
         {((Renderer: Component<AnyType>) => <Renderer {...getRenderProps(route.index as never)} />) as never}
       </Show>
     );
