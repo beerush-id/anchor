@@ -12,8 +12,9 @@ import {
   setRendererFactory,
   type UnknownRoute,
 } from '@anchorlib/router';
-import { For, type JSX, onCleanup, onMount, type ParentComponent, Show } from 'solid-js';
+import { type Component, For, type JSX, onCleanup, onMount, type ParentComponent } from 'solid-js';
 import { setup } from '../hoc.js';
+import { Show } from '../switch.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
@@ -26,21 +27,25 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
   const { route, stacks } = props;
 
   const Index = () => {
-    const Renderer = route.index?.renderer ?? (() => null);
-
     return (
-      <Show when={!route.exception && route.authenticated && route.index?.active}>
-        <Renderer {...getRenderProps(route.index as never)} />
+      <Show when={!route.exception && route.authenticated && route.index?.active && route.index?.active}>
+        {((Renderer: Component<AnyType>) => <Renderer {...getRenderProps(route.index as never)} />) as never}
       </Show>
     );
   };
-  const Layout = route.renderer ?? (({ children }) => children);
-  const layoutProps = getRenderProps(route);
+  const Layout = ({ children }: AnyType) => (
+    <Show when={route.renderer as Component<AnyType>} fallback={children}>
+      {(Wrapper: Component<AnyType>) => <Wrapper {...getRenderProps(route)}>{children}</Wrapper>}
+    </Show>
+  );
   const Exception = () => {
-    const Renderer = route.exceptionRenderer ?? (() => null);
     return (
-      <Show when={route.exception || !route.authenticated}>
-        {(() => <Renderer error={(route.exception ?? route.state.error) as AnyType} {...layoutProps} />) as never}
+      <Show when={(route.exception || !route.authenticated) && route.exceptionRenderer}>
+        {
+          ((Renderer: Component<AnyType>) => (
+            <Renderer error={(route.exception ?? route.state.error) as AnyType} {...getRenderProps(route)} />
+          )) as never
+        }
       </Show>
     );
   };
@@ -53,7 +58,7 @@ export function RouteViewer(props: { route: UnknownRoute; stacks: RouteStacks; c
           typeof route.index?.renderer === 'undefined'
         }
         fallback={
-          <Layout {...layoutProps}>
+          <Layout>
             <Index />
             <Show when={!route.exception && route.authenticated}>{props.children}</Show>
             <Exception />
