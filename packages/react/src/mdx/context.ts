@@ -1,11 +1,16 @@
 import { getContext, mutable, setContext } from '@anchorlib/core';
-import type { TocHeading } from './TableOfContent.js';
 
-export type MdxContext = {
-  url: string;
-  meta: Record<string, unknown>;
-  headings: TocHeading[];
-};
+export interface TocHeading {
+  id: string;
+  text: string;
+  depth: number;
+}
+
+export interface MdxContext {
+  url?: string;
+  meta?: Record<string, unknown>;
+  headings?: TocHeading[];
+}
 
 export const mdxCtx = {
   get() {

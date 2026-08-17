@@ -43,6 +43,8 @@ export type LinkProps<R> = ReactProps<'a'> &
     replace?: boolean;
     fullMatch?: boolean;
     activeClass?: string;
+    resetScroll?: boolean | 'smooth' | 'auto' | 'instant';
+    keepVisible?: boolean | 'smooth' | 'auto' | 'instant';
   };
 
 /**

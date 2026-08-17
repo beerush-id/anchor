@@ -1,3 +1,5 @@
+export * from './Admonition.js';
+export * from './Badge.js';
 export * from './CodeBlock.js';
 export * from './CodeCopy.js';
 export * from './CodeGroup.js';

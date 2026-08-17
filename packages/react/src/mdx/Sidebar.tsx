@@ -1,34 +1,48 @@
-import { type AnyRoute, For, Link, Show, template } from '../index.js';
+import type { HTMLAttributes } from 'react';
+import { type AnyType, classx, For, Link, Show, template } from '../index.js';
 
 export interface NavItem {
   text: string;
-  route?: AnyRoute;
+  route?: AnyType;
   items?: NavItem[];
 }
 
-export interface SidebarProps {
+export interface SidebarProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
 }
 
 export const Sidebar = template<SidebarProps>(
-  ({ nav }) => (
-    <nav className="air-mdx-sidebar-nav">
+  ({ nav, className, ...restProps }) => (
+    <nav {...restProps} className={classx('air-mdx-sidebar-nav', className)}>
       <For each={() => nav}>{(item) => <SidebarNode item={item} />}</For>
     </nav>
   ),
   'DocsSidebar'
 );
 
-const SidebarNode = template<{ item: NavItem }>(({ item }) => {
+export interface SidebarNodeProps extends HTMLAttributes<HTMLElement> {
+  item: NavItem;
+}
+
+export const SidebarNode = template<SidebarNodeProps>(({ item, className, ...restProps }) => {
   if (item.items && item.items.length > 0) {
     return (
-      <div className="air-mdx-sidebar-group-container">
+      <div
+        {...restProps}
+        role="group"
+        aria-label={item.text}
+        className={classx('air-mdx-sidebar-group-container', className)}
+      >
         <Show when={() => item.text}>
           {() =>
             item.route ? (
-              <Link to={item.route} className="air-mdx-sidebar-link" activeClass="active" />
+              <Link to={item.route as AnyType} className="air-mdx-sidebar-link" activeClass="active" keepVisible>
+                {item.text}
+              </Link>
             ) : (
-              <div className="air-mdx-sidebar-group">{item.text}</div>
+              <div className="air-mdx-sidebar-group" aria-hidden="true">
+                {item.text}
+              </div>
             )
           }
         </Show>
@@ -41,9 +55,21 @@ const SidebarNode = template<{ item: NavItem }>(({ item }) => {
 
   if (item.route) {
     return (
-      <Link to={item.route} className="air-mdx-sidebar-link" activeClass="active">
+      <Link
+        {...(restProps as AnyType)}
+        to={item.route as AnyType}
+        className={classx('air-mdx-sidebar-link', className)}
+        activeClass="active"
+        keepVisible
+      >
         {item.text}
       </Link>
     );
   }
+
+  return (
+    <span {...restProps} className={classx('air-mdx-sidebar-text', className)}>
+      {item.text}
+    </span>
+  );
 }, 'SidebarNode');

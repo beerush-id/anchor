@@ -1,13 +1,13 @@
-import { $inline, classx, derived, For, isBrowser, mutable, onCleanup, setup } from '../index.js';
+import type { HTMLAttributes, MouseEvent } from 'react';
+import { $inline, classx, derived, For, isBrowser, mutable, onCleanup, render, setup } from '../index.js';
 import { mdxCtx } from './context.js';
 
-export interface TocHeading {
-  id: string;
-  text: string;
-  depth: number;
+export interface TableOfContentProps extends HTMLAttributes<HTMLDivElement> {
+  title?: string;
 }
 
-export const TableOfContent = setup(() => {
+export const TableOfContent = setup<TableOfContentProps>((props) => {
+  const $restProps = props.$omit(['title', 'className']);
   const ctx = mdxCtx.get();
   const activeId = mutable('');
 
@@ -27,6 +27,7 @@ export const TableOfContent = setup(() => {
       observer!.disconnect();
     });
   }
+
   const observe = (el: HTMLAnchorElement | null, id: string) => {
     if (el) {
       const target = document.getElementById(id);
@@ -37,40 +38,45 @@ export const TableOfContent = setup(() => {
     }
   };
 
-  const scrollTo = (e: MouseEvent, id: string) => {
+  const scrollTo = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
     e.stopPropagation();
     e.preventDefault();
 
     const target = document.getElementById(id);
     if (target) {
       target.scrollIntoView({ behavior: 'smooth' });
-      history.replaceState(null, '', [location.pathname, `#${id}`].join('/'));
+      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
     }
   };
 
-  return (
-    <div className="air-mdx-toc">
-      <div className="air-mdx-toc-title">On this page</div>
-      <nav className="air-mdx-toc-navs">
-        <For each={() => ctx?.headings as TocHeading[]}>
-          {(h) => {
-            const active = derived(() => activeId.value === h.id);
-            return $inline(() => (
-              <a
-                id={`#${h.id}`}
-                ref={(el) => observe(el, h.id)}
-                style={{ paddingLeft: `${h.depth - 2}rem` }}
-                className={classx(`air-mdx-toc-link`, { active: active.value })}
-                onClick={(e) => {
-                  scrollTo(e as never, h.id);
-                }}
-              >
-                {h.text}
-              </a>
-            ));
-          }}
-        </For>
-      </nav>
-    </div>
-  );
+  return render(() => {
+    if (!ctx?.headings?.length) return null;
+
+    return (
+      <div {...$restProps} className={classx('air-mdx-toc', props.className)}>
+        <div className="air-mdx-toc-title">{props.title ?? 'On this page'}</div>
+        <nav className="air-mdx-toc-navs" aria-label={props.title ?? 'Table of contents'}>
+          <For each={() => ctx.headings!}>
+            {(h) => {
+              const active = derived(() => activeId.value === h.id);
+              return $inline(() => (
+                <a
+                  href={`#${h.id}`}
+                  ref={(el) => observe(el, h.id)}
+                  style={{ paddingInlineStart: `${Math.max(0, h.depth - 2) * 0.75}rem` }}
+                  className={classx('air-mdx-toc-link', { active: active.value })}
+                  aria-current={active.value ? 'true' : undefined}
+                  onClick={(e) => {
+                    scrollTo(e, h.id);
+                  }}
+                >
+                  {h.text}
+                </a>
+              ));
+            }}
+          </For>
+        </nav>
+      </div>
+    );
+  }, 'TableOfContent');
 }, 'TableOfContent');

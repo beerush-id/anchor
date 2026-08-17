@@ -1,52 +1,84 @@
-import { derived, Link, Show, setup } from '../index.js';
+import type { HTMLAttributes } from 'react';
+import { type AnyType, classx, derived, Link, render, Show, setup, untrack } from '../index.js';
+
 import { mdxCtx } from './context.js';
 import type { NavItem } from './Sidebar.js';
 
-export interface PaginationProps {
+export interface PaginationProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
 }
 
+export type NavigableItem = NavItem & { route: AnyType };
+
+export interface PaginationLinks {
+  prev?: NavigableItem;
+  next?: NavigableItem;
+}
+
 export const Pagination = setup<PaginationProps>((props) => {
+  const $restProps = props.$omit(['nav', 'className']);
   const ctx = mdxCtx.get();
-  const flatLinks = flatten(props.nav);
+  const flatLinks = derived(() => flatten(props.nav));
 
   const links = derived.as(() => {
     if (!ctx?.url) return {};
 
-    const currentIndex = flatLinks.findIndex((l) => l.route?.active);
-    if (currentIndex === -1) return {};
+    const items = flatLinks.value;
+    return untrack(() => {
+      const currentIndex = items.findIndex((l) => l.route.active);
+      if (currentIndex === -1) return {};
 
-    const prev = flatLinks[currentIndex - 1];
-    const next = flatLinks[currentIndex + 1];
+      const prev = items[currentIndex - 1];
+      const next = items[currentIndex + 1];
 
-    return { prev, next };
+      return { prev, next } as PaginationLinks;
+    });
   });
 
-  return (
-    <div className="air-mdx-pagination">
-      <Show when={() => links.prev}>
-        {(p) => (
-          <Link to={p!.route} className="air-mdx-pagination-link air-mdx-pagination-prev">
-            <span>Previous</span>
-            <strong>{p!.text}</strong>
-          </Link>
-        )}
-      </Show>
+  return render(() => {
+    if (!links.prev && !links.next) return null;
 
-      <Show when={() => links.next}>
-        {(n) => (
-          <Link to={n!.route} className="air-mdx-pagination-link air-mdx-pagination-next">
-            <span>Next</span>
-            <strong>{n!.text}</strong>
-          </Link>
-        )}
-      </Show>
-    </div>
-  );
+    return (
+      <nav {...$restProps} className={classx('air-mdx-pagination', props.className)}>
+        <div className="air-mdx-pagination-prev">
+          <Show when={() => links.prev!}>
+            {(p) => (
+              <Link
+                to={p.route as AnyType}
+                className="air-mdx-pagination-link"
+                aria-label={`Previous: ${p.text}`}
+                rel="prev"
+              >
+                <span>Previous</span>
+                <strong>{p.text}</strong>
+              </Link>
+            )}
+          </Show>
+        </div>
+
+        <div className="air-mdx-pagination-next">
+          <Show when={() => links.next!}>
+            {(n) => (
+              <Link
+                to={n.route as AnyType}
+                className="air-mdx-pagination-link"
+                aria-label={`Next: ${n.text}`}
+                rel="next"
+              >
+                <span>Next</span>
+                <strong>{n.text}</strong>
+              </Link>
+            )}
+          </Show>
+        </div>
+      </nav>
+    );
+  }, 'Pagination');
 }, 'Pagination');
 
-function flatten(items: NavItem[] = []) {
-  return items.flatMap((item): NavItem[] => {
-    return item.items ? [item, ...flatten(item.items)] : [item];
-  }) as NavItem[];
+function flatten(items: NavItem[] = []): NavigableItem[] {
+  return items.flatMap((item) => {
+    const children = item.items ? flatten(item.items) : [];
+    return item.route ? [item as NavigableItem, ...children] : children;
+  });
 }

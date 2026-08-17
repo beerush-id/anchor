@@ -1,9 +1,11 @@
 import { type AnyType, derived } from '@anchorlib/core';
 import { createUrl, Route } from '@anchorlib/router';
-import type { MouseEventHandler, ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode, RefObject } from 'react';
+import { onMount } from 'src/lifecycle.ts';
 import { render, setup } from '../hoc.js';
 import type { ComponentProps } from '../types.js';
 import { navigate } from './navigate.js';
+import { uiRouterCtx } from './router.tsx';
 import type { AnyRoute, LinkProps, RouteComponent } from './types.js';
 
 type LinkComponent = <T>(props: LinkProps<T>) => ReactNode;
@@ -21,6 +23,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     params: Record<string, unknown>;
   };
 
+  const ctx = uiRouterCtx.get();
   const query = derived(() => $props.query);
   const params = derived(() => $props.params);
   const target = derived(() => {
@@ -63,6 +66,11 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
       } as never);
     }
 
+    if (!ctx?.resetScroll && props.resetScroll) {
+      const behavior = typeof props.resetScroll === 'string' ? props.resetScroll : 'instant';
+      document.body.scrollTo({ left: 0, top: 0, behavior });
+    }
+
     $props.onClick?.(e);
   };
 
@@ -76,9 +84,34 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     $props.onMouseEnter?.(e);
   };
 
+  const ref = { current: null } as RefObject<HTMLAnchorElement | null>;
+  const assignRef = (el: HTMLAnchorElement | null) => {
+    ref.current = el;
+
+    let cleanup: (() => void) | undefined;
+
+    if ('ref' in props) {
+      if (typeof props.ref === 'function') {
+        cleanup = props.ref(el) as never;
+      } else {
+        (props.ref as RefObject<HTMLAnchorElement | null>).current = el;
+      }
+    }
+
+    return cleanup;
+  };
+
+  onMount(() => {
+    if (props.keepVisible && isActive.value) {
+      const behavior = typeof props.keepVisible === 'string' ? props.keepVisible : 'instant';
+      ref.current?.scrollIntoView({ block: 'center', inline: 'center', behavior });
+    }
+  });
+
   return render(
     () => (
       <a
+        ref={assignRef}
         href={href.value}
         onClick={handleClick}
         onMouseEnter={handleHover}
@@ -96,6 +129,9 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
           'className',
           'children',
           'fullMatch',
+          'keepVisible',
+          'resetScroll',
+          'ref',
         ])}
       >
         {props.children}

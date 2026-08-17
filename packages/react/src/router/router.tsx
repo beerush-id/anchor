@@ -1,4 +1,4 @@
-import { $symbol, type AnyType, isBrowser, setContext, untrack } from '@anchorlib/core';
+import { $symbol, type AnyType, createContext, isBrowser, setContext, untrack } from '@anchorlib/core';
 import {
   createRouter as createAppRouter,
   getRenderProps,
@@ -22,6 +22,7 @@ import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
 const STACK_REGISTRY = new WeakSet<UnknownRoute>();
+export const uiRouterCtx = createContext<UIRouterProps>();
 
 /**
  * A reactive snippet that renders the view for a given route and its children.
@@ -160,7 +161,10 @@ RouteRendererComponent.displayName = 'Definition(Route)';
 /**
  * The root router component that mounts the application route tree to React.
  */
-export function UIRouter({ router, resetScroll, url, headless = true }: UIRouterProps) {
+export function UIRouter(props: UIRouterProps) {
+  uiRouterCtx.set(props);
+
+  const { router, resetScroll, url, headless = true } = props;
   const stacks = createRef(new Map()).current;
   const activate = async () => {
     const match = router.find(url ?? location.href);
@@ -169,7 +173,7 @@ export function UIRouter({ router, resetScroll, url, headless = true }: UIRouter
       window.scrollTo({
         top: 0,
         left: 0,
-        behavior: typeof resetScroll === 'string' ? resetScroll : 'smooth',
+        behavior: typeof resetScroll === 'string' ? resetScroll : 'instant',
       });
     }
 

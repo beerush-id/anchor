@@ -1,21 +1,18 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { setup, classx, render } from '../index.js';
+import { classx, Show, template } from '../index.js';
 import { CodeCopy } from './CodeCopy.js';
 
 export interface CodeBlockProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
+  hideCopy?: boolean;
 }
 
-export const CodeBlock = setup<CodeBlockProps>((props) => {
-  const $restProps = props.$omit(['children', 'className']);
-
-  return render(
-    () => (
-      <div {...$restProps} className={classx('air-mdx-code-block-wrapper', props.className)}>
-        <CodeCopy />
-        {props.children}
-      </div>
-    ),
-    'CodeBlock'
-  );
-}, 'CodeBlock');
+export const CodeBlock = template<CodeBlockProps>(
+  ({ children, className, hideCopy, ...restProps }) => (
+    <div {...restProps} className={classx('air-mdx-code-block-wrapper', className)}>
+      <Show when={() => !hideCopy}>{() => <CodeCopy />}</Show>
+      {children}
+    </div>
+  ),
+  'CodeBlock'
+);
