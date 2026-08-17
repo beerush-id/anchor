@@ -71,8 +71,9 @@ export interface MarkdownNode extends Node {
   data?: Record<string, unknown>;
   depth?: number;
   value?: string;
-  children?: HTMLNode[];
+  children?: MarkdownNode[];
   properties?: Record<string, unknown>;
+  attributes?: Record<string, string>;
 }
 
 export interface HTMLNode extends MarkdownNode {
@@ -166,7 +167,10 @@ export class MdxModule {
 
     if (this.extended) {
       const compSource = `@anchorlib/${AIR_ENV.framework}/mdx`;
-      body = [body, `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock } from '${compSource}';`].join('\n');
+      body = [
+        body,
+        `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock, Admonition as AirAdmonition, Badge as AirBadge } from '${compSource}';`,
+      ].join('\n');
       log.verbose(color.event('Injected'), 'mdx component imports');
     }
 
@@ -398,6 +402,8 @@ export async function loadExtendedPlugins(module: MdxModule) {
   return { remarkPlugins, rehypePlugins };
 }
 
+const ADMONITION_TYPES = new Set(['note', 'tip', 'info', 'warning', 'danger', 'important', 'caution']);
+
 /**
  * Remark plugin for an MdxModule: tags directives as admonitions, maps
  * `code-group` directives to `AirCodeGroup`, and moves `script` directive
@@ -408,24 +414,60 @@ export async function loadExtendedPlugins(module: MdxModule) {
  */
 export function airMdxRemark(module?: MdxModule) {
   return (tree: MarkdownNode) => {
-    visit(tree, (node) => {
+    visit(tree, (node: MarkdownNode) => {
       const data = node.data || (node.data = {});
 
       if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
-        data.hProperties = {
-          ...node.properties,
-          className: [`admonition`, node.name],
-        };
-
         if (node.name === 'code-group') {
           data.hName = 'AirCodeGroup';
+          data.hProperties = {
+            ...node.properties,
+          };
+        } else if (ADMONITION_TYPES.has(node.name!)) {
+          const firstChild = node.children?.[0] as AnyType;
+          let title: string | undefined = node.attributes?.title;
+
+          if (firstChild?.data?.directiveLabel) {
+            title = getLeafNode(firstChild)?.value ?? title;
+            node.children = node.children!.slice(1);
+          }
+
+          data.hName = 'AirAdmonition';
+          data.hProperties = {
+            ...node.properties,
+            title,
+            type: node.name,
+          };
+        } else if (node.name === 'badge') {
+          let text = '';
+          const firstChild = node.children?.[0] as AnyType;
+          if (firstChild?.data?.directiveLabel) {
+            text = getLeafNode(firstChild)?.value ?? '';
+            node.children = node.children!.slice(1);
+          } else if (node.children?.length) {
+            text = getLeafNode(node)?.value ?? '';
+            node.children = [];
+          }
+
+          const variant = node.attributes?.type ?? node.attributes?.variant ?? 'neutral';
+
+          data.hName = 'AirBadge';
+          data.hProperties = {
+            ...node.properties,
+            variant,
+            children: text || node.attributes?.text,
+          };
         } else {
           data.hName = 'div';
+          data.hProperties = {
+            ...node.properties,
+            className: [node.name, (node.properties as AnyType)?.className].filter(Boolean).join(' '),
+          };
         }
 
         if (node.name === 'script') {
           for (const code of node.children!) {
-            if (code.lang !== 'js' && code.lang !== 'ts') {
+            if (!['js', 'ts', 'tsx', 'jsx'].includes(code.lang as string)) {
               code.type = 'paragraph';
               code.value = '';
               continue;
@@ -440,9 +482,11 @@ export function airMdxRemark(module?: MdxModule) {
             }
           }
 
-          node.type = 'paragraph';
-          node.value = '';
-          node.children = [];
+          if (!('rendered' in (node.attributes ?? {}))) {
+            node.type = 'paragraph';
+            node.value = '';
+            node.children = [];
+          }
         }
       }
 
@@ -457,7 +501,7 @@ export function airMdxHeadings(module?: MdxModule) {
   return (tree: HTMLNode) => {
     const headings = [] as MdxHeading[];
 
-    visit(tree, (node) => {
+    visit(tree, (node: HTMLNode) => {
       const props = node.properties || (node.properties = {});
 
       if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName)) {
@@ -493,8 +537,9 @@ export function airMdxRehype(module?: MdxModule) {
   return (tree: HTMLNode) => {
     const headings = [] as MdxHeading[];
 
-    visit(tree, (node) => {
+    visit(tree, (node: HTMLNode) => {
       const data = (node.data || (node.data = {})) as AnyType;
+
       const props = node.properties || (node.properties = {});
 
       if (node.tagName === 'figure') {

@@ -319,6 +319,7 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
   if (!existsSync(workerPath)) return;
 
   try {
+    const start = performance.now();
     const { pathToFileURL } = await import('node:url');
     const workerModule = await import(pathToFileURL(workerPath).href);
     const worker = workerModule.default ?? workerModule;
@@ -326,14 +327,60 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
     if (!worker?.router || typeof worker.fetch !== 'function') return;
 
     let staticPages = 0;
-    for (const [path, info] of worker.router.entries()) {
+    let finishedPages = 0;
+
+    const promises = [];
+    const routes = worker.router.entries();
+
+    for (const [path, info] of routes) {
       if (info.route?.options?.static) {
-        const request = new Request(`http://localhost${path}`);
-        await worker.fetch(request, undefined, true);
+        const controller = new AbortController();
+        const request = new Request(`http://localhost${path}`, { signal: controller.signal });
+
+        const promise = new Promise((resolve, reject) => {
+          const start = performance.now();
+          const timer = setTimeout(() => {
+            controller.abort();
+          }, 5000);
+
+          worker
+            .fetch(request, undefined, true)
+            .then((res: Response) => {
+              clearTimeout(timer);
+              resolve(res);
+              finishedPages++;
+
+              log.verbose(
+                `SSG finished: ${finishedPages}/${staticPages}`,
+                color.file(path),
+                'in',
+                color.timing(`${Math.round(performance.now() - start)}ms`)
+              );
+            })
+            .catch((e: Error) => {
+              clearTimeout(timer);
+              reject(e);
+
+              finishedPages++;
+              log.error(`SSG failed: ${finishedPages}/${staticPages}: ${path}`, e);
+            });
+        });
+
+        promises.push(promise);
         staticPages++;
       }
     }
-    log.debug(color.event('SSG'), `generated ${staticPages} static pages`);
+
+    log.debug('Generating', staticPages, 'static pages...');
+    await Promise.all(promises);
+
+    log.info(
+      color.event('SSG:'),
+      'generated',
+      color.file(staticPages),
+      'pages in',
+      color.timing(`${Math.round(performance.now() - start)}ms`)
+    );
   } catch (e) {
     log.warn(`SSG generation failed during build: ${e}`);
   }
