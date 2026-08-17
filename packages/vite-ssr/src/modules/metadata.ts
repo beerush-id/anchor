@@ -1,10 +1,10 @@
-import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { color, taggedLogger } from '../logger.js';
 import type { AnyType } from '../types.js';
 import { matchFrontmatter, parseFrontmatterBlock } from '../utils/frontmatter.js';
+import { hashBlock } from '../utils/hash.js';
 import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
 import type { FolderNode } from './folder-node.js';
@@ -264,8 +264,6 @@ type MetadataEntry = {
   key: string;
   meta: Record<string, AnyType>;
 };
-
-const hashBlock = (block: string) => createHash('sha1').update(block).digest('hex');
 
 /**
  * Frontmatter store keyed by absolute file path. `resolve` serves unpredictable

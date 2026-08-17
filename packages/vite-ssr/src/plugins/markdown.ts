@@ -68,7 +68,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const chunk = CHUNK_ENTRIES.get(id);
 
         if (chunk?.body) {
-          log.verbose(color.event('Served'), 'compiled chunk for', color.file(relFile(chunk.id)));
+          log.verbose(color.event('Loaded'), 'compiled chunk for', color.file(relFile(chunk.id)));
           return chunk.body;
         }
 
@@ -78,7 +78,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const entry = CHUNK_ENTRIES.get(src);
         const text = entry?.code ?? fs.readFileSync(src, 'utf-8');
         const { code } = await mdxFile(src, text, $options);
-        const body = entry?.entry ? [code, 'export default AirMdxPage;'].join('\n') : code;
+        const body = [code, 'export default AirMdxPage;'].join('\n');
         if (entry) entry.body = body;
         return body;
       },

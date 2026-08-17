@@ -10,6 +10,7 @@ import type { PluggableList, Plugin } from 'unified';
 import { visit } from 'unist-util-visit';
 import { color, taggedLogger } from '../logger.js';
 import { stripFrontmatter } from '../utils/frontmatter.js';
+import { hashBlock } from '../utils/hash.js';
 import { wrapJsx } from '../utils/jsx.js';
 import type { FileMap } from '../utils/mapper.js';
 import { createMatcher } from '../utils/matcher.js';
@@ -36,6 +37,11 @@ export type MdxHeading = {
   depth: number;
 };
 
+export type MdxCodeGroup = {
+  name: string;
+  source: string;
+};
+
 /**
  * Configuration for the optional remark/rehype plugins (GFM, directives,
  * heading ids, code highlighting). Passed via `MdxModuleOptions.extended`;
@@ -43,6 +49,7 @@ export type MdxHeading = {
  */
 export type MdxExtendedOptions = {
   search?: boolean | { include?: string[]; exclude?: string[] };
+  codeGroup?: MdxCodeGroup;
   remarkGfm?: RemarkGfmOptions;
   rehypeAutolinkHeadings?: RehypeAutolinkHeadingsOptions;
   rehypePrettyCode?: RehypePrettyCodeOptions;
@@ -86,6 +93,12 @@ export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
   rehypePlugins: [],
 };
 
+type MdxCache = {
+  hash: string;
+  item: MdxModule;
+};
+const MDX_CACHE = new Map<string, MdxCache>();
+
 /**
  * Compiles one MDX source into framework JSX. Compilation is deferred until
  * the optional remark/rehype plugins are loaded; the compiled output is split
@@ -123,6 +136,20 @@ export class MdxModule {
 
   public async compile(code: string) {
     const started = performance.now();
+
+    const hash = hashBlock(code);
+    const cache = MDX_CACHE.get(this.id);
+
+    if (cache && cache.hash === hash) {
+      this.locals = cache.item.locals;
+      this.globals = cache.item.globals;
+      log.debug(color.event('Loaded cache for'), color.file(relToPages(this.id)));
+      return;
+    }
+
+    const { extended } = this.options;
+    const { codeGroup } = typeof extended === 'object' && extended ? extended : {};
+
     log.debug(color.event('Compiling'), color.file(relToPages(this.id)));
 
     if (!this.initialized) {
@@ -137,8 +164,18 @@ export class MdxModule {
     const { include, remarkPlugins, rehypePlugins, postProcesses = [] } = options;
 
     this.metadata = META_STORE.resolve(id, code);
-    const body = stripFrontmatter(code);
     log.verbose(color.event('Resolved'), 'frontmatter metadata');
+
+    let body = stripFrontmatter(code);
+
+    if (body.includes(':::code-group')) {
+      const group = codeGroup ?? {
+        name: 'CodeGroup',
+        source: `@anchorlib/${AIR_ENV.framework}/docs`,
+      };
+      body = [body, `import { ${group.name} as AirCodeGroup } from '${group.source}';`].join('\n');
+      log.verbose(color.event('Injected'), 'AirCodeGroup import');
+    }
 
     // Compilation errors propagate to the bundler: a broken MDX file must fail
     // the build instead of silently compiling to a blank module.
@@ -175,6 +212,8 @@ export class MdxModule {
       'in',
       color.timing(`${Math.round(performance.now() - started)}ms`)
     );
+
+    MDX_CACHE.set(this.id, { hash, item: this });
   }
 
   public toString() {
