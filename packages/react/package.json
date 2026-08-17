@@ -67,15 +67,15 @@
       "types": "./dist/workflow/index.d.ts",
       "import": "./dist/workflow/index.js"
     },
-    "./docs": {
-      "types": "./dist/docs/index.d.ts",
-      "import": "./dist/docs/index.js"
+    "./mdx": {
+      "types": "./dist/mdx/index.d.ts",
+      "import": "./dist/mdx/index.js"
     },
-    "./docs/*": {
-      "types": "./dist/docs/*.d.ts",
-      "import": "./dist/docs/*.js"
+    "./mdx/*": {
+      "types": "./dist/mdx/*.d.ts",
+      "import": "./dist/mdx/*.js"
     },
-    "./docs/*.css": "./src/docs/*.css"
+    "./mdx/*.css": "./src/mdx/*.css"
   },
   "files": [
     "dist"

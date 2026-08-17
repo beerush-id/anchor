@@ -59,6 +59,8 @@
     "chokidar": "catalog:lib",
     "magic-string": "catalog:lib",
     "oxc-parser": "catalog:lib",
+    "rehype-autolink-headings": "catalog:lib",
+    "rehype-slug": "catalog:lib",
     "unified": "catalog:lib",
     "unist-util-visit": "catalog:lib",
     "ws": "catalog:lib",
@@ -68,9 +70,7 @@
     "vite": "catalog:lib"
   },
   "optionalDependencies": {
-    "rehype-autolink-headings": "catalog:lib",
     "rehype-pretty-code": "catalog:lib",
-    "rehype-slug": "catalog:lib",
     "remark-directive": "catalog:lib",
     "remark-gfm": "catalog:lib"
   },

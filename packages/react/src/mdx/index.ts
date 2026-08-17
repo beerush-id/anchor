@@ -1,4 +1,5 @@
 export * from './CodeBlock.js';
+export * from './CodeCopy.js';
 export * from './CodeGroup.js';
 export * from './context.js';
 export * from './Layout.js';

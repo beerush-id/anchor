@@ -18,19 +18,19 @@ export const Layout = setup<LayoutProps>((props) => {
   mdxCtx.set();
 
   return (
-    <main className="air-docs">
-      <div className="air-docs-layout">
-        <aside className="air-docs-aside-left">
+    <main className="air-mdx">
+      <div className="air-mdx-layout">
+        <aside className="air-mdx-aside-left">
           <Show when={() => props.nav}>{(nav) => <Sidebar nav={nav} />}</Show>
         </aside>
 
-        <div className="air-docs-main">
-          <div className="air-docs-main-inner">
+        <div className="air-mdx-main">
+          <div className="air-mdx-main-inner">
             <Snippet>{() => props.children}</Snippet>
             <Show when={() => !props.disablePagination}>{() => <Pagination nav={props.nav} />}</Show>
           </div>
 
-          <aside className="air-docs-aside-right">
+          <aside className="air-mdx-aside-right">
             <TableOfContent />
           </aside>
         </div>

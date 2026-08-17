@@ -23,10 +23,10 @@ export const Pagination = setup<PaginationProps>((props) => {
   });
 
   return (
-    <div className="air-docs-pagination">
+    <div className="air-mdx-pagination">
       <Show when={() => links.prev}>
         {(p) => (
-          <Link to={p!.route} className="air-docs-pagination-link air-docs-pagination-prev">
+          <Link to={p!.route} className="air-mdx-pagination-link air-mdx-pagination-prev">
             <span>Previous</span>
             <strong>{p!.text}</strong>
           </Link>
@@ -35,7 +35,7 @@ export const Pagination = setup<PaginationProps>((props) => {
 
       <Show when={() => links.next}>
         {(n) => (
-          <Link to={n!.route} className="air-docs-pagination-link air-docs-pagination-next">
+          <Link to={n!.route} className="air-mdx-pagination-link air-mdx-pagination-next">
             <span>Next</span>
             <strong>{n!.text}</strong>
           </Link>

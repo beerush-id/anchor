@@ -49,9 +49,9 @@ export const TableOfContent = setup(() => {
   };
 
   return (
-    <div className="air-docs-toc">
-      <div className="air-docs-toc-title">On this page</div>
-      <nav className="air-docs-toc-navs">
+    <div className="air-mdx-toc">
+      <div className="air-mdx-toc-title">On this page</div>
+      <nav className="air-mdx-toc-navs">
         <For each={() => ctx?.headings as TocHeading[]}>
           {(h) => {
             const active = derived(() => activeId.value === h.id);
@@ -60,7 +60,7 @@ export const TableOfContent = setup(() => {
                 id={`#${h.id}`}
                 ref={(el) => observe(el, h.id)}
                 style={{ paddingLeft: `${h.depth - 2}rem` }}
-                className={classx(`air-docs-toc-link`, { active: active.value })}
+                className={classx(`air-mdx-toc-link`, { active: active.value })}
                 onClick={(e) => {
                   scrollTo(e as never, h.id);
                 }}

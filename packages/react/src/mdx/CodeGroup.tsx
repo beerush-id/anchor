@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
-import { type AnyType, For, mutable, setup, Show } from '../index.js';
+import { type AnyType, For, mutable, Show, setup } from '../index.js';
+import { CodeCopy } from './CodeCopy.js';
 
 export interface CodeGroupProps {
   children?: ReactNode;
@@ -17,14 +18,14 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
   }));
 
   return (
-    <div className="air-docs-codegroup">
-      <div className="air-docs-codegroup-tabs" role="tablist">
+    <div className="air-mdx-codegroup">
+      <div className="air-mdx-codegroup-tabs" role="tablist">
         <For each={() => buttons}>
           {(tab) => (
             <button
               role="tab"
               aria-selected={state.activeIndex === tab.id}
-              className={`air-docs-codegroup-tab ${state.activeIndex === tab.id ? 'active' : ''}`}
+              className={`air-mdx-codegroup-tab ${state.activeIndex === tab.id ? 'active' : ''}`}
               onClick={() => {
                 state.activeIndex = tab.id;
               }}
@@ -34,7 +35,8 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
           )}
         </For>
       </div>
-      <div className="air-docs-codegroup-content" role="tabpanel">
+      <div className="air-mdx-codegroup-content" role="tabpanel">
+        <CodeCopy />
         <For each={() => nodes}>{(node, i) => <Show when={() => state.activeIndex === i} children={node} />}</For>
       </div>
     </div>

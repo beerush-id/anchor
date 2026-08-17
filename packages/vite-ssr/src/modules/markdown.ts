@@ -2,8 +2,9 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
 import type { Node } from 'mdast';
-import type { Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
+import rehypeAutolinkHeadings, { type Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
 import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
+import rehypeSlug from 'rehype-slug';
 import type { Options as RemarkGfmOptions } from 'remark-gfm';
 import type { AnyType } from 'src/types.ts';
 import type { PluggableList, Plugin } from 'unified';
@@ -37,11 +38,6 @@ export type MdxHeading = {
   depth: number;
 };
 
-export type MdxCodeGroup = {
-  name: string;
-  source: string;
-};
-
 /**
  * Configuration for the optional remark/rehype plugins (GFM, directives,
  * heading ids, code highlighting). Passed via `MdxModuleOptions.extended`;
@@ -49,9 +45,7 @@ export type MdxCodeGroup = {
  */
 export type MdxExtendedOptions = {
   search?: boolean | { include?: string[]; exclude?: string[] };
-  codeGroup?: MdxCodeGroup;
   remarkGfm?: RemarkGfmOptions;
-  rehypeAutolinkHeadings?: RehypeAutolinkHeadingsOptions;
   rehypePrettyCode?: RehypePrettyCodeOptions;
 };
 
@@ -67,6 +61,7 @@ export type MdxModuleOptions = Omit<MdxOptions, 'remarkPlugins' | 'rehypePlugins
   remarkPlugins: PluggableList;
   rehypePlugins: PluggableList;
   postProcesses?: Array<(ctx: MdxModule) => void | Promise<void>>;
+  rehypeAutolinkHeadings?: RehypeAutolinkHeadingsOptions;
 };
 
 export interface MarkdownNode extends Node {
@@ -87,7 +82,7 @@ export interface HTMLNode extends MarkdownNode {
 
 export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
   include: ['.md', '.mdx'],
-  extended: true,
+  extended: false,
   headingDepth: 3,
   remarkPlugins: [],
   rehypePlugins: [],
@@ -116,6 +111,10 @@ export class MdxModule {
   public globals: string[] = [];
 
   public tree?: HTMLNode;
+
+  public get extended() {
+    return this.options.extended;
+  }
 
   /**
    * @param id Module id — the absolute path of the MDX source.
@@ -147,9 +146,6 @@ export class MdxModule {
       return;
     }
 
-    const { extended } = this.options;
-    const { codeGroup } = typeof extended === 'object' && extended ? extended : {};
-
     log.debug(color.event('Compiling'), color.file(relToPages(this.id)));
 
     if (!this.initialized) {
@@ -168,14 +164,17 @@ export class MdxModule {
 
     let body = stripFrontmatter(code);
 
-    if (body.includes(':::code-group')) {
-      const group = codeGroup ?? {
-        name: 'CodeGroup',
-        source: `@anchorlib/${AIR_ENV.framework}/docs`,
-      };
-      body = [body, `import { ${group.name} as AirCodeGroup } from '${group.source}';`].join('\n');
-      log.verbose(color.event('Injected'), 'AirCodeGroup import');
+    if (this.extended) {
+      const compSource = `@anchorlib/${AIR_ENV.framework}/mdx`;
+      body = [body, `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock } from '${compSource}';`].join('\n');
+      log.verbose(color.event('Injected'), 'mdx component imports');
     }
+
+    rehypePlugins.push(
+      rehypeSlug,
+      [rehypeAutolinkHeadings, { ...options.rehypeAutolinkHeadings, behavior: 'wrap' }],
+      [airMdxHeadings, this]
+    );
 
     // Compilation errors propagate to the bundler: a broken MDX file must fail
     // the build instead of silently compiling to a blank module.
@@ -229,11 +228,11 @@ export class MdxModule {
   private async loadPlugins() {
     this.initialized = true;
 
-    const { extended, remarkPlugins, rehypePlugins } = this.options as MdxModuleOptions;
+    if (!this.extended) return;
 
-    if (extended === false) return;
-
+    const { remarkPlugins, rehypePlugins } = this.options as MdxModuleOptions;
     const { remarkPlugins: remark, rehypePlugins: rehype } = await loadExtendedPlugins(this);
+
     remarkPlugins.unshift(...remark);
     rehypePlugins.unshift(...rehype);
   }
@@ -351,8 +350,6 @@ export const importExtended = (): Promise<ExtendedPlugins> => {
     extendedImportPromise = Promise.all([
       import('remark-gfm'),
       import('remark-directive'),
-      import('rehype-slug'),
-      import('rehype-autolink-headings'),
       import('rehype-pretty-code'),
     ])
       .then((plugins) => {
@@ -369,8 +366,6 @@ export const importExtended = (): Promise<ExtendedPlugins> => {
             `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
             `  - remark-gfm\n` +
             `  - remark-directive\n` +
-            `  - rehype-slug\n` +
-            `  - rehype-autolink-headings\n` +
             `  - rehype-pretty-code\n\n`
         );
       });
@@ -390,7 +385,7 @@ export async function loadExtendedPlugins(module: MdxModule) {
   const { extended } = module.options;
   const options = (typeof extended === 'object' && extended ? extended : {}) as MdxExtendedOptions;
 
-  const [gfm, directive, slug, autolink, prettyCode] = await importExtended();
+  const [gfm, directive, prettyCode] = await importExtended();
 
   // Remark Plugins.
   const remarkPlugins: PluggableList = [
@@ -404,8 +399,6 @@ export async function loadExtendedPlugins(module: MdxModule) {
   const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
 
   const rehypePlugins: PluggableList = [
-    [slug.default as Plugin, {}],
-    [autolink.default as Plugin, { ...options.rehypeAutolinkHeadings, behavior: 'wrap' }],
     [prettyCode.default as Plugin, shikiOptions],
     [airMdxRehype, module],
   ];
@@ -470,6 +463,35 @@ export function airMdxRemark(module?: MdxModule) {
   };
 }
 
+export function airMdxHeadings(module?: MdxModule) {
+  return (tree: HTMLNode) => {
+    const headings = [] as MdxHeading[];
+
+    visit(tree, (node) => {
+      const props = node.properties || (node.properties = {});
+
+      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName)) {
+        props.id = (props.id ?? '').replace(/[-]+/g, '-');
+
+        const text = getLeafNode(node);
+        if (text?.value) {
+          headings.push({
+            id: props.id,
+            text: text.value,
+            depth: Number(node.tagName.charAt(1)),
+          });
+        }
+      }
+    });
+
+    if (module) {
+      const { headingDepth } = module.options;
+      module.tree = tree;
+      module.headings = headings.filter((h) => h.depth <= headingDepth!);
+    }
+  };
+}
+
 /**
  * Rehype plugin for an MdxModule: normalizes heading ids and records the
  * module's headings, filtered by `headingDepth`.
@@ -485,17 +507,9 @@ export function airMdxRehype(module?: MdxModule) {
       const data = (node.data || (node.data = {})) as AnyType;
       const props = node.properties || (node.properties = {});
 
-      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName)) {
-        props.id = (props.id ?? '').replace(/[-]+/g, '-');
-
-        const text = getLeafNode(node);
-        if (text?.value) {
-          headings.push({
-            id: props.id,
-            text: text.value,
-            depth: Number(node.tagName.charAt(1)),
-          });
-        }
+      if (node.tagName === 'figure') {
+        node.tagName = 'AirCodeBlock';
+        delete props['data-rehype-pretty-code-figure'];
       }
 
       if (node.tagName === 'code' && data.meta) {

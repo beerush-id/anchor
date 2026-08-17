@@ -12,7 +12,7 @@ export interface SidebarProps {
 
 export const Sidebar = template<SidebarProps>(
   ({ nav }) => (
-    <nav className="air-docs-sidebar-nav">
+    <nav className="air-mdx-sidebar-nav">
       <For each={() => nav}>{(item) => <SidebarNode item={item} />}</For>
     </nav>
   ),
@@ -22,17 +22,17 @@ export const Sidebar = template<SidebarProps>(
 const SidebarNode = template<{ item: NavItem }>(({ item }) => {
   if (item.items && item.items.length > 0) {
     return (
-      <div className="air-docs-sidebar-group-container">
+      <div className="air-mdx-sidebar-group-container">
         <Show when={() => item.text}>
           {() =>
             item.route ? (
-              <Link to={item.route} className="air-docs-sidebar-link" activeClass="active" />
+              <Link to={item.route} className="air-mdx-sidebar-link" activeClass="active" />
             ) : (
-              <div className="air-docs-sidebar-group">{item.text}</div>
+              <div className="air-mdx-sidebar-group">{item.text}</div>
             )
           }
         </Show>
-        <div className="air-docs-sidebar-children">
+        <div className="air-mdx-sidebar-children">
           <For each={() => item.items!}>{(child) => <SidebarNode item={child} />}</For>
         </div>
       </div>
@@ -41,7 +41,7 @@ const SidebarNode = template<{ item: NavItem }>(({ item }) => {
 
   if (item.route) {
     return (
-      <Link to={item.route} className="air-docs-sidebar-link" activeClass="active">
+      <Link to={item.route} className="air-mdx-sidebar-link" activeClass="active">
         {item.text}
       </Link>
     );
