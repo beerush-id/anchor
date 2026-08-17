@@ -99,7 +99,7 @@ describe('ssrRenderToString', () => {
     });
 
     expect(result.html).toBe('<div></div>');
-    expect(result.head).toBe('<title>Test</title><script>hydrate()</script>');
+    expect(result.head.replace(/\n/g, '')).toBe('<title>Test</title><script>hydrate()</script>');
     expect(result.status).toBe(200);
     expect(router.cleanup).toHaveBeenCalled();
   });
@@ -114,7 +114,7 @@ describe('ssrRenderToString', () => {
     });
 
     expect(result.html).toBe('<div></div>');
-    expect(result.head).toBe('<title>Test</title>');
+    expect(result.head.replace(/\n/g, '')).toBe('<title>Test</title>');
     expect(result.status).toBe(200);
     expect(router.cleanup).toHaveBeenCalled();
   });

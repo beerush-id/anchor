@@ -1,6 +1,15 @@
 import { safeRun, sleep } from '@anchorlib/core';
+import { createRouter } from '@anchorlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createFullWorker, createWorker, SSR_ENV_KEY, ssrEnv, type SSROutput, type SSRRenderer } from '../src/index.js';
+import {
+  createFullWorker,
+  createWorker,
+  deferScript,
+  SSR_ENV_KEY,
+  type SSROutput,
+  type SSRRenderer,
+  ssrEnv,
+} from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
   const defaults: SSROutput = {
@@ -12,7 +21,9 @@ function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
     ...output,
   };
 
-  return vi.fn(async () => defaults) as unknown as SSRRenderer;
+  const renderer = vi.fn(async () => defaults) as unknown as SSRRenderer;
+  Object.assign(renderer, { router: createRouter(), options: {} });
+  return renderer;
 }
 
 function createRequest(url: string, options?: RequestInit) {
@@ -131,6 +142,47 @@ describe('createWorker', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe('application/xml; charset=utf-8');
     expect(await response.text()).toBe('<urlset></urlset>');
+  });
+
+  it('skips deferScript when deferred is false and noscript is falsy', async () => {
+    const renderer = createMockRenderer({
+      html: '<script src="/test.js"></script>',
+    });
+    renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false } } })) as any;
+    
+    const worker = createWorker(renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    const body = await response.text();
+    expect(body).toContain('<script src="/test.js"></script>');
+  });
+
+  it('strips scripts when noscript is true', async () => {
+    const renderer = createMockRenderer({
+      html: '<script src="/test.js"></script>',
+    });
+    renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false, noscript: true } } })) as any;
+    
+    const worker = createWorker(renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    const body = await response.text();
+    expect(body).not.toContain('<script src="/test.js"></script>');
+    expect(body).not.toContain('<script type="module">');
+  });
+
+  it('defers scripts with custom delay when deferred is a number', async () => {
+    const renderer = createMockRenderer({
+      html: '<script src="/test.js"></script>',
+    });
+    renderer.router.find = vi.fn(() => ({ route: { options: { deferred: 150 } } })) as any;
+    
+    const worker = createWorker(renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    const body = await response.text();
+    expect(body).toContain('<script type="module">');
+    expect(body).toContain('}, 150);');
   });
 
   it('falls through to SSR when resolveAsset returns undefined', async () => {
@@ -782,6 +834,50 @@ describe('createFullWorker', () => {
     expect(renderer).toHaveBeenCalled();
     expect(router.isolate).toHaveBeenCalled();
   });
+
+  it('skips deferScript when deferred is false and noscript is falsy', async () => {
+    const renderer = createMockRenderer({
+      html: '<script src="/test.js"></script>',
+    });
+    renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false } } })) as any;
+    
+    const router = createMockRouter();
+    const worker = createFullWorker(router, renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    const body = await response.text();
+    expect(body).toContain('<script src="/test.js"></script>');
+  });
+
+  it('strips scripts when noscript is true', async () => {
+    const renderer = createMockRenderer({
+      html: '<script src="/test.js"></script>',
+    });
+    renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false, noscript: true } } })) as any;
+    
+    const router = createMockRouter();
+    const worker = createFullWorker(router, renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    const body = await response.text();
+    expect(body).not.toContain('<script src="/test.js"></script>');
+    expect(body).not.toContain('<script type="module">');
+  });
+
+  it('defers scripts with custom delay when deferred is a number', async () => {
+    const renderer = createMockRenderer({
+      html: '<script src="/test.js"></script>',
+    });
+    renderer.router.find = vi.fn(() => ({ route: { options: { deferred: 150 } } })) as any;
+    
+    const router = createMockRouter();
+    const worker = createFullWorker(router, renderer, { template: TEMPLATE });
+
+    const response = await worker.fetch(createRequest('http://localhost/'));
+    const body = await response.text();
+    expect(body).toContain('<script type="module">');
+    expect(body).toContain('}, 150);');
+  });
   describe('upgrade', () => {
     it('throws error if wsRouter is not provided', async () => {
       const renderer = createMockRenderer();
@@ -1122,3 +1218,58 @@ function createMockBun() {
     }),
   };
 }
+
+describe('deferScript', () => {
+  it('extracts script tags and appends defer snippet before </body>', () => {
+    const html = `<html><head></head><body><script src="/main.js"></script><script src="/other.js" type="module" crossorigin="anonymous"></script><div>Content</div></body></html>`;
+    const result = deferScript(html, 100);
+
+    expect(result).not.toContain('<script src="/main.js"></script>');
+    expect(result).not.toContain('<script src="/other.js" type="module" crossorigin="anonymous"></script>');
+    expect(result).toContain('<script type="module">');
+    expect(result).toContain('"src":"/main.js","scriptType":"text/javascript"');
+    expect(result).toContain('"src":"/other.js","scriptType":"module","crossOrigin":"anonymous"');
+    expect(result).toContain('}, 100);');
+    expect(result.endsWith('</body></html>')).toBe(true);
+  });
+
+  it('extracts link tags and appends defer snippet at the end if no </body>', () => {
+    // Adding a .js link to match the regex: /<link[^>]*href="([^"]+\\.js)"[^>]*>\\n?/gi
+    const html = `<div>Content</div><link href="/style.js" rel="modulepreload" crossorigin="use-credentials">`;
+    const result = deferScript(html, 50);
+
+    expect(result).not.toContain('<link href="/style.js" rel="modulepreload" crossorigin="use-credentials">');
+    expect(result).toContain('<script type="module">');
+    expect(result).toContain('"type":"link","href":"/style.js","rel":"modulepreload","crossOrigin":"use-credentials"');
+    expect(result).toContain('}, 50);');
+    expect(result.endsWith('</script>')).toBe(true);
+  });
+
+  it('strips scripts and links entirely when strip is true', () => {
+    const html = `<html><body><script src="/main.js"></script><link href="/style.js" rel="modulepreload"></body></html>`;
+    const result = deferScript(html, 50, true);
+
+    expect(result).not.toContain('/main.js');
+    expect(result).not.toContain('/style.js');
+    expect(result).not.toContain('<script type="module">');
+    expect(result).toBe('<html><body></body></html>');
+  });
+
+  it('handles crossOrigin without value', () => {
+    // Note: <link> missing rel attribute
+    const html = `<html><body><script src="/main.js" crossorigin></script><link href="/style.js" crossorigin></body></html>`;
+    const result = deferScript(html, 100);
+    expect(result).toContain('"crossOrigin":"anonymous"');
+    const scriptMatch = result.match(/"type":"script"[^}]+"crossOrigin":"anonymous"/);
+    const linkMatch = result.match(/"type":"link"[^}]+"crossOrigin":"anonymous"/);
+    expect(scriptMatch).toBeTruthy();
+    expect(linkMatch).toBeTruthy();
+    expect(result).toContain('"rel":"modulepreload"');
+  });
+
+  it('leaves html unmodified if no scripts or links match', () => {
+    const html = `<html><body><div>Content</div></body></html>`;
+    const result = deferScript(html);
+    expect(result).toBe(html);
+  });
+});

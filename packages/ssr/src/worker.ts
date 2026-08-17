@@ -55,7 +55,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
         }
 
-        const match = renderer.router.find(url, true);
+        const match = renderer.router?.find(url, true);
         const { deferred, noscript } = match?.route.options ?? {};
 
         const { html, head, status, cookies, redirect, contentType } = await renderer({
@@ -170,7 +170,7 @@ export function createFullWorker<E = AnyType>(
         let cookies: string[] = [];
         const cookieJar = decodeCookies(cookie);
 
-        const match = renderer.router.find(url, true);
+        const match = renderer.router?.find(url, true);
         const { deferred, noscript } = match?.route.options ?? {};
 
         const response = await router.isolate(
