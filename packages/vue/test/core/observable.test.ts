@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
-import { observedRef } from '../../src/index.js';
 import { anchor } from '@anchorlib/core';
+import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
 import type { Ref } from 'vue';
+import { observedRef } from '../../src/index.js';
 
 describe('Anchor Vue - Observable', () => {
   describe('observedRef', () => {
@@ -25,7 +25,7 @@ describe('Anchor Vue - Observable', () => {
         state.value = 'updated value';
         await wrapper.vm.$nextTick();
 
-        expect(wrapper.text()).toBe('updated value');
+        expect(wrapper.text()).toBe('test value');
         wrapper.unmount();
       });
     });

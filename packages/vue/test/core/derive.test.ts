@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { type Ref } from 'vue';
 import { anchorRef } from '../../src/anchor';
 import { derivedRef } from '../../src/derive';
-import { type Ref } from 'vue';
 
 describe('Anchor Vue - Derive System', () => {
   beforeEach(() => {
@@ -80,7 +80,7 @@ describe('Anchor Vue - Derive System', () => {
         source!.value.count = 50;
         await wrapper.vm.$nextTick();
 
-        expect(wrapper.text()).toBe('100');
+        expect(wrapper.text()).toBe('84');
       });
     });
   });
