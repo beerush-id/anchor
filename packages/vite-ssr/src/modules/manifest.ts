@@ -111,7 +111,11 @@ export class ManifestNode extends EventEmitter {
    */
   private ensureInstalled() {
     if (this.parent) return;
-    bootPackage(this.manifestDir, '@airstack/manifest', { '.': './index.ts' });
+    bootPackage(this.manifestDir, '@airstack/manifest', {
+      '.': './index.ts',
+      './*': './*.ts',
+      './*.js': './*.ts',
+    });
     ensureSymlink(this.viteRoot);
   }
 

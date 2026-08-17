@@ -55,12 +55,13 @@ describe('route generation — folders define URLs', () => {
     expect(content).toContain("export const aboutIndexRoute = aboutRoute.route('/');");
   });
 
-  it('keeps a page folder without a layout bound to the base route', () => {
+  it('auto-scaffolds a layout when a page folder has children and adds an index route', () => {
     boot({ 'pages/blogs/page.tsx': '', 'pages/blogs/[slug]/page.tsx': '' });
 
     const blogs = route('blogs');
     expect(blogs).toContain("export const blogsRoute = rootRoute.route('/blogs');");
-    expect(blogs).not.toContain('IndexRoute');
+    expect(blogs).toContain("export const blogsIndexRoute = blogsRoute.route('/');");
+    expect(fixtureExists(dir, 'pages/blogs/layout.tsx')).toBe(true);
 
     const detail = route('blogs/[slug]');
     expect(detail).toContain("import blogsRoute from '../route.js';");

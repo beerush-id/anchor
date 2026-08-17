@@ -10,6 +10,8 @@ export type MakeAppOptions = {
   manifest?: boolean;
   /** MDX metadata generation. Defaults to true (matches airPages defaults). */
   metadata?: boolean;
+  /** Whether to link MDX metadata to routes. Defaults to false. */
+  linkMetadata?: boolean;
   /** Scaffolding of empty page files. Defaults to true (matches airPages defaults). */
   scaffold?: boolean;
   /** Custom file map. Defaults to DEFAULT_FILE_MAP. */
@@ -30,6 +32,7 @@ export function makeApp(dir: string, extra: MakeAppOptions = {}) {
     fileMap: extra.fileMap ?? DEFAULT_FILE_MAP,
     manifestEnabled: extra.manifest ?? true,
     metadataEnabled: extra.metadata ?? true,
+    linkMetadata: extra.linkMetadata,
     scaffoldEnabled: extra.scaffold ?? true,
   });
 }

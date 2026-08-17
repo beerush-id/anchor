@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { color, taggedLogger } from '../logger.js';
-import { canonicalPath, derivePrefix, GENERATED_MARKER } from '../utils/mapper.js';
+import { canonicalPath, deriveMetaName, deriveNamedMetaName, GENERATED_MARKER } from '../utils/mapper.js';
 import { writeIfChanged } from '../utils/sync.js';
 
 const log = taggedLogger('air-metadata');
@@ -40,12 +40,13 @@ export class MarkdownNode extends EventEmitter {
     const relDir = path.dirname(rel);
     const nodeRel = relDir === '.' ? '' : relDir;
     const relPath = nodeRel ? `${nodeRel}/${fileName}` : fileName;
+    const folderSegment = nodeRel ? path.basename(nodeRel) : '';
 
     this.generatedFilePath = path.join(metadataDir, `${relPath}.ts`);
 
     const isPageOrLayout = fileName === 'page' || fileName === 'layout';
     this.itemPath = (isPageOrLayout ? canonicalPath(nodeRel) : canonicalPath(relPath)).replace(/\(|\)/g, '');
-    this.varName = `${derivePrefix(relPath) || 'root'}Meta`;
+    this.varName = isPageOrLayout ? deriveMetaName(folderSegment) : deriveNamedMetaName(folderSegment, fileName);
   }
 
   /**

@@ -84,7 +84,11 @@ export class MetadataNode extends EventEmitter {
    */
   private ensureInstalled() {
     if (this.parent) return;
-    bootPackage(this.metadataDir, '@airstack/metadata', { '.': './index.ts', './*': './*.ts' });
+    bootPackage(this.metadataDir, '@airstack/metadata', {
+      '.': './index.ts',
+      './*': './*.ts',
+      './*.js': './*.ts',
+    });
     ensureSymlink(this.viteRoot);
   }
 

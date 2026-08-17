@@ -5,9 +5,6 @@ export type { Framework };
 
 /** Header marker written on top of every generated file. */
 export const GENERATED_MARKER = '// @generated';
-
-/** Line markers written above generator-owned lines, naming what is protected. */
-export const MARKER_IMPORT_NAME = '// @generated - do not edit the import name';
 export const MARKER_VARIABLE_NAME = '// @generated - do not edit the variable name';
 export const MARKER_DEFAULT = '// @generated - do not edit';
 
@@ -115,6 +112,35 @@ export function namedPageName(file: string, fileMap: FileMap): string {
 export function deriveNamedRouteName(folderSegment: string, pageName: string): string {
   const rel = folderSegment ? `${folderSegment}/${pageName}` : pageName;
   return `${derivePrefix(rel)}Route`;
+}
+
+/**
+ * The meta import variable name for a folder route segment:
+ * `members` → `membersMeta`, `docs` → `docsMeta`, root → `pageMeta`.
+ */
+export function deriveMetaName(segment: string): string {
+  if (!segment) return 'pageMeta';
+  return `${camelizeSegment(segment)}Meta`;
+}
+
+/**
+ * The meta import variable name for an index route segment:
+ * `members` → `membersIndexMeta`, `docs` → `docsIndexMeta`, root → `pageMeta`.
+ */
+export function deriveIndexMetaName(segment: string): string {
+  if (!segment) return 'pageMeta';
+  return `${camelizeSegment(segment)}IndexMeta`;
+}
+
+/**
+ * The meta import variable name for a named page:
+ * `components` + `badge` → `componentsBadgeMeta`,
+ * `docs` + `getting-started` → `docsGettingStartedMeta`,
+ * root + `guide` → `guideMeta`.
+ */
+export function deriveNamedMetaName(folderSegment: string, pageName: string): string {
+  const rel = folderSegment ? `${folderSegment}/${pageName}` : pageName;
+  return `${derivePrefix(rel) || 'root'}Meta`;
 }
 
 /** Camel-cases a single folder segment into an identifier prefix. */

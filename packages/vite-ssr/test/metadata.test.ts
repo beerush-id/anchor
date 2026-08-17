@@ -109,8 +109,8 @@ describe('mdx metadata generator', () => {
     expect(rootIndex).toContain("{ path: '/', meta: pageMeta }");
 
     const docsIndex = readMetadata(dir, 'docs/index.ts');
-    expect(docsIndex).toContain("import docsPageMeta from './page.js';");
-    expect(docsIndex).toContain("{ path: '/docs', meta: docsPageMeta }");
+    expect(docsIndex).toContain("import docsMeta from './page.js';");
+    expect(docsIndex).toContain("{ path: '/docs', meta: docsMeta }");
   });
 
   it('generates a scoped metadata index per folder without child spreads', () => {
@@ -119,8 +119,8 @@ describe('mdx metadata generator', () => {
     app = makeApp(dir);
 
     const slugIndex = readMetadata(dir, 'blogs/[slug]/index.ts');
-    expect(slugIndex).toContain("import blogsDynamicTestMeta from './test.js';");
-    expect(slugIndex).toContain("{ path: '/blogs/:slug/test', meta: blogsDynamicTestMeta }");
+    expect(slugIndex).toContain("import DynamicTestMeta from './test.js';");
+    expect(slugIndex).toContain("{ path: '/blogs/:slug/test', meta: DynamicTestMeta }");
     expect(slugIndex).not.toContain('...');
   });
 

@@ -7,10 +7,10 @@ import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
 import type { FileMap } from '../utils/mapper.js';
-import { airWorker, type AirWorkerOptions, resolveWorkerEntry } from '../worker.js';
+import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
 import { airEnv } from './env.js';
-import { airImage, type AirImageOptions } from './image.js';
-import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
+import { type AirImageOptions, airImage } from './image.js';
+import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
 
@@ -100,6 +100,13 @@ export type AirPagesOptions = {
   metadata?: boolean;
 
   /**
+   * Whether to link MDX frontmatter metadata to route declarations (.meta()).
+   * Requires metadata generation to be enabled.
+   * @default false
+   */
+  linkMetadata?: boolean;
+
+  /**
    * Console log level, applied to every `air-*` tag (shared sink).
    * Authoritative over sub-plugin levels when composing via `airPages`.
    * @default LogLevel.INFO
@@ -176,6 +183,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         routerFile: path.resolve(config.root, routerFile),
         manifestEnabled: options.manifest,
         metadataEnabled: options.metadata,
+        linkMetadata: options.linkMetadata ?? false,
         framework: AIR_ENV.framework,
         scaffoldEnabled: options.scaffold,
         fileMap: AIR_ENV.files,

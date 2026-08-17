@@ -321,6 +321,30 @@ describe('coverage tests for unreached branches', () => {
       expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain('modal(blogsRoute)');
     });
 
+    it('auto-scaffolds layout when page.tsx is added dynamically to a folder with children', () => {
+      dir = makeFixture({ 'pages/docs/item/page.tsx': '' });
+      app = makeApp(dir);
+
+      expect(fixtureExists(dir, 'pages/docs/layout.tsx')).toBe(false);
+
+      writeFixture(dir, { 'pages/docs/page.tsx': '' });
+      app.rootFolder.children.get('docs')?.handleFileAdded('page.tsx');
+
+      expect(fixtureExists(dir, 'pages/docs/layout.tsx')).toBe(true);
+    });
+
+    it('auto-scaffolds layout when page.mdx is added dynamically to a folder with children', () => {
+      dir = makeFixture({ 'pages/docs/item/page.tsx': '' });
+      app = makeApp(dir);
+
+      expect(fixtureExists(dir, 'pages/docs/layout.tsx')).toBe(false);
+
+      writeFixture(dir, { 'pages/docs/page.mdx': '' });
+      app.rootFolder.children.get('docs')?.handleFileAdded('page.mdx');
+
+      expect(fixtureExists(dir, 'pages/docs/layout.tsx')).toBe(true);
+    });
+
     it('survives a failed scaffold write without crashing', () => {
       dir = makeFixture({ 'pages/docs/layout.tsx': '' });
       const original = fs.writeFileSync.bind(fs) as (...args: unknown[]) => void;
@@ -338,6 +362,36 @@ describe('coverage tests for unreached branches', () => {
       }
 
       expect(readFixture(dir, 'pages/docs/layout.tsx')).toBe('');
+    });
+
+    it('survives a failed ensureLayoutFile write without crashing', () => {
+      dir = makeFixture({ 'pages/docs/page.tsx': '', 'pages/docs/child/page.tsx': '' });
+      const original = fs.writeFileSync.bind(fs) as (...args: unknown[]) => void;
+      const spy = vi.spyOn(fs, 'writeFileSync').mockImplementation(((...args: unknown[]) => {
+        if (typeof args[0] === 'string' && args[0].endsWith('layout.tsx')) {
+          throw new Error('disk full');
+        }
+        return original(...args);
+      }) as typeof fs.writeFileSync);
+
+      try {
+        expect(() => makeApp(dir)).not.toThrow();
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('returns false from ensureLayoutFile when layout is already true or file already exists', () => {
+      dir = makeFixture({ 'pages/docs/page.tsx': '', 'pages/docs/child/page.tsx': '' });
+      app = makeApp(dir);
+
+      const docsRoute = app!.rootRoute!.children.get('docs');
+      expect(docsRoute?.ensureLayoutFile()).toBe(false);
+
+      if (docsRoute) {
+        docsRoute.layout = false;
+        expect(docsRoute.ensureLayoutFile()).toBe(false);
+      }
     });
   });
 

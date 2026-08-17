@@ -31,6 +31,8 @@ export type AppNodeOptions = {
   manifestEnabled?: boolean;
   /** Whether to generate MDX metadata. Defaults to true. */
   metadataEnabled?: boolean;
+  /** Whether to link MDX frontmatter metadata to route declarations. */
+  linkMetadata?: boolean;
   /** Whether to scaffold entry files. Defaults to true. */
   scaffoldEnabled?: boolean;
 };
@@ -62,7 +64,14 @@ export class AppNode extends EventEmitter {
     this.rootFolder.scan();
 
     log.verbose(color.event('Booting route tree'));
-    this.rootRoute = new RouteNode(this.rootFolder, undefined, this.fileMap, opts.framework, opts.routerFile);
+    this.rootRoute = new RouteNode(
+      this.rootFolder,
+      undefined,
+      this.fileMap,
+      opts.framework,
+      opts.routerFile,
+      opts.linkMetadata ?? AIR_ENV.linkMetadata
+    );
     this.rootRoute.on('change', this.handleChange);
     this.rootRoute.boot();
 

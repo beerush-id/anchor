@@ -33,6 +33,8 @@ export type AirEnv = {
   framework: Framework;
   /** Resolved file name map (defaults merged with user overrides). */
   files: FileMap;
+  /** Whether to automatically link MDX frontmatter metadata to route declarations. */
+  linkMetadata: boolean;
   /** Last served URL in dev, used to force SSR module refresh on MDX changes. */
   currentUrl?: string;
 };
@@ -52,4 +54,5 @@ export const AIR_ENV: AirEnv = {
   pagesDir: 'src/pages',
   framework: 'react',
   files: DEFAULT_FILE_MAP,
+  linkMetadata: false,
 };
