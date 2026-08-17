@@ -1,10 +1,12 @@
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { type AnyType, classx, For, Link, Show, template } from '../index.js';
 
 export interface NavItem {
-  text: string;
+  text?: string;
   route?: AnyType;
   items?: NavItem[];
+  icon?: () => ReactNode;
+  separator?: boolean;
 }
 
 export interface SidebarProps extends HTMLAttributes<HTMLElement> {
@@ -22,9 +24,14 @@ export const Sidebar = template<SidebarProps>(
 
 export interface SidebarNodeProps extends HTMLAttributes<HTMLElement> {
   item: NavItem;
+  level?: number;
 }
 
-export const SidebarNode = template<SidebarNodeProps>(({ item, className, ...restProps }) => {
+export const SidebarNode = template<SidebarNodeProps>(({ item, className, level, ...restProps }) => {
+  if (item.separator) {
+    return <div {...restProps} className={classx('air-mdx-sidebar-separator', className)} />;
+  }
+
   if (item.items && item.items.length > 0) {
     return (
       <div
@@ -32,22 +39,25 @@ export const SidebarNode = template<SidebarNodeProps>(({ item, className, ...res
         role="group"
         aria-label={item.text}
         className={classx('air-mdx-sidebar-group-container', className)}
+        style={{ '--air-nav-level': `${level ?? 0}` } as Record<string, string>}
       >
         <Show when={() => item.text}>
           {() =>
             item.route ? (
               <Link to={item.route as AnyType} className="air-mdx-sidebar-link" activeClass="active" keepVisible>
-                {item.text}
+                <SidebarItem icon={item.icon} text={item.text} />
               </Link>
             ) : (
               <div className="air-mdx-sidebar-group" aria-hidden="true">
-                {item.text}
+                <SidebarItem icon={item.icon} text={item.text} />
               </div>
             )
           }
         </Show>
         <div className="air-mdx-sidebar-children">
-          <For each={() => item.items!}>{(child) => <SidebarNode item={child} />}</For>
+          <For each={() => item.items!}>
+            {(child) => <SidebarNode item={child} level={typeof level === 'number' ? level + 1 : level} />}
+          </For>
         </div>
       </div>
     );
@@ -62,14 +72,24 @@ export const SidebarNode = template<SidebarNodeProps>(({ item, className, ...res
         activeClass="active"
         keepVisible
       >
-        {item.text}
+        <SidebarItem icon={item.icon} text={item.text} />
       </Link>
     );
   }
 
   return (
     <span {...restProps} className={classx('air-mdx-sidebar-text', className)}>
-      {item.text}
+      <SidebarItem icon={item.icon} text={item.text} />
     </span>
   );
 }, 'SidebarNode');
+
+const SidebarItem = template<{ icon?: () => ReactNode; text?: string }>(
+  ({ icon, text }) => (
+    <>
+      {icon?.()}
+      <span className="air-mdx-sidebar-item">{text}</span>
+    </>
+  ),
+  'SidebarItem'
+);

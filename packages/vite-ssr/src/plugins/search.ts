@@ -17,9 +17,16 @@ export type MdxSearchOptions = {
 };
 
 export interface SearchDocument {
+  /** Relative path from the pages dir — always present, acts as the entry key. */
   id: string;
+  /** Frontmatter `title`, always present. */
   title: string;
+  /**
+   * Searchable text: page body + frontmatter `description` by default, or the
+   * values of the frontmatter keys listed in `indexable: [...]` when set.
+   */
   content: string;
+  /** Canonical route, always present. */
   url: string;
 }
 
@@ -123,7 +130,14 @@ let searchExclude: string[] = [];
 
 /**
  * Surgically updates the index entry for a single file: re-parses only that
- * file (through the shared metadata store) and replaces its entry.
+ * file (through the shared metadata store) and replaces its entry. The
+ * `indexable` frontmatter flag controls the entry:
+ * - `false` drops the file from the index entirely;
+ * - an array of frontmatter keys uses their values as the searchable content
+ *   instead of the page body (`indexable: ['description', 'keywords']`);
+ * - `true` (or omitted) indexes the page body plus the frontmatter
+ *   `description`.
+ * Title and URL always ship.
  *
  * @param file Absolute path of the markdown file to re-index.
  * @param include Extensions that qualify a file for indexing.
@@ -133,6 +147,13 @@ export async function invalidateSearchCache(file: string, include: string[]): Pr
 
   const content = fs.readFileSync(file, 'utf-8');
   const meta = META_STORE.invalidate(file, content);
+
+  if (meta.indexable === false) {
+    searchCache.delete(file);
+    log.debug(color.event('Skipped'), color.file(path.relative(searchRoot, file)), '(indexable: false)');
+    return Promise.resolve();
+  }
+
   searchCache.set(file, toSearchDocument(file, meta, content));
   log.debug(color.event('Re-indexed'), color.file(path.relative(searchRoot, file)));
 
@@ -157,9 +178,9 @@ function isIndexedFile(file: string, include: string[]): boolean {
 function toSearchDocument(file: string, meta: Record<string, unknown>, content: string): SearchDocument {
   const rel = path.relative(searchPagesDir, file).replace(/\\/g, '/');
 
-  let id = rel.replace(/\.(mdx|md)$/, '');
-  if (id.endsWith('/page') || id === 'page') id = id.replace(/\/?page$/, '') || '/';
-  else id = `/${id}`;
+  let url = rel.replace(/\.(mdx|md)$/, '');
+  if (url.endsWith('/page') || url === 'page') url = url.replace(/\/?page$/, '') || '/';
+  else url = `/${url}`;
 
   const clean = content
     .replace(/^\s*---\r?\n[\s\S]*?\r?\n---/, '')
@@ -167,10 +188,44 @@ function toSearchDocument(file: string, meta: Record<string, unknown>, content: 
     .replace(/:::.*?:::/gs, '')
     .slice(0, 10000);
 
+  const keys = indexableKeys(meta.indexable);
+  // Default indexable text = page body + frontmatter description (curated
+  // keywords, not a 1:1 body excerpt, so it deserves a search hit of its own).
+  const searchContent = keys
+    ? pickFrontmatter(meta, keys)
+    : [clean, pickFrontmatter(meta, ['description'])].filter(Boolean).join(' ');
+
   return {
-    id: file,
+    id: rel,
     title: (meta.title as string) || '',
-    content: clean,
-    url: id,
+    content: searchContent,
+    url,
   };
+}
+
+/**
+ * Resolves the `indexable` frontmatter value to the list of frontmatter keys
+ * whose values become the searchable content. `true` (or any non-array,
+ * non-false value) returns `undefined`, meaning the page body is indexed.
+ */
+function indexableKeys(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter((key): key is string => typeof key === 'string');
+}
+
+/**
+ * Serializes the values of the given frontmatter keys into a single searchable
+ * string — strings pass through, arrays join with spaces, missing keys are
+ * skipped.
+ */
+function pickFrontmatter(meta: Record<string, unknown>, keys: string[]): string {
+  return keys
+    .map((key) => {
+      const value = meta[key];
+      if (Array.isArray(value)) return value.filter((v) => v != null).map(String).join(' ');
+      if (value == null) return '';
+      return String(value);
+    })
+    .filter(Boolean)
+    .join(' ');
 }

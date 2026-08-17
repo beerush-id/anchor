@@ -433,14 +433,17 @@
       font-size: 0.875rem;
 
       .air-mdx-sidebar-group-container {
-        margin-block-start: 1.25rem;
+        margin-inline-start: calc(var(--air-nav-level, 0) * 1rem);
+      }
 
-        &:first-child {
-          margin-block-start: 0;
-        }
+      .air-mdx-sidebar-separator {
+        height: 1.5rem;
       }
 
       .air-mdx-sidebar-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         padding-block: 0.25rem;
         padding-inline: 0.75rem;
         font-weight: 600;
@@ -448,24 +451,41 @@
       }
 
       .air-mdx-sidebar-text {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         padding-block: 0.35rem;
         padding-inline: 0.75rem;
         color: var(--air-mdx-text-2);
       }
 
       .air-mdx-sidebar-children {
+        /* Indent children so their text aligns with the parent group's text (icon + gap). */
+        position: relative;
+        padding-inline-start: 1.625rem;
         display: flex;
         flex-direction: column;
         gap: 2px;
+
+        /* Vertical guide line aligned with the parent group's icon center (0.75rem padding + 0.5625rem half-icon). */
+        &::before {
+          content: '';
+          position: absolute;
+          inset-block: 0;
+          inset-inline-start: 1.3125rem;
+          border-inline-start: 1px solid var(--air-mdx-border);
+        }
       }
 
       .air-mdx-sidebar-link {
         cursor: pointer;
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         padding-block: 0.35rem;
         padding-inline: 0.75rem;
         border-radius: 6px;
+        font-weight: 500;
         color: var(--air-mdx-text-2);
         line-height: 1.5;
         transition:
@@ -479,9 +499,14 @@
 
         &.active {
           color: var(--air-mdx-primary);
-          font-weight: 600;
           background-color: var(--air-mdx-bg-soft);
         }
+      }
+
+      svg {
+        width: 1.125rem;
+        height: 1.125rem;
+        flex-shrink: 0;
       }
     }
 
@@ -507,6 +532,7 @@
           cursor: pointer;
           display: block;
           padding-block: 0.25rem;
+          font-weight: 500;
           color: var(--air-mdx-text-2);
           transition: color 0.2s;
 
@@ -516,7 +542,6 @@
 
           &.active {
             color: var(--air-mdx-primary);
-            font-weight: 500;
           }
         }
       }
