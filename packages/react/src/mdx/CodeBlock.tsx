@@ -9,10 +9,13 @@ export interface CodeBlockProps extends HTMLAttributes<HTMLDivElement> {
 export const CodeBlock = setup<CodeBlockProps>((props) => {
   const $restProps = props.$omit(['children', 'className']);
 
-  return render(() =>(
-    <div {...$restProps} className={classx('air-mdx-code-block-wrapper', props.className)}>
-      <CodeCopy />
-      {props.children}
-    </div>
-  ), 'CodeBlock');
+  return render(
+    () => (
+      <div {...$restProps} className={classx('air-mdx-code-block-wrapper', props.className)}>
+        <CodeCopy />
+        {props.children}
+      </div>
+    ),
+    'CodeBlock'
+  );
 }, 'CodeBlock');

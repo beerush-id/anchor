@@ -149,7 +149,7 @@ describe('createWorker', () => {
       html: '<script src="/test.js"></script>',
     });
     renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false } } })) as any;
-    
+
     const worker = createWorker(renderer, { template: TEMPLATE });
 
     const response = await worker.fetch(createRequest('http://localhost/'));
@@ -162,7 +162,7 @@ describe('createWorker', () => {
       html: '<script src="/test.js"></script>',
     });
     renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false, noscript: true } } })) as any;
-    
+
     const worker = createWorker(renderer, { template: TEMPLATE });
 
     const response = await worker.fetch(createRequest('http://localhost/'));
@@ -176,7 +176,7 @@ describe('createWorker', () => {
       html: '<script src="/test.js"></script>',
     });
     renderer.router.find = vi.fn(() => ({ route: { options: { deferred: 150 } } })) as any;
-    
+
     const worker = createWorker(renderer, { template: TEMPLATE });
 
     const response = await worker.fetch(createRequest('http://localhost/'));
@@ -840,7 +840,7 @@ describe('createFullWorker', () => {
       html: '<script src="/test.js"></script>',
     });
     renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false } } })) as any;
-    
+
     const router = createMockRouter();
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
@@ -854,7 +854,7 @@ describe('createFullWorker', () => {
       html: '<script src="/test.js"></script>',
     });
     renderer.router.find = vi.fn(() => ({ route: { options: { deferred: false, noscript: true } } })) as any;
-    
+
     const router = createMockRouter();
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
@@ -869,7 +869,7 @@ describe('createFullWorker', () => {
       html: '<script src="/test.js"></script>',
     });
     renderer.router.find = vi.fn(() => ({ route: { options: { deferred: 150 } } })) as any;
-    
+
     const router = createMockRouter();
     const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
