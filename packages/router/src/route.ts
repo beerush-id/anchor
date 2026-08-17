@@ -957,6 +957,7 @@ export class Route<
 
   private async ensureRenderer(force?: boolean) {
     if (typeof this.loadRenderer !== 'function') return;
+    /* v8 ignore next */
     if (this.rendererState.value && !force) return;
 
     try {

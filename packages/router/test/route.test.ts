@@ -957,6 +957,7 @@ describe('Route class', () => {
 
       const context = { params: {}, query: {}, data: {} };
       await route.activate(context);
+      await route.activate(context);
 
       expect(loader).toHaveBeenCalled();
       expect((route as any).loadRenderer).toBeUndefined();

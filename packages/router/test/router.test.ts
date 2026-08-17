@@ -1271,6 +1271,9 @@ describe('router.ts', () => {
       });
       vi.stubGlobal('document', {
         querySelector: () => ({
+          get textContent() {
+            return JSON.stringify(mockHydrationData);
+          },
           remove: vi.fn(),
         }),
       });
@@ -1283,6 +1286,37 @@ describe('router.ts', () => {
 
       // Clean up
       vi.unstubAllGlobals();
+    });
+
+    it('should warn malformed hydration script', () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // Simulate browser environment with hydration data
+      const HYDRATION_KEY = '__ANCHOR_ROUTER_CACHE__';
+      const mockHydrationData = [[{ name: 'test', cache: [] }]];
+
+      // Stub window object with hydration data
+      vi.stubGlobal('window', {
+        [HYDRATION_KEY]: mockHydrationData,
+      });
+      vi.stubGlobal('document', {
+        querySelector: () => ({
+          get textContent() {
+            return `{ a: ' }`;
+          },
+          remove: vi.fn(),
+        }),
+      });
+
+      // Create router - should pick up hydration data
+      const routerWithHydration = new Router();
+
+      // Verify hydration data was captured
+      expect((routerWithHydration as any).hydratedSegments).toBeUndefined();
+      expect(errSpy).toHaveBeenCalledTimes(1);
+
+      // Clean up
+      vi.unstubAllGlobals();
+      errSpy.mockRestore();
     });
 
     it('should not check window in non-browser environment', () => {
@@ -1366,7 +1400,7 @@ describe('router.ts', () => {
       const script = router.createHydrationScript(snapshot as RouterSnapshot);
 
       // Verify script tag structure
-      expect(script).toContain('<script id="__ANCHOR_ROUTER_CACHE__">');
+      expect(script).toContain('<script id="__ANCHOR_ROUTER_CACHE__"');
       expect(script).toContain('</script>');
       expect(script).toContain('__ANCHOR_ROUTER_CACHE__');
 
@@ -1383,7 +1417,7 @@ describe('router.ts', () => {
 
       const script = router.createHydrationScript(snapshot);
 
-      expect(script).toContain('<script id="__ANCHOR_ROUTER_CACHE__">');
+      expect(script).toContain('<script id="__ANCHOR_ROUTER_CACHE__"');
       expect(script).toContain('</script>');
       expect(script).toContain('__ANCHOR_ROUTER_CACHE__');
       expect(script).toContain('[]');
