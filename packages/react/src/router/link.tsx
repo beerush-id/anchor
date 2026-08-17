@@ -102,9 +102,12 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
   };
 
   onMount(() => {
-    if (props.keepVisible && isActive.value) {
-      const behavior = typeof props.keepVisible === 'string' ? props.keepVisible : 'instant';
-      ref.current?.scrollIntoView({ block: 'center', inline: 'center', behavior });
+    if (ref.current && props.keepVisible && isActive.value) {
+      if (props.keepVisible === true) {
+        ref.current.focus();
+      } else {
+        ref.current?.scrollIntoView({ block: 'center', inline: 'center', behavior: props.keepVisible });
+      }
     }
   });
 
