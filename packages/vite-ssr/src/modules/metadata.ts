@@ -94,7 +94,6 @@ export class MetadataNode extends EventEmitter {
 
     child.on('change', (file, kind) => {
       this.emit('change', file, kind);
-      if (!this.booting) this.generate();
     });
 
     child.boot();
@@ -148,7 +147,7 @@ export class MetadataNode extends EventEmitter {
 
   /**
    * Generates the index.ts file for this metadata directory,
-   * aggregating imports from all MDX files and child metadata nodes.
+   * aggregating imports from MDX files within its direct folder scope.
    */
   public generate() {
     this.ensureInstalled();
@@ -162,28 +161,14 @@ export class MetadataNode extends EventEmitter {
       }))
       .sort((a, b) => a.fromPath.localeCompare(b.fromPath));
 
-    const childImports: { varName: string; fromPath: string }[] = [];
-    for (const [segment] of this.children) {
-      const childIndexPath = path.join(this.metadataDir, this.folderNode.rel, segment, 'index.ts');
-      if (fs.existsSync(childIndexPath)) {
-        const varName = `${segment}Meta`;
-        childImports.push({
-          varName,
-          fromPath: importSpecifier(indexPath, childIndexPath),
-        });
-      }
-    }
-
     log.verbose(
       color.event('Collected metadata entries'),
       color.file(this.folderNode.rel || 'root'),
       items.length,
-      'files,',
-      childImports.length,
-      'children'
+      'files'
     );
 
-    if (items.length === 0 && childImports.length === 0 && this.parent !== undefined) {
+    if (items.length === 0 && this.parent !== undefined) {
       try {
         if (fs.existsSync(indexPath)) {
           fs.unlinkSync(indexPath);
@@ -194,17 +179,12 @@ export class MetadataNode extends EventEmitter {
       return;
     }
 
-    const imports = [
-      ...items.map((item) => `import ${item.varName} from '${item.fromPath}';`),
-      ...childImports.map((c) => `import ${c.varName} from '${c.fromPath}';`),
-    ];
     const lines = [
       GENERATED_MARKER,
-      ...imports,
+      ...items.map((item) => `import ${item.varName} from '${item.fromPath}';`),
       '',
       'export default [',
       ...items.map((item) => `  { path: '${item.path}', meta: ${item.varName} },`),
-      ...childImports.map((c) => `  ...${c.varName},`),
       '];',
       '',
     ];

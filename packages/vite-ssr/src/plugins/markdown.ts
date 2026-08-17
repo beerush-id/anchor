@@ -4,7 +4,7 @@ import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
-import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile, type MdxModuleOptions } from '../modules/markdown.js';
+import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxEntryWrapper, mdxFile } from '../modules/markdown.js';
 
 const log = taggedLogger('air-markdown');
 

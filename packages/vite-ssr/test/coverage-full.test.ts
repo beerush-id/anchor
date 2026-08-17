@@ -1,5 +1,3 @@
-// biome-ignore assist/source/organizeImports: must register the chokidar mock before any module imports chokidar.
-import { chokidarState } from './chokidar.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnyType } from '@anchorlib/core';
@@ -14,6 +12,7 @@ import { matchFrontmatter, parseFrontmatterBlock } from '../src/utils/frontmatte
 import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
 import { scaffoldForFile } from '../src/utils/scaffold.js';
 import { ensureSymlink } from '../src/utils/sync.js';
+import { chokidarState } from './chokidar.js';
 import {
   cleanFixture,
   fixtureExists,

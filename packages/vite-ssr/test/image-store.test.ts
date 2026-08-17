@@ -178,12 +178,15 @@ describe('image optimization — sources are encoded and cached by request', () 
   });
 
   it('reports readable sizes for large sources', async () => {
-    const file = source(900, 900, true);
-    const store = new ImageStore({}, dir);
+    // 513px is the narrowest source that still emits the 512w size; noise keeps
+    // the file above 1MB so the MB branch of the size formatter is exercised.
+    // A smaller source also avoids paying worst-case encoder cost on noise.
+    const file = source(513, 513, true);
+    const store = new ImageStore({ quality: 10 }, dir);
 
     const result = await store.resolve(file);
 
-    expect(result.width).toBe(900);
+    expect(result.width).toBe(513);
     expect(result.srcset).toContain('512w');
   });
 });

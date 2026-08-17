@@ -113,14 +113,15 @@ describe('mdx metadata generator', () => {
     expect(docsIndex).toContain("{ path: '/docs', meta: docsPageMeta }");
   });
 
-  it('aggregates nested mdx folders into their parent index', () => {
+  it('generates a scoped metadata index per folder without child spreads', () => {
     dir = makeFixture({ 'pages/blogs/[slug]/test.mdx': '---\ntitle: "Post"\n---\n' });
 
     app = makeApp(dir);
 
-    const rootIndex = readMetadata(dir, 'index.ts');
-    expect(rootIndex).toContain('...');
-    expect(fixtureExists(dir, '.airstack/metadata/blogs/index.ts')).toBe(true);
+    const slugIndex = readMetadata(dir, 'blogs/[slug]/index.ts');
+    expect(slugIndex).toContain("import blogsDynamicTestMeta from './test.js';");
+    expect(slugIndex).toContain("{ path: '/blogs/:slug/test', meta: blogsDynamicTestMeta }");
+    expect(slugIndex).not.toContain('...');
   });
 
   it('cleans up generated metadata files when the app is destroyed', () => {

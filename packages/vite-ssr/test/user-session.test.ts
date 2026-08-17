@@ -1,34 +1,40 @@
 import fs from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { chokidarState } from './chokidar.js';
 import { cleanFixture, fixtureExists, fixturePath, makeFixture, readFixture, removeFixture } from './fixture.js';
 import { makeApp, readManifest, readMetadata } from './make-sync.js';
 
 /** One dev session, told as user actions. Starting and stopping the dev server
  *  are actions like any other — there are no test-runner hooks here. The app is
  *  booted in the first step, shared by every step in order, and shut down in
- *  the last step. */
+ *  the last step. chokidar is stubbed, so each step writes its files and emits
+ *  the watcher events the real watcher would produce — deterministic, with no
+ *  real-timer settling or polling. */
 describe('one dev session — start, work, stop', () => {
   let dir = '';
   let app: ReturnType<typeof makeApp> | undefined;
 
-  /** Lets chokidar settle after a mutation before asserting the final state. */
-  async function settle(ms = 150): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
 
-  async function waitFor(cond: () => boolean, timeout = 5000): Promise<void> {
-    const start = Date.now();
-    while (!cond()) {
-      if (Date.now() - start > timeout) throw new Error('condition not met in time');
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-  }
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-  it('the user starts the dev server on a project that has an about page', async () => {
+  /** Routes a chokidar event to the watcher owning the file's parent directory. */
+  const emit = (ev: string, rel: string) => {
+    const abs = fixturePath(dir, rel);
+    const watcherDir = path.dirname(abs);
+    const watcher = chokidarState.watchers.get(watcherDir) ?? chokidarState.watchers.get(fixturePath(dir, 'pages'));
+    watcher?.emit(ev, abs);
+  };
+
+  it('the user starts the dev server on a project that has an about page', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/about/page.tsx': '// about\n' });
     app = makeApp(dir);
     app.rootFolder.watch();
-    await settle();
 
     // First boot: the page is a route, listed in the manifest, content untouched.
     expect(readFixture(dir, 'pages/about/route.ts')).toContain("export const aboutRoute = rootRoute.route('/about');");
@@ -36,64 +42,67 @@ describe('one dev session — start, work, stop', () => {
     expect(readFixture(dir, 'pages/about/page.tsx')).toBe('// about\n');
   });
 
-  it('the user adds a route — a new blogs page', async () => {
+  it('the user adds a route — a new blogs page', () => {
     fs.mkdirSync(fixturePath(dir, 'pages/blogs'), { recursive: true });
     fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '');
+    emit('addDir', 'pages/blogs');
+    emit('add', 'pages/blogs/page.tsx');
 
-    await waitFor(() => fixtureExists(dir, 'pages/blogs/route.ts'));
     expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
-    await waitFor(() => readManifest(dir).includes("'/blogs'"));
-    await waitFor(() => readFixture(dir, 'pages/blogs/page.tsx').includes('<h1>Blogs</h1>'));
+    expect(readManifest(dir)).toContain("'/blogs'");
+    expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain('<h1>Blogs</h1>');
   });
 
-  it('the user adds a child route — a dynamic post page under blogs', async () => {
+  it('the user adds a child route — a dynamic post page under blogs', () => {
     fs.mkdirSync(fixturePath(dir, 'pages/blogs/[slug]'), { recursive: true });
     fs.writeFileSync(fixturePath(dir, 'pages/blogs/[slug]/page.tsx'), '// post\n');
+    emit('addDir', 'pages/blogs/[slug]');
+    emit('add', 'pages/blogs/[slug]/page.tsx');
 
-    await waitFor(() => fixtureExists(dir, 'pages/blogs/[slug]/route.ts'));
     expect(readFixture(dir, 'pages/blogs/[slug]/route.ts')).toContain(
       "export const DynamicRoute = blogsRoute.route('/:slug');"
     );
-    await waitFor(() => fixtureExists(dir, '.airstack/manifest/blogs/index.ts'));
-    await waitFor(() => readManifest(dir, 'blogs/index.ts').includes('/blogs/:slug'));
+    expect(readManifest(dir, 'blogs/index.ts')).toContain('/blogs/:slug');
   });
 
-  // The suite runs many chokidar watchers in parallel; under load the file
-  // change event can be delayed well past the ~350ms this takes in isolation.
-  // The waitFors below govern delivery — this just keeps vitest's own timeout
-  // from preempting them.
-  it('the user adds a docs page and changes its metadata', async () => {
+  it('the user adds a docs page and changes its metadata', () => {
     fs.mkdirSync(fixturePath(dir, 'pages/docs'), { recursive: true });
     fs.writeFileSync(fixturePath(dir, 'pages/docs/page.mdx'), '---\ntitle: "Docs"\n---\n# Docs\n');
-    await waitFor(() => fixtureExists(dir, '.airstack/metadata/docs/page.ts'));
+    emit('addDir', 'pages/docs');
+    emit('add', 'pages/docs/page.mdx');
+
     expect(readMetadata(dir, 'docs/page.ts')).toContain('"title": "Docs"');
 
-    // A real user pauses between creating a file and editing it; this also gives
-    // chokidar time to establish the watch on the new folder before the change.
-    await settle(300);
+    // A real user pauses between creating a file and editing it; the stub
+    // watcher establishes the folder watch synchronously on addDir, so the
+    // change can follow immediately — no real-timer pause needed.
     fs.writeFileSync(fixturePath(dir, 'pages/docs/page.mdx'), '---\ntitle: "Updated Docs"\n---\n# Docs\n');
-    await waitFor(() => readMetadata(dir, 'docs/page.ts').includes('Updated Docs'));
-  }, 30_000);
+    emit('change', 'pages/docs/page.mdx');
 
-  it('the user updates the blogs page content — the write is preserved', async () => {
+    expect(readMetadata(dir, 'docs/page.ts')).toContain('Updated Docs');
+  });
+
+  it('the user updates the blogs page content — the write is preserved', () => {
     fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '// final draft\n');
-    await settle(250);
+    emit('change', 'pages/blogs/page.tsx');
 
     expect(readFixture(dir, 'pages/blogs/page.tsx')).toBe('// final draft\n');
     expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('blogsRoute');
   });
 
-  it('the user adds a layout to the about page — the index route appears', async () => {
+  it('the user adds a layout to the about page — the index route appears', () => {
     fs.writeFileSync(fixturePath(dir, 'pages/about/layout.tsx'), '// layout\n');
+    emit('add', 'pages/about/layout.tsx');
 
-    await waitFor(() => readFixture(dir, 'pages/about/route.ts').includes('aboutIndexRoute'));
-    await waitFor(() => readManifest(dir).includes('route: aboutIndexRoute'));
+    expect(readFixture(dir, 'pages/about/route.ts')).toContain('aboutIndexRoute');
+    expect(readManifest(dir)).toContain('route: aboutIndexRoute');
   });
 
-  it('the user removes the layout — the index route disappears, files stay', async () => {
+  it('the user removes the layout — the index route disappears, files stay', () => {
     removeFixture(dir, 'pages/about/layout.tsx');
+    emit('unlink', 'pages/about/layout.tsx');
 
-    await waitFor(() => !readFixture(dir, 'pages/about/route.ts').includes('aboutIndexRoute'));
+    expect(readFixture(dir, 'pages/about/route.ts')).not.toContain('aboutIndexRoute');
     expect(readManifest(dir)).toContain('route: aboutRoute },');
     expect(readFixture(dir, 'pages/about/page.tsx')).toBe('// about\n');
   });

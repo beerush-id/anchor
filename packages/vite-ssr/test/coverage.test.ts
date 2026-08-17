@@ -623,19 +623,19 @@ describe('coverage tests for unreached branches', () => {
       app.rootFolder.children.get('guide')?.handleFileRemoved('page.mdx');
 
       expect(fixtureExists(dir, '.airstack/metadata/guide/page.ts')).toBe(false);
-      expect(readMetadata(dir, 'index.ts')).not.toContain('guideMeta');
+      expect(fixtureExists(dir, '.airstack/metadata/guide/index.ts')).toBe(false);
     });
 
-    it('drops the parent spread when an mdx folder is removed', () => {
+    it('removes a metadata folder when an mdx folder is removed', () => {
       dir = makeFixture({ 'pages/blogs/[slug]/test.mdx': '---\ntitle: "Post"\n---\n' });
       app = makeApp(dir);
 
-      expect(readMetadata(dir, 'index.ts')).toContain('blogsMeta');
+      expect(fixtureExists(dir, '.airstack/metadata/blogs/[slug]/test.ts')).toBe(true);
 
       removeFixture(dir, 'pages/blogs');
       app.rootFolder.handleChildRemoved('blogs');
 
-      expect(readMetadata(dir, 'index.ts')).not.toContain('blogsMeta');
+      expect(fixtureExists(dir, '.airstack/metadata/blogs')).toBe(false);
     });
 
     it('removes manifest entries when a folder is removed', () => {
