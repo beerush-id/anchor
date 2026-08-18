@@ -20,7 +20,7 @@ export const Layout = setup<LayoutProps>((props) => {
 
   return render(
     () => (
-      <main {...$restProps} className={classx('air-mdx', props.className)}>
+      <main {...$restProps} className={classx('air-mdx air-mdx-container', props.className)}>
         <div className="air-mdx-layout">
           <aside className="air-mdx-aside-left" aria-label="Documentation navigation">
             <Show when={() => props.nav}>{(nav) => <Sidebar nav={nav} />}</Show>

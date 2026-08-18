@@ -1,6 +1,5 @@
 import type { HTMLAttributes, KeyboardEvent, ReactElement, ReactNode } from 'react';
 import { type AnyType, classx, For, mutable, render, Show, setup, uIndex } from '../index.js';
-import { CodeCopy } from './CodeCopy.js';
 
 const CODE_GROUP_INDEX = Symbol.for('air.mdx.codegroup');
 
@@ -44,11 +43,6 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     }
   };
 
-  const getActiveText = (): string => {
-    const activeNode = nodes[state.activeIndex];
-    return activeNode ? extractText(activeNode) : '';
-  };
-
   return render(
     () => (
       <div {...$restProps} className={classx('air-mdx-codegroup', props.className)}>
@@ -78,7 +72,6 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
           aria-labelledby={`tab-${groupId}-${state.activeIndex}`}
           className="air-mdx-codegroup-content"
         >
-          <CodeCopy getText={getActiveText} />
           <For each={() => nodes}>{(node, i) => <Show when={() => state.activeIndex === i}>{() => node}</Show>}</For>
         </div>
       </div>

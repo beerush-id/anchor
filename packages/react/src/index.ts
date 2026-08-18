@@ -1,4 +1,4 @@
-export const AIR_REACT_CLIENT_INIT = 'preprocessed';
+export const __AIR_REACT_CLIENT_INIT__ = 'preprocessed';
 
 export type {
   AnchorSettings,

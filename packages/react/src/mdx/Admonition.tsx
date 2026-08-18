@@ -1,9 +1,9 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { classx, template } from '../index.js';
 
-export type AdmonitionType = 'note' | 'tip' | 'info' | 'warning' | 'danger' | 'important' | 'caution';
+export type AdmonitionType = 'note' | 'tip' | 'info' | 'warning' | 'danger' | 'important' | 'caution' | 'details';
 
-export interface AdmonitionProps extends HTMLAttributes<HTMLDivElement> {
+export interface AdmonitionProps extends HTMLAttributes<HTMLDivElement | HTMLDetailsElement> {
   type?: AdmonitionType;
   title?: string;
   icon?: ReactNode;
@@ -15,6 +15,24 @@ export const Admonition = template<AdmonitionProps>(
     const isAlert = type === 'warning' || type === 'danger' || type === 'caution';
     const heading = title ?? defaultTitles[type];
     const visualIcon = icon ?? defaultIcons[type];
+
+    if (type === 'details') {
+      return (
+        <details {...restProps} className={classx('admonition', type, className)}>
+          {(heading || visualIcon) && (
+            <summary className="admonition-header">
+              {visualIcon && (
+                <span className="admonition-icon" aria-hidden="true">
+                  {visualIcon}
+                </span>
+              )}
+              {heading && <span className="admonition-title">{heading}</span>}
+            </summary>
+          )}
+          <div className="admonition-content">{children}</div>
+        </details>
+      );
+    }
 
     return (
       <div role={role ?? (isAlert ? 'alert' : 'note')} {...restProps} className={classx('admonition', type, className)}>
@@ -78,6 +96,7 @@ const defaultTitles: Record<AdmonitionType, string> = {
   danger: 'Danger',
   important: 'Important',
   caution: 'Caution',
+  details: 'Details',
 };
 
 const defaultIcons: Record<AdmonitionType, ReactNode> = {
@@ -114,6 +133,11 @@ const defaultIcons: Record<AdmonitionType, ReactNode> = {
   caution: (
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
       <path d="M508.5-291.5Q520-303 520-320t-11.5-28.5Q497-360 480-360t-28.5 11.5Q440-337 440-320t11.5 28.5Q463-280 480-280t28.5-11.5Zm0-160Q520-463 520-480v-160q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v160q0 17 11.5 28.5T480-440q17 0 28.5-11.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" />
+    </svg>
+  ),
+  details: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="m508-528 98-98q10-10 5-22t-19-12H368q-14 0-19 12t5 22l98 98q12 12 28 12t28-12Zm252-312q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560ZM200-320v120h560v-120H200Zm560-80v-360H200v360h560Zm-560 80v120-120Z" />
     </svg>
   ),
 };
