@@ -179,8 +179,13 @@ function toSearchDocument(file: string, meta: Record<string, unknown>, content: 
   const rel = path.relative(searchPagesDir, file).replace(/\\/g, '/');
 
   let url = rel.replace(/\.(mdx|md)$/, '');
-  if (url.endsWith('/page') || url === 'page') url = url.replace(/\/?page$/, '') || '/';
-  else url = `/${url}`;
+  url = url.replace(/\.page$/, '');
+
+  if (url === 'page') {
+    url = '/';
+  } else {
+    url = `/${url.replace(/\/page$/, '')}`;
+  }
 
   const clean = content
     .replace(/^\s*---\r?\n[\s\S]*?\r?\n---/, '')
@@ -222,7 +227,11 @@ function pickFrontmatter(meta: Record<string, unknown>, keys: string[]): string 
   return keys
     .map((key) => {
       const value = meta[key];
-      if (Array.isArray(value)) return value.filter((v) => v != null).map(String).join(' ');
+      if (Array.isArray(value))
+        return value
+          .filter((v) => v != null)
+          .map(String)
+          .join(' ');
       if (value == null) return '';
       return String(value);
     })
