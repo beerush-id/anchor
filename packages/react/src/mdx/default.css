@@ -1,20 +1,11 @@
-/* ═══════════════════════════════════════════════════════
-   Scope: all MDX CSS lives here.
-   Add `air-mdx` to any element to access variables and
-   typography. Add `air-mdx-container` for the full doc
-   layout (sidebar + content + TOC).
-   ═══════════════════════════════════════════════════════ */
 .air-mdx {
-  color-scheme: light dark;
-
-  /* Custom Properties */
   --air-mdx-bg: transparent;
   --air-mdx-bg-inner: light-dark(#ffffff, #1b1b1f);
   --air-mdx-bg-soft: light-dark(#f1f3f5, #27272a);
   --air-mdx-text: light-dark(#111827, #f9fafb);
   --air-mdx-text-2: light-dark(#374151, #d1d5db);
   --air-mdx-border: var(--color-border, light-dark(#ccd0da, #313244));
-  --air-mdx-primary: light-dark(#c25200, #ffb347);
+  --air-mdx-primary: var(--color-primary, light-dark(#0051ff, #ffb347));
   --air-mdx-primary-alt: color-mix(in srgb, var(--air-mdx-primary) 10%, transparent);
   --air-mdx-primary-soft: color-mix(in srgb, var(--air-mdx-primary) 5%, transparent);
   --air-mdx-on-primary: light-dark(#ffffff, #111827);
@@ -234,7 +225,6 @@
     border: 1px solid var(--air-mdx-primary-soft);
     font-family: var(--air-mdx-font-mono), monospace;
     font-size: 0.85em;
-    font-weight: 500;
   }
 
   /* Tables */
@@ -666,7 +656,7 @@
       margin-block-start: 0.5rem;
     }
 
-    &.details {
+    &:is(details) {
       gap: 0;
 
       .admonition-header {
@@ -783,6 +773,14 @@
     color: var(--air-mdx-danger);
   }
 
+  /* Interactive **/
+  .air-mdx-interactive-source,
+  .air-mdx-interactive-render {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
   /* Badges */
   .air-mdx-badge {
     display: inline-flex;
@@ -873,17 +871,17 @@
       color: var(--air-mdx-primary);
     }
   }
-}
 
-/* Accessibility screen-reader only utility */
-.sr-only {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  /* Accessibility screen-reader only utility */
+  .sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }

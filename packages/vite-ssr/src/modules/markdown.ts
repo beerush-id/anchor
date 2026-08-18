@@ -465,8 +465,8 @@ export function airMdxRemark(module?: MdxModule) {
 
           data.hName = 'AirAdmonition';
           data.hProperties = {
-            ...node.properties,
             title,
+            ...node.attributes,
             type: node.name,
           };
         } else if (node.name === 'badge') {
@@ -484,35 +484,45 @@ export function airMdxRemark(module?: MdxModule) {
 
           data.hName = 'AirBadge';
           data.hProperties = {
-            ...node.properties,
             variant,
+            ...node.attributes,
             children: text || node.attributes?.text,
           };
         } else {
           data.hName = 'div';
           data.hProperties = {
-            ...node.properties,
-            className: [node.name, (node.properties as AnyType)?.className].filter(Boolean).join(' '),
+            ...node.attributes,
+            class: [node.name, (node.attributes as AnyType)?.class].filter(Boolean).join(' '),
           };
         }
 
         if (node.name === 'interactive') {
-          for (const code of node.children!) {
-            if (!['js', 'ts', 'tsx', 'jsx'].includes(code.lang as string)) {
-              // code.type = 'paragraph';
-              // code.value = '';
+          const source: MarkdownNode[] = [];
+          const render: MarkdownNode[] = [];
+
+          for (const child of node.children!) {
+            if (child.type === 'mdxJsxFlowElement') {
+              render.push(child);
               continue;
             }
 
-            if (code.value && module) {
-              const { head, body } = stripImports(code.value);
+            source.push(child);
+
+            if (!['js', 'ts', 'tsx', 'jsx'].includes(child.lang as string)) {
+              continue;
+            }
+
+            if (child.value) {
+              if (!module) continue;
+
+              const { head, body } = stripImports(child.value);
 
               if (head) {
                 module.globals.push(head);
               }
 
               if (body) {
-                if (code.meta?.includes('module')) {
+                if (child.meta?.includes('module')) {
                   module.globals.push(body);
                 } else {
                   module.locals.push(body);
@@ -522,21 +532,40 @@ export function airMdxRemark(module?: MdxModule) {
           }
 
           if (node.attributes?.rendered !== 'false') {
-            const firstChild = node.children?.[0] as AnyType;
-            let title: string | undefined = node.attributes?.title ?? 'Demo';
+            const firstChild = source[0] as AnyType;
+            let title: string | undefined = node.attributes?.title;
 
             if (firstChild?.data?.directiveLabel) {
               title = getLeafNode(firstChild)?.value ?? title;
-              node.children = node.children!.slice(1);
+              source.shift();
             }
 
             data.hName = 'AirAdmonition';
             data.hProperties = {
-              ...node.properties,
               title,
-              type: 'details',
               open: true,
+              ...node.attributes,
+              type: 'interactive',
             };
+
+            node.children = [
+              {
+                type: 'paragraph',
+                data: {
+                  hName: 'div',
+                  hProperties: { class: 'air-mdx-interactive-source' },
+                },
+                children: source,
+              },
+              {
+                type: 'paragraph',
+                data: {
+                  hName: 'div',
+                  hProperties: { class: 'air-mdx-interactive-render' },
+                },
+                children: render,
+              },
+            ];
           } else {
             node.type = 'paragraph';
             node.value = '';
