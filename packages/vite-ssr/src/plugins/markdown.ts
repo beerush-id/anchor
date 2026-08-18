@@ -4,7 +4,7 @@ import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV } from '../modules/env.js';
-import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxEntryWrapper, mdxFile } from '../modules/markdown.js';
+import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile, type MdxModuleOptions } from '../modules/markdown.js';
 
 const log = taggedLogger('air-markdown');
 
@@ -23,13 +23,19 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
 
   const isEntryFile = (id: string) => {
     const [file] = id.split('?');
-    const { files } = AIR_ENV;
+    const { page, pageMdx, layout, layoutMdx } = AIR_ENV.files;
 
-    if (!file.startsWith(pagesRoot + path.sep)) return false;
+    if (!isMdxFile(file) || !file.startsWith(pagesRoot + path.sep)) return false;
+    return [page, pageMdx, layout, layoutMdx].some((entry) => file.endsWith(entry));
+  };
 
-    return [files.page, files.pageMdx, files.layout, files.layoutMdx].some(
-      (f) => file.endsWith(f) && $options.include.some((ext) => f.endsWith(ext))
-    );
+  const isPlainMdx = (id: string) => {
+    return isMdxFile(id) && !isEntryFile(id);
+  };
+
+  const isMdxFile = (id: string) => {
+    const idExt = path.extname(id);
+    return $options.include.some((ext) => ext === idExt);
   };
 
   return [
@@ -41,11 +47,56 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         pagesRoot = path.resolve(config.root, AIR_ENV.pagesDir);
       },
       transform(code, id) {
-        if (!isEntryFile(id)) return;
+        if (!isMdxFile(id)) return;
         if (!CHUNK_ENTRIES.has(id)) {
           CHUNK_ENTRIES.set(id, { id, code });
           log.verbose(color.event('Registered'), color.file(relFile(id)), 'entry');
         }
+      },
+    } as Plugin,
+    {
+      name: 'air-pages:mdx:entry',
+      enforce: 'pre',
+      transform(code, id) {
+        if (isChunkFile(id) || !isMdxFile(id) || !isChunkable(id, code)) return;
+
+        const chunk = CHUNK_ENTRIES.get(id)!;
+        const baseName = path.basename(id);
+        const chunkName = `./${baseName}${CHUNK_ALIAS}`;
+        const chunkFile = path.join(path.dirname(id), `./${baseName}${CHUNK_SUFFIX}`);
+
+        if (isPlainMdx(id)) {
+          chunk.entry = [
+            `import AirMdxPage from '${chunkName}';`,
+            `export * from '${chunkName}';`,
+            'if (import.meta.hot)' + ' import.meta.hot.accept();',
+            'export default AirMdxPage;',
+          ].join('\n');
+          chunk.chunk = chunkFile;
+
+          CHUNK_ENTRIES.set(chunkFile, chunk);
+          log.verbose(color.event('Created standalone chunk for'), color.file(relFile(id)));
+          return chunk.entry;
+        }
+
+        const route = AIR_ENV.routes.resolve(id);
+        if (!route) {
+          const entry = path.relative(pagesRoot, id.split('?')[0]);
+          throw new Error(`[air-pages] No route resolution for markdown entry: ${entry}`);
+        }
+
+        const routeName = route.exportName;
+
+        log.verbose(color.event('Resolved'), 'route for', color.file(relFile(id)));
+        log.verbose(color.event('Wired'), color.file(relFile(id)), 'to', routeName);
+
+        const { framework, files } = AIR_ENV;
+
+        chunk.entry = mdxEntryWrapper({ file: id, route, framework, files, chunkName });
+        chunk.chunk = chunkFile;
+
+        CHUNK_ENTRIES.set(chunkFile, chunk);
+        log.verbose(color.event('Created'), 'chunk for', color.file(relFile(id)));
       },
     } as Plugin,
     {
@@ -68,7 +119,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const chunk = CHUNK_ENTRIES.get(id);
 
         if (chunk?.body) {
-          log.verbose(color.event('Loaded'), 'compiled chunk for', color.file(relFile(chunk.id)));
+          log.info(color.event('Loaded'), 'compiled chunk for', color.file(relFile(chunk.id)));
           return chunk.body;
         }
 
@@ -76,49 +127,8 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         const entry = CHUNK_ENTRIES.get(src);
         const text = entry?.code ?? fs.readFileSync(src, 'utf-8');
         const { code } = await mdxFile(src, text, $options);
-        const body = [code, 'export default AirMdxPage;'].join('\n');
-        if (entry) entry.body = body;
-        return body;
-      },
-    } as Plugin,
-    {
-      name: 'air-pages:mdx:entry',
-      enforce: 'pre',
-      transform(code, id) {
-        if (isChunkFile(id)) return;
-        if (!isEntryFile(id)) return;
-        if (!isChunkable(id, code)) return;
-
-        const resolution = AIR_ENV.routes.resolve(id);
-        if (!resolution) {
-          const entry = path.relative(pagesRoot, id.split('?')[0]);
-          throw new Error(`[air-pages] No route resolution for markdown entry: ${entry}`);
-        }
-
-        const baseName = path.basename(id);
-        const routeName = resolution.exportName;
-
-        log.verbose(color.event('Resolved'), 'route for', color.file(relFile(id)));
-        log.verbose(color.event('Wired'), color.file(relFile(id)), 'to', routeName);
-
-        const chunkName = `./${baseName}${CHUNK_ALIAS}`;
-        const chunkFile = path.join(path.dirname(id), `./${baseName}${CHUNK_SUFFIX}`);
-
-        const wrapped = mdxEntryWrapper({
-          file: id,
-          resolution,
-          framework: AIR_ENV.framework,
-          files: AIR_ENV.files,
-          chunkName,
-        });
-
-        if (!wrapped) return;
-
-        const chunk = CHUNK_ENTRIES.get(id)!;
-        chunk.entry = wrapped;
-        chunk.chunk = chunkFile;
-        CHUNK_ENTRIES.set(chunkFile, chunk);
-        log.verbose(color.event('Created'), 'chunk for', color.file(relFile(id)));
+        if (entry) entry.body = code;
+        return code;
       },
     } as Plugin,
     {
@@ -135,7 +145,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         return chunk.entry ?? chunk.body;
       },
       handleHotUpdate({ file, server, modules }) {
-        if (!isEntryFile(file)) return;
+        if (!isMdxFile(file)) return;
 
         log.debug(color.event('HMR:'), color.file(relFile(file)), 'changed — recompiling');
         const entry = CHUNK_ENTRIES.get(file);

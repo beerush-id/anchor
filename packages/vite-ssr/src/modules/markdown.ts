@@ -2,6 +2,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
 import type { Node } from 'mdast';
+import { parseSync } from 'oxc-parser';
 import rehypeAutolinkHeadings, { type Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
 import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
 import rehypeSlug from 'rehype-slug';
@@ -163,14 +164,13 @@ export class MdxModule {
     this.metadata = META_STORE.resolve(id, code);
     log.verbose(color.event('Resolved'), 'frontmatter metadata');
 
-    let body = stripFrontmatter(code);
+    const body = stripFrontmatter(code);
 
     if (this.extended) {
       const compSource = `@anchorlib/${AIR_ENV.framework}/mdx`;
-      body = [
-        body,
-        `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock, Admonition as AirAdmonition, Badge as AirBadge } from '${compSource}';`,
-      ].join('\n');
+      this.globals.push(
+        `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock, Admonition as AirAdmonition, Badge as AirBadge } from '${compSource}';`
+      );
       log.verbose(color.event('Injected'), 'mdx component imports');
     }
 
@@ -182,11 +182,16 @@ export class MdxModule {
 
     const file = await compile(
       { path: id, value: body },
-      { ...options, jsx: true, mdxExtensions: include, remarkPlugins, rehypePlugins, recmaPlugins: [airRecmaPlugin] }
+      {
+        ...options,
+        jsx: true,
+        mdxExtensions: include,
+        remarkPlugins,
+        rehypePlugins,
+        recmaPlugins: [airRecmaPlugin],
+      }
     );
     log.verbose(color.event('Compiled'), 'MDX source');
-
-    const postProcessors = [...postProcesses];
 
     const [source] = file.toString().split('export default function MDXContent');
     let [head, content] = source.split('function _createMdxContent');
@@ -199,7 +204,9 @@ export class MdxModule {
     this.globals.push(`const airMdxHeadings = ${JSON.stringify(this.headings)};\n`);
     log.verbose(color.event('Split'), 'MDX content into head and body');
 
+    const postProcessors = [...postProcesses];
     if (postProcessors.length) log.verbose(color.event('Ran'), `${postProcessors.length} post-processors`);
+
     for (const handler of postProcessors) {
       try {
         await handler(this);
@@ -218,7 +225,7 @@ export class MdxModule {
   }
 
   public toString() {
-    const head = this.globals.join('\n');
+    const head = dedupeImports(this.globals.join('\n'));
     const body = this.locals.join('\n');
 
     this.output = wrapJsx(AIR_ENV.framework, head, body);
@@ -243,8 +250,37 @@ export class MdxModule {
 export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
   let hasLink = false;
 
+  const filterStatements = (statements: AnyType[]) => {
+    return statements.filter((stmt) => {
+      if (stmt.type === 'VariableDeclaration') {
+        const isComponentsDecl = stmt.declarations.some(
+          (d: AnyType) =>
+            (d.id.type === 'Identifier' && d.id.name === '_components') ||
+            (d.init?.type === 'Identifier' && d.init.name === '_components')
+        );
+        if (isComponentsDecl) return false;
+      }
+
+      if (stmt.type === 'IfStatement') {
+        const isMissingRefCheck =
+          stmt.consequent?.type === 'ExpressionStatement' &&
+          stmt.consequent.expression?.type === 'CallExpression' &&
+          stmt.consequent.expression.callee?.name === '_missingMdxReference';
+        if (isMissingRefCheck) return false;
+      }
+
+      return true;
+    });
+  };
+
   const visit = (node: AnyType) => {
     if (!node || typeof node !== 'object') return;
+
+    if (node.type === 'BlockStatement' || node.type === 'Program') {
+      if (Array.isArray(node.body)) {
+        node.body = filterStatements(node.body);
+      }
+    }
 
     if (node.type === 'JSXElement') {
       if (node.openingElement) visit(node.openingElement);
@@ -271,7 +307,7 @@ export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
       const child = node[key];
       if (Array.isArray(child)) {
         child.forEach(visit);
-      } else {
+      } else if (child && typeof child === 'object') {
         visit(child);
       }
     }
@@ -298,18 +334,13 @@ export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
  */
 export function mdxEntryWrapper(opts: {
   file: string;
-  resolution: RouteResolution;
+  route: RouteResolution;
   framework: Framework;
   files: FileMap;
   chunkName: string;
-}): string | undefined {
-  const { file, resolution, framework, files, chunkName } = opts;
-  const base = path.basename(file);
-
-  if (!base.endsWith('.mdx')) return undefined;
-  if (base === files.pageMdx && resolution.node.page === 'tsx') return undefined;
-
-  const routeName = resolution.exportName;
+}): string {
+  const { route, framework, files, chunkName } = opts;
+  const routeName = route.exportName;
   const routePath = `./${files.route}`;
 
   return [
@@ -402,7 +433,7 @@ export async function loadExtendedPlugins(module: MdxModule) {
   return { remarkPlugins, rehypePlugins };
 }
 
-const ADMONITION_TYPES = new Set(['note', 'tip', 'info', 'warning', 'danger', 'important', 'caution']);
+const ADMONITION_TYPES = new Set(['note', 'tip', 'info', 'warning', 'danger', 'important', 'caution', 'details']);
 
 /**
  * Remark plugin for an MdxModule: tags directives as admonitions, maps
@@ -465,24 +496,48 @@ export function airMdxRemark(module?: MdxModule) {
           };
         }
 
-        if (node.name === 'script') {
+        if (node.name === 'interactive') {
           for (const code of node.children!) {
             if (!['js', 'ts', 'tsx', 'jsx'].includes(code.lang as string)) {
-              code.type = 'paragraph';
-              code.value = '';
+              // code.type = 'paragraph';
+              // code.value = '';
               continue;
             }
 
             if (code.value && module) {
-              if (code.meta?.includes('module')) {
-                module.globals.push(code.value);
-              } else {
-                module.locals.push(code.value);
+              const { head, body } = stripImports(code.value);
+
+              if (head) {
+                module.globals.push(head);
+              }
+
+              if (body) {
+                if (code.meta?.includes('module')) {
+                  module.globals.push(body);
+                } else {
+                  module.locals.push(body);
+                }
               }
             }
           }
 
-          if (!('rendered' in (node.attributes ?? {}))) {
+          if (node.attributes?.rendered !== 'false') {
+            const firstChild = node.children?.[0] as AnyType;
+            let title: string | undefined = node.attributes?.title ?? 'Demo';
+
+            if (firstChild?.data?.directiveLabel) {
+              title = getLeafNode(firstChild)?.value ?? title;
+              node.children = node.children!.slice(1);
+            }
+
+            data.hName = 'AirAdmonition';
+            data.hProperties = {
+              ...node.properties,
+              title,
+              type: 'details',
+              open: true,
+            };
+          } else {
             node.type = 'paragraph';
             node.value = '';
             node.children = [];
@@ -548,7 +603,7 @@ export function airMdxRehype(module?: MdxModule) {
       }
 
       if (node.tagName === 'code' && data.meta) {
-        const [meta] = data.meta.match(/[\w\d\s\-_]+/gi) ?? [];
+        const [meta] = data.meta.match(/[\w\d\s\-_.]+/gi) ?? [];
         props['data-title'] = meta;
       }
     });
@@ -575,14 +630,202 @@ export function mdxMatcher(include: string[] = MDX_DEFAULT_OPTIONS.include) {
  *
  * @param node Root of the search.
  * @param type Node type to find (default `'text'`).
+ * @param key Node key to find the type from (default `'type'`).
  */
-export function getLeafNode(node: MarkdownNode, type = 'text'): MarkdownNode | undefined {
-  if (node.type === type) return node;
+export function getLeafNode<N = MarkdownNode>(node: N, type = 'text', key = 'type'): N | undefined {
+  const $node = node as MarkdownNode;
+  if ($node[key as 'type'] === type) return node;
 
-  if (node.children) {
-    for (const child of node.children) {
+  if ($node.children) {
+    for (const child of $node.children) {
       const result = getLeafNode(child, type);
-      if (result) return result;
+      if (result) return result as N;
     }
   }
+}
+
+/**
+ * Extracts top-level ES import statements from a code block using `oxc-parser`,
+ * returning the import statements as `head` and the remaining code as `body`.
+ */
+export function stripImports(code: string): { head: string; body: string } {
+  if (!code.includes('import')) {
+    return { head: '', body: code.trim() };
+  }
+
+  try {
+    const parsed = parseSync('snippet.tsx', code, {
+      lang: 'tsx',
+      sourceType: 'module',
+    });
+
+    if (parsed.errors.length === 0 && parsed.program.body) {
+      const imports: string[] = [];
+      const rangesToCut: Array<{ start: number; end: number }> = [];
+
+      for (const stmt of parsed.program.body as AnyType[]) {
+        if (stmt.type === 'ImportDeclaration') {
+          imports.push(code.slice(stmt.start, stmt.end).trim());
+          rangesToCut.push({ start: stmt.start, end: stmt.end });
+        }
+      }
+
+      if (rangesToCut.length > 0) {
+        let body = '';
+        let lastIndex = 0;
+        for (const range of rangesToCut) {
+          body += code.slice(lastIndex, range.start);
+          lastIndex = range.end;
+        }
+        body += code.slice(lastIndex);
+
+        return {
+          head: imports.join('\n'),
+          body: body.trim(),
+        };
+      }
+    }
+  } catch {
+    // Fall back to regex if snippet parsing fails
+  }
+
+  const importRegex = /^import\s+(?:type\s+)?[\s\S]*?from\s+['"][^'"]+['"];?|^import\s+['"][^'"]+['"];?/gm;
+  const imports: string[] = [];
+  const body = code.replace(importRegex, (match) => {
+    imports.push(match.trim());
+    return '';
+  });
+
+  return { head: imports.join('\n'), body: body.trim() };
+}
+
+/**
+ * Deduplicates ES import statements in a string of global statements using `oxc-parser`,
+ * consolidating multiple imports from the same module source.
+ */
+export function dedupeImports(head: string): string {
+  if (!head.includes('import')) {
+    return head.trim();
+  }
+
+  type ModuleImports = {
+    defaults: Set<string>;
+    namespaces: Set<string>;
+    named: Set<string>;
+    sideEffect: boolean;
+  };
+
+  const moduleMap = new Map<string, ModuleImports>();
+  let rest = head;
+
+  try {
+    const parsed = parseSync('globals.tsx', head, {
+      lang: 'tsx',
+      sourceType: 'module',
+    });
+
+    if (parsed.errors.length === 0 && parsed.program.body) {
+      const rangesToCut: Array<{ start: number; end: number }> = [];
+
+      for (const stmt of parsed.program.body as AnyType[]) {
+        if (stmt.type === 'ImportDeclaration') {
+          rangesToCut.push({ start: stmt.start, end: stmt.end });
+
+          const modPath = stmt.source?.value;
+          if (typeof modPath !== 'string') continue;
+
+          if (!moduleMap.has(modPath)) {
+            moduleMap.set(modPath, {
+              defaults: new Set(),
+              namespaces: new Set(),
+              named: new Set(),
+              sideEffect: false,
+            });
+          }
+
+          const entry = moduleMap.get(modPath)!;
+
+          if (!stmt.specifiers || stmt.specifiers.length === 0) {
+            entry.sideEffect = true;
+            continue;
+          }
+
+          for (const spec of stmt.specifiers) {
+            if (spec.type === 'ImportDefaultSpecifier') {
+              if (spec.local?.name) {
+                entry.defaults.add(spec.local.name);
+              }
+            } else if (spec.type === 'ImportNamespaceSpecifier') {
+              if (spec.local?.name) {
+                entry.namespaces.add(`* as ${spec.local.name}`);
+              }
+            } else if (spec.type === 'ImportSpecifier') {
+              const importedName = spec.imported?.name ?? spec.imported?.value;
+              const localName = spec.local?.name;
+              const isType = spec.importKind === 'type' || stmt.importKind === 'type';
+              const typePrefix = isType ? 'type ' : '';
+
+              if (importedName && localName && importedName !== localName) {
+                entry.named.add(`${typePrefix}${importedName} as ${localName}`);
+              } else if (localName) {
+                entry.named.add(`${typePrefix}${localName}`);
+              }
+            }
+          }
+        }
+      }
+
+      if (rangesToCut.length > 0) {
+        let text = '';
+        let lastIndex = 0;
+        for (const range of rangesToCut) {
+          text += head.slice(lastIndex, range.start);
+          lastIndex = range.end;
+        }
+        text += head.slice(lastIndex);
+        rest = text;
+      }
+    }
+  } catch {
+    // Ignore parse errors and retain head as-is
+  }
+
+  if (moduleMap.size === 0) {
+    return head.trim();
+  }
+
+  const dedupedImports: string[] = [];
+
+  for (const [modPath, entry] of moduleMap.entries()) {
+    if (entry.sideEffect && entry.defaults.size === 0 && entry.namespaces.size === 0 && entry.named.size === 0) {
+      dedupedImports.push(`import '${modPath}';`);
+      continue;
+    }
+
+    const parts: string[] = [];
+
+    if (entry.defaults.size > 0) {
+      parts.push([...entry.defaults][0]);
+    }
+
+    if (entry.namespaces.size > 0) {
+      parts.push([...entry.namespaces][0]);
+    }
+
+    if (entry.named.size > 0) {
+      parts.push(`{ ${[...entry.named].join(', ')} }`);
+    }
+
+    if (parts.length > 0) {
+      dedupedImports.push(`import ${parts.join(', ')} from '${modPath}';`);
+    }
+  }
+
+  const cleanRest = rest
+    .split('\n')
+    .filter((line, i, arr) => line.trim() !== '' || (i > 0 && arr[i - 1].trim() !== ''))
+    .join('\n')
+    .trim();
+
+  return [...dedupedImports, cleanRest].filter(Boolean).join('\n');
 }

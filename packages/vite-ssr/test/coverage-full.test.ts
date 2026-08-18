@@ -691,7 +691,7 @@ describe('mdx attach & metadata names — edge cases', () => {
     if (!resolution) return undefined;
     return mdxEntryWrapper({
       file: fixturePath(dir, file),
-      resolution,
+      route: resolution,
       framework,
       files: DEFAULT_FILE_MAP,
       chunkName: './page.mdx?chunk',

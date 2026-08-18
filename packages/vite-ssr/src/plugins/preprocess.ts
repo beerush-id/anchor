@@ -29,11 +29,11 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
       transform(code) {
         if (AIR_ENV.framework !== 'react') return;
         if (this.environment?.name !== 'client') return;
-        if (!code.includes('AIR_REACT_CLIENT_INIT')) return;
+        if (!code.includes('__AIR_REACT_CLIENT_INIT__')) return;
 
         log.verbose(color.event('Injected client import'));
         const magic = new MagicString(code);
-        magic.prepend('import "@anchorlib/react/client";\n');
+        magic.prepend('import "@anchorlib/react/client";');
 
         return { code: magic.toString(), map: magic.generateMap({ hires: true }) };
       },

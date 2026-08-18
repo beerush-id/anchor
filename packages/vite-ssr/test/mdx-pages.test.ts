@@ -11,7 +11,7 @@ async function attach(dir: string, file: string, framework: 'react' | 'solid' = 
   const wrapper = resolution
     ? mdxEntryWrapper({
         file: fixturePath(dir, file),
-        resolution,
+        route: resolution,
         framework,
         files: DEFAULT_FILE_MAP,
         chunkName: './page.mdx?chunk',

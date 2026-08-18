@@ -3,15 +3,15 @@ import type { Framework } from '../modules/env.js';
 export function wrapJsx(framework: Framework, head: string, body: string): string {
   if (framework === 'react') {
     return `
-import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, render as __airRender } from '@anchorlib/react';
+import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@anchorlib/react';
 
 ${head}
 
-export function AirMdxPage({ state: $state, context: $context, children: $children }) {
+export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
   const __airMdxCtx = __airGetCtx('mdx-context');
   if (__airMdxCtx) {
     Object.assign(__airMdxCtx, {
-      url: $context.url,
+      url: $context?.url,
       meta: airMdxMeta,
       headings: airMdxHeadings,
     });
@@ -19,12 +19,12 @@ export function AirMdxPage({ state: $state, context: $context, children: $childr
 
 ${body}
 
-  return __airRender(() => (
+  return (
     <>
       <AirHtmlHead meta={airMdxMeta} />
       <AirMdxContent />
     </>
-  ), 'AirMdxPage');
+  );
 }
     `;
   }
@@ -35,7 +35,7 @@ import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from 
 
 ${head}
 
-export function AirMdxPage({ state: $state, context: $context, children: $children }) {
+export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
   const __airMdxCtx = __airGetCtx('mdx-context');
   if (__airMdxCtx) {
     Object.assign(__airMdxCtx, {

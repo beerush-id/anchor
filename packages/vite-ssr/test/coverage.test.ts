@@ -25,7 +25,7 @@ import {
   removeFixture,
   writeFixture,
 } from './fixture.js';
-import { makeApp, readManifest, readMetadata } from './make-sync.js';
+import { makeApp, readManifest } from './make-sync.js';
 
 describe('coverage tests for unreached branches', () => {
   let dir = '';
@@ -430,7 +430,7 @@ describe('coverage tests for unreached branches', () => {
       const resolution = AIR_ENV.routes.resolve(fixturePath(dir, 'pages/docs/page.mdx'))!;
       const wrapper = mdxEntryWrapper({
         file: fixturePath(dir, 'pages/docs/page.mdx'),
-        resolution,
+        route: resolution,
         framework: 'react',
         files: DEFAULT_FILE_MAP,
         chunkName: './page.mdx?chunk',

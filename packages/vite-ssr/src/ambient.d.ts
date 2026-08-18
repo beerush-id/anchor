@@ -52,3 +52,10 @@ declare module 'virtual:air/routes' {
   const modules: Record<string, unknown>;
   export default modules;
 }
+
+declare module '*.mdx' {
+  import type { ComponentType } from 'react';
+
+  const Component: ComponentType<Record<string, unknown>>;
+  export default Component;
+}
