@@ -27,16 +27,16 @@ export function createRenderer(
   defaultOptions?: SSROptions & Omit<RouterOptions, 'router'>
 ): SSRRenderer {
   const renderer = ((options: SSRRenderOptions) => {
-    const mergedOptions = options.options ?? defaultOptions;
+    const mergedOptions = { ...defaultOptions, ...options } as SSRRenderOptions;
 
     if (options.isolated) {
       return ssrRenderToString({
         router,
         renderView,
-        url: options.url,
-        controller: options.controller,
-        options: mergedOptions,
-        hydrated: options.hydrated,
+        url: mergedOptions.url,
+        controller: mergedOptions.controller,
+        options: mergedOptions as SSROptions,
+        hydrated: mergedOptions.hydrated,
       }) as Promise<SSROutput>;
     }
 
@@ -54,10 +54,10 @@ export function createRenderer(
         const result = await ssrRenderToString({
           router,
           renderView,
-          url: options.url,
-          controller: options.controller,
-          options: mergedOptions,
-          hydrated: options.hydrated,
+          url: mergedOptions.url,
+          controller: mergedOptions.controller,
+          options: mergedOptions as SSROptions,
+          hydrated: mergedOptions.hydrated,
         });
 
         cookies = jar.encode();
@@ -75,6 +75,7 @@ export function createRenderer(
 
 export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): Promise<Omit<SSROutput, 'cookies'>> {
   const { router, renderView, url, controller, options, hydrated = true } = renderOptions;
+  const { scripts = [] } = renderOptions.options ?? {};
 
   if (options?.sitemap !== false && url.endsWith('sitemap.xml')) {
     const sitemapConfig = typeof options?.sitemap === 'object' ? options.sitemap : {};
@@ -123,6 +124,7 @@ export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): 
       head = result.head;
 
       if (!noscript) head += `\n${script}`;
+      head = [head, ...scripts].join('\n');
     } catch (error) {
       if (error instanceof Redirect) {
         status = 302;

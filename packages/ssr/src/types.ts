@@ -82,6 +82,7 @@ export type SSROptions = {
   template?: string;
   headTag?: string;
   bodyTag?: string;
+  scripts?: string[];
   timeout?: number;
   cache?: {
     assets?: CacheControl;
