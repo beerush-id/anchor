@@ -87,7 +87,7 @@ function resolveStaticMetadata(staticOpt: StaticOption, url: URL, fallbackCache?
 
 function resolveStaticPath(cacheDir: string, pathname: string): string {
   const cleanPath = pathname === '/' ? '/index' : pathname.replace(/\/$/, '');
-  const ext = cleanPath.endsWith('.html') ? '' : '.html';
+  const ext = cleanPath.endsWith('.html') ? '' : '/index.html';
   return `${cacheDir}${cleanPath}${ext}`;
 }
 
