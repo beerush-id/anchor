@@ -471,13 +471,17 @@ function derivedFn<T>(derive: () => T): DerivedRef<T> {
 }
 
 derivedFn.as = <T extends object, A extends AnyType[]>(factory: (...args: A) => T, ...args: A) => {
-  const ref = derived(() => factory(...args));
-
-  return new Proxy(ref, {
-    get: (_target, property) => {
-      return ref.value[property as keyof T];
-    },
-  }) as T;
+  const state = mutable({}, { recursive: false });
+  const observer = createObserver(() => {
+    assign();
+  });
+  const assign = () => {
+    observer.run(() => {
+      anchor.assign(state, factory(...args), true);
+    });
+  };
+  assign();
+  return state as T;
 };
 
 export const derived = derivedFn as DeriveFactory;

@@ -39,7 +39,7 @@ if (!bindingInitialized && isBrowser()) {
         // Create an Anchor observer that will trigger the Svelte update when changes occur
         const observer = createObserver(
           () => {
-            observer.reset();
+            // observer.reset();
             update();
           },
           undefined,

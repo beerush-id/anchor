@@ -16,6 +16,7 @@ import { BROADCASTER_REGISTRY, META_REGISTRY, STATE_BUSY_LIST, STATE_REGISTRY } 
  * @template P - The type of the source partial object
  * @param {T} target - The target state object to be updated
  * @param {P} source - The partial object containing the new values
+ * @param replace - If true, replaces existing keys in the target with the source values
  * @throws {Error} If the target is not an assignable state or if the source is not an object-like value
  */
 export const assign = <T extends Assignable, P extends AssignablePart<T>>(target: T, source: P, replace?: boolean) => {

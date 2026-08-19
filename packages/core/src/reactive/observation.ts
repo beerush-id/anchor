@@ -43,7 +43,7 @@ function effectFn<T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscri
   const observer = createObserver(
     (event) => {
       cleanup?.();
-      observer.reset();
+      // observer.reset();
 
       runEffect(event);
     },
@@ -98,7 +98,7 @@ function asyncEffectFn<T>(fn: AsyncEffectHandler<T>, displayName?: string): Stat
   const observer = createObserver(
     (event) => {
       cleanup?.();
-      observer.reset();
+      // observer.reset();
 
       runEffect(event).catch(handleError);
     },
@@ -338,6 +338,7 @@ export function createObserver(
       return;
     }
 
+    reset();
     onChange(event);
   };
 
@@ -352,7 +353,14 @@ export function createObserver(
     },
     states,
     destroy,
-    reset,
+    reset: () => {
+      const error = new Error('Deprecated API usage detected.');
+      captureStack.warning.external(
+        'Deprecated API usage detected.',
+        'The "obserer.reset()" method is deprecated in favor of automatic cleanup.',
+        error
+      );
+    },
     track,
     assign,
     onChange: propagate,

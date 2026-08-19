@@ -46,7 +46,7 @@ export function query<T extends Linkable, E extends Error = Error>(
   let activePromise: Promise<T | undefined> | undefined;
 
   const observer = createObserver(() => {
-    observer.reset();
+    // observer.reset();
     start();
   });
 

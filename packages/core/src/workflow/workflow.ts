@@ -242,7 +242,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
 
     if (isBrowser()) {
       const observer = createObserver(() => {
-        observer.reset();
+        // observer.reset();
         dispatch();
       });
 

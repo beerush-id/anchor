@@ -58,7 +58,7 @@ if (!bindingInitialized) {
       const [version, setVersion] = createSignal(0);
       const observer = createObserver(
         () => {
-          observer.reset();
+          // observer.reset();
           setVersion(version() + 1);
         },
         undefined,
