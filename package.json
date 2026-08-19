@@ -61,7 +61,6 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "kits/*",
     "irpclib/*",
     "demos/*"
   ],
