@@ -604,18 +604,15 @@ export class Router<Output = any> {
 
     const { segments } = match;
 
-    for (const segment of segments) {
-      storage.context.attach(segment.store);
-    }
-
     // Authenticate before resolving providers.
-    for (const { route, store } of segments) {
-      const blocker = await route.authenticate(store as RouterContext<None, None, TRec>);
-      if (blocker instanceof Error || blocker instanceof Redirect) return;
-    }
+    const auths = await Promise.all(
+      segments.map(({ route }) => route.authenticate(storage.context as RouterContext<None, None, TRec>))
+    );
+    if (auths.some((r) => r instanceof Error || r instanceof Redirect)) return;
 
     // Resolve all providers.
     for (const { route, store } of segments) {
+      await route.ensureRenderer();
       await route.resolve(store as RouteContext<None, None, TRec>);
     }
   }

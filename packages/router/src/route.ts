@@ -605,7 +605,7 @@ export class Route<
           const observer = createObserver(() => {
             this.router.start(1);
 
-            observer.reset();
+            // observer.reset();
             authenticator();
           });
 
@@ -666,6 +666,7 @@ export class Route<
     hydration?: boolean,
     controller?: AbortController
   ): Promise<Data | GuardBlocker> {
+    void this.ensureRenderer();
     const authenticated = await this.authenticate(context);
     if (authenticated !== true) return authenticated;
     return (await this.resolve(context as RouteContext<TRec, TRec, TRec>, hydration, controller)) as Data;
@@ -714,7 +715,7 @@ export class Route<
           if (!providerObservers.has(handler)) {
             const observer = createObserver(() => {
               this.router.start(1);
-              observer.reset();
+              // observer.reset();
               resolver();
             });
 
@@ -832,7 +833,12 @@ export class Route<
   ): Promise<void> {
     const { state } = this.preActivate(context);
 
+    this.router.start();
+    this.router.progress(0.5);
+
     await this.ensureRenderer();
+
+    this.router.progress(0.5);
 
     // Preload data if preload is enabled.
     if (resolve) {
@@ -955,15 +961,24 @@ export class Route<
     }
   }
 
-  private async ensureRenderer(force?: boolean) {
+  private renderLoaderQueue: AnyType | undefined;
+
+  public async ensureRenderer(force?: boolean): Promise<void> {
     if (typeof this.loadRenderer !== 'function') return;
-    /* v8 ignore next */
     if (this.rendererState.value && !force) return;
 
+    if (this.renderLoaderQueue) {
+      await this.renderLoaderQueue;
+      return;
+    }
+
     try {
-      const renderer = await this.loadRenderer();
+      this.renderLoaderQueue = this.loadRenderer();
+      const renderer = await this.renderLoaderQueue;
       this.render(renderer as AnyType);
+
       delete this.loadRenderer;
+      delete this.renderLoaderQueue;
     } catch (error) {
       const { state } = this.storage;
       state.status = ROUTE_STATUS.ERROR;
