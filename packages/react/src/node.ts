@@ -29,7 +29,7 @@ export function nodeRef<E extends HTMLElement, P extends HTMLAttributes<E> = HTM
   let prevProps: Record<string, unknown> = {};
 
   const observer = createObserver(() => {
-    observer.reset();
+    // observer.reset();
     update();
   });
   observer.name = `Attribute(${displayName ?? 'Anonymous'})`;

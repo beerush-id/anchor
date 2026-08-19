@@ -1,5 +1,5 @@
-import type { HTMLAttributes, MouseEvent } from 'react';
-import { $inline, classx, derived, For, isBrowser, mutable, onCleanup, render, setup } from '../index.js';
+import type { HTMLAttributes } from 'react';
+import { classx, derived, For, isBrowser, Link, mutable, onCleanup, render, Snippet, setup } from '../index.js';
 import { mdxCtx } from './context.js';
 
 export interface TableOfContentProps extends HTMLAttributes<HTMLDivElement> {
@@ -38,17 +38,6 @@ export const TableOfContent = setup<TableOfContentProps>((props) => {
     }
   };
 
-  const scrollTo = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    const target = document.getElementById(id);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
-      history.replaceState(null, '', `${location.pathname}${location.search}#${id}`);
-    }
-  };
-
   return render(() => {
     if (!ctx?.headings?.length) return null;
 
@@ -59,20 +48,21 @@ export const TableOfContent = setup<TableOfContentProps>((props) => {
           <For each={() => ctx.headings!}>
             {(h) => {
               const active = derived(() => activeId.value === h.id);
-              return $inline(() => (
-                <a
-                  href={`#${h.id}`}
-                  ref={(el) => observe(el, h.id)}
-                  style={{ paddingInlineStart: `${Math.max(0, h.depth - 2) * 0.75}rem` }}
-                  className={classx('air-mdx-toc-link', { active: active.value })}
-                  aria-current={active.value ? 'true' : undefined}
-                  onClick={(e) => {
-                    scrollTo(e, h.id);
-                  }}
-                >
-                  {h.text}
-                </a>
-              ));
+              return (
+                <Snippet>
+                  {() => (
+                    <Link
+                      href={`#${h.id}`}
+                      ref={(el) => observe(el, h.id)}
+                      style={{ paddingInlineStart: `${Math.max(0, h.depth - 2) * 0.75}rem` }}
+                      className={classx('air-mdx-toc-link', { active: active.value })}
+                      aria-current={active.value ? 'true' : undefined}
+                    >
+                      {h.text}
+                    </Link>
+                  )}
+                </Snippet>
+              );
             }}
           </For>
         </nav>

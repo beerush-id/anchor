@@ -1,4 +1,4 @@
-import { $symbol, type AnyType, createContext, isBrowser, setContext, untrack } from '@anchorlib/core';
+import { $symbol, type AnyType, createContext, isBrowser, setContext, sleep, untrack } from '@anchorlib/core';
 import {
   createRouter as createAppRouter,
   getRenderProps,
@@ -166,22 +166,30 @@ export function UIRouter(props: UIRouterProps) {
 
   const { router, resetScroll, url, headless = true } = props;
   const stacks = createRef(new Map()).current;
-  const activate = async () => {
+  const activate = async (e?: PopStateEvent) => {
+    const behavior = typeof resetScroll === 'string' ? resetScroll : 'smooth';
+
+    const { from, to } = e?.state ?? {};
+    if (to?.hash && to?.path === from?.path) {
+      scrollIntoView(to?.hash, behavior);
+      return;
+    }
     const match = router.find(url ?? location.href);
 
     if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: typeof resetScroll === 'string' ? resetScroll : 'instant',
-      });
+      window.scrollTo({ top: 0, left: 0, behavior });
     }
 
-    await router.activate(url ?? location.href);
+    await router.activate(to?.href ?? location.href);
+
+    if (to?.hash) {
+      await sleep(100);
+      scrollIntoView(to?.hash, behavior);
+    }
   };
 
   if (!headless) {
-    activate();
+    // activate();
   }
 
   createEffect(() => {
@@ -202,6 +210,13 @@ export function UIRouter(props: UIRouterProps) {
       <StackRenderer stacks={stacks} />
     </>
   );
+}
+
+function scrollIntoView(hash: string, behavior: ScrollBehavior = 'smooth') {
+  const element = document.getElementById(hash);
+  if (element) {
+    element.scrollIntoView({ block: 'start', inline: 'start', behavior });
+  }
 }
 
 const StackRenderer = snippet<{ stacks: RouteStacks }>(

@@ -26,38 +26,41 @@ export const Admonition = template<AdmonitionProps>(
     const heading = title ?? defaultTitles[type];
     const visualIcon = icon ?? defaultIcons[type];
 
-    console.log('collapsible', collapsible);
     if (type === 'details' || (typeof collapsible !== 'undefined' && collapsible !== 'false')) {
       return (
-        <details {...restProps} className={classx('admonition', type, className)}>
+        <details {...restProps} className={classx('air-mdx-admonition', type, className)}>
           {(heading || visualIcon) && (
-            <summary className="admonition-header">
+            <summary className="air-mdx-admonition-header">
               {visualIcon && (
-                <span className="admonition-icon" aria-hidden="true">
+                <span className="air-mdx-admonition-icon" aria-hidden="true">
                   {visualIcon}
                 </span>
               )}
-              {heading && <span className="admonition-title">{heading}</span>}
+              {heading && <span className="air-mdx-admonition-title">{heading}</span>}
             </summary>
           )}
-          <div className="admonition-content">{children}</div>
+          <div className="air-mdx-admonition-content">{children}</div>
         </details>
       );
     }
 
     return (
-      <div role={role ?? (isAlert ? 'alert' : 'note')} {...restProps} className={classx('admonition', type, className)}>
+      <div
+        role={role ?? (isAlert ? 'alert' : 'note')}
+        {...restProps}
+        className={classx('air-mdx-admonition', type, className)}
+      >
         {(heading || visualIcon) && (
-          <div className="admonition-header">
+          <div className="air-mdx-admonition-header">
             {visualIcon && (
-              <span className="admonition-icon" aria-hidden="true">
+              <span className="air-mdx-admonition-icon" aria-hidden="true">
                 {visualIcon}
               </span>
             )}
-            {heading && <span className="admonition-title">{heading}</span>}
+            {heading && <span className="air-mdx-admonition-title">{heading}</span>}
           </div>
         )}
-        <div className="admonition-content">{children}</div>
+        <div className="air-mdx-admonition-content">{children}</div>
       </div>
     );
   },

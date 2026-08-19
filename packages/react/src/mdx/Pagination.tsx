@@ -1,11 +1,12 @@
+import type { PreloadMode } from '@anchorlib/router';
 import type { HTMLAttributes } from 'react';
 import { type AnyType, classx, derived, Link, render, Show, setup, untrack } from '../index.js';
-
 import { mdxCtx } from './context.js';
 import type { NavItem } from './Sidebar.js';
 
 export interface PaginationProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
+  preload?: PreloadMode;
 }
 
 export type NavigableItem = NavItem & { route: AnyType };
@@ -16,7 +17,7 @@ export interface PaginationLinks {
 }
 
 export const Pagination = setup<PaginationProps>((props) => {
-  const $restProps = props.$omit(['nav', 'className']);
+  const $restProps = props.$omit(['nav', 'className', 'preload']);
   const ctx = mdxCtx.get();
   const flatLinks = derived(() => flatten(props.nav));
 
@@ -48,6 +49,7 @@ export const Pagination = setup<PaginationProps>((props) => {
                 className="air-mdx-pagination-link"
                 aria-label={`Previous: ${p.text}`}
                 rel="prev"
+                preload={props.preload}
               >
                 <span>Previous</span>
                 <strong>{p.text}</strong>
@@ -64,6 +66,7 @@ export const Pagination = setup<PaginationProps>((props) => {
                 className="air-mdx-pagination-link"
                 aria-label={`Next: ${n.text}`}
                 rel="next"
+                preload={props.preload}
               >
                 <span>Next</span>
                 <strong>{n.text}</strong>

@@ -1,6 +1,7 @@
 import type {
   IndexRoute,
   None,
+  PreloadMode,
   Route,
   RouteIndexRenderer,
   RouteLayoutRenderer,
@@ -8,7 +9,7 @@ import type {
   Router,
   UnknownRoute,
 } from '@anchorlib/router';
-import type { FC, ReactNode, ComponentProps as ReactProps } from 'react';
+import type { ComponentProps as ReactProps, FC, ReactNode } from 'react';
 
 /**
  * Represents any generic Route definition from the core router.
@@ -39,7 +40,7 @@ export type ComposedLinkProps<T> =
  */
 export type LinkProps<R> = ReactProps<'a'> &
   ComposedLinkProps<R> & {
-    preload?: 'hover' | 'always' | 'never';
+    preload?: PreloadMode;
     replace?: boolean;
     fullMatch?: boolean;
     activeClass?: string;

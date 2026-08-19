@@ -260,8 +260,7 @@ export function snippet<P, SP extends GenericProps = GenericProps>(
     const [{ context, observer, scheduleCleanup, cancelCleanup }] = createState(() => {
       const [scheduleCleanup, cancelCleanup] = microtask(CLEANUP_DEBOUNCE_TIME);
       const observer = createObserver(function snippetRenderer() {
-        // Prevent triggering re-render when not in browser.
-        observer.reset();
+        // observer.reset();
 
         if (!isBrowser()) return;
 

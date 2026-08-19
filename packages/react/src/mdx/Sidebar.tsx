@@ -1,3 +1,4 @@
+import type { PreloadMode } from '@anchorlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { type AnyType, classx, For, Link, Show, template } from '../index.js';
 
@@ -11,12 +12,13 @@ export interface NavItem {
 
 export interface SidebarProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
+  preload?: PreloadMode;
 }
 
 export const Sidebar = template<SidebarProps>(
-  ({ nav, className, ...restProps }) => (
+  ({ nav, className, preload, ...restProps }) => (
     <nav {...restProps} className={classx('air-mdx-sidebar-nav', className)}>
-      <For each={() => nav}>{(item) => <SidebarNode item={item} />}</For>
+      <For each={() => nav}>{(item) => <SidebarNode item={item} preload={preload} />}</For>
     </nav>
   ),
   'DocsSidebar'
@@ -25,9 +27,10 @@ export const Sidebar = template<SidebarProps>(
 export interface SidebarNodeProps extends HTMLAttributes<HTMLElement> {
   item: NavItem;
   level?: number;
+  preload?: PreloadMode;
 }
 
-export const SidebarNode = template<SidebarNodeProps>(({ item, className, level, ...restProps }) => {
+export const SidebarNode = template<SidebarNodeProps>(({ item, className, level, preload, ...restProps }) => {
   if (item.separator) {
     return <div {...restProps} className={classx('air-mdx-sidebar-separator', className)} />;
   }
@@ -44,7 +47,13 @@ export const SidebarNode = template<SidebarNodeProps>(({ item, className, level,
         <Show when={() => item.text}>
           {() =>
             item.route ? (
-              <Link to={item.route as AnyType} className="air-mdx-sidebar-link" activeClass="active" keepVisible>
+              <Link
+                to={item.route as AnyType}
+                className="air-mdx-sidebar-link"
+                activeClass="active"
+                preload={preload}
+                keepVisible
+              >
                 <SidebarItem icon={item.icon} text={item.text} />
               </Link>
             ) : (
@@ -56,7 +65,9 @@ export const SidebarNode = template<SidebarNodeProps>(({ item, className, level,
         </Show>
         <div className="air-mdx-sidebar-children">
           <For each={() => item.items!}>
-            {(child) => <SidebarNode item={child} level={typeof level === 'number' ? level + 1 : level} />}
+            {(child) => (
+              <SidebarNode item={child} preload={preload} level={typeof level === 'number' ? level + 1 : level} />
+            )}
           </For>
         </div>
       </div>
@@ -70,6 +81,7 @@ export const SidebarNode = template<SidebarNodeProps>(({ item, className, level,
         to={item.route as AnyType}
         className={classx('air-mdx-sidebar-link', className)}
         activeClass="active"
+        preload={preload}
         keepVisible
       >
         <SidebarItem icon={item.icon} text={item.text} />
