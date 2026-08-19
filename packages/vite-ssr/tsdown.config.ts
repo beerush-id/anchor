@@ -11,9 +11,8 @@ export default defineConfig({
   unbundle: true,
   platform: 'node',
   external: [
-    'vfile',
     '@mdx-js/mdx',
-    '@mdx-js/rollup',
+    '@shikijs/transformers',
     'unist-util-visit',
     'remark-frontmatter',
     'remark-mdx-frontmatter',

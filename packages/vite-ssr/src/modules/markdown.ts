@@ -294,6 +294,12 @@ export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
         if (tagName === 'a') {
           hasLink = true;
           tagName = 'AirLink';
+
+          node.attributes?.push({
+            type: 'JSXAttribute',
+            name: { type: 'JSXIdentifier', name: 'className' },
+            value: { type: 'Literal', value: 'air-mdx-link' },
+          });
         }
 
         node.name = {
@@ -369,10 +375,8 @@ export async function mdxFile(id: string, code: string, options: Partial<MdxModu
   return { id, file, code: file.toString() };
 }
 
-export type ExtendedPlugins = Array<{ default: unknown }>;
-
-let extendedImportPromise: Promise<ExtendedPlugins> | undefined;
-export const importExtended = (): Promise<ExtendedPlugins> => {
+let extendedImportPromise: Promise<AnyType> | undefined;
+export const importExtended = (): Promise<AnyType> => {
   if (!extendedImportPromise) {
     const started = performance.now();
     log.debug(color.event('Loading remark/rehype plugins'));
@@ -380,6 +384,7 @@ export const importExtended = (): Promise<ExtendedPlugins> => {
       import('remark-gfm'),
       import('remark-directive'),
       import('rehype-pretty-code'),
+      import('@shikijs/transformers')
     ])
       .then((plugins) => {
         log.debug(
@@ -414,7 +419,7 @@ export async function loadExtendedPlugins(module: MdxModule) {
   const { extended } = module.options;
   const options = (typeof extended === 'object' && extended ? extended : {}) as MdxExtendedOptions;
 
-  const [gfm, directive, prettyCode] = await importExtended();
+  const [gfm, directive, prettyCode, transformers] = await importExtended();
 
   const remarkPlugins: PluggableList = [
     [gfm.default as Plugin, { ...options.remarkGfm }],
@@ -423,7 +428,17 @@ export async function loadExtendedPlugins(module: MdxModule) {
   ];
 
   const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
-  const shikiOptions = { theme: shikiTheme, ...options.rehypePrettyCode };
+  const shikiOptions = {
+    theme: shikiTheme,
+    transformers: [
+      transformers.transformerNotationDiff,
+      transformers.transformerNotationHighlight,
+      transformers.transformerNotationWordHighlight,
+      transformers.transformerNotationFocus,
+      transformers.transformerNotationErrorLevel,
+    ],
+    ...options.rehypePrettyCode
+  };
 
   const rehypePlugins: PluggableList = [
     [prettyCode.default as Plugin, shikiOptions],

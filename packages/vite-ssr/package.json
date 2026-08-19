@@ -70,6 +70,7 @@
     "vite": "catalog:lib"
   },
   "optionalDependencies": {
+    "@shikijs/transformers": "catalog:lib",
     "rehype-pretty-code": "catalog:lib",
     "remark-directive": "catalog:lib",
     "remark-gfm": "catalog:lib"
